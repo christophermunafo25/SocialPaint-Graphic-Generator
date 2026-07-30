@@ -3,7 +3,6 @@ import {
   BarChart3,
   Frame,
   LogOut,
-  Monitor,
   Moon,
   Paintbrush,
   PanelLeft,
@@ -12,8 +11,10 @@ import {
   Sun,
   Users,
 } from "lucide-react";
+import { stores } from "@/lib/stores";
+import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
-import { useColorScheme, type ColorScheme } from "@/lib/colorScheme";
+import { useColorScheme } from "@/lib/colorScheme";
 import { useRouter, type Route } from "../router";
 import logoOnLight from "@/assets/socialpaint/socialpaint-logo-on-light.svg";
 import logoOnDark from "@/assets/socialpaint/socialpaint-logo-on-dark.svg";
@@ -57,39 +58,40 @@ interface NavItem {
   adminOnly: boolean;
   /** Route names that keep this item highlighted. */
   matches: string[];
+  /** Logical group — groups separate with whitespace, never divider rules. */
+  group: number;
 }
 
 /** Figma order: Brand templates · Templates · Insights & Analytics ·
- * Brand Studio · People · Settings & Admin. Members see only the first. */
+ * Brand Studio · People · Settings & Admin. Members see only the first.
+ * Groups: member-facing / building / administration. */
 const NAV: NavItem[] = [
-  { label: "Brand templates", route: { name: "portal" }, Icon: Paintbrush, adminOnly: false, matches: ["portal", "template"] },
-  { label: "Templates", route: { name: "adminTemplates" }, Icon: Frame, adminOnly: true, matches: ["adminTemplates", "builder"] },
-  { label: "Insights & Analytics", route: { name: "dashboard" }, Icon: BarChart3, adminOnly: true, matches: ["dashboard"] },
-  { label: "Brand Studio", route: { name: "brandStudio" }, Icon: PencilRuler, adminOnly: true, matches: ["brandStudio"] },
-  { label: "People", route: { name: "people" }, Icon: Users, adminOnly: true, matches: ["people"] },
-  { label: "Settings & Admin", route: { name: "settings" }, Icon: Settings, adminOnly: true, matches: ["settings"] },
+  { label: "Brand templates", route: { name: "portal" }, Icon: Paintbrush, adminOnly: false, matches: ["portal", "template"], group: 0 },
+  { label: "Templates", route: { name: "adminTemplates" }, Icon: Frame, adminOnly: true, matches: ["adminTemplates", "builder"], group: 1 },
+  { label: "Insights & Analytics", route: { name: "dashboard" }, Icon: BarChart3, adminOnly: true, matches: ["dashboard"], group: 1 },
+  { label: "Brand Studio", route: { name: "brandStudio" }, Icon: PencilRuler, adminOnly: true, matches: ["brandStudio"], group: 1 },
+  { label: "People", route: { name: "people" }, Icon: Users, adminOnly: true, matches: ["people"], group: 2 },
+  { label: "Settings & Admin", route: { name: "settings" }, Icon: Settings, adminOnly: true, matches: ["settings"], group: 2 },
 ];
 
-const SCHEME_CYCLE: Array<{ key: ColorScheme; label: string; Icon: typeof Sun }> = [
-  { key: "system", label: "System theme", Icon: Monitor },
-  { key: "light", label: "Light theme", Icon: Sun },
-  { key: "dark", label: "Dark theme", Icon: Moon },
-];
-
-function ThemeToggle() {
-  const { scheme, setScheme } = useColorScheme();
-  const idx = SCHEME_CYCLE.findIndex((s) => s.key === scheme);
-  const current = SCHEME_CYCLE[idx === -1 ? 0 : idx];
-  const next = SCHEME_CYCLE[(idx + 1) % SCHEME_CYCLE.length];
+/** Two-state light/dark quick toggle for the sidebar header. Reads and
+ * writes the same ColorScheme state as Settings' System/Light/Dark control —
+ * the two always agree; Settings remains the full three-way control. */
+function QuickThemeToggle() {
+  const { resolved, setScheme } = useColorScheme();
+  const next = resolved === "dark" ? "light" : "dark";
   return (
     <button
-      onClick={() => setScheme(next.key)}
-      title={`${current.label} — click for ${next.label.toLowerCase()}`}
-      aria-label={`Color theme: ${current.label}. Switch to ${next.label}`}
-      className="flex items-center justify-center rounded-lg flex-shrink-0"
-      style={{ width: 28, height: 28, color: "var(--sb-fg)" }}
+      onClick={() => setScheme(next)}
+      title={`Switch to ${next} mode`}
+      aria-label={`Switch to ${next} mode`}
+      className="sp-icon-btn"
     >
-      <current.Icon style={{ width: 14, height: 14 }} />
+      {resolved === "dark" ? (
+        <Moon style={{ width: 15, height: 15 }} />
+      ) : (
+        <Sun style={{ width: 15, height: 15 }} />
+      )}
     </button>
   );
 }
@@ -163,14 +165,21 @@ function AccountBlock({ onNavigate }: { onNavigate(route: Route): void }) {
           {initials}
         </span>
         <span className="min-w-0 flex-1 text-left">
-          <span className="block truncate" style={{ fontSize: 13, fontWeight: 500, color: "var(--sb-fg-active)" }}>
+          <span
+            className="block truncate"
+            title={displayName}
+            style={{ fontSize: 13, fontWeight: 500, color: "var(--sb-fg-active)" }}
+          >
             {displayName}
           </span>
-          <span className="block truncate" style={{ fontSize: 11, color: "var(--sb-fg)" }}>
+          <span
+            className="block truncate"
+            title={user?.email ?? `${company?.name ?? "Workspace"} · ${role}`}
+            style={{ fontSize: 11, color: "var(--sb-fg)" }}
+          >
             {user?.email ?? `${company?.name ?? "Workspace"} · ${role}`}
           </span>
         </span>
-        <ThemeToggle />
         {signOut && (
           <button
             onClick={() => void signOut()}
@@ -193,8 +202,35 @@ function AccountBlock({ onNavigate }: { onNavigate(route: Route): void }) {
  * vertically from the top as a panel over a scrim. SocialPaint product UI —
  * tenant brand kits never re-color it. */
 export function Sidebar() {
-  const { role } = useAuth();
+  const { role, company, backend } = useAuth();
   const { route, navigate } = useRouter();
+
+  // Right-aligned nav counts — only where a REAL count exists: Templates
+  // (admin), People (Supabase backend only; the dev backend has no real
+  // accounts, and a fabricated 0 would be noise). Refreshes on navigation.
+  const countsState = useAsync<Record<string, number>>(async () => {
+    if (!company || role !== "admin") return {};
+    const out: Record<string, number> = {};
+    await Promise.all([
+      stores.templates
+        .listAll(company.id)
+        .then((l) => {
+          out.Templates = l.length;
+        })
+        .catch(() => undefined),
+      backend === "supabase"
+        ? stores.people
+            .list(company.id)
+            .then((l) => {
+              out.People = l.length;
+            })
+            .catch(() => undefined)
+        : Promise.resolve(),
+    ]);
+    return out;
+  }, [company, role, backend, route.name]);
+  const countFor = (label: string): number | null =>
+    countsState.status === "ready" ? countsState.data[label] ?? null : null;
   const [isNarrow, setIsNarrow] = useState(() => window.matchMedia("(max-width: 1023px)").matches);
   const [menuOpen, setMenuOpen] = useState(false);
   const [collapsedPref, setCollapsedPref] = useState<boolean>(() => {
@@ -258,18 +294,21 @@ export function Sidebar() {
             <button onClick={() => go({ name: role === "admin" ? "adminTemplates" : "portal" })} aria-label="SocialPaint — home">
               <BrandLockup height={18} />
             </button>
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              aria-expanded={menuOpen}
-              aria-label={menuOpen ? "Close navigation" : "Open navigation"}
-              data-open={menuOpen}
-              className="sp-nav-toggle relative flex items-center justify-center rounded-md"
-              style={{ width: 36, height: 36, color: "var(--sb-fg-active)", border: "1px solid var(--sb-border)" }}
-            >
-              <span aria-hidden className="sp-nav-toggle__bar sp-nav-toggle__bar--top" />
-              <span aria-hidden className="sp-nav-toggle__bar sp-nav-toggle__bar--mid" />
-              <span aria-hidden className="sp-nav-toggle__bar sp-nav-toggle__bar--bot" />
-            </button>
+            <div className="flex items-center gap-2">
+              <QuickThemeToggle />
+              <button
+                onClick={() => setMenuOpen(!menuOpen)}
+                aria-expanded={menuOpen}
+                aria-label={menuOpen ? "Close navigation" : "Open navigation"}
+                data-open={menuOpen}
+                className="sp-nav-toggle relative flex items-center justify-center rounded-md"
+                style={{ width: 36, height: 36, color: "var(--sb-fg-active)", border: "1px solid var(--sb-border)" }}
+              >
+                <span aria-hidden className="sp-nav-toggle__bar sp-nav-toggle__bar--top" />
+                <span aria-hidden className="sp-nav-toggle__bar sp-nav-toggle__bar--mid" />
+                <span aria-hidden className="sp-nav-toggle__bar sp-nav-toggle__bar--bot" />
+              </button>
+            </div>
           </div>
 
           {/* Drop-down panel — slides down from under the bar */}
@@ -320,36 +359,42 @@ export function Sidebar() {
     <div
       className="flex-shrink-0"
       style={{
-        width: collapsed ? "var(--sb-width-collapsed)" : "var(--sb-width)",
+        // Floating panel: inset 12px from the top, left, and bottom.
+        width: `calc(${collapsed ? "var(--sb-width-collapsed)" : "var(--sb-width)"} + 12px)`,
+        padding: "12px 0 12px 12px",
         transition: "width 0.2s ease",
       }}
     >
       <aside
-        className="sp-sidebar flex flex-col sticky top-0"
+        className="sp-sidebar flex flex-col sticky"
         style={{
+          top: 12,
           width: collapsed ? "var(--sb-width-collapsed)" : "var(--sb-width)",
-          height: "100vh",
-          padding: collapsed ? "20px 12px" : "24px 20px",
+          height: "calc(100vh - 24px)",
+          padding: collapsed ? "20px 12px" : "20px 16px",
           transition: "width 0.2s ease",
           zIndex: 30,
         }}
       >
-        {/* Logo + collapse toggle */}
-        <div className={`flex items-center ${collapsed ? "justify-center" : "justify-between"} mb-7`}>
+        {/* Header row: logo + utility icon buttons (theme quick toggle,
+            collapse), vertically centered with the logo. */}
+        <div className={`flex items-center ${collapsed ? "justify-center" : "justify-between"} mb-6`}>
           {!collapsed && (
             <button onClick={() => go({ name: role === "admin" ? "adminTemplates" : "portal" })} title="Home" aria-label="SocialPaint — home">
               <BrandLockup />
             </button>
           )}
-          <button
-            onClick={() => setCollapsedPref((c) => !c)}
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className="flex items-center justify-center rounded-md flex-shrink-0"
-            style={{ width: 26, height: 26, color: "var(--sb-fg)", border: "1.5px solid var(--sb-border)" }}
-          >
-            <PanelLeft style={{ width: 13, height: 13 }} />
-          </button>
+          <div className="flex items-center gap-2">
+            {!collapsed && <QuickThemeToggle />}
+            <button
+              onClick={() => setCollapsedPref((c) => !c)}
+              title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              className="sp-icon-btn"
+            >
+              <PanelLeft style={{ width: 15, height: 15 }} />
+            </button>
+          </div>
         </div>
         {collapsed && (
           <button
@@ -362,10 +407,13 @@ export function Sidebar() {
           </button>
         )}
 
-        {/* Nav — scrolls on short viewports so the user block stays reachable */}
-        <nav className="flex flex-col gap-3.5 flex-1 min-h-0 overflow-y-auto" aria-label="Primary">
-          {items.map(({ label, route: target, Icon, matches }) => {
+        {/* Nav — scrolls on short viewports so the user block stays reachable.
+            2px between rows; 24px of whitespace (never a rule) between groups. */}
+        <nav className="flex flex-col flex-1 min-h-0 overflow-y-auto" style={{ gap: 2 }} aria-label="Primary">
+          {items.map(({ label, route: target, Icon, matches, group }, i) => {
             const active = matches.includes(route.name);
+            const newGroup = i > 0 && group !== items[i - 1].group;
+            const count = countFor(label);
             return (
               <button
                 key={label}
@@ -374,10 +422,21 @@ export function Sidebar() {
                 data-active={active}
                 title={collapsed ? label : undefined}
                 aria-current={active ? "page" : undefined}
-                style={collapsed ? { justifyContent: "center", padding: 0 } : undefined}
+                style={{
+                  ...(collapsed ? { justifyContent: "center", padding: 0 } : undefined),
+                  ...(newGroup ? { marginTop: 24 } : undefined),
+                }}
               >
-                <Icon style={{ width: 17, height: 17, flexShrink: 0 }} />
+                <Icon style={{ width: 18, height: 18, flexShrink: 0 }} />
                 {!collapsed && label}
+                {!collapsed && count !== null && (
+                  <span
+                    className="ml-auto"
+                    style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-3)" }}
+                  >
+                    {count}
+                  </span>
+                )}
               </button>
             );
           })}

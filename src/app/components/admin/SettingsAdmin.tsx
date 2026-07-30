@@ -2,6 +2,7 @@ import React from "react";
 import { LogOut, Monitor, Moon, Sun } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useColorScheme, type ColorScheme } from "@/lib/colorScheme";
+import { Page, PageHeader } from "../layout/Page";
 
 const SCHEMES: Array<{ key: ColorScheme; label: string; Icon: typeof Sun; hint: string }> = [
   { key: "system", label: "System", Icon: Monitor, hint: "Follow the OS preference" },
@@ -16,18 +17,16 @@ export function SettingsAdmin() {
   const { scheme, setScheme } = useColorScheme();
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-10 space-y-5">
-      <div>
-        <h1 className="sp-page-title">Settings & Admin</h1>
-        <p style={{ fontSize: 13, color: "var(--fg-3)", marginTop: 4 }}>
-          Workspace, appearance, and account. Members and roles are managed on
-          the People page.
-        </p>
-      </div>
+    <Page narrow={760}>
+      <PageHeader
+        title="Settings & Admin"
+        description="Workspace, appearance, and account. Members and roles are managed on the People page."
+      />
+      <div className="space-y-6">
 
-      <div className="sp-card p-5 space-y-3">
+      <div className="sp-card sp-card--content space-y-3">
         <h2 className="sp-panel-title">Workspace</h2>
-        <div className="grid grid-cols-2 gap-x-6 gap-y-2" style={{ fontSize: 13 }}>
+        <div className="grid gap-x-6 gap-y-2" style={{ gridTemplateColumns: "140px 1fr", fontSize: 13 }}>
           <span style={{ color: "var(--fg-3)" }}>Name</span>
           <span style={{ color: "var(--ink)" }}>{company?.name ?? "—"}</span>
           <span style={{ color: "var(--fg-3)" }}>Slug</span>
@@ -41,7 +40,7 @@ export function SettingsAdmin() {
         </div>
       </div>
 
-      <div className="sp-card p-5 space-y-3">
+      <div className="sp-card sp-card--content space-y-3">
         <h2 className="sp-panel-title">Appearance</h2>
         <p style={{ fontSize: 12, color: "var(--fg-3)" }}>
           Applies to the SocialPaint chrome only — template graphics and
@@ -55,22 +54,22 @@ export function SettingsAdmin() {
               title={hint}
               className="flex flex-col items-center gap-1.5 py-3 rounded-xl"
               style={{
-                border: `1.5px solid ${scheme === key ? "var(--solar)" : "var(--hairline-strong)"}`,
-                background: scheme === key ? "var(--accent-wash)" : "var(--lift)",
-                color: "var(--ink)",
+                border: `1px solid ${scheme === key ? "transparent" : "var(--hairline-strong)"}`,
+                background: scheme === key ? "var(--sb-active-bg)" : "var(--lift)",
+                color: scheme === key ? "var(--sb-fg-active)" : "var(--ink)",
                 fontSize: 12.5,
               }}
             >
-              <Icon style={{ width: 16, height: 16, color: scheme === key ? "var(--solar)" : "var(--fg-2)" }} />
+              <Icon style={{ width: 16, height: 16, color: scheme === key ? "var(--sb-fg-active)" : "var(--fg-2)" }} />
               {label}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="sp-card p-5 space-y-3">
+      <div className="sp-card sp-card--content space-y-3">
         <h2 className="sp-panel-title">Account</h2>
-        <div className="grid grid-cols-2 gap-x-6 gap-y-2" style={{ fontSize: 13 }}>
+        <div className="grid gap-x-6 gap-y-2" style={{ gridTemplateColumns: "140px 1fr", fontSize: 13 }}>
           <span style={{ color: "var(--fg-3)" }}>Email</span>
           <span style={{ color: "var(--ink)" }}>{user?.email ?? "— (dev backend)"}</span>
           <span style={{ color: "var(--fg-3)" }}>Role</span>
@@ -83,6 +82,7 @@ export function SettingsAdmin() {
           </button>
         )}
       </div>
-    </div>
+      </div>
+    </Page>
   );
 }

@@ -11,6 +11,7 @@ import { DEFAULT_PALETTE, DEFAULT_TYPE_STYLES } from "@/lib/theme";
 import { TypeStylesEditor } from "./TypeStylesEditor";
 import { DesignSystemImportPanel } from "./DesignSystemImportPanel";
 import { ColorControl } from "../ColorControl";
+import { Page, PageHeader } from "../layout/Page";
 import { ConfirmDialog } from "../ConfirmDialog";
 import { useFileDrop } from "@/lib/useFileDrop";
 import { useUnsavedChangesWarning } from "@/lib/useUnsavedChangesWarning";
@@ -261,23 +262,21 @@ export function BrandStudio() {
   );
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-10">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="sp-page-title">Brand Studio</h1>
-          <p style={{ fontSize: 13, color: "var(--fg-3)", marginTop: 4 }}>
-            Colors, fonts, and logos every template inherits.
-          </p>
-        </div>
-        <button
-          onClick={requestSave}
-          disabled={saving}
-          className="sp-btn sp-btn-primary"
-        >
-          {savedTick ? <Check className="w-4 h-4" /> : null}
-          {savedTick ? "Saved" : saving ? "Saving…" : "Save brand"}
-        </button>
-      </div>
+    <Page>
+      <PageHeader
+        title="Brand Studio"
+        description="Colors, fonts, and logos every template inherits."
+        action={
+          <button
+            onClick={requestSave}
+            disabled={saving}
+            className="sp-btn sp-btn-primary"
+          >
+            {savedTick ? <Check className="w-4 h-4" /> : null}
+            {savedTick ? "Saved" : saving ? "Saving…" : "Save brand"}
+          </button>
+        }
+      />
 
       <ConfirmDialog
         open={impact !== null}
@@ -313,13 +312,13 @@ export function BrandStudio() {
         </p>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="sp-grid-12">
         {/* Colors */}
-        <section className="sp-card p-5 space-y-4">
+        <section className="sp-span-6 sp-card sp-card--content space-y-4">
           <h2 className="sp-panel-title">Colors</h2>
           <div className="space-y-2.5">
             {colors.map((c, i) => (
-              <div key={c.key} className="flex items-center gap-3">
+              <div key={c.key} className="flex items-center gap-3" style={{ minHeight: 44 }}>
                 <ColorControl
                   ariaLabel={`${c.name} color`}
                   value={c.hex}
@@ -359,7 +358,7 @@ export function BrandStudio() {
         </section>
 
         {/* Fonts */}
-        <section className="sp-card p-5 space-y-4">
+        <section className="sp-span-6 sp-card sp-card--content space-y-4">
           <h2 className="sp-panel-title">Fonts</h2>
           <div>
             <label className="sp-eyebrow block mb-1">Heading</label>
@@ -427,14 +426,14 @@ export function BrandStudio() {
         </section>
 
         {/* Logos */}
-        <section className="sp-card p-5 space-y-4">
+        <section className="sp-span-12 sp-card sp-card--content space-y-4">
           <h2 className="sp-panel-title">Logos</h2>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-6">
             {logoAssets.map((a) => (
               <div
                 key={a.id}
                 className="sp-chip-in relative rounded-xl border p-3 flex items-center justify-center aspect-square"
-                style={{ borderColor: a.id === primaryLogoAssetId ? "var(--solar)" : "var(--hairline)", borderRadius: "var(--radius-icon)" }}
+                style={{ borderColor: a.id === primaryLogoAssetId ? "var(--solar)" : "var(--hairline)", borderRadius: 12 }}
               >
                 <img src={a.url} alt={a.name} className="max-w-full max-h-full object-contain" />
                 <button
@@ -480,7 +479,7 @@ export function BrandStudio() {
         </section>
 
         {/* Type styles — the brand rules engine */}
-        <section className="sp-card p-5 space-y-4 lg:col-span-2">
+        <section className="sp-span-12 sp-card sp-card--content space-y-4">
           <div>
             <h2 className="sp-panel-title">Type styles &amp; rules (optional)</h2>
             <p style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 3 }}>
@@ -499,7 +498,7 @@ export function BrandStudio() {
         </section>
 
         {/* Design-system import */}
-        <section className="sp-card p-5 space-y-4">
+        <section className="sp-span-6 sp-card sp-card--content space-y-4">
           <div>
             <h2 className="sp-panel-title">Import design system</h2>
             <p style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 3 }}>
@@ -515,7 +514,7 @@ export function BrandStudio() {
         </section>
 
         {/* Brand guidelines (free-text rules) */}
-        <section className="sp-card p-5 space-y-3">
+        <section className="sp-span-6 sp-card sp-card--content space-y-3">
           <div>
             <h2 className="sp-panel-title">Brand guidelines</h2>
             <p style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 3 }}>
@@ -549,7 +548,7 @@ export function BrandStudio() {
         </section>
 
         {/* Live preview */}
-        <section className="sp-card p-5 space-y-4">
+        <section className="sp-span-12 sp-card sp-card--content space-y-4">
           <h2 className="sp-panel-title">Preview</h2>
           <BrandPreviewCard
             colors={colors}
@@ -562,7 +561,7 @@ export function BrandStudio() {
           </p>
         </section>
       </div>
-    </div>
+    </Page>
   );
 }
 

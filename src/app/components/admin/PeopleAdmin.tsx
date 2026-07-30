@@ -5,6 +5,7 @@ import type { Member } from "@/lib/stores/interfaces";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { Page, PageHeader } from "../layout/Page";
 import { ConfirmDialog } from "../ConfirmDialog";
 import { ErrorState } from "../ErrorState";
 
@@ -57,7 +58,7 @@ export function PeopleAdmin() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
+    <Page narrow={900}>
       <ConfirmDialog
         open={removing !== null}
         title={`Remove ${removing?.email ?? ""} from ${company?.name ?? "this company"}?`}
@@ -65,10 +66,10 @@ export function PeopleAdmin() {
         onCancel={() => setRemoving(null)}
         onConfirm={confirmRemove}
       />
-      <h1 className="sp-page-title">People</h1>
-      <p style={{ fontSize: 13, color: "var(--fg-3)", marginTop: 4, marginBottom: 24 }}>
-        Admins build and manage the brand; members use the portal to fill in templates.
-      </p>
+      <PageHeader
+        title="People"
+        description="Admins build and manage the brand; members use the portal to fill in templates."
+      />
 
       {isDevAuth && (
         <p className="rounded-lg px-4 py-3 mb-5" style={{ fontSize: 12, background: "var(--paper-warm)", color: "var(--fg-2)" }}>
@@ -85,12 +86,13 @@ export function PeopleAdmin() {
           onKeyDown={(e) => e.key === "Enter" && void invite()}
           placeholder="person@company.com"
           className="sp-input flex-1"
+          style={{ height: 40 }}
         />
-        <select value={role} onChange={(e) => setRole(e.target.value as Role)} className="sp-input" style={{ width: "auto" }}>
+        <select value={role} onChange={(e) => setRole(e.target.value as Role)} className="sp-input" style={{ width: "auto", height: 40 }}>
           <option value="member">Member</option>
           <option value="admin">Admin</option>
         </select>
-        <button className="sp-btn sp-btn-primary" disabled={busy || !email.trim() || isDevAuth} onClick={() => void invite()}>
+        <button className="sp-btn sp-btn-primary" style={{ height: 40 }} disabled={busy || !email.trim() || isDevAuth} onClick={() => void invite()}>
           <Send style={{ width: 13, height: 13 }} />
           {busy ? "Inviting…" : "Invite"}
         </button>
@@ -100,7 +102,7 @@ export function PeopleAdmin() {
 
       <div className="sp-card overflow-hidden mt-4">
         {membersState.status === "loading" ? (
-          <p className="px-4 py-8 text-center" style={{ fontSize: 13, color: "var(--fg-3)" }}>Loading…</p>
+          <p className="px-6 py-8 text-center" style={{ fontSize: 13, color: "var(--fg-3)" }}>Loading…</p>
         ) : membersState.status === "error" ? (
           <ErrorState
             title="We couldn't load your team."
@@ -108,15 +110,15 @@ export function PeopleAdmin() {
             onRetry={membersState.retry}
           />
         ) : members.length === 0 ? (
-          <p className="px-4 py-8 text-center" style={{ fontSize: 13, color: "var(--fg-3)" }}>
+          <p className="px-6 py-8 text-center" style={{ fontSize: 13, color: "var(--fg-3)" }}>
             No members yet.
           </p>
         ) : (
           members.map((m, i) => (
             <div
               key={m.userId}
-              className="flex items-center gap-3 px-4 py-3"
-              style={i > 0 ? { borderTop: "1px solid var(--hairline)" } : undefined}
+              className="flex items-center gap-3"
+              style={{ padding: "12px 24px", minHeight: 56, ...(i > 0 ? { borderTop: "1px solid var(--hairline)" } : {}) }}
             >
               <span
                 className="sp-mesh flex-shrink-0"
@@ -160,6 +162,6 @@ export function PeopleAdmin() {
           ))
         )}
       </div>
-    </div>
+    </Page>
   );
 }

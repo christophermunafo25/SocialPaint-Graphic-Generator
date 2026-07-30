@@ -76,8 +76,8 @@
   --font-ui: "Inter Tight", ui-sans-serif, system-ui, -apple-system, sans-serif;
 
   /* Shape: soft containers vs crisp controls — hold the gap, never 12px */
-  --radius-card: 20px;
-  --radius-card-sm: 20px;
+  --radius-card: 16px;
+  --radius-card-sm: 16px;
   --radius-icon: 5px;
   --radius-input: 5px;
   --radius-button: 5px;
@@ -116,7 +116,7 @@
   --viz-grid: #dddfd4;
 
   /* Sidebar — flat surface (no glass in this system) */
-  --sb-width: 264px;
+  --sb-width: 260px;
   --sb-width-collapsed: 76px;
   --sb-bg: #ffffff;
   --sb-border: #dddfd4;
@@ -242,7 +242,7 @@ button, input, select, textarea, optgroup {
    face is broad and heavy, so sizes are compressed. */
 .sp-page-title {
   font-family: var(--font-display);
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: -0.03em;
@@ -341,10 +341,8 @@ button, input, select, textarea, optgroup {
 /* ── Sidebar — flat surface panel, rounded on its right corners only ────── */
 .sp-sidebar {
   background: var(--sb-bg);
-  border-top: 1px solid var(--sb-border);
-  border-right: 1px solid var(--sb-border);
-  border-bottom: 1px solid var(--sb-border);
-  border-radius: 0 var(--radius-card) var(--radius-card) 0;
+  border: 1px solid var(--sb-border);
+  border-radius: var(--radius-card);
   box-shadow: var(--sb-shadow);
 }
 .sp-sidebar-item {
@@ -352,8 +350,8 @@ button, input, select, textarea, optgroup {
   align-items: center;
   gap: 12px;
   width: 100%;
-  height: 44px;
-  padding: 0 12px;
+  height: 40px;
+  padding: 0 10px;
   border-radius: var(--radius-button);
   border: 1px solid transparent;
   font-size: 14px;
@@ -657,3 +655,64 @@ button, input, select, textarea, optgroup {
     opacity: 1;
   }
 }
+
+/* --- Shell layout primitives (App Shell Reframe) ---------------------------
+   One content column, one header pattern, one card recipe, two grids. Every
+   page inherits these instead of defining its own container. */
+
+/* 32px circular utility icon button (sidebar header controls). */
+.sp-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: var(--paper-warm);
+  color: var(--sb-fg);
+  border: none;
+  flex-shrink: 0;
+}
+.sp-icon-btn:hover { color: var(--sb-fg-active); }
+
+/* Content-panel card padding (Insights, Brand Studio, Settings, People). */
+.sp-card--content { padding: 24px; }
+
+/* Media card: 10px uniform padding; the preview is its own inset surface. */
+.sp-media-card { padding: 10px; }
+.sp-media-card__preview {
+  border-radius: 12px;
+  aspect-ratio: 4 / 3;
+  background: var(--paper-warm);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+/* Media card grid: 24px gap; 4 / 3 / 2 / 1 columns. */
+.sp-grid-media {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: 1fr;
+  align-items: stretch;
+}
+@media (min-width: 720px)  { .sp-grid-media { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1100px) { .sp-grid-media { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1440px) { .sp-grid-media { grid-template-columns: repeat(4, 1fr); } }
+
+/* Content-panel grid: 12 columns, same 24px gap. */
+.sp-grid-12 {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(12, 1fr);
+  align-items: stretch;
+}
+.sp-span-6  { grid-column: span 6; }
+.sp-span-12 { grid-column: span 12; }
+@media (max-width: 900px) { .sp-span-6 { grid-column: span 12; } }
+
+/* Equal-height media cards: faces fill the grid-stretched scene. */
+.sp-grid-media .sp-flipcard-scene { height: 100%; }
+.sp-flipcard__face--front { height: 100%; }

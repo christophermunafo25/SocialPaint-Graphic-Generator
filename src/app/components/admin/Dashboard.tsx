@@ -5,6 +5,7 @@ import type { DailyActivityPoint, UsageSummary } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { Page, PageHeader } from "../layout/Page";
 import { ErrorState } from "../ErrorState";
 import { BrandMark } from "../Sidebar";
 
@@ -37,7 +38,7 @@ interface KpiProps {
 /** Stat tile — a headline number needs no chart. Values are data → mono. */
 function Kpi({ label, value, Icon, chip }: KpiProps) {
   return (
-    <div className="sp-card p-5 flex items-center gap-4">
+    <div className="sp-card sp-card--content flex items-center gap-4">
       <span
         className="flex items-center justify-center flex-shrink-0"
         style={{ width: 38, height: 38, borderRadius: "var(--radius-icon)", background: chip }}
@@ -105,13 +106,8 @@ export function Dashboard() {
   const maxCount = Math.max(1, ...top.map((r) => Math.max(r.downloads, r.opens)));
 
   return (
-    <div className="max-w-6xl mx-auto px-8 sm:px-12 py-10">
-      <div className="mb-8">
-        <h1 className="sp-page-title">Insights</h1>
-        <p style={{ fontSize: 13, color: "var(--fg-3)", marginTop: 4 }}>
-          Which templates your team actually uses.
-        </p>
-      </div>
+    <Page>
+      <PageHeader title="Insights" description="Which templates your team actually uses." />
 
       {summary.rows.length === 0 ? (
         <div className="sp-card relative overflow-hidden text-center py-20 px-6">
@@ -129,9 +125,9 @@ export function Dashboard() {
           </p>
         </div>
       ) : (
-        <div className="space-y-5">
-          {/* KPI row */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="space-y-6">
+          {/* KPI row — same 24px gap as every other grid on the page */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             <Kpi label="Total exports" value={String(summary.totalDownloads)} Icon={Download} chip="var(--mint)" />
             <Kpi label="Total opens" value={String(totalOpens)} Icon={Eye} chip="var(--sky)" />
             <Kpi label="Export rate" value={exportRate(summary.totalDownloads, totalOpens)} Icon={Percent} chip="var(--paper-warm)" />
@@ -139,7 +135,7 @@ export function Dashboard() {
           </div>
 
           {/* 30-day trend */}
-          <div className="sp-card p-5">
+          <div className="sp-card sp-card--content">
             <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
               <h2 className="sp-panel-title">Activity — last 30 days</h2>
               <div className="flex items-center gap-4">
@@ -213,9 +209,9 @@ export function Dashboard() {
             )}
           </div>
 
-          <div className="grid lg:grid-cols-5 gap-5 items-start">
+          <div className="grid lg:grid-cols-5 gap-6 items-stretch">
             {/* Most-used leaderboard */}
-            <div className="sp-card p-5 lg:col-span-2">
+            <div className="sp-card sp-card--content lg:col-span-2">
               <h2 className="sp-panel-title mb-4">Most used</h2>
               <div className="space-y-4">
                 {top.map((r, i) => (
@@ -288,6 +284,6 @@ export function Dashboard() {
           </div>
         </div>
       )}
-    </div>
+    </Page>
   );
 }

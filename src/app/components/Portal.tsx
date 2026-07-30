@@ -4,6 +4,7 @@ import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useRouter } from "../router";
+import { Page, PageHeader } from "./layout/Page";
 import { ErrorState } from "./ErrorState";
 import { TemplateThumbnail } from "./TemplateThumbnail";
 
@@ -33,43 +34,26 @@ export function Portal() {
   }, [templates, query]);
 
   return (
-    <div>
-      {/* Header — flat on the canvas; comfortable clearance from the sidebar */}
-      <div className="max-w-7xl mx-auto px-8 sm:px-12 pt-12 pb-2">
-        <p className="sp-eyebrow mb-3">{company?.name}</p>
-        <h1
-          style={{
-            fontFamily: "var(--font-display)",
-            fontWeight: 800,
-            textTransform: "uppercase",
-            fontSize: "clamp(22px, 3.2vw, 36px)",
-            letterSpacing: "-0.03em",
-            lineHeight: 0.95,
-            color: "var(--ink)",
-            marginBottom: 10,
-          }}
-        >
-          Brand templates
-        </h1>
-        <p style={{ fontFamily: "var(--font-body)", color: "var(--fg-2)", fontSize: 15, maxWidth: 420, marginBottom: 24 }}>
-          Pick a template, fill in the details, and download a ready-to-post on-brand graphic.
-        </p>
-        <div className="relative max-w-md">
-          <Search className="absolute" style={{ left: 14, top: "50%", transform: "translateY(-50%)", width: 15, height: 15, color: "var(--fg-3)", zIndex: 1 }} />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search templates…"
-            aria-label="Search templates"
-            className="sp-input"
-            style={{ padding: "10px 14px 10px 38px" }}
-          />
-        </div>
+    <Page>
+      <PageHeader
+        eyebrow={company?.name}
+        title="Brand templates"
+        description="Pick a template, fill in the details, and download a ready-to-post on-brand graphic."
+      />
+      <div className="relative" style={{ maxWidth: 420, marginBottom: 24 }}>
+        <Search className="absolute" style={{ left: 14, top: "50%", transform: "translateY(-50%)", width: 15, height: 15, color: "var(--fg-3)", zIndex: 1 }} />
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search templates…"
+          aria-label="Search templates"
+          className="sp-input"
+          style={{ height: 40, padding: "0 14px 0 38px" }}
+        />
       </div>
 
-      {/* Grid */}
-      <div className="max-w-7xl mx-auto px-8 sm:px-12 py-10">
+      <div>
         {templatesState.status === "loading" ? (
           <p className="text-center py-20" style={{ fontSize: 13, color: "var(--fg-3)" }}>
             Loading templates…
@@ -101,7 +85,7 @@ export function Portal() {
               </p>
               <p style={{ fontSize: 12, color: "var(--fg-3)" }}>Click a template to get started</p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="sp-grid-media">
               {filtered.map((t) => (
                 <button
                   key={t.id}
@@ -111,14 +95,20 @@ export function Portal() {
                 >
                   <div className="sp-flipcard">
                     {/* Front — the card as it was */}
-                    <div className="sp-flipcard__face sp-flipcard__face--front">
-                      <div
-                        className="w-full overflow-hidden"
-                        style={{ aspectRatio: `${t.canvasWidth} / ${t.canvasHeight}`, background: "var(--paper-warm)" }}
-                      >
-                        <TemplateThumbnail template={t} />
+                    <div className="sp-flipcard__face sp-flipcard__face--front sp-media-card">
+                      <div className="sp-media-card__preview">
+                        <div
+                          style={{
+                            aspectRatio: `${t.canvasWidth} / ${t.canvasHeight}`,
+                            ...(t.canvasWidth / t.canvasHeight >= 4 / 3
+                              ? { width: "100%" }
+                              : { height: "100%" }),
+                          }}
+                        >
+                          <TemplateThumbnail template={t} />
+                        </div>
                       </div>
-                      <div className="p-4">
+                      <div style={{ padding: "12px 2px 4px" }}>
                         <div className="flex items-start justify-between gap-3 mb-1.5">
                           <div>
                             {t.category && <p className="sp-eyebrow mb-1">{t.category}</p>}
@@ -174,6 +164,6 @@ export function Portal() {
           </>
         )}
       </div>
-    </div>
+    </Page>
   );
 }

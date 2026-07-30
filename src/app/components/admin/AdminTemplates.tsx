@@ -5,6 +5,7 @@ import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useRouter } from "../../router";
+import { Page, PageHeader } from "../layout/Page";
 import { ConfirmDialog } from "../ConfirmDialog";
 import { ErrorState } from "../ErrorState";
 import { TemplateThumbnail } from "../TemplateThumbnail";
@@ -119,7 +120,7 @@ export function AdminTemplates() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <Page>
       {toast && (
         <div className="sp-toast" role="status" aria-live="polite">
           <CheckCircle2 style={{ width: 16, height: 16, color: "var(--success)", flexShrink: 0, marginTop: 1 }} />
@@ -134,22 +135,20 @@ export function AdminTemplates() {
         onCancel={() => setDeleting(null)}
         onConfirm={() => void confirmDelete()}
       />
-      <div className="flex items-end justify-between mb-6">
-        <div>
-          <h1 className="sp-page-title">Templates</h1>
-          <p style={{ fontSize: 13, color: "var(--fg-3)", marginTop: 4 }}>
-            Create, edit, and publish — published templates appear in your team's Brand templates.
-          </p>
-        </div>
-        <button className="sp-btn sp-btn-primary" onClick={() => navigate({ name: "builder", templateId: null })}>
-          <Plus style={{ width: 13, height: 13 }} />
-          New template
-        </button>
-      </div>
+      <PageHeader
+        title="Templates"
+        description="Create, edit, and publish — published templates appear in your team's Brand templates."
+        action={
+          <button className="sp-btn sp-btn-primary" onClick={() => navigate({ name: "builder", templateId: null })}>
+            <Plus style={{ width: 13, height: 13 }} />
+            New template
+          </button>
+        }
+      />
 
       {templatesState.status === "ready" && templates.length > 0 && (
-        <div className="flex flex-wrap items-center gap-3 mb-6">
-          <div className="relative" style={{ width: 280 }}>
+        <div className="flex flex-wrap items-center mb-6" style={{ gap: 12 }}>
+          <div className="relative" style={{ width: 420, maxWidth: "100%" }}>
             <Search
               className="absolute"
               style={{ left: 12, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: "var(--fg-3)", zIndex: 1 }}
@@ -161,14 +160,14 @@ export function AdminTemplates() {
               placeholder="Search templates…"
               aria-label="Search templates"
               className="sp-input"
-              style={{ padding: "8px 12px 8px 34px", fontSize: 13 }}
+              style={{ height: 40, padding: "0 12px 0 34px", fontSize: 13 }}
             />
           </div>
           <div
             className="flex rounded-lg overflow-hidden"
             role="group"
             aria-label="Filter by status"
-            style={{ border: "1px solid var(--hairline-strong)" }}
+            style={{ border: "1px solid var(--hairline-strong)", height: 40 }}
           >
             {(
               [
@@ -181,7 +180,7 @@ export function AdminTemplates() {
                 key={key}
                 onClick={() => setStatusFilter(key)}
                 aria-pressed={statusFilter === key}
-                className="px-3 py-1.5"
+                className="px-3 flex items-center"
                 style={{
                   fontSize: 12,
                   ...(statusFilter === key
@@ -198,7 +197,7 @@ export function AdminTemplates() {
             onChange={(e) => setSort(e.target.value as SortKey)}
             aria-label="Sort templates"
             className="sp-input"
-            style={{ width: "auto", padding: "8px 10px", fontSize: 12 }}
+            style={{ width: "auto", height: 40, padding: "0 10px", fontSize: 12 }}
           >
             <option value="recent">Recently edited</option>
             <option value="name">Name</option>
@@ -236,56 +235,76 @@ export function AdminTemplates() {
               : "Nothing published yet."}
         </p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {visible.map((t) => (
-            <div key={t.id} className="sp-card overflow-hidden flex flex-col" style={{ borderRadius: "var(--radius-card-sm)" }}>
+        <div className="sp-grid-media">
+          {visible.map((t) => {
+            const iconBtn: React.CSSProperties = {
+              width: 32,
+              height: 32,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            };
+            return (
+            <div key={t.id} className="sp-card sp-media-card flex flex-col">
               <button
                 onClick={() => navigate({ name: "builder", templateId: t.id })}
-                className="w-full overflow-hidden"
-                style={{ aspectRatio: `${t.canvasWidth} / ${t.canvasHeight}`, background: "var(--paper-warm)" }}
+                className="sp-media-card__preview"
+                aria-label={`Edit ${t.name}`}
               >
-                <TemplateThumbnail template={t} />
-              </button>
-              <div className="p-3.5 flex items-center gap-2">
-                <div className="flex-1 min-w-0">
-                  <p className="truncate" style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)" }}>{t.name}</p>
-                  <span
-                    className="sp-eyebrow inline-block mt-0.5"
-                    style={t.status === "published" ? { color: "var(--success)" } : undefined}
-                  >
-                    {t.status}
-                  </span>
-                  {usageState.status === "ready" && (
-                    <p style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 2 }}>
-                      {(() => {
-                        const u = usageByTemplate.get(t.id);
-                        if (!u || u.downloads === 0) return "Not used yet";
-                        return `${u.downloads} download${u.downloads === 1 ? "" : "s"} · last used ${lastUsed(u.lastUsedAt)}`;
-                      })()}
-                    </p>
-                  )}
+                <div
+                  style={{
+                    aspectRatio: `${t.canvasWidth} / ${t.canvasHeight}`,
+                    ...(t.canvasWidth / t.canvasHeight >= 4 / 3 ? { width: "100%" } : { height: "100%" }),
+                  }}
+                >
+                  <TemplateThumbnail template={t} />
                 </div>
-                <button onClick={() => void toggleStatus(t)} title={t.status === "published" ? "Unpublish" : "Publish"}>
-                  {t.status === "published" ? (
-                    <EyeOff style={{ width: 15, height: 15, color: "var(--fg-3)" }} />
-                  ) : (
-                    <Eye style={{ width: 15, height: 15, color: "var(--solar)" }} />
-                  )}
-                </button>
-                <button onClick={() => navigate({ name: "builder", templateId: t.id })} title="Edit">
-                  <Pencil style={{ width: 15, height: 15, color: "var(--fg-3)" }} />
-                </button>
-                <button onClick={() => void duplicateTemplate(t)} title="Duplicate">
-                  <Copy style={{ width: 15, height: 15, color: "var(--fg-3)" }} />
-                </button>
-                <button onClick={() => setDeleting(t)} title="Delete">
-                  <Trash2 style={{ width: 15, height: 15, color: "var(--danger)" }} />
-                </button>
+              </button>
+              <div style={{ padding: "12px 2px 4px" }}>
+                {/* Line 1: title + icon action row on the same line */}
+                <div className="flex items-center" style={{ gap: 8 }}>
+                  <p className="truncate flex-1 min-w-0" style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)" }}>{t.name}</p>
+                  <button style={iconBtn} onClick={() => void toggleStatus(t)} title={t.status === "published" ? "Unpublish" : "Publish"}>
+                    {t.status === "published" ? (
+                      <EyeOff style={{ width: 16, height: 16, color: "var(--fg-3)" }} />
+                    ) : (
+                      <Eye style={{ width: 16, height: 16, color: "var(--solar)" }} />
+                    )}
+                  </button>
+                  <button style={iconBtn} onClick={() => navigate({ name: "builder", templateId: t.id })} title="Edit">
+                    <Pencil style={{ width: 16, height: 16, color: "var(--fg-3)" }} />
+                  </button>
+                  <button style={iconBtn} onClick={() => void duplicateTemplate(t)} title="Duplicate">
+                    <Copy style={{ width: 16, height: 16, color: "var(--fg-3)" }} />
+                  </button>
+                  <button style={iconBtn} onClick={() => setDeleting(t)} title="Delete">
+                    <Trash2 style={{ width: 16, height: 16, color: "var(--danger)" }} />
+                  </button>
+                </div>
+                {/* Line 2: status */}
+                <span
+                  className="sp-eyebrow inline-block"
+                  style={t.status === "published" ? { color: "var(--success)" } : undefined}
+                >
+                  {t.status}
+                </span>
+                {/* Line 3: meta */}
+                {usageState.status === "ready" && (
+                  <p style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 2 }}>
+                    {(() => {
+                      const u = usageByTemplate.get(t.id);
+                      if (!u || u.downloads === 0) return "Not used yet";
+                      return `${u.downloads} download${u.downloads === 1 ? "" : "s"} · last used ${lastUsed(u.lastUsedAt)}`;
+                    })()}
+                  </p>
+                )}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
-    </div>
+    </Page>
   );
 }
