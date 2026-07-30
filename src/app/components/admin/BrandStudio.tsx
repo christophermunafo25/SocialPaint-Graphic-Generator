@@ -12,7 +12,16 @@ import { TypeStylesEditor } from "./TypeStylesEditor";
 import { DesignSystemImportPanel } from "./DesignSystemImportPanel";
 import { ColorControl } from "../ColorControl";
 import { ConfirmDialog } from "../ConfirmDialog";
+import { useFileDrop } from "@/lib/useFileDrop";
 import { useUnsavedChangesWarning } from "@/lib/useUnsavedChangesWarning";
+
+/** A font file mid-upload: chip enters, shimmers, flips to done, leaves. */
+interface PendingFontChip {
+  key: string;
+  name: string;
+  done: boolean;
+  leaving: boolean;
+}
 
 /** Fields/templates bound to one style or color key. */
 interface BindingUsage {
@@ -166,6 +175,8 @@ export function BrandStudio() {
     }
   };
 
+  const [pendingFonts, setPendingFonts] = useState<PendingFontChip[]>([]);
+
   const uploadFont = async (file: File) => {
     if (!company) return;
     const check = validateFontFile(file);
@@ -174,9 +185,27 @@ export function BrandStudio() {
       return;
     }
     setError(null);
-    const asset = await stores.brandAssets.upload(company.id, "font", file, check.metadata);
-    await registerCustomFont(asset); // usable immediately, export-safe
-    await refresh();
+    const key = `${file.name}-${Date.now()}-${Math.random()}`;
+    setPendingFonts((prev) => [
+      ...prev,
+      { key, name: check.metadata.family ?? file.name, done: false, leaving: false },
+    ]);
+    try {
+      const asset = await stores.brandAssets.upload(company.id, "font", file, check.metadata);
+      await registerCustomFont(asset); // usable immediately, export-safe
+      // Done check → chip leaves → the real asset row enters in its place.
+      setPendingFonts((prev) => prev.map((p) => (p.key === key ? { ...p, done: true } : p)));
+      window.setTimeout(() => {
+        setPendingFonts((prev) => prev.map((p) => (p.key === key ? { ...p, leaving: true } : p)));
+        window.setTimeout(() => {
+          setPendingFonts((prev) => prev.filter((p) => p.key !== key));
+          void refresh();
+        }, 260);
+      }, 700);
+    } catch (e) {
+      setPendingFonts((prev) => prev.filter((p) => p.key !== key));
+      setError(e instanceof Error ? e.message : "Font upload failed.");
+    }
   };
 
   const uploadLogo = async (file: File) => {
@@ -185,6 +214,13 @@ export function BrandStudio() {
     if (!logoAssets.length) setPrimaryLogoAssetId(asset.id);
     await refresh();
   };
+
+  const fontDrop = useFileDrop((files) => {
+    for (const f of files) void uploadFont(f);
+  });
+  const logoDrop = useFileDrop((files) => {
+    if (files[0]) void uploadLogo(files[0]);
+  });
 
   // Design-system import merges: existing keys win; new entries append.
   const mergeColors = (incoming: BrandColor[]) =>
@@ -334,10 +370,12 @@ export function BrandStudio() {
             {fontOptions(bodyFont, setBodyFont)}
           </div>
           <label
-            className="flex items-center justify-center gap-2 py-3 cursor-pointer"
+            {...fontDrop.bind}
+            data-active={fontDrop.active}
+            className="sp-dropzone flex items-center justify-center gap-2 py-3 cursor-pointer"
             style={{ border: "1.5px dashed var(--hairline-strong)", borderRadius: "var(--radius-input)", fontSize: 13, color: "var(--fg-2)" }}
           >
-            <Upload className="w-4 h-4" />
+            <Upload className="sp-dropzone__icon w-4 h-4" />
             Upload font file
             <input
               type="file"
@@ -350,8 +388,31 @@ export function BrandStudio() {
               }}
             />
           </label>
+          {pendingFonts.map((p) => (
+            <div
+              key={p.key}
+              className={`${p.leaving ? "sp-chip-out" : "sp-chip-in"} flex items-center gap-2.5 px-3 py-2`}
+              style={{ border: "1px solid var(--hairline)", borderRadius: "var(--radius-input)", background: "var(--lift)" }}
+            >
+              <span className="flex-1 min-w-0">
+                <span className="block truncate" style={{ fontSize: 12, fontWeight: 500, color: "var(--ink)" }}>
+                  {p.name}
+                </span>
+                {p.done ? (
+                  <span className="sp-done-in flex items-center gap-1 mt-1" style={{ fontSize: 10, color: "var(--success)" }}>
+                    <Check style={{ width: 11, height: 11 }} />
+                    Added
+                  </span>
+                ) : (
+                  <span className="sp-upload-track block mt-1.5">
+                    <span className="sp-upload-bar" />
+                  </span>
+                )}
+              </span>
+            </div>
+          ))}
           {fontAssets.map((a) => (
-            <div key={a.id} className="flex items-center justify-between text-sm">
+            <div key={a.id} className="sp-chip-in flex items-center justify-between text-sm">
               <span style={{ color: "var(--foreground)", fontFamily: `"${a.metadata.family ?? a.name}"` }}>
                 {a.metadata.family ?? a.name}
               </span>
@@ -372,7 +433,7 @@ export function BrandStudio() {
             {logoAssets.map((a) => (
               <div
                 key={a.id}
-                className="relative rounded-xl border p-3 flex items-center justify-center aspect-square"
+                className="sp-chip-in relative rounded-xl border p-3 flex items-center justify-center aspect-square"
                 style={{ borderColor: a.id === primaryLogoAssetId ? "var(--solar)" : "var(--hairline)", borderRadius: "var(--radius-icon)" }}
               >
                 <img src={a.url} alt={a.name} className="max-w-full max-h-full object-contain" />
@@ -397,10 +458,12 @@ export function BrandStudio() {
               </div>
             ))}
             <label
-              className="rounded-xl border-2 border-dashed flex flex-col items-center justify-center aspect-square cursor-pointer gap-1"
+              {...logoDrop.bind}
+              data-active={logoDrop.active}
+              className="sp-dropzone rounded-xl border-2 border-dashed flex flex-col items-center justify-center aspect-square cursor-pointer gap-1"
               style={{ borderColor: "var(--border)" }}
             >
-              <Upload className="w-5 h-5" style={{ color: "var(--muted-foreground)" }} />
+              <Upload className="sp-dropzone__icon w-5 h-5" style={{ color: "var(--muted-foreground)" }} />
               <span className="sp-eyebrow" style={{ fontSize: 9 }}>Add logo</span>
               <input
                 type="file"

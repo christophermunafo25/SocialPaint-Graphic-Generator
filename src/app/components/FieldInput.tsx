@@ -145,7 +145,8 @@ function ImageFieldInput({ field, value, onChange, inputId }: FieldInputProps) {
           "aria-label": `${field.label}: upload a JPG, PNG, or WEBP image up to 10MB`,
           "aria-required": field.required || undefined,
         })}
-        className="text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 group"
+        data-active={isDragActive}
+        className="sp-dropzone text-center cursor-pointer flex flex-col items-center justify-center gap-2 group"
         style={{
           border: `1.5px dashed ${isDragActive ? "var(--solar)" : "var(--hairline-strong)"}`,
           borderRadius: "var(--radius-input)",
@@ -170,7 +171,7 @@ function ImageFieldInput({ field, value, onChange, inputId }: FieldInputProps) {
           </div>
         ) : (
           <span
-            className="flex items-center justify-center"
+            className="sp-dropzone__icon flex items-center justify-center"
             style={{ width: 36, height: 36, borderRadius: "var(--radius-icon)", background: "var(--peach)" }}
           >
             <Upload style={{ width: 15, height: 15, color: "var(--ink)" }} />

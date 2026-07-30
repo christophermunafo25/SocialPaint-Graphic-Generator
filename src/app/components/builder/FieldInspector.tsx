@@ -31,6 +31,7 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { useBrand } from "@/lib/brand/BrandContext";
 import { GOOGLE_FONTS } from "@/lib/render/fonts";
 import { suggestFieldKey } from "@/lib/caption";
+import { useFileDrop } from "@/lib/useFileDrop";
 import { getTypeStyle, lockedProperties, ruleSentences } from "@/lib/brand/resolveStyle";
 import { ColorControl } from "../ColorControl";
 import { GradientEditor } from "./GradientEditor";
@@ -255,6 +256,10 @@ export function FieldInspector({
     }
   };
 
+  const staticDrop = useFileDrop((files) => {
+    if (files[0]) void uploadStaticImage(files[0]);
+  });
+
   // A freshly-dropped palette element opens for naming immediately; the
   // parent clears focusLabelFieldId once selection moves on, so merely
   // re-selecting a field never steals focus into the label input.
@@ -421,7 +426,9 @@ export function FieldInspector({
           <div>
             <label className={labelClass} style={labelStyle}>Image</label>
             <label
-              className="flex items-center justify-center gap-2 cursor-pointer py-2.5"
+              {...staticDrop.bind}
+              data-active={staticDrop.active}
+              className="sp-dropzone flex items-center justify-center gap-2 cursor-pointer py-2.5"
               style={{
                 border: "1.5px dashed var(--hairline-strong)",
                 borderRadius: 8,
@@ -432,7 +439,7 @@ export function FieldInspector({
               {uploadingStatic ? (
                 <RefreshCw className="w-3.5 h-3.5 animate-spin" style={{ color: "var(--solar)" }} />
               ) : (
-                <Upload className="w-3.5 h-3.5" style={{ color: "var(--solar)" }} />
+                <Upload className="sp-dropzone__icon w-3.5 h-3.5" style={{ color: "var(--solar)" }} />
               )}
               {uploadingStatic ? "Uploading…" : field.staticValue ? "Replace image" : "Upload image"}
               <input

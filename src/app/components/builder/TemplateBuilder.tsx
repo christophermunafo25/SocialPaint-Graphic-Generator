@@ -29,6 +29,7 @@ import { useBrand } from "@/lib/brand/BrandContext";
 import { ErrorState } from "../ErrorState";
 import { newId } from "@/lib/stores/local/db";
 import { retagCaption, suggestFieldKey } from "@/lib/caption";
+import { useFileDrop } from "@/lib/useFileDrop";
 import { useUnsavedChangesWarning } from "@/lib/useUnsavedChangesWarning";
 import { useRouter } from "../../router";
 import { ColorControl } from "../ColorControl";
@@ -403,6 +404,10 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     },
     [company],
   );
+
+  /** Both background-upload labels double as drag targets (never visible at
+   * the same time, so one hook serves both). */
+  const bgDrop = useFileDrop((files) => void onDropBackground(files));
 
   /** Latest draft, readable from timer closures without staleness. */
   const draftRef = useRef(draft);
@@ -1056,7 +1061,9 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                     <div className="space-y-2">
                       <label className="sp-eyebrow block">Background image</label>
                       <label
-                        className="flex items-center justify-center gap-2 cursor-pointer py-2.5"
+                        {...bgDrop.bind}
+                        data-active={bgDrop.active}
+                        className="sp-dropzone flex items-center justify-center gap-2 cursor-pointer py-2.5"
                         style={{
                           border: "1.5px dashed var(--hairline-strong)",
                           borderRadius: 8,
@@ -1067,7 +1074,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                         {uploading ? (
                           <RefreshCw className="w-3.5 h-3.5 animate-spin" style={{ color: "var(--solar)" }} />
                         ) : (
-                          <Upload className="w-3.5 h-3.5" style={{ color: "var(--solar)" }} />
+                          <Upload className="sp-dropzone__icon w-3.5 h-3.5" style={{ color: "var(--solar)" }} />
                         )}
                         {uploading ? "Uploading…" : draft.backgroundUrl ? "Replace image" : "Upload image"}
                         <input
@@ -1162,9 +1169,11 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                   />
                 </div>
                 <label
-                  className="flex items-center gap-2 cursor-pointer" style={{ fontSize: 12, color: "var(--fg-2)" }}
+                  {...bgDrop.bind}
+                  data-active={bgDrop.active}
+                  className="sp-dropzone flex items-center gap-2 cursor-pointer rounded-md" style={{ fontSize: 12, color: "var(--fg-2)", padding: "4px 6px", margin: "-4px -6px" }}
                 >
-                  {uploading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                  {uploading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Upload className="sp-dropzone__icon w-3.5 h-3.5" />}
                   {uploading
                     ? "Uploading…"
                     : draft.backgroundUrl

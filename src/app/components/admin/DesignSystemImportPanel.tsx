@@ -4,6 +4,7 @@ import type { BrandColor, BrandTypeStyle } from "@/lib/types";
 import { parseDesignTokens, parseGuidelines } from "@/lib/brand/designSystemImport";
 import { stores } from "@/lib/stores";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { useFileDrop } from "@/lib/useFileDrop";
 
 interface DesignSystemImportPanelProps {
   onImportColors(colors: BrandColor[]): void;
@@ -82,46 +83,21 @@ export function DesignSystemImportPanel(props: DesignSystemImportPanelProps) {
     }
   };
 
-  const uploadTile = (
-    label: string,
-    icon: React.ReactNode,
-    accept: string,
-    onFile: (f: File) => void,
-  ) => (
-    <label
-      className="flex flex-col items-center justify-center gap-1.5 py-4 cursor-pointer text-center"
-      style={{ border: "1.5px dashed var(--hairline-strong)", borderRadius: "var(--radius-input)", fontSize: 12, color: "var(--fg-2)" }}
-    >
-      {icon}
-      {label}
-      <input
-        type="file"
-        accept={accept}
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) onFile(f);
-          e.target.value = "";
-        }}
-      />
-    </label>
-  );
-
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-2.5">
-        {uploadTile(
-          "Design tokens (.json)",
-          <FileJson style={{ width: 16, height: 16, color: "var(--solar)" }} />,
-          ".json,application/json",
-          (f) => void handleTokens(f),
-        )}
-        {uploadTile(
-          "Guidelines (.md)",
-          <FileText style={{ width: 16, height: 16, color: "var(--solar)" }} />,
-          ".md,.txt,text/markdown,text/plain",
-          (f) => void handleGuidelines(f),
-        )}
+        <UploadTile
+          label="Design tokens (.json)"
+          icon={<FileJson style={{ width: 16, height: 16, color: "var(--solar)" }} />}
+          accept=".json,application/json"
+          onFile={(f) => void handleTokens(f)}
+        />
+        <UploadTile
+          label="Guidelines (.md)"
+          icon={<FileText style={{ width: 16, height: 16, color: "var(--solar)" }} />}
+          accept=".md,.txt,text/markdown,text/plain"
+          onFile={(f) => void handleGuidelines(f)}
+        />
       </div>
 
       {stores.designImport.isConfigured() && (
@@ -185,5 +161,43 @@ export function DesignSystemImportPanel(props: DesignSystemImportPanelProps) {
       {status && <p style={{ fontSize: 12, color: "var(--success)" }}>{status}</p>}
       {error && <p style={{ fontSize: 12, color: "var(--danger)" }}>{error}</p>}
     </div>
+  );
+}
+
+/** A file-pick tile that also accepts a dragged file (.sp-dropzone motion). */
+function UploadTile({
+  label,
+  icon,
+  accept,
+  onFile,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  accept: string;
+  onFile: (f: File) => void;
+}) {
+  const drop = useFileDrop((files) => {
+    if (files[0]) onFile(files[0]);
+  });
+  return (
+    <label
+      {...drop.bind}
+      data-active={drop.active}
+      className="sp-dropzone flex flex-col items-center justify-center gap-1.5 py-4 cursor-pointer text-center"
+      style={{ border: "1.5px dashed var(--hairline-strong)", borderRadius: "var(--radius-input)", fontSize: 12, color: "var(--fg-2)" }}
+    >
+      <span className="sp-dropzone__icon flex">{icon}</span>
+      {label}
+      <input
+        type="file"
+        accept={accept}
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) onFile(f);
+          e.target.value = "";
+        }}
+      />
+    </label>
   );
 }

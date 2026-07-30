@@ -8,6 +8,7 @@ import { useRouter } from "../../router";
 import { DEFAULT_PALETTE, DEFAULT_TYPE_STYLES } from "@/lib/theme";
 import { GOOGLE_FONTS, loadGoogleFonts } from "@/lib/render/fonts";
 import { FONT_ACCEPT, validateFontFile } from "@/lib/brand/fontUpload";
+import { useFileDrop } from "@/lib/useFileDrop";
 import { ColorControl } from "../ColorControl";
 
 /** First-run onboarding: walks a user from an empty database to a themed,
@@ -274,6 +275,21 @@ interface StepFontsProps {
 }
 
 function StepFonts(props: StepFontsProps) {
+  const addFonts = (files: File[]) => {
+    props.onError(null);
+    for (const file of files) {
+      const check = validateFontFile(file);
+      if (!check.ok) {
+        props.onError(check.error);
+        continue;
+      }
+      props.setPendingFonts((prev) => [
+        ...prev,
+        { file, family: check.metadata.family ?? file.name, use: "none" },
+      ]);
+    }
+  };
+  const drop = useFileDrop(addFonts);
   return (
     <div className="space-y-4">
       <h2 className="sp-panel-title" style={{ fontSize: 16 }}>Fonts</h2>
@@ -286,10 +302,12 @@ function StepFonts(props: StepFontsProps) {
       </div>
       <div>
         <label
-          className="flex items-center justify-center gap-2 py-3.5 cursor-pointer"
+          {...drop.bind}
+          data-active={drop.active}
+          className="sp-dropzone flex items-center justify-center gap-2 py-3.5 cursor-pointer"
           style={{ border: "1.5px dashed var(--hairline-strong)", borderRadius: "var(--radius-input)", fontSize: 13, color: "var(--fg-2)" }}
         >
-          <Upload className="w-4 h-4" />
+          <Upload className="sp-dropzone__icon w-4 h-4" />
           Upload custom font
           <input
             type="file"
@@ -297,24 +315,13 @@ function StepFonts(props: StepFontsProps) {
             multiple
             className="hidden"
             onChange={(e) => {
-              props.onError(null);
-              for (const file of Array.from(e.target.files ?? [])) {
-                const check = validateFontFile(file);
-                if (!check.ok) {
-                  props.onError(check.error);
-                  continue;
-                }
-                props.setPendingFonts((prev) => [
-                  ...prev,
-                  { file, family: check.metadata.family ?? file.name, use: "none" },
-                ]);
-              }
+              addFonts(Array.from(e.target.files ?? []));
               e.target.value = "";
             }}
           />
         </label>
         {props.pendingFonts.map((pf, i) => (
-          <div key={`${pf.file.name}-${i}`} className="flex items-center gap-2 mt-2">
+          <div key={`${pf.file.name}-${i}`} className="sp-chip-in flex items-center gap-2 mt-2">
             <span className="text-sm flex-1 truncate" style={{ color: "var(--foreground)" }}>{pf.family}</span>
             <select
               value={pf.use}
@@ -343,6 +350,9 @@ function StepFonts(props: StepFontsProps) {
 }
 
 function StepLogo({ preview, onPick }: { preview: string | null; onPick(f: File): void }) {
+  const drop = useFileDrop((files) => {
+    if (files[0]) onPick(files[0]);
+  });
   return (
     <div className="space-y-3">
       <h2 className="sp-panel-title" style={{ fontSize: 16 }}>Logo</h2>
@@ -350,13 +360,15 @@ function StepLogo({ preview, onPick }: { preview: string | null; onPick(f: File)
         Optional now — you can add more logos later in Brand Studio.
       </p>
       <label
-        className="flex flex-col items-center justify-center gap-3 py-8 cursor-pointer"
+        {...drop.bind}
+        data-active={drop.active}
+        className="sp-dropzone flex flex-col items-center justify-center gap-3 py-8 cursor-pointer"
         style={{ border: "1.5px dashed var(--hairline-strong)", borderRadius: "var(--radius-card-sm)" }}
       >
         {preview ? (
           <img src={preview} alt="Logo preview" className="max-h-20 max-w-[240px] object-contain" />
         ) : (
-          <Upload className="w-6 h-6" style={{ color: "var(--muted-foreground)" }} />
+          <Upload className="sp-dropzone__icon w-6 h-6" style={{ color: "var(--muted-foreground)" }} />
         )}
         <span style={{ fontSize: 13, color: "var(--fg-2)" }}>
           {preview ? "Replace logo" : "Upload logo (PNG or SVG)"}

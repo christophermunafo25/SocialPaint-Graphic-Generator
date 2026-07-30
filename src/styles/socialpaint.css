@@ -466,3 +466,111 @@ button, input, select, textarea, optgroup {
 @media (prefers-reduced-motion: reduce) {
   .sp-nav-toggle__bar { transition-duration: 0.001ms; }
 }
+
+/* --- Upload interactions ---------------------------------------------------
+   Shared motion for every file-upload surface (drop zones, file chips,
+   upload progress). Interaction pattern from the BYQ drop-zone gem; colors,
+   type, and radii stay in this design system (--solar for the drag "pop",
+   --success for done, --danger for remove). */
+.sp-dropzone {
+  transform: scale(1);
+  transition:
+    border-color 0.25s ease,
+    color 0.25s ease,
+    background 0.25s ease,
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.35s ease;
+}
+.sp-dropzone[data-active="true"] {
+  border-color: var(--solar) !important;
+  transform: scale(1.02);
+  box-shadow:
+    inset 0 0 32px 0 color-mix(in srgb, var(--solar) 10%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--solar) 20%, transparent);
+}
+.sp-dropzone__icon {
+  transform: translateY(0);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.sp-dropzone[data-active="true"] .sp-dropzone__icon {
+  animation: sp-dz-bounce 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes sp-dz-bounce {
+  0%   { transform: translateY(0); }
+  35%  { transform: translateY(-7px); }
+  65%  { transform: translateY(-4px); }
+  85%  { transform: translateY(-6px); }
+  100% { transform: translateY(-5px); }
+}
+
+/* File chips: enter / leave */
+.sp-chip-in {
+  animation: sp-chip-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes sp-chip-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.sp-chip-out {
+  animation: sp-chip-out 0.28s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+@keyframes sp-chip-out {
+  to { opacity: 0; transform: translateX(-8px) scale(0.96); }
+}
+
+/* Indeterminate upload bar — a shimmer, never a fake percentage. */
+.sp-upload-track {
+  position: relative;
+  height: 3px;
+  border-radius: 99px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--hairline-strong) 80%, transparent);
+}
+.sp-upload-bar {
+  position: absolute;
+  inset: 0;
+  border-radius: 99px;
+  background: var(--solar);
+  box-shadow: 0 0 6px 0 color-mix(in srgb, var(--solar) 55%, transparent);
+}
+.sp-upload-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--ink) 20%, transparent) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: sp-upload-shimmer 1.1s linear infinite;
+}
+@keyframes sp-upload-shimmer {
+  to { transform: translateX(400%); }
+}
+
+/* Done row slide-in */
+.sp-done-in {
+  animation: sp-done-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes sp-done-in {
+  from { opacity: 0; transform: translateX(-4px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sp-dropzone { transition: none; }
+  .sp-dropzone[data-active="true"] { transform: none; }
+  .sp-dropzone[data-active="true"] .sp-dropzone__icon {
+    animation: none;
+    transform: translateY(-4px);
+  }
+  .sp-chip-in,
+  .sp-chip-out,
+  .sp-done-in,
+  .sp-upload-bar::after {
+    animation: none;
+  }
+  .sp-chip-out { opacity: 0; }
+}
