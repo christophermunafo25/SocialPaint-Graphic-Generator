@@ -574,3 +574,86 @@ button, input, select, textarea, optgroup {
   }
   .sp-chip-out { opacity: 0; }
 }
+
+/* --- Template card flip ----------------------------------------------------
+   Member gallery cards flip on hover/keyboard-focus to reveal a "Use
+   template" back. Interaction from the BYQ flip-card gem (perspective scene,
+   preserve-3d rotation, hidden backfaces, deepening shadow, reduced-motion
+   cross-fade); surfaces, borders, radii, and type stay in this design
+   system. The front face is in-flow so the grid keeps content-driven card
+   heights; the back overlays it. */
+.sp-flipcard-scene {
+  perspective: 1000px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-card-sm);
+}
+.sp-flipcard {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: var(--radius-card-sm);
+}
+.sp-flipcard-scene:hover .sp-flipcard,
+.sp-flipcard-scene:focus-visible .sp-flipcard {
+  transform: rotateY(180deg);
+}
+.sp-flipcard__face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: var(--radius-card-sm);
+  border: 1px solid var(--hairline);
+  background: var(--lift);
+  overflow: hidden;
+  box-shadow: var(--shadow-e1);
+  transition: box-shadow 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.sp-flipcard-scene:hover .sp-flipcard__face,
+.sp-flipcard-scene:focus-visible .sp-flipcard__face {
+  box-shadow: var(--shadow-e3);
+}
+.sp-flipcard__face--front {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.sp-flipcard__face--back {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 20px;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* No 3D flip — cross-fade the faces instead. */
+  .sp-flipcard {
+    transition: none;
+    transform: none !important;
+    transform-style: flat;
+  }
+  .sp-flipcard__face {
+    backface-visibility: visible;
+    -webkit-backface-visibility: visible;
+    transition: opacity 0.25s ease;
+  }
+  .sp-flipcard__face--back {
+    transform: none;
+    opacity: 0;
+  }
+  .sp-flipcard-scene:hover .sp-flipcard__face--front,
+  .sp-flipcard-scene:focus-visible .sp-flipcard__face--front {
+    opacity: 0;
+  }
+  .sp-flipcard-scene:hover .sp-flipcard__face--back,
+  .sp-flipcard-scene:focus-visible .sp-flipcard__face--back {
+    opacity: 1;
+  }
+}
