@@ -716,3 +716,10 @@ button, input, select, textarea, optgroup {
 /* Equal-height media cards: faces fill the grid-stretched scene. */
 .sp-grid-media .sp-flipcard-scene { height: 100%; }
 .sp-flipcard__face--front { height: 100%; }
+
+/* Brand templates: the flip back is a brand-moment surface (deep green,
+   lime voice) — the double class outweighs the face's default lift fill. */
+.sp-flipcard__face--back.sp-mesh {
+  background: #122407;
+  border-color: #122407;
+}

@@ -97,62 +97,37 @@ export function Portal() {
                     {/* Front — the card as it was */}
                     <div className="sp-flipcard__face sp-flipcard__face--front sp-media-card">
                       <div className="sp-media-card__preview">
+                        {/* Cover, not contain: the artwork FILLS the frame
+                            (edges crop on the mismatched axis). */}
                         <div
                           style={{
                             aspectRatio: `${t.canvasWidth} / ${t.canvasHeight}`,
+                            flexShrink: 0,
                             ...(t.canvasWidth / t.canvasHeight >= 4 / 3
-                              ? { width: "100%" }
-                              : { height: "100%" }),
+                              ? { height: "100%" }
+                              : { width: "100%" }),
                           }}
                         >
                           <TemplateThumbnail template={t} />
                         </div>
                       </div>
                       <div style={{ padding: "12px 2px 4px" }}>
-                        <div className="flex items-start justify-between gap-3 mb-1.5">
-                          <div>
-                            {t.category && <p className="sp-eyebrow mb-1">{t.category}</p>}
-                            <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 800, textTransform: "uppercase" as const, fontSize: 16, letterSpacing: "-0.2px", color: "var(--ink)" }}>
-                              {t.name}
-                            </h2>
-                          </div>
-                          <span
-                            className="flex items-center justify-center flex-shrink-0 rounded-full"
-                            style={{ width: 30, height: 30, background: "var(--peach)" }}
-                          >
-                            <ArrowRight style={{ width: 14, height: 14, color: "var(--ink)" }} />
-                          </span>
-                        </div>
+                        {t.category && <p className="sp-eyebrow mb-1">{t.category}</p>}
+                        <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 800, textTransform: "uppercase" as const, fontSize: 14, letterSpacing: "-0.2px", color: "var(--ink)" }}>
+                          {t.name}
+                        </h2>
                         {t.description && (
-                          <p style={{ fontSize: 13, lineHeight: 1.5, color: "var(--fg-2)", marginBottom: 10 }}>{t.description}</p>
+                          <p style={{ fontSize: 13, lineHeight: 1.5, color: "var(--fg-2)", marginTop: 6 }}>{t.description}</p>
                         )}
-                        <div className="flex flex-wrap gap-1.5">
-                          {t.fields.map((f) => (
-                            <span
-                              key={f.id}
-                              style={{
-                                fontFamily: "var(--font-mono)",
-                                fontSize: 10,
-                                letterSpacing: "0.3px",
-                                color: "var(--fg-2)",
-                                background: "rgba(35,31,35,0.05)",
-                                padding: "2px 7px",
-                                borderRadius: 5,
-                              }}
-                            >
-                              {f.label}
-                            </span>
-                          ))}
-                        </div>
                       </div>
                     </div>
-                    {/* Back — the invitation */}
-                    <div className="sp-flipcard__face sp-flipcard__face--back" aria-hidden>
+                    {/* Back — the invitation, on the brand's deep green */}
+                    <div className="sp-flipcard__face sp-flipcard__face--back sp-mesh" aria-hidden>
                       {t.category && <p className="sp-eyebrow">{t.category}</p>}
-                      <p style={{ fontFamily: "var(--font-display)", fontWeight: 800, textTransform: "uppercase" as const, fontSize: 20, letterSpacing: "-0.3px", lineHeight: 1.05, color: "var(--ink)" }}>
+                      <p style={{ fontFamily: "var(--font-display)", fontWeight: 800, textTransform: "uppercase" as const, fontSize: 16, letterSpacing: "-0.3px", lineHeight: 1.05 }}>
                         {t.name}
                       </p>
-                      <span className="sp-btn sp-btn-primary" style={{ pointerEvents: "none" }}>
+                      <span className="sp-btn sp-btn-solar" style={{ pointerEvents: "none" }}>
                         Use template
                         <ArrowRight style={{ width: 14, height: 14 }} />
                       </span>

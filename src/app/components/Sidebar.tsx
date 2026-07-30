@@ -58,20 +58,17 @@ interface NavItem {
   adminOnly: boolean;
   /** Route names that keep this item highlighted. */
   matches: string[];
-  /** Logical group — groups separate with whitespace, never divider rules. */
-  group: number;
 }
 
 /** Figma order: Brand templates · Templates · Insights & Analytics ·
- * Brand Studio · People · Settings & Admin. Members see only the first.
- * Groups: member-facing / building / administration. */
+ * Brand Studio · People · Settings & Admin. Members see only the first. */
 const NAV: NavItem[] = [
-  { label: "Brand templates", route: { name: "portal" }, Icon: Paintbrush, adminOnly: false, matches: ["portal", "template"], group: 0 },
-  { label: "Templates", route: { name: "adminTemplates" }, Icon: Frame, adminOnly: true, matches: ["adminTemplates", "builder"], group: 1 },
-  { label: "Insights & Analytics", route: { name: "dashboard" }, Icon: BarChart3, adminOnly: true, matches: ["dashboard"], group: 1 },
-  { label: "Brand Studio", route: { name: "brandStudio" }, Icon: PencilRuler, adminOnly: true, matches: ["brandStudio"], group: 1 },
-  { label: "People", route: { name: "people" }, Icon: Users, adminOnly: true, matches: ["people"], group: 2 },
-  { label: "Settings & Admin", route: { name: "settings" }, Icon: Settings, adminOnly: true, matches: ["settings"], group: 2 },
+  { label: "Brand templates", route: { name: "portal" }, Icon: Paintbrush, adminOnly: false, matches: ["portal", "template"] },
+  { label: "Templates", route: { name: "adminTemplates" }, Icon: Frame, adminOnly: true, matches: ["adminTemplates", "builder"] },
+  { label: "Insights & Analytics", route: { name: "dashboard" }, Icon: BarChart3, adminOnly: true, matches: ["dashboard"] },
+  { label: "Brand Studio", route: { name: "brandStudio" }, Icon: PencilRuler, adminOnly: true, matches: ["brandStudio"] },
+  { label: "People", route: { name: "people" }, Icon: Users, adminOnly: true, matches: ["people"] },
+  { label: "Settings & Admin", route: { name: "settings" }, Icon: Settings, adminOnly: true, matches: ["settings"] },
 ];
 
 /** Two-state light/dark quick toggle for the sidebar header. Reads and
@@ -407,12 +404,10 @@ export function Sidebar() {
           </button>
         )}
 
-        {/* Nav — scrolls on short viewports so the user block stays reachable.
-            2px between rows; 24px of whitespace (never a rule) between groups. */}
+        {/* Nav — scrolls on short viewports so the user block stays reachable. */}
         <nav className="flex flex-col flex-1 min-h-0 overflow-y-auto" style={{ gap: 2 }} aria-label="Primary">
-          {items.map(({ label, route: target, Icon, matches, group }, i) => {
+          {items.map(({ label, route: target, Icon, matches }) => {
             const active = matches.includes(route.name);
-            const newGroup = i > 0 && group !== items[i - 1].group;
             const count = countFor(label);
             return (
               <button
@@ -422,10 +417,7 @@ export function Sidebar() {
                 data-active={active}
                 title={collapsed ? label : undefined}
                 aria-current={active ? "page" : undefined}
-                style={{
-                  ...(collapsed ? { justifyContent: "center", padding: 0 } : undefined),
-                  ...(newGroup ? { marginTop: 24 } : undefined),
-                }}
+                style={collapsed ? { justifyContent: "center", padding: 0 } : undefined}
               >
                 <Icon style={{ width: 18, height: 18, flexShrink: 0 }} />
                 {!collapsed && label}
