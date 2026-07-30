@@ -3,7 +3,6 @@ import {
   BarChart3,
   Frame,
   LogOut,
-  Menu,
   Monitor,
   Moon,
   Paintbrush,
@@ -12,7 +11,6 @@ import {
   Settings,
   Sun,
   Users,
-  X,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useColorScheme, type ColorScheme } from "@/lib/colorScheme";
@@ -264,10 +262,13 @@ export function Sidebar() {
               onClick={() => setMenuOpen(!menuOpen)}
               aria-expanded={menuOpen}
               aria-label={menuOpen ? "Close navigation" : "Open navigation"}
-              className="flex items-center justify-center rounded-md"
+              data-open={menuOpen}
+              className="sp-nav-toggle relative flex items-center justify-center rounded-md"
               style={{ width: 36, height: 36, color: "var(--sb-fg-active)", border: "1px solid var(--sb-border)" }}
             >
-              {menuOpen ? <X style={{ width: 16, height: 16 }} /> : <Menu style={{ width: 16, height: 16 }} />}
+              <span aria-hidden className="sp-nav-toggle__bar sp-nav-toggle__bar--top" />
+              <span aria-hidden className="sp-nav-toggle__bar sp-nav-toggle__bar--mid" />
+              <span aria-hidden className="sp-nav-toggle__bar sp-nav-toggle__bar--bot" />
             </button>
           </div>
 

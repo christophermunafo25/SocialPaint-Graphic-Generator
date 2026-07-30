@@ -417,3 +417,52 @@ button, input, select, textarea, optgroup {
   background: #fff;
   border-color: var(--editor-accent);
 }
+
+/* --- Mobile nav toggle -----------------------------------------------------
+   Three bars that morph into an X. Movement only (stagger, hover width
+   pulse, sprung rotation, reduced-motion fallback); colors and sizing stay
+   in this design system: bars ride currentColor, flipping to --solar when
+   open. Hover rules come BEFORE open rules on purpose — the open state
+   resets bar widths at equal specificity via source order. */
+.sp-nav-toggle__bar {
+  display: block;
+  position: absolute;
+  width: 16px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  transform-origin: center center;
+  transition:
+    transform 0.35s cubic-bezier(0.34, 1.3, 0.64, 1),
+    opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    background 0.3s ease;
+}
+.sp-nav-toggle__bar--top { transform: translateY(-5px); }
+.sp-nav-toggle__bar--mid { transform: translateY(0); }
+.sp-nav-toggle__bar--bot { transform: translateY(5px); }
+
+/* Hover nudge — subtle width pulse */
+.sp-nav-toggle:hover .sp-nav-toggle__bar--top { width: 12px; }
+.sp-nav-toggle:hover .sp-nav-toggle__bar--bot { width: 19px; }
+
+/* Open — morph to X */
+.sp-nav-toggle[data-open="true"] .sp-nav-toggle__bar {
+  background: var(--solar);
+  width: 16px; /* reset the hover pulse */
+}
+.sp-nav-toggle[data-open="true"] .sp-nav-toggle__bar--top {
+  transform: translateY(0) rotate(45deg);
+}
+.sp-nav-toggle[data-open="true"] .sp-nav-toggle__bar--mid {
+  opacity: 0;
+  width: 0;
+  transform: translateY(0) scaleX(0);
+}
+.sp-nav-toggle[data-open="true"] .sp-nav-toggle__bar--bot {
+  transform: translateY(0) rotate(-45deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sp-nav-toggle__bar { transition-duration: 0.001ms; }
+}
