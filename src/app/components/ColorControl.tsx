@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Pencil } from "lucide-react";
+import type { BrandColor } from "@/lib/types";
+import { useBrand } from "@/lib/brand/BrandContext";
 
 interface ColorControlProps {
   value: string | undefined; // #RRGGBB
@@ -8,15 +10,39 @@ interface ColorControlProps {
   onClear?: () => void;
   size?: number; // swatch px
   ariaLabel?: string;
+  /** Quick-select row of the company's brand colors. On everywhere except the
+   *  two screens where this control IS the palette editor. */
+  brandSwatches?: boolean;
+  /** Picking a swatch reports the palette entry rather than a raw hex, so the
+   *  caller can bind by key and let a re-theme flow through. Without it, a
+   *  swatch just sets its hex. */
+  onPickBrandColor?(color: BrandColor): void;
+  /** Palette key the value is currently bound to — drives the selected ring. */
+  selectedColorKey?: string;
+  /** Greys out the brand row only (locked brand rules still show the palette). */
+  swatchesDisabled?: boolean;
 }
 
 const HEX_RE = /^#?([0-9a-fA-F]{6})$/;
 
 /** The app-wide color control: a swatch that is OBVIOUSLY editable (hover
- * pencil + pointer + tooltip) paired with a visible, editable hex input.
- * The native color picker opens from the swatch. Used everywhere a color is
- * set — Brand Studio palette, field colors, gradient stops, onboarding. */
-export function ColorControl({ value, onChange, onClear, size = 32, ariaLabel }: ColorControlProps) {
+ * pencil + pointer + tooltip) paired with a visible, editable hex input, and
+ * the brand palette underneath for one-click on-brand picks. The native color
+ * picker opens from the swatch. Used everywhere a color is set — Brand Studio
+ * palette, field colors, canvas background, gradient stops, onboarding. */
+export function ColorControl({
+  value,
+  onChange,
+  onClear,
+  size = 32,
+  ariaLabel,
+  brandSwatches = true,
+  onPickBrandColor,
+  selectedColorKey,
+  swatchesDisabled = false,
+}: ColorControlProps) {
+  const { kit } = useBrand();
+  const palette = brandSwatches ? kit?.colors ?? [] : [];
   const [draft, setDraft] = useState(value ?? "");
   const [hover, setHover] = useState(false);
   const nativeRef = useRef<HTMLInputElement>(null);
@@ -32,7 +58,8 @@ export function ColorControl({ value, onChange, onClear, size = 32, ariaLabel }:
   };
 
   return (
-    <div className="inline-flex items-center gap-2">
+    <div className="inline-flex flex-col items-start gap-2">
+      <div className="inline-flex items-center gap-2">
       <button
         type="button"
         title="Click to edit color"
@@ -45,7 +72,7 @@ export function ColorControl({ value, onChange, onClear, size = 32, ariaLabel }:
           width: size,
           height: size,
           borderRadius: 8,
-          border: hover ? "2px solid var(--solar)" : "1px solid var(--hairline-strong)",
+          border: hover ? "2px solid var(--state-primary)" : "1px solid var(--border-strong)",
           background: value
             ? value
             : "repeating-conic-gradient(#e5e5e5 0% 25%, #ffffff 0% 50%) 0 0 / 10px 10px",
@@ -86,11 +113,37 @@ export function ColorControl({ value, onChange, onClear, size = 32, ariaLabel }:
         <button
           type="button"
           onClick={onClear}
-          style={{ fontSize: 11, color: "var(--fg-3)" }}
+          style={{ fontSize: 11, color: "var(--text-muted)" }}
           title="Remove color"
         >
           Clear
         </button>
+      )}
+      </div>
+
+      {palette.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="sp-eyebrow" style={{ fontSize: 9 }}>Brand</span>
+          {palette.map((c) => {
+            const selected = selectedColorKey
+              ? selectedColorKey === c.key
+              : (value ?? "").toUpperCase() === c.hex.toUpperCase();
+            return (
+              <button
+                key={c.key}
+                type="button"
+                title={`${c.name} — click to use`}
+                aria-label={`Use brand color ${c.name}`}
+                aria-pressed={selected}
+                disabled={swatchesDisabled}
+                onClick={() => (onPickBrandColor ? onPickBrandColor(c) : onChange(c.hex.toUpperCase()))}
+                className="sp-swatch"
+                data-selected={selected ? "true" : undefined}
+                style={{ background: c.hex }}
+              />
+            );
+          })}
+        </div>
       )}
     </div>
   );

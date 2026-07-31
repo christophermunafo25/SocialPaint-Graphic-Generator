@@ -88,13 +88,13 @@ export function DesignSystemImportPanel(props: DesignSystemImportPanelProps) {
       <div className="grid grid-cols-2 gap-2.5">
         <UploadTile
           label="Design tokens (.json)"
-          icon={<FileJson style={{ width: 16, height: 16, color: "var(--solar)" }} />}
+          icon={<FileJson style={{ width: 16, height: 16, color: "var(--state-primary)" }} />}
           accept=".json,application/json"
           onFile={(f) => void handleTokens(f)}
         />
         <UploadTile
           label="Guidelines (.md)"
-          icon={<FileText style={{ width: 16, height: 16, color: "var(--solar)" }} />}
+          icon={<FileText style={{ width: 16, height: 16, color: "var(--state-primary)" }} />}
           accept=".md,.txt,text/markdown,text/plain"
           onFile={(f) => void handleGuidelines(f)}
         />
@@ -103,7 +103,7 @@ export function DesignSystemImportPanel(props: DesignSystemImportPanelProps) {
       {stores.designImport.isConfigured() && (
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <Figma style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", width: 13, height: 13, color: "var(--fg-3)" }} />
+            <Figma style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", width: 13, height: 13, color: "var(--text-muted)" }} />
             <input
               className="sp-input"
               style={{ paddingLeft: 30 }}
@@ -124,13 +124,13 @@ export function DesignSystemImportPanel(props: DesignSystemImportPanelProps) {
       )}
 
       {suggestions.length > 0 && (
-        <div className="space-y-2 rounded-lg p-3" style={{ background: "var(--paper)", border: "1px solid var(--hairline)" }}>
-          <p style={{ fontSize: 12, color: "var(--fg-2)" }}>
+        <div className="space-y-2 rounded-lg p-3" style={{ background: "var(--bg-raised)", border: "1px solid var(--border)" }}>
+          <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
             Found {suggestions.length} rule-like lines — keep the ones that are real brand rules:
           </p>
           <div className="max-h-48 overflow-auto space-y-1">
             {suggestions.map((sug, i) => (
-              <label key={i} className="flex items-start gap-2" style={{ fontSize: 12, color: "var(--ink)" }}>
+              <label key={i} className="flex items-start gap-2" style={{ fontSize: 12, color: "var(--text-primary)" }}>
                 <input
                   type="checkbox"
                   className="mt-0.5"
@@ -158,8 +158,8 @@ export function DesignSystemImportPanel(props: DesignSystemImportPanelProps) {
         </div>
       )}
 
-      {status && <p style={{ fontSize: 12, color: "var(--success)" }}>{status}</p>}
-      {error && <p style={{ fontSize: 12, color: "var(--danger)" }}>{error}</p>}
+      {status && <p style={{ fontSize: 12, color: "var(--state-primary)" }}>{status}</p>}
+      {error && <p style={{ fontSize: 12, color: "var(--state-danger)" }}>{error}</p>}
     </div>
   );
 }
@@ -184,7 +184,7 @@ function UploadTile({
       {...drop.bind}
       data-active={drop.active}
       className="sp-dropzone flex flex-col items-center justify-center gap-1.5 py-4 cursor-pointer text-center"
-      style={{ border: "1.5px dashed var(--hairline-strong)", borderRadius: "var(--radius-input)", fontSize: 12, color: "var(--fg-2)" }}
+      style={{ border: "1.5px dashed var(--border-strong)", borderRadius: "var(--radius-control)", fontSize: 12, color: "var(--text-secondary)" }}
     >
       <span className="sp-dropzone__icon flex">{icon}</span>
       {label}

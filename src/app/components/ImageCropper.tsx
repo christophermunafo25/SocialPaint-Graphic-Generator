@@ -153,7 +153,7 @@ export function ImageCropper({ imageSrc, onCancel, onCropComplete, aspect = 1 }:
             step={0.1}
             aria-labelledby="crop-zoom-label"
             onChange={(e) => setZoom(Number(e.target.value))}
-            className="w-full h-2 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-[var(--ring-color)]"
+            className="w-full h-2 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-[var(--ring)]"
           />
         </div>
 

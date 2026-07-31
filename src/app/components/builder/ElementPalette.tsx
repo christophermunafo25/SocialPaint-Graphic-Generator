@@ -42,15 +42,15 @@ function Tile({ item, onAdd }: { item: PaletteItem; onAdd(id: string): void }) {
       title="Drag onto the canvas, or click to add at the center"
       className="flex flex-col items-center gap-1.5 py-3 px-2 transition-colors"
       style={{
-        border: "1px solid var(--hairline-strong)",
+        border: "1px solid var(--border-strong)",
         borderRadius: "var(--radius-card-sm, 10px)",
-        background: "var(--lift)",
+        background: "var(--bg-surface)",
         cursor: "grab",
         fontSize: 11,
-        color: "var(--fg-2)",
+        color: "var(--text-secondary)",
       }}
     >
-      <Icon style={{ width: 16, height: 16, color: "var(--solar)" }} />
+      <Icon style={{ width: 16, height: 16, color: "var(--state-primary)" }} />
       {item.label}
     </button>
   );
@@ -81,7 +81,7 @@ export function ElementPalette({ onAdd }: ElementPaletteProps) {
             <Tile key={item.id} item={item} onAdd={onAdd} />
           ))}
         </div>
-        <p style={{ fontSize: 10.5, color: "var(--fg-4)" }}>
+        <p style={{ fontSize: 10.5, color: "var(--text-disabled)" }}>
           Shapes are design-only — members never see them as fields.
         </p>
       </div>

@@ -307,7 +307,7 @@ export function BrandStudio() {
       />
 
       {error && (
-        <p className="mb-5 text-sm rounded-xl px-4 py-3" style={{ background: "var(--fill-danger-bg)", color: "var(--destructive)" }}>
+        <p className="mb-5 text-sm rounded-xl px-4 py-3" style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}>
           {error}
         </p>
       )}
@@ -323,6 +323,9 @@ export function BrandStudio() {
                   ariaLabel={`${c.name} color`}
                   value={c.hex}
                   onChange={(hex) => setColors(colors.map((x, j) => (j === i ? { ...x, hex } : x)))}
+                  /* This row IS the palette — offering the palette back would
+                     just be a circle. */
+                  brandSwatches={false}
                 />
                 <div className="flex-1 min-w-0">
                   <input
@@ -332,7 +335,7 @@ export function BrandStudio() {
                     style={{ color: "var(--foreground)" }}
                   />
                   {templates && (
-                    <p style={{ fontSize: 11, color: "var(--fg-3)" }}>
+                    <p style={{ fontSize: 11, color: "var(--text-muted)" }}>
                       {usageLabel(bindings.colorUse.get(c.key))}
                     </p>
                   )}
@@ -350,7 +353,7 @@ export function BrandStudio() {
               const n = colors.filter((c) => c.key.startsWith("custom")).length + 1;
               setColors([...colors, { key: `custom_${n}`, name: `Custom ${n}`, hex: "#888888" }]);
             }}
-            style={{ fontSize: 12, color: "var(--solar)", display: "flex", alignItems: "center", gap: 5 }}
+            style={{ fontSize: 12, color: "var(--state-primary)", display: "flex", alignItems: "center", gap: 5 }}
           >
             <Plus className="w-3.5 h-3.5" />
             Add color
@@ -372,7 +375,7 @@ export function BrandStudio() {
             {...fontDrop.bind}
             data-active={fontDrop.active}
             className="sp-dropzone flex items-center justify-center gap-2 py-3 cursor-pointer"
-            style={{ border: "1.5px dashed var(--hairline-strong)", borderRadius: "var(--radius-input)", fontSize: 13, color: "var(--fg-2)" }}
+            style={{ border: "1.5px dashed var(--border-strong)", borderRadius: "var(--radius-control)", fontSize: 13, color: "var(--text-secondary)" }}
           >
             <Upload className="sp-dropzone__icon w-4 h-4" />
             Upload font file
@@ -391,14 +394,14 @@ export function BrandStudio() {
             <div
               key={p.key}
               className={`${p.leaving ? "sp-chip-out" : "sp-chip-in"} flex items-center gap-2.5 px-3 py-2`}
-              style={{ border: "1px solid var(--hairline)", borderRadius: "var(--radius-input)", background: "var(--lift)" }}
+              style={{ border: "1px solid var(--border)", borderRadius: "var(--radius-control)", background: "var(--bg-surface)" }}
             >
               <span className="flex-1 min-w-0">
-                <span className="block truncate" style={{ fontSize: 12, fontWeight: 500, color: "var(--ink)" }}>
+                <span className="block truncate" style={{ fontSize: 12, fontWeight: 500, color: "var(--text-primary)" }}>
                   {p.name}
                 </span>
                 {p.done ? (
-                  <span className="sp-done-in flex items-center gap-1 mt-1" style={{ fontSize: 10, color: "var(--success)" }}>
+                  <span className="sp-done-in flex items-center gap-1 mt-1" style={{ fontSize: 10, color: "var(--state-primary)" }}>
                     <Check style={{ width: 11, height: 11 }} />
                     Added
                   </span>
@@ -433,7 +436,7 @@ export function BrandStudio() {
               <div
                 key={a.id}
                 className="sp-chip-in relative rounded-xl border p-3 flex items-center justify-center aspect-square"
-                style={{ borderColor: a.id === primaryLogoAssetId ? "var(--solar)" : "var(--hairline)", borderRadius: 12 }}
+                style={{ borderColor: a.id === primaryLogoAssetId ? "var(--state-primary)" : "var(--border)", borderRadius: 12 }}
               >
                 <img src={a.url} alt={a.name} className="max-w-full max-h-full object-contain" />
                 <button
@@ -443,7 +446,7 @@ export function BrandStudio() {
                 >
                   <Star
                     className="w-4 h-4"
-                    style={{ color: a.id === primaryLogoAssetId ? "var(--amber)" : "var(--hairline-strong)" }}
+                    style={{ color: a.id === primaryLogoAssetId ? "var(--volt)" : "var(--border-strong)" }}
                     fill={a.id === primaryLogoAssetId ? "currentColor" : "none"}
                   />
                 </button>
@@ -482,7 +485,7 @@ export function BrandStudio() {
         <section className="sp-span-12 sp-card sp-card--content space-y-4">
           <div>
             <h2 className="sp-panel-title">Type styles &amp; rules (optional)</h2>
-            <p style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 3 }}>
+            <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 3 }}>
               An opt-in convenience for reuse: apply a saved style to a field if you want, or style
               every field by hand — both are fully locked for end users. Every property a style
               defines follows it across all templates. Unlimited styles.
@@ -501,7 +504,7 @@ export function BrandStudio() {
         <section className="sp-span-6 sp-card sp-card--content space-y-4">
           <div>
             <h2 className="sp-panel-title">Import design system</h2>
-            <p style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 3 }}>
+            <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 3 }}>
               Ingest a design-tokens JSON (colors, type scale) to populate the palette and type
               styles, parse a guidelines.md into suggested rules, or pull styles from a Figma file.
             </p>
@@ -517,20 +520,20 @@ export function BrandStudio() {
         <section className="sp-span-6 sp-card sp-card--content space-y-3">
           <div>
             <h2 className="sp-panel-title">Brand guidelines</h2>
-            <p style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 3 }}>
+            <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 3 }}>
               Do/don't and voice rules for humans building templates. Imported from guidelines.md
               or written here.
             </p>
           </div>
           {guidelines.length === 0 && (
-            <p style={{ fontSize: 12, color: "var(--fg-3)" }}>No guidelines yet.</p>
+            <p style={{ fontSize: 12, color: "var(--text-muted)" }}>No guidelines yet.</p>
           )}
           {guidelines.map((g, i) => (
             <div key={`${g}-${i}`} className="flex items-start gap-2">
-              <span style={{ color: "var(--solar)", fontSize: 12, lineHeight: "1.5" }}>—</span>
-              <span className="flex-1" style={{ fontSize: 12, color: "var(--ink)", lineHeight: 1.5 }}>{g}</span>
+              <span style={{ color: "var(--state-primary)", fontSize: 12, lineHeight: "1.5" }}>—</span>
+              <span className="flex-1" style={{ fontSize: 12, color: "var(--text-primary)", lineHeight: 1.5 }}>{g}</span>
               <button onClick={() => setGuidelines(guidelines.filter((_, j) => j !== i))} aria-label="Remove rule">
-                <Trash2 style={{ width: 13, height: 13, color: "var(--fg-3)" }} />
+                <Trash2 style={{ width: 13, height: 13, color: "var(--text-muted)" }} />
               </button>
             </div>
           ))}
@@ -556,7 +559,7 @@ export function BrandStudio() {
             bodyFamily={bodyFont.family}
             logoUrl={logoAssets.find((a) => a.id === primaryLogoAssetId)?.url ?? logoAssets[0]?.url}
           />
-          <p style={{ fontSize: 12, color: "var(--fg-3)" }}>
+          <p style={{ fontSize: 12, color: "var(--text-muted)" }}>
             How your brand applies to your templates and graphics. Save to apply everywhere.
           </p>
         </section>
@@ -575,7 +578,7 @@ interface BrandPreviewCardProps {
 function BrandPreviewCard({ colors, headingFamily, bodyFamily, logoUrl }: BrandPreviewCardProps) {
   const hex = (key: string, fallback: string) => colors.find((c) => c.key === key)?.hex ?? fallback;
   return (
-    <div className="overflow-hidden" style={{ border: "1px solid var(--hairline)", borderRadius: "var(--radius-card-sm)" }}>
+    <div className="overflow-hidden" style={{ border: "1px solid var(--border)", borderRadius: "var(--radius-card-sm)" }}>
       <div className="px-5 py-4 flex items-center gap-3" style={{ background: hex("primary", "#2F3B4C") }}>
         {logoUrl && <img src={logoUrl} alt="" className="h-6 w-auto" />}
         <span className="text-white font-extrabold uppercase text-sm" style={{ fontFamily: `"${headingFamily}", sans-serif` }}>

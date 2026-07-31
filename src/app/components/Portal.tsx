@@ -41,7 +41,7 @@ export function Portal() {
         description="Pick a template, fill in the details, and download a ready-to-post on-brand graphic."
       />
       <div className="relative" style={{ maxWidth: 420, marginBottom: 24 }}>
-        <Search className="absolute" style={{ left: 14, top: "50%", transform: "translateY(-50%)", width: 15, height: 15, color: "var(--fg-3)", zIndex: 1 }} />
+        <Search className="absolute" style={{ left: 14, top: "50%", transform: "translateY(-50%)", width: 15, height: 15, color: "var(--text-muted)", zIndex: 1 }} />
         <input
           type="text"
           value={query}
@@ -55,7 +55,7 @@ export function Portal() {
 
       <div>
         {templatesState.status === "loading" ? (
-          <p className="text-center py-20" style={{ fontSize: 13, color: "var(--fg-3)" }}>
+          <p className="text-center py-20" style={{ fontSize: 13, color: "var(--text-muted)" }}>
             Loading templates…
           </p>
         ) : templatesState.status === "error" ? (
@@ -66,7 +66,7 @@ export function Portal() {
           />
         ) : templates.length === 0 ? (
           <div className="text-center py-20 space-y-3">
-            <p style={{ fontSize: 14, color: "var(--fg-2)" }}>No templates published yet.</p>
+            <p style={{ fontSize: 14, color: "var(--text-secondary)" }}>No templates published yet.</p>
             {role === "admin" && (
               <button className="sp-btn sp-btn-primary" onClick={() => navigate({ name: "adminTemplates" })}>
                 Create your first template
@@ -74,7 +74,7 @@ export function Portal() {
             )}
           </div>
         ) : filtered.length === 0 ? (
-          <p className="text-center py-20" style={{ fontSize: 14, color: "var(--fg-2)" }}>
+          <p className="text-center py-20" style={{ fontSize: 14, color: "var(--text-secondary)" }}>
             No templates match “{query}”.
           </p>
         ) : (
@@ -83,7 +83,7 @@ export function Portal() {
               <p className="sp-eyebrow">
                 {filtered.length} template{filtered.length !== 1 ? "s" : ""}
               </p>
-              <p style={{ fontSize: 12, color: "var(--fg-3)" }}>Click a template to get started</p>
+              <p style={{ fontSize: 12, color: "var(--text-muted)" }}>Click a template to get started</p>
             </div>
             <div className="sp-grid-media">
               {filtered.map((t) => (
@@ -103,7 +103,9 @@ export function Portal() {
                           style={{
                             aspectRatio: `${t.canvasWidth} / ${t.canvasHeight}`,
                             flexShrink: 0,
-                            ...(t.canvasWidth / t.canvasHeight >= 4 / 3
+                            // Pin the SHORT axis so the artwork overflows the
+                            // square frame on the long one and crops there.
+                            ...(t.canvasWidth / t.canvasHeight >= 1
                               ? { height: "100%" }
                               : { width: "100%" }),
                           }}
@@ -113,18 +115,18 @@ export function Portal() {
                       </div>
                       <div style={{ padding: "12px 2px 4px" }}>
                         {t.category && <p className="sp-eyebrow mb-1">{t.category}</p>}
-                        <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 800, textTransform: "uppercase" as const, fontSize: 14, letterSpacing: "-0.2px", color: "var(--ink)" }}>
+                        <h2 style={{ fontFamily: "var(--font-head-sm)", fontWeight: 700, fontSize: 14, letterSpacing: "-0.2px", color: "var(--text-primary)" }}>
                           {t.name}
                         </h2>
                         {t.description && (
-                          <p style={{ fontSize: 13, lineHeight: 1.5, color: "var(--fg-2)", marginTop: 6 }}>{t.description}</p>
+                          <p style={{ fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)", marginTop: 6 }}>{t.description}</p>
                         )}
                       </div>
                     </div>
                     {/* Back — the invitation, on the brand's deep green */}
                     <div className="sp-flipcard__face sp-flipcard__face--back sp-mesh" aria-hidden>
                       {t.category && <p className="sp-eyebrow">{t.category}</p>}
-                      <p style={{ fontFamily: "var(--font-display)", fontWeight: 800, textTransform: "uppercase" as const, fontSize: 16, letterSpacing: "-0.3px", lineHeight: 1.05 }}>
+                      <p style={{ fontFamily: "var(--font-head-sm)", fontWeight: 700, fontSize: 16, letterSpacing: "-0.3px", lineHeight: 1.05 }}>
                         {t.name}
                       </p>
                       <span className="sp-btn sp-btn-solar" style={{ pointerEvents: "none" }}>

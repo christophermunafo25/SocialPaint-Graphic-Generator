@@ -41,12 +41,12 @@ function Kpi({ label, value, Icon, chip }: KpiProps) {
     <div className="sp-card sp-card--content flex items-center gap-4">
       <span
         className="flex items-center justify-center flex-shrink-0"
-        style={{ width: 38, height: 38, borderRadius: "var(--radius-icon)", background: chip }}
+        style={{ width: 38, height: 38, borderRadius: "var(--radius-control)", background: chip }}
       >
-        <Icon style={{ width: 16, height: 16, color: "#122407" }} />
+        <Icon style={{ width: 16, height: 16, color: "var(--text-on-accent)" }} />
       </span>
       <span className="min-w-0">
-        <span className="block truncate" style={{ ...mono, fontSize: 24, lineHeight: 1.1, color: "var(--ink)" }}>
+        <span className="block truncate" style={{ ...mono, fontSize: 24, lineHeight: 1.1, color: "var(--text-primary)" }}>
           {value}
         </span>
         <span className="sp-eyebrow block" style={{ marginTop: 3 }}>{label}</span>
@@ -58,10 +58,10 @@ function Kpi({ label, value, Icon, chip }: KpiProps) {
 /** Legend chip: colored dot + label + mono total (identity never color-alone). */
 function LegendChip({ color, label, total }: { color: string; label: string; total: number }) {
   return (
-    <span className="flex items-center gap-1.5" style={{ fontSize: 12, color: "var(--fg-2)" }}>
+    <span className="flex items-center gap-1.5" style={{ fontSize: 12, color: "var(--text-secondary)" }}>
       <span aria-hidden style={{ width: 8, height: 8, borderRadius: 999, background: color }} />
       {label}
-      <span style={{ ...mono, fontSize: 11, color: "var(--fg-3)" }}>{total}</span>
+      <span style={{ ...mono, fontSize: 11, color: "var(--text-muted)" }}>{total}</span>
     </span>
   );
 }
@@ -81,7 +81,7 @@ export function Dashboard() {
   );
 
   if (summaryState.status === "loading") {
-    return <p className="text-center py-24" style={{ fontSize: 13, color: "var(--fg-3)" }}>Loading usage…</p>;
+    return <p className="text-center py-24" style={{ fontSize: 13, color: "var(--text-muted)" }}>Loading usage…</p>;
   }
   if (summaryState.status === "error") {
     return (
@@ -94,7 +94,7 @@ export function Dashboard() {
   }
   const summary = summaryState.data;
   if (!summary) {
-    return <p className="text-center py-24" style={{ fontSize: 13, color: "var(--fg-3)" }}>Loading usage…</p>;
+    return <p className="text-center py-24" style={{ fontSize: 13, color: "var(--text-muted)" }}>Loading usage…</p>;
   }
   const trend = trendState.status === "ready" ? trendState.data : null;
 
@@ -114,12 +114,12 @@ export function Dashboard() {
           <span
             aria-hidden
             className="absolute"
-            style={{ right: -40, bottom: -30, opacity: 0.07, color: "var(--ink)" }}
+            style={{ right: -40, bottom: -30, opacity: 0.07, color: "var(--text-primary)" }}
           >
             <BrandMark width={280} />
           </span>
-          <p style={{ fontSize: 14, color: "var(--fg-1)", fontWeight: 500 }}>No usage yet</p>
-          <p style={{ fontSize: 13, color: "var(--fg-3)", marginTop: 6 }}>
+          <p style={{ fontSize: 14, color: "var(--text-primary)", fontWeight: 500 }}>No usage yet</p>
+          <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 6 }}>
             Opens and downloads appear here as soon as members start using
             published templates.
           </p>
@@ -128,10 +128,10 @@ export function Dashboard() {
         <div className="space-y-6">
           {/* KPI row — same 24px gap as every other grid on the page */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-            <Kpi label="Total exports" value={String(summary.totalDownloads)} Icon={Download} chip="var(--mint)" />
-            <Kpi label="Total opens" value={String(totalOpens)} Icon={Eye} chip="var(--sky)" />
-            <Kpi label="Export rate" value={exportRate(summary.totalDownloads, totalOpens)} Icon={Percent} chip="var(--paper-warm)" />
-            <Kpi label="Templates in use" value={String(activeTemplates)} Icon={Layers} chip="var(--paper-warm)" />
+            <Kpi label="Total exports" value={String(summary.totalDownloads)} Icon={Download} chip="var(--volt)" />
+            <Kpi label="Total opens" value={String(totalOpens)} Icon={Eye} chip="var(--volt)" />
+            <Kpi label="Export rate" value={exportRate(summary.totalDownloads, totalOpens)} Icon={Percent} chip="var(--bg-hover)" />
+            <Kpi label="Templates in use" value={String(activeTemplates)} Icon={Layers} chip="var(--bg-hover)" />
           </div>
 
           {/* 30-day trend */}
@@ -145,7 +145,7 @@ export function Dashboard() {
             </div>
             {trendState.status === "error" ? (
               <div className="flex flex-col items-center justify-center gap-3" style={{ height: 220 }}>
-                <p style={{ fontSize: 13, color: "var(--fg-3)" }}>We couldn't load the activity trend.</p>
+                <p style={{ fontSize: 13, color: "var(--text-muted)" }}>We couldn't load the activity trend.</p>
                 <button className="sp-btn sp-btn-ghost" onClick={trendState.retry}>
                   Try again
                 </button>
@@ -158,27 +158,27 @@ export function Dashboard() {
                   <XAxis
                     dataKey="date"
                     tickFormatter={fmtDay}
-                    tick={{ fontSize: 10, fontFamily: "var(--font-mono)", fill: "var(--fg-3)" }}
+                    tick={{ fontSize: 10, fontFamily: "var(--font-mono)", fill: "var(--text-muted)" }}
                     tickLine={false}
                     axisLine={false}
                     minTickGap={28}
                   />
                   <YAxis
                     allowDecimals={false}
-                    tick={{ fontSize: 10, fontFamily: "var(--font-mono)", fill: "var(--fg-3)" }}
+                    tick={{ fontSize: 10, fontFamily: "var(--font-mono)", fill: "var(--text-muted)" }}
                     tickLine={false}
                     axisLine={false}
                   />
                   <Tooltip
-                    cursor={{ stroke: "var(--hairline-strong)", strokeDasharray: "3 3" }}
+                    cursor={{ stroke: "var(--border-strong)", strokeDasharray: "3 3" }}
                     labelFormatter={(v) => fmtDay(String(v))}
                     contentStyle={{
                       fontFamily: "var(--font-mono)",
                       fontSize: 12,
-                      background: "var(--lift)",
-                      border: "1px solid var(--hairline)",
+                      background: "var(--bg-surface)",
+                      border: "1px solid var(--border)",
                       borderRadius: 10,
-                      color: "var(--ink)",
+                      color: "var(--text-primary)",
                     }}
                   />
                   <Area
@@ -218,14 +218,14 @@ export function Dashboard() {
                   <div key={r.templateId}>
                     <div className="flex items-baseline justify-between gap-3 mb-1.5">
                       <span className="flex items-baseline gap-2 min-w-0">
-                        <span style={{ ...mono, fontSize: 10, color: "var(--fg-4)" }}>
+                        <span style={{ ...mono, fontSize: 10, color: "var(--text-disabled)" }}>
                           {String(i + 1).padStart(2, "0")}
                         </span>
-                        <span className="truncate" style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>
+                        <span className="truncate" style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>
                           {r.templateName}
                         </span>
                       </span>
-                      <span className="flex-shrink-0" style={{ ...mono, fontSize: 11, color: "var(--fg-3)" }}>
+                      <span className="flex-shrink-0" style={{ ...mono, fontSize: 11, color: "var(--text-muted)" }}>
                         {r.downloads} · {r.opens}
                       </span>
                     </div>
@@ -242,11 +242,11 @@ export function Dashboard() {
                 ))}
               </div>
               {summary.rows.length > top.length && (
-                <p className="mt-4" style={{ fontSize: 11, color: "var(--fg-4)" }}>
+                <p className="mt-4" style={{ fontSize: 11, color: "var(--text-disabled)" }}>
                   +{summary.rows.length - top.length} more in the table
                 </p>
               )}
-              <div className="flex items-center gap-4 mt-5 pt-4" style={{ borderTop: "1px solid var(--hairline)" }}>
+              <div className="flex items-center gap-4 mt-5 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
                 <LegendChip color="var(--viz-downloads)" label="Downloads" total={summary.totalDownloads} />
                 <LegendChip color="var(--viz-opens)" label="Opens" total={totalOpens} />
               </div>
@@ -256,7 +256,7 @@ export function Dashboard() {
             <div className="sp-card overflow-hidden overflow-x-auto lg:col-span-3">
               <table className="w-full" style={{ fontSize: 13, minWidth: 520 }}>
                 <thead>
-                  <tr className="text-left" style={{ borderBottom: "1px solid var(--hairline)" }}>
+                  <tr className="text-left" style={{ borderBottom: "1px solid var(--border)" }}>
                     {["Template", "Opens", "Downloads", "Export rate", "Last used"].map((h) => (
                       <th key={h} className="sp-eyebrow px-4 py-3" style={{ fontWeight: 400 }}>
                         {h}
@@ -266,14 +266,14 @@ export function Dashboard() {
                 </thead>
                 <tbody>
                   {summary.rows.map((r) => (
-                    <tr key={r.templateId} style={{ borderTop: "1px solid var(--hairline)" }}>
-                      <td className="px-4 py-3" style={{ color: "var(--ink)", fontWeight: 500 }}>{r.templateName}</td>
-                      <td className="px-4 py-3" style={{ ...mono, fontSize: 12, color: "var(--fg-2)" }}>{r.opens}</td>
-                      <td className="px-4 py-3" style={{ ...mono, fontSize: 12, color: "var(--ink)" }}>{r.downloads}</td>
-                      <td className="px-4 py-3" style={{ ...mono, fontSize: 12, color: "var(--fg-2)" }}>
+                    <tr key={r.templateId} style={{ borderTop: "1px solid var(--border)" }}>
+                      <td className="px-4 py-3" style={{ color: "var(--text-primary)", fontWeight: 500 }}>{r.templateName}</td>
+                      <td className="px-4 py-3" style={{ ...mono, fontSize: 12, color: "var(--text-secondary)" }}>{r.opens}</td>
+                      <td className="px-4 py-3" style={{ ...mono, fontSize: 12, color: "var(--text-primary)" }}>{r.downloads}</td>
+                      <td className="px-4 py-3" style={{ ...mono, fontSize: 12, color: "var(--text-secondary)" }}>
                         {exportRate(r.downloads, r.opens)}
                       </td>
-                      <td className="px-4 py-3" style={{ ...mono, fontSize: 12, color: "var(--fg-3)" }}>
+                      <td className="px-4 py-3" style={{ ...mono, fontSize: 12, color: "var(--text-muted)" }}>
                         {relativeDay(r.lastUsedAt)}
                       </td>
                     </tr>

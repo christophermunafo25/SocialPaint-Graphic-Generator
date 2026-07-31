@@ -39,7 +39,7 @@ export function WizardStepper({ current, complete, canGo, onGo }: WizardStepperP
             {i > 0 && (
               <span
                 aria-hidden
-                style={{ width: 20, height: 1, background: "var(--hairline-strong)", margin: "0 2px" }}
+                style={{ width: 20, height: 1, background: "var(--border-strong)", margin: "0 2px" }}
               />
             )}
             <button
@@ -49,7 +49,7 @@ export function WizardStepper({ current, complete, canGo, onGo }: WizardStepperP
               className="flex items-center gap-2 px-2.5 py-1.5"
               style={{
                 borderRadius: 999,
-                background: isCurrent ? "var(--ink)" : "transparent",
+                background: isCurrent ? "var(--text-primary)" : "transparent",
                 cursor: reachable ? "pointer" : "default",
                 opacity: reachable || isCurrent ? 1 : 0.45,
               }}
@@ -62,8 +62,8 @@ export function WizardStepper({ current, complete, canGo, onGo }: WizardStepperP
                   borderRadius: 999,
                   fontSize: 10,
                   fontFamily: "var(--font-mono)",
-                  background: isComplete ? "var(--mint)" : isCurrent ? "var(--btn-primary-bg)" : "var(--fg-5)",
-                  color: isCurrent ? "var(--btn-primary-fg)" : isComplete ? "#122407" : "var(--ink)",
+                  background: isComplete ? "var(--volt)" : isCurrent ? "var(--btn-primary-bg)" : "var(--bg-hover)",
+                  color: isCurrent ? "var(--btn-primary-fg)" : isComplete ? "#083B27" : "var(--text-primary)",
                 }}
               >
                 {isComplete ? <Check style={{ width: 11, height: 11 }} /> : i + 1}
@@ -71,13 +71,13 @@ export function WizardStepper({ current, complete, canGo, onGo }: WizardStepperP
               <span
                 style={{
                   fontSize: 12,
-                  color: isCurrent ? "var(--fg-on-dark-1)" : "var(--fg-2)",
+                  color: isCurrent ? "var(--text-on-accent)" : "var(--text-secondary)",
                   fontWeight: isCurrent ? 500 : 400,
                 }}
               >
                 {s.title}
                 {s.optional && (
-                  <span style={{ fontSize: 10, color: isCurrent ? "var(--fg-on-dark-1)" : "var(--fg-4)" }}>
+                  <span style={{ fontSize: 10, color: isCurrent ? "var(--text-on-accent)" : "var(--text-disabled)" }}>
                     {" "}· optional
                   </span>
                 )}

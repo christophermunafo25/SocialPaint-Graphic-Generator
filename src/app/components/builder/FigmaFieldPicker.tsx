@@ -56,7 +56,7 @@ export function FigmaFieldPicker({ result, kit, onConfirm, onBack }: FigmaFieldP
       {/* Frame with candidate overlay */}
       <div className="lg:col-span-7">
         <div className="sp-card p-4">
-          <p className="mb-3" style={{ fontSize: 12, color: "var(--fg-3)" }}>
+          <p className="mb-3" style={{ fontSize: 12, color: "var(--text-muted)" }}>
             {result.suggestedFields.length} elements detected. Checked elements become editable
             inputs and are lifted off the background; everything unchecked stays baked into the
             locked design.
@@ -99,7 +99,7 @@ export function FigmaFieldPicker({ result, kit, onConfirm, onBack }: FigmaFieldP
                   top: field.y * scale,
                   width: field.width * scale,
                   height: field.height * scale,
-                  border: include ? "2px solid var(--solar)" : "1.5px dashed rgba(35,31,35,0.35)",
+                  border: include ? "2px solid var(--state-primary)" : "1.5px dashed rgba(35,31,35,0.35)",
                   background:
                     activeId === field.id
                       ? "var(--accent-wash-strong)"
@@ -113,7 +113,7 @@ export function FigmaFieldPicker({ result, kit, onConfirm, onBack }: FigmaFieldP
           </div>
         </div>
         {result.warnings.map((w) => (
-          <p key={w} className="mt-2 rounded-lg px-3 py-2" style={{ fontSize: 12, background: "var(--paper-warm)", color: "var(--fg-2)" }}>
+          <p key={w} className="mt-2 rounded-lg px-3 py-2" style={{ fontSize: 12, background: "var(--bg-hover)", color: "var(--text-secondary)" }}>
             {w}
           </p>
         ))}
@@ -121,14 +121,14 @@ export function FigmaFieldPicker({ result, kit, onConfirm, onBack }: FigmaFieldP
 
       {/* Candidate list */}
       <div className="lg:col-span-5 space-y-3">
-        <div className="sp-card divide-y" style={{ borderColor: "var(--hairline)" }}>
+        <div className="sp-card divide-y" style={{ borderColor: "var(--border)" }}>
           {candidates.map(({ field, include }) => (
             <div
               key={field.id}
               className="flex items-center gap-2.5 px-3 py-2.5"
               style={{
-                borderColor: "var(--hairline)",
-                background: activeId === field.id ? "var(--paper)" : undefined,
+                borderColor: "var(--border)",
+                background: activeId === field.id ? "var(--bg-raised)" : undefined,
               }}
               onMouseEnter={() => setActiveId(field.id)}
             >
@@ -138,13 +138,13 @@ export function FigmaFieldPicker({ result, kit, onConfirm, onBack }: FigmaFieldP
                 onChange={(e) => update(field.id, { include: e.target.checked })}
               />
               {field.type === "image" ? (
-                <ImageIcon style={{ width: 13, height: 13, color: "var(--fg-3)", flexShrink: 0 }} />
+                <ImageIcon style={{ width: 13, height: 13, color: "var(--text-muted)", flexShrink: 0 }} />
               ) : (
-                <TypeIcon style={{ width: 13, height: 13, color: "var(--fg-3)", flexShrink: 0 }} />
+                <TypeIcon style={{ width: 13, height: 13, color: "var(--text-muted)", flexShrink: 0 }} />
               )}
               <input
                 className="flex-1 bg-transparent outline-none min-w-0"
-                style={{ fontSize: 13, color: include ? "var(--ink)" : "var(--fg-4)" }}
+                style={{ fontSize: 13, color: include ? "var(--text-primary)" : "var(--text-disabled)" }}
                 value={field.label}
                 disabled={!include}
                 onChange={(e) => update(field.id, { field: { label: e.target.value } })}
@@ -179,7 +179,7 @@ export function FigmaFieldPicker({ result, kit, onConfirm, onBack }: FigmaFieldP
             </div>
           ))}
           {candidates.length === 0 && (
-            <p className="px-3 py-6 text-center" style={{ fontSize: 13, color: "var(--fg-3)" }}>
+            <p className="px-3 py-6 text-center" style={{ fontSize: 13, color: "var(--text-muted)" }}>
               Nothing was detected — the background imported; draw fields manually in the next step.
             </p>
           )}
@@ -200,7 +200,7 @@ export function FigmaFieldPicker({ result, kit, onConfirm, onBack }: FigmaFieldP
               : "Continue with background only"}
           </button>
         </div>
-        <p style={{ fontSize: 11, color: "var(--fg-3)" }}>
+        <p style={{ fontSize: 11, color: "var(--text-muted)" }}>
           You can refine guardrails, positions, and styling for each field in the builder next.
         </p>
       </div>

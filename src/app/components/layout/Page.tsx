@@ -43,7 +43,7 @@ export function PageHeader({
         )}
         <h1 className="sp-page-title">{title}</h1>
         {description && (
-          <p style={{ fontSize: 13, color: "var(--fg-3)", marginTop: 8 }}>{description}</p>
+          <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 8 }}>{description}</p>
         )}
       </div>
       {action && <div className="flex-shrink-0">{action}</div>}

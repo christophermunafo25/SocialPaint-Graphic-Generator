@@ -1,212 +1,293 @@
 /* ==========================================================================
    SocialPaint Design System — platform UI tokens.
-   Implemented from the claude.ai/design "SocialPaint Design System" project
-   (tokens/*.css + readme). Acid lime + deep green lead; cyan and pink
-   support; every neutral carries a green cast — no grey neutrals. Soft
-   containers (20px) against crisp controls (5px). Flat color only: no
-   gradients as surface treatment, no glass, no texture. PLATFORM UI ONLY:
-   tenant brand kits style the template graphics, never this chrome.
+   Ported from the "SocialPaint Design System" Claude Design project
+   (tokens/*.css, SKILL.md, docs/02-tokens.md), 2026-07-30.
 
-   The custom-property NAMES are kept from the previous system so components
-   need no changes — only the VALUES changed.
+   Five colours only: Ink #1A1A1A, Forrest #083B27, Volt #BCFF78, White,
+   Gray #F9F9F8. Danger #FF7D51 sits outside the palette as a functional
+   signal — never a brand colour, never decorative.
+
+   Non-negotiables carried from the DS:
+   - Soft cards (20px) against crisp controls (5px). Never meet at 12px.
+   - One UI weight. Never bold for emphasis — shift colour or use the
+     display face.
+   - Primary action is Forrest fill + Volt label on light, inverted on dark.
+   - No gradients as surface, no drop shadows in either mode, no glass.
+   - Sentence case everywhere. ALL CAPS only for the small-label treatment
+     (eyebrows, table headers) at 0.04em tracking.
+
+   Themes are scoped to [data-theme="light" | "dark"], which
+   ColorSchemeProvider sets on <html> alongside the .dark class that
+   Tailwind's dark: variant needs.
+
+   PLATFORM UI ONLY: tenant brand kits style the template graphics that
+   members generate, never this chrome.
    ========================================================================== */
 
-@import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap");
 
-/* Kurdis Extra Wide Extra Bold — licensed heading face, vendored locally. */
+/* Neuething Sans — the licensed heading face, vendored locally. The 800
+   Ultra Expanded cut carries Display/H1/H2; the variable cut at 700 takes
+   H3 and below. */
 @font-face {
-  font-family: "Kurdis Extra Wide";
-  src: url("../assets/fonts/kurdis/KurdisExtraWideExtraBold.otf") format("opentype");
-  font-weight: 400 800;
+  font-family: "Neuething Sans";
+  src: url("../assets/fonts/neuething/NeuethingSans-ExtraBoldUltraExpanded.otf") format("opentype");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Neuething Sans Variable";
+  src: url("../assets/fonts/neuething/NeuethingSans-variableVF.ttf") format("truetype");
+  font-weight: 100 900;
   font-style: normal;
   font-display: swap;
 }
 
+/* ── Primitives ─────────────────────────────────────────────────────────────
+   The five brand colours. These are the only tokens without a category
+   prefix — that is how you tell a primitive at a glance. Never reach past
+   the semantic tier to one of these in product code. */
 :root {
-  /* Surfaces (light: canvas / raised / hover / surface, all green-cast) */
-  --linen: #fafaf9;
-  --paper: #f2f3ee;
-  --paper-warm: #e8eae1;
-  --lift: #ffffff;
-  --ink: #122407;
-  --obsidian: #000000;
+  --forrest: #083b27;
+  --volt:    #bcff78;
+  --white:   #ffffff;
+  --gray:    #f9f9f8;
+  /* The DS primitive --ink (#1A1A1A) is --bg-canvas in dark and the value
+     behind --text-primary in light; product code reaches for those. */
 
-  /* Accent range (names kept; values are the DS secondary palette) */
-  --orchid: #ff8af5;
-  --mint: #caff5f;
-  --sky: #89f6ff;
-  --sand: #caff5f;
-  --peach: #ff8af5;
-
-  /* Brand accents — light mode: --solar is the READABLE accent (brights
-     are fills, not text, on light) */
-  --amber: #89f6ff;
-  --solar: #122407;
-  --blush: #ff8af5;
-
-  /* Semantic state */
-  --success: #122407;
-  --danger: #b02015;
-
-  /* Foregrounds on light (green-cast ladder) */
-  --fg-1: #122407;
-  --fg-2: #4a5738;
-  --fg-3: #66754f;
-  --fg-4: #9aa48b;
-  --fg-5: rgba(18, 36, 7, 0.08);
-  --hairline: #dddfd4;
-  --hairline-strong: #b9bea9;
-
-  /* Text on ink-colored surfaces. Light mode's primary construction is deep
-     green fill + LIME text (DS light primary button). */
-  --fg-on-dark-1: #caff5f;
-  --fg-on-dark-2: rgba(255, 255, 255, 0.78);
-  --fg-on-dark-3: rgba(255, 255, 255, 0.55);
-
-  /* Accent washes/borders for tinted chrome (active nav, locked-rule boxes) */
-  --accent-wash: color-mix(in srgb, #122407 8%, transparent);
-  --accent-wash-strong: color-mix(in srgb, #122407 16%, transparent);
-  --accent-border: color-mix(in srgb, #122407 35%, transparent);
-  --fill-danger-bg: #ffd9d5;
-
-  /* Typography families */
-  --font-display: "Kurdis Extra Wide", "Inter Tight", ui-sans-serif, system-ui, sans-serif;
-  --font-body: "Inter Tight", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  /* Typography */
+  --font-head:      "Neuething Sans", "Inter Tight", system-ui, sans-serif;
+  --font-head-sm:   "Neuething Sans Variable", "Neuething Sans", system-ui, sans-serif;
+  --weight-head:    800; /* Display, H1, H2 */
+  --weight-head-sm: 700; /* H3 and below */
+  --font-body: "Inter Tight", system-ui, -apple-system, sans-serif;
+  --font-ui:   "Inter Tight", system-ui, -apple-system, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  --font-ui: "Inter Tight", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --weight-ui: 500;
 
-  /* Shape: soft containers vs crisp controls — hold the gap, never 12px */
-  --radius-card: 16px;
-  --radius-card-sm: 16px;
-  --radius-icon: 5px;
-  --radius-input: 5px;
-  --radius-button: 5px;
-  --radius-pill: 999px;
+  --type-display-size: 72px; --type-display-lh: 0.92; --type-display-track: -0.03em;
+  --type-h1-size: 40px;      --type-h1-lh: 0.95;      --type-h1-track: -0.03em;
+  --type-h2-size: 32px;      --type-h2-lh: 1;         --type-h2-track: -0.03em;
+  --type-h3-size: 28px;      --type-h3-lh: 1.1;       --type-h3-track: -0.03em;
+  --type-h4-size: 20px;      --type-h4-lh: 1.2;       --type-h4-track: -0.03em;
+  --type-cardtitle-size: 16px; --type-cardtitle-lh: 1.3; --type-cardtitle-track: -0.03em;
+  --type-body-size: 15px;    --type-body-lh: 1.5;     --type-body-track: -0.015em;
+  --type-label-size: 13px;   --type-label-lh: 1.25;   --type-label-track: -0.01em;
+  --type-caption-size: 12px; --type-caption-lh: 1.4;  --type-caption-track: 0;
+  --type-button-size: 15px;  --type-button-lh: 1.1;   --type-button-track: -0.02em;
+  --type-data-size: 13px;    --type-data-lh: 1.4;     --type-data-track: 0;
 
-  /* Elevation (light) */
-  --shadow-e1: 0 2px 8px rgba(18, 36, 7, 0.07);
-  --shadow-e2: 0 2px 8px rgba(18, 36, 7, 0.07);
-  --shadow-e3: 0 8px 24px rgba(18, 36, 7, 0.11);
-  --shadow-e4: 0 8px 24px rgba(18, 36, 7, 0.11);
+  /* Spacing — 4px base, nothing off the scale. */
+  --space-3xs:  4px;
+  --space-2xs:  8px;
+  --space-xs:  12px;
+  --space-sm:  16px;
+  --space-md:  24px; /* default card padding */
+  --space-lg:  32px; /* card padding when a headline is present */
+  --space-xl:  48px;
+  --space-2xl: 64px;
+  --space-3xl: 96px;
 
-  /* Focus — 2px ring; mid-green on light (lime would vanish on paper) */
-  --ring-color: #122407;
-  --focus-ring: 0 0 0 2px var(--ring-color);
-  --focus-ring-tight: 0 0 0 2px var(--ring-color);
+  /* Shape — hold the gap between soft containers and crisp controls. */
+  --radius-control: 5px;
+  --radius-card:   20px;
+  --radius-pill:  999px;
+  --control-sm: 38px;
+  --control-md: 46px;
+  --control-lg: 54px;
+  --border-width: 1px;
 
-  /* Motion — one easing, three durations */
-  --ease: cubic-bezier(0.2, 0, 0, 1);
-  --dur-state: 140ms;
-  --dur-panel: 220ms;
+  /* Layout */
+  --bp-sm:  480px;
+  --bp-md:  768px;
+  --bp-lg: 1024px;
+  --bp-xl: 1280px;
+  --bp-2xl: 1600px;
+  --container-sm:  640px;
+  --container-md:  768px;
+  --container-lg: 1024px;
+  --container-xl: 1180px;
+  --container-full: 100%;
+  --grid-cols: 4;
+  --grid-gutter: var(--space-sm);
+  --grid-margin: var(--space-sm);
+  --z-base: 0;
+  --z-raised: 10;
+  --z-sticky: 100;
+  --z-drawer: 200;
+  --z-overlay: 300;
+  --z-modal: 400;
+  --z-popover: 500;
+  --z-toast: 600;
+  --z-tooltip: 700;
+  --density-control: var(--control-md);
+  --density-row-y: var(--space-sm);
+  --density-cell-x: var(--space-md);
 
-  /* Brand moment surfaces (names kept from the old mesh; now FLAT deep
-     green — gradients as surface treatment are banned in this system) */
-  --mesh-warm: #122407;
-  --mesh-soft: #122407;
+  /* Motion — one easing, three durations. */
+  --ease:       cubic-bezier(0.2, 0, 0, 1);
+  --dur-state:  140ms;
+  --dur-panel:  220ms;
+  --dur-reveal: 400ms;
+  --focus-width:  2px;
+  --focus-offset: 2px;
+}
 
-  /* Primary action: light = deep green fill + lime text */
-  --btn-primary-bg: #122407;
-  --btn-primary-fg: #caff5f;
-  --btn-primary-bg-hover: color-mix(in srgb, #122407 86%, #fff);
+@media (min-width: 768px) {
+  :root { --grid-cols: 8; --grid-gutter: var(--space-md); --grid-margin: var(--space-lg); }
+}
+@media (min-width: 1024px) {
+  :root { --grid-cols: 12; --grid-gutter: var(--space-md); --grid-margin: var(--space-xl); }
+}
 
-  /* Data-viz series (validated against the light surface — deep green +
-     readable teal; brights are fills-not-marks on light) */
-  --viz-downloads: #122407;
-  --viz-opens: #00919f;
-  --viz-grid: #dddfd4;
-
-  /* Sidebar — flat surface (no glass in this system) */
-  --sb-width: 260px;
-  --sb-width-collapsed: 76px;
-  --sb-bg: #ffffff;
-  --sb-border: #dddfd4;
-  --sb-shadow: 0 2px 8px rgba(18, 36, 7, 0.07);
-  --sb-fg: #4a5738;
-  --sb-fg-active: #122407;
-  --sb-active-bg: color-mix(in srgb, #122407 8%, transparent);
-  --sb-active-border: transparent;
+[data-density="compact"] {
+  --density-control: var(--control-sm);
+  --density-row-y:   var(--space-2xs);
+  --density-cell-x:  var(--space-xs);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :root {
-    --dur-state: 0ms;
-    --dur-panel: 0ms;
-  }
+  :root { --dur-state: 0ms; --dur-panel: 0ms; --dur-reveal: 0ms; }
 }
 
-/* ── Dark mode ──────────────────────────────────────────────────────────────
-   The dark ladder is the DS dark theme: #1A1A1A canvas rising through
-   surface/raised/hover. Dark elevates with surface color — NO shadows.
-   Template graphics are untouched: the render canvas is a fixed #fff
-   surface and field colors come from tenant brand kits. */
-.dark {
-  --linen: #1a1a1a;
-  --paper: #2e2e2e;
-  --paper-warm: #383838;
-  --lift: #242424;
-  --ink: #f2f3ef;
-  --obsidian: #ffffff;
+/* ── Semantic: dark ─────────────────────────────────────────────────────────
+   The primary mode. Ink is the floor; elevation is surface colour, never
+   shadow. */
+[data-theme="dark"] {
+  --bg-canvas:     #1a1a1a;
+  --bg-surface:    #242424;
+  --bg-raised:     #2e2e2e;
+  --bg-hover:      #383838;
+  --bg-plate:      #ffffff; /* imagery plate — never inverts */
+  --border:        #303030;
+  --border-strong: #4a4a4a;
 
-  --solar: #caff5f; /* brights carry text on dark */
-  --amber: #89f6ff;
-  --blush: #ff8af5;
-  --success: #caff5f;
-  --danger: #ff7a6e;
+  --text-primary:   #ffffff;
+  --text-secondary: #c5c7cb;
+  --text-muted:     #92959b;
+  --text-disabled:  #5e6167;
+  --text-on-accent: #1a1a1a;
 
-  --fg-1: #f2f3ef;
-  --fg-2: #c3c6bd;
-  --fg-3: #97998f;
-  --fg-4: #5d5f57;
-  --fg-5: rgba(242, 243, 239, 0.08);
-  --hairline: #333333;
-  --hairline-strong: #454545;
+  --text-on-surface:           #ffffff;
+  --text-on-surface-secondary: #c5c7cb;
+  --text-on-surface-muted:     #92959b;
+  --border-on-surface:         #303030;
+  --bg-surface-raised:         #2e2e2e;
+  --bg-surface-hover:          #383838;
+  --state-primary-on-surface:   #bcff78;
+  --state-attention-on-surface: #bcff78;
+  --state-danger-on-surface:    #ff7d51;
 
-  /* Ink pills are light in dark mode — text on them goes deep green */
-  --fg-on-dark-1: #122407;
-  --fg-on-dark-2: rgba(18, 36, 7, 0.72);
-  --fg-on-dark-3: rgba(18, 36, 7, 0.5);
+  --state-primary:   #bcff78; --fill-primary:   #bcff78;
+  --state-attention: #bcff78; --fill-attention: #bcff78;
+  --state-danger:    #ff7d51; --fill-danger:    #ff7d51;
 
-  --accent-wash: color-mix(in srgb, #caff5f 15%, transparent);
-  --accent-wash-strong: color-mix(in srgb, #caff5f 28%, transparent);
-  --accent-border: color-mix(in srgb, #caff5f 40%, transparent);
-  --fill-danger-bg: rgba(255, 122, 110, 0.16);
+  --ring: #bcff78;
 
-  /* Dark mode raises with surface color, never shadow */
-  --shadow-e1: none;
-  --shadow-e2: none;
-  --shadow-e3: none;
-  --shadow-e4: none;
+  --shadow-sm: none;
+  --shadow-md: none;
 
-  --ring-color: #caff5f;
-
-  /* Primary action: dark = lime fill + deep green text */
-  --btn-primary-bg: #caff5f;
-  --btn-primary-fg: #122407;
-  --btn-primary-bg-hover: color-mix(in srgb, #caff5f 86%, #fff);
-
-  /* Data-viz series on the dark surface — the brights carry data on dark */
-  --viz-downloads: #caff5f;
-  --viz-opens: #89f6ff;
-  --viz-grid: #333333;
-
-  --sb-bg: #242424;
-  --sb-border: #333333;
-  --sb-shadow: none;
-  --sb-fg: #c3c6bd;
-  --sb-fg-active: #f2f3ef;
-  --sb-active-bg: color-mix(in srgb, #caff5f 15%, transparent);
-  --sb-active-border: transparent;
+  color-scheme: dark;
 }
-.dark ::selection { background: var(--mint); color: #122407; }
-::selection { background: var(--mint); color: #122407; }
+
+/* ── Semantic: light ────────────────────────────────────────────────────────
+   Gray canvas; borders carry separation. Forrest is the readable accent —
+   Volt is a fill here, never a mark. */
+[data-theme="light"] {
+  --bg-canvas:     #f9f9f8;
+  --bg-surface:    #ffffff;
+  --bg-raised:     #f0f0ee;
+  --bg-hover:      #e7e7e4;
+  --bg-plate:      #ffffff;
+  --border:        #e2e2de;
+  --border-strong: #c4c4bf;
+
+  --text-primary:   #1a1a1a;
+  --text-secondary: #4a4d53;
+  --text-muted:     #6e7178;
+  --text-disabled:  #a2a5aa;
+  --text-on-accent: #1a1a1a;
+
+  --text-on-surface:           #1a1a1a;
+  --text-on-surface-secondary: #4a4d53;
+  --text-on-surface-muted:     #6e7178;
+  --border-on-surface:         #e2e2de;
+  --bg-surface-raised:         #f9f9f8;
+  --bg-surface-hover:          #f0f0ee;
+  --state-primary-on-surface:   #083b27;
+  --state-attention-on-surface: #083b27;
+  --state-danger-on-surface:    #ff7d51;
+
+  --state-primary:   #083b27; --fill-primary:   #bcff78;
+  --state-attention: #083b27; --fill-attention: #bcff78;
+  --state-danger:    #ff7d51; --fill-danger:    #ff7d51;
+
+  --ring: #083b27;
+
+  --shadow-sm: none;
+  --shadow-md: none;
+
+  color-scheme: light;
+}
+
+/* ── Component tier ─────────────────────────────────────────────────────────
+   Deliberately thin, per docs/02-tokens.md: this is a single-brand system,
+   so component indirection only earns its keep where a recipe genuinely
+   differs between themes. Everything here resolves to semantic tokens. */
+[data-theme] {
+  /* Focus — 2px ring at 2px offset. Where a box-shadow stands in for an
+     outline (inputs), the canvas-coloured first layer creates the offset. */
+  --focus-ring: 0 0 0 var(--focus-offset) var(--bg-surface),
+                0 0 0 calc(var(--focus-offset) + var(--focus-width)) var(--ring);
+  --focus-ring-tight: 0 0 0 var(--focus-width) var(--ring);
+
+  /* Tinted chrome — active nav, locked-rule boxes, selection washes. */
+  --accent-wash:        color-mix(in srgb, var(--state-primary) 10%, transparent);
+  --accent-wash-strong: color-mix(in srgb, var(--state-primary) 20%, transparent);
+  --accent-border:      color-mix(in srgb, var(--state-primary) 40%, transparent);
+  --danger-wash:        color-mix(in srgb, var(--state-danger) 16%, transparent);
+
+  /* Brand-moment surface — flat Forrest with Volt as the voice. */
+  --brand-surface:    var(--forrest);
+  --brand-surface-fg: var(--volt);
+
+  /* Data-viz series. Two marks only; the palette has no third hue to give. */
+  --viz-downloads: var(--state-primary);
+  --viz-opens:     var(--border-strong);
+  --viz-grid:      var(--border);
+
+  /* Sidebar */
+  --sb-width: 260px;
+  --sb-width-collapsed: 76px;
+  --sb-bg:        var(--bg-surface);
+  --sb-border:    var(--border);
+  --sb-fg:        var(--text-secondary);
+  --sb-fg-active: var(--text-primary);
+  --sb-active-bg: var(--accent-wash);
+}
+
+/* Primary action: Forrest fill + Volt label on light, inverted on dark. */
+[data-theme="light"] {
+  --btn-primary-bg:       var(--forrest);
+  --btn-primary-fg:       var(--volt);
+  --btn-primary-bg-hover: color-mix(in srgb, var(--forrest) 86%, #fff);
+}
+[data-theme="dark"] {
+  --btn-primary-bg:       var(--volt);
+  --btn-primary-fg:       var(--ink, #1a1a1a);
+  --btn-primary-bg-hover: color-mix(in srgb, var(--volt) 86%, #fff);
+}
+
+::selection { background: var(--volt); color: #1a1a1a; }
 
 /* ── Base ───────────────────────────────────────────────────────────────── */
 
 html {
   font-family: var(--font-ui);
   letter-spacing: -0.015em; /* Inter Tight at -1% per the DS body spec */
-  color: var(--fg-1);
-  background: var(--linen);
+  color: var(--text-primary);
+  background: var(--bg-canvas);
   /* The page never scrolls horizontally — wide content (tables, canvases)
      scrolls inside its own container. Clipping on html propagates to the
      viewport, so position: sticky keeps working. */
@@ -223,7 +304,7 @@ button, input, select, textarea, optgroup {
 
 /* Focus: 2px ring at 2px offset on every interactive element, both modes. */
 :focus-visible {
-  outline: 2px solid var(--ring-color);
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
 
@@ -234,19 +315,45 @@ button, input, select, textarea, optgroup {
   font-size: 10px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--fg-3);
+  color: var(--text-muted);
   font-weight: 400;
 }
 
-/* Headings are Kurdis Extra Wide Extra Bold, UPPERCASE, -3% tracking. The
-   face is broad and heavy, so sizes are compressed. */
+/* Headings are SENTENCE CASE — the DS reserves ALL CAPS for the small-label
+   treatment (.sp-eyebrow) only, never for headings or emphasis.
+
+   The face follows the type STEP, not the role: Extra Bold Ultra Expanded
+   (800) carries Display–H2, and H3 and below drop to the Variable cut at
+   700. Product chrome runs a compressed scale, so a page title sits at the
+   H4 step and therefore takes the Variable cut. */
 .sp-page-title {
-  font-family: var(--font-display);
-  font-size: 20px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: -0.03em;
-  color: var(--ink);
+  font-family: var(--font-head-sm);
+  font-size: var(--type-h4-size);
+  line-height: var(--type-h4-lh);
+  font-weight: var(--weight-head-sm);
+  letter-spacing: var(--type-h4-track);
+  color: var(--text-primary);
+}
+
+/* Brand moments — the onboarding and sign-in front doors. These are the only
+   places in the app that reach the H2 step, which is where Ultra Expanded
+   belongs. */
+.sp-hero-title {
+  font-family: var(--font-head);
+  font-size: var(--type-h2-size);
+  line-height: var(--type-h2-lh);
+  font-weight: var(--weight-head);
+  letter-spacing: var(--type-h2-track);
+}
+
+/* Section and dialog headings — the H3-and-below band. */
+.sp-section-title {
+  font-family: var(--font-head-sm);
+  font-size: var(--type-cardtitle-size);
+  line-height: var(--type-cardtitle-lh);
+  font-weight: var(--weight-head-sm);
+  letter-spacing: var(--type-cardtitle-track);
+  color: var(--text-primary);
 }
 
 .sp-panel-title {
@@ -254,7 +361,7 @@ button, input, select, textarea, optgroup {
   font-size: 14px;
   font-weight: 500;
   letter-spacing: -0.01em;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .sp-btn {
@@ -264,7 +371,7 @@ button, input, select, textarea, optgroup {
   letter-spacing: -0.02em;
   min-height: 38px;
   padding: 8px 16px;
-  border-radius: var(--radius-button);
+  border-radius: var(--radius-control);
   border: 1px solid transparent;
   cursor: pointer;
   display: inline-flex;
@@ -276,11 +383,11 @@ button, input, select, textarea, optgroup {
 .sp-btn:disabled { opacity: 0.4; cursor: default; }
 .sp-btn-primary { background: var(--btn-primary-bg); color: var(--btn-primary-fg); }
 .sp-btn-primary:hover:not(:disabled) { background: var(--btn-primary-bg-hover); }
-.sp-btn-ghost { background: transparent; color: var(--fg-2); border-color: var(--hairline-strong); }
-.sp-btn-ghost:hover:not(:disabled) { background: var(--paper-warm); color: var(--fg-1); }
+.sp-btn-ghost { background: transparent; color: var(--text-secondary); border-color: var(--border-strong); }
+.sp-btn-ghost:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-primary); }
 /* Lime CTA — same fill both modes; deep green carries the text */
-.sp-btn-solar { background: #caff5f; color: #122407; }
-.sp-btn-solar:hover:not(:disabled) { background: color-mix(in srgb, #caff5f 86%, #fff); }
+.sp-btn-solar { background: var(--volt); color: var(--text-on-accent); }
+.sp-btn-solar:hover:not(:disabled) { background: color-mix(in srgb, var(--volt) 86%, #fff); }
 
 .sp-input {
   font-family: var(--font-ui);
@@ -288,30 +395,30 @@ button, input, select, textarea, optgroup {
   letter-spacing: -0.015em;
   width: 100%;
   padding: 9px 12px;
-  border-radius: var(--radius-input);
-  background: var(--lift);
-  border: 1px solid var(--hairline);
-  color: var(--ink);
+  border-radius: var(--radius-control);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
   outline: none;
   transition: box-shadow var(--dur-state) var(--ease), border-color var(--dur-state) var(--ease);
 }
-.sp-input::placeholder { color: var(--fg-4); }
+.sp-input::placeholder { color: var(--text-disabled); }
 .sp-input:focus { border-color: transparent; box-shadow: var(--focus-ring-tight); }
 
 .sp-card {
-  background: var(--lift);
-  border: 1px solid var(--hairline);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
   border-radius: var(--radius-card);
-  box-shadow: var(--shadow-e1);
+  box-shadow: var(--shadow-sm);
 }
 
-/* Brand-moment surface (hero headers, identity chips). Flat deep green with
-   lime as the voice — the old warm mesh + noise treatment is gone. */
+/* Brand-moment surface (hero headers, identity chips). Flat Forrest with
+   Volt as the voice — the DS bans gradients as a surface treatment. */
 .sp-mesh {
-  background: #122407;
-  color: #f2f3ef;
+  background: var(--brand-surface);
+  color: var(--white);
 }
-.sp-mesh .sp-eyebrow { color: #caff5f; }
+.sp-mesh .sp-eyebrow { color: var(--brand-surface-fg); }
 
 /* Toast — floating card with the DS's 3px semantic top bar. */
 .sp-toast {
@@ -326,14 +433,14 @@ button, input, select, textarea, optgroup {
   min-width: 260px;
   max-width: min(92vw, 420px);
   padding: 12px 16px;
-  background: var(--lift);
-  border: 1px solid var(--hairline);
-  border-top: 3px solid var(--success);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--state-primary);
   border-radius: 10px;
-  box-shadow: var(--shadow-e3);
+  box-shadow: var(--shadow-md);
   animation: sp-toast-in var(--dur-panel) var(--ease);
 }
-.sp-toast[data-tone="danger"] { border-top-color: var(--danger); }
+.sp-toast[data-tone="danger"] { border-top-color: var(--state-danger); }
 @keyframes sp-toast-in {
   from { opacity: 0; transform: translateX(-50%) translateY(8px); }
 }
@@ -343,7 +450,7 @@ button, input, select, textarea, optgroup {
   background: var(--sb-bg);
   border: 1px solid var(--sb-border);
   border-radius: var(--radius-card);
-  box-shadow: var(--sb-shadow);
+  box-shadow: var(--shadow-sm);
 }
 .sp-sidebar-item {
   display: flex;
@@ -352,7 +459,7 @@ button, input, select, textarea, optgroup {
   width: 100%;
   height: 40px;
   padding: 0 10px;
-  border-radius: var(--radius-button);
+  border-radius: var(--radius-control);
   border: 1px solid transparent;
   font-size: 14px;
   font-weight: 500;
@@ -362,7 +469,7 @@ button, input, select, textarea, optgroup {
   white-space: nowrap;
   overflow: hidden;
 }
-.sp-sidebar-item:hover { background: var(--paper-warm); color: var(--sb-fg-active); }
+.sp-sidebar-item:hover { background: var(--bg-hover); color: var(--sb-fg-active); }
 .sp-sidebar-item[data-active="true"] {
   background: var(--sb-active-bg);
   border-color: var(--sb-active-border);
@@ -373,15 +480,14 @@ button, input, select, textarea, optgroup {
    Tokens for the design-canvas overlay: selection outlines, Moveable
    transform controls, label chips, and the dimension badge. The chrome
    paints over the template canvas — which stays paper-white in both app
-   themes — so the accent holds a single value; both theme blocks declare it
-   the way the --sb-* sidebar tokens do. */
+   themes — so the accent holds a single value in both.
+
+   Forrest, not the old Figma blue: the DS allows no sixth hue in platform
+   chrome, and Volt would disappear against a paper-white canvas. */
 :root {
-  --editor-accent: #0d99ff;
+  --editor-accent: #083b27;
   --editor-line: 1px;
   --editor-handle: 7px;
-}
-.dark {
-  --editor-accent: #0d99ff;
 }
 
 /* Scoped to the builder canvas so a future Moveable elsewhere keeps its own
@@ -419,7 +525,7 @@ button, input, select, textarea, optgroup {
 /* --- Mobile nav toggle -----------------------------------------------------
    Three bars that morph into an X. Movement only (stagger, hover width
    pulse, sprung rotation, reduced-motion fallback); colors and sizing stay
-   in this design system: bars ride currentColor, flipping to --solar when
+   in this design system: bars ride currentColor, flipping to --state-primary when
    open. Hover rules come BEFORE open rules on purpose — the open state
    resets bar widths at equal specificity via source order. */
 .sp-nav-toggle__bar {
@@ -446,7 +552,7 @@ button, input, select, textarea, optgroup {
 
 /* Open — morph to X */
 .sp-nav-toggle[data-open="true"] .sp-nav-toggle__bar {
-  background: var(--solar);
+  background: var(--state-primary);
   width: 16px; /* reset the hover pulse */
 }
 .sp-nav-toggle[data-open="true"] .sp-nav-toggle__bar--top {
@@ -468,8 +574,8 @@ button, input, select, textarea, optgroup {
 /* --- Upload interactions ---------------------------------------------------
    Shared motion for every file-upload surface (drop zones, file chips,
    upload progress). Interaction pattern from the BYQ drop-zone gem; colors,
-   type, and radii stay in this design system (--solar for the drag "pop",
-   --success for done, --danger for remove). */
+   type, and radii stay in this design system (--state-primary for the drag "pop",
+   --state-primary for done, --state-danger for remove). */
 .sp-dropzone {
   transform: scale(1);
   transition:
@@ -480,11 +586,11 @@ button, input, select, textarea, optgroup {
     box-shadow 0.35s ease;
 }
 .sp-dropzone[data-active="true"] {
-  border-color: var(--solar) !important;
+  border-color: var(--state-primary) !important;
   transform: scale(1.02);
   box-shadow:
-    inset 0 0 32px 0 color-mix(in srgb, var(--solar) 10%, transparent),
-    0 0 0 1px color-mix(in srgb, var(--solar) 20%, transparent);
+    inset 0 0 32px 0 color-mix(in srgb, var(--state-primary) 10%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--state-primary) 20%, transparent);
 }
 .sp-dropzone__icon {
   transform: translateY(0);
@@ -522,14 +628,14 @@ button, input, select, textarea, optgroup {
   height: 3px;
   border-radius: 99px;
   overflow: hidden;
-  background: color-mix(in srgb, var(--hairline-strong) 80%, transparent);
+  background: color-mix(in srgb, var(--border-strong) 80%, transparent);
 }
 .sp-upload-bar {
   position: absolute;
   inset: 0;
   border-radius: 99px;
-  background: var(--solar);
-  box-shadow: 0 0 6px 0 color-mix(in srgb, var(--solar) 55%, transparent);
+  background: var(--state-primary);
+  box-shadow: 0 0 6px 0 color-mix(in srgb, var(--state-primary) 55%, transparent);
 }
 .sp-upload-bar::after {
   content: "";
@@ -538,7 +644,7 @@ button, input, select, textarea, optgroup {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    color-mix(in srgb, var(--ink) 20%, transparent) 50%,
+    color-mix(in srgb, var(--text-primary) 20%, transparent) 50%,
     transparent 100%
   );
   transform: translateX(-100%);
@@ -602,15 +708,15 @@ button, input, select, textarea, optgroup {
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   border-radius: var(--radius-card-sm);
-  border: 1px solid var(--hairline);
-  background: var(--lift);
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
   overflow: hidden;
-  box-shadow: var(--shadow-e1);
+  box-shadow: var(--shadow-sm);
   transition: box-shadow 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .sp-flipcard-scene:hover .sp-flipcard__face,
 .sp-flipcard-scene:focus-visible .sp-flipcard__face {
-  box-shadow: var(--shadow-e3);
+  box-shadow: var(--shadow-md);
 }
 .sp-flipcard__face--front {
   position: relative;
@@ -668,7 +774,7 @@ button, input, select, textarea, optgroup {
   width: 32px;
   height: 32px;
   border-radius: 999px;
-  background: var(--paper-warm);
+  background: var(--bg-hover);
   color: var(--sb-fg);
   border: none;
   flex-shrink: 0;
@@ -678,12 +784,15 @@ button, input, select, textarea, optgroup {
 /* Content-panel card padding (Insights, Brand Studio, Settings, People). */
 .sp-card--content { padding: 24px; }
 
-/* Media card: 10px uniform padding; the preview is its own inset surface. */
+/* Media card: 10px uniform padding; the preview is its own inset surface.
+   The frame is square — most templates are 1:1 social posts, so a square
+   well crops the least and keeps the grid rows even. Both call sites compare
+   a template's own ratio against 1 to decide which axis to pin. */
 .sp-media-card { padding: 10px; }
 .sp-media-card__preview {
   border-radius: 12px;
-  aspect-ratio: 4 / 3;
-  background: var(--paper-warm);
+  aspect-ratio: 1 / 1;
+  background: var(--bg-hover);
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -691,16 +800,18 @@ button, input, select, textarea, optgroup {
   width: 100%;
 }
 
-/* Media card grid: 24px gap; 4 / 3 / 2 / 1 columns. */
+/* Media card grid: 24px gap; 4 / 3 / 2 / 1 columns. minmax(0, 1fr), not 1fr
+   — a plain 1fr track can't go below its card's min-content, so one card
+   with a wide title row steals width from the rest of the row. */
 .sp-grid-media {
   display: grid;
   gap: 24px;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   align-items: stretch;
 }
-@media (min-width: 720px)  { .sp-grid-media { grid-template-columns: repeat(2, 1fr); } }
-@media (min-width: 1100px) { .sp-grid-media { grid-template-columns: repeat(3, 1fr); } }
-@media (min-width: 1440px) { .sp-grid-media { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 720px)  { .sp-grid-media { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1100px) { .sp-grid-media { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 1440px) { .sp-grid-media { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 
 /* Content-panel grid: 12 columns, same 24px gap. */
 .sp-grid-12 {
@@ -720,6 +831,242 @@ button, input, select, textarea, optgroup {
 /* Brand templates: the flip back is a brand-moment surface (deep green,
    lime voice) — the double class outweighs the face's default lift fill. */
 .sp-flipcard__face--back.sp-mesh {
-  background: #122407;
-  border-color: #122407;
+  background: var(--brand-surface);
+  border-color: var(--brand-surface);
+}
+
+/* --- Brand swatch ---------------------------------------------------------
+   The quick-select chip in ColorControl's brand row. One recipe so every
+   colour surface — canvas background, field fill, gradient stops — offers the
+   palette the same way. */
+.sp-swatch {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  border: 2px solid var(--border);
+  cursor: pointer;
+  padding: 0;
+  transition: transform var(--dur-state) var(--ease), border-color var(--dur-state) var(--ease);
+}
+.sp-swatch:hover:not(:disabled) { transform: scale(1.12); }
+.sp-swatch:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-tight);
+}
+.sp-swatch[data-selected="true"] { border-color: var(--ring); }
+.sp-swatch:disabled { cursor: default; opacity: 0.5; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sp-swatch:hover:not(:disabled) { transform: none; }
+}
+
+/* --- Inline edit ----------------------------------------------------------
+   Click-to-edit-in-place: a value reads as plain text with a pencil that
+   fades in on hover/focus, then swaps to a pre-filled input with save and
+   cancel buttons. Enter saves, Escape cancels, a lime flash confirms.
+
+   The interaction model and every timing value are lifted from the BYQ
+   Supply "InlineEdit" gem; the colors, type, radii and focus ring are ours.
+   Timings are literal (0.15s / 0.18s / 0.13s / 0.7s) rather than
+   --dur-state because they are the effect — reduced motion is handled by
+   the block at the bottom, not by re-tokenizing them. */
+
+/* Stacked card of labelled rows (the group presentation). */
+.sp-inline-edit-group {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.sp-inline-edit-group .sp-inline-edit {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.sp-inline-edit-group .sp-inline-edit:last-child { border-bottom: none; }
+
+/* One editable value. Standalone (outside a group) it carries no chrome, so
+   it drops into a toolbar or a card title without disturbing the layout. */
+.sp-inline-edit {
+  position: relative;
+  min-width: 0;
+}
+
+.sp-inline-edit__label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+  user-select: none;
+}
+
+/* ── Display row (value + pencil) ── */
+.sp-inline-edit__row {
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.sp-inline-edit__display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  min-width: 0;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  text-align: left;
+  border-radius: var(--radius-control);
+  padding: 2px 4px;
+  margin: 0 -4px;
+  color: inherit;
+  font: inherit;
+  transition: background 0.15s ease;
+}
+
+.sp-inline-edit__display:hover,
+.sp-inline-edit__display:focus-visible {
+  background: var(--bg-hover);
+}
+
+.sp-inline-edit__display:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-tight);
+}
+
+.sp-inline-edit__value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sp-inline-edit__icon {
+  display: flex;
+  align-items: center;
+  opacity: 0;
+  color: var(--text-muted);
+  transition: opacity 0.18s ease;
+  flex-shrink: 0;
+}
+
+.sp-inline-edit__display:hover .sp-inline-edit__icon,
+.sp-inline-edit__display:focus-visible .sp-inline-edit__icon {
+  opacity: 1;
+}
+
+/* ── Edit row (input + save/cancel) ── */
+.sp-inline-edit__edit-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  min-width: 0;
+}
+
+/* width:0 alongside flex — an <input> otherwise reports its `size`-derived
+   width as its min-content contribution, which widens the grid track the
+   card sits in and makes the card jump the moment editing opens. */
+.sp-inline-edit__input {
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
+  font: inherit;
+  font-family: var(--font-ui);
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  padding: 3px 8px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sp-inline-edit__input:focus {
+  border-color: transparent;
+  box-shadow: var(--focus-ring-tight);
+}
+
+.sp-inline-edit__save,
+.sp-inline-edit__cancel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  transition: background 0.13s ease, color 0.13s ease;
+}
+
+/* Save wears the DS primary construction: deep green + lime on light, the
+   inverse on dark. */
+.sp-inline-edit__save {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+}
+.sp-inline-edit__save:hover { background: var(--btn-primary-bg-hover); }
+
+.sp-inline-edit__cancel {
+  background: var(--bg-hover);
+  color: var(--text-muted);
+}
+.sp-inline-edit__cancel:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.sp-inline-edit__save:focus-visible,
+.sp-inline-edit__cancel:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-tight);
+}
+
+/* ── Confirm flash ──
+   Literal rgba of --volt (#BCFF78), not color-mix: Chrome drops the alpha
+   when it interpolates a color-mix()'d color() inside a keyframe, which
+   turns the wash into a solid lime bar. */
+@keyframes sp-inline-edit-flash {
+  0%   { background-color: rgba(188, 255, 120, 0.18); }
+  60%  { background-color: rgba(188, 255, 120, 0.12); }
+  100% { background-color: rgba(188, 255, 120, 0); }
+}
+
+.sp-inline-edit[data-flash="true"] {
+  animation: sp-inline-edit-flash 0.7s ease forwards;
+}
+
+/* Visually hidden announcement region. */
+.sp-inline-edit__live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sp-inline-edit__display,
+  .sp-inline-edit__icon,
+  .sp-inline-edit__input,
+  .sp-inline-edit__save,
+  .sp-inline-edit__cancel {
+    transition-duration: 0.001ms;
+  }
+  /* The confirm still has to register — it just holds still and clears on a
+     timer instead of animating out. */
+  .sp-inline-edit[data-flash="true"] {
+    animation: none;
+    background-color: rgba(188, 255, 120, 0.12);
+  }
 }

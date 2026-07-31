@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { useRouter } from "../../router";
 import { Page, PageHeader } from "../layout/Page";
 import { ConfirmDialog } from "../ConfirmDialog";
+import { InlineEdit } from "../InlineEdit";
 import { ErrorState } from "../ErrorState";
 import { TemplateThumbnail } from "../TemplateThumbnail";
 
@@ -85,6 +86,8 @@ export function AdminTemplates() {
 
   /** Template pending delete confirmation. */
   const [deleting, setDeleting] = useState<TemplateSchema | null>(null);
+  /** Template whose name is open for inline rename. */
+  const [renaming, setRenaming] = useState<string | null>(null);
 
   const confirmDelete = async () => {
     if (!deleting) return;
@@ -96,6 +99,19 @@ export function AdminTemplates() {
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(toastTimer.current), []);
+
+  /** Rename from the card. Throws on failure so the inline editor rolls the
+   *  name back instead of showing a change that never landed. */
+  const renameTemplate = async (t: TemplateSchema, name: string) => {
+    try {
+      await stores.templates.update(t.id, { name });
+      reload();
+    } catch (e) {
+      setToast("Couldn't rename. Try again.");
+      toastTimer.current = window.setTimeout(() => setToast(null), 4000);
+      throw e;
+    }
+  };
 
   const duplicateTemplate = async (t: TemplateSchema) => {
     // "<name> copy", then "<name> copy 2", 3, … on collision.
@@ -123,8 +139,8 @@ export function AdminTemplates() {
     <Page>
       {toast && (
         <div className="sp-toast" role="status" aria-live="polite">
-          <CheckCircle2 style={{ width: 16, height: 16, color: "var(--success)", flexShrink: 0, marginTop: 1 }} />
-          <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>{toast}</span>
+          <CheckCircle2 style={{ width: 16, height: 16, color: "var(--state-primary)", flexShrink: 0, marginTop: 1 }} />
+          <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>{toast}</span>
         </div>
       )}
       <ConfirmDialog
@@ -151,7 +167,7 @@ export function AdminTemplates() {
           <div className="relative" style={{ width: 420, maxWidth: "100%" }}>
             <Search
               className="absolute"
-              style={{ left: 12, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: "var(--fg-3)", zIndex: 1 }}
+              style={{ left: 12, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: "var(--text-muted)", zIndex: 1 }}
             />
             <input
               type="text"
@@ -167,7 +183,7 @@ export function AdminTemplates() {
             className="flex rounded-lg overflow-hidden"
             role="group"
             aria-label="Filter by status"
-            style={{ border: "1px solid var(--hairline-strong)", height: 40 }}
+            style={{ border: "1px solid var(--border-strong)", height: 40 }}
           >
             {(
               [
@@ -184,8 +200,8 @@ export function AdminTemplates() {
                 style={{
                   fontSize: 12,
                   ...(statusFilter === key
-                    ? { background: "var(--ink)", color: "var(--fg-on-dark-1)" }
-                    : { background: "var(--lift)", color: "var(--fg-2)" }),
+                    ? { background: "var(--text-primary)", color: "var(--text-on-accent)" }
+                    : { background: "var(--bg-surface)", color: "var(--text-secondary)" }),
                 }}
               >
                 {label}
@@ -207,7 +223,7 @@ export function AdminTemplates() {
       )}
 
       {templatesState.status === "loading" ? (
-        <p className="text-center py-20" style={{ fontSize: 13, color: "var(--fg-3)" }}>Loading…</p>
+        <p className="text-center py-20" style={{ fontSize: 13, color: "var(--text-muted)" }}>Loading…</p>
       ) : templatesState.status === "error" ? (
         <ErrorState
           title="We couldn't load your templates."
@@ -217,17 +233,17 @@ export function AdminTemplates() {
       ) : templates.length === 0 ? (
         <div
           className="text-center py-24"
-          style={{ border: "1.5px dashed var(--hairline-strong)", borderRadius: "var(--radius-card)" }}
+          style={{ border: "1.5px dashed var(--border-strong)", borderRadius: "var(--radius-card)" }}
         >
-          <p style={{ fontFamily: "var(--font-display)", fontWeight: 800, textTransform: "uppercase" as const, fontSize: 16, color: "var(--ink)", marginBottom: 6 }}>
+          <p style={{ fontFamily: "var(--font-head-sm)", fontWeight: 700, fontSize: 16, color: "var(--text-primary)", marginBottom: 6 }}>
             Create your first template
           </p>
-          <p className="max-w-md mx-auto" style={{ fontSize: 13, color: "var(--fg-2)" }}>
+          <p className="max-w-md mx-auto" style={{ fontSize: 13, color: "var(--text-secondary)" }}>
             Upload a PNG or import a Figma frame, map the editable fields, and publish it for your team.
           </p>
         </div>
       ) : visible.length === 0 ? (
-        <p className="text-center py-20" style={{ fontSize: 14, color: "var(--fg-2)" }}>
+        <p className="text-center py-20" style={{ fontSize: 14, color: "var(--text-secondary)" }}>
           {query.trim()
             ? "No templates match that search."
             : statusFilter === "draft"
@@ -255,7 +271,9 @@ export function AdminTemplates() {
                 <div
                   style={{
                     aspectRatio: `${t.canvasWidth} / ${t.canvasHeight}`,
-                    ...(t.canvasWidth / t.canvasHeight >= 4 / 3 ? { width: "100%" } : { height: "100%" }),
+                    // Contain, unlike the member gallery: an admin needs to see
+                    // the whole artwork, so pin the LONG axis and letterbox.
+                    ...(t.canvasWidth / t.canvasHeight >= 1 ? { width: "100%" } : { height: "100%" }),
                   }}
                 >
                   <TemplateThumbnail template={t} />
@@ -264,34 +282,49 @@ export function AdminTemplates() {
               <div style={{ padding: "12px 2px 4px" }}>
                 {/* Line 1: title + icon action row on the same line */}
                 <div className="flex items-center" style={{ gap: 8 }}>
-                  <p className="truncate flex-1 min-w-0" style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)" }}>{t.name}</p>
-                  <button style={iconBtn} onClick={() => void toggleStatus(t)} title={t.status === "published" ? "Unpublish" : "Publish"}>
-                    {t.status === "published" ? (
-                      <EyeOff style={{ width: 16, height: 16, color: "var(--fg-3)" }} />
-                    ) : (
-                      <Eye style={{ width: 16, height: 16, color: "var(--solar)" }} />
-                    )}
-                  </button>
-                  <button style={iconBtn} onClick={() => navigate({ name: "builder", templateId: t.id })} title="Edit">
-                    <Pencil style={{ width: 16, height: 16, color: "var(--fg-3)" }} />
-                  </button>
-                  <button style={iconBtn} onClick={() => void duplicateTemplate(t)} title="Duplicate">
-                    <Copy style={{ width: 16, height: 16, color: "var(--fg-3)" }} />
-                  </button>
-                  <button style={iconBtn} onClick={() => setDeleting(t)} title="Delete">
-                    <Trash2 style={{ width: 16, height: 16, color: "var(--danger)" }} />
-                  </button>
+                  <InlineEdit
+                    className="flex-1 min-w-0"
+                    value={t.name}
+                    ariaLabel={`Rename ${t.name}`}
+                    inputAriaLabel="Template name"
+                    placeholder="Untitled template"
+                    valueStyle={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}
+                    onSave={(name) => renameTemplate(t, name)}
+                    onEditingChange={(on) => setRenaming(on ? t.id : null)}
+                  />
+                  {/* The rename input needs the whole line — four 32px icons
+                      would squeeze it down to a couple of characters. */}
+                  {renaming !== t.id && (
+                    <>
+                      <button style={iconBtn} onClick={() => void toggleStatus(t)} title={t.status === "published" ? "Unpublish" : "Publish"}>
+                        {t.status === "published" ? (
+                          <EyeOff style={{ width: 16, height: 16, color: "var(--text-muted)" }} />
+                        ) : (
+                          <Eye style={{ width: 16, height: 16, color: "var(--state-primary)" }} />
+                        )}
+                      </button>
+                      <button style={iconBtn} onClick={() => navigate({ name: "builder", templateId: t.id })} title="Edit">
+                        <Pencil style={{ width: 16, height: 16, color: "var(--text-muted)" }} />
+                      </button>
+                      <button style={iconBtn} onClick={() => void duplicateTemplate(t)} title="Duplicate">
+                        <Copy style={{ width: 16, height: 16, color: "var(--text-muted)" }} />
+                      </button>
+                      <button style={iconBtn} onClick={() => setDeleting(t)} title="Delete">
+                        <Trash2 style={{ width: 16, height: 16, color: "var(--state-danger)" }} />
+                      </button>
+                    </>
+                  )}
                 </div>
                 {/* Line 2: status */}
                 <span
                   className="sp-eyebrow inline-block"
-                  style={t.status === "published" ? { color: "var(--success)" } : undefined}
+                  style={t.status === "published" ? { color: "var(--state-primary)" } : undefined}
                 >
                   {t.status}
                 </span>
                 {/* Line 3: meta */}
                 {usageState.status === "ready" && (
-                  <p style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 2 }}>
+                  <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
                     {(() => {
                       const u = usageByTemplate.get(t.id);
                       if (!u || u.downloads === 0) return "Not used yet";

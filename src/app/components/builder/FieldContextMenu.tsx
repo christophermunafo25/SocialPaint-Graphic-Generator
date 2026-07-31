@@ -45,10 +45,10 @@ export function FieldContextMenu({ x, y, actions, onClose }: FieldContextMenuPro
         left,
         top,
         minWidth: 180,
-        background: "var(--lift)",
-        border: "1px solid var(--hairline-strong)",
+        background: "var(--bg-surface)",
+        border: "1px solid var(--border-strong)",
         borderRadius: 10,
-        boxShadow: "var(--shadow-e3, 0 8px 24px rgba(26,23,26,0.16))",
+        boxShadow: "var(--shadow-md, 0 8px 24px rgba(26,23,26,0.16))",
       }}
       onContextMenu={(e) => e.preventDefault()}
     >
@@ -63,12 +63,12 @@ export function FieldContextMenu({ x, y, actions, onClose }: FieldContextMenuPro
           className="w-full flex items-center justify-between gap-6 px-3 py-1.5 text-left"
           style={{
             fontSize: 12.5,
-            color: a.destructive ? "var(--destructive)" : "var(--ink)",
+            color: a.destructive ? "var(--destructive)" : "var(--text-primary)",
             opacity: a.disabled ? 0.4 : 1,
             cursor: a.disabled ? "default" : "pointer",
           }}
           onMouseEnter={(e) => {
-            if (!a.disabled) (e.currentTarget as HTMLElement).style.background = "var(--paper)";
+            if (!a.disabled) (e.currentTarget as HTMLElement).style.background = "var(--bg-raised)";
           }}
           onMouseLeave={(e) => {
             (e.currentTarget as HTMLElement).style.background = "transparent";
@@ -76,7 +76,7 @@ export function FieldContextMenu({ x, y, actions, onClose }: FieldContextMenuPro
         >
           {a.label}
           {a.shortcut && (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-3)" }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text-muted)" }}>
               {a.shortcut}
             </span>
           )}

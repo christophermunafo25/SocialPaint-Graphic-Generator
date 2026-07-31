@@ -44,10 +44,10 @@ export function FieldListPanel({ fields, selectedIds, onSelect, onReorder, onCon
     <div className="sp-card p-3 space-y-2">
       <div className="flex items-baseline justify-between">
         <h3 className="sp-eyebrow">Form order</h3>
-        <span style={{ fontSize: 10, color: "var(--fg-3)" }}>The order your team fills these in.</span>
+        <span style={{ fontSize: 10, color: "var(--text-muted)" }}>The order your team fills these in.</span>
       </div>
       {fields.length === 0 ? (
-        <p className="py-4 text-center" style={{ fontSize: 12, color: "var(--fg-3)" }}>
+        <p className="py-4 text-center" style={{ fontSize: 12, color: "var(--text-muted)" }}>
           No fields yet — drag an element onto the canvas.
         </p>
       ) : (
@@ -94,40 +94,40 @@ export function FieldListPanel({ fields, selectedIds, onSelect, onReorder, onCon
                 className="flex items-center gap-2 px-2 py-2 cursor-pointer"
                 style={{
                   borderRadius: 8,
-                  border: `1px solid ${isSelected ? "var(--solar)" : "var(--hairline)"}`,
+                  border: `1px solid ${isSelected ? "var(--state-primary)" : "var(--border)"}`,
                   background: isSelected
                     ? "var(--accent-wash)"
                     : overIndex === i && dragIndex.current !== null
-                      ? "var(--paper)"
-                      : "var(--lift)",
+                      ? "var(--bg-raised)"
+                      : "var(--bg-surface)",
                 }}
               >
                 <GripVertical
-                  style={{ width: 13, height: 13, color: "var(--fg-4)", flexShrink: 0, cursor: "grab" }}
+                  style={{ width: 13, height: 13, color: "var(--text-disabled)", flexShrink: 0, cursor: "grab" }}
                 />
                 <span
                   className="flex items-center"
                   style={{
                     fontFamily: "var(--font-mono)",
                     fontSize: 10,
-                    color: "var(--fg-3)",
+                    color: "var(--text-muted)",
                     width: 16,
                     flexShrink: 0,
                   }}
                 >
                   {stepNo === null ? (
-                    <Pin style={{ width: 11, height: 11, color: "var(--solar)" }} />
+                    <Pin style={{ width: 11, height: 11, color: "var(--state-primary)" }} />
                   ) : (
                     String(stepNo).padStart(2, "0")
                   )}
                 </span>
-                <Icon style={{ width: 13, height: 13, color: "var(--fg-3)", flexShrink: 0 }} />
-                <span className="flex-1 truncate" style={{ fontSize: 12.5, color: "var(--ink)" }}>
+                <Icon style={{ width: 13, height: 13, color: "var(--text-muted)", flexShrink: 0 }} />
+                <span className="flex-1 truncate" style={{ fontSize: 12.5, color: "var(--text-primary)" }}>
                   {f.label}
                 </span>
                 <span
                   className="truncate"
-                  style={{ fontFamily: "var(--font-mono)", fontSize: 9.5, color: "var(--fg-4)", maxWidth: 90 }}
+                  style={{ fontFamily: "var(--font-mono)", fontSize: 9.5, color: "var(--text-disabled)", maxWidth: 90 }}
                 >
                   {f.static ? "fixed" : `{${f.fieldKey}}`}
                 </span>
@@ -137,7 +137,7 @@ export function FieldListPanel({ fields, selectedIds, onSelect, onReorder, onCon
           })()}
         </div>
       )}
-      <p style={{ fontSize: 10.5, color: "var(--fg-3)" }}>
+      <p style={{ fontSize: 10.5, color: "var(--text-muted)" }}>
         Drag to reorder. Layer order — what sits on top on the graphic — is
         separate: use "To front / To back" in the inspector.
       </p>

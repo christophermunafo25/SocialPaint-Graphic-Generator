@@ -2,66 +2,52 @@
 
 :root {
   --font-size: 16px;
-  --background: var(--linen);
-  --foreground: var(--ink);
-  --card: var(--lift);
-  --card-foreground: var(--ink);
-  --popover: var(--lift);
-  --popover-foreground: var(--ink);
-  --primary: var(--ink);
-  --primary-foreground: var(--fg-on-dark-1);
-  --secondary: var(--paper-warm);
-  --secondary-foreground: var(--ink);
-  --muted: var(--paper-warm);
-  --muted-foreground: var(--fg-3);
-  --accent: var(--solar);
-  --accent-foreground: #ffffff;
-  --destructive: var(--danger);
-  --destructive-foreground: #ffffff;
-  --border: var(--hairline);
+  --background: var(--bg-canvas);
+  --foreground: var(--text-primary);
+  --card: var(--bg-surface);
+  --card-foreground: var(--text-primary);
+  --popover: var(--bg-surface);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--text-primary);
+  --primary-foreground: var(--text-on-accent);
+  --secondary: var(--bg-hover);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--bg-hover);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--state-primary);
+  --accent-foreground: var(--text-on-accent);
+  --destructive: var(--state-danger);
+  --destructive-foreground: var(--text-on-accent);
+  /* --border and --ring are design-system token names already — aliasing them
+     here would shadow (and, self-referentially, destroy) the real ones. */
   --input: transparent;
-  --input-background: var(--lift);
-  --switch-background: #cbced4;
+  --input-background: var(--bg-surface);
+  --switch-background: var(--border-strong);
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: var(--solar);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: #030213;
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* Charts draw from the five-colour palette; there is no third hue to give,
+     so a third series has to separate by shape or label, not colour. */
+  --chart-1: var(--viz-downloads);
+  --chart-2: var(--viz-opens);
+  --chart-3: var(--border-strong);
+  --chart-4: var(--text-muted);
+  --chart-5: var(--border);
+  /* Crisp controls — the soft 20px belongs to cards (.sp-card), and the DS
+     forbids the two meeting in the middle. */
+  --radius: var(--radius-control);
+  --sidebar: var(--sb-bg);
+  --sidebar-foreground: var(--sb-fg-active);
+  --sidebar-primary: var(--state-primary);
+  --sidebar-primary-foreground: var(--text-on-accent);
+  --sidebar-accent: var(--bg-hover);
+  --sidebar-accent-foreground: var(--text-primary);
+  --sidebar-border: var(--sb-border);
+  --sidebar-ring: var(--ring);
 }
 
-/* Dark mode: the :root mappings above reference SocialPaint tokens, which
-   flip inside socialpaint.css's own `.dark` block — so surfaces, text, and
-   borders re-theme automatically. Only literals that don't route through a
-   SocialPaint token need explicit dark values here. */
-.dark {
-  --input-background: var(--lift);
-  --switch-background: #4a464b;
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: var(--lift);
-  --sidebar-foreground: var(--ink);
-  --sidebar-primary: var(--solar);
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: var(--paper-warm);
-  --sidebar-accent-foreground: var(--ink);
-  --sidebar-border: var(--hairline);
-  --sidebar-ring: var(--solar);
-}
+/* Every mapping above resolves through a design-system semantic token, and
+   those flip inside socialpaint.css's [data-theme] blocks — so surfaces,
+   text, borders, and charts re-theme with no dark-mode overrides here. */
 
 @theme inline {
   --color-background: var(--background);

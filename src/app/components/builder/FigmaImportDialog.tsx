@@ -66,11 +66,11 @@ export function FigmaImportDialog({ onClose, onImported }: FigmaImportDialogProp
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="w-full max-w-lg p-6 space-y-4" style={{ background: "var(--lift)", borderRadius: "var(--radius-card)", boxShadow: "var(--shadow-e4)" }}
+        className="w-full max-w-lg p-6 space-y-4" style={{ background: "var(--bg-surface)", borderRadius: "var(--radius-card)", boxShadow: "var(--shadow-md)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <h2 className="flex items-center gap-2" style={{ fontFamily: "var(--font-display)", fontWeight: 800, textTransform: "uppercase" as const, fontSize: 17, letterSpacing: "-0.3px", color: "var(--ink)" }}>
+          <h2 className="flex items-center gap-2" style={{ fontFamily: "var(--font-head-sm)", fontWeight: 700, fontSize: 17, letterSpacing: "-0.3px", color: "var(--text-primary)" }}>
             <Figma className="w-5 h-5" />
             Import from Figma
           </h2>
@@ -128,12 +128,12 @@ export function FigmaImportDialog({ onClose, onImported }: FigmaImportDialogProp
         )}
 
         {error && (
-          <p className="text-sm rounded-xl px-4 py-3" style={{ background: "var(--fill-danger-bg)", color: "var(--destructive)" }}>
+          <p className="text-sm rounded-xl px-4 py-3" style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}>
             {error}
           </p>
         )}
         {warnings.map((w) => (
-          <p key={w} className="rounded-lg px-3 py-2" style={{ fontSize: 12, background: "var(--paper-warm)", color: "var(--fg-2)" }}>
+          <p key={w} className="rounded-lg px-3 py-2" style={{ fontSize: 12, background: "var(--bg-hover)", color: "var(--text-secondary)" }}>
             {w}
           </p>
         ))}

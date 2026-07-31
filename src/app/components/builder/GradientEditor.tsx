@@ -27,7 +27,7 @@ export function GradientEditor({
   const enabled = Boolean(gradient);
   return (
     <div className="space-y-2">
-      <label className="flex items-center gap-2" style={{ fontSize: 13, color: "var(--ink)" }}>
+      <label className="flex items-center gap-2" style={{ fontSize: 13, color: "var(--text-primary)" }}>
         <input
           type="checkbox"
           disabled={disabled}
@@ -71,7 +71,7 @@ export function GradientEditor({
               {gradient.stops.length > 2 && (
                 <button
                   onClick={() => onChange({ ...gradient, stops: gradient.stops.filter((_, j) => j !== i) })}
-                  style={{ fontSize: 11, color: "var(--fg-3)" }}
+                  style={{ fontSize: 11, color: "var(--text-muted)" }}
                 >
                   Remove
                 </button>
@@ -83,11 +83,11 @@ export function GradientEditor({
               onClick={() =>
                 onChange({ ...gradient, stops: [...gradient.stops, { position: 1, color: "#FFED8C" }] })
               }
-              style={{ fontSize: 11, color: "var(--solar)" }}
+              style={{ fontSize: 11, color: "var(--state-primary)" }}
             >
               + Add stop
             </button>
-            <label className="flex items-center gap-1.5" style={{ fontSize: 11, color: "var(--fg-2)" }}>
+            <label className="flex items-center gap-1.5" style={{ fontSize: 11, color: "var(--text-secondary)" }}>
               Angle
               <input
                 type="number"

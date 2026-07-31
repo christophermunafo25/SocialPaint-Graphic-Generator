@@ -113,7 +113,7 @@ function Section({
 }) {
   const [open, setOpen] = useState(() => readOpen(id, defaultOpen));
   return (
-    <div className="pt-3" style={{ borderTop: "1px solid var(--hairline)" }}>
+    <div className="pt-3" style={{ borderTop: "1px solid var(--border)" }}>
       <div className="flex items-center justify-between" style={{ paddingBottom: open ? 10 : 2 }}>
         <button
           onClick={() => {
@@ -123,12 +123,12 @@ function Section({
           aria-expanded={open}
           className="flex-1 flex items-center justify-between text-left"
         >
-          <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>{title}</span>
+          <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>{title}</span>
           <ChevronDown
             style={{
               width: 13,
               height: 13,
-              color: "var(--fg-3)",
+              color: "var(--text-muted)",
               transform: open ? undefined : "rotate(-90deg)",
               transition: "transform var(--dur-state) var(--ease)",
             }}
@@ -163,7 +163,7 @@ function InlineNum({
       className="sp-input flex items-center gap-2"
       style={{ padding: "7px 10px", cursor: disabled ? "default" : "text", opacity: disabled ? 0.5 : 1 }}
     >
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-4)", flexShrink: 0 }}>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text-disabled)", flexShrink: 0 }}>
         {prefix}
       </span>
       <input
@@ -171,7 +171,7 @@ function InlineNum({
         step={step}
         disabled={disabled}
         className="w-full bg-transparent outline-none border-none"
-        style={{ fontSize: 13, color: "var(--ink)", padding: 0 }}
+        style={{ fontSize: 13, color: "var(--text-primary)", padding: 0 }}
         value={value}
         placeholder={placeholder}
         onChange={(e) => onCommit(e.target.value === "" ? undefined : Number(e.target.value))}
@@ -205,9 +205,9 @@ function IconRow<T extends string>({
             width: 30,
             height: 26,
             border: "1px solid",
-            borderColor: value === key ? "var(--solar)" : "transparent",
+            borderColor: value === key ? "var(--state-primary)" : "transparent",
             background: value === key ? "var(--accent-wash)" : "transparent",
-            color: value === key ? "var(--solar)" : "var(--fg-2)",
+            color: value === key ? "var(--state-primary)" : "var(--text-secondary)",
           }}
         >
           <Icon style={{ width: 14, height: 14 }} />
@@ -376,7 +376,7 @@ export function FieldInspector({
                 <option key={s.value} value={s.value}>{s.label}</option>
               ))}
             </select>
-            <p style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 4 }}>
+            <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
               Shapes are design-only — members never see them as fields.
             </p>
           </div>
@@ -385,7 +385,7 @@ export function FieldInspector({
         {field.type !== "select" && !isShape && (
           <label
             className="flex items-start gap-2 cursor-pointer"
-            style={{ fontSize: 13, color: "var(--ink)" }}
+            style={{ fontSize: 13, color: "var(--text-primary)" }}
           >
             <input
               type="checkbox"
@@ -400,9 +400,9 @@ export function FieldInspector({
               }
             />
             <span>
-              <Pin style={{ width: 11, height: 11, display: "inline", marginRight: 4, verticalAlign: "-1px", color: "var(--solar)" }} />
+              <Pin style={{ width: 11, height: 11, display: "inline", marginRight: 4, verticalAlign: "-1px", color: "var(--state-primary)" }} />
               Fixed element
-              <span style={{ display: "block", fontSize: 11, color: "var(--fg-3)" }}>
+              <span style={{ display: "block", fontSize: 11, color: "var(--text-muted)" }}>
                 Baked into the graphic — members don't see or edit it.
               </span>
             </span>
@@ -430,16 +430,16 @@ export function FieldInspector({
               data-active={staticDrop.active}
               className="sp-dropzone flex items-center justify-center gap-2 cursor-pointer py-2.5"
               style={{
-                border: "1.5px dashed var(--hairline-strong)",
+                border: "1.5px dashed var(--border-strong)",
                 borderRadius: 8,
                 fontSize: 12,
-                color: "var(--fg-2)",
+                color: "var(--text-secondary)",
               }}
             >
               {uploadingStatic ? (
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" style={{ color: "var(--solar)" }} />
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" style={{ color: "var(--state-primary)" }} />
               ) : (
-                <Upload className="sp-dropzone__icon w-3.5 h-3.5" style={{ color: "var(--solar)" }} />
+                <Upload className="sp-dropzone__icon w-3.5 h-3.5" style={{ color: "var(--state-primary)" }} />
               )}
               {uploadingStatic ? "Uploading…" : field.staticValue ? "Replace image" : "Upload image"}
               <input
@@ -501,7 +501,7 @@ export function FieldInspector({
                 title="Rotate 90° clockwise"
                 onClick={() => onChange({ rotation: (((field.rotation ?? 0) + 90) % 360) || undefined })}
                 className="flex items-center justify-center rounded-md"
-                style={{ width: 30, height: 26, color: "var(--fg-2)", border: "1px solid var(--hairline)" }}
+                style={{ width: 30, height: 26, color: "var(--text-secondary)", border: "1px solid var(--border)" }}
               >
                 <RotateCw style={{ width: 13, height: 13 }} />
               </button>
@@ -522,7 +522,7 @@ export function FieldInspector({
         </div>
         <div>
           <label className={labelClass} style={labelStyle}>Layer order</label>
-          <p style={{ fontSize: 10.5, color: "var(--fg-4)", marginBottom: 6 }}>
+          <p style={{ fontSize: 10.5, color: "var(--text-disabled)", marginBottom: 6 }}>
             What sits on top on the graphic.
           </p>
           <div className="grid grid-cols-2 gap-2">
@@ -545,7 +545,7 @@ export function FieldInspector({
             <label className={labelClass} style={labelStyle}>Resizing</label>
             <div
               className="grid grid-cols-3 rounded-lg overflow-hidden"
-              style={{ border: "1px solid var(--hairline-strong)" }}
+              style={{ border: "1px solid var(--border-strong)" }}
               role="group"
               aria-label="Text resizing behavior"
             >
@@ -565,7 +565,7 @@ export function FieldInspector({
                   style={{
                     fontSize: 12,
                     background: resizeMode === key ? "var(--accent-wash)" : "transparent",
-                    color: resizeMode === key ? "var(--solar)" : "var(--fg-2)",
+                    color: resizeMode === key ? "var(--state-primary)" : "var(--text-secondary)",
                     fontWeight: resizeMode === key ? 500 : 400,
                   }}
                 >
@@ -589,9 +589,9 @@ export function FieldInspector({
                 }
               >
                 {field.fixedWidth ? (
-                  <Lock style={{ width: 12, height: 12, color: "var(--solar)" }} />
+                  <Lock style={{ width: 12, height: 12, color: "var(--state-primary)" }} />
                 ) : (
-                  <Unlock style={{ width: 12, height: 12, color: "var(--fg-4)" }} />
+                  <Unlock style={{ width: 12, height: 12, color: "var(--text-disabled)" }} />
                 )}
               </button>
             )}
@@ -690,8 +690,8 @@ export function FieldInspector({
                 style={{ background: "var(--accent-wash)", border: "1px solid var(--accent-border)" }}
               >
                 {ruleSentences(boundStyle, kit).map((r) => (
-                  <p key={r} style={{ fontSize: 11, color: "var(--fg-2)" }}>
-                    <Lock style={{ width: 10, height: 10, display: "inline", marginRight: 5, verticalAlign: "-1px", color: "var(--solar)" }} />
+                  <p key={r} style={{ fontSize: 11, color: "var(--text-secondary)" }}>
+                    <Lock style={{ width: 10, height: 10, display: "inline", marginRight: 5, verticalAlign: "-1px", color: "var(--state-primary)" }} />
                     {r}
                   </p>
                 ))}
@@ -789,6 +789,8 @@ export function FieldInspector({
       {/* Fill — text color / shape fill */}
       {(isText || isShape) && (
         <Section id="fill" title="Fill">
+          {/* Swatches bind by palette KEY, not hex — a field picked from the
+              brand row re-themes with the kit. */}
           <ColorControl
             ariaLabel="Field text color"
             value={field.colorHex ?? kit?.colors.find((c) => c.key === field.colorKey)?.hex}
@@ -796,25 +798,12 @@ export function FieldInspector({
               !locked.has("colorKey") &&
               onChange({ colorHex: hex, colorKey: undefined, textGradient: undefined })
             }
+            onPickBrandColor={(c) =>
+              onChange({ colorKey: c.key, colorHex: undefined, textGradient: undefined })
+            }
+            selectedColorKey={field.colorKey}
+            swatchesDisabled={locked.has("colorKey")}
           />
-          {(kit?.colors.length ?? 0) > 0 && (
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="sp-eyebrow" style={{ fontSize: 9 }}>Brand</span>
-              {(kit?.colors ?? []).map((c) => (
-                <button
-                  key={c.key}
-                  title={`${c.name} — click to use`}
-                  disabled={locked.has("colorKey")}
-                  onClick={() => onChange({ colorKey: c.key, colorHex: undefined, textGradient: undefined })}
-                  className="w-5 h-5 rounded-md border-2 transition-transform hover:scale-110 cursor-pointer"
-                  style={{
-                    background: c.hex,
-                    borderColor: field.colorKey === c.key ? "var(--ring)" : "var(--hairline)",
-                  }}
-                />
-              ))}
-            </div>
-          )}
           <GradientEditor
             gradient={field.textGradient}
             disabled={locked.has("colorKey")}
@@ -966,9 +955,9 @@ function CornerRadiusControl({ value, onChange }: CornerRadiusControlProps) {
           title={linked ? "Unlink corners — set each independently" : "Link corners — one value for all four"}
         >
           {linked ? (
-            <LinkIcon className="w-3.5 h-3.5" style={{ color: "var(--solar)" }} />
+            <LinkIcon className="w-3.5 h-3.5" style={{ color: "var(--state-primary)" }} />
           ) : (
-            <Unlink className="w-3.5 h-3.5" style={{ color: "var(--fg-3)" }} />
+            <Unlink className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
           )}
         </button>
       </div>
@@ -996,7 +985,7 @@ function CornerRadiusControl({ value, onChange }: CornerRadiusControlProps) {
                 title={c.label}
                 onChange={(e) => set({ [c.key]: Math.max(0, Number(e.target.value) || 0) })}
               />
-              <p className="text-center" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--fg-4)" }}>
+              <p className="text-center" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--text-disabled)" }}>
                 {c.label}
               </p>
             </div>

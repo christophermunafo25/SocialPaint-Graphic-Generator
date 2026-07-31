@@ -93,16 +93,16 @@ export function AuthPage() {
   );
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "var(--linen)" }}>
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "var(--bg-canvas)" }}>
       <div
         className="w-full max-w-sm overflow-hidden"
-        style={{ background: "var(--lift)", border: "1px solid var(--hairline)", borderRadius: "var(--radius-card)", boxShadow: "var(--shadow-e4)" }}
+        style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-card)", boxShadow: "var(--shadow-md)" }}
       >
         <div className="sp-mesh px-7 pt-7 pb-6">
           <p className="sp-eyebrow mb-1" style={{ color: "rgba(255,255,255,0.85)" }}>
             Brand template portal
           </p>
-          <h1 style={{ fontFamily: "var(--font-display)", fontWeight: 800, textTransform: "uppercase", fontSize: 20, letterSpacing: "-0.03em", color: "#f2f3ef" }}>
+          <h1 className="sp-hero-title" style={{ color: "var(--white)" }}>
             {view === "signup" ? "Create your account" : view === "forgot" ? "Reset password" : view === "setPassword" ? "Choose a new password" : "Sign in"}
           </h1>
         </div>
@@ -111,7 +111,7 @@ export function AuthPage() {
           {(view === "signin" || view === "signup") && (
             <div
               className="grid grid-cols-2 rounded-lg overflow-hidden"
-              style={{ border: "1px solid var(--hairline-strong)" }}
+              style={{ border: "1px solid var(--border-strong)" }}
               role="tablist"
               aria-label="Sign in or create account"
             >
@@ -133,8 +133,8 @@ export function AuthPage() {
                     fontSize: 13,
                     fontFamily: "var(--font-ui)",
                     ...(view === v
-                      ? { background: "var(--ink)", color: "var(--fg-on-dark-1)" }
-                      : { background: "var(--lift)", color: "var(--fg-2)" }),
+                      ? { background: "var(--text-primary)", color: "var(--text-on-accent)" }
+                      : { background: "var(--bg-surface)", color: "var(--text-secondary)" }),
                   }}
                 >
                   {label}
@@ -143,8 +143,8 @@ export function AuthPage() {
             </div>
           )}
           {view === "checkEmail" ? (
-            <p style={{ fontSize: 13, color: "var(--fg-2)", lineHeight: 1.6 }}>
-              Almost there — we sent a confirmation link to <b style={{ color: "var(--ink)" }}>{email}</b>.
+            <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>
+              Almost there — we sent a confirmation link to <b style={{ color: "var(--text-primary)" }}>{email}</b>.
               Open it, then come back and sign in.
             </p>
           ) : (
@@ -163,11 +163,11 @@ export function AuthPage() {
           )}
 
           {error && (
-            <p className="rounded-lg px-3 py-2" style={{ fontSize: 12, background: "var(--fill-danger-bg)", color: "var(--danger)" }}>
+            <p className="rounded-lg px-3 py-2" style={{ fontSize: 12, background: "var(--danger-wash)", color: "var(--state-danger)" }}>
               {error}
             </p>
           )}
-          {notice && <p style={{ fontSize: 12, color: "var(--success)" }}>{notice}</p>}
+          {notice && <p style={{ fontSize: 12, color: "var(--state-primary)" }}>{notice}</p>}
 
           {view === "signin" && (
             <>
@@ -176,7 +176,7 @@ export function AuthPage() {
               </button>
               <button
                 className="w-full text-center"
-                style={{ fontSize: 12, color: "var(--fg-2)" }}
+                style={{ fontSize: 12, color: "var(--text-secondary)" }}
                 onClick={() => setView("forgot")}
               >
                 Forgot password?
@@ -188,7 +188,7 @@ export function AuthPage() {
               <button className="sp-btn sp-btn-primary w-full" disabled={busy || !email || password.length < 8} onClick={() => void signUp()}>
                 {busy ? "Creating…" : "Create account"}
               </button>
-              <p style={{ fontSize: 11, color: "var(--fg-3)" }}>Password must be at least 8 characters.</p>
+              <p style={{ fontSize: 11, color: "var(--text-muted)" }}>Password must be at least 8 characters.</p>
             </>
           )}
           {view === "forgot" && (
@@ -196,7 +196,7 @@ export function AuthPage() {
               <button className="sp-btn sp-btn-primary w-full" disabled={busy || !email} onClick={() => void forgot()}>
                 {busy ? "Sending…" : "Send reset link"}
               </button>
-              <button style={{ fontSize: 12, color: "var(--fg-2)" }} onClick={() => setView("signin")}>
+              <button style={{ fontSize: 12, color: "var(--text-secondary)" }} onClick={() => setView("signin")}>
                 Back to sign in
               </button>
             </>

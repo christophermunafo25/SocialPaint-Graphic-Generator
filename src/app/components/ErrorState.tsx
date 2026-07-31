@@ -14,8 +14,8 @@ export function ErrorState({
 }) {
   return (
     <div className="text-center py-20 space-y-3 px-6">
-      <p style={{ fontSize: 14, color: "var(--fg-2)" }}>{title}</p>
-      {detail && <p style={{ fontSize: 13, color: "var(--fg-3)" }}>{detail}</p>}
+      <p style={{ fontSize: 14, color: "var(--text-secondary)" }}>{title}</p>
+      {detail && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{detail}</p>}
       <button className="sp-btn sp-btn-primary" onClick={onRetry}>
         Try again
       </button>

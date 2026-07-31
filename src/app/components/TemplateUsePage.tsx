@@ -12,8 +12,8 @@ import { SchemaRenderer, type SchemaRendererHandle } from "./SchemaRenderer";
 import { FieldInput } from "./FieldInput";
 
 const panel: React.CSSProperties = {
-  background: "var(--lift)",
-  border: "1px solid var(--hairline)",
+  background: "var(--bg-surface)",
+  border: "1px solid var(--border)",
   borderRadius: 12,
 };
 
@@ -53,7 +53,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
   );
 
   if (templateState.status === "loading") {
-    return <p className="text-center py-24" style={{ fontSize: 13, color: "var(--fg-3)" }}>Loading template…</p>;
+    return <p className="text-center py-24" style={{ fontSize: 13, color: "var(--text-muted)" }}>Loading template…</p>;
   }
   if (templateState.status === "error") {
     return (
@@ -65,7 +65,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
     );
   }
   if (!template) {
-    return <p className="text-center py-24" style={{ fontSize: 13, color: "var(--fg-3)" }}>Template not found.</p>;
+    return <p className="text-center py-24" style={{ fontSize: 13, color: "var(--text-muted)" }}>Template not found.</p>;
   }
 
   const handleDownload = async () => {
@@ -99,17 +99,17 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
           aria-live={exportToast === "error" ? "assertive" : "polite"}
         >
           {exportToast === "error" ? (
-            <AlertTriangle style={{ width: 16, height: 16, color: "var(--danger)", flexShrink: 0, marginTop: 1 }} />
+            <AlertTriangle style={{ width: 16, height: 16, color: "var(--state-danger)", flexShrink: 0, marginTop: 1 }} />
           ) : (
-            <CheckCircle2 style={{ width: 16, height: 16, color: "var(--success)", flexShrink: 0, marginTop: 1 }} />
+            <CheckCircle2 style={{ width: 16, height: 16, color: "var(--state-primary)", flexShrink: 0, marginTop: 1 }} />
           )}
           <span className="min-w-0">
-            <span className="block" style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>
+            <span className="block" style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>
               {exportToast === "downloaded" && "Graphic downloaded"}
               {exportToast === "shared" && "Graphic shared"}
               {exportToast === "error" && "Couldn't export the graphic"}
             </span>
-            <span className="block" style={{ fontSize: 12, color: "var(--fg-3)" }}>
+            <span className="block" style={{ fontSize: 12, color: "var(--text-muted)" }}>
               {exportToast === "downloaded" && "It's in your downloads folder, ready to post."}
               {exportToast === "shared" && "Sent through your device's share sheet."}
               {exportToast === "error" && "Try again — if it keeps failing, re-upload the photo."}
@@ -120,7 +120,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
       <button
         onClick={() => navigate({ name: "portal" })}
         className="flex items-center gap-1.5 mb-5"
-        style={{ fontSize: 13, color: "var(--fg-2)" }}
+        style={{ fontSize: 13, color: "var(--text-secondary)" }}
       >
         <ArrowLeft style={{ width: 14, height: 14 }} />
         Brand templates
@@ -132,7 +132,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
           <div>
             <h1 className="sp-page-title">{template.name}</h1>
             {template.description && (
-              <p style={{ fontSize: 13, color: "var(--fg-3)", marginTop: 4 }}>{template.description}</p>
+              <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>{template.description}</p>
             )}
           </div>
 
@@ -146,12 +146,12 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
                 <label
                   htmlFor={inputId}
                   className="block"
-                  style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)", marginTop: 2 }}
+                  style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)", marginTop: 2 }}
                 >
                   {field.label}
                   {field.required && (
                     <>
-                      <span aria-hidden style={{ color: "var(--solar)" }}> *</span>
+                      <span aria-hidden style={{ color: "var(--state-primary)" }}> *</span>
                       <span className="sr-only"> (required)</span>
                     </>
                   )}
@@ -161,7 +161,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
                     role="status"
                     aria-live="polite"
                     aria-label={`${(values[field.fieldKey] ?? "").length} of ${maxLength} characters used`}
-                    style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-3)", marginTop: 2 }}
+                    style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}
                   >
                     {(values[field.fieldKey] ?? "").length}/{maxLength}
                   </p>
@@ -185,7 +185,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
                 {caption !== null && (
                   <button
                     onClick={() => setCaption(null)}
-                    style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--solar)" }}
+                    style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--state-primary)" }}
                   >
                     Reset to suggestion
                   </button>
@@ -224,7 +224,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
                 role="status"
                 aria-live="polite"
                 className="text-center"
-                style={{ fontSize: 12, color: "var(--fg-3)" }}
+                style={{ fontSize: 12, color: "var(--text-muted)" }}
               >
                 Fill required: {missingRequired.map((f) => f.label).join(", ")}
               </p>
@@ -234,14 +234,14 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
 
         {/* Right — live preview */}
         <div className="lg:col-span-7 lg:sticky lg:top-8">
-          <div className="p-5" style={{ ...panel, boxShadow: "var(--shadow-e2)" }}>
+          <div className="p-5" style={{ ...panel, boxShadow: "var(--shadow-sm)" }}>
             <div className="flex items-center justify-between mb-3">
               <h3 className="sp-panel-title">Preview</h3>
               <span className="sp-eyebrow">
                 {template.canvasWidth}×{template.canvasHeight} · live
               </span>
             </div>
-            <div className="rounded-xl overflow-hidden" style={{ background: "var(--paper-warm)", border: "1px solid var(--hairline)" }}>
+            <div className="rounded-xl overflow-hidden" style={{ background: "var(--bg-hover)", border: "1px solid var(--border)" }}>
               <SchemaRenderer
                 ref={rendererRef}
                 schema={template}

@@ -16,8 +16,8 @@ import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useColorScheme } from "@/lib/colorScheme";
 import { useRouter, type Route } from "../router";
-import logoOnLight from "@/assets/socialpaint/socialpaint-logo-on-light.svg";
-import logoOnDark from "@/assets/socialpaint/socialpaint-logo-on-dark.svg";
+import logoOnLight from "@/assets/socialpaint/logo-on-light.svg";
+import logoOnDark from "@/assets/socialpaint/logo-on-dark.svg";
 
 const LS_COLLAPSED = "sp-sidebar-collapsed";
 
@@ -153,8 +153,8 @@ function AccountBlock({ onNavigate }: { onNavigate(route: Route): void }) {
             width: 38,
             height: 38,
             borderRadius: 999,
-            background: "var(--mint)", // flat fill — gradients are banned as surface treatment
-            color: "#122407",
+            background: "var(--volt)", // flat fill — gradients are banned as surface treatment
+            color: "var(--text-on-accent)",
             fontSize: 12,
             fontWeight: 600,
           }}
@@ -398,7 +398,7 @@ export function Sidebar() {
             onClick={() => go({ name: role === "admin" ? "adminTemplates" : "portal" })}
             title="SocialPaint — home"
             className="mx-auto mb-6"
-            style={{ color: "var(--solar)" }}
+            style={{ color: "var(--state-primary)" }}
           >
             <BrandMark width={26} />
           </button>
@@ -424,7 +424,7 @@ export function Sidebar() {
                 {!collapsed && count !== null && (
                   <span
                     className="ml-auto"
-                    style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-3)" }}
+                    style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--text-muted)" }}
                   >
                     {count}
                   </span>
@@ -446,8 +446,8 @@ export function Sidebar() {
                 width: 34,
                 height: 34,
                 borderRadius: 999,
-                background: "var(--mint)",
-                color: "#122407",
+                background: "var(--volt)",
+                color: "var(--text-on-accent)",
                 fontSize: 11,
                 fontWeight: 600,
               }}

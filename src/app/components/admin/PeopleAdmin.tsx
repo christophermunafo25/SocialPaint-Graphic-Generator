@@ -72,7 +72,7 @@ export function PeopleAdmin() {
       />
 
       {isDevAuth && (
-        <p className="rounded-lg px-4 py-3 mb-5" style={{ fontSize: 12, background: "var(--paper-warm)", color: "var(--fg-2)" }}>
+        <p className="rounded-lg px-4 py-3 mb-5" style={{ fontSize: 12, background: "var(--bg-hover)", color: "var(--text-secondary)" }}>
           People management needs the Supabase backend with auth enabled — this dev backend has no
           real accounts.
         </p>
@@ -97,12 +97,12 @@ export function PeopleAdmin() {
           {busy ? "Inviting…" : "Invite"}
         </button>
       </div>
-      {error && <p style={{ fontSize: 12, color: "var(--danger)", marginBottom: 8 }}>{error}</p>}
-      {notice && <p style={{ fontSize: 12, color: "var(--success)", marginBottom: 8 }}>{notice}</p>}
+      {error && <p style={{ fontSize: 12, color: "var(--state-danger)", marginBottom: 8 }}>{error}</p>}
+      {notice && <p style={{ fontSize: 12, color: "var(--state-primary)", marginBottom: 8 }}>{notice}</p>}
 
       <div className="sp-card overflow-hidden mt-4">
         {membersState.status === "loading" ? (
-          <p className="px-6 py-8 text-center" style={{ fontSize: 13, color: "var(--fg-3)" }}>Loading…</p>
+          <p className="px-6 py-8 text-center" style={{ fontSize: 13, color: "var(--text-muted)" }}>Loading…</p>
         ) : membersState.status === "error" ? (
           <ErrorState
             title="We couldn't load your team."
@@ -110,7 +110,7 @@ export function PeopleAdmin() {
             onRetry={membersState.retry}
           />
         ) : members.length === 0 ? (
-          <p className="px-6 py-8 text-center" style={{ fontSize: 13, color: "var(--fg-3)" }}>
+          <p className="px-6 py-8 text-center" style={{ fontSize: 13, color: "var(--text-muted)" }}>
             No members yet.
           </p>
         ) : (
@@ -118,20 +118,20 @@ export function PeopleAdmin() {
             <div
               key={m.userId}
               className="flex items-center gap-3"
-              style={{ padding: "12px 24px", minHeight: 56, ...(i > 0 ? { borderTop: "1px solid var(--hairline)" } : {}) }}
+              style={{ padding: "12px 24px", minHeight: 56, ...(i > 0 ? { borderTop: "1px solid var(--border)" } : {}) }}
             >
               <span
                 className="sp-mesh flex-shrink-0"
                 style={{ width: 26, height: 26, borderRadius: 999, display: "grid", placeItems: "center", overflow: "hidden" }}
               >
-                <span style={{ color: "#fff", fontFamily: "var(--font-display)", fontWeight: 800, textTransform: "uppercase" as const, fontSize: 11 }}>
+                <span style={{ color: "#fff", fontFamily: "var(--font-head-sm)", fontWeight: 700, fontSize: 11 }}>
                   {(m.name ?? m.email).slice(0, 1).toUpperCase()}
                 </span>
               </span>
               <div className="flex-1 min-w-0">
-                <p className="truncate" style={{ fontSize: 13, color: "var(--ink)" }}>
+                <p className="truncate" style={{ fontSize: 13, color: "var(--text-primary)" }}>
                   {m.email}
-                  {m.userId === user?.id && <span style={{ color: "var(--fg-3)" }}> (you)</span>}
+                  {m.userId === user?.id && <span style={{ color: "var(--text-muted)" }}> (you)</span>}
                 </p>
               </div>
               <select
@@ -156,7 +156,7 @@ export function PeopleAdmin() {
                 aria-label={`Remove ${m.email}`}
                 style={{ opacity: m.userId === user?.id ? 0.3 : 1 }}
               >
-                <Trash2 style={{ width: 15, height: 15, color: "var(--danger)" }} />
+                <Trash2 style={{ width: 15, height: 15, color: "var(--state-danger)" }} />
               </button>
             </div>
           ))

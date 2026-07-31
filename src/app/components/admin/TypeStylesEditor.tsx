@@ -39,19 +39,19 @@ export function TypeStylesEditor({ styles, colors, customFamilies, onChange, usa
         const expanded = open === s.key;
         const rules = ruleSentences(s, kitForRules);
         return (
-          <div key={s.key} style={{ border: "1px solid var(--hairline)", borderRadius: 10 }}>
+          <div key={s.key} style={{ border: "1px solid var(--border)", borderRadius: 10 }}>
             <button
               className="w-full flex items-center gap-2 px-3 py-2.5 text-left"
               onClick={() => setOpen(expanded ? null : s.key)}
             >
               {expanded ? (
-                <ChevronDown style={{ width: 14, height: 14, color: "var(--fg-3)" }} />
+                <ChevronDown style={{ width: 14, height: 14, color: "var(--text-muted)" }} />
               ) : (
-                <ChevronRight style={{ width: 14, height: 14, color: "var(--fg-3)" }} />
+                <ChevronRight style={{ width: 14, height: 14, color: "var(--text-muted)" }} />
               )}
-              <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>{s.name}</span>
+              <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>{s.name}</span>
               {usageLabelFor?.(s.key) && (
-                <span style={{ fontSize: 11, color: "var(--fg-3)" }}>{usageLabelFor(s.key)}</span>
+                <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{usageLabelFor(s.key)}</span>
               )}
               <span className="sp-eyebrow ml-auto" style={{ fontSize: 9 }}>
                 {rules.length} rule{rules.length !== 1 ? "s" : ""}
@@ -60,12 +60,12 @@ export function TypeStylesEditor({ styles, colors, customFamilies, onChange, usa
 
             {!expanded && rules.length > 0 && (
               <div className="px-9 pb-2.5 -mt-1">
-                <p style={{ fontSize: 11, color: "var(--fg-3)" }}>{rules.join(" ")}</p>
+                <p style={{ fontSize: 11, color: "var(--text-muted)" }}>{rules.join(" ")}</p>
               </div>
             )}
 
             {expanded && (
-              <div className="px-3 pb-3 space-y-3" style={{ borderTop: "1px solid var(--hairline)", paddingTop: 12 }}>
+              <div className="px-3 pb-3 space-y-3" style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
                 <div className="grid grid-cols-2 gap-2.5">
                   <div>
                     <label className="sp-eyebrow block mb-1">Name</label>
@@ -173,7 +173,7 @@ export function TypeStylesEditor({ styles, colors, customFamilies, onChange, usa
                       onChange={(e) => update(s.key, { lineHeight: e.target.value ? Number(e.target.value) : undefined })}
                     />
                   </div>
-                  <label className="flex items-center gap-2" style={{ fontSize: 13, color: "var(--ink)" }}>
+                  <label className="flex items-center gap-2" style={{ fontSize: 13, color: "var(--text-primary)" }}>
                     <input
                       type="checkbox"
                       checked={s.uppercase ?? false}
@@ -181,7 +181,7 @@ export function TypeStylesEditor({ styles, colors, customFamilies, onChange, usa
                     />
                     Always uppercase
                   </label>
-                  <label className="flex items-center gap-2" style={{ fontSize: 13, color: "var(--ink)" }}>
+                  <label className="flex items-center gap-2" style={{ fontSize: 13, color: "var(--text-primary)" }}>
                     <input
                       type="checkbox"
                       checked={s.autoFit ?? false}
@@ -197,8 +197,8 @@ export function TypeStylesEditor({ styles, colors, customFamilies, onChange, usa
                     style={{ background: "var(--accent-wash)", border: "1px solid var(--accent-border)" }}
                   >
                     {rules.map((r) => (
-                      <p key={r} style={{ fontSize: 11, color: "var(--fg-2)" }}>
-                        <Lock style={{ width: 10, height: 10, display: "inline", marginRight: 5, verticalAlign: "-1px", color: "var(--solar)" }} />
+                      <p key={r} style={{ fontSize: 11, color: "var(--text-secondary)" }}>
+                        <Lock style={{ width: 10, height: 10, display: "inline", marginRight: 5, verticalAlign: "-1px", color: "var(--state-primary)" }} />
                         {r}
                       </p>
                     ))}
@@ -208,7 +208,7 @@ export function TypeStylesEditor({ styles, colors, customFamilies, onChange, usa
                 <button
                   onClick={() => onChange(styles.filter((x) => x.key !== s.key))}
                   className="flex items-center gap-1.5"
-                  style={{ fontSize: 12, color: "var(--danger)" }}
+                  style={{ fontSize: 12, color: "var(--state-danger)" }}
                 >
                   <Trash2 style={{ width: 13, height: 13 }} />
                   Delete style
@@ -227,7 +227,7 @@ export function TypeStylesEditor({ styles, colors, customFamilies, onChange, usa
           setOpen(key);
         }}
         className="flex items-center gap-1.5"
-        style={{ fontSize: 12, color: "var(--solar)" }}
+        style={{ fontSize: 12, color: "var(--state-primary)" }}
       >
         <Plus style={{ width: 13, height: 13 }} />
         Add type style

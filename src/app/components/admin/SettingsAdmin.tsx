@@ -27,14 +27,14 @@ export function SettingsAdmin() {
       <div className="sp-card sp-card--content space-y-3">
         <h2 className="sp-panel-title">Workspace</h2>
         <div className="grid gap-x-6 gap-y-2" style={{ gridTemplateColumns: "140px 1fr", fontSize: 13 }}>
-          <span style={{ color: "var(--fg-3)" }}>Name</span>
-          <span style={{ color: "var(--ink)" }}>{company?.name ?? "—"}</span>
-          <span style={{ color: "var(--fg-3)" }}>Slug</span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ink)" }}>
+          <span style={{ color: "var(--text-muted)" }}>Name</span>
+          <span style={{ color: "var(--text-primary)" }}>{company?.name ?? "—"}</span>
+          <span style={{ color: "var(--text-muted)" }}>Slug</span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--text-primary)" }}>
             {company?.slug ?? "—"}
           </span>
-          <span style={{ color: "var(--fg-3)" }}>Backend</span>
-          <span style={{ color: "var(--ink)" }}>
+          <span style={{ color: "var(--text-muted)" }}>Backend</span>
+          <span style={{ color: "var(--text-primary)" }}>
             {backend === "supabase" ? "Supabase (live)" : "Local dev (browser storage)"}
           </span>
         </div>
@@ -42,7 +42,7 @@ export function SettingsAdmin() {
 
       <div className="sp-card sp-card--content space-y-3">
         <h2 className="sp-panel-title">Appearance</h2>
-        <p style={{ fontSize: 12, color: "var(--fg-3)" }}>
+        <p style={{ fontSize: 12, color: "var(--text-muted)" }}>
           Applies to the SocialPaint chrome only — template graphics and
           exports are identical in both modes.
         </p>
@@ -54,13 +54,13 @@ export function SettingsAdmin() {
               title={hint}
               className="flex flex-col items-center gap-1.5 py-3 rounded-xl"
               style={{
-                border: `1px solid ${scheme === key ? "transparent" : "var(--hairline-strong)"}`,
-                background: scheme === key ? "var(--sb-active-bg)" : "var(--lift)",
-                color: scheme === key ? "var(--sb-fg-active)" : "var(--ink)",
+                border: `1px solid ${scheme === key ? "transparent" : "var(--border-strong)"}`,
+                background: scheme === key ? "var(--sb-active-bg)" : "var(--bg-surface)",
+                color: scheme === key ? "var(--sb-fg-active)" : "var(--text-primary)",
                 fontSize: 12.5,
               }}
             >
-              <Icon style={{ width: 16, height: 16, color: scheme === key ? "var(--sb-fg-active)" : "var(--fg-2)" }} />
+              <Icon style={{ width: 16, height: 16, color: scheme === key ? "var(--sb-fg-active)" : "var(--text-secondary)" }} />
               {label}
             </button>
           ))}
@@ -70,10 +70,10 @@ export function SettingsAdmin() {
       <div className="sp-card sp-card--content space-y-3">
         <h2 className="sp-panel-title">Account</h2>
         <div className="grid gap-x-6 gap-y-2" style={{ gridTemplateColumns: "140px 1fr", fontSize: 13 }}>
-          <span style={{ color: "var(--fg-3)" }}>Email</span>
-          <span style={{ color: "var(--ink)" }}>{user?.email ?? "— (dev backend)"}</span>
-          <span style={{ color: "var(--fg-3)" }}>Role</span>
-          <span className="capitalize" style={{ color: "var(--ink)" }}>{role}</span>
+          <span style={{ color: "var(--text-muted)" }}>Email</span>
+          <span style={{ color: "var(--text-primary)" }}>{user?.email ?? "— (dev backend)"}</span>
+          <span style={{ color: "var(--text-muted)" }}>Role</span>
+          <span className="capitalize" style={{ color: "var(--text-primary)" }}>{role}</span>
         </div>
         {signOut && (
           <button onClick={() => void signOut()} className="sp-btn sp-btn-ghost">

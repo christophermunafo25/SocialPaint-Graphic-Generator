@@ -40,6 +40,9 @@ export function ColorSchemeProvider({ children }: { children: React.ReactNode })
   useEffect(() => {
     const apply = () => {
       const dark = scheme === "dark" || (scheme === "system" && systemPrefersDark());
+      // data-theme is what the design system scopes its tokens to; the .dark
+      // class stays because Tailwind's dark: variant and theme.css key off it.
+      document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
       document.documentElement.classList.toggle("dark", dark);
       document.documentElement.style.colorScheme = dark ? "dark" : "light";
       setResolved(dark ? "dark" : "light");

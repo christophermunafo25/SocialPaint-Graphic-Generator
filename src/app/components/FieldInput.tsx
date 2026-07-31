@@ -148,9 +148,9 @@ function ImageFieldInput({ field, value, onChange, inputId }: FieldInputProps) {
         data-active={isDragActive}
         className="sp-dropzone text-center cursor-pointer flex flex-col items-center justify-center gap-2 group"
         style={{
-          border: `1.5px dashed ${isDragActive ? "var(--solar)" : "var(--hairline-strong)"}`,
-          borderRadius: "var(--radius-input)",
-          background: isDragActive ? "var(--accent-wash)" : "var(--lift)",
+          border: `1.5px dashed ${isDragActive ? "var(--state-primary)" : "var(--border-strong)"}`,
+          borderRadius: "var(--radius-control)",
+          background: isDragActive ? "var(--accent-wash)" : "var(--bg-surface)",
           padding: 14,
         }}
       >
@@ -162,7 +162,7 @@ function ImageFieldInput({ field, value, onChange, inputId }: FieldInputProps) {
         {value ? (
           <div
             className="relative w-16 h-16 overflow-hidden"
-            style={{ borderRadius: 8, border: "1px solid var(--hairline)", boxShadow: "var(--shadow-e1)" }}
+            style={{ borderRadius: 8, border: "1px solid var(--border)", boxShadow: "var(--shadow-sm)" }}
           >
             <img src={value} alt="Preview" className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -172,17 +172,17 @@ function ImageFieldInput({ field, value, onChange, inputId }: FieldInputProps) {
         ) : (
           <span
             className="sp-dropzone__icon flex items-center justify-center"
-            style={{ width: 36, height: 36, borderRadius: "var(--radius-icon)", background: "var(--peach)" }}
+            style={{ width: 36, height: 36, borderRadius: "var(--radius-control)", background: "var(--volt)" }}
           >
-            <Upload style={{ width: 15, height: 15, color: "var(--ink)" }} />
+            <Upload style={{ width: 15, height: 15, color: "var(--text-primary)" }} />
           </span>
         )}
-        <p style={{ fontSize: 12, color: "var(--fg-2)" }}>
+        <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
           {value ? "Replace image" : "Click or drag to upload"}
         </p>
       </div>
       {uploadError && (
-        <p role="alert" style={{ fontSize: 12, color: "var(--solar)", marginTop: 6 }}>
+        <p role="alert" style={{ fontSize: 12, color: "var(--state-primary)", marginTop: 6 }}>
           {uploadError}
         </p>
       )}

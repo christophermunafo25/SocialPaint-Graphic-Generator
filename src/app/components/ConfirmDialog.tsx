@@ -38,18 +38,18 @@ export function ConfirmDialog({
       <AlertDialogContent
         onOverlayClick={onCancel}
         style={{
-          background: "var(--lift)",
-          border: "1px solid var(--hairline)",
+          background: "var(--bg-surface)",
+          border: "1px solid var(--border)",
           borderRadius: "var(--radius-card)",
-          boxShadow: "var(--shadow-e4)",
+          boxShadow: "var(--shadow-md)",
         }}
       >
         <AlertDialogHeader>
-          <AlertDialogTitle style={{ fontSize: 16, fontWeight: 600, color: "var(--ink)" }}>
+          <AlertDialogTitle style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)" }}>
             {title}
           </AlertDialogTitle>
           {description && (
-            <AlertDialogDescription style={{ fontSize: 13, color: "var(--fg-2)" }}>
+            <AlertDialogDescription style={{ fontSize: 13, color: "var(--text-secondary)" }}>
               {description}
             </AlertDialogDescription>
           )}
@@ -64,7 +64,7 @@ export function ConfirmDialog({
           </AlertDialogCancel>
           <AlertDialogAction
             className={tone === "primary" ? "sp-btn sp-btn-primary" : "sp-btn"}
-            style={tone === "danger" ? { background: "var(--danger)", color: "#fff" } : undefined}
+            style={tone === "danger" ? { background: "var(--state-danger)", color: "#fff" } : undefined}
             onClick={onConfirm}
           >
             {confirmLabel}

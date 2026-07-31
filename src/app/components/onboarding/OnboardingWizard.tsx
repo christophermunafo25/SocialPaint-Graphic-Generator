@@ -103,14 +103,14 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "var(--linen)" }}>
-      <div className="w-full max-w-2xl overflow-hidden" style={{ background: "var(--lift)", border: "1px solid var(--hairline)", borderRadius: "var(--radius-card)", boxShadow: "var(--shadow-e4)" }}>
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "var(--bg-canvas)" }}>
+      <div className="w-full max-w-2xl overflow-hidden" style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-card)", boxShadow: "var(--shadow-md)" }}>
         {/* Header + progress */}
         <div className="sp-mesh px-8 pt-8 pb-6">
           <p className="sp-eyebrow mb-1" style={{ color: "rgba(255,255,255,0.85)" }}>
             {firstRun ? "Welcome" : "New company"}
           </p>
-          <h1 style={{ fontFamily: "var(--font-display)", fontWeight: 800, textTransform: "uppercase", fontSize: 20, letterSpacing: "-0.03em", lineHeight: 1.05, color: "#f2f3ef" }}>
+          <h1 className="sp-hero-title" style={{ color: "var(--white)" }}>
             {firstRun ? "Set up your brand portal" : "Create a company"}
           </h1>
           <div className="flex gap-1.5 mt-5">
@@ -154,7 +154,7 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
             />
           )}
           {error && (
-            <p className="text-sm rounded-xl px-4 py-3" style={{ background: "var(--fill-danger-bg)", color: "var(--destructive)" }}>
+            <p className="text-sm rounded-xl px-4 py-3" style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}>
               {error}
             </p>
           )}
@@ -165,7 +165,7 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
           <button
             onClick={() => (step === 0 ? navigate({ name: "portal" }) : setStep(step - 1))}
             disabled={firstRun && step === 0}
-            className="flex items-center gap-1.5 disabled:opacity-0" style={{ fontSize: 13, color: "var(--fg-2)" }}
+            className="flex items-center gap-1.5 disabled:opacity-0" style={{ fontSize: 13, color: "var(--text-secondary)" }}
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             {step === 0 ? "Cancel" : "Back"}
@@ -235,6 +235,9 @@ function StepColors({ colors, onChange }: { colors: BrandColor[]; onChange(c: Br
               ariaLabel={`${c.name} color`}
               value={c.hex}
               onChange={(hex) => set(i, { hex })}
+              /* The palette is being defined here — there is nothing to
+                 quick-select from yet. */
+              brandSwatches={false}
             />
             <span className="text-sm font-semibold flex-1" style={{ color: "var(--foreground)" }}>{c.name}</span>
           </div>
@@ -305,7 +308,7 @@ function StepFonts(props: StepFontsProps) {
           {...drop.bind}
           data-active={drop.active}
           className="sp-dropzone flex items-center justify-center gap-2 py-3.5 cursor-pointer"
-          style={{ border: "1.5px dashed var(--hairline-strong)", borderRadius: "var(--radius-input)", fontSize: 13, color: "var(--fg-2)" }}
+          style={{ border: "1.5px dashed var(--border-strong)", borderRadius: "var(--radius-control)", fontSize: 13, color: "var(--text-secondary)" }}
         >
           <Upload className="sp-dropzone__icon w-4 h-4" />
           Upload custom font
@@ -363,14 +366,14 @@ function StepLogo({ preview, onPick }: { preview: string | null; onPick(f: File)
         {...drop.bind}
         data-active={drop.active}
         className="sp-dropzone flex flex-col items-center justify-center gap-3 py-8 cursor-pointer"
-        style={{ border: "1.5px dashed var(--hairline-strong)", borderRadius: "var(--radius-card-sm)" }}
+        style={{ border: "1.5px dashed var(--border-strong)", borderRadius: "var(--radius-card-sm)" }}
       >
         {preview ? (
           <img src={preview} alt="Logo preview" className="max-h-20 max-w-[240px] object-contain" />
         ) : (
           <Upload className="sp-dropzone__icon w-6 h-6" style={{ color: "var(--muted-foreground)" }} />
         )}
-        <span style={{ fontSize: 13, color: "var(--fg-2)" }}>
+        <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>
           {preview ? "Replace logo" : "Upload logo (PNG or SVG)"}
         </span>
         <input
