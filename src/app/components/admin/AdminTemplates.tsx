@@ -152,7 +152,7 @@ export function AdminTemplates() {
         onConfirm={() => void confirmDelete()}
       />
       <PageHeader
-        title="Templates"
+        title="Template Builder"
         description="Create, edit, and publish — published templates appear in your team's Brand templates."
         action={
           <button className="sp-btn sp-btn-primary" onClick={() => navigate({ name: "builder", templateId: null })}>
@@ -199,8 +199,9 @@ export function AdminTemplates() {
                 className="px-3 flex items-center"
                 style={{
                   fontSize: 12,
+                  fontWeight: 500,
                   ...(statusFilter === key
-                    ? { background: "var(--text-primary)", color: "var(--text-on-accent)" }
+                    ? { background: "var(--btn-primary-bg)", color: "var(--btn-primary-fg)" }
                     : { background: "var(--bg-surface)", color: "var(--text-secondary)" }),
                 }}
               >

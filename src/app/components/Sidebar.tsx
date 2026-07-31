@@ -21,19 +21,15 @@ import logoOnDark from "@/assets/socialpaint/logo-on-dark.svg";
 
 const LS_COLLAPSED = "sp-sidebar-collapsed";
 
-/** The SocialPaint mark — five bars and the sparkle square, from the
- * official horizontal logo. One-color via currentColor (the sparkle knocks
- * out to the background). Used where the full lockup doesn't fit: the
- * collapsed rail and DS empty states. */
+/** The SocialPaint mark — the Voltage swoosh, the same artwork that carries
+ * the mark in the horizontal lockups. Painted with currentColor so it can
+ * sit in Volt on the collapsed rail and as a tinted watermark elsewhere;
+ * the brand default is Volt in both themes. Used where the full lockup
+ * doesn't fit. */
 export function BrandMark({ width = 28 }: { width?: number }) {
   return (
-    <svg viewBox="0 0 161 87" fill="currentColor" style={{ width, height: "auto", display: "block" }} aria-hidden>
-      <path d="M6.4355 86.5649H0V0H6.4355V86.5649Z" />
-      <path d="M23.5976 86.5649H15.0176V0H23.5976V86.5649Z" />
-      <path d="M40.7597 86.5649H32.1797V0H40.7597V86.5649Z" />
-      <path d="M57.9217 86.5649H47.1952V0H57.9217V86.5649Z" />
-      <path d="M75.0838 86.5649H62.2128V0H75.0838V86.5649Z" />
-      <path d="M149.104 0C155.343 0 160.4 5.05729 160.4 11.2958V86.5649H119.662C119.662 86.5649 121.912 64.2741 130.667 54.972C139.422 45.6706 160.4 43.2813 160.4 43.2813C160.343 43.2748 139.41 40.8815 130.667 31.5929C121.92 22.2997 119.667 0.0428244 119.662 0C119.653 0.090865 117.397 22.3098 108.66 31.5929C99.9181 40.88 78.9913 43.274 78.927 43.2813C78.927 43.2813 99.9047 45.6705 108.66 54.972C117.404 64.2625 119.657 86.5091 119.662 86.5649H78.3049V0H149.104Z" />
+    <svg viewBox="0 0 78 75" fill="currentColor" style={{ width, height: "auto", display: "block" }} aria-hidden>
+      <path d="M71.015 20.1137C78.0595 17.0276 80.2378 8.13069 75.4088 2.16802C73.6321 -0.0258537 70.5303 -0.637869 68.0462 0.715313L55.4811 7.56023C55.4811 7.56023 41.6669 14.0438 39.5209 14.9553L39.2042 15.0805L38.7605 15.2386C38.7605 15.2386 21.1752 22.8273 14.4914 25.9586C9.49613 28.302 -2.18124 33.7813 0.356282 43.6079C2.94579 53.544 16.2801 52.8276 21.3504 52.5552L21.3702 52.5541C28.8126 52.1492 38.0973 50.6715 46.2913 49.3674L46.339 49.3598C48.2472 49.0573 50.3401 48.7224 52.4318 48.4062C48.6605 51.7677 44.7414 54.9584 40.6863 57.9693C36.0655 61.4002 34.672 67.7996 37.7963 72.6205C39.3773 75.0599 42.6596 75.7537 45.0519 74.092C50.9981 69.9619 56.7088 65.5035 62.157 60.7373C75.0652 49.3423 76.569 44.0012 76.2808 39.9286C76.1987 38.7219 75.8619 37.5459 75.2925 36.4774C74.7231 35.4089 73.9338 34.4719 72.9761 33.7274C68.5158 30.2063 62.0155 31.0281 43.8614 33.9151L43.8136 33.9227C40.5056 34.4509 36.1941 35.1394 31.8322 35.7378C36.0674 34.1303 40.391 32.5915 43.9414 31.3279L44.3977 31.1655L44.5625 31.1069C50.562 28.5897 68.1728 21.3588 68.1728 21.3588L71.015 20.1137Z" />
     </svg>
   );
 }
@@ -64,7 +60,7 @@ interface NavItem {
  * Brand Studio · People · Settings & Admin. Members see only the first. */
 const NAV: NavItem[] = [
   { label: "Brand templates", route: { name: "portal" }, Icon: Paintbrush, adminOnly: false, matches: ["portal", "template"] },
-  { label: "Templates", route: { name: "adminTemplates" }, Icon: Frame, adminOnly: true, matches: ["adminTemplates", "builder"] },
+  { label: "Template Builder", route: { name: "adminTemplates" }, Icon: Frame, adminOnly: true, matches: ["adminTemplates", "builder"] },
   { label: "Insights & Analytics", route: { name: "dashboard" }, Icon: BarChart3, adminOnly: true, matches: ["dashboard"] },
   { label: "Brand Studio", route: { name: "brandStudio" }, Icon: PencilRuler, adminOnly: true, matches: ["brandStudio"] },
   { label: "People", route: { name: "people" }, Icon: Users, adminOnly: true, matches: ["people"] },
@@ -398,7 +394,7 @@ export function Sidebar() {
             onClick={() => go({ name: role === "admin" ? "adminTemplates" : "portal" })}
             title="SocialPaint — home"
             className="mx-auto mb-6"
-            style={{ color: "var(--state-primary)" }}
+            style={{ color: "var(--volt)" }}
           >
             <BrandMark width={26} />
           </button>

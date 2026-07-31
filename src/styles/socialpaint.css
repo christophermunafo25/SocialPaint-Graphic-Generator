@@ -3,7 +3,7 @@
    Ported from the "SocialPaint Design System" Claude Design project
    (tokens/*.css, SKILL.md, docs/02-tokens.md), 2026-07-30.
 
-   Five colours only: Ink #1A1A1A, Forrest #083B27, Volt #BCFF78, White,
+   Five colours only: Ink #1A1A1A, Forrest #082C1E, Volt #BCFF78, White,
    Gray #F9F9F8. Danger #FF7D51 sits outside the palette as a functional
    signal — never a brand colour, never decorative.
 
@@ -49,7 +49,7 @@
    prefix — that is how you tell a primitive at a glance. Never reach past
    the semantic tier to one of these in product code. */
 :root {
-  --forrest: #083b27;
+  --forrest: #082c1e;
   --volt:    #bcff78;
   --white:   #ffffff;
   --gray:    #f9f9f8;
@@ -213,15 +213,15 @@
   --border-on-surface:         #e2e2de;
   --bg-surface-raised:         #f9f9f8;
   --bg-surface-hover:          #f0f0ee;
-  --state-primary-on-surface:   #083b27;
-  --state-attention-on-surface: #083b27;
+  --state-primary-on-surface:   #082c1e;
+  --state-attention-on-surface: #082c1e;
   --state-danger-on-surface:    #ff7d51;
 
-  --state-primary:   #083b27; --fill-primary:   #bcff78;
-  --state-attention: #083b27; --fill-attention: #bcff78;
+  --state-primary:   #082c1e; --fill-primary:   #bcff78;
+  --state-attention: #082c1e; --fill-attention: #bcff78;
   --state-danger:    #ff7d51; --fill-danger:    #ff7d51;
 
-  --ring: #083b27;
+  --ring: #082c1e;
 
   --shadow-sm: none;
   --shadow-md: none;
@@ -483,7 +483,7 @@ button, input, select, textarea, optgroup {
    Forrest, not the old Figma blue: the DS allows no sixth hue in platform
    chrome, and Volt would disappear against a paper-white canvas. */
 :root {
-  --editor-accent: #083b27;
+  --editor-accent: #082c1e;
   --editor-line: 1px;
   --editor-handle: 7px;
 }
@@ -677,87 +677,72 @@ button, input, select, textarea, optgroup {
   .sp-chip-out { opacity: 0; }
 }
 
-/* --- Template card flip ----------------------------------------------------
-   Member gallery cards flip on hover/keyboard-focus to reveal a "Use
-   template" back. Interaction from the BYQ flip-card gem (perspective scene,
-   preserve-3d rotation, hidden backfaces, deepening shadow, reduced-motion
-   cross-fade); surfaces, borders, radii, and type stay in this design
-   system. The front face is in-flow so the grid keeps content-driven card
-   heights; the back overlays it. */
-.sp-flipcard-scene {
-  perspective: 1000px;
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-card);
-}
-.sp-flipcard {
-  position: relative;
+/* --- Template card ---------------------------------------------------------
+   The member gallery card. One control — the whole card — with a circular
+   arrow that reads as the "open this" affordance. It is a decorative span,
+   not a nested button, so keyboard users get a single stop per card. */
+.sp-template-card {
+  display: block;
   width: 100%;
   height: 100%;
-  transform-style: preserve-3d;
-  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-  border-radius: var(--radius-card);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--dur-state) var(--ease);
 }
-.sp-flipcard-scene:hover .sp-flipcard,
-.sp-flipcard-scene:focus-visible .sp-flipcard {
-  transform: rotateY(180deg);
-}
-.sp-flipcard__face {
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  border-radius: var(--radius-card);
-  border: 1px solid var(--border);
-  background: var(--bg-surface);
-  overflow: hidden;
-  box-shadow: var(--shadow-sm);
-  transition: box-shadow 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.sp-flipcard-scene:hover .sp-flipcard__face,
-.sp-flipcard-scene:focus-visible .sp-flipcard__face {
-  box-shadow: var(--shadow-md);
-}
-.sp-flipcard__face--front {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-}
-.sp-flipcard__face--back {
-  position: absolute;
-  inset: 0;
-  transform: rotateY(180deg);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  padding: 20px;
-  text-align: center;
+.sp-template-card:hover { border-color: var(--border-strong); }
+.sp-template-card:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-tight);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  /* No 3D flip — cross-fade the faces instead. */
-  .sp-flipcard {
-    transition: none;
-    transform: none !important;
-    transform-style: flat;
-  }
-  .sp-flipcard__face {
-    backface-visibility: visible;
-    -webkit-backface-visibility: visible;
-    transition: opacity 0.25s ease;
-  }
-  .sp-flipcard__face--back {
-    transform: none;
-    opacity: 0;
-  }
-  .sp-flipcard-scene:hover .sp-flipcard__face--front,
-  .sp-flipcard-scene:focus-visible .sp-flipcard__face--front {
-    opacity: 0;
-  }
-  .sp-flipcard-scene:hover .sp-flipcard__face--back,
-  .sp-flipcard-scene:focus-visible .sp-flipcard__face--back {
-    opacity: 1;
-  }
+/* Title block. Zero horizontal padding so the text aligns flush with the
+   media plate above it — the card's own inset is the only gutter. */
+.sp-template-card__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) 0 var(--space-3xs);
+}
+.sp-template-card__text { flex: 1; min-width: 0; }
+.sp-template-card__title {
+  font-family: var(--font-ui);
+  font-size: var(--type-label-size);
+  line-height: var(--type-label-lh);
+  font-weight: var(--weight-ui);
+  letter-spacing: var(--type-label-track);
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-template-card__desc {
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-lh);
+  color: var(--text-muted);
+  margin-top: var(--space-3xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-template-card__go {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
+  transition: background var(--dur-state) var(--ease),
+              border-color var(--dur-state) var(--ease),
+              color var(--dur-state) var(--ease);
+}
+.sp-template-card:hover .sp-template-card__go,
+.sp-template-card:focus-visible .sp-template-card__go {
+  background: var(--btn-primary-bg);
+  border-color: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
 }
 
 /* --- Shell layout primitives (App Shell Reframe) ---------------------------
@@ -786,7 +771,7 @@ button, input, select, textarea, optgroup {
    The frame is square — most templates are 1:1 social posts, so a square
    well crops the least and keeps the grid rows even. Both call sites compare
    a template's own ratio against 1 to decide which axis to pin. */
-.sp-media-card { --media-pad: var(--space-3xs); padding: var(--media-pad); }
+.sp-media-card { --media-pad: var(--space-xs); padding: var(--media-pad); }
 .sp-media-card__preview {
   /* Concentric with the card it sits in — inner radius = outer minus the
      inset — so the two curves stay parallel. Derived rather than picked,
@@ -825,16 +810,8 @@ button, input, select, textarea, optgroup {
 .sp-span-12 { grid-column: span 12; }
 @media (max-width: 900px) { .sp-span-6 { grid-column: span 12; } }
 
-/* Equal-height media cards: faces fill the grid-stretched scene. */
-.sp-grid-media .sp-flipcard-scene { height: 100%; }
-.sp-flipcard__face--front { height: 100%; }
-
-/* Brand templates: the flip back is a brand-moment surface (deep green,
-   lime voice) — the double class outweighs the face's default lift fill. */
-.sp-flipcard__face--back.sp-mesh {
-  background: var(--brand-surface);
-  border-color: var(--brand-surface);
-}
+/* Equal-height media cards across a grid row. */
+.sp-grid-media .sp-template-card { height: 100%; }
 
 /* --- Brand swatch ---------------------------------------------------------
    The quick-select chip in ColorControl's brand row. One recipe so every

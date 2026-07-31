@@ -91,49 +91,36 @@ export function Portal() {
                   key={t.id}
                   onClick={() => navigate({ name: "template", templateId: t.id })}
                   aria-label={t.category ? `${t.name} — ${t.category}` : t.name}
-                  className="sp-flipcard-scene group text-left"
+                  className="sp-card sp-media-card sp-template-card"
                 >
-                  <div className="sp-flipcard">
-                    {/* Front — the card as it was */}
-                    <div className="sp-flipcard__face sp-flipcard__face--front sp-media-card">
-                      <div className="sp-media-card__preview">
-                        {/* Cover, not contain: the artwork FILLS the frame
-                            (edges crop on the mismatched axis). */}
-                        <div
-                          style={{
-                            aspectRatio: `${t.canvasWidth} / ${t.canvasHeight}`,
-                            flexShrink: 0,
-                            // Pin the SHORT axis so the artwork overflows the
-                            // square frame on the long one and crops there.
-                            ...(t.canvasWidth / t.canvasHeight >= 1
-                              ? { height: "100%" }
-                              : { width: "100%" }),
-                          }}
-                        >
-                          <TemplateThumbnail template={t} />
-                        </div>
-                      </div>
-                      <div style={{ padding: "12px 2px 4px" }}>
-                        {t.category && <p className="sp-eyebrow mb-1">{t.category}</p>}
-                        <h2 style={{ fontFamily: "var(--font-ui)", fontWeight: 500, fontSize: 14, letterSpacing: "-0.01em", color: "var(--text-primary)" }}>
-                          {t.name}
-                        </h2>
-                        {t.description && (
-                          <p style={{ fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)", marginTop: 6 }}>{t.description}</p>
-                        )}
-                      </div>
+                  <div className="sp-media-card__preview">
+                    {/* Cover, not contain: the artwork FILLS the frame
+                        (edges crop on the mismatched axis). */}
+                    <div
+                      style={{
+                        aspectRatio: `${t.canvasWidth} / ${t.canvasHeight}`,
+                        flexShrink: 0,
+                        // Pin the SHORT axis so the artwork overflows the
+                        // square frame on the long one and crops there.
+                        ...(t.canvasWidth / t.canvasHeight >= 1
+                          ? { height: "100%" }
+                          : { width: "100%" }),
+                      }}
+                    >
+                      <TemplateThumbnail template={t} />
                     </div>
-                    {/* Back — the invitation, on the brand's deep green */}
-                    <div className="sp-flipcard__face sp-flipcard__face--back sp-mesh" aria-hidden>
-                      {t.category && <p className="sp-eyebrow">{t.category}</p>}
-                      <p style={{ fontFamily: "var(--font-ui)", fontWeight: 500, fontSize: 16, letterSpacing: "-0.01em", lineHeight: 1.3 }}>
-                        {t.name}
-                      </p>
-                      <span className="sp-btn sp-btn-solar" style={{ pointerEvents: "none" }}>
-                        Use template
-                        <ArrowRight style={{ width: 14, height: 14 }} />
-                      </span>
-                    </div>
+                  </div>
+                  <div className="sp-template-card__meta">
+                    <span className="sp-template-card__text">
+                      {t.category && <span className="sp-eyebrow block mb-1">{t.category}</span>}
+                      <span className="sp-template-card__title block">{t.name}</span>
+                      {t.description && (
+                        <span className="sp-template-card__desc block">{t.description}</span>
+                      )}
+                    </span>
+                    <span className="sp-template-card__go" aria-hidden>
+                      <ArrowRight style={{ width: 15, height: 15 }} />
+                    </span>
                   </div>
                 </button>
               ))}
