@@ -13,8 +13,9 @@
      display face.
    - Primary action is Forrest fill + Volt label on light, inverted on dark.
    - No gradients as surface, no drop shadows in either mode, no glass.
-   - Sentence case everywhere. ALL CAPS only for the small-label treatment
-     (eyebrows, table headers) at 0.04em tracking.
+   - ALL CAPS headings in the display face (a deliberate override of the
+     DS's sentence-case rule — see the @font-face note). Small labels
+     (eyebrows, table headers) are ALL CAPS mono at 0.04em tracking.
 
    Themes are scoped to [data-theme="light" | "dark"], which
    ColorSchemeProvider sets on <html> alongside the .dark class that
@@ -26,20 +27,19 @@
 
 @import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap");
 
-/* Neuething Sans — the licensed heading face, vendored locally. The 800
-   Ultra Expanded cut carries Display/H1/H2; the variable cut at 700 takes
-   H3 and below. */
+/* Neuething Sans Extra Bold EXTRA Expanded — the licensed heading face,
+   vendored locally. One cut carries every heading at every step.
+
+   This departs from the published DS on two points, at Chris's direction,
+   pending an update to the design system itself:
+   - the DS splits headings between Ultra Expanded (800) for Display–H2 and
+     a variable cut at 700 for H3 and below; the app runs this single face
+     throughout instead;
+   - the DS sets headings in sentence case; the app sets them in ALL CAPS. */
 @font-face {
   font-family: "Neuething Sans";
-  src: url("../assets/fonts/neuething/NeuethingSans-ExtraBoldUltraExpanded.otf") format("opentype");
+  src: url("../assets/fonts/neuething/NeuethingSans-ExtraBoldExtraExpanded.otf") format("opentype");
   font-weight: 800;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Neuething Sans Variable";
-  src: url("../assets/fonts/neuething/NeuethingSans-variableVF.ttf") format("truetype");
-  font-weight: 100 900;
   font-style: normal;
   font-display: swap;
 }
@@ -57,10 +57,8 @@
      behind --text-primary in light; product code reaches for those. */
 
   /* Typography */
-  --font-head:      "Neuething Sans", "Inter Tight", system-ui, sans-serif;
-  --font-head-sm:   "Neuething Sans Variable", "Neuething Sans", system-ui, sans-serif;
-  --weight-head:    800; /* Display, H1, H2 */
-  --weight-head-sm: 700; /* H3 and below */
+  --font-head:    "Neuething Sans", "Inter Tight", system-ui, sans-serif;
+  --weight-head:  800; /* every heading step */
   --font-body: "Inter Tight", system-ui, -apple-system, sans-serif;
   --font-ui:   "Inter Tight", system-ui, -apple-system, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
@@ -319,40 +317,40 @@ button, input, select, textarea, optgroup {
   font-weight: 400;
 }
 
-/* Headings are SENTENCE CASE — the DS reserves ALL CAPS for the small-label
-   treatment (.sp-eyebrow) only, never for headings or emphasis.
-
-   The face follows the type STEP, not the role: Extra Bold Ultra Expanded
-   (800) carries Display–H2, and H3 and below drop to the Variable cut at
-   700. Product chrome runs a compressed scale, so a page title sits at the
-   H4 step and therefore takes the Variable cut. */
+/* Headings are the display face in ALL CAPS at every step — a deliberate
+   departure from the published DS's sentence case (see the @font-face note
+   above). Content set in the display face is a HEADING; anything that is
+   really a data label — a template's name on a card, a field name — stays
+   in Inter Tight so the caps treatment never lands on user content. */
 .sp-page-title {
-  font-family: var(--font-head-sm);
+  font-family: var(--font-head);
   font-size: var(--type-h4-size);
   line-height: var(--type-h4-lh);
-  font-weight: var(--weight-head-sm);
+  font-weight: var(--weight-head);
   letter-spacing: var(--type-h4-track);
+  text-transform: uppercase;
   color: var(--text-primary);
 }
 
-/* Brand moments — the onboarding and sign-in front doors. These are the only
-   places in the app that reach the H2 step, which is where Ultra Expanded
-   belongs. */
+/* Brand moments — the onboarding and sign-in front doors, the only places
+   in the app that reach the H2 step. */
 .sp-hero-title {
   font-family: var(--font-head);
   font-size: var(--type-h2-size);
   line-height: var(--type-h2-lh);
   font-weight: var(--weight-head);
   letter-spacing: var(--type-h2-track);
+  text-transform: uppercase;
 }
 
-/* Section and dialog headings — the H3-and-below band. */
+/* Section and dialog headings. */
 .sp-section-title {
-  font-family: var(--font-head-sm);
+  font-family: var(--font-head);
   font-size: var(--type-cardtitle-size);
   line-height: var(--type-cardtitle-lh);
-  font-weight: var(--weight-head-sm);
+  font-weight: var(--weight-head);
   letter-spacing: var(--type-cardtitle-track);
+  text-transform: uppercase;
   color: var(--text-primary);
 }
 
@@ -690,7 +688,7 @@ button, input, select, textarea, optgroup {
   perspective: 1000px;
   background: transparent;
   border: none;
-  border-radius: var(--radius-card-sm);
+  border-radius: var(--radius-card);
 }
 .sp-flipcard {
   position: relative;
@@ -698,7 +696,7 @@ button, input, select, textarea, optgroup {
   height: 100%;
   transform-style: preserve-3d;
   transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-  border-radius: var(--radius-card-sm);
+  border-radius: var(--radius-card);
 }
 .sp-flipcard-scene:hover .sp-flipcard,
 .sp-flipcard-scene:focus-visible .sp-flipcard {
@@ -707,7 +705,7 @@ button, input, select, textarea, optgroup {
 .sp-flipcard__face {
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  border-radius: var(--radius-card-sm);
+  border-radius: var(--radius-card);
   border: 1px solid var(--border);
   background: var(--bg-surface);
   overflow: hidden;
@@ -788,9 +786,12 @@ button, input, select, textarea, optgroup {
    The frame is square — most templates are 1:1 social posts, so a square
    well crops the least and keeps the grid rows even. Both call sites compare
    a template's own ratio against 1 to decide which axis to pin. */
-.sp-media-card { padding: 10px; }
+.sp-media-card { --media-pad: var(--space-3xs); padding: var(--media-pad); }
 .sp-media-card__preview {
-  border-radius: 12px;
+  /* Concentric with the card it sits in — inner radius = outer minus the
+     inset — so the two curves stay parallel. Derived rather than picked,
+     which also keeps it off the banned 12px it used to sit at. */
+  border-radius: calc(var(--radius-card) - var(--media-pad));
   aspect-ratio: 1 / 1;
   background: var(--bg-hover);
   overflow: hidden;

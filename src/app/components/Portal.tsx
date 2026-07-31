@@ -115,7 +115,7 @@ export function Portal() {
                       </div>
                       <div style={{ padding: "12px 2px 4px" }}>
                         {t.category && <p className="sp-eyebrow mb-1">{t.category}</p>}
-                        <h2 style={{ fontFamily: "var(--font-head-sm)", fontWeight: 700, fontSize: 14, letterSpacing: "-0.2px", color: "var(--text-primary)" }}>
+                        <h2 style={{ fontFamily: "var(--font-ui)", fontWeight: 500, fontSize: 14, letterSpacing: "-0.01em", color: "var(--text-primary)" }}>
                           {t.name}
                         </h2>
                         {t.description && (
@@ -126,7 +126,7 @@ export function Portal() {
                     {/* Back — the invitation, on the brand's deep green */}
                     <div className="sp-flipcard__face sp-flipcard__face--back sp-mesh" aria-hidden>
                       {t.category && <p className="sp-eyebrow">{t.category}</p>}
-                      <p style={{ fontFamily: "var(--font-head-sm)", fontWeight: 700, fontSize: 16, letterSpacing: "-0.3px", lineHeight: 1.05 }}>
+                      <p style={{ fontFamily: "var(--font-ui)", fontWeight: 500, fontSize: 16, letterSpacing: "-0.01em", lineHeight: 1.3 }}>
                         {t.name}
                       </p>
                       <span className="sp-btn sp-btn-solar" style={{ pointerEvents: "none" }}>
