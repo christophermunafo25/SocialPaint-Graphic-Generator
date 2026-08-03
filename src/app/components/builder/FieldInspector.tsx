@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlignCenter,
   AlignCenterHorizontal,
@@ -14,6 +14,7 @@ import {
   AlignVerticalJustifyStart,
   ArrowDownToLine,
   ArrowUpToLine,
+  Check,
   ChevronDown,
   Link as LinkIcon,
   Lock,
@@ -29,10 +30,20 @@ import type { BrandKit, CornerRadius, FieldType, TemplateField, TextGradient } f
 import { stores } from "@/lib/stores";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useBrand } from "@/lib/brand/BrandContext";
-import { GOOGLE_FONTS } from "@/lib/render/fonts";
+import { GOOGLE_FONTS, loadGoogleFonts } from "@/lib/render/fonts";
+import {
+  customFamilyStyles,
+  familyStyles,
+  nearestStyle,
+  styleGroups,
+  styleKey,
+  styleName,
+  toFontStyle,
+  type FontStyle,
+} from "@/lib/render/fontCatalog";
 import { suggestFieldKey } from "@/lib/caption";
 import { useFileDrop } from "@/lib/useFileDrop";
-import { getTypeStyle, lockedProperties, ruleSentences } from "@/lib/brand/resolveStyle";
+import { getTypeStyle, isStyleLocked, lockedProperties, resolveFieldStyle, ruleSentences } from "@/lib/brand/resolveStyle";
 import { ColorControl } from "../ColorControl";
 import { GradientEditor } from "./GradientEditor";
 
@@ -297,6 +308,69 @@ export function FieldInspector({
   };
 
   // --- Layout helpers ------------------------------------------------------
+
+  // --- Typography helpers --------------------------------------------------
+
+  // The picker shows the RESOLVED face, so a field bound to a type style
+  // displays what it actually renders with rather than its own overridden
+  // values sitting underneath.
+  const resolved = resolveFieldStyle(field, kit);
+  const displayFamily = resolved.fontFamily;
+  const currentStyle = toFontStyle(resolved.fontWeight, resolved.fontStyle, resolved.fontStretch);
+  const fontAssets = useMemo(() => assets.filter((a) => a.kind === "font"), [assets]);
+
+  const familyGroups = useMemo(() => {
+    const brand = [
+      ...new Set([kit?.headingFont?.family, kit?.bodyFont?.family].filter((f): f is string => Boolean(f))),
+    ];
+    const uploaded = [...customFamilyStyles(fontAssets).keys()].filter((f) => !brand.includes(f));
+    const google = GOOGLE_FONTS.filter((f) => !brand.includes(f) && !uploaded.includes(f));
+    return [
+      { label: "Brand fonts", families: brand },
+      { label: "Uploaded fonts", families: uploaded },
+      { label: "Google Fonts", families: google },
+    ].filter((g) => g.families.length > 0);
+  }, [kit, fontAssets]);
+
+  const fontCatalog = displayFamily ? familyStyles(displayFamily, fontAssets, currentStyle) : null;
+  const styleLocked = isStyleLocked(locked);
+
+  /** A style that fixes the weight but not the family narrows the style list
+   * to that weight in whatever family is chosen, rather than hiding it. */
+  const styleOptions = useMemo(() => {
+    if (!fontCatalog) return [];
+    const lockedWeight = locked.has("weight") ? boundStyle?.weight : undefined;
+    if (lockedWeight === undefined) return fontCatalog.styles;
+    const atWeight = nearestStyle({ ...currentStyle, weight: lockedWeight }, fontCatalog.styles);
+    return atWeight ? fontCatalog.styles.filter((s) => s.weight === atWeight.weight) : fontCatalog.styles;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fontCatalog?.family, fontCatalog?.styles, locked, boundStyle?.weight, styleKey(currentStyle)]);
+
+  /** Never show a style the chosen family does not have. */
+  const displayStyle =
+    (styleOptions.length > 0 ? nearestStyle(currentStyle, styleOptions) : undefined) ?? currentStyle;
+
+  /** Weight stays absent when it was absent and the face is plain Regular, so
+   * choosing a family does not quietly add values to a legacy field. */
+  const stylePatch = (s: FontStyle, explicit: boolean): Partial<TemplateField> => ({
+    fontWeight: !explicit && field.fontWeight === undefined && s.weight === 400 ? undefined : s.weight,
+    fontStyle: s.italic ? "italic" : undefined,
+    fontStretch: s.stretch === "normal" ? undefined : s.stretch,
+  });
+
+  const changeFamily = (family: string | undefined) => {
+    if (!family) {
+      onChange({ fontFamily: undefined });
+      return;
+    }
+    // Map onto the nearest style the NEW family has rather than resetting to
+    // Regular — same weight where it exists, closest weight where it doesn't,
+    // italic and width preserved only where the family offers them.
+    const mapped = nearestStyle(currentStyle, familyStyles(family, fontAssets, currentStyle).styles);
+    onChange({ fontFamily: family, ...(mapped ? stylePatch(mapped, false) : {}) });
+  };
+
+  const changeStyle = (s: FontStyle) => onChange(stylePatch(s, true));
 
   const resizeMode: ResizeMode = field.fixedWidth ? "fixed" : field.autoFit ? "shrink" : "free";
   const setResizeMode = (mode: ResizeMode) => {
@@ -700,24 +774,22 @@ export function FieldInspector({
           </div>
           <div>
             <label className={labelClass} style={labelStyle}>Font</label>
-            <FontSelect field={field} kit={kit} locked={locked} onChange={onChange} customFamilies={
-              assets.filter((a) => a.kind === "font").map((a) => a.metadata.family ?? a.name)
-            } />
+            <FontFamilySelect
+              value={displayFamily}
+              groups={familyGroups}
+              disabled={locked.has("fontFamily")}
+              onSelect={changeFamily}
+            />
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <select
-              className={controlClass}
-              style={controlStyle}
-              aria-label="Font weight"
-              disabled={locked.has("weight")}
-              value={field.fontWeight ?? ""}
-              onChange={(e) => onChange({ fontWeight: e.target.value ? Number(e.target.value) : undefined })}
-            >
-              <option value="">Weight</option>
-              {[100, 200, 300, 400, 500, 600, 700, 800, 900].map((w) => (
-                <option key={w} value={w}>{w}</option>
-              ))}
-            </select>
+            <FontStyleSelect
+              family={displayFamily}
+              styles={styleOptions}
+              value={displayStyle}
+              disabled={!displayFamily || styleLocked}
+              locked={styleLocked}
+              onSelect={changeStyle}
+            />
             <InlineNum
               prefix="px"
               value={field.fontSizePx ?? 45}
@@ -725,6 +797,12 @@ export function FieldInspector({
               onCommit={(v) => onChange({ fontSizePx: v ?? 45 })}
             />
           </div>
+          {fontCatalog && !fontCatalog.verified && (
+            <p style={{ fontSize: 11, color: "var(--text-muted)" }}>
+              We don't have {displayFamily} on file, so these styles are a guess — upload the
+              font in Brand Studio to pick from what it really has.
+            </p>
+          )}
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className={labelClass} style={labelStyle}>Line height</label>
@@ -868,49 +946,518 @@ export function FieldInspector({
   );
 }
 
-function FontSelect({
-  field,
-  kit,
-  customFamilies,
-  locked,
-  onChange,
+// ---------------------------------------------------------------------------
+// Two-step font picker — Figma's model: choose a family, then choose from the
+// styles that family ACTUALLY has. The old control paired a family <select>
+// with an unconditional 100–900 weight ladder, so picking 700 on a family
+// that ships only 400 rendered a synthesized face and exported the wrong one.
+// ---------------------------------------------------------------------------
+
+/** Close on outside pointerdown or Escape, and hand focus back to the trigger
+ * so Escape leaves the keyboard exactly where it started. */
+function useDismiss(
+  open: boolean,
+  refs: Array<React.RefObject<HTMLElement | null>>,
+  onClose: () => void,
+) {
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => {
+      if (!refs.some((r) => r.current?.contains(e.target as Node))) onClose();
+    };
+    window.addEventListener("pointerdown", onDown, true);
+    return () => window.removeEventListener("pointerdown", onDown, true);
+  }, [open, onClose, refs]);
+}
+
+/** The dropdown surface. Fixed-positioned off the trigger's rect rather than
+ * absolutely positioned inside the inspector, which scrolls and would clip it.
+ * Elevation is surface + border, never shadow. */
+function MenuSurface({
+  triggerRef,
+  surfaceRef,
+  children,
+  role,
+  id,
+  onKeyDown,
+  autoFocus,
 }: {
-  field: TemplateField;
-  kit: BrandKit | null;
-  customFamilies: string[];
-  locked: Set<string>;
-  onChange(patch: Partial<TemplateField>): void;
+  triggerRef: React.RefObject<HTMLElement | null>;
+  surfaceRef: React.RefObject<HTMLDivElement | null>;
+  children: React.ReactNode;
+  role?: string;
+  id?: string;
+  onKeyDown?(e: React.KeyboardEvent): void;
+  autoFocus?: boolean;
 }) {
-  const brandFamilies = [
-    ...new Set(
-      [kit?.headingFont?.family, kit?.bodyFont?.family, ...customFamilies].filter(
-        (f): f is string => Boolean(f),
-      ),
-    ),
-  ];
-  const otherFamilies = GOOGLE_FONTS.filter((f) => !brandFamilies.includes(f));
+  // autoFocus is not honoured on a div — focus it explicitly, or the style
+  // menu's arrow/Enter/Escape handling never receives a key.
+  useEffect(() => {
+    if (autoFocus) surfaceRef.current?.focus();
+  }, [autoFocus, surfaceRef]);
+
+  const rect = triggerRef.current?.getBoundingClientRect();
+  const maxHeight = 260;
+  const below = rect ? window.innerHeight - rect.bottom - 12 : maxHeight;
+  const flip = below < 160 && rect && rect.top > below;
   return (
-    <select
-      className={controlClass}
-      style={controlStyle}
-      disabled={locked.has("fontFamily")}
-      value={field.fontFamily ?? ""}
-      onChange={(e) => onChange({ fontFamily: e.target.value || undefined })}
+    <div
+      ref={surfaceRef}
+      role={role}
+      id={id}
+      tabIndex={autoFocus ? -1 : undefined}
+      onKeyDown={onKeyDown}
+      className="fixed z-50 py-1 overflow-y-auto"
+      style={{
+        left: rect?.left,
+        top: flip ? undefined : (rect?.bottom ?? 0) + 4,
+        bottom: flip && rect ? window.innerHeight - rect.top + 4 : undefined,
+        width: rect?.width,
+        maxHeight: Math.min(maxHeight, Math.max(160, flip ? (rect?.top ?? 0) - 12 : below)),
+        background: "var(--bg-surface)",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-control)",
+        outline: "none",
+      }}
     >
-      <option value="">Default (sans-serif)</option>
-      {brandFamilies.length > 0 && (
-        <optgroup label="Brand fonts">
-          {brandFamilies.map((f) => (
-            <option key={f} value={f}>{f}</option>
-          ))}
-        </optgroup>
+      {children}
+    </div>
+  );
+}
+
+/** One row in either menu. The label renders in its OWN face — no waiting on
+ * the font: it paints in the fallback and upgrades in place when the file
+ * lands, which is what keeps the menu from stalling on open. */
+function MenuRow({
+  label,
+  fullName,
+  selected,
+  active,
+  previewStyle,
+  onSelect,
+  onHover,
+  id,
+}: {
+  label: string;
+  /** The unabbreviated name, when the visible label leans on a group header
+   * for context — screen readers get "Bold Expanded", not a bare "Bold". */
+  fullName?: string;
+  selected: boolean;
+  active: boolean;
+  previewStyle?: React.CSSProperties;
+  onSelect(): void;
+  onHover(): void;
+  id?: string;
+}) {
+  return (
+    <div
+      id={id}
+      role="option"
+      aria-label={fullName}
+      aria-selected={selected}
+      onPointerDown={(e) => {
+        e.preventDefault();
+        onSelect();
+      }}
+      onPointerEnter={onHover}
+      className="flex items-center justify-between gap-2 px-2.5 py-1.5 cursor-pointer"
+      style={{
+        background: selected ? "var(--accent-wash)" : active ? "var(--bg-hover)" : "transparent",
+        color: "var(--text-primary)",
+        transition: "background var(--dur-state) var(--ease)",
+      }}
+    >
+      <span className="truncate" style={{ fontSize: 13, ...previewStyle }}>
+        {label}
+      </span>
+      {selected && (
+        <Check style={{ width: 12, height: 12, flexShrink: 0, color: "var(--state-primary)" }} />
       )}
-      <optgroup label="Google Fonts">
-        {otherFamilies.map((f) => (
-          <option key={f} value={f}>{f}</option>
-        ))}
-      </optgroup>
-    </select>
+    </div>
+  );
+}
+
+const groupLabelStyle: React.CSSProperties = {
+  fontFamily: "var(--font-mono)",
+  fontSize: 9.5,
+  letterSpacing: "0.06em",
+  textTransform: "uppercase",
+  color: "var(--text-disabled)",
+  padding: "6px 10px 3px",
+};
+
+/** The trigger both controls share — looks exactly like the .sp-input select
+ * it replaces, so nothing else in the inspector shifts. */
+const TriggerButton = React.forwardRef<
+  HTMLButtonElement,
+  {
+    value: string;
+    placeholder?: string;
+    disabled?: boolean;
+    lockedHint?: boolean;
+    previewStyle?: React.CSSProperties;
+    ariaLabel: string;
+    expanded: boolean;
+    controls?: string;
+    onOpen(): void;
+    onKeyDown?(e: React.KeyboardEvent): void;
+  }
+>(function TriggerButton(
+  { value, placeholder, disabled, lockedHint, previewStyle, ariaLabel, expanded, controls, onOpen, onKeyDown },
+  ref,
+) {
+  return (
+    <button
+      ref={ref}
+      type="button"
+      role="combobox"
+      aria-label={ariaLabel}
+      aria-expanded={expanded}
+      aria-controls={controls}
+      aria-haspopup="listbox"
+      disabled={disabled}
+      onClick={onOpen}
+      onKeyDown={onKeyDown}
+      className={`${controlClass} flex items-center justify-between gap-2 text-left`}
+      style={{ opacity: disabled ? 0.5 : 1, cursor: disabled ? "default" : "pointer" }}
+    >
+      <span className="truncate" style={value ? previewStyle : { color: "var(--text-disabled)" }}>
+        {value || placeholder}
+      </span>
+      {lockedHint ? (
+        <Lock style={{ width: 11, height: 11, flexShrink: 0, color: "var(--state-primary)" }} />
+      ) : (
+        <ChevronDown style={{ width: 12, height: 12, flexShrink: 0, color: "var(--text-muted)" }} />
+      )}
+    </button>
+  );
+});
+
+/** Move an index through a list with wrap-around. */
+const step = (index: number, delta: number, length: number): number =>
+  length === 0 ? -1 : (index + delta + length) % length;
+
+/** Keep the arrow-key cursor visible in a scrolling menu. */
+function useScrollActiveIntoView(
+  open: boolean,
+  active: number,
+  surfaceRef: React.RefObject<HTMLDivElement | null>,
+) {
+  useEffect(() => {
+    if (!open) return;
+    const rows = surfaceRef.current?.querySelectorAll("[role=option]");
+    rows?.[active]?.scrollIntoView({ block: "nearest" });
+  }, [open, active, surfaceRef]);
+}
+
+interface FamilyOption {
+  family: string; // "" = default sans-serif
+  label: string;
+  group: string;
+}
+
+/** Control 1 — family. Searchable: brand fonts, then uploaded families, then
+ * Google families, each group divided as in Figma's menu. */
+function FontFamilySelect({
+  value,
+  groups,
+  disabled,
+  onSelect,
+}: {
+  value: string | undefined;
+  groups: Array<{ label: string; families: string[] }>;
+  disabled: boolean;
+  onSelect(family: string | undefined): void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [active, setActive] = useState(0);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const surfaceRef = useRef<HTMLDivElement>(null);
+
+  const close = useCallback(() => {
+    setOpen(false);
+    setQuery("");
+    triggerRef.current?.focus();
+  }, []);
+  useDismiss(open, [triggerRef, surfaceRef], () => setOpen(false));
+  useScrollActiveIntoView(open, active, surfaceRef);
+
+  const options: FamilyOption[] = useMemo(() => {
+    const all: FamilyOption[] = [{ family: "", label: "Default (sans-serif)", group: "" }];
+    for (const g of groups) {
+      for (const family of g.families) all.push({ family, label: family, group: g.label });
+    }
+    const q = query.trim().toLowerCase();
+    return q ? all.filter((o) => o.label.toLowerCase().includes(q)) : all;
+  }, [groups, query]);
+
+  // Preview each visible family in its own face. One face per family, and
+  // only for what is on the list right now, so typing narrows the work.
+  useEffect(() => {
+    if (!open) return;
+    const usage = new Map(
+      options
+        .filter((o) => o.family)
+        .map((o) => {
+          const known = familyStyles(o.family);
+          const regular = nearestStyle(toFontStyle(400), known.styles);
+          return [o.family, regular ? [regular] : []] as const;
+        })
+        .filter(([, styles]) => styles.length > 0),
+    );
+    if (usage.size > 0) loadGoogleFonts(usage);
+  }, [open, options]);
+
+  useEffect(() => {
+    if (!open) return;
+    setActive(Math.max(0, options.findIndex((o) => o.family === (value ?? ""))));
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const commit = (index: number) => {
+    const option = options[index];
+    if (!option) return;
+    onSelect(option.family || undefined);
+    close();
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    // Keys handled here stay here. The builder listens on window for Escape
+    // (clear selection) and Delete (remove field); without this, dismissing
+    // the menu also deselected the field the inspector was editing.
+    if (["Escape", "ArrowDown", "ArrowUp", "Enter"].includes(e.key)) e.stopPropagation();
+    if (e.key === "Escape") {
+      e.preventDefault();
+      close(); // closes and restores — no value change
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActive((i) => step(i, 1, options.length));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActive((i) => step(i, -1, options.length));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      commit(active);
+    }
+  };
+
+  let lastGroup = "";
+  return (
+    <>
+      <TriggerButton
+        ref={triggerRef}
+        ariaLabel="Font family"
+        value={value ?? ""}
+        placeholder="Default (sans-serif)"
+        previewStyle={value ? { fontFamily: `"${value}", sans-serif` } : undefined}
+        disabled={disabled}
+        lockedHint={disabled}
+        expanded={open}
+        controls="sp-family-menu"
+        onOpen={() => setOpen((o) => !o)}
+        onKeyDown={(e) => {
+          if (!open && (e.key === "ArrowDown" || e.key === "Enter" || e.key === " ")) {
+            e.preventDefault();
+            setOpen(true);
+          }
+        }}
+      />
+      {open && (
+        <MenuSurface triggerRef={triggerRef} surfaceRef={surfaceRef} id="sp-family-menu">
+          <div style={{ padding: "2px 6px 6px" }}>
+            <input
+              autoFocus
+              className={controlClass}
+              style={{ padding: "6px 9px", fontSize: 12.5 }}
+              placeholder="Search fonts"
+              value={query}
+              aria-label="Search fonts"
+              aria-controls="sp-family-list"
+              aria-activedescendant={options[active] ? `sp-family-opt-${active}` : undefined}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setActive(0);
+              }}
+              onKeyDown={onKeyDown}
+            />
+          </div>
+          <div role="listbox" id="sp-family-list" aria-label="Font family">
+            {options.length === 0 && (
+              <p style={{ fontSize: 12, color: "var(--text-muted)", padding: "6px 10px 8px" }}>
+                No fonts match “{query}”.
+              </p>
+            )}
+            {options.map((o, i) => {
+              const newGroup = o.group !== lastGroup;
+              const previousGroup = lastGroup;
+              lastGroup = o.group;
+              return (
+                <React.Fragment key={o.family || "__default"}>
+                  {newGroup && o.group && (
+                    <div
+                      style={{
+                        ...groupLabelStyle,
+                        borderTop: previousGroup === "" && i === 0 ? undefined : "1px solid var(--border)",
+                        marginTop: 4,
+                      }}
+                    >
+                      {o.group}
+                    </div>
+                  )}
+                  <MenuRow
+                    id={`sp-family-opt-${i}`}
+                    label={o.label}
+                    selected={o.family === (value ?? "")}
+                    active={i === active}
+                    previewStyle={o.family ? { fontFamily: `"${o.family}", sans-serif` } : undefined}
+                    onSelect={() => commit(i)}
+                    onHover={() => setActive(i)}
+                  />
+                </React.Fragment>
+              );
+            })}
+          </div>
+        </MenuSurface>
+      )}
+    </>
+  );
+}
+
+/** Control 2 — style. Lists only the styles the chosen family has, by name,
+ * with width groups divided as Figma does. Disabled until a family is chosen. */
+function FontStyleSelect({
+  family,
+  styles,
+  value,
+  disabled,
+  locked,
+  onSelect,
+}: {
+  family: string | undefined;
+  styles: FontStyle[];
+  value: FontStyle;
+  disabled: boolean;
+  locked: boolean;
+  onSelect(style: FontStyle): void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(0);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const surfaceRef = useRef<HTMLDivElement>(null);
+
+  const close = useCallback(() => {
+    setOpen(false);
+    triggerRef.current?.focus();
+  }, []);
+  useDismiss(open, [triggerRef, surfaceRef], () => setOpen(false));
+  useScrollActiveIntoView(open, active, surfaceRef);
+
+  const ordered = useMemo(() => styleGroups(styles), [styles]);
+  const flat = useMemo(() => ordered.flatMap((g) => g.styles), [ordered]);
+
+  useEffect(() => {
+    if (!open) return;
+    setActive(Math.max(0, flat.findIndex((s) => styleKey(s) === styleKey(value))));
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const commit = (index: number) => {
+    const style = flat[index];
+    if (!style) return;
+    onSelect(style);
+    close();
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (["Escape", "ArrowDown", "ArrowUp", "Enter", " "].includes(e.key)) e.stopPropagation();
+    if (e.key === "Escape") {
+      e.preventDefault();
+      close();
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActive((i) => step(i, 1, flat.length));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActive((i) => step(i, -1, flat.length));
+    } else if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      commit(active);
+    }
+  };
+
+  const faceOf = (style: FontStyle): React.CSSProperties => ({
+    fontFamily: family ? `"${family}", sans-serif` : undefined,
+    fontWeight: style.weight,
+    fontStyle: style.italic ? "italic" : undefined,
+    fontStretch: style.stretch === "normal" ? undefined : style.stretch,
+  });
+
+  let index = -1;
+  return (
+    <>
+      <TriggerButton
+        ref={triggerRef}
+        ariaLabel="Font style"
+        value={family ? styleName(value) : ""}
+        placeholder={family ? "Style" : "Choose a font first"}
+        previewStyle={faceOf(value)}
+        disabled={disabled}
+        lockedHint={locked}
+        expanded={open}
+        controls="sp-style-menu"
+        onOpen={() => setOpen((o) => !o)}
+        onKeyDown={(e) => {
+          if (!open && (e.key === "ArrowDown" || e.key === "Enter" || e.key === " ")) {
+            e.preventDefault();
+            setOpen(true);
+          }
+        }}
+      />
+      {open && (
+        <MenuSurface
+          triggerRef={triggerRef}
+          surfaceRef={surfaceRef}
+          id="sp-style-menu"
+          role="listbox"
+          autoFocus
+          onKeyDown={onKeyDown}
+        >
+          {ordered.map((group, gi) => (
+            <React.Fragment key={group.stretch}>
+              {group.label && (
+                <div
+                  style={{
+                    ...groupLabelStyle,
+                    borderTop: gi === 0 ? undefined : "1px solid var(--border)",
+                    marginTop: gi === 0 ? 0 : 4,
+                  }}
+                >
+                  {group.label}
+                </div>
+              )}
+              {group.styles.map((style) => {
+                index += 1;
+                const i = index;
+                return (
+                  <MenuRow
+                    key={styleKey(style)}
+                    // Inside a width group the header already says the width,
+                    // so the row carries only the weight — as Figma does.
+                    // Ungrouped families keep the full name.
+                    label={group.label ? styleName({ ...style, stretch: "normal" }) : styleName(style)}
+                    fullName={styleName(style)}
+                    selected={styleKey(style) === styleKey(value)}
+                    active={i === active}
+                    previewStyle={faceOf(style)}
+                    onSelect={() => commit(i)}
+                    onHover={() => setActive(i)}
+                  />
+                );
+              })}
+            </React.Fragment>
+          ))}
+        </MenuSurface>
+      )}
+    </>
   );
 }
 
