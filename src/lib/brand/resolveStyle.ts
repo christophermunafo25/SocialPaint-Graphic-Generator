@@ -1,4 +1,5 @@
 import type { BrandKit, BrandTypeStyle, TemplateField } from "../types";
+import { styleName, toFontStyle } from "../render/fontCatalog";
 
 /** The styling a field actually renders with after the brand rules engine
  * applies: any property the bound type style DEFINES wins over the field's
@@ -6,6 +7,8 @@ import type { BrandKit, BrandTypeStyle, TemplateField } from "../types";
 export interface ResolvedFieldStyle {
   fontFamily?: string;
   fontWeight?: number;
+  fontStyle?: "normal" | "italic";
+  fontStretch?: string;
   fontSizePx?: number;
   minFontSizePx?: number;
   uppercase?: boolean;
@@ -30,6 +33,8 @@ export function resolveFieldStyle(field: TemplateField, kit: BrandKit | null): R
   return {
     fontFamily: style?.font?.family ?? field.fontFamily,
     fontWeight: style?.weight ?? field.fontWeight,
+    fontStyle: style?.fontStyle ?? field.fontStyle,
+    fontStretch: style?.fontStretch ?? field.fontStretch,
     fontSizePx: style?.fontSizePx ?? field.fontSizePx,
     minFontSizePx: field.minFontSizePx,
     uppercase: style?.uppercase ?? field.uppercase,
@@ -50,6 +55,8 @@ export function lockedProperties(style: BrandTypeStyle | undefined): Set<string>
   if (!style) return locked;
   if (style.font) locked.add("fontFamily");
   if (style.weight !== undefined) locked.add("weight");
+  if (style.fontStyle !== undefined) locked.add("fontStyle");
+  if (style.fontStretch !== undefined) locked.add("fontStretch");
   if (style.fontSizePx !== undefined) locked.add("fontSizePx");
   if (style.uppercase !== undefined) locked.add("uppercase");
   if (style.letterSpacingPx !== undefined) locked.add("letterSpacingPx");
@@ -60,15 +67,33 @@ export function lockedProperties(style: BrandTypeStyle | undefined): Set<string>
   return locked;
 }
 
+/** Whether the two-step picker's STYLE control is locked. Binding a font locks
+ * it too: a style that says "always Neuething Sans Bold Expanded" cannot leave
+ * the face editable, and a style that fixes only the weight locks the style
+ * control while the family stays free. */
+export const isStyleLocked = (locked: Set<string>): boolean =>
+  locked.has("fontFamily") || locked.has("weight") || locked.has("fontStyle") || locked.has("fontStretch");
+
 /** Human-readable rule sentences for a type style — how marketing sees the
  * rules they've encoded ("Heading is always uppercase"). */
 export function ruleSentences(style: BrandTypeStyle, kit: BrandKit | null): string[] {
   const rules: string[] = [];
   const colorName = kit?.colors.find((c) => c.key === style.colorKey)?.name;
+  // The face reads as a name, never as raw values: "Bold Expanded", not
+  // "700 / ultra-expanded". Only named when the style actually fixes part of
+  // it — a style that locks the family alone stays "always Montserrat".
+  const face =
+    style.weight !== undefined || style.fontStyle !== undefined || style.fontStretch !== undefined
+      ? styleName(toFontStyle(style.weight, style.fontStyle, style.fontStretch))
+      : "";
   if (style.font) {
     rules.push(
-      `${style.name} is always ${style.font.family}${style.weight ? ` ${weightName(style.weight)}` : ""}${colorName ? ` in ${colorName}` : ""}.`,
+      `${style.name} is always ${style.font.family}${face ? ` ${face}` : ""}${colorName ? ` in ${colorName}` : ""}.`,
     );
+  } else if (face) {
+    // A weight-only lock used to produce no sentence at all, leaving the
+    // control disabled with nothing explaining why.
+    rules.push(`${style.name} is always ${face}${colorName ? ` in ${colorName}` : ""}.`);
   } else if (colorName) {
     rules.push(`${style.name} is always ${colorName}.`);
   }
@@ -77,12 +102,4 @@ export function ruleSentences(style: BrandTypeStyle, kit: BrandKit | null): stri
   if (style.maxLength !== undefined) rules.push(`${style.name} never exceeds ${style.maxLength} characters.`);
   if (style.autoFit) rules.push(`${style.name} auto-shrinks to fit its box.`);
   return rules;
-}
-
-function weightName(w: number): string {
-  if (w >= 700) return "Bold";
-  if (w >= 600) return "SemiBold";
-  if (w >= 500) return "Medium";
-  if (w <= 300) return "Light";
-  return "Regular";
 }
