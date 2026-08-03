@@ -177,12 +177,12 @@ function ImageFieldInput({ field, value, onChange, inputId }: FieldInputProps) {
             <Upload style={{ width: 15, height: 15, color: "var(--text-primary)" }} />
           </span>
         )}
-        <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+        <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}>
           {value ? "Replace image" : "Click or drag to upload"}
         </p>
       </div>
       {uploadError && (
-        <p role="alert" style={{ fontSize: 12, color: "var(--state-primary)", marginTop: 6 }}>
+        <p role="alert" style={{ fontSize: "var(--type-caption-size)", color: "var(--state-primary)", marginTop: 6 }}>
           {uploadError}
         </p>
       )}

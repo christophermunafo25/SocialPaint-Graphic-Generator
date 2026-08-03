@@ -44,11 +44,11 @@ export function ConfirmDialog({
         }}
       >
         <AlertDialogHeader>
-          <AlertDialogTitle style={{ fontSize: 16, fontWeight: "var(--weight-ui)", color: "var(--text-primary)" }}>
+          <AlertDialogTitle style={{ fontSize: "var(--type-cardtitle-size)", fontWeight: "var(--weight-ui)", color: "var(--text-primary)" }}>
             {title}
           </AlertDialogTitle>
           {description && (
-            <AlertDialogDescription style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+            <AlertDialogDescription style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
               {description}
             </AlertDialogDescription>
           )}

@@ -123,7 +123,7 @@ function Section({
           aria-expanded={open}
           className="flex-1 flex items-center justify-between text-left"
         >
-          <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>{title}</span>
+          <span style={{ fontSize: "var(--type-label-size)", fontWeight: 500, color: "var(--text-primary)" }}>{title}</span>
           <ChevronDown
             style={{
               width: 13,
@@ -171,7 +171,7 @@ function InlineNum({
         step={step}
         disabled={disabled}
         className="w-full bg-transparent outline-none border-none"
-        style={{ fontSize: 13, color: "var(--text-primary)", padding: 0 }}
+        style={{ fontSize: "var(--type-label-size)", color: "var(--text-primary)", padding: 0 }}
         value={value}
         placeholder={placeholder}
         onChange={(e) => onCommit(e.target.value === "" ? undefined : Number(e.target.value))}
@@ -376,7 +376,7 @@ export function FieldInspector({
                 <option key={s.value} value={s.value}>{s.label}</option>
               ))}
             </select>
-            <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
+            <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: "var(--space-3xs)" }}>
               Shapes are design-only — members never see them as fields.
             </p>
           </div>
@@ -385,7 +385,7 @@ export function FieldInspector({
         {field.type !== "select" && !isShape && (
           <label
             className="flex items-start gap-2 cursor-pointer"
-            style={{ fontSize: 13, color: "var(--text-primary)" }}
+            style={{ fontSize: "var(--type-label-size)", color: "var(--text-primary)" }}
           >
             <input
               type="checkbox"
@@ -400,7 +400,7 @@ export function FieldInspector({
               }
             />
             <span>
-              <Pin style={{ width: 11, height: 11, display: "inline", marginRight: 4, verticalAlign: "-1px", color: "var(--state-primary)" }} />
+              <Pin style={{ width: 11, height: 11, display: "inline", marginRight: "var(--space-3xs)", verticalAlign: "-1px", color: "var(--state-primary)" }} />
               Fixed element
               <span style={{ display: "block", fontSize: 11, color: "var(--text-muted)" }}>
                 Baked into the graphic — members don't see or edit it.
@@ -432,7 +432,7 @@ export function FieldInspector({
               style={{
                 border: "1.5px dashed var(--border-strong)",
                 borderRadius: "var(--radius-control)",
-                fontSize: 12,
+                fontSize: "var(--type-caption-size)",
                 color: "var(--text-secondary)",
               }}
             >
@@ -563,7 +563,7 @@ export function FieldInspector({
                   onClick={() => setResizeMode(key)}
                   className="py-1.5"
                   style={{
-                    fontSize: 12,
+                    fontSize: "var(--type-caption-size)",
                     background: resizeMode === key ? "var(--accent-wash)" : "transparent",
                     color: resizeMode === key ? "var(--state-primary)" : "var(--text-secondary)",
                     fontWeight: resizeMode === key ? 500 : 400,
@@ -980,7 +980,7 @@ function CornerRadiusControl({ value, onChange }: CornerRadiusControlProps) {
                 type="number"
                 min={0}
                 className={controlClass}
-                style={{ padding: "6px 6px", fontSize: 12 }}
+                style={{ padding: "6px 6px", fontSize: "var(--type-caption-size)" }}
                 value={value?.[c.key] ?? 0}
                 title={c.label}
                 onChange={(e) => set({ [c.key]: Math.max(0, Number(e.target.value) || 0) })}

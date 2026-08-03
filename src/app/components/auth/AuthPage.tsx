@@ -130,7 +130,7 @@ export function AuthPage() {
                   }}
                   className="py-2 transition-colors"
                   style={{
-                    fontSize: 13,
+                    fontSize: "var(--type-label-size)",
                     fontFamily: "var(--font-ui)",
                     ...(view === v
                       ? { background: "var(--text-primary)", color: "var(--text-on-accent)" }
@@ -143,7 +143,7 @@ export function AuthPage() {
             </div>
           )}
           {view === "checkEmail" ? (
-            <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>
+            <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)", lineHeight: 1.6 }}>
               Almost there — we sent a confirmation link to <b style={{ color: "var(--text-primary)" }}>{email}</b>.
               Open it, then come back and sign in.
             </p>
@@ -163,11 +163,11 @@ export function AuthPage() {
           )}
 
           {error && (
-            <p className="rounded-lg px-3 py-2" style={{ fontSize: 12, background: "var(--danger-wash)", color: "var(--state-danger)" }}>
+            <p className="rounded-lg px-3 py-2" style={{ fontSize: "var(--type-caption-size)", background: "var(--danger-wash)", color: "var(--state-danger)" }}>
               {error}
             </p>
           )}
-          {notice && <p style={{ fontSize: 12, color: "var(--state-primary)" }}>{notice}</p>}
+          {notice && <p style={{ fontSize: "var(--type-caption-size)", color: "var(--state-primary)" }}>{notice}</p>}
 
           {view === "signin" && (
             <>
@@ -176,7 +176,7 @@ export function AuthPage() {
               </button>
               <button
                 className="w-full text-center"
-                style={{ fontSize: 12, color: "var(--text-secondary)" }}
+                style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}
                 onClick={() => setView("forgot")}
               >
                 Forgot password?
@@ -196,7 +196,7 @@ export function AuthPage() {
               <button className="sp-btn sp-btn-primary w-full" disabled={busy || !email} onClick={() => void forgot()}>
                 {busy ? "Sending…" : "Send reset link"}
               </button>
-              <button style={{ fontSize: 12, color: "var(--text-secondary)" }} onClick={() => setView("signin")}>
+              <button style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }} onClick={() => setView("signin")}>
                 Back to sign in
               </button>
             </>

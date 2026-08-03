@@ -49,7 +49,7 @@ export function TypeStylesEditor({ styles, colors, customFamilies, onChange, usa
               ) : (
                 <ChevronRight style={{ width: 14, height: 14, color: "var(--text-muted)" }} />
               )}
-              <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>{s.name}</span>
+              <span style={{ fontSize: "var(--type-label-size)", fontWeight: 500, color: "var(--text-primary)" }}>{s.name}</span>
               {usageLabelFor?.(s.key) && (
                 <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{usageLabelFor(s.key)}</span>
               )}
@@ -65,11 +65,12 @@ export function TypeStylesEditor({ styles, colors, customFamilies, onChange, usa
             )}
 
             {expanded && (
-              <div className="px-3 pb-3 space-y-3" style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
+              <div className="px-3 pb-3 space-y-3" style={{ borderTop: "1px solid var(--border)", paddingTop: "var(--space-xs)" }}>
                 <div className="grid grid-cols-2 gap-2.5">
                   <div>
                     <label className="sp-eyebrow block mb-1">Name</label>
                     <input
+                      aria-label="Name"
                       className="sp-input"
                       value={s.name}
                       onChange={(e) => update(s.key, { name: e.target.value })}
@@ -78,6 +79,7 @@ export function TypeStylesEditor({ styles, colors, customFamilies, onChange, usa
                   <div>
                     <label className="sp-eyebrow block mb-1">Font</label>
                     <select
+                      aria-label="Font"
                       className="sp-input"
                       value={s.font ? `${s.font.source}:${s.font.family}` : ""}
                       onChange={(e) => {
@@ -106,6 +108,7 @@ export function TypeStylesEditor({ styles, colors, customFamilies, onChange, usa
                   <div>
                     <label className="sp-eyebrow block mb-1">Weight</label>
                     <select
+                      aria-label="Weight"
                       className="sp-input"
                       value={s.weight ?? ""}
                       onChange={(e) => update(s.key, { weight: e.target.value ? Number(e.target.value) : undefined })}
@@ -119,6 +122,7 @@ export function TypeStylesEditor({ styles, colors, customFamilies, onChange, usa
                   <div>
                     <label className="sp-eyebrow block mb-1">Color</label>
                     <select
+                      aria-label="Color"
                       className="sp-input"
                       value={s.colorKey ?? ""}
                       onChange={(e) => update(s.key, { colorKey: e.target.value || undefined })}
@@ -133,6 +137,7 @@ export function TypeStylesEditor({ styles, colors, customFamilies, onChange, usa
                     <label className="sp-eyebrow block mb-1">Fixed size (px)</label>
                     <input
                       type="number"
+                      aria-label="Fixed size (px)"
                       className="sp-input"
                       value={s.fontSizePx ?? ""}
                       placeholder="Per template"
@@ -143,6 +148,7 @@ export function TypeStylesEditor({ styles, colors, customFamilies, onChange, usa
                     <label className="sp-eyebrow block mb-1">Max characters</label>
                     <input
                       type="number"
+                      aria-label="Max characters"
                       className="sp-input"
                       value={s.maxLength ?? ""}
                       placeholder="No limit"
@@ -154,6 +160,7 @@ export function TypeStylesEditor({ styles, colors, customFamilies, onChange, usa
                     <input
                       type="number"
                       step="0.1"
+                      aria-label="Letter spacing (px)"
                       className="sp-input"
                       value={s.letterSpacingPx ?? ""}
                       placeholder="Not enforced"
@@ -167,13 +174,14 @@ export function TypeStylesEditor({ styles, colors, customFamilies, onChange, usa
                     <input
                       type="number"
                       step="0.05"
+                      aria-label="Line height"
                       className="sp-input"
                       value={s.lineHeight ?? ""}
                       placeholder="Not enforced"
                       onChange={(e) => update(s.key, { lineHeight: e.target.value ? Number(e.target.value) : undefined })}
                     />
                   </div>
-                  <label className="flex items-center gap-2" style={{ fontSize: 13, color: "var(--text-primary)" }}>
+                  <label className="flex items-center gap-2" style={{ fontSize: "var(--type-label-size)", color: "var(--text-primary)" }}>
                     <input
                       type="checkbox"
                       checked={s.uppercase ?? false}
@@ -181,7 +189,7 @@ export function TypeStylesEditor({ styles, colors, customFamilies, onChange, usa
                     />
                     Always uppercase
                   </label>
-                  <label className="flex items-center gap-2" style={{ fontSize: 13, color: "var(--text-primary)" }}>
+                  <label className="flex items-center gap-2" style={{ fontSize: "var(--type-label-size)", color: "var(--text-primary)" }}>
                     <input
                       type="checkbox"
                       checked={s.autoFit ?? false}
@@ -208,7 +216,7 @@ export function TypeStylesEditor({ styles, colors, customFamilies, onChange, usa
                 <button
                   onClick={() => onChange(styles.filter((x) => x.key !== s.key))}
                   className="flex items-center gap-1.5"
-                  style={{ fontSize: 12, color: "var(--state-danger)" }}
+                  style={{ fontSize: "var(--type-caption-size)", color: "var(--state-danger)" }}
                 >
                   <Trash2 style={{ width: 13, height: 13 }} />
                   Delete style
@@ -227,7 +235,7 @@ export function TypeStylesEditor({ styles, colors, customFamilies, onChange, usa
           setOpen(key);
         }}
         className="flex items-center gap-1.5"
-        style={{ fontSize: 12, color: "var(--state-primary)" }}
+        style={{ fontSize: "var(--type-caption-size)", color: "var(--state-primary)" }}
       >
         <Plus style={{ width: 13, height: 13 }} />
         Add type style

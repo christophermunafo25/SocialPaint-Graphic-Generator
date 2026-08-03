@@ -70,7 +70,7 @@ export function WizardStepper({ current, complete, canGo, onGo }: WizardStepperP
               </span>
               <span
                 style={{
-                  fontSize: 12,
+                  fontSize: "var(--type-caption-size)",
                   color: isCurrent ? "var(--text-on-accent)" : "var(--text-secondary)",
                   fontWeight: isCurrent ? 500 : 400,
                 }}

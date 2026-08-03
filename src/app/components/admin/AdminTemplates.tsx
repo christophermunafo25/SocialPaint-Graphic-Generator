@@ -140,7 +140,7 @@ export function AdminTemplates() {
       {toast && (
         <div className="sp-toast" role="status" aria-live="polite">
           <CheckCircle2 style={{ width: 16, height: 16, color: "var(--state-primary)", flexShrink: 0, marginTop: 1 }} />
-          <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>{toast}</span>
+          <span style={{ fontSize: "var(--type-label-size)", fontWeight: 500, color: "var(--text-primary)" }}>{toast}</span>
         </div>
       )}
       <ConfirmDialog
@@ -163,7 +163,7 @@ export function AdminTemplates() {
       />
 
       {templatesState.status === "ready" && templates.length > 0 && (
-        <div className="flex flex-wrap items-center mb-6" style={{ gap: 12 }}>
+        <div className="flex flex-wrap items-center mb-6" style={{ gap: "var(--space-xs)" }}>
           <div style={{ width: 420, maxWidth: "100%" }}>
             <TemplateSearchField value={query} onChange={setQuery} />
           </div>
@@ -186,7 +186,7 @@ export function AdminTemplates() {
                 aria-pressed={statusFilter === key}
                 className="px-3 flex items-center"
                 style={{
-                  fontSize: 12,
+                  fontSize: "var(--type-caption-size)",
                   fontWeight: 500,
                   ...(statusFilter === key
                     ? { background: "var(--btn-primary-bg)", color: "var(--btn-primary-fg)" }
@@ -202,7 +202,7 @@ export function AdminTemplates() {
             onChange={(e) => setSort(e.target.value as SortKey)}
             aria-label="Sort templates"
             className="sp-input"
-            style={{ width: "auto", height: 40, padding: "0 10px", fontSize: 12 }}
+            style={{ width: "auto", height: 40, padding: "0 10px", fontSize: "var(--type-caption-size)" }}
           >
             <option value="recent">Recently edited</option>
             <option value="name">Name</option>
@@ -212,7 +212,7 @@ export function AdminTemplates() {
       )}
 
       {templatesState.status === "loading" ? (
-        <p className="text-center py-20" style={{ fontSize: 13, color: "var(--text-muted)" }}>Loading…</p>
+        <p className="text-center py-20" style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>Loading…</p>
       ) : templatesState.status === "error" ? (
         <ErrorState
           title="We couldn't load your templates."
@@ -224,10 +224,10 @@ export function AdminTemplates() {
           className="text-center py-24"
           style={{ border: "1.5px dashed var(--border-strong)", borderRadius: "var(--radius-card)" }}
         >
-          <p style={{ fontFamily: "var(--font-head)", fontWeight: 800, textTransform: "uppercase" as const, fontSize: 16, color: "var(--text-primary)", marginBottom: 6 }}>
+          <p style={{ fontFamily: "var(--font-head)", fontWeight: 800, textTransform: "uppercase" as const, fontSize: "var(--type-cardtitle-size)", color: "var(--text-primary)", marginBottom: 6 }}>
             Create your first template
           </p>
-          <p className="max-w-md mx-auto" style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+          <p className="max-w-md mx-auto" style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
             Upload a PNG or import a Figma frame, map the editable fields, and publish it for your team.
           </p>
         </div>
@@ -270,7 +270,7 @@ export function AdminTemplates() {
               </button>
               <div style={{ padding: "12px 2px 4px" }}>
                 {/* Line 1: title + icon action row on the same line */}
-                <div className="flex items-center" style={{ gap: 8 }}>
+                <div className="flex items-center" style={{ gap: "var(--space-2xs)" }}>
                   <InlineEdit
                     className="flex-1 min-w-0"
                     value={t.name}

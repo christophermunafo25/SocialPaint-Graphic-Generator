@@ -576,7 +576,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
         >
           The builder needs a bigger screen
         </p>
-        <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text-secondary)" }}>
+        <p style={{ fontSize: "var(--type-label-size)", lineHeight: 1.6, color: "var(--text-secondary)" }}>
           Building templates takes a canvas, palette, and inspector side by side, so it
           works on laptop and desktop screens. Your team can still browse and fill in
           templates right here on this device.
@@ -633,7 +633,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                 <p style={{ fontFamily: "var(--font-head)", fontWeight: 800, textTransform: "uppercase" as const, fontSize: 17, color: "var(--text-primary)" }}>
                   Publishing…
                 </p>
-                <p style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
                   Saving "{draft.name.trim() || "Untitled template"}" and making it live for your team.
                 </p>
               </>
@@ -648,7 +648,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                 <p style={{ fontFamily: "var(--font-head)", fontWeight: 800, textTransform: "uppercase" as const, fontSize: 17, color: "var(--text-primary)" }}>
                   Template published
                 </p>
-                <p style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
                   "{draft.name.trim() || "Untitled template"}" is live. Taking you back to
                   Templates…
                 </p>
@@ -676,7 +676,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <button
           onClick={() => navigate({ name: "adminTemplates" })}
-          style={{ fontSize: 13, color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 6 }}
+          style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 6 }}
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           Templates
@@ -687,7 +687,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
           ariaLabel="Rename this template"
           inputAriaLabel="Template name"
           placeholder="Untitled template"
-          valueStyle={{ fontFamily: "var(--font-ui)", fontWeight: 500, fontSize: 16, letterSpacing: "-0.01em", color: "var(--text-primary)" }}
+          valueStyle={{ fontFamily: "var(--font-ui)", fontWeight: 500, fontSize: "var(--type-cardtitle-size)", letterSpacing: "-0.01em", color: "var(--text-primary)" }}
           onSave={(name) => setDraft((d) => ({ ...d, name }), "text:name")}
         />
         <span
@@ -698,7 +698,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
         </span>
         {sourceChosen && (
           <>
-            <span role="status" style={{ fontSize: 12, color: saveFailed ? "var(--state-primary)" : "var(--text-muted)" }}>
+            <span role="status" style={{ fontSize: "var(--type-caption-size)", color: saveFailed ? "var(--state-primary)" : "var(--text-muted)" }}>
               {saving
                 ? "Saving…"
                 : saveFailed
@@ -802,7 +802,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
             <h2 style={{ fontFamily: "var(--font-head)", fontWeight: 800, textTransform: "uppercase" as const, fontSize: 18, letterSpacing: "-0.3px", color: "var(--text-primary)" }}>
               Start your template
             </h2>
-            <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+            <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
               Build from scratch, or import a designed frame — both end at the
               same place: locked design, editable fields.
               {presets[0] && ` Canvas: ${presets[0].label}.`}
@@ -828,7 +828,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
             >
               <Plus className="w-6 h-6" style={{ color: "var(--state-primary)" }} />
               <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>Start blank</p>
-              <p style={{ fontSize: 12, color: "var(--text-secondary)", maxWidth: 240 }}>
+              <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)", maxWidth: 240 }}>
                 Build the design from scratch on an empty canvas — drag on
                 text, images, and fixed elements.
               </p>
@@ -849,7 +849,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
             >
               <Figma className="w-6 h-6" style={{ color: "var(--state-primary)" }} />
               <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>Import from Figma</p>
-              <p style={{ fontSize: 12, color: "var(--text-secondary)", maxWidth: 240 }}>
+              <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)", maxWidth: 240 }}>
                 {stores.designImport.isConfigured()
                   ? "Paste a frame link — pick which elements become editable fields; the rest is baked into the locked design."
                   : "Requires the Supabase backend with the Figma connection configured (see docs/ARCHITECTURE.md)."}
@@ -868,7 +868,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                   <h2 style={{ fontFamily: "var(--font-head)", fontWeight: 800, textTransform: "uppercase" as const, fontSize: 18, letterSpacing: "-0.3px", color: "var(--text-primary)" }}>
                     What should this template be called?
                   </h2>
-                  <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+                  <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
                     Members see this name in their template gallery. You'll name
                     each editable field next — field names become the caption's
                     merge tags.
@@ -888,10 +888,10 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                   }}
                   placeholder="e.g. Employee anniversary post"
                   className="sp-input"
-                  style={{ fontSize: 16, padding: "12px 14px" }}
+                  style={{ fontSize: "var(--type-cardtitle-size)", padding: "12px 14px" }}
                 />
                 {nameNeeded && (
-                  <p role="alert" style={{ fontSize: 12, color: "var(--state-primary)" }}>
+                  <p role="alert" style={{ fontSize: "var(--type-caption-size)", color: "var(--state-primary)" }}>
                     Name the template before publishing — members find it by
                     this name in their gallery.
                   </p>
@@ -920,7 +920,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
               <div className="lg:col-span-5 space-y-3 w-full max-w-xl mx-auto lg:max-w-none">
                 <div className="sp-card p-4">
                   <div className="flex items-center justify-between gap-3 flex-wrap-reverse mb-3">
-                    <p style={{ fontSize: 12, color: "var(--text-muted)", flex: "1 1 260px", minWidth: 0 }}>
+                    <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)", flex: "1 1 260px", minWidth: 0 }}>
                       {mode === "edit"
                         ? "Drag elements from the palette onto the canvas. Drag to move, handles resize, top handle rotates. Right-click for copy/paste."
                         : "Member preview — placeholder content, locked styling."}
@@ -957,7 +957,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                           onClick={() => setMode(m)}
                           className="flex items-center gap-1.5 px-3 py-1.5 capitalize"
                           style={{
-                            fontSize: 12,
+                            fontSize: "var(--type-caption-size)",
                             ...(mode === m
                               ? { background: "var(--text-primary)", color: "var(--text-on-accent)" }
                               : { background: "var(--bg-surface)", color: "var(--text-secondary)" }),
@@ -998,7 +998,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                 {stores.designImport.isConfigured() && mode === "edit" && (
                   <button
                     onClick={() => setFigmaOpen(true)}
-                    style={{ fontSize: 12, color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 6 }}
+                    style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 6 }}
                   >
                     <Figma className="w-3.5 h-3.5" />
                     Import more fields from Figma
@@ -1041,7 +1041,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                 ) : (
                   <div className="sp-card p-4 space-y-4">
                     <h3 className="sp-panel-title">Canvas</h3>
-                    <p style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                    <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
                       {draft.fields.length === 0
                         ? "Drag your first element from the palette onto the canvas. Style the template background below."
                         : "Select a field to edit it — or style the template background here."}
@@ -1072,7 +1072,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                         style={{
                           border: "1.5px dashed var(--border-strong)",
                           borderRadius: "var(--radius-control)",
-                          fontSize: 12,
+                          fontSize: "var(--type-caption-size)",
                           color: "var(--text-secondary)",
                         }}
                       >
@@ -1116,9 +1116,9 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                 <div className="space-y-1">
                   <h2 style={{ fontFamily: "var(--font-head)", fontWeight: 800, textTransform: "uppercase" as const, fontSize: 18, letterSpacing: "-0.3px", color: "var(--text-primary)" }}>
                     Suggested caption
-                    <span style={{ fontSize: 12, color: "var(--text-disabled)", fontWeight: 400 }}> · optional</span>
+                    <span style={{ fontSize: "var(--type-caption-size)", color: "var(--text-disabled)", fontWeight: 400 }}> · optional</span>
                   </h2>
-                  <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+                  <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
                     Members get this caption next to the finished graphic, with
                     the tags filled from what they typed. Click a tag chip to
                     insert it.
@@ -1139,9 +1139,9 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                 <div className="space-y-1">
                   <h2 style={{ fontFamily: "var(--font-head)", fontWeight: 800, textTransform: "uppercase" as const, fontSize: 18, letterSpacing: "-0.3px", color: "var(--text-primary)" }}>
                     Tags & details
-                    <span style={{ fontSize: 12, color: "var(--text-disabled)", fontWeight: 400 }}> · optional</span>
+                    <span style={{ fontSize: "var(--type-caption-size)", color: "var(--text-disabled)", fontWeight: 400 }}> · optional</span>
                   </h2>
-                  <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+                  <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
                     Shown on the template's card in the members' gallery.
                   </p>
                 </div>
@@ -1176,7 +1176,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                 <label
                   {...bgDrop.bind}
                   data-active={bgDrop.active}
-                  className="sp-dropzone flex items-center gap-2 cursor-pointer rounded-md" style={{ fontSize: 12, color: "var(--text-secondary)", padding: "4px 6px", margin: "-4px -6px" }}
+                  className="sp-dropzone flex items-center gap-2 cursor-pointer rounded-md" style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)", padding: "4px 6px", margin: "-4px -6px" }}
                 >
                   {uploading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Upload className="sp-dropzone__icon w-3.5 h-3.5" />}
                   {uploading
@@ -1196,7 +1196,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                 </label>
               </div>
               <div className="sp-card p-6 space-y-3">
-                <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+                <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
                   "{draft.name.trim() || "Untitled template"}" · {draft.fields.length} field
                   {draft.fields.length !== 1 ? "s" : ""} ·{" "}
                   {draft.captionTemplate ? "caption set" : "no caption"}

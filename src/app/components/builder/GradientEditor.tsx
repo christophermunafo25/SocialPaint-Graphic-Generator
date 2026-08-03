@@ -27,7 +27,7 @@ export function GradientEditor({
   const enabled = Boolean(gradient);
   return (
     <div className="space-y-2">
-      <label className="flex items-center gap-2" style={{ fontSize: 13, color: "var(--text-primary)" }}>
+      <label className="flex items-center gap-2" style={{ fontSize: "var(--type-label-size)", color: "var(--text-primary)" }}>
         <input
           type="checkbox"
           disabled={disabled}

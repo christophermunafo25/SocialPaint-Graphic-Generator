@@ -125,12 +125,12 @@ export function DesignSystemImportPanel(props: DesignSystemImportPanelProps) {
 
       {suggestions.length > 0 && (
         <div className="space-y-2 rounded-lg p-3" style={{ background: "var(--bg-raised)", border: "1px solid var(--border)" }}>
-          <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+          <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}>
             Found {suggestions.length} rule-like lines — keep the ones that are real brand rules:
           </p>
           <div className="max-h-48 overflow-auto space-y-1">
             {suggestions.map((sug, i) => (
-              <label key={i} className="flex items-start gap-2" style={{ fontSize: 12, color: "var(--text-primary)" }}>
+              <label key={i} className="flex items-start gap-2" style={{ fontSize: "var(--type-caption-size)", color: "var(--text-primary)" }}>
                 <input
                   type="checkbox"
                   className="mt-0.5"
@@ -147,19 +147,19 @@ export function DesignSystemImportPanel(props: DesignSystemImportPanelProps) {
             ))}
           </div>
           <div className="flex gap-2">
-            <button className="sp-btn sp-btn-primary" style={{ padding: "6px 12px", fontSize: 12 }} onClick={acceptSuggestions}>
+            <button className="sp-btn sp-btn-primary" style={{ padding: "6px 12px", fontSize: "var(--type-caption-size)" }} onClick={acceptSuggestions}>
               <Check style={{ width: 12, height: 12 }} />
               Add {accepted.size} rules
             </button>
-            <button className="sp-btn sp-btn-ghost" style={{ padding: "6px 12px", fontSize: 12 }} onClick={() => setSuggestions([])}>
+            <button className="sp-btn sp-btn-ghost" style={{ padding: "6px 12px", fontSize: "var(--type-caption-size)" }} onClick={() => setSuggestions([])}>
               Cancel
             </button>
           </div>
         </div>
       )}
 
-      {status && <p style={{ fontSize: 12, color: "var(--state-primary)" }}>{status}</p>}
-      {error && <p style={{ fontSize: 12, color: "var(--state-danger)" }}>{error}</p>}
+      {status && <p style={{ fontSize: "var(--type-caption-size)", color: "var(--state-primary)" }}>{status}</p>}
+      {error && <p style={{ fontSize: "var(--type-caption-size)", color: "var(--state-danger)" }}>{error}</p>}
     </div>
   );
 }
@@ -184,7 +184,7 @@ function UploadTile({
       {...drop.bind}
       data-active={drop.active}
       className="sp-dropzone flex flex-col items-center justify-center gap-1.5 py-4 cursor-pointer text-center"
-      style={{ border: "1.5px dashed var(--border-strong)", borderRadius: "var(--radius-control)", fontSize: 12, color: "var(--text-secondary)" }}
+      style={{ border: "1.5px dashed var(--border-strong)", borderRadius: "var(--radius-control)", fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}
     >
       <span className="sp-dropzone__icon flex">{icon}</span>
       {label}

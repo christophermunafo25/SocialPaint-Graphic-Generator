@@ -26,11 +26,11 @@ export function SettingsAdmin() {
 
       <div className="sp-card sp-card--content space-y-3">
         <h2 className="sp-panel-title">Workspace</h2>
-        <div className="grid gap-x-6 gap-y-2" style={{ gridTemplateColumns: "140px 1fr", fontSize: 13 }}>
+        <div className="grid gap-x-6 gap-y-2" style={{ gridTemplateColumns: "140px 1fr", fontSize: "var(--type-label-size)" }}>
           <span style={{ color: "var(--text-muted)" }}>Name</span>
           <span style={{ color: "var(--text-primary)" }}>{company?.name ?? "—"}</span>
           <span style={{ color: "var(--text-muted)" }}>Slug</span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--text-primary)" }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--type-caption-size)", color: "var(--text-primary)" }}>
             {company?.slug ?? "—"}
           </span>
           <span style={{ color: "var(--text-muted)" }}>Backend</span>
@@ -42,7 +42,7 @@ export function SettingsAdmin() {
 
       <div className="sp-card sp-card--content space-y-3">
         <h2 className="sp-panel-title">Appearance</h2>
-        <p style={{ fontSize: 12, color: "var(--text-muted)" }}>
+        <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
           Applies to the SocialPaint chrome only — template graphics and
           exports are identical in both modes.
         </p>
@@ -69,7 +69,7 @@ export function SettingsAdmin() {
 
       <div className="sp-card sp-card--content space-y-3">
         <h2 className="sp-panel-title">Account</h2>
-        <div className="grid gap-x-6 gap-y-2" style={{ gridTemplateColumns: "140px 1fr", fontSize: 13 }}>
+        <div className="grid gap-x-6 gap-y-2" style={{ gridTemplateColumns: "140px 1fr", fontSize: "var(--type-label-size)" }}>
           <span style={{ color: "var(--text-muted)" }}>Email</span>
           <span style={{ color: "var(--text-primary)" }}>{user?.email ?? "— (dev backend)"}</span>
           <span style={{ color: "var(--text-muted)" }}>Role</span>

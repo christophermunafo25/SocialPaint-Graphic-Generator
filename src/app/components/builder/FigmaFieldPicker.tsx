@@ -56,7 +56,7 @@ export function FigmaFieldPicker({ result, kit, onConfirm, onBack }: FigmaFieldP
       {/* Frame with candidate overlay */}
       <div className="lg:col-span-7">
         <div className="sp-card p-4">
-          <p className="mb-3" style={{ fontSize: 12, color: "var(--text-muted)" }}>
+          <p className="mb-3" style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
             {result.suggestedFields.length} elements detected. Checked elements become editable
             inputs and are lifted off the background; everything unchecked stays baked into the
             locked design.
@@ -113,7 +113,7 @@ export function FigmaFieldPicker({ result, kit, onConfirm, onBack }: FigmaFieldP
           </div>
         </div>
         {result.warnings.map((w) => (
-          <p key={w} className="mt-2 rounded-lg px-3 py-2" style={{ fontSize: 12, background: "var(--bg-hover)", color: "var(--text-secondary)" }}>
+          <p key={w} className="mt-2 rounded-lg px-3 py-2" style={{ fontSize: "var(--type-caption-size)", background: "var(--bg-hover)", color: "var(--text-secondary)" }}>
             {w}
           </p>
         ))}
@@ -144,7 +144,7 @@ export function FigmaFieldPicker({ result, kit, onConfirm, onBack }: FigmaFieldP
               )}
               <input
                 className="flex-1 bg-transparent outline-none min-w-0"
-                style={{ fontSize: 13, color: include ? "var(--text-primary)" : "var(--text-disabled)" }}
+                style={{ fontSize: "var(--type-label-size)", color: include ? "var(--text-primary)" : "var(--text-disabled)" }}
                 value={field.label}
                 disabled={!include}
                 onChange={(e) => update(field.id, { field: { label: e.target.value } })}
@@ -179,7 +179,7 @@ export function FigmaFieldPicker({ result, kit, onConfirm, onBack }: FigmaFieldP
             </div>
           ))}
           {candidates.length === 0 && (
-            <p className="px-3 py-6 text-center" style={{ fontSize: 13, color: "var(--text-muted)" }}>
+            <p className="px-3 py-6 text-center" style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>
               Nothing was detected — the background imported; draw fields manually in the next step.
             </p>
           )}

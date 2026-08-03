@@ -58,7 +58,7 @@ function Kpi({ label, value, Icon, chip }: KpiProps) {
 /** Legend chip: colored dot + label + mono total (identity never color-alone). */
 function LegendChip({ color, label, total }: { color: string; label: string; total: number }) {
   return (
-    <span className="flex items-center gap-1.5" style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+    <span className="flex items-center gap-1.5" style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}>
       <span aria-hidden style={{ width: 8, height: 8, borderRadius: "var(--radius-pill)", background: color }} />
       {label}
       <span style={{ ...mono, fontSize: 11, color: "var(--text-muted)" }}>{total}</span>
@@ -81,7 +81,7 @@ export function Dashboard() {
   );
 
   if (summaryState.status === "loading") {
-    return <p className="text-center py-24" style={{ fontSize: 13, color: "var(--text-muted)" }}>Loading usage…</p>;
+    return <p className="text-center py-24" style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>Loading usage…</p>;
   }
   if (summaryState.status === "error") {
     return (
@@ -94,7 +94,7 @@ export function Dashboard() {
   }
   const summary = summaryState.data;
   if (!summary) {
-    return <p className="text-center py-24" style={{ fontSize: 13, color: "var(--text-muted)" }}>Loading usage…</p>;
+    return <p className="text-center py-24" style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>Loading usage…</p>;
   }
   const trend = trendState.status === "ready" ? trendState.data : null;
 
@@ -119,7 +119,7 @@ export function Dashboard() {
             <BrandMark width={280} />
           </span>
           <p style={{ fontSize: 14, color: "var(--text-primary)", fontWeight: 500 }}>No usage yet</p>
-          <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 6 }}>
+          <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)", marginTop: 6 }}>
             Opens and downloads appear here as soon as members start using
             published templates.
           </p>
@@ -145,7 +145,7 @@ export function Dashboard() {
             </div>
             {trendState.status === "error" ? (
               <div className="flex flex-col items-center justify-center gap-3" style={{ height: 220 }}>
-                <p style={{ fontSize: 13, color: "var(--text-muted)" }}>We couldn't load the activity trend.</p>
+                <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>We couldn't load the activity trend.</p>
                 <button className="sp-btn sp-btn-ghost" onClick={trendState.retry}>
                   Try again
                 </button>
@@ -174,7 +174,7 @@ export function Dashboard() {
                     labelFormatter={(v) => fmtDay(String(v))}
                     contentStyle={{
                       fontFamily: "var(--font-mono)",
-                      fontSize: 12,
+                      fontSize: "var(--type-caption-size)",
                       background: "var(--bg-surface)",
                       border: "1px solid var(--border)",
                       borderRadius: "var(--radius-card)",
@@ -221,7 +221,7 @@ export function Dashboard() {
                         <span style={{ ...mono, fontSize: 10, color: "var(--text-muted)" }}>
                           {String(i + 1).padStart(2, "0")}
                         </span>
-                        <span className="truncate" style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>
+                        <span className="truncate" style={{ fontSize: "var(--type-label-size)", fontWeight: 500, color: "var(--text-primary)" }}>
                           {r.templateName}
                         </span>
                       </span>
@@ -254,7 +254,7 @@ export function Dashboard() {
 
             {/* Full table */}
             <div className="sp-card overflow-hidden overflow-x-auto lg:col-span-3">
-              <table className="w-full" style={{ fontSize: 13, minWidth: 520 }}>
+              <table className="w-full" style={{ fontSize: "var(--type-label-size)", minWidth: 520 }}>
                 <thead>
                   <tr className="text-left" style={{ borderBottom: "1px solid var(--border)" }}>
                     {["Template", "Opens", "Downloads", "Export rate", "Last used"].map((h) => (
@@ -268,12 +268,12 @@ export function Dashboard() {
                   {summary.rows.map((r) => (
                     <tr key={r.templateId} style={{ borderTop: "1px solid var(--border)" }}>
                       <td className="px-4 py-3" style={{ color: "var(--text-primary)", fontWeight: 500 }}>{r.templateName}</td>
-                      <td className="px-4 py-3" style={{ ...mono, fontSize: 12, color: "var(--text-secondary)" }}>{r.opens}</td>
-                      <td className="px-4 py-3" style={{ ...mono, fontSize: 12, color: "var(--text-primary)" }}>{r.downloads}</td>
-                      <td className="px-4 py-3" style={{ ...mono, fontSize: 12, color: "var(--text-secondary)" }}>
+                      <td className="px-4 py-3" style={{ ...mono, fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}>{r.opens}</td>
+                      <td className="px-4 py-3" style={{ ...mono, fontSize: "var(--type-caption-size)", color: "var(--text-primary)" }}>{r.downloads}</td>
+                      <td className="px-4 py-3" style={{ ...mono, fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}>
                         {exportRate(r.downloads, r.opens)}
                       </td>
-                      <td className="px-4 py-3" style={{ ...mono, fontSize: 12, color: "var(--text-muted)" }}>
+                      <td className="px-4 py-3" style={{ ...mono, fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
                         {relativeDay(r.lastUsedAt)}
                       </td>
                     </tr>

@@ -133,7 +133,7 @@ export function FigmaImportDialog({ onClose, onImported }: FigmaImportDialogProp
           </p>
         )}
         {warnings.map((w) => (
-          <p key={w} className="rounded-lg px-3 py-2" style={{ fontSize: 12, background: "var(--bg-hover)", color: "var(--text-secondary)" }}>
+          <p key={w} className="rounded-lg px-3 py-2" style={{ fontSize: "var(--type-caption-size)", background: "var(--bg-hover)", color: "var(--text-secondary)" }}>
             {w}
           </p>
         ))}

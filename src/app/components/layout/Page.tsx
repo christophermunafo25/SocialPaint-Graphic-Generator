@@ -34,7 +34,7 @@ export function PageHeader({
   action?: React.ReactNode;
 }) {
   return (
-    <header className="flex items-start justify-between gap-4" style={{ marginBottom: 32 }}>
+    <header className="flex items-start justify-between gap-4" style={{ marginBottom: "var(--space-lg)" }}>
       <div className="min-w-0">
         {eyebrow && (
           <p className="sp-eyebrow" style={{ marginBottom: 6 }}>
@@ -43,7 +43,7 @@ export function PageHeader({
         )}
         <h1 className="sp-page-title">{title}</h1>
         {description && (
-          <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 8 }}>{description}</p>
+          <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)", marginTop: "var(--space-2xs)" }}>{description}</p>
         )}
       </div>
       {action && <div className="flex-shrink-0">{action}</div>}

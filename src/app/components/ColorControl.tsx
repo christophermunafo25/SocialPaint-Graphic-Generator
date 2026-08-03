@@ -106,7 +106,7 @@ export function ColorControl({
         onBlur={commitDraft}
         onKeyDown={(e) => e.key === "Enter" && commitDraft()}
         className="sp-input"
-        style={{ width: 88, fontFamily: "var(--font-mono)", fontSize: 12, padding: "5px 8px" }}
+        style={{ width: 88, fontFamily: "var(--font-mono)", fontSize: "var(--type-caption-size)", padding: "5px 8px" }}
         aria-label={`${ariaLabel ?? "Color"} hex value`}
       />
       {onClear && value && (

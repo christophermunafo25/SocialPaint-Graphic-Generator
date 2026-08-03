@@ -72,7 +72,7 @@ export function PeopleAdmin() {
       />
 
       {isDevAuth && (
-        <p className="rounded-lg px-4 py-3 mb-5" style={{ fontSize: 12, background: "var(--bg-hover)", color: "var(--text-secondary)" }}>
+        <p className="rounded-lg px-4 py-3 mb-5" style={{ fontSize: "var(--type-caption-size)", background: "var(--bg-hover)", color: "var(--text-secondary)" }}>
           People management needs the Supabase backend with auth enabled — this dev backend has no
           real accounts.
         </p>
@@ -97,12 +97,12 @@ export function PeopleAdmin() {
           {busy ? "Inviting…" : "Invite"}
         </button>
       </div>
-      {error && <p style={{ fontSize: 12, color: "var(--state-danger)", marginBottom: 8 }}>{error}</p>}
-      {notice && <p style={{ fontSize: 12, color: "var(--state-primary)", marginBottom: 8 }}>{notice}</p>}
+      {error && <p style={{ fontSize: "var(--type-caption-size)", color: "var(--state-danger)", marginBottom: "var(--space-2xs)" }}>{error}</p>}
+      {notice && <p style={{ fontSize: "var(--type-caption-size)", color: "var(--state-primary)", marginBottom: "var(--space-2xs)" }}>{notice}</p>}
 
       <div className="sp-card overflow-hidden mt-4">
         {membersState.status === "loading" ? (
-          <p className="px-6 py-8 text-center" style={{ fontSize: 13, color: "var(--text-muted)" }}>Loading…</p>
+          <p className="px-6 py-8 text-center" style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>Loading…</p>
         ) : membersState.status === "error" ? (
           <ErrorState
             title="We couldn't load your team."
@@ -110,7 +110,7 @@ export function PeopleAdmin() {
             onRetry={membersState.retry}
           />
         ) : members.length === 0 ? (
-          <p className="px-6 py-8 text-center" style={{ fontSize: 13, color: "var(--text-muted)" }}>
+          <p className="px-6 py-8 text-center" style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>
             No members yet.
           </p>
         ) : (
@@ -118,7 +118,7 @@ export function PeopleAdmin() {
             <div
               key={m.userId}
               className="flex items-center gap-3"
-              style={{ padding: "12px 24px", minHeight: 56, ...(i > 0 ? { borderTop: "1px solid var(--border)" } : {}) }}
+              style={{ padding: "var(--space-xs) var(--space-md)", minHeight: 56, ...(i > 0 ? { borderTop: "1px solid var(--border)" } : {}) }}
             >
               <span
                 className="flex-shrink-0"
@@ -129,14 +129,14 @@ export function PeopleAdmin() {
                 </span>
               </span>
               <div className="flex-1 min-w-0">
-                <p className="truncate" style={{ fontSize: 13, color: "var(--text-primary)" }}>
+                <p className="truncate" style={{ fontSize: "var(--type-label-size)", color: "var(--text-primary)" }}>
                   {m.email}
                   {m.userId === user?.id && <span style={{ color: "var(--text-muted)" }}> (you)</span>}
                 </p>
               </div>
               <select
                 className="sp-input"
-                style={{ width: "auto", padding: "5px 8px", fontSize: 12 }}
+                style={{ width: "auto", padding: "5px 8px", fontSize: "var(--type-caption-size)" }}
                 value={m.role}
                 disabled={m.userId === user?.id}
                 onChange={(e) => {

@@ -113,7 +113,7 @@ function AccountBlock({ onNavigate }: { onNavigate(route: Route): void }) {
             else void setCompany(e.target.value);
           }}
           className="sp-input mb-2"
-          style={{ fontSize: 12, padding: "6px 10px" }}
+          style={{ fontSize: "var(--type-caption-size)", padding: "6px 10px" }}
           aria-label="Workspace"
         >
           {companies.map((c) => (
@@ -151,7 +151,7 @@ function AccountBlock({ onNavigate }: { onNavigate(route: Route): void }) {
             borderRadius: "var(--radius-pill)",
             background: "var(--volt)", // flat fill — gradients are banned as surface treatment
             color: "var(--text-on-accent)",
-            fontSize: 12,
+            fontSize: "var(--type-caption-size)",
             fontWeight: "var(--weight-ui)",
           }}
         >
@@ -161,7 +161,7 @@ function AccountBlock({ onNavigate }: { onNavigate(route: Route): void }) {
           <span
             className="block truncate"
             title={displayName}
-            style={{ fontSize: 13, fontWeight: 500, color: "var(--sb-fg-active)" }}
+            style={{ fontSize: "var(--type-label-size)", fontWeight: 500, color: "var(--sb-fg-active)" }}
           >
             {displayName}
           </span>

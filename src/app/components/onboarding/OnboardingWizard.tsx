@@ -165,7 +165,7 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
           <button
             onClick={() => (step === 0 ? navigate({ name: "portal" }) : setStep(step - 1))}
             disabled={firstRun && step === 0}
-            className="flex items-center gap-1.5 disabled:opacity-0" style={{ fontSize: 13, color: "var(--text-secondary)" }}
+            className="flex items-center gap-1.5 disabled:opacity-0" style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             {step === 0 ? "Cancel" : "Back"}
@@ -198,7 +198,7 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
 function StepCompany({ name, slug, onChange }: { name: string; slug: string; onChange(v: string): void }) {
   return (
     <div className="space-y-3">
-      <h2 className="sp-panel-title" style={{ fontSize: 16 }}>Company name</h2>
+      <h2 className="sp-panel-title" style={{ fontSize: "var(--type-cardtitle-size)" }}>Company name</h2>
       <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
         The tenant everything belongs to — templates, brand kit, and usage stay private to it.
       </p>
@@ -224,7 +224,7 @@ function StepColors({ colors, onChange }: { colors: BrandColor[]; onChange(c: Br
     onChange(colors.map((c, j) => (j === i ? { ...c, ...patch } : c)));
   return (
     <div className="space-y-3">
-      <h2 className="sp-panel-title" style={{ fontSize: 16 }}>Brand colors</h2>
+      <h2 className="sp-panel-title" style={{ fontSize: "var(--type-cardtitle-size)" }}>Brand colors</h2>
       <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
         Sensible defaults — override them with your palette. Template text colors are always picked from these, keeping every graphic on-brand.
       </p>
@@ -295,7 +295,7 @@ function StepFonts(props: StepFontsProps) {
   const drop = useFileDrop(addFonts);
   return (
     <div className="space-y-4">
-      <h2 className="sp-panel-title" style={{ fontSize: 16 }}>Fonts</h2>
+      <h2 className="sp-panel-title" style={{ fontSize: "var(--type-cardtitle-size)" }}>Fonts</h2>
       <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
         Pick from Google Fonts, or upload your own brand font files (.woff2, .woff, .ttf, .otf) and assign them.
       </p>
@@ -308,7 +308,7 @@ function StepFonts(props: StepFontsProps) {
           {...drop.bind}
           data-active={drop.active}
           className="sp-dropzone flex items-center justify-center gap-2 py-3.5 cursor-pointer"
-          style={{ border: "1.5px dashed var(--border-strong)", borderRadius: "var(--radius-control)", fontSize: 13, color: "var(--text-secondary)" }}
+          style={{ border: "1.5px dashed var(--border-strong)", borderRadius: "var(--radius-control)", fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}
         >
           <Upload className="sp-dropzone__icon w-4 h-4" />
           Upload custom font
@@ -333,7 +333,7 @@ function StepFonts(props: StepFontsProps) {
                   prev.map((p, j) => (j === i ? { ...p, use: e.target.value as PendingFont["use"] } : p)),
                 )
               }
-              className="sp-input" style={{ width: "auto", padding: "5px 8px", fontSize: 12 }}
+              className="sp-input" style={{ width: "auto", padding: "5px 8px", fontSize: "var(--type-caption-size)" }}
             >
               <option value="none">Library only</option>
               <option value="heading">Use as heading</option>
@@ -358,7 +358,7 @@ function StepLogo({ preview, onPick }: { preview: string | null; onPick(f: File)
   });
   return (
     <div className="space-y-3">
-      <h2 className="sp-panel-title" style={{ fontSize: 16 }}>Logo</h2>
+      <h2 className="sp-panel-title" style={{ fontSize: "var(--type-cardtitle-size)" }}>Logo</h2>
       <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
         Optional now — you can add more logos later in Brand Studio.
       </p>
@@ -373,7 +373,7 @@ function StepLogo({ preview, onPick }: { preview: string | null; onPick(f: File)
         ) : (
           <Upload className="sp-dropzone__icon w-6 h-6" style={{ color: "var(--muted-foreground)" }} />
         )}
-        <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+        <span style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
           {preview ? "Replace logo" : "Upload logo (PNG or SVG)"}
         </span>
         <input

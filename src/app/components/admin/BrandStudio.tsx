@@ -331,6 +331,7 @@ export function BrandStudio() {
                   <input
                     value={c.name}
                     onChange={(e) => setColors(colors.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))}
+                    aria-label={`Name for the ${c.name} brand color`}
                     className="text-sm w-full bg-transparent outline-none"
                     style={{ color: "var(--foreground)" }}
                   />
@@ -353,7 +354,7 @@ export function BrandStudio() {
               const n = colors.filter((c) => c.key.startsWith("custom")).length + 1;
               setColors([...colors, { key: `custom_${n}`, name: `Custom ${n}`, hex: "#888888" }]);
             }}
-            style={{ fontSize: 12, color: "var(--state-primary)", display: "flex", alignItems: "center", gap: 5 }}
+            style={{ fontSize: "var(--type-caption-size)", color: "var(--state-primary)", display: "flex", alignItems: "center", gap: 5 }}
           >
             <Plus className="w-3.5 h-3.5" />
             Add color
@@ -375,7 +376,7 @@ export function BrandStudio() {
             {...fontDrop.bind}
             data-active={fontDrop.active}
             className="sp-dropzone flex items-center justify-center gap-2 py-3 cursor-pointer"
-            style={{ border: "1.5px dashed var(--border-strong)", borderRadius: "var(--radius-control)", fontSize: 13, color: "var(--text-secondary)" }}
+            style={{ border: "1.5px dashed var(--border-strong)", borderRadius: "var(--radius-control)", fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}
           >
             <Upload className="sp-dropzone__icon w-4 h-4" />
             Upload font file
@@ -397,7 +398,7 @@ export function BrandStudio() {
               style={{ border: "1px solid var(--border)", borderRadius: "var(--radius-control)", background: "var(--bg-surface)" }}
             >
               <span className="flex-1 min-w-0">
-                <span className="block truncate" style={{ fontSize: 12, fontWeight: 500, color: "var(--text-primary)" }}>
+                <span className="block truncate" style={{ fontSize: "var(--type-caption-size)", fontWeight: 500, color: "var(--text-primary)" }}>
                   {p.name}
                 </span>
                 {p.done ? (
@@ -485,7 +486,7 @@ export function BrandStudio() {
         <section className="sp-span-12 sp-card sp-card--content space-y-4">
           <div>
             <h2 className="sp-panel-title">Type styles &amp; rules (optional)</h2>
-            <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 3 }}>
+            <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)", marginTop: 3 }}>
               An opt-in convenience for reuse: apply a saved style to a field if you want, or style
               every field by hand — both are fully locked for end users. Every property a style
               defines follows it across all templates. Unlimited styles.
@@ -504,7 +505,7 @@ export function BrandStudio() {
         <section className="sp-span-6 sp-card sp-card--content space-y-4">
           <div>
             <h2 className="sp-panel-title">Import design system</h2>
-            <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 3 }}>
+            <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)", marginTop: 3 }}>
               Ingest a design-tokens JSON (colors, type scale) to populate the palette and type
               styles, parse a guidelines.md into suggested rules, or pull styles from a Figma file.
             </p>
@@ -520,18 +521,18 @@ export function BrandStudio() {
         <section className="sp-span-6 sp-card sp-card--content space-y-3">
           <div>
             <h2 className="sp-panel-title">Brand guidelines</h2>
-            <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 3 }}>
+            <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)", marginTop: 3 }}>
               Do/don't and voice rules for humans building templates. Imported from guidelines.md
               or written here.
             </p>
           </div>
           {guidelines.length === 0 && (
-            <p style={{ fontSize: 12, color: "var(--text-muted)" }}>No guidelines yet.</p>
+            <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>No guidelines yet.</p>
           )}
           {guidelines.map((g, i) => (
             <div key={`${g}-${i}`} className="flex items-start gap-2">
-              <span style={{ color: "var(--state-primary)", fontSize: 12, lineHeight: "1.5" }}>—</span>
-              <span className="flex-1" style={{ fontSize: 12, color: "var(--text-primary)", lineHeight: 1.5 }}>{g}</span>
+              <span style={{ color: "var(--state-primary)", fontSize: "var(--type-caption-size)", lineHeight: "1.5" }}>—</span>
+              <span className="flex-1" style={{ fontSize: "var(--type-caption-size)", color: "var(--text-primary)", lineHeight: 1.5 }}>{g}</span>
               <button onClick={() => setGuidelines(guidelines.filter((_, j) => j !== i))} aria-label="Remove rule">
                 <Trash2 style={{ width: 13, height: 13, color: "var(--text-muted)" }} />
               </button>
@@ -559,7 +560,7 @@ export function BrandStudio() {
             bodyFamily={bodyFont.family}
             logoUrl={logoAssets.find((a) => a.id === primaryLogoAssetId)?.url ?? logoAssets[0]?.url}
           />
-          <p style={{ fontSize: 12, color: "var(--text-muted)" }}>
+          <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
             How your brand applies to your templates and graphics. Save to apply everywhere.
           </p>
         </section>

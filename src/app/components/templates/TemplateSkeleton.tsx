@@ -32,7 +32,7 @@ export function TemplateShelfSkeleton({ cards = 4 }: { cards?: number }) {
           />
           <span
             className="sp-skeleton__line sp-skeleton__block"
-            style={{ width: 90, height: 10, marginTop: 8 }}
+            style={{ width: 90, height: 10, marginTop: "var(--space-2xs)" }}
           />
         </div>
       </div>

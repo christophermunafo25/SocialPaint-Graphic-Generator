@@ -48,7 +48,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
   );
 
   if (templateState.status === "loading") {
-    return <p className="text-center py-24" style={{ fontSize: 13, color: "var(--text-muted)" }}>Loading template…</p>;
+    return <p className="text-center py-24" style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>Loading template…</p>;
   }
   if (templateState.status === "error") {
     return (
@@ -60,7 +60,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
     );
   }
   if (!template) {
-    return <p className="text-center py-24" style={{ fontSize: 13, color: "var(--text-muted)" }}>Template not found.</p>;
+    return <p className="text-center py-24" style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>Template not found.</p>;
   }
 
   const handleDownload = async () => {
@@ -99,12 +99,12 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
             <CheckCircle2 style={{ width: 16, height: 16, color: "var(--state-primary)", flexShrink: 0, marginTop: 1 }} />
           )}
           <span className="min-w-0">
-            <span className="block" style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>
+            <span className="block" style={{ fontSize: "var(--type-label-size)", fontWeight: 500, color: "var(--text-primary)" }}>
               {exportToast === "downloaded" && "Graphic downloaded"}
               {exportToast === "shared" && "Graphic shared"}
               {exportToast === "error" && "Couldn't export the graphic"}
             </span>
-            <span className="block" style={{ fontSize: 12, color: "var(--text-muted)" }}>
+            <span className="block" style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
               {exportToast === "downloaded" && "It's in your downloads folder, ready to post."}
               {exportToast === "shared" && "Sent through your device's share sheet."}
               {exportToast === "error" && "Try again — if it keeps failing, re-upload the photo."}
@@ -115,7 +115,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
       <button
         onClick={() => navigate({ name: "portal" })}
         className="flex items-center gap-1.5 mb-5"
-        style={{ fontSize: 13, color: "var(--text-secondary)" }}
+        style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}
       >
         <ArrowLeft style={{ width: 14, height: 14 }} />
         Brand templates
@@ -127,7 +127,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
           <div>
             <h1 className="sp-page-title">{template.name}</h1>
             {template.description && (
-              <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>{template.description}</p>
+              <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)", marginTop: "var(--space-3xs)" }}>{template.description}</p>
             )}
           </div>
 
@@ -219,7 +219,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
                 role="status"
                 aria-live="polite"
                 className="text-center"
-                style={{ fontSize: 12, color: "var(--text-muted)" }}
+                style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}
               >
                 Fill required: {missingRequired.map((f) => f.label).join(", ")}
               </p>

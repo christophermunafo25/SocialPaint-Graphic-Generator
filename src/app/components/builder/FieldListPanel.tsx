@@ -47,7 +47,7 @@ export function FieldListPanel({ fields, selectedIds, onSelect, onReorder, onCon
         <span style={{ fontSize: 10, color: "var(--text-muted)" }}>The order your team fills these in.</span>
       </div>
       {fields.length === 0 ? (
-        <p className="py-4 text-center" style={{ fontSize: 12, color: "var(--text-muted)" }}>
+        <p className="py-4 text-center" style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
           No fields yet — drag an element onto the canvas.
         </p>
       ) : (
