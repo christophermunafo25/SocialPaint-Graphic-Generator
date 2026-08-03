@@ -762,36 +762,6 @@ button, input, select, textarea, optgroup {
   white-space: nowrap;
 }
 
-/* "Use template" — a label over the foot of the thumbnail, not a nested
-   control. The card itself is the button. */
-.sp-media-card__preview { position: relative; }
-.sp-template-card__use {
-  position: absolute;
-  left: var(--space-2xs);
-  right: var(--space-2xs);
-  bottom: var(--space-2xs);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: var(--control-sm);
-  border-radius: var(--radius-control);
-  background: var(--btn-primary-bg);
-  color: var(--btn-primary-fg);
-  font-family: var(--font-ui);
-  font-size: var(--type-label-size);
-  font-weight: var(--weight-ui);
-  letter-spacing: var(--type-label-track);
-  opacity: 0;
-  transform: translateY(4px);
-  transition: opacity var(--dur-state) var(--ease), transform var(--dur-state) var(--ease);
-  pointer-events: none;
-}
-.sp-template-card:hover .sp-template-card__use,
-.sp-template-card:focus-visible .sp-template-card__use {
-  opacity: 1;
-  transform: none;
-}
-
 /* Hover lift. The DS bans shadows, so the border carries the elevation the
    spec asked a shadow to carry. */
 .sp-template-card {
@@ -801,11 +771,13 @@ button, input, select, textarea, optgroup {
 
 @media (prefers-reduced-motion: reduce) {
   .sp-template-card:hover { transform: none; }
-  .sp-template-card__use { transform: none; }
 }
 
 /* --- Shelf track ---------------------------------------------------------- */
-.sp-shelf__rail { --shelf-card-w: 240px; }
+.sp-shelf__rail { --shelf-visible: 1.15; }
+@media (min-width: 480px)  { .sp-shelf__rail { --shelf-visible: 2; } }
+@media (min-width: 768px)  { .sp-shelf__rail { --shelf-visible: 3; } }
+@media (min-width: 1100px) { .sp-shelf__rail { --shelf-visible: 4; } }
 .sp-shelf__track {
   gap: var(--space-sm);
   scroll-snap-type: x mandatory;
@@ -819,8 +791,14 @@ button, input, select, textarea, optgroup {
 }
 .sp-shelf__track:focus-visible { outline: none; box-shadow: var(--focus-ring-tight); }
 .sp-shelf__item {
-  flex: 0 0 var(--shelf-card-w);
-  width: var(--shelf-card-w);
+  /* Exactly --shelf-visible cards fill the track before it scrolls. The
+     percentage resolves against the track's own content box, so the count
+     holds at any column width without measuring anything in JS. */
+  --shelf-item-w: calc(
+    (100% - (var(--shelf-visible) - 1) * var(--space-sm)) / var(--shelf-visible)
+  );
+  flex: 0 0 var(--shelf-item-w);
+  width: var(--shelf-item-w);
   scroll-snap-align: start;
 }
 
@@ -830,7 +808,7 @@ button, input, select, textarea, optgroup {
 @media (hover: hover) {
   .sp-shelf__arrow {
     position: absolute;
-    top: calc(var(--shelf-frame-h, var(--shelf-card-w)) / 2 + var(--media-pad, 12px));
+    top: calc(var(--shelf-frame-h, 200px) / 2 + var(--media-pad, 12px));
     transform: translateY(-50%);
     z-index: 2;
     display: flex;
@@ -898,6 +876,10 @@ button, input, select, textarea, optgroup {
 }
 .sp-icon-btn:hover { color: var(--sb-fg-active); }
 
+/* THE content column's padding. Lives here rather than inline on <Page> so
+   it can shrink to a 16px gutter on mobile. */
+.sp-page { padding: 40px 32px 64px; }
+
 /* Content-panel card padding (Insights, Brand Studio, Settings, People). */
 .sp-card--content { padding: 24px; }
 
@@ -932,7 +914,7 @@ button, input, select, textarea, optgroup {
   grid-template-columns: minmax(0, 1fr);
   align-items: stretch;
 }
-@media (min-width: 720px)  { .sp-grid-media { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 768px)  { .sp-grid-media { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (min-width: 1100px) { .sp-grid-media { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (min-width: 1440px) { .sp-grid-media { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 
@@ -948,7 +930,8 @@ button, input, select, textarea, optgroup {
 @media (max-width: 900px) { .sp-span-6 { grid-column: span 12; } }
 
 /* Equal-height media cards across a grid row. */
-.sp-grid-media .sp-template-card { height: 100%; }
+.sp-grid-media .sp-template-card,
+.sp-grid-media .sp-reveal__item { height: 100%; }
 
 /* --- Brand swatch ---------------------------------------------------------
    The quick-select chip in ColorControl's brand row. One recipe so every
@@ -1206,21 +1189,21 @@ button, input, select, textarea, optgroup {
 }
 .sp-searchfield__input {
   height: var(--control-md);
-  padding: 0 44px 0 40px;
+  padding: 0 52px 0 40px;
   font-size: var(--type-body-size);
 }
 /* The type=search UA affordances duplicate our own clear button. */
 .sp-searchfield__input::-webkit-search-cancel-button { display: none; }
 .sp-searchfield__clear {
   position: absolute;
-  right: 6px;
+  right: 2px;
   top: 50%;
   transform: translateY(-50%);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
   border: none;
   border-radius: var(--radius-pill);
   background: transparent;
@@ -1455,4 +1438,72 @@ button, input, select, textarea, optgroup {
   justify-content: center;
   gap: var(--space-2xs);
   margin-top: var(--space-md);
+}
+
+/* --- Entrance reveal ------------------------------------------------------
+   Sections fade and rise once as they scroll in, their cards staggered.
+   `armed` is only set from JS, so nothing is ever stuck invisible if the
+   script doesn't run. Timing comes from the DS ladder — one easing, and the
+   reveal duration — rather than a bespoke curve. */
+.sp-reveal[data-reveal="armed"] .sp-reveal__item,
+.sp-reveal[data-reveal="armed"] .sp-shelf__header,
+.sp-reveal[data-reveal="armed"] .sp-resultgroup__title {
+  opacity: 0;
+  transform: translateY(40px);
+}
+.sp-reveal[data-reveal] .sp-reveal__item,
+.sp-reveal[data-reveal] .sp-shelf__header,
+.sp-reveal[data-reveal] .sp-resultgroup__title {
+  transition:
+    opacity var(--dur-reveal) var(--ease),
+    transform var(--dur-reveal) var(--ease);
+}
+.sp-reveal[data-reveal] .sp-reveal__item {
+  transition-delay: calc(var(--reveal-i, 0) * 80ms);
+}
+.sp-reveal[data-reveal="in"] .sp-reveal__item,
+.sp-reveal[data-reveal="in"] .sp-shelf__header,
+.sp-reveal[data-reveal="in"] .sp-resultgroup__title {
+  opacity: 1;
+  transform: none;
+}
+
+/* --- Skeletons -----------------------------------------------------------
+   Card geometry, so nothing jumps when the data lands. A pulse rather than a
+   sweeping highlight: the DS bans gradients as a surface treatment. */
+@keyframes sp-skeleton-pulse {
+  0%, 100% { background-color: var(--bg-raised); }
+  50%      { background-color: var(--bg-hover); }
+}
+.sp-skeleton__block {
+  background-color: var(--bg-raised);
+  animation: sp-skeleton-pulse 1.4s var(--ease) infinite;
+}
+.sp-skeleton__line {
+  display: block;
+  height: 13px;
+  border-radius: var(--radius-control);
+}
+.sp-skeleton-card { pointer-events: none; }
+.sp-skeleton-card .sp-media-card__preview { border: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  /* State still changes; it just doesn't travel or pulse. */
+  .sp-reveal[data-reveal] .sp-reveal__item,
+  .sp-reveal[data-reveal] .sp-shelf__header,
+  .sp-reveal[data-reveal] .sp-resultgroup__title {
+    opacity: 1;
+    transform: none;
+    transition: none;
+    transition-delay: 0ms;
+  }
+  .sp-skeleton__block { animation: none; }
+}
+
+/* --- Responsive ----------------------------------------------------------- */
+@media (max-width: 767px) {
+  /* 16px page gutter on mobile, per the DS layout spec. */
+  .sp-page { padding: var(--space-md) var(--space-sm) var(--space-2xl); }
+  .sp-shelf { margin-top: var(--space-xl); }
+  .sp-filterbar { padding: var(--space-xs) 0; }
 }

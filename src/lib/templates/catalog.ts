@@ -88,8 +88,11 @@ export function toCatalogTemplate(t: TemplateSchema): CatalogTemplate {
   };
 }
 
-/** "1080 × 1350 · 4:5 · Portrait" — the card's meta line. Uses ×, not x. */
+/** "1080 × 1350 · 4:5" — the card's meta line. Uses ×, not x.
+ *
+ *  Orientation is deliberately absent: every card sits under a heading that
+ *  already names it ("Instagram Vertical"), and repeating it here pushed the
+ *  line past a landscape card's width and truncated the ratio. */
 export function metaLine(t: CatalogTemplate): string {
-  const orientation = t.orientation[0].toUpperCase() + t.orientation.slice(1);
-  return `${t.width} × ${t.height} · ${t.aspectRatio} · ${orientation}`;
+  return `${t.width} × ${t.height} · ${t.aspectRatio}`;
 }

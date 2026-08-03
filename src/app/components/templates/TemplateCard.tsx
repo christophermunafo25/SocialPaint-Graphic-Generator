@@ -11,10 +11,10 @@ const MAX_TAGS = 2;
  * One card, used by both the shelves and the grid. There is no second card
  * design.
  *
- * The whole card is the control. "Use template" and the circular arrow are
- * `aria-hidden` decoration over that single button rather than nested
- * controls, so a screen reader gets one clearly-named target per card and
- * the keyboard gets one stop.
+ * The whole card is the control. The circular arrow is `aria-hidden`
+ * decoration over that single button rather than a nested control, so a
+ * screen reader gets one clearly-named target per card and the keyboard gets
+ * one stop.
  */
 export function TemplateCard({
   template,
@@ -59,9 +59,6 @@ export function TemplateCard({
         >
           <TemplateThumbnail template={template.template} />
         </div>
-        <span className="sp-template-card__use" aria-hidden>
-          Use template
-        </span>
       </div>
 
       <div className="sp-template-card__meta">

@@ -13,7 +13,7 @@ export function Page({
   children: React.ReactNode;
 }) {
   return (
-    <div style={{ maxWidth: 1440, padding: "40px 32px 64px 32px" }}>
+    <div className="sp-page" style={{ maxWidth: 1440 }}>
       <div style={narrow ? { maxWidth: narrow } : undefined}>{children}</div>
     </div>
   );

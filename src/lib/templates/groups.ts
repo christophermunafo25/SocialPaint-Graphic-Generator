@@ -93,18 +93,3 @@ export function buildGroups(templates: CatalogTemplate[]): TemplateGroup[] {
   }
   return groups;
 }
-
-/** Card width per shape, so a rail of stories isn't three times the height
- *  of a rail of banners. Widths are on the 4px scale. */
-export function shelfCardWidth(orientation: Orientation): number {
-  switch (orientation) {
-    case "landscape":
-      return 300;
-    case "square":
-      return 240;
-    case "portrait":
-      return 220;
-    case "vertical":
-      return 188;
-  }
-}

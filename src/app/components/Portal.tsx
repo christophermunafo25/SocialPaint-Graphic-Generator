@@ -3,7 +3,7 @@ import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { toCatalogTemplate, type CatalogTemplate } from "@/lib/templates/catalog";
-import { buildGroups, groupIdOf } from "@/lib/templates/groups";
+import { buildGroups, groupIdOf, type TemplateGroup } from "@/lib/templates/groups";
 import { buildSearchIndex, searchTemplates } from "@/lib/templates/searchIndex";
 import { useRouter } from "../router";
 import { Page, PageHeader } from "./layout/Page";
@@ -12,6 +12,8 @@ import { GroupChips } from "./templates/GroupChips";
 import { PlatformShelf } from "./templates/PlatformShelf";
 import { TemplateCard } from "./templates/TemplateCard";
 import { TemplateSearchField } from "./templates/TemplateSearchField";
+import { TemplateShelfSkeleton } from "./templates/TemplateSkeleton";
+import { revealIndex, useReveal } from "./templates/useReveal";
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
@@ -160,7 +162,10 @@ export function Portal() {
       </p>
 
       {templatesState.status === "loading" ? (
-        <p style={{ fontSize: 13, color: "var(--text-muted)" }}>Loading templates…</p>
+        <>
+          <TemplateShelfSkeleton />
+          <TemplateShelfSkeleton />
+        </>
       ) : catalog.length === 0 ? (
         <div className="sp-emptystate">
           <p className="sp-emptystate__title">Publish your first template</p>
@@ -229,29 +234,42 @@ export function Portal() {
             </div>
           ) : (
             resultGroups.map((g) => (
-              <section key={g.id} className="sp-resultgroup">
-                {!group && (
-                  <h2 className="sp-resultgroup__title">
-                    {g.label}
-                    <span className="sp-eyebrow">{plural(g.templates.length, "template")}</span>
-                  </h2>
-                )}
-                <div className="sp-grid-media">
-                  {g.templates.map((t) => (
-                    <TemplateCard
-                      key={t.id}
-                      template={t}
-                      frame={g.frame}
-                      showTags
-                      onOpen={openTemplate}
-                    />
-                  ))}
-                </div>
-              </section>
+              <ResultGroup key={g.id} group={g} showHeading={!group} onOpen={openTemplate} />
             ))
           )}
         </>
       )}
     </Page>
+  );
+}
+
+/** One group's grid within the results. Split out so each section owns its
+ *  own scroll-in reveal rather than the whole page animating as one block. */
+function ResultGroup({
+  group,
+  showHeading,
+  onOpen,
+}: {
+  group: TemplateGroup;
+  showHeading: boolean;
+  onOpen(template: CatalogTemplate): void;
+}) {
+  const revealRef = useReveal<HTMLElement>();
+  return (
+    <section ref={revealRef} className="sp-resultgroup sp-reveal">
+      {showHeading && (
+        <h2 className="sp-resultgroup__title">
+          {group.label}
+          <span className="sp-eyebrow">{plural(group.templates.length, "template")}</span>
+        </h2>
+      )}
+      <div className="sp-grid-media">
+        {group.templates.map((t, i) => (
+          <div key={t.id} className="sp-reveal__item" style={revealIndex(i)}>
+            <TemplateCard template={t} frame={group.frame} showTags onOpen={onOpen} />
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }

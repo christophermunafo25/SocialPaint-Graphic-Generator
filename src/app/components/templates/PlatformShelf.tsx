@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useLayoutEffect, useState } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import type { CatalogTemplate } from "@/lib/templates/catalog";
-import { shelfCardWidth, type TemplateGroup } from "@/lib/templates/groups";
+import type { TemplateGroup } from "@/lib/templates/groups";
 import { TemplateCard } from "./TemplateCard";
 import { useEdgeFade } from "./useEdgeFade";
+import { revealIndex, useReveal } from "./useReveal";
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
@@ -24,17 +25,27 @@ export function PlatformShelf({
   onOpen(template: CatalogTemplate): void;
   onViewAll(): void;
 }) {
-  const { platform, templates } = group;
+  const { templates } = group;
   const { ref, atStart, atEnd } = useEdgeFade<HTMLDivElement>([templates.length]);
+  const revealRef = useReveal<HTMLElement>();
 
-  // Card width follows the shape, so a rail of stories isn't three times the
-  // height of a rail of banners. The frame height follows from both.
-  const cardW = shelfCardWidth(group.orientation);
-  const [fw, fh] = group.frame.split("/").map((n) => Number(n.trim()));
-  const railVars = {
-    "--shelf-card-w": `${cardW}px`,
-    "--shelf-frame-h": `${Math.round((cardW - 24) * (fh / fw))}px`,
-  } as React.CSSProperties;
+  // Card width is now fluid — CSS fits a fixed number of cards across the
+  // track — so the frame height has to be measured rather than derived. The
+  // arrows centre on it.
+  const [frameH, setFrameH] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const frame = ref.current?.querySelector<HTMLElement>(".sp-media-card__preview");
+    if (!frame) return;
+    const read = () => setFrameH(frame.getBoundingClientRect().height);
+    read();
+    const ro = new ResizeObserver(read);
+    ro.observe(frame);
+    return () => ro.disconnect();
+  }, [templates.length, ref]);
+
+  const railVars = (
+    frameH ? { "--shelf-frame-h": `${Math.round(frameH)}px` } : {}
+  ) as React.CSSProperties;
 
   /** Just under a full pane, so the card you were reading stays in view. */
   const page = (direction: 1 | -1) => {
@@ -44,7 +55,7 @@ export function PlatformShelf({
   };
 
   return (
-    <section className="sp-shelf" aria-labelledby={`shelf-${group.id}`}>
+    <section ref={revealRef} className="sp-shelf sp-reveal" aria-labelledby={`shelf-${group.id}`}>
       <div className="sp-shelf__header">
         <div>
           <h2 className="sp-shelf__title" id={`shelf-${group.id}`}>
@@ -81,8 +92,8 @@ export function PlatformShelf({
           role="group"
           aria-label={`${group.label} templates`}
         >
-          {templates.map((t) => (
-            <div key={t.id} className="sp-shelf__item">
+          {templates.map((t, i) => (
+            <div key={t.id} className="sp-shelf__item sp-reveal__item" style={revealIndex(i)}>
               <TemplateCard template={t} frame={group.frame} onOpen={onOpen} />
             </div>
           ))}
