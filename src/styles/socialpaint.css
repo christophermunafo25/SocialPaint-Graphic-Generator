@@ -724,6 +724,140 @@ button, input, select, textarea, optgroup {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* Meta line — mono, uppercase, with the platform mark. Platform identity
+   lives here and in the shelf header, never in an invented per-platform
+   colour: the palette is spoken for. */
+.sp-template-card__metaline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3xs);
+  margin-top: var(--space-3xs);
+  font-family: var(--font-mono);
+  font-size: var(--type-caption-size);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-template-card__platformicon { width: 13px; height: 13px; flex-shrink: 0; }
+
+.sp-template-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3xs);
+  margin-top: var(--space-2xs);
+}
+.sp-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--space-2xs);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  font-size: var(--type-caption-size);
+  line-height: 1.5;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* "Use template" — a label over the foot of the thumbnail, not a nested
+   control. The card itself is the button. */
+.sp-media-card__preview { position: relative; }
+.sp-template-card__use {
+  position: absolute;
+  left: var(--space-2xs);
+  right: var(--space-2xs);
+  bottom: var(--space-2xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--control-sm);
+  border-radius: var(--radius-control);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+  font-family: var(--font-ui);
+  font-size: var(--type-label-size);
+  font-weight: var(--weight-ui);
+  letter-spacing: var(--type-label-track);
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity var(--dur-state) var(--ease), transform var(--dur-state) var(--ease);
+  pointer-events: none;
+}
+.sp-template-card:hover .sp-template-card__use,
+.sp-template-card:focus-visible .sp-template-card__use {
+  opacity: 1;
+  transform: none;
+}
+
+/* Hover lift. The DS bans shadows, so the border carries the elevation the
+   spec asked a shadow to carry. */
+.sp-template-card {
+  transition: border-color var(--dur-state) var(--ease), transform var(--dur-state) var(--ease);
+}
+.sp-template-card:hover { transform: translateY(-4px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .sp-template-card:hover { transform: none; }
+  .sp-template-card__use { transform: none; }
+}
+
+/* --- Shelf track ---------------------------------------------------------- */
+.sp-shelf__rail { --shelf-card-w: 240px; }
+.sp-shelf__track {
+  gap: var(--space-sm);
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  /* The padding keeps a card's focus ring from being clipped by the
+     scroller. scroll-padding moves the snapport in to match: without it,
+     mandatory snap parks the first card at scrollLeft 2 rather than 0, and
+     the rail never reports itself as being at the start. */
+  padding: 2px;
+  scroll-padding-inline: 2px;
+}
+.sp-shelf__track:focus-visible { outline: none; box-shadow: var(--focus-ring-tight); }
+.sp-shelf__item {
+  flex: 0 0 var(--shelf-card-w);
+  width: var(--shelf-card-w);
+  scroll-snap-align: start;
+}
+
+/* Circular prev/next, centred on the thumbnail and sitting over the fade
+   masks. Pointer affordance only — touch already has the gesture. */
+.sp-shelf__arrow { display: none; }
+@media (hover: hover) {
+  .sp-shelf__arrow {
+    position: absolute;
+    top: calc(var(--shelf-frame-h, var(--shelf-card-w)) / 2 + var(--media-pad, 12px));
+    transform: translateY(-50%);
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border);
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity var(--dur-state) var(--ease), border-color var(--dur-state) var(--ease);
+  }
+  .sp-shelf__rail:hover .sp-shelf__arrow,
+  .sp-shelf__rail:focus-within .sp-shelf__arrow { opacity: 1; }
+  .sp-shelf__arrow:hover { border-color: var(--border-strong); }
+  .sp-shelf__arrow:focus-visible { opacity: 1; outline: none; box-shadow: var(--focus-ring-tight); }
+  .sp-shelf__arrow:disabled { opacity: 0; pointer-events: none; }
+  .sp-shelf__arrow--prev { left: var(--space-2xs); }
+  .sp-shelf__arrow--next { right: var(--space-2xs); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sp-shelf__track { scroll-behavior: auto; }
+}
 .sp-template-card__go {
   display: flex;
   align-items: center;
@@ -777,7 +911,10 @@ button, input, select, textarea, optgroup {
      inset — so the two curves stay parallel. Derived rather than picked,
      which also keeps it off the banned 12px it used to sit at. */
   border-radius: calc(var(--radius-card) - var(--media-pad));
-  aspect-ratio: 1 / 1;
+  /* Square unless a caller sets the group's own ratio. Grouping the gallery
+     by platform AND shape means every card in a rail shares one ratio, so
+     the frame can simply BE that ratio and nothing letterboxes. */
+  aspect-ratio: var(--frame-ratio, 1 / 1);
   background: var(--bg-hover);
   overflow: hidden;
   display: flex;
@@ -1047,4 +1184,275 @@ button, input, select, textarea, optgroup {
     animation: none;
     background-color: rgba(188, 255, 120, 0.12);
   }
+}
+
+/* --- Brand templates: search, filter bar, shelves -------------------------
+   The catalogue's browse chrome. Surfaces, radii and motion come from the
+   tokens above; the DS bans shadows in both themes, so the pinned filter bar
+   separates with a hairline rather than lifting. */
+
+/* Search field — the icon and clear button sit inside the input's box. */
+.sp-searchfield { position: relative; width: 100%; }
+.sp-searchfield__icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: var(--text-muted);
+  pointer-events: none;
+  z-index: 1;
+}
+.sp-searchfield__input {
+  height: var(--control-md);
+  padding: 0 44px 0 40px;
+  font-size: var(--type-body-size);
+}
+/* The type=search UA affordances duplicate our own clear button. */
+.sp-searchfield__input::-webkit-search-cancel-button { display: none; }
+.sp-searchfield__clear {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--dur-state) var(--ease), color var(--dur-state) var(--ease);
+}
+.sp-searchfield__clear:hover { background: var(--bg-hover); color: var(--text-primary); }
+.sp-searchfield__clear:focus-visible { outline: none; box-shadow: var(--focus-ring-tight); }
+
+/* Sticky region: search + chips pin below the top of the viewport. Flat
+   until pinned, then a hairline does the separating. */
+.sp-filterbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  background: var(--bg-canvas);
+  padding: var(--space-sm) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--dur-state) var(--ease);
+}
+.sp-filterbar[data-pinned] { border-bottom-color: var(--border); }
+
+/* Horizontal rail with edge fades. Shared by the chip bar and the shelves:
+   the mask hides at whichever end has nothing left to reveal. */
+.sp-railfade { position: relative; min-width: 0; }
+.sp-railfade::before,
+.sp-railfade::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 80px;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 1;
+  transition: opacity var(--dur-state) var(--ease);
+}
+.sp-railfade::before {
+  left: 0;
+  background: linear-gradient(to right, var(--bg-canvas), transparent);
+}
+.sp-railfade::after {
+  right: 0;
+  background: linear-gradient(to left, var(--bg-canvas), transparent);
+}
+.sp-railfade[data-at-start]::before { opacity: 0; }
+.sp-railfade[data-at-end]::after { opacity: 0; }
+
+.sp-railfade__track {
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.sp-railfade__track::-webkit-scrollbar { display: none; }
+
+/* Platform chips. Crisp control radius; the selected chip wears the DS
+   primary construction so its label stays readable in both themes. */
+.sp-chipbar { gap: var(--space-2xs); padding: 2px; }
+.sp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  flex-shrink: 0;
+  min-height: 44px; /* hit target */
+  padding: 0 var(--space-xs);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: var(--type-label-size);
+  font-weight: var(--weight-ui);
+  letter-spacing: var(--type-label-track);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color var(--dur-state) var(--ease),
+              background var(--dur-state) var(--ease),
+              color var(--dur-state) var(--ease);
+}
+.sp-chip:hover { border-color: var(--border-strong); }
+.sp-chip:focus-visible { outline: none; box-shadow: var(--focus-ring-tight); }
+.sp-chip[data-selected] {
+  background: var(--btn-primary-bg);
+  border-color: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+}
+.sp-chip__icon { width: 16px; height: 16px; flex-shrink: 0; }
+.sp-chip__count {
+  font-family: var(--font-mono);
+  font-size: var(--type-caption-size);
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.sp-chip[data-selected] .sp-chip__count { color: var(--btn-primary-fg); opacity: 0.8; }
+
+/* Shelves — one section per platform. */
+.sp-shelf { margin-top: var(--space-2xl); }
+.sp-shelf:first-of-type { margin-top: var(--space-xl); }
+.sp-shelf__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+.sp-shelf__title {
+  font-family: var(--font-head);
+  font-size: var(--type-cardtitle-size);
+  line-height: var(--type-cardtitle-lh);
+  font-weight: var(--weight-head);
+  letter-spacing: var(--type-cardtitle-track);
+  text-transform: uppercase;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.sp-shelf__viewall {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3xs);
+  min-height: 44px;
+  padding: 0 var(--space-2xs);
+  border: none;
+  background: transparent;
+  color: var(--state-primary);
+  font-family: var(--font-ui);
+  font-size: var(--type-label-size);
+  font-weight: var(--weight-ui);
+  cursor: pointer;
+  border-radius: var(--radius-control);
+}
+.sp-shelf__viewall:hover { text-decoration: underline; }
+.sp-shelf__viewall:focus-visible { outline: none; box-shadow: var(--focus-ring-tight); }
+
+/* Scaffolding only — phase 4 swaps these for the card track and the grid. */
+.sp-shelf__placeholder {
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-card);
+  padding: var(--space-xl);
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: var(--type-caption-size);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.sp-resultline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin: var(--space-md) 0 var(--space-sm);
+}
+.sp-resultline__clear {
+  border: none;
+  background: transparent;
+  color: var(--state-primary);
+  font-family: var(--font-ui);
+  font-size: var(--type-label-size);
+  font-weight: var(--weight-ui);
+  min-height: 44px;
+  padding: 0 var(--space-2xs);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+.sp-resultline__clear:hover { text-decoration: underline; }
+.sp-resultline__clear:focus-visible { outline: none; box-shadow: var(--focus-ring-tight); }
+
+/* Visually hidden live region. */
+.sp-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 767px) {
+  .sp-railfade::before, .sp-railfade::after { width: 40px; }
+}
+
+/* Result sections — one per group, so each keeps its own frame ratio and a
+   mixed search result never forces stories and banners into one shape. */
+.sp-resultgroup { margin-bottom: var(--space-xl); }
+.sp-resultgroup__title {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2xs);
+  font-family: var(--font-head);
+  font-size: var(--type-cardtitle-size);
+  line-height: var(--type-cardtitle-lh);
+  font-weight: var(--weight-head);
+  letter-spacing: var(--type-cardtitle-track);
+  text-transform: uppercase;
+  color: var(--text-primary);
+  margin-bottom: var(--space-xs);
+}
+
+/* Empty state — the DS pattern: a headline naming the way out, one line of
+   body, and the actions. No illustration. */
+.sp-emptystate {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--bg-surface);
+  padding: var(--space-2xl) var(--space-lg);
+  text-align: center;
+}
+.sp-emptystate__title {
+  font-family: var(--font-head);
+  font-size: var(--type-cardtitle-size);
+  line-height: var(--type-cardtitle-lh);
+  font-weight: var(--weight-head);
+  letter-spacing: var(--type-cardtitle-track);
+  text-transform: uppercase;
+  color: var(--text-primary);
+}
+.sp-emptystate__body {
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-lh);
+  color: var(--text-secondary);
+  margin-top: var(--space-2xs);
+}
+.sp-emptystate__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2xs);
+  margin-top: var(--space-md);
 }

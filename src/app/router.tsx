@@ -1,10 +1,16 @@
-import React, { createContext, useContext, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
-/** Lightweight view-state routing, extending the original App.tsx pattern
- * (no URL router — matches the Figma Make export's structure). */
+/** View-state routing, now mirrored to the URL so a view is shareable and
+ * survives refresh and back/forward. Still no router dependency: one path
+ * table, `history.pushState`, and a `popstate` listener.
+ *
+ * The Brand templates route carries its own filter state (`group`, `q`)
+ * because the URL is the source of truth for that page — selecting a chip or
+ * typing a query IS a navigation. `group` is a platform-and-shape id such as
+ * `instagram-4-5`, which is the unit the gallery filters by. */
 export type Route =
   | { name: "onboarding" }
-  | { name: "portal" }
+  | { name: "portal"; group?: string; q?: string }
   | { name: "template"; templateId: string }
   | { name: "adminTemplates" }
   | { name: "builder"; templateId: string | null }
@@ -13,16 +19,116 @@ export type Route =
   | { name: "people" }
   | { name: "settings" };
 
+interface NavigateOptions {
+  /** Replace the current history entry instead of pushing a new one. The
+   * debounced search field uses this so typing a query doesn't bury the back
+   * button under one entry per keystroke. */
+  replace?: boolean;
+}
+
 interface RouterState {
   route: Route;
-  navigate(route: Route): void;
+  navigate(route: Route, options?: NavigateOptions): void;
 }
 
 const RouterContext = createContext<RouterState | null>(null);
 
+/** Route → URL. Keep in step with `urlToRoute`. */
+export function routeToUrl(route: Route): string {
+  switch (route.name) {
+    case "onboarding":
+      return "/onboarding";
+    case "portal": {
+      const params = new URLSearchParams();
+      if (route.group) params.set("group", route.group);
+      if (route.q) params.set("q", route.q);
+      const qs = params.toString();
+      return qs ? `/templates?${qs}` : "/templates";
+    }
+    case "template":
+      return `/templates/${encodeURIComponent(route.templateId)}`;
+    case "adminTemplates":
+      return "/template-builder";
+    case "builder":
+      return route.templateId
+        ? `/template-builder/${encodeURIComponent(route.templateId)}`
+        : "/template-builder/new";
+    case "brandStudio":
+      return "/brand-studio";
+    case "dashboard":
+      return "/insights";
+    case "people":
+      return "/people";
+    case "settings":
+      return "/settings";
+  }
+}
+
+/** URL → Route. Anything unrecognised lands on the gallery rather than a
+ * dead end. */
+export function urlToRoute(pathname: string, search: string): Route {
+  const params = new URLSearchParams(search);
+  const [head, tail] = pathname.split("/").filter(Boolean);
+
+  switch (head) {
+    case "onboarding":
+      return { name: "onboarding" };
+    case "templates":
+      if (tail) return { name: "template", templateId: decodeURIComponent(tail) };
+      return {
+        name: "portal",
+        group: params.get("group") ?? undefined,
+        q: params.get("q") ?? undefined,
+      };
+    case "template-builder":
+      if (!tail) return { name: "adminTemplates" };
+      return {
+        name: "builder",
+        templateId: tail === "new" ? null : decodeURIComponent(tail),
+      };
+    case "brand-studio":
+      return { name: "brandStudio" };
+    case "insights":
+      return { name: "dashboard" };
+    case "people":
+      return { name: "people" };
+    case "settings":
+      return { name: "settings" };
+    default:
+      return { name: "portal" };
+  }
+}
+
 export function RouterProvider({ children }: { children: React.ReactNode }) {
-  const [route, navigate] = useState<Route>({ name: "portal" });
-  const value = useMemo<RouterState>(() => ({ route, navigate }), [route]);
+  const [route, setRoute] = useState<Route>(() =>
+    urlToRoute(window.location.pathname, window.location.search),
+  );
+
+  const navigate = useCallback((next: Route, options?: NavigateOptions) => {
+    const url = routeToUrl(next);
+    if (url !== window.location.pathname + window.location.search) {
+      window.history[options?.replace ? "replaceState" : "pushState"](null, "", url);
+    }
+    setRoute(next);
+  }, []);
+
+  // Back/forward move the app without writing to history again.
+  useEffect(() => {
+    const onPop = () =>
+      setRoute(urlToRoute(window.location.pathname, window.location.search));
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  // A first load on "/" should read as the gallery in the address bar too.
+  useEffect(() => {
+    const canonical = routeToUrl(urlToRoute(window.location.pathname, window.location.search));
+    if (window.location.pathname + window.location.search !== canonical) {
+      window.history.replaceState(null, "", canonical);
+    }
+  }, []);
+
+  const value = useMemo<RouterState>(() => ({ route, navigate }), [route, navigate]);
   return <RouterContext.Provider value={value}>{children}</RouterContext.Provider>;
 }
 

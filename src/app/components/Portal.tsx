@@ -1,133 +1,257 @@
-import React, { useMemo, useState } from "react";
-import { ArrowRight, Search } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { toCatalogTemplate, type CatalogTemplate } from "@/lib/templates/catalog";
+import { buildGroups, groupIdOf } from "@/lib/templates/groups";
+import { buildSearchIndex, searchTemplates } from "@/lib/templates/searchIndex";
 import { useRouter } from "../router";
 import { Page, PageHeader } from "./layout/Page";
 import { ErrorState } from "./ErrorState";
-import { TemplateThumbnail } from "./TemplateThumbnail";
+import { GroupChips } from "./templates/GroupChips";
+import { PlatformShelf } from "./templates/PlatformShelf";
+import { TemplateCard } from "./templates/TemplateCard";
+import { TemplateSearchField } from "./templates/TemplateSearchField";
 
-/** Member-facing, company-scoped searchable template grid. SocialPaint
- * platform chrome: signature warm mesh hero, lift cards on hairlines,
- * sentence case, mono metadata. Tenant brand lives in the thumbnails. */
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+/** Member-facing template library. Three views on one surface, all driven by
+ * the URL: browse (a rail per group), filtered (one group's grid), and search
+ * (matches across every group).
+ *
+ * The unit throughout is a GROUP — one platform at one shape, e.g. "Facebook
+ * Landscape". Grouping this far down is what lets every frame in a rail or a
+ * grid share one ratio, so nothing is letterboxed to a common square and
+ * rows sit even. Platform, shape and ratio are all derived from a template's
+ * canvas; see lib/templates/platforms.ts. */
 export function Portal() {
-  const { company, role } = useAuth();
-  const { navigate } = useRouter();
-  const [query, setQuery] = useState("");
+  const { company } = useAuth();
+  const { route, navigate } = useRouter();
+
   const templatesState = useAsync(
     () => (company ? stores.templates.listPublished(company.id) : Promise.resolve([])),
     [company],
   );
   const templates = templatesState.status === "ready" ? templatesState.data : [];
 
-  const filtered = useMemo(() => {
-    if (!query.trim()) return templates;
-    const q = query.toLowerCase();
-    return templates.filter(
-      (t) =>
-        t.name.toLowerCase().includes(q) ||
-        t.description.toLowerCase().includes(q) ||
-        t.category.toLowerCase().includes(q) ||
-        t.tags.some((tag) => tag.toLowerCase().includes(q)),
+  // ── URL is the source of truth ──────────────────────────────────────────
+  const query = (route.name === "portal" && route.q) || "";
+  const rawGroup = route.name === "portal" ? route.group : undefined;
+
+  const setState = (next: { group?: string | null; q?: string }, replace = false) =>
+    navigate(
+      {
+        name: "portal",
+        group: (next.group !== undefined ? next.group : rawGroup) ?? undefined,
+        q: (next.q !== undefined ? next.q : query) || undefined,
+      },
+      { replace },
     );
-  }, [templates, query]);
+
+  // ── Derive the catalogue ────────────────────────────────────────────────
+  const catalog = useMemo<CatalogTemplate[]>(
+    () => templates.map(toCatalogTemplate),
+    [templates],
+  );
+  const index = useMemo(() => buildSearchIndex(catalog), [catalog]);
+  const allGroups = useMemo(() => buildGroups(catalog), [catalog]);
+
+  /** Query applies first; the chip then narrows within it. */
+  const searched = useMemo(
+    () => (query ? searchTemplates(index, query) : catalog),
+    [index, catalog, query],
+  );
+
+  /** Chips are faceted off the query, so every count on the page describes
+   *  what's actually in front of the member. */
+  const searchedGroups = useMemo(() => buildGroups(searched), [searched]);
+
+  /** Resolved against the whole catalogue, not the search results: a chip
+   *  the member picked stays picked even when the query excludes everything
+   *  in it. That combination is a real empty state, not a reason to quietly
+   *  widen the filter. */
+  const group = allGroups.find((g) => g.id === rawGroup) ?? null;
+
+  const results = useMemo(
+    () => (group ? searched.filter((t) => groupIdOf(t) === group.id) : searched),
+    [group, searched],
+  );
+
+  /** The chip stays on the bar at zero rather than disappearing under the
+   *  member's cursor. */
+  const chipGroups = useMemo(
+    () =>
+      group && !searchedGroups.some((g) => g.id === group.id)
+        ? [...searchedGroups, { ...group, templates: [] }]
+        : searchedGroups,
+    [searchedGroups, group],
+  );
+
+  /** The grid renders a section per group so each one keeps its own frame
+   *  ratio — a mixed search result never forces stories and banners into a
+   *  single shared shape. */
+  const resultGroups = useMemo(
+    () => (group ? [{ ...group, templates: results }] : buildGroups(results)),
+    [group, results],
+  );
+
+  const browsing = !query && !rawGroup;
+
+  /** The generation entry point: TemplateUsePage fills the template in and
+   *  downloads the graphic. */
+  const openTemplate = (t: CatalogTemplate) =>
+    navigate({ name: "template", templateId: t.id });
+
+  // ── Sticky pin ──────────────────────────────────────────────────────────
+  const sentinel = useRef<HTMLDivElement>(null);
+  const [pinned, setPinned] = useState(false);
+  useEffect(() => {
+    const el = sentinel.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([entry]) => setPinned(!entry.isIntersecting), {
+      threshold: 1,
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  const announcement = browsing
+    ? ""
+    : query
+      ? `${plural(results.length, "result")} for “${query}”${group ? ` · ${group.label}` : ""}`
+      : `${plural(results.length, "template")}${group ? ` · ${group.label}` : ""}`;
+
+  if (templatesState.status === "error") {
+    return (
+      <Page>
+        <PageHeader eyebrow={company?.name} title="Brand templates" />
+        <ErrorState
+          title="We couldn't load your templates."
+          detail="Check your connection and try again."
+          onRetry={templatesState.retry}
+        />
+      </Page>
+    );
+  }
 
   return (
     <Page>
       <PageHeader
         eyebrow={company?.name}
         title="Brand templates"
-        description="Pick a template, fill in the details, and download a ready-to-post on-brand graphic."
+        description="Starting points sized for every surface. Each one fills with your brand when you generate."
       />
-      <div className="relative" style={{ maxWidth: 420, marginBottom: 24 }}>
-        <Search className="absolute" style={{ left: 14, top: "50%", transform: "translateY(-50%)", width: 15, height: 15, color: "var(--text-muted)", zIndex: 1 }} />
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search templates…"
-          aria-label="Search templates"
-          className="sp-input"
-          style={{ height: 40, padding: "0 14px 0 38px" }}
-        />
-      </div>
 
-      <div>
-        {templatesState.status === "loading" ? (
-          <p className="text-center py-20" style={{ fontSize: 13, color: "var(--text-muted)" }}>
-            Loading templates…
-          </p>
-        ) : templatesState.status === "error" ? (
-          <ErrorState
-            title="We couldn't load your templates."
-            detail="Check your connection and try again."
-            onRetry={templatesState.retry}
+      <div ref={sentinel} aria-hidden style={{ height: 1 }} />
+      <div className="sp-filterbar" data-pinned={pinned || undefined}>
+        <TemplateSearchField value={query} onChange={(q) => setState({ q }, true)} />
+        {catalog.length > 0 && (
+          <GroupChips
+            groups={chipGroups}
+            total={searched.length}
+            selected={group?.id ?? null}
+            onSelect={(next) => setState({ group: next })}
           />
-        ) : templates.length === 0 ? (
-          <div className="text-center py-20 space-y-3">
-            <p style={{ fontSize: 14, color: "var(--text-secondary)" }}>No templates published yet.</p>
-            {role === "admin" && (
-              <button className="sp-btn sp-btn-primary" onClick={() => navigate({ name: "adminTemplates" })}>
-                Create your first template
-              </button>
-            )}
-          </div>
-        ) : filtered.length === 0 ? (
-          <p className="text-center py-20" style={{ fontSize: 14, color: "var(--text-secondary)" }}>
-            No templates match “{query}”.
-          </p>
-        ) : (
-          <>
-            <div className="flex items-center justify-between mb-6">
-              <p className="sp-eyebrow">
-                {filtered.length} template{filtered.length !== 1 ? "s" : ""}
-              </p>
-              <p style={{ fontSize: 12, color: "var(--text-muted)" }}>Click a template to get started</p>
-            </div>
-            <div className="sp-grid-media">
-              {filtered.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => navigate({ name: "template", templateId: t.id })}
-                  aria-label={t.category ? `${t.name} — ${t.category}` : t.name}
-                  className="sp-card sp-media-card sp-template-card"
-                >
-                  <div className="sp-media-card__preview">
-                    {/* Cover, not contain: the artwork FILLS the frame
-                        (edges crop on the mismatched axis). */}
-                    <div
-                      style={{
-                        aspectRatio: `${t.canvasWidth} / ${t.canvasHeight}`,
-                        flexShrink: 0,
-                        // Pin the SHORT axis so the artwork overflows the
-                        // square frame on the long one and crops there.
-                        ...(t.canvasWidth / t.canvasHeight >= 1
-                          ? { height: "100%" }
-                          : { width: "100%" }),
-                      }}
-                    >
-                      <TemplateThumbnail template={t} />
-                    </div>
-                  </div>
-                  <div className="sp-template-card__meta">
-                    <span className="sp-template-card__text">
-                      {t.category && <span className="sp-eyebrow block mb-1">{t.category}</span>}
-                      <span className="sp-template-card__title block">{t.name}</span>
-                      {t.description && (
-                        <span className="sp-template-card__desc block">{t.description}</span>
-                      )}
-                    </span>
-                    <span className="sp-template-card__go" aria-hidden>
-                      <ArrowRight style={{ width: 15, height: 15 }} />
-                    </span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </>
         )}
       </div>
+
+      <p className="sp-live" role="status" aria-live="polite">
+        {announcement}
+      </p>
+
+      {templatesState.status === "loading" ? (
+        <p style={{ fontSize: 13, color: "var(--text-muted)" }}>Loading templates…</p>
+      ) : catalog.length === 0 ? (
+        <div className="sp-emptystate">
+          <p className="sp-emptystate__title">Publish your first template</p>
+          <p className="sp-emptystate__body">
+            Published templates appear here for everyone on your team.
+          </p>
+        </div>
+      ) : browsing ? (
+        allGroups.map((g) => (
+          <PlatformShelf
+            key={g.id}
+            group={g}
+            onOpen={openTemplate}
+            onViewAll={() => setState({ group: g.id })}
+          />
+        ))
+      ) : (
+        <>
+          <div className="sp-resultline">
+            <p className="sp-eyebrow">{announcement}</p>
+            <button
+              type="button"
+              className="sp-resultline__clear"
+              onClick={() => setState({ group: null, q: "" })}
+            >
+              Clear
+            </button>
+          </div>
+
+          {results.length === 0 ? (
+            <div className="sp-emptystate">
+              <p className="sp-emptystate__title">
+                {query
+                  ? `No templates match “${query}”.`
+                  : "That set is empty."}
+              </p>
+              <div className="sp-emptystate__actions">
+                {query && (
+                  <button
+                    type="button"
+                    className="sp-btn sp-btn-primary"
+                    onClick={() => setState({ q: "" })}
+                  >
+                    Clear search
+                  </button>
+                )}
+                {query && group && (
+                  <button
+                    type="button"
+                    className="sp-btn sp-btn-ghost"
+                    onClick={() => setState({ group: null })}
+                  >
+                    Search all platforms
+                  </button>
+                )}
+                {!query && (
+                  <button
+                    type="button"
+                    className="sp-btn sp-btn-primary"
+                    onClick={() => setState({ group: null })}
+                  >
+                    Back to all templates
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            resultGroups.map((g) => (
+              <section key={g.id} className="sp-resultgroup">
+                {!group && (
+                  <h2 className="sp-resultgroup__title">
+                    {g.label}
+                    <span className="sp-eyebrow">{plural(g.templates.length, "template")}</span>
+                  </h2>
+                )}
+                <div className="sp-grid-media">
+                  {g.templates.map((t) => (
+                    <TemplateCard
+                      key={t.id}
+                      template={t}
+                      frame={g.frame}
+                      showTags
+                      onOpen={openTemplate}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))
+          )}
+        </>
+      )}
     </Page>
   );
 }
