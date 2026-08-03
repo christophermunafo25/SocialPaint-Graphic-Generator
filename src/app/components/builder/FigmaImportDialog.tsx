@@ -66,7 +66,7 @@ export function FigmaImportDialog({ onClose, onImported }: FigmaImportDialogProp
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="w-full max-w-lg p-6 space-y-4" style={{ background: "var(--bg-surface)", borderRadius: "var(--radius-card)", boxShadow: "var(--shadow-md)" }}
+        className="w-full max-w-lg p-6 space-y-4" style={{ background: "var(--bg-surface)", borderRadius: "var(--radius-card)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
@@ -128,7 +128,7 @@ export function FigmaImportDialog({ onClose, onImported }: FigmaImportDialogProp
         )}
 
         {error && (
-          <p className="text-sm rounded-xl px-4 py-3" style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}>
+          <p className="text-sm px-4 py-3" data-radius-card style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}>
             {error}
           </p>
         )}

@@ -33,6 +33,7 @@ import { useFileDrop } from "@/lib/useFileDrop";
 import { useUnsavedChangesWarning } from "@/lib/useUnsavedChangesWarning";
 import { useRouter } from "../../router";
 import { ColorControl } from "../ColorControl";
+import { Page } from "../layout/Page";
 import { InlineEdit } from "../InlineEdit";
 import { SchemaRenderer, schemaBackgroundCss } from "../SchemaRenderer";
 import { GradientEditor } from "./GradientEditor";
@@ -611,17 +612,17 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <Page>
       {publishState !== "idle" && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: "rgba(26,23,26,0.55)", backdropFilter: "blur(2px)" }}
+          style={{ background: "color-mix(in srgb, var(--text-on-accent) 55%, transparent)", backdropFilter: "blur(2px)" }}
           role="status"
           aria-live="polite"
         >
           <div
             className="w-full max-w-xs p-7 text-center space-y-3"
-            style={{ background: "var(--bg-surface)", borderRadius: "var(--radius-card)", boxShadow: "var(--shadow-md)" }}
+            style={{ background: "var(--bg-surface)", borderRadius: "var(--radius-card)" }}
           >
             {publishState === "publishing" ? (
               <>
@@ -640,7 +641,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
               <>
                 <span
                   className="mx-auto flex items-center justify-center"
-                  style={{ width: 44, height: 44, borderRadius: 999, background: "var(--volt)" }}
+                  style={{ width: 44, height: 44, borderRadius: "var(--radius-pill)", background: "var(--volt)" }}
                 >
                   <Check style={{ width: 22, height: 22, color: "var(--text-primary)" }} />
                 </span>
@@ -690,7 +691,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
           onSave={(name) => setDraft((d) => ({ ...d, name }), "text:name")}
         />
         <span
-          className="sp-eyebrow px-2 py-1 rounded-md" style={{ background: "rgba(35,31,35,0.04)" }}
+          className="sp-eyebrow px-2 py-1" style={{ background: "var(--bg-hover)", borderRadius: "var(--radius-control)" }}
         >
           {draft.canvasWidth}×{draft.canvasHeight} · {draft.status}
           {recomposing ? " · lifting elements off background…" : ""}
@@ -722,7 +723,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       </div>
 
       {error && (
-        <p className="mb-4 text-sm rounded-xl px-4 py-3" style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}>
+        <p className="mb-4 text-sm px-4 py-3" data-radius-card style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}>
           {error}
         </p>
       )}
@@ -819,7 +820,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
               className="p-8 text-center transition-all flex flex-col items-center justify-center gap-3"
               style={{
                 border: "1.5px dashed var(--border-strong)",
-                borderRadius: "var(--radius-card-sm)",
+                borderRadius: "var(--radius-card)",
                 background: "var(--bg-surface)",
                 minHeight: 220,
                 cursor: "pointer",
@@ -839,7 +840,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
               className="p-8 text-center transition-all flex flex-col items-center justify-center gap-3"
               style={{
                 border: "1.5px dashed var(--border-strong)",
-                borderRadius: "var(--radius-card-sm)",
+                borderRadius: "var(--radius-card)",
                 background: "var(--bg-surface)",
                 minHeight: 220,
                 cursor: stores.designImport.isConfigured() ? "pointer" : "default",
@@ -1070,7 +1071,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                         className="sp-dropzone flex items-center justify-center gap-2 cursor-pointer py-2.5"
                         style={{
                           border: "1.5px dashed var(--border-strong)",
-                          borderRadius: 8,
+                          borderRadius: "var(--radius-control)",
                           fontSize: 12,
                           color: "var(--text-secondary)",
                         }}
@@ -1236,6 +1237,6 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
           </div>
         </>
       )}
-    </div>
+    </Page>
   );
 }

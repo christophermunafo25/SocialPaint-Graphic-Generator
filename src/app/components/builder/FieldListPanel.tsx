@@ -93,7 +93,7 @@ export function FieldListPanel({ fields, selectedIds, onSelect, onReorder, onCon
                 onContextMenu={(e) => onContextMenu(e, f.id)}
                 className="flex items-center gap-2 px-2 py-2 cursor-pointer"
                 style={{
-                  borderRadius: 8,
+                  borderRadius: "var(--radius-control)",
                   border: `1px solid ${isSelected ? "var(--state-primary)" : "var(--border)"}`,
                   background: isSelected
                     ? "var(--accent-wash)"

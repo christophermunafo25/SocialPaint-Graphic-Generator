@@ -47,8 +47,7 @@ export function FieldContextMenu({ x, y, actions, onClose }: FieldContextMenuPro
         minWidth: 180,
         background: "var(--bg-surface)",
         border: "1px solid var(--border-strong)",
-        borderRadius: 10,
-        boxShadow: "var(--shadow-md, 0 8px 24px rgba(26,23,26,0.16))",
+        borderRadius: "var(--radius-card)",
       }}
       onContextMenu={(e) => e.preventDefault()}
     >

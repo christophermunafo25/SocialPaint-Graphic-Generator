@@ -71,7 +71,7 @@ export function ColorControl({
         style={{
           width: size,
           height: size,
-          borderRadius: 8,
+          borderRadius: "var(--radius-control)",
           border: hover ? "2px solid var(--state-primary)" : "1px solid var(--border-strong)",
           background: value
             ? value
@@ -82,7 +82,7 @@ export function ColorControl({
         {hover && (
           <span
             className="absolute inset-0 flex items-center justify-center"
-            style={{ background: "rgba(35,31,35,0.35)", borderRadius: 6 }}
+            style={{ background: "color-mix(in srgb, var(--text-on-accent) 35%, transparent)", borderRadius: "var(--radius-control)" }}
           >
             <Pencil style={{ width: Math.max(11, size * 0.38), height: Math.max(11, size * 0.38), color: "#fff" }} />
           </span>

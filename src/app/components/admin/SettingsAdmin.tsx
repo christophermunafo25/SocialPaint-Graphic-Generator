@@ -52,7 +52,7 @@ export function SettingsAdmin() {
               key={key}
               onClick={() => setScheme(key)}
               title={hint}
-              className="flex flex-col items-center gap-1.5 py-3 rounded-xl"
+              className="flex flex-col items-center gap-1.5 py-3" data-radius-card
               style={{
                 border: `1px solid ${scheme === key ? "transparent" : "var(--border-strong)"}`,
                 background: scheme === key ? "var(--sb-active-bg)" : "var(--bg-surface)",

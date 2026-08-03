@@ -41,11 +41,10 @@ export function ConfirmDialog({
           background: "var(--bg-surface)",
           border: "1px solid var(--border)",
           borderRadius: "var(--radius-card)",
-          boxShadow: "var(--shadow-md)",
         }}
       >
         <AlertDialogHeader>
-          <AlertDialogTitle style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)" }}>
+          <AlertDialogTitle style={{ fontSize: 16, fontWeight: "var(--weight-ui)", color: "var(--text-primary)" }}>
             {title}
           </AlertDialogTitle>
           {description && (

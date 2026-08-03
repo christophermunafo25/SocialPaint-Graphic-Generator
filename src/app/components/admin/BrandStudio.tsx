@@ -307,7 +307,7 @@ export function BrandStudio() {
       />
 
       {error && (
-        <p className="mb-5 text-sm rounded-xl px-4 py-3" style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}>
+        <p className="mb-5 text-sm px-4 py-3" data-radius-card style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}>
           {error}
         </p>
       )}
@@ -331,7 +331,7 @@ export function BrandStudio() {
                   <input
                     value={c.name}
                     onChange={(e) => setColors(colors.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))}
-                    className="text-sm font-semibold w-full bg-transparent outline-none"
+                    className="text-sm w-full bg-transparent outline-none"
                     style={{ color: "var(--foreground)" }}
                   />
                   {templates && (
@@ -435,8 +435,8 @@ export function BrandStudio() {
             {logoAssets.map((a) => (
               <div
                 key={a.id}
-                className="sp-chip-in relative rounded-xl border p-3 flex items-center justify-center aspect-square"
-                style={{ borderColor: a.id === primaryLogoAssetId ? "var(--state-primary)" : "var(--border)", borderRadius: 12 }}
+                className="sp-chip-in relative border p-3 flex items-center justify-center aspect-square"
+                style={{ borderColor: a.id === primaryLogoAssetId ? "var(--state-primary)" : "var(--border)", borderRadius: "var(--radius-card)" }}
               >
                 <img src={a.url} alt={a.name} className="max-w-full max-h-full object-contain" />
                 <button
@@ -462,7 +462,7 @@ export function BrandStudio() {
             <label
               {...logoDrop.bind}
               data-active={logoDrop.active}
-              className="sp-dropzone rounded-xl border-2 border-dashed flex flex-col items-center justify-center aspect-square cursor-pointer gap-1"
+              className="sp-dropzone border-2 border-dashed flex flex-col items-center justify-center aspect-square cursor-pointer gap-1"
               style={{ borderColor: "var(--border)" }}
             >
               <Upload className="sp-dropzone__icon w-5 h-5" style={{ color: "var(--muted-foreground)" }} />
@@ -586,14 +586,14 @@ function BrandPreviewCard({ colors, headingFamily, bodyFamily, logoUrl }: BrandP
         </span>
       </div>
       <div className="p-5" style={{ background: hex("background", "#F6F7F9") }}>
-        <p className="font-extrabold text-lg mb-1" style={{ color: hex("text", "#1A1F26"), fontFamily: `"${headingFamily}", sans-serif` }}>
+        <p className="text-lg mb-1" style={{ color: hex("text", "#1A1F26"), fontFamily: `"${headingFamily}", sans-serif` }}>
           Congratulations, Jordan!
         </p>
         <p className="text-sm mb-3" style={{ color: hex("text", "#1A1F26"), fontFamily: `"${bodyFamily}", sans-serif` }}>
           Five incredible years — thank you for everything you do.
         </p>
         <span
-          className="inline-block text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md"
+          className="sp-eyebrow inline-block px-2.5 py-1 rounded-md"
           style={{ background: hex("accent", "#C9A227"), color: "#fff" }}
         >
           Accent chip

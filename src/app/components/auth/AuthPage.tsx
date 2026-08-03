@@ -96,10 +96,10 @@ export function AuthPage() {
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "var(--bg-canvas)" }}>
       <div
         className="w-full max-w-sm overflow-hidden"
-        style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-card)", boxShadow: "var(--shadow-md)" }}
+        style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-card)" }}
       >
         <div className="sp-mesh px-7 pt-7 pb-6">
-          <p className="sp-eyebrow mb-1" style={{ color: "rgba(255,255,255,0.85)" }}>
+          <p className="sp-eyebrow mb-1" style={{ color: "var(--brand-surface-fg)" }}>
             Brand template portal
           </p>
           <h1 className="sp-hero-title" style={{ color: "var(--white)" }}>

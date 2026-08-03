@@ -59,7 +59,7 @@ function Kpi({ label, value, Icon, chip }: KpiProps) {
 function LegendChip({ color, label, total }: { color: string; label: string; total: number }) {
   return (
     <span className="flex items-center gap-1.5" style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-      <span aria-hidden style={{ width: 8, height: 8, borderRadius: 999, background: color }} />
+      <span aria-hidden style={{ width: 8, height: 8, borderRadius: "var(--radius-pill)", background: color }} />
       {label}
       <span style={{ ...mono, fontSize: 11, color: "var(--text-muted)" }}>{total}</span>
     </span>
@@ -177,7 +177,7 @@ export function Dashboard() {
                       fontSize: 12,
                       background: "var(--bg-surface)",
                       border: "1px solid var(--border)",
-                      borderRadius: 10,
+                      borderRadius: "var(--radius-card)",
                       color: "var(--text-primary)",
                     }}
                   />
@@ -218,7 +218,7 @@ export function Dashboard() {
                   <div key={r.templateId}>
                     <div className="flex items-baseline justify-between gap-3 mb-1.5">
                       <span className="flex items-baseline gap-2 min-w-0">
-                        <span style={{ ...mono, fontSize: 10, color: "var(--text-disabled)" }}>
+                        <span style={{ ...mono, fontSize: 10, color: "var(--text-muted)" }}>
                           {String(i + 1).padStart(2, "0")}
                         </span>
                         <span className="truncate" style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>
@@ -232,11 +232,11 @@ export function Dashboard() {
                     {/* thin rounded data bars, 2px apart — downloads then opens */}
                     <div
                       aria-hidden
-                      style={{ height: 6, borderRadius: 4, background: "var(--viz-downloads)", width: `${Math.max(2, (r.downloads / maxCount) * 100)}%` }}
+                      style={{ height: 6, borderRadius: "var(--radius-pill)", background: "var(--viz-downloads)", width: `${Math.max(2, (r.downloads / maxCount) * 100)}%` }}
                     />
                     <div
                       aria-hidden
-                      style={{ height: 6, borderRadius: 4, background: "var(--viz-opens)", width: `${Math.max(2, (r.opens / maxCount) * 100)}%`, marginTop: 2 }}
+                      style={{ height: 6, borderRadius: "var(--radius-pill)", background: "var(--viz-opens)", width: `${Math.max(2, (r.opens / maxCount) * 100)}%`, marginTop: 2 }}
                     />
                   </div>
                 ))}

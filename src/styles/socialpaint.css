@@ -407,7 +407,6 @@ button, input, select, textarea, optgroup {
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
-  box-shadow: var(--shadow-sm);
 }
 
 /* Brand-moment surface (hero headers, identity chips). Flat Forrest with
@@ -434,8 +433,7 @@ button, input, select, textarea, optgroup {
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-top: 3px solid var(--state-primary);
-  border-radius: 10px;
-  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-card);
   animation: sp-toast-in var(--dur-panel) var(--ease);
 }
 .sp-toast[data-tone="danger"] { border-top-color: var(--state-danger); }
@@ -448,7 +446,6 @@ button, input, select, textarea, optgroup {
   background: var(--sb-bg);
   border: 1px solid var(--sb-border);
   border-radius: var(--radius-card);
-  box-shadow: var(--shadow-sm);
 }
 .sp-sidebar-item {
   display: flex;
@@ -581,14 +578,13 @@ button, input, select, textarea, optgroup {
     color 0.25s ease,
     background 0.25s ease,
     transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.35s ease;
 }
 .sp-dropzone[data-active="true"] {
   border-color: var(--state-primary) !important;
   transform: scale(1.02);
-  box-shadow:
-    inset 0 0 32px 0 color-mix(in srgb, var(--state-primary) 10%, transparent),
-    0 0 0 1px color-mix(in srgb, var(--state-primary) 20%, transparent);
+  /* Elevation is surface colour, never shadow — the active state steps the
+     fill and the border rather than casting a glow. */
+  background: var(--accent-wash);
 }
 .sp-dropzone__icon {
   transform: translateY(0);
@@ -633,7 +629,6 @@ button, input, select, textarea, optgroup {
   inset: 0;
   border-radius: 99px;
   background: var(--state-primary);
-  box-shadow: 0 0 6px 0 color-mix(in srgb, var(--state-primary) 55%, transparent);
 }
 .sp-upload-bar::after {
   content: "";
@@ -941,7 +936,7 @@ button, input, select, textarea, optgroup {
   width: 20px;
   height: 20px;
   flex-shrink: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-control);
   border: 2px solid var(--border);
   cursor: pointer;
   padding: 0;
@@ -975,7 +970,6 @@ button, input, select, textarea, optgroup {
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
-  box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
 .sp-inline-edit-group .sp-inline-edit {
@@ -1507,3 +1501,29 @@ button, input, select, textarea, optgroup {
   .sp-shelf { margin-top: var(--space-xl); }
   .sp-filterbar { padding: var(--space-xs) 0; }
 }
+
+/* --- Reduced motion: the literal-timing holdouts -------------------------
+   Most of the system animates on --dur-* tokens, which zero out under
+   prefers-reduced-motion for free. These four predate that and carry literal
+   durations, so they need saying explicitly. The timings themselves are left
+   alone — see the note in the report; normalising them onto the token ladder
+   would change how they feel, which is a design call, not a cleanup. */
+@media (prefers-reduced-motion: reduce) {
+  .sp-dropzone,
+  .sp-dropzone__icon {
+    transition: none;
+  }
+  .sp-dropzone[data-active="true"] { transform: none; }
+  .sp-dropzone[data-active="true"] .sp-dropzone__icon,
+  .sp-chip-in,
+  .sp-chip-out,
+  .sp-done-in,
+  .sp-upload-bar::after {
+    animation: none;
+  }
+}
+
+/* Containers that were reaching for Tailwind's rounded-xl, which resolves to
+   calc(--radius-control + 4px) = 9px — inside the banned 6–19 band. */
+[data-radius-card] { border-radius: var(--radius-card); }
+.sp-dropzone { border-radius: var(--radius-control); }

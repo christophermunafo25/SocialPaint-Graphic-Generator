@@ -148,11 +148,11 @@ function AccountBlock({ onNavigate }: { onNavigate(route: Route): void }) {
           style={{
             width: 38,
             height: 38,
-            borderRadius: 999,
+            borderRadius: "var(--radius-pill)",
             background: "var(--volt)", // flat fill — gradients are banned as surface treatment
             color: "var(--text-on-accent)",
             fontSize: 12,
-            fontWeight: 600,
+            fontWeight: "var(--weight-ui)",
           }}
         >
           {initials}
@@ -274,7 +274,7 @@ export function Sidebar() {
         {menuOpen && (
           <div
             className="fixed inset-0"
-            style={{ background: "rgba(18,36,7,0.4)", zIndex: 39 }}
+            style={{ background: "color-mix(in srgb, var(--text-on-accent) 40%, transparent)", zIndex: 39 }}
             onClick={() => setMenuOpen(false)}
             aria-hidden
           />
@@ -441,11 +441,11 @@ export function Sidebar() {
               style={{
                 width: 34,
                 height: 34,
-                borderRadius: 999,
+                borderRadius: "var(--radius-pill)",
                 background: "var(--volt)",
                 color: "var(--text-on-accent)",
                 fontSize: 11,
-                fontWeight: 600,
+                fontWeight: "var(--weight-ui)",
               }}
             >
               <CollapsedInitials />

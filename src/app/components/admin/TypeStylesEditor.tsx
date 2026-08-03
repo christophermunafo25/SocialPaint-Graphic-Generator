@@ -39,7 +39,7 @@ export function TypeStylesEditor({ styles, colors, customFamilies, onChange, usa
         const expanded = open === s.key;
         const rules = ruleSentences(s, kitForRules);
         return (
-          <div key={s.key} style={{ border: "1px solid var(--border)", borderRadius: 10 }}>
+          <div key={s.key} style={{ border: "1px solid var(--border)", borderRadius: "var(--radius-card)" }}>
             <button
               className="w-full flex items-center gap-2 px-3 py-2.5 text-left"
               onClick={() => setOpen(expanded ? null : s.key)}

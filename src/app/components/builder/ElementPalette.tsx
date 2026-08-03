@@ -43,7 +43,7 @@ function Tile({ item, onAdd }: { item: PaletteItem; onAdd(id: string): void }) {
       className="flex flex-col items-center gap-1.5 py-3 px-2 transition-colors"
       style={{
         border: "1px solid var(--border-strong)",
-        borderRadius: "var(--radius-card-sm, 10px)",
+        borderRadius: "var(--radius-control)",
         background: "var(--bg-surface)",
         cursor: "grab",
         fontSize: 11,

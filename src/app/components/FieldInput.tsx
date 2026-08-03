@@ -162,7 +162,7 @@ function ImageFieldInput({ field, value, onChange, inputId }: FieldInputProps) {
         {value ? (
           <div
             className="relative w-16 h-16 overflow-hidden"
-            style={{ borderRadius: 8, border: "1px solid var(--border)", boxShadow: "var(--shadow-sm)" }}
+            style={{ borderRadius: "var(--radius-card)", border: "1px solid var(--border)" }}
           >
             <img src={value} alt="Preview" className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">

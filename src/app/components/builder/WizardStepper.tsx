@@ -48,7 +48,7 @@ export function WizardStepper({ current, complete, canGo, onGo }: WizardStepperP
               aria-current={isCurrent ? "step" : undefined}
               className="flex items-center gap-2 px-2.5 py-1.5"
               style={{
-                borderRadius: 999,
+                borderRadius: "var(--radius-pill)",
                 background: isCurrent ? "var(--text-primary)" : "transparent",
                 cursor: reachable ? "pointer" : "default",
                 opacity: reachable || isCurrent ? 1 : 0.45,
@@ -59,11 +59,11 @@ export function WizardStepper({ current, complete, canGo, onGo }: WizardStepperP
                 style={{
                   width: 18,
                   height: 18,
-                  borderRadius: 999,
+                  borderRadius: "var(--radius-pill)",
                   fontSize: 10,
                   fontFamily: "var(--font-mono)",
                   background: isComplete ? "var(--volt)" : isCurrent ? "var(--btn-primary-bg)" : "var(--bg-hover)",
-                  color: isCurrent ? "var(--btn-primary-fg)" : isComplete ? "#082C1E" : "var(--text-primary)",
+                  color: isCurrent ? "var(--btn-primary-fg)" : isComplete ? "var(--forrest)" : "var(--text-primary)",
                 }}
               >
                 {isComplete ? <Check style={{ width: 11, height: 11 }} /> : i + 1}

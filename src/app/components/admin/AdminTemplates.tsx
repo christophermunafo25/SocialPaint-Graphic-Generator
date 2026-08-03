@@ -8,6 +8,9 @@ import { useRouter } from "../../router";
 import { Page, PageHeader } from "../layout/Page";
 import { ConfirmDialog } from "../ConfirmDialog";
 import { InlineEdit } from "../InlineEdit";
+import { TemplateSearchField } from "../templates/TemplateSearchField";
+import { toCatalogTemplate } from "@/lib/templates/catalog";
+import { buildSearchIndex, searchTemplates } from "@/lib/templates/searchIndex";
 import { ErrorState } from "../ErrorState";
 import { TemplateThumbnail } from "../TemplateThumbnail";
 
@@ -59,14 +62,11 @@ export function AdminTemplates() {
     let list =
       statusFilter === "all" ? templates : templates.filter((t) => t.status === statusFilter);
     if (query.trim()) {
-      const q = query.toLowerCase();
-      list = list.filter(
-        (t) =>
-          t.name.toLowerCase().includes(q) ||
-          t.description.toLowerCase().includes(q) ||
-          t.category.toLowerCase().includes(q) ||
-          t.tags.some((tag) => tag.toLowerCase().includes(q)),
-      );
+      // Same index the member gallery uses, so "1200x627", "li" or "4:5"
+      // all work here too.
+      const ranked = searchTemplates(buildSearchIndex(list.map(toCatalogTemplate)), query);
+      const order = new Map(ranked.map((r, i) => [r.id, i]));
+      list = list.filter((t) => order.has(t.id)).sort((a, b) => order.get(a.id)! - order.get(b.id)!);
     }
     const sorted = [...list];
     if (sort === "name") sorted.sort((a, b) => a.name.localeCompare(b.name));
@@ -164,20 +164,8 @@ export function AdminTemplates() {
 
       {templatesState.status === "ready" && templates.length > 0 && (
         <div className="flex flex-wrap items-center mb-6" style={{ gap: 12 }}>
-          <div className="relative" style={{ width: 420, maxWidth: "100%" }}>
-            <Search
-              className="absolute"
-              style={{ left: 12, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: "var(--text-muted)", zIndex: 1 }}
-            />
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search templates…"
-              aria-label="Search templates"
-              className="sp-input"
-              style={{ height: 40, padding: "0 12px 0 34px", fontSize: 13 }}
-            />
+          <div style={{ width: 420, maxWidth: "100%" }}>
+            <TemplateSearchField value={query} onChange={setQuery} />
           </div>
           <div
             className="flex rounded-lg overflow-hidden"

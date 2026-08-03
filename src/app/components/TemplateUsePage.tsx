@@ -10,12 +10,7 @@ import { resolveFieldStyle } from "@/lib/brand/resolveStyle";
 import { ErrorState } from "./ErrorState";
 import { SchemaRenderer, type SchemaRendererHandle } from "./SchemaRenderer";
 import { FieldInput } from "./FieldInput";
-
-const panel: React.CSSProperties = {
-  background: "var(--bg-surface)",
-  border: "1px solid var(--border)",
-  borderRadius: 12,
-};
+import { Page } from "./layout/Page";
 
 /** Member self-service flow: fields on the left, live preview on the right,
  * suggested caption, PNG download. Members change field CONTENT only. */
@@ -90,7 +85,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-8">
+    <Page>
       {exportToast && (
         <div
           className="sp-toast"
@@ -140,7 +135,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
             const maxLength = resolveFieldStyle(field, kit).maxLength;
             const inputId = `field-${field.id}`;
             return (
-            <div key={field.id} className="p-4 space-y-2.5" style={panel}>
+            <div key={field.id} className="sp-card p-4 space-y-2.5">
               <div>
                 <p className="sp-eyebrow">Step {String(i + 1).padStart(2, "0")}</p>
                 <label
@@ -179,7 +174,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
 
           {/* Suggested caption */}
           {template.captionTemplate && (
-            <div className="p-4 space-y-2.5" style={panel}>
+            <div className="sp-card p-4 space-y-2.5">
               <div className="flex items-center justify-between">
                 <h2 className="sp-panel-title">Suggested caption</h2>
                 {caption !== null && (
@@ -207,7 +202,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
           )}
 
           {/* Download */}
-          <div className="p-4 space-y-2" style={panel}>
+          <div className="sp-card p-4 space-y-2">
             <button
               onClick={handleDownload}
               disabled={exporting || missingRequired.length > 0}
@@ -234,14 +229,14 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
 
         {/* Right — live preview */}
         <div className="lg:col-span-7 lg:sticky lg:top-8">
-          <div className="p-5" style={{ ...panel, boxShadow: "var(--shadow-sm)" }}>
+          <div className="sp-card p-5">
             <div className="flex items-center justify-between mb-3">
               <h3 className="sp-panel-title">Preview</h3>
               <span className="sp-eyebrow">
                 {template.canvasWidth}×{template.canvasHeight} · live
               </span>
             </div>
-            <div className="rounded-xl overflow-hidden" style={{ background: "var(--bg-hover)", border: "1px solid var(--border)" }}>
+            <div className="overflow-hidden" data-radius-card style={{ background: "var(--bg-hover)", border: "1px solid var(--border)" }}>
               <SchemaRenderer
                 ref={rendererRef}
                 schema={template}
@@ -252,6 +247,6 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
           </div>
         </div>
       </div>
-    </div>
+    </Page>
   );
 }

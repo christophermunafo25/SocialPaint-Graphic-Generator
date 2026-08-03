@@ -104,10 +104,10 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "var(--bg-canvas)" }}>
-      <div className="w-full max-w-2xl overflow-hidden" style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-card)", boxShadow: "var(--shadow-md)" }}>
+      <div className="w-full max-w-2xl overflow-hidden" style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-card)" }}>
         {/* Header + progress */}
         <div className="sp-mesh px-8 pt-8 pb-6">
-          <p className="sp-eyebrow mb-1" style={{ color: "rgba(255,255,255,0.85)" }}>
+          <p className="sp-eyebrow mb-1" style={{ color: "var(--brand-surface-fg)" }}>
             {firstRun ? "Welcome" : "New company"}
           </p>
           <h1 className="sp-hero-title" style={{ color: "var(--white)" }}>
@@ -118,9 +118,9 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
               <div key={label} className="flex-1">
                 <div
                   className="h-1 rounded-full"
-                  style={{ background: i <= step ? "#fff" : "rgba(255,255,255,0.3)" }}
+                  style={{ background: i <= step ? "var(--brand-surface-fg)" : "color-mix(in srgb, var(--white) 30%, transparent)" }}
                 />
-                <p className="sp-eyebrow mt-1.5" style={{ fontSize: 9, color: "rgba(255,255,255,0.75)" }}>{label}</p>
+                <p className="sp-eyebrow mt-1.5" style={{ fontSize: 9, color: "color-mix(in srgb, var(--white) 75%, transparent)" }}>{label}</p>
               </div>
             ))}
           </div>
@@ -154,7 +154,7 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
             />
           )}
           {error && (
-            <p className="text-sm rounded-xl px-4 py-3" style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}>
+            <p className="text-sm px-4 py-3" data-radius-card style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}>
               {error}
             </p>
           )}
@@ -239,7 +239,7 @@ function StepColors({ colors, onChange }: { colors: BrandColor[]; onChange(c: Br
                  quick-select from yet. */
               brandSwatches={false}
             />
-            <span className="text-sm font-semibold flex-1" style={{ color: "var(--foreground)" }}>{c.name}</span>
+            <span className="text-sm flex-1" style={{ color: "var(--foreground)" }}>{c.name}</span>
           </div>
         ))}
       </div>

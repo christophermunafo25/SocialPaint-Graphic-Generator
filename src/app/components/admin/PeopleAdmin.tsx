@@ -121,10 +121,10 @@ export function PeopleAdmin() {
               style={{ padding: "12px 24px", minHeight: 56, ...(i > 0 ? { borderTop: "1px solid var(--border)" } : {}) }}
             >
               <span
-                className="sp-mesh flex-shrink-0"
-                style={{ width: 26, height: 26, borderRadius: 999, display: "grid", placeItems: "center", overflow: "hidden" }}
+                className="flex-shrink-0"
+                style={{ width: 26, height: 26, borderRadius: "var(--radius-pill)", display: "grid", placeItems: "center", overflow: "hidden", background: "var(--volt)" }}
               >
-                <span style={{ color: "#fff", fontFamily: "var(--font-head)", fontWeight: 800, textTransform: "uppercase" as const, fontSize: 11 }}>
+                <span style={{ color: "var(--text-on-accent)", fontFamily: "var(--font-head)", fontWeight: 800, textTransform: "uppercase" as const, fontSize: 11 }}>
                   {(m.name ?? m.email).slice(0, 1).toUpperCase()}
                 </span>
               </span>

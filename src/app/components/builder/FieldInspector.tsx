@@ -431,7 +431,7 @@ export function FieldInspector({
               className="sp-dropzone flex items-center justify-center gap-2 cursor-pointer py-2.5"
               style={{
                 border: "1.5px dashed var(--border-strong)",
-                borderRadius: 8,
+                borderRadius: "var(--radius-control)",
                 fontSize: 12,
                 color: "var(--text-secondary)",
               }}
