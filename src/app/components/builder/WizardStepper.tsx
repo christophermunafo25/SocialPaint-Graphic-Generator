@@ -9,11 +9,14 @@ export interface StepDef {
   optional?: boolean;
 }
 
+/** Fields first: the design is what the admin came to build, and the name
+ *  reads better once there's something to name. Publish still demands a real
+ *  name, so it stays a required step — just the last one. */
 export const WIZARD_STEPS: StepDef[] = [
-  { key: "name", title: "Name" },
   { key: "fields", title: "Fields" },
   { key: "caption", title: "Caption", optional: true },
   { key: "details", title: "Tags & details", optional: true },
+  { key: "name", title: "Name" },
 ];
 
 interface WizardStepperProps {

@@ -88,10 +88,12 @@ function useViewportAtLeast(px: number): boolean {
 }
 
 /** Admin Template Builder: a guided wizard. Pick the source (PNG upload or
- * Figma import), then Step 1 Name → Step 2 Fields (element palette + canvas +
- * field list + inspector) → Step 3 Caption (optional) → Step 4 Tags & details
- * (optional) → Publish. Save draft is available at every step; completed
- * steps are jumpable from the persistent progress indicator. */
+ * Figma import), then Step 1 Fields (element palette + canvas + field list +
+ * inspector) → Step 2 Caption (optional) → Step 3 Tags & details (optional)
+ * → Step 4 Name, which carries Publish. Naming last means the admin names
+ * something they can see; the default "Untitled template" keeps the wizard
+ * unblocked until then, and Publish refuses it. Save draft is available at
+ * every step; completed steps are jumpable from the progress indicator. */
 export function TemplateBuilder({ templateId }: { templateId: string | null }) {
   const { company } = useAuth();
   const { kit } = useBrand();
@@ -136,8 +138,8 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
   /** True once a creation path was chosen — "Start blank" needs no
    * background, so backgroundUrl alone can't gate the wizard anymore. */
   const [started, setStarted] = useState<boolean>(Boolean(templateId));
-  const [step, setStep] = useState<WizardStep>("name");
-  const [visited, setVisited] = useState<Set<WizardStep>>(() => new Set(["name"]));
+  const [step, setStep] = useState<WizardStep>("fields");
+  const [visited, setVisited] = useState<Set<WizardStep>>(() => new Set(["fields"]));
   const [mode, setMode] = useState<"edit" | "preview">("edit");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -178,7 +180,6 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
   }, [templateState, resetHistory]);
 
   const sourceChosen = started || Boolean(draft.backgroundUrl);
-  const nameComplete = Boolean(draft.name.trim());
   /** Publishing needs a REAL name, not the placeholder default. */
   const hasRealName = Boolean(draft.name.trim()) && draft.name.trim() !== "Untitled template";
   const fieldsComplete = draft.fields.length > 0;
@@ -190,22 +191,24 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
 
   const complete = useMemo(() => {
     const s = new Set<WizardStep>();
-    if (nameComplete) s.add("name");
+    // A real name, not just any name: the default "Untitled template" would
+    // otherwise tick the final step green before it has been touched.
+    if (hasRealName) s.add("name");
     if (fieldsComplete) s.add("fields");
     if (visited.has("caption")) s.add("caption");
     if (visited.has("details")) s.add("details");
     return s;
-  }, [nameComplete, fieldsComplete, visited]);
+  }, [hasRealName, fieldsComplete, visited]);
 
   const canGo = useCallback(
     (target: WizardStep): boolean => {
       if (!sourceChosen) return false;
-      if (target === "name") return true;
-      if (!nameComplete) return false;
       if (target === "fields") return true;
+      // Everything after Fields — including Name, now last — needs at least
+      // one field on the canvas.
       return fieldsComplete;
     },
-    [sourceChosen, nameComplete, fieldsComplete],
+    [sourceChosen, fieldsComplete],
   );
 
   const goTo = useCallback((target: WizardStep) => {
@@ -754,9 +757,9 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
             });
             setPendingImport(null);
             setMode("edit");
-            // A brand-new import starts at Step 1 (Name); an existing
-            // template that pulled in more fields goes straight to Fields.
-            goTo(draft.name.trim() ? "fields" : "name");
+            // Both a brand-new import and an existing template that pulled
+            // in more fields land on Fields, which is now Step 1.
+            goTo("fields");
             // Lift the chosen elements OFF the background: re-render the frame
             // without them and swap in the recomposed PNG. On any failure the
             // flat render stays (fields overlay their baked twins).
@@ -813,8 +816,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
             <button
               onClick={() => {
                 setStarted(true);
-                // Straight to the canvas — the default name unblocks the
-                // wizard, and publish asks for a real one.
+                // Straight to the canvas: Fields is Step 1.
                 goTo("fields");
               }}
               className="p-8 text-center transition-all flex flex-col items-center justify-center gap-3"
@@ -869,9 +871,8 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                     What should this template be called?
                   </h2>
                   <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
-                    Members see this name in their template gallery. You'll name
-                    each editable field next — field names become the caption's
-                    merge tags.
+                    Members see this name in their template gallery. This is
+                    the last step — name it and publish.
                   </p>
                 </div>
                 <input
@@ -882,9 +883,6 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                     // The default is a placeholder, not a choice — typing
                     // should replace it, not append to it.
                     if (e.target.value.trim() === "Untitled template") e.target.select();
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && nameComplete) goTo("fields");
                   }}
                   placeholder="e.g. Employee anniversary post"
                   className="sp-input"
@@ -897,6 +895,22 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                   </p>
                 )}
               </div>
+            <div className="sp-card p-6 space-y-3">
+              <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
+                "{draft.name.trim() || "Untitled template"}" · {draft.fields.length} field
+                {draft.fields.length !== 1 ? "s" : ""} ·{" "}
+                {draft.captionTemplate ? "caption set" : "no caption"}
+              </p>
+              <button
+                onClick={() => void publish()}
+                disabled={saving || publishState !== "idle" || draft.fields.length === 0}
+                className="sp-btn sp-btn-primary w-full"
+                style={{ padding: "11px 14px" }}
+              >
+                <Send className="w-3.5 h-3.5" />
+                {draft.status === "published" ? "Publish changes" : "Publish template"}
+              </button>
+            </div>
             </div>
           )}
 
@@ -1194,22 +1208,6 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                     }}
                   />
                 </label>
-              </div>
-              <div className="sp-card p-6 space-y-3">
-                <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
-                  "{draft.name.trim() || "Untitled template"}" · {draft.fields.length} field
-                  {draft.fields.length !== 1 ? "s" : ""} ·{" "}
-                  {draft.captionTemplate ? "caption set" : "no caption"}
-                </p>
-                <button
-                  onClick={() => void publish()}
-                  disabled={saving || publishState !== "idle" || draft.fields.length === 0}
-                  className="sp-btn sp-btn-primary w-full"
-                  style={{ padding: "11px 14px" }}
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  {draft.status === "published" ? "Publish changes" : "Publish template"}
-                </button>
               </div>
             </div>
           )}
