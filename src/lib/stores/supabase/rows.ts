@@ -102,6 +102,8 @@ export interface TemplateFieldRow {
   static_value: string | null;
   font_family: string | null;
   font_weight: number | null;
+  font_style: "normal" | "italic" | null;
+  font_stretch: string | null;
   color_hex: string | null;
   text_gradient: import("../../types").TextGradient | null;
   font_size_px: number | null;
@@ -149,6 +151,8 @@ export const toTemplateField = (r: TemplateFieldRow): TemplateField => ({
   staticValue: opt(r.static_value),
   fontFamily: opt(r.font_family),
   fontWeight: opt(r.font_weight) === undefined ? undefined : Number(r.font_weight),
+  fontStyle: opt(r.font_style),
+  fontStretch: opt(r.font_stretch),
   colorHex: opt(r.color_hex),
   textGradient: opt(r.text_gradient),
   fontSizePx: opt(r.font_size_px) === undefined ? undefined : Number(r.font_size_px),
@@ -194,6 +198,8 @@ export const fieldToRow = (
   static_value: f.staticValue ?? null,
   font_family: f.fontFamily ?? null,
   font_weight: f.fontWeight ?? null,
+  font_style: f.fontStyle ?? null,
+  font_stretch: f.fontStretch ?? null,
   color_hex: f.colorHex ?? null,
   text_gradient: f.textGradient ?? null,
   font_size_px: f.fontSizePx ?? null,
