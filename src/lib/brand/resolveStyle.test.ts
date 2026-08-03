@@ -99,6 +99,7 @@ describe("a bound type style carries the full face", () => {
     const partial: BrandTypeStyle = { key: "heading", name: "Heading", weight: 500 };
     const field: TemplateField = {
       ...legacyField,
+      fontFamily: "Archivo", // has both a width axis and italic
       typeStyleKey: "heading",
       fontStyle: "italic",
       fontStretch: "condensed",
@@ -113,6 +114,59 @@ describe("a bound type style carries the full face", () => {
     const locked = lockedProperties(style);
     expect(locked.has("fontStyle")).toBe(true);
     expect(locked.has("fontStretch")).toBe(true);
+  });
+});
+
+describe("the resolved face is one the family can actually draw", () => {
+  // Preview, canvas measurement and the export embed all read this. Handing
+  // them a weight the family lacks means the DOM synthesizes a fake bold while
+  // the export embeds the real face — the two disagree, and the PNG is wrong.
+  it("snaps a locked weight the family does not have", () => {
+    const style: BrandTypeStyle = { key: "sub", name: "Subhead", weight: 700 };
+    const field: TemplateField = { ...legacyField, fontFamily: "Bebas Neue", typeStyleKey: "sub" };
+    // Bebas Neue ships exactly one 400 face.
+    expect(resolveFieldStyle(field, withStyles([style])).fontWeight).toBe(400);
+  });
+
+  it("drops italic on a family that has none", () => {
+    const field: TemplateField = { ...legacyField, fontFamily: "Oswald", fontStyle: "italic" };
+    expect(resolveFieldStyle(field, null).fontStyle).toBe("normal");
+  });
+
+  it("drops a width the family has no axis for", () => {
+    const field: TemplateField = { ...legacyField, fontFamily: "Montserrat", fontStretch: "condensed" };
+    expect(resolveFieldStyle(field, null).fontStretch).toBe("normal");
+  });
+
+  it("keeps a width the family really reaches", () => {
+    const field: TemplateField = { ...legacyField, fontFamily: "Archivo", fontStretch: "expanded" };
+    expect(resolveFieldStyle(field, null).fontStretch).toBe("expanded");
+  });
+
+  it("leaves an unverified family exactly as authored", () => {
+    // No table and no uploaded metadata — guessing here would be worse than
+    // passing the author's value through.
+    const field: TemplateField = { ...legacyField, fontFamily: "Neuething Sans", fontWeight: 850 };
+    expect(resolveFieldStyle(field, null).fontWeight).toBe(850);
+  });
+
+  it("does not add values to a field that never set them", () => {
+    const field: TemplateField = {
+      ...legacyField,
+      fontFamily: "Inter",
+      fontWeight: undefined,
+      fontStyle: undefined,
+      fontStretch: undefined,
+    };
+    const resolved = resolveFieldStyle(field, null);
+    expect(resolved.fontWeight).toBeUndefined();
+    expect(resolved.fontStyle).toBeUndefined();
+    expect(resolved.fontStretch).toBeUndefined();
+  });
+
+  it("leaves a weight the family does have untouched", () => {
+    const field: TemplateField = { ...legacyField, fontFamily: "Montserrat", fontWeight: 700 };
+    expect(resolveFieldStyle(field, null).fontWeight).toBe(700);
   });
 });
 

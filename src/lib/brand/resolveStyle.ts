@@ -1,5 +1,5 @@
 import type { BrandKit, BrandTypeStyle, TemplateField } from "../types";
-import { styleName, toFontStyle } from "../render/fontCatalog";
+import { familyStyles, nearestStyle, styleName, toFontStyle } from "../render/fontCatalog";
 
 /** The styling a field actually renders with after the brand rules engine
  * applies: any property the bound type style DEFINES wins over the field's
@@ -28,13 +28,35 @@ export function getTypeStyle(kit: BrandKit | null, key: string | undefined): Bra
   return kit.typeStyles?.find((s) => s.key === key);
 }
 
+/** Absent stays absent: a snapped value that lands on the CSS default for a
+ * property the field never set stays unset, so a legacy field keeps resolving
+ * to exactly the values it did before. */
+const keepAbsent = <T,>(raw: T | undefined, next: T, dflt: T): T | undefined =>
+  raw === undefined && next === dflt ? undefined : next;
+
 export function resolveFieldStyle(field: TemplateField, kit: BrandKit | null): ResolvedFieldStyle {
   const style = getTypeStyle(kit, field.typeStyleKey);
+  const fontFamily = style?.font?.family ?? field.fontFamily;
+  const rawWeight = style?.weight ?? field.fontWeight;
+  const rawStyle = style?.fontStyle ?? field.fontStyle;
+  const rawStretch = style?.fontStretch ?? field.fontStretch;
+
+  // Snap onto a face the family actually has. A brand rule can name a weight
+  // the chosen family cannot draw — "Subhead is always Bold" over Bebas Neue,
+  // which ships one 400 face — and asking for it anyway renders a synthesized
+  // bold in the preview while the export embeds the real 400. Only families
+  // the catalogue can verify are snapped; an uploaded or imported family has
+  // no table to check against, so its value is left exactly as authored.
+  const known = fontFamily ? familyStyles(fontFamily) : undefined;
+  const face = known?.verified
+    ? nearestStyle(toFontStyle(rawWeight, rawStyle, rawStretch), known.styles)
+    : undefined;
+
   return {
-    fontFamily: style?.font?.family ?? field.fontFamily,
-    fontWeight: style?.weight ?? field.fontWeight,
-    fontStyle: style?.fontStyle ?? field.fontStyle,
-    fontStretch: style?.fontStretch ?? field.fontStretch,
+    fontFamily,
+    fontWeight: face ? keepAbsent(rawWeight, face.weight, 400) : rawWeight,
+    fontStyle: face ? keepAbsent(rawStyle, face.italic ? "italic" : "normal", "normal") : rawStyle,
+    fontStretch: face ? keepAbsent(rawStretch, face.stretch, "normal") : rawStretch,
     fontSizePx: style?.fontSizePx ?? field.fontSizePx,
     minFontSizePx: field.minFontSizePx,
     uppercase: style?.uppercase ?? field.uppercase,
