@@ -31,9 +31,62 @@ interface FixedFitInput {
   minFontSizePx?: number;
   fontFamily?: string;
   fontWeight?: number;
+  fontStyle?: string;
+  fontStretch?: string;
   letterSpacingPx?: number;
   uppercase?: boolean;
 }
+
+/** Compose the canvas `font` shorthand.
+ *
+ * Two things silently break the WHOLE shorthand, which reverts measurement to
+ * the default face and throws off every auto-fit calculation:
+ *
+ *  - a font-stretch PERCENTAGE. `italic 700 125% 45px X` is rejected outright
+ *    and the context keeps its previous font. Only keywords are legal here,
+ *    which is why the app stores keywords rather than the percentages css2
+ *    hands back in its @font-face descriptors.
+ *  - anything appearing after the size. Style, weight and stretch are an
+ *    order-independent set in the CSS grammar, but all of them must precede
+ *    the size, and the family comes last.
+ *
+ * Reading `ctx.font` back is not a check: canvas accepts the stretch keyword
+ * and measures with it, but drops it from the serialized value. Only a width
+ * measurement proves it took. */
+export function canvasFontShorthand(input: {
+  fontStyle?: string;
+  fontWeight?: number;
+  fontStretch?: string;
+  fontSizePx: number;
+  fontFamily?: string;
+}): string {
+  const family = input.fontFamily ? `"${input.fontFamily}", sans-serif` : "sans-serif";
+  return [
+    input.fontStyle === "italic" ? "italic" : "",
+    input.fontWeight ?? 400,
+    // "normal" is the default and adds nothing; a percentage would poison it.
+    isStretchKeyword(input.fontStretch) && input.fontStretch !== "normal" ? input.fontStretch : "",
+    `${input.fontSizePx}px`,
+    family,
+  ]
+    .filter((part) => part !== "")
+    .join(" ");
+}
+
+const STRETCH_KEYWORDS = new Set([
+  "ultra-condensed",
+  "extra-condensed",
+  "condensed",
+  "semi-condensed",
+  "normal",
+  "semi-expanded",
+  "expanded",
+  "extra-expanded",
+  "ultra-expanded",
+]);
+
+const isStretchKeyword = (v: string | undefined): v is string =>
+  v !== undefined && STRETCH_KEYWORDS.has(v);
 
 let measureCtx: CanvasRenderingContext2D | null = null;
 
@@ -46,8 +99,7 @@ export function fixedWidthFontSize(input: FixedFitInput, text: string): number {
     return fittedFontSize({ ...input, autoFit: true }, text);
   }
   const sample = input.uppercase ? text.toUpperCase() : text;
-  const family = input.fontFamily ? `"${input.fontFamily}", sans-serif` : "sans-serif";
-  measureCtx.font = `${input.fontWeight ?? 400} ${base}px ${family}`;
+  measureCtx.font = canvasFontShorthand({ ...input, fontSizePx: base });
   // letter-spacing is a per-gap constant that does NOT scale with font size
   const spacing = (input.letterSpacingPx ?? 0) * Math.max(0, sample.length - 1);
   const glyphs = measureCtx.measureText(sample).width;

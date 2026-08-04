@@ -10,7 +10,7 @@ import type { BrandKit, FieldValues, TemplateField, TemplateSchema } from "@/lib
 import { useDataUrl } from "@/lib/render/useDataUrl";
 import { fittedFontSize, fixedWidthFontSize } from "@/lib/render/autoFit";
 import { resolveFieldStyle } from "@/lib/brand/resolveStyle";
-import { loadGoogleFonts, schemaFontFamilies } from "@/lib/render/fonts";
+import { loadGoogleFonts, schemaFontUsage } from "@/lib/render/fonts";
 import { exportSchemaPng, type ExportOutcome } from "@/lib/render/exportPng";
 import { stores } from "@/lib/stores";
 
@@ -58,7 +58,7 @@ export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererPro
     // Figma fonts and type-style-bound fonts included) so fields render in
     // their designed typeface.
     useEffect(() => {
-      loadGoogleFonts(schemaFontFamilies(schema, brandKit));
+      loadGoogleFonts(schemaFontUsage(schema, brandKit));
     }, [schema, brandKit]);
 
     // Fixed-width fitting measures real glyphs — re-render once webfonts
@@ -324,6 +324,10 @@ function TextFieldBox({ field, value, brandKit }: FieldBoxProps) {
         style={{
           fontFamily: style.fontFamily ? `"${style.fontFamily}", sans-serif` : "sans-serif",
           fontWeight: style.fontWeight,
+          // Absent stays absent — a legacy field sets neither, so the browser
+          // picks exactly the face it picked before these existed.
+          fontStyle: style.fontStyle,
+          fontStretch: style.fontStretch,
           fontSize,
           color: resolveColor(style.colorKey, style.colorHex, brandKit),
           opacity: atFullStrength ? 1 : 0.55, // placeholder shows the real styling, dimmed

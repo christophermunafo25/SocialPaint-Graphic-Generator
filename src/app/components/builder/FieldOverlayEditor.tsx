@@ -3,8 +3,7 @@ import Moveable from "react-moveable";
 import type { TemplateField } from "@/lib/types";
 import { useDataUrl } from "@/lib/render/useDataUrl";
 import { useBrand } from "@/lib/brand/BrandContext";
-import { loadGoogleFonts } from "@/lib/render/fonts";
-import { resolveFieldStyle } from "@/lib/brand/resolveStyle";
+import { fieldsFontUsage, loadGoogleFonts } from "@/lib/render/fonts";
 import { cornerRadiusCss, FieldBoxContent } from "../SchemaRenderer";
 import { PALETTE_MIME } from "./fieldOps";
 
@@ -88,11 +87,7 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
   // styling), so the designed typefaces must load here too, not just in
   // preview mode.
   useEffect(() => {
-    loadGoogleFonts(
-      fields
-        .map((f) => resolveFieldStyle(f, kit).fontFamily)
-        .filter((f): f is string => Boolean(f)),
-    );
+    loadGoogleFonts(fieldsFontUsage(fields, kit));
   }, [fields, kit]);
 
   const toCanvas = useCallback(

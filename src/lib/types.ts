@@ -29,7 +29,12 @@ export interface BrandTypeStyle {
   key: string; // stable slug, e.g. "heading"
   name: string; // "Heading"
   font?: FontRef;
-  weight?: number; // 100–900
+  weight?: number; // exact weight the family actually ships, not a 100–900 assumption
+  /** Italic and width, so a style can lock a FULL face ("Bold Expanded")
+   * rather than a weight alone. Absent means normal — a style saved before
+   * these existed locks exactly what it locked before. */
+  fontStyle?: "normal" | "italic";
+  fontStretch?: string; // CSS font-stretch keyword; see FontStretch in render/fontCatalog
   uppercase?: boolean;
   letterSpacingPx?: number;
   lineHeight?: number;
@@ -140,6 +145,12 @@ export interface TemplateField {
   // kit palette so a palette change propagates everywhere.
   fontFamily?: string;
   fontWeight?: number; // exact weight from an import; type styles override
+  /** The rest of the face. The numeric weight above stays the value the
+   * renderer, autoFit measurement and the export embed consume — these two
+   * complete it. Absent means normal, so a field saved with only fontWeight
+   * renders exactly as it did before these existed. */
+  fontStyle?: "normal" | "italic";
+  fontStretch?: string; // CSS font-stretch keyword; see FontStretch in render/fontCatalog
   fontSizePx?: number;
   minFontSizePx?: number; // autoFit floor
   colorKey?: string;
