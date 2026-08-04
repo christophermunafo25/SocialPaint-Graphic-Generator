@@ -32,6 +32,7 @@ export function AutoBuildDialog({ onClose, onBuilt }: AutoBuildDialogProps) {
   const { company } = useAuth();
   const [tab, setTab] = useState<Tab>("figma");
   const [figmaConnected, setFigmaConnected] = useState<boolean | null>(null);
+  const [canva, setCanva] = useState<{ enabled: boolean; connected: boolean } | null>(null);
   const [url, setUrl] = useState("");
   const [hint, setHint] = useState("");
   const [busy, setBusy] = useState(false);
@@ -46,6 +47,10 @@ export function AutoBuildDialog({ onClose, onBuilt }: AutoBuildDialogProps) {
       .isConnected(company.id)
       .then(setFigmaConnected)
       .catch(() => setFigmaConnected(false));
+    stores.designImport
+      .canvaStatus(company.id)
+      .then(setCanva)
+      .catch(() => setCanva({ enabled: false, connected: false }));
   }, [company]);
 
   useEffect(() => () => window.clearInterval(stageTimer.current), []);
@@ -96,6 +101,20 @@ export function AutoBuildDialog({ onClose, onBuilt }: AutoBuildDialogProps) {
     } catch (e) {
       setUploadingImage(false);
       setError(`${e instanceof Error ? e.message : "Upload failed."} ${MANUAL_PATHS_NOTE}`);
+    }
+  };
+
+  const connectCanva = async () => {
+    if (!company) return;
+    setError(null);
+    try {
+      const { authorizeUrl } = await stores.designImport.canvaConnectStart(
+        company.id,
+        `${window.location.origin}/?canva_oauth=1`,
+      );
+      window.location.assign(authorizeUrl); // returns via the app's callback handler
+    } catch (e) {
+      setError(`${e instanceof Error ? e.message : "Canva connect failed."} ${MANUAL_PATHS_NOTE}`);
     }
   };
 
@@ -155,7 +174,7 @@ export function AutoBuildDialog({ onClose, onBuilt }: AutoBuildDialogProps) {
           <>
             <div className="flex items-center gap-1.5" role="tablist" aria-label="Design source">
               {tabButton("figma", "Figma link")}
-              {tabButton("canva", "Canva link", true, "Coming soon")}
+              {tabButton("canva", "Canva link", !(canva?.enabled), canva?.enabled ? undefined : "Coming soon")}
               {tabButton("image", "Upload an image")}
             </div>
 
@@ -186,10 +205,40 @@ export function AutoBuildDialog({ onClose, onBuilt }: AutoBuildDialogProps) {
               </div>
             )}
 
-            {tab === "canva" && (
-              <p className="text-sm py-4" style={{ color: "var(--text-muted)" }}>
-                Canva auto-build is coming soon.
-              </p>
+            {tab === "canva" && canva?.enabled && (
+              <div className="space-y-3">
+                {!canva.connected ? (
+                  <>
+                    <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
+                      Connect your Canva account to read designs. Each admin authorizes with their
+                      own Canva login; the tokens are stored server-side and never reach this
+                      browser again.
+                    </p>
+                    <button onClick={() => void connectCanva()} className="sp-btn sp-btn-primary w-full">
+                      Connect Canva
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
+                      Paste a Canva design link. Elements Canva reports as locked arrive Fixed;
+                      unlocked text arrives editable.
+                    </p>
+                    <p className="px-3 py-2" data-radius-control style={{ fontSize: "var(--type-caption-size)", background: "var(--bg-hover)", color: "var(--text-secondary)" }}>
+                      Canva templates import with the original artwork still visible behind editable
+                      text — give editable text a fill or a background shape behind it.
+                    </p>
+                    <input
+                      type="url"
+                      value={url}
+                      onChange={(e) => setUrl(e.target.value)}
+                      placeholder="https://www.canva.com/design/…"
+                      className="sp-input"
+                      aria-label="Canva design link"
+                    />
+                  </>
+                )}
+              </div>
             )}
 
             {tab === "image" && (
@@ -242,6 +291,16 @@ export function AutoBuildDialog({ onClose, onBuilt }: AutoBuildDialogProps) {
                   placeholder='e.g. "The date and location change weekly; the rest is fixed"'
                 />
               </div>
+            )}
+
+            {tab === "canva" && canva?.enabled && canva.connected && (
+              <button
+                onClick={() => void run({ kind: "canva", url: url.trim() })}
+                disabled={!url.trim()}
+                className="sp-btn sp-btn-primary w-full"
+              >
+                Auto-build from Canva
+              </button>
             )}
 
             {tab === "figma" && figmaConnected !== false && (

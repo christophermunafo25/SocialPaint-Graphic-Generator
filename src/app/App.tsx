@@ -18,10 +18,34 @@ import { BrandStudio } from "./components/admin/BrandStudio";
 import { Dashboard } from "./components/admin/Dashboard";
 import { SettingsAdmin } from "./components/admin/SettingsAdmin";
 
+/** Completes the Canva OAuth round-trip: the authorize redirect lands on
+ * `/?canva_oauth=1&code=…&state=…`; this exchanges the pair server-side (the
+ * PKCE verifier never left the Edge Function) and cleans the URL. */
+function useCanvaOAuthReturn(companyId: string | undefined) {
+  const [notice, setNotice] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("canva_oauth") !== "1" || !companyId) return;
+    const code = params.get("code");
+    const state = params.get("state");
+    window.history.replaceState({}, "", window.location.pathname);
+    if (!code || !state) {
+      setNotice("Canva connection was cancelled.");
+      return;
+    }
+    stores.designImport
+      .canvaConnectCallback(companyId, code, state, `${window.location.origin}/?canva_oauth=1`)
+      .then(() => setNotice("Canva connected. Open Auto-build to use it."))
+      .catch((e) => setNotice(e instanceof Error ? e.message : "Canva connection failed."));
+  }, [companyId]);
+  return { notice, dismiss: () => setNotice(null) };
+}
+
 function Screen() {
   const { loading, error, retry, company, role, user, backend } = useAuth();
   const brand = useBrand();
   const { route } = useRouter();
+  const canvaReturn = useCanvaOAuthReturn(company?.id);
 
   if (loading) {
     return (
@@ -74,6 +98,16 @@ function Screen() {
 
   return (
     <AppShell>
+      {canvaReturn.notice && (
+        <div className="sp-toast" role="status" aria-live="polite">
+          <span style={{ fontSize: "var(--type-label-size)", fontWeight: 500, color: "var(--text-primary)" }}>
+            {canvaReturn.notice}
+          </span>
+          <button onClick={canvaReturn.dismiss} aria-label="Dismiss" style={{ color: "var(--text-muted)" }}>
+            ×
+          </button>
+        </div>
+      )}
       {route.name === "portal" && <Portal />}
       {route.name === "template" && <TemplateUsePage templateId={route.templateId} />}
       {route.name === "adminTemplates" && adminOnly(<AdminTemplates />)}

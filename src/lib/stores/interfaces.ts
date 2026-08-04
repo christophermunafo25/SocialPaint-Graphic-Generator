@@ -104,6 +104,17 @@ export interface DesignImportProvider {
     source: import("../types").DesignSource,
     hint?: string,
   ): Promise<import("../types").AutoBuildResult>;
+  /** Canva connection lifecycle (flagged server-side; enabled=false hides the
+   * tab). The PKCE state and verifier never reach the browser — start returns
+   * only the authorize URL, and the callback echoes code+state back. */
+  canvaStatus(companyId: string): Promise<{ enabled: boolean; connected: boolean }>;
+  canvaConnectStart(companyId: string, redirectUri: string): Promise<{ authorizeUrl: string }>;
+  canvaConnectCallback(
+    companyId: string,
+    code: string,
+    state: string,
+    redirectUri: string,
+  ): Promise<void>;
 }
 
 export interface StyleImportResult {

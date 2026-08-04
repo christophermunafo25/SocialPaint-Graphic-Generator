@@ -56,6 +56,29 @@ export class FigmaImporter implements DesignImportProvider {
     return data as AutoBuildResult;
   }
 
+  async canvaStatus(companyId: string): Promise<{ enabled: boolean; connected: boolean }> {
+    const { data, error } = await supabase().functions.invoke("canva-auth", {
+      body: { companyId, action: "status" },
+    });
+    if (error) return { enabled: false, connected: false };
+    return data as { enabled: boolean; connected: boolean };
+  }
+
+  async canvaConnectStart(companyId: string, redirectUri: string): Promise<{ authorizeUrl: string }> {
+    const { data, error } = await supabase().functions.invoke("canva-auth", {
+      body: { companyId, action: "start", redirectUri },
+    });
+    if (error) throw new Error(`Canva connect failed: ${error.message}`);
+    return data as { authorizeUrl: string };
+  }
+
+  async canvaConnectCallback(companyId: string, code: string, state: string, redirectUri: string): Promise<void> {
+    const { error } = await supabase().functions.invoke("canva-auth", {
+      body: { companyId, action: "callback", code, state, redirectUri },
+    });
+    if (error) throw new Error(`Canva connect failed: ${error.message}`);
+  }
+
   async renderLayers(
     companyId: string,
     url: string,

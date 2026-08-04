@@ -242,6 +242,15 @@ export class LocalDesignImportProvider implements DesignImportProvider {
   async renderLayers(): Promise<never> {
     throw new Error("Figma integration requires the Supabase backend (see .env.example).");
   }
+  async canvaStatus(): Promise<{ enabled: boolean; connected: boolean }> {
+    return { enabled: false, connected: false };
+  }
+  async canvaConnectStart(): Promise<never> {
+    throw new Error("Canva integration requires the Supabase backend.");
+  }
+  async canvaConnectCallback(): Promise<never> {
+    throw new Error("Canva integration requires the Supabase backend.");
+  }
   /** Deterministic demo stub — never calls Anthropic. Two plausible fields so
    * the builder's auto-build path is demoable with no Supabase and no key. */
   async autoBuild(

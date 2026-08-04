@@ -28,6 +28,9 @@ import {
   type ValidatedField,
 } from "../_shared/autobuildValidate.ts";
 import { AUTOBUILD_SYSTEM_PROMPT } from "./prompt.ts";
+import { canvaEnabled, getCanvaToken } from "../_shared/canva.ts";
+import { CanvaMcpClient, parseCanvaUrl } from "../_shared/canvaMcp.ts";
+import { parseCanvaCdf } from "../_shared/canvaCdf.ts";
 
 type DesignSource =
   | { kind: "figma"; url: string }
@@ -107,6 +110,57 @@ async function extractFigma(
     warnings,
     modelImageUrl,
   };
+}
+
+/** Canva path — MCP read-design (transactional, for the CDF with locator
+ * ids) + export-design for the background. There is NO layered recompose on
+ * this path: Canva has no equivalent of figma-layers, so the flat export
+ * stays as the background and fields overlay their baked artwork (which is
+ * why the response carries no sourceUrl). */
+async function extractCanva(
+  db: ReturnType<typeof serviceClient>,
+  companyId: string,
+  url: string,
+): Promise<ExtractionResult & { modelImageUrl: string }> {
+  const parsed = parseCanvaUrl(url);
+  if (!parsed) throw new HttpError(400, "Could not read that link — copy a design link from Canva.");
+  const token = await getCanvaToken(db, companyId);
+  if (!token) throw new HttpError(400, "Canva is not connected for this company.");
+
+  const mcp = new CanvaMcpClient(token);
+  try {
+    await mcp.initialize();
+    const { designContent } = await mcp.readDesign(parsed.designId);
+    if (!designContent) throw new HttpError(502, "Canva returned no design content.");
+    const cdf = parseCanvaCdf(designContent);
+    if (!cdf.canvasWidth || !cdf.canvasHeight) {
+      throw new HttpError(502, "Couldn't read the design's dimensions from Canva.");
+    }
+
+    const exportUrl = await mcp.exportDesign(parsed.designId);
+    const png = await (await fetch(exportUrl)).arrayBuffer();
+    const path = `${companyId}/autobuild-canva-${Date.now()}.png`;
+    const upload = await db.storage.from("template-backgrounds").upload(path, png, { contentType: "image/png" });
+    if (upload.error) throw new HttpError(500, `Storage upload failed: ${upload.error.message}`);
+    const backgroundUrl = db.storage.from("template-backgrounds").getPublicUrl(path).data.publicUrl;
+
+    return {
+      backgroundUrl,
+      canvasWidth: cdf.canvasWidth,
+      canvasHeight: cdf.canvasHeight,
+      elements: cdf.elements,
+      // No sourceUrl: it is what enables the layered recompose, which this
+      // path cannot do.
+      warnings: [
+        ...cdf.warnings,
+        "Canva imports keep the original artwork visible behind editable text — give editable text a fill or a background shape behind it.",
+      ],
+      modelImageUrl: backgroundUrl,
+    };
+  } finally {
+    // Ends the MCP session, releasing the read transaction server-side.
+    await mcp.close();
+  }
 }
 
 /** Flat-image path: the background is already uploaded; there is no geometry. */
@@ -389,8 +443,11 @@ Deno.serve(async (req) => {
         return json({ error: "image source needs backgroundUrl, canvasWidth, canvasHeight" }, 400);
       }
       extraction = extractImage(source);
+    } else if (source.kind === "canva") {
+      if (!canvaEnabled()) return json({ error: "Canva auto-build is not enabled." }, 501);
+      extraction = await extractCanva(db, companyId, source.url);
     } else {
-      return json({ error: "Canva auto-build is not available yet." }, 501);
+      return json({ error: `Unknown source kind.` }, 400);
     }
 
     // 2. Brand kit + catalog context.
