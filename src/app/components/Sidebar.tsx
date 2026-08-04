@@ -21,11 +21,10 @@ import logoOnDark from "@/assets/socialpaint/logo-on-dark.svg";
 
 const LS_COLLAPSED = "sp-sidebar-collapsed";
 
-/** The SocialPaint mark — the Voltage swoosh, the same artwork that carries
- * the mark in the horizontal lockups. Painted with currentColor so it can
- * sit in Volt on the collapsed rail and as a tinted watermark elsewhere;
- * the brand default is Volt in both themes. Used where the full lockup
- * doesn't fit. */
+/** The SocialPaint mark — the swoosh, the same artwork that carries the
+ * mark in the horizontal lockups. Painted with currentColor so callers tint
+ * it; the brand default is Orange in both themes — Orange is the mark and
+ * never a control fill. Used where the full lockup doesn't fit. */
 export function BrandMark({ width = 28 }: { width?: number }) {
   return (
     <svg viewBox="0 0 78 75" fill="currentColor" style={{ width, height: "auto", display: "block" }} aria-hidden>
@@ -34,8 +33,8 @@ export function BrandMark({ width = 28 }: { width?: number }) {
   );
 }
 
-/** The official horizontal lockup — dark-green artwork on light chrome,
- * lime + white artwork on dark. */
+/** The official horizontal lockup — Ink wordmark + Orange mark on light
+ * chrome, White wordmark + Orange mark on dark. */
 function BrandLockup({ height = 16 }: { height?: number }) {
   const { resolved } = useColorScheme();
   return (
@@ -394,7 +393,7 @@ export function Sidebar() {
             onClick={() => go({ name: role === "admin" ? "adminTemplates" : "portal" })}
             title="SocialPaint — home"
             className="mx-auto mb-6"
-            style={{ color: "var(--volt)" }}
+            style={{ color: "var(--orange)" }}
           >
             <BrandMark width={26} />
           </button>
