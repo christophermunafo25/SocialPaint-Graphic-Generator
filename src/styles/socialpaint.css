@@ -3,15 +3,17 @@
    Ported from the "SocialPaint Design System" Claude Design project
    (tokens/*.css, SKILL.md, docs/02-tokens.md), 2026-07-30.
 
-   Five colours only: Ink #1A1A1A, Forrest #082C1E, Volt #BCFF78, White,
-   Gray #F9F9F8. Danger #FF7D51 sits outside the palette as a functional
-   signal — never a brand colour, never decorative.
+   Five colours only: Ink #121212, Orange #FF4D12, Green #BCFF78, White,
+   Gray #F9F9F8. Danger #A50000 / #B51F16 and Warning #FFD900 sit outside
+   the palette as functional signals — never brand colours, never decorative.
 
    Non-negotiables carried from the DS:
    - Soft cards (20px) against crisp controls (5px). Never meet at 12px.
    - One UI weight. Never bold for emphasis — shift colour or use the
      display face.
-   - Primary action is Forrest fill + Volt label on light, inverted on dark.
+   - The primary action is neutral: it inverts against the surface instead of
+     carrying a hue. Orange is the mark and the focus ring, never a control
+     fill; Green is success and the commit action (Publish / Export).
    - No gradients as surface, no drop shadows in either mode, no glass.
    - ALL CAPS headings in the display face (a deliberate override of the
      DS's sentence-case rule — see the @font-face note). Small labels
@@ -44,17 +46,28 @@
   font-display: swap;
 }
 
+/* The DS's variable cut (NeuethingSans-variableVF) is vendored alongside but
+   deliberately NOT registered: its axes are custom-scaled (wght 50–100,
+   wdth 50–100, not the OpenType-standard ranges), so a normal font-weight
+   descriptor would clamp every CSS weight to the axis maximum and render one
+   arbitrary instance. Using it correctly requires font-variation-settings
+   per step — a typography change, out of scope for the colour patch. */
+
 /* ── Primitives ─────────────────────────────────────────────────────────────
    The five brand colours. These are the only tokens without a category
    prefix — that is how you tell a primitive at a glance. Never reach past
    the semantic tier to one of these in product code. */
 :root {
-  --forrest: #082c1e;
-  --volt:    #bcff78;
-  --white:   #ffffff;
-  --gray:    #f9f9f8;
-  /* The DS primitive --ink (#1A1A1A) is --bg-canvas in dark and the value
-     behind --text-primary in light; product code reaches for those. */
+  --orange: #FF4D12; /* the mark and the focus ring — never fills a control */
+  --volt:   #BCFF78; /* Green — success, and the commit action */
+  --white:  #F9F9F8;
+  --gray:   #F9F9F8;
+  --ink:    #121212;
+
+  /* Retired. Forrest is not in the five-colour palette. Aliased to the mark so
+     any straggling reference degrades to a brand colour rather than to nothing;
+     remove once no consumers are left. */
+  --forrest: var(--orange);
 
   /* Typography */
   --font-head:    "Neuething Sans", "Inter Tight", system-ui, sans-serif;
@@ -153,35 +166,45 @@
    The primary mode. Ink is the floor; elevation is surface colour, never
    shadow. */
 [data-theme="dark"] {
-  --bg-canvas:     #1a1a1a;
-  --bg-surface:    #242424;
-  --bg-raised:     #2e2e2e;
-  --bg-hover:      #383838;
-  --bg-plate:      #ffffff; /* imagery plate — never inverts */
-  --border:        #303030;
-  --border-strong: #4a4a4a;
+  --bg-canvas:     #121212;
+  --bg-surface:    #1C1C1C;
+  --bg-raised:     #262626;
+  --bg-hover:      #303030;
+  --bg-plate:      #FFFFFF; /* imagery plate — never inverts */
+  --border:        #2B2B2B; /* decorative separation only */
+  --border-strong: #3D3D3D;
 
-  --text-primary:   #ffffff;
-  --text-secondary: #c5c7cb;
-  --text-muted:     #92959b;
-  --text-disabled:  #5e6167;
-  --text-on-accent: #1a1a1a;
+  --text-primary:   #F9F9F8;
+  --text-secondary: #C6C6C2;
+  --text-muted:     #949490;
+  --text-disabled:  #5C5C58;
+  --text-on-accent: #121212;
 
-  --text-on-surface:           #ffffff;
-  --text-on-surface-secondary: #c5c7cb;
-  --text-on-surface-muted:     #92959b;
-  --border-on-surface:         #303030;
-  --bg-surface-raised:         #2e2e2e;
-  --bg-surface-hover:          #383838;
-  --state-primary-on-surface:   #bcff78;
-  --state-attention-on-surface: #bcff78;
-  --state-danger-on-surface:    #ff7d51;
+  --text-on-surface:           #F9F9F8;
+  --text-on-surface-secondary: #C6C6C2;
+  --text-on-surface-muted:     #949490;
+  --border-on-surface:         #2B2B2B;
+  --bg-surface-raised:         #262626;
+  --bg-surface-hover:          #303030;
 
-  --state-primary:   #bcff78; --fill-primary:   #bcff78;
-  --state-attention: #bcff78; --fill-attention: #bcff78;
-  --state-danger:    #ff7d51; --fill-danger:    #ff7d51;
+  /* Action fill — the primary button, and any control that fills to show it is on.
+     Neutral by rule: it inverts against the surface instead of carrying a hue,
+     which is what keeps Orange free for the mark and Green free for meaning. */
+  --fill-action:    #F9F9F8;
+  --text-on-action: #121212;
+  --border-control: #F9F9F8; /* the edge of a pressable outlined control */
 
-  --ring: #bcff78;
+  --state-primary-on-surface:   #FF4D12;
+  --state-attention-on-surface: #BCFF78;
+  --state-danger-on-surface:    #D94637; /* 4.35:1 — one ramp step lighter than light mode */
+  --state-warning-on-surface:   #FFD900;
+
+  --state-primary:   #FF4D12; --fill-primary:   #FF4D12;
+  --state-attention: #BCFF78; --fill-attention: #BCFF78;
+  --state-danger:    #A50000; --fill-danger:    #A50000;
+  --state-warning:   #FFD900; --fill-warning:   #FFD900;
+
+  --ring: #FF4D12; /* 5.64:1 against the dark canvas */
 
   --shadow-sm: none;
   --shadow-md: none;
@@ -190,38 +213,48 @@
 }
 
 /* ── Semantic: light ────────────────────────────────────────────────────────
-   Gray canvas; borders carry separation. Forrest is the readable accent —
-   Volt is a fill here, never a mark. */
+   Gray canvas; borders carry separation. Signals keep their hue as text; the
+   brand accent does not. */
 [data-theme="light"] {
-  --bg-canvas:     #f9f9f8;
-  --bg-surface:    #ffffff;
-  --bg-raised:     #f0f0ee;
-  --bg-hover:      #e7e7e4;
-  --bg-plate:      #ffffff;
-  --border:        #e2e2de;
-  --border-strong: #c4c4bf;
+  --bg-canvas:     #F9F9F8;
+  --bg-surface:    #FFFFFF;
+  --bg-raised:     #F0F0EE;
+  --bg-hover:      #E7E7E4;
+  --bg-plate:      #FFFFFF;
+  --border:        #E2E2DE;
+  --border-strong: #C6C6C2;
 
-  --text-primary:   #1a1a1a;
-  --text-secondary: #4a4d53;
-  --text-muted:     #6e7178;
-  --text-disabled:  #a2a5aa;
-  --text-on-accent: #1a1a1a;
+  --text-primary:   #121212;
+  --text-secondary: #4A4A46;
+  --text-muted:     #6E6E6A;
+  --text-disabled:  #A2A29E;
+  --text-on-accent: #121212;
 
-  --text-on-surface:           #1a1a1a;
-  --text-on-surface-secondary: #4a4d53;
-  --text-on-surface-muted:     #6e7178;
-  --border-on-surface:         #e2e2de;
-  --bg-surface-raised:         #f9f9f8;
-  --bg-surface-hover:          #f0f0ee;
-  --state-primary-on-surface:   #082c1e;
-  --state-attention-on-surface: #082c1e;
-  --state-danger-on-surface:    #ff7d51;
+  --text-on-surface:           #121212;
+  --text-on-surface-secondary: #4A4A46;
+  --text-on-surface-muted:     #6E6E6A;
+  --border-on-surface:         #E2E2DE;
+  --bg-surface-raised:         #F0F0EE;
+  --bg-surface-hover:          #E7E7E4;
 
-  --state-primary:   #082c1e; --fill-primary:   #bcff78;
-  --state-attention: #082c1e; --fill-attention: #bcff78;
-  --state-danger:    #ff7d51; --fill-danger:    #ff7d51;
+  --fill-action:    #121212;
+  --text-on-action: #F9F9F8;
+  --border-control: #121212;
 
-  --ring: #082c1e;
+  /* Signals keep their hue as text; the brand accent does not. Success and warning drop
+     to the darkest step of their own ramp that clears AA. Orange collapses to Black —
+     an orange word in running text would read as a status. The bright stays in --fill-*. */
+  --state-primary-on-surface:   #121212; /* Orange is identity, not a signal — it stays neutral as text */
+  --state-attention-on-surface: #467200; /* Green holds its hue as text · 5.44:1 */
+  --state-danger-on-surface:    #B51F16;
+  --state-warning-on-surface:   #756200;
+
+  --state-primary:   #121212; --fill-primary:   #FF4D12;
+  --state-attention: #121212; --fill-attention: #BCFF78;
+  --state-danger:    #A50000; --fill-danger:    #A50000;
+  --state-warning:   #756200; --fill-warning:   #FFD900;
+
+  --ring: #FF4D12; /* 3.15:1 against the light canvas — clears the 3:1 non-text floor */
 
   --shadow-sm: none;
   --shadow-md: none;
@@ -240,19 +273,22 @@
                 0 0 0 calc(var(--focus-offset) + var(--focus-width)) var(--ring);
   --focus-ring-tight: 0 0 0 var(--focus-width) var(--ring);
 
-  /* Tinted chrome — active nav, locked-rule boxes, selection washes. */
-  --accent-wash:        color-mix(in srgb, var(--state-primary) 10%, transparent);
-  --accent-wash-strong: color-mix(in srgb, var(--state-primary) 20%, transparent);
-  --accent-border:      color-mix(in srgb, var(--state-primary) 40%, transparent);
+  /* Selection is neutral system-wide, so the wash is the standard 12% state
+     layer rather than an accent tint. */
+  --accent-wash:        color-mix(in srgb, var(--text-primary) 12%, transparent);
+  --accent-wash-strong: color-mix(in srgb, var(--text-primary) 20%, transparent);
+  --accent-border:      color-mix(in srgb, var(--text-primary) 40%, transparent);
   --danger-wash:        color-mix(in srgb, var(--state-danger) 16%, transparent);
 
-  /* Brand-moment surface — flat Forrest with Volt as the voice. */
-  --brand-surface:    var(--forrest);
-  --brand-surface-fg: var(--volt);
+  /* Brand-moment surface — was a Forrest ground with a Volt label. Orange is
+     the brand ground now. */
+  --brand-surface:    var(--orange);
+  --brand-surface-fg: #121212; /* 5.70:1 */
 
-  /* Data-viz series. Two marks only; the palette has no third hue to give. */
-  --viz-downloads: var(--state-primary);
-  --viz-opens:     var(--border-strong);
+  /* Charts are not controls, so accents are legitimate here. Two real series:
+     Orange and Blue. A third has to separate by shape or label, not colour. */
+  --viz-downloads: var(--fill-primary);
+  --viz-opens:     #66ECFE;
   --viz-grid:      var(--border);
 
   /* Sidebar */
@@ -265,19 +301,16 @@
   --sb-active-bg: var(--accent-wash);
 }
 
-/* Primary action: Forrest fill + Volt label on light, inverted on dark. */
-[data-theme="light"] {
-  --btn-primary-bg:       var(--forrest);
-  --btn-primary-fg:       var(--volt);
-  --btn-primary-bg-hover: color-mix(in srgb, var(--forrest) 86%, #fff);
-}
-[data-theme="dark"] {
-  --btn-primary-bg:       var(--volt);
-  --btn-primary-fg:       var(--ink, #1a1a1a);
-  --btn-primary-bg-hover: color-mix(in srgb, var(--volt) 86%, #fff);
+/* One pair replaces the old per-theme values: the primary button is the neutral
+   action fill, which already inverts per theme. Hover is the standard 8% state
+   layer of the label into the fill, so it stays correct in both themes. */
+:root {
+  --btn-primary-bg:       var(--fill-action);
+  --btn-primary-fg:       var(--text-on-action);
+  --btn-primary-bg-hover: color-mix(in srgb, var(--text-on-action) 8%, var(--fill-action));
 }
 
-::selection { background: var(--volt); color: #1a1a1a; }
+::selection { background: var(--volt); color: #121212; }
 
 /* ── Base ───────────────────────────────────────────────────────────────── */
 
@@ -484,10 +517,12 @@ button, input, select, textarea, optgroup {
    paints over the template canvas — which stays paper-white in both app
    themes — so the accent holds a single value in both.
 
-   Forrest, not the old Figma blue: the DS allows no sixth hue in platform
-   chrome, and Volt would disappear against a paper-white canvas. */
+   Orange: selection handles sit on arbitrary user artwork, so they need a hue
+   that is never part of the artwork's own palette. Orange is the system's
+   marker colour and is reserved from UI fills, which makes it the right
+   choice here. */
 :root {
-  --editor-accent: #082c1e;
+  --editor-accent: var(--orange);
   --editor-line: 1px;
   --editor-handle: 7px;
 }
@@ -1534,3 +1569,44 @@ button, input, select, textarea, optgroup {
    calc(--radius-control + 4px) = 9px — inside the banned 6–19 band. */
 [data-radius-card] { border-radius: var(--radius-card); }
 .sp-dropzone { border-radius: var(--radius-control); }
+
+/* ── Component colour overrides (design-system distribution, section 8) ─────
+   Appended after the platform's component rules so it wins on cascade order.
+   Colour properties only — no geometry, no layout, no shadow. */
+
+/* Ghost carries a border in this platform, which makes it the system's secondary:
+   outlined at full contrast, with the label at full contrast too. A control the
+   user is meant to press reads as a deliberate edge, not as a divider. */
+.sp-btn-ghost { color: var(--text-primary); border-color: var(--border-control); }
+.sp-btn-ghost:hover:not(:disabled) { background: color-mix(in srgb, var(--text-primary) 8%, transparent); color: var(--text-primary); }
+
+/* Solar is the system's commit variant: the action that sends work to the world.
+   Green is near-white in luminance, so the fill cannot bound itself on a light
+   canvas (1.13:1) and takes a darker green edge at 5.44:1 light / 3.27:1 dark. */
+.sp-btn-solar { background: var(--fill-attention); color: #121212; border-color: #467200; }
+.sp-btn-solar:hover:not(:disabled) { background: color-mix(in srgb, #121212 8%, var(--fill-attention)); }
+
+/* Destructive is outlined, never filled: a red fill outranks the primary action
+   and reads as the recommended path, which is the opposite of the intent. */
+.sp-btn-danger, .sp-btn[data-tone="danger"] {
+  background: transparent;
+  color: var(--state-danger-on-surface);
+  border-color: var(--state-danger-on-surface);
+}
+.sp-btn-danger:hover:not(:disabled), .sp-btn[data-tone="danger"]:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--state-danger-on-surface) 8%, transparent);
+}
+
+/* Selection is neutral everywhere it appears. */
+.sp-chip[data-selected] { border-color: var(--border-control); }
+.sp-sidebar-item[data-active="true"] { background: var(--sb-active-bg); color: var(--sb-fg-active); }
+
+/* The one selection exception: a swatch shows a colour, so a neutral marker can
+   vanish against a black or white swatch. Orange is the marker colour and reads
+   against every hue in the picker. */
+.sp-swatch[data-selected="true"] { border-color: var(--ring); }
+
+/* Tone-carrying feedback keeps its hue — these are signals, not controls. */
+.sp-toast[data-tone="danger"]  { border-top-color: var(--state-danger); }
+.sp-toast[data-tone="warning"] { border-top-color: var(--state-warning); }
+.sp-toast[data-tone="success"] { border-top-color: var(--fill-attention); }
