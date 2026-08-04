@@ -41,7 +41,6 @@ import { FieldOverlayEditor } from "./FieldOverlayEditor";
 import { FieldInspector } from "./FieldInspector";
 import { CaptionEditor } from "./CaptionEditor";
 import { FigmaImportDialog } from "./FigmaImportDialog";
-import { FigmaFieldPicker } from "./FigmaFieldPicker";
 import { ElementPalette } from "./ElementPalette";
 import { FieldListPanel } from "./FieldListPanel";
 import { FieldContextMenu, type MenuAction } from "./FieldContextMenu";
@@ -146,7 +145,6 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
   const [figmaOpen, setFigmaOpen] = useState(false);
   /** Snapshot of the last loaded/saved draft — anything else is unsaved. */
   const savedSnapshotRef = useRef<string>("");
-  const [pendingImport, setPendingImport] = useState<DesignImportResult | null>(null);
   const [recomposing, setRecomposing] = useState(false);
   const [publishState, setPublishState] = useState<"idle" | "publishing" | "success">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -533,6 +531,85 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
   );
 
   // -------------------------------------------------------------------------
+  // Figma import
+  // -------------------------------------------------------------------------
+
+  /** Land EVERY detected element on the canvas as a real field.
+   *
+   * There is no pre-selection step: deciding what should be member-editable
+   * before seeing the frame is a decision made with the least information
+   * available. Everything arrives editable and the admin marks whatever is
+   * chrome as Fixed in the inspector, in context, with the canvas in front of
+   * them. Fixed keeps the element live and movable — it only takes it out of
+   * the member form. */
+  const applyImport = (result: DesignImportResult) => {
+    // Computed OUTSIDE the setDraft updater: updaters run at render time (and
+    // twice under StrictMode), so pushing into `imported` there would leave it
+    // empty for the recomposition below and duplicate every field in dev.
+    const existing = [...draft.fields];
+    let z = maxZ(existing);
+    const imported = result.suggestedFields.map((f) => {
+      // Imported elements default to member-editable: the admin subtracts
+      // rather than adds, and a text layer a designer bothered to make is
+      // more often content than chrome.
+      const next: TemplateField = { ...f, fieldKey: suggestFieldKey(f.label, existing), zIndex: ++z };
+      existing.push(next);
+      return next;
+    });
+    setDraft((d) => ({
+      ...d,
+      backgroundUrl: result.backgroundUrl,
+      canvasWidth: result.canvasWidth,
+      canvasHeight: result.canvasHeight,
+      fields: [...d.fields, ...imported],
+    }));
+    // A successful import IS a chosen source, even if the background render
+    // came back empty — without this the wizard stays on the source screen
+    // with the imported fields invisible behind it.
+    setStarted(true);
+    setMode("edit");
+    // Fields is Step 1; Name comes last in the wizard.
+    goTo("fields");
+
+    // Lift the imported elements OFF the background: re-render the frame
+    // without them and swap in the recomposed PNG. On any failure the
+    // flat render stays (fields overlay their baked twins).
+    const excludeIds = imported
+      .map((f) => f.sourceNodeId)
+      .filter((id): id is string => Boolean(id));
+    if (company && result.sourceUrl && excludeIds.length) {
+      setRecomposing(true);
+      void (async () => {
+        try {
+          const layers = await stores.designImport.renderLayers(
+            company.id,
+            result.sourceUrl!,
+            excludeIds,
+          );
+          const blob = await composeFigmaBackground(layers);
+          const bgUrl = await stores.templates.uploadBackground(
+            company.id,
+            blob,
+            "figma-composed.png",
+          );
+          setDraft((d) => ({ ...d, backgroundUrl: bgUrl }));
+          if (layers.warnings.length) {
+            setError(layers.warnings.join(" "));
+          }
+        } catch (e) {
+          console.error("Background recomposition failed", e);
+          setError(
+            "Couldn't lift the selected elements off the background — the flat Figma render is in use, so fields may overlap their original artwork. " +
+              (e instanceof Error ? e.message : ""),
+          );
+        } finally {
+          setRecomposing(false);
+        }
+      })();
+    }
+  };
+
+  // -------------------------------------------------------------------------
   // Context menu actions
   // -------------------------------------------------------------------------
 
@@ -666,7 +743,9 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
           onClose={() => setFigmaOpen(false)}
           onImported={(result) => {
             setFigmaOpen(false);
-            setPendingImport(result); // admin picks which elements become fields
+            // No pre-selection step: everything lands on the canvas, and the
+            // admin marks chrome as Fixed in the inspector, in context.
+            applyImport(result);
           }}
         />
       )}
@@ -731,74 +810,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
         </p>
       )}
 
-      {pendingImport ? (
-        <FigmaFieldPicker
-          result={pendingImport}
-          kit={kit}
-          onBack={() => setPendingImport(null)}
-          onConfirm={(fields) => {
-            const importResult = pendingImport;
-            setDraft((d) => {
-              const existing = [...d.fields];
-              let z = maxZ(existing);
-              const merged = fields.map((f) => {
-                const fieldKey = suggestFieldKey(f.label, existing);
-                const next = { ...f, fieldKey, zIndex: ++z };
-                existing.push(next);
-                return next;
-              });
-              return {
-                ...d,
-                backgroundUrl: importResult.backgroundUrl,
-                canvasWidth: importResult.canvasWidth,
-                canvasHeight: importResult.canvasHeight,
-                fields: [...d.fields, ...merged],
-              };
-            });
-            setPendingImport(null);
-            setMode("edit");
-            // Both a brand-new import and an existing template that pulled
-            // in more fields land on Fields, which is now Step 1.
-            goTo("fields");
-            // Lift the chosen elements OFF the background: re-render the frame
-            // without them and swap in the recomposed PNG. On any failure the
-            // flat render stays (fields overlay their baked twins).
-            const excludeIds = fields
-              .map((f) => f.sourceNodeId)
-              .filter((id): id is string => Boolean(id));
-            if (company && importResult.sourceUrl && excludeIds.length) {
-              setRecomposing(true);
-              void (async () => {
-                try {
-                  const layers = await stores.designImport.renderLayers(
-                    company.id,
-                    importResult.sourceUrl!,
-                    excludeIds,
-                  );
-                  const blob = await composeFigmaBackground(layers);
-                  const bgUrl = await stores.templates.uploadBackground(
-                    company.id,
-                    blob,
-                    "figma-composed.png",
-                  );
-                  setDraft((d) => ({ ...d, backgroundUrl: bgUrl }));
-                  if (layers.warnings.length) {
-                    setError(layers.warnings.join(" "));
-                  }
-                } catch (e) {
-                  console.error("Background recomposition failed", e);
-                  setError(
-                    "Couldn't lift the selected elements off the background — the flat Figma render is in use, so fields may overlap their original artwork. " +
-                      (e instanceof Error ? e.message : ""),
-                  );
-                } finally {
-                  setRecomposing(false);
-                }
-              })();
-            }
-          }}
-        />
-      ) : !sourceChosen ? (
+      {!sourceChosen ? (
         /* Source pick: two co-equal creation paths */
         <div className="max-w-3xl mx-auto py-10 space-y-5">
           <div className="text-center space-y-1 mb-2">
@@ -853,7 +865,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
               <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>Import from Figma</p>
               <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)", maxWidth: 240 }}>
                 {stores.designImport.isConfigured()
-                  ? "Paste a frame link — pick which elements become editable fields; the rest is baked into the locked design."
+                  ? "Paste a frame link — every element lands on the canvas as an editable field. Mark anything that shouldn't be as fixed."
                   : "Requires the Supabase backend with the Figma connection configured (see docs/ARCHITECTURE.md)."}
               </p>
             </button>
