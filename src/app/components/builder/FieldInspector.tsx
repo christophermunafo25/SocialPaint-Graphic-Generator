@@ -403,7 +403,7 @@ export function FieldInspector({
               <Pin style={{ width: 11, height: 11, display: "inline", marginRight: "var(--space-3xs)", verticalAlign: "-1px", color: "var(--state-primary)" }} />
               Fixed element
               <span style={{ display: "block", fontSize: 11, color: "var(--text-muted)" }}>
-                Baked into the graphic — members don't see or edit it.
+                Stays exactly as designed — members don't see or edit it. You can still move and style it.
               </span>
             </span>
           </label>

@@ -39,7 +39,8 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
   const suggestedCaption = template ? mergeCaption(template, values) : "";
   const shownCaption = caption ?? suggestedCaption;
 
-  // Static elements are baked into the graphic — members never fill them in.
+  // Fixed elements render on the graphic like any field, but members never
+  // fill them in — no form entry, no required check.
   const formFields = useMemo(() => (template?.fields ?? []).filter((f) => !f.static), [template]);
 
   const missingRequired = useMemo(
