@@ -128,8 +128,8 @@ export function Dashboard() {
         <div className="space-y-6">
           {/* KPI row — same 24px gap as every other grid on the page */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-            <Kpi label="Total exports" value={String(summary.totalDownloads)} Icon={Download} chip="var(--volt)" />
-            <Kpi label="Total opens" value={String(totalOpens)} Icon={Eye} chip="var(--volt)" />
+            <Kpi label="Total exports" value={String(summary.totalDownloads)} Icon={Download} chip="var(--viz-downloads)" />
+            <Kpi label="Total opens" value={String(totalOpens)} Icon={Eye} chip="var(--viz-opens)" />
             <Kpi label="Export rate" value={exportRate(summary.totalDownloads, totalOpens)} Icon={Percent} chip="var(--bg-hover)" />
             <Kpi label="Templates in use" value={String(activeTemplates)} Icon={Layers} chip="var(--bg-hover)" />
           </div>

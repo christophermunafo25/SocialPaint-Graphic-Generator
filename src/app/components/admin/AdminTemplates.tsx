@@ -168,7 +168,7 @@ export function AdminTemplates() {
             <TemplateSearchField value={query} onChange={setQuery} />
           </div>
           <div
-            className="flex rounded-lg overflow-hidden"
+            className="flex overflow-hidden" data-radius-control
             role="group"
             aria-label="Filter by status"
             style={{ border: "1px solid var(--border-strong)", height: 40 }}

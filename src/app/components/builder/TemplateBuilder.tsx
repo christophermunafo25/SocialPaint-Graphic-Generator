@@ -1036,7 +1036,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                     </p>
                     <div className="flex items-center gap-2 flex-shrink-0">
                     {mode === "edit" && (
-                      <div className="flex rounded-lg overflow-hidden" style={{ border: "1px solid var(--border-strong)" }}>
+                      <div className="flex overflow-hidden" data-radius-control style={{ border: "1px solid var(--border-strong)" }}>
                         <button
                           onClick={undo}
                           disabled={!canUndo}
@@ -1059,7 +1059,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                         </button>
                       </div>
                     )}
-                    <div className="flex rounded-lg overflow-hidden" style={{ border: "1px solid var(--border-strong)" }}>
+                    <div className="flex overflow-hidden" data-radius-control style={{ border: "1px solid var(--border-strong)" }}>
                       {(["edit", "preview"] as const).map((m) => (
                         <button
                           key={m}
@@ -1285,7 +1285,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                 <label
                   {...bgDrop.bind}
                   data-active={bgDrop.active}
-                  className="sp-dropzone flex items-center gap-2 cursor-pointer rounded-md" style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)", padding: "4px 6px", margin: "-4px -6px" }}
+                  className="sp-dropzone flex items-center gap-2 cursor-pointer " data-radius-control style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)", padding: "4px 6px", margin: "-4px -6px" }}
                 >
                   {uploading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Upload className="sp-dropzone__icon w-3.5 h-3.5" />}
                   {uploading

@@ -72,7 +72,7 @@ export function PeopleAdmin() {
       />
 
       {isDevAuth && (
-        <p className="rounded-lg px-4 py-3 mb-5" style={{ fontSize: "var(--type-caption-size)", background: "var(--bg-hover)", color: "var(--text-secondary)" }}>
+        <p className="px-4 py-3 mb-5" data-radius-control style={{ fontSize: "var(--type-caption-size)", background: "var(--bg-hover)", color: "var(--text-secondary)" }}>
           People management needs the Supabase backend with auth enabled — this dev backend has no
           real accounts.
         </p>
@@ -122,9 +122,9 @@ export function PeopleAdmin() {
             >
               <span
                 className="flex-shrink-0"
-                style={{ width: 26, height: 26, borderRadius: "var(--radius-pill)", display: "grid", placeItems: "center", overflow: "hidden", background: "var(--volt)" }}
+                style={{ width: 26, height: 26, borderRadius: "var(--radius-pill)", display: "grid", placeItems: "center", overflow: "hidden", background: "var(--bg-raised)", border: "1px solid var(--border)" }}
               >
-                <span style={{ color: "var(--text-on-accent)", fontFamily: "var(--font-head)", fontWeight: 800, textTransform: "uppercase" as const, fontSize: 11 }}>
+                <span style={{ color: "var(--text-primary)", fontFamily: "var(--font-head)", fontWeight: 800, textTransform: "uppercase" as const, fontSize: 11 }}>
                   {(m.name ?? m.email).slice(0, 1).toUpperCase()}
                 </span>
               </span>

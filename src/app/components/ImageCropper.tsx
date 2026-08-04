@@ -128,7 +128,7 @@ export function ImageCropper({ imageSrc, onCancel, onCropComplete, aspect = 1 }:
       role="dialog"
       aria-modal="true"
       aria-label="Crop image"
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/95 p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/95 p-4 animate-in fade-in duration-[var(--dur-panel)]"
     >
       <div className="relative w-full max-w-2xl h-[60vh] overflow-hidden sp-card">
         <Cropper

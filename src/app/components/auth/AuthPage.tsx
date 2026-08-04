@@ -110,7 +110,7 @@ export function AuthPage() {
         <div className="px-7 py-6 space-y-4">
           {(view === "signin" || view === "signup") && (
             <div
-              className="grid grid-cols-2 rounded-lg overflow-hidden"
+              className="grid grid-cols-2 overflow-hidden" data-radius-control
               style={{ border: "1px solid var(--border-strong)" }}
               role="tablist"
               aria-label="Sign in or create account"
@@ -163,7 +163,7 @@ export function AuthPage() {
           )}
 
           {error && (
-            <p className="rounded-lg px-3 py-2" style={{ fontSize: "var(--type-caption-size)", background: "var(--danger-wash)", color: "var(--state-danger)" }}>
+            <p className="px-3 py-2" data-radius-control style={{ fontSize: "var(--type-caption-size)", background: "var(--danger-wash)", color: "var(--state-danger)" }}>
               {error}
             </p>
           )}

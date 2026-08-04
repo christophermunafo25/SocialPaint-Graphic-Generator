@@ -127,7 +127,7 @@ function AccountBlock({ onNavigate }: { onNavigate(route: Route): void }) {
             <button
               key={r}
               onClick={() => setRole(r)}
-              className="flex-1 py-1 rounded-md capitalize"
+              className="flex-1 py-1 capitalize" data-radius-control
               style={{
                 fontSize: 11,
                 border: "1px solid var(--sb-border)",
@@ -148,8 +148,9 @@ function AccountBlock({ onNavigate }: { onNavigate(route: Route): void }) {
             width: 38,
             height: 38,
             borderRadius: "var(--radius-pill)",
-            background: "var(--volt)", // flat fill — gradients are banned as surface treatment
-            color: "var(--text-on-accent)",
+            background: "var(--bg-raised)", // neutral, per the DS Avatar recipe — Green means success/commit
+            border: "1px solid var(--border)",
+            color: "var(--text-primary)",
             fontSize: "var(--type-caption-size)",
             fontWeight: "var(--weight-ui)",
           }}
@@ -177,7 +178,7 @@ function AccountBlock({ onNavigate }: { onNavigate(route: Route): void }) {
             onClick={() => void signOut()}
             title="Sign out"
             aria-label="Sign out"
-            className="flex items-center justify-center rounded-lg flex-shrink-0"
+            className="flex items-center justify-center flex-shrink-0" data-radius-control
             style={{ width: 28, height: 28, color: "var(--sb-fg)" }}
           >
             <LogOut style={{ width: 14, height: 14 }} />
@@ -293,7 +294,7 @@ export function Sidebar() {
                 aria-expanded={menuOpen}
                 aria-label={menuOpen ? "Close navigation" : "Open navigation"}
                 data-open={menuOpen}
-                className="sp-nav-toggle relative flex items-center justify-center rounded-md"
+                className="sp-nav-toggle relative flex items-center justify-center " data-radius-control
                 style={{ width: 36, height: 36, color: "var(--sb-fg-active)", border: "1px solid var(--sb-border)" }}
               >
                 <span aria-hidden className="sp-nav-toggle__bar sp-nav-toggle__bar--top" />
@@ -354,7 +355,7 @@ export function Sidebar() {
         // Floating panel: inset 12px from the top, left, and bottom.
         width: `calc(${collapsed ? "var(--sb-width-collapsed)" : "var(--sb-width)"} + 12px)`,
         padding: "12px 0 12px 12px",
-        transition: "width 0.2s ease",
+        transition: "width var(--dur-panel) var(--ease)",
       }}
     >
       <aside
@@ -364,7 +365,7 @@ export function Sidebar() {
           width: collapsed ? "var(--sb-width-collapsed)" : "var(--sb-width)",
           height: "calc(100vh - 24px)",
           padding: collapsed ? "20px 12px" : "20px 16px",
-          transition: "width 0.2s ease",
+          transition: "width var(--dur-panel) var(--ease)",
           zIndex: 30,
         }}
       >
@@ -441,8 +442,9 @@ export function Sidebar() {
                 width: 34,
                 height: 34,
                 borderRadius: "var(--radius-pill)",
-                background: "var(--volt)",
-                color: "var(--text-on-accent)",
+                background: "var(--bg-raised)",
+                border: "1px solid var(--border)",
+                color: "var(--text-primary)",
                 fontSize: 11,
                 fontWeight: "var(--weight-ui)",
               }}

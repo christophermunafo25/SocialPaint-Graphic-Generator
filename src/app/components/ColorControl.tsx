@@ -76,7 +76,7 @@ export function ColorControl({
           background: value
             ? value
             : "repeating-conic-gradient(#e5e5e5 0% 25%, #ffffff 0% 50%) 0 0 / 10px 10px",
-          transition: "border-color 0.15s",
+          transition: "border-color var(--dur-state) var(--ease)",
         }}
       >
         {hover && (

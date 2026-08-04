@@ -3,9 +3,10 @@
    Ported from the "SocialPaint Design System" Claude Design project
    (tokens/*.css, SKILL.md, docs/02-tokens.md), 2026-07-30.
 
-   Five colours only: Ink #121212, Orange #FF4D12, Green #BCFF78, White,
-   Gray #F9F9F8. Danger #A50000 / #B51F16 and Warning #FFD900 sit outside
-   the palette as functional signals — never brand colours, never decorative.
+   Five colours only: Black #121212, White #F9F9F8, Orange #FF4D12,
+   Blue #66ECFE, Green #BCFF78. Danger #A50000 / #B51F16 and Warning #FFD900
+   sit outside the palette as functional signals — never brand colours,
+   never decorative.
 
    Non-negotiables carried from the DS:
    - Soft cards (20px) against crisp controls (5px). Never meet at 12px.
@@ -59,6 +60,7 @@
    the semantic tier to one of these in product code. */
 :root {
   --orange: #FF4D12; /* the mark and the focus ring — never fills a control */
+  --blue:   #66ECFE; /* secondary accent — informs, mostly in charts */
   --volt:   #BCFF78; /* Green — success, and the commit action */
   --white:  #F9F9F8;
   --gray:   #F9F9F8;
@@ -200,6 +202,7 @@
   --state-warning-on-surface:   #FFD900;
 
   --state-primary:   #FF4D12; --fill-primary:   #FF4D12;
+  --state-info:      #66ECFE; --fill-info:      #66ECFE;
   --state-attention: #BCFF78; --fill-attention: #BCFF78;
   --state-danger:    #A50000; --fill-danger:    #A50000;
   --state-warning:   #FFD900; --fill-warning:   #FFD900;
@@ -250,6 +253,7 @@
   --state-warning-on-surface:   #756200;
 
   --state-primary:   #121212; --fill-primary:   #FF4D12;
+  --state-info:      #121212; --fill-info:      #66ECFE;
   --state-attention: #121212; --fill-attention: #BCFF78;
   --state-danger:    #A50000; --fill-danger:    #A50000;
   --state-warning:   #756200; --fill-warning:   #FFD900;
@@ -288,7 +292,7 @@
   /* Charts are not controls, so accents are legitimate here. Two real series:
      Orange and Blue. A third has to separate by shape or label, not colour. */
   --viz-downloads: var(--fill-primary);
-  --viz-opens:     #66ECFE;
+  --viz-opens:     var(--fill-info);
   --viz-grid:      var(--border);
 
   /* Sidebar */
@@ -1568,6 +1572,7 @@ button, input, select, textarea, optgroup {
 /* Containers that were reaching for Tailwind's rounded-xl, which resolves to
    calc(--radius-control + 4px) = 9px — inside the banned 6–19 band. */
 [data-radius-card] { border-radius: var(--radius-card); }
+[data-radius-control] { border-radius: var(--radius-control); }
 .sp-dropzone { border-radius: var(--radius-control); }
 
 /* ── Component colour overrides (design-system distribution, section 8) ─────

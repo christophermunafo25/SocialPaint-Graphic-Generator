@@ -201,7 +201,7 @@ export function TypeStylesEditor({ styles, colors, customFamilies, onChange, usa
 
                 {rules.length > 0 && (
                   <div
-                    className="rounded-lg px-3 py-2 space-y-0.5"
+                    className="px-3 py-2 space-y-0.5" data-radius-control
                     style={{ background: "var(--accent-wash)", border: "1px solid var(--accent-border)" }}
                   >
                     {rules.map((r) => (

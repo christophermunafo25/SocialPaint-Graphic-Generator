@@ -211,7 +211,7 @@ function IconRow<T extends string>({
           title={title}
           aria-pressed={value === key}
           onClick={() => onSelect(key)}
-          className="flex items-center justify-center rounded-md"
+          className="flex items-center justify-center " data-radius-control
           style={{
             width: 30,
             height: 26,
@@ -574,7 +574,7 @@ export function FieldInspector({
               <button
                 title="Rotate 90° clockwise"
                 onClick={() => onChange({ rotation: (((field.rotation ?? 0) + 90) % 360) || undefined })}
-                className="flex items-center justify-center rounded-md"
+                className="flex items-center justify-center " data-radius-control
                 style={{ width: 30, height: 26, color: "var(--text-secondary)", border: "1px solid var(--border)" }}
               >
                 <RotateCw style={{ width: 13, height: 13 }} />
@@ -618,7 +618,7 @@ export function FieldInspector({
           <div>
             <label className={labelClass} style={labelStyle}>Resizing</label>
             <div
-              className="grid grid-cols-3 rounded-lg overflow-hidden"
+              className="grid grid-cols-3 overflow-hidden" data-radius-control
               style={{ border: "1px solid var(--border-strong)" }}
               role="group"
               aria-label="Text resizing behavior"
@@ -760,7 +760,7 @@ export function FieldInspector({
             </select>
             {boundStyle && (
               <div
-                className="mt-2 rounded-lg px-3 py-2 space-y-0.5"
+                className="mt-2 px-3 py-2 space-y-0.5" data-radius-control
                 style={{ background: "var(--accent-wash)", border: "1px solid var(--accent-border)" }}
               >
                 {ruleSentences(boundStyle, kit).map((r) => (

@@ -124,7 +124,7 @@ export function DesignSystemImportPanel(props: DesignSystemImportPanelProps) {
       )}
 
       {suggestions.length > 0 && (
-        <div className="space-y-2 rounded-lg p-3" style={{ background: "var(--bg-raised)", border: "1px solid var(--border)" }}>
+        <div className="space-y-2 p-3" data-radius-control style={{ background: "var(--bg-raised)", border: "1px solid var(--border)" }}>
           <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}>
             Found {suggestions.length} rule-like lines — keep the ones that are real brand rules:
           </p>

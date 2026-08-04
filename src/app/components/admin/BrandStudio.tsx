@@ -447,7 +447,7 @@ export function BrandStudio() {
                 >
                   <Star
                     className="w-4 h-4"
-                    style={{ color: a.id === primaryLogoAssetId ? "var(--volt)" : "var(--border-strong)" }}
+                    style={{ color: a.id === primaryLogoAssetId ? "var(--editor-accent)" : "var(--border-strong)" }}
                     fill={a.id === primaryLogoAssetId ? "currentColor" : "none"}
                   />
                 </button>
@@ -594,7 +594,7 @@ function BrandPreviewCard({ colors, headingFamily, bodyFamily, logoUrl }: BrandP
           Five incredible years — thank you for everything you do.
         </p>
         <span
-          className="sp-eyebrow inline-block px-2.5 py-1 rounded-md"
+          className="sp-eyebrow inline-block px-2.5 py-1 " data-radius-control
           style={{ background: hex("accent", "#C9A227"), color: "#fff" }}
         >
           Accent chip

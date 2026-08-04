@@ -172,7 +172,7 @@ function ImageFieldInput({ field, value, onChange, inputId }: FieldInputProps) {
         ) : (
           <span
             className="sp-dropzone__icon flex items-center justify-center"
-            style={{ width: 36, height: 36, borderRadius: "var(--radius-control)", background: "var(--volt)" }}
+            style={{ width: 36, height: 36, borderRadius: "var(--radius-control)", background: "var(--bg-raised)", border: "1px solid var(--border)" }}
           >
             <Upload style={{ width: 15, height: 15, color: "var(--text-primary)" }} />
           </span>
