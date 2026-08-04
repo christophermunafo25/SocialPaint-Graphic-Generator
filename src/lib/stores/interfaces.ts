@@ -95,6 +95,15 @@ export interface DesignImportProvider {
     url: string,
     excludeNodeIds: string[],
   ): Promise<import("../types").LayerRenderResult>;
+  /** Auto-build: Claude turns a design into a complete template proposal —
+   * fields with Fixed marks, labels, guardrails, brand bindings, metadata,
+   * and a caption. The client applies it to the draft; nothing is written
+   * server-side. */
+  autoBuild(
+    companyId: string,
+    source: import("../types").DesignSource,
+    hint?: string,
+  ): Promise<import("../types").AutoBuildResult>;
 }
 
 export interface StyleImportResult {

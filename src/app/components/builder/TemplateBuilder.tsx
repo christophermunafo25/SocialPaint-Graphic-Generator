@@ -5,6 +5,7 @@ import {
   Check,
   CheckCircle2,
   Eye,
+  Sparkles,
   Figma,
   Pencil,
   Plus,
@@ -16,6 +17,7 @@ import {
   Upload,
 } from "lucide-react";
 import type {
+  AutoBuildResult,
   CanvasPreset,
   DesignImportResult,
   NewTemplateInput,
@@ -42,6 +44,7 @@ import { FieldOverlayEditor } from "./FieldOverlayEditor";
 import { FieldInspector } from "./FieldInspector";
 import { CaptionEditor } from "./CaptionEditor";
 import { FigmaImportDialog } from "./FigmaImportDialog";
+import { AutoBuildDialog } from "./AutoBuildDialog";
 import { ElementPalette } from "./ElementPalette";
 import { FieldListPanel } from "./FieldListPanel";
 import { FieldContextMenu, type MenuAction } from "./FieldContextMenu";
@@ -144,6 +147,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [figmaOpen, setFigmaOpen] = useState(false);
+  const [autoBuildOpen, setAutoBuildOpen] = useState(false);
   /** Snapshot of the last loaded/saved draft — anything else is unsaved. */
   const savedSnapshotRef = useRef<string>("");
   const [recomposing, setRecomposing] = useState(false);
@@ -562,33 +566,44 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
   // Figma import
   // -------------------------------------------------------------------------
 
-  /** Land EVERY detected element on the canvas as a real field.
+  /** Shared landing for every import path: merge the incoming fields into the
+   * draft with unique keys and stacked z-indexes, enter the wizard, announce
+   * what happened, and lift the imported elements off the background.
    *
    * There is no pre-selection step: deciding what should be member-editable
    * before seeing the frame is a decision made with the least information
-   * available. Everything arrives editable and the admin marks whatever is
-   * chrome as Fixed in the inspector, in context, with the canvas in front of
-   * them. Fixed keeps the element live and movable — it only takes it out of
-   * the member form. */
-  const applyImport = (result: DesignImportResult) => {
+   * available. The proposal — human or model — lands as real fields and the
+   * admin corrects in context. */
+  const landImport = (opts: {
+    backgroundUrl: string;
+    canvasWidth: number;
+    canvasHeight: number;
+    sourceUrl?: string;
+    fields: TemplateField[];
+    /** How to key each incoming field against what already exists. */
+    fieldKeyFor(field: TemplateField, existing: TemplateField[]): string;
+    /** Extra draft patch, computed AFTER keys are final (caption tags need
+     * the surviving keys). */
+    patch?(imported: TemplateField[]): Partial<NewTemplateInput>;
+    summary(imported: TemplateField[]): string;
+  }): TemplateField[] => {
     // Computed OUTSIDE the setDraft updater: updaters run at render time (and
     // twice under StrictMode), so pushing into `imported` there would leave it
     // empty for the recomposition below and duplicate every field in dev.
     const existing = [...draft.fields];
     let z = maxZ(existing);
-    const imported = result.suggestedFields.map((f) => {
-      // Imported elements default to member-editable: the admin subtracts
-      // rather than adds, and a text layer a designer bothered to make is
-      // more often content than chrome.
-      const next: TemplateField = { ...f, fieldKey: suggestFieldKey(f.label, existing), zIndex: ++z };
+    const imported = opts.fields.map((f) => {
+      const next: TemplateField = { ...f, fieldKey: opts.fieldKeyFor(f, existing), zIndex: ++z };
       existing.push(next);
       return next;
     });
+    const patch = opts.patch?.(imported) ?? {};
     setDraft((d) => ({
       ...d,
-      backgroundUrl: result.backgroundUrl,
-      canvasWidth: result.canvasWidth,
-      canvasHeight: result.canvasHeight,
+      ...patch,
+      backgroundUrl: opts.backgroundUrl,
+      canvasWidth: opts.canvasWidth,
+      canvasHeight: opts.canvasHeight,
       fields: [...d.fields, ...imported],
     }));
     // A successful import IS a chosen source, even if the background render
@@ -599,19 +614,86 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     // Fields is Step 1; Name comes last in the wizard.
     goTo("fields");
 
-    // Counts from the data, never hardcoded. The empty case keeps the honesty
-    // the removed picker screen used to provide.
-    setImportSummary(
-      imported.length === 0
-        ? "Nothing was detected — the background imported. Draw fields on the canvas."
-        : `${imported.length} element${imported.length !== 1 ? "s" : ""} imported — all editable. Mark anything that shouldn't be as fixed.`,
-    );
+    setImportSummary(opts.summary(imported));
     window.clearTimeout(importSummaryTimer.current);
     importSummaryTimer.current = window.setTimeout(() => setImportSummary(null), 8000);
 
-    // Lift the imported elements OFF the background: re-render the frame
-    // without them and swap in the recomposed PNG. On any failure the
-    // flat render stays (fields overlay their baked twins).
+    recomposeBackground(opts.sourceUrl, imported);
+    return imported;
+  };
+
+  /** Every detected element lands member-editable; the admin subtracts by
+   * marking chrome as Fixed. Counts from the data, never hardcoded. */
+  const applyImport = (result: DesignImportResult) => {
+    landImport({
+      backgroundUrl: result.backgroundUrl,
+      canvasWidth: result.canvasWidth,
+      canvasHeight: result.canvasHeight,
+      sourceUrl: result.sourceUrl,
+      fields: result.suggestedFields,
+      fieldKeyFor: (f, existing) => suggestFieldKey(f.label, existing),
+      summary: (imported) =>
+        imported.length === 0
+          ? "Nothing was detected — the background imported. Draw fields on the canvas."
+          : `${imported.length} element${imported.length !== 1 ? "s" : ""} imported — all editable. Mark anything that shouldn't be as fixed.`,
+    });
+  };
+
+  /** Claude's proposal lands exactly like a manual import — fields with
+   * label, type, Fixed marks, guardrails, and brand bindings already set —
+   * plus the template metadata, pre-filling the wizard's later steps without
+   * bypassing them. */
+  const applyAutoBuild = (result: AutoBuildResult) => {
+    setAutoBuildOpen(false);
+    landImport({
+      backgroundUrl: result.backgroundUrl,
+      canvasWidth: result.canvasWidth,
+      canvasHeight: result.canvasHeight,
+      sourceUrl: result.sourceUrl,
+      fields: result.fields,
+      // Keep Claude's keys (the caption's merge tags reference them); only a
+      // clash with fields already in the draft forces a re-key.
+      fieldKeyFor: (f, existing) =>
+        existing.some((e) => e.fieldKey === f.fieldKey)
+          ? suggestFieldKey(f.label, existing)
+          : f.fieldKey,
+      patch: (imported) => {
+        // Re-point caption tags at any re-keyed fields so they still resolve.
+        let caption = result.template.captionTemplate;
+        result.fields.forEach((f, i) => {
+          const finalKey = imported[i]?.fieldKey;
+          if (finalKey && finalKey !== f.fieldKey) {
+            caption = caption.split(`{${f.fieldKey}}`).join(`{${finalKey}}`);
+          }
+        });
+        const meta = { ...result.meta, rationale: result.rationale };
+        // Fill, don't clobber: a mid-build auto-build must not overwrite the
+        // name or caption the admin already wrote.
+        return {
+          name: draft.name.trim() && draft.name !== "Untitled template" ? draft.name : result.template.name,
+          description: draft.description.trim() ? draft.description : result.template.description,
+          category: draft.category.trim() ? draft.category : result.template.category,
+          tags: draft.tags.length ? draft.tags : result.template.tags,
+          captionTemplate: draft.captionTemplate.trim() ? draft.captionTemplate : caption,
+          autobuildMeta: meta,
+        };
+      },
+      summary: (imported) => {
+        const editable = imported.filter((f) => !f.static).length;
+        return `${imported.length} element${imported.length !== 1 ? "s" : ""} imported. Claude made ${editable} editable and marked ${imported.length - editable} fixed. Change anything in the inspector.`;
+      },
+    });
+    if (result.warnings.length) setError(result.warnings.join(" "));
+  };
+
+  /** Lift the imported elements OFF the background: re-render the frame
+   * without them and swap in the recomposed PNG. On any failure the flat
+   * render stays (fields overlay their baked twins).
+   *
+   * Runs for every import path, auto-build included: excludeIds derives from
+   * every imported field, Fixed ones too — a Fixed element is a live object
+   * on the canvas, so leaving it in the plate would render it twice. */
+  const recomposeBackground = (sourceUrl: string | undefined, imported: TemplateField[]) => {
     //
     // The invariant that matters: every id excluded from the background must
     // belong to a field in the draft. An id lifted off the background with no
@@ -627,13 +709,13 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     const excludeIds = imported
       .map((f) => f.sourceNodeId)
       .filter((id): id is string => Boolean(id));
-    if (company && result.sourceUrl && excludeIds.length) {
+    if (company && sourceUrl && excludeIds.length) {
       setRecomposing(true);
       void (async () => {
         try {
           const layers = await stores.designImport.renderLayers(
             company.id,
-            result.sourceUrl!,
+            sourceUrl,
             excludeIds,
           );
           const blob = await composeFigmaBackground(layers);
@@ -812,6 +894,10 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
         </div>
       )}
 
+      {autoBuildOpen && (
+        <AutoBuildDialog onClose={() => setAutoBuildOpen(false)} onBuilt={applyAutoBuild} />
+      )}
+
       {figmaOpen && (
         <FigmaImportDialog
           onClose={() => setFigmaOpen(false)}
@@ -906,7 +992,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
               {presets[0] && ` Canvas: ${presets[0].label}.`}
             </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-stretch">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-stretch">
             {/* Path A — blank canvas */}
             <button
               onClick={() => {
@@ -950,6 +1036,28 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                 {stores.designImport.isConfigured()
                   ? "Paste a frame link — every element lands on the canvas as an editable field. Mark anything that shouldn't be as fixed."
                   : "Requires the Supabase backend with the Figma connection configured (see docs/ARCHITECTURE.md)."}
+              </p>
+            </button>
+            {/* Path C — auto-build with Claude */}
+            <button
+              onClick={() => stores.designImport.isConfigured() && setAutoBuildOpen(true)}
+              disabled={!stores.designImport.isConfigured()}
+              className="p-8 text-center transition-all flex flex-col items-center justify-center gap-3"
+              style={{
+                border: "1.5px dashed var(--border-strong)",
+                borderRadius: "var(--radius-card)",
+                background: "var(--bg-surface)",
+                minHeight: 220,
+                cursor: stores.designImport.isConfigured() ? "pointer" : "default",
+                opacity: stores.designImport.isConfigured() ? 1 : 0.55,
+              }}
+            >
+              <Sparkles className="w-6 h-6" style={{ color: "var(--state-primary)" }} />
+              <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>Auto-build with Claude</p>
+              <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)", maxWidth: 240 }}>
+                {stores.designImport.isConfigured()
+                  ? "Paste a Figma link or upload an image — Claude decides what's editable, names every field, and writes the caption. You correct in the inspector."
+                  : "Requires the Supabase backend with auto-build configured (see docs/ARCHITECTURE.md)."}
               </p>
             </button>
           </div>
@@ -1105,13 +1213,22 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                   )}
                 </div>
                 {stores.designImport.isConfigured() && mode === "edit" && (
-                  <button
-                    onClick={() => setFigmaOpen(true)}
-                    style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 6 }}
-                  >
-                    <Figma className="w-3.5 h-3.5" />
-                    Import more fields from Figma
-                  </button>
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={() => setFigmaOpen(true)}
+                      style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 6 }}
+                    >
+                      <Figma className="w-3.5 h-3.5" />
+                      Import more fields from Figma
+                    </button>
+                    <button
+                      onClick={() => setAutoBuildOpen(true)}
+                      style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 6 }}
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      Auto-build with Claude
+                    </button>
+                  </div>
                 )}
               </div>
 

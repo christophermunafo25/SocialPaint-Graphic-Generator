@@ -304,13 +304,22 @@ export function AdminTemplates() {
                     </>
                   )}
                 </div>
-                {/* Line 2: status */}
+                {/* Line 2: status (+ provenance when a model built the fields) */}
                 <span
                   className="sp-eyebrow inline-block"
                   style={t.status === "published" ? { color: "var(--state-primary)" } : undefined}
                 >
                   {t.status}
                 </span>
+                {t.autobuildMeta && (
+                  <span
+                    className="sp-eyebrow inline-block ml-2"
+                    title={`Built by ${t.autobuildMeta.model} from ${t.autobuildMeta.sourceKind}`}
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    · AI-built
+                  </span>
+                )}
                 {/* Line 3: meta */}
                 {usageState.status === "ready" && (
                   <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>

@@ -1,4 +1,4 @@
-import type { DesignImportResult, LayerRenderResult } from "../../types";
+import type { AutoBuildResult, DesignImportResult, DesignSource, LayerRenderResult } from "../../types";
 import type { DesignImportProvider, StyleImportResult } from "../interfaces";
 import { isSupabaseConfigured, supabase } from "./client";
 
@@ -46,6 +46,14 @@ export class FigmaImporter implements DesignImportProvider {
     });
     if (error) throw new Error(`Figma style import failed: ${error.message}`);
     return data as StyleImportResult;
+  }
+
+  async autoBuild(companyId: string, source: DesignSource, hint?: string): Promise<AutoBuildResult> {
+    const { data, error } = await supabase().functions.invoke("template-autobuild", {
+      body: { companyId, source, hint },
+    });
+    if (error) throw new Error(`Auto-build failed: ${error.message}`);
+    return data as AutoBuildResult;
   }
 
   async renderLayers(

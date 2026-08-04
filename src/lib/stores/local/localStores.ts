@@ -242,4 +242,70 @@ export class LocalDesignImportProvider implements DesignImportProvider {
   async renderLayers(): Promise<never> {
     throw new Error("Figma integration requires the Supabase backend (see .env.example).");
   }
+  /** Deterministic demo stub — never calls Anthropic. Two plausible fields so
+   * the builder's auto-build path is demoable with no Supabase and no key. */
+  async autoBuild(
+    _companyId: string,
+    source: import("../../types").DesignSource,
+    _hint?: string,
+  ): Promise<import("../../types").AutoBuildResult> {
+    if (source.kind !== "image") {
+      throw new Error("Auto-build from a link requires the Supabase backend; upload an image instead.");
+    }
+    const w = source.canvasWidth;
+    const h = source.canvasHeight;
+    const fields: import("../../types").TemplateField[] = [
+      {
+        id: newId(),
+        label: "Headline",
+        fieldKey: "headline",
+        type: "text",
+        x: Math.round(w * 0.08),
+        y: Math.round(h * 0.12),
+        width: Math.round(w * 0.84),
+        height: Math.round(h * 0.12),
+        placeholder: "Big announcement",
+        required: true,
+        maxLength: 60,
+        autoFit: true,
+      },
+      {
+        id: newId(),
+        label: "Photo",
+        fieldKey: "photo",
+        type: "image",
+        x: Math.round(w * 0.3),
+        y: Math.round(h * 0.35),
+        width: Math.round(w * 0.4),
+        height: Math.round(h * 0.4),
+        objectFit: "cover",
+      },
+    ];
+    return {
+      sourceKind: "image",
+      backgroundUrl: source.backgroundUrl,
+      canvasWidth: w,
+      canvasHeight: h,
+      fields,
+      template: {
+        name: "Auto-built template",
+        description: "Demo proposal from the local stub.",
+        category: "General",
+        tags: ["demo"],
+        captionTemplate: "{headline} — see the photo!",
+      },
+      rationale: [
+        { fieldKey: "headline", why: "The main line changes on every post." },
+        { fieldKey: "photo", why: "A photo slot members fill per post." },
+      ],
+      warnings: ["Local demo stub — no model was called."],
+      meta: {
+        model: "local-stub",
+        sourceKind: "image",
+        generatedAt: new Date(0).toISOString(),
+        elementCount: 2,
+        editableCount: 2,
+      },
+    };
+  }
 }
