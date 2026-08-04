@@ -44,6 +44,7 @@ export class SupabaseTemplateStore implements TemplateStore {
         background_color: input.backgroundColor ?? null,
         background_gradient: input.backgroundGradient ?? null,
         caption_template: input.captionTemplate,
+        autobuild_meta: input.autobuildMeta ?? null,
       })
       .select()
       .single();
@@ -66,6 +67,7 @@ export class SupabaseTemplateStore implements TemplateStore {
     if ("backgroundColor" in patch) row.background_color = patch.backgroundColor ?? null;
     if ("backgroundGradient" in patch) row.background_gradient = patch.backgroundGradient ?? null;
     if (patch.captionTemplate !== undefined) row.caption_template = patch.captionTemplate;
+    if ("autobuildMeta" in patch) row.autobuild_meta = patch.autobuildMeta ?? null;
     const { error } = await supabase().from("templates").update(row).eq("id", id);
     if (error) throw error;
     if (patch.fields) await this.replaceFields(id, patch as Pick<NewTemplateInput, "fields">);

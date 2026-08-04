@@ -79,7 +79,8 @@ export interface UsageStore {
 }
 
 export interface DesignImportProvider {
-  readonly provider: "figma";
+  /** Source kinds this provider can import from. */
+  readonly providers: import("../types").DesignSourceKind[];
   isConfigured(): boolean; // backend reachable at all (Edge Functions deployed)
   isConnected(companyId: string): Promise<boolean>;
   connect(companyId: string, credential: { kind: "oauth-code" | "pat"; value: string }): Promise<void>;
@@ -94,6 +95,26 @@ export interface DesignImportProvider {
     url: string,
     excludeNodeIds: string[],
   ): Promise<import("../types").LayerRenderResult>;
+  /** Auto-build: Claude turns a design into a complete template proposal —
+   * fields with Fixed marks, labels, guardrails, brand bindings, metadata,
+   * and a caption. The client applies it to the draft; nothing is written
+   * server-side. */
+  autoBuild(
+    companyId: string,
+    source: import("../types").DesignSource,
+    hint?: string,
+  ): Promise<import("../types").AutoBuildResult>;
+  /** Canva connection lifecycle (flagged server-side; enabled=false hides the
+   * tab). The PKCE state and verifier never reach the browser — start returns
+   * only the authorize URL, and the callback echoes code+state back. */
+  canvaStatus(companyId: string): Promise<{ enabled: boolean; connected: boolean }>;
+  canvaConnectStart(companyId: string, redirectUri: string): Promise<{ authorizeUrl: string }>;
+  canvaConnectCallback(
+    companyId: string,
+    code: string,
+    state: string,
+    redirectUri: string,
+  ): Promise<void>;
 }
 
 export interface StyleImportResult {

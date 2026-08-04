@@ -200,6 +200,8 @@ export interface TemplateSchema {
   backgroundGradient?: TextGradient;
   fields: TemplateField[];
   captionTemplate: string; // "{name} celebrated {years} incredible years!"
+  /** Present when Claude built this template's fields (auto-build). */
+  autobuildMeta?: AutoBuildMeta;
   createdAt: string;
   updatedAt: string;
 }
@@ -231,6 +233,50 @@ export interface DailyActivityPoint {
 /** The values a member has entered for a template's fields, keyed by fieldKey.
  * Image fields hold a data URL. */
 export type FieldValues = Record<string, string>;
+
+/** Where a design import comes from. "image" is a flat PNG/JPEG with no
+ * source geometry — the one path where box proposals are estimated rather
+ * than extracted. */
+export type DesignSourceKind = "figma" | "canva" | "image";
+
+export type DesignSource =
+  | { kind: "figma"; url: string }
+  | { kind: "canva"; url: string }
+  | { kind: "image"; backgroundUrl: string; canvasWidth: number; canvasHeight: number };
+
+/** Provenance for an AI-built template: which model, from what source, what
+ * it decided, and why. Stored on the template so a misbehaving template can
+ * be traced to a human or a model. */
+export interface AutoBuildMeta {
+  model: string;
+  sourceKind: string;
+  generatedAt: string;
+  elementCount: number;
+  editableCount: number;
+  rationale?: Array<{ fieldKey: string; why: string }>;
+}
+
+/** The template-autobuild Edge Function's response — a finished proposal the
+ * client applies to its draft. Never written server-side. */
+export interface AutoBuildResult {
+  sourceKind: DesignSourceKind;
+  backgroundUrl: string;
+  canvasWidth: number;
+  canvasHeight: number;
+  sourceUrl?: string;
+  /** Ordered as the FORM should read; `static` already set. */
+  fields: TemplateField[];
+  template: {
+    name: string;
+    description: string;
+    category: string;
+    tags: string[];
+    captionTemplate: string;
+  };
+  rationale: Array<{ fieldKey: string; why: string }>;
+  warnings: string[];
+  meta: AutoBuildMeta;
+}
 
 export interface DesignImportResult {
   backgroundUrl: string;

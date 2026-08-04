@@ -1,4 +1,4 @@
-import type { DesignImportResult, LayerRenderResult } from "../../types";
+import type { AutoBuildResult, DesignImportResult, DesignSource, LayerRenderResult } from "../../types";
 import type { DesignImportProvider, StyleImportResult } from "../interfaces";
 import { isSupabaseConfigured, supabase } from "./client";
 
@@ -8,7 +8,7 @@ import { isSupabaseConfigured, supabase } from "./client";
  * OAuth secret / personal access token server-side in integration_connections.
  */
 export class FigmaImporter implements DesignImportProvider {
-  readonly provider = "figma" as const;
+  readonly providers: import("../../types").DesignSourceKind[] = ["figma", "image"];
 
   isConfigured(): boolean {
     return isSupabaseConfigured;
@@ -46,6 +46,37 @@ export class FigmaImporter implements DesignImportProvider {
     });
     if (error) throw new Error(`Figma style import failed: ${error.message}`);
     return data as StyleImportResult;
+  }
+
+  async autoBuild(companyId: string, source: DesignSource, hint?: string): Promise<AutoBuildResult> {
+    const { data, error } = await supabase().functions.invoke("template-autobuild", {
+      body: { companyId, source, hint },
+    });
+    if (error) throw new Error(`Auto-build failed: ${error.message}`);
+    return data as AutoBuildResult;
+  }
+
+  async canvaStatus(companyId: string): Promise<{ enabled: boolean; connected: boolean }> {
+    const { data, error } = await supabase().functions.invoke("canva-auth", {
+      body: { companyId, action: "status" },
+    });
+    if (error) return { enabled: false, connected: false };
+    return data as { enabled: boolean; connected: boolean };
+  }
+
+  async canvaConnectStart(companyId: string, redirectUri: string): Promise<{ authorizeUrl: string }> {
+    const { data, error } = await supabase().functions.invoke("canva-auth", {
+      body: { companyId, action: "start", redirectUri },
+    });
+    if (error) throw new Error(`Canva connect failed: ${error.message}`);
+    return data as { authorizeUrl: string };
+  }
+
+  async canvaConnectCallback(companyId: string, code: string, state: string, redirectUri: string): Promise<void> {
+    const { error } = await supabase().functions.invoke("canva-auth", {
+      body: { companyId, action: "callback", code, state, redirectUri },
+    });
+    if (error) throw new Error(`Canva connect failed: ${error.message}`);
   }
 
   async renderLayers(
