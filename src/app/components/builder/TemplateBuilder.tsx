@@ -574,6 +574,18 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     // Lift the imported elements OFF the background: re-render the frame
     // without them and swap in the recomposed PNG. On any failure the
     // flat render stays (fields overlay their baked twins).
+    //
+    // The invariant that matters: every id excluded from the background must
+    // belong to a field in the draft. An id lifted off the background with no
+    // field behind it makes the element VANISH — worse than the old failure
+    // mode, where a failed lift merely showed a duplicate. `excludeIds` is
+    // therefore derived from `imported`, the exact array merged into the
+    // draft above, never from `result.suggestedFields` — the two differ the
+    // moment a merge drops or rewrites an entry.
+    //
+    // This runs ONCE per import. Toggling Fixed later never re-renders the
+    // background: a Fixed element stays a live object on the canvas, so the
+    // plate underneath it has no reason to change.
     const excludeIds = imported
       .map((f) => f.sourceNodeId)
       .filter((id): id is string => Boolean(id));
@@ -592,14 +604,23 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
             blob,
             "figma-composed.png",
           );
-          setDraft((d) => ({ ...d, backgroundUrl: bgUrl }));
+          setDraft((d) => {
+            // Undo guard: recomposition takes seconds (Figma render + upload),
+            // and ⌘Z during that window reverts the whole import — fields AND
+            // flat background. Swapping in the stripped plate then would leave
+            // a background missing elements no field represents. Individual
+            // deletions are different: deleting a live element means "remove
+            // it from the design", which the stripped plate already reflects.
+            const importSurvives = d.fields.some((f) => imported.some((i) => i.id === f.id));
+            return importSurvives ? { ...d, backgroundUrl: bgUrl } : d;
+          });
           if (layers.warnings.length) {
             setError(layers.warnings.join(" "));
           }
         } catch (e) {
           console.error("Background recomposition failed", e);
           setError(
-            "Couldn't lift the selected elements off the background — the flat Figma render is in use, so fields may overlap their original artwork. " +
+            "Couldn't lift the imported elements off the background — the flat Figma render is in use, so fields may overlap their original artwork. " +
               (e instanceof Error ? e.message : ""),
           );
         } finally {
