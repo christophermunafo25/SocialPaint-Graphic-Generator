@@ -223,7 +223,7 @@ export class LocalPeopleStore {
 /** Dev mode has no Edge Functions, so Figma import is unavailable — the
  * Template Builder detects this and shows only the manual PNG path. */
 export class LocalDesignImportProvider implements DesignImportProvider {
-  readonly provider = "figma" as const;
+  readonly providers: import("../../types").DesignSourceKind[] = [];
   isConfigured(): boolean {
     return false;
   }

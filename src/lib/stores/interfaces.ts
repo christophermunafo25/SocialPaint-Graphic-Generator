@@ -79,7 +79,8 @@ export interface UsageStore {
 }
 
 export interface DesignImportProvider {
-  readonly provider: "figma";
+  /** Source kinds this provider can import from. */
+  readonly providers: import("../types").DesignSourceKind[];
   isConfigured(): boolean; // backend reachable at all (Edge Functions deployed)
   isConnected(companyId: string): Promise<boolean>;
   connect(companyId: string, credential: { kind: "oauth-code" | "pat"; value: string }): Promise<void>;

@@ -232,6 +232,16 @@ export interface DailyActivityPoint {
  * Image fields hold a data URL. */
 export type FieldValues = Record<string, string>;
 
+/** Where a design import comes from. "image" is a flat PNG/JPEG with no
+ * source geometry — the one path where box proposals are estimated rather
+ * than extracted. */
+export type DesignSourceKind = "figma" | "canva" | "image";
+
+export type DesignSource =
+  | { kind: "figma"; url: string }
+  | { kind: "canva"; url: string }
+  | { kind: "image"; backgroundUrl: string; canvasWidth: number; canvasHeight: number };
+
 export interface DesignImportResult {
   backgroundUrl: string;
   canvasWidth: number;

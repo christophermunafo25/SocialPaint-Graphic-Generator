@@ -8,7 +8,7 @@ import { isSupabaseConfigured, supabase } from "./client";
  * OAuth secret / personal access token server-side in integration_connections.
  */
 export class FigmaImporter implements DesignImportProvider {
-  readonly provider = "figma" as const;
+  readonly providers: import("../../types").DesignSourceKind[] = ["figma", "image"];
 
   isConfigured(): boolean {
     return isSupabaseConfigured;
