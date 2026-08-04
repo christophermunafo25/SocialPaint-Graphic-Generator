@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
+  CheckCircle2,
   Eye,
   Figma,
   Pencil,
@@ -146,6 +147,11 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
   /** Snapshot of the last loaded/saved draft — anything else is unsaved. */
   const savedSnapshotRef = useRef<string>("");
   const [recomposing, setRecomposing] = useState(false);
+  /** One-line import summary ("12 elements imported — all editable") so the
+   * admin knows what they're looking at when the canvas opens full. */
+  const [importSummary, setImportSummary] = useState<string | null>(null);
+  const importSummaryTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(importSummaryTimer.current), []);
   const [publishState, setPublishState] = useState<"idle" | "publishing" | "success">("idle");
   const [error, setError] = useState<string | null>(null);
   /** Field whose label should open for naming (a just-added element);
@@ -345,6 +351,28 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
 
   const reorderLayer = useCallback(
     (ids: string[], where: "front" | "back") => setFields(setLayerOrder(draft.fields, ids, where)),
+    [draft.fields, setFields],
+  );
+
+  /** Bulk Fixed toggle over a selection — the recovery move after an import
+   * lands twenty elements. Shapes are excluded (always fixed by definition)
+   * and dropdowns too (they exist only as member inputs); both match what the
+   * inspector's own checkbox allows. Patches mirror the inspector exactly so
+   * a bulk toggle and a one-at-a-time toggle produce identical fields. */
+  const setFixed = useCallback(
+    (ids: string[], fixed: boolean) => {
+      const idSet = new Set(ids);
+      const eligible = (f: TemplateField) => idSet.has(f.id) && f.type !== "shape" && f.type !== "select";
+      setFields(
+        draft.fields.map((f) =>
+          eligible(f)
+            ? fixed
+              ? { ...f, static: true, required: undefined, placeholder: undefined, maxLength: undefined }
+              : { ...f, static: undefined, staticValue: undefined }
+            : f,
+        ),
+      );
+    },
     [draft.fields, setFields],
   );
 
@@ -571,6 +599,16 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     // Fields is Step 1; Name comes last in the wizard.
     goTo("fields");
 
+    // Counts from the data, never hardcoded. The empty case keeps the honesty
+    // the removed picker screen used to provide.
+    setImportSummary(
+      imported.length === 0
+        ? "Nothing was detected — the background imported. Draw fields on the canvas."
+        : `${imported.length} element${imported.length !== 1 ? "s" : ""} imported — all editable. Mark anything that shouldn't be as fixed.`,
+    );
+    window.clearTimeout(importSummaryTimer.current);
+    importSummaryTimer.current = window.setTimeout(() => setImportSummary(null), 8000);
+
     // Lift the imported elements OFF the background: re-render the frame
     // without them and swap in the recomposed PNG. On any failure the
     // flat render stays (fields overlay their baked twins).
@@ -647,6 +685,14 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       ];
     }
     const ids = selectedIds.includes(menu.fieldId) ? selectedIds : [menu.fieldId];
+    // The Fixed toggle drives toward ONE uniform end state: a mixed selection
+    // becomes all fixed, and only an all-fixed selection offers the reverse —
+    // so the label always says exactly what the action will do. Shapes and
+    // dropdowns don't count (the inspector's checkbox excludes them too).
+    const toggleable = draft.fields.filter(
+      (f) => ids.includes(f.id) && f.type !== "shape" && f.type !== "select",
+    );
+    const allFixed = toggleable.length > 0 && toggleable.every((f) => f.static);
     return [
       { label: "Copy", shortcut: "⌘C", onSelect: () => copyFields(ids) },
       { label: "Cut", shortcut: "⌘X", onSelect: () => cutFields(ids) },
@@ -657,11 +703,18 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
         onSelect: () => pasteFields(),
       },
       { label: "Duplicate", shortcut: "⌘D", onSelect: () => duplicateSelected(ids) },
+      ...(toggleable.length > 0
+        ? [
+            allFixed
+              ? { label: toggleable.length > 1 ? "Make editable" : "Make field editable", onSelect: () => setFixed(ids, false) }
+              : { label: toggleable.length > 1 ? "Mark as fixed" : "Mark field as fixed", onSelect: () => setFixed(ids, true) },
+          ]
+        : []),
       { label: "Bring to front", onSelect: () => reorderLayer(ids, "front") },
       { label: "Send to back", onSelect: () => reorderLayer(ids, "back") },
       { label: "Delete", shortcut: "⌫", destructive: true, onSelect: () => deleteFields(ids) },
     ];
-  }, [menu, selectedIds, copyFields, cutFields, pasteFields, duplicateSelected, reorderLayer, deleteFields]);
+  }, [menu, selectedIds, draft.fields, copyFields, cutFields, pasteFields, duplicateSelected, setFixed, reorderLayer, deleteFields]);
 
   if (!viewportOk) {
     return (
@@ -773,6 +826,15 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
 
       {menu && (
         <FieldContextMenu x={menu.x} y={menu.y} actions={menuActions} onClose={() => setMenu(null)} />
+      )}
+
+      {importSummary && (
+        <div className="sp-toast" role="status" aria-live="polite">
+          <CheckCircle2 style={{ width: 16, height: 16, color: "var(--state-primary)", flexShrink: 0, marginTop: 1 }} />
+          <span style={{ fontSize: "var(--type-label-size)", fontWeight: 500, color: "var(--text-primary)" }}>
+            {importSummary}
+          </span>
+        </div>
       )}
 
       {/* Toolbar */}
