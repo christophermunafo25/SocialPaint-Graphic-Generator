@@ -8,16 +8,18 @@
   --card-foreground: var(--text-primary);
   --popover: var(--bg-surface);
   --popover-foreground: var(--text-primary);
-  --primary: var(--text-primary);
-  --primary-foreground: var(--text-on-accent);
+  /* The inverting neutral action fill — same value --text-primary resolved to,
+     repointed so the intent is legible in the source. */
+  --primary: var(--fill-action);
+  --primary-foreground: var(--text-on-action);
   --secondary: var(--bg-hover);
   --secondary-foreground: var(--text-primary);
   --muted: var(--bg-hover);
   --muted-foreground: var(--text-muted);
   --accent: var(--state-primary);
-  --accent-foreground: var(--text-on-accent);
-  --destructive: var(--state-danger);
-  --destructive-foreground: var(--text-on-accent);
+  --accent-foreground: var(--text-on-action);
+  --destructive: var(--state-danger-on-surface);
+  --destructive-foreground: #F9F9F8;
   /* --border and --ring are design-system token names already — aliasing them
      here would shadow (and, self-referentially, destroy) the real ones. */
   --input: transparent;

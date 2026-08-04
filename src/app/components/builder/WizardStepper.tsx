@@ -66,7 +66,7 @@ export function WizardStepper({ current, complete, canGo, onGo }: WizardStepperP
                   fontSize: 10,
                   fontFamily: "var(--font-mono)",
                   background: isComplete ? "var(--volt)" : isCurrent ? "var(--btn-primary-bg)" : "var(--bg-hover)",
-                  color: isCurrent ? "var(--btn-primary-fg)" : isComplete ? "var(--forrest)" : "var(--text-primary)",
+                  color: isCurrent ? "var(--btn-primary-fg)" : isComplete ? "var(--text-on-accent)" : "var(--text-primary)",
                 }}
               >
                 {isComplete ? <Check style={{ width: 11, height: 11 }} /> : i + 1}
