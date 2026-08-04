@@ -144,11 +144,13 @@ Everything set in onboarding is editable later in Brand Studio.
 Two co-equal ways to create a template, both ending in the same schema:
 
 1. **PNG upload** — drop a finished design, draw editable field boxes on it.
-2. **Figma link** — paste a frame link; the frame renders to the locked
-   background and every detected text layer / image placeholder becomes a
-   CANDIDATE in an interactive picker (`FigmaFieldPicker`). The admin decides
-   which candidates become editable input fields (label, type, brand
-   type-style binding); everything unchecked stays baked into the background.
+2. **Figma link** — paste a frame link; every detected text layer / image
+   placeholder lands on the canvas as a real, member-editable field, and the
+   frame is recomposed WITHOUT those elements into a background plate. The
+   admin then marks whatever shouldn't be member-editable as Fixed in the
+   inspector — which keeps the element live and movable but out of the member
+   form. There is no pre-selection step: that decision is made in the editor,
+   with the canvas in front of you.
 
 ## Brand rules engine & design-system import
 
