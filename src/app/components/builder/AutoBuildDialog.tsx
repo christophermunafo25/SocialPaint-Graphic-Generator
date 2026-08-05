@@ -152,7 +152,7 @@ export function AutoBuildDialog({ onClose, onBuilt }: AutoBuildDialogProps) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <h2 className="flex items-center gap-2" style={{ fontFamily: "var(--font-head)", fontWeight: 800, textTransform: "uppercase" as const, fontSize: 17, letterSpacing: "-0.3px", color: "var(--text-primary)" }}>
+          <h2 className="flex items-center gap-2" style={{ fontFamily: "var(--font-head)", fontWeight: 800, textTransform: "uppercase" as const, fontSize: 17, letterSpacing: "-0.01em", color: "var(--text-primary)" }}>
             <Sparkles className="w-5 h-5" style={{ color: "var(--state-primary)" }} />
             Auto-build with Claude
           </h2>
