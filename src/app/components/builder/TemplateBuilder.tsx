@@ -887,8 +887,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
         <p
           style={{
             fontFamily: "var(--font-head)",
-            fontWeight: 800,
-            textTransform: "uppercase" as const,
+            fontWeight: "var(--weight-head)",
             fontSize: 18,
             letterSpacing: "-0.01em",
             color: "var(--text-primary)",
@@ -950,7 +949,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                   className="animate-spin mx-auto"
                   style={{ width: 28, height: 28, color: "var(--state-primary)" }}
                 />
-                <p style={{ fontFamily: "var(--font-head)", fontWeight: 800, textTransform: "uppercase" as const, fontSize: 17, letterSpacing: "-0.01em", color: "var(--text-primary)" }}>
+                <p style={{ fontFamily: "var(--font-head)", fontWeight: "var(--weight-head)", fontSize: 17, letterSpacing: "-0.01em", color: "var(--text-primary)" }}>
                   Publishing…
                 </p>
                 <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
@@ -965,7 +964,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                 >
                   <Check style={{ width: 22, height: 22, color: "var(--text-primary)" }} />
                 </span>
-                <p style={{ fontFamily: "var(--font-head)", fontWeight: 800, textTransform: "uppercase" as const, fontSize: 17, letterSpacing: "-0.01em", color: "var(--text-primary)" }}>
+                <p style={{ fontFamily: "var(--font-head)", fontWeight: "var(--weight-head)", fontSize: 17, letterSpacing: "-0.01em", color: "var(--text-primary)" }}>
                   Template published
                 </p>
                 <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
@@ -1067,7 +1066,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
         /* Source pick: two co-equal creation paths */
         <div className="max-w-3xl mx-auto py-10 space-y-5">
           <div className="text-center space-y-1 mb-2">
-            <h2 style={{ fontFamily: "var(--font-head)", fontWeight: 800, textTransform: "uppercase" as const, fontSize: 18, letterSpacing: "-0.01em", color: "var(--text-primary)" }}>
+            <h2 style={{ fontFamily: "var(--font-head)", fontWeight: "var(--weight-head)", fontSize: 18, letterSpacing: "-0.01em", color: "var(--text-primary)" }}>
               Start your template
             </h2>
             <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
@@ -1154,7 +1153,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
             <div className="max-w-xl mx-auto py-8">
               <div className="sp-card p-6 space-y-4">
                 <div className="space-y-1">
-                  <h2 style={{ fontFamily: "var(--font-head)", fontWeight: 800, textTransform: "uppercase" as const, fontSize: 18, letterSpacing: "-0.01em", color: "var(--text-primary)" }}>
+                  <h2 style={{ fontFamily: "var(--font-head)", fontWeight: "var(--weight-head)", fontSize: 18, letterSpacing: "-0.01em", color: "var(--text-primary)" }}>
                     What should this template be called?
                   </h2>
                   <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
@@ -1426,7 +1425,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
             <div className="max-w-2xl mx-auto py-8">
               <div className="sp-card p-6 space-y-4">
                 <div className="space-y-1">
-                  <h2 style={{ fontFamily: "var(--font-head)", fontWeight: 800, textTransform: "uppercase" as const, fontSize: 18, letterSpacing: "-0.01em", color: "var(--text-primary)" }}>
+                  <h2 style={{ fontFamily: "var(--font-head)", fontWeight: "var(--weight-head)", fontSize: 18, letterSpacing: "-0.01em", color: "var(--text-primary)" }}>
                     Suggested caption
                     <span style={{ fontSize: "var(--type-caption-size)", color: "var(--text-disabled)", fontWeight: 400 }}> · optional</span>
                   </h2>
@@ -1449,7 +1448,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
             <div className="max-w-2xl mx-auto py-8 space-y-4">
               <div className="sp-card p-6 space-y-4">
                 <div className="space-y-1">
-                  <h2 style={{ fontFamily: "var(--font-head)", fontWeight: 800, textTransform: "uppercase" as const, fontSize: 18, letterSpacing: "-0.01em", color: "var(--text-primary)" }}>
+                  <h2 style={{ fontFamily: "var(--font-head)", fontWeight: "var(--weight-head)", fontSize: 18, letterSpacing: "-0.01em", color: "var(--text-primary)" }}>
                     Tags & details
                     <span style={{ fontSize: "var(--type-caption-size)", color: "var(--text-disabled)", fontWeight: 400 }}> · optional</span>
                   </h2>

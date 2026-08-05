@@ -124,7 +124,7 @@ export function PeopleAdmin() {
                 className="flex-shrink-0"
                 style={{ width: 26, height: 26, borderRadius: "var(--radius-pill)", display: "grid", placeItems: "center", overflow: "hidden", background: "var(--bg-raised)", border: "1px solid var(--border)" }}
               >
-                <span style={{ color: "var(--text-primary)", fontFamily: "var(--font-head)", fontWeight: 800, textTransform: "uppercase" as const, fontSize: 11, letterSpacing: "-0.01em" }}>
+                <span style={{ color: "var(--text-primary)", fontFamily: "var(--font-head)", fontWeight: "var(--weight-head)", fontSize: 11, letterSpacing: "-0.01em" }}>
                   {(m.name ?? m.email).slice(0, 1).toUpperCase()}
                 </span>
               </span>

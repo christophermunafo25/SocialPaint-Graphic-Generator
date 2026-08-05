@@ -16,9 +16,9 @@
      carrying a hue. Orange is the mark and the focus ring, never a control
      fill; Green is success and the commit action (Publish / Export).
    - No gradients as surface, no drop shadows in either mode, no glass.
-   - ALL CAPS headings in the display face (a deliberate override of the
-     DS's sentence-case rule — see the @font-face note). Small labels
-     (eyebrows, table headers) are ALL CAPS mono at 0.04em tracking.
+   - Headings are Inter Tight SemiBold in sentence case (the display face
+     is retired from chrome at Chris's direction, 2026-08-05). Small labels
+     (eyebrows, table headers) stay ALL CAPS mono at 0.04em tracking.
 
    Themes are scoped to [data-theme="light" | "dark"], which
    ColorSchemeProvider sets on <html> alongside the .dark class that
@@ -28,7 +28,7 @@
    members generate, never this chrome.
    ========================================================================== */
 
-@import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap");
 
 /* Neuething Sans Extra Bold EXTRA Expanded — the licensed heading face,
    vendored locally. One cut carries every heading at every step.
@@ -77,8 +77,8 @@
   --forrest: var(--orange);
 
   /* Typography */
-  --font-head:    "Neuething Sans Platform", "Neuething Sans", "Inter Tight", system-ui, sans-serif;
-  --weight-head:  800; /* every heading step */
+  --font-head:    "Inter Tight", system-ui, sans-serif;
+  --weight-head:  600; /* every heading step — Inter Tight SemiBold */
   --font-body: "Inter Tight", system-ui, -apple-system, sans-serif;
   --font-ui:   "Inter Tight", system-ui, -apple-system, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
@@ -370,7 +370,6 @@ button, input, select, textarea, optgroup {
   line-height: var(--type-h4-lh);
   font-weight: var(--weight-head);
   letter-spacing: var(--type-h4-track);
-  text-transform: uppercase;
   color: var(--text-primary);
 }
 
@@ -382,7 +381,6 @@ button, input, select, textarea, optgroup {
   line-height: var(--type-h2-lh);
   font-weight: var(--weight-head);
   letter-spacing: var(--type-h2-track);
-  text-transform: uppercase;
 }
 
 /* Section and dialog headings. */
@@ -392,7 +390,6 @@ button, input, select, textarea, optgroup {
   line-height: var(--type-cardtitle-lh);
   font-weight: var(--weight-head);
   letter-spacing: var(--type-cardtitle-track);
-  text-transform: uppercase;
   color: var(--text-primary);
 }
 
@@ -1365,7 +1362,6 @@ button, input, select, textarea, optgroup {
   line-height: var(--type-cardtitle-lh);
   font-weight: var(--weight-head);
   letter-spacing: var(--type-cardtitle-track);
-  text-transform: uppercase;
   color: var(--text-primary);
   margin-bottom: 4px;
 }
@@ -1458,7 +1454,6 @@ button, input, select, textarea, optgroup {
   line-height: var(--type-cardtitle-lh);
   font-weight: var(--weight-head);
   letter-spacing: var(--type-cardtitle-track);
-  text-transform: uppercase;
   color: var(--text-primary);
   margin-bottom: var(--space-xs);
 }
@@ -1478,7 +1473,6 @@ button, input, select, textarea, optgroup {
   line-height: var(--type-cardtitle-lh);
   font-weight: var(--weight-head);
   letter-spacing: var(--type-cardtitle-track);
-  text-transform: uppercase;
   color: var(--text-primary);
 }
 .sp-emptystate__body {
