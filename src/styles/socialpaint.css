@@ -4,7 +4,7 @@
    (tokens/*.css, SKILL.md, docs/02-tokens.md), 2026-07-30.
 
    Five colours only: Black #121212, White #F9F9F8, Orange #FF4D12,
-   Blue #66ECFE, Green #BCFF78. Danger #A50000 / #B51F16 and Warning #FFD900
+   Blue #66ECFE, Green #B1FF63. Danger #A50000 / #B51F16 and Warning #FFD900
    sit outside the palette as functional signals — never brand colours,
    never decorative.
 
@@ -60,8 +60,13 @@
    the semantic tier to one of these in product code. */
 :root {
   --orange: #FF4D12; /* the mark and the focus ring — never fills a control */
+  /* The Orange gradient — everywhere Orange used to paint FLAT, it now runs
+     #FF4D12 → #FF8235, linear. Solid --orange remains for the places a
+     gradient physically can't go: focus rings, borders, icon strokes. */
+  --orange-2: #FF8235;
+  --grad-primary: linear-gradient(135deg, var(--orange) 0%, var(--orange-2) 100%);
   --blue:   #66ECFE; /* secondary accent — informs, mostly in charts */
-  --volt:   #BCFF78; /* Green — success, and the commit action */
+  --volt:   #B1FF63; /* Green — success, and the commit action */
   --white:  #F9F9F8;
   --gray:   #F9F9F8;
   --ink:    #121212;
@@ -197,13 +202,13 @@
   --border-control: #F9F9F8; /* the edge of a pressable outlined control */
 
   --state-primary-on-surface:   #FF4D12;
-  --state-attention-on-surface: #BCFF78;
+  --state-attention-on-surface: #B1FF63;
   --state-danger-on-surface:    #D94637; /* 4.35:1 — one ramp step lighter than light mode */
   --state-warning-on-surface:   #FFD900;
 
   --state-primary:   #FF4D12; --fill-primary:   #FF4D12;
   --state-info:      #66ECFE; --fill-info:      #66ECFE;
-  --state-attention: #BCFF78; --fill-attention: #BCFF78;
+  --state-attention: #B1FF63; --fill-attention: #B1FF63;
   --state-danger:    #A50000; --fill-danger:    #A50000;
   --state-warning:   #FFD900; --fill-warning:   #FFD900;
 
@@ -254,7 +259,7 @@
 
   --state-primary:   #121212; --fill-primary:   #FF4D12;
   --state-info:      #121212; --fill-info:      #66ECFE;
-  --state-attention: #121212; --fill-attention: #BCFF78;
+  --state-attention: #121212; --fill-attention: #B1FF63;
   --state-danger:    #A50000; --fill-danger:    #A50000;
   --state-warning:   #756200; --fill-warning:   #FFD900;
 
@@ -593,7 +598,7 @@ button, input, select, textarea, optgroup {
 
 /* Open — morph to X */
 .sp-nav-toggle[data-open="true"] .sp-nav-toggle__bar {
-  background: var(--state-primary);
+  background: var(--grad-primary);
   width: 16px; /* reset the hover pulse */
 }
 .sp-nav-toggle[data-open="true"] .sp-nav-toggle__bar--top {
@@ -674,7 +679,7 @@ button, input, select, textarea, optgroup {
   position: absolute;
   inset: 0;
   border-radius: 99px;
-  background: var(--state-primary);
+  background: var(--grad-primary);
 }
 .sp-upload-bar::after {
   content: "";
@@ -1170,13 +1175,13 @@ button, input, select, textarea, optgroup {
 }
 
 /* ── Confirm flash ──
-   Literal rgba of --volt (#BCFF78), not color-mix: Chrome drops the alpha
+   Literal rgba of --volt (#B1FF63), not color-mix: Chrome drops the alpha
    when it interpolates a color-mix()'d color() inside a keyframe, which
    turns the wash into a solid lime bar. */
 @keyframes sp-inline-edit-flash {
-  0%   { background-color: rgba(188, 255, 120, 0.18); }
-  60%  { background-color: rgba(188, 255, 120, 0.12); }
-  100% { background-color: rgba(188, 255, 120, 0); }
+  0%   { background-color: rgba(177, 255, 99, 0.18); }
+  60%  { background-color: rgba(177, 255, 99, 0.12); }
+  100% { background-color: rgba(177, 255, 99, 0); }
 }
 
 .sp-inline-edit[data-flash="true"] {
@@ -1205,7 +1210,7 @@ button, input, select, textarea, optgroup {
      timer instead of animating out. */
   .sp-inline-edit[data-flash="true"] {
     animation: none;
-    background-color: rgba(188, 255, 120, 0.12);
+    background-color: rgba(177, 255, 99, 0.12);
   }
 }
 
@@ -1371,14 +1376,20 @@ button, input, select, textarea, optgroup {
   min-height: 44px;
   padding: 0 var(--space-2xs);
   border: none;
-  background: transparent;
-  color: var(--state-primary);
+  /* Orange text runs the gradient; the glyphs clip it, so the underline and
+     any currentColor icon inside need their own explicit colours. */
+  background: var(--grad-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-decoration-color: var(--orange-2);
   font-family: var(--font-ui);
   font-size: var(--type-label-size);
   font-weight: var(--weight-ui);
   cursor: pointer;
   border-radius: var(--radius-control);
 }
+.sp-shelf__viewall svg { color: var(--orange-2); }
 .sp-shelf__viewall:hover { text-decoration: underline; }
 .sp-shelf__viewall:focus-visible { outline: none; box-shadow: var(--focus-ring-tight); }
 
@@ -1404,8 +1415,11 @@ button, input, select, textarea, optgroup {
 }
 .sp-resultline__clear {
   border: none;
-  background: transparent;
-  color: var(--state-primary);
+  background: var(--grad-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-decoration-color: var(--orange-2);
   font-family: var(--font-ui);
   font-size: var(--type-label-size);
   font-weight: var(--weight-ui);
@@ -1414,6 +1428,7 @@ button, input, select, textarea, optgroup {
   border-radius: var(--radius-control);
   cursor: pointer;
 }
+.sp-resultline__clear svg { color: var(--orange-2); }
 .sp-resultline__clear:hover { text-decoration: underline; }
 .sp-resultline__clear:focus-visible { outline: none; box-shadow: var(--focus-ring-tight); }
 
