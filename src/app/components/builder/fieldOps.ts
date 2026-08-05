@@ -37,6 +37,9 @@ export const PALETTE_ITEMS: PaletteItem[] = [
 /** dataTransfer MIME key for palette drags (payload = PaletteItem.id). */
 export const PALETTE_MIME = "application/x-sp-element";
 
+/** Palette-id prefix for brand logo tiles (payload = `logo:<assetId>`). */
+export const LOGO_PALETTE_PREFIX = "logo:";
+
 const maxZ = (fields: TemplateField[]) =>
   fields.reduce((m, f) => Math.max(m, f.zIndex ?? 0), 0);
 
@@ -81,6 +84,53 @@ export function fieldFromPalette(
         }
       : {}),
     ...(item.type === "select" ? { options: [] } : {}),
+  };
+}
+
+/** Build a fixed image field for a brand logo dropped from the palette.
+ *
+ * Always `objectFit: "contain"` — a logo must never crop, whatever box it
+ * lands in or gets resized to. Static with the artwork as `staticValue`:
+ * the logo is brand chrome, members never see it as a form field. The box
+ * takes the logo's natural aspect ratio when known (scaled to a hand-sized
+ * default), so "contain" shows no letterboxing until the admin reshapes it. */
+export function logoFieldFromAsset(
+  asset: { id: string; name: string; url: string },
+  natural: { width: number; height: number } | null,
+  at: { x: number; y: number },
+  existing: TemplateField[],
+  canvas: { width: number; height: number },
+): TemplateField {
+  const DEFAULT = 360; // longest side, in canvas px — prominent but not dominant
+  const ratio =
+    natural && natural.width > 0 && natural.height > 0
+      ? natural.width / natural.height
+      : 1;
+  let width = ratio >= 1 ? DEFAULT : Math.round(DEFAULT * ratio);
+  let height = ratio >= 1 ? Math.round(DEFAULT / ratio) : DEFAULT;
+  // Clamp preserving the ratio — "contain" would mask distortion, but the
+  // box should still start true to the artwork.
+  const scale = Math.min(1, canvas.width / width, canvas.height / height);
+  width = Math.max(1, Math.round(width * scale));
+  height = Math.max(1, Math.round(height * scale));
+  const x = Math.round(Math.max(0, Math.min(canvas.width - width, at.x - width / 2)));
+  const y = Math.round(Math.max(0, Math.min(canvas.height - height, at.y - height / 2)));
+  const base = asset.name.replace(/\.[^.]+$/, "").trim() || "Logo";
+  const label = uniqueLabel(base, existing);
+  return {
+    id: newId(),
+    label,
+    fieldKey: suggestFieldKey(label, existing),
+    type: "image",
+    x,
+    y,
+    width,
+    height,
+    zIndex: maxZ(existing) + 1,
+    objectFit: "contain",
+    ...(natural ? { aspectRatio: ratio } : {}),
+    static: true,
+    staticValue: asset.url,
   };
 }
 

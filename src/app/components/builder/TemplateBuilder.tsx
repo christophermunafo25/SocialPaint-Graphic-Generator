@@ -50,12 +50,14 @@ import { FieldListPanel } from "./FieldListPanel";
 import { FieldContextMenu, type MenuAction } from "./FieldContextMenu";
 import { WIZARD_STEPS, WizardStepper, type WizardStep } from "./WizardStepper";
 import {
+  LOGO_PALETTE_PREFIX,
   PALETTE_ITEMS,
   clipboardHasFields,
   copyToClipboard,
   duplicateFields,
   fieldFromPalette,
   isTypingTarget,
+  logoFieldFromAsset,
   pasteFromClipboard,
   setLayerOrder,
 } from "./fieldOps";
@@ -99,7 +101,7 @@ function useViewportAtLeast(px: number): boolean {
  * every step; completed steps are jumpable from the progress indicator. */
 export function TemplateBuilder({ templateId }: { templateId: string | null }) {
   const { company } = useAuth();
-  const { kit } = useBrand();
+  const { kit, assets: brandAssets } = useBrand();
   const { navigate } = useRouter();
   const viewportOk = useViewportAtLeast(BUILDER_MIN_VIEWPORT_PX);
 
@@ -284,17 +286,55 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     setFocusLabelFieldId(field.id);
   };
 
+  const logoAssets = useMemo(
+    () => brandAssets.filter((a) => a.kind === "logo"),
+    [brandAssets],
+  );
+  /** Natural pixel size per logo asset, warmed as soon as the logos are known
+   * so a drop can size its box to the artwork synchronously. A drop that
+   * beats the preload falls back to a square box — "contain" still shows the
+   * whole logo, just letterboxed until resized. */
+  const logoDimsRef = useRef(new Map<string, { width: number; height: number }>());
+  useEffect(() => {
+    for (const asset of logoAssets) {
+      if (logoDimsRef.current.has(asset.id)) continue;
+      const img = new Image();
+      img.onload = () => {
+        logoDimsRef.current.set(asset.id, {
+          width: img.naturalWidth,
+          height: img.naturalHeight,
+        });
+      };
+      img.src = asset.url;
+    }
+  }, [logoAssets]);
+
   /** Primary path: a palette element dropped (or clicked) onto the canvas —
    * pre-sized, pre-typed; fields immediately open for naming (shapes don't
-   * need a name — they're design-only). */
+   * need a name — they're design-only, and neither do logos — the asset
+   * name is already right). */
   const addPaletteField = (paletteId: string, at?: { x: number; y: number }) => {
+    const point = at ?? { x: draft.canvasWidth / 2, y: draft.canvasHeight / 2 };
+    const canvas = { width: draft.canvasWidth, height: draft.canvasHeight };
+    if (paletteId.startsWith(LOGO_PALETTE_PREFIX)) {
+      const asset = logoAssets.find(
+        (a) => a.id === paletteId.slice(LOGO_PALETTE_PREFIX.length),
+      );
+      if (!asset) return;
+      const field = logoFieldFromAsset(
+        asset,
+        logoDimsRef.current.get(asset.id) ?? null,
+        point,
+        draft.fields,
+        canvas,
+      );
+      setFields([...draft.fields, field]);
+      setSelectedIds([field.id]);
+      return;
+    }
     const item = PALETTE_ITEMS.find((p) => p.id === paletteId);
     if (!item) return;
-    const point = at ?? { x: draft.canvasWidth / 2, y: draft.canvasHeight / 2 };
-    const field = fieldFromPalette(item, point, draft.fields, kit, {
-      width: draft.canvasWidth,
-      height: draft.canvasHeight,
-    });
+    const field = fieldFromPalette(item, point, draft.fields, kit, canvas);
     setFields([...draft.fields, field]);
     setSelectedIds([field.id]);
     if (item.type !== "shape") setFocusLabelFieldId(field.id);
@@ -1120,7 +1160,9 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
           {step === "fields" && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
               <div className="lg:col-span-3 space-y-4 w-full max-w-xl mx-auto lg:max-w-none">
-                {mode === "edit" && <ElementPalette onAdd={(id) => addPaletteField(id)} />}
+                {mode === "edit" && (
+                  <ElementPalette onAdd={(id) => addPaletteField(id)} logos={logoAssets} />
+                )}
                 <FieldListPanel
                   fields={draft.fields}
                   selectedIds={selectedIds}
