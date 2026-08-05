@@ -224,7 +224,7 @@ export function AdminTemplates() {
           className="text-center py-24"
           style={{ border: "1.5px dashed var(--border-strong)", borderRadius: "var(--radius-card)" }}
         >
-          <p style={{ fontFamily: "var(--font-head)", fontWeight: 800, textTransform: "uppercase" as const, fontSize: "var(--type-cardtitle-size)", color: "var(--text-primary)", marginBottom: 6 }}>
+          <p style={{ fontFamily: "var(--font-head)", fontWeight: 800, textTransform: "uppercase" as const, fontSize: "var(--type-cardtitle-size)", letterSpacing: "-0.01em", color: "var(--text-primary)", marginBottom: 6 }}>
             Create your first template
           </p>
           <p className="max-w-md mx-auto" style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
