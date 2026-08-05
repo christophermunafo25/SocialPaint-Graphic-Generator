@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  freezeBrandColors,
   isStyleLocked,
   lockedProperties,
   resolveFieldStyle,
@@ -287,5 +288,57 @@ describe("the shared weight naming changes some existing sentences", () => {
     expect(named(900)).toBe("H is always Inter Black.");
     expect(named(200)).toBe("H is always Inter ExtraLight.");
     expect(named(100)).toBe("H is always Inter Thin.");
+  });
+});
+
+describe("freezeBrandColors", () => {
+  const paletteKit: BrandKit = {
+    ...kit,
+    colors: [
+      { key: "accent", name: "Volt", hex: "#D3FF68" },
+      { key: "text", name: "Ink", hex: "#121212" },
+    ],
+  };
+  const bound: TemplateField = { ...legacyField, id: "f2", colorKey: "accent" };
+
+  it("bakes a direct brand pick into its current hex and unbinds the key", () => {
+    const [f] = freezeBrandColors([bound], paletteKit);
+    expect(f.colorKey).toBeUndefined();
+    expect(f.colorHex).toBe("#D3FF68");
+  });
+
+  it("later palette edits no longer reach a frozen field", () => {
+    const [frozen] = freezeBrandColors([bound], paletteKit);
+    const rethemed: BrandKit = {
+      ...paletteKit,
+      colors: [{ key: "accent", name: "Volt", hex: "#FF0000" }],
+    };
+    // The renderer's rule: colorKey resolves live, else colorHex.
+    const rendered = frozen.colorKey
+      ? rethemed.colors.find((c) => c.key === frozen.colorKey)?.hex
+      : frozen.colorHex;
+    expect(rendered).toBe("#D3FF68");
+  });
+
+  it("leaves plain-hex and unbound fields untouched", () => {
+    const plain: TemplateField = { ...legacyField, id: "f3", colorHex: "#ABCDEF" };
+    expect(freezeBrandColors([plain, legacyField], paletteKit)).toEqual([plain, legacyField]);
+  });
+
+  it("a dangling key unbinds without inventing a color", () => {
+    const dangling: TemplateField = { ...legacyField, id: "f4", colorKey: "gone", colorHex: "#333333" };
+    const [f] = freezeBrandColors([dangling], paletteKit);
+    expect(f.colorKey).toBeUndefined();
+    expect(f.colorHex).toBe("#333333");
+  });
+
+  it("does not bake without a kit", () => {
+    expect(freezeBrandColors([bound], null)).toEqual([bound]);
+  });
+
+  it("never touches type-style bindings — those are live brand rules", () => {
+    const ruled: TemplateField = { ...legacyField, id: "f5", typeStyleKey: "heading" };
+    const [f] = freezeBrandColors([ruled], paletteKit);
+    expect(f.typeStyleKey).toBe("heading");
   });
 });

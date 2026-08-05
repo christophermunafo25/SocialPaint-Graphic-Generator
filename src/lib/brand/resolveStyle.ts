@@ -71,6 +71,27 @@ export function resolveFieldStyle(field: TemplateField, kit: BrandKit | null): R
   };
 }
 
+/** Bake direct brand-color picks into literal hex values.
+ *
+ * Called on the field list at SAVE time: a template captures the brand
+ * colors as they look right now, so later palette edits in Brand Studio
+ * never restyle already-saved templates. Only the field's own `colorKey`
+ * bakes — a color set through a bound type style ("Heading is always
+ * Volt") is an explicit live brand rule and keeps resolving at render.
+ * A key that no longer exists in the palette simply unbinds, leaving the
+ * field's own hex fallback exactly as the renderer would have used it. */
+export function freezeBrandColors(
+  fields: TemplateField[],
+  kit: BrandKit | null,
+): TemplateField[] {
+  if (!kit) return fields;
+  return fields.map((f) => {
+    if (!f.colorKey) return f;
+    const hex = kit.colors.find((c) => c.key === f.colorKey)?.hex;
+    return { ...f, colorKey: undefined, ...(hex ? { colorHex: hex } : {}) };
+  });
+}
+
 /** Which field-level controls a bound style locks (for the builder UI). */
 export function lockedProperties(style: BrandTypeStyle | undefined): Set<string> {
   const locked = new Set<string>();

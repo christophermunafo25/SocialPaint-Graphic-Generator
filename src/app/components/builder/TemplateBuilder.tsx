@@ -62,6 +62,7 @@ import {
   setLayerOrder,
 } from "./fieldOps";
 import { composeFigmaBackground } from "@/lib/figma/composeLayers";
+import { freezeBrandColors } from "@/lib/brand/resolveStyle";
 
 /** The builder is a desktop tool: below this width the canvas + inspector
  * layout breaks, so we explain rather than attempt a responsive builder.
@@ -512,6 +513,11 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
         companyId: company.id,
         status: status ?? snapshot.status,
         name: snapshot.name.trim() || "Untitled template",
+        // Saving captures brand colors as they look right now — later Brand
+        // Studio palette edits must never restyle an already-saved template.
+        // The in-editor draft keeps its live colorKey bindings; only what
+        // persists is baked.
+        fields: freezeBrandColors(snapshot.fields, kit),
       };
       const saved = savedId
         ? await stores.templates.update(savedId, payload)
