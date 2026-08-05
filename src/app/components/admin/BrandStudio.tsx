@@ -6,7 +6,7 @@ import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useBrand } from "@/lib/brand/BrandContext";
 import { GOOGLE_FONTS, loadGoogleFonts, registerCustomFont } from "@/lib/render/fonts";
-import { FONT_ACCEPT, validateFontFile } from "@/lib/brand/fontUpload";
+import { FONT_ACCEPT, inspectFontFile } from "@/lib/brand/fontUpload";
 import { DEFAULT_PALETTE, DEFAULT_TYPE_STYLES } from "@/lib/theme";
 import { TypeStylesEditor } from "./TypeStylesEditor";
 import { DesignSystemImportPanel } from "./DesignSystemImportPanel";
@@ -180,7 +180,7 @@ export function BrandStudio() {
 
   const uploadFont = async (file: File) => {
     if (!company) return;
-    const check = validateFontFile(file);
+    const check = await inspectFontFile(file);
     if (!check.ok) {
       setError(check.error);
       return;
