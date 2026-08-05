@@ -62,7 +62,20 @@ export interface FontAssetMetadata {
   family?: string;
   weight?: number;
   style?: "normal" | "italic";
+  /** CSS font-stretch keyword for a static width cut (absent = normal). */
+  stretch?: string;
   format?: "woff2" | "woff" | "truetype" | "opentype";
+  /** A variable font's named instances — every cut the file offers, each
+   * mapped to CSS weight/stretch slots with its raw axis coordinates kept
+   * for font-variation-settings. One @font-face registers per cut, and the
+   * builder's style picker lists them all. */
+  cuts?: Array<{
+    name: string;
+    weight: number;
+    stretch: string;
+    italic: boolean;
+    axes?: Record<string, number>;
+  }>;
 }
 
 export interface BrandAsset {

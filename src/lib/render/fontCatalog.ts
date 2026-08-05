@@ -225,11 +225,23 @@ type FontAssetLike = Pick<BrandAsset, "kind" | "name" | "metadata">;
 export const assetFamily = (asset: FontAssetLike): string =>
   asset.metadata.family ?? asset.name.replace(/\.[^.]+$/, "");
 
-const styleFromMetadata = (m: FontAssetMetadata): FontStyle => ({
-  weight: m.weight ?? 400,
-  italic: m.style === "italic",
-  stretch: "normal",
-});
+/** Every style one asset's file actually carries: a variable font's named
+ * instances (metadata.cuts), or the single cut of a static file — with its
+ * real width, so an ExtraExpanded upload groups under ExtraExpanded. */
+const stylesFromMetadata = (m: FontAssetMetadata): FontStyle[] => {
+  if (m.cuts?.length) {
+    return m.cuts.map((c) => ({
+      weight: c.weight,
+      italic: c.italic,
+      stretch: isFontStretch(c.stretch) ? c.stretch : "normal",
+    }));
+  }
+  return [{
+    weight: m.weight ?? 400,
+    italic: m.style === "italic",
+    stretch: isFontStretch(m.stretch) ? m.stretch : "normal",
+  }];
+};
 
 /** family → the styles that actually have a file behind them. */
 export function customFamilyStyles(assets: FontAssetLike[]): Map<string, FontStyle[]> {
@@ -237,9 +249,10 @@ export function customFamilyStyles(assets: FontAssetLike[]): Map<string, FontSty
   for (const asset of assets) {
     if (asset.kind !== "font") continue;
     const family = assetFamily(asset);
-    const style = styleFromMetadata(asset.metadata);
     const group = byFamily.get(family) ?? new Map<string, FontStyle>();
-    group.set(styleKey(style), style);
+    for (const style of stylesFromMetadata(asset.metadata)) {
+      group.set(styleKey(style), style);
+    }
     byFamily.set(family, group);
   }
   return new Map([...byFamily].map(([family, group]) => [family, sortStyles([...group.values()])]));

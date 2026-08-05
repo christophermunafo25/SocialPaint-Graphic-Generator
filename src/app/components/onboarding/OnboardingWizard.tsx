@@ -7,7 +7,7 @@ import { useBrand } from "@/lib/brand/BrandContext";
 import { useRouter } from "../../router";
 import { DEFAULT_PALETTE, DEFAULT_TYPE_STYLES } from "@/lib/theme";
 import { GOOGLE_FONTS, loadGoogleFonts } from "@/lib/render/fonts";
-import { FONT_ACCEPT, validateFontFile } from "@/lib/brand/fontUpload";
+import { FONT_ACCEPT, inspectFontFile } from "@/lib/brand/fontUpload";
 import { useFileDrop } from "@/lib/useFileDrop";
 import { ColorControl } from "../ColorControl";
 
@@ -58,7 +58,7 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
       let headingFont: FontRef = { source: "google", family: headingGoogle };
       let bodyFont: FontRef = { source: "google", family: bodyGoogle };
       for (const pf of pendingFonts) {
-        const check = validateFontFile(pf.file);
+        const check = await inspectFontFile(pf.file);
         if (!check.ok) continue; // validated at add time; belt-and-braces
         const asset = await stores.brandAssets.upload(company.id, "font", pf.file, {
           ...check.metadata,
@@ -278,10 +278,10 @@ interface StepFontsProps {
 }
 
 function StepFonts(props: StepFontsProps) {
-  const addFonts = (files: File[]) => {
+  const addFonts = async (files: File[]) => {
     props.onError(null);
     for (const file of files) {
-      const check = validateFontFile(file);
+      const check = await inspectFontFile(file);
       if (!check.ok) {
         props.onError(check.error);
         continue;

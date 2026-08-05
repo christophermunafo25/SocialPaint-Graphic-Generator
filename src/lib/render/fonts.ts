@@ -136,9 +136,56 @@ export function loadGoogleFonts(request: string[] | FontUsage): void {
   }
 }
 
-/** Register an uploaded font file as a runtime @font-face with a data-URL src,
- * making the family usable everywhere the app renders text AND embeddable in
- * PNG exports (via buildFontEmbedCss). */
+/** The @font-face blocks one uploaded asset registers.
+ *
+ * A static cut is one face carrying its true weight, style, and width. A
+ * variable font (metadata.cuts) registers one face PER named instance, all
+ * sharing the binary: the conventional weight/stretch descriptors make the
+ * cut addressable from the field model, and font-variation-settings pins the
+ * actual axis coordinates — required because axis ranges are foundry-defined
+ * (Neuething runs wght 50–100, where CSS font-weight alone would clamp). */
+export function customFontFaceCss(
+  asset: Pick<BrandAsset, "name" | "metadata">,
+  src: string,
+): string {
+  const family = asset.metadata.family ?? asset.name.replace(/\.[^.]+$/, "");
+  const format = asset.metadata.format ?? "woff2";
+  const face = (opts: {
+    weight: number;
+    italic: boolean;
+    stretch?: string;
+    axes?: Record<string, number>;
+  }): string => {
+    const stretchPct =
+      opts.stretch && opts.stretch in STRETCH_PERCENT
+        ? STRETCH_PERCENT[opts.stretch as keyof typeof STRETCH_PERCENT]
+        : undefined;
+    const variation = opts.axes
+      ? Object.entries(opts.axes).map(([tag, v]) => `"${tag}" ${v}`).join(", ")
+      : undefined;
+    return [
+      `@font-face {`,
+      `  font-family: "${family}";`,
+      `  src: url("${src}") format("${format}");`,
+      `  font-weight: ${opts.weight};`,
+      `  font-style: ${opts.italic ? "italic" : "normal"};`,
+      ...(stretchPct !== undefined && stretchPct !== 100 ? [`  font-stretch: ${stretchPct}%;`] : []),
+      ...(variation ? [`  font-variation-settings: ${variation};`] : []),
+      `}`,
+    ].join("\n");
+  };
+  const cuts = asset.metadata.cuts;
+  if (cuts?.length) return cuts.map(face).join("\n");
+  return face({
+    weight: asset.metadata.weight ?? 400,
+    italic: asset.metadata.style === "italic",
+    stretch: asset.metadata.stretch,
+  });
+}
+
+/** Register an uploaded font file as runtime @font-face rules with a data-URL
+ * src, making the family usable everywhere the app renders text AND
+ * embeddable in PNG exports (via buildFontEmbedCss). */
 export async function registerCustomFont(asset: BrandAsset): Promise<void> {
   if (registeredCustomAssets.has(asset.id)) return;
   registeredCustomAssets.add(asset.id);
@@ -155,13 +202,7 @@ export async function registerCustomFont(asset: BrandAsset): Promise<void> {
             reader.readAsDataURL(blob);
           });
         })();
-    const format = asset.metadata.format ?? "woff2";
-    const css = `@font-face {
-  font-family: "${family}";
-  src: url("${dataUrl}") format("${format}");
-  font-weight: ${asset.metadata.weight ?? 400};
-  font-style: ${asset.metadata.style ?? "normal"};
-}`;
+    const css = customFontFaceCss(asset, dataUrl);
     const style = document.createElement("style");
     style.dataset.customFont = asset.id;
     style.textContent = css;
