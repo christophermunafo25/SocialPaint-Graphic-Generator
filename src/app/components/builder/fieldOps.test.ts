@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { logoFieldFromAsset } from "./fieldOps";
+import {
+  applyClipboardStyle,
+  clearStyleClipboard,
+  clipboardHasStyle,
+  copyStyle,
+  logoFieldFromAsset,
+} from "./fieldOps";
 import type { TemplateField } from "@/lib/types";
 
 const asset = {
@@ -65,5 +71,77 @@ describe("logoFieldFromAsset", () => {
     const existing = [{ ...f }] as TemplateField[];
     const f2 = logoFieldFromAsset(asset, null, center, existing, canvas);
     expect(f2.label).toBe("SocialPaint-Primary copy");
+  });
+});
+
+describe("style clipboard", () => {
+  const headline: TemplateField = {
+    id: "src", label: "Headline", fieldKey: "headline", type: "text",
+    x: 10, y: 20, width: 500, height: 100,
+    fontFamily: "Neuething Sans", fontWeight: 800, fontStretch: "expanded",
+    fontSizePx: 96, uppercase: false, letterSpacingPx: -1.9, lineHeight: 1.2,
+    align: "left", autoFit: true, colorHex: "#F9F9F8",
+    textGradient: { angle: 135, stops: [{ position: 0, color: "#FF4D12" }, { position: 1, color: "#FF8235" }] },
+  };
+  const plain: TemplateField = {
+    id: "dst", label: "Body", fieldKey: "body", type: "multiline",
+    x: 700, y: 800, width: 400, height: 200,
+    fontFamily: "Inter Tight", fontWeight: 400, fontSizePx: 36, colorHex: "#121212",
+  };
+
+  it("pastes the look, never content or geometry", () => {
+    copyStyle(headline);
+    const styled = applyClipboardStyle(plain);
+    expect(styled.fontFamily).toBe("Neuething Sans");
+    expect(styled.fontWeight).toBe(800);
+    expect(styled.fontSizePx).toBe(96);
+    expect(styled.textGradient?.stops[1].color).toBe("#FF8235");
+    // untouched identity + geometry
+    expect(styled.id).toBe("dst");
+    expect(styled.label).toBe("Body");
+    expect(styled.fieldKey).toBe("body");
+    expect(styled.type).toBe("multiline");
+    expect([styled.x, styled.y, styled.width, styled.height]).toEqual([700, 800, 400, 200]);
+  });
+
+  it("clears what the source lacks — adopt the look, don't merge", () => {
+    const gradFree: TemplateField = { ...plain, id: "s2", textGradient: { angle: 0, stops: [] } };
+    copyStyle(plain);
+    const styled = applyClipboardStyle(gradFree);
+    expect(styled.textGradient).toBeUndefined();
+  });
+
+  it("applies only the type-appropriate subset across kinds", () => {
+    copyStyle(headline);
+    const image: TemplateField = {
+      id: "img", label: "Photo", fieldKey: "photo", type: "image",
+      x: 0, y: 0, width: 100, height: 100, objectFit: "cover",
+      cornerRadius: { tl: 8, tr: 8, br: 8, bl: 8 },
+    };
+    const styled = applyClipboardStyle(image);
+    expect(styled.fontFamily).toBeUndefined();
+    // source had no image-facing props — the look transfers as "no radius, default fit"
+    expect(styled.cornerRadius).toBeUndefined();
+    expect(styled.objectFit).toBeUndefined();
+    expect(styled.width).toBe(100);
+  });
+
+  it("shape fill adopts a text style's color and gradient", () => {
+    copyStyle(headline);
+    const shape: TemplateField = {
+      id: "sh", label: "Rect", fieldKey: "rect", type: "shape", shape: "rect",
+      x: 0, y: 0, width: 50, height: 50, colorHex: "#d9d9d9", static: true,
+    };
+    const styled = applyClipboardStyle(shape);
+    expect(styled.colorHex).toBe("#F9F9F8");
+    expect(styled.textGradient?.angle).toBe(135);
+    expect(styled.static).toBe(true);
+    expect(styled.shape).toBe("rect");
+  });
+
+  it("empty clipboard is a no-op", () => {
+    clearStyleClipboard();
+    expect(clipboardHasStyle()).toBe(false);
+    expect(applyClipboardStyle(plain)).toEqual(plain);
   });
 });
