@@ -52,7 +52,10 @@ import { WIZARD_STEPS, WizardStepper, type WizardStep } from "./WizardStepper";
 import {
   LOGO_PALETTE_PREFIX,
   PALETTE_ITEMS,
+  applyClipboardStyle,
   clipboardHasFields,
+  clipboardHasStyle,
+  copyStyle,
   copyToClipboard,
   duplicateFields,
   fieldFromPalette,
@@ -383,6 +386,24 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     [draft.fields, setFields],
   );
 
+  /** Copy style lifts the LOOK of one element (the first selected — style is
+   * singular); paste style dresses every selected element in it. */
+  const copyStyleFrom = useCallback(
+    (ids: string[]) => {
+      const source = draft.fields.find((f) => ids.includes(f.id));
+      if (source) copyStyle(source);
+    },
+    [draft.fields],
+  );
+
+  const pasteStyleTo = useCallback(
+    (ids: string[]) => {
+      if (!clipboardHasStyle()) return;
+      setFields(draft.fields.map((f) => (ids.includes(f.id) ? applyClipboardStyle(f) : f)));
+    },
+    [draft.fields, setFields],
+  );
+
   const duplicateSelected = useCallback(
     (ids: string[]) => {
       const targets = draft.fields.filter((f) => ids.includes(f.id));
@@ -435,13 +456,22 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       } else if ((mod && key === "z" && e.shiftKey) || (mod && key === "y")) {
         e.preventDefault();
         redo();
-      } else if (mod && key === "c" && selectedIds.length) {
+      } else if (mod && e.altKey && e.code === "KeyC" && selectedIds.length) {
+        // Style shortcuts match on e.code and run BEFORE plain copy/paste:
+        // macOS ⌥C reports e.key "ç", and Windows Ctrl+Alt+C keeps e.key "c",
+        // which would otherwise fall into the plain-copy branch.
+        e.preventDefault();
+        copyStyleFrom(selectedIds);
+      } else if (mod && e.altKey && e.code === "KeyV" && selectedIds.length && clipboardHasStyle()) {
+        e.preventDefault();
+        pasteStyleTo(selectedIds);
+      } else if (mod && key === "c" && !e.altKey && selectedIds.length) {
         e.preventDefault();
         copyFields(selectedIds);
       } else if (mod && key === "x" && selectedIds.length) {
         e.preventDefault();
         cutFields(selectedIds);
-      } else if (mod && key === "v" && clipboardHasFields()) {
+      } else if (mod && key === "v" && !e.altKey && clipboardHasFields()) {
         e.preventDefault();
         pasteFields();
       } else if (mod && key === "d" && selectedIds.length) {
@@ -456,7 +486,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [step, mode, selectedIds, copyFields, cutFields, pasteFields, duplicateSelected, deleteFields, undo, redo]);
+  }, [step, mode, selectedIds, copyFields, cutFields, pasteFields, copyStyleFrom, pasteStyleTo, duplicateSelected, deleteFields, undo, redo]);
 
   // -------------------------------------------------------------------------
   // Source, save, publish
@@ -831,6 +861,13 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
         onSelect: () => pasteFields(),
       },
       { label: "Duplicate", shortcut: "⌘D", onSelect: () => duplicateSelected(ids) },
+      { label: "Copy style", shortcut: isMac ? "⌥⌘C" : "Ctrl+Alt+C", onSelect: () => copyStyleFrom(ids) },
+      {
+        label: "Paste style",
+        shortcut: isMac ? "⌥⌘V" : "Ctrl+Alt+V",
+        disabled: !clipboardHasStyle(),
+        onSelect: () => pasteStyleTo(ids),
+      },
       ...(toggleable.length > 0
         ? [
             allFixed
@@ -842,7 +879,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       { label: "Send to back", onSelect: () => reorderLayer(ids, "back") },
       { label: "Delete", shortcut: "⌫", destructive: true, onSelect: () => deleteFields(ids) },
     ];
-  }, [menu, selectedIds, draft.fields, copyFields, cutFields, pasteFields, duplicateSelected, setFixed, reorderLayer, deleteFields]);
+  }, [menu, selectedIds, draft.fields, copyFields, cutFields, pasteFields, copyStyleFrom, pasteStyleTo, duplicateSelected, setFixed, reorderLayer, deleteFields]);
 
   if (!viewportOk) {
     return (

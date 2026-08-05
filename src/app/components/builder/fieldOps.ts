@@ -251,3 +251,69 @@ export function isTypingTarget(e: KeyboardEvent): boolean {
   const tag = el.tagName?.toLowerCase();
   return tag === "input" || tag === "textarea" || tag === "select" || el.isContentEditable;
 }
+
+// ---------------------------------------------------------------------------
+// Style clipboard — Figma's "copy/paste properties": the LOOK of an element,
+// never its content, geometry, or form identity. Module-level like the field
+// clipboard, so a style survives step navigation within the session.
+// ---------------------------------------------------------------------------
+
+/** Every property that is "style". Copy takes all of these from the source;
+ * paste applies the type-appropriate subset and CLEARS what the source lacks
+ * — pasting a gradient-free style onto a gradient field removes the gradient,
+ * because paste-style means "adopt this look", not "merge looks". */
+const TEXT_STYLE_PROPS = [
+  "typeStyleKey", "fontFamily", "fontWeight", "fontStyle", "fontStretch",
+  "fontSizePx", "minFontSizePx", "uppercase", "letterSpacingPx", "lineHeight",
+  "align", "verticalAlign", "autoFit", "colorKey", "colorHex", "textGradient",
+  "opacity",
+] as const;
+const IMAGE_STYLE_PROPS = ["cornerRadius", "opacity", "objectFit"] as const;
+const SHAPE_STYLE_PROPS = ["colorKey", "colorHex", "textGradient", "cornerRadius", "opacity"] as const;
+
+type StyleProp =
+  | (typeof TEXT_STYLE_PROPS)[number]
+  | (typeof IMAGE_STYLE_PROPS)[number]
+  | (typeof SHAPE_STYLE_PROPS)[number];
+
+const ALL_STYLE_PROPS = [
+  ...new Set<StyleProp>([...TEXT_STYLE_PROPS, ...IMAGE_STYLE_PROPS, ...SHAPE_STYLE_PROPS]),
+];
+
+export type FieldStyle = Partial<Pick<TemplateField, StyleProp>>;
+
+const propsForType = (type: FieldType): readonly StyleProp[] =>
+  type === "image" ? IMAGE_STYLE_PROPS : type === "shape" ? SHAPE_STYLE_PROPS : TEXT_STYLE_PROPS;
+
+let styleClipboard: FieldStyle | null = null;
+
+/** Lift the style off a field into the clipboard. */
+export function copyStyle(field: TemplateField): void {
+  const style: FieldStyle = {};
+  for (const p of ALL_STYLE_PROPS) {
+    const v = field[p];
+    if (v !== undefined) (style as Record<StyleProp, unknown>)[p] = v;
+  }
+  styleClipboard = structuredClone(style);
+}
+
+export const clipboardHasStyle = (): boolean => styleClipboard !== null;
+
+/** A field wearing the clipboard's style: the properties that mean something
+ * for its type are set from the clipboard (absent ones clear); everything
+ * else — content, geometry, type, form identity — is untouched. Pasting a
+ * headline's style onto an image applies just the shared visuals (opacity),
+ * exactly like Figma pasting properties across element kinds. */
+export function applyClipboardStyle(field: TemplateField): TemplateField {
+  if (!styleClipboard) return field;
+  const next: TemplateField = { ...field };
+  for (const p of propsForType(field.type)) {
+    (next as Record<StyleProp, unknown>)[p] = structuredClone(styleClipboard[p]);
+  }
+  return next;
+}
+
+/** Test-only: reset the style clipboard between cases. */
+export function clearStyleClipboard(): void {
+  styleClipboard = null;
+}
