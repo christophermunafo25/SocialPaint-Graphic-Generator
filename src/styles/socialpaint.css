@@ -3,11 +3,12 @@
    Ported from the "SocialPaint Design System" Claude Design project
    (tokens/*.css, SKILL.md, docs/02-tokens.md), 2026-07-30.
 
-   Palette (Raveo design system, 2026-08-06): Ink #070708 and Parchment
-   #F9F9F8 are the floors; Fire #FF7649 is the mark accent, Volt #B5FF6A the
-   commit/CTA signal, Aqua #72EEFF informs. Error Clay #C94040 and Warning
-   #FFD900 sit outside the palette as functional signals — never brand
-   colours, never decorative.
+   Palette (Raveo design system, 2026-08-06; Fire removed from chrome
+   2026-08-07 — no orange anywhere in the platform UI): Ink #070708 and
+   Parchment #F9F9F8 are the floors; Volt #B5FF6A is THE primary, Aqua
+   #72EEFF informs. Error Clay #C94040, Warning #FFD900, and the editor's
+   selection Blue #0D99FF sit outside the palette as functional signals —
+   never brand colours, never decorative.
 
    Non-negotiables carried from the DS:
    - Soft cards (20px) against crisp controls (5px). Never meet at 12px.
@@ -64,22 +65,11 @@ html { scrollbar-gutter: stable; }
    prefix — that is how you tell a primitive at a glance. Never reach past
    the semantic tier to one of these in product code. */
 :root {
-  --orange: #FF7649; /* Fire — the mark accent; Ultra-tier signaling */
-  /* The Orange gradient — everywhere Orange used to paint FLAT, it now runs
-     #FF7649 → #FF8235, linear. Solid --orange remains for the places a
-     gradient physically can't go: focus rings, borders, icon strokes. */
-  --orange-2: #FF8235;
-  --grad-primary: linear-gradient(135deg, var(--orange) 0%, var(--orange-2) 100%);
   --blue:   #72EEFF; /* Aqua — informs; AI moments */
   --volt:   #B5FF6A; /* Volt — success, and the commit/CTA action */
   --white:  #F9F9F8;
   --gray:   #F9F9F8;
   --ink:    #070708;
-
-  /* Retired. Forrest is not in the five-colour palette. Aliased to the mark so
-     any straggling reference degrades to a brand colour rather than to nothing;
-     remove once no consumers are left. */
-  --forrest: var(--orange);
 
   /* Typography */
   --font-head:    "Raveo Display Platform", "Raveo Display", system-ui, sans-serif;
@@ -203,7 +193,7 @@ html { scrollbar-gutter: stable; }
 
   /* Action fill — the primary button, and any control that fills to show it is on.
      Neutral by rule: it inverts against the surface instead of carrying a hue,
-     which is what keeps Orange free for the mark and Green free for meaning. */
+     which is what keeps Volt's meaning single: commit, success, primary. */
   --fill-action:    #F9F9F8;
   --text-on-action: #070708;
   --border-control: #F9F9F8; /* the edge of a pressable outlined control */
@@ -257,8 +247,8 @@ html { scrollbar-gutter: stable; }
   --border-control: #070708;
 
   /* Signals keep their hue as text; the brand accent does not. Success and warning drop
-     to the darkest step of their own ramp that clears AA. Orange collapses to Black —
-     an orange word in running text would read as a status. The bright stays in --fill-*. */
+     to the darkest step of their own ramp that clears AA. The primary collapses to Black —
+     a coloured word in running text would read as a status. The bright stays in --fill-*. */
   --state-primary-on-surface:   #070708; /* Volt is fill-only — as text the primary stays ink */
   --state-attention-on-surface: #467200; /* Green holds its hue as text · 5.44:1 */
   --state-danger-on-surface:    #C94040;
@@ -296,13 +286,13 @@ html { scrollbar-gutter: stable; }
   --accent-border:      color-mix(in srgb, var(--text-primary) 40%, transparent);
   --danger-wash:        color-mix(in srgb, var(--state-danger) 16%, transparent);
 
-  /* Brand-moment surface — was a Forrest ground with a Volt label. Orange is
-     the brand ground now. */
-  --brand-surface:    var(--orange);
-  --brand-surface-fg: #070708; /* 5.70:1 */
+  /* Brand-moment surface — the sign-in and onboarding front doors ground in
+     Volt, THE primary. Ink on Volt reads at ~13:1. */
+  --brand-surface:    var(--volt);
+  --brand-surface-fg: #070708;
 
   /* Charts are not controls, so accents are legitimate here. Two real series:
-     Orange and Blue. A third has to separate by shape or label, not colour. */
+     Volt and Aqua. A third has to separate by shape or label, not colour. */
   --viz-downloads: var(--fill-primary);
   --viz-opens:     var(--fill-info);
   --viz-grid:      var(--border);
@@ -527,12 +517,11 @@ button, input, select, textarea, optgroup {
    paints over the template canvas — which stays paper-white in both app
    themes — so the accent holds a single value in both.
 
-   Orange: selection handles sit on arbitrary user artwork, so they need a hue
-   that is never part of the artwork's own palette. Orange is the system's
-   marker colour and is reserved from UI fills, which makes it the right
-   choice here. */
+   Selection handles sit on arbitrary user artwork, so they need a hue that
+   is never part of the artwork's own palette — a functional editor blue,
+   reserved from every UI fill and from the brand itself. */
 :root {
-  --editor-accent: var(--orange);
+  --editor-accent: #0D99FF; /* selection blue — functional, never brand; foreign to artwork by design */
   --editor-line: 1px;
   --editor-handle: 7px;
 }
@@ -599,7 +588,7 @@ button, input, select, textarea, optgroup {
 
 /* Open — morph to X */
 .sp-nav-toggle[data-open="true"] .sp-nav-toggle__bar {
-  background: var(--grad-primary);
+  background: var(--text-primary);
   width: 16px; /* reset the hover pulse */
 }
 .sp-nav-toggle[data-open="true"] .sp-nav-toggle__bar--top {
@@ -680,7 +669,7 @@ button, input, select, textarea, optgroup {
   position: absolute;
   inset: 0;
   border-radius: 99px;
-  background: var(--grad-primary);
+  background: var(--fill-primary);
 }
 .sp-upload-bar::after {
   content: "";
@@ -1356,20 +1345,14 @@ button, input, select, textarea, optgroup {
   min-height: 44px;
   padding: 0 var(--space-2xs);
   border: none;
-  /* Orange text runs the gradient; the glyphs clip it, so the underline and
-     any currentColor icon inside need their own explicit colours. */
-  background: var(--grad-primary);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  text-decoration-color: var(--orange-2);
+  background: transparent;
+  color: var(--state-primary);
   font-family: var(--font-ui);
   font-size: var(--type-label-size);
   font-weight: var(--weight-ui);
   cursor: pointer;
   border-radius: var(--radius-control);
 }
-.sp-shelf__viewall svg { color: var(--orange-2); }
 .sp-shelf__viewall:hover { text-decoration: underline; }
 .sp-shelf__viewall:focus-visible { outline: none; box-shadow: var(--focus-ring-tight); }
 
@@ -1395,11 +1378,8 @@ button, input, select, textarea, optgroup {
 }
 .sp-resultline__clear {
   border: none;
-  background: var(--grad-primary);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  text-decoration-color: var(--orange-2);
+  background: transparent;
+  color: var(--state-primary);
   font-family: var(--font-ui);
   font-size: var(--type-label-size);
   font-weight: var(--weight-ui);
@@ -1408,7 +1388,6 @@ button, input, select, textarea, optgroup {
   border-radius: var(--radius-control);
   cursor: pointer;
 }
-.sp-resultline__clear svg { color: var(--orange-2); }
 .sp-resultline__clear:hover { text-decoration: underline; }
 .sp-resultline__clear:focus-visible { outline: none; box-shadow: var(--focus-ring-tight); }
 
@@ -1602,7 +1581,7 @@ button, input, select, textarea, optgroup {
 .sp-sidebar-item[data-active="true"] { background: var(--sb-active-bg); color: var(--sb-fg-active); }
 
 /* The one selection exception: a swatch shows a colour, so a neutral marker can
-   vanish against a black or white swatch. Orange is the marker colour and reads
+   vanish against a black or white swatch. The editor blue is the marker colour and reads
    against every hue in the picker. */
 .sp-swatch[data-selected="true"] { border-color: var(--ring); }
 
