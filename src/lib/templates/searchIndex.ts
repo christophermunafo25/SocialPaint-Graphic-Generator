@@ -76,7 +76,7 @@ export function buildSearchIndex(templates: CatalogTemplate[]): IndexedTemplate[
       name: tokenize(t.name),
       useCases: t.useCases.flatMap(tokenize),
       // Both the label and the id, so "web" finds "Web & Open Graph".
-      platform: [...tokenize(t.platformLabel), t.platform],
+      platform: [...tokenize(t.platformLabel), ...t.platforms],
       assetType: tokenize(t.assetType),
       // Every form a member might type: the two numbers, and the ratio.
       dimensions: [String(t.width), String(t.height), ...tokenize(t.aspectRatio)],

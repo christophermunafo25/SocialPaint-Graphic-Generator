@@ -38,7 +38,7 @@ const slug = (s: string) => s.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "")
  *  can be applied without rebuilding the groups off a filtered set — which
  *  would make a selected group vanish the moment a search excluded it. */
 export const groupIdOf = (t: CatalogTemplate): string =>
-  `${t.platform}-${slug(t.aspectRatio)}`;
+  `${t.platforms.join("-")}-${slug(t.aspectRatio)}`;
 
 /**
  * Build the catalogue's groups: platform order first (the fixed list), then
@@ -47,7 +47,9 @@ export const groupIdOf = (t: CatalogTemplate): string =>
 export function buildGroups(templates: CatalogTemplate[]): TemplateGroup[] {
   const buckets = new Map<string, CatalogTemplate[]>();
   for (const t of templates) {
-    const key = `${t.platform}|${t.aspectRatio}`;
+    // The platform SET is part of the bucket: 1200×627 (LinkedIn) must not
+    // merge with 1200×630 (Facebook) just because both are 1.91:1.
+    const key = `${t.platforms.join("+")}|${t.aspectRatio}`;
     const bucket = buckets.get(key);
     if (bucket) bucket.push(t);
     else buckets.set(key, [t]);
@@ -55,9 +57,11 @@ export function buildGroups(templates: CatalogTemplate[]): TemplateGroup[] {
 
   const groups: TemplateGroup[] = [];
   for (const platform of PLATFORMS) {
-    const mine = [...buckets.entries()]
-      .filter(([key]) => key.startsWith(`${platform.id}|`))
-      .map(([, members]) => members);
+    // A bucket belongs to the shelf of its PRIMARY platform (first in the
+    // list) — a shared size appears once, labelled with every platform.
+    const mine = [...buckets.values()].filter(
+      (members) => members[0].platform === platform.id,
+    );
 
     mine.sort(
       (a, b) =>
@@ -78,7 +82,7 @@ export function buildGroups(templates: CatalogTemplate[]): TemplateGroup[] {
 
     for (const members of mine) {
       const head = members[0];
-      const base = `${platform.label} ${ORIENTATION_LABEL[head.orientation]}`;
+      const base = `${head.platformLabel} ${ORIENTATION_LABEL[head.orientation]}`;
       const ambiguous = (orientationCounts.get(head.orientation) ?? 0) > 1;
       groups.push({
         id: groupIdOf(head),
