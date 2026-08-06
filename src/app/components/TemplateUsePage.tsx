@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, ArrowLeft, Check, CheckCircle2, Copy, Download, RefreshCw } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, Check, CheckCircle2, Copy, Download, RefreshCw } from "lucide-react";
 import type { FieldValues } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
@@ -20,6 +20,10 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
   const templateState = useAsync(() => stores.templates.get(templateId), [templateId]);
   const template = templateState.status === "ready" ? templateState.data : null;
   const [values, setValues] = useState<FieldValues>({});
+  /** One field per step; the last step (index formFields.length) is Finish —
+   * caption + download. Steps are freely navigable in both directions. */
+  const [step, setStep] = useState(0);
+  const stepCardRef = useRef<HTMLDivElement>(null);
   const [caption, setCaption] = useState<string | null>(null); // null → follow suggestion
   const [copied, setCopied] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -29,6 +33,15 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
   const rendererRef = useRef<SchemaRendererHandle>(null);
 
   useEffect(() => () => window.clearTimeout(toastTimer.current), []);
+
+  useEffect(() => {
+    // Land focus on the step's input so members can type immediately —
+    // but not on first render, where it would yank the page down.
+    if (step === 0) return;
+    stepCardRef.current
+      ?.querySelector<HTMLElement>("input, textarea, select")
+      ?.focus();
+  }, [step]);
 
   const showToast = (kind: "downloaded" | "shared" | "error") => {
     window.clearTimeout(toastTimer.current);
@@ -132,100 +145,210 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
             )}
           </div>
 
-          {formFields.map((field, i) => {
-            const maxLength = resolveFieldStyle(field, kit).maxLength;
-            const inputId = `field-${field.id}`;
-            return (
-            <div key={field.id} className="sp-card p-4 space-y-2.5">
-              <div>
-                <p className="sp-eyebrow">Step {String(i + 1).padStart(2, "0")}</p>
-                <label
-                  htmlFor={inputId}
-                  className="block"
-                  style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)", marginTop: 2 }}
+          {/* Step rail — every step is reachable in one click, forward or
+              back. A field's chip fills once it has a value; Finish is the
+              flag at the end. */}
+          {formFields.length > 0 && (
+            <nav aria-label="Steps" className="flex flex-wrap items-center" style={{ gap: 6 }}>
+              {formFields.map((f, i) => {
+                const filled = Boolean(values[f.fieldKey]);
+                const current = step === i;
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => setStep(i)}
+                    aria-label={`Step ${i + 1}: ${f.label}${filled ? " (filled)" : ""}`}
+                    aria-current={current ? "step" : undefined}
+                    title={f.label}
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: "var(--radius-pill)",
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 11,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      border: current ? "1px solid transparent" : "1px solid var(--border-strong)",
+                      background: current ? "var(--fill-primary)" : filled ? "var(--bg-hover)" : "transparent",
+                      color: current ? "var(--text-on-accent)" : "var(--text-secondary)",
+                      transition: "background var(--dur-state) var(--ease), color var(--dur-state) var(--ease)",
+                    }}
+                  >
+                    {filled && !current ? <Check style={{ width: 12, height: 12 }} /> : i + 1}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => setStep(formFields.length)}
+                aria-label="Finish: caption and download"
+                aria-current={step === formFields.length ? "step" : undefined}
+                style={{
+                  height: 28,
+                  padding: "0 12px",
+                  borderRadius: "var(--radius-pill)",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  letterSpacing: "0.04em",
+                  textTransform: "uppercase",
+                  border: step === formFields.length ? "1px solid transparent" : "1px solid var(--border-strong)",
+                  background: step === formFields.length ? "var(--fill-primary)" : "transparent",
+                  color: step === formFields.length ? "var(--text-on-accent)" : "var(--text-secondary)",
+                  transition: "background var(--dur-state) var(--ease), color var(--dur-state) var(--ease)",
+                }}
+              >
+                Finish
+              </button>
+            </nav>
+          )}
+
+          {/* The current step — one field at a time. */}
+          {step < formFields.length &&
+            (() => {
+              const field = formFields[step];
+              const maxLength = resolveFieldStyle(field, kit).maxLength;
+              const inputId = `field-${field.id}`;
+              return (
+                <div
+                  key={field.id}
+                  ref={stepCardRef}
+                  className="sp-card p-4 space-y-2.5"
+                  onKeyDown={(e) => {
+                    // Enter advances on single-line inputs; textareas keep
+                    // Enter for newlines, selects for choosing.
+                    if (e.key === "Enter" && (e.target as HTMLElement).tagName === "INPUT") {
+                      e.preventDefault();
+                      setStep((n) => Math.min(n + 1, formFields.length));
+                    }
+                  }}
                 >
-                  {field.label}
-                  {field.required && (
-                    <>
-                      <span aria-hidden style={{ color: "var(--state-primary)" }}> *</span>
-                      <span className="sr-only"> (required)</span>
-                    </>
-                  )}
-                </label>
-                {maxLength && (
+                  <div>
+                    <p className="sp-eyebrow">
+                      Step {String(step + 1).padStart(2, "0")} of {String(formFields.length).padStart(2, "0")}
+                    </p>
+                    <label
+                      htmlFor={inputId}
+                      className="block"
+                      style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)", marginTop: 2 }}
+                    >
+                      {field.label}
+                      {field.required && (
+                        <>
+                          <span aria-hidden style={{ color: "var(--state-primary)" }}> *</span>
+                          <span className="sr-only"> (required)</span>
+                        </>
+                      )}
+                    </label>
+                    {maxLength && (
+                      <p
+                        role="status"
+                        aria-live="polite"
+                        aria-label={`${(values[field.fieldKey] ?? "").length} of ${maxLength} characters used`}
+                        style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}
+                      >
+                        {(values[field.fieldKey] ?? "").length}/{maxLength}
+                      </p>
+                    )}
+                  </div>
+                  <FieldInput
+                    field={{ ...field, maxLength }}
+                    value={values[field.fieldKey] ?? ""}
+                    onChange={(v) => setValues((prev) => ({ ...prev, [field.fieldKey]: v }))}
+                    inputId={inputId}
+                  />
+                  <div className="flex items-center justify-between" style={{ paddingTop: 4 }}>
+                    <button
+                      type="button"
+                      onClick={() => setStep((n) => Math.max(0, n - 1))}
+                      disabled={step === 0}
+                      className="sp-btn sp-btn-ghost"
+                      style={step === 0 ? { opacity: 0.4, cursor: "default" } : undefined}
+                    >
+                      <ArrowLeft style={{ width: 14, height: 14 }} />
+                      Back
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setStep((n) => Math.min(n + 1, formFields.length))}
+                      className="sp-btn sp-btn-primary"
+                    >
+                      {step === formFields.length - 1 ? "Finish" : "Next"}
+                      <ArrowRight style={{ width: 14, height: 14 }} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+
+          {/* Finish step — caption + download. */}
+          {step === formFields.length && (
+            <>
+              {template.captionTemplate && (
+                <div className="sp-card p-4 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <h2 className="sp-panel-title">Suggested caption</h2>
+                    {caption !== null && (
+                      <button
+                        onClick={() => setCaption(null)}
+                        style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--state-primary)" }}
+                      >
+                        Reset to suggestion
+                      </button>
+                    )}
+                  </div>
+                  <textarea
+                    value={shownCaption}
+                    onChange={(e) => setCaption(e.target.value)}
+                    rows={4}
+                    aria-label="Suggested caption"
+                    className="sp-input"
+                    style={{ resize: "vertical" }}
+                  />
+                  <button onClick={handleCopy} className="sp-btn sp-btn-ghost w-full">
+                    {copied ? <Check style={{ width: 14, height: 14 }} /> : <Copy style={{ width: 14, height: 14 }} />}
+                    {copied ? "Copied" : "Copy caption"}
+                  </button>
+                </div>
+              )}
+
+              <div className="sp-card p-4 space-y-2">
+                <button
+                  onClick={handleDownload}
+                  disabled={exporting || missingRequired.length > 0}
+                  aria-describedby={missingRequired.length > 0 ? "download-blocked-reason" : undefined}
+                  className="sp-btn sp-btn-primary w-full"
+                  style={{ padding: "11px 14px" }}
+                >
+                  {exporting ? <RefreshCw className="animate-spin" style={{ width: 14, height: 14 }} /> : <Download style={{ width: 14, height: 14 }} />}
+                  {exporting ? "Generating…" : "Download graphic"}
+                </button>
+                {missingRequired.length > 0 && (
                   <p
+                    id="download-blocked-reason"
                     role="status"
                     aria-live="polite"
-                    aria-label={`${(values[field.fieldKey] ?? "").length} of ${maxLength} characters used`}
-                    style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}
+                    className="text-center"
+                    style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}
                   >
-                    {(values[field.fieldKey] ?? "").length}/{maxLength}
+                    Fill required: {missingRequired.map((f) => f.label).join(", ")}
                   </p>
                 )}
               </div>
-              <FieldInput
-                field={{ ...field, maxLength }}
-                value={values[field.fieldKey] ?? ""}
-                onChange={(v) => setValues((prev) => ({ ...prev, [field.fieldKey]: v }))}
-                inputId={inputId}
-              />
-            </div>
-            );
-          })}
 
-          {/* Suggested caption */}
-          {template.captionTemplate && (
-            <div className="sp-card p-4 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <h2 className="sp-panel-title">Suggested caption</h2>
-                {caption !== null && (
-                  <button
-                    onClick={() => setCaption(null)}
-                    style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--state-primary)" }}
-                  >
-                    Reset to suggestion
-                  </button>
-                )}
-              </div>
-              <textarea
-                value={shownCaption}
-                onChange={(e) => setCaption(e.target.value)}
-                rows={4}
-                aria-label="Suggested caption"
-                className="sp-input"
-                style={{ resize: "vertical" }}
-              />
-              <button onClick={handleCopy} className="sp-btn sp-btn-ghost w-full">
-                {copied ? <Check style={{ width: 14, height: 14 }} /> : <Copy style={{ width: 14, height: 14 }} />}
-                {copied ? "Copied" : "Copy caption"}
-              </button>
-            </div>
+              {formFields.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setStep(formFields.length - 1)}
+                  className="sp-btn sp-btn-ghost"
+                >
+                  <ArrowLeft style={{ width: 14, height: 14 }} />
+                  Back to fields
+                </button>
+              )}
+            </>
           )}
-
-          {/* Download */}
-          <div className="sp-card p-4 space-y-2">
-            <button
-              onClick={handleDownload}
-              disabled={exporting || missingRequired.length > 0}
-              aria-describedby={missingRequired.length > 0 ? "download-blocked-reason" : undefined}
-              className="sp-btn sp-btn-primary w-full"
-              style={{ padding: "11px 14px" }}
-            >
-              {exporting ? <RefreshCw className="animate-spin" style={{ width: 14, height: 14 }} /> : <Download style={{ width: 14, height: 14 }} />}
-              {exporting ? "Generating…" : "Download graphic"}
-            </button>
-            {missingRequired.length > 0 && (
-              <p
-                id="download-blocked-reason"
-                role="status"
-                aria-live="polite"
-                className="text-center"
-                style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}
-              >
-                Fill required: {missingRequired.map((f) => f.label).join(", ")}
-              </p>
-            )}
-          </div>
         </div>
 
         {/* Right — live preview */}
