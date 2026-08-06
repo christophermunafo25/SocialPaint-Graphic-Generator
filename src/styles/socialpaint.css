@@ -906,6 +906,42 @@ button, input, select, textarea, optgroup {
   padding: 40px var(--page-pad) 64px;
   box-sizing: border-box;
 }
+/* The page continues in <PageBand> siblings — they carry the bottom rhythm. */
+.sp-page--flush { padding-bottom: 0; }
+
+/* ── Bands — full-bleed siblings of the column (Phase 3) ────────────────────
+   A band spans the whole region right of the sidebar and rebuilds the
+   column geometry as PADDING (percentages here resolve against the region,
+   which is exactly what 100vw gets wrong next to the rail): each side is
+   max(--page-pad, surplus/2 + --page-pad), which equals the centred
+   column's gutter at every width. Band content therefore lines up with
+   column content above and below it. */
+.sp-band { width: 100%; }
+.sp-band__col {
+  box-sizing: border-box;
+  padding-inline: max(var(--page-pad), calc((100% - var(--page-max)) / 2 + var(--page-pad)));
+}
+.sp-band:last-child { padding-bottom: 64px; }
+
+/* Right bleed (desktop only — below 1024px a band behaves exactly like the
+   column). The right padding drops, so an overflow track runs from the
+   column's left edge to the region edge. Everything that is NOT the track —
+   the shelf header — pins itself back to the column's right edge, and card
+   widths re-base to the column so exactly --shelf-visible cards fill it and
+   the next card peeks into the bleed. --band-col-w is the column width as
+   measured from inside the band (100% = band content width here). */
+@media (min-width: 1024px) {
+  .sp-band--bleed-right .sp-band__col {
+    padding-right: 0;
+    --band-col-w: min(calc(var(--page-max) - 2 * var(--page-pad)), calc(100% - var(--page-pad)));
+  }
+  .sp-band--bleed-right .sp-shelf__header { max-width: var(--band-col-w); }
+  .sp-band--bleed-right .sp-shelf__item {
+    --shelf-item-w: calc(
+      (var(--band-col-w) - (var(--shelf-visible) - 1) * var(--space-sm)) / var(--shelf-visible)
+    );
+  }
+}
 
 /* Content-panel card padding (Insights, Brand Studio, Settings, People). */
 .sp-card--content { padding: 24px; }
@@ -1535,8 +1571,10 @@ button, input, select, textarea, optgroup {
 
 /* --- Responsive ----------------------------------------------------------- */
 @media (max-width: 767px) {
-  /* 16px page gutter on mobile, per the DS layout spec. */
-  .sp-page { --page-pad: 16px; padding: var(--space-md) var(--page-pad) var(--space-2xl); }
+  /* 16px page gutter on mobile, per the DS layout spec. :root so the
+     bands' column padding follows the same token. */
+  :root { --page-pad: 16px; }
+  .sp-page { padding: var(--space-md) var(--page-pad) var(--space-2xl); }
   .sp-shelf { margin-top: var(--space-xl); }
   .sp-filterbar { padding: var(--space-xs) 0; }
 }

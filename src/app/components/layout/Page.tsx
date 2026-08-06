@@ -9,14 +9,38 @@ import React from "react";
  * inside the column. */
 export function Page({
   narrow,
+  flush,
   children,
 }: {
   narrow?: 760 | 900;
+  /** Drop the bottom padding — the page continues in <PageBand> siblings. */
+  flush?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <div className="sp-page">
+    <div className={flush ? "sp-page sp-page--flush" : "sp-page"}>
       <div style={narrow ? { maxWidth: narrow, marginInline: "auto" } : undefined}>{children}</div>
+    </div>
+  );
+}
+
+/** A full-bleed band — a SIBLING of <Page>, never a child. It spans the whole
+ * region right of the sidebar and rebuilds the column geometry as padding, so
+ * band content lines up with column content above and below it. `bleedRight`
+ * (≥1024px only) drops the right padding: an overflow track inside starts at
+ * the column's left edge and runs to the region edge, like the reference's
+ * category row. Never done with 100vw — the sidebar makes the viewport the
+ * wrong ruler. */
+export function PageBand({
+  bleedRight,
+  children,
+}: {
+  bleedRight?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={bleedRight ? "sp-band sp-band--bleed-right" : "sp-band"}>
+      <div className="sp-band__col">{children}</div>
     </div>
   );
 }
