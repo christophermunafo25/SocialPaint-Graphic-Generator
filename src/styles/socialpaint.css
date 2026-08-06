@@ -52,6 +52,13 @@
   font-display: swap;
 }
 
+/* The document is the vertical scroll container (AppShell's main has no
+   overflow of its own). Reserving the scrollbar gutter keeps the centred
+   content column in exactly the same place on pages that scroll and pages
+   that don't — without it, a classic (non-overlay) scrollbar eats 12–15px
+   off the right gutter only when content overflows. */
+html { scrollbar-gutter: stable; }
+
 /* ── Primitives ─────────────────────────────────────────────────────────────
    The five brand colours. These are the only tokens without a category
    prefix — that is how you tell a primitive at a glance. Never reach past
