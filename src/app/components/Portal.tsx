@@ -6,7 +6,7 @@ import { toCatalogTemplate, type CatalogTemplate } from "@/lib/templates/catalog
 import { buildGroups, groupIdOf, type TemplateGroup } from "@/lib/templates/groups";
 import { buildSearchIndex, searchTemplates } from "@/lib/templates/searchIndex";
 import { useRouter } from "../router";
-import { Page, PageBand, PageHeader } from "./layout/Page";
+import { Page, PageHeader } from "./layout/Page";
 import { ErrorState } from "./ErrorState";
 import { GroupChips } from "./templates/GroupChips";
 import { PlatformShelf } from "./templates/PlatformShelf";
@@ -136,14 +136,8 @@ export function Portal() {
     );
   }
 
-  /** Shelves render as full-bleed bands OUTSIDE the column (siblings of
-   * <Page>) so their scroll tracks can run to the region edge. */
-  const shelvesAsBands =
-    templatesState.status !== "loading" && catalog.length > 0 && browsing;
-
   return (
-    <>
-    <Page flush={shelvesAsBands}>
+    <Page>
       <PageHeader
         eyebrow={company?.name}
         title="Brand templates"
@@ -179,7 +173,16 @@ export function Portal() {
             Published templates appear here for everyone on your team.
           </p>
         </div>
-      ) : browsing ? null : (
+      ) : browsing ? (
+        allGroups.map((g) => (
+          <PlatformShelf
+            key={g.id}
+            group={g}
+            onOpen={openTemplate}
+            onViewAll={() => setState({ group: g.id })}
+          />
+        ))
+      ) : (
         <>
           <div className="sp-resultline">
             <p className="sp-eyebrow">{announcement}</p>
@@ -237,17 +240,6 @@ export function Portal() {
         </>
       )}
     </Page>
-    {shelvesAsBands &&
-      allGroups.map((g) => (
-        <PageBand bleedRight key={g.id}>
-          <PlatformShelf
-            group={g}
-            onOpen={openTemplate}
-            onViewAll={() => setState({ group: g.id })}
-          />
-        </PageBand>
-      ))}
-    </>
   );
 }
 
