@@ -843,37 +843,6 @@ button, input, select, textarea, optgroup {
   scroll-snap-align: start;
 }
 
-/* Circular prev/next, centred on the thumbnail and sitting over the fade
-   masks. Pointer affordance only — touch already has the gesture. */
-.sp-shelf__arrow { display: none; }
-@media (hover: hover) {
-  .sp-shelf__arrow {
-    position: absolute;
-    top: calc(var(--shelf-frame-h, 200px) / 2 + var(--media-pad, 12px));
-    transform: translateY(-50%);
-    z-index: 2;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    border-radius: var(--radius-pill);
-    border: 1px solid var(--border);
-    background: var(--bg-surface);
-    color: var(--text-primary);
-    cursor: pointer;
-    opacity: 0;
-    transition: opacity var(--dur-state) var(--ease), border-color var(--dur-state) var(--ease);
-  }
-  .sp-shelf__rail:hover .sp-shelf__arrow,
-  .sp-shelf__rail:focus-within .sp-shelf__arrow { opacity: 1; }
-  .sp-shelf__arrow:hover { border-color: var(--border-strong); }
-  .sp-shelf__arrow:focus-visible { opacity: 1; outline: none; box-shadow: var(--focus-ring-tight); }
-  .sp-shelf__arrow:disabled { opacity: 0; pointer-events: none; }
-  .sp-shelf__arrow--prev { left: var(--space-2xs); }
-  .sp-shelf__arrow--next { right: var(--space-2xs); }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .sp-shelf__track { scroll-behavior: auto; }
 }
