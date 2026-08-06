@@ -13,13 +13,13 @@
    - Soft cards (20px) against crisp controls (5px). Never meet at 12px.
    - One UI weight. Never bold for emphasis — shift colour or use the
      display face.
-   - The primary action is neutral: it inverts against the surface instead of
-     carrying a hue. Orange is the mark and the focus ring, never a control
-     fill; Green is success and the commit action (Publish / Export).
+   - Volt #B5FF6A is THE primary brand colour: the commit/CTA signal and the
+     dark-mode focus ring, fill-only on light (it cannot clear contrast as
+     text on parchment). Fire stays the mark accent, never a control fill.
    - No gradients as surface, no drop shadows in either mode, no glass.
-   - Headings are Inter Tight SemiBold in sentence case (the display face
-     is retired from chrome at Chris's direction, 2026-08-05). Small labels
-     (eyebrows, table headers) stay ALL CAPS mono at 0.04em tracking.
+   - Headings are Raveo Display Medium in sentence case (2026-08-06); bold
+     is banned everywhere in chrome. Small labels (eyebrows, table headers)
+     stay ALL CAPS mono at 0.04em tracking.
 
    Themes are scoped to [data-theme="light" | "dark"], which
    ColorSchemeProvider sets on <html> alongside the .dark class that
@@ -208,18 +208,18 @@ html { scrollbar-gutter: stable; }
   --text-on-action: #070708;
   --border-control: #F9F9F8; /* the edge of a pressable outlined control */
 
-  --state-primary-on-surface:   #FF7649;
+  --state-primary-on-surface:   #B5FF6A; /* Volt — THE brand primary */
   --state-attention-on-surface: #B5FF6A;
   --state-danger-on-surface:    #C94040; /* 4.35:1 — one ramp step lighter than light mode */
   --state-warning-on-surface:   #FFD900;
 
-  --state-primary:   #FF7649; --fill-primary:   #FF7649;
+  --state-primary:   #B5FF6A; --fill-primary:   #B5FF6A; /* Volt — THE brand primary */
   --state-info:      #72EEFF; --fill-info:      #72EEFF;
   --state-attention: #B5FF6A; --fill-attention: #B5FF6A;
   --state-danger:    #C94040; --fill-danger:    #C94040;
   --state-warning:   #FFD900; --fill-warning:   #FFD900;
 
-  --ring: #FF7649; /* 5.64:1 against the dark canvas */
+  --ring: #B5FF6A; /* Volt · ~15:1 against the deep-ink canvas */
 
   --shadow-sm: none;
   --shadow-md: none;
@@ -259,18 +259,18 @@ html { scrollbar-gutter: stable; }
   /* Signals keep their hue as text; the brand accent does not. Success and warning drop
      to the darkest step of their own ramp that clears AA. Orange collapses to Black —
      an orange word in running text would read as a status. The bright stays in --fill-*. */
-  --state-primary-on-surface:   #070708; /* Orange is identity, not a signal — it stays neutral as text */
+  --state-primary-on-surface:   #070708; /* Volt is fill-only — as text the primary stays ink */
   --state-attention-on-surface: #467200; /* Green holds its hue as text · 5.44:1 */
   --state-danger-on-surface:    #C94040;
   --state-warning-on-surface:   #756200;
 
-  --state-primary:   #070708; --fill-primary:   #FF7649;
+  --state-primary:   #070708; --fill-primary:   #B5FF6A; /* Volt — THE brand primary, fill-only on light */
   --state-info:      #070708; --fill-info:      #72EEFF;
   --state-attention: #070708; --fill-attention: #B5FF6A;
   --state-danger:    #C94040; --fill-danger:    #C94040;
   --state-warning:   #756200; --fill-warning:   #FFD900;
 
-  --ring: #FF7649; /* 3.15:1 against the light canvas — clears the 3:1 non-text floor */
+  --ring: #070708; /* ink — Volt (1.5:1) and Fire (2.3:1) both miss the 3:1 non-text floor on parchment */
 
   --shadow-sm: none;
   --shadow-md: none;
