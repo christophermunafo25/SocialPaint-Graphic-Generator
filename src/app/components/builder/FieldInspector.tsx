@@ -2,6 +2,9 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   AlignCenter,
   AlignCenterHorizontal,
+  Blend,
+  CaseUpper,
+  SquareRoundCorner,
   AlignCenterVertical,
   AlignEndHorizontal,
   AlignEndVertical,
@@ -16,9 +19,13 @@ import {
   ArrowUpToLine,
   Check,
   ChevronDown,
+  FlipHorizontal2,
+  FlipVertical2,
   Link as LinkIcon,
   Lock,
+  Minus,
   Pin,
+  Plus,
   RefreshCw,
   RotateCw,
   Trash2,
@@ -45,7 +52,12 @@ import { suggestFieldKey } from "@/lib/caption";
 import { useFileDrop } from "@/lib/useFileDrop";
 import { getTypeStyle, isStyleLocked, lockedProperties, resolveFieldStyle, ruleSentences } from "@/lib/brand/resolveStyle";
 import { ColorControl } from "../ColorControl";
+import { DEFAULT_FILL_HEX, gradientCss } from "../SchemaRenderer";
 import { GradientEditor } from "./GradientEditor";
+import { Switch } from "../Switch";
+import { InspectorSection, NumericField, PropertyRow, SegmentedIconGroup, compactControlStyle } from "./InspectorControls";
+import { FillPicker, getFill } from "./FillPicker";
+import { parseHex, toHex } from "@/lib/color";
 
 interface FieldInspectorProps {
   field: TemplateField;
@@ -230,10 +242,933 @@ function IconRow<T extends string>({
 
 type ResizeMode = "free" | "shrink" | "fixed";
 
-/** Inspector for the selected field, laid out Figma-style: identity, then
- * collapsible Position / Layout / Appearance / Typography / Fill /
- * Member-input sections. */
-export function FieldInspector({
+/** The section stack, in inspector order. Each renders even when empty so
+ * the panel's structure reads at a glance; contents land phase by phase
+ * (Field → Fill), migrating out of LegacyFieldInspector below. */
+const INSPECTOR_SECTIONS: Array<{ id: string; title: string }> = [
+  { id: "field", title: "Field" },
+  { id: "position", title: "Position" },
+  { id: "layout", title: "Layout" },
+  { id: "appearance", title: "Appearance" },
+  { id: "typography", title: "Typography" },
+  { id: "fill", title: "Fill" },
+];
+
+/** Inspector for the selected field: a flat, hairline-divided stack of
+ * collapsible sections — Field, Position, Layout, Appearance, Typography,
+ * Fill — built on the InspectorSection / PropertyRow / NumericField
+ * primitives. */
+/** Wrap an angle into Figma's −180..180 display range. */
+const wrapDeg = (n: number): number => ((((n + 180) % 360) + 360) % 360) - 180;
+
+export function FieldInspector(props: FieldInspectorProps) {
+  const { field, allFields, canvasWidth, canvasHeight, onChange, onDelete, focusLabelFieldId } = props;
+  const { company } = useAuth();
+  const { kit, assets } = useBrand();
+  const isText = field.type === "text" || field.type === "multiline" || field.type === "select";
+  const isShape = field.type === "shape";
+  const isStatic = Boolean(field.static);
+  const labelRef = useRef<HTMLInputElement>(null);
+  const [uploadingStatic, setUploadingStatic] = useState(false);
+
+  const uploadStaticImage = async (file: File) => {
+    if (!company) return;
+    setUploadingStatic(true);
+    try {
+      const url = await stores.templates.uploadBackground(company.id, file, file.name);
+      onChange({ staticValue: url });
+    } catch (e) {
+      console.error("Static image upload failed", e);
+    } finally {
+      setUploadingStatic(false);
+    }
+  };
+
+  const staticDrop = useFileDrop((files) => {
+    if (files[0]) void uploadStaticImage(files[0]);
+  });
+
+  // A freshly-dropped palette element opens for naming immediately; the
+  // parent clears focusLabelFieldId once selection moves on, so merely
+  // re-selecting a field never steals focus into the label input.
+  useEffect(() => {
+    if (focusLabelFieldId !== field.id) return;
+    labelRef.current?.focus();
+    labelRef.current?.select();
+  }, [focusLabelFieldId, field.id]);
+
+  // Secondary, not muted — teaching copy in the panel clears 4.5:1.
+  const hintStyle: React.CSSProperties = {
+    fontSize: "var(--type-caption-size)",
+    color: "var(--text-secondary)",
+  };
+
+  const centered = field.anchor === "center";
+
+  /** Align the box against the canvas bounds (anchor-aware). */
+  const alignBoxH = (pos: "start" | "center" | "end") => {
+    const left = pos === "start" ? 0 : pos === "center" ? (canvasWidth - field.width) / 2 : canvasWidth - field.width;
+    onChange({ x: Math.round(centered ? left + field.width / 2 : left) });
+  };
+  const alignBoxV = (pos: "start" | "center" | "end") => {
+    const top = pos === "start" ? 0 : pos === "center" ? (canvasHeight - field.height) / 2 : canvasHeight - field.height;
+    onChange({ y: Math.round(centered ? top + field.height / 2 : top) });
+  };
+
+  const canLockWidth = field.type === "text" || field.type === "multiline";
+  const resizeMode: ResizeMode = field.fixedWidth ? "fixed" : field.autoFit ? "shrink" : "free";
+  const setResizeMode = (mode: ResizeMode) => {
+    if (mode === "free") onChange({ autoFit: undefined, fixedWidth: undefined });
+    else if (mode === "shrink") onChange({ autoFit: true, fixedWidth: undefined });
+    else onChange({ fixedWidth: true, autoFit: undefined });
+  };
+
+  /** Constrain-proportions for the W/H pair — a panel behavior (linked
+   * editing), not a persisted field property. */
+  const [constrain, setConstrain] = useState(false);
+  const commitW = (v: number | undefined) => {
+    const width = Math.max(1, v ?? field.width);
+    if (constrain && field.width > 0) {
+      onChange({ width, height: Math.max(1, Math.round(width * (field.height / field.width))) });
+    } else {
+      onChange({ width });
+    }
+  };
+  const commitH = (v: number | undefined) => {
+    const height = Math.max(1, v ?? field.height);
+    if (constrain && field.height > 0) {
+      onChange({ height, width: Math.max(1, Math.round(height * (field.width / field.height))) });
+    } else {
+      onChange({ height });
+    }
+  };
+
+  // --- Typography ----------------------------------------------------------
+  // Same resolved-face logic the previous inspector used: the pickers show
+  // what a field ACTUALLY renders with (type-style bindings included), and
+  // the style list only ever offers faces the chosen family really has.
+
+  const boundStyle = getTypeStyle(kit, field.typeStyleKey);
+  const locked = lockedProperties(boundStyle);
+  const resolved = resolveFieldStyle(field, kit);
+  const displayFamily = resolved.fontFamily;
+  const currentStyle = toFontStyle(resolved.fontWeight, resolved.fontStyle, resolved.fontStretch);
+  const fontAssets = useMemo(() => assets.filter((a) => a.kind === "font"), [assets]);
+
+  const familyGroups = useMemo(() => {
+    const brand = [
+      ...new Set([kit?.headingFont?.family, kit?.bodyFont?.family].filter((f): f is string => Boolean(f))),
+    ];
+    const uploaded = [...customFamilyStyles(fontAssets).keys()].filter((f) => !brand.includes(f));
+    const google = GOOGLE_FONTS.filter((f) => !brand.includes(f) && !uploaded.includes(f));
+    return [
+      { label: "Brand fonts", families: brand },
+      { label: "Uploaded fonts", families: uploaded },
+      { label: "Google Fonts", families: google },
+    ].filter((g) => g.families.length > 0);
+  }, [kit, fontAssets]);
+
+  const fontCatalog = displayFamily ? familyStyles(displayFamily, fontAssets, currentStyle) : null;
+  const styleLocked = isStyleLocked(locked);
+
+  const styleOptions = useMemo(() => {
+    if (!fontCatalog) return [];
+    const lockedWeight = locked.has("weight") ? boundStyle?.weight : undefined;
+    if (lockedWeight === undefined) return fontCatalog.styles;
+    const atWeight = nearestStyle({ ...currentStyle, weight: lockedWeight }, fontCatalog.styles);
+    return atWeight ? fontCatalog.styles.filter((s) => s.weight === atWeight.weight) : fontCatalog.styles;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fontCatalog?.family, fontCatalog?.styles, locked, boundStyle?.weight, styleKey(currentStyle)]);
+
+  const displayStyle =
+    (styleOptions.length > 0 ? nearestStyle(currentStyle, styleOptions) : undefined) ?? currentStyle;
+
+  const stylePatch = (s: FontStyle, explicit: boolean): Partial<TemplateField> => ({
+    fontWeight: !explicit && field.fontWeight === undefined && s.weight === 400 ? undefined : s.weight,
+    fontStyle: s.italic ? "italic" : undefined,
+    fontStretch: s.stretch === "normal" ? undefined : s.stretch,
+  });
+
+  const changeFamily = (family: string | undefined) => {
+    if (!family) {
+      onChange({ fontFamily: undefined });
+      return;
+    }
+    const mapped = nearestStyle(currentStyle, familyStyles(family, fontAssets, currentStyle).styles);
+    onChange({ fontFamily: family, ...(mapped ? stylePatch(mapped, false) : {}) });
+  };
+
+  const changeStyle = (s: FontStyle) => onChange(stylePatch(s, true));
+
+  // --- Fill -----------------------------------------------------------------
+
+  const hasFill = isText || isShape;
+  const fill = getFill(field, kit);
+  const fillLocked = locked.has("colorKey");
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const fillSwatchRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => setPickerOpen(false), [field.id]);
+
+  /** Alpha byte of a solid fill's hex (100 when opaque or brand-bound). */
+  const fillAlpha = fill?.type === "solid" ? Math.round((parseHex(fill.hex)?.a ?? 1) * 100) : 100;
+
+  // --- Appearance ----------------------------------------------------------
+
+  const hasRadius = field.type === "image" || (isShape && (field.shape ?? "rect") === "rect");
+  const r = field.cornerRadius;
+  const radiusUniform = !r || (r.tl === r.tr && r.tr === r.br && r.br === r.bl);
+  const [radiusLinked, setRadiusLinked] = useState(radiusUniform);
+  // Re-derive the link state when the selection moves to another field —
+  // the inspector itself never remounts.
+  useEffect(() => {
+    setRadiusLinked(!field.cornerRadius || radiusUniform);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [field.id]);
+
+  const setRadius = (patch: Partial<CornerRadius>) => {
+    const next = { tl: 0, tr: 0, br: 0, bl: 0, ...field.cornerRadius, ...patch };
+    const empty = !next.tl && !next.tr && !next.br && !next.bl;
+    onChange({ cornerRadius: empty ? undefined : next });
+  };
+
+  /** Switching the anchor converts X/Y so the box stays exactly where it is. */
+  const changeAnchor = (anchor: "topLeft" | "center") => {
+    const was = field.anchor === "center" ? "center" : "topLeft";
+    if (anchor === was) return;
+    if (anchor === "center") {
+      onChange({ anchor: "center", x: Math.round(field.x + field.width / 2), y: Math.round(field.y + field.height / 2) });
+    } else {
+      onChange({ anchor: "topLeft", x: Math.round(field.x - field.width / 2), y: Math.round(field.y - field.height / 2) });
+    }
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between" style={{ paddingBottom: "var(--space-xs)" }}>
+        <h3 className="sp-panel-title">Field settings</h3>
+        <button onClick={onDelete} title="Delete field">
+          <Trash2 className="w-4 h-4" style={{ color: "var(--destructive)" }} />
+        </button>
+      </div>
+
+      <InspectorSection id="field" title="Field">
+        {/* The field type control that exists today, left in place — same
+            options, same static/shape conversion patches. */}
+        <PropertyRow label="Type">
+          <select
+            className="sp-input"
+            style={compactControlStyle}
+            aria-label="Field type"
+            value={field.type}
+            onChange={(e) => {
+              const t = e.target.value as FieldType;
+              if (t === "shape") {
+                // Shapes are always static design elements with a fill.
+                onChange({ type: t, shape: field.shape ?? "rect", static: true, colorHex: field.colorHex ?? "#d9d9d9" });
+              } else if (isShape) {
+                onChange({ type: t, shape: undefined, static: undefined, staticValue: undefined });
+              } else {
+                onChange({ type: t });
+              }
+            }}
+          >
+            {FIELD_TYPES.filter((t) => !isStatic || isShape || t.value !== "select").map((t) => (
+              <option key={t.value} value={t.value}>{t.label}</option>
+            ))}
+          </select>
+        </PropertyRow>
+
+        {isShape && (
+          <>
+            <PropertyRow label="Shape">
+              <select
+                className="sp-input"
+                style={compactControlStyle}
+                aria-label="Shape kind"
+                value={field.shape ?? "rect"}
+                onChange={(e) => onChange({ shape: e.target.value as TemplateField["shape"] })}
+              >
+                {SHAPE_KINDS.map((s) => (
+                  <option key={s.value} value={s.value}>{s.label}</option>
+                ))}
+              </select>
+            </PropertyRow>
+            <p style={hintStyle}>Shapes are design-only — members never see them as fields.</p>
+          </>
+        )}
+
+        {/* Field name: shares its default with the member-form placeholder
+            (shown as the input's placeholder when the name is empty) but
+            writes only label + fieldKey — editing it never touches the
+            placeholder. */}
+        <PropertyRow label="Name">
+          <div className="flex flex-col flex-1" style={{ gap: "var(--space-3xs)", minWidth: 0 }}>
+            <input
+              ref={labelRef}
+              className="sp-input"
+              style={compactControlStyle}
+              aria-label="Field name"
+              value={field.label}
+              placeholder={field.placeholder || undefined}
+              onChange={(e) => {
+                const label = e.target.value;
+                onChange({
+                  label,
+                  fieldKey: suggestFieldKey(label, allFields.filter((f) => f.id !== field.id)),
+                });
+              }}
+            />
+            {!isStatic && (
+              <p className="font-mono" style={{ fontSize: 10, color: "var(--text-secondary)" }}>
+                caption tag: {"{"}{field.fieldKey}{"}"}
+              </p>
+            )}
+          </div>
+        </PropertyRow>
+
+        {field.type !== "select" && !isShape && (
+          <>
+            <PropertyRow label="Fixed">
+              <Switch
+                checked={isStatic}
+                ariaLabel="Fixed element"
+                onChange={(next) =>
+                  onChange(
+                    next
+                      ? { static: true, required: undefined, placeholder: undefined, maxLength: undefined }
+                      : { static: undefined, staticValue: undefined },
+                  )
+                }
+              />
+            </PropertyRow>
+            <p style={hintStyle}>
+              Fixed elements stay exactly as designed — members don't see or edit them. You can still
+              move and style them.
+            </p>
+          </>
+        )}
+
+        {isStatic && isText && (
+          <PropertyRow label="Content" align="start">
+            <textarea
+              rows={field.type === "multiline" ? 3 : 1}
+              className="sp-input"
+              style={{ fontSize: "var(--type-label-size)", padding: "var(--space-2xs)", resize: "vertical" }}
+              aria-label="Fixed content"
+              value={field.staticValue ?? ""}
+              placeholder="The exact text shown on the graphic"
+              onChange={(e) => onChange({ staticValue: e.target.value || undefined })}
+            />
+          </PropertyRow>
+        )}
+        {isStatic && field.type === "image" && (
+          <PropertyRow label="Image" align="start">
+            <label
+              {...staticDrop.bind}
+              data-active={staticDrop.active}
+              className="sp-dropzone flex flex-1 items-center justify-center gap-2 cursor-pointer"
+              style={{
+                border: "1.5px dashed var(--border-strong)",
+                borderRadius: "var(--radius-control)",
+                fontSize: "var(--type-caption-size)",
+                color: "var(--text-secondary)",
+                minHeight: "var(--row-h-compact)",
+              }}
+            >
+              {uploadingStatic ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" style={{ color: "var(--state-primary)" }} />
+              ) : (
+                <Upload className="sp-dropzone__icon w-3.5 h-3.5" style={{ color: "var(--state-primary)" }} />
+              )}
+              {uploadingStatic ? "Uploading…" : field.staticValue ? "Replace image" : "Upload image"}
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void uploadStaticImage(f);
+                }}
+              />
+            </label>
+          </PropertyRow>
+        )}
+      </InspectorSection>
+
+      <InspectorSection id="position" title="Position">
+        <PropertyRow label="Align">
+          <SegmentedIconGroup
+            ariaLabel="Align horizontally on the canvas"
+            options={[
+              { key: "start", Icon: AlignStartVertical, title: "Align left edge of canvas" },
+              { key: "center", Icon: AlignCenterVertical, title: "Center horizontally on canvas" },
+              { key: "end", Icon: AlignEndVertical, title: "Align right edge of canvas" },
+            ]}
+            onSelect={alignBoxH}
+          />
+          <SegmentedIconGroup
+            ariaLabel="Align vertically on the canvas"
+            options={[
+              { key: "start", Icon: AlignStartHorizontal, title: "Align top edge of canvas" },
+              { key: "center", Icon: AlignCenterHorizontal, title: "Center vertically on canvas" },
+              { key: "end", Icon: AlignEndHorizontal, title: "Align bottom edge of canvas" },
+            ]}
+            onSelect={alignBoxV}
+          />
+        </PropertyRow>
+        <PropertyRow label="Position">
+          <NumericField
+            label="X"
+            ariaLabel="X position"
+            precision={0}
+            value={field.x}
+            onCommit={(v) => onChange({ x: v ?? 0 })}
+          />
+          <NumericField
+            label="Y"
+            ariaLabel="Y position"
+            precision={0}
+            value={field.y}
+            onCommit={(v) => onChange({ y: v ?? 0 })}
+          />
+        </PropertyRow>
+        <PropertyRow label="Rotate">
+          <NumericField
+            icon={<RotateCw style={{ width: 12, height: 12 }} strokeWidth={1.5} />}
+            suffix="°"
+            ariaLabel="Rotation in degrees"
+            precision={0}
+            value={wrapDeg(field.rotation ?? 0)}
+            onCommit={(v) => onChange({ rotation: wrapDeg(v ?? 0) || undefined })}
+          />
+          <SegmentedIconGroup
+            ariaLabel="Flip"
+            options={[
+              { key: "flipX", Icon: FlipHorizontal2, title: "Flip horizontal", active: Boolean(field.flipX) },
+              { key: "flipY", Icon: FlipVertical2, title: "Flip vertical", active: Boolean(field.flipY) },
+            ]}
+            onSelect={(k) =>
+              k === "flipX"
+                ? onChange({ flipX: field.flipX ? undefined : true })
+                : onChange({ flipY: field.flipY ? undefined : true })
+            }
+          />
+        </PropertyRow>
+        <PropertyRow label="Anchor">
+          <select
+            className="sp-input"
+            style={compactControlStyle}
+            aria-label="Anchor point"
+            value={field.anchor ?? "topLeft"}
+            onChange={(e) => changeAnchor(e.target.value as "topLeft" | "center")}
+          >
+            <option value="topLeft">Top-left (X/Y = box corner)</option>
+            <option value="center">Center (X/Y = box center)</option>
+          </select>
+        </PropertyRow>
+      </InspectorSection>
+
+      <InspectorSection id="layout" title="Layout">
+        {canLockWidth && (
+          <PropertyRow label="Resizing">
+            <SegmentedIconGroup
+              stretch
+              ariaLabel="Text resizing behavior"
+              value={resizeMode}
+              options={[
+                { key: "free", label: "Free", title: "Text renders at its set size — it may escape the box" },
+                { key: "shrink", label: "Shrink", title: "Text shrinks to fit as it gets longer (estimate)" },
+                {
+                  key: "fixed",
+                  label: "Fixed",
+                  title:
+                    field.type === "multiline"
+                      ? "Text wraps at the box edge and never escapes"
+                      : "Text shrinks at exactly the box edge and never escapes",
+                },
+              ]}
+              onSelect={setResizeMode}
+            />
+          </PropertyRow>
+        )}
+        <PropertyRow label="Dimensions">
+          <NumericField
+            label="W"
+            ariaLabel="Width"
+            precision={0}
+            min={1}
+            value={field.width}
+            onCommit={commitW}
+          />
+          <NumericField
+            label="H"
+            ariaLabel="Height"
+            precision={0}
+            min={1}
+            value={field.height}
+            onCommit={commitH}
+          />
+          <button
+            onClick={() => setConstrain(!constrain)}
+            aria-pressed={constrain}
+            title={constrain ? "Unlink — edit width and height independently" : "Constrain proportions — width and height scale together"}
+            style={{ flexShrink: 0, display: "flex", alignItems: "center" }}
+          >
+            {constrain ? (
+              <LinkIcon style={{ width: 13, height: 13, color: "var(--state-primary)" }} strokeWidth={1.5} />
+            ) : (
+              <Unlink style={{ width: 13, height: 13, color: "var(--text-muted)" }} strokeWidth={1.5} />
+            )}
+          </button>
+        </PropertyRow>
+        {isText && field.type !== "select" && resizeMode !== "free" && (
+          <PropertyRow label="Min text">
+            <NumericField
+              suffix="px"
+              ariaLabel="Minimum text size"
+              precision={0}
+              min={1}
+              allowEmpty
+              placeholder="18"
+              value={field.minFontSizePx}
+              onCommit={(v) => onChange({ minFontSizePx: v })}
+            />
+          </PropertyRow>
+        )}
+      </InspectorSection>
+
+      <InspectorSection id="appearance" title="Appearance">
+        {/* Opacity + corner radius on one row, X/Y rhythm. Radius appears
+            only where the renderer honors it (images, rect shapes). */}
+        <PropertyRow>
+          <NumericField
+            icon={<Blend style={{ width: 12, height: 12 }} strokeWidth={1.5} />}
+            suffix="%"
+            ariaLabel="Opacity"
+            precision={0}
+            min={0}
+            max={100}
+            value={field.opacity ?? 100}
+            onCommit={(v) => onChange({ opacity: v === undefined || v >= 100 ? undefined : v })}
+          />
+          {hasRadius && (
+            <>
+              <NumericField
+                icon={<SquareRoundCorner style={{ width: 12, height: 12 }} strokeWidth={1.5} />}
+                suffix="px"
+                ariaLabel="Corner radius"
+                precision={0}
+                min={0}
+                value={radiusLinked || radiusUniform ? field.cornerRadius?.tl ?? 0 : undefined}
+                mixed={!radiusLinked && !radiusUniform}
+                onCommit={(v) => {
+                  const rad = Math.max(0, v ?? 0);
+                  setRadius({ tl: rad, tr: rad, br: rad, bl: rad });
+                }}
+              />
+              <button
+                onClick={() => {
+                  if (!radiusLinked) {
+                    // Re-linking collapses to the top-left value.
+                    const rad = field.cornerRadius?.tl ?? 0;
+                    setRadius({ tl: rad, tr: rad, br: rad, bl: rad });
+                  }
+                  setRadiusLinked(!radiusLinked);
+                }}
+                aria-pressed={radiusLinked}
+                title={radiusLinked ? "Unlink corners — set each independently" : "Link corners — one value for all four"}
+                style={{ flexShrink: 0, display: "flex", alignItems: "center" }}
+              >
+                {radiusLinked ? (
+                  <LinkIcon style={{ width: 13, height: 13, color: "var(--state-primary)" }} strokeWidth={1.5} />
+                ) : (
+                  <Unlink style={{ width: 13, height: 13, color: "var(--text-muted)" }} strokeWidth={1.5} />
+                )}
+              </button>
+            </>
+          )}
+        </PropertyRow>
+        {hasRadius && !radiusLinked && (
+          <PropertyRow>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(4, 1fr)",
+                gap: "var(--space-3xs)",
+                flex: 1,
+                minWidth: 0,
+              }}
+            >
+              {CORNERS.map((c) => (
+                <NumericField
+                  key={c.key}
+                  label={c.label}
+                  ariaLabel={`Corner radius ${c.label}`}
+                  precision={0}
+                  min={0}
+                  value={field.cornerRadius?.[c.key] ?? 0}
+                  onCommit={(v) => setRadius({ [c.key]: Math.max(0, v ?? 0) })}
+                />
+              ))}
+            </div>
+          </PropertyRow>
+        )}
+        {field.type === "image" && (
+          <>
+            <PropertyRow label="Fit">
+              <select
+                className="sp-input"
+                style={compactControlStyle}
+                aria-label="Image fit"
+                value={field.objectFit ?? "cover"}
+                onChange={(e) => onChange({ objectFit: e.target.value as TemplateField["objectFit"] })}
+              >
+                <option value="cover">Cover (fill box)</option>
+                <option value="contain">Contain (fit inside)</option>
+              </select>
+            </PropertyRow>
+            {!isStatic && (
+              <PropertyRow label="Crop ratio">
+                <NumericField
+                  ariaLabel="Crop ratio (width over height)"
+                  precision={2}
+                  step={0.1}
+                  min={0.1}
+                  allowEmpty
+                  placeholder={`box: ${(field.width / field.height).toFixed(2)}`}
+                  value={field.aspectRatio}
+                  onCommit={(v) => onChange({ aspectRatio: v })}
+                />
+              </PropertyRow>
+            )}
+          </>
+        )}
+      </InspectorSection>
+
+      <InspectorSection id="typography" title="Typography">
+        {isText && (
+          <>
+            <PropertyRow label="Type style">
+              <select
+                className="sp-input"
+                style={compactControlStyle}
+                aria-label="Saved brand type style"
+                value={field.typeStyleKey ?? ""}
+                onChange={(e) => onChange({ typeStyleKey: e.target.value || undefined })}
+              >
+                <option value="">None — style freely</option>
+                {(kit?.typeStyles ?? []).map((ts) => (
+                  <option key={ts.key} value={ts.key}>{ts.name}</option>
+                ))}
+              </select>
+            </PropertyRow>
+            {boundStyle && (
+              <div
+                className="px-3 py-2 space-y-0.5" data-radius-control
+                style={{ background: "var(--accent-wash)", border: "1px solid var(--accent-border)" }}
+              >
+                {ruleSentences(boundStyle, kit).map((rule) => (
+                  <p key={rule} style={{ fontSize: 11, color: "var(--text-secondary)" }}>
+                    <Lock style={{ width: 10, height: 10, display: "inline", marginRight: 5, verticalAlign: "-1px", color: "var(--state-primary)" }} />
+                    {rule}
+                  </p>
+                ))}
+              </div>
+            )}
+            <PropertyRow full>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <FontFamilySelect
+                  value={displayFamily}
+                  groups={familyGroups}
+                  disabled={locked.has("fontFamily")}
+                  triggerStyle={compactControlStyle}
+                  onSelect={changeFamily}
+                />
+              </div>
+            </PropertyRow>
+            <PropertyRow>
+              <div style={{ flex: 1.4, minWidth: 0 }}>
+                <FontStyleSelect
+                  family={displayFamily}
+                  styles={styleOptions}
+                  value={displayStyle}
+                  disabled={!displayFamily || styleLocked}
+                  locked={styleLocked}
+                  triggerStyle={compactControlStyle}
+                  onSelect={changeStyle}
+                />
+              </div>
+              <NumericField
+                suffix="px"
+                ariaLabel="Font size"
+                precision={2}
+                min={1}
+                disabled={locked.has("fontSizePx")}
+                value={field.fontSizePx ?? 45}
+                onCommit={(v) => onChange({ fontSizePx: v ?? 45 })}
+              />
+            </PropertyRow>
+            {fontCatalog && !fontCatalog.verified && (
+              <p style={hintStyle}>
+                We don't have {displayFamily} on file, so these styles are a guess — upload the
+                font in Brand Studio to pick from what it really has.
+              </p>
+            )}
+            <PropertyRow label="Line height">
+              <NumericField
+                suffix="%"
+                ariaLabel="Line height percent"
+                precision={0}
+                min={0}
+                allowEmpty
+                placeholder="110"
+                disabled={locked.has("lineHeight")}
+                value={field.lineHeight === undefined ? undefined : Math.round(field.lineHeight * 100)}
+                onCommit={(v) => onChange({ lineHeight: v === undefined ? undefined : v / 100 })}
+              />
+            </PropertyRow>
+            <PropertyRow label="Spacing">
+              <NumericField
+                suffix="px"
+                ariaLabel="Letter spacing in pixels"
+                precision={1}
+                allowEmpty
+                placeholder="0"
+                disabled={locked.has("letterSpacingPx")}
+                value={field.letterSpacingPx}
+                onCommit={(v) => onChange({ letterSpacingPx: v })}
+              />
+            </PropertyRow>
+            <PropertyRow label="Align">
+              <SegmentedIconGroup
+                ariaLabel="Horizontal text alignment"
+                value={field.align ?? "left"}
+                options={[
+                  { key: "left", Icon: AlignLeft, title: "Align text left" },
+                  { key: "center", Icon: AlignCenter, title: "Center text" },
+                  { key: "right", Icon: AlignRight, title: "Align text right" },
+                ]}
+                onSelect={(k) => onChange({ align: k as TemplateField["align"] })}
+              />
+              <SegmentedIconGroup
+                ariaLabel="Vertical text alignment"
+                value={field.verticalAlign ?? "middle"}
+                options={[
+                  { key: "top", Icon: AlignVerticalJustifyStart, title: "Align text to the top of the box" },
+                  { key: "middle", Icon: AlignVerticalJustifyCenter, title: "Center text vertically" },
+                  { key: "bottom", Icon: AlignVerticalJustifyEnd, title: "Align text to the bottom of the box" },
+                ]}
+                onSelect={(k) =>
+                  onChange({ verticalAlign: k === "middle" ? undefined : (k as TemplateField["verticalAlign"]) })
+                }
+              />
+              <SegmentedIconGroup
+                ariaLabel="Letter case"
+                disabled={locked.has("uppercase")}
+                options={[
+                  { key: "uppercase", Icon: CaseUpper, title: "Uppercase", active: field.uppercase ?? false },
+                ]}
+                onSelect={() => onChange({ uppercase: field.uppercase ? undefined : true })}
+              />
+            </PropertyRow>
+          </>
+        )}
+      </InspectorSection>
+
+      <InspectorSection
+        id="fill"
+        title="Fill"
+        headerExtra={
+          hasFill && !fill && !fillLocked ? (
+            <button
+              title="Add fill"
+              aria-label="Add fill"
+              onClick={() => onChange({ colorHex: DEFAULT_FILL_HEX, colorKey: undefined, textGradient: undefined })}
+              style={{ color: "var(--text-secondary)", display: "flex" }}
+            >
+              <Plus style={{ width: 13, height: 13 }} strokeWidth={1.5} />
+            </button>
+          ) : undefined
+        }
+      >
+        {hasFill &&
+          (fill ? (
+            <PropertyRow>
+              <button
+                ref={fillSwatchRef}
+                title="Edit fill"
+                aria-label="Edit fill"
+                aria-expanded={pickerOpen}
+                onClick={() => setPickerOpen((o) => !o)}
+                style={{
+                  width: 24,
+                  height: 24,
+                  flexShrink: 0,
+                  borderRadius: "var(--radius-control)",
+                  border: "1px solid var(--border-strong)",
+                  background:
+                    fill.type === "gradient"
+                      ? `${gradientCss({ ...fill.gradient, angle: 90 })}, var(--bg-plate)`
+                      : `${fill.hex}, var(--bg-plate)`,
+                  cursor: "pointer",
+                }}
+              />
+              {fill.type === "solid" ? (
+                <>
+                  <input
+                    type="text"
+                    spellCheck={false}
+                    disabled={fillLocked}
+                    aria-label="Fill hex value"
+                    className="sp-input"
+                    style={{
+                      ...compactControlStyle,
+                      fontFamily: "var(--font-mono)",
+                      fontSize: "var(--type-caption-size)",
+                      minWidth: 0,
+                      flex: 1,
+                    }}
+                    key={`${field.id}:${fill.hex}`}
+                    defaultValue={fill.hex}
+                    onKeyDown={(e) => {
+                      e.stopPropagation();
+                      if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                      if (e.key === "Escape") {
+                        (e.target as HTMLInputElement).value = fill.hex;
+                        (e.target as HTMLInputElement).blur();
+                      }
+                    }}
+                    onBlur={(e) => {
+                      const m = /^#?([0-9a-fA-F]{6})([0-9a-fA-F]{2})?$/.exec(e.target.value.trim());
+                      if (m) {
+                        onChange({
+                          colorHex: `#${m[1].toUpperCase()}${m[2] ? m[2].toUpperCase() : ""}`,
+                          colorKey: undefined,
+                          textGradient: undefined,
+                        });
+                      } else {
+                        e.target.value = fill.hex;
+                      }
+                    }}
+                  />
+                  <NumericField
+                    suffix="%"
+                    ariaLabel="Fill opacity"
+                    precision={0}
+                    min={0}
+                    max={100}
+                    disabled={fillLocked || Boolean(fill.colorKey)}
+                    value={fillAlpha}
+                    onCommit={(v) => {
+                      const base = parseHex(fill.hex);
+                      if (!base) return;
+                      onChange({
+                        colorHex: toHex({ ...base, a: (v ?? 100) / 100 }),
+                        colorKey: undefined,
+                        textGradient: undefined,
+                      });
+                    }}
+                  />
+                </>
+              ) : (
+                <span style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)", flex: 1 }}>
+                  Linear gradient
+                </span>
+              )}
+              <button
+                title="Remove fill"
+                aria-label="Remove fill"
+                disabled={fillLocked}
+                onClick={() => {
+                  setPickerOpen(false);
+                  onChange({ colorHex: undefined, colorKey: undefined, textGradient: undefined });
+                }}
+                style={{ color: fillLocked ? "var(--text-disabled)" : "var(--text-muted)", display: "flex", flexShrink: 0 }}
+              >
+                <Minus style={{ width: 13, height: 13 }} strokeWidth={1.5} />
+              </button>
+            </PropertyRow>
+          ) : (
+            <p style={hintStyle}>
+              No fill — {isShape ? "the shape falls back to ink" : "text falls back to ink"}. Add one with the plus.
+            </p>
+          ))}
+        {fill?.type === "solid" && fill.colorKey && (
+          <p style={{ fontSize: 10, color: "var(--text-secondary)" }}>
+            Bound to brand color — re-theming the palette updates this field.
+          </p>
+        )}
+      </InspectorSection>
+
+      {/* Member input — what the member sees in their form; gone on fixed
+          elements. Same write paths the old panel used. */}
+      {!isStatic && (
+        <InspectorSection id="member-input" title="Member input">
+          {isText && field.type !== "select" && (
+            <PropertyRow label="Max chars">
+              <NumericField
+                ariaLabel="Maximum characters"
+                precision={0}
+                min={1}
+                allowEmpty
+                placeholder="none"
+                disabled={locked.has("maxLength")}
+                value={field.maxLength}
+                onCommit={(v) => onChange({ maxLength: v })}
+              />
+            </PropertyRow>
+          )}
+          {field.type === "select" && (
+            <PropertyRow label="Options" align="start">
+              <textarea
+                rows={3}
+                className="sp-input"
+                style={{ fontSize: "var(--type-label-size)", padding: "var(--space-2xs)", resize: "vertical" }}
+                aria-label="Dropdown options, one per line"
+                value={(field.options ?? []).join("\n")}
+                onChange={(e) =>
+                  onChange({ options: e.target.value.split("\n").map((s) => s.trim()).filter(Boolean) })
+                }
+              />
+            </PropertyRow>
+          )}
+          <PropertyRow label="Placeholder">
+            <input
+              className="sp-input"
+              style={compactControlStyle}
+              aria-label="Member form placeholder"
+              value={field.placeholder ?? ""}
+              onChange={(e) => onChange({ placeholder: e.target.value || undefined })}
+            />
+          </PropertyRow>
+          <PropertyRow label="Required">
+            <Switch
+              checked={field.required ?? false}
+              ariaLabel="Required field"
+              onChange={(next) => onChange({ required: next || undefined })}
+            />
+          </PropertyRow>
+        </InspectorSection>
+      )}
+
+      {pickerOpen && hasFill && (
+        <FillPicker
+          anchorRef={fillSwatchRef}
+          field={field}
+          kit={kit}
+          companyId={company?.id}
+          locked={fillLocked}
+          onChange={onChange}
+          onClose={() => setPickerOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+/** The pre-rebuild inspector, kept intact while its controls migrate into
+ * the new section shell one phase at a time. Not rendered. */
+export function LegacyFieldInspector({
   field,
   allFields,
   canvasWidth,
@@ -1099,11 +2034,13 @@ const TriggerButton = React.forwardRef<
     ariaLabel: string;
     expanded: boolean;
     controls?: string;
+    /** Extra trigger styling (the inspector squeezes it onto compact rows). */
+    triggerStyle?: React.CSSProperties;
     onOpen(): void;
     onKeyDown?(e: React.KeyboardEvent): void;
   }
 >(function TriggerButton(
-  { value, placeholder, disabled, lockedHint, previewStyle, ariaLabel, expanded, controls, onOpen, onKeyDown },
+  { value, placeholder, disabled, lockedHint, previewStyle, ariaLabel, expanded, controls, triggerStyle, onOpen, onKeyDown },
   ref,
 ) {
   return (
@@ -1119,7 +2056,7 @@ const TriggerButton = React.forwardRef<
       onClick={onOpen}
       onKeyDown={onKeyDown}
       className={`${controlClass} flex items-center justify-between gap-2 text-left`}
-      style={{ opacity: disabled ? 0.5 : 1, cursor: disabled ? "default" : "pointer" }}
+      style={{ opacity: disabled ? 0.5 : 1, cursor: disabled ? "default" : "pointer", ...triggerStyle }}
     >
       <span className="truncate" style={value ? previewStyle : { color: "var(--text-disabled)" }}>
         {value || placeholder}
@@ -1162,11 +2099,13 @@ function FontFamilySelect({
   value,
   groups,
   disabled,
+  triggerStyle,
   onSelect,
 }: {
   value: string | undefined;
   groups: Array<{ label: string; families: string[] }>;
   disabled: boolean;
+  triggerStyle?: React.CSSProperties;
   onSelect(family: string | undefined): void;
 }) {
   const [open, setOpen] = useState(false);
@@ -1253,6 +2192,7 @@ function FontFamilySelect({
         disabled={disabled}
         lockedHint={disabled}
         expanded={open}
+        triggerStyle={triggerStyle}
         controls="sp-family-menu"
         onOpen={() => setOpen((o) => !o)}
         onKeyDown={(e) => {
@@ -1331,6 +2271,7 @@ function FontStyleSelect({
   value,
   disabled,
   locked,
+  triggerStyle,
   onSelect,
 }: {
   family: string | undefined;
@@ -1338,6 +2279,7 @@ function FontStyleSelect({
   value: FontStyle;
   disabled: boolean;
   locked: boolean;
+  triggerStyle?: React.CSSProperties;
   onSelect(style: FontStyle): void;
 }) {
   const [open, setOpen] = useState(false);
@@ -1403,6 +2345,7 @@ function FontStyleSelect({
         disabled={disabled}
         lockedHint={locked}
         expanded={open}
+        triggerStyle={triggerStyle}
         controls="sp-style-menu"
         onOpen={() => setOpen((o) => !o)}
         onKeyDown={(e) => {

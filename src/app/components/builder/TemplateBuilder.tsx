@@ -48,6 +48,7 @@ import { AutoBuildDialog } from "./AutoBuildDialog";
 import { ElementPalette } from "./ElementPalette";
 import { FieldListPanel } from "./FieldListPanel";
 import { FieldContextMenu, type MenuAction } from "./FieldContextMenu";
+import { inspectorGestureActive } from "./InspectorControls";
 import { WIZARD_STEPS, WizardStepper, type WizardStep } from "./WizardStepper";
 import {
   LOGO_PALETTE_PREFIX,
@@ -262,8 +263,11 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       },
       // Same field + same properties inside the window = one undo entry, so a
       // keystroke stream in the label input or a color scrub isn't forty
-      // steps. Distinct properties (or a pause) still push separately.
+      // steps. Distinct properties (or a pause) still push separately —
+      // except mid-gesture: while a scrub or slider drag is in progress the
+      // hold flag keeps the whole gesture in one entry regardless of pace.
       `patch:${id}:${Object.keys(patch).sort().join(",")}`,
+      inspectorGestureActive(),
     );
   }, [setDraft]);
 
@@ -1219,7 +1223,11 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                 />
               </div>
 
-              <div className="lg:col-span-5 space-y-3 w-full max-w-xl mx-auto lg:max-w-none">
+              {/* The canvas column stretches to the full row height (its
+                  siblings stay items-start) so the sticky card inside it has
+                  room to travel; it releases naturally at the region's end. */}
+              <div className="lg:col-span-5 w-full max-w-xl mx-auto lg:max-w-none lg:self-stretch">
+                <div className="lg:sticky space-y-3" style={{ top: "var(--space-lg)" }}>
                 <div className="sp-card p-4">
                   <div className="flex items-center justify-between gap-3 flex-wrap-reverse mb-3">
                     <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)", flex: "1 1 260px", minWidth: 0 }}>
@@ -1272,6 +1280,19 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                     </div>
                     </div>
                   </div>
+                  {/* The canvas sizes from its width (aspect-ratio +
+                      ResizeObserver), so capping the height means capping the
+                      width: never wider than what fits the viewport minus the
+                      pinned chrome around it. Keeps the stuck card fully in
+                      view instead of clipping. */}
+                  <div
+                    style={{
+                      maxWidth: `min(100%, calc((100dvh - (var(--space-2xl) + var(--space-3xl))) * ${
+                        draft.canvasWidth / draft.canvasHeight
+                      }))`,
+                      marginInline: "auto",
+                    }}
+                  >
                   {mode === "edit" ? (
                     <FieldOverlayEditor
                       canvasWidth={draft.canvasWidth}
@@ -1296,6 +1317,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                       instrument={false}
                     />
                   )}
+                  </div>
                 </div>
                 {stores.designImport.isConfigured() && mode === "edit" && (
                   <div className="flex items-center gap-4">
@@ -1315,6 +1337,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                     </button>
                   </div>
                 )}
+                </div>
               </div>
 
               <div className="lg:col-span-4 space-y-4 w-full max-w-xl mx-auto lg:max-w-none">

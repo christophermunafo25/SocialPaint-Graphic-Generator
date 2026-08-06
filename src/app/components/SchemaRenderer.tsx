@@ -145,6 +145,11 @@ export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererPro
   },
 );
 
+/** The renderer's fallback fill — what a field with no explicit fill paints
+ * with. Canvas DATA, not chrome: the inspector's add-fill and gradient
+ * defaults reuse it so there is exactly one source for the value. */
+export const DEFAULT_FILL_HEX = "#111111";
+
 function resolveColor(
   colorKey: string | undefined,
   colorHex: string | undefined,
@@ -154,7 +159,7 @@ function resolveColor(
     const entry = brandKit?.colors.find((c) => c.key === colorKey);
     if (entry) return entry.hex;
   }
-  return colorHex ?? "#111111";
+  return colorHex ?? DEFAULT_FILL_HEX;
 }
 
 function boxStyle(field: TemplateField): React.CSSProperties {
@@ -186,6 +191,10 @@ function contentBaseStyle(field: TemplateField): React.CSSProperties {
     height: "100%",
     // Element opacity (0-100, default 100)
     opacity: field.opacity !== undefined ? Math.max(0, Math.min(100, field.opacity)) / 100 : undefined,
+    // Flip mirrors the CONTENT inside the box (after box rotation), so it
+    // rides along in the builder's interaction boxes and the PNG export the
+    // same way opacity does.
+    transform: field.flipX || field.flipY ? `scale(${field.flipX ? -1 : 1}, ${field.flipY ? -1 : 1})` : undefined,
   };
 }
 

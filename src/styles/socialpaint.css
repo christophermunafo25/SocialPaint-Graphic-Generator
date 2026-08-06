@@ -122,6 +122,10 @@ html { scrollbar-gutter: stable; }
   --control-sm: 38px;
   --control-md: 46px;
   --control-lg: 54px;
+  /* Inspector density — the builder's property rows run tighter than the
+     38px form floor: label + control on a 32px line, Figma-inspector style.
+     Builder chrome only; member-facing forms keep the --control-* heights. */
+  --row-h-compact: 32px;
   --border-width: 1px;
 
   /* Layout */
@@ -456,6 +460,103 @@ button, input, select, textarea, optgroup {
    :focus-visible; both override the global 2px outline. */
 .sp-input:focus { border-color: var(--ring); box-shadow: none; outline: none; }
 .sp-input:focus-visible { border-color: var(--ring); box-shadow: none; outline: none; }
+
+/* Inspector numeric field — a composite control (scrub label + input + unit
+   suffix) that focuses as one box: same ring-coloured border treatment as
+   .sp-input, driven by the inner input's focus. */
+.sp-numfield:focus-within { border-color: var(--ring); }
+.sp-numfield[data-disabled] { color: var(--text-disabled); }
+
+/* Segmented icon group — alignment triplets, flip pair, resizing modes.
+   One shared hairline container, crisp control radius; the active segment
+   fills with the inverting neutral action fill (the "filled = on" rule). */
+.sp-seg {
+  display: inline-flex;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-control);
+  overflow: hidden;
+}
+.sp-seg button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 30px;
+  color: var(--text-secondary);
+  transition: background var(--dur-state) var(--ease), color var(--dur-state) var(--ease);
+}
+.sp-seg button + button { border-left: 1px solid var(--border); }
+.sp-seg button:hover:not(:disabled):not([data-active="true"]) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+.sp-seg button[data-active="true"] {
+  background: var(--fill-action);
+  color: var(--text-on-action);
+}
+.sp-seg button:disabled { color: var(--text-disabled); cursor: default; }
+.sp-seg button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-tight);
+  position: relative;
+  z-index: 1;
+}
+/* Text segments (resizing modes): the group fills the row, segments share
+   the width, labels at caption size. */
+.sp-seg[data-stretch] { display: flex; flex: 1; }
+.sp-seg[data-stretch] button {
+  flex: 1;
+  width: auto;
+  padding: 0 var(--space-2xs);
+  font-size: var(--type-caption-size);
+  letter-spacing: -0.01em;
+}
+
+/* Switch — the DS core Switch pattern (40×24 pill, sliding knob) on platform
+   tokens: the track fills with the inverting neutral action fill to show it
+   is on (the --fill-action rule), the knob carries the on-action color, and
+   the off state leans on the existing switch-background alias. */
+.sp-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  cursor: pointer;
+}
+.sp-switch[data-disabled] { cursor: default; opacity: 0.5; }
+.sp-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.sp-switch__track {
+  width: 40px;
+  height: 24px;
+  border-radius: var(--radius-pill);
+  background: var(--switch-background);
+  position: relative;
+  flex-shrink: 0;
+  transition: background var(--dur-state) var(--ease);
+}
+.sp-switch input:checked + .sp-switch__track { background: var(--fill-action); }
+.sp-switch input:focus-visible + .sp-switch__track { box-shadow: var(--focus-ring-tight); }
+.sp-switch__knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--text-primary);
+  transition: left var(--dur-state) var(--ease), background var(--dur-state) var(--ease);
+}
+.sp-switch input:checked + .sp-switch__track .sp-switch__knob {
+  left: 19px;
+  background: var(--text-on-action);
+}
+@media (prefers-reduced-motion: reduce) {
+  .sp-switch__track, .sp-switch__knob { transition: none; }
+}
 
 .sp-card {
   background: var(--bg-surface);

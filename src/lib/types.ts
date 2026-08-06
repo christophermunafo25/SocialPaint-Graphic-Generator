@@ -129,6 +129,11 @@ export interface TemplateField {
   width: number;
   height: number;
   rotation?: number; // degrees, about the box center
+  /** Mirror the content horizontally / vertically (Figma-style flip).
+   * Applied as a scale on the content inside the box, after rotation —
+   * renders identically in the builder, member preview, and PNG export. */
+  flipX?: boolean;
+  flipY?: boolean;
   anchor?: "topLeft" | "center";
   /** Canvas paint (layer) order — higher paints on top. This is a SEPARATE
    * concern from the fields array order, which is the member form order. */

@@ -27,7 +27,10 @@ interface Hist<T> {
 
 export interface History<T> {
   state: T;
-  set(updater: T | ((prev: T) => T), coalesceKey?: string): void;
+  /** `hold` keeps coalescing alive beyond the time window while a pointer
+   * gesture (scrub, slider drag) is in progress — the whole gesture lands
+   * as ONE history entry no matter how slowly the pointer moves. */
+  set(updater: T | ((prev: T) => T), coalesceKey?: string, hold?: boolean): void;
   undo(): void;
   redo(): void;
   canUndo: boolean;
@@ -47,7 +50,7 @@ export function useHistory<T>(initial: T | (() => T)): History<T> {
   /** Last coalesce key + timestamp; null after discrete ops, undo, reset. */
   const lastKey = useRef<{ key: string; time: number } | null>(null);
 
-  const set = useCallback((updater: T | ((prev: T) => T), coalesceKey?: string) => {
+  const set = useCallback((updater: T | ((prev: T) => T), coalesceKey?: string, hold?: boolean) => {
     const now = Date.now();
     setHist((h) => {
       const next = apply(updater, h.present);
@@ -56,7 +59,7 @@ export function useHistory<T>(initial: T | (() => T)): History<T> {
         coalesceKey !== undefined &&
         lastKey.current !== null &&
         lastKey.current.key === coalesceKey &&
-        now - lastKey.current.time < COALESCE_MS;
+        (hold === true || now - lastKey.current.time < COALESCE_MS);
       lastKey.current = coalesceKey ? { key: coalesceKey, time: now } : null;
       if (coalesce) {
         // Extend the in-progress entry: the pre-stream state is already on

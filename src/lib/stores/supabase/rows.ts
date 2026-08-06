@@ -93,6 +93,8 @@ export interface TemplateFieldRow {
   width: number;
   height: number;
   rotation: number | null;
+  flip_x: boolean | null;
+  flip_y: boolean | null;
   anchor: TemplateField["anchor"] | null;
   z_index: number | null;
   corner_radius: import("../../types").CornerRadius | null;
@@ -142,6 +144,8 @@ export const toTemplateField = (r: TemplateFieldRow): TemplateField => ({
   width: Number(r.width),
   height: Number(r.height),
   rotation: opt(r.rotation) === undefined ? undefined : Number(r.rotation),
+  flipX: opt(r.flip_x),
+  flipY: opt(r.flip_y),
   anchor: opt(r.anchor),
   zIndex: opt(r.z_index) === undefined ? undefined : Number(r.z_index),
   cornerRadius: opt(r.corner_radius),
@@ -189,6 +193,8 @@ export const fieldToRow = (
   width: f.width,
   height: f.height,
   rotation: f.rotation ?? null,
+  flip_x: f.flipX ?? null,
+  flip_y: f.flipY ?? null,
   anchor: f.anchor ?? null,
   z_index: f.zIndex ?? null,
   corner_radius: f.cornerRadius ?? null,
