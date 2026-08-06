@@ -115,6 +115,8 @@
   --border-width: 1px;
 
   /* Layout */
+  --page-max: 1240px; /* THE content column cap — one knob, see .sp-page */
+  --page-pad: 32px;   /* column gutter; 16px under 768 */
   --bp-sm:  480px;
   --bp-md:  768px;
   --bp-lg: 1024px;
@@ -886,9 +888,17 @@ button, input, select, textarea, optgroup {
 }
 .sp-icon-btn:hover { color: var(--sb-fg-active); }
 
-/* THE content column's padding. Lives here rather than inline on <Page> so
-   it can shrink to a 16px gutter on mobile. */
-.sp-page { padding: 40px 32px 64px; }
+/* THE content column. Centred in the region right of the sidebar —
+   margin-inline: auto splits the surplus equally, so the gutter off the rail
+   equals the gutter off the window edge at every viewport and in both
+   sidebar states. Width and gutter are tokens (--page-max / --page-pad);
+   nothing else may cap or offset the column. */
+.sp-page {
+  max-width: var(--page-max);
+  margin-inline: auto;
+  padding: 40px var(--page-pad) 64px;
+  box-sizing: border-box;
+}
 
 /* Content-panel card padding (Insights, Brand Studio, Settings, People). */
 .sp-card--content { padding: 24px; }
@@ -1519,7 +1529,7 @@ button, input, select, textarea, optgroup {
 /* --- Responsive ----------------------------------------------------------- */
 @media (max-width: 767px) {
   /* 16px page gutter on mobile, per the DS layout spec. */
-  .sp-page { padding: var(--space-md) var(--space-sm) var(--space-2xl); }
+  .sp-page { --page-pad: 16px; padding: var(--space-md) var(--page-pad) var(--space-2xl); }
   .sp-shelf { margin-top: var(--space-xl); }
   .sp-filterbar { padding: var(--space-xs) 0; }
 }
