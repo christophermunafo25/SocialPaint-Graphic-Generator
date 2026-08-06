@@ -172,7 +172,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
                       justifyContent: "center",
                       border: current ? "1px solid transparent" : "1px solid var(--border-strong)",
                       background: current ? "var(--fill-primary)" : filled ? "var(--bg-hover)" : "transparent",
-                      color: current ? "var(--text-on-accent)" : "var(--text-secondary)",
+                      color: current ? "var(--text-on-volt)" : "var(--text-secondary)",
                       transition: "background var(--dur-state) var(--ease), color var(--dur-state) var(--ease)",
                     }}
                   >
@@ -195,7 +195,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
                   textTransform: "uppercase",
                   border: step === formFields.length ? "1px solid transparent" : "1px solid var(--border-strong)",
                   background: step === formFields.length ? "var(--fill-primary)" : "transparent",
-                  color: step === formFields.length ? "var(--text-on-accent)" : "var(--text-secondary)",
+                  color: step === formFields.length ? "var(--text-on-volt)" : "var(--text-secondary)",
                   transition: "background var(--dur-state) var(--ease), color var(--dur-state) var(--ease)",
                 }}
               >

@@ -16,7 +16,8 @@
      display face.
    - Volt #B5FF6A is THE primary brand colour: the commit/CTA signal and the
      dark-mode focus ring, fill-only on light (it cannot clear contrast as
-     text on parchment). Fire stays the mark accent, never a control fill.
+     text on parchment). Icons and text ON Volt are always Ink #070708
+     (--text-on-volt) — in chrome and in template guidance alike.
    - No gradients as surface, no drop shadows in either mode, no glass.
    - Headings are Raveo Display Medium in sentence case (2026-08-06); bold
      is banned everywhere in chrome. Small labels (eyebrows, table headers)
@@ -67,6 +68,11 @@ html { scrollbar-gutter: stable; }
 :root {
   --blue:   #72EEFF; /* Aqua — informs; AI moments */
   --volt:   #B5FF6A; /* Volt — success, and the commit/CTA action */
+  /* RULE: any icon or text sitting ON Volt is Ink — no exceptions, either
+     theme. Volt is bright enough that only Ink clears contrast on it
+     (~13:1); anything else is a defect. Use this token for every glyph a
+     Volt surface carries. */
+  --text-on-volt: #070708;
   --white:  #F9F9F8;
   --gray:   #F9F9F8;
   --ink:    #070708;
@@ -289,7 +295,7 @@ html { scrollbar-gutter: stable; }
   /* Brand-moment surface — the sign-in and onboarding front doors ground in
      Volt, THE primary. Ink on Volt reads at ~13:1. */
   --brand-surface:    var(--volt);
-  --brand-surface-fg: #070708;
+  --brand-surface-fg: var(--text-on-volt);
 
   /* Charts are not controls, so accents are legitimate here. Two real series:
      Volt and Aqua. A third has to separate by shape or label, not colour. */
@@ -316,7 +322,7 @@ html { scrollbar-gutter: stable; }
   --btn-primary-bg-hover: color-mix(in srgb, var(--text-on-action) 8%, var(--fill-action));
 }
 
-::selection { background: var(--volt); color: #070708; }
+::selection { background: var(--volt); color: var(--text-on-volt); }
 
 /* ── Base ───────────────────────────────────────────────────────────────── */
 
@@ -420,7 +426,7 @@ button, input, select, textarea, optgroup {
 .sp-btn-ghost { background: transparent; color: var(--text-secondary); border-color: var(--border-strong); }
 .sp-btn-ghost:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-primary); }
 /* Lime CTA — same fill both modes; deep green carries the text */
-.sp-btn-solar { background: var(--volt); color: var(--text-on-accent); }
+.sp-btn-solar { background: var(--volt); color: var(--text-on-volt); }
 .sp-btn-solar:hover:not(:disabled) { background: color-mix(in srgb, var(--volt) 86%, #fff); }
 
 .sp-input {
