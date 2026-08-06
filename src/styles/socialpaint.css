@@ -520,7 +520,6 @@ button, input, select, textarea, optgroup {
 .sp-sidebar-item:hover { background: var(--bg-hover); color: var(--sb-fg-active); }
 .sp-sidebar-item[data-active="true"] {
   background: var(--sb-active-bg);
-  border-color: var(--sb-active-border);
   color: var(--sb-fg-active);
 }
 
@@ -832,11 +831,15 @@ button, input, select, textarea, optgroup {
   gap: var(--space-sm);
   scroll-snap-type: x mandatory;
   scroll-behavior: smooth;
-  /* The padding keeps a card's focus ring from being clipped by the
-     scroller. scroll-padding moves the snapport in to match: without it,
-     mandatory snap parks the first card at scrollLeft 2 rather than 0, and
-     the rail never reports itself as being at the start. */
-  padding: 2px;
+  /* The padding keeps a card's focus ring — and the top of a card mid
+     hover-lift (translateY(-4px) + 2px ring = 6px) — from being clipped by
+     the scroller, whose overflow-x: auto clips vertically too. The negative
+     top margin cancels the extra headroom so resting cards sit exactly
+     where they always did. scroll-padding moves the snapport in to match:
+     without it, mandatory snap parks the first card at scrollLeft 2 rather
+     than 0, and the rail never reports itself as being at the start. */
+  padding: 6px 2px 2px;
+  margin-top: -4px;
   scroll-padding-inline: 2px;
 }
 .sp-shelf__track:focus-visible { outline: none; box-shadow: var(--focus-ring-tight); }
