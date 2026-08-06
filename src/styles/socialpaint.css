@@ -19,9 +19,9 @@
      text on parchment). Icons and text ON Volt are always Ink #070708
      (--text-on-volt) — in chrome and in template guidance alike.
    - No gradients as surface, no drop shadows in either mode, no glass.
-   - Headings are Raveo Display Medium in sentence case (2026-08-06); bold
-     is banned everywhere in chrome. Small labels (eyebrows, table headers)
-     stay ALL CAPS mono at 0.04em tracking.
+   - Headings are Raveo Display SemiBold in sentence case (2026-08-08);
+     bold proper is banned everywhere in chrome. Small labels (eyebrows,
+     table headers) stay ALL CAPS mono at 0.04em tracking.
 
    Themes are scoped to [data-theme="light" | "dark"], which
    ColorSchemeProvider sets on <html> alongside the .dark class that
@@ -33,12 +33,12 @@
 
 @import url("https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap");
 
-/* Raveo Display — the platform face (Raveo design system), vendored
-   locally at the two weights the system allows: Regular and Medium. No bold
-   anywhere in chrome — emphasis is Medium, colour, or size. Registered under
-   a platform-private family so a tenant's font upload can never shadow the
-   chrome (@font-face is document-global; see the Neuething incident,
-   2026-08-05). */
+/* Raveo Display — the platform face (Raveo design system), vendored at
+   Regular, Medium, and SemiBold (headings run SemiBold at Chris's
+   direction, 2026-08-08 — the one sanctioned step past the DS's 400/500;
+   bold proper stays banned). Registered under a platform-private family so
+   a tenant's font upload can never shadow the chrome (@font-face is
+   document-global; see the Neuething incident, 2026-08-05). */
 @font-face {
   font-family: "Raveo Display Platform";
   src: url("../assets/fonts/raveo/RaveoDisplay-Regular.otf") format("opentype");
@@ -50,6 +50,13 @@
   font-family: "Raveo Display Platform";
   src: url("../assets/fonts/raveo/RaveoDisplay-Medium.otf") format("opentype");
   font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Raveo Display Platform";
+  src: url("../assets/fonts/raveo/RaveoDisplay-SemiBold.otf") format("opentype");
+  font-weight: 600;
   font-style: normal;
   font-display: swap;
 }
@@ -79,7 +86,7 @@ html { scrollbar-gutter: stable; }
 
   /* Typography */
   --font-head:    "Raveo Display Platform", "Raveo Display", system-ui, sans-serif;
-  --weight-head:  500; /* every heading step — Raveo Medium; the system bans bold */
+  --weight-head:  600; /* every heading step — Raveo SemiBold */
   --font-body: "Raveo Display Platform", "Raveo Display", system-ui, -apple-system, sans-serif;
   --font-ui:   "Raveo Display Platform", "Raveo Display", system-ui, -apple-system, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
