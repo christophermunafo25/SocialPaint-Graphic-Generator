@@ -3,10 +3,11 @@
    Ported from the "SocialPaint Design System" Claude Design project
    (tokens/*.css, SKILL.md, docs/02-tokens.md), 2026-07-30.
 
-   Five colours only: Black #121212, White #F9F9F8, Orange #FF4D12,
-   Blue #66ECFE, Green #B1FF63. Danger #A50000 / #B51F16 and Warning #FFD900
-   sit outside the palette as functional signals — never brand colours,
-   never decorative.
+   Palette (Raveo design system, 2026-08-06): Ink #070708 and Parchment
+   #F9F9F8 are the floors; Fire #FF7649 is the mark accent, Volt #B5FF6A the
+   commit/CTA signal, Aqua #72EEFF informs. Error Clay #C94040 and Warning
+   #FFD900 sit outside the palette as functional signals — never brand
+   colours, never decorative.
 
    Non-negotiables carried from the DS:
    - Soft cards (20px) against crisp controls (5px). Never meet at 12px.
@@ -28,48 +29,45 @@
    members generate, never this chrome.
    ========================================================================== */
 
-@import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap");
 
-/* Neuething Sans Extra Bold EXTRA Expanded — the licensed heading face,
-   vendored locally. One cut carries every heading at every step.
-
-   This departs from the published DS on two points, at Chris's direction,
-   pending an update to the design system itself:
-   - the DS splits headings between Ultra Expanded (800) for Display–H2 and
-     a variable cut at 700 for H3 and below; the app runs this single face
-     throughout instead;
-   - the DS sets headings in sentence case; the app sets them in ALL CAPS. */
+/* Raveo Display — the platform face (Raveo design system), vendored
+   locally at the two weights the system allows: Regular and Medium. No bold
+   anywhere in chrome — emphasis is Medium, colour, or size. Registered under
+   a platform-private family so a tenant's font upload can never shadow the
+   chrome (@font-face is document-global; see the Neuething incident,
+   2026-08-05). */
 @font-face {
-  font-family: "Neuething Sans Platform";
-  src: url("../assets/fonts/neuething/NeuethingSans-ExtraBoldExtraExpanded.otf") format("opentype");
-  font-weight: 800;
+  font-family: "Raveo Display Platform";
+  src: url("../assets/fonts/raveo/RaveoDisplay-Regular.otf") format("opentype");
+  font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
-
-/* The DS's variable cut (NeuethingSans-variableVF) is vendored alongside but
-   deliberately NOT registered: its axes are custom-scaled (wght 50–100,
-   wdth 50–100, not the OpenType-standard ranges), so a normal font-weight
-   descriptor would clamp every CSS weight to the axis maximum and render one
-   arbitrary instance. Using it correctly requires font-variation-settings
-   per step — a typography change, out of scope for the colour patch. */
+@font-face {
+  font-family: "Raveo Display Platform";
+  src: url("../assets/fonts/raveo/RaveoDisplay-Medium.otf") format("opentype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
 
 /* ── Primitives ─────────────────────────────────────────────────────────────
    The five brand colours. These are the only tokens without a category
    prefix — that is how you tell a primitive at a glance. Never reach past
    the semantic tier to one of these in product code. */
 :root {
-  --orange: #FF4D12; /* the mark and the focus ring — never fills a control */
+  --orange: #FF7649; /* Fire — the mark accent; Ultra-tier signaling */
   /* The Orange gradient — everywhere Orange used to paint FLAT, it now runs
-     #FF4D12 → #FF8235, linear. Solid --orange remains for the places a
+     #FF7649 → #FF8235, linear. Solid --orange remains for the places a
      gradient physically can't go: focus rings, borders, icon strokes. */
   --orange-2: #FF8235;
   --grad-primary: linear-gradient(135deg, var(--orange) 0%, var(--orange-2) 100%);
-  --blue:   #66ECFE; /* secondary accent — informs, mostly in charts */
-  --volt:   #B1FF63; /* Green — success, and the commit action */
+  --blue:   #72EEFF; /* Aqua — informs; AI moments */
+  --volt:   #B5FF6A; /* Volt — success, and the commit/CTA action */
   --white:  #F9F9F8;
   --gray:   #F9F9F8;
-  --ink:    #121212;
+  --ink:    #070708;
 
   /* Retired. Forrest is not in the five-colour palette. Aliased to the mark so
      any straggling reference degrades to a brand colour rather than to nothing;
@@ -77,11 +75,11 @@
   --forrest: var(--orange);
 
   /* Typography */
-  --font-head:    "Inter Tight", system-ui, sans-serif;
-  --weight-head:  600; /* every heading step — Inter Tight SemiBold */
-  --font-body: "Inter Tight", system-ui, -apple-system, sans-serif;
-  --font-ui:   "Inter Tight", system-ui, -apple-system, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-head:    "Raveo Display Platform", "Raveo Display", system-ui, sans-serif;
+  --weight-head:  500; /* every heading step — Raveo Medium; the system bans bold */
+  --font-body: "Raveo Display Platform", "Raveo Display", system-ui, -apple-system, sans-serif;
+  --font-ui:   "Raveo Display Platform", "Raveo Display", system-ui, -apple-system, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
   --weight-ui: 500;
 
   --type-display-size: 80px; --type-display-lh: 0.92; --type-display-track: -0.01em;
@@ -173,19 +171,19 @@
    The primary mode. Ink is the floor; elevation is surface colour, never
    shadow. */
 [data-theme="dark"] {
-  --bg-canvas:     #121212;
-  --bg-surface:    #1C1C1C;
-  --bg-raised:     #262626;
-  --bg-hover:      #303030;
+  --bg-canvas:     #070708;
+  --bg-surface:    #18191A;
+  --bg-raised:     #1F1F1F;
+  --bg-hover:      #2A2A2B;
   --bg-plate:      #FFFFFF; /* imagery plate — never inverts */
-  --border:        #2B2B2B; /* decorative separation only */
-  --border-strong: #3D3D3D;
+  --border:        rgba(241, 241, 241, 0.10); /* decorative separation only */
+  --border-strong: rgba(241, 241, 241, 0.20);
 
-  --text-primary:   #F9F9F8;
-  --text-secondary: #C6C6C2;
-  --text-muted:     #949490;
-  --text-disabled:  #5C5C58;
-  --text-on-accent: #121212;
+  --text-primary:   #F1F1F1;
+  --text-secondary: #A0A0A0;
+  --text-muted:     rgba(241, 241, 241, 0.4);
+  --text-disabled:  rgba(241, 241, 241, 0.25);
+  --text-on-accent: #070708;
 
   --text-on-surface:           #F9F9F8;
   --text-on-surface-secondary: #C6C6C2;
@@ -198,21 +196,21 @@
      Neutral by rule: it inverts against the surface instead of carrying a hue,
      which is what keeps Orange free for the mark and Green free for meaning. */
   --fill-action:    #F9F9F8;
-  --text-on-action: #121212;
+  --text-on-action: #070708;
   --border-control: #F9F9F8; /* the edge of a pressable outlined control */
 
-  --state-primary-on-surface:   #FF4D12;
-  --state-attention-on-surface: #B1FF63;
-  --state-danger-on-surface:    #D94637; /* 4.35:1 — one ramp step lighter than light mode */
+  --state-primary-on-surface:   #FF7649;
+  --state-attention-on-surface: #B5FF6A;
+  --state-danger-on-surface:    #C94040; /* 4.35:1 — one ramp step lighter than light mode */
   --state-warning-on-surface:   #FFD900;
 
-  --state-primary:   #FF4D12; --fill-primary:   #FF4D12;
-  --state-info:      #66ECFE; --fill-info:      #66ECFE;
-  --state-attention: #B1FF63; --fill-attention: #B1FF63;
-  --state-danger:    #A50000; --fill-danger:    #A50000;
+  --state-primary:   #FF7649; --fill-primary:   #FF7649;
+  --state-info:      #72EEFF; --fill-info:      #72EEFF;
+  --state-attention: #B5FF6A; --fill-attention: #B5FF6A;
+  --state-danger:    #C94040; --fill-danger:    #C94040;
   --state-warning:   #FFD900; --fill-warning:   #FFD900;
 
-  --ring: #FF4D12; /* 5.64:1 against the dark canvas */
+  --ring: #FF7649; /* 5.64:1 against the dark canvas */
 
   --shadow-sm: none;
   --shadow-md: none;
@@ -226,44 +224,44 @@
 [data-theme="light"] {
   --bg-canvas:     #F9F9F8;
   --bg-surface:    #FFFFFF;
-  --bg-raised:     #F0F0EE;
-  --bg-hover:      #E7E7E4;
+  --bg-raised:     #F1F1F1;
+  --bg-hover:      #ECECEA;
   --bg-plate:      #FFFFFF;
-  --border:        #E2E2DE;
-  --border-strong: #C6C6C2;
+  --border:        rgba(7, 7, 8, 0.08);
+  --border-strong: rgba(7, 7, 8, 0.16);
 
-  --text-primary:   #121212;
-  --text-secondary: #4A4A46;
-  --text-muted:     #6E6E6A;
-  --text-disabled:  #A2A29E;
-  --text-on-accent: #121212;
+  --text-primary:   #070708;
+  --text-secondary: #666666;
+  --text-muted:     rgba(7, 7, 8, 0.4);
+  --text-disabled:  rgba(7, 7, 8, 0.25);
+  --text-on-accent: #070708;
 
-  --text-on-surface:           #121212;
+  --text-on-surface:           #070708;
   --text-on-surface-secondary: #4A4A46;
   --text-on-surface-muted:     #6E6E6A;
   --border-on-surface:         #E2E2DE;
   --bg-surface-raised:         #F0F0EE;
   --bg-surface-hover:          #E7E7E4;
 
-  --fill-action:    #121212;
+  --fill-action:    #070708;
   --text-on-action: #F9F9F8;
-  --border-control: #121212;
+  --border-control: #070708;
 
   /* Signals keep their hue as text; the brand accent does not. Success and warning drop
      to the darkest step of their own ramp that clears AA. Orange collapses to Black —
      an orange word in running text would read as a status. The bright stays in --fill-*. */
-  --state-primary-on-surface:   #121212; /* Orange is identity, not a signal — it stays neutral as text */
+  --state-primary-on-surface:   #070708; /* Orange is identity, not a signal — it stays neutral as text */
   --state-attention-on-surface: #467200; /* Green holds its hue as text · 5.44:1 */
-  --state-danger-on-surface:    #B51F16;
+  --state-danger-on-surface:    #C94040;
   --state-warning-on-surface:   #756200;
 
-  --state-primary:   #121212; --fill-primary:   #FF4D12;
-  --state-info:      #121212; --fill-info:      #66ECFE;
-  --state-attention: #121212; --fill-attention: #B1FF63;
-  --state-danger:    #A50000; --fill-danger:    #A50000;
+  --state-primary:   #070708; --fill-primary:   #FF7649;
+  --state-info:      #070708; --fill-info:      #72EEFF;
+  --state-attention: #070708; --fill-attention: #B5FF6A;
+  --state-danger:    #C94040; --fill-danger:    #C94040;
   --state-warning:   #756200; --fill-warning:   #FFD900;
 
-  --ring: #FF4D12; /* 3.15:1 against the light canvas — clears the 3:1 non-text floor */
+  --ring: #FF7649; /* 3.15:1 against the light canvas — clears the 3:1 non-text floor */
 
   --shadow-sm: none;
   --shadow-md: none;
@@ -292,7 +290,7 @@
   /* Brand-moment surface — was a Forrest ground with a Volt label. Orange is
      the brand ground now. */
   --brand-surface:    var(--orange);
-  --brand-surface-fg: #121212; /* 5.70:1 */
+  --brand-surface-fg: #070708; /* 5.70:1 */
 
   /* Charts are not controls, so accents are legitimate here. Two real series:
      Orange and Blue. A third has to separate by shape or label, not colour. */
@@ -319,7 +317,7 @@
   --btn-primary-bg-hover: color-mix(in srgb, var(--text-on-action) 8%, var(--fill-action));
 }
 
-::selection { background: var(--volt); color: #121212; }
+::selection { background: var(--volt); color: #070708; }
 
 /* ── Base ───────────────────────────────────────────────────────────────── */
 
@@ -1172,13 +1170,13 @@ button, input, select, textarea, optgroup {
 }
 
 /* ── Confirm flash ──
-   Literal rgba of --volt (#B1FF63), not color-mix: Chrome drops the alpha
+   Literal rgba of --volt (#B5FF6A), not color-mix: Chrome drops the alpha
    when it interpolates a color-mix()'d color() inside a keyframe, which
    turns the wash into a solid lime bar. */
 @keyframes sp-inline-edit-flash {
-  0%   { background-color: rgba(177, 255, 99, 0.18); }
-  60%  { background-color: rgba(177, 255, 99, 0.12); }
-  100% { background-color: rgba(177, 255, 99, 0); }
+  0%   { background-color: rgba(181, 255, 106, 0.18); }
+  60%  { background-color: rgba(181, 255, 106, 0.12); }
+  100% { background-color: rgba(181, 255, 106, 0); }
 }
 
 .sp-inline-edit[data-flash="true"] {
@@ -1207,7 +1205,7 @@ button, input, select, textarea, optgroup {
      timer instead of animating out. */
   .sp-inline-edit[data-flash="true"] {
     animation: none;
-    background-color: rgba(177, 255, 99, 0.12);
+    background-color: rgba(181, 255, 106, 0.12);
   }
 }
 
@@ -1597,8 +1595,8 @@ button, input, select, textarea, optgroup {
 /* Solar is the system's commit variant: the action that sends work to the world.
    Green is near-white in luminance, so the fill cannot bound itself on a light
    canvas (1.13:1) and takes a darker green edge at 5.44:1 light / 3.27:1 dark. */
-.sp-btn-solar { background: var(--fill-attention); color: #121212; border-color: #467200; }
-.sp-btn-solar:hover:not(:disabled) { background: color-mix(in srgb, #121212 8%, var(--fill-attention)); }
+.sp-btn-solar { background: var(--fill-attention); color: #070708; border-color: #467200; }
+.sp-btn-solar:hover:not(:disabled) { background: color-mix(in srgb, #070708 8%, var(--fill-attention)); }
 
 /* Destructive is outlined, never filled: a red fill outranks the primary action
    and reads as the recommended path, which is the opposite of the intent. */

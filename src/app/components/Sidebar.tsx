@@ -407,9 +407,9 @@ export function Sidebar() {
             onClick={() => go({ name: role === "admin" ? "adminTemplates" : "portal" })}
             title="SocialPaint — home"
             className="mx-auto mb-6"
-            style={{ color: "var(--orange)" }}
+            style={{ color: "var(--text-primary)" }}
           >
-            <BrandMark width={26} gradient />
+            <BrandMark width={26} />
           </button>
         )}
 
