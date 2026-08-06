@@ -1,10 +1,12 @@
 import React from "react";
 
 /** THE content column — every page renders inside this, and none defines its
- * own container. Left-aligned (never centered): 32px gutter off the sidebar,
- * max-width 1440px, 40px top / 64px bottom padding, 32px right padding
- * before the viewport edge. `narrow` caps the inner content (People 900,
- * Settings 760) while keeping the shared left edge. */
+ * own container. Horizontally centred in the region right of the sidebar:
+ * the gutter off the rail equals the gutter off the window edge at every
+ * viewport and in both sidebar states. The width cap and gutter are tokens
+ * (--page-max / --page-pad on .sp-page) — one knob, no per-page overrides.
+ * `narrow` caps the inner content (People 900, Settings 760) and centres it
+ * inside the column. */
 export function Page({
   narrow,
   children,
@@ -13,8 +15,8 @@ export function Page({
   children: React.ReactNode;
 }) {
   return (
-    <div className="sp-page" style={{ maxWidth: 1440 }}>
-      <div style={narrow ? { maxWidth: narrow } : undefined}>{children}</div>
+    <div className="sp-page">
+      <div style={narrow ? { maxWidth: narrow, marginInline: "auto" } : undefined}>{children}</div>
     </div>
   );
 }
