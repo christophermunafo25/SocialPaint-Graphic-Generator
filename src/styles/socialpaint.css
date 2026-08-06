@@ -447,14 +447,12 @@ button, input, select, textarea, optgroup {
   transition: box-shadow var(--dur-state) var(--ease), border-color var(--dur-state) var(--ease);
 }
 .sp-input::placeholder { color: var(--text-disabled); }
-.sp-input:focus { border-color: transparent; box-shadow: var(--focus-ring-tight); }
-/* `.sp-input` clears the outline, so the ring above is the only focus
-   affordance — and on a <select> or a <button> styled as a control it
-   computes away to nothing, leaving keyboard users with no indicator at all.
-   Text inputs were unaffected: the focusable element there is the bare inner
-   <input>, which picks up the global :focus-visible outline. Same 2px ring at
-   2px offset as everywhere else, restored for the elements that lost it. */
-.sp-input:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+/* A focused text box shows a 1px ring-coloured BORDER — the control's own
+   1px edge changing colour, never a thicker halo or a second outline. Two
+   rules because a <select> or button-styled control only ever fires
+   :focus-visible; both override the global 2px outline. */
+.sp-input:focus { border-color: var(--ring); box-shadow: none; outline: none; }
+.sp-input:focus-visible { border-color: var(--ring); box-shadow: none; outline: none; }
 
 .sp-card {
   background: var(--bg-surface);
