@@ -96,7 +96,7 @@ html { scrollbar-gutter: stable; }
   --type-h1-size: 48px;      --type-h1-lh: 0.95;      --type-h1-track: -0.01em;
   --type-h2-size: 40px;      --type-h2-lh: 1;         --type-h2-track: -0.01em;
   --type-h3-size: 32px;      --type-h3-lh: 1.1;       --type-h3-track: -0.01em;
-  --type-h4-size: 26px;      --type-h4-lh: 1.2;       --type-h4-track: -0.01em;
+  --type-h4-size: 30px;      --type-h4-lh: 1.2;       --type-h4-track: -0.01em; /* page titles */
   --type-cardtitle-size: 20px; --type-cardtitle-lh: 1.3; --type-cardtitle-track: -0.01em;
   --type-body-size: 15px;    --type-body-lh: 1.5;     --type-body-track: -0.015em;
   --type-label-size: 13px;   --type-label-lh: 1.25;   --type-label-track: -0.01em;
