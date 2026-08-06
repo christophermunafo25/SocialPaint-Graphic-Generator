@@ -63,47 +63,37 @@ const BY_ID = new Map(PLATFORMS.map((p) => [p.id, p]));
 
 export const platformById = (id: PlatformId): Platform => BY_ID.get(id)!;
 
-/** What a known canvas size means. Keyed by the `canvas_presets` row id, so
- *  this table and `supabase/seed.sql` stay in lockstep — adding a preset row
- *  means adding one line here, and nothing else.
- *
- *  These are the ONLY sizes the catalogue knows about, because they are the
- *  only ones the repo actually declares. Dimensions are not invented here;
- *  every entry mirrors a seeded row. */
-interface SizeMeaning {
-  platform: PlatformId;
-  /** "Feed post" | "Story" | "Banner" | … — sentence case, DS content rules. */
+/** What a known canvas size means. One size can serve SEVERAL platforms —
+ *  1080×1350 is the portrait post on Instagram, Facebook, AND LinkedIn — and
+ *  the catalogue shows it that way: the platform list drives the group label
+ *  ("Instagram · Facebook · LinkedIn Portrait") and search. Order inside
+ *  `platforms` is display order; the first entry is the primary (icons,
+ *  stable ids). Dimensions mirror the published size sheet, 2026-08-07. */
+export interface SizeMeaning {
+  platforms: PlatformId[];
+  /** "Portrait post" | "Story · Reel · Vertical video" | … — sentence case. */
   assetType: string;
 }
 
-const SIZE_MEANING: Record<string, SizeMeaning> = {
-  "square-1440": { platform: "general", assetType: "Square canvas" },
-  "ig-post-1080": { platform: "instagram", assetType: "Feed post" },
-  "ig-story-1080": { platform: "instagram", assetType: "Story" },
-  "fb-post-1200": { platform: "facebook", assetType: "Feed post" },
-  "li-post-1200": { platform: "linkedin", assetType: "Feed post" },
-};
-
-/** Every seeded size, whether or not it is currently offered to admins.
- *  `listCanvasPresets()` filters to `enabled`, which is the right rule for
- *  the builder's size picker but the wrong one here: a template built at a
- *  size that was later disabled still belongs to its platform. */
-export const KNOWN_SIZES: Array<CanvasPreset & SizeMeaning> = [
-  { id: "square-1440", label: "Square (1440×1440)", width: 1440, height: 1440, enabled: true, ...SIZE_MEANING["square-1440"] },
-  { id: "ig-post-1080", label: "Instagram Post (1080×1080)", width: 1080, height: 1080, enabled: false, ...SIZE_MEANING["ig-post-1080"] },
-  { id: "ig-story-1080", label: "Instagram Story (1080×1920)", width: 1080, height: 1920, enabled: false, ...SIZE_MEANING["ig-story-1080"] },
-  { id: "fb-post-1200", label: "Facebook (1200×630)", width: 1200, height: 630, enabled: false, ...SIZE_MEANING["fb-post-1200"] },
-  { id: "li-post-1200", label: "LinkedIn (1200×627)", width: 1200, height: 627, enabled: false, ...SIZE_MEANING["li-post-1200"] },
+export const KNOWN_SIZES: Array<{ width: number; height: number } & SizeMeaning> = [
+  { width: 1080, height: 1350, platforms: ["instagram", "facebook", "linkedin"], assetType: "Portrait post" },
+  { width: 1080, height: 1080, platforms: ["instagram", "facebook"], assetType: "Square post" },
+  { width: 1080, height: 566,  platforms: ["instagram"], assetType: "Landscape post" },
+  { width: 1080, height: 1920, platforms: ["instagram", "facebook", "linkedin"], assetType: "Story · Reel · Vertical video" },
+  { width: 1200, height: 630,  platforms: ["facebook"], assetType: "Link preview" },
+  { width: 1200, height: 1200, platforms: ["linkedin"], assetType: "Square post" },
+  { width: 1200, height: 627,  platforms: ["linkedin"], assetType: "Landscape post · Link preview" },
+  { width: 1440, height: 1440, platforms: ["general"], assetType: "Square canvas" },
 ];
 
 /** Exact dimension match only. A near-miss is a different size, not a typo —
  *  guessing would put templates on shelves they don't belong to. */
 export function classifySize(width: number, height: number): SizeMeaning {
   const hit = KNOWN_SIZES.find((s) => s.width === width && s.height === height);
-  if (hit) return { platform: hit.platform, assetType: hit.assetType };
+  if (hit) return { platforms: hit.platforms, assetType: hit.assetType };
   // An unseeded size is honestly unclassifiable; it still belongs somewhere
   // the member can find it.
-  return { platform: "general", assetType: "Custom size" };
+  return { platforms: ["general"], assetType: "Custom size" };
 }
 
 export type Orientation = "square" | "portrait" | "vertical" | "landscape";

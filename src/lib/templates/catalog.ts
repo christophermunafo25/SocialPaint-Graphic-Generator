@@ -21,7 +21,11 @@ export interface CatalogTemplate {
   id: string;
   name: string;
   description: string;
+  /** Primary platform (first of `platforms`) — icons and stable group ids. */
   platform: PlatformId;
+  /** Every platform this size serves, display order. */
+  platforms: PlatformId[];
+  /** All platform names joined — "Instagram · Facebook · LinkedIn". */
   platformLabel: string;
   assetType: string;
   width: number;
@@ -66,14 +70,15 @@ function colorModeOf(t: TemplateSchema): ColorMode | null {
 }
 
 export function toCatalogTemplate(t: TemplateSchema): CatalogTemplate {
-  const { platform, assetType } = classifySize(t.canvasWidth, t.canvasHeight);
+  const { platforms, assetType } = classifySize(t.canvasWidth, t.canvasHeight);
   const editable = t.fields.filter((f) => !f.static);
   return {
     id: t.id,
     name: t.name,
     description: t.description,
-    platform,
-    platformLabel: platformById(platform).label,
+    platform: platforms[0],
+    platforms,
+    platformLabel: platforms.map((p) => platformById(p).label).join(" · "),
     assetType,
     width: t.canvasWidth,
     height: t.canvasHeight,
