@@ -102,7 +102,8 @@ export function AuthPage() {
           <p className="sp-eyebrow mb-1" style={{ color: "var(--brand-surface-fg)" }}>
             Brand template portal
           </p>
-          <h1 className="sp-hero-title" style={{ color: "var(--white)" }}>
+          {/* Ink on the brand surface — anything on Volt/Aqua is Ink, no exceptions. */}
+          <h1 className="sp-hero-title" style={{ color: "var(--brand-surface-fg)" }}>
             {view === "signup" ? "Create your account" : view === "forgot" ? "Reset password" : view === "setPassword" ? "Choose a new password" : "Sign in"}
           </h1>
         </div>
@@ -132,8 +133,10 @@ export function AuthPage() {
                   style={{
                     fontSize: "var(--type-label-size)",
                     fontFamily: "var(--font-ui)",
+                    // The inverting action pair — NOT --text-primary/--text-on-accent,
+                    // which are both ink in light mode (invisible label).
                     ...(view === v
-                      ? { background: "var(--text-primary)", color: "var(--text-on-accent)" }
+                      ? { background: "var(--fill-action)", color: "var(--text-on-action)" }
                       : { background: "var(--bg-surface)", color: "var(--text-secondary)" }),
                   }}
                 >

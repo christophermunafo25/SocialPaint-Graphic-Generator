@@ -52,7 +52,7 @@ export function WizardStepper({ current, complete, canGo, onGo }: WizardStepperP
               className="flex items-center gap-2 px-2.5 py-1.5"
               style={{
                 borderRadius: "var(--radius-pill)",
-                background: isCurrent ? "var(--text-primary)" : "transparent",
+                background: isCurrent ? "var(--fill-action)" : "transparent",
                 cursor: reachable ? "pointer" : "default",
                 opacity: reachable || isCurrent ? 1 : 0.45,
               }}
@@ -74,13 +74,13 @@ export function WizardStepper({ current, complete, canGo, onGo }: WizardStepperP
               <span
                 style={{
                   fontSize: "var(--type-caption-size)",
-                  color: isCurrent ? "var(--text-on-accent)" : "var(--text-secondary)",
+                  color: isCurrent ? "var(--text-on-action)" : "var(--text-secondary)",
                   fontWeight: isCurrent ? 500 : 400,
                 }}
               >
                 {s.title}
                 {s.optional && (
-                  <span style={{ fontSize: 10, color: isCurrent ? "var(--text-on-accent)" : "var(--text-disabled)" }}>
+                  <span style={{ fontSize: 10, color: isCurrent ? "var(--text-on-action)" : "var(--text-disabled)" }}>
                     {" "}· optional
                   </span>
                 )}

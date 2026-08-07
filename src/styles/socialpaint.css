@@ -303,9 +303,12 @@ html { scrollbar-gutter: stable; }
   --accent-border:      color-mix(in srgb, var(--text-primary) 40%, transparent);
   --danger-wash:        color-mix(in srgb, var(--state-danger) 16%, transparent);
 
-  /* Brand-moment surface — the sign-in and onboarding front doors ground in
-     Volt, THE primary. Ink on Volt reads at ~13:1. */
-  --brand-surface:    var(--volt);
+  /* Brand-moment surface — the sign-in and onboarding front doors. The one
+     sanctioned gradient in the chrome (Chris, 2026-08-07): Volt grounding
+     the bottom-left, Aqua lifting the top-right — the brand's two colours
+     in one sweep. Ink is the fg across the WHOLE ramp: it reads ~13:1 on
+     Volt and ~14:1 on Aqua, so --brand-surface-fg never changes. */
+  --brand-surface:    linear-gradient(to top right, var(--volt), var(--blue));
   --brand-surface-fg: var(--text-on-volt);
 
   /* Charts are not controls, so accents are legitimate here. Two real series:
@@ -564,11 +567,12 @@ button, input, select, textarea, optgroup {
   border-radius: var(--radius-card);
 }
 
-/* Brand-moment surface (hero headers, identity chips). Flat Forrest with
-   Volt as the voice — the DS bans gradients as a surface treatment. */
+/* Brand-moment surface (hero headers, identity chips). The Volt→Aqua
+   gradient — everything ON it is Ink, no exceptions, both themes (the
+   on-Volt rule extends across the ramp; white never clears contrast here). */
 .sp-mesh {
   background: var(--brand-surface);
-  color: var(--white);
+  color: var(--brand-surface-fg);
 }
 .sp-mesh .sp-eyebrow { color: var(--brand-surface-fg); }
 

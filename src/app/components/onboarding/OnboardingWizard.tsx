@@ -110,7 +110,8 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
           <p className="sp-eyebrow mb-1" style={{ color: "var(--brand-surface-fg)" }}>
             {firstRun ? "Welcome" : "New company"}
           </p>
-          <h1 className="sp-hero-title" style={{ color: "var(--white)" }}>
+          {/* Ink on the brand surface — anything on Volt/Aqua is Ink, no exceptions. */}
+          <h1 className="sp-hero-title" style={{ color: "var(--brand-surface-fg)" }}>
             {firstRun ? "Set up your brand portal" : "Create a company"}
           </h1>
           <div className="flex gap-1.5 mt-5">
@@ -118,9 +119,9 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
               <div key={label} className="flex-1">
                 <div
                   className="h-1 rounded-full"
-                  style={{ background: i <= step ? "var(--brand-surface-fg)" : "color-mix(in srgb, var(--white) 30%, transparent)" }}
+                  style={{ background: i <= step ? "var(--brand-surface-fg)" : "color-mix(in srgb, var(--brand-surface-fg) 30%, transparent)" }}
                 />
-                <p className="sp-eyebrow mt-1.5" style={{ fontSize: 9, color: "color-mix(in srgb, var(--white) 75%, transparent)" }}>{label}</p>
+                <p className="sp-eyebrow mt-1.5" style={{ fontSize: 9, color: "color-mix(in srgb, var(--brand-surface-fg) 75%, transparent)" }}>{label}</p>
               </div>
             ))}
           </div>

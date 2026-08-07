@@ -1269,7 +1269,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                           style={{
                             fontSize: "var(--type-caption-size)",
                             ...(mode === m
-                              ? { background: "var(--text-primary)", color: "var(--text-on-accent)" }
+                              ? { background: "var(--fill-action)", color: "var(--text-on-action)" }
                               : { background: "var(--bg-surface)", color: "var(--text-secondary)" }),
                           }}
                         >

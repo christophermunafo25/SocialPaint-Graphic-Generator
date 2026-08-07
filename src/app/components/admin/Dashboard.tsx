@@ -33,17 +33,21 @@ interface KpiProps {
   value: string;
   Icon: typeof Download;
   chip: string; // background token for the icon chip
+  /** Icon color on the chip. Brand fills (Volt/Aqua) take ink in both themes;
+   * neutral chips (--bg-hover) need the theme-following text color instead —
+   * ink on a dark-mode --bg-hover chip disappears. */
+  chipFg?: string;
 }
 
 /** Stat tile — a headline number needs no chart. Values are data → mono. */
-function Kpi({ label, value, Icon, chip }: KpiProps) {
+function Kpi({ label, value, Icon, chip, chipFg = "var(--text-on-accent)" }: KpiProps) {
   return (
     <div className="sp-card sp-card--content flex items-center gap-4">
       <span
         className="flex items-center justify-center flex-shrink-0"
         style={{ width: 38, height: 38, borderRadius: "var(--radius-control)", background: chip }}
       >
-        <Icon style={{ width: 16, height: 16, color: "var(--text-on-accent)" }} />
+        <Icon style={{ width: 16, height: 16, color: chipFg }} />
       </span>
       <span className="min-w-0">
         <span className="block truncate" style={{ ...mono, fontSize: 24, lineHeight: 1.1, color: "var(--text-primary)" }}>
@@ -130,8 +134,8 @@ export function Dashboard() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             <Kpi label="Total exports" value={String(summary.totalDownloads)} Icon={Download} chip="var(--viz-downloads)" />
             <Kpi label="Total opens" value={String(totalOpens)} Icon={Eye} chip="var(--viz-opens)" />
-            <Kpi label="Export rate" value={exportRate(summary.totalDownloads, totalOpens)} Icon={Percent} chip="var(--bg-hover)" />
-            <Kpi label="Templates in use" value={String(activeTemplates)} Icon={Layers} chip="var(--bg-hover)" />
+            <Kpi label="Export rate" value={exportRate(summary.totalDownloads, totalOpens)} Icon={Percent} chip="var(--bg-hover)" chipFg="var(--text-primary)" />
+            <Kpi label="Templates in use" value={String(activeTemplates)} Icon={Layers} chip="var(--bg-hover)" chipFg="var(--text-primary)" />
           </div>
 
           {/* 30-day trend */}
