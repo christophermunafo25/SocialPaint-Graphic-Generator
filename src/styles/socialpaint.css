@@ -5,8 +5,9 @@
 
    Palette (Raveo design system, 2026-08-06; Fire removed from chrome
    2026-08-07 — no orange anywhere in the platform UI): Ink #070708 and
-   Parchment #F9F9F8 are the floors; Volt #B5FF6A is THE primary, Aqua
-   #72EEFF informs. Error Clay #C94040, Warning #FFD900, and the editor's
+   Parchment #F9F9F8 are the floors; Volt #B5FF00 is THE primary, Spring
+   #86FF45 informs (2026-08 rebrand ramp: #B5FF00 → #86FF45 → #00FF99).
+   Error Clay #C94040, Warning #FFD900, and the editor's
    selection Blue #0D99FF sit outside the palette as functional signals —
    never brand colours, never decorative.
 
@@ -14,7 +15,7 @@
    - Soft cards (20px) against crisp controls (5px). Never meet at 12px.
    - One UI weight. Never bold for emphasis — shift colour or use the
      display face.
-   - Volt #B5FF6A is THE primary brand colour: the commit/CTA signal and the
+   - Volt #B5FF00 is THE primary brand colour: the commit/CTA signal and the
      dark-mode focus ring, fill-only on light (it cannot clear contrast as
      text on parchment). Icons and text ON Volt are always Ink #070708
      (--text-on-volt) — in chrome and in template guidance alike.
@@ -73,8 +74,8 @@ html { scrollbar-gutter: stable; }
    prefix — that is how you tell a primitive at a glance. Never reach past
    the semantic tier to one of these in product code. */
 :root {
-  --blue:   #72EEFF; /* Aqua — informs; AI moments */
-  --volt:   #B5FF6A; /* Volt — success, and the commit/CTA action */
+  --spring: #86FF45; /* Spring — informs; AI moments (was Aqua/--blue) */
+  --volt:   #B5FF00; /* Volt — success, and the commit/CTA action */
   /* RULE: any icon or text sitting ON Volt is Ink — no exceptions, either
      theme. Volt is bright enough that only Ink clears contrast on it
      (~13:1); anything else is a defect. Use this token for every glyph a
@@ -215,18 +216,18 @@ html { scrollbar-gutter: stable; }
   --text-on-action: #070708;
   --border-control: #F9F9F8; /* the edge of a pressable outlined control */
 
-  --state-primary-on-surface:   #B5FF6A; /* Volt — THE brand primary */
-  --state-attention-on-surface: #B5FF6A;
+  --state-primary-on-surface:   #B5FF00; /* Volt — THE brand primary */
+  --state-attention-on-surface: #B5FF00;
   --state-danger-on-surface:    #C94040; /* 4.35:1 — one ramp step lighter than light mode */
   --state-warning-on-surface:   #FFD900;
 
-  --state-primary:   #B5FF6A; --fill-primary:   #B5FF6A; /* Volt — THE brand primary */
-  --state-info:      #72EEFF; --fill-info:      #72EEFF;
-  --state-attention: #B5FF6A; --fill-attention: #B5FF6A;
+  --state-primary:   #B5FF00; --fill-primary:   #B5FF00; /* Volt — THE brand primary */
+  --state-info:      #86FF45; --fill-info:      #86FF45;
+  --state-attention: #B5FF00; --fill-attention: #B5FF00;
   --state-danger:    #C94040; --fill-danger:    #C94040;
   --state-warning:   #FFD900; --fill-warning:   #FFD900;
 
-  --ring: #B5FF6A; /* Volt · ~15:1 against the deep-ink canvas */
+  --ring: #B5FF00; /* Volt · ~15:1 against the deep-ink canvas */
 
   --shadow-sm: none;
   --shadow-md: none;
@@ -271,9 +272,9 @@ html { scrollbar-gutter: stable; }
   --state-danger-on-surface:    #C94040;
   --state-warning-on-surface:   #756200;
 
-  --state-primary:   #070708; --fill-primary:   #B5FF6A; /* Volt — THE brand primary, fill-only on light */
-  --state-info:      #070708; --fill-info:      #72EEFF;
-  --state-attention: #070708; --fill-attention: #B5FF6A;
+  --state-primary:   #070708; --fill-primary:   #B5FF00; /* Volt — THE brand primary, fill-only on light */
+  --state-info:      #070708; --fill-info:      #86FF45;
+  --state-attention: #070708; --fill-attention: #B5FF00;
   --state-danger:    #C94040; --fill-danger:    #C94040;
   --state-warning:   #756200; --fill-warning:   #FFD900;
 
@@ -308,7 +309,7 @@ html { scrollbar-gutter: stable; }
      the bottom-left, Aqua lifting the top-right — the brand's two colours
      in one sweep. Ink is the fg across the WHOLE ramp: it reads ~13:1 on
      Volt and ~14:1 on Aqua, so --brand-surface-fg never changes. */
-  --brand-surface:    linear-gradient(to top right, var(--volt), var(--blue));
+  --brand-surface:    linear-gradient(to top right, var(--volt), var(--spring));
   --brand-surface-fg: var(--text-on-volt);
 
   /* Charts are not controls, so accents are legitimate here. Two real series:
@@ -1263,13 +1264,13 @@ button, input, select, textarea, optgroup {
 }
 
 /* ── Confirm flash ──
-   Literal rgba of --volt (#B5FF6A), not color-mix: Chrome drops the alpha
+   Literal rgba of --volt (#B5FF00), not color-mix: Chrome drops the alpha
    when it interpolates a color-mix()'d color() inside a keyframe, which
    turns the wash into a solid lime bar. */
 @keyframes sp-inline-edit-flash {
-  0%   { background-color: rgba(181, 255, 106, 0.18); }
-  60%  { background-color: rgba(181, 255, 106, 0.12); }
-  100% { background-color: rgba(181, 255, 106, 0); }
+  0%   { background-color: rgba(181, 255, 0, 0.18); }
+  60%  { background-color: rgba(181, 255, 0, 0.12); }
+  100% { background-color: rgba(181, 255, 0, 0); }
 }
 
 .sp-inline-edit[data-flash="true"] {
@@ -1298,7 +1299,7 @@ button, input, select, textarea, optgroup {
      timer instead of animating out. */
   .sp-inline-edit[data-flash="true"] {
     animation: none;
-    background-color: rgba(181, 255, 106, 0.12);
+    background-color: rgba(181, 255, 0, 0.12);
   }
 }
 
