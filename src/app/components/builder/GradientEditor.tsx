@@ -1,6 +1,6 @@
-import React from "react";
 import type { TextGradient } from "@/lib/types";
 import { ColorControl } from "../ColorControl";
+import { NumericField } from "./InspectorControls";
 
 interface GradientEditorProps {
   gradient: TextGradient | undefined;
@@ -13,7 +13,10 @@ interface GradientEditorProps {
 }
 
 /** Linear-gradient editor: toggle, per-stop hex-first color controls, stop
- * positions, and angle. Shared by the text fill and the canvas background. */
+ * positions, and angle. Shared by the text fill and the canvas background.
+ * Numeric entry runs on the inspector's NumericField contract: draft while
+ * typing, commit on Enter/blur, revert on Escape or invalid input — clearing
+ * a field can never write a constant into the gradient. */
 export function GradientEditor({
   gradient,
   disabled = false,
@@ -51,23 +54,24 @@ export function GradientEditor({
                   })
                 }
               />
-              <input
-                type="number"
-                min={0}
-                max={100}
-                className="sp-input"
-                style={{ width: 62, padding: "4px 6px", fontSize: 11 }}
-                value={Math.round(stop.position * 100)}
-                title="Stop position (%)"
-                onChange={(e) =>
-                  onChange({
-                    ...gradient,
-                    stops: gradient.stops.map((st, j) =>
-                      j === i ? { ...st, position: Math.min(100, Math.max(0, Number(e.target.value))) / 100 } : st,
-                    ),
-                  })
-                }
-              />
+              <div style={{ width: 74, flexShrink: 0, display: "flex" }}>
+                <NumericField
+                  suffix="%"
+                  ariaLabel={`Stop ${i + 1} position`}
+                  precision={0}
+                  min={0}
+                  max={100}
+                  value={Math.round(stop.position * 100)}
+                  onCommit={(v) =>
+                    onChange({
+                      ...gradient,
+                      stops: gradient.stops.map((st, j) =>
+                        j === i ? { ...st, position: (v ?? stop.position * 100) / 100 } : st,
+                      ),
+                    })
+                  }
+                />
+              </div>
               {gradient.stops.length > 2 && (
                 <button
                   onClick={() => onChange({ ...gradient, stops: gradient.stops.filter((_, j) => j !== i) })}
@@ -89,14 +93,17 @@ export function GradientEditor({
             </button>
             <label className="flex items-center gap-1.5" style={{ fontSize: 11, color: "var(--text-secondary)" }}>
               Angle
-              <input
-                type="number"
-                className="sp-input"
-                style={{ width: 62, padding: "4px 6px", fontSize: 11 }}
-                value={gradient.angle}
-                onChange={(e) => onChange({ ...gradient, angle: Number(e.target.value) })}
-              />
-              °
+              <div style={{ width: 74, flexShrink: 0, display: "flex" }}>
+                <NumericField
+                  suffix="°"
+                  ariaLabel="Gradient angle"
+                  precision={0}
+                  value={gradient.angle}
+                  onCommit={(v) =>
+                    onChange({ ...gradient, angle: (((v ?? gradient.angle) % 360) + 360) % 360 })
+                  }
+                />
+              </div>
             </label>
           </div>
         </div>

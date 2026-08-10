@@ -1,11 +1,13 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Moveable from "react-moveable";
-import type { TemplateField } from "@/lib/types";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import type { BrandKit, TemplateField } from "@/lib/types";
 import { useDataUrl } from "@/lib/render/useDataUrl";
 import { useBrand } from "@/lib/brand/BrandContext";
 import { fieldsFontUsage, loadGoogleFonts } from "@/lib/render/fonts";
-import { cornerRadiusCss, FieldBoxContent } from "../SchemaRenderer";
-import { PALETTE_MIME } from "./fieldOps";
+import { fittedFontSize, fixedWidthFontSize } from "@/lib/render/autoFit";
+import { resolveFieldStyle } from "@/lib/brand/resolveStyle";
+import { cornerRadiusCss, DEFAULT_FILL_HEX, FieldBoxContent } from "../SchemaRenderer";
+import { PALETTE_MIME, paintOrder } from "./fieldOps";
+import { cancelActiveGesture, startDrag } from "./canvasGesture";
 
 interface FieldOverlayEditorProps {
   canvasWidth: number;
@@ -23,6 +25,9 @@ interface FieldOverlayEditorProps {
   onDropElement(paletteId: string, at: { x: number; y: number }): void;
   /** Right-click on a field (id) or empty canvas (null, with canvas point). */
   onContextMenu(pos: { x: number; y: number }, fieldId: string | null, canvasPoint: { x: number; y: number }): void;
+  /** Double-click on a member-editable element: the text an admin can change
+   * there is its NAME, which lives in the inspector — focus it. */
+  onRequestLabelFocus(fieldId: string): void;
 }
 
 interface DrawState {
@@ -34,14 +39,251 @@ interface DrawState {
   h: number;
 }
 
-const GRID = 10; // canvas px
+/** Live geometry while a gesture is in progress. The draft (and therefore
+ * history and autosave) is untouched until the gesture ends: overrides hold
+ * the per-frame truth, one state write per frame, and the commit on release
+ * writes exactly what was last rendered — mid-drag IS what you get. */
+interface GestureFrame {
+  kind: "move" | "resize" | "rotate";
+  overrides: Map<string, Partial<TemplateField>>;
+  guides: Guide[];
+}
 
-/** The Template Builder's design canvas. Figma-class editing via
- * react-moveable: drag to move, 8 resize handles (corner drags scale a text
- * field's font size with the box), rotation handle, snap-to-grid, and smart
- * alignment guides. Multi-select via shift/⌘-click (group drag). Palette
- * elements drop where released; drawing a box still works as a secondary
- * path. All coordinates commit in canvas pixel space (screen px ÷ scale). */
+interface Guide {
+  axis: "v" | "h";
+  /** Canvas-space position of the line. */
+  pos: number;
+}
+
+/** Smallest committable box edge, canvas px. Applied live during the drag
+ * (computed from the start rect, so the cursor picks the edge back up on the
+ * way out — no jump at release). */
+const MIN_SIZE = 16;
+/** Snap capture distance in screen px (converted per-frame to canvas px). */
+const SNAP_SCREEN_PX = 6;
+/** Movement below this many screen px is a click, not a drag. */
+const DRAG_THRESHOLD_PX = 3;
+/** A move can bleed past the canvas edge, but this much of the selection
+ * must stay inside — an element can never be dragged fully out of reach.
+ * Clamped live during the drag, so what shows is what commits. */
+const MIN_VISIBLE = 24;
+/** Below this box size on screen (px), the mid-edge handles crowd the
+ * corners and the body — only the corner handles render. */
+const HANDLE_CROWD_PX = 28;
+
+/** Invisible resize strips along each border: the whole edge is grabbable,
+ * Figma-style, whatever size the box is — the visible dots are wayfinding,
+ * not the hit target. Inset from the ends so the corner dots win corners. */
+const EDGE_STRIPS: Array<{ dx: -1 | 0 | 1; dy: -1 | 0 | 1; cursor: string; style: React.CSSProperties }> = [
+  { dx: 0, dy: -1, cursor: "ns-resize", style: { left: 8, right: 8, top: -5, height: 10 } },
+  { dx: 0, dy: 1, cursor: "ns-resize", style: { left: 8, right: 8, bottom: -5, height: 10 } },
+  { dx: -1, dy: 0, cursor: "ew-resize", style: { top: 8, bottom: 8, left: -5, width: 10 } },
+  { dx: 1, dy: 0, cursor: "ew-resize", style: { top: 8, bottom: 8, right: -5, width: 10 } },
+];
+
+const RESIZE_DIRS: Array<{ dx: -1 | 0 | 1; dy: -1 | 0 | 1; cursor: string }> = [
+  { dx: -1, dy: -1, cursor: "nwse-resize" },
+  { dx: 0, dy: -1, cursor: "ns-resize" },
+  { dx: 1, dy: -1, cursor: "nesw-resize" },
+  { dx: 1, dy: 0, cursor: "ew-resize" },
+  { dx: 1, dy: 1, cursor: "nwse-resize" },
+  { dx: 0, dy: 1, cursor: "ns-resize" },
+  { dx: -1, dy: 1, cursor: "nesw-resize" },
+  { dx: -1, dy: 0, cursor: "ew-resize" },
+];
+
+/** Editor always works in top-left space; center-anchored fields are
+ * normalized on display and denormalized on commit. */
+const displayX = (f: TemplateField): number => (f.anchor === "center" ? f.x - f.width / 2 : f.x);
+const displayY = (f: TemplateField): number => (f.anchor === "center" ? f.y - f.height / 2 : f.y);
+const toAnchorSpace = (
+  f: TemplateField,
+  tlx: number,
+  tly: number,
+  w = f.width,
+  h = f.height,
+): { x: number; y: number } => ({
+  x: f.anchor === "center" ? tlx + w / 2 : tlx,
+  y: f.anchor === "center" ? tly + h / 2 : tly,
+});
+
+/** Whether a canvas-space point falls inside a field's box, rotation
+ * included: transform the point into the box's local axes and compare. */
+function hitTestField(f: TemplateField, p: { x: number; y: number }): boolean {
+  const cx = displayX(f) + f.width / 2;
+  const cy = displayY(f) + f.height / 2;
+  const rad = ((f.rotation ?? 0) * Math.PI) / 180;
+  const dx0 = p.x - cx;
+  const dy0 = p.y - cy;
+  const dx = Math.cos(rad) * dx0 + Math.sin(rad) * dy0;
+  const dy = -Math.sin(rad) * dx0 + Math.cos(rad) * dy0;
+  return Math.abs(dx) <= f.width / 2 && Math.abs(dy) <= f.height / 2;
+}
+
+/** Snap one axis of a moving span: try its start / center / end against the
+ * targets, take the closest hit inside the threshold, and report the line. */
+function snapAxis(
+  lo: number,
+  hi: number,
+  targets: number[],
+  thresh: number,
+): { adjust: number; guide: number | null } {
+  const cands = [lo, (lo + hi) / 2, hi];
+  let best = Infinity;
+  let adjust = 0;
+  let guide: number | null = null;
+  for (const t of targets) {
+    for (const c of cands) {
+      const d = t - c;
+      if (Math.abs(d) < Math.abs(best)) {
+        best = d;
+        adjust = d;
+        guide = t;
+      }
+    }
+  }
+  if (Math.abs(best) > thresh) return { adjust: 0, guide: null };
+  return { adjust, guide };
+}
+
+/** Memoized so only fields whose geometry is actually changing re-render
+ * their content per frame (text measurement isn't free). */
+const FieldContent = React.memo(FieldBoxContent);
+
+/** In-place editing for a FIXED text element's content (double-click to
+ * enter). A contentEditable mirror of TextFieldBox's own <p> — same resolved
+ * face, size fitting, alignment, spacing — so entering and leaving edit mode
+ * moves nothing. Commits ONCE on exit (blur or Enter): one undo entry per
+ * editing session. Escape reverts and exits. */
+function InlineTextEditor({
+  field,
+  brandKit,
+  scale,
+  onCommit,
+  onExit,
+}: {
+  field: TemplateField;
+  brandKit: BrandKit | null;
+  scale: number;
+  onCommit(text: string): void;
+  onExit(): void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const original = field.staticValue ?? "";
+  /** Mirrors the DOM text purely so font fitting recomputes per keystroke —
+   * the contentEditable itself stays uncontrolled. */
+  const [text, setText] = useState(original);
+  const cancelled = useRef(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.focus();
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+  }, []);
+
+  const style = resolveFieldStyle(field, brandKit);
+  const singleLine = field.type !== "multiline";
+  const shown = text || " ";
+  const fontSize =
+    field.fixedWidth && singleLine
+      ? fixedWidthFontSize({ width: field.width, ...style }, shown)
+      : fittedFontSize({ width: field.width, ...style }, shown);
+  const brandHex = style.colorKey
+    ? brandKit?.colors.find((c) => c.key === style.colorKey)?.hex
+    : undefined;
+  const color = brandHex ?? style.colorHex ?? DEFAULT_FILL_HEX;
+  const justify =
+    field.align === "center" ? "center" : field.align === "right" ? "flex-end" : "flex-start";
+  const alignItems =
+    field.verticalAlign === "top" ? "flex-start" : field.verticalAlign === "bottom" ? "flex-end" : "center";
+
+  const finish = (commit: boolean) => {
+    if (cancelled.current) return;
+    cancelled.current = true;
+    if (commit) {
+      const next = ref.current?.innerText ?? text;
+      if (next !== original) onCommit(next);
+    }
+    onExit();
+  };
+
+  return (
+    <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
+      <div
+        style={{
+          width: field.width,
+          height: field.height,
+          transform: `scale(${scale})`,
+          transformOrigin: "top left",
+          display: "flex",
+          alignItems,
+          justifyContent: justify,
+        }}
+      >
+        <div
+          ref={ref}
+          contentEditable
+          suppressContentEditableWarning
+          role="textbox"
+          aria-label={`Edit ${field.label} content`}
+          onPointerDown={(e) => e.stopPropagation()}
+          onDoubleClick={(e) => e.stopPropagation()}
+          onInput={(e) => setText((e.target as HTMLElement).innerText)}
+          onKeyDown={(e) => {
+            // Every key belongs to the editor — the builder's shortcuts
+            // (Delete, ⌘Z, Escape-deselect) must not fire while typing.
+            e.stopPropagation();
+            if (e.key === "Escape") {
+              e.preventDefault();
+              finish(false);
+            } else if (e.key === "Enter" && singleLine) {
+              e.preventDefault();
+              finish(true);
+            }
+          }}
+          onBlur={() => finish(true)}
+          style={{
+            fontFamily: style.fontFamily ? `"${style.fontFamily}", sans-serif` : "sans-serif",
+            fontWeight: style.fontWeight,
+            fontStyle: style.fontStyle,
+            fontStretch: style.fontStretch,
+            fontSize,
+            color,
+            textAlign: field.align ?? "left",
+            textTransform: style.uppercase ? "uppercase" : undefined,
+            letterSpacing: style.letterSpacingPx ? `${style.letterSpacingPx}px` : undefined,
+            lineHeight: style.lineHeight ?? 1.1,
+            whiteSpace: singleLine ? "nowrap" : "pre-wrap",
+            wordBreak: singleLine ? undefined : "break-word",
+            width: singleLine ? undefined : "100%",
+            minWidth: 20,
+            margin: 0,
+            outline: "none",
+            caretColor: "var(--editor-accent)",
+            cursor: "text",
+          }}
+        >
+          {original}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** The Template Builder's design canvas. Every drag — move, the 8 resize
+ * handles, rotate, draw-to-create — runs through the shared canvasGesture
+ * core: pointer capture, rAF-throttled frames, a click/drag threshold, and
+ * clean cancel on Escape/blur/unmount. Geometry writes are REAL per frame
+ * (no transform preview): what shows mid-drag is what commits on release,
+ * as one undo entry. Smart guides snap to canvas edges/centers and to other
+ * elements; ⌘/Ctrl suppresses snapping. Multi-select via shift/⌘-click with
+ * group drag. Palette elements drop where released; drawing a box still
+ * works as a secondary path. All coordinates commit in canvas pixel space. */
 export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
   const {
     canvasWidth,
@@ -55,23 +297,40 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
     onDraw,
     onDropElement,
     onContextMenu,
+    onRequestLabelFocus,
   } = props;
   const { kit } = useBrand();
   const containerRef = useRef<HTMLDivElement>(null);
-  const boxRefs = useRef(new Map<string, HTMLDivElement>());
   const [scale, setScale] = useState(0.4);
   const [draw, setDraw] = useState<DrawState | null>(null);
   /** Chips show on hover + selection only — twelve fields ≠ twelve chips. */
   const [hoveredId, setHoveredId] = useState<string | null>(null);
-  /** Canvas-space dimensions shown under the selection while manipulating. */
-  const [manipDims, setManipDims] = useState<{ w: number; h: number } | null>(null);
-  const showDims = useCallback(
-    (w: number, h: number) =>
-      setManipDims((prev) => (prev && prev.w === w && prev.h === h ? prev : { w, h })),
-    [],
-  );
-  const resizeStart = useRef<{ height: number; fontSize?: number; corner: boolean }>({ height: 0, corner: false });
+  const [frame, setFrame] = useState<GestureFrame | null>(null);
+  /** Fixed text element whose content is being edited in place. */
+  const [editingId, setEditingId] = useState<string | null>(null);
   const backgroundDataUrl = useDataUrl(backgroundUrl || undefined);
+
+  // Gesture callbacks fire outside the render cycle; refs keep them reading
+  // the current props/scale instead of the closure they were created in.
+  const fieldsRef = useRef(fields);
+  fieldsRef.current = fields;
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  const onSelectRef = useRef(onSelect);
+  onSelectRef.current = onSelect;
+  const scaleRef = useRef(scale);
+  scaleRef.current = scale;
+
+  // A mode switch or navigation mid-drag must not strand the capture.
+  useEffect(() => () => cancelActiveGesture(), []);
+
+  // Editing lives and dies with the selection: selecting anything else (or
+  // deleting the field) closes the editor.
+  useEffect(() => {
+    if (editingId && (selectedIds.length !== 1 || selectedIds[0] !== editingId)) {
+      setEditingId(null);
+    }
+  }, [editingId, selectedIds]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -93,80 +352,345 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
   const toCanvas = useCallback(
     (e: { clientX: number; clientY: number }) => {
       const rect = containerRef.current!.getBoundingClientRect();
+      const s = scaleRef.current;
       return {
-        x: Math.max(0, Math.min(canvasWidth, (e.clientX - rect.left) / scale)),
-        y: Math.max(0, Math.min(canvasHeight, (e.clientY - rect.top) / scale)),
+        x: Math.max(0, Math.min(canvasWidth, (e.clientX - rect.left) / s)),
+        y: Math.max(0, Math.min(canvasHeight, (e.clientY - rect.top) / s)),
       };
     },
-    [scale, canvasWidth, canvasHeight],
+    [canvasWidth, canvasHeight],
   );
 
-  const patchFields = useCallback(
-    (patches: Map<string, Partial<TemplateField>>) =>
-      onChange(fields.map((f) => (patches.has(f.id) ? { ...f, ...patches.get(f.id)! } : f))),
-    [fields, onChange],
-  );
+  /** Unclamped variant — rotation needs true angles past the canvas edge. */
+  const toCanvasFree = (e: { clientX: number; clientY: number }) => {
+    const rect = containerRef.current!.getBoundingClientRect();
+    const s = scaleRef.current;
+    return { x: (e.clientX - rect.left) / s, y: (e.clientY - rect.top) / s };
+  };
+
+  /** Snap targets from every field NOT being dragged, plus the canvas
+   * edges and centers. Canvas-space, computed once per gesture. */
+  const snapTargets = (excluded: Set<string>) => {
+    const v = [0, canvasWidth / 2, canvasWidth];
+    const h = [0, canvasHeight / 2, canvasHeight];
+    for (const f of fieldsRef.current) {
+      if (excluded.has(f.id)) continue;
+      const l = displayX(f);
+      const t = displayY(f);
+      v.push(l, l + f.width / 2, l + f.width);
+      h.push(t, t + f.height / 2, t + f.height);
+    }
+    return { v, h };
+  };
+
+  /** One commit per gesture = one undo entry. Geometry rounds to whole
+   * canvas px here and only here — frames stay fractional so slow drags
+   * don't stair-step. */
+  const commitOverrides = (
+    overrides: Map<string, Partial<TemplateField>>,
+    extra?: Map<string, Partial<TemplateField>>,
+  ) => {
+    const next = fieldsRef.current.map((f) => {
+      const o = overrides.get(f.id);
+      if (!o) return f;
+      const merged: TemplateField = { ...f, ...o, ...extra?.get(f.id) };
+      merged.x = Math.round(merged.x);
+      merged.y = Math.round(merged.y);
+      merged.width = Math.round(merged.width);
+      merged.height = Math.round(merged.height);
+      if (merged.rotation !== undefined) {
+        const deg = Math.round(merged.rotation) % 360;
+        merged.rotation = deg === 0 ? undefined : deg;
+      }
+      return merged;
+    });
+    onChangeRef.current(next);
+  };
+
+  // --- Move (single or group) ----------------------------------------------
+
+  const beginMove = (
+    e: React.PointerEvent,
+    ids: string[],
+    primaryId: string,
+    reduceOnTap: boolean,
+  ) => {
+    const dragSet = new Set(ids);
+    const startRects = fieldsRef.current
+      .filter((f) => dragSet.has(f.id))
+      .map((f) => ({ f, tlx: displayX(f), tly: displayY(f) }));
+    if (!startRects.length) return;
+    const bbox = {
+      l: Math.min(...startRects.map((r) => r.tlx)),
+      t: Math.min(...startRects.map((r) => r.tly)),
+      r: Math.max(...startRects.map((r) => r.tlx + r.f.width)),
+      b: Math.max(...startRects.map((r) => r.tly + r.f.height)),
+    };
+    const targets = snapTargets(dragSet);
+    let latest: Map<string, Partial<TemplateField>> | null = null;
+
+    startDrag(e.nativeEvent, containerRef.current!, {
+      threshold: DRAG_THRESHOLD_PX,
+      onMove: (dx, dy, ev) => {
+        const s = scaleRef.current;
+        let ddx = dx / s;
+        let ddy = dy / s;
+        // Shift locks to the dominant axis — re-read from the raw deltas
+        // every frame, so the lock follows the pointer's larger travel and
+        // releasing shift mid-drag frees both axes again.
+        const lockX = ev.shiftKey && Math.abs(dx) < Math.abs(dy);
+        const lockY = ev.shiftKey && !lockX;
+        if (lockX) ddx = 0;
+        if (lockY) ddy = 0;
+        const guides: Guide[] = [];
+        if (!ev.metaKey && !ev.ctrlKey) {
+          const thresh = SNAP_SCREEN_PX / s;
+          if (!lockX) {
+            const sx = snapAxis(bbox.l + ddx, bbox.r + ddx, targets.v, thresh);
+            ddx += sx.adjust;
+            if (sx.guide !== null) guides.push({ axis: "v", pos: sx.guide });
+          }
+          if (!lockY) {
+            const sy = snapAxis(bbox.t + ddy, bbox.b + ddy, targets.h, thresh);
+            ddy += sy.adjust;
+            if (sy.guide !== null) guides.push({ axis: "h", pos: sy.guide });
+          }
+        }
+        // Never lose an element off the canvas: enough of the selection must
+        // stay inside to grab it again. Clamped live, so there is no
+        // snap-back at release.
+        ddx = Math.min(ddx, canvasWidth - MIN_VISIBLE - bbox.l);
+        ddx = Math.max(ddx, MIN_VISIBLE - bbox.r);
+        ddy = Math.min(ddy, canvasHeight - MIN_VISIBLE - bbox.t);
+        ddy = Math.max(ddy, MIN_VISIBLE - bbox.b);
+        const overrides = new Map<string, Partial<TemplateField>>();
+        for (const r of startRects) {
+          overrides.set(r.f.id, toAnchorSpace(r.f, r.tlx + ddx, r.tly + ddy));
+        }
+        latest = overrides;
+        setFrame({ kind: "move", overrides, guides });
+      },
+      onEnd: () => {
+        setFrame(null);
+        if (latest) commitOverrides(latest);
+      },
+      onCancel: () => setFrame(null),
+      onTap: () => {
+        // A plain click on one element of a multi-selection narrows the
+        // selection to it — the drag path already handled everything else.
+        if (reduceOnTap) onSelectRef.current([primaryId]);
+      },
+    });
+  };
+
+  // --- Resize (single selection, 8 handles) --------------------------------
+
+  const beginResize = (e: React.PointerEvent, f: TemplateField, dirX: -1 | 0 | 1, dirY: -1 | 0 | 1) => {
+    const tlx0 = displayX(f);
+    const tly0 = displayY(f);
+    const w0 = f.width;
+    const h0 = f.height;
+    const rad = ((f.rotation ?? 0) * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    const unrotated = !f.rotation;
+    const targets = snapTargets(new Set([f.id]));
+    const c0x = tlx0 + w0 / 2;
+    const c0y = tly0 + h0 / 2;
+    let latest: Map<string, Partial<TemplateField>> | null = null;
+
+    startDrag(e.nativeEvent, containerRef.current!, {
+      threshold: DRAG_THRESHOLD_PX,
+      onMove: (dx, dy, ev) => {
+        const s = scaleRef.current;
+        // The pointer delta expressed along the element's own axes, so a
+        // rotated box resizes along its edges, not the screen's.
+        const cdx = dx / s;
+        const cdy = dy / s;
+        const ldx = cos * cdx + sin * cdy;
+        const ldy = -sin * cdx + cos * cdy;
+        // Modifiers read live from the event, so pressing or releasing them
+        // mid-drag takes effect on the very next frame.
+        const fromCenter = ev.altKey;
+        const proportional = ev.shiftKey;
+        // From-center: the pointer moves one edge, the mirror edge follows.
+        const k = fromCenter ? 2 : 1;
+        let w1 = dirX !== 0 ? w0 + dirX * ldx * k : w0;
+        let h1 = dirY !== 0 ? h0 + dirY * ldy * k : h0;
+        const guides: Guide[] = [];
+
+        /** Where the handle-side vertical/horizontal edge currently sits. */
+        const movingEdgeX = () =>
+          fromCenter ? c0x + (dirX * w1) / 2 : dirX === 1 ? tlx0 + w1 : tlx0 + w0 - w1;
+        const movingEdgeY = () =>
+          fromCenter ? c0y + (dirY * h1) / 2 : dirY === 1 ? tly0 + h1 : tly0 + h0 - h1;
+        /** Grow/shrink one axis so its moving edge lands on the snapped
+         * position (a from-center edge moves at half the rate of the size). */
+        const applyX = (adjust: number) => (w1 += dirX * adjust * k);
+        const applyY = (adjust: number) => (h1 += dirY * adjust * k);
+
+        const snappable = unrotated && !ev.metaKey && !ev.ctrlKey;
+        const thresh = SNAP_SCREEN_PX / s;
+
+        if (proportional) {
+          // One scale factor for both axes, driven by whichever axis the
+          // pointer has changed more; the other follows. Snap the driving
+          // edge first so the ratio is computed from the snapped size.
+          const sxr = dirX !== 0 ? w1 / w0 : null;
+          const syr = dirY !== 0 ? h1 / h0 : null;
+          const driveX =
+            sxr !== null && (syr === null || Math.abs(sxr - 1) >= Math.abs(syr - 1));
+          if (snappable) {
+            if (driveX) {
+              const hit = snapAxis(movingEdgeX(), movingEdgeX(), targets.v, thresh);
+              if (hit.guide !== null) {
+                applyX(hit.adjust);
+                guides.push({ axis: "v", pos: hit.guide });
+              }
+            } else {
+              const hit = snapAxis(movingEdgeY(), movingEdgeY(), targets.h, thresh);
+              if (hit.guide !== null) {
+                applyY(hit.adjust);
+                guides.push({ axis: "h", pos: hit.guide });
+              }
+            }
+          }
+          let sc = driveX ? w1 / w0 : h1 / h0;
+          sc = Math.max(sc, MIN_SIZE / w0, MIN_SIZE / h0);
+          w1 = w0 * sc;
+          h1 = h0 * sc;
+        } else {
+          if (snappable && dirX !== 0) {
+            const hit = snapAxis(movingEdgeX(), movingEdgeX(), targets.v, thresh);
+            if (hit.guide !== null) {
+              applyX(hit.adjust);
+              guides.push({ axis: "v", pos: hit.guide });
+            }
+          }
+          if (snappable && dirY !== 0) {
+            const hit = snapAxis(movingEdgeY(), movingEdgeY(), targets.h, thresh);
+            if (hit.guide !== null) {
+              applyY(hit.adjust);
+              guides.push({ axis: "h", pos: hit.guide });
+            }
+          }
+          // The box stops at the minimum while the cursor keeps going, and —
+          // because every frame recomputes from the start rect — picks back
+          // up the moment the cursor returns. No jump at release.
+          w1 = Math.max(MIN_SIZE, w1);
+          h1 = Math.max(MIN_SIZE, h1);
+        }
+
+        // The fixed point is the center (alt) or the corner/edge opposite
+        // the handle, held in world space; the new center falls out of it.
+        // Computed fresh from the start rect every frame — nothing
+        // accumulates, so nothing drifts.
+        let c1x = c0x;
+        let c1y = c0y;
+        if (!fromCenter) {
+          const ax = (-dirX * w0) / 2;
+          const ay = (-dirY * h0) / 2;
+          const awx = c0x + cos * ax - sin * ay;
+          const awy = c0y + sin * ax + cos * ay;
+          const nx = (dirX * w1) / 2;
+          const ny = (dirY * h1) / 2;
+          c1x = awx + cos * nx - sin * ny;
+          c1y = awy + sin * nx + cos * ny;
+        }
+        const tlx1 = c1x - w1 / 2;
+        const tly1 = c1y - h1 / 2;
+        const overrides = new Map<string, Partial<TemplateField>>([
+          [f.id, { ...toAnchorSpace(f, tlx1, tly1, w1, h1), width: w1, height: h1 }],
+        ]);
+        latest = overrides;
+        setFrame({ kind: "resize", overrides, guides });
+      },
+      onEnd: () => {
+        setFrame(null);
+        // A resize changes the BOX and only the box: font size is a property
+        // the admin sets, never a side effect of a drag. Fitting modes
+        // (shrink / fixed) keep deriving their displayed size from the new
+        // width exactly as they will render after release.
+        if (latest) commitOverrides(latest);
+      },
+      onCancel: () => setFrame(null),
+    });
+  };
+
+  // --- Rotate ---------------------------------------------------------------
+
+  const beginRotate = (e: React.PointerEvent, f: TemplateField) => {
+    const cx = displayX(f) + f.width / 2;
+    const cy = displayY(f) + f.height / 2;
+    const p0 = toCanvasFree(e);
+    const a0 = Math.atan2(p0.y - cy, p0.x - cx);
+    const r0 = f.rotation ?? 0;
+    let latest: Map<string, Partial<TemplateField>> | null = null;
+
+    startDrag(e.nativeEvent, containerRef.current!, {
+      threshold: DRAG_THRESHOLD_PX,
+      onMove: (_dx, _dy, ev) => {
+        const p = toCanvasFree(ev);
+        const a = Math.atan2(p.y - cy, p.x - cx);
+        let deg = r0 + ((a - a0) * 180) / Math.PI;
+        if (ev.shiftKey) deg = Math.round(deg / 15) * 15;
+        const overrides = new Map<string, Partial<TemplateField>>([[f.id, { rotation: deg }]]);
+        latest = overrides;
+        setFrame({ kind: "rotate", overrides, guides: [] });
+      },
+      onEnd: () => {
+        setFrame(null);
+        if (latest) commitOverrides(latest);
+      },
+      onCancel: () => setFrame(null),
+    });
+  };
+
+  // --- Draw-to-create (empty canvas) ---------------------------------------
+
+  const beginDraw = (e: React.PointerEvent) => {
+    onSelectRef.current([]);
+    const p0 = toCanvas(e);
+    let last: DrawState | null = null;
+
+    startDrag(e.nativeEvent, containerRef.current!, {
+      threshold: DRAG_THRESHOLD_PX,
+      onMove: (_dx, _dy, ev) => {
+        const p = toCanvas(ev);
+        last = {
+          startX: p0.x,
+          startY: p0.y,
+          x: Math.min(p0.x, p.x),
+          y: Math.min(p0.y, p.y),
+          w: Math.abs(p.x - p0.x),
+          h: Math.abs(p.y - p0.y),
+        };
+        setDraw(last);
+      },
+      onEnd: () => {
+        setDraw(null);
+        if (last && last.w > 24 && last.h > 24) {
+          onDraw({
+            x: Math.round(last.x),
+            y: Math.round(last.y),
+            width: Math.round(last.w),
+            height: Math.round(last.h),
+          });
+        }
+      },
+      onCancel: () => setDraw(null),
+    });
+  };
+
+  // --- Render ---------------------------------------------------------------
 
   const selected = fields.filter((f) => selectedIds.includes(f.id));
   const single = selected.length === 1 ? selected[0] : null;
 
-  // Target elements via state (not a render-time ref read): callback refs
-  // populate AFTER render, so newly-added boxes need this second pass for
-  // Moveable to mount on them.
-  const [targetEls, setTargetEls] = useState<HTMLDivElement[]>([]);
-  useEffect(() => {
-    setTargetEls(
-      selectedIds
-        .map((id) => boxRefs.current.get(id))
-        .filter((el): el is HTMLDivElement => Boolean(el)),
-    );
-  }, [selectedIds, fields, scale]);
-
-  /** Editor always works in top-left space; center-anchored fields are
-   * normalized on display and denormalized on commit. */
-  const displayX = (f: TemplateField) => (f.anchor === "center" ? f.x - f.width / 2 : f.x);
-  const displayY = (f: TemplateField) => (f.anchor === "center" ? f.y - f.height / 2 : f.y);
-  const commitPos = (f: TemplateField, left: number, top: number, w = f.width, h = f.height) => ({
-    x: Math.round(f.anchor === "center" ? left / scale + w / 2 : left / scale),
-    y: Math.round(f.anchor === "center" ? top / scale + h / 2 : top / scale),
-  });
-
-  /** Commit every selected box's current on-screen position (group drag). */
-  const commitGroupPositions = useCallback(() => {
-    const patches = new Map<string, Partial<TemplateField>>();
-    for (const f of fields) {
-      if (!selectedIds.includes(f.id)) continue;
-      const el = boxRefs.current.get(f.id);
-      if (!el) continue;
-      patches.set(f.id, commitPos(f, parseFloat(el.style.left), parseFloat(el.style.top)));
-    }
-    patchFields(patches);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fields, selectedIds, patchFields, scale]);
-
-  const guidelineElements = useMemo(
-    () =>
-      fields
-        .filter((f) => !selectedIds.includes(f.id))
-        .map((f) => boxRefs.current.get(f.id))
-        .filter((el): el is HTMLDivElement => Boolean(el)),
-    // Refs are stable per id; recompute when the set or selection changes.
-    [fields, selectedIds, scale],
-  );
-
-  const moveableProps = {
-    container: containerRef.current,
-    origin: false,
-    throttleDrag: 0,
-    snappable: true,
-    snapThreshold: 6,
-    snapGridWidth: GRID * scale,
-    snapGridHeight: GRID * scale,
-    elementGuidelines: guidelineElements,
-    verticalGuidelines: [0, (canvasWidth * scale) / 2, canvasWidth * scale],
-    horizontalGuidelines: [0, (canvasHeight * scale) / 2, canvasHeight * scale],
-    elementSnapDirections: { top: true, bottom: true, left: true, right: true, center: true, middle: true },
-    snapDirections: { top: true, bottom: true, left: true, right: true, center: true, middle: true },
+  /** The field as currently shown: draft state plus any live gesture frame. */
+  const viewOf = (f: TemplateField): TemplateField => {
+    const o = frame?.overrides.get(f.id);
+    return o ? { ...f, ...o } : f;
   };
 
   return (
@@ -197,36 +721,7 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
         if (e.button !== 0) return;
         const target = e.target as HTMLElement;
         if (target !== e.currentTarget && target.dataset.role !== "bg") return;
-        const p = toCanvas(e);
-        setDraw({ startX: p.x, startY: p.y, x: p.x, y: p.y, w: 0, h: 0 });
-        onSelect([]);
-        try {
-          (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-        } catch {
-          // Pointer capture is best-effort (synthetic/secondary pointers).
-        }
-      }}
-      onPointerMove={(e) => {
-        if (!draw) return;
-        const p = toCanvas(e);
-        setDraw({
-          ...draw,
-          x: Math.min(draw.startX, p.x),
-          y: Math.min(draw.startY, p.y),
-          w: Math.abs(p.x - draw.startX),
-          h: Math.abs(p.y - draw.startY),
-        });
-      }}
-      onPointerUp={() => {
-        if (draw && draw.w > 24 && draw.h > 24) {
-          onDraw({
-            x: Math.round(draw.x),
-            y: Math.round(draw.y),
-            width: Math.round(draw.w),
-            height: Math.round(draw.h),
-          });
-        }
-        setDraw(null);
+        beginDraw(e);
       }}
     >
       {/* Background at canvas scale */}
@@ -255,23 +750,74 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
 
       {/* Field boxes (screen space = canvas × scale; z = canvas layer order) */}
       {fields.map((f) => {
+        const v = viewOf(f);
         const isSelected = selectedIds.includes(f.id);
+        const isEditing = editingId === f.id;
+        const showHandles = isSelected && single?.id === f.id && !isEditing;
+        // The whole EDGE is the resize surface (strips below); the dots are
+        // wayfinding. A mid-edge dot renders only where it has room between
+        // the corners — on a short or narrow box it would crowd them — but
+        // dropping a dot never costs the interaction, because its edge strip
+        // stays grabbable at any size.
+        const handleDirs = RESIZE_DIRS.filter(
+          ({ dx, dy }) =>
+            (dx !== 0 && dy !== 0) ||
+            (dy === 0
+              ? v.height * scale >= HANDLE_CROWD_PX
+              : v.width * scale >= HANDLE_CROWD_PX),
+        );
         return (
           <div
             key={f.id}
-            ref={(el) => {
-              if (el) boxRefs.current.set(f.id, el);
-              else boxRefs.current.delete(f.id);
-            }}
             onPointerDown={(e) => {
               if (e.button !== 0) return;
               e.stopPropagation();
-              if (e.shiftKey || e.metaKey || e.ctrlKey) {
-                onSelect(
-                  isSelected ? selectedIds.filter((id) => id !== f.id) : [...selectedIds, f.id],
-                );
-              } else if (!isSelected) {
-                onSelect([f.id]);
+              // While editing text in this box, the pointer belongs to the
+              // editor — no drags, no reselection.
+              if (editingId === f.id) return;
+              // Alt-click digs through the stack: each click selects the
+              // next element beneath the pointer, wrapping at the bottom —
+              // and drags it in the same gesture.
+              if (e.altKey && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
+                const p = toCanvas(e);
+                const stack = paintOrder(fieldsRef.current)
+                  .reverse()
+                  .filter((sf) => hitTestField(sf, p));
+                if (stack.length > 1) {
+                  const cur = stack.findIndex((sf) => selectedIds.includes(sf.id));
+                  const next = stack[(cur + 1) % stack.length];
+                  onSelect([next.id]);
+                  beginMove(e, [next.id], next.id, false);
+                  return;
+                }
+              }
+              const multi = e.shiftKey || e.metaKey || e.ctrlKey;
+              let ids: string[];
+              if (multi) {
+                ids = isSelected
+                  ? selectedIds.filter((id) => id !== f.id)
+                  : [...selectedIds, f.id];
+                onSelect(ids);
+                // Toggled OFF — a drag from a just-deselected element would
+                // move everything else out from under the pointer.
+                if (!ids.includes(f.id)) return;
+              } else {
+                ids = isSelected ? selectedIds : [f.id];
+                if (!isSelected) onSelect([f.id]);
+              }
+              // Selection and drag are ONE gesture — pressing an unselected
+              // element and pulling moves it immediately, first time.
+              beginMove(e, ids, f.id, !multi && isSelected && selectedIds.length > 1);
+            }}
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              if (f.static && (f.type === "text" || f.type === "multiline")) {
+                // Fixed text: its content lives on the canvas — edit it there.
+                setEditingId(f.id);
+              } else {
+                // Member-editable elements have no builder-side content; the
+                // double-clickable text is their NAME, over in the inspector.
+                onRequestLabelFocus(f.id);
               }
             }}
             onContextMenu={(e) => {
@@ -284,40 +830,57 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
             onMouseLeave={() => setHoveredId((id) => (id === f.id ? null : id))}
             style={{
               position: "absolute",
-              left: displayX(f) * scale,
-              top: displayY(f) * scale,
-              width: f.width * scale,
-              height: f.height * scale,
+              left: displayX(v) * scale,
+              top: displayY(v) * scale,
+              width: v.width * scale,
+              height: v.height * scale,
               zIndex: (f.zIndex ?? 0) + 1, // +1 keeps every box above the background
-              transform: f.rotation ? `rotate(${f.rotation}deg)` : undefined,
+              transform: v.rotation ? `rotate(${v.rotation}deg)` : undefined,
               border: isSelected
                 ? "var(--editor-line) solid var(--editor-accent)"
                 : "var(--editor-line) dashed color-mix(in srgb, var(--editor-accent) 65%, transparent)",
               borderRadius: f.type === "image" ? cornerRadiusCss(f) : undefined,
-              // Content lives INSIDE the box now — no fill, the outline and
+              // Content lives INSIDE the box — no fill, the outline and
               // handles carry selection.
               background: "transparent",
-              cursor: "move",
+              cursor: isEditing ? "text" : "move",
             }}
           >
-            {/* The field's real appearance, riding inside the interaction box
-                so the browser moves/rotates it with the box — drags are
-                visually correct by construction. Sized in canvas units and
-                scaled down to the box; pointer events stay on the box. */}
-            <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
-              <div
-                data-field-content
-                style={{
-                  width: f.width,
-                  height: f.height,
-                  transform: `scale(${scale})`,
-                  transformOrigin: "top left",
-                  pointerEvents: "none",
-                }}
-              >
-                <FieldBoxContent field={f} value={undefined} brandKit={kit} />
+            {/* The field's real appearance, riding inside the interaction box.
+                Sized in canvas units from the LIVE view geometry and scaled
+                down uniformly — during a resize the box gets real dimensions
+                every frame, so text reflows as it will look, never a
+                stretched glyph preview. */}
+            {isEditing ? (
+              <InlineTextEditor
+                field={v}
+                brandKit={kit}
+                scale={scale}
+                onCommit={(text) =>
+                  onChangeRef.current(
+                    fieldsRef.current.map((cf) =>
+                      cf.id === f.id ? { ...cf, staticValue: text || undefined } : cf,
+                    ),
+                  )
+                }
+                onExit={() => setEditingId(null)}
+              />
+            ) : (
+              <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
+                <div
+                  data-field-content
+                  style={{
+                    width: v.width,
+                    height: v.height,
+                    transform: `scale(${scale})`,
+                    transformOrigin: "top left",
+                    pointerEvents: "none",
+                  }}
+                >
+                  <FieldContent field={v} value={undefined} brandKit={kit} />
+                </div>
               </div>
-            </div>
+            )}
             {(isSelected || hoveredId === f.id) && (
               <span
                 className="absolute -top-4 left-0 rounded whitespace-nowrap"
@@ -343,7 +906,103 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
                 })()}
               </span>
             )}
-            {isSelected && single?.id === f.id && manipDims && (
+
+            {/* Transform chrome: 8 resize handles + the rotate handle, only
+                on a single selection. Children of the box, so they rotate
+                and travel with it for free. */}
+            {showHandles && (
+              <>
+                <div
+                  title="Rotate (shift snaps to 15°)"
+                  onPointerDown={(e) => {
+                    if (e.button !== 0) return;
+                    e.stopPropagation();
+                    beginRotate(e, f);
+                  }}
+                  style={{
+                    position: "absolute",
+                    left: "50%",
+                    top: -26,
+                    transform: "translateX(-50%)",
+                    width: 16,
+                    height: 16,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "grab",
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 9,
+                      height: 9,
+                      borderRadius: "50%",
+                      background: "var(--bg-surface)",
+                      border: "var(--editor-line) solid var(--editor-accent)",
+                    }}
+                  />
+                </div>
+                <div
+                  style={{
+                    position: "absolute",
+                    left: "50%",
+                    top: -12,
+                    width: 1,
+                    height: 12,
+                    background: "var(--editor-accent)",
+                    pointerEvents: "none",
+                  }}
+                />
+                {EDGE_STRIPS.map(({ dx, dy, cursor, style }) => (
+                  <div
+                    key={`edge${dx},${dy}`}
+                    data-resize-edge={`${dx},${dy}`}
+                    onPointerDown={(e) => {
+                      if (e.button !== 0) return;
+                      e.stopPropagation();
+                      beginResize(e, f, dx, dy);
+                    }}
+                    style={{ position: "absolute", cursor, ...style }}
+                  />
+                ))}
+                {handleDirs.map(({ dx, dy, cursor }) => (
+                  <div
+                    key={`${dx},${dy}`}
+                    onPointerDown={(e) => {
+                      if (e.button !== 0) return;
+                      e.stopPropagation();
+                      beginResize(e, f, dx, dy);
+                    }}
+                    style={{
+                      position: "absolute",
+                      left: `${(dx + 1) * 50}%`,
+                      top: `${(dy + 1) * 50}%`,
+                      transform: "translate(-50%, -50%)",
+                      width: 14,
+                      height: 14,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor,
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 8,
+                        height: 8,
+                        background: "var(--bg-surface)",
+                        border: "var(--editor-line) solid var(--editor-accent)",
+                      }}
+                    />
+                  </div>
+                ))}
+              </>
+            )}
+
+            {/* Live readout under the box: dimensions while moving/resizing,
+                the angle while rotating. Derived from the same frame state
+                that renders the box — it can never disagree with what shows. */}
+            {showHandles && frame && (
               <span
                 className="absolute whitespace-nowrap rounded"
                 style={{
@@ -359,105 +1018,46 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
                   pointerEvents: "none",
                 }}
               >
-                {manipDims.w} × {manipDims.h}
+                {frame.kind === "rotate"
+                  ? `${Math.round(v.rotation ?? 0)}°`
+                  : `${Math.round(v.width)} × ${Math.round(v.height)}`}
               </span>
             )}
           </div>
         );
       })}
 
-      {/* Figma-class transform controls: full controls on a single selection,
-          group drag on a multi-selection */}
-      {single && targetEls.length === 1 && (
-        <Moveable
-          key={`${single.id}-${scale}`}
-          target={targetEls[0]}
-          {...moveableProps}
-          draggable
-          resizable
-          rotatable
-          throttleResize={0}
-          throttleRotate={0}
-          renderDirections={["nw", "n", "ne", "e", "se", "s", "sw", "w"]}
-          onDrag={(e) => {
-            e.target.style.left = `${e.left}px`;
-            e.target.style.top = `${e.top}px`;
-            showDims(single.width, single.height);
-          }}
-          onDragEnd={(e) => {
-            setManipDims(null);
-            if (!e.lastEvent) return;
-            patchFields(new Map([[single.id, commitPos(single, e.lastEvent.left, e.lastEvent.top)]]));
-          }}
-          onResizeStart={(e) => {
-            resizeStart.current = {
-              height: single.height,
-              fontSize: single.fontSizePx,
-              corner: e.direction[0] !== 0 && e.direction[1] !== 0,
-            };
-          }}
-          onResize={(e) => {
-            e.target.style.width = `${e.width}px`;
-            e.target.style.height = `${e.height}px`;
-            e.target.style.left = `${e.drag.left}px`;
-            e.target.style.top = `${e.drag.top}px`;
-            // Stretch the content live with the box (canvas units → the box's
-            // current screen size); the exact font math commits on release.
-            const content = e.target.querySelector<HTMLElement>("[data-field-content]");
-            if (content && single.width > 0 && single.height > 0) {
-              content.style.transform = `scale(${e.width / single.width}, ${e.height / single.height})`;
-            }
-            // Canvas pixels, never screen pixels — the person designs at 1440.
-            showDims(Math.round(e.width / scale), Math.round(e.height / scale));
-          }}
-          onResizeEnd={(e) => {
-            setManipDims(null);
-            // React won't rewrite an unchanged transform prop, so undo the
-            // manual stretch before state re-renders the content at its
-            // committed size.
-            const content = e.target.querySelector<HTMLElement>("[data-field-content]");
-            if (content) content.style.transform = `scale(${scale})`;
-            if (!e.lastEvent) return;
-            const w = Math.max(16, Math.round(e.lastEvent.width / scale));
-            const h = Math.max(16, Math.round(e.lastEvent.height / scale));
-            const patch: Partial<TemplateField> = {
-              width: w,
-              height: h,
-              ...commitPos(single, e.lastEvent.drag.left, e.lastEvent.drag.top, w, h),
-            };
-            // Corner drags scale text like a design tool: font follows the box.
-            const start = resizeStart.current;
-            const isText = single.type === "text" || single.type === "multiline" || single.type === "select";
-            if (start.corner && isText && start.height > 0) {
-              const base = start.fontSize ?? 45;
-              patch.fontSizePx = Math.max(6, Math.round(base * (h / start.height)));
-            }
-            patchFields(new Map([[single.id, patch]]));
-          }}
-          onRotate={(e) => {
-            e.target.style.transform = `rotate(${e.rotation}deg)`;
-          }}
-          onRotateEnd={(e) => {
-            if (!e.lastEvent) return;
-            const deg = Math.round(e.lastEvent.rotation) % 360;
-            patchFields(new Map([[single.id, { rotation: deg === 0 ? undefined : deg }]]));
-          }}
-        />
-      )}
-      {selected.length > 1 && targetEls.length > 1 && (
-        <Moveable
-          key={`group-${selectedIds.join(",")}-${scale}`}
-          target={targetEls}
-          {...moveableProps}
-          draggable
-          onDragGroup={(e) => {
-            e.events.forEach((ev) => {
-              ev.target.style.left = `${ev.left}px`;
-              ev.target.style.top = `${ev.top}px`;
-            });
-          }}
-          onDragGroupEnd={commitGroupPositions}
-        />
+      {/* Smart guides for the active snap */}
+      {frame?.guides.map((g, i) =>
+        g.axis === "v" ? (
+          <div
+            key={`g${i}`}
+            style={{
+              position: "absolute",
+              left: g.pos * scale,
+              top: 0,
+              width: 1,
+              height: "100%",
+              background: "var(--editor-accent)",
+              pointerEvents: "none",
+              zIndex: 9998,
+            }}
+          />
+        ) : (
+          <div
+            key={`g${i}`}
+            style={{
+              position: "absolute",
+              top: g.pos * scale,
+              left: 0,
+              height: 1,
+              width: "100%",
+              background: "var(--editor-accent)",
+              pointerEvents: "none",
+              zIndex: 9998,
+            }}
+          />
+        ),
       )}
 
       {/* Draw preview */}

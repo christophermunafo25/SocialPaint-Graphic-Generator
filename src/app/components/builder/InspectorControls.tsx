@@ -259,14 +259,18 @@ export function NumericField({
    * draft in its closure, so without the flag it would commit the very value
    * Escape just threw away. */
   const cancelling = useRef(false);
-  const scrub = useRef<{ startX: number; base: number; last: number } | null>(null);
+  const scrub = useRef<{ startX: number; base: number; last: number; pendingX: number; shift: boolean } | null>(null);
+  const scrubRaf = useRef(0);
 
   const clamp = (n: number): number => {
     if (min !== undefined) n = Math.max(min, n);
     if (max !== undefined) n = Math.min(max, n);
     return Number(n.toFixed(precision));
   };
-  const format = (n: number | undefined): string => (n === undefined ? "" : n.toFixed(precision));
+  // toFixed enforces the precision; Number() drops the trailing zeros it
+  // pads with — "45", not "45.00", exactly as a design tool displays it.
+  const format = (n: number | undefined): string =>
+    n === undefined ? "" : String(Number(n.toFixed(precision)));
 
   const shown = draft ?? (mixed ? "" : format(value));
 
@@ -323,20 +327,41 @@ export function NumericField({
     e.preventDefault();
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
     beginInspectorGesture();
-    scrub.current = { startX: e.clientX, base: value ?? 0, last: value ?? 0 };
+    scrub.current = { startX: e.clientX, base: value ?? 0, last: value ?? 0, pendingX: e.clientX, shift: e.shiftKey };
   };
+  // rAF-throttled like every canvas drag: at most one commit per frame,
+  // computed from the latest pointer position.
   const onScrubMove = (e: React.PointerEvent<HTMLSpanElement>) => {
     if (!scrub.current) return;
-    const dx = e.clientX - scrub.current.startX;
-    const next = clamp(scrub.current.base + dx * step * (e.shiftKey ? 10 : 1));
-    if (next !== scrub.current.last) {
-      scrub.current.last = next;
-      onCommit(next);
-      setDraft(null);
-    }
+    scrub.current.pendingX = e.clientX;
+    scrub.current.shift = e.shiftKey;
+    if (scrubRaf.current) return;
+    scrubRaf.current = requestAnimationFrame(() => {
+      scrubRaf.current = 0;
+      const sc = scrub.current;
+      if (!sc) return;
+      const dx = sc.pendingX - sc.startX;
+      const next = clamp(sc.base + dx * step * (sc.shift ? 10 : 1));
+      if (next !== sc.last) {
+        sc.last = next;
+        onCommit(next);
+        setDraft(null);
+      }
+    });
   };
   const onScrubUp = (e: React.PointerEvent<HTMLSpanElement>) => {
     if (!scrub.current) return;
+    // Land exactly where the pointer stopped, then release.
+    const sc = scrub.current;
+    const next = clamp(sc.base + (e.clientX - sc.startX) * step * (e.shiftKey ? 10 : 1));
+    if (next !== sc.last) {
+      onCommit(next);
+      setDraft(null);
+    }
+    if (scrubRaf.current) {
+      cancelAnimationFrame(scrubRaf.current);
+      scrubRaf.current = 0;
+    }
     (e.target as HTMLElement).releasePointerCapture(e.pointerId);
     scrub.current = null;
     endInspectorGesture();

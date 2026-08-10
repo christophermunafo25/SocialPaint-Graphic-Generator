@@ -49,6 +49,7 @@ import { ElementPalette } from "./ElementPalette";
 import { FieldListPanel } from "./FieldListPanel";
 import { FieldContextMenu, type MenuAction } from "./FieldContextMenu";
 import { inspectorGestureActive } from "./InspectorControls";
+import { canvasGestureActive } from "./canvasGesture";
 import { WIZARD_STEPS, WizardStepper, type WizardStep } from "./WizardStepper";
 import {
   LOGO_PALETTE_PREFIX,
@@ -145,6 +146,39 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     captionTemplate: "",
   }));
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  /** Undo/redo restore SELECTION along with geometry: after a history jump,
+   * the fields the jump changed (or brought back) become the selection —
+   * the same way a design tool re-selects what an undo affected. Set before
+   * calling undo/redo; consumed by the diff effect below. */
+  const histNavRef = useRef(false);
+  const prevFieldsRef = useRef<TemplateField[]>([]);
+  useEffect(() => {
+    const prev = prevFieldsRef.current;
+    prevFieldsRef.current = draft.fields;
+    if (!histNavRef.current) return;
+    histNavRef.current = false;
+    if (prev === draft.fields) return;
+    const prevById = new Map(prev.map((f) => [f.id, f]));
+    const changed = draft.fields
+      .filter((f) => {
+        const p = prevById.get(f.id);
+        return !p || (p !== f && JSON.stringify(p) !== JSON.stringify(f));
+      })
+      .map((f) => f.id);
+    if (changed.length) setSelectedIds(changed);
+    // A pure deletion-undo target: nothing changed among survivors — just
+    // drop selection entries that no longer exist.
+    else setSelectedIds((sel) => sel.filter((id) => draft.fields.some((f) => f.id === id)));
+  }, [draft]);
+  const doUndo = useCallback(() => {
+    histNavRef.current = true;
+    undo();
+  }, [undo]);
+  const doRedo = useCallback(() => {
+    histNavRef.current = true;
+    redo();
+  }, [redo]);
   /** True once a creation path was chosen — "Start blank" needs no
    * background, so backgroundUrl alone can't gate the wizard anymore. */
   const [started, setStarted] = useState<boolean>(Boolean(templateId));
@@ -249,8 +283,16 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
   const singleSelected = selectedFields.length === 1 ? selectedFields[0] : null;
 
   /** Patch one field; when the patch re-derives the merge tag, rewrite the
-   * caption template so existing {old_key} references follow the rename. */
-  const patchField = useCallback((id: string, patch: Partial<TemplateField>) => {
+   * caption template so existing {old_key} references follow the rename.
+   *
+   * Coalescing is opt-in, not ambient: a keystroke STREAM (label input,
+   * textarea — `stream` true) collapses by the time window, and a pointer
+   * gesture (scrub, slider — gesture hold active) collapses for its whole
+   * duration. A discrete commit — a numeric field's Enter/blur, a toggle —
+   * passes no key and is exactly one undo entry, even two in quick
+   * succession. */
+  const patchField = useCallback((id: string, patch: Partial<TemplateField>, stream = false) => {
+    const gesture = inspectorGestureActive();
     setDraft(
       (d) => {
         const prev = d.fields.find((f) => f.id === id);
@@ -261,13 +303,8 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
             : d.captionTemplate;
         return { ...d, fields, captionTemplate };
       },
-      // Same field + same properties inside the window = one undo entry, so a
-      // keystroke stream in the label input or a color scrub isn't forty
-      // steps. Distinct properties (or a pause) still push separately —
-      // except mid-gesture: while a scrub or slider drag is in progress the
-      // hold flag keeps the whole gesture in one entry regardless of pace.
-      `patch:${id}:${Object.keys(patch).sort().join(",")}`,
-      inspectorGestureActive(),
+      stream || gesture ? `patch:${id}:${Object.keys(patch).sort().join(",")}` : undefined,
+      gesture,
     );
   }, [setDraft]);
 
@@ -356,6 +393,25 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       setFocusLabelFieldId(null);
     }
   }, [selectedIds, focusLabelFieldId]);
+
+  /** Arrow-key nudge: 1 canvas px, shift ×10. A rapid streak of presses
+   * coalesces into one undo entry (the time window); spaced, deliberate
+   * nudges stay separate steps. */
+  const nudgeFields = useCallback(
+    (ids: string[], dx: number, dy: number) => {
+      const idSet = new Set(ids);
+      setDraft(
+        (d) => ({
+          ...d,
+          fields: d.fields.map((f) =>
+            idSet.has(f.id) ? { ...f, x: f.x + dx, y: f.y + dy } : f,
+          ),
+        }),
+        `nudge:${ids.join(",")}`,
+      );
+    },
+    [setDraft],
+  );
 
   const deleteFields = useCallback(
     (ids: string[]) => {
@@ -452,14 +508,18 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     if (step !== "fields" || mode !== "edit") return;
     const handler = (e: KeyboardEvent) => {
       if (isTypingTarget(e)) return; // native text undo stays native
+      // Mid-drag the canvas owns the pointer AND the keyboard: deleting or
+      // undoing the element under an active gesture would strand it.
+      // (Escape cancels the drag inside the gesture core and never lands here.)
+      if (canvasGestureActive()) return;
       const mod = e.metaKey || e.ctrlKey;
       const key = e.key.toLowerCase();
       if (mod && key === "z" && !e.shiftKey) {
         e.preventDefault();
-        undo();
+        doUndo();
       } else if ((mod && key === "z" && e.shiftKey) || (mod && key === "y")) {
         e.preventDefault();
-        redo();
+        doRedo();
       } else if (mod && e.altKey && e.code === "KeyC" && selectedIds.length) {
         // Style shortcuts match on e.code and run BEFORE plain copy/paste:
         // macOS ⌥C reports e.key "ç", and Windows Ctrl+Alt+C keeps e.key "c",
@@ -484,13 +544,19 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       } else if ((e.key === "Delete" || e.key === "Backspace") && selectedIds.length) {
         e.preventDefault();
         deleteFields(selectedIds);
+      } else if (!mod && e.key.startsWith("Arrow") && selectedIds.length) {
+        e.preventDefault();
+        const step = e.shiftKey ? 10 : 1;
+        const dx = e.key === "ArrowLeft" ? -step : e.key === "ArrowRight" ? step : 0;
+        const dy = e.key === "ArrowUp" ? -step : e.key === "ArrowDown" ? step : 0;
+        if (dx || dy) nudgeFields(selectedIds, dx, dy);
       } else if (e.key === "Escape") {
         setSelectedIds([]);
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [step, mode, selectedIds, copyFields, cutFields, pasteFields, copyStyleFrom, pasteStyleTo, duplicateSelected, deleteFields, undo, redo]);
+  }, [step, mode, selectedIds, copyFields, cutFields, pasteFields, copyStyleFrom, pasteStyleTo, duplicateSelected, deleteFields, nudgeFields, doUndo, doRedo]);
 
   // -------------------------------------------------------------------------
   // Source, save, publish
@@ -1239,7 +1305,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                     {mode === "edit" && (
                       <div className="flex overflow-hidden" data-radius-control style={{ border: "1px solid var(--border-strong)" }}>
                         <button
-                          onClick={undo}
+                          onClick={doUndo}
                           disabled={!canUndo}
                           title={`Undo (${isMac ? "⌘" : "Ctrl+"}Z)`}
                           aria-label="Undo"
@@ -1249,7 +1315,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                           <Undo2 className="w-3.5 h-3.5" />
                         </button>
                         <button
-                          onClick={redo}
+                          onClick={doRedo}
                           disabled={!canRedo}
                           title={`Redo (${isMac ? "⇧⌘" : "Ctrl+Shift+"}Z)`}
                           aria-label="Redo"
@@ -1308,6 +1374,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                       onContextMenu={(pos, fieldId, canvasPoint) =>
                         setMenu({ x: pos.x, y: pos.y, fieldId, canvasPoint })
                       }
+                      onRequestLabelFocus={setFocusLabelFieldId}
                     />
                   ) : (
                     <SchemaRenderer
@@ -1349,7 +1416,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                       canvasWidth={draft.canvasWidth}
                       canvasHeight={draft.canvasHeight}
                       focusLabelFieldId={focusLabelFieldId}
-                      onChange={(patch) => patchField(singleSelected.id, patch)}
+                      onChange={(patch, stream) => patchField(singleSelected.id, patch, stream)}
                       onDelete={() => deleteFields([singleSelected.id])}
                       onBringToFront={() => reorderLayer([singleSelected.id], "front")}
                       onSendToBack={() => reorderLayer([singleSelected.id], "back")}
