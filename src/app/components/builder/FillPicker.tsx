@@ -108,7 +108,10 @@ function Swatch({
         flexShrink: 0,
         borderRadius: "var(--radius-control)",
         border: selected ? "2px solid var(--ring)" : "1px solid var(--border-strong)",
-        background: `${css}, ${checkerCss}`,
+        // A bare color is only valid in the FINAL background layer; layered
+        // over the checker it must be wrapped as an image (gradient) or the
+        // whole declaration is dropped and the swatch paints empty.
+        background: `linear-gradient(${css}, ${css}), ${checkerCss}`,
         cursor: disabled ? "default" : "pointer",
         opacity: disabled ? 0.5 : 1,
       }}
