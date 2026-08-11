@@ -239,6 +239,7 @@ export interface TemplateRow {
   background_storage_path: string | null;
   background_color: string | null;
   background_gradient: import("../../types").TextGradient | null;
+  layout_groups: import("../../types").LayoutGroup[] | null;
   caption_template: string;
   autobuild_meta: import("../../types").AutoBuildMeta | null;
   created_at: string;
@@ -265,6 +266,7 @@ export const toTemplate = (r: TemplateRow): TemplateSchema => ({
     .slice()
     .sort((a, b) => a.sort_order - b.sort_order)
     .map(toTemplateField),
+  layoutGroups: r.layout_groups ?? undefined,
   captionTemplate: r.caption_template,
   autobuildMeta: r.autobuild_meta ?? undefined,
   createdAt: r.created_at,

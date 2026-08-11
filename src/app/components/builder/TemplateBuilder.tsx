@@ -20,10 +20,12 @@ import type {
   AutoBuildResult,
   CanvasPreset,
   DesignImportResult,
+  LayoutGroup,
   NewTemplateInput,
   TemplateField,
   TemplateSchema,
 } from "@/lib/types";
+import { groupChildRef } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useHistory } from "@/lib/useHistory";
@@ -68,6 +70,19 @@ import {
 } from "./fieldOps";
 import { composeFigmaBackground } from "@/lib/figma/composeLayers";
 import { freezeBrandColors } from "@/lib/brand/resolveStyle";
+import { createCanvasMeasurer } from "@/lib/render/autoFit";
+import { computeLayout } from "@/lib/render/layout";
+import {
+  deriveGroup,
+  fieldIdsInGroups,
+  groupIdsWithin,
+  renameKeyInGroups,
+  selectedFieldIds,
+  selectedGroupIds,
+  stripFieldsFromGroups,
+  ungroup,
+} from "./groupOps";
+import { GroupInspector } from "./GroupInspector";
 
 /** The builder is a desktop tool: below this width the canvas + inspector
  * layout breaks, so we explain rather than attempt a responsive builder.
@@ -282,6 +297,108 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
   const selectedFields = draft.fields.filter((f) => selectedIds.includes(f.id));
   const singleSelected = selectedFields.length === 1 ? selectedFields[0] : null;
 
+  // -------------------------------------------------------------------------
+  // Layout groups (auto-layout stacks)
+  // -------------------------------------------------------------------------
+
+  // Builder-side layout pass over the draft (placeholder values, same as the
+  // edit canvas paints): drives the overlay's group frames and computed child
+  // rects, the inspector's computed geometry, and the overflow warnings. Re-
+  // measures once webfonts land, like the member preview.
+  const [fontsTick, setFontsTick] = useState(0);
+  useEffect(() => {
+    let mounted = true;
+    document.fonts?.ready.then(() => mounted && setFontsTick(1));
+    return () => {
+      mounted = false;
+    };
+  }, []);
+  const measurer = useMemo(() => createCanvasMeasurer(), [fontsTick]);
+  const builderLayout = useMemo(
+    () => computeLayout(draft, {}, kit, measurer),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [draft.fields, draft.layoutGroups, draft.canvasWidth, draft.canvasHeight, kit, measurer],
+  );
+
+  const groups = useMemo(() => draft.layoutGroups ?? [], [draft.layoutGroups]);
+  /** Authoring-time overflow visibility: the admin sees the worst case, not
+   * the member. Overflow never clips or blocks — it warns. */
+  const overflowGroupIds = useMemo(
+    () => groups.filter((g) => builderLayout.groupRects.get(g.id)?.overflows).map((g) => g.id),
+    [groups, builderLayout],
+  );
+  const layoutWarnings = useMemo(() => {
+    const out = [...builderLayout.warnings];
+    for (const g of groups) {
+      if (builderLayout.groupRects.get(g.id)?.overflows) {
+        out.push(`"${g.name}" extends beyond the canvas — its content can crop on export. Shorten the content, tighten the gap, or enable "Shrink to fit".`);
+      }
+    }
+    return out;
+  }, [builderLayout, groups]);
+  const selGroupIds = selectedGroupIds(selectedIds);
+  const selectedGroup =
+    selGroupIds.length === 1 && selectedFields.length === 0
+      ? (groups.find((g) => g.id === selGroupIds[0]) ?? null)
+      : null;
+
+  const patchGroup = useCallback(
+    (id: string, patch: Partial<LayoutGroup>, stream = false) => {
+      const gesture = inspectorGestureActive();
+      setDraft(
+        (d) => ({
+          ...d,
+          layoutGroups: (d.layoutGroups ?? []).map((g) => (g.id === id ? { ...g, ...patch } : g)),
+        }),
+        stream || gesture ? `patchGroup:${id}:${Object.keys(patch).sort().join(",")}` : undefined,
+        gesture,
+      );
+    },
+    [setDraft],
+  );
+
+  /** ⌘G: one history entry, derived so nothing moves at the moment of
+   * grouping. Selecting a group + fields nests the group as a child. */
+  const groupSelection = useCallback(() => {
+    const g = deriveGroup({
+      fields: draft.fields,
+      groups,
+      fieldIds: selectedFieldIds(selectedIds),
+      groupIds: selGroupIds,
+      layout: builderLayout,
+      kit,
+      measure: measurer,
+    });
+    if (!g) return;
+    setDraft((d) => ({ ...d, layoutGroups: [...(d.layoutGroups ?? []), g] }));
+    setSelectedIds([groupChildRef(g.id)]);
+  }, [draft.fields, groups, selectedIds, selGroupIds, builderLayout, kit, measurer, setDraft]);
+
+  /** ⇧⌘G: children freeze at their computed rects — also lossless. */
+  const ungroupSelection = useCallback(() => {
+    const targets = selGroupIds
+      .map((id) => groups.find((g) => g.id === id))
+      .filter((g): g is LayoutGroup => Boolean(g));
+    if (!targets.length) return;
+    let fields = draft.fields;
+    let nextGroups = groups;
+    for (const g of targets) {
+      const res = ungroup(g, fields, nextGroups, builderLayout);
+      fields = res.fields;
+      nextGroups = res.groups;
+    }
+    // Fields and groups change together — exactly one undo entry.
+    setDraft((d) => ({
+      ...d,
+      fields,
+      layoutGroups: nextGroups.length ? nextGroups : undefined,
+    }));
+    const freedKeys = new Set(targets.flatMap((g) => g.children));
+    setSelectedIds(
+      draft.fields.filter((f) => freedKeys.has(f.fieldKey)).map((f) => f.id),
+    );
+  }, [selGroupIds, groups, draft.fields, builderLayout, setDraft]);
+
   /** Patch one field; when the patch re-derives the merge tag, rewrite the
    * caption template so existing {old_key} references follow the rename.
    *
@@ -297,11 +414,16 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       (d) => {
         const prev = d.fields.find((f) => f.id === id);
         const fields = d.fields.map((f) => (f.id === id ? { ...f, ...patch } : f));
-        const captionTemplate =
-          prev && patch.fieldKey && patch.fieldKey !== prev.fieldKey
-            ? retagCaption(d.captionTemplate, prev.fieldKey, patch.fieldKey)
-            : d.captionTemplate;
-        return { ...d, fields, captionTemplate };
+        const renamed = prev && patch.fieldKey && patch.fieldKey !== prev.fieldKey;
+        const captionTemplate = renamed
+          ? retagCaption(d.captionTemplate, prev.fieldKey, patch.fieldKey!)
+          : d.captionTemplate;
+        // Group children reference fields by fieldKey — a rename follows
+        // through them exactly as it does through the caption tags.
+        const layoutGroups = renamed
+          ? renameKeyInGroups(d.layoutGroups, prev.fieldKey, patch.fieldKey!)
+          : d.layoutGroups;
+        return { ...d, fields, captionTemplate, layoutGroups };
       },
       stream || gesture ? `patch:${id}:${Object.keys(patch).sort().join(",")}` : undefined,
       gesture,
@@ -399,13 +521,19 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
    * nudges stay separate steps. */
   const nudgeFields = useCallback(
     (ids: string[], dx: number, dy: number) => {
-      const idSet = new Set(ids);
+      const idSet = new Set(selectedFieldIds(ids));
+      const gidSet = new Set(selectedGroupIds(ids));
       setDraft(
         (d) => ({
           ...d,
           fields: d.fields.map((f) =>
             idSet.has(f.id) ? { ...f, x: f.x + dx, y: f.y + dy } : f,
           ),
+          layoutGroups: gidSet.size
+            ? d.layoutGroups?.map((g) =>
+                gidSet.has(g.id) ? { ...g, x: g.x + dx, y: g.y + dy } : g,
+              )
+            : d.layoutGroups,
         }),
         `nudge:${ids.join(",")}`,
       );
@@ -416,11 +544,29 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
   const deleteFields = useCallback(
     (ids: string[]) => {
       if (!ids.length) return;
-      const idSet = new Set(ids);
-      setDraft((d) => ({ ...d, fields: d.fields.filter((f) => !idSet.has(f.id)) }));
-      setSelectedIds((sel) => sel.filter((id) => !idSet.has(id)));
+      // A selected GROUP deletes with everything in it (nested included) —
+      // Figma semantics; a selected field also leaves any group it was in.
+      const allGroups = draftRef.current.layoutGroups ?? [];
+      const gids = groupIdsWithin(selectedGroupIds(ids), allGroups);
+      const idSet = new Set([
+        ...selectedFieldIds(ids),
+        ...fieldIdsInGroups(gids, draftRef.current.fields, allGroups),
+      ]);
+      setDraft((d) => {
+        const deletedKeys = d.fields.filter((f) => idSet.has(f.id)).map((f) => f.fieldKey);
+        return {
+          ...d,
+          fields: d.fields.filter((f) => !idSet.has(f.id)),
+          layoutGroups: stripFieldsFromGroups(
+            d.layoutGroups?.filter((g) => !gids.includes(g.id)),
+            deletedKeys,
+          ),
+        };
+      });
+      const gidRefs = new Set(gids.map(groupChildRef));
+      setSelectedIds((sel) => sel.filter((id) => !idSet.has(id) && !gidRefs.has(id)));
     },
-    [],
+    [setDraft],
   );
 
   const copyFields = useCallback(
@@ -541,6 +687,12 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       } else if (mod && key === "d" && selectedIds.length) {
         e.preventDefault();
         duplicateSelected(selectedIds);
+      } else if (mod && key === "g" && !e.shiftKey && selectedIds.length >= 2) {
+        e.preventDefault();
+        groupSelection();
+      } else if (mod && key === "g" && e.shiftKey && selectedGroupIds(selectedIds).length) {
+        e.preventDefault();
+        ungroupSelection();
       } else if ((e.key === "Delete" || e.key === "Backspace") && selectedIds.length) {
         e.preventDefault();
         deleteFields(selectedIds);
@@ -556,7 +708,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [step, mode, selectedIds, copyFields, cutFields, pasteFields, copyStyleFrom, pasteStyleTo, duplicateSelected, deleteFields, nudgeFields, doUndo, doRedo]);
+  }, [step, mode, selectedIds, copyFields, cutFields, pasteFields, copyStyleFrom, pasteStyleTo, duplicateSelected, deleteFields, nudgeFields, doUndo, doRedo, groupSelection, ungroupSelection]);
 
   // -------------------------------------------------------------------------
   // Source, save, publish
@@ -912,7 +1064,19 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
         },
       ];
     }
+    // Right-click on a group frame: the overlay passes the group ref.
+    if (selectedGroupIds([menu.fieldId]).length) {
+      return [
+        { label: "Ungroup", shortcut: isMac ? "⇧⌘G" : "Ctrl+Shift+G", onSelect: ungroupSelection },
+        { label: "Delete group", shortcut: "⌫", destructive: true, onSelect: () => deleteFields([menu.fieldId!]) },
+      ];
+    }
     const ids = selectedIds.includes(menu.fieldId) ? selectedIds : [menu.fieldId];
+    const groupable =
+      ids.length >= 2 &&
+      draft.fields
+        .filter((f) => ids.includes(f.id))
+        .every((f) => !groups.some((g) => g.children.includes(f.fieldKey)));
     // The Fixed toggle drives toward ONE uniform end state: a mixed selection
     // becomes all fixed, and only an all-fixed selection offers the reverse —
     // so the label always says exactly what the action will do. Shapes and
@@ -931,6 +1095,9 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
         onSelect: () => pasteFields(),
       },
       { label: "Duplicate", shortcut: "⌘D", onSelect: () => duplicateSelected(ids) },
+      ...(groupable
+        ? [{ label: "Group selection", shortcut: isMac ? "⌘G" : "Ctrl+G", onSelect: groupSelection }]
+        : []),
       { label: "Copy style", shortcut: isMac ? "⌥⌘C" : "Ctrl+Alt+C", onSelect: () => copyStyleFrom(ids) },
       {
         label: "Paste style",
@@ -949,7 +1116,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       { label: "Send to back", onSelect: () => reorderLayer(ids, "back") },
       { label: "Delete", shortcut: "⌫", destructive: true, onSelect: () => deleteFields(ids) },
     ];
-  }, [menu, selectedIds, draft.fields, copyFields, cutFields, pasteFields, copyStyleFrom, pasteStyleTo, duplicateSelected, setFixed, reorderLayer, deleteFields]);
+  }, [menu, selectedIds, draft.fields, groups, copyFields, cutFields, pasteFields, copyStyleFrom, pasteStyleTo, duplicateSelected, setFixed, reorderLayer, deleteFields, groupSelection, ungroupSelection]);
 
   if (!viewportOk) {
     return (
@@ -1278,9 +1445,11 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                 )}
                 <FieldListPanel
                   fields={draft.fields}
+                  groups={groups}
                   selectedIds={selectedIds}
                   onSelect={setSelectedIds}
                   onReorder={setFields}
+                  onReorderChildren={(id, children) => patchGroup(id, { children })}
                   onContextMenu={(e, fieldId) => {
                     e.preventDefault();
                     if (!selectedIds.includes(fieldId)) setSelectedIds([fieldId]);
@@ -1359,32 +1528,54 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                       marginInline: "auto",
                     }}
                   >
-                  {mode === "edit" ? (
-                    <FieldOverlayEditor
-                      canvasWidth={draft.canvasWidth}
-                      canvasHeight={draft.canvasHeight}
-                      backgroundUrl={draft.backgroundUrl}
-                      backgroundCss={schemaBackgroundCss(draft)}
-                      fields={draft.fields}
-                      selectedIds={selectedIds}
-                      onSelect={setSelectedIds}
-                      onChange={setFields}
-                      onDraw={addDrawnField}
-                      onDropElement={(id, at) => addPaletteField(id, at)}
-                      onContextMenu={(pos, fieldId, canvasPoint) =>
-                        setMenu({ x: pos.x, y: pos.y, fieldId, canvasPoint })
-                      }
-                      onRequestLabelFocus={setFocusLabelFieldId}
-                    />
-                  ) : (
-                    <SchemaRenderer
-                      schema={previewSchema}
-                      values={{}}
-                      brandKit={kit}
-                      instrument={false}
-                    />
-                  )}
+                    {mode === "edit" ? (
+                      <FieldOverlayEditor
+                        canvasWidth={draft.canvasWidth}
+                        canvasHeight={draft.canvasHeight}
+                        backgroundUrl={draft.backgroundUrl}
+                        backgroundCss={schemaBackgroundCss(draft)}
+                        fields={draft.fields}
+                        groups={groups}
+                        layout={builderLayout}
+                        overflowGroupIds={overflowGroupIds}
+                        selectedIds={selectedIds}
+                        onSelect={setSelectedIds}
+                        onChange={setFields}
+                        onGroupChange={patchGroup}
+                        onReorderChildren={(id, children) => patchGroup(id, { children })}
+                        onDraw={addDrawnField}
+                        onDropElement={(id, at) => addPaletteField(id, at)}
+                        onContextMenu={(pos, fieldId, canvasPoint) =>
+                          setMenu({ x: pos.x, y: pos.y, fieldId, canvasPoint })
+                        }
+                        onRequestLabelFocus={setFocusLabelFieldId}
+                      />
+                    ) : (
+                      <SchemaRenderer
+                        schema={previewSchema}
+                        values={{}}
+                        brandKit={kit}
+                        instrument={false}
+                      />
+                    )}
                   </div>
+                  {mode === "edit" && layoutWarnings.length > 0 && (
+                    <div
+                      role="status"
+                      className="mt-3 px-3 py-2 space-y-1"
+                      style={{
+                        borderRadius: "var(--radius-control)",
+                        border: "1px solid var(--border-strong)",
+                        background: "var(--bg-raised)",
+                      }}
+                    >
+                      {layoutWarnings.map((w, i) => (
+                        <p key={i} style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}>
+                          {w}
+                        </p>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 {stores.designImport.isConfigured() && mode === "edit" && (
                   <div className="flex items-center gap-4">
@@ -1408,7 +1599,17 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
               </div>
 
               <div className="lg:col-span-4 space-y-4 w-full max-w-xl mx-auto lg:max-w-none">
-                {singleSelected ? (
+                {selectedGroup ? (
+                  <div className="sp-card p-4">
+                    <GroupInspector
+                      group={selectedGroup}
+                      computedRect={builderLayout.groupRects.get(selectedGroup.id)}
+                      onChange={(patch, stream) => patchGroup(selectedGroup.id, patch, stream)}
+                      onUngroup={ungroupSelection}
+                      onDelete={() => deleteFields([groupChildRef(selectedGroup.id)])}
+                    />
+                  </div>
+                ) : singleSelected ? (
                   <div className="sp-card p-4">
                     <FieldInspector
                       field={singleSelected}
@@ -1416,6 +1617,8 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                       canvasWidth={draft.canvasWidth}
                       canvasHeight={draft.canvasHeight}
                       focusLabelFieldId={focusLabelFieldId}
+                      containingGroup={groups.find((g) => g.children.includes(singleSelected.fieldKey))}
+                      computedRect={builderLayout.fieldRects.get(singleSelected.id)}
                       onChange={(patch, stream) => patchField(singleSelected.id, patch, stream)}
                       onDelete={() => deleteFields([singleSelected.id])}
                       onBringToFront={() => reorderLayer([singleSelected.id], "front")}
@@ -1425,6 +1628,9 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                 ) : selectedFields.length > 1 ? (
                   <div className="sp-card p-4 space-y-3">
                     <h3 className="sp-panel-title">{selectedFields.length} fields selected</h3>
+                    <button className="sp-btn sp-btn-primary w-full" onClick={groupSelection}>
+                      Group selection {isMac ? "⌘G" : "Ctrl+G"}
+                    </button>
                     <div className="grid grid-cols-2 gap-2">
                       <button className="sp-btn sp-btn-ghost" onClick={() => copyFields(selectedIds)}>Copy</button>
                       <button className="sp-btn sp-btn-ghost" onClick={() => duplicateSelected(selectedIds)}>Duplicate</button>

@@ -43,6 +43,7 @@ export class SupabaseTemplateStore implements TemplateStore {
         background_storage_path: input.backgroundUrl || null,
         background_color: input.backgroundColor ?? null,
         background_gradient: input.backgroundGradient ?? null,
+        layout_groups: input.layoutGroups ?? null,
         caption_template: input.captionTemplate,
         autobuild_meta: input.autobuildMeta ?? null,
       })
@@ -66,6 +67,7 @@ export class SupabaseTemplateStore implements TemplateStore {
     if (patch.backgroundUrl !== undefined) row.background_storage_path = patch.backgroundUrl || null;
     if ("backgroundColor" in patch) row.background_color = patch.backgroundColor ?? null;
     if ("backgroundGradient" in patch) row.background_gradient = patch.backgroundGradient ?? null;
+    if ("layoutGroups" in patch) row.layout_groups = patch.layoutGroups ?? null;
     if (patch.captionTemplate !== undefined) row.caption_template = patch.captionTemplate;
     if ("autobuildMeta" in patch) row.autobuild_meta = patch.autobuildMeta ?? null;
     const { error } = await supabase().from("templates").update(row).eq("id", id);

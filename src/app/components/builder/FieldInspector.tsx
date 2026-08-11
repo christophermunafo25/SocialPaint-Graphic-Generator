@@ -59,6 +59,11 @@ interface FieldInspectorProps {
   /** Canvas size — the alignment buttons align against these bounds. */
   canvasWidth: number;
   canvasHeight: number;
+  /** The auto-layout group DIRECTLY containing this field, when grouped —
+   * position (and, for text, main-axis size) become computed, not authored. */
+  containingGroup?: import("@/lib/types").LayoutGroup;
+  /** This field's rect from the layout pass (shown when values are computed). */
+  computedRect?: import("@/lib/render/layout").Rect;
   /** `stream` marks a per-keystroke source (text inputs): successive
    * commits coalesce into one undo entry. Discrete commits (numeric fields,
    * toggles) omit it and land one undo entry each. */
@@ -97,12 +102,18 @@ type ResizeMode = "free" | "shrink" | "fixed";
 const wrapDeg = (n: number): number => ((((n + 180) % 360) + 360) % 360) - 180;
 
 export function FieldInspector(props: FieldInspectorProps) {
-  const { field, allFields, canvasWidth, canvasHeight, onChange, onDelete, focusLabelFieldId } = props;
+  const { field, allFields, canvasWidth, canvasHeight, containingGroup, computedRect, onChange, onDelete, focusLabelFieldId } = props;
   const { company } = useAuth();
   const { kit, assets } = useBrand();
   const isText = field.type === "text" || field.type === "multiline" || field.type === "select";
   const isShape = field.type === "shape";
   const isStatic = Boolean(field.static);
+  /** Grouped children are PLACED by their stack: position is computed, and a
+   * text child's main-axis size hugs its content. The inspector says so
+   * instead of offering editors that would be silently overridden. */
+  const inGroup = Boolean(containingGroup);
+  const groupVertical = containingGroup?.direction !== "horizontal";
+  const mainSizeComputed = inGroup && isText;
   const labelRef = useRef<HTMLInputElement>(null);
   const [uploadingStatic, setUploadingStatic] = useState(false);
 
@@ -434,42 +445,55 @@ export function FieldInspector(props: FieldInspectorProps) {
       </InspectorSection>
 
       <InspectorSection id="position" title="Position">
-        <PropertyRow label="Align">
-          <SegmentedIconGroup
-            ariaLabel="Align horizontally on the canvas"
-            options={[
-              { key: "start", Icon: AlignStartVertical, title: "Align left edge of canvas" },
-              { key: "center", Icon: AlignCenterVertical, title: "Center horizontally on canvas" },
-              { key: "end", Icon: AlignEndVertical, title: "Align right edge of canvas" },
-            ]}
-            onSelect={alignBoxH}
-          />
-          <SegmentedIconGroup
-            ariaLabel="Align vertically on the canvas"
-            options={[
-              { key: "start", Icon: AlignStartHorizontal, title: "Align top edge of canvas" },
-              { key: "center", Icon: AlignCenterHorizontal, title: "Center vertically on canvas" },
-              { key: "end", Icon: AlignEndHorizontal, title: "Align bottom edge of canvas" },
-            ]}
-            onSelect={alignBoxV}
-          />
-        </PropertyRow>
-        <PropertyRow label="Position">
-          <NumericField
-            label="X"
-            ariaLabel="X position"
-            precision={0}
-            value={field.x}
-            onCommit={(v) => onChange({ x: v ?? field.x })}
-          />
-          <NumericField
-            label="Y"
-            ariaLabel="Y position"
-            precision={0}
-            value={field.y}
-            onCommit={(v) => onChange({ y: v ?? field.y })}
-          />
-        </PropertyRow>
+        {inGroup ? (
+          // Grouped: the stack places this element. Show where it landed
+          // rather than offering editors the layout pass would override.
+          <PropertyRow label="Position">
+            <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+              X {Math.round(computedRect?.x ?? field.x)} · Y {Math.round(computedRect?.y ?? field.y)} —
+              placed by "{containingGroup?.name}"
+            </span>
+          </PropertyRow>
+        ) : (
+          <>
+            <PropertyRow label="Align">
+              <SegmentedIconGroup
+                ariaLabel="Align horizontally on the canvas"
+                options={[
+                  { key: "start", Icon: AlignStartVertical, title: "Align left edge of canvas" },
+                  { key: "center", Icon: AlignCenterVertical, title: "Center horizontally on canvas" },
+                  { key: "end", Icon: AlignEndVertical, title: "Align right edge of canvas" },
+                ]}
+                onSelect={alignBoxH}
+              />
+              <SegmentedIconGroup
+                ariaLabel="Align vertically on the canvas"
+                options={[
+                  { key: "start", Icon: AlignStartHorizontal, title: "Align top edge of canvas" },
+                  { key: "center", Icon: AlignCenterHorizontal, title: "Center vertically on canvas" },
+                  { key: "end", Icon: AlignEndHorizontal, title: "Align bottom edge of canvas" },
+                ]}
+                onSelect={alignBoxV}
+              />
+            </PropertyRow>
+            <PropertyRow label="Position">
+              <NumericField
+                label="X"
+                ariaLabel="X position"
+                precision={0}
+                value={field.x}
+                onCommit={(v) => onChange({ x: v ?? field.x })}
+              />
+              <NumericField
+                label="Y"
+                ariaLabel="Y position"
+                precision={0}
+                value={field.y}
+                onCommit={(v) => onChange({ y: v ?? field.y })}
+              />
+            </PropertyRow>
+          </>
+        )}
         <PropertyRow label="Rotate">
           <NumericField
             icon={<RotateCw style={{ width: 12, height: 12 }} strokeWidth={1.5} />}
@@ -492,18 +516,20 @@ export function FieldInspector(props: FieldInspectorProps) {
             }
           />
         </PropertyRow>
-        <PropertyRow label="Anchor">
-          <select
-            className="sp-input"
-            style={compactControlStyle}
-            aria-label="Anchor point"
-            value={field.anchor ?? "topLeft"}
-            onChange={(e) => changeAnchor(e.target.value as "topLeft" | "center")}
-          >
-            <option value="topLeft">Top-left (X/Y = box corner)</option>
-            <option value="center">Center (X/Y = box center)</option>
-          </select>
-        </PropertyRow>
+        {!inGroup && (
+          <PropertyRow label="Anchor">
+            <select
+              className="sp-input"
+              style={compactControlStyle}
+              aria-label="Anchor point"
+              value={field.anchor ?? "topLeft"}
+              onChange={(e) => changeAnchor(e.target.value as "topLeft" | "center")}
+            >
+              <option value="topLeft">Top-left (X/Y = box corner)</option>
+              <option value="center">Center (X/Y = box center)</option>
+            </select>
+          </PropertyRow>
+        )}
       </InspectorSection>
 
       <InspectorSection id="layout" title="Layout">
@@ -530,22 +556,34 @@ export function FieldInspector(props: FieldInspectorProps) {
           </PropertyRow>
         )}
         <PropertyRow label="Dimensions">
-          <NumericField
-            label="W"
-            ariaLabel="Width"
-            precision={0}
-            min={1}
-            value={field.width}
-            onCommit={commitW}
-          />
-          <NumericField
-            label="H"
-            ariaLabel="Height"
-            precision={0}
-            min={1}
-            value={field.height}
-            onCommit={commitH}
-          />
+          {mainSizeComputed && !groupVertical ? (
+            <span style={{ fontSize: 11, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
+              W {Math.round(computedRect?.width ?? field.width)} · computed
+            </span>
+          ) : (
+            <NumericField
+              label="W"
+              ariaLabel="Width"
+              precision={0}
+              min={1}
+              value={field.width}
+              onCommit={commitW}
+            />
+          )}
+          {mainSizeComputed && groupVertical ? (
+            <span style={{ fontSize: 11, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
+              H {Math.round(computedRect?.height ?? field.height)} · hugs content
+            </span>
+          ) : (
+            <NumericField
+              label="H"
+              ariaLabel="Height"
+              precision={0}
+              min={1}
+              value={field.height}
+              onCommit={commitH}
+            />
+          )}
           <button
             onClick={() => setConstrain(!constrain)}
             aria-pressed={constrain}
@@ -788,18 +826,23 @@ export function FieldInspector(props: FieldInspectorProps) {
                 ]}
                 onSelect={(k) => onChange({ align: k as TemplateField["align"] })}
               />
-              <SegmentedIconGroup
-                ariaLabel="Vertical text alignment"
-                value={field.verticalAlign ?? "middle"}
-                options={[
-                  { key: "top", Icon: AlignVerticalJustifyStart, title: "Align text to the top of the box" },
-                  { key: "middle", Icon: AlignVerticalJustifyCenter, title: "Center text vertically" },
-                  { key: "bottom", Icon: AlignVerticalJustifyEnd, title: "Align text to the bottom of the box" },
-                ]}
-                onSelect={(k) =>
-                  onChange({ verticalAlign: k === "middle" ? undefined : (k as TemplateField["verticalAlign"]) })
-                }
-              />
+              {/* A grouped text child hugs its content — there is no free
+                  vertical space to align within; the STACK's anchor and gap
+                  own vertical placement. */}
+              {!mainSizeComputed && (
+                <SegmentedIconGroup
+                  ariaLabel="Vertical text alignment"
+                  value={field.verticalAlign ?? "middle"}
+                  options={[
+                    { key: "top", Icon: AlignVerticalJustifyStart, title: "Align text to the top of the box" },
+                    { key: "middle", Icon: AlignVerticalJustifyCenter, title: "Center text vertically" },
+                    { key: "bottom", Icon: AlignVerticalJustifyEnd, title: "Align text to the bottom of the box" },
+                  ]}
+                  onSelect={(k) =>
+                    onChange({ verticalAlign: k === "middle" ? undefined : (k as TemplateField["verticalAlign"]) })
+                  }
+                />
+              )}
               <SegmentedIconGroup
                 ariaLabel="Letter case"
                 disabled={locked.has("uppercase")}

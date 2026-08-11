@@ -197,6 +197,55 @@ export interface TemplateField {
   required?: boolean;
 }
 
+/** A point along one axis of a layout group: the main-axis anchor (which
+ * point holds still as content grows) or the cross-axis alignment. */
+export type GroupAxisPoint = "start" | "center" | "end";
+
+/** An auto-layout stack: an ordered run of fields placed along an axis with
+ * a fixed gap, anchored at a point that does not move when content grows.
+ *
+ * Groups are pure layout metadata, deliberately OUTSIDE the fields array:
+ * fields stay flat, so the member form order (fields array), caption merge
+ * tags, and paint order (zIndex) provably cannot change when an admin groups
+ * elements. A template with no groups renders through the identical path it
+ * always did.
+ *
+ * Geometry semantics, vertical direction (horizontal swaps the axes):
+ *  - x is the stack's left edge; crossSize its width.
+ *  - y is the ANCHOR point: the top edge when anchor="start", the vertical
+ *    center when "center", the bottom edge when "end". Content grows away
+ *    from it, which is the whole point of the feature.
+ *  - Main-axis size is computed from measured content — never stored.
+ */
+export interface LayoutGroup {
+  /** Client-generated and persisted verbatim (the DB re-mints template_fields
+   * row ids on every save, so groups never reference fields by row id). */
+  id: string;
+  name: string;
+  direction: "vertical" | "horizontal";
+  /** Canvas px between adjacent children. */
+  gap: number;
+  anchor: GroupAxisPoint;
+  align: GroupAxisPoint;
+  x: number;
+  y: number;
+  crossSize: number;
+  /** Ordered stack children: a field's fieldKey (the one save-stable field
+   * identifier), or "group:<id>" for a nested group. Array order IS the
+   * stack order — a third ordering, separate from form order and zIndex. */
+  children: string[];
+  /** Overflow policy: proportionally shrink text children (never below their
+   * autoFit floors) until the stack fits inside the canvas. Off by default —
+   * overflow stays visible, with a builder-only warning. */
+  shrinkToFit?: boolean;
+}
+
+/** Child reference encoding for LayoutGroup.children. fieldKeys are
+ * [a-z0-9_] slugs, so the "group:" prefix can never collide. */
+export const groupChildRef = (groupId: string): string => `group:${groupId}`;
+export const parseGroupChildRef = (ref: string): string | null =>
+  ref.startsWith("group:") ? ref.slice(6) : null;
+
 export type TemplateStatus = "draft" | "published";
 
 export interface TemplateSchema {
@@ -217,6 +266,9 @@ export interface TemplateSchema {
   backgroundColor?: string;
   backgroundGradient?: TextGradient;
   fields: TemplateField[];
+  /** Auto-layout stacks over the flat fields (absent = none — the pre-groups
+   * rendering path, byte for byte). */
+  layoutGroups?: LayoutGroup[];
   captionTemplate: string; // "{name} celebrated {years} incredible years!"
   /** Present when Claude built this template's fields (auto-build). */
   autobuildMeta?: AutoBuildMeta;

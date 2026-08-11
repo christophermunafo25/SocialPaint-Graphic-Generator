@@ -1,9 +1,17 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import type { BrandKit, TemplateField } from "@/lib/types";
+import type { BrandKit, LayoutGroup, TemplateField } from "@/lib/types";
+import { groupChildRef, parseGroupChildRef } from "@/lib/types";
 import { useDataUrl } from "@/lib/render/useDataUrl";
 import { useBrand } from "@/lib/brand/BrandContext";
 import { fieldsFontUsage, loadGoogleFonts } from "@/lib/render/fonts";
 import { fittedFontSize, fixedWidthFontSize } from "@/lib/render/autoFit";
+import {
+  groupFieldKeys,
+  outermostGroupOf,
+  parentGroupOf,
+  type LayoutResult,
+  type Rect,
+} from "@/lib/render/layout";
 import { resolveFieldStyle } from "@/lib/brand/resolveStyle";
 import { cornerRadiusCss, DEFAULT_FILL_HEX, FieldBoxContent } from "../SchemaRenderer";
 import { PALETTE_MIME, paintOrder } from "./fieldOps";
@@ -16,14 +24,27 @@ interface FieldOverlayEditorProps {
   /** Canvas base fill (schemaBackgroundCss) — under the background image. */
   backgroundCss?: string;
   fields: TemplateField[];
+  /** Auto-layout stacks over the fields (may be empty). */
+  groups: LayoutGroup[];
+  /** The builder's layout pass over the current draft: computed rects for
+   * grouped children, group frames, and shrink-adjusted font sizes. */
+  layout: LayoutResult;
+  /** Groups currently outgrowing the canvas — their frames flag it. */
+  overflowGroupIds: string[];
+  /** Selection entries are field ids or "group:<id>" refs. */
   selectedIds: string[];
   onSelect(ids: string[]): void;
   onChange(fields: TemplateField[]): void;
+  /** Commit a group geometry change (move, cross-axis resize) — one entry. */
+  onGroupChange(id: string, patch: Partial<LayoutGroup>): void;
+  /** Commit a stack-order change from a child drag. */
+  onReorderChildren(id: string, children: string[]): void;
   /** Secondary path: the admin drew a raw box (canvas-space rect). */
   onDraw(rect: { x: number; y: number; width: number; height: number }): void;
   /** Primary path: a palette element was dropped at a canvas point. */
   onDropElement(paletteId: string, at: { x: number; y: number }): void;
-  /** Right-click on a field (id) or empty canvas (null, with canvas point). */
+  /** Right-click on a field (id), a group frame ("group:<id>"), or empty
+   * canvas (null, with canvas point). */
   onContextMenu(pos: { x: number; y: number }, fieldId: string | null, canvasPoint: { x: number; y: number }): void;
   /** Double-click on a member-editable element: the text an admin can change
    * there is its NAME, which lives in the inspector — focus it. */
@@ -44,9 +65,13 @@ interface DrawState {
  * the per-frame truth, one state write per frame, and the commit on release
  * writes exactly what was last rendered — mid-drag IS what you get. */
 interface GestureFrame {
-  kind: "move" | "resize" | "rotate";
+  kind: "move" | "resize" | "rotate" | "groupMove" | "reorder";
   overrides: Map<string, Partial<TemplateField>>;
   guides: Guide[];
+  /** groupMove: every listed group frame and member field translates live. */
+  groupDelta?: { groupIds: Set<string>; fieldIds: Set<string>; dx: number; dy: number };
+  /** reorder: the dragged child's main-axis offset (vertical: dy). */
+  reorderDelta?: { fieldId: string; dx: number; dy: number };
 }
 
 interface Guide {
@@ -107,17 +132,21 @@ const toAnchorSpace = (
   y: f.anchor === "center" ? tly + h / 2 : tly,
 });
 
-/** Whether a canvas-space point falls inside a field's box, rotation
+/** Whether a canvas-space point falls inside a display rect, rotation
  * included: transform the point into the box's local axes and compare. */
-function hitTestField(f: TemplateField, p: { x: number; y: number }): boolean {
-  const cx = displayX(f) + f.width / 2;
-  const cy = displayY(f) + f.height / 2;
-  const rad = ((f.rotation ?? 0) * Math.PI) / 180;
+function hitTestRect(
+  r: { x: number; y: number; width: number; height: number },
+  rotation: number | undefined,
+  p: { x: number; y: number },
+): boolean {
+  const cx = r.x + r.width / 2;
+  const cy = r.y + r.height / 2;
+  const rad = ((rotation ?? 0) * Math.PI) / 180;
   const dx0 = p.x - cx;
   const dy0 = p.y - cy;
   const dx = Math.cos(rad) * dx0 + Math.sin(rad) * dy0;
   const dy = -Math.sin(rad) * dx0 + Math.cos(rad) * dy0;
-  return Math.abs(dx) <= f.width / 2 && Math.abs(dy) <= f.height / 2;
+  return Math.abs(dx) <= r.width / 2 && Math.abs(dy) <= r.height / 2;
 }
 
 /** Snap one axis of a moving span: try its start / center / end against the
@@ -291,9 +320,14 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
     backgroundUrl,
     backgroundCss,
     fields,
+    groups,
+    layout,
+    overflowGroupIds,
     selectedIds,
     onSelect,
     onChange,
+    onGroupChange,
+    onReorderChildren,
     onDraw,
     onDropElement,
     onContextMenu,
@@ -318,8 +352,33 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
   onChangeRef.current = onChange;
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
+  const onGroupChangeRef = useRef(onGroupChange);
+  onGroupChangeRef.current = onGroupChange;
+  const onReorderChildrenRef = useRef(onReorderChildren);
+  onReorderChildrenRef.current = onReorderChildren;
   const scaleRef = useRef(scale);
   scaleRef.current = scale;
+  const groupsRef = useRef(groups);
+  groupsRef.current = groups;
+  const layoutRef = useRef(layout);
+  layoutRef.current = layout;
+
+  // --- Group lookups -------------------------------------------------------
+
+  /** fieldKey → the group DIRECTLY containing it. */
+  const directGroupOf = (fieldKey: string): LayoutGroup | undefined =>
+    groupsRef.current.find((g) => g.children.includes(fieldKey));
+
+  const isGrouped = (f: TemplateField): boolean => Boolean(directGroupOf(f.fieldKey));
+
+  /** A field's DISPLAY rect in canvas space: the layout pass's output for
+   * grouped children, the authored box otherwise. Everything the overlay
+   * paints, hits, or snaps against reads through here — one positioning
+   * path, same as the renderer. */
+  const displayRect = (f: TemplateField): Rect => {
+    const r = layoutRef.current.fieldRects.get(f.id);
+    return r ?? { x: displayX(f), y: displayY(f), width: f.width, height: f.height };
+  };
 
   // A mode switch or navigation mid-drag must not strand the capture.
   useEffect(() => () => cancelActiveGesture(), []);
@@ -369,16 +428,16 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
   };
 
   /** Snap targets from every field NOT being dragged, plus the canvas
-   * edges and centers. Canvas-space, computed once per gesture. */
+   * edges and centers. Canvas-space DISPLAY rects (grouped children snap at
+   * their computed positions), computed once per gesture. */
   const snapTargets = (excluded: Set<string>) => {
     const v = [0, canvasWidth / 2, canvasWidth];
     const h = [0, canvasHeight / 2, canvasHeight];
     for (const f of fieldsRef.current) {
       if (excluded.has(f.id)) continue;
-      const l = displayX(f);
-      const t = displayY(f);
-      v.push(l, l + f.width / 2, l + f.width);
-      h.push(t, t + f.height / 2, t + f.height);
+      const r = displayRect(f);
+      v.push(r.x, r.x + r.width / 2, r.x + r.width);
+      h.push(r.y, r.y + r.height / 2, r.y + r.height);
     }
     return { v, h };
   };
@@ -415,7 +474,14 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
     primaryId: string,
     reduceOnTap: boolean,
   ) => {
-    const dragSet = new Set(ids);
+    // Grouped children have COMPUTED positions — a free move can't apply.
+    // They drop out of the drag set (their group moves via beginGroupMove).
+    const dragSet = new Set(
+      ids.filter((id) => {
+        const f = fieldsRef.current.find((x) => x.id === id);
+        return f && !isGrouped(f);
+      }),
+    );
     const startRects = fieldsRef.current
       .filter((f) => dragSet.has(f.id))
       .map((f) => ({ f, tlx: displayX(f), tly: displayY(f) }));
@@ -480,6 +546,143 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
         // selection to it — the drag path already handled everything else.
         if (reduceOnTap) onSelectRef.current([primaryId]);
       },
+    });
+  };
+
+  // --- Group move (whole stack) --------------------------------------------
+
+  const beginGroupMove = (e: React.PointerEvent, group: LayoutGroup) => {
+    const rect = layoutRef.current.groupRects.get(group.id);
+    if (!rect) return;
+    const memberKeys = new Set(groupFieldKeys(group, groupsRef.current));
+    const memberIds = new Set(
+      fieldsRef.current.filter((f) => memberKeys.has(f.fieldKey)).map((f) => f.id),
+    );
+    // Every group frame inside the dragged one translates with it.
+    const within = new Set<string>();
+    const visit = (g: LayoutGroup) => {
+      within.add(g.id);
+      for (const ref of g.children) {
+        const id = parseGroupChildRef(ref);
+        const nested = id ? groupsRef.current.find((x) => x.id === id) : undefined;
+        if (nested && !within.has(nested.id)) visit(nested);
+      }
+    };
+    visit(group);
+    const targets = snapTargets(memberIds);
+    const bbox = { l: rect.x, t: rect.y, r: rect.x + rect.width, b: rect.y + rect.height };
+    let latest: { dx: number; dy: number } | null = null;
+
+    startDrag(e.nativeEvent, containerRef.current!, {
+      threshold: DRAG_THRESHOLD_PX,
+      onMove: (dx, dy, ev) => {
+        const s = scaleRef.current;
+        let ddx = dx / s;
+        let ddy = dy / s;
+        const lockX = ev.shiftKey && Math.abs(dx) < Math.abs(dy);
+        const lockY = ev.shiftKey && !lockX;
+        if (lockX) ddx = 0;
+        if (lockY) ddy = 0;
+        const guides: Guide[] = [];
+        if (!ev.metaKey && !ev.ctrlKey) {
+          const thresh = SNAP_SCREEN_PX / s;
+          if (!lockX) {
+            const sx = snapAxis(bbox.l + ddx, bbox.r + ddx, targets.v, thresh);
+            ddx += sx.adjust;
+            if (sx.guide !== null) guides.push({ axis: "v", pos: sx.guide });
+          }
+          if (!lockY) {
+            const sy = snapAxis(bbox.t + ddy, bbox.b + ddy, targets.h, thresh);
+            ddy += sy.adjust;
+            if (sy.guide !== null) guides.push({ axis: "h", pos: sy.guide });
+          }
+        }
+        ddx = Math.min(ddx, canvasWidth - MIN_VISIBLE - bbox.l);
+        ddx = Math.max(ddx, MIN_VISIBLE - bbox.r);
+        ddy = Math.min(ddy, canvasHeight - MIN_VISIBLE - bbox.t);
+        ddy = Math.max(ddy, MIN_VISIBLE - bbox.b);
+        latest = { dx: ddx, dy: ddy };
+        setFrame({
+          kind: "groupMove",
+          overrides: new Map(),
+          guides,
+          groupDelta: { groupIds: within, fieldIds: memberIds, dx: ddx, dy: ddy },
+        });
+      },
+      onEnd: () => {
+        setFrame(null);
+        if (latest && (latest.dx || latest.dy)) {
+          onGroupChangeRef.current(group.id, {
+            x: Math.round(group.x + latest.dx),
+            y: Math.round(group.y + latest.dy),
+          });
+        }
+      },
+      onCancel: () => setFrame(null),
+    });
+  };
+
+  // --- Child reorder (drag within the stack) -------------------------------
+
+  /** Dragging a grouped child moves it ALONG the stack axis and re-slots it:
+   * on release the child lands at the index its center crossed into. The
+   * stack order lives on the group (a third ordering — never the form order,
+   * never zIndex). */
+  const beginChildReorder = (e: React.PointerEvent, f: TemplateField) => {
+    const group = directGroupOf(f.fieldKey);
+    if (!group) return;
+    const vertical = group.direction === "vertical";
+    const myRect = displayRect(f);
+    const slots = group.children.map((ref) => {
+      const gid = parseGroupChildRef(ref);
+      let r: Rect | undefined;
+      if (gid) {
+        r = layoutRef.current.groupRects.get(gid);
+      } else {
+        const fld = fieldsRef.current.find((x) => x.fieldKey === ref);
+        r = fld ? layoutRef.current.fieldRects.get(fld.id) : undefined;
+      }
+      return { ref, center: r ? (vertical ? r.y + r.height / 2 : r.x + r.width / 2) : 0 };
+    });
+    if (!group.children.includes(f.fieldKey)) return;
+    let latest = 0;
+
+    startDrag(e.nativeEvent, containerRef.current!, {
+      threshold: DRAG_THRESHOLD_PX,
+      onMove: (dx, dy) => {
+        const s = scaleRef.current;
+        latest = (vertical ? dy : dx) / s;
+        setFrame({
+          kind: "reorder",
+          overrides: new Map(),
+          guides: [],
+          reorderDelta: {
+            fieldId: f.id,
+            dx: vertical ? 0 : latest,
+            dy: vertical ? latest : 0,
+          },
+        });
+      },
+      onEnd: () => {
+        setFrame(null);
+        if (!latest) return;
+        const myCenter =
+          (vertical ? myRect.y + myRect.height / 2 : myRect.x + myRect.width / 2) + latest;
+        const others = slots.filter((s2) => s2.ref !== f.fieldKey);
+        let insert = others.length;
+        for (let i = 0; i < others.length; i++) {
+          if (myCenter < others[i].center) {
+            insert = i;
+            break;
+          }
+        }
+        const next = others.map((s2) => s2.ref);
+        next.splice(insert, 0, f.fieldKey);
+        if (next.join(" ") !== group.children.join(" ")) {
+          onReorderChildrenRef.current(group.id, next);
+        }
+      },
+      onCancel: () => setFrame(null),
     });
   };
 
@@ -611,7 +814,24 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
         // the admin sets, never a side effect of a drag. Fitting modes
         // (shrink / fixed) keep deriving their displayed size from the new
         // width exactly as they will render after release.
-        if (latest) commitOverrides(latest);
+        if (!latest) return;
+        // A grouped child's position is computed by the stack, and a text
+        // child's main-axis size hugs its content — only the authored
+        // dimensions commit.
+        if (isGrouped(f)) {
+          const stripped = new Map<string, Partial<TemplateField>>();
+          for (const [id, o] of latest) {
+            const isText = f.type !== "image" && f.type !== "shape";
+            const vertical = directGroupOf(f.fieldKey)?.direction !== "horizontal";
+            const patch: Partial<TemplateField> = { width: o.width, height: o.height };
+            if (isText && vertical) delete patch.height;
+            if (isText && !vertical) delete patch.width;
+            stripped.set(id, patch);
+          }
+          commitOverrides(stripped);
+          return;
+        }
+        commitOverrides(latest);
       },
       onCancel: () => setFrame(null),
     });
@@ -748,24 +968,115 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
         )}
       </div>
 
+      {/* Group frames: builder-only chrome (never in preview or export).
+          They sit UNDER the child boxes in DOM order, so children win clicks
+          and the frame catches the gaps. */}
+      {groups.map((g) => {
+        const r0 = layout.groupRects.get(g.id);
+        if (!r0) return null;
+        const gd = frame?.groupDelta;
+        const dgx = gd && gd.groupIds.has(g.id) ? gd.dx : 0;
+        const dgy = gd && gd.groupIds.has(g.id) ? gd.dy : 0;
+        const gref = groupChildRef(g.id);
+        const isSel = selectedIds.includes(gref);
+        const overflow = overflowGroupIds.includes(g.id);
+        const isTop = !parentGroupOf(g.id, groups);
+        return (
+          <div
+            key={g.id}
+            onPointerDown={(e) => {
+              if (e.button !== 0 || !isTop) return;
+              e.stopPropagation();
+              if (!isSel) onSelect([gref]);
+              beginGroupMove(e, g);
+            }}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (!isSel) onSelect([gref]);
+              onContextMenu({ x: e.clientX, y: e.clientY }, gref, toCanvas(e));
+            }}
+            style={{
+              position: "absolute",
+              left: (r0.x + dgx) * scale,
+              top: (r0.y + dgy) * scale,
+              width: r0.width * scale,
+              height: r0.height * scale,
+              zIndex: 1,
+              border: isSel
+                ? "var(--editor-line) solid var(--editor-accent)"
+                : `var(--editor-line) dashed color-mix(in srgb, ${
+                    overflow ? "var(--destructive)" : "var(--editor-accent)"
+                  } 55%, transparent)`,
+              background: "transparent",
+              cursor: isTop ? "move" : "default",
+            }}
+          >
+            {(isSel || overflow) && (
+              <span
+                className="absolute -top-4 left-0 rounded whitespace-nowrap"
+                style={{
+                  background: overflow ? "var(--destructive)" : "var(--editor-accent)",
+                  color: "var(--text-on-action)",
+                  fontSize: 9,
+                  fontWeight: 500,
+                  padding: "1px 4px",
+                  pointerEvents: "none",
+                }}
+              >
+                {g.name}
+                {overflow ? " · outside canvas" : ""}
+              </span>
+            )}
+          </div>
+        );
+      })}
+
       {/* Field boxes (screen space = canvas × scale; z = canvas layer order) */}
       {fields.map((f) => {
         const v = viewOf(f);
+        const grouped = isGrouped(f);
+        // Display geometry: an active free gesture (move/resize/rotate) owns
+        // the box; otherwise the layout pass does — grouped children render
+        // at their computed, hugged rects, ungrouped at authored ones.
+        const hasOverride = Boolean(frame?.overrides.has(f.id));
+        const base: { x: number; y: number; width: number; height: number } = hasOverride
+          ? { x: displayX(v), y: displayY(v), width: v.width, height: v.height }
+          : displayRect(f);
+        const gd = frame?.groupDelta;
+        const rd = frame?.reorderDelta;
+        const box = {
+          x: base.x + (gd?.fieldIds.has(f.id) ? gd.dx : 0) + (rd?.fieldId === f.id ? rd.dx : 0),
+          y: base.y + (gd?.fieldIds.has(f.id) ? gd.dy : 0) + (rd?.fieldId === f.id ? rd.dy : 0),
+          width: base.width,
+          height: base.height,
+        };
         const isSelected = selectedIds.includes(f.id);
         const isEditing = editingId === f.id;
         const showHandles = isSelected && single?.id === f.id && !isEditing;
+        const isText = f.type !== "image" && f.type !== "shape";
+        const groupVertical = grouped ? directGroupOf(f.fieldKey)?.direction !== "horizontal" : false;
         // The whole EDGE is the resize surface (strips below); the dots are
         // wayfinding. A mid-edge dot renders only where it has room between
         // the corners — on a short or narrow box it would crowd them — but
         // dropping a dot never costs the interaction, because its edge strip
         // stays grabbable at any size.
+        //
+        // Grouped TEXT children hug their main axis — only the cross-axis
+        // edges stay resizable; corners (which resize both axes) drop too.
+        const allowDir = (dx: number, dy: number): boolean => {
+          if (!grouped || !isText) return true;
+          return groupVertical ? dy === 0 && dx !== 0 : dx === 0 && dy !== 0;
+        };
         const handleDirs = RESIZE_DIRS.filter(
           ({ dx, dy }) =>
-            (dx !== 0 && dy !== 0) ||
-            (dy === 0
-              ? v.height * scale >= HANDLE_CROWD_PX
-              : v.width * scale >= HANDLE_CROWD_PX),
+            allowDir(dx, dy) &&
+            ((dx !== 0 && dy !== 0) ||
+              (dy === 0
+                ? box.height * scale >= HANDLE_CROWD_PX
+                : box.width * scale >= HANDLE_CROWD_PX)),
         );
+        const edgeStrips = EDGE_STRIPS.filter(({ dx, dy }) => allowDir(dx, dy));
         return (
           <div
             key={f.id}
@@ -782,16 +1093,31 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
                 const p = toCanvas(e);
                 const stack = paintOrder(fieldsRef.current)
                   .reverse()
-                  .filter((sf) => hitTestField(sf, p));
+                  .filter((sf) => hitTestRect(displayRect(sf), sf.rotation, p));
                 if (stack.length > 1) {
                   const cur = stack.findIndex((sf) => selectedIds.includes(sf.id));
                   const next = stack[(cur + 1) % stack.length];
                   onSelect([next.id]);
-                  beginMove(e, [next.id], next.id, false);
+                  if (!isGrouped(next)) beginMove(e, [next.id], next.id, false);
                   return;
                 }
               }
               const multi = e.shiftKey || e.metaKey || e.ctrlKey;
+              // Grouped child, plain click: FIRST click selects the whole
+              // stack (drag moves it); a click while the stack is selected
+              // goes down INTO the child (drag re-slots it in the stack).
+              if (grouped && !multi) {
+                const outer = outermostGroupOf(f.fieldKey, groupsRef.current);
+                const outerRef = outer ? groupChildRef(outer.id) : null;
+                if (outerRef && !selectedIds.includes(outerRef) && !isSelected) {
+                  onSelect([outerRef]);
+                  if (outer) beginGroupMove(e, outer);
+                  return;
+                }
+                if (!isSelected) onSelect([f.id]);
+                beginChildReorder(e, f);
+                return;
+              }
               let ids: string[];
               if (multi) {
                 ids = isSelected
@@ -830,11 +1156,11 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
             onMouseLeave={() => setHoveredId((id) => (id === f.id ? null : id))}
             style={{
               position: "absolute",
-              left: displayX(v) * scale,
-              top: displayY(v) * scale,
-              width: v.width * scale,
-              height: v.height * scale,
-              zIndex: (f.zIndex ?? 0) + 1, // +1 keeps every box above the background
+              left: box.x * scale,
+              top: box.y * scale,
+              width: box.width * scale,
+              height: box.height * scale,
+              zIndex: (f.zIndex ?? 0) + 2, // above the background AND group frames
               transform: v.rotation ? `rotate(${v.rotation}deg)` : undefined,
               border: isSelected
                 ? "var(--editor-line) solid var(--editor-accent)"
@@ -843,7 +1169,7 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
               // Content lives INSIDE the box — no fill, the outline and
               // handles carry selection.
               background: "transparent",
-              cursor: isEditing ? "text" : "move",
+              cursor: isEditing ? "text" : grouped ? "grab" : "move",
             }}
           >
             {/* The field's real appearance, riding inside the interaction box.
@@ -853,7 +1179,7 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
                 stretched glyph preview. */}
             {isEditing ? (
               <InlineTextEditor
-                field={v}
+                field={{ ...v, width: box.width, height: box.height }}
                 brandKit={kit}
                 scale={scale}
                 onCommit={(text) =>
@@ -870,14 +1196,19 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
                 <div
                   data-field-content
                   style={{
-                    width: v.width,
-                    height: v.height,
+                    width: box.width,
+                    height: box.height,
                     transform: `scale(${scale})`,
                     transformOrigin: "top left",
                     pointerEvents: "none",
                   }}
                 >
-                  <FieldContent field={v} value={undefined} brandKit={kit} />
+                  <FieldContent
+                    field={grouped ? { ...v, width: box.width, height: box.height } : v}
+                    value={undefined}
+                    brandKit={kit}
+                    fontSize={layout.fontSizes.get(f.id)}
+                  />
                 </div>
               </div>
             )}
@@ -953,7 +1284,7 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
                     pointerEvents: "none",
                   }}
                 />
-                {EDGE_STRIPS.map(({ dx, dy, cursor, style }) => (
+                {edgeStrips.map(({ dx, dy, cursor, style }) => (
                   <div
                     key={`edge${dx},${dy}`}
                     data-resize-edge={`${dx},${dy}`}
@@ -1020,7 +1351,7 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
               >
                 {frame.kind === "rotate"
                   ? `${Math.round(v.rotation ?? 0)}°`
-                  : `${Math.round(v.width)} × ${Math.round(v.height)}`}
+                  : `${Math.round(box.width)} × ${Math.round(box.height)}`}
               </span>
             )}
           </div>
