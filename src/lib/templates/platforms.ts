@@ -13,7 +13,6 @@ import {
   X as XIcon,
   Youtube,
 } from "lucide-react";
-import type { CanvasPreset } from "@/lib/types";
 
 /** Every platform the catalogue can group by. The order here IS the shelf
  *  order on the Brand templates page — deliberate, never by template count. */
@@ -76,13 +75,23 @@ export interface SizeMeaning {
 }
 
 export const KNOWN_SIZES: Array<{ width: number; height: number } & SizeMeaning> = [
-  { width: 1080, height: 1350, platforms: ["instagram", "facebook", "linkedin"], assetType: "Portrait post" },
+  {
+    width: 1080,
+    height: 1350,
+    platforms: ["instagram", "facebook", "linkedin"],
+    assetType: "Portrait post",
+  },
   { width: 1080, height: 1080, platforms: ["instagram", "facebook"], assetType: "Square post" },
-  { width: 1080, height: 566,  platforms: ["instagram"], assetType: "Landscape post" },
-  { width: 1080, height: 1920, platforms: ["instagram", "facebook", "linkedin"], assetType: "Story · Reel · Vertical video" },
-  { width: 1200, height: 630,  platforms: ["facebook"], assetType: "Link preview" },
+  { width: 1080, height: 566, platforms: ["instagram"], assetType: "Landscape post" },
+  {
+    width: 1080,
+    height: 1920,
+    platforms: ["instagram", "facebook", "linkedin"],
+    assetType: "Story · Reel · Vertical video",
+  },
+  { width: 1200, height: 630, platforms: ["facebook"], assetType: "Link preview" },
   { width: 1200, height: 1200, platforms: ["linkedin"], assetType: "Square post" },
-  { width: 1200, height: 627,  platforms: ["linkedin"], assetType: "Landscape post · Link preview" },
+  { width: 1200, height: 627, platforms: ["linkedin"], assetType: "Landscape post · Link preview" },
   { width: 1440, height: 1440, platforms: ["general"], assetType: "Square canvas" },
 ];
 

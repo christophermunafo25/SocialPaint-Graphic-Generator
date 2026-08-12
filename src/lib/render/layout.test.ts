@@ -165,7 +165,14 @@ describe("horizontal stack", () => {
   it("hugs single-line text width on the main axis", () => {
     const a = mkField({ fieldKey: "a", fontSizePx: 20 });
     const b = mkField({ fieldKey: "b", fontSizePx: 20 });
-    const g = mkGroup({ direction: "horizontal", children: ["a", "b"], x: 50, y: 50, gap: 12, crossSize: 100 });
+    const g = mkGroup({
+      direction: "horizontal",
+      children: ["a", "b"],
+      x: 50,
+      y: 50,
+      gap: 12,
+      crossSize: 100,
+    });
     const r = layout([a, b], [g], { a: "abcd", b: "xy" });
     const ra = r.fieldRects.get(a.id)!;
     const rb = r.fieldRects.get(b.id)!;
@@ -257,7 +264,13 @@ describe("robustness", () => {
   });
 
   it("shrinkToFit drives text down to fit, floored at the autoFit minimum", () => {
-    const t1 = mkField({ fieldKey: "t1", type: "multiline", fontSizePx: 100, minFontSizePx: 10, width: 400 });
+    const t1 = mkField({
+      fieldKey: "t1",
+      type: "multiline",
+      fontSizePx: 100,
+      minFontSizePx: 10,
+      width: 400,
+    });
     const g = mkGroup({ children: ["t1"], x: 0, y: 1300, shrinkToFit: true });
     // 12 chars at 100px → 600 wide → wraps to 2 lines of 100px = 200 tall;
     // only 140px available below the anchor.

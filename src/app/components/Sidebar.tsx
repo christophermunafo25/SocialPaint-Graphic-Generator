@@ -28,12 +28,7 @@ const LS_COLLAPSED = "sp-sidebar-collapsed";
  * doesn't fit (collapsed nav, dashboard hero). */
 export function BrandMark({ width = 28 }: { width?: number }) {
   return (
-    <img
-      src={markSvg}
-      alt=""
-      aria-hidden
-      style={{ width, height: "auto", display: "block" }}
-    />
+    <img src={markSvg} alt="" aria-hidden style={{ width, height: "auto", display: "block" }} />
   );
 }
 
@@ -62,12 +57,42 @@ interface NavItem {
 /** Figma order: Brand templates · Templates · Insights & Analytics ·
  * Brand Studio · People · Settings & Admin. Members see only the first. */
 const NAV: NavItem[] = [
-  { label: "Brand templates", route: { name: "portal" }, Icon: Paintbrush, adminOnly: false, matches: ["portal", "template"] },
-  { label: "Template Builder", route: { name: "adminTemplates" }, Icon: Frame, adminOnly: true, matches: ["adminTemplates", "builder"] },
-  { label: "Insights & Analytics", route: { name: "dashboard" }, Icon: BarChart3, adminOnly: true, matches: ["dashboard"] },
-  { label: "Brand Studio", route: { name: "brandStudio" }, Icon: PencilRuler, adminOnly: true, matches: ["brandStudio"] },
+  {
+    label: "Brand templates",
+    route: { name: "portal" },
+    Icon: Paintbrush,
+    adminOnly: false,
+    matches: ["portal", "template"],
+  },
+  {
+    label: "Template Builder",
+    route: { name: "adminTemplates" },
+    Icon: Frame,
+    adminOnly: true,
+    matches: ["adminTemplates", "builder"],
+  },
+  {
+    label: "Insights & Analytics",
+    route: { name: "dashboard" },
+    Icon: BarChart3,
+    adminOnly: true,
+    matches: ["dashboard"],
+  },
+  {
+    label: "Brand Studio",
+    route: { name: "brandStudio" },
+    Icon: PencilRuler,
+    adminOnly: true,
+    matches: ["brandStudio"],
+  },
   { label: "People", route: { name: "people" }, Icon: Users, adminOnly: true, matches: ["people"] },
-  { label: "Settings & Admin", route: { name: "settings" }, Icon: Settings, adminOnly: true, matches: ["settings"] },
+  {
+    label: "Settings & Admin",
+    route: { name: "settings" },
+    Icon: Settings,
+    adminOnly: true,
+    matches: ["settings"],
+  },
 ];
 
 /** Two-state light/dark quick toggle for the sidebar header. Reads and
@@ -95,7 +120,8 @@ function QuickThemeToggle() {
 /** Workspace switcher + dev role toggle + user row — shared between the
  * desktop sidebar's bottom block and the mobile dropdown. */
 function AccountBlock({ onNavigate }: { onNavigate(route: Route): void }) {
-  const { company, companies, role, user, isDevAuth, setCompany, setRole, signOut, backend } = useAuth();
+  const { company, companies, role, user, isDevAuth, setCompany, setRole, signOut, backend } =
+    useAuth();
   const initials = (user?.email ?? company?.name ?? "?")
     .split(/[@\s._-]+/)
     .filter(Boolean)
@@ -103,8 +129,11 @@ function AccountBlock({ onNavigate }: { onNavigate(route: Route): void }) {
     .map((s) => s[0]!.toUpperCase())
     .join("");
   const displayName = user
-    ? user.email.split("@")[0].replace(/[._-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
-    : company?.name ?? "Workspace";
+    ? user.email
+        .split("@")[0]
+        .replace(/[._-]+/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase())
+    : (company?.name ?? "Workspace");
 
   return (
     <>
@@ -120,18 +149,25 @@ function AccountBlock({ onNavigate }: { onNavigate(route: Route): void }) {
           aria-label="Workspace"
         >
           {companies.map((c) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
           ))}
           <option value="__new__">+ Create company…</option>
         </select>
       )}
       {isDevAuth && (
-        <div className="flex items-center gap-1 mb-3" role="group" aria-label="Dev role (localStorage backend)">
+        <div
+          className="flex items-center gap-1 mb-3"
+          role="group"
+          aria-label="Dev role (localStorage backend)"
+        >
           {(["admin", "member"] as const).map((r) => (
             <button
               key={r}
               onClick={() => setRole(r)}
-              className="flex-1 py-1 capitalize" data-radius-control
+              className="flex-1 py-1 capitalize"
+              data-radius-control
               style={{
                 fontSize: 11,
                 border: "1px solid var(--sb-border)",
@@ -165,7 +201,11 @@ function AccountBlock({ onNavigate }: { onNavigate(route: Route): void }) {
           <span
             className="block truncate"
             title={displayName}
-            style={{ fontSize: "var(--type-label-size)", fontWeight: 500, color: "var(--sb-fg-active)" }}
+            style={{
+              fontSize: "var(--type-label-size)",
+              fontWeight: 500,
+              color: "var(--sb-fg-active)",
+            }}
           >
             {displayName}
           </span>
@@ -182,7 +222,8 @@ function AccountBlock({ onNavigate }: { onNavigate(route: Route): void }) {
             onClick={() => void signOut()}
             title="Sign out"
             aria-label="Sign out"
-            className="flex items-center justify-center flex-shrink-0" data-radius-control
+            className="flex items-center justify-center flex-shrink-0"
+            data-radius-control
             style={{ width: 28, height: 28, color: "var(--sb-fg)" }}
           >
             <LogOut style={{ width: 14, height: 14 }} />
@@ -227,7 +268,7 @@ export function Sidebar() {
     return out;
   }, [company, role, backend, route.name]);
   const countFor = (label: string): number | null =>
-    countsState.status === "ready" ? countsState.data[label] ?? null : null;
+    countsState.status === "ready" ? (countsState.data[label] ?? null) : null;
   const [isNarrow, setIsNarrow] = useState(() => window.matchMedia("(max-width: 1023px)").matches);
   const [menuOpen, setMenuOpen] = useState(false);
   const [collapsedPref, setCollapsedPref] = useState<boolean>(() => {
@@ -278,17 +319,27 @@ export function Sidebar() {
         {menuOpen && (
           <div
             className="fixed inset-0"
-            style={{ background: "color-mix(in srgb, var(--text-on-accent) 40%, transparent)", zIndex: 39 }}
+            style={{
+              background: "color-mix(in srgb, var(--text-on-accent) 40%, transparent)",
+              zIndex: 39,
+            }}
             onClick={() => setMenuOpen(false)}
             aria-hidden
           />
         )}
         <header
           className="sticky top-0 w-full"
-          style={{ background: "var(--sb-bg)", borderBottom: "1px solid var(--sb-border)", zIndex: 40 }}
+          style={{
+            background: "var(--sb-bg)",
+            borderBottom: "1px solid var(--sb-border)",
+            zIndex: 40,
+          }}
         >
           <div className="flex items-center justify-between px-4" style={{ height: 56 }}>
-            <button onClick={() => go({ name: role === "admin" ? "adminTemplates" : "portal" })} aria-label="SocialPaint — home">
+            <button
+              onClick={() => go({ name: role === "admin" ? "adminTemplates" : "portal" })}
+              aria-label="SocialPaint — home"
+            >
               <BrandLockup height={18} />
             </button>
             <div className="flex items-center gap-2">
@@ -298,8 +349,14 @@ export function Sidebar() {
                 aria-expanded={menuOpen}
                 aria-label={menuOpen ? "Close navigation" : "Open navigation"}
                 data-open={menuOpen}
-                className="sp-nav-toggle relative flex items-center justify-center " data-radius-control
-                style={{ width: 36, height: 36, color: "var(--sb-fg-active)", border: "1px solid var(--sb-border)" }}
+                className="sp-nav-toggle relative flex items-center justify-center "
+                data-radius-control
+                style={{
+                  width: 36,
+                  height: 36,
+                  color: "var(--sb-fg-active)",
+                  border: "1px solid var(--sb-border)",
+                }}
               >
                 <span aria-hidden className="sp-nav-toggle__bar sp-nav-toggle__bar--top" />
                 <span aria-hidden className="sp-nav-toggle__bar sp-nav-toggle__bar--mid" />
@@ -375,9 +432,15 @@ export function Sidebar() {
       >
         {/* Header row: logo + utility icon buttons (theme quick toggle,
             collapse), vertically centered with the logo. */}
-        <div className={`flex items-center ${collapsed ? "justify-center" : "justify-between"} mb-6`}>
+        <div
+          className={`flex items-center ${collapsed ? "justify-center" : "justify-between"} mb-6`}
+        >
           {!collapsed && (
-            <button onClick={() => go({ name: role === "admin" ? "adminTemplates" : "portal" })} title="Home" aria-label="SocialPaint — home">
+            <button
+              onClick={() => go({ name: role === "admin" ? "adminTemplates" : "portal" })}
+              title="Home"
+              aria-label="SocialPaint — home"
+            >
               <BrandLockup />
             </button>
           )}
@@ -405,7 +468,11 @@ export function Sidebar() {
         )}
 
         {/* Nav — scrolls on short viewports so the user block stays reachable. */}
-        <nav className="flex flex-col flex-1 min-h-0 overflow-y-auto" style={{ gap: 2 }} aria-label="Primary">
+        <nav
+          className="flex flex-col flex-1 min-h-0 overflow-y-auto"
+          style={{ gap: 2 }}
+          aria-label="Primary"
+        >
           {items.map(({ label, route: target, Icon, matches }) => {
             const active = matches.includes(route.name);
             const count = countFor(label);
@@ -424,7 +491,11 @@ export function Sidebar() {
                 {!collapsed && count !== null && (
                   <span
                     className="ml-auto"
-                    style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--text-muted)" }}
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 11,
+                      color: "var(--text-muted)",
+                    }}
                   >
                     {count}
                   </span>

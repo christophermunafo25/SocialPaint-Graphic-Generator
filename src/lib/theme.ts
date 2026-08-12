@@ -33,9 +33,30 @@ export function applyBrandTheme(kit: BrandKit | null): void {
 /** Sensible starting type styles offered by onboarding — pure defaults the
  * user renames, edits, extends without limit. */
 export const DEFAULT_TYPE_STYLES = [
-  { key: "heading", name: "Heading", font: { source: "google" as const, family: "Montserrat" }, weight: 700, uppercase: true, colorKey: "text", autoFit: true },
-  { key: "subhead", name: "Subhead", font: { source: "google" as const, family: "Montserrat" }, weight: 600, colorKey: "text" },
-  { key: "body", name: "Body", font: { source: "google" as const, family: "Inter" }, weight: 400, colorKey: "text", maxLength: 200 },
+  {
+    key: "heading",
+    name: "Heading",
+    font: { source: "google" as const, family: "Montserrat" },
+    weight: 700,
+    uppercase: true,
+    colorKey: "text",
+    autoFit: true,
+  },
+  {
+    key: "subhead",
+    name: "Subhead",
+    font: { source: "google" as const, family: "Montserrat" },
+    weight: 600,
+    colorKey: "text",
+  },
+  {
+    key: "body",
+    name: "Body",
+    font: { source: "google" as const, family: "Inter" },
+    weight: 400,
+    colorKey: "text",
+    maxLength: 200,
+  },
 ];
 
 /** Sensible starting palette offered by onboarding — the user overrides these;

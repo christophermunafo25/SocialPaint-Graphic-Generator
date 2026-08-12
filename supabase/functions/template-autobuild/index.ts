@@ -49,7 +49,11 @@ async function extractFigma(
   url: string,
 ): Promise<ExtractionResult & { modelImageUrl: string }> {
   const parsed = parseFigmaUrl(url);
-  if (!parsed) throw new HttpError(400, "Could not read that link — copy a frame link (with node-id) from Figma.");
+  if (!parsed)
+    throw new HttpError(
+      400,
+      "Could not read that link — copy a frame link (with node-id) from Figma.",
+    );
   const token = await getFigmaToken(db, companyId);
   if (!token) throw new HttpError(400, "Figma is not connected for this company.");
 
@@ -58,9 +62,12 @@ async function extractFigma(
     token,
   );
   if (!nodesRes.ok) throw new HttpError(400, `Figma nodes request failed (${nodesRes.status}).`);
-  const nodesBody = (await nodesRes.json()) as { nodes: Record<string, { document: FigmaNode } | null> };
+  const nodesBody = (await nodesRes.json()) as {
+    nodes: Record<string, { document: FigmaNode } | null>;
+  };
   const root = nodesBody.nodes[parsed.nodeId]?.document;
-  if (!root?.absoluteBoundingBox) throw new HttpError(400, "That node has no renderable bounds — pick a frame.");
+  if (!root?.absoluteBoundingBox)
+    throw new HttpError(400, "That node has no renderable bounds — pick a frame.");
   const frame = root.absoluteBoundingBox;
 
   // Two renders: scale 2 for the stored background (matching figma-import),
@@ -77,7 +84,9 @@ async function extractFigma(
   const png = await (await fetch(renderUrl)).arrayBuffer();
 
   const path = `${companyId}/autobuild-${Date.now()}.png`;
-  const upload = await db.storage.from("template-backgrounds").upload(path, png, { contentType: "image/png" });
+  const upload = await db.storage
+    .from("template-backgrounds")
+    .upload(path, png, { contentType: "image/png" });
   if (upload.error) throw new HttpError(500, `Storage upload failed: ${upload.error.message}`);
   const backgroundUrl = db.storage.from("template-backgrounds").getPublicUrl(path).data.publicUrl;
 
@@ -96,7 +105,8 @@ async function extractFigma(
   const taken = new Set<string>();
   const seenIds = new Set<string>();
   try {
-    for (const child of root.children ?? []) walk(child, frame, suggested, warnings, taken, seenIds);
+    for (const child of root.children ?? [])
+      walk(child, frame, suggested, warnings, taken, seenIds);
   } catch (e) {
     warnings.push(`Element detection stopped early (${String(e)}).`);
   }
@@ -123,7 +133,8 @@ async function extractCanva(
   url: string,
 ): Promise<ExtractionResult & { modelImageUrl: string }> {
   const parsed = parseCanvaUrl(url);
-  if (!parsed) throw new HttpError(400, "Could not read that link — copy a design link from Canva.");
+  if (!parsed)
+    throw new HttpError(400, "Could not read that link — copy a design link from Canva.");
   const token = await getCanvaToken(db, companyId);
   if (!token) throw new HttpError(400, "Canva is not connected for this company.");
 
@@ -140,7 +151,9 @@ async function extractCanva(
     const exportUrl = await mcp.exportDesign(parsed.designId);
     const png = await (await fetch(exportUrl)).arrayBuffer();
     const path = `${companyId}/autobuild-canva-${Date.now()}.png`;
-    const upload = await db.storage.from("template-backgrounds").upload(path, png, { contentType: "image/png" });
+    const upload = await db.storage
+      .from("template-backgrounds")
+      .upload(path, png, { contentType: "image/png" });
     if (upload.error) throw new HttpError(500, `Storage upload failed: ${upload.error.message}`);
     const backgroundUrl = db.storage.from("template-backgrounds").getPublicUrl(path).data.publicUrl;
 
@@ -164,7 +177,9 @@ async function extractCanva(
 }
 
 /** Flat-image path: the background is already uploaded; there is no geometry. */
-function extractImage(source: Extract<DesignSource, { kind: "image" }>): ExtractionResult & { modelImageUrl: string } {
+function extractImage(
+  source: Extract<DesignSource, { kind: "image" }>,
+): ExtractionResult & { modelImageUrl: string } {
   return {
     backgroundUrl: source.backgroundUrl,
     canvasWidth: Math.round(source.canvasWidth),
@@ -195,22 +210,31 @@ const PROPOSE_TEMPLATE_TOOL = {
           additionalProperties: false,
           required: ["label", "fieldKey", "type"],
           properties: {
-            sourceId: { type: "string", description: "The extraction element this field is. Omit only on a flat-image import." },
+            sourceId: {
+              type: "string",
+              description:
+                "The extraction element this field is. Omit only on a flat-image import.",
+            },
             box: {
               type: "object",
               additionalProperties: false,
               required: ["x", "y", "width", "height"],
               description: "Flat-image imports only — proposed bounding box in canvas pixels.",
               properties: {
-                x: { type: "number" }, y: { type: "number" },
-                width: { type: "number" }, height: { type: "number" },
+                x: { type: "number" },
+                y: { type: "number" },
+                width: { type: "number" },
+                height: { type: "number" },
               },
             },
             label: { type: "string" },
             fieldKey: { type: "string" },
             type: { type: "string", enum: ["text", "multiline", "image", "select"] },
             options: { type: "array", items: { type: "string" } },
-            static: { type: "boolean", description: "true = Fixed: stays on the canvas, leaves the member form." },
+            static: {
+              type: "boolean",
+              description: "true = Fixed: stays on the canvas, leaves the member form.",
+            },
             required: { type: "boolean" },
             maxLength: { type: "number" },
             placeholder: { type: "string" },
@@ -269,13 +293,17 @@ function buildUserText(
   sourceKind: AutobuildSourceKind,
 ): string {
   const parts: string[] = [];
-  parts.push(`Canvas: ${extraction.canvasWidth}x${extraction.canvasHeight}px. Source: ${sourceKind}.`);
+  parts.push(
+    `Canvas: ${extraction.canvasWidth}x${extraction.canvasHeight}px. Source: ${sourceKind}.`,
+  );
   if (sourceKind === "image") {
     parts.push(
       "This is a flat image import — there is no element list. Propose fields with conservative bounding boxes (box, in canvas pixels). Prefer fewer confident fields to many uncertain ones.",
     );
   } else {
-    parts.push(`Extracted elements (reference by sourceId; all geometry is authoritative):\n${JSON.stringify(extraction.elements)}`);
+    parts.push(
+      `Extracted elements (reference by sourceId; all geometry is authoritative):\n${JSON.stringify(extraction.elements)}`,
+    );
   }
   parts.push(
     `Brand kit — type styles: ${JSON.stringify(brand.typeStyles)}; palette: ${JSON.stringify(brand.colors)}.`,
@@ -341,10 +369,16 @@ async function callClaude(
     const detail = await res.text().catch(() => "");
     throw new HttpError(502, `The model request failed (${res.status}). ${detail.slice(0, 200)}`);
   }
-  const body = (await res.json()) as { content: Array<{ type: string; id?: string; name?: string; input?: unknown }> };
+  const body = (await res.json()) as {
+    content: Array<{ type: string; id?: string; name?: string; input?: unknown }>;
+  };
   const toolUse = body.content.find((b) => b.type === "tool_use" && b.name === "propose_template");
   if (!toolUse?.input) throw new HttpError(502, "The model returned no proposal.");
-  return { proposal: toolUse.input as ModelProposal, toolUseId: toolUse.id ?? "", raw: body.content };
+  return {
+    proposal: toolUse.input as ModelProposal,
+    toolUseId: toolUse.id ?? "",
+    raw: body.content,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -380,7 +414,9 @@ async function bakeStaticImages(
       `/v1/images/${parsed.fileKey}?ids=${encodeURIComponent(ids)}&format=png&scale=2`,
       token,
     );
-    const body = res.ok ? ((await res.json()) as { images: Record<string, string | null> }) : { images: {} };
+    const body = res.ok
+      ? ((await res.json()) as { images: Record<string, string | null> })
+      : { images: {} };
     for (const f of targets) {
       const url = body.images[f.sourceNodeId!];
       if (!url) {
@@ -389,7 +425,9 @@ async function bakeStaticImages(
       }
       const png = await (await fetch(url)).arrayBuffer();
       const path = `${companyId}/autobuild-static-${crypto.randomUUID()}.png`;
-      const upload = await db.storage.from("template-backgrounds").upload(path, png, { contentType: "image/png" });
+      const upload = await db.storage
+        .from("template-backgrounds")
+        .upload(path, png, { contentType: "image/png" });
       if (upload.error) {
         degrade(f, "its artwork upload failed");
         continue;
@@ -397,14 +435,19 @@ async function bakeStaticImages(
       f.staticValue = db.storage.from("template-backgrounds").getPublicUrl(path).data.publicUrl;
     }
   } catch {
-    targets.filter((f) => f.static && !f.staticValue).forEach((f) => degrade(f, "couldn't render its artwork"));
+    targets
+      .filter((f) => f.static && !f.staticValue)
+      .forEach((f) => degrade(f, "couldn't render its artwork"));
   }
 }
 
 // ---------------------------------------------------------------------------
 
 class HttpError extends Error {
-  constructor(readonly status: number, message: string) {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
     super(message);
   }
 }
@@ -426,7 +469,10 @@ Deno.serve(async (req) => {
     const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
     if (!apiKey) {
       return json(
-        { error: "Auto-build is not configured: set the ANTHROPIC_API_KEY secret (supabase secrets set) and redeploy." },
+        {
+          error:
+            "Auto-build is not configured: set the ANTHROPIC_API_KEY secret (supabase secrets set) and redeploy.",
+        },
         503,
       );
     }
@@ -457,7 +503,7 @@ Deno.serve(async (req) => {
       .eq("company_id", companyId)
       .eq("is_active", true)
       .maybeSingle();
-    const colors = ((kitRow?.colors ?? []) as Array<{ key: string; name: string; hex: string }>);
+    const colors = (kitRow?.colors ?? []) as Array<{ key: string; name: string; hex: string }>;
     const typeStyles = ((kitRow?.type_styles ?? []) as Array<{ key: string; name: string }>).map(
       ({ key, name }) => ({ key, name }),
     );
@@ -466,13 +512,18 @@ Deno.serve(async (req) => {
       .select("name, category")
       .eq("company_id", companyId)
       .limit(40);
-    const catalog = ((templateRows ?? []) as Array<{ name: string; category: string }>);
+    const catalog = (templateRows ?? []) as Array<{ name: string; category: string }>;
 
     // 3. The design, as the model sees it.
     const imageBase64 = await fetchPngBase64(extraction.modelImageUrl);
 
     // 4. One forced tool call; one retry carrying the validation errors.
-    const userText = buildUserText(extraction, { typeStyles, colors, catalog }, cleanHint, source.kind);
+    const userText = buildUserText(
+      extraction,
+      { typeStyles, colors, catalog },
+      cleanHint,
+      source.kind,
+    );
     let attempt = await callClaude(apiKey, imageBase64, userText);
     let validated;
     try {
@@ -498,7 +549,10 @@ Deno.serve(async (req) => {
         );
       } catch {
         return json(
-          { error: "Auto-build couldn't read this design. The plain import and the blank canvas are unaffected — build it manually and try auto-build on another design." },
+          {
+            error:
+              "Auto-build couldn't read this design. The plain import and the blank canvas are unaffected — build it manually and try auto-build on another design.",
+          },
           502,
         );
       }

@@ -86,10 +86,10 @@ Full details:
 
 ## Scripts
 
-| Command | What it does |
-|---|---|
-| `npm run dev` | Start the Vite dev server (set `PORT` to pick a port) |
-| `npm run build` | Production build |
+| Command         | What it does                                          |
+| --------------- | ----------------------------------------------------- |
+| `npm run dev`   | Start the Vite dev server (set `PORT` to pick a port) |
+| `npm run build` | Production build                                      |
 
 ## Origins
 

@@ -35,7 +35,11 @@ interface StyleNode {
   children?: StyleNode[];
 }
 
-interface ColorOut { key: string; name: string; hex: string }
+interface ColorOut {
+  key: string;
+  name: string;
+  hex: string;
+}
 interface TypeStyleOut {
   key: string;
   name: string;
@@ -48,7 +52,11 @@ interface TypeStyleOut {
 }
 
 const slug = (s: string, taken: Set<string>): string => {
-  const base = s.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "token";
+  const base =
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "") || "token";
   let key = base;
   let n = 2;
   while (taken.has(key)) key = `${base}_${n++}`;
@@ -59,7 +67,11 @@ const slug = (s: string, taken: Set<string>): string => {
 const toHex = (c: { r: number; g: number; b: number }): string =>
   "#" +
   [c.r, c.g, c.b]
-    .map((v) => Math.round(v * 255).toString(16).padStart(2, "0"))
+    .map((v) =>
+      Math.round(v * 255)
+        .toString(16)
+        .padStart(2, "0"),
+    )
     .join("")
     .toUpperCase();
 
@@ -108,10 +120,15 @@ Deno.serve(async (req) => {
         meta?: { styles?: Array<{ node_id: string; name: string; style_type: string }> };
       };
       const metas = body.meta?.styles ?? [];
-      const wanted = metas.filter((m) => m.style_type === "FILL" || m.style_type === "TEXT").slice(0, 100);
+      const wanted = metas
+        .filter((m) => m.style_type === "FILL" || m.style_type === "TEXT")
+        .slice(0, 100);
       if (wanted.length) {
         const ids = wanted.map((m) => m.node_id).join(",");
-        const nodesRes = await figmaGet(`/v1/files/${fileKey}/nodes?ids=${encodeURIComponent(ids)}`, token);
+        const nodesRes = await figmaGet(
+          `/v1/files/${fileKey}/nodes?ids=${encodeURIComponent(ids)}`,
+          token,
+        );
         if (nodesRes.ok) {
           const nodesBody = (await nodesRes.json()) as {
             nodes: Record<string, { document: StyleNode } | null>;
@@ -122,7 +139,11 @@ Deno.serve(async (req) => {
             if (meta.style_type === "FILL") {
               const fill = firstSolidFill(node);
               if (fill?.color) {
-                colors.push({ key: slug(meta.name, colorKeys), name: meta.name, hex: toHex(fill.color) });
+                colors.push({
+                  key: slug(meta.name, colorKeys),
+                  name: meta.name,
+                  hex: toHex(fill.color),
+                });
               }
             } else if (meta.style_type === "TEXT") {
               typeStyles.push(textNodeToTypeStyle(meta.name, node, styleKeys));
@@ -135,7 +156,8 @@ Deno.serve(async (req) => {
     // 2. Fallback: scan the document when the file publishes no styles.
     if (!colors.length && !typeStyles.length) {
       const fileRes = await figmaGet(`/v1/files/${fileKey}?depth=4`, token);
-      if (!fileRes.ok) return json({ error: `Figma file request failed (${fileRes.status}).` }, 400);
+      if (!fileRes.ok)
+        return json({ error: `Figma file request failed (${fileRes.status}).` }, 400);
       const fileBody = (await fileRes.json()) as { document: StyleNode };
       const seenHex = new Set<string>();
       const seenType = new Set<string>();

@@ -162,7 +162,12 @@ export class LocalBrandAssetStore implements BrandAssetStore {
 }
 
 export class LocalUsageStore implements UsageStore {
-  async record(companyId: string, templateId: string, action: UsageAction, userId?: string): Promise<void> {
+  async record(
+    companyId: string,
+    templateId: string,
+    action: UsageAction,
+    userId?: string,
+  ): Promise<void> {
     const event: UsageEventRec = {
       id: newId(),
       companyId,
@@ -259,7 +264,9 @@ export class LocalDesignImportProvider implements DesignImportProvider {
     _hint?: string,
   ): Promise<import("../../types").AutoBuildResult> {
     if (source.kind !== "image") {
-      throw new Error("Auto-build from a link requires the Supabase backend; upload an image instead.");
+      throw new Error(
+        "Auto-build from a link requires the Supabase backend; upload an image instead.",
+      );
     }
     const w = source.canvasWidth;
     const h = source.canvasHeight;

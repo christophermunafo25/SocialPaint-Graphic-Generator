@@ -75,7 +75,9 @@ export function FieldContextMenu({ x, y, actions, onClose }: FieldContextMenuPro
         >
           {a.label}
           {a.shortcut && (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text-muted)" }}>
+            <span
+              style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text-muted)" }}
+            >
               {a.shortcut}
             </span>
           )}

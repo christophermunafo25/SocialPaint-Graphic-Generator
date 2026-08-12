@@ -61,7 +61,8 @@ Deno.serve(async (req) => {
     }
 
     if (action === "callback") {
-      if (!code || !state || !redirectUri) return json({ error: "code, state, redirectUri required" }, 400);
+      if (!code || !state || !redirectUri)
+        return json({ error: "code, state, redirectUri required" }, 400);
       const { data: stateRow } = await db
         .from("canva_oauth_states")
         .select("state, company_id, code_verifier, created_at")
@@ -69,7 +70,11 @@ Deno.serve(async (req) => {
         .maybeSingle();
       // Single-use, whatever happens next.
       await db.from("canva_oauth_states").delete().eq("state", state);
-      const s = stateRow as { company_id: string; code_verifier: string; created_at: string } | null;
+      const s = stateRow as {
+        company_id: string;
+        code_verifier: string;
+        created_at: string;
+      } | null;
       if (!s || s.company_id !== companyId) {
         return json({ error: "This connection attempt doesn't match — start again." }, 400);
       }

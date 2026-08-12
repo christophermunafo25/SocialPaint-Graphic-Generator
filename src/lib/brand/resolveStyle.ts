@@ -23,7 +23,10 @@ export interface ResolvedFieldStyle {
   boundStyle?: BrandTypeStyle;
 }
 
-export function getTypeStyle(kit: BrandKit | null, key: string | undefined): BrandTypeStyle | undefined {
+export function getTypeStyle(
+  kit: BrandKit | null,
+  key: string | undefined,
+): BrandTypeStyle | undefined {
   if (!kit || !key) return undefined;
   return kit.typeStyles?.find((s) => s.key === key);
 }
@@ -31,7 +34,7 @@ export function getTypeStyle(kit: BrandKit | null, key: string | undefined): Bra
 /** Absent stays absent: a snapped value that lands on the CSS default for a
  * property the field never set stays unset, so a legacy field keeps resolving
  * to exactly the values it did before. */
-const keepAbsent = <T,>(raw: T | undefined, next: T, dflt: T): T | undefined =>
+const keepAbsent = <T>(raw: T | undefined, next: T, dflt: T): T | undefined =>
   raw === undefined && next === dflt ? undefined : next;
 
 export function resolveFieldStyle(field: TemplateField, kit: BrandKit | null): ResolvedFieldStyle {
@@ -80,10 +83,7 @@ export function resolveFieldStyle(field: TemplateField, kit: BrandKit | null): R
  * Volt") is an explicit live brand rule and keeps resolving at render.
  * A key that no longer exists in the palette simply unbinds, leaving the
  * field's own hex fallback exactly as the renderer would have used it. */
-export function freezeBrandColors(
-  fields: TemplateField[],
-  kit: BrandKit | null,
-): TemplateField[] {
+export function freezeBrandColors(fields: TemplateField[], kit: BrandKit | null): TemplateField[] {
   if (!kit) return fields;
   return fields.map((f) => {
     if (!f.colorKey) return f;
@@ -115,7 +115,10 @@ export function lockedProperties(style: BrandTypeStyle | undefined): Set<string>
  * the face editable, and a style that fixes only the weight locks the style
  * control while the family stays free. */
 export const isStyleLocked = (locked: Set<string>): boolean =>
-  locked.has("fontFamily") || locked.has("weight") || locked.has("fontStyle") || locked.has("fontStretch");
+  locked.has("fontFamily") ||
+  locked.has("weight") ||
+  locked.has("fontStyle") ||
+  locked.has("fontStretch");
 
 /** Human-readable rule sentences for a type style — how marketing sees the
  * rules they've encoded ("Heading is always uppercase"). */
@@ -141,8 +144,10 @@ export function ruleSentences(style: BrandTypeStyle, kit: BrandKit | null): stri
     rules.push(`${style.name} is always ${colorName}.`);
   }
   if (style.uppercase) rules.push(`${style.name} is always UPPERCASE.`);
-  if (style.fontSizePx !== undefined) rules.push(`${style.name} is fixed at ${style.fontSizePx}px.`);
-  if (style.maxLength !== undefined) rules.push(`${style.name} never exceeds ${style.maxLength} characters.`);
+  if (style.fontSizePx !== undefined)
+    rules.push(`${style.name} is fixed at ${style.fontSizePx}px.`);
+  if (style.maxLength !== undefined)
+    rules.push(`${style.name} never exceeds ${style.maxLength} characters.`);
   if (style.autoFit) rules.push(`${style.name} auto-shrinks to fit its box.`);
   return rules;
 }

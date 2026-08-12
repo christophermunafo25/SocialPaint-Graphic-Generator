@@ -30,12 +30,17 @@ export function GradientEditor({
   const enabled = Boolean(gradient);
   return (
     <div className="space-y-2">
-      <label className="flex items-center gap-2" style={{ fontSize: "var(--type-label-size)", color: "var(--text-primary)" }}>
+      <label
+        className="flex items-center gap-2"
+        style={{ fontSize: "var(--type-label-size)", color: "var(--text-primary)" }}
+      >
         <input
           type="checkbox"
           disabled={disabled}
           checked={enabled}
-          onChange={(e) => onChange(e.target.checked ? { angle: 90, stops: defaultStops } : undefined)}
+          onChange={(e) =>
+            onChange(e.target.checked ? { angle: 90, stops: defaultStops } : undefined)
+          }
         />
         {label}
       </label>
@@ -74,7 +79,9 @@ export function GradientEditor({
               </div>
               {gradient.stops.length > 2 && (
                 <button
-                  onClick={() => onChange({ ...gradient, stops: gradient.stops.filter((_, j) => j !== i) })}
+                  onClick={() =>
+                    onChange({ ...gradient, stops: gradient.stops.filter((_, j) => j !== i) })
+                  }
                   style={{ fontSize: 11, color: "var(--text-muted)" }}
                 >
                   Remove
@@ -85,13 +92,19 @@ export function GradientEditor({
           <div className="flex items-center gap-3">
             <button
               onClick={() =>
-                onChange({ ...gradient, stops: [...gradient.stops, { position: 1, color: "#FFED8C" }] })
+                onChange({
+                  ...gradient,
+                  stops: [...gradient.stops, { position: 1, color: "#FFED8C" }],
+                })
               }
               style={{ fontSize: 11, color: "var(--state-primary)" }}
             >
               + Add stop
             </button>
-            <label className="flex items-center gap-1.5" style={{ fontSize: 11, color: "var(--text-secondary)" }}>
+            <label
+              className="flex items-center gap-1.5"
+              style={{ fontSize: 11, color: "var(--text-secondary)" }}
+            >
               Angle
               <div style={{ width: 74, flexShrink: 0, display: "flex" }}>
                 <NumericField

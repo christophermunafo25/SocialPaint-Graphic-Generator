@@ -93,10 +93,17 @@ export function AuthPage() {
   );
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "var(--bg-canvas)" }}>
+    <div
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{ background: "var(--bg-canvas)" }}
+    >
       <div
         className="w-full max-w-sm overflow-hidden"
-        style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-card)" }}
+        style={{
+          background: "var(--bg-surface)",
+          border: "1px solid var(--border)",
+          borderRadius: "var(--radius-card)",
+        }}
       >
         <div className="sp-mesh px-7 pt-7 pb-6">
           <p className="sp-eyebrow mb-1" style={{ color: "var(--brand-surface-fg)" }}>
@@ -104,22 +111,31 @@ export function AuthPage() {
           </p>
           {/* Ink on the brand surface — anything on Volt/Aqua is Ink, no exceptions. */}
           <h1 className="sp-hero-title" style={{ color: "var(--brand-surface-fg)" }}>
-            {view === "signup" ? "Create your account" : view === "forgot" ? "Reset password" : view === "setPassword" ? "Choose a new password" : "Sign in"}
+            {view === "signup"
+              ? "Create your account"
+              : view === "forgot"
+                ? "Reset password"
+                : view === "setPassword"
+                  ? "Choose a new password"
+                  : "Sign in"}
           </h1>
         </div>
 
         <div className="px-7 py-6 space-y-4">
           {(view === "signin" || view === "signup") && (
             <div
-              className="grid grid-cols-2 overflow-hidden" data-radius-control
+              className="grid grid-cols-2 overflow-hidden"
+              data-radius-control
               style={{ border: "1px solid var(--border-strong)" }}
               role="tablist"
               aria-label="Sign in or create account"
             >
-              {([
-                ["signin", "Sign in"],
-                ["signup", "Create account"],
-              ] as const).map(([v, label]) => (
+              {(
+                [
+                  ["signin", "Sign in"],
+                  ["signup", "Create account"],
+                ] as const
+              ).map(([v, label]) => (
                 <button
                   key={v}
                   role="tab"
@@ -146,35 +162,57 @@ export function AuthPage() {
             </div>
           )}
           {view === "checkEmail" ? (
-            <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)", lineHeight: 1.6 }}>
-              Almost there — we sent a confirmation link to <b style={{ color: "var(--text-primary)" }}>{email}</b>.
-              Open it, then come back and sign in.
+            <p
+              style={{
+                fontSize: "var(--type-label-size)",
+                color: "var(--text-secondary)",
+                lineHeight: 1.6,
+              }}
+            >
+              Almost there — we sent a confirmation link to{" "}
+              <b style={{ color: "var(--text-primary)" }}>{email}</b>. Open it, then come back and
+              sign in.
             </p>
           ) : (
             <>
               {view !== "setPassword" && field("Email", "email", email, setEmail, "email")}
-              {view !== "forgot" && (
+              {view !== "forgot" &&
                 field(
                   view === "setPassword" ? "New password" : "Password",
                   "password",
                   password,
                   setPassword,
                   view === "signin" ? "current-password" : "new-password",
-                )
-              )}
+                )}
             </>
           )}
 
           {error && (
-            <p className="px-3 py-2" data-radius-control style={{ fontSize: "var(--type-caption-size)", background: "var(--danger-wash)", color: "var(--state-danger)" }}>
+            <p
+              className="px-3 py-2"
+              data-radius-control
+              style={{
+                fontSize: "var(--type-caption-size)",
+                background: "var(--danger-wash)",
+                color: "var(--state-danger)",
+              }}
+            >
               {error}
             </p>
           )}
-          {notice && <p style={{ fontSize: "var(--type-caption-size)", color: "var(--state-primary)" }}>{notice}</p>}
+          {notice && (
+            <p style={{ fontSize: "var(--type-caption-size)", color: "var(--state-primary)" }}>
+              {notice}
+            </p>
+          )}
 
           {view === "signin" && (
             <>
-              <button className="sp-btn sp-btn-primary w-full" disabled={busy || !email || !password} onClick={() => void signIn()}>
+              <button
+                className="sp-btn sp-btn-primary w-full"
+                disabled={busy || !email || !password}
+                onClick={() => void signIn()}
+              >
                 {busy ? "Signing in…" : "Sign in"}
               </button>
               <button
@@ -188,24 +226,41 @@ export function AuthPage() {
           )}
           {view === "signup" && (
             <>
-              <button className="sp-btn sp-btn-primary w-full" disabled={busy || !email || password.length < 8} onClick={() => void signUp()}>
+              <button
+                className="sp-btn sp-btn-primary w-full"
+                disabled={busy || !email || password.length < 8}
+                onClick={() => void signUp()}
+              >
                 {busy ? "Creating…" : "Create account"}
               </button>
-              <p style={{ fontSize: 11, color: "var(--text-muted)" }}>Password must be at least 8 characters.</p>
+              <p style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                Password must be at least 8 characters.
+              </p>
             </>
           )}
           {view === "forgot" && (
             <>
-              <button className="sp-btn sp-btn-primary w-full" disabled={busy || !email} onClick={() => void forgot()}>
+              <button
+                className="sp-btn sp-btn-primary w-full"
+                disabled={busy || !email}
+                onClick={() => void forgot()}
+              >
                 {busy ? "Sending…" : "Send reset link"}
               </button>
-              <button style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }} onClick={() => setView("signin")}>
+              <button
+                style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}
+                onClick={() => setView("signin")}
+              >
                 Back to sign in
               </button>
             </>
           )}
           {view === "setPassword" && (
-            <button className="sp-btn sp-btn-primary w-full" disabled={busy || password.length < 8} onClick={() => void setNewPassword()}>
+            <button
+              className="sp-btn sp-btn-primary w-full"
+              disabled={busy || password.length < 8}
+              onClick={() => void setNewPassword()}
+            >
               {busy ? "Saving…" : "Save password"}
             </button>
           )}

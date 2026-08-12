@@ -42,10 +42,16 @@ export function BrandStudio() {
   const { kit, assets, refresh } = useBrand();
 
   const [colors, setColors] = useState<BrandColor[]>(kit?.colors ?? DEFAULT_PALETTE);
-  const [typeStyles, setTypeStyles] = useState<BrandTypeStyle[]>(kit?.typeStyles ?? DEFAULT_TYPE_STYLES);
+  const [typeStyles, setTypeStyles] = useState<BrandTypeStyle[]>(
+    kit?.typeStyles ?? DEFAULT_TYPE_STYLES,
+  );
   const [guidelines, setGuidelines] = useState<string[]>(kit?.guidelines ?? []);
-  const [headingFont, setHeadingFont] = useState<FontRef>(kit?.headingFont ?? { source: "google", family: "Montserrat" });
-  const [bodyFont, setBodyFont] = useState<FontRef>(kit?.bodyFont ?? { source: "google", family: "Inter" });
+  const [headingFont, setHeadingFont] = useState<FontRef>(
+    kit?.headingFont ?? { source: "google", family: "Montserrat" },
+  );
+  const [bodyFont, setBodyFont] = useState<FontRef>(
+    kit?.bodyFont ?? { source: "google", family: "Inter" },
+  );
   const [primaryLogoAssetId, setPrimaryLogoAssetId] = useState(kit?.primaryLogoAssetId);
   const [saving, setSaving] = useState(false);
   const [savedTick, setSavedTick] = useState(false);
@@ -227,7 +233,10 @@ export function BrandStudio() {
   const mergeColors = (incoming: BrandColor[]) =>
     setColors((prev) => [...prev, ...incoming.filter((c) => !prev.some((p) => p.key === c.key))]);
   const mergeTypeStyles = (incoming: BrandTypeStyle[]) =>
-    setTypeStyles((prev) => [...prev, ...incoming.filter((t) => !prev.some((p) => p.key === t.key))]);
+    setTypeStyles((prev) => [
+      ...prev,
+      ...incoming.filter((t) => !prev.some((p) => p.key === t.key)),
+    ]);
   const mergeGuidelines = (incoming: string[]) =>
     setGuidelines((prev) => [...new Set([...prev, ...incoming])]);
 
@@ -241,7 +250,12 @@ export function BrandStudio() {
           set({ source: "google", family: value });
         } else {
           const asset = fontAssets.find((a) => a.id === value);
-          if (asset) set({ source: "custom", family: asset.metadata.family ?? asset.name, assetId: asset.id });
+          if (asset)
+            set({
+              source: "custom",
+              family: asset.metadata.family ?? asset.name,
+              assetId: asset.id,
+            });
         }
       }}
       className="sp-input"
@@ -249,13 +263,17 @@ export function BrandStudio() {
       {fontAssets.length > 0 && (
         <optgroup label="Your uploaded fonts">
           {fontAssets.map((a) => (
-            <option key={a.id} value={`custom:${a.id}`}>{a.metadata.family ?? a.name}</option>
+            <option key={a.id} value={`custom:${a.id}`}>
+              {a.metadata.family ?? a.name}
+            </option>
           ))}
         </optgroup>
       )}
       <optgroup label="Google Fonts">
         {GOOGLE_FONTS.map((f) => (
-          <option key={f} value={`google:${f}`}>{f}</option>
+          <option key={f} value={`google:${f}`}>
+            {f}
+          </option>
         ))}
       </optgroup>
     </select>
@@ -267,11 +285,7 @@ export function BrandStudio() {
         title="Brand Studio"
         description="Colors, fonts, and logos every template inherits."
         action={
-          <button
-            onClick={requestSave}
-            disabled={saving}
-            className="sp-btn sp-btn-primary"
-          >
+          <button onClick={requestSave} disabled={saving} className="sp-btn sp-btn-primary">
             {savedTick ? <Check className="w-4 h-4" /> : null}
             {savedTick ? "Saved" : saving ? "Saving…" : "Save brand"}
           </button>
@@ -307,7 +321,11 @@ export function BrandStudio() {
       />
 
       {error && (
-        <p className="mb-5 text-sm px-4 py-3" data-radius-card style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}>
+        <p
+          className="mb-5 text-sm px-4 py-3"
+          data-radius-card
+          style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}
+        >
           {error}
         </p>
       )}
@@ -330,7 +348,11 @@ export function BrandStudio() {
                 <div className="flex-1 min-w-0">
                   <input
                     value={c.name}
-                    onChange={(e) => setColors(colors.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))}
+                    onChange={(e) =>
+                      setColors(
+                        colors.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)),
+                      )
+                    }
                     aria-label={`Name for the ${c.name} brand color`}
                     className="text-sm w-full bg-transparent outline-none"
                     style={{ color: "var(--foreground)" }}
@@ -342,7 +364,10 @@ export function BrandStudio() {
                   )}
                 </div>
                 {!DEFAULT_PALETTE.some((d) => d.key === c.key) && (
-                  <button onClick={() => setColors(colors.filter((_, j) => j !== i))} aria-label={`Remove ${c.name}`}>
+                  <button
+                    onClick={() => setColors(colors.filter((_, j) => j !== i))}
+                    aria-label={`Remove ${c.name}`}
+                  >
                     <Trash2 className="w-4 h-4" style={{ color: "var(--muted-foreground)" }} />
                   </button>
                 )}
@@ -354,7 +379,13 @@ export function BrandStudio() {
               const n = colors.filter((c) => c.key.startsWith("custom")).length + 1;
               setColors([...colors, { key: `custom_${n}`, name: `Custom ${n}`, hex: "#888888" }]);
             }}
-            style={{ fontSize: "var(--type-caption-size)", color: "var(--state-primary)", display: "flex", alignItems: "center", gap: 5 }}
+            style={{
+              fontSize: "var(--type-caption-size)",
+              color: "var(--state-primary)",
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+            }}
           >
             <Plus className="w-3.5 h-3.5" />
             Add color
@@ -376,7 +407,12 @@ export function BrandStudio() {
             {...fontDrop.bind}
             data-active={fontDrop.active}
             className="sp-dropzone flex items-center justify-center gap-2 py-3 cursor-pointer"
-            style={{ border: "1.5px dashed var(--border-strong)", borderRadius: "var(--radius-control)", fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}
+            style={{
+              border: "1.5px dashed var(--border-strong)",
+              borderRadius: "var(--radius-control)",
+              fontSize: "var(--type-label-size)",
+              color: "var(--text-secondary)",
+            }}
           >
             <Upload className="sp-dropzone__icon w-4 h-4" />
             Upload font file
@@ -395,14 +431,28 @@ export function BrandStudio() {
             <div
               key={p.key}
               className={`${p.leaving ? "sp-chip-out" : "sp-chip-in"} flex items-center gap-2.5 px-3 py-2`}
-              style={{ border: "1px solid var(--border)", borderRadius: "var(--radius-control)", background: "var(--bg-surface)" }}
+              style={{
+                border: "1px solid var(--border)",
+                borderRadius: "var(--radius-control)",
+                background: "var(--bg-surface)",
+              }}
             >
               <span className="flex-1 min-w-0">
-                <span className="block truncate" style={{ fontSize: "var(--type-caption-size)", fontWeight: 500, color: "var(--text-primary)" }}>
+                <span
+                  className="block truncate"
+                  style={{
+                    fontSize: "var(--type-caption-size)",
+                    fontWeight: 500,
+                    color: "var(--text-primary)",
+                  }}
+                >
                   {p.name}
                 </span>
                 {p.done ? (
-                  <span className="sp-done-in flex items-center gap-1 mt-1" style={{ fontSize: 10, color: "var(--state-primary)" }}>
+                  <span
+                    className="sp-done-in flex items-center gap-1 mt-1"
+                    style={{ fontSize: 10, color: "var(--state-primary)" }}
+                  >
                     <Check style={{ width: 11, height: 11 }} />
                     Added
                   </span>
@@ -416,7 +466,12 @@ export function BrandStudio() {
           ))}
           {fontAssets.map((a) => (
             <div key={a.id} className="sp-chip-in flex items-center justify-between text-sm">
-              <span style={{ color: "var(--foreground)", fontFamily: `"${a.metadata.family ?? a.name}"` }}>
+              <span
+                style={{
+                  color: "var(--foreground)",
+                  fontFamily: `"${a.metadata.family ?? a.name}"`,
+                }}
+              >
                 {a.metadata.family ?? a.name}
               </span>
               <button
@@ -437,7 +492,11 @@ export function BrandStudio() {
               <div
                 key={a.id}
                 className="sp-chip-in relative border p-3 flex items-center justify-center aspect-square"
-                style={{ borderColor: a.id === primaryLogoAssetId ? "var(--state-primary)" : "var(--border)", borderRadius: "var(--radius-card)" }}
+                style={{
+                  borderColor:
+                    a.id === primaryLogoAssetId ? "var(--state-primary)" : "var(--border)",
+                  borderRadius: "var(--radius-card)",
+                }}
               >
                 <img src={a.url} alt={a.name} className="max-w-full max-h-full object-contain" />
                 <button
@@ -447,7 +506,12 @@ export function BrandStudio() {
                 >
                   <Star
                     className="w-4 h-4"
-                    style={{ color: a.id === primaryLogoAssetId ? "var(--editor-accent)" : "var(--border-strong)" }}
+                    style={{
+                      color:
+                        a.id === primaryLogoAssetId
+                          ? "var(--editor-accent)"
+                          : "var(--border-strong)",
+                    }}
                     fill={a.id === primaryLogoAssetId ? "currentColor" : "none"}
                   />
                 </button>
@@ -466,8 +530,13 @@ export function BrandStudio() {
               className="sp-dropzone border-2 border-dashed flex flex-col items-center justify-center aspect-square cursor-pointer gap-1"
               style={{ borderColor: "var(--border)" }}
             >
-              <Upload className="sp-dropzone__icon w-5 h-5" style={{ color: "var(--muted-foreground)" }} />
-              <span className="sp-eyebrow" style={{ fontSize: 9 }}>Add logo</span>
+              <Upload
+                className="sp-dropzone__icon w-5 h-5"
+                style={{ color: "var(--muted-foreground)" }}
+              />
+              <span className="sp-eyebrow" style={{ fontSize: 9 }}>
+                Add logo
+              </span>
               <input
                 type="file"
                 accept="image/*"
@@ -486,7 +555,13 @@ export function BrandStudio() {
         <section className="sp-span-12 sp-card sp-card--content space-y-4">
           <div>
             <h2 className="sp-panel-title">Type styles &amp; rules (optional)</h2>
-            <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)", marginTop: 3 }}>
+            <p
+              style={{
+                fontSize: "var(--type-caption-size)",
+                color: "var(--text-muted)",
+                marginTop: 3,
+              }}
+            >
               An opt-in convenience for reuse: apply a saved style to a field if you want, or style
               every field by hand — both are fully locked for end users. Every property a style
               defines follows it across all templates. Unlimited styles.
@@ -505,7 +580,13 @@ export function BrandStudio() {
         <section className="sp-span-6 sp-card sp-card--content space-y-4">
           <div>
             <h2 className="sp-panel-title">Import design system</h2>
-            <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)", marginTop: 3 }}>
+            <p
+              style={{
+                fontSize: "var(--type-caption-size)",
+                color: "var(--text-muted)",
+                marginTop: 3,
+              }}
+            >
               Ingest a design-tokens JSON (colors, type scale) to populate the palette and type
               styles, parse a guidelines.md into suggested rules, or pull styles from a Figma file.
             </p>
@@ -521,19 +602,47 @@ export function BrandStudio() {
         <section className="sp-span-6 sp-card sp-card--content space-y-3">
           <div>
             <h2 className="sp-panel-title">Brand guidelines</h2>
-            <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)", marginTop: 3 }}>
-              Do/don't and voice rules for humans building templates. Imported from guidelines.md
-              or written here.
+            <p
+              style={{
+                fontSize: "var(--type-caption-size)",
+                color: "var(--text-muted)",
+                marginTop: 3,
+              }}
+            >
+              Do/don't and voice rules for humans building templates. Imported from guidelines.md or
+              written here.
             </p>
           </div>
           {guidelines.length === 0 && (
-            <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>No guidelines yet.</p>
+            <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
+              No guidelines yet.
+            </p>
           )}
           {guidelines.map((g, i) => (
             <div key={`${g}-${i}`} className="flex items-start gap-2">
-              <span style={{ color: "var(--state-primary)", fontSize: "var(--type-caption-size)", lineHeight: "1.5" }}>—</span>
-              <span className="flex-1" style={{ fontSize: "var(--type-caption-size)", color: "var(--text-primary)", lineHeight: 1.5 }}>{g}</span>
-              <button onClick={() => setGuidelines(guidelines.filter((_, j) => j !== i))} aria-label="Remove rule">
+              <span
+                style={{
+                  color: "var(--state-primary)",
+                  fontSize: "var(--type-caption-size)",
+                  lineHeight: "1.5",
+                }}
+              >
+                —
+              </span>
+              <span
+                className="flex-1"
+                style={{
+                  fontSize: "var(--type-caption-size)",
+                  color: "var(--text-primary)",
+                  lineHeight: 1.5,
+                }}
+              >
+                {g}
+              </span>
+              <button
+                onClick={() => setGuidelines(guidelines.filter((_, j) => j !== i))}
+                aria-label="Remove rule"
+              >
                 <Trash2 style={{ width: 13, height: 13, color: "var(--text-muted)" }} />
               </button>
             </div>
@@ -579,22 +688,38 @@ interface BrandPreviewCardProps {
 function BrandPreviewCard({ colors, headingFamily, bodyFamily, logoUrl }: BrandPreviewCardProps) {
   const hex = (key: string, fallback: string) => colors.find((c) => c.key === key)?.hex ?? fallback;
   return (
-    <div className="overflow-hidden" style={{ border: "1px solid var(--border)", borderRadius: "var(--radius-card-sm)" }}>
-      <div className="px-5 py-4 flex items-center gap-3" style={{ background: hex("primary", "#2F3B4C") }}>
+    <div
+      className="overflow-hidden"
+      style={{ border: "1px solid var(--border)", borderRadius: "var(--radius-card-sm)" }}
+    >
+      <div
+        className="px-5 py-4 flex items-center gap-3"
+        style={{ background: hex("primary", "#2F3B4C") }}
+      >
         {logoUrl && <img src={logoUrl} alt="" className="h-6 w-auto" />}
-        <span className="text-white font-extrabold uppercase text-sm" style={{ fontFamily: `"${headingFamily}", sans-serif` }}>
+        <span
+          className="text-white font-extrabold uppercase text-sm"
+          style={{ fontFamily: `"${headingFamily}", sans-serif` }}
+        >
           Sample Header
         </span>
       </div>
       <div className="p-5" style={{ background: hex("background", "#F6F7F9") }}>
-        <p className="text-lg mb-1" style={{ color: hex("text", "#1A1F26"), fontFamily: `"${headingFamily}", sans-serif` }}>
+        <p
+          className="text-lg mb-1"
+          style={{ color: hex("text", "#1A1F26"), fontFamily: `"${headingFamily}", sans-serif` }}
+        >
           Congratulations, Jordan!
         </p>
-        <p className="text-sm mb-3" style={{ color: hex("text", "#1A1F26"), fontFamily: `"${bodyFamily}", sans-serif` }}>
+        <p
+          className="text-sm mb-3"
+          style={{ color: hex("text", "#1A1F26"), fontFamily: `"${bodyFamily}", sans-serif` }}
+        >
           Five incredible years — thank you for everything you do.
         </p>
         <span
-          className="sp-eyebrow inline-block px-2.5 py-1 " data-radius-control
+          className="sp-eyebrow inline-block px-2.5 py-1 "
+          data-radius-control
           style={{ background: hex("accent", "#C9A227"), color: "#fff" }}
         >
           Accent chip

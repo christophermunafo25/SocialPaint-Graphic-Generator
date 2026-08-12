@@ -34,7 +34,10 @@ export function Portal() {
     () => (company ? stores.templates.listPublished(company.id) : Promise.resolve([])),
     [company],
   );
-  const templates = templatesState.status === "ready" ? templatesState.data : [];
+  const templates = useMemo(
+    () => (templatesState.status === "ready" ? templatesState.data : []),
+    [templatesState],
+  );
 
   // ── URL is the source of truth ──────────────────────────────────────────
   const query = (route.name === "portal" && route.q) || "";
@@ -51,10 +54,7 @@ export function Portal() {
     );
 
   // ── Derive the catalogue ────────────────────────────────────────────────
-  const catalog = useMemo<CatalogTemplate[]>(
-    () => templates.map(toCatalogTemplate),
-    [templates],
-  );
+  const catalog = useMemo<CatalogTemplate[]>(() => templates.map(toCatalogTemplate), [templates]);
   const index = useMemo(() => buildSearchIndex(catalog), [catalog]);
   const allGroups = useMemo(() => buildGroups(catalog), [catalog]);
 
@@ -101,8 +101,7 @@ export function Portal() {
 
   /** The generation entry point: TemplateUsePage fills the template in and
    *  downloads the graphic. */
-  const openTemplate = (t: CatalogTemplate) =>
-    navigate({ name: "template", templateId: t.id });
+  const openTemplate = (t: CatalogTemplate) => navigate({ name: "template", templateId: t.id });
 
   // ── Sticky pin ──────────────────────────────────────────────────────────
   const sentinel = useRef<HTMLDivElement>(null);
@@ -198,9 +197,7 @@ export function Portal() {
           {results.length === 0 ? (
             <div className="sp-emptystate">
               <p className="sp-emptystate__title">
-                {query
-                  ? `No templates match “${query}”.`
-                  : "That set is empty."}
+                {query ? `No templates match “${query}”.` : "That set is empty."}
               </p>
               <div className="sp-emptystate__actions">
                 {query && (

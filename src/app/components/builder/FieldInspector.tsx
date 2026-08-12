@@ -46,10 +46,22 @@ import {
 } from "@/lib/render/fontCatalog";
 import { suggestFieldKey } from "@/lib/caption";
 import { useFileDrop } from "@/lib/useFileDrop";
-import { getTypeStyle, isStyleLocked, lockedProperties, resolveFieldStyle, ruleSentences } from "@/lib/brand/resolveStyle";
+import {
+  getTypeStyle,
+  isStyleLocked,
+  lockedProperties,
+  resolveFieldStyle,
+  ruleSentences,
+} from "@/lib/brand/resolveStyle";
 import { DEFAULT_FILL_HEX, gradientCss } from "../SchemaRenderer";
 import { Switch } from "../Switch";
-import { InspectorSection, NumericField, PropertyRow, SegmentedIconGroup, compactControlStyle } from "./InspectorControls";
+import {
+  InspectorSection,
+  NumericField,
+  PropertyRow,
+  SegmentedIconGroup,
+  compactControlStyle,
+} from "./InspectorControls";
 import { FillPicker, getFill } from "./FillPicker";
 import { parseHex, toHex } from "@/lib/color";
 
@@ -102,7 +114,17 @@ type ResizeMode = "free" | "shrink" | "fixed";
 const wrapDeg = (n: number): number => ((((n + 180) % 360) + 360) % 360) - 180;
 
 export function FieldInspector(props: FieldInspectorProps) {
-  const { field, allFields, canvasWidth, canvasHeight, containingGroup, computedRect, onChange, onDelete, focusLabelFieldId } = props;
+  const {
+    field,
+    allFields,
+    canvasWidth,
+    canvasHeight,
+    containingGroup,
+    computedRect,
+    onChange,
+    onDelete,
+    focusLabelFieldId,
+  } = props;
   const { company } = useAuth();
   const { kit, assets } = useBrand();
   const isText = field.type === "text" || field.type === "multiline" || field.type === "select";
@@ -153,11 +175,21 @@ export function FieldInspector(props: FieldInspectorProps) {
 
   /** Align the box against the canvas bounds (anchor-aware). */
   const alignBoxH = (pos: "start" | "center" | "end") => {
-    const left = pos === "start" ? 0 : pos === "center" ? (canvasWidth - field.width) / 2 : canvasWidth - field.width;
+    const left =
+      pos === "start"
+        ? 0
+        : pos === "center"
+          ? (canvasWidth - field.width) / 2
+          : canvasWidth - field.width;
     onChange({ x: Math.round(centered ? left + field.width / 2 : left) });
   };
   const alignBoxV = (pos: "start" | "center" | "end") => {
-    const top = pos === "start" ? 0 : pos === "center" ? (canvasHeight - field.height) / 2 : canvasHeight - field.height;
+    const top =
+      pos === "start"
+        ? 0
+        : pos === "center"
+          ? (canvasHeight - field.height) / 2
+          : canvasHeight - field.height;
     onChange({ y: Math.round(centered ? top + field.height / 2 : top) });
   };
 
@@ -203,7 +235,9 @@ export function FieldInspector(props: FieldInspectorProps) {
 
   const familyGroups = useMemo(() => {
     const brand = [
-      ...new Set([kit?.headingFont?.family, kit?.bodyFont?.family].filter((f): f is string => Boolean(f))),
+      ...new Set(
+        [kit?.headingFont?.family, kit?.bodyFont?.family].filter((f): f is string => Boolean(f)),
+      ),
     ];
     const uploaded = [...customFamilyStyles(fontAssets).keys()].filter((f) => !brand.includes(f));
     const google = GOOGLE_FONTS.filter((f) => !brand.includes(f) && !uploaded.includes(f));
@@ -217,20 +251,25 @@ export function FieldInspector(props: FieldInspectorProps) {
   const fontCatalog = displayFamily ? familyStyles(displayFamily, fontAssets, currentStyle) : null;
   const styleLocked = isStyleLocked(locked);
 
+  const currentStyleKey = styleKey(currentStyle);
   const styleOptions = useMemo(() => {
     if (!fontCatalog) return [];
     const lockedWeight = locked.has("weight") ? boundStyle?.weight : undefined;
     if (lockedWeight === undefined) return fontCatalog.styles;
     const atWeight = nearestStyle({ ...currentStyle, weight: lockedWeight }, fontCatalog.styles);
-    return atWeight ? fontCatalog.styles.filter((s) => s.weight === atWeight.weight) : fontCatalog.styles;
+    return atWeight
+      ? fontCatalog.styles.filter((s) => s.weight === atWeight.weight)
+      : fontCatalog.styles;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fontCatalog?.family, fontCatalog?.styles, locked, boundStyle?.weight, styleKey(currentStyle)]);
+  }, [fontCatalog?.family, fontCatalog?.styles, locked, boundStyle?.weight, currentStyleKey]);
 
   const displayStyle =
-    (styleOptions.length > 0 ? nearestStyle(currentStyle, styleOptions) : undefined) ?? currentStyle;
+    (styleOptions.length > 0 ? nearestStyle(currentStyle, styleOptions) : undefined) ??
+    currentStyle;
 
   const stylePatch = (s: FontStyle, explicit: boolean): Partial<TemplateField> => ({
-    fontWeight: !explicit && field.fontWeight === undefined && s.weight === 400 ? undefined : s.weight,
+    fontWeight:
+      !explicit && field.fontWeight === undefined && s.weight === 400 ? undefined : s.weight,
     fontStyle: s.italic ? "italic" : undefined,
     fontStretch: s.stretch === "normal" ? undefined : s.stretch,
   });
@@ -240,7 +279,10 @@ export function FieldInspector(props: FieldInspectorProps) {
       onChange({ fontFamily: undefined });
       return;
     }
-    const mapped = nearestStyle(currentStyle, familyStyles(family, fontAssets, currentStyle).styles);
+    const mapped = nearestStyle(
+      currentStyle,
+      familyStyles(family, fontAssets, currentStyle).styles,
+    );
     onChange({ fontFamily: family, ...(mapped ? stylePatch(mapped, false) : {}) });
   };
 
@@ -282,15 +324,26 @@ export function FieldInspector(props: FieldInspectorProps) {
     const was = field.anchor === "center" ? "center" : "topLeft";
     if (anchor === was) return;
     if (anchor === "center") {
-      onChange({ anchor: "center", x: Math.round(field.x + field.width / 2), y: Math.round(field.y + field.height / 2) });
+      onChange({
+        anchor: "center",
+        x: Math.round(field.x + field.width / 2),
+        y: Math.round(field.y + field.height / 2),
+      });
     } else {
-      onChange({ anchor: "topLeft", x: Math.round(field.x - field.width / 2), y: Math.round(field.y - field.height / 2) });
+      onChange({
+        anchor: "topLeft",
+        x: Math.round(field.x - field.width / 2),
+        y: Math.round(field.y - field.height / 2),
+      });
     }
   };
 
   return (
     <div>
-      <div className="flex items-center justify-between" style={{ paddingBottom: "var(--space-xs)" }}>
+      <div
+        className="flex items-center justify-between"
+        style={{ paddingBottom: "var(--space-xs)" }}
+      >
         <h3 className="sp-panel-title">Field settings</h3>
         <button onClick={onDelete} title="Delete field">
           <Trash2 className="w-4 h-4" style={{ color: "var(--destructive)" }} />
@@ -310,7 +363,12 @@ export function FieldInspector(props: FieldInspectorProps) {
               const t = e.target.value as FieldType;
               if (t === "shape") {
                 // Shapes are always static design elements with a fill.
-                onChange({ type: t, shape: field.shape ?? "rect", static: true, colorHex: field.colorHex ?? "#d9d9d9" });
+                onChange({
+                  type: t,
+                  shape: field.shape ?? "rect",
+                  static: true,
+                  colorHex: field.colorHex ?? "#d9d9d9",
+                });
               } else if (isShape) {
                 onChange({ type: t, shape: undefined, static: undefined, staticValue: undefined });
               } else {
@@ -319,7 +377,9 @@ export function FieldInspector(props: FieldInspectorProps) {
             }}
           >
             {FIELD_TYPES.filter((t) => !isStatic || isShape || t.value !== "select").map((t) => (
-              <option key={t.value} value={t.value}>{t.label}</option>
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
             ))}
           </select>
         </PropertyRow>
@@ -335,7 +395,9 @@ export function FieldInspector(props: FieldInspectorProps) {
                 onChange={(e) => onChange({ shape: e.target.value as TemplateField["shape"] })}
               >
                 {SHAPE_KINDS.map((s) => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
                 ))}
               </select>
             </PropertyRow>
@@ -361,7 +423,10 @@ export function FieldInspector(props: FieldInspectorProps) {
                 onChange(
                   {
                     label,
-                    fieldKey: suggestFieldKey(label, allFields.filter((f) => f.id !== field.id)),
+                    fieldKey: suggestFieldKey(
+                      label,
+                      allFields.filter((f) => f.id !== field.id),
+                    ),
                   },
                   true,
                 );
@@ -369,7 +434,9 @@ export function FieldInspector(props: FieldInspectorProps) {
             />
             {!isStatic && (
               <p className="font-mono" style={{ fontSize: 10, color: "var(--text-secondary)" }}>
-                caption tag: {"{"}{field.fieldKey}{"}"}
+                caption tag: {"{"}
+                {field.fieldKey}
+                {"}"}
               </p>
             )}
           </div>
@@ -384,15 +451,20 @@ export function FieldInspector(props: FieldInspectorProps) {
                 onChange={(next) =>
                   onChange(
                     next
-                      ? { static: true, required: undefined, placeholder: undefined, maxLength: undefined }
+                      ? {
+                          static: true,
+                          required: undefined,
+                          placeholder: undefined,
+                          maxLength: undefined,
+                        }
                       : { static: undefined, staticValue: undefined },
                   )
                 }
               />
             </PropertyRow>
             <p style={hintStyle}>
-              Fixed elements stay exactly as designed — members don't see or edit them. You can still
-              move and style them.
+              Fixed elements stay exactly as designed — members don't see or edit them. You can
+              still move and style them.
             </p>
           </>
         )}
@@ -402,7 +474,11 @@ export function FieldInspector(props: FieldInspectorProps) {
             <textarea
               rows={field.type === "multiline" ? 3 : 1}
               className="sp-input"
-              style={{ fontSize: "var(--type-label-size)", padding: "var(--space-2xs)", resize: "vertical" }}
+              style={{
+                fontSize: "var(--type-label-size)",
+                padding: "var(--space-2xs)",
+                resize: "vertical",
+              }}
               aria-label="Fixed content"
               value={field.staticValue ?? ""}
               placeholder="The exact text shown on the graphic"
@@ -425,11 +501,21 @@ export function FieldInspector(props: FieldInspectorProps) {
               }}
             >
               {uploadingStatic ? (
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" style={{ color: "var(--state-primary)" }} />
+                <RefreshCw
+                  className="w-3.5 h-3.5 animate-spin"
+                  style={{ color: "var(--state-primary)" }}
+                />
               ) : (
-                <Upload className="sp-dropzone__icon w-3.5 h-3.5" style={{ color: "var(--state-primary)" }} />
+                <Upload
+                  className="sp-dropzone__icon w-3.5 h-3.5"
+                  style={{ color: "var(--state-primary)" }}
+                />
               )}
-              {uploadingStatic ? "Uploading…" : field.staticValue ? "Replace image" : "Upload image"}
+              {uploadingStatic
+                ? "Uploading…"
+                : field.staticValue
+                  ? "Replace image"
+                  : "Upload image"}
               <input
                 type="file"
                 accept="image/png,image/jpeg,image/svg+xml,image/webp"
@@ -450,8 +536,8 @@ export function FieldInspector(props: FieldInspectorProps) {
           // rather than offering editors the layout pass would override.
           <PropertyRow label="Position">
             <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
-              X {Math.round(computedRect?.x ?? field.x)} · Y {Math.round(computedRect?.y ?? field.y)} —
-              placed by "{containingGroup?.name}"
+              X {Math.round(computedRect?.x ?? field.x)} · Y{" "}
+              {Math.round(computedRect?.y ?? field.y)} — placed by "{containingGroup?.name}"
             </span>
           </PropertyRow>
         ) : (
@@ -461,7 +547,11 @@ export function FieldInspector(props: FieldInspectorProps) {
                 ariaLabel="Align horizontally on the canvas"
                 options={[
                   { key: "start", Icon: AlignStartVertical, title: "Align left edge of canvas" },
-                  { key: "center", Icon: AlignCenterVertical, title: "Center horizontally on canvas" },
+                  {
+                    key: "center",
+                    Icon: AlignCenterVertical,
+                    title: "Center horizontally on canvas",
+                  },
                   { key: "end", Icon: AlignEndVertical, title: "Align right edge of canvas" },
                 ]}
                 onSelect={alignBoxH}
@@ -470,7 +560,11 @@ export function FieldInspector(props: FieldInspectorProps) {
                 ariaLabel="Align vertically on the canvas"
                 options={[
                   { key: "start", Icon: AlignStartHorizontal, title: "Align top edge of canvas" },
-                  { key: "center", Icon: AlignCenterHorizontal, title: "Center vertically on canvas" },
+                  {
+                    key: "center",
+                    Icon: AlignCenterHorizontal,
+                    title: "Center vertically on canvas",
+                  },
                   { key: "end", Icon: AlignEndHorizontal, title: "Align bottom edge of canvas" },
                 ]}
                 onSelect={alignBoxV}
@@ -506,8 +600,18 @@ export function FieldInspector(props: FieldInspectorProps) {
           <SegmentedIconGroup
             ariaLabel="Flip"
             options={[
-              { key: "flipX", Icon: FlipHorizontal2, title: "Flip horizontal", active: Boolean(field.flipX) },
-              { key: "flipY", Icon: FlipVertical2, title: "Flip vertical", active: Boolean(field.flipY) },
+              {
+                key: "flipX",
+                Icon: FlipHorizontal2,
+                title: "Flip horizontal",
+                active: Boolean(field.flipX),
+              },
+              {
+                key: "flipY",
+                Icon: FlipVertical2,
+                title: "Flip vertical",
+                active: Boolean(field.flipY),
+              },
             ]}
             onSelect={(k) =>
               k === "flipX"
@@ -540,8 +644,16 @@ export function FieldInspector(props: FieldInspectorProps) {
               ariaLabel="Text resizing behavior"
               value={resizeMode}
               options={[
-                { key: "free", label: "Free", title: "Text renders at its set size — it may escape the box" },
-                { key: "shrink", label: "Shrink", title: "Text shrinks to fit as it gets longer (estimate)" },
+                {
+                  key: "free",
+                  label: "Free",
+                  title: "Text renders at its set size — it may escape the box",
+                },
+                {
+                  key: "shrink",
+                  label: "Shrink",
+                  title: "Text shrinks to fit as it gets longer (estimate)",
+                },
                 {
                   key: "fixed",
                   label: "Fixed",
@@ -587,13 +699,23 @@ export function FieldInspector(props: FieldInspectorProps) {
           <button
             onClick={() => setConstrain(!constrain)}
             aria-pressed={constrain}
-            title={constrain ? "Unlink — edit width and height independently" : "Constrain proportions — width and height scale together"}
+            title={
+              constrain
+                ? "Unlink — edit width and height independently"
+                : "Constrain proportions — width and height scale together"
+            }
             style={{ flexShrink: 0, display: "flex", alignItems: "center" }}
           >
             {constrain ? (
-              <LinkIcon style={{ width: 13, height: 13, color: "var(--state-primary)" }} strokeWidth={1.5} />
+              <LinkIcon
+                style={{ width: 13, height: 13, color: "var(--state-primary)" }}
+                strokeWidth={1.5}
+              />
             ) : (
-              <Unlink style={{ width: 13, height: 13, color: "var(--text-muted)" }} strokeWidth={1.5} />
+              <Unlink
+                style={{ width: 13, height: 13, color: "var(--text-muted)" }}
+                strokeWidth={1.5}
+              />
             )}
           </button>
         </PropertyRow>
@@ -635,7 +757,7 @@ export function FieldInspector(props: FieldInspectorProps) {
                 ariaLabel="Corner radius"
                 precision={0}
                 min={0}
-                value={radiusLinked || radiusUniform ? field.cornerRadius?.tl ?? 0 : undefined}
+                value={radiusLinked || radiusUniform ? (field.cornerRadius?.tl ?? 0) : undefined}
                 mixed={!radiusLinked && !radiusUniform}
                 onCommit={(v) => {
                   const rad = Math.max(0, v ?? field.cornerRadius?.tl ?? 0);
@@ -652,13 +774,23 @@ export function FieldInspector(props: FieldInspectorProps) {
                   setRadiusLinked(!radiusLinked);
                 }}
                 aria-pressed={radiusLinked}
-                title={radiusLinked ? "Unlink corners — set each independently" : "Link corners — one value for all four"}
+                title={
+                  radiusLinked
+                    ? "Unlink corners — set each independently"
+                    : "Link corners — one value for all four"
+                }
                 style={{ flexShrink: 0, display: "flex", alignItems: "center" }}
               >
                 {radiusLinked ? (
-                  <LinkIcon style={{ width: 13, height: 13, color: "var(--state-primary)" }} strokeWidth={1.5} />
+                  <LinkIcon
+                    style={{ width: 13, height: 13, color: "var(--state-primary)" }}
+                    strokeWidth={1.5}
+                  />
                 ) : (
-                  <Unlink style={{ width: 13, height: 13, color: "var(--text-muted)" }} strokeWidth={1.5} />
+                  <Unlink
+                    style={{ width: 13, height: 13, color: "var(--text-muted)" }}
+                    strokeWidth={1.5}
+                  />
                 )}
               </button>
             </>
@@ -683,7 +815,9 @@ export function FieldInspector(props: FieldInspectorProps) {
                   precision={0}
                   min={0}
                   value={field.cornerRadius?.[c.key] ?? 0}
-                  onCommit={(v) => setRadius({ [c.key]: Math.max(0, v ?? field.cornerRadius?.[c.key] ?? 0) })}
+                  onCommit={(v) =>
+                    setRadius({ [c.key]: Math.max(0, v ?? field.cornerRadius?.[c.key] ?? 0) })
+                  }
                 />
               ))}
             </div>
@@ -697,7 +831,9 @@ export function FieldInspector(props: FieldInspectorProps) {
                 style={compactControlStyle}
                 aria-label="Image fit"
                 value={field.objectFit ?? "cover"}
-                onChange={(e) => onChange({ objectFit: e.target.value as TemplateField["objectFit"] })}
+                onChange={(e) =>
+                  onChange({ objectFit: e.target.value as TemplateField["objectFit"] })
+                }
               >
                 <option value="cover">Cover (fill box)</option>
                 <option value="contain">Contain (fit inside)</option>
@@ -734,18 +870,33 @@ export function FieldInspector(props: FieldInspectorProps) {
               >
                 <option value="">None — style freely</option>
                 {(kit?.typeStyles ?? []).map((ts) => (
-                  <option key={ts.key} value={ts.key}>{ts.name}</option>
+                  <option key={ts.key} value={ts.key}>
+                    {ts.name}
+                  </option>
                 ))}
               </select>
             </PropertyRow>
             {boundStyle && (
               <div
-                className="px-3 py-2 space-y-0.5" data-radius-control
-                style={{ background: "var(--accent-wash)", border: "1px solid var(--accent-border)" }}
+                className="px-3 py-2 space-y-0.5"
+                data-radius-control
+                style={{
+                  background: "var(--accent-wash)",
+                  border: "1px solid var(--accent-border)",
+                }}
               >
                 {ruleSentences(boundStyle, kit).map((rule) => (
                   <p key={rule} style={{ fontSize: 11, color: "var(--text-secondary)" }}>
-                    <Lock style={{ width: 10, height: 10, display: "inline", marginRight: 5, verticalAlign: "-1px", color: "var(--state-primary)" }} />
+                    <Lock
+                      style={{
+                        width: 10,
+                        height: 10,
+                        display: "inline",
+                        marginRight: 5,
+                        verticalAlign: "-1px",
+                        color: "var(--state-primary)",
+                      }}
+                    />
                     {rule}
                   </p>
                 ))}
@@ -786,8 +937,8 @@ export function FieldInspector(props: FieldInspectorProps) {
             </PropertyRow>
             {fontCatalog && !fontCatalog.verified && (
               <p style={hintStyle}>
-                We don't have {displayFamily} on file, so these styles are a guess — upload the
-                font in Brand Studio to pick from what it really has.
+                We don't have {displayFamily} on file, so these styles are a guess — upload the font
+                in Brand Studio to pick from what it really has.
               </p>
             )}
             <PropertyRow label="Line height">
@@ -799,7 +950,9 @@ export function FieldInspector(props: FieldInspectorProps) {
                 allowEmpty
                 placeholder="110"
                 disabled={locked.has("lineHeight")}
-                value={field.lineHeight === undefined ? undefined : Math.round(field.lineHeight * 100)}
+                value={
+                  field.lineHeight === undefined ? undefined : Math.round(field.lineHeight * 100)
+                }
                 onCommit={(v) => onChange({ lineHeight: v === undefined ? undefined : v / 100 })}
               />
             </PropertyRow>
@@ -834,12 +987,27 @@ export function FieldInspector(props: FieldInspectorProps) {
                   ariaLabel="Vertical text alignment"
                   value={field.verticalAlign ?? "middle"}
                   options={[
-                    { key: "top", Icon: AlignVerticalJustifyStart, title: "Align text to the top of the box" },
-                    { key: "middle", Icon: AlignVerticalJustifyCenter, title: "Center text vertically" },
-                    { key: "bottom", Icon: AlignVerticalJustifyEnd, title: "Align text to the bottom of the box" },
+                    {
+                      key: "top",
+                      Icon: AlignVerticalJustifyStart,
+                      title: "Align text to the top of the box",
+                    },
+                    {
+                      key: "middle",
+                      Icon: AlignVerticalJustifyCenter,
+                      title: "Center text vertically",
+                    },
+                    {
+                      key: "bottom",
+                      Icon: AlignVerticalJustifyEnd,
+                      title: "Align text to the bottom of the box",
+                    },
                   ]}
                   onSelect={(k) =>
-                    onChange({ verticalAlign: k === "middle" ? undefined : (k as TemplateField["verticalAlign"]) })
+                    onChange({
+                      verticalAlign:
+                        k === "middle" ? undefined : (k as TemplateField["verticalAlign"]),
+                    })
                   }
                 />
               )}
@@ -847,7 +1015,12 @@ export function FieldInspector(props: FieldInspectorProps) {
                 ariaLabel="Letter case"
                 disabled={locked.has("uppercase")}
                 options={[
-                  { key: "uppercase", Icon: CaseUpper, title: "Uppercase", active: field.uppercase ?? false },
+                  {
+                    key: "uppercase",
+                    Icon: CaseUpper,
+                    title: "Uppercase",
+                    active: field.uppercase ?? false,
+                  },
                 ]}
                 onSelect={() => onChange({ uppercase: field.uppercase ? undefined : true })}
               />
@@ -864,7 +1037,13 @@ export function FieldInspector(props: FieldInspectorProps) {
             <button
               title="Add fill"
               aria-label="Add fill"
-              onClick={() => onChange({ colorHex: DEFAULT_FILL_HEX, colorKey: undefined, textGradient: undefined })}
+              onClick={() =>
+                onChange({
+                  colorHex: DEFAULT_FILL_HEX,
+                  colorKey: undefined,
+                  textGradient: undefined,
+                })
+              }
               style={{ color: "var(--text-secondary)", display: "flex" }}
             >
               <Plus style={{ width: 13, height: 13 }} strokeWidth={1.5} />
@@ -952,7 +1131,13 @@ export function FieldInspector(props: FieldInspectorProps) {
                   />
                 </>
               ) : (
-                <span style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)", flex: 1 }}>
+                <span
+                  style={{
+                    fontSize: "var(--type-caption-size)",
+                    color: "var(--text-secondary)",
+                    flex: 1,
+                  }}
+                >
                   Linear gradient
                 </span>
               )}
@@ -964,14 +1149,19 @@ export function FieldInspector(props: FieldInspectorProps) {
                   setPickerOpen(false);
                   onChange({ colorHex: undefined, colorKey: undefined, textGradient: undefined });
                 }}
-                style={{ color: fillLocked ? "var(--text-disabled)" : "var(--text-muted)", display: "flex", flexShrink: 0 }}
+                style={{
+                  color: fillLocked ? "var(--text-disabled)" : "var(--text-muted)",
+                  display: "flex",
+                  flexShrink: 0,
+                }}
               >
                 <Minus style={{ width: 13, height: 13 }} strokeWidth={1.5} />
               </button>
             </PropertyRow>
           ) : (
             <p style={hintStyle}>
-              No fill — {isShape ? "the shape falls back to ink" : "text falls back to ink"}. Add one with the plus.
+              No fill — {isShape ? "the shape falls back to ink" : "text falls back to ink"}. Add
+              one with the plus.
             </p>
           ))}
         {fill?.type === "solid" && fill.colorKey && (
@@ -1004,11 +1194,23 @@ export function FieldInspector(props: FieldInspectorProps) {
               <textarea
                 rows={3}
                 className="sp-input"
-                style={{ fontSize: "var(--type-label-size)", padding: "var(--space-2xs)", resize: "vertical" }}
+                style={{
+                  fontSize: "var(--type-label-size)",
+                  padding: "var(--space-2xs)",
+                  resize: "vertical",
+                }}
                 aria-label="Dropdown options, one per line"
                 value={(field.options ?? []).join("\n")}
                 onChange={(e) =>
-                  onChange({ options: e.target.value.split("\n").map((s) => s.trim()).filter(Boolean) }, true)
+                  onChange(
+                    {
+                      options: e.target.value
+                        .split("\n")
+                        .map((s) => s.trim())
+                        .filter(Boolean),
+                    },
+                    true,
+                  )
                 }
               />
             </PropertyRow>
@@ -1046,7 +1248,6 @@ export function FieldInspector(props: FieldInspectorProps) {
     </div>
   );
 }
-
 
 // ---------------------------------------------------------------------------
 // Two-step font picker — Figma's model: choose a family, then choose from the
@@ -1207,7 +1408,19 @@ const TriggerButton = React.forwardRef<
     onKeyDown?(e: React.KeyboardEvent): void;
   }
 >(function TriggerButton(
-  { value, placeholder, disabled, lockedHint, previewStyle, ariaLabel, expanded, controls, triggerStyle, onOpen, onKeyDown },
+  {
+    value,
+    placeholder,
+    disabled,
+    lockedHint,
+    previewStyle,
+    ariaLabel,
+    expanded,
+    controls,
+    triggerStyle,
+    onOpen,
+    onKeyDown,
+  },
   ref,
 ) {
   return (
@@ -1223,7 +1436,11 @@ const TriggerButton = React.forwardRef<
       onClick={onOpen}
       onKeyDown={onKeyDown}
       className="sp-input flex items-center justify-between gap-2 text-left"
-      style={{ opacity: disabled ? 0.5 : 1, cursor: disabled ? "default" : "pointer", ...triggerStyle }}
+      style={{
+        opacity: disabled ? 0.5 : 1,
+        cursor: disabled ? "default" : "pointer",
+        ...triggerStyle,
+      }}
     >
       <span className="truncate" style={value ? previewStyle : { color: "var(--text-disabled)" }}>
         {value || placeholder}
@@ -1317,7 +1534,12 @@ function FontFamilySelect({
 
   useEffect(() => {
     if (!open) return;
-    setActive(Math.max(0, options.findIndex((o) => o.family === (value ?? ""))));
+    setActive(
+      Math.max(
+        0,
+        options.findIndex((o) => o.family === (value ?? "")),
+      ),
+    );
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const commit = (index: number) => {
@@ -1404,7 +1626,8 @@ function FontFamilySelect({
                     <div
                       style={{
                         ...groupLabelStyle,
-                        borderTop: previousGroup === "" && i === 0 ? undefined : "1px solid var(--border)",
+                        borderTop:
+                          previousGroup === "" && i === 0 ? undefined : "1px solid var(--border)",
                         marginTop: 4,
                       }}
                     >
@@ -1416,7 +1639,9 @@ function FontFamilySelect({
                     label={o.label}
                     selected={o.family === (value ?? "")}
                     active={i === active}
-                    previewStyle={o.family ? { fontFamily: `"${o.family}", sans-serif` } : undefined}
+                    previewStyle={
+                      o.family ? { fontFamily: `"${o.family}", sans-serif` } : undefined
+                    }
                     onSelect={() => commit(i)}
                     onHover={() => setActive(i)}
                   />
@@ -1466,7 +1691,12 @@ function FontStyleSelect({
 
   useEffect(() => {
     if (!open) return;
-    setActive(Math.max(0, flat.findIndex((s) => styleKey(s) === styleKey(value))));
+    setActive(
+      Math.max(
+        0,
+        flat.findIndex((s) => styleKey(s) === styleKey(value)),
+      ),
+    );
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const commit = (index: number) => {
@@ -1553,7 +1783,9 @@ function FontStyleSelect({
                     // Inside a width group the header already says the width,
                     // so the row carries only the weight — as Figma does.
                     // Ungrouped families keep the full name.
-                    label={group.label ? styleName({ ...style, stretch: "normal" }) : styleName(style)}
+                    label={
+                      group.label ? styleName({ ...style, stretch: "normal" }) : styleName(style)
+                    }
                     fullName={styleName(style)}
                     selected={styleKey(style) === styleKey(value)}
                     active={i === active}
@@ -1571,11 +1803,9 @@ function FontStyleSelect({
   );
 }
 
-
 const CORNERS: Array<{ key: keyof CornerRadius; label: string }> = [
   { key: "tl", label: "TL" },
   { key: "tr", label: "TR" },
   { key: "br", label: "BR" },
   { key: "bl", label: "BL" },
 ];
-

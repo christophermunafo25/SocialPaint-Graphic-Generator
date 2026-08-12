@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { CheckCircle2, Copy, Eye, EyeOff, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { CheckCircle2, Copy, Eye, EyeOff, Pencil, Plus, Trash2 } from "lucide-react";
 import type { TemplateSchema, UsageSummary } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
@@ -38,7 +38,10 @@ export function AdminTemplates() {
     () => (company ? stores.templates.listAll(company.id) : Promise.resolve([])),
     [company, version],
   );
-  const templates = templatesState.status === "ready" ? templatesState.data : [];
+  const templates = useMemo(
+    () => (templatesState.status === "ready" ? templatesState.data : []),
+    [templatesState],
+  );
 
   // Usage rides along so revise-or-retire decisions don't need Insights.
   // If it's slow or fails, cards render without the usage line.
@@ -47,7 +50,7 @@ export function AdminTemplates() {
     [company, version],
   );
   const usageByTemplate = useMemo(() => {
-    const rows = usageState.status === "ready" ? usageState.data?.rows ?? [] : [];
+    const rows = usageState.status === "ready" ? (usageState.data?.rows ?? []) : [];
     return new Map(rows.map((r) => [r.templateId, r]));
   }, [usageState]);
 
@@ -66,7 +69,9 @@ export function AdminTemplates() {
       // all work here too.
       const ranked = searchTemplates(buildSearchIndex(list.map(toCatalogTemplate)), query);
       const order = new Map(ranked.map((r, i) => [r.id, i]));
-      list = list.filter((t) => order.has(t.id)).sort((a, b) => order.get(a.id)! - order.get(b.id)!);
+      list = list
+        .filter((t) => order.has(t.id))
+        .sort((a, b) => order.get(a.id)! - order.get(b.id)!);
     }
     const sorted = [...list];
     if (sort === "name") sorted.sort((a, b) => a.name.localeCompare(b.name));
@@ -139,8 +144,24 @@ export function AdminTemplates() {
     <Page>
       {toast && (
         <div className="sp-toast" role="status" aria-live="polite">
-          <CheckCircle2 style={{ width: 16, height: 16, color: "var(--state-primary)", flexShrink: 0, marginTop: 1 }} />
-          <span style={{ fontSize: "var(--type-label-size)", fontWeight: 500, color: "var(--text-primary)" }}>{toast}</span>
+          <CheckCircle2
+            style={{
+              width: 16,
+              height: 16,
+              color: "var(--state-primary)",
+              flexShrink: 0,
+              marginTop: 1,
+            }}
+          />
+          <span
+            style={{
+              fontSize: "var(--type-label-size)",
+              fontWeight: 500,
+              color: "var(--text-primary)",
+            }}
+          >
+            {toast}
+          </span>
         </div>
       )}
       <ConfirmDialog
@@ -155,7 +176,10 @@ export function AdminTemplates() {
         title="Template Builder"
         description="Create, edit, and publish — published templates appear in your team's Brand templates."
         action={
-          <button className="sp-btn sp-btn-primary" onClick={() => navigate({ name: "builder", templateId: null })}>
+          <button
+            className="sp-btn sp-btn-primary"
+            onClick={() => navigate({ name: "builder", templateId: null })}
+          >
             <Plus style={{ width: 13, height: 13 }} />
             New template
           </button>
@@ -168,7 +192,8 @@ export function AdminTemplates() {
             <TemplateSearchField value={query} onChange={setQuery} />
           </div>
           <div
-            className="flex overflow-hidden" data-radius-control
+            className="flex overflow-hidden"
+            data-radius-control
             role="group"
             aria-label="Filter by status"
             style={{ border: "1px solid var(--border-strong)", height: 40 }}
@@ -202,7 +227,12 @@ export function AdminTemplates() {
             onChange={(e) => setSort(e.target.value as SortKey)}
             aria-label="Sort templates"
             className="sp-input"
-            style={{ width: "auto", height: 40, padding: "0 10px", fontSize: "var(--type-caption-size)" }}
+            style={{
+              width: "auto",
+              height: 40,
+              padding: "0 10px",
+              fontSize: "var(--type-caption-size)",
+            }}
           >
             <option value="recent">Recently edited</option>
             <option value="name">Name</option>
@@ -212,7 +242,12 @@ export function AdminTemplates() {
       )}
 
       {templatesState.status === "loading" ? (
-        <p className="text-center py-20" style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>Loading…</p>
+        <p
+          className="text-center py-20"
+          style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}
+        >
+          Loading…
+        </p>
       ) : templatesState.status === "error" ? (
         <ErrorState
           title="We couldn't load your templates."
@@ -222,13 +257,29 @@ export function AdminTemplates() {
       ) : templates.length === 0 ? (
         <div
           className="text-center py-24"
-          style={{ border: "1.5px dashed var(--border-strong)", borderRadius: "var(--radius-card)" }}
+          style={{
+            border: "1.5px dashed var(--border-strong)",
+            borderRadius: "var(--radius-card)",
+          }}
         >
-          <p style={{ fontFamily: "var(--font-head)", fontWeight: "var(--weight-head)", fontSize: "var(--type-cardtitle-size)", letterSpacing: "-0.01em", color: "var(--text-primary)", marginBottom: 6 }}>
+          <p
+            style={{
+              fontFamily: "var(--font-head)",
+              fontWeight: "var(--weight-head)",
+              fontSize: "var(--type-cardtitle-size)",
+              letterSpacing: "-0.01em",
+              color: "var(--text-primary)",
+              marginBottom: 6,
+            }}
+          >
             Create your first template
           </p>
-          <p className="max-w-md mx-auto" style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
-            Upload a PNG or import a Figma frame, map the editable fields, and publish it for your team.
+          <p
+            className="max-w-md mx-auto"
+            style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}
+          >
+            Upload a PNG or import a Figma frame, map the editable fields, and publish it for your
+            team.
           </p>
         </div>
       ) : visible.length === 0 ? (
@@ -251,87 +302,101 @@ export function AdminTemplates() {
               flexShrink: 0,
             };
             return (
-            <div key={t.id} className="sp-card sp-media-card flex flex-col">
-              <button
-                onClick={() => navigate({ name: "builder", templateId: t.id })}
-                className="sp-media-card__preview"
-                aria-label={`Edit ${t.name}`}
-              >
-                <div
-                  style={{
-                    aspectRatio: `${t.canvasWidth} / ${t.canvasHeight}`,
-                    // Contain, unlike the member gallery: an admin needs to see
-                    // the whole artwork, so pin the LONG axis and letterbox.
-                    ...(t.canvasWidth / t.canvasHeight >= 1 ? { width: "100%" } : { height: "100%" }),
-                  }}
+              <div key={t.id} className="sp-card sp-media-card flex flex-col">
+                <button
+                  onClick={() => navigate({ name: "builder", templateId: t.id })}
+                  className="sp-media-card__preview"
+                  aria-label={`Edit ${t.name}`}
                 >
-                  <TemplateThumbnail template={t} />
-                </div>
-              </button>
-              <div style={{ padding: "12px 2px 4px" }}>
-                {/* Line 1: title + icon action row on the same line */}
-                <div className="flex items-center" style={{ gap: "var(--space-2xs)" }}>
-                  <InlineEdit
-                    className="flex-1 min-w-0"
-                    value={t.name}
-                    ariaLabel={`Rename ${t.name}`}
-                    inputAriaLabel="Template name"
-                    placeholder="Untitled template"
-                    valueStyle={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}
-                    onSave={(name) => renameTemplate(t, name)}
-                    onEditingChange={(on) => setRenaming(on ? t.id : null)}
-                  />
-                  {/* The rename input needs the whole line — four 32px icons
+                  <div
+                    style={{
+                      aspectRatio: `${t.canvasWidth} / ${t.canvasHeight}`,
+                      // Contain, unlike the member gallery: an admin needs to see
+                      // the whole artwork, so pin the LONG axis and letterbox.
+                      ...(t.canvasWidth / t.canvasHeight >= 1
+                        ? { width: "100%" }
+                        : { height: "100%" }),
+                    }}
+                  >
+                    <TemplateThumbnail template={t} />
+                  </div>
+                </button>
+                <div style={{ padding: "12px 2px 4px" }}>
+                  {/* Line 1: title + icon action row on the same line */}
+                  <div className="flex items-center" style={{ gap: "var(--space-2xs)" }}>
+                    <InlineEdit
+                      className="flex-1 min-w-0"
+                      value={t.name}
+                      ariaLabel={`Rename ${t.name}`}
+                      inputAriaLabel="Template name"
+                      placeholder="Untitled template"
+                      valueStyle={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}
+                      onSave={(name) => renameTemplate(t, name)}
+                      onEditingChange={(on) => setRenaming(on ? t.id : null)}
+                    />
+                    {/* The rename input needs the whole line — four 32px icons
                       would squeeze it down to a couple of characters. */}
-                  {renaming !== t.id && (
-                    <>
-                      <button style={iconBtn} onClick={() => void toggleStatus(t)} title={t.status === "published" ? "Unpublish" : "Publish"}>
-                        {t.status === "published" ? (
-                          <EyeOff style={{ width: 16, height: 16, color: "var(--text-muted)" }} />
-                        ) : (
-                          <Eye style={{ width: 16, height: 16, color: "var(--state-primary)" }} />
-                        )}
-                      </button>
-                      <button style={iconBtn} onClick={() => navigate({ name: "builder", templateId: t.id })} title="Edit">
-                        <Pencil style={{ width: 16, height: 16, color: "var(--text-muted)" }} />
-                      </button>
-                      <button style={iconBtn} onClick={() => void duplicateTemplate(t)} title="Duplicate">
-                        <Copy style={{ width: 16, height: 16, color: "var(--text-muted)" }} />
-                      </button>
-                      <button style={iconBtn} onClick={() => setDeleting(t)} title="Delete">
-                        <Trash2 style={{ width: 16, height: 16, color: "var(--state-danger)" }} />
-                      </button>
-                    </>
+                    {renaming !== t.id && (
+                      <>
+                        <button
+                          style={iconBtn}
+                          onClick={() => void toggleStatus(t)}
+                          title={t.status === "published" ? "Unpublish" : "Publish"}
+                        >
+                          {t.status === "published" ? (
+                            <EyeOff style={{ width: 16, height: 16, color: "var(--text-muted)" }} />
+                          ) : (
+                            <Eye style={{ width: 16, height: 16, color: "var(--state-primary)" }} />
+                          )}
+                        </button>
+                        <button
+                          style={iconBtn}
+                          onClick={() => navigate({ name: "builder", templateId: t.id })}
+                          title="Edit"
+                        >
+                          <Pencil style={{ width: 16, height: 16, color: "var(--text-muted)" }} />
+                        </button>
+                        <button
+                          style={iconBtn}
+                          onClick={() => void duplicateTemplate(t)}
+                          title="Duplicate"
+                        >
+                          <Copy style={{ width: 16, height: 16, color: "var(--text-muted)" }} />
+                        </button>
+                        <button style={iconBtn} onClick={() => setDeleting(t)} title="Delete">
+                          <Trash2 style={{ width: 16, height: 16, color: "var(--state-danger)" }} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                  {/* Line 2: status (+ provenance when a model built the fields) */}
+                  <span
+                    className="sp-eyebrow inline-block"
+                    style={t.status === "published" ? { color: "var(--state-primary)" } : undefined}
+                  >
+                    {t.status}
+                  </span>
+                  {t.autobuildMeta && (
+                    <span
+                      className="sp-eyebrow inline-block ml-2"
+                      title={`Built by ${t.autobuildMeta.model} from ${t.autobuildMeta.sourceKind}`}
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      · AI-built
+                    </span>
+                  )}
+                  {/* Line 3: meta */}
+                  {usageState.status === "ready" && (
+                    <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
+                      {(() => {
+                        const u = usageByTemplate.get(t.id);
+                        if (!u || u.downloads === 0) return "Not used yet";
+                        return `${u.downloads} download${u.downloads === 1 ? "" : "s"} · last used ${lastUsed(u.lastUsedAt)}`;
+                      })()}
+                    </p>
                   )}
                 </div>
-                {/* Line 2: status (+ provenance when a model built the fields) */}
-                <span
-                  className="sp-eyebrow inline-block"
-                  style={t.status === "published" ? { color: "var(--state-primary)" } : undefined}
-                >
-                  {t.status}
-                </span>
-                {t.autobuildMeta && (
-                  <span
-                    className="sp-eyebrow inline-block ml-2"
-                    title={`Built by ${t.autobuildMeta.model} from ${t.autobuildMeta.sourceKind}`}
-                    style={{ color: "var(--text-muted)" }}
-                  >
-                    · AI-built
-                  </span>
-                )}
-                {/* Line 3: meta */}
-                {usageState.status === "ready" && (
-                  <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
-                    {(() => {
-                      const u = usageByTemplate.get(t.id);
-                      if (!u || u.downloads === 0) return "Not used yet";
-                      return `${u.downloads} download${u.downloads === 1 ? "" : "s"} · last used ${lastUsed(u.lastUsedAt)}`;
-                    })()}
-                  </p>
-                )}
               </div>
-            </div>
             );
           })}
         </div>

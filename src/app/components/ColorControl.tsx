@@ -42,7 +42,7 @@ export function ColorControl({
   swatchesDisabled = false,
 }: ColorControlProps) {
   const { kit } = useBrand();
-  const palette = brandSwatches ? kit?.colors ?? [] : [];
+  const palette = brandSwatches ? (kit?.colors ?? []) : [];
   const [draft, setDraft] = useState(value ?? "");
   const [hover, setHover] = useState(false);
   const nativeRef = useRef<HTMLInputElement>(null);
@@ -60,70 +60,86 @@ export function ColorControl({
   return (
     <div className="inline-flex flex-col items-start gap-2">
       <div className="inline-flex items-center gap-2">
-      <button
-        type="button"
-        title="Click to edit color"
-        aria-label={ariaLabel ?? "Edit color"}
-        onClick={() => nativeRef.current?.click()}
-        onMouseEnter={() => setHover(true)}
-        onMouseLeave={() => setHover(false)}
-        className="relative flex-shrink-0 cursor-pointer"
-        style={{
-          width: size,
-          height: size,
-          borderRadius: "var(--radius-control)",
-          border: hover ? "2px solid var(--state-primary)" : "1px solid var(--border-strong)",
-          background: value
-            ? value
-            : "repeating-conic-gradient(#e5e5e5 0% 25%, #ffffff 0% 50%) 0 0 / 10px 10px",
-          transition: "border-color var(--dur-state) var(--ease)",
-        }}
-      >
-        {hover && (
-          <span
-            className="absolute inset-0 flex items-center justify-center"
-            style={{ background: "color-mix(in srgb, var(--text-on-accent) 35%, transparent)", borderRadius: "var(--radius-control)" }}
-          >
-            <Pencil style={{ width: Math.max(11, size * 0.38), height: Math.max(11, size * 0.38), color: "#fff" }} />
-          </span>
-        )}
-        <input
-          ref={nativeRef}
-          type="color"
-          value={value ?? "#888888"}
-          onChange={(e) => onChange(e.target.value.toUpperCase())}
-          className="absolute inset-0 opacity-0 cursor-pointer"
-          tabIndex={-1}
-          aria-hidden
-        />
-      </button>
-      <input
-        type="text"
-        value={draft}
-        placeholder="#RRGGBB"
-        spellCheck={false}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={commitDraft}
-        onKeyDown={(e) => e.key === "Enter" && commitDraft()}
-        className="sp-input"
-        style={{ width: 88, fontFamily: "var(--font-mono)", fontSize: "var(--type-caption-size)", padding: "5px 8px" }}
-        aria-label={`${ariaLabel ?? "Color"} hex value`}
-      />
-      {onClear && value && (
         <button
           type="button"
-          onClick={onClear}
-          style={{ fontSize: 11, color: "var(--text-muted)" }}
-          title="Remove color"
+          title="Click to edit color"
+          aria-label={ariaLabel ?? "Edit color"}
+          onClick={() => nativeRef.current?.click()}
+          onMouseEnter={() => setHover(true)}
+          onMouseLeave={() => setHover(false)}
+          className="relative flex-shrink-0 cursor-pointer"
+          style={{
+            width: size,
+            height: size,
+            borderRadius: "var(--radius-control)",
+            border: hover ? "2px solid var(--state-primary)" : "1px solid var(--border-strong)",
+            background: value
+              ? value
+              : "repeating-conic-gradient(#e5e5e5 0% 25%, #ffffff 0% 50%) 0 0 / 10px 10px",
+            transition: "border-color var(--dur-state) var(--ease)",
+          }}
         >
-          Clear
+          {hover && (
+            <span
+              className="absolute inset-0 flex items-center justify-center"
+              style={{
+                background: "color-mix(in srgb, var(--text-on-accent) 35%, transparent)",
+                borderRadius: "var(--radius-control)",
+              }}
+            >
+              <Pencil
+                style={{
+                  width: Math.max(11, size * 0.38),
+                  height: Math.max(11, size * 0.38),
+                  color: "#fff",
+                }}
+              />
+            </span>
+          )}
+          <input
+            ref={nativeRef}
+            type="color"
+            value={value ?? "#888888"}
+            onChange={(e) => onChange(e.target.value.toUpperCase())}
+            className="absolute inset-0 opacity-0 cursor-pointer"
+            tabIndex={-1}
+            aria-hidden
+          />
         </button>
-      )}
+        <input
+          type="text"
+          value={draft}
+          placeholder="#RRGGBB"
+          spellCheck={false}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commitDraft}
+          onKeyDown={(e) => e.key === "Enter" && commitDraft()}
+          className="sp-input"
+          style={{
+            width: 88,
+            fontFamily: "var(--font-mono)",
+            fontSize: "var(--type-caption-size)",
+            padding: "5px 8px",
+          }}
+          aria-label={`${ariaLabel ?? "Color"} hex value`}
+        />
+        {onClear && value && (
+          <button
+            type="button"
+            onClick={onClear}
+            style={{ fontSize: 11, color: "var(--text-muted)" }}
+            title="Remove color"
+          >
+            Clear
+          </button>
+        )}
       </div>
 
       {palette.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="sp-eyebrow" style={{ fontSize: 9 }}>Brand</span>
+          <span className="sp-eyebrow" style={{ fontSize: 9 }}>
+            Brand
+          </span>
           {palette.map((c) => {
             const selected = selectedColorKey
               ? selectedColorKey === c.key
@@ -136,7 +152,9 @@ export function ColorControl({
                 aria-label={`Use brand color ${c.name}`}
                 aria-pressed={selected}
                 disabled={swatchesDisabled}
-                onClick={() => (onPickBrandColor ? onPickBrandColor(c) : onChange(c.hex.toUpperCase()))}
+                onClick={() =>
+                  onPickBrandColor ? onPickBrandColor(c) : onChange(c.hex.toUpperCase())
+                }
                 className="sp-swatch"
                 data-selected={selected ? "true" : undefined}
                 style={{ background: c.hex }}

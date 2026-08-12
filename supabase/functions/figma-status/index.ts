@@ -1,4 +1,10 @@
-import { getFigmaToken, handleOptions, json, requireRole, serviceClient } from "../_shared/figma.ts";
+import {
+  getFigmaToken,
+  handleOptions,
+  json,
+  requireRole,
+  serviceClient,
+} from "../_shared/figma.ts";
 
 Deno.serve(async (req) => {
   const options = handleOptions(req);

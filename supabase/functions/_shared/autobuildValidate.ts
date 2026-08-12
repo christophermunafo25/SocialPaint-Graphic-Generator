@@ -108,7 +108,11 @@ const MAX_ELEMENTS = 40;
 /** Slug a string into a valid, unique fieldKey. */
 function reslug(raw: string, taken: Set<string>): string {
   const base =
-    raw.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 32) || "field";
+    raw
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "")
+      .slice(0, 32) || "field";
   const rooted = /^[a-z]/.test(base) ? base : `f_${base}`;
   let key = rooted;
   let n = 2;
@@ -118,7 +122,9 @@ function reslug(raw: string, taken: Set<string>): string {
 }
 
 /** Copy geometry + typography from the extraction — never from the model. */
-function geometryFrom(el: ExtractedElement): Omit<ValidatedField, "id" | "label" | "fieldKey" | "type"> {
+function geometryFrom(
+  el: ExtractedElement,
+): Omit<ValidatedField, "id" | "label" | "fieldKey" | "type"> {
   return {
     sourceNodeId: el.sourceId,
     x: el.x,
@@ -162,11 +168,15 @@ export function validateProposal(
     let element: ExtractedElement | undefined;
     if (!isImagePath) {
       if (!p.sourceId || !byId.has(p.sourceId)) {
-        warnings.push(`Dropped "${p.label ?? p.fieldKey ?? "?"}": sourceId ${p.sourceId ?? "(none)"} is not in the extraction.`);
+        warnings.push(
+          `Dropped "${p.label ?? p.fieldKey ?? "?"}": sourceId ${p.sourceId ?? "(none)"} is not in the extraction.`,
+        );
         continue;
       }
       if (claimed.has(p.sourceId)) {
-        warnings.push(`Dropped "${p.label}": element ${p.sourceId} was already claimed by an earlier field.`);
+        warnings.push(
+          `Dropped "${p.label}": element ${p.sourceId} was already claimed by an earlier field.`,
+        );
         continue;
       }
       element = byId.get(p.sourceId)!;
@@ -175,7 +185,9 @@ export function validateProposal(
         // fields are geometric primitives that can't reproduce arbitrary
         // vector artwork, and on the Canva path (no recompose) a shape field
         // would paint an approximation over the real artwork.
-        warnings.push(`Dropped "${p.label}": ${p.sourceId} is a shape — shapes stay in the artwork.`);
+        warnings.push(
+          `Dropped "${p.label}": ${p.sourceId} is a shape — shapes stay in the artwork.`,
+        );
         continue;
       }
       claimed.add(p.sourceId);
@@ -225,13 +237,16 @@ export function validateProposal(
     }
     let colorKey = p.colorKey;
     if (colorKey !== undefined && !colors.has(colorKey)) {
-      warnings.push(`"${label}": palette key "${colorKey}" is not in the brand kit — keeping the extracted color.`);
+      warnings.push(
+        `"${label}": palette key "${colorKey}" is not in the brand kit — keeping the extracted color.`,
+      );
       colorKey = undefined;
     }
 
-    let maxLength = typeof p.maxLength === "number" && Number.isFinite(p.maxLength)
-      ? Math.min(2000, Math.max(1, Math.round(p.maxLength)))
-      : undefined;
+    let maxLength =
+      typeof p.maxLength === "number" && Number.isFinite(p.maxLength)
+        ? Math.min(2000, Math.max(1, Math.round(p.maxLength)))
+        : undefined;
 
     const isStatic = p.static === true;
 
@@ -242,7 +257,10 @@ export function validateProposal(
     } else {
       // Image path only: the model proposes boxes; clamp hard.
       const b = p.box;
-      if (!b || ![b.x, b.y, b.width, b.height].every((v) => typeof v === "number" && Number.isFinite(v))) {
+      if (
+        !b ||
+        ![b.x, b.y, b.width, b.height].every((v) => typeof v === "number" && Number.isFinite(v))
+      ) {
         warnings.push(`Dropped "${label}": no usable box on the image path.`);
         continue;
       }
@@ -276,9 +294,9 @@ export function validateProposal(
       static: isStatic || undefined,
       staticValue: isStatic && element?.text ? element.text : undefined,
       placeholder: !isStatic
-        ? (typeof p.placeholder === "string" && p.placeholder.trim()
+        ? typeof p.placeholder === "string" && p.placeholder.trim()
           ? p.placeholder.trim().slice(0, 120)
-          : element?.text?.slice(0, 80))
+          : element?.text?.slice(0, 80)
         : undefined,
       required: !isStatic && p.required === true ? true : undefined,
       maxLength: !isStatic && type !== "image" ? maxLength : undefined,
@@ -296,7 +314,7 @@ export function validateProposal(
   if (!isImagePath) {
     for (const el of extraction.elements) {
       if (claimed.has(el.sourceId) || el.kind === "shape") continue;
-      const label = (el.text?.trim().slice(0, 40) || (el.kind === "image" ? "Image" : "Text"));
+      const label = el.text?.trim().slice(0, 40) || (el.kind === "image" ? "Image" : "Text");
       fields.push({
         id: crypto.randomUUID(),
         label,
@@ -308,7 +326,9 @@ export function validateProposal(
         autoFit: el.kind === "text" ? true : undefined,
         objectFit: el.kind === "image" ? "cover" : undefined,
       });
-      warnings.push(`"${label}": not in the proposal — imported as Fixed so it stays on the canvas.`);
+      warnings.push(
+        `"${label}": not in the proposal — imported as Fixed so it stays on the canvas.`,
+      );
     }
   }
 
@@ -327,14 +347,20 @@ export function validateProposal(
   const t = proposal.template ?? ({} as ProposedTemplate);
   const validKeys = new Set(fields.map((f) => f.fieldKey));
   let caption = typeof t.captionTemplate === "string" ? t.captionTemplate : "";
-  caption = caption.replace(/\{([a-z][a-z0-9_]*)\}/g, (tag, key: string) => {
-    if (validKeys.has(key)) return tag;
-    warnings.push(`Caption tag {${key}} doesn't match any field — removed.`);
-    return "";
-  }).replace(/[ \t]{2,}/g, " ").trim();
+  caption = caption
+    .replace(/\{([a-z][a-z0-9_]*)\}/g, (tag, key: string) => {
+      if (validKeys.has(key)) return tag;
+      warnings.push(`Caption tag {${key}} doesn't match any field — removed.`);
+      return "";
+    })
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
 
   const template: ProposedTemplate = {
-    name: (typeof t.name === "string" && t.name.trim() ? t.name.trim() : "Untitled template").slice(0, 80),
+    name: (typeof t.name === "string" && t.name.trim() ? t.name.trim() : "Untitled template").slice(
+      0,
+      80,
+    ),
     description: typeof t.description === "string" ? t.description.trim().slice(0, 300) : "",
     category: typeof t.category === "string" ? t.category.trim().slice(0, 60) : "",
     tags: (Array.isArray(t.tags) ? t.tags : [])
@@ -345,7 +371,13 @@ export function validateProposal(
   };
 
   const rationale = (Array.isArray(proposal.rationale) ? proposal.rationale : [])
-    .filter((r) => r && typeof r.fieldKey === "string" && typeof r.why === "string" && validKeys.has(r.fieldKey))
+    .filter(
+      (r) =>
+        r &&
+        typeof r.fieldKey === "string" &&
+        typeof r.why === "string" &&
+        validKeys.has(r.fieldKey),
+    )
     .map((r) => ({ fieldKey: r.fieldKey, why: r.why.slice(0, 200) }));
 
   return { fields, template, rationale, warnings };

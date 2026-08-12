@@ -32,11 +32,7 @@ export const selectedFieldIds = (selection: string[]): string[] =>
  * content block inside the authored box (verticalAlign applied); for
  * everything else, the authored box. Grouping anchors to what the admin
  * SEES, which is what makes the moment of grouping lossless. */
-function visualExtent(
-  f: TemplateField,
-  kit: BrandKit | null,
-  measure: LineMeasurer,
-): Rect {
+function visualExtent(f: TemplateField, kit: BrandKit | null, measure: LineMeasurer): Rect {
   const box = authoredRect(f);
   if (f.type !== "text" && f.type !== "multiline" && f.type !== "select") return box;
   const style = resolveFieldStyle(f, kit);
@@ -95,7 +91,10 @@ export function deriveGroup(input: DeriveInput): LayoutGroup | null {
     })),
     ...selectedGroups.map((g) => {
       const r = layout.groupRects.get(g.id);
-      return { ref: groupChildRef(g.id), extent: r ?? { x: g.x, y: g.y, width: g.crossSize, height: 0 } };
+      return {
+        ref: groupChildRef(g.id),
+        extent: r ?? { x: g.x, y: g.y, width: g.crossSize, height: 0 },
+      };
     }),
   ];
   if (members.length < 2) return null;
@@ -173,9 +172,7 @@ export function ungroup(
           : g.anchor === "center"
             ? mainStart + mainSize / 2
             : mainStart + mainSize;
-      return vertical
-        ? { ...g, x: rect.x, y: anchorPos }
-        : { ...g, x: anchorPos, y: rect.y };
+      return vertical ? { ...g, x: rect.x, y: anchorPos } : { ...g, x: anchorPos, y: rect.y };
     });
 
   return { fields: updatedFields, groups: updatedGroups };

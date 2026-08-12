@@ -114,8 +114,7 @@ export function RouterProvider({ children }: { children: React.ReactNode }) {
 
   // Back/forward move the app without writing to history again.
   useEffect(() => {
-    const onPop = () =>
-      setRoute(urlToRoute(window.location.pathname, window.location.search));
+    const onPop = () => setRoute(urlToRoute(window.location.pathname, window.location.search));
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);

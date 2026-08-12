@@ -41,8 +41,13 @@ const num = (s: string | undefined): number | undefined => {
 
 /** `pos: x,y size: W×H rotation: R opacity: O [locked: true]` */
 function parsePosLine(line: string): {
-  x: number; y: number; width: number; height: number;
-  rotation?: number; opacity?: number; locked: boolean;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation?: number;
+  opacity?: number;
+  locked: boolean;
 } | null {
   const pos = line.match(/pos:\s*(-?[\d.]+),(-?[\d.]+)/);
   const size = line.match(/size:\s*(-?[\d.]+)×(-?[\d.]+)/);

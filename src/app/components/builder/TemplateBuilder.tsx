@@ -31,6 +31,7 @@ import { useAsync } from "@/lib/useAsync";
 import { useHistory } from "@/lib/useHistory";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useBrand } from "@/lib/brand/BrandContext";
+import { ErrorBoundary } from "../ErrorBoundary";
 import { ErrorState } from "../ErrorState";
 import { newId } from "@/lib/stores/local/db";
 import { retagCaption, suggestFieldKey } from "@/lib/caption";
@@ -101,9 +102,7 @@ function savedAgo(savedAt: number, _nowTick: number): string {
 }
 
 function useViewportAtLeast(px: number): boolean {
-  const [matches, setMatches] = useState(
-    () => window.matchMedia(`(min-width: ${px}px)`).matches,
-  );
+  const [matches, setMatches] = useState(() => window.matchMedia(`(min-width: ${px}px)`).matches);
   useEffect(() => {
     const mq = window.matchMedia(`(min-width: ${px}px)`);
     const onChange = () => setMatches(mq.matches);
@@ -230,7 +229,8 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     if (presetsState.status !== "ready" || templateId) return;
     const first = presetsState.data[0];
     // Baseline, not an edit: applying the preset dims must not be undoable.
-    if (first) resetHistory((d) => ({ ...d, canvasWidth: first.width, canvasHeight: first.height }));
+    if (first)
+      resetHistory((d) => ({ ...d, canvasWidth: first.width, canvasHeight: first.height }));
   }, [presetsState, templateId, resetHistory]);
 
   useEffect(() => {
@@ -291,7 +291,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
 
   const setFields = useCallback(
     (fields: TemplateField[]) => setDraft((d) => ({ ...d, fields })),
-    [],
+    [setDraft],
   );
 
   const selectedFields = draft.fields.filter((f) => selectedIds.includes(f.id));
@@ -308,11 +308,12 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
   const [fontsTick, setFontsTick] = useState(0);
   useEffect(() => {
     let mounted = true;
-    document.fonts?.ready.then(() => mounted && setFontsTick(1));
+    void document.fonts?.ready.then(() => mounted && setFontsTick(1));
     return () => {
       mounted = false;
     };
   }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- fontsTick deliberately busts the cache
   const measurer = useMemo(() => createCanvasMeasurer(), [fontsTick]);
   const builderLayout = useMemo(
     () => computeLayout(draft, {}, kit, measurer),
@@ -331,7 +332,9 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     const out = [...builderLayout.warnings];
     for (const g of groups) {
       if (builderLayout.groupRects.get(g.id)?.overflows) {
-        out.push(`"${g.name}" extends beyond the canvas — its content can crop on export. Shorten the content, tighten the gap, or enable "Shrink to fit".`);
+        out.push(
+          `"${g.name}" extends beyond the canvas — its content can crop on export. Shorten the content, tighten the gap, or enable "Shrink to fit".`,
+        );
       }
     }
     return out;
@@ -394,9 +397,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       layoutGroups: nextGroups.length ? nextGroups : undefined,
     }));
     const freedKeys = new Set(targets.flatMap((g) => g.children));
-    setSelectedIds(
-      draft.fields.filter((f) => freedKeys.has(f.fieldKey)).map((f) => f.id),
-    );
+    setSelectedIds(draft.fields.filter((f) => freedKeys.has(f.fieldKey)).map((f) => f.id));
   }, [selGroupIds, groups, draft.fields, builderLayout, setDraft]);
 
   /** Patch one field; when the patch re-derives the merge tag, rewrite the
@@ -408,27 +409,30 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
    * duration. A discrete commit — a numeric field's Enter/blur, a toggle —
    * passes no key and is exactly one undo entry, even two in quick
    * succession. */
-  const patchField = useCallback((id: string, patch: Partial<TemplateField>, stream = false) => {
-    const gesture = inspectorGestureActive();
-    setDraft(
-      (d) => {
-        const prev = d.fields.find((f) => f.id === id);
-        const fields = d.fields.map((f) => (f.id === id ? { ...f, ...patch } : f));
-        const renamed = prev && patch.fieldKey && patch.fieldKey !== prev.fieldKey;
-        const captionTemplate = renamed
-          ? retagCaption(d.captionTemplate, prev.fieldKey, patch.fieldKey!)
-          : d.captionTemplate;
-        // Group children reference fields by fieldKey — a rename follows
-        // through them exactly as it does through the caption tags.
-        const layoutGroups = renamed
-          ? renameKeyInGroups(d.layoutGroups, prev.fieldKey, patch.fieldKey!)
-          : d.layoutGroups;
-        return { ...d, fields, captionTemplate, layoutGroups };
-      },
-      stream || gesture ? `patch:${id}:${Object.keys(patch).sort().join(",")}` : undefined,
-      gesture,
-    );
-  }, [setDraft]);
+  const patchField = useCallback(
+    (id: string, patch: Partial<TemplateField>, stream = false) => {
+      const gesture = inspectorGestureActive();
+      setDraft(
+        (d) => {
+          const prev = d.fields.find((f) => f.id === id);
+          const fields = d.fields.map((f) => (f.id === id ? { ...f, ...patch } : f));
+          const renamed = prev && patch.fieldKey && patch.fieldKey !== prev.fieldKey;
+          const captionTemplate = renamed
+            ? retagCaption(d.captionTemplate, prev.fieldKey, patch.fieldKey!)
+            : d.captionTemplate;
+          // Group children reference fields by fieldKey — a rename follows
+          // through them exactly as it does through the caption tags.
+          const layoutGroups = renamed
+            ? renameKeyInGroups(d.layoutGroups, prev.fieldKey, patch.fieldKey!)
+            : d.layoutGroups;
+          return { ...d, fields, captionTemplate, layoutGroups };
+        },
+        stream || gesture ? `patch:${id}:${Object.keys(patch).sort().join(",")}` : undefined,
+        gesture,
+      );
+    },
+    [setDraft],
+  );
 
   const maxZ = (fields: TemplateField[]) => fields.reduce((m, f) => Math.max(m, f.zIndex ?? 0), 0);
 
@@ -453,10 +457,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     setFocusLabelFieldId(field.id);
   };
 
-  const logoAssets = useMemo(
-    () => brandAssets.filter((a) => a.kind === "logo"),
-    [brandAssets],
-  );
+  const logoAssets = useMemo(() => brandAssets.filter((a) => a.kind === "logo"), [brandAssets]);
   /** Natural pixel size per logo asset, warmed as soon as the logos are known
    * so a drop can size its box to the artwork synchronously. A drop that
    * beats the preload falls back to a square box — "contain" still shows the
@@ -484,9 +485,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     const point = at ?? { x: draft.canvasWidth / 2, y: draft.canvasHeight / 2 };
     const canvas = { width: draft.canvasWidth, height: draft.canvasHeight };
     if (paletteId.startsWith(LOGO_PALETTE_PREFIX)) {
-      const asset = logoAssets.find(
-        (a) => a.id === paletteId.slice(LOGO_PALETTE_PREFIX.length),
-      );
+      const asset = logoAssets.find((a) => a.id === paletteId.slice(LOGO_PALETTE_PREFIX.length));
       if (!asset) return;
       const field = logoFieldFromAsset(
         asset,
@@ -526,9 +525,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       setDraft(
         (d) => ({
           ...d,
-          fields: d.fields.map((f) =>
-            idSet.has(f.id) ? { ...f, x: f.x + dx, y: f.y + dy } : f,
-          ),
+          fields: d.fields.map((f) => (idSet.has(f.id) ? { ...f, x: f.x + dx, y: f.y + dy } : f)),
           layoutGroups: gidSet.size
             ? d.layoutGroups?.map((g) =>
                 gidSet.has(g.id) ? { ...g, x: g.x + dx, y: g.y + dy } : g,
@@ -634,12 +631,19 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
   const setFixed = useCallback(
     (ids: string[], fixed: boolean) => {
       const idSet = new Set(ids);
-      const eligible = (f: TemplateField) => idSet.has(f.id) && f.type !== "shape" && f.type !== "select";
+      const eligible = (f: TemplateField) =>
+        idSet.has(f.id) && f.type !== "shape" && f.type !== "select";
       setFields(
         draft.fields.map((f) =>
           eligible(f)
             ? fixed
-              ? { ...f, static: true, required: undefined, placeholder: undefined, maxLength: undefined }
+              ? {
+                  ...f,
+                  static: true,
+                  required: undefined,
+                  placeholder: undefined,
+                  maxLength: undefined,
+                }
               : { ...f, static: undefined, staticValue: undefined }
             : f,
         ),
@@ -672,7 +676,13 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
         // which would otherwise fall into the plain-copy branch.
         e.preventDefault();
         copyStyleFrom(selectedIds);
-      } else if (mod && e.altKey && e.code === "KeyV" && selectedIds.length && clipboardHasStyle()) {
+      } else if (
+        mod &&
+        e.altKey &&
+        e.code === "KeyV" &&
+        selectedIds.length &&
+        clipboardHasStyle()
+      ) {
         e.preventDefault();
         pasteStyleTo(selectedIds);
       } else if (mod && key === "c" && !e.altKey && selectedIds.length) {
@@ -708,7 +718,23 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [step, mode, selectedIds, copyFields, cutFields, pasteFields, copyStyleFrom, pasteStyleTo, duplicateSelected, deleteFields, nudgeFields, doUndo, doRedo, groupSelection, ungroupSelection]);
+  }, [
+    step,
+    mode,
+    selectedIds,
+    copyFields,
+    cutFields,
+    pasteFields,
+    copyStyleFrom,
+    pasteStyleTo,
+    duplicateSelected,
+    deleteFields,
+    nudgeFields,
+    doUndo,
+    doRedo,
+    groupSelection,
+    ungroupSelection,
+  ]);
 
   // -------------------------------------------------------------------------
   // Source, save, publish
@@ -730,7 +756,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
         setUploading(false);
       }
     },
-    [company],
+    [company, setDraft],
   );
 
   /** Both background-upload labels double as drag targets (never visible at
@@ -968,7 +994,10 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
         // Fill, don't clobber: a mid-build auto-build must not overwrite the
         // name or caption the admin already wrote.
         return {
-          name: draft.name.trim() && draft.name !== "Untitled template" ? draft.name : result.template.name,
+          name:
+            draft.name.trim() && draft.name !== "Untitled template"
+              ? draft.name
+              : result.template.name,
           description: draft.description.trim() ? draft.description : result.template.description,
           category: draft.category.trim() ? draft.category : result.template.category,
           tags: draft.tags.length ? draft.tags : result.template.tags,
@@ -1011,11 +1040,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       setRecomposing(true);
       void (async () => {
         try {
-          const layers = await stores.designImport.renderLayers(
-            company.id,
-            sourceUrl,
-            excludeIds,
-          );
+          const layers = await stores.designImport.renderLayers(company.id, sourceUrl, excludeIds);
           const blob = await composeFigmaBackground(layers);
           const bgUrl = await stores.templates.uploadBackground(
             company.id,
@@ -1068,7 +1093,12 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     if (selectedGroupIds([menu.fieldId]).length) {
       return [
         { label: "Ungroup", shortcut: isMac ? "⇧⌘G" : "Ctrl+Shift+G", onSelect: ungroupSelection },
-        { label: "Delete group", shortcut: "⌫", destructive: true, onSelect: () => deleteFields([menu.fieldId!]) },
+        {
+          label: "Delete group",
+          shortcut: "⌫",
+          destructive: true,
+          onSelect: () => deleteFields([menu.fieldId!]),
+        },
       ];
     }
     const ids = selectedIds.includes(menu.fieldId) ? selectedIds : [menu.fieldId];
@@ -1096,9 +1126,19 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       },
       { label: "Duplicate", shortcut: "⌘D", onSelect: () => duplicateSelected(ids) },
       ...(groupable
-        ? [{ label: "Group selection", shortcut: isMac ? "⌘G" : "Ctrl+G", onSelect: groupSelection }]
+        ? [
+            {
+              label: "Group selection",
+              shortcut: isMac ? "⌘G" : "Ctrl+G",
+              onSelect: groupSelection,
+            },
+          ]
         : []),
-      { label: "Copy style", shortcut: isMac ? "⌥⌘C" : "Ctrl+Alt+C", onSelect: () => copyStyleFrom(ids) },
+      {
+        label: "Copy style",
+        shortcut: isMac ? "⌥⌘C" : "Ctrl+Alt+C",
+        onSelect: () => copyStyleFrom(ids),
+      },
       {
         label: "Paste style",
         shortcut: isMac ? "⌥⌘V" : "Ctrl+Alt+V",
@@ -1108,15 +1148,37 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       ...(toggleable.length > 0
         ? [
             allFixed
-              ? { label: toggleable.length > 1 ? "Make editable" : "Make field editable", onSelect: () => setFixed(ids, false) }
-              : { label: toggleable.length > 1 ? "Mark as fixed" : "Mark field as fixed", onSelect: () => setFixed(ids, true) },
+              ? {
+                  label: toggleable.length > 1 ? "Make editable" : "Make field editable",
+                  onSelect: () => setFixed(ids, false),
+                }
+              : {
+                  label: toggleable.length > 1 ? "Mark as fixed" : "Mark field as fixed",
+                  onSelect: () => setFixed(ids, true),
+                },
           ]
         : []),
       { label: "Bring to front", onSelect: () => reorderLayer(ids, "front") },
       { label: "Send to back", onSelect: () => reorderLayer(ids, "back") },
       { label: "Delete", shortcut: "⌫", destructive: true, onSelect: () => deleteFields(ids) },
     ];
-  }, [menu, selectedIds, draft.fields, groups, copyFields, cutFields, pasteFields, copyStyleFrom, pasteStyleTo, duplicateSelected, setFixed, reorderLayer, deleteFields, groupSelection, ungroupSelection]);
+  }, [
+    menu,
+    selectedIds,
+    draft.fields,
+    groups,
+    copyFields,
+    cutFields,
+    pasteFields,
+    copyStyleFrom,
+    pasteStyleTo,
+    duplicateSelected,
+    setFixed,
+    reorderLayer,
+    deleteFields,
+    groupSelection,
+    ungroupSelection,
+  ]);
 
   if (!viewportOk) {
     return (
@@ -1132,19 +1194,32 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
         >
           The builder needs a bigger screen
         </p>
-        <p style={{ fontSize: "var(--type-label-size)", lineHeight: 1.6, color: "var(--text-secondary)" }}>
-          Building templates takes a canvas, palette, and inspector side by side, so it
-          works on laptop and desktop screens. Your team can still browse and fill in
-          templates right here on this device.
+        <p
+          style={{
+            fontSize: "var(--type-label-size)",
+            lineHeight: 1.6,
+            color: "var(--text-secondary)",
+          }}
+        >
+          Building templates takes a canvas, palette, and inspector side by side, so it works on
+          laptop and desktop screens. Your team can still browse and fill in templates right here on
+          this device.
         </p>
-        <button className="sp-btn sp-btn-primary" onClick={() => navigate({ name: "adminTemplates" })}>
+        <button
+          className="sp-btn sp-btn-primary"
+          onClick={() => navigate({ name: "adminTemplates" })}
+        >
           Back to Templates
         </button>
       </div>
     );
   }
   if (templateId && templateState.status === "loading") {
-    return <p className="text-center py-24 text-sm" style={{ color: "var(--muted-foreground)" }}>Loading…</p>;
+    return (
+      <p className="text-center py-24 text-sm" style={{ color: "var(--muted-foreground)" }}>
+        Loading…
+      </p>
+    );
   }
   if (templateId && templateState.status === "error") {
     return (
@@ -1172,7 +1247,10 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       {publishState !== "idle" && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: "color-mix(in srgb, var(--text-on-accent) 55%, transparent)", backdropFilter: "blur(2px)" }}
+          style={{
+            background: "color-mix(in srgb, var(--text-on-accent) 55%, transparent)",
+            backdropFilter: "blur(2px)",
+          }}
           role="status"
           aria-live="polite"
         >
@@ -1186,22 +1264,44 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                   className="animate-spin mx-auto"
                   style={{ width: 28, height: 28, color: "var(--state-primary)" }}
                 />
-                <p style={{ fontFamily: "var(--font-head)", fontWeight: "var(--weight-head)", fontSize: 21, letterSpacing: "-0.01em", color: "var(--text-primary)" }}>
+                <p
+                  style={{
+                    fontFamily: "var(--font-head)",
+                    fontWeight: "var(--weight-head)",
+                    fontSize: 21,
+                    letterSpacing: "-0.01em",
+                    color: "var(--text-primary)",
+                  }}
+                >
                   Publishing…
                 </p>
                 <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
-                  Saving "{draft.name.trim() || "Untitled template"}" and making it live for your team.
+                  Saving "{draft.name.trim() || "Untitled template"}" and making it live for your
+                  team.
                 </p>
               </>
             ) : (
               <>
                 <span
                   className="mx-auto flex items-center justify-center"
-                  style={{ width: 44, height: 44, borderRadius: "var(--radius-pill)", background: "var(--volt)" }}
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: "var(--radius-pill)",
+                    background: "var(--volt)",
+                  }}
                 >
                   <Check style={{ width: 22, height: 22, color: "var(--text-primary)" }} />
                 </span>
-                <p style={{ fontFamily: "var(--font-head)", fontWeight: "var(--weight-head)", fontSize: 21, letterSpacing: "-0.01em", color: "var(--text-primary)" }}>
+                <p
+                  style={{
+                    fontFamily: "var(--font-head)",
+                    fontWeight: "var(--weight-head)",
+                    fontSize: 21,
+                    letterSpacing: "-0.01em",
+                    color: "var(--text-primary)",
+                  }}
+                >
                   Template published
                 </p>
                 <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
@@ -1231,13 +1331,32 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       )}
 
       {menu && (
-        <FieldContextMenu x={menu.x} y={menu.y} actions={menuActions} onClose={() => setMenu(null)} />
+        <FieldContextMenu
+          x={menu.x}
+          y={menu.y}
+          actions={menuActions}
+          onClose={() => setMenu(null)}
+        />
       )}
 
       {importSummary && (
         <div className="sp-toast" role="status" aria-live="polite">
-          <CheckCircle2 style={{ width: 16, height: 16, color: "var(--state-primary)", flexShrink: 0, marginTop: 1 }} />
-          <span style={{ fontSize: "var(--type-label-size)", fontWeight: 500, color: "var(--text-primary)" }}>
+          <CheckCircle2
+            style={{
+              width: 16,
+              height: 16,
+              color: "var(--state-primary)",
+              flexShrink: 0,
+              marginTop: 1,
+            }}
+          />
+          <span
+            style={{
+              fontSize: "var(--type-label-size)",
+              fontWeight: 500,
+              color: "var(--text-primary)",
+            }}
+          >
             {importSummary}
           </span>
         </div>
@@ -1247,7 +1366,13 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <button
           onClick={() => navigate({ name: "adminTemplates" })}
-          style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 6 }}
+          style={{
+            fontSize: "var(--type-label-size)",
+            color: "var(--text-secondary)",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           Templates
@@ -1258,18 +1383,31 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
           ariaLabel="Rename this template"
           inputAriaLabel="Template name"
           placeholder="Untitled template"
-          valueStyle={{ fontFamily: "var(--font-ui)", fontWeight: 500, fontSize: "var(--type-cardtitle-size)", letterSpacing: "-0.01em", color: "var(--text-primary)" }}
+          valueStyle={{
+            fontFamily: "var(--font-ui)",
+            fontWeight: 500,
+            fontSize: "var(--type-cardtitle-size)",
+            letterSpacing: "-0.01em",
+            color: "var(--text-primary)",
+          }}
           onSave={(name) => setDraft((d) => ({ ...d, name }), "text:name")}
         />
         <span
-          className="sp-eyebrow px-2 py-1" style={{ background: "var(--bg-hover)", borderRadius: "var(--radius-control)" }}
+          className="sp-eyebrow px-2 py-1"
+          style={{ background: "var(--bg-hover)", borderRadius: "var(--radius-control)" }}
         >
           {draft.canvasWidth}×{draft.canvasHeight} · {draft.status}
           {recomposing ? " · lifting elements off background…" : ""}
         </span>
         {sourceChosen && (
           <>
-            <span role="status" style={{ fontSize: "var(--type-caption-size)", color: saveFailed ? "var(--state-primary)" : "var(--text-muted)" }}>
+            <span
+              role="status"
+              style={{
+                fontSize: "var(--type-caption-size)",
+                color: saveFailed ? "var(--state-primary)" : "var(--text-muted)",
+              }}
+            >
               {saving
                 ? "Saving…"
                 : saveFailed
@@ -1294,7 +1432,11 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       </div>
 
       {error && (
-        <p className="mb-4 text-sm px-4 py-3" data-radius-card style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}>
+        <p
+          className="mb-4 text-sm px-4 py-3"
+          data-radius-card
+          style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}
+        >
           {error}
         </p>
       )}
@@ -1303,12 +1445,20 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
         /* Source pick: two co-equal creation paths */
         <div className="max-w-3xl mx-auto py-10 space-y-5">
           <div className="text-center space-y-1 mb-2">
-            <h2 style={{ fontFamily: "var(--font-head)", fontWeight: "var(--weight-head)", fontSize: 22, letterSpacing: "-0.01em", color: "var(--text-primary)" }}>
+            <h2
+              style={{
+                fontFamily: "var(--font-head)",
+                fontWeight: "var(--weight-head)",
+                fontSize: 22,
+                letterSpacing: "-0.01em",
+                color: "var(--text-primary)",
+              }}
+            >
               Start your template
             </h2>
             <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
-              Build from scratch, or import a designed frame — both end at the
-              same place: locked design, editable fields.
+              Build from scratch, or import a designed frame — both end at the same place: locked
+              design, editable fields.
               {presets[0] && ` Canvas: ${presets[0].label}.`}
             </p>
           </div>
@@ -1330,10 +1480,18 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
               }}
             >
               <Plus className="w-6 h-6" style={{ color: "var(--state-primary)" }} />
-              <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>Start blank</p>
-              <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)", maxWidth: 240 }}>
-                Build the design from scratch on an empty canvas — drag on
-                text, images, and fixed elements.
+              <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>
+                Start blank
+              </p>
+              <p
+                style={{
+                  fontSize: "var(--type-caption-size)",
+                  color: "var(--text-secondary)",
+                  maxWidth: 240,
+                }}
+              >
+                Build the design from scratch on an empty canvas — drag on text, images, and fixed
+                elements.
               </p>
             </button>
             {/* Path B — Figma link */}
@@ -1351,8 +1509,16 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
               }}
             >
               <Figma className="w-6 h-6" style={{ color: "var(--state-primary)" }} />
-              <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>Import from Figma</p>
-              <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)", maxWidth: 240 }}>
+              <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>
+                Import from Figma
+              </p>
+              <p
+                style={{
+                  fontSize: "var(--type-caption-size)",
+                  color: "var(--text-secondary)",
+                  maxWidth: 240,
+                }}
+              >
                 {stores.designImport.isConfigured()
                   ? "Paste a frame link — every element lands on the canvas as an editable field. Mark anything that shouldn't be as fixed."
                   : "Requires the Supabase backend with the Figma connection configured (see docs/ARCHITECTURE.md)."}
@@ -1373,8 +1539,16 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
               }}
             >
               <Sparkles className="w-6 h-6" style={{ color: "var(--state-primary)" }} />
-              <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>Auto-build with Claude</p>
-              <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)", maxWidth: 240 }}>
+              <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>
+                Auto-build with Claude
+              </p>
+              <p
+                style={{
+                  fontSize: "var(--type-caption-size)",
+                  color: "var(--text-secondary)",
+                  maxWidth: 240,
+                }}
+              >
                 {stores.designImport.isConfigured()
                   ? "Paste a Figma link or upload an image — Claude decides what's editable, names every field, and writes the caption. You correct in the inspector."
                   : "Requires the Supabase backend with auto-build configured (see docs/ARCHITECTURE.md)."}
@@ -1390,12 +1564,20 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
             <div className="max-w-xl mx-auto py-8">
               <div className="sp-card p-6 space-y-4">
                 <div className="space-y-1">
-                  <h2 style={{ fontFamily: "var(--font-head)", fontWeight: "var(--weight-head)", fontSize: 22, letterSpacing: "-0.01em", color: "var(--text-primary)" }}>
+                  <h2
+                    style={{
+                      fontFamily: "var(--font-head)",
+                      fontWeight: "var(--weight-head)",
+                      fontSize: 22,
+                      letterSpacing: "-0.01em",
+                      color: "var(--text-primary)",
+                    }}
+                  >
                     What should this template be called?
                   </h2>
                   <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
-                    Members see this name in their template gallery. This is
-                    the last step — name it and publish.
+                    Members see this name in their template gallery. This is the last step — name it
+                    and publish.
                   </p>
                 </div>
                 <input
@@ -1412,28 +1594,31 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                   style={{ fontSize: "var(--type-cardtitle-size)", padding: "12px 14px" }}
                 />
                 {nameNeeded && (
-                  <p role="alert" style={{ fontSize: "var(--type-caption-size)", color: "var(--state-primary)" }}>
-                    Name the template before publishing — members find it by
-                    this name in their gallery.
+                  <p
+                    role="alert"
+                    style={{ fontSize: "var(--type-caption-size)", color: "var(--state-primary)" }}
+                  >
+                    Name the template before publishing — members find it by this name in their
+                    gallery.
                   </p>
                 )}
               </div>
-            <div className="sp-card p-6 space-y-3">
-              <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
-                "{draft.name.trim() || "Untitled template"}" · {draft.fields.length} field
-                {draft.fields.length !== 1 ? "s" : ""} ·{" "}
-                {draft.captionTemplate ? "caption set" : "no caption"}
-              </p>
-              <button
-                onClick={() => void publish()}
-                disabled={saving || publishState !== "idle" || draft.fields.length === 0}
-                className="sp-btn sp-btn-primary w-full"
-                style={{ padding: "11px 14px" }}
-              >
-                <Send className="w-3.5 h-3.5" />
-                {draft.status === "published" ? "Publish changes" : "Publish template"}
-              </button>
-            </div>
+              <div className="sp-card p-6 space-y-3">
+                <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
+                  "{draft.name.trim() || "Untitled template"}" · {draft.fields.length} field
+                  {draft.fields.length !== 1 ? "s" : ""} ·{" "}
+                  {draft.captionTemplate ? "caption set" : "no caption"}
+                </p>
+                <button
+                  onClick={() => void publish()}
+                  disabled={saving || publishState !== "idle" || draft.fields.length === 0}
+                  className="sp-btn sp-btn-primary w-full"
+                  style={{ padding: "11px 14px" }}
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  {draft.status === "published" ? "Publish changes" : "Publish template"}
+                </button>
+              </div>
             </div>
           )}
 
@@ -1463,138 +1648,207 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                   room to travel; it releases naturally at the region's end. */}
               <div className="lg:col-span-5 w-full max-w-xl mx-auto lg:max-w-none lg:self-stretch">
                 <div className="lg:sticky space-y-3" style={{ top: "var(--space-lg)" }}>
-                <div className="sp-card p-4">
-                  <div className="flex items-center justify-between gap-3 flex-wrap-reverse mb-3">
-                    <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)", flex: "1 1 260px", minWidth: 0 }}>
-                      {mode === "edit"
-                        ? "Drag elements from the palette onto the canvas. Drag to move, handles resize, top handle rotates. Right-click for copy/paste."
-                        : "Member preview — placeholder content, locked styling."}
-                    </p>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                    {mode === "edit" && (
-                      <div className="flex overflow-hidden" data-radius-control style={{ border: "1px solid var(--border-strong)" }}>
-                        <button
-                          onClick={doUndo}
-                          disabled={!canUndo}
-                          title={`Undo (${isMac ? "⌘" : "Ctrl+"}Z)`}
-                          aria-label="Undo"
-                          className="px-2.5 py-1.5"
-                          style={{ background: "var(--bg-surface)", color: canUndo ? "var(--text-secondary)" : "var(--text-disabled)", cursor: canUndo ? "pointer" : "default" }}
+                  <div className="sp-card p-4">
+                    <div className="flex items-center justify-between gap-3 flex-wrap-reverse mb-3">
+                      <p
+                        style={{
+                          fontSize: "var(--type-caption-size)",
+                          color: "var(--text-muted)",
+                          flex: "1 1 260px",
+                          minWidth: 0,
+                        }}
+                      >
+                        {mode === "edit"
+                          ? "Drag elements from the palette onto the canvas. Drag to move, handles resize, top handle rotates. Right-click for copy/paste."
+                          : "Member preview — placeholder content, locked styling."}
+                      </p>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {mode === "edit" && (
+                          <div
+                            className="flex overflow-hidden"
+                            data-radius-control
+                            style={{ border: "1px solid var(--border-strong)" }}
+                          >
+                            <button
+                              onClick={doUndo}
+                              disabled={!canUndo}
+                              title={`Undo (${isMac ? "⌘" : "Ctrl+"}Z)`}
+                              aria-label="Undo"
+                              className="px-2.5 py-1.5"
+                              style={{
+                                background: "var(--bg-surface)",
+                                color: canUndo ? "var(--text-secondary)" : "var(--text-disabled)",
+                                cursor: canUndo ? "pointer" : "default",
+                              }}
+                            >
+                              <Undo2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={doRedo}
+                              disabled={!canRedo}
+                              title={`Redo (${isMac ? "⇧⌘" : "Ctrl+Shift+"}Z)`}
+                              aria-label="Redo"
+                              className="px-2.5 py-1.5"
+                              style={{
+                                background: "var(--bg-surface)",
+                                color: canRedo ? "var(--text-secondary)" : "var(--text-disabled)",
+                                cursor: canRedo ? "pointer" : "default",
+                                borderLeft: "1px solid var(--border)",
+                              }}
+                            >
+                              <Redo2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
+                        <div
+                          className="flex overflow-hidden"
+                          data-radius-control
+                          style={{ border: "1px solid var(--border-strong)" }}
                         >
-                          <Undo2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={doRedo}
-                          disabled={!canRedo}
-                          title={`Redo (${isMac ? "⇧⌘" : "Ctrl+Shift+"}Z)`}
-                          aria-label="Redo"
-                          className="px-2.5 py-1.5"
-                          style={{ background: "var(--bg-surface)", color: canRedo ? "var(--text-secondary)" : "var(--text-disabled)", cursor: canRedo ? "pointer" : "default", borderLeft: "1px solid var(--border)" }}
-                        >
-                          <Redo2 className="w-3.5 h-3.5" />
-                        </button>
+                          {(["edit", "preview"] as const).map((m) => (
+                            <button
+                              key={m}
+                              onClick={() => setMode(m)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 capitalize"
+                              style={{
+                                fontSize: "var(--type-caption-size)",
+                                ...(mode === m
+                                  ? {
+                                      background: "var(--fill-action)",
+                                      color: "var(--text-on-action)",
+                                    }
+                                  : {
+                                      background: "var(--bg-surface)",
+                                      color: "var(--text-secondary)",
+                                    }),
+                              }}
+                            >
+                              {m === "edit" ? (
+                                <Pencil className="w-3 h-3" />
+                              ) : (
+                                <Eye className="w-3 h-3" />
+                              )}
+                              {m}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    )}
-                    <div className="flex overflow-hidden" data-radius-control style={{ border: "1px solid var(--border-strong)" }}>
-                      {(["edit", "preview"] as const).map((m) => (
-                        <button
-                          key={m}
-                          onClick={() => setMode(m)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 capitalize"
-                          style={{
-                            fontSize: "var(--type-caption-size)",
-                            ...(mode === m
-                              ? { background: "var(--fill-action)", color: "var(--text-on-action)" }
-                              : { background: "var(--bg-surface)", color: "var(--text-secondary)" }),
-                          }}
-                        >
-                          {m === "edit" ? <Pencil className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                          {m}
-                        </button>
-                      ))}
                     </div>
-                    </div>
-                  </div>
-                  {/* The canvas sizes from its width (aspect-ratio +
+                    {/* The canvas sizes from its width (aspect-ratio +
                       ResizeObserver), so capping the height means capping the
                       width: never wider than what fits the viewport minus the
                       pinned chrome around it. Keeps the stuck card fully in
                       view instead of clipping. */}
-                  <div
-                    style={{
-                      maxWidth: `min(100%, calc((100dvh - (var(--space-2xl) + var(--space-3xl))) * ${
-                        draft.canvasWidth / draft.canvasHeight
-                      }))`,
-                      marginInline: "auto",
-                    }}
-                  >
-                    {mode === "edit" ? (
-                      <FieldOverlayEditor
-                        canvasWidth={draft.canvasWidth}
-                        canvasHeight={draft.canvasHeight}
-                        backgroundUrl={draft.backgroundUrl}
-                        backgroundCss={schemaBackgroundCss(draft)}
-                        fields={draft.fields}
-                        groups={groups}
-                        layout={builderLayout}
-                        overflowGroupIds={overflowGroupIds}
-                        selectedIds={selectedIds}
-                        onSelect={setSelectedIds}
-                        onChange={setFields}
-                        onGroupChange={patchGroup}
-                        onReorderChildren={(id, children) => patchGroup(id, { children })}
-                        onDraw={addDrawnField}
-                        onDropElement={(id, at) => addPaletteField(id, at)}
-                        onContextMenu={(pos, fieldId, canvasPoint) =>
-                          setMenu({ x: pos.x, y: pos.y, fieldId, canvasPoint })
-                        }
-                        onRequestLabelFocus={setFocusLabelFieldId}
-                      />
-                    ) : (
-                      <SchemaRenderer
-                        schema={previewSchema}
-                        values={{}}
-                        brandKit={kit}
-                        instrument={false}
-                      />
-                    )}
-                  </div>
-                  {mode === "edit" && layoutWarnings.length > 0 && (
                     <div
-                      role="status"
-                      className="mt-3 px-3 py-2 space-y-1"
                       style={{
-                        borderRadius: "var(--radius-control)",
-                        border: "1px solid var(--border-strong)",
-                        background: "var(--bg-raised)",
+                        maxWidth: `min(100%, calc((100dvh - (var(--space-2xl) + var(--space-3xl))) * ${
+                          draft.canvasWidth / draft.canvasHeight
+                        }))`,
+                        marginInline: "auto",
                       }}
                     >
-                      {layoutWarnings.map((w, i) => (
-                        <p key={i} style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}>
-                          {w}
-                        </p>
-                      ))}
+                      {/* Canvas boundary: a crash on the design surface leaves
+                      the wizard, toolbar, and inspector standing; the draft
+                      is autosaved up to the last change. Mode switches and
+                      edits reset a crashed boundary. */}
+                      <ErrorBoundary
+                        level="canvas"
+                        context={{ templateId: savedId ?? undefined }}
+                        resetKeys={[mode, draft.fields]}
+                        fallback={(retry) => (
+                          <ErrorState
+                            title="The canvas ran into a problem."
+                            detail="Everything up to your last save is safe. Try again — if it keeps happening, undo your last change."
+                            onRetry={retry}
+                          />
+                        )}
+                      >
+                        {mode === "edit" ? (
+                          <FieldOverlayEditor
+                            canvasWidth={draft.canvasWidth}
+                            canvasHeight={draft.canvasHeight}
+                            backgroundUrl={draft.backgroundUrl}
+                            backgroundCss={schemaBackgroundCss(draft)}
+                            fields={draft.fields}
+                            groups={groups}
+                            layout={builderLayout}
+                            overflowGroupIds={overflowGroupIds}
+                            selectedIds={selectedIds}
+                            onSelect={setSelectedIds}
+                            onChange={setFields}
+                            onGroupChange={patchGroup}
+                            onReorderChildren={(id, children) => patchGroup(id, { children })}
+                            onDraw={addDrawnField}
+                            onDropElement={(id, at) => addPaletteField(id, at)}
+                            onContextMenu={(pos, fieldId, canvasPoint) =>
+                              setMenu({ x: pos.x, y: pos.y, fieldId, canvasPoint })
+                            }
+                            onRequestLabelFocus={setFocusLabelFieldId}
+                          />
+                        ) : (
+                          <SchemaRenderer
+                            schema={previewSchema}
+                            values={{}}
+                            brandKit={kit}
+                            instrument={false}
+                          />
+                        )}
+                      </ErrorBoundary>
+                    </div>
+                    {mode === "edit" && layoutWarnings.length > 0 && (
+                      <div
+                        role="status"
+                        className="mt-3 px-3 py-2 space-y-1"
+                        style={{
+                          borderRadius: "var(--radius-control)",
+                          border: "1px solid var(--border-strong)",
+                          background: "var(--bg-raised)",
+                        }}
+                      >
+                        {layoutWarnings.map((w, i) => (
+                          <p
+                            key={i}
+                            style={{
+                              fontSize: "var(--type-caption-size)",
+                              color: "var(--text-secondary)",
+                            }}
+                          >
+                            {w}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {stores.designImport.isConfigured() && mode === "edit" && (
+                    <div className="flex items-center gap-4">
+                      <button
+                        onClick={() => setFigmaOpen(true)}
+                        style={{
+                          fontSize: "var(--type-caption-size)",
+                          color: "var(--text-secondary)",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                        }}
+                      >
+                        <Figma className="w-3.5 h-3.5" />
+                        Import more fields from Figma
+                      </button>
+                      <button
+                        onClick={() => setAutoBuildOpen(true)}
+                        style={{
+                          fontSize: "var(--type-caption-size)",
+                          color: "var(--text-secondary)",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                        }}
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        Auto-build with Claude
+                      </button>
                     </div>
                   )}
-                </div>
-                {stores.designImport.isConfigured() && mode === "edit" && (
-                  <div className="flex items-center gap-4">
-                    <button
-                      onClick={() => setFigmaOpen(true)}
-                      style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 6 }}
-                    >
-                      <Figma className="w-3.5 h-3.5" />
-                      Import more fields from Figma
-                    </button>
-                    <button
-                      onClick={() => setAutoBuildOpen(true)}
-                      style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 6 }}
-                    >
-                      <Sparkles className="w-3.5 h-3.5" />
-                      Auto-build with Claude
-                    </button>
-                  </div>
-                )}
                 </div>
               </div>
 
@@ -1617,7 +1871,9 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                       canvasWidth={draft.canvasWidth}
                       canvasHeight={draft.canvasHeight}
                       focusLabelFieldId={focusLabelFieldId}
-                      containingGroup={groups.find((g) => g.children.includes(singleSelected.fieldKey))}
+                      containingGroup={groups.find((g) =>
+                        g.children.includes(singleSelected.fieldKey),
+                      )}
                       computedRect={builderLayout.fieldRects.get(singleSelected.id)}
                       onChange={(patch, stream) => patchField(singleSelected.id, patch, stream)}
                       onDelete={() => deleteFields([singleSelected.id])}
@@ -1632,10 +1888,30 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                       Group selection {isMac ? "⌘G" : "Ctrl+G"}
                     </button>
                     <div className="grid grid-cols-2 gap-2">
-                      <button className="sp-btn sp-btn-ghost" onClick={() => copyFields(selectedIds)}>Copy</button>
-                      <button className="sp-btn sp-btn-ghost" onClick={() => duplicateSelected(selectedIds)}>Duplicate</button>
-                      <button className="sp-btn sp-btn-ghost" onClick={() => reorderLayer(selectedIds, "front")}>To front</button>
-                      <button className="sp-btn sp-btn-ghost" onClick={() => reorderLayer(selectedIds, "back")}>To back</button>
+                      <button
+                        className="sp-btn sp-btn-ghost"
+                        onClick={() => copyFields(selectedIds)}
+                      >
+                        Copy
+                      </button>
+                      <button
+                        className="sp-btn sp-btn-ghost"
+                        onClick={() => duplicateSelected(selectedIds)}
+                      >
+                        Duplicate
+                      </button>
+                      <button
+                        className="sp-btn sp-btn-ghost"
+                        onClick={() => reorderLayer(selectedIds, "front")}
+                      >
+                        To front
+                      </button>
+                      <button
+                        className="sp-btn sp-btn-ghost"
+                        onClick={() => reorderLayer(selectedIds, "back")}
+                      >
+                        To back
+                      </button>
                     </div>
                     <button
                       className="sp-btn sp-btn-ghost w-full"
@@ -1658,7 +1934,9 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                       <ColorControl
                         ariaLabel="Template background color"
                         value={draft.backgroundColor ?? "#ffffff"}
-                        onChange={(hex) => setDraft((d) => ({ ...d, backgroundColor: hex }), "bg:color")}
+                        onChange={(hex) =>
+                          setDraft((d) => ({ ...d, backgroundColor: hex }), "bg:color")
+                        }
                       />
                     </div>
                     <GradientEditor
@@ -1668,7 +1946,9 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                         { position: 0, color: kit?.colors[0]?.hex ?? "#BCFF78" },
                         { position: 1, color: kit?.colors[1]?.hex ?? "#082C1E" },
                       ]}
-                      onChange={(backgroundGradient) => setDraft((d) => ({ ...d, backgroundGradient }), "bg:gradient")}
+                      onChange={(backgroundGradient) =>
+                        setDraft((d) => ({ ...d, backgroundGradient }), "bg:gradient")
+                      }
                     />
                     <div className="space-y-2">
                       <label className="sp-eyebrow block">Background image</label>
@@ -1684,11 +1964,21 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                         }}
                       >
                         {uploading ? (
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin" style={{ color: "var(--state-primary)" }} />
+                          <RefreshCw
+                            className="w-3.5 h-3.5 animate-spin"
+                            style={{ color: "var(--state-primary)" }}
+                          />
                         ) : (
-                          <Upload className="sp-dropzone__icon w-3.5 h-3.5" style={{ color: "var(--state-primary)" }} />
+                          <Upload
+                            className="sp-dropzone__icon w-3.5 h-3.5"
+                            style={{ color: "var(--state-primary)" }}
+                          />
                         )}
-                        {uploading ? "Uploading…" : draft.backgroundUrl ? "Replace image" : "Upload image"}
+                        {uploading
+                          ? "Uploading…"
+                          : draft.backgroundUrl
+                            ? "Replace image"
+                            : "Upload image"}
                         <input
                           type="file"
                           accept="image/png,image/jpeg"
@@ -1721,20 +2011,38 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
             <div className="max-w-2xl mx-auto py-8">
               <div className="sp-card p-6 space-y-4">
                 <div className="space-y-1">
-                  <h2 style={{ fontFamily: "var(--font-head)", fontWeight: "var(--weight-head)", fontSize: 22, letterSpacing: "-0.01em", color: "var(--text-primary)" }}>
+                  <h2
+                    style={{
+                      fontFamily: "var(--font-head)",
+                      fontWeight: "var(--weight-head)",
+                      fontSize: 22,
+                      letterSpacing: "-0.01em",
+                      color: "var(--text-primary)",
+                    }}
+                  >
                     Suggested caption
-                    <span style={{ fontSize: "var(--type-caption-size)", color: "var(--text-disabled)", fontWeight: 400 }}> · optional</span>
+                    <span
+                      style={{
+                        fontSize: "var(--type-caption-size)",
+                        color: "var(--text-disabled)",
+                        fontWeight: 400,
+                      }}
+                    >
+                      {" "}
+                      · optional
+                    </span>
                   </h2>
                   <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
-                    Members get this caption next to the finished graphic, with
-                    the tags filled from what they typed. Click a tag chip to
-                    insert it.
+                    Members get this caption next to the finished graphic, with the tags filled from
+                    what they typed. Click a tag chip to insert it.
                   </p>
                 </div>
                 <CaptionEditor
                   value={draft.captionTemplate}
                   fields={draft.fields}
-                  onChange={(captionTemplate) => setDraft((d) => ({ ...d, captionTemplate }), "text:caption")}
+                  onChange={(captionTemplate) =>
+                    setDraft((d) => ({ ...d, captionTemplate }), "text:caption")
+                  }
                 />
               </div>
             </div>
@@ -1744,9 +2052,26 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
             <div className="max-w-2xl mx-auto py-8 space-y-4">
               <div className="sp-card p-6 space-y-4">
                 <div className="space-y-1">
-                  <h2 style={{ fontFamily: "var(--font-head)", fontWeight: "var(--weight-head)", fontSize: 22, letterSpacing: "-0.01em", color: "var(--text-primary)" }}>
+                  <h2
+                    style={{
+                      fontFamily: "var(--font-head)",
+                      fontWeight: "var(--weight-head)",
+                      fontSize: 22,
+                      letterSpacing: "-0.01em",
+                      color: "var(--text-primary)",
+                    }}
+                  >
                     Tags & details
-                    <span style={{ fontSize: "var(--type-caption-size)", color: "var(--text-disabled)", fontWeight: 400 }}> · optional</span>
+                    <span
+                      style={{
+                        fontSize: "var(--type-caption-size)",
+                        color: "var(--text-disabled)",
+                        fontWeight: 400,
+                      }}
+                    >
+                      {" "}
+                      · optional
+                    </span>
                   </h2>
                   <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
                     Shown on the template's card in the members' gallery.
@@ -1754,14 +2079,18 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                 </div>
                 <input
                   value={draft.description}
-                  onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }), "text:description")}
+                  onChange={(e) =>
+                    setDraft((d) => ({ ...d, description: e.target.value }), "text:description")
+                  }
                   placeholder="Short description shown on the portal card"
                   className="sp-input"
                 />
                 <div className="grid grid-cols-2 gap-3">
                   <input
                     value={draft.category}
-                    onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value }), "text:category")}
+                    onChange={(e) =>
+                      setDraft((d) => ({ ...d, category: e.target.value }), "text:category")
+                    }
                     placeholder="Category"
                     className="sp-input"
                   />
@@ -1771,7 +2100,10 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                       setDraft(
                         (d) => ({
                           ...d,
-                          tags: e.target.value.split(",").map((t) => t.trim()).filter(Boolean),
+                          tags: e.target.value
+                            .split(",")
+                            .map((t) => t.trim())
+                            .filter(Boolean),
                         }),
                         "text:tags",
                       )
@@ -1783,9 +2115,20 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                 <label
                   {...bgDrop.bind}
                   data-active={bgDrop.active}
-                  className="sp-dropzone flex items-center gap-2 cursor-pointer " data-radius-control style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)", padding: "4px 6px", margin: "-4px -6px" }}
+                  className="sp-dropzone flex items-center gap-2 cursor-pointer "
+                  data-radius-control
+                  style={{
+                    fontSize: "var(--type-caption-size)",
+                    color: "var(--text-secondary)",
+                    padding: "4px 6px",
+                    margin: "-4px -6px",
+                  }}
                 >
-                  {uploading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Upload className="sp-dropzone__icon w-3.5 h-3.5" />}
+                  {uploading ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Upload className="sp-dropzone__icon w-3.5 h-3.5" />
+                  )}
                   {uploading
                     ? "Uploading…"
                     : draft.backgroundUrl

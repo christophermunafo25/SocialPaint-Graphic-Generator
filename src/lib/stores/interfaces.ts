@@ -72,7 +72,12 @@ export interface PeopleStore {
 
 export interface UsageStore {
   /** Fire-and-forget from SchemaRenderer; failures must never break the UI. */
-  record(companyId: string, templateId: string, action: UsageAction, userId?: string): Promise<void>;
+  record(
+    companyId: string,
+    templateId: string,
+    action: UsageAction,
+    userId?: string,
+  ): Promise<void>;
   getUsageSummary(companyId: string): Promise<UsageSummary>;
   /** Zero-filled day buckets for the Insights trend chart. */
   getDailyActivity(companyId: string, days: number): Promise<DailyActivityPoint[]>;
@@ -83,7 +88,10 @@ export interface DesignImportProvider {
   readonly providers: import("../types").DesignSourceKind[];
   isConfigured(): boolean; // backend reachable at all (Edge Functions deployed)
   isConnected(companyId: string): Promise<boolean>;
-  connect(companyId: string, credential: { kind: "oauth-code" | "pat"; value: string }): Promise<void>;
+  connect(
+    companyId: string,
+    credential: { kind: "oauth-code" | "pat"; value: string },
+  ): Promise<void>;
   importFromUrl(companyId: string, url: string): Promise<DesignImportResult>;
   /** Design-system import: pull the color + text styles of a Figma FILE into
    * palette entries + brand type styles (Feature 4 → design-system import). */

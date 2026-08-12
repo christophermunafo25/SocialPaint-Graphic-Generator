@@ -1,10 +1,15 @@
 // Store factory. Components import `stores` from here and never touch a
 // backend client directly. Backend selection:
-//   - VITE_SUPABASE_URL set   → Supabase (Postgres + Storage + Edge Functions)
-//   - unset                   → localStorage dev backend (zero setup)
+//   - valid VITE_SUPABASE_* config → Supabase (Postgres + Storage + Edge Functions)
+//   - unset, dev build             → localStorage dev backend (zero setup)
+//   - unset/invalid, prod build    → throw. Never ship the localStorage backend
+//     to production: it boots a working-looking app that silently loses
+//     everything. main.tsx checks the same config before importing this module
+//     and renders the failure screen; the throw here is the backstop.
 
 import type { Stores } from "./interfaces";
 import { isSupabaseConfigured } from "./supabase/client";
+import { supabaseAnonKey, supabaseEnvProblems, supabaseUrl } from "@/lib/config/supabaseEnv";
 import { SupabaseCompanyStore } from "./supabase/companyStore";
 import { SupabaseTemplateStore } from "./supabase/templateStore";
 import { SupabaseBrandAssetStore, SupabaseBrandKitStore } from "./supabase/brandStore";
@@ -33,6 +38,18 @@ function createStores(): Stores {
       designImport: new FigmaImporter(),
       backend: "supabase",
     };
+  }
+  if (import.meta.env.PROD) {
+    throw new Error(
+      `Supabase configuration is missing or invalid in a production build: ${supabaseEnvProblems.join("; ")}`,
+    );
+  }
+  if (supabaseUrl || supabaseAnonKey) {
+    // Partially set or malformed config in dev would otherwise silently mask a
+    // typo behind the local backend.
+    console.warn(
+      `Supabase config ignored (${supabaseEnvProblems.join("; ")}) — falling back to the localStorage dev backend.`,
+    );
   }
   return {
     companies: new LocalCompanyStore(),

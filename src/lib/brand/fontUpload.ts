@@ -15,16 +15,22 @@ const MAX_FONT_BYTES = 5 * 1024 * 1024;
  * (WOFF/WOFF2 compress their tables; the browser has no Brotli inflater).
  * Splits camelCase before matching so "NeuethingSans-Bold" finds both the
  * family "Neuething Sans" and the weight. */
-function fromFilename(base: string): Pick<FontAssetMetadata, "family" | "weight" | "style" | "stretch"> {
+function fromFilename(
+  base: string,
+): Pick<FontAssetMetadata, "family" | "weight" | "style" | "stretch"> {
   const spaced = base.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[-_]+/g, " ");
   const weight = weightFromName(spaced) ?? 400;
   const stretch = stretchFromName(spaced);
   const italic = /italic|oblique/i.test(spaced);
-  const family = spaced
-    .replace(/\b(thin|extra\s?light|ultra\s?light|light|regular|normal|book|medium|semi\s?bold|demi\s?bold|extra\s?bold|ultra\s?bold|bold|black|heavy|italic|oblique|var(iable)?|vf)\b/gi, "")
-    .replace(/\b(ultra|extra|semi)?\s?(condensed|expanded|extended|wide|narrow)\b/gi, "")
-    .replace(/\s+/g, " ")
-    .trim() || base;
+  const family =
+    spaced
+      .replace(
+        /\b(thin|extra\s?light|ultra\s?light|light|regular|normal|book|medium|semi\s?bold|demi\s?bold|extra\s?bold|ultra\s?bold|bold|black|heavy|italic|oblique|var(iable)?|vf)\b/gi,
+        "",
+      )
+      .replace(/\b(ultra|extra|semi)?\s?(condensed|expanded|extended|wide|narrow)\b/gi, "")
+      .replace(/\s+/g, " ")
+      .trim() || base;
   return { family, weight, style: italic ? "italic" : "normal", ...(stretch ? { stretch } : {}) };
 }
 
@@ -41,7 +47,10 @@ export async function inspectFontFile(
   const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
   const format = FORMAT_BY_EXT[ext];
   if (!format) {
-    return { ok: false, error: `Unsupported font format ".${ext}" — use .woff2, .woff, .ttf, or .otf.` };
+    return {
+      ok: false,
+      error: `Unsupported font format ".${ext}" — use .woff2, .woff, .ttf, or .otf.`,
+    };
   }
   if (file.size > MAX_FONT_BYTES) {
     return { ok: false, error: "Font file is too large (max 5 MB)." };

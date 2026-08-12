@@ -8,6 +8,7 @@ import React, {
   useState,
 } from "react";
 import type { BrandKit, FieldValues, TemplateField, TemplateSchema } from "@/lib/types";
+import { ErrorBoundary, FieldCrashFallback } from "./ErrorBoundary";
 import { useDataUrl } from "@/lib/render/useDataUrl";
 import { createCanvasMeasurer, fittedFontSize, fixedWidthFontSize } from "@/lib/render/autoFit";
 import { computeLayout, renderedText, type Rect } from "@/lib/render/layout";
@@ -48,7 +49,9 @@ export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererPro
       const el = containerRef.current;
       if (!el) return;
       const update = () => {
-        setScale(Math.min(el.offsetWidth / schema.canvasWidth, el.offsetHeight / schema.canvasHeight, 1));
+        setScale(
+          Math.min(el.offsetWidth / schema.canvasWidth, el.offsetHeight / schema.canvasHeight, 1),
+        );
       };
       update();
       const observer = new ResizeObserver(update);
@@ -69,7 +72,7 @@ export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererPro
     const [fontsTick, setFontsReady] = useState(0);
     useEffect(() => {
       let mounted = true;
-      document.fonts?.ready.then(() => mounted && setFontsReady(1));
+      void document.fonts?.ready.then(() => mounted && setFontsReady(1));
       return () => {
         mounted = false;
       };
@@ -78,6 +81,7 @@ export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererPro
     // THE layout pass: schema + values in, rects out. One measurer (and its
     // memo) per fonts generation — a webfont landing changes what the same
     // shorthand measures, so the cache must not survive it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fontsTick deliberately busts the cache
     const measurer = useMemo(() => createCanvasMeasurer(), [fontsTick]);
     const layout = useMemo(
       () => computeLayout(schema, values, brandKit, measurer),
@@ -136,7 +140,13 @@ export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererPro
               <img
                 src={backgroundDataUrl}
                 alt=""
-                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                }}
               />
             )}
             {schema.fields.map((field) => (
@@ -145,6 +155,7 @@ export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererPro
                 field={field}
                 value={values[field.fieldKey]}
                 brandKit={brandKit}
+                templateId={schema.id}
                 rect={layout.fieldRects.get(field.id)}
                 fontSize={layout.fontSizes.get(field.id)}
               />
@@ -208,16 +219,23 @@ function contentBaseStyle(field: TemplateField): React.CSSProperties {
     width: "100%",
     height: "100%",
     // Element opacity (0-100, default 100)
-    opacity: field.opacity !== undefined ? Math.max(0, Math.min(100, field.opacity)) / 100 : undefined,
+    opacity:
+      field.opacity !== undefined ? Math.max(0, Math.min(100, field.opacity)) / 100 : undefined,
     // Flip mirrors the CONTENT inside the box (after box rotation), so it
     // rides along in the builder's interaction boxes and the PNG export the
     // same way opacity does.
-    transform: field.flipX || field.flipY ? `scale(${field.flipX ? -1 : 1}, ${field.flipY ? -1 : 1})` : undefined,
+    transform:
+      field.flipX || field.flipY
+        ? `scale(${field.flipX ? -1 : 1}, ${field.flipY ? -1 : 1})`
+        : undefined,
   };
 }
 
 /** CSS linear-gradient from the shared gradient shape. */
-export function gradientCss(g: { angle: number; stops: Array<{ position: number; color: string }> }): string {
+export function gradientCss(g: {
+  angle: number;
+  stops: Array<{ position: number; color: string }>;
+}): string {
   return `linear-gradient(${g.angle}deg, ${g.stops
     .map((s) => `${s.color} ${Math.round(s.position * 100)}%`)
     .join(", ")})`;
@@ -253,11 +271,29 @@ interface FieldBoxProps {
 }
 
 /** Positioning wrapper (boxStyle) around the field's visual content. The
- * single member-preview/export render path — behavior must stay identical. */
-export function FieldBox({ field, value, brandKit, rect, fontSize }: FieldBoxProps) {
+ * single member-preview/export render path — behavior must stay identical.
+ * The FIELD boundary lives here: one malformed field degrades to a quiet
+ * placeholder in its own box; every other field still renders and a member
+ * can still fill the rest of the template. Editing the field (a new object)
+ * resets the boundary and re-attempts the render. */
+export function FieldBox({
+  field,
+  value,
+  brandKit,
+  rect,
+  fontSize,
+  templateId,
+}: FieldBoxProps & { templateId?: string }) {
   return (
     <div style={boxStyle(field, rect)}>
-      <FieldBoxContent field={field} value={value} brandKit={brandKit} fontSize={fontSize} />
+      <ErrorBoundary
+        level="field"
+        context={{ fieldId: field.id, fieldType: field.type, templateId }}
+        resetKeys={[field, value]}
+        fallback={() => <FieldCrashFallback width={field.width} height={field.height} />}
+      >
+        <FieldBoxContent field={field} value={value} brandKit={brandKit} fontSize={fontSize} />
+      </ErrorBoundary>
     </div>
   );
 }
@@ -305,10 +341,17 @@ function ShapeFieldBox({ field, brandKit }: { field: TemplateField; brandKit: Br
   const paint = g ? `url(#${gradId})` : solid;
   return (
     <div style={contentBaseStyle(field)}>
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ width: "100%", height: "100%", display: "block" }}>
+      <svg
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        style={{ width: "100%", height: "100%", display: "block" }}
+      >
         {g && (
           <defs>
-            <linearGradient id={gradId} gradientTransform={`rotate(${((g.angle - 90) % 360 + 360) % 360}, 0.5, 0.5)`}>
+            <linearGradient
+              id={gradId}
+              gradientTransform={`rotate(${(((g.angle - 90) % 360) + 360) % 360}, 0.5, 0.5)`}
+            >
               {g.stops.map((s, i) => (
                 <stop key={i} offset={`${Math.round(s.position * 100)}%`} stopColor={s.color} />
               ))}
@@ -347,7 +390,11 @@ function TextFieldBox({ field, value, brandKit, fontSize: layoutFontSize }: Fiel
   const justify =
     field.align === "center" ? "center" : field.align === "right" ? "flex-end" : "flex-start";
   const alignItems =
-    field.verticalAlign === "top" ? "flex-start" : field.verticalAlign === "bottom" ? "flex-end" : "center";
+    field.verticalAlign === "top"
+      ? "flex-start"
+      : field.verticalAlign === "bottom"
+        ? "flex-end"
+        : "center";
   return (
     <div
       style={{
@@ -416,11 +463,16 @@ function ImageFieldBox({ field, value }: { field: TemplateField; value: string |
           style={{ width: "100%", height: "100%", objectFit: field.objectFit ?? "cover" }}
         />
       ) : (
-        <span style={{ color: "rgba(0,0,0,0.35)", fontSize: Math.max(18, field.width / 14), textAlign: "center" }}>
+        <span
+          style={{
+            color: "rgba(0,0,0,0.35)",
+            fontSize: Math.max(18, field.width / 14),
+            textAlign: "center",
+          }}
+        >
           {field.label}
         </span>
       )}
     </div>
   );
 }
-

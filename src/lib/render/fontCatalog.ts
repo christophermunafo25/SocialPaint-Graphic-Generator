@@ -136,11 +136,7 @@ export function parseStyleKey(key: string): FontStyle | undefined {
 /** Build a FontStyle from the three loose values a field carries. Absent
  * means normal — the backward-compatible reading of a legacy field that has
  * only `fontWeight`. */
-export function toFontStyle(
-  weight?: number,
-  fontStyle?: string,
-  fontStretch?: string,
-): FontStyle {
+export function toFontStyle(weight?: number, fontStyle?: string, fontStretch?: string): FontStyle {
   return {
     weight: weight ?? 400,
     italic: fontStyle === "italic",
@@ -169,33 +165,60 @@ interface GoogleFamilyAxes {
  * there without a row here falls through to the unverified path rather than
  * silently getting a wrong ladder (fontCatalog.test.ts guards this). */
 export const GOOGLE_FAMILY_AXES: Record<string, GoogleFamilyAxes> = {
-  "Archivo": { weights: [100, 200, 300, 400, 500, 600, 700, 800, 900], italic: true, stretches: ["extra-condensed", "condensed", "semi-condensed", "normal", "semi-expanded", "expanded"] },
+  Archivo: {
+    weights: [100, 200, 300, 400, 500, 600, 700, 800, 900],
+    italic: true,
+    stretches: [
+      "extra-condensed",
+      "condensed",
+      "semi-condensed",
+      "normal",
+      "semi-expanded",
+      "expanded",
+    ],
+  },
   "Bebas Neue": { weights: [400], italic: false },
-  "Cabin": { weights: [400, 500, 600, 700], italic: true, stretches: ["condensed", "semi-condensed", "normal"] },
+  Cabin: {
+    weights: [400, 500, 600, 700],
+    italic: true,
+    stretches: ["condensed", "semi-condensed", "normal"],
+  },
   "DM Sans": { weights: [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000], italic: true },
   "Fira Sans": { weights: [100, 200, 300, 400, 500, 600, 700, 800, 900], italic: true },
-  "Inter": { weights: [100, 200, 300, 400, 500, 600, 700, 800, 900], italic: true },
+  Inter: { weights: [100, 200, 300, 400, 500, 600, 700, 800, 900], italic: true },
   "Josefin Sans": { weights: [100, 200, 300, 400, 500, 600, 700], italic: true },
-  "Karla": { weights: [200, 300, 400, 500, 600, 700, 800], italic: true },
-  "Lato": { weights: [100, 300, 400, 700, 900], italic: true },
+  Karla: { weights: [200, 300, 400, 500, 600, 700, 800], italic: true },
+  Lato: { weights: [100, 300, 400, 700, 900], italic: true },
   "Libre Baskerville": { weights: [400, 500, 600, 700], italic: true },
-  "Lora": { weights: [400, 500, 600, 700], italic: true },
-  "Manrope": { weights: [200, 300, 400, 500, 600, 700, 800], italic: false },
-  "Merriweather": { weights: [300, 400, 500, 600, 700, 800, 900], italic: true, stretches: ["semi-condensed", "normal"] },
-  "Montserrat": { weights: [100, 200, 300, 400, 500, 600, 700, 800, 900], italic: true },
-  "Mulish": { weights: [200, 300, 400, 500, 600, 700, 800, 900, 1000], italic: true },
-  "Nunito": { weights: [200, 300, 400, 500, 600, 700, 800, 900, 1000], italic: true },
-  "Open Sans": { weights: [300, 400, 500, 600, 700, 800], italic: true, stretches: ["condensed", "semi-condensed", "normal"] },
-  "Oswald": { weights: [200, 300, 400, 500, 600, 700], italic: false },
-  "Outfit": { weights: [100, 200, 300, 400, 500, 600, 700, 800, 900], italic: false },
+  Lora: { weights: [400, 500, 600, 700], italic: true },
+  Manrope: { weights: [200, 300, 400, 500, 600, 700, 800], italic: false },
+  Merriweather: {
+    weights: [300, 400, 500, 600, 700, 800, 900],
+    italic: true,
+    stretches: ["semi-condensed", "normal"],
+  },
+  Montserrat: { weights: [100, 200, 300, 400, 500, 600, 700, 800, 900], italic: true },
+  Mulish: { weights: [200, 300, 400, 500, 600, 700, 800, 900, 1000], italic: true },
+  Nunito: { weights: [200, 300, 400, 500, 600, 700, 800, 900, 1000], italic: true },
+  "Open Sans": {
+    weights: [300, 400, 500, 600, 700, 800],
+    italic: true,
+    stretches: ["condensed", "semi-condensed", "normal"],
+  },
+  Oswald: { weights: [200, 300, 400, 500, 600, 700], italic: false },
+  Outfit: { weights: [100, 200, 300, 400, 500, 600, 700, 800, 900], italic: false },
   "Playfair Display": { weights: [400, 500, 600, 700, 800, 900], italic: true },
   "Plus Jakarta Sans": { weights: [200, 300, 400, 500, 600, 700, 800], italic: true },
-  "Poppins": { weights: [100, 200, 300, 400, 500, 600, 700, 800, 900], italic: true },
-  "Raleway": { weights: [100, 200, 300, 400, 500, 600, 700, 800, 900], italic: true },
-  "Roboto": { weights: [100, 200, 300, 400, 500, 600, 700, 800, 900], italic: true, stretches: ["condensed", "semi-condensed", "normal"] },
+  Poppins: { weights: [100, 200, 300, 400, 500, 600, 700, 800, 900], italic: true },
+  Raleway: { weights: [100, 200, 300, 400, 500, 600, 700, 800, 900], italic: true },
+  Roboto: {
+    weights: [100, 200, 300, 400, 500, 600, 700, 800, 900],
+    italic: true,
+    stretches: ["condensed", "semi-condensed", "normal"],
+  },
   "Roboto Slab": { weights: [100, 200, 300, 400, 500, 600, 700, 800, 900], italic: false },
-  "Rubik": { weights: [300, 400, 500, 600, 700, 800, 900], italic: true },
-  "Sora": { weights: [100, 200, 300, 400, 500, 600, 700, 800], italic: false },
+  Rubik: { weights: [300, 400, 500, 600, 700, 800, 900], italic: true },
+  Sora: { weights: [100, 200, 300, 400, 500, 600, 700, 800], italic: false },
   "Source Sans 3": { weights: [200, 300, 400, 500, 600, 700, 800, 900], italic: true },
   "Space Grotesk": { weights: [300, 400, 500, 600, 700], italic: false },
   "Work Sans": { weights: [100, 200, 300, 400, 500, 600, 700, 800, 900], italic: true },
@@ -236,11 +259,13 @@ const stylesFromMetadata = (m: FontAssetMetadata): FontStyle[] => {
       stretch: isFontStretch(c.stretch) ? c.stretch : "normal",
     }));
   }
-  return [{
-    weight: m.weight ?? 400,
-    italic: m.style === "italic",
-    stretch: isFontStretch(m.stretch) ? m.stretch : "normal",
-  }];
+  return [
+    {
+      weight: m.weight ?? 400,
+      italic: m.style === "italic",
+      stretch: isFontStretch(m.stretch) ? m.stretch : "normal",
+    },
+  ];
 };
 
 /** family → the styles that actually have a file behind them. */
@@ -287,7 +312,8 @@ export function familyStyles(
   if (custom?.length) return { family, source: "custom", styles: custom, verified: true };
 
   const axes = GOOGLE_FAMILY_AXES[family];
-  if (axes) return { family, source: "google", styles: sortStyles(expandGoogle(axes)), verified: true };
+  if (axes)
+    return { family, source: "google", styles: sortStyles(expandGoogle(axes)), verified: true };
 
   // Unknown (Figma import, system font): a conservative pair plus whatever the
   // field already renders with, deduped.
@@ -329,7 +355,9 @@ export function nearestStyle(target: FontStyle, styles: FontStyle[]): FontStyle 
 
 /** Styles split into the width groups the picker draws dividers between.
  * A family with no width axis yields a single unlabeled group. */
-export function styleGroups(styles: FontStyle[]): Array<{ stretch: FontStretch; label: string; styles: FontStyle[] }> {
+export function styleGroups(
+  styles: FontStyle[],
+): Array<{ stretch: FontStretch; label: string; styles: FontStyle[] }> {
   const groups = new Map<FontStretch, FontStyle[]>();
   for (const style of sortStyles(styles)) {
     groups.set(style.stretch, [...(groups.get(style.stretch) ?? []), style]);

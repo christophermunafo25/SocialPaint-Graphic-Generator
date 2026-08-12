@@ -14,7 +14,11 @@ import {
   type FontStyle,
 } from "@/lib/render/fontCatalog";
 
-const style = (weight: number, italic = false, stretch: FontStyle["stretch"] = "normal"): FontStyle => ({
+const style = (
+  weight: number,
+  italic = false,
+  stretch: FontStyle["stretch"] = "normal",
+): FontStyle => ({
   weight,
   italic,
   stretch,
@@ -88,9 +92,21 @@ describe("style lists come from real metadata, not a 100-900 ladder", () => {
 describe("uploaded families offer exactly what has a file behind it", () => {
   it("groups assets by family and lists only uploaded styles", () => {
     const assets = [
-      fontAsset("NeuethingSans-Regular.woff2", { family: "Neuething Sans", weight: 400, style: "normal" }),
-      fontAsset("NeuethingSans-Bold.woff2", { family: "Neuething Sans", weight: 700, style: "normal" }),
-      fontAsset("NeuethingSans-BoldItalic.woff2", { family: "Neuething Sans", weight: 700, style: "italic" }),
+      fontAsset("NeuethingSans-Regular.woff2", {
+        family: "Neuething Sans",
+        weight: 400,
+        style: "normal",
+      }),
+      fontAsset("NeuethingSans-Bold.woff2", {
+        family: "Neuething Sans",
+        weight: 700,
+        style: "normal",
+      }),
+      fontAsset("NeuethingSans-BoldItalic.woff2", {
+        family: "Neuething Sans",
+        weight: 700,
+        style: "italic",
+      }),
       fontAsset("OtherFace-Regular.woff2", { family: "Other Face", weight: 400 }),
     ];
     const { styles, source, verified } = familyStyles("Neuething Sans", assets);
@@ -205,7 +221,9 @@ describe("changing family maps to the nearest style, never a reset", () => {
 
   it("preserves width where it exists and falls back to normal where it does not", () => {
     const archivo = familyStyles("Archivo").styles;
-    expect(nearestStyle(style(700, false, "expanded"), archivo)).toEqual(style(700, false, "expanded"));
+    expect(nearestStyle(style(700, false, "expanded"), archivo)).toEqual(
+      style(700, false, "expanded"),
+    );
     // Inter has no width axis at all.
     expect(nearestStyle(style(700, false, "expanded"), inter)).toEqual(style(700));
   });

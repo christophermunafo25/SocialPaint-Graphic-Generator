@@ -31,8 +31,7 @@ import {
 
 /** The structured view over the field's flat fill properties. */
 export type Fill =
-  | { type: "solid"; hex: string; colorKey?: string }
-  | { type: "gradient"; gradient: TextGradient };
+  { type: "solid"; hex: string; colorKey?: string } | { type: "gradient"; gradient: TextGradient };
 
 export function getFill(field: TemplateField, kit: BrandKit | null): Fill | null {
   if (field.textGradient?.stops.length) return { type: "gradient", gradient: field.textGradient };
@@ -53,7 +52,9 @@ export function readRecentColors(companyId: string | undefined): string[] {
   if (!companyId) return [];
   try {
     const list = JSON.parse(localStorage.getItem(recentKey(companyId)) ?? "[]");
-    return Array.isArray(list) ? list.filter((c): c is string => typeof c === "string").slice(0, RECENT_CAP) : [];
+    return Array.isArray(list)
+      ? list.filter((c): c is string => typeof c === "string").slice(0, RECENT_CAP)
+      : [];
   } catch {
     return [];
   }
@@ -119,63 +120,6 @@ function Swatch({
   );
 }
 
-const HEX_ROW_RE = /^#?([0-9a-fA-F]{6})([0-9a-fA-F]{2})?$/;
-
-/** Editable hex text (mono) committing on Enter/blur, reverting on Escape. */
-function HexInput({
-  value,
-  disabled,
-  ariaLabel,
-  onCommit,
-}: {
-  value: string;
-  disabled?: boolean;
-  ariaLabel: string;
-  onCommit(hex: string): void;
-}) {
-  const [draft, setDraft] = useState<string | null>(null);
-  const commit = () => {
-    if (draft === null) return;
-    const m = HEX_ROW_RE.exec(draft.trim());
-    if (m) onCommit(`#${m[1].toUpperCase()}${m[2] ? m[2].toUpperCase() : ""}`);
-    setDraft(null);
-  };
-  return (
-    <input
-      type="text"
-      spellCheck={false}
-      disabled={disabled}
-      aria-label={ariaLabel}
-      className="sp-input"
-      style={{
-        ...compactControlStyle,
-        fontFamily: "var(--font-mono)",
-        fontSize: "var(--type-caption-size)",
-        minWidth: 0,
-        flex: 1,
-      }}
-      value={draft ?? value}
-      onFocus={(e) => {
-        setDraft(value);
-        e.target.select();
-      }}
-      onChange={(e) => setDraft(e.target.value)}
-      onBlur={commit}
-      onKeyDown={(e) => {
-        e.stopPropagation();
-        if (e.key === "Enter") {
-          e.preventDefault();
-          commit();
-        } else if (e.key === "Escape") {
-          e.preventDefault();
-          setDraft(null);
-          (e.target as HTMLInputElement).blur();
-        }
-      }}
-    />
-  );
-}
-
 /** Horizontal drag surface (hue / alpha sliders, and the SV square's x/y). */
 function useDrag2D(onMove: (x: number, y: number) => void) {
   const ref = useRef<HTMLDivElement>(null);
@@ -207,7 +151,10 @@ function useDrag2D(onMove: (x: number, y: number) => void) {
     (e.target as HTMLElement).releasePointerCapture(e.pointerId);
     endInspectorGesture();
   };
-  return { ref, handlers: { onPointerDown, onPointerMove, onPointerUp, onPointerCancel: onPointerUp } };
+  return {
+    ref,
+    handlers: { onPointerDown, onPointerMove, onPointerUp, onPointerCancel: onPointerUp },
+  };
 }
 
 const sliderHandle: React.CSSProperties = {
@@ -235,7 +182,15 @@ interface FillPickerProps {
   onClose(): void;
 }
 
-export function FillPicker({ anchorRef, field, kit, companyId, locked, onChange, onClose }: FillPickerProps) {
+export function FillPicker({
+  anchorRef,
+  field,
+  kit,
+  companyId,
+  locked,
+  onChange,
+  onClose,
+}: FillPickerProps) {
   const { navigate } = useRouter();
   const surfaceRef = useRef<HTMLDivElement>(null);
   const [tab, setTab] = useState<"custom" | "libraries">("custom");
@@ -247,7 +202,8 @@ export function FillPicker({ anchorRef, field, kit, companyId, locked, onChange,
   /** The hex currently being edited: the solid fill, or the selected stop. */
   const targetHex =
     mode === "gradient"
-      ? gradient?.stops[Math.min(stopIndex, (gradient?.stops.length ?? 1) - 1)]?.color ?? DEFAULT_FILL_HEX
+      ? (gradient?.stops[Math.min(stopIndex, (gradient?.stops.length ?? 1) - 1)]?.color ??
+        DEFAULT_FILL_HEX)
       : fill?.type === "solid"
         ? fill.hex
         : DEFAULT_FILL_HEX;
@@ -255,7 +211,9 @@ export function FillPicker({ anchorRef, field, kit, companyId, locked, onChange,
   // HSV state lives locally (hue is ambiguous at zero saturation); it syncs
   // from the target hex whenever a change arrives that we didn't emit.
   const lastEmit = useRef<string | null>(null);
-  const [hsv, setHsv] = useState<HSV>(() => rgbToHsv(parseHex(targetHex) ?? { r: 17, g: 17, b: 17, a: 1 }));
+  const [hsv, setHsv] = useState<HSV>(() =>
+    rgbToHsv(parseHex(targetHex) ?? { r: 17, g: 17, b: 17, a: 1 }),
+  );
   const [alpha, setAlpha] = useState(() => parseHex(targetHex)?.a ?? 1);
   useEffect(() => {
     if (lastEmit.current === targetHex) return;
@@ -340,14 +298,21 @@ export function FillPicker({ anchorRef, field, kit, companyId, locked, onChange,
   const opaqueHex = toHex({ ...rgba, a: 1 });
   const recents = useMemo(() => readRecentColors(companyId), [companyId]);
 
-  const setGradient = (g: TextGradient) => onChange({ textGradient: g, colorHex: undefined, colorKey: undefined });
+  const setGradient = (g: TextGradient) =>
+    onChange({ textGradient: g, colorHex: undefined, colorKey: undefined });
 
   const switchMode = (next: "solid" | "gradient") => {
     if (next === mode || locked) return;
     if (next === "gradient") {
       const base = fill?.type === "solid" ? fill.hex.slice(0, 7) : DEFAULT_FILL_HEX;
       setStopIndex(0);
-      setGradient({ angle: 90, stops: [{ position: 0, color: base }, { position: 1, color: `${base}00` }] });
+      setGradient({
+        angle: 90,
+        stops: [
+          { position: 0, color: base },
+          { position: 1, color: `${base}00` },
+        ],
+      });
     } else {
       const first = gradient?.stops[0]?.color ?? DEFAULT_FILL_HEX;
       onChange({ colorHex: first.slice(0, 7), colorKey: undefined, textGradient: undefined });
@@ -440,7 +405,9 @@ export function FillPicker({ anchorRef, field, kit, companyId, locked, onChange,
                   ariaLabel="Gradient angle"
                   precision={0}
                   value={gradient.angle}
-                  onCommit={(v) => setGradient({ ...gradient, angle: ((v ?? 0) % 360 + 360) % 360 })}
+                  onCommit={(v) =>
+                    setGradient({ ...gradient, angle: (((v ?? 0) % 360) + 360) % 360 })
+                  }
                 />
                 <button
                   title="Reverse gradient"
@@ -448,7 +415,9 @@ export function FillPicker({ anchorRef, field, kit, companyId, locked, onChange,
                   onClick={() =>
                     setGradient({
                       ...gradient,
-                      stops: gradient.stops.map((s) => ({ ...s, position: 1 - s.position })).reverse(),
+                      stops: gradient.stops
+                        .map((s) => ({ ...s, position: 1 - s.position }))
+                        .reverse(),
                     })
                   }
                   style={{ color: "var(--text-secondary)", display: "flex" }}
@@ -497,7 +466,9 @@ export function FillPicker({ anchorRef, field, kit, companyId, locked, onChange,
                       onCommit={(v) =>
                         sortedCommit({
                           ...gradient,
-                          stops: gradient.stops.map((s, j) => (j === i ? { ...s, position: (v ?? 0) / 100 } : s)),
+                          stops: gradient.stops.map((s, j) =>
+                            j === i ? { ...s, position: (v ?? 0) / 100 } : s,
+                          ),
                         })
                       }
                     />
@@ -532,11 +503,15 @@ export function FillPicker({ anchorRef, field, kit, companyId, locked, onChange,
                       aria-label={`Remove stop ${i + 1}`}
                       disabled={locked || gradient.stops.length <= 2}
                       onClick={() => {
-                        sortedCommit({ ...gradient, stops: gradient.stops.filter((_, j) => j !== i) });
+                        sortedCommit({
+                          ...gradient,
+                          stops: gradient.stops.filter((_, j) => j !== i),
+                        });
                         setStopIndex(0);
                       }}
                       style={{
-                        color: gradient.stops.length <= 2 ? "var(--text-disabled)" : "var(--text-muted)",
+                        color:
+                          gradient.stops.length <= 2 ? "var(--text-disabled)" : "var(--text-muted)",
                         display: "flex",
                         flexShrink: 0,
                       }}
@@ -596,7 +571,13 @@ export function FillPicker({ anchorRef, field, kit, companyId, locked, onChange,
               pointerEvents: locked ? "none" : undefined,
             }}
           >
-            <span style={{ ...sliderHandle, left: `${(hsv.h / 360) * 100}%`, background: `hsl(${hsv.h} 100% 50%)` }} />
+            <span
+              style={{
+                ...sliderHandle,
+                left: `${(hsv.h / 360) * 100}%`,
+                background: `hsl(${hsv.h} 100% 50%)`,
+              }}
+            />
           </div>
           <div
             {...alphaDrag.handlers}
@@ -621,7 +602,12 @@ export function FillPicker({ anchorRef, field, kit, companyId, locked, onChange,
           <div className="flex items-center" style={{ gap: "var(--space-2xs)" }}>
             <select
               className="sp-input"
-              style={{ ...compactControlStyle, width: 58, flexShrink: 0, padding: "0 var(--space-3xs)" }}
+              style={{
+                ...compactControlStyle,
+                width: 58,
+                flexShrink: 0,
+                padding: "0 var(--space-3xs)",
+              }}
               aria-label="Color format"
               value={format}
               onChange={(e) => setFormat(e.target.value as ColorFormat)}
@@ -793,7 +779,11 @@ function GradientBar({
   };
 
   // Preview always reads left→right; the angle field states the real angle.
-  const previewCss = gradientCss({ ...gradient, angle: 90, stops: [...gradient.stops].sort((a, b) => a.position - b.position) });
+  const previewCss = gradientCss({
+    ...gradient,
+    angle: 90,
+    stops: [...gradient.stops].sort((a, b) => a.position - b.position),
+  });
 
   return (
     <div

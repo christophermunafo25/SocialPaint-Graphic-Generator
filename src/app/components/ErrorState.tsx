@@ -15,7 +15,9 @@ export function ErrorState({
   return (
     <div className="text-center py-20 space-y-3 px-6">
       <p style={{ fontSize: 14, color: "var(--text-secondary)" }}>{title}</p>
-      {detail && <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>{detail}</p>}
+      {detail && (
+        <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>{detail}</p>
+      )}
       <button className="sp-btn sp-btn-primary" onClick={onRetry}>
         Try again
       </button>

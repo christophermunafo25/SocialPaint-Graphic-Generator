@@ -24,7 +24,10 @@ interface Paint {
   visible?: boolean;
   opacity?: number;
   color?: { r: number; g: number; b: number; a?: number };
-  gradientStops?: Array<{ position: number; color: { r: number; g: number; b: number; a?: number } }>;
+  gradientStops?: Array<{
+    position: number;
+    color: { r: number; g: number; b: number; a?: number };
+  }>;
   gradientHandlePositions?: Array<{ x: number; y: number }>;
   imageRef?: string;
   scaleMode?: string;
@@ -93,7 +96,11 @@ function fillUnits(node: Node, frame: { x: number; y: number }, warnings: string
       }
     } else if (fill.type?.startsWith("GRADIENT")) {
       if (fill.gradientStops?.length) {
-        units.push({ kind: "solid", ...base, color: rgba(fill.gradientStops[0].color, fill.opacity ?? 1) });
+        units.push({
+          kind: "solid",
+          ...base,
+          color: rgba(fill.gradientStops[0].color, fill.opacity ?? 1),
+        });
       }
       warnings.push(`"${node.name}": ${fill.type} approximated with a flat color.`);
     }
@@ -158,8 +165,11 @@ Deno.serve(async (req) => {
       `/v1/files/${parsed.fileKey}/nodes?ids=${encodeURIComponent(parsed.nodeId)}`,
       token,
     );
-    if (!nodesRes.ok) return json({ error: `Figma nodes request failed (${nodesRes.status}).` }, 400);
-    const nodesBody = (await nodesRes.json()) as { nodes: Record<string, { document: Node } | null> };
+    if (!nodesRes.ok)
+      return json({ error: `Figma nodes request failed (${nodesRes.status}).` }, 400);
+    const nodesBody = (await nodesRes.json()) as {
+      nodes: Record<string, { document: Node } | null>;
+    };
     const root = nodesBody.nodes[parsed.nodeId]?.document;
     if (!root?.absoluteBoundingBox) return json({ error: "Pick a frame link." }, 400);
     const frame = root.absoluteBoundingBox;
@@ -198,7 +208,8 @@ Deno.serve(async (req) => {
     if (units.some((u) => u.url?.startsWith("imageref:"))) {
       const fillsRes = await figmaGet(`/v1/files/${parsed.fileKey}/images`, token);
       const fillMap = fillsRes.ok
-        ? (((await fillsRes.json()) as { meta?: { images?: Record<string, string> } }).meta?.images ?? {})
+        ? (((await fillsRes.json()) as { meta?: { images?: Record<string, string> } }).meta
+            ?.images ?? {})
         : {};
       for (const u of units) {
         if (u.url?.startsWith("imageref:")) {
@@ -231,9 +242,7 @@ Deno.serve(async (req) => {
     return json({
       canvasWidth: Math.round(frame.width),
       canvasHeight: Math.round(frame.height),
-      units: units
-        .filter((u) => u.kind !== "node" || u.url)
-        .map(({ nodeId: _n, ...rest }) => rest),
+      units: units.filter((u) => u.kind !== "node" || u.url).map(({ nodeId: _n, ...rest }) => rest),
       warnings,
     });
   } catch (e) {

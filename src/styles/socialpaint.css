@@ -67,59 +67,83 @@
    content column in exactly the same place on pages that scroll and pages
    that don't — without it, a classic (non-overlay) scrollbar eats 12–15px
    off the right gutter only when content overflows. */
-html { scrollbar-gutter: stable; }
+html {
+  scrollbar-gutter: stable;
+}
 
 /* ── Primitives ─────────────────────────────────────────────────────────────
    The five brand colours. These are the only tokens without a category
    prefix — that is how you tell a primitive at a glance. Never reach past
    the semantic tier to one of these in product code. */
 :root {
-  --spring: #86FF45; /* Spring — informs; AI moments (was Aqua/--blue) */
-  --volt:   #B5FF00; /* Volt — success, and the commit/CTA action */
+  --spring: #86ff45; /* Spring — informs; AI moments (was Aqua/--blue) */
+  --volt: #b5ff00; /* Volt — success, and the commit/CTA action */
   /* RULE: any icon or text sitting ON Volt is Ink — no exceptions, either
      theme. Volt is bright enough that only Ink clears contrast on it
      (~13:1); anything else is a defect. Use this token for every glyph a
      Volt surface carries. */
   --text-on-volt: #070708;
-  --white:  #F9F9F8;
-  --gray:   #F9F9F8;
-  --ink:    #070708;
+  --white: #f9f9f8;
+  --gray: #f9f9f8;
+  --ink: #070708;
 
   /* Typography */
-  --font-head:    "Raveo Display Platform", "Raveo Display", system-ui, sans-serif;
-  --weight-head:  600; /* every heading step — Raveo SemiBold */
+  --font-head: "Raveo Display Platform", "Raveo Display", system-ui, sans-serif;
+  --weight-head: 600; /* every heading step — Raveo SemiBold */
   --font-body: "Raveo Display Platform", "Raveo Display", system-ui, -apple-system, sans-serif;
-  --font-ui:   "Raveo Display Platform", "Raveo Display", system-ui, -apple-system, sans-serif;
+  --font-ui: "Raveo Display Platform", "Raveo Display", system-ui, -apple-system, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
   --weight-ui: 500;
 
-  --type-display-size: 80px; --type-display-lh: 0.92; --type-display-track: -0.01em;
-  --type-h1-size: 48px;      --type-h1-lh: 0.95;      --type-h1-track: -0.01em;
-  --type-h2-size: 40px;      --type-h2-lh: 1;         --type-h2-track: -0.01em;
-  --type-h3-size: 32px;      --type-h3-lh: 1.1;       --type-h3-track: -0.01em;
-  --type-h4-size: 30px;      --type-h4-lh: 1.2;       --type-h4-track: -0.01em; /* page titles */
-  --type-cardtitle-size: 20px; --type-cardtitle-lh: 1.3; --type-cardtitle-track: -0.01em;
-  --type-body-size: 15px;    --type-body-lh: 1.5;     --type-body-track: -0.015em;
-  --type-label-size: 13px;   --type-label-lh: 1.25;   --type-label-track: -0.01em;
-  --type-caption-size: 12px; --type-caption-lh: 1.4;  --type-caption-track: 0;
-  --type-button-size: 15px;  --type-button-lh: 1.1;   --type-button-track: -0.02em;
-  --type-data-size: 13px;    --type-data-lh: 1.4;     --type-data-track: 0;
+  --type-display-size: 80px;
+  --type-display-lh: 0.92;
+  --type-display-track: -0.01em;
+  --type-h1-size: 48px;
+  --type-h1-lh: 0.95;
+  --type-h1-track: -0.01em;
+  --type-h2-size: 40px;
+  --type-h2-lh: 1;
+  --type-h2-track: -0.01em;
+  --type-h3-size: 32px;
+  --type-h3-lh: 1.1;
+  --type-h3-track: -0.01em;
+  --type-h4-size: 30px;
+  --type-h4-lh: 1.2;
+  --type-h4-track: -0.01em; /* page titles */
+  --type-cardtitle-size: 20px;
+  --type-cardtitle-lh: 1.3;
+  --type-cardtitle-track: -0.01em;
+  --type-body-size: 15px;
+  --type-body-lh: 1.5;
+  --type-body-track: -0.015em;
+  --type-label-size: 13px;
+  --type-label-lh: 1.25;
+  --type-label-track: -0.01em;
+  --type-caption-size: 12px;
+  --type-caption-lh: 1.4;
+  --type-caption-track: 0;
+  --type-button-size: 15px;
+  --type-button-lh: 1.1;
+  --type-button-track: -0.02em;
+  --type-data-size: 13px;
+  --type-data-lh: 1.4;
+  --type-data-track: 0;
 
   /* Spacing — 4px base, nothing off the scale. */
-  --space-3xs:  4px;
-  --space-2xs:  8px;
-  --space-xs:  12px;
-  --space-sm:  16px;
-  --space-md:  24px; /* default card padding */
-  --space-lg:  32px; /* card padding when a headline is present */
-  --space-xl:  48px;
+  --space-3xs: 4px;
+  --space-2xs: 8px;
+  --space-xs: 12px;
+  --space-sm: 16px;
+  --space-md: 24px; /* default card padding */
+  --space-lg: 32px; /* card padding when a headline is present */
+  --space-xl: 48px;
   --space-2xl: 64px;
   --space-3xl: 96px;
 
   /* Shape — hold the gap between soft containers and crisp controls. */
   --radius-control: 5px;
-  --radius-card:   20px;
-  --radius-pill:  999px;
+  --radius-card: 20px;
+  --radius-pill: 999px;
   --control-sm: 38px;
   --control-md: 46px;
   --control-lg: 54px;
@@ -131,14 +155,14 @@ html { scrollbar-gutter: stable; }
 
   /* Layout */
   --page-max: 1240px; /* THE content column cap — one knob, see .sp-page */
-  --page-pad: 32px;   /* column gutter; 16px under 768 */
-  --bp-sm:  480px;
-  --bp-md:  768px;
+  --page-pad: 32px; /* column gutter; 16px under 768 */
+  --bp-sm: 480px;
+  --bp-md: 768px;
   --bp-lg: 1024px;
   --bp-xl: 1280px;
   --bp-2xl: 1600px;
-  --container-sm:  640px;
-  --container-md:  768px;
+  --container-sm: 640px;
+  --container-md: 768px;
   --container-lg: 1024px;
   --container-xl: 1180px;
   --container-full: 100%;
@@ -159,75 +183,92 @@ html { scrollbar-gutter: stable; }
   --density-cell-x: var(--space-md);
 
   /* Motion — one easing, three durations. */
-  --ease:       cubic-bezier(0.2, 0, 0, 1);
-  --dur-state:  140ms;
-  --dur-panel:  220ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --dur-state: 140ms;
+  --dur-panel: 220ms;
   --dur-reveal: 400ms;
-  --focus-width:  2px;
+  --focus-width: 2px;
   --focus-offset: 2px;
 }
 
 @media (min-width: 768px) {
-  :root { --grid-cols: 8; --grid-gutter: var(--space-md); --grid-margin: var(--space-lg); }
+  :root {
+    --grid-cols: 8;
+    --grid-gutter: var(--space-md);
+    --grid-margin: var(--space-lg);
+  }
 }
 @media (min-width: 1024px) {
-  :root { --grid-cols: 12; --grid-gutter: var(--space-md); --grid-margin: var(--space-xl); }
+  :root {
+    --grid-cols: 12;
+    --grid-gutter: var(--space-md);
+    --grid-margin: var(--space-xl);
+  }
 }
 
 [data-density="compact"] {
   --density-control: var(--control-sm);
-  --density-row-y:   var(--space-2xs);
-  --density-cell-x:  var(--space-xs);
+  --density-row-y: var(--space-2xs);
+  --density-cell-x: var(--space-xs);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :root { --dur-state: 0ms; --dur-panel: 0ms; --dur-reveal: 0ms; }
+  :root {
+    --dur-state: 0ms;
+    --dur-panel: 0ms;
+    --dur-reveal: 0ms;
+  }
 }
 
 /* ── Semantic: dark ─────────────────────────────────────────────────────────
    The primary mode. Ink is the floor; elevation is surface colour, never
    shadow. */
 [data-theme="dark"] {
-  --bg-canvas:     #070708;
-  --bg-surface:    #18191A;
-  --bg-raised:     #1F1F1F;
-  --bg-hover:      #2A2A2B;
-  --bg-plate:      #FFFFFF; /* imagery plate — never inverts */
-  --border:        rgba(241, 241, 241, 0.10); /* decorative separation only */
-  --border-strong: rgba(241, 241, 241, 0.20);
+  --bg-canvas: #070708;
+  --bg-surface: #18191a;
+  --bg-raised: #1f1f1f;
+  --bg-hover: #2a2a2b;
+  --bg-plate: #ffffff; /* imagery plate — never inverts */
+  --border: rgba(241, 241, 241, 0.1); /* decorative separation only */
+  --border-strong: rgba(241, 241, 241, 0.2);
 
-  --text-primary:   #F1F1F1;
-  --text-secondary: #A0A0A0;
-  --text-muted:     rgba(241, 241, 241, 0.4);
-  --text-disabled:  rgba(241, 241, 241, 0.25);
+  --text-primary: #f1f1f1;
+  --text-secondary: #a0a0a0;
+  --text-muted: rgba(241, 241, 241, 0.4);
+  --text-disabled: rgba(241, 241, 241, 0.25);
   --text-on-accent: #070708;
 
-  --text-on-surface:           #F9F9F8;
-  --text-on-surface-secondary: #C6C6C2;
-  --text-on-surface-muted:     #949490;
-  --border-on-surface:         #2B2B2B;
-  --bg-surface-raised:         #262626;
-  --bg-surface-hover:          #303030;
+  --text-on-surface: #f9f9f8;
+  --text-on-surface-secondary: #c6c6c2;
+  --text-on-surface-muted: #949490;
+  --border-on-surface: #2b2b2b;
+  --bg-surface-raised: #262626;
+  --bg-surface-hover: #303030;
 
   /* Action fill — the primary button, and any control that fills to show it is on.
      Neutral by rule: it inverts against the surface instead of carrying a hue,
      which is what keeps Volt's meaning single: commit, success, primary. */
-  --fill-action:    #F9F9F8;
+  --fill-action: #f9f9f8;
   --text-on-action: #070708;
-  --border-control: #F9F9F8; /* the edge of a pressable outlined control */
+  --border-control: #f9f9f8; /* the edge of a pressable outlined control */
 
-  --state-primary-on-surface:   #B5FF00; /* Volt — THE brand primary */
-  --state-attention-on-surface: #B5FF00;
-  --state-danger-on-surface:    #C94040; /* 4.35:1 — one ramp step lighter than light mode */
-  --state-warning-on-surface:   #FFD900;
+  --state-primary-on-surface: #b5ff00; /* Volt — THE brand primary */
+  --state-attention-on-surface: #b5ff00;
+  --state-danger-on-surface: #c94040; /* 4.35:1 — one ramp step lighter than light mode */
+  --state-warning-on-surface: #ffd900;
 
-  --state-primary:   #B5FF00; --fill-primary:   #B5FF00; /* Volt — THE brand primary */
-  --state-info:      #86FF45; --fill-info:      #86FF45;
-  --state-attention: #B5FF00; --fill-attention: #B5FF00;
-  --state-danger:    #C94040; --fill-danger:    #C94040;
-  --state-warning:   #FFD900; --fill-warning:   #FFD900;
+  --state-primary: #b5ff00;
+  --fill-primary: #b5ff00; /* Volt — THE brand primary */
+  --state-info: #86ff45;
+  --fill-info: #86ff45;
+  --state-attention: #b5ff00;
+  --fill-attention: #b5ff00;
+  --state-danger: #c94040;
+  --fill-danger: #c94040;
+  --state-warning: #ffd900;
+  --fill-warning: #ffd900;
 
-  --ring: #B5FF00; /* Volt · ~15:1 against the deep-ink canvas */
+  --ring: #b5ff00; /* Volt · ~15:1 against the deep-ink canvas */
 
   --shadow-sm: none;
   --shadow-md: none;
@@ -239,44 +280,49 @@ html { scrollbar-gutter: stable; }
    Gray canvas; borders carry separation. Signals keep their hue as text; the
    brand accent does not. */
 [data-theme="light"] {
-  --bg-canvas:     #F9F9F8;
-  --bg-surface:    #FFFFFF;
-  --bg-raised:     #F1F1F1;
-  --bg-hover:      #ECECEA;
-  --bg-plate:      #FFFFFF;
-  --border:        rgba(7, 7, 8, 0.08);
+  --bg-canvas: #f9f9f8;
+  --bg-surface: #ffffff;
+  --bg-raised: #f1f1f1;
+  --bg-hover: #ececea;
+  --bg-plate: #ffffff;
+  --border: rgba(7, 7, 8, 0.08);
   --border-strong: rgba(7, 7, 8, 0.16);
 
-  --text-primary:   #070708;
+  --text-primary: #070708;
   --text-secondary: #666666;
-  --text-muted:     rgba(7, 7, 8, 0.4);
-  --text-disabled:  rgba(7, 7, 8, 0.25);
+  --text-muted: rgba(7, 7, 8, 0.4);
+  --text-disabled: rgba(7, 7, 8, 0.25);
   --text-on-accent: #070708;
 
-  --text-on-surface:           #070708;
-  --text-on-surface-secondary: #4A4A46;
-  --text-on-surface-muted:     #6E6E6A;
-  --border-on-surface:         #E2E2DE;
-  --bg-surface-raised:         #F0F0EE;
-  --bg-surface-hover:          #E7E7E4;
+  --text-on-surface: #070708;
+  --text-on-surface-secondary: #4a4a46;
+  --text-on-surface-muted: #6e6e6a;
+  --border-on-surface: #e2e2de;
+  --bg-surface-raised: #f0f0ee;
+  --bg-surface-hover: #e7e7e4;
 
-  --fill-action:    #070708;
-  --text-on-action: #F9F9F8;
+  --fill-action: #070708;
+  --text-on-action: #f9f9f8;
   --border-control: #070708;
 
   /* Signals keep their hue as text; the brand accent does not. Success and warning drop
      to the darkest step of their own ramp that clears AA. The primary collapses to Black —
      a coloured word in running text would read as a status. The bright stays in --fill-*. */
-  --state-primary-on-surface:   #070708; /* Volt is fill-only — as text the primary stays ink */
+  --state-primary-on-surface: #070708; /* Volt is fill-only — as text the primary stays ink */
   --state-attention-on-surface: #467200; /* Green holds its hue as text · 5.44:1 */
-  --state-danger-on-surface:    #C94040;
-  --state-warning-on-surface:   #756200;
+  --state-danger-on-surface: #c94040;
+  --state-warning-on-surface: #756200;
 
-  --state-primary:   #070708; --fill-primary:   #B5FF00; /* Volt — THE brand primary, fill-only on light */
-  --state-info:      #070708; --fill-info:      #86FF45;
-  --state-attention: #070708; --fill-attention: #B5FF00;
-  --state-danger:    #C94040; --fill-danger:    #C94040;
-  --state-warning:   #756200; --fill-warning:   #FFD900;
+  --state-primary: #070708;
+  --fill-primary: #b5ff00; /* Volt — THE brand primary, fill-only on light */
+  --state-info: #070708;
+  --fill-info: #86ff45;
+  --state-attention: #070708;
+  --fill-attention: #b5ff00;
+  --state-danger: #c94040;
+  --fill-danger: #c94040;
+  --state-warning: #756200;
+  --fill-warning: #ffd900;
 
   --ring: #070708; /* ink — Volt (1.5:1) and Fire (2.3:1) both miss the 3:1 non-text floor on parchment */
 
@@ -293,37 +339,38 @@ html { scrollbar-gutter: stable; }
 [data-theme] {
   /* Focus — 2px ring at 2px offset. Where a box-shadow stands in for an
      outline (inputs), the canvas-coloured first layer creates the offset. */
-  --focus-ring: 0 0 0 var(--focus-offset) var(--bg-surface),
-                0 0 0 calc(var(--focus-offset) + var(--focus-width)) var(--ring);
+  --focus-ring:
+    0 0 0 var(--focus-offset) var(--bg-surface),
+    0 0 0 calc(var(--focus-offset) + var(--focus-width)) var(--ring);
   --focus-ring-tight: 0 0 0 var(--focus-width) var(--ring);
 
   /* Selection is neutral system-wide, so the wash is the standard 12% state
      layer rather than an accent tint. */
-  --accent-wash:        color-mix(in srgb, var(--text-primary) 12%, transparent);
+  --accent-wash: color-mix(in srgb, var(--text-primary) 12%, transparent);
   --accent-wash-strong: color-mix(in srgb, var(--text-primary) 20%, transparent);
-  --accent-border:      color-mix(in srgb, var(--text-primary) 40%, transparent);
-  --danger-wash:        color-mix(in srgb, var(--state-danger) 16%, transparent);
+  --accent-border: color-mix(in srgb, var(--text-primary) 40%, transparent);
+  --danger-wash: color-mix(in srgb, var(--state-danger) 16%, transparent);
 
   /* Brand-moment surface — the sign-in and onboarding front doors. The one
      sanctioned gradient in the chrome (Chris, 2026-08-07): Volt grounding
      the bottom-left, Aqua lifting the top-right — the brand's two colours
      in one sweep. Ink is the fg across the WHOLE ramp: it reads ~13:1 on
      Volt and ~14:1 on Aqua, so --brand-surface-fg never changes. */
-  --brand-surface:    linear-gradient(to top right, var(--volt), var(--spring));
+  --brand-surface: linear-gradient(to top right, var(--volt), var(--spring));
   --brand-surface-fg: var(--text-on-volt);
 
   /* Charts are not controls, so accents are legitimate here. Two real series:
      Volt and Aqua. A third has to separate by shape or label, not colour. */
   --viz-downloads: var(--fill-primary);
-  --viz-opens:     var(--fill-info);
-  --viz-grid:      var(--border);
+  --viz-opens: var(--fill-info);
+  --viz-grid: var(--border);
 
   /* Sidebar */
   --sb-width: 260px;
   --sb-width-collapsed: 76px;
-  --sb-bg:        var(--bg-surface);
-  --sb-border:    var(--border);
-  --sb-fg:        var(--text-secondary);
+  --sb-bg: var(--bg-surface);
+  --sb-border: var(--border);
+  --sb-fg: var(--text-secondary);
   --sb-fg-active: var(--text-primary);
   --sb-active-bg: var(--accent-wash);
 }
@@ -332,12 +379,15 @@ html { scrollbar-gutter: stable; }
    action fill, which already inverts per theme. Hover is the standard 8% state
    layer of the label into the fill, so it stays correct in both themes. */
 :root {
-  --btn-primary-bg:       var(--fill-action);
-  --btn-primary-fg:       var(--text-on-action);
+  --btn-primary-bg: var(--fill-action);
+  --btn-primary-fg: var(--text-on-action);
   --btn-primary-bg-hover: color-mix(in srgb, var(--text-on-action) 8%, var(--fill-action));
 }
 
-::selection { background: var(--volt); color: var(--text-on-volt); }
+::selection {
+  background: var(--volt);
+  color: var(--text-on-volt);
+}
 
 /* ── Base ───────────────────────────────────────────────────────────────── */
 
@@ -355,7 +405,11 @@ html {
   text-rendering: optimizeLegibility;
 }
 
-button, input, select, textarea, optgroup {
+button,
+input,
+select,
+textarea,
+optgroup {
   font-family: var(--font-ui);
   letter-spacing: -0.015em;
 }
@@ -433,16 +487,40 @@ button, input, select, textarea, optgroup {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  transition: background var(--dur-state) var(--ease), color var(--dur-state) var(--ease), border-color var(--dur-state) var(--ease), opacity var(--dur-state) var(--ease);
+  transition:
+    background var(--dur-state) var(--ease),
+    color var(--dur-state) var(--ease),
+    border-color var(--dur-state) var(--ease),
+    opacity var(--dur-state) var(--ease);
 }
-.sp-btn:disabled { opacity: 0.4; cursor: default; }
-.sp-btn-primary { background: var(--btn-primary-bg); color: var(--btn-primary-fg); }
-.sp-btn-primary:hover:not(:disabled) { background: var(--btn-primary-bg-hover); }
-.sp-btn-ghost { background: transparent; color: var(--text-secondary); border-color: var(--border-strong); }
-.sp-btn-ghost:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-primary); }
+.sp-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.sp-btn-primary {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+}
+.sp-btn-primary:hover:not(:disabled) {
+  background: var(--btn-primary-bg-hover);
+}
+.sp-btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border-color: var(--border-strong);
+}
+.sp-btn-ghost:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
 /* Lime CTA — same fill both modes; deep green carries the text */
-.sp-btn-solar { background: var(--volt); color: var(--text-on-volt); }
-.sp-btn-solar:hover:not(:disabled) { background: color-mix(in srgb, var(--volt) 86%, #fff); }
+.sp-btn-solar {
+  background: var(--volt);
+  color: var(--text-on-volt);
+}
+.sp-btn-solar:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--volt) 86%, #fff);
+}
 
 .sp-input {
   font-family: var(--font-ui);
@@ -455,21 +533,37 @@ button, input, select, textarea, optgroup {
   border: 1px solid var(--border);
   color: var(--text-primary);
   outline: none;
-  transition: box-shadow var(--dur-state) var(--ease), border-color var(--dur-state) var(--ease);
+  transition:
+    box-shadow var(--dur-state) var(--ease),
+    border-color var(--dur-state) var(--ease);
 }
-.sp-input::placeholder { color: var(--text-disabled); }
+.sp-input::placeholder {
+  color: var(--text-disabled);
+}
 /* A focused text box shows a 1px ring-coloured BORDER — the control's own
    1px edge changing colour, never a thicker halo or a second outline. Two
    rules because a <select> or button-styled control only ever fires
    :focus-visible; both override the global 2px outline. */
-.sp-input:focus { border-color: var(--ring); box-shadow: none; outline: none; }
-.sp-input:focus-visible { border-color: var(--ring); box-shadow: none; outline: none; }
+.sp-input:focus {
+  border-color: var(--ring);
+  box-shadow: none;
+  outline: none;
+}
+.sp-input:focus-visible {
+  border-color: var(--ring);
+  box-shadow: none;
+  outline: none;
+}
 
 /* Inspector numeric field — a composite control (scrub label + input + unit
    suffix) that focuses as one box: same ring-coloured border treatment as
    .sp-input, driven by the inner input's focus. */
-.sp-numfield:focus-within { border-color: var(--ring); }
-.sp-numfield[data-disabled] { color: var(--text-disabled); }
+.sp-numfield:focus-within {
+  border-color: var(--ring);
+}
+.sp-numfield[data-disabled] {
+  color: var(--text-disabled);
+}
 
 /* Segmented icon group — alignment triplets, flip pair, resizing modes.
    One shared hairline container, crisp control radius; the active segment
@@ -487,9 +581,13 @@ button, input, select, textarea, optgroup {
   width: 28px;
   height: 30px;
   color: var(--text-secondary);
-  transition: background var(--dur-state) var(--ease), color var(--dur-state) var(--ease);
+  transition:
+    background var(--dur-state) var(--ease),
+    color var(--dur-state) var(--ease);
 }
-.sp-seg button + button { border-left: 1px solid var(--border); }
+.sp-seg button + button {
+  border-left: 1px solid var(--border);
+}
 .sp-seg button:hover:not(:disabled):not([data-active="true"]) {
   background: var(--bg-hover);
   color: var(--text-primary);
@@ -498,7 +596,10 @@ button, input, select, textarea, optgroup {
   background: var(--fill-action);
   color: var(--text-on-action);
 }
-.sp-seg button:disabled { color: var(--text-disabled); cursor: default; }
+.sp-seg button:disabled {
+  color: var(--text-disabled);
+  cursor: default;
+}
 .sp-seg button:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring-tight);
@@ -507,7 +608,10 @@ button, input, select, textarea, optgroup {
 }
 /* Text segments (resizing modes): the group fills the row, segments share
    the width, labels at caption size. */
-.sp-seg[data-stretch] { display: flex; flex: 1; }
+.sp-seg[data-stretch] {
+  display: flex;
+  flex: 1;
+}
 .sp-seg[data-stretch] button {
   flex: 1;
   width: auto;
@@ -526,7 +630,10 @@ button, input, select, textarea, optgroup {
   gap: var(--space-2xs);
   cursor: pointer;
 }
-.sp-switch[data-disabled] { cursor: default; opacity: 0.5; }
+.sp-switch[data-disabled] {
+  cursor: default;
+  opacity: 0.5;
+}
 .sp-switch input {
   position: absolute;
   opacity: 0;
@@ -542,8 +649,12 @@ button, input, select, textarea, optgroup {
   flex-shrink: 0;
   transition: background var(--dur-state) var(--ease);
 }
-.sp-switch input:checked + .sp-switch__track { background: var(--fill-action); }
-.sp-switch input:focus-visible + .sp-switch__track { box-shadow: var(--focus-ring-tight); }
+.sp-switch input:checked + .sp-switch__track {
+  background: var(--fill-action);
+}
+.sp-switch input:focus-visible + .sp-switch__track {
+  box-shadow: var(--focus-ring-tight);
+}
 .sp-switch__knob {
   position: absolute;
   top: 3px;
@@ -552,14 +663,19 @@ button, input, select, textarea, optgroup {
   height: 18px;
   border-radius: 50%;
   background: var(--text-primary);
-  transition: left var(--dur-state) var(--ease), background var(--dur-state) var(--ease);
+  transition:
+    left var(--dur-state) var(--ease),
+    background var(--dur-state) var(--ease);
 }
 .sp-switch input:checked + .sp-switch__track .sp-switch__knob {
   left: 19px;
   background: var(--text-on-action);
 }
 @media (prefers-reduced-motion: reduce) {
-  .sp-switch__track, .sp-switch__knob { transition: none; }
+  .sp-switch__track,
+  .sp-switch__knob {
+    transition: none;
+  }
 }
 
 .sp-card {
@@ -575,7 +691,9 @@ button, input, select, textarea, optgroup {
   background: var(--brand-surface);
   color: var(--brand-surface-fg);
 }
-.sp-mesh .sp-eyebrow { color: var(--brand-surface-fg); }
+.sp-mesh .sp-eyebrow {
+  color: var(--brand-surface-fg);
+}
 
 /* Toast — floating card with the DS's 3px semantic top bar. */
 .sp-toast {
@@ -596,9 +714,14 @@ button, input, select, textarea, optgroup {
   border-radius: var(--radius-card);
   animation: sp-toast-in var(--dur-panel) var(--ease);
 }
-.sp-toast[data-tone="danger"] { border-top-color: var(--state-danger); }
+.sp-toast[data-tone="danger"] {
+  border-top-color: var(--state-danger);
+}
 @keyframes sp-toast-in {
-  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px);
+  }
 }
 
 /* ── Sidebar — flat surface panel, rounded on its right corners only ────── */
@@ -620,11 +743,16 @@ button, input, select, textarea, optgroup {
   font-weight: 500;
   letter-spacing: -0.015em;
   color: var(--sb-fg);
-  transition: background var(--dur-state) var(--ease), color var(--dur-state) var(--ease);
+  transition:
+    background var(--dur-state) var(--ease),
+    color var(--dur-state) var(--ease);
   white-space: nowrap;
   overflow: hidden;
 }
-.sp-sidebar-item:hover { background: var(--bg-hover); color: var(--sb-fg-active); }
+.sp-sidebar-item:hover {
+  background: var(--bg-hover);
+  color: var(--sb-fg-active);
+}
 .sp-sidebar-item[data-active="true"] {
   background: var(--sb-active-bg);
   color: var(--sb-fg-active);
@@ -640,7 +768,7 @@ button, input, select, textarea, optgroup {
    is never part of the artwork's own palette — a functional editor blue,
    reserved from every UI fill and from the brand itself. */
 :root {
-  --editor-accent: #0D99FF; /* selection blue — functional, never brand; foreign to artwork by design */
+  --editor-accent: #0d99ff; /* selection blue — functional, never brand; foreign to artwork by design */
   --editor-line: 1px;
   --editor-handle: 7px;
 }
@@ -697,13 +825,23 @@ button, input, select, textarea, optgroup {
     width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
     background 0.3s ease;
 }
-.sp-nav-toggle__bar--top { transform: translateY(-5px); }
-.sp-nav-toggle__bar--mid { transform: translateY(0); }
-.sp-nav-toggle__bar--bot { transform: translateY(5px); }
+.sp-nav-toggle__bar--top {
+  transform: translateY(-5px);
+}
+.sp-nav-toggle__bar--mid {
+  transform: translateY(0);
+}
+.sp-nav-toggle__bar--bot {
+  transform: translateY(5px);
+}
 
 /* Hover nudge — subtle width pulse */
-.sp-nav-toggle:hover .sp-nav-toggle__bar--top { width: 12px; }
-.sp-nav-toggle:hover .sp-nav-toggle__bar--bot { width: 19px; }
+.sp-nav-toggle:hover .sp-nav-toggle__bar--top {
+  width: 12px;
+}
+.sp-nav-toggle:hover .sp-nav-toggle__bar--bot {
+  width: 19px;
+}
 
 /* Open — morph to X */
 .sp-nav-toggle[data-open="true"] .sp-nav-toggle__bar {
@@ -723,7 +861,9 @@ button, input, select, textarea, optgroup {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sp-nav-toggle__bar { transition-duration: 0.001ms; }
+  .sp-nav-toggle__bar {
+    transition-duration: 0.001ms;
+  }
 }
 
 /* --- Upload interactions ---------------------------------------------------
@@ -737,7 +877,7 @@ button, input, select, textarea, optgroup {
     border-color 0.25s ease,
     color 0.25s ease,
     background 0.25s ease,
-    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .sp-dropzone[data-active="true"] {
   border-color: var(--state-primary) !important;
@@ -754,11 +894,21 @@ button, input, select, textarea, optgroup {
   animation: sp-dz-bounce 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 @keyframes sp-dz-bounce {
-  0%   { transform: translateY(0); }
-  35%  { transform: translateY(-7px); }
-  65%  { transform: translateY(-4px); }
-  85%  { transform: translateY(-6px); }
-  100% { transform: translateY(-5px); }
+  0% {
+    transform: translateY(0);
+  }
+  35% {
+    transform: translateY(-7px);
+  }
+  65% {
+    transform: translateY(-4px);
+  }
+  85% {
+    transform: translateY(-6px);
+  }
+  100% {
+    transform: translateY(-5px);
+  }
 }
 
 /* File chips: enter / leave */
@@ -766,14 +916,23 @@ button, input, select, textarea, optgroup {
   animation: sp-chip-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 @keyframes sp-chip-in {
-  from { opacity: 0; transform: translateY(6px) scale(0.97); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 .sp-chip-out {
   animation: sp-chip-out 0.28s cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 @keyframes sp-chip-out {
-  to { opacity: 0; transform: translateX(-8px) scale(0.96); }
+  to {
+    opacity: 0;
+    transform: translateX(-8px) scale(0.96);
+  }
 }
 
 /* Indeterminate upload bar — a shimmer, never a fake percentage. */
@@ -804,7 +963,9 @@ button, input, select, textarea, optgroup {
   animation: sp-upload-shimmer 1.1s linear infinite;
 }
 @keyframes sp-upload-shimmer {
-  to { transform: translateX(400%); }
+  to {
+    transform: translateX(400%);
+  }
 }
 
 /* Done row slide-in */
@@ -812,13 +973,23 @@ button, input, select, textarea, optgroup {
   animation: sp-done-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 @keyframes sp-done-in {
-  from { opacity: 0; transform: translateX(-4px); }
-  to   { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sp-dropzone { transition: none; }
-  .sp-dropzone[data-active="true"] { transform: none; }
+  .sp-dropzone {
+    transition: none;
+  }
+  .sp-dropzone[data-active="true"] {
+    transform: none;
+  }
   .sp-dropzone[data-active="true"] .sp-dropzone__icon {
     animation: none;
     transform: translateY(-4px);
@@ -829,7 +1000,9 @@ button, input, select, textarea, optgroup {
   .sp-upload-bar::after {
     animation: none;
   }
-  .sp-chip-out { opacity: 0; }
+  .sp-chip-out {
+    opacity: 0;
+  }
 }
 
 /* --- Template card ---------------------------------------------------------
@@ -844,7 +1017,9 @@ button, input, select, textarea, optgroup {
   cursor: pointer;
   transition: border-color var(--dur-state) var(--ease);
 }
-.sp-template-card:hover { border-color: var(--border-strong); }
+.sp-template-card:hover {
+  border-color: var(--border-strong);
+}
 .sp-template-card:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring-tight);
@@ -858,7 +1033,10 @@ button, input, select, textarea, optgroup {
   gap: var(--space-xs);
   padding: var(--space-xs) 0 var(--space-3xs);
 }
-.sp-template-card__text { flex: 1; min-width: 0; }
+.sp-template-card__text {
+  flex: 1;
+  min-width: 0;
+}
 .sp-template-card__title {
   font-family: var(--font-ui);
   font-size: var(--type-label-size);
@@ -897,7 +1075,11 @@ button, input, select, textarea, optgroup {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.sp-template-card__platformicon { width: 13px; height: 13px; flex-shrink: 0; }
+.sp-template-card__platformicon {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
 
 .sp-template-card__tags {
   display: flex;
@@ -920,19 +1102,39 @@ button, input, select, textarea, optgroup {
 /* Hover lift. The DS bans shadows, so the border carries the elevation the
    spec asked a shadow to carry. */
 .sp-template-card {
-  transition: border-color var(--dur-state) var(--ease), transform var(--dur-state) var(--ease);
+  transition:
+    border-color var(--dur-state) var(--ease),
+    transform var(--dur-state) var(--ease);
 }
-.sp-template-card:hover { transform: translateY(-4px); }
+.sp-template-card:hover {
+  transform: translateY(-4px);
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .sp-template-card:hover { transform: none; }
+  .sp-template-card:hover {
+    transform: none;
+  }
 }
 
 /* --- Shelf track ---------------------------------------------------------- */
-.sp-shelf__rail { --shelf-visible: 1.15; }
-@media (min-width: 480px)  { .sp-shelf__rail { --shelf-visible: 2; } }
-@media (min-width: 768px)  { .sp-shelf__rail { --shelf-visible: 3; } }
-@media (min-width: 1100px) { .sp-shelf__rail { --shelf-visible: 4; } }
+.sp-shelf__rail {
+  --shelf-visible: 1.15;
+}
+@media (min-width: 480px) {
+  .sp-shelf__rail {
+    --shelf-visible: 2;
+  }
+}
+@media (min-width: 768px) {
+  .sp-shelf__rail {
+    --shelf-visible: 3;
+  }
+}
+@media (min-width: 1100px) {
+  .sp-shelf__rail {
+    --shelf-visible: 4;
+  }
+}
 .sp-shelf__track {
   gap: var(--space-sm);
   scroll-snap-type: x mandatory;
@@ -948,7 +1150,10 @@ button, input, select, textarea, optgroup {
   margin-top: -4px;
   scroll-padding-inline: 2px;
 }
-.sp-shelf__track:focus-visible { outline: none; box-shadow: var(--focus-ring-tight); }
+.sp-shelf__track:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-tight);
+}
 .sp-shelf__item {
   /* Exactly --shelf-visible cards fill the track before it scrolls. The
      percentage resolves against the track's own content box, so the count
@@ -962,7 +1167,9 @@ button, input, select, textarea, optgroup {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sp-shelf__track { scroll-behavior: auto; }
+  .sp-shelf__track {
+    scroll-behavior: auto;
+  }
 }
 .sp-template-card__go {
   display: flex;
@@ -974,9 +1181,10 @@ button, input, select, textarea, optgroup {
   border-radius: var(--radius-pill);
   border: 1px solid var(--border-strong);
   color: var(--text-primary);
-  transition: background var(--dur-state) var(--ease),
-              border-color var(--dur-state) var(--ease),
-              color var(--dur-state) var(--ease);
+  transition:
+    background var(--dur-state) var(--ease),
+    border-color var(--dur-state) var(--ease),
+    color var(--dur-state) var(--ease);
 }
 .sp-template-card:hover .sp-template-card__go,
 .sp-template-card:focus-visible .sp-template-card__go {
@@ -1002,7 +1210,9 @@ button, input, select, textarea, optgroup {
   border: none;
   flex-shrink: 0;
 }
-.sp-icon-btn:hover { color: var(--sb-fg-active); }
+.sp-icon-btn:hover {
+  color: var(--sb-fg-active);
+}
 
 /* THE content column. Centred in the region right of the sidebar —
    margin-inline: auto splits the surplus equally, so the gutter off the rail
@@ -1016,13 +1226,18 @@ button, input, select, textarea, optgroup {
   box-sizing: border-box;
 }
 /* Content-panel card padding (Insights, Brand Studio, Settings, People). */
-.sp-card--content { padding: 24px; }
+.sp-card--content {
+  padding: 24px;
+}
 
 /* Media card: 10px uniform padding; the preview is its own inset surface.
    The frame is square — most templates are 1:1 social posts, so a square
    well crops the least and keeps the grid rows even. Both call sites compare
    a template's own ratio against 1 to decide which axis to pin. */
-.sp-media-card { --media-pad: var(--space-xs); padding: var(--media-pad); }
+.sp-media-card {
+  --media-pad: var(--space-xs);
+  padding: var(--media-pad);
+}
 .sp-media-card__preview {
   /* Concentric with the card it sits in — inner radius = outer minus the
      inset — so the two curves stay parallel. Derived rather than picked,
@@ -1049,9 +1264,21 @@ button, input, select, textarea, optgroup {
   grid-template-columns: minmax(0, 1fr);
   align-items: stretch;
 }
-@media (min-width: 768px)  { .sp-grid-media { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (min-width: 1100px) { .sp-grid-media { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@media (min-width: 1440px) { .sp-grid-media { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (min-width: 768px) {
+  .sp-grid-media {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1100px) {
+  .sp-grid-media {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1440px) {
+  .sp-grid-media {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
 
 /* Content-panel grid: 12 columns, same 24px gap. */
 .sp-grid-12 {
@@ -1060,13 +1287,23 @@ button, input, select, textarea, optgroup {
   grid-template-columns: repeat(12, 1fr);
   align-items: stretch;
 }
-.sp-span-6  { grid-column: span 6; }
-.sp-span-12 { grid-column: span 12; }
-@media (max-width: 900px) { .sp-span-6 { grid-column: span 12; } }
+.sp-span-6 {
+  grid-column: span 6;
+}
+.sp-span-12 {
+  grid-column: span 12;
+}
+@media (max-width: 900px) {
+  .sp-span-6 {
+    grid-column: span 12;
+  }
+}
 
 /* Equal-height media cards across a grid row. */
 .sp-grid-media .sp-template-card,
-.sp-grid-media .sp-reveal__item { height: 100%; }
+.sp-grid-media .sp-reveal__item {
+  height: 100%;
+}
 
 /* --- Brand swatch ---------------------------------------------------------
    The quick-select chip in ColorControl's brand row. One recipe so every
@@ -1080,18 +1317,29 @@ button, input, select, textarea, optgroup {
   border: 2px solid var(--border);
   cursor: pointer;
   padding: 0;
-  transition: transform var(--dur-state) var(--ease), border-color var(--dur-state) var(--ease);
+  transition:
+    transform var(--dur-state) var(--ease),
+    border-color var(--dur-state) var(--ease);
 }
-.sp-swatch:hover:not(:disabled) { transform: scale(1.12); }
+.sp-swatch:hover:not(:disabled) {
+  transform: scale(1.12);
+}
 .sp-swatch:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring-tight);
 }
-.sp-swatch[data-selected="true"] { border-color: var(--ring); }
-.sp-swatch:disabled { cursor: default; opacity: 0.5; }
+.sp-swatch[data-selected="true"] {
+  border-color: var(--ring);
+}
+.sp-swatch:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .sp-swatch:hover:not(:disabled) { transform: none; }
+  .sp-swatch:hover:not(:disabled) {
+    transform: none;
+  }
 }
 
 /* --- Inline edit ----------------------------------------------------------
@@ -1116,7 +1364,9 @@ button, input, select, textarea, optgroup {
   padding: 14px 18px;
   border-bottom: 1px solid var(--border);
 }
-.sp-inline-edit-group .sp-inline-edit:last-child { border-bottom: none; }
+.sp-inline-edit-group .sp-inline-edit:last-child {
+  border-bottom: none;
+}
 
 /* One editable value. Standalone (outside a group) it carries no chrome, so
    it drops into a toolbar or a card title without disturbing the layout. */
@@ -1218,7 +1468,9 @@ button, input, select, textarea, optgroup {
   border-radius: var(--radius-control);
   padding: 3px 8px;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .sp-inline-edit__input:focus {
@@ -1237,7 +1489,9 @@ button, input, select, textarea, optgroup {
   border: none;
   border-radius: var(--radius-control);
   cursor: pointer;
-  transition: background 0.13s ease, color 0.13s ease;
+  transition:
+    background 0.13s ease,
+    color 0.13s ease;
 }
 
 /* Save wears the DS primary construction: deep green + lime on light, the
@@ -1246,7 +1500,9 @@ button, input, select, textarea, optgroup {
   background: var(--btn-primary-bg);
   color: var(--btn-primary-fg);
 }
-.sp-inline-edit__save:hover { background: var(--btn-primary-bg-hover); }
+.sp-inline-edit__save:hover {
+  background: var(--btn-primary-bg-hover);
+}
 
 .sp-inline-edit__cancel {
   background: var(--bg-hover);
@@ -1268,9 +1524,15 @@ button, input, select, textarea, optgroup {
    when it interpolates a color-mix()'d color() inside a keyframe, which
    turns the wash into a solid lime bar. */
 @keyframes sp-inline-edit-flash {
-  0%   { background-color: rgba(181, 255, 0, 0.18); }
-  60%  { background-color: rgba(181, 255, 0, 0.12); }
-  100% { background-color: rgba(181, 255, 0, 0); }
+  0% {
+    background-color: rgba(181, 255, 0, 0.18);
+  }
+  60% {
+    background-color: rgba(181, 255, 0, 0.12);
+  }
+  100% {
+    background-color: rgba(181, 255, 0, 0);
+  }
 }
 
 .sp-inline-edit[data-flash="true"] {
@@ -1309,7 +1571,10 @@ button, input, select, textarea, optgroup {
    separates with a hairline rather than lifting. */
 
 /* Search field — the icon and clear button sit inside the input's box. */
-.sp-searchfield { position: relative; width: 100%; }
+.sp-searchfield {
+  position: relative;
+  width: 100%;
+}
 .sp-searchfield__icon {
   position: absolute;
   left: 14px;
@@ -1327,7 +1592,9 @@ button, input, select, textarea, optgroup {
   font-size: var(--type-body-size);
 }
 /* The type=search UA affordances duplicate our own clear button. */
-.sp-searchfield__input::-webkit-search-cancel-button { display: none; }
+.sp-searchfield__input::-webkit-search-cancel-button {
+  display: none;
+}
 .sp-searchfield__clear {
   position: absolute;
   right: 2px;
@@ -1343,10 +1610,18 @@ button, input, select, textarea, optgroup {
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
-  transition: background var(--dur-state) var(--ease), color var(--dur-state) var(--ease);
+  transition:
+    background var(--dur-state) var(--ease),
+    color var(--dur-state) var(--ease);
 }
-.sp-searchfield__clear:hover { background: var(--bg-hover); color: var(--text-primary); }
-.sp-searchfield__clear:focus-visible { outline: none; box-shadow: var(--focus-ring-tight); }
+.sp-searchfield__clear:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+.sp-searchfield__clear:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-tight);
+}
 
 /* Sticky region: search + chips pin below the top of the viewport. Flat
    until pinned, then a hairline does the separating. */
@@ -1362,11 +1637,16 @@ button, input, select, textarea, optgroup {
   border-bottom: 1px solid transparent;
   transition: border-color var(--dur-state) var(--ease);
 }
-.sp-filterbar[data-pinned] { border-bottom-color: var(--border); }
+.sp-filterbar[data-pinned] {
+  border-bottom-color: var(--border);
+}
 
 /* Horizontal rail with edge fades. Shared by the chip bar and the shelves:
    the mask hides at whichever end has nothing left to reveal. */
-.sp-railfade { position: relative; min-width: 0; }
+.sp-railfade {
+  position: relative;
+  min-width: 0;
+}
 .sp-railfade::before,
 .sp-railfade::after {
   content: "";
@@ -1387,8 +1667,12 @@ button, input, select, textarea, optgroup {
   right: 0;
   background: linear-gradient(to left, var(--bg-canvas), transparent);
 }
-.sp-railfade[data-at-start]::before { opacity: 0; }
-.sp-railfade[data-at-end]::after { opacity: 0; }
+.sp-railfade[data-at-start]::before {
+  opacity: 0;
+}
+.sp-railfade[data-at-end]::after {
+  opacity: 0;
+}
 
 .sp-railfade__track {
   display: flex;
@@ -1396,11 +1680,16 @@ button, input, select, textarea, optgroup {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
-.sp-railfade__track::-webkit-scrollbar { display: none; }
+.sp-railfade__track::-webkit-scrollbar {
+  display: none;
+}
 
 /* Platform chips. Crisp control radius; the selected chip wears the DS
    primary construction so its label stays readable in both themes. */
-.sp-chipbar { gap: var(--space-2xs); padding: 2px; }
+.sp-chipbar {
+  gap: var(--space-2xs);
+  padding: 2px;
+}
 .sp-chip {
   display: inline-flex;
   align-items: center;
@@ -1418,29 +1707,46 @@ button, input, select, textarea, optgroup {
   letter-spacing: var(--type-label-track);
   cursor: pointer;
   white-space: nowrap;
-  transition: border-color var(--dur-state) var(--ease),
-              background var(--dur-state) var(--ease),
-              color var(--dur-state) var(--ease);
+  transition:
+    border-color var(--dur-state) var(--ease),
+    background var(--dur-state) var(--ease),
+    color var(--dur-state) var(--ease);
 }
-.sp-chip:hover { border-color: var(--border-strong); }
-.sp-chip:focus-visible { outline: none; box-shadow: var(--focus-ring-tight); }
+.sp-chip:hover {
+  border-color: var(--border-strong);
+}
+.sp-chip:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-tight);
+}
 .sp-chip[data-selected] {
   background: var(--btn-primary-bg);
   border-color: var(--btn-primary-bg);
   color: var(--btn-primary-fg);
 }
-.sp-chip__icon { width: 16px; height: 16px; flex-shrink: 0; }
+.sp-chip__icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
 .sp-chip__count {
   font-family: var(--font-mono);
   font-size: var(--type-caption-size);
   letter-spacing: 0.04em;
   color: var(--text-muted);
 }
-.sp-chip[data-selected] .sp-chip__count { color: var(--btn-primary-fg); opacity: 0.8; }
+.sp-chip[data-selected] .sp-chip__count {
+  color: var(--btn-primary-fg);
+  opacity: 0.8;
+}
 
 /* Shelves — one section per platform. */
-.sp-shelf { margin-top: var(--space-2xl); }
-.sp-shelf:first-of-type { margin-top: var(--space-xl); }
+.sp-shelf {
+  margin-top: var(--space-2xl);
+}
+.sp-shelf:first-of-type {
+  margin-top: var(--space-xl);
+}
 .sp-shelf__header {
   display: flex;
   align-items: flex-end;
@@ -1472,8 +1778,13 @@ button, input, select, textarea, optgroup {
   cursor: pointer;
   border-radius: var(--radius-control);
 }
-.sp-shelf__viewall:hover { text-decoration: underline; }
-.sp-shelf__viewall:focus-visible { outline: none; box-shadow: var(--focus-ring-tight); }
+.sp-shelf__viewall:hover {
+  text-decoration: underline;
+}
+.sp-shelf__viewall:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-tight);
+}
 
 /* Scaffolding only — phase 4 swaps these for the card track and the grid. */
 .sp-shelf__placeholder {
@@ -1507,8 +1818,13 @@ button, input, select, textarea, optgroup {
   border-radius: var(--radius-control);
   cursor: pointer;
 }
-.sp-resultline__clear:hover { text-decoration: underline; }
-.sp-resultline__clear:focus-visible { outline: none; box-shadow: var(--focus-ring-tight); }
+.sp-resultline__clear:hover {
+  text-decoration: underline;
+}
+.sp-resultline__clear:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-tight);
+}
 
 /* Visually hidden live region. */
 .sp-live {
@@ -1521,12 +1837,17 @@ button, input, select, textarea, optgroup {
 }
 
 @media (max-width: 767px) {
-  .sp-railfade::before, .sp-railfade::after { width: 40px; }
+  .sp-railfade::before,
+  .sp-railfade::after {
+    width: 40px;
+  }
 }
 
 /* Result sections — one per group, so each keeps its own frame ratio and a
    mixed search result never forces stories and banners into one shape. */
-.sp-resultgroup { margin-bottom: var(--space-xl); }
+.sp-resultgroup {
+  margin-bottom: var(--space-xl);
+}
 .sp-resultgroup__title {
   display: flex;
   align-items: baseline;
@@ -1603,8 +1924,13 @@ button, input, select, textarea, optgroup {
    Card geometry, so nothing jumps when the data lands. A pulse rather than a
    sweeping highlight: the DS bans gradients as a surface treatment. */
 @keyframes sp-skeleton-pulse {
-  0%, 100% { background-color: var(--bg-raised); }
-  50%      { background-color: var(--bg-hover); }
+  0%,
+  100% {
+    background-color: var(--bg-raised);
+  }
+  50% {
+    background-color: var(--bg-hover);
+  }
 }
 .sp-skeleton__block {
   background-color: var(--bg-raised);
@@ -1615,8 +1941,12 @@ button, input, select, textarea, optgroup {
   height: 13px;
   border-radius: var(--radius-control);
 }
-.sp-skeleton-card { pointer-events: none; }
-.sp-skeleton-card .sp-media-card__preview { border: none; }
+.sp-skeleton-card {
+  pointer-events: none;
+}
+.sp-skeleton-card .sp-media-card__preview {
+  border: none;
+}
 
 @media (prefers-reduced-motion: reduce) {
   /* State still changes; it just doesn't travel or pulse. */
@@ -1628,17 +1958,27 @@ button, input, select, textarea, optgroup {
     transition: none;
     transition-delay: 0ms;
   }
-  .sp-skeleton__block { animation: none; }
+  .sp-skeleton__block {
+    animation: none;
+  }
 }
 
 /* --- Responsive ----------------------------------------------------------- */
 @media (max-width: 767px) {
   /* 16px page gutter on mobile, per the DS layout spec. :root so the
      bands' column padding follows the same token. */
-  :root { --page-pad: 16px; }
-  .sp-page { padding: var(--space-md) var(--page-pad) var(--space-2xl); }
-  .sp-shelf { margin-top: var(--space-xl); }
-  .sp-filterbar { padding: var(--space-xs) 0; }
+  :root {
+    --page-pad: 16px;
+  }
+  .sp-page {
+    padding: var(--space-md) var(--page-pad) var(--space-2xl);
+  }
+  .sp-shelf {
+    margin-top: var(--space-xl);
+  }
+  .sp-filterbar {
+    padding: var(--space-xs) 0;
+  }
 }
 
 /* --- Reduced motion: the literal-timing holdouts -------------------------
@@ -1652,7 +1992,9 @@ button, input, select, textarea, optgroup {
   .sp-dropzone__icon {
     transition: none;
   }
-  .sp-dropzone[data-active="true"] { transform: none; }
+  .sp-dropzone[data-active="true"] {
+    transform: none;
+  }
   .sp-dropzone[data-active="true"] .sp-dropzone__icon,
   .sp-chip-in,
   .sp-chip-out,
@@ -1664,9 +2006,15 @@ button, input, select, textarea, optgroup {
 
 /* Containers that were reaching for Tailwind's rounded-xl, which resolves to
    calc(--radius-control + 4px) = 9px — inside the banned 6–19 band. */
-[data-radius-card] { border-radius: var(--radius-card); }
-[data-radius-control] { border-radius: var(--radius-control); }
-.sp-dropzone { border-radius: var(--radius-control); }
+[data-radius-card] {
+  border-radius: var(--radius-card);
+}
+[data-radius-control] {
+  border-radius: var(--radius-control);
+}
+.sp-dropzone {
+  border-radius: var(--radius-control);
+}
 
 /* ── Component colour overrides (design-system distribution, section 8) ─────
    Appended after the platform's component rules so it wins on cascade order.
@@ -1675,36 +2023,63 @@ button, input, select, textarea, optgroup {
 /* Ghost carries a border in this platform, which makes it the system's secondary:
    outlined at full contrast, with the label at full contrast too. A control the
    user is meant to press reads as a deliberate edge, not as a divider. */
-.sp-btn-ghost { color: var(--text-primary); border-color: var(--border-control); }
-.sp-btn-ghost:hover:not(:disabled) { background: color-mix(in srgb, var(--text-primary) 8%, transparent); color: var(--text-primary); }
+.sp-btn-ghost {
+  color: var(--text-primary);
+  border-color: var(--border-control);
+}
+.sp-btn-ghost:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--text-primary) 8%, transparent);
+  color: var(--text-primary);
+}
 
 /* Solar is the system's commit variant: the action that sends work to the world.
    Green is near-white in luminance, so the fill cannot bound itself on a light
    canvas (1.13:1) and takes a darker green edge at 5.44:1 light / 3.27:1 dark. */
-.sp-btn-solar { background: var(--fill-attention); color: #070708; border-color: #467200; }
-.sp-btn-solar:hover:not(:disabled) { background: color-mix(in srgb, #070708 8%, var(--fill-attention)); }
+.sp-btn-solar {
+  background: var(--fill-attention);
+  color: #070708;
+  border-color: #467200;
+}
+.sp-btn-solar:hover:not(:disabled) {
+  background: color-mix(in srgb, #070708 8%, var(--fill-attention));
+}
 
 /* Destructive is outlined, never filled: a red fill outranks the primary action
    and reads as the recommended path, which is the opposite of the intent. */
-.sp-btn-danger, .sp-btn[data-tone="danger"] {
+.sp-btn-danger,
+.sp-btn[data-tone="danger"] {
   background: transparent;
   color: var(--state-danger-on-surface);
   border-color: var(--state-danger-on-surface);
 }
-.sp-btn-danger:hover:not(:disabled), .sp-btn[data-tone="danger"]:hover:not(:disabled) {
+.sp-btn-danger:hover:not(:disabled),
+.sp-btn[data-tone="danger"]:hover:not(:disabled) {
   background: color-mix(in srgb, var(--state-danger-on-surface) 8%, transparent);
 }
 
 /* Selection is neutral everywhere it appears. */
-.sp-chip[data-selected] { border-color: var(--border-control); }
-.sp-sidebar-item[data-active="true"] { background: var(--sb-active-bg); color: var(--sb-fg-active); }
+.sp-chip[data-selected] {
+  border-color: var(--border-control);
+}
+.sp-sidebar-item[data-active="true"] {
+  background: var(--sb-active-bg);
+  color: var(--sb-fg-active);
+}
 
 /* The one selection exception: a swatch shows a colour, so a neutral marker can
    vanish against a black or white swatch. The editor blue is the marker colour and reads
    against every hue in the picker. */
-.sp-swatch[data-selected="true"] { border-color: var(--ring); }
+.sp-swatch[data-selected="true"] {
+  border-color: var(--ring);
+}
 
 /* Tone-carrying feedback keeps its hue — these are signals, not controls. */
-.sp-toast[data-tone="danger"]  { border-top-color: var(--state-danger); }
-.sp-toast[data-tone="warning"] { border-top-color: var(--state-warning); }
-.sp-toast[data-tone="success"] { border-top-color: var(--fill-attention); }
+.sp-toast[data-tone="danger"] {
+  border-top-color: var(--state-danger);
+}
+.sp-toast[data-tone="warning"] {
+  border-top-color: var(--state-warning);
+}
+.sp-toast[data-tone="success"] {
+  border-top-color: var(--fill-attention);
+}

@@ -29,7 +29,7 @@ export function useDataUrl(url: string | undefined): string | null {
       return;
     }
     let cancelled = false;
-    (async () => {
+    void (async () => {
       try {
         const response = await fetch(url);
         const blob = await response.blob();

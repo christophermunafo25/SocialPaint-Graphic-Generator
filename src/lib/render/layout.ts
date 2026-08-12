@@ -16,13 +16,7 @@
 //  - Fractional values are kept — rounding inside the stack math would let
 //    error accumulate into the gaps this feature exists to hold fixed.
 
-import type {
-  BrandKit,
-  FieldValues,
-  LayoutGroup,
-  TemplateField,
-  TemplateSchema,
-} from "../types";
+import type { BrandKit, FieldValues, LayoutGroup, TemplateField, TemplateSchema } from "../types";
 import { parseGroupChildRef } from "../types";
 import { resolveFieldStyle, type ResolvedFieldStyle } from "../brand/resolveStyle";
 import {
@@ -329,7 +323,10 @@ function sizedChildren(
       continue;
     }
     if (ctx.claimed.has(ref)) {
-      warnOnce(ctx, `Group "${group.name}": field "${ref}" already belongs to another group — skipped.`);
+      warnOnce(
+        ctx,
+        `Group "${group.name}": field "${ref}" already belongs to another group — skipped.`,
+      );
       continue;
     }
     if (claim) ctx.claimed.add(ref);

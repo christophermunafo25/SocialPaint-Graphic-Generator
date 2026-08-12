@@ -1,0 +1,9 @@
+node_modules
+dist
+package-lock.json
+src/imports
+src/app/components/ui
+docs
+guidelines
+default_shadcn_theme.css
+supabase/migrations

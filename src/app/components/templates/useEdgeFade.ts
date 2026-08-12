@@ -14,7 +14,9 @@ export interface EdgeFade {
  *  `deps` re-measures when the track's contents change — a ResizeObserver on
  *  the track alone misses a change in scrollWidth when the box itself is
  *  unchanged. */
-export function useEdgeFade<T extends HTMLElement>(deps: unknown[] = []): EdgeFade & {
+export function useEdgeFade<T extends HTMLElement>(
+  deps: unknown[] = [],
+): EdgeFade & {
   ref: React.RefObject<T | null>;
 } {
   const ref = useRef<T>(null);

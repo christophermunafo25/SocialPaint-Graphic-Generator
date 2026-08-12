@@ -11,14 +11,21 @@ interface EventRow {
 }
 
 export class SupabaseUsageStore implements UsageStore {
-  async record(companyId: string, templateId: string, action: UsageAction, userId?: string): Promise<void> {
+  async record(
+    companyId: string,
+    templateId: string,
+    action: UsageAction,
+    userId?: string,
+  ): Promise<void> {
     try {
-      await supabase().from("usage_events").insert({
-        company_id: companyId,
-        template_id: templateId,
-        action,
-        user_id: userId ?? null,
-      });
+      await supabase()
+        .from("usage_events")
+        .insert({
+          company_id: companyId,
+          template_id: templateId,
+          action,
+          user_id: userId ?? null,
+        });
     } catch (e) {
       // Instrumentation must never break the member flow.
       console.warn("usage_events insert failed", e);

@@ -36,7 +36,11 @@ export interface FigmaNode {
 export const toHex = (c: { r: number; g: number; b: number }): string =>
   "#" +
   [c.r, c.g, c.b]
-    .map((v) => Math.round(v * 255).toString(16).padStart(2, "0"))
+    .map((v) =>
+      Math.round(v * 255)
+        .toString(16)
+        .padStart(2, "0"),
+    )
     .join("")
     .toUpperCase();
 
@@ -71,7 +75,11 @@ export const ALIGN: Record<string, "left" | "center" | "right"> = {
 };
 
 export function slug(name: string, taken: Set<string>): string {
-  const base = name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "field";
+  const base =
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "") || "field";
   let key = base;
   let n = 2;
   while (taken.has(key)) key = `${base}_${n++}`;
@@ -96,7 +104,8 @@ export function walk(
   const box = node.absoluteBoundingBox;
 
   if (box && node.type === "TEXT") {
-    const isMultiline = (node.characters ?? "").includes("\n") || box.height > (node.style?.fontSize ?? 16) * 2.2;
+    const isMultiline =
+      (node.characters ?? "").includes("\n") || box.height > (node.style?.fontSize ?? 16) * 2.2;
     const solidFill = node.fills?.find((f) => f.type === "SOLID" && f.visible !== false && f.color);
     out.push({
       id: crypto.randomUUID(),
@@ -125,7 +134,11 @@ export function walk(
   }
 
   const hasImageFill = node.fills?.some((f) => f.type === "IMAGE" && f.visible !== false) ?? false;
-  if (box && hasImageFill && (node.type === "RECTANGLE" || node.type === "FRAME" || node.type === "ELLIPSE")) {
+  if (
+    box &&
+    hasImageFill &&
+    (node.type === "RECTANGLE" || node.type === "FRAME" || node.type === "ELLIPSE")
+  ) {
     out.push({
       id: crypto.randomUUID(),
       label: node.name,
@@ -188,7 +201,7 @@ export interface ExtractionResult {
 export function figmaFieldsToElements(fields: SuggestedField[]): ExtractedElement[] {
   return fields.map((f) => ({
     sourceId: f.sourceNodeId,
-    kind: f.type === "image" ? "image" as const : "text" as const,
+    kind: f.type === "image" ? ("image" as const) : ("text" as const),
     x: f.x,
     y: f.y,
     width: f.width,

@@ -1,41 +1,46 @@
+<!doctype html>
+<html lang="en" data-theme="dark" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Brand Template Portal</title>
+    <meta
+      name="description"
+      content="Streamlines marketing content creation by ensuring consistent formatting, alignment, and responsive text sizing for clear, professional presentations."
+    />
 
-  <!DOCTYPE html>
-  <html lang="en" data-theme="dark" class="dark">
-    <head>
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+      #root {
+        height: 100%;
+      }
+    </style>
 
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>Brand Template Portal</title>
-      <meta name="description" content="Streamlines marketing content creation by ensuring consistent formatting, alignment, and responsive text sizing for clear, professional presentations." />
-      
-      <style>html, body { height: 100%; margin: 0; } #root { height: 100%; }</style>
-
-      <!-- Design-system tokens are scoped to [data-theme], so the attribute has
+    <!-- Design-system tokens are scoped to [data-theme], so the attribute has
            to be right before first paint — ColorSchemeProvider only runs after
            React mounts, which would flash the wrong theme. -->
-      <script>
-        (function () {
-          try {
-            var v = localStorage.getItem("sp-color-scheme");
-            var dark =
-              v === "dark" ||
-              ((v === "system" || !v) &&
-                window.matchMedia("(prefers-color-scheme: dark)").matches);
-            var el = document.documentElement;
-            el.setAttribute("data-theme", dark ? "dark" : "light");
-            el.classList.toggle("dark", dark);
-            el.style.colorScheme = dark ? "dark" : "light";
-          } catch (e) {}
-        })();
-      </script>
+    <script>
+      (function () {
+        try {
+          var v = localStorage.getItem("sp-color-scheme");
+          var dark =
+            v === "dark" ||
+            ((v === "system" || !v) && window.matchMedia("(prefers-color-scheme: dark)").matches);
+          var el = document.documentElement;
+          el.setAttribute("data-theme", dark ? "dark" : "light");
+          el.classList.toggle("dark", dark);
+          el.style.colorScheme = dark ? "dark" : "light";
+        } catch (e) {}
+      })();
+    </script>
+  </head>
 
-    </head>
-
-    <body>
-      
-      <div id="root"></div>
-      <script type="module" src="/src/main.tsx"></script>
-      
-    </body>
-  </html>
-  
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

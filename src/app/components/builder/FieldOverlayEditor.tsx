@@ -14,6 +14,7 @@ import {
 } from "@/lib/render/layout";
 import { resolveFieldStyle } from "@/lib/brand/resolveStyle";
 import { cornerRadiusCss, DEFAULT_FILL_HEX, FieldBoxContent } from "../SchemaRenderer";
+import { ErrorBoundary, FieldCrashFallback } from "../ErrorBoundary";
 import { PALETTE_MIME, paintOrder } from "./fieldOps";
 import { cancelActiveGesture, startDrag } from "./canvasGesture";
 
@@ -45,7 +46,11 @@ interface FieldOverlayEditorProps {
   onDropElement(paletteId: string, at: { x: number; y: number }): void;
   /** Right-click on a field (id), a group frame ("group:<id>"), or empty
    * canvas (null, with canvas point). */
-  onContextMenu(pos: { x: number; y: number }, fieldId: string | null, canvasPoint: { x: number; y: number }): void;
+  onContextMenu(
+    pos: { x: number; y: number },
+    fieldId: string | null,
+    canvasPoint: { x: number; y: number },
+  ): void;
   /** Double-click on a member-editable element: the text an admin can change
    * there is its NAME, which lives in the inspector — focus it. */
   onRequestLabelFocus(fieldId: string): void;
@@ -99,7 +104,12 @@ const HANDLE_CROWD_PX = 28;
 /** Invisible resize strips along each border: the whole edge is grabbable,
  * Figma-style, whatever size the box is — the visible dots are wayfinding,
  * not the hit target. Inset from the ends so the corner dots win corners. */
-const EDGE_STRIPS: Array<{ dx: -1 | 0 | 1; dy: -1 | 0 | 1; cursor: string; style: React.CSSProperties }> = [
+const EDGE_STRIPS: Array<{
+  dx: -1 | 0 | 1;
+  dy: -1 | 0 | 1;
+  cursor: string;
+  style: React.CSSProperties;
+}> = [
   { dx: 0, dy: -1, cursor: "ns-resize", style: { left: 8, right: 8, top: -5, height: 10 } },
   { dx: 0, dy: 1, cursor: "ns-resize", style: { left: 8, right: 8, bottom: -5, height: 10 } },
   { dx: -1, dy: 0, cursor: "ew-resize", style: { top: 8, bottom: 8, left: -5, width: 10 } },
@@ -229,7 +239,11 @@ function InlineTextEditor({
   const justify =
     field.align === "center" ? "center" : field.align === "right" ? "flex-end" : "flex-start";
   const alignItems =
-    field.verticalAlign === "top" ? "flex-start" : field.verticalAlign === "bottom" ? "flex-end" : "center";
+    field.verticalAlign === "top"
+      ? "flex-start"
+      : field.verticalAlign === "bottom"
+        ? "flex-end"
+        : "center";
 
   const finish = (commit: boolean) => {
     if (cancelled.current) return;
@@ -688,7 +702,12 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
 
   // --- Resize (single selection, 8 handles) --------------------------------
 
-  const beginResize = (e: React.PointerEvent, f: TemplateField, dirX: -1 | 0 | 1, dirY: -1 | 0 | 1) => {
+  const beginResize = (
+    e: React.PointerEvent,
+    f: TemplateField,
+    dirX: -1 | 0 | 1,
+    dirY: -1 | 0 | 1,
+  ) => {
     const tlx0 = displayX(f);
     const tly0 = displayY(f);
     const w0 = f.width;
@@ -741,8 +760,7 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
           // edge first so the ratio is computed from the snapped size.
           const sxr = dirX !== 0 ? w1 / w0 : null;
           const syr = dirY !== 0 ? h1 / h0 : null;
-          const driveX =
-            sxr !== null && (syr === null || Math.abs(sxr - 1) >= Math.abs(syr - 1));
+          const driveX = sxr !== null && (syr === null || Math.abs(sxr - 1) >= Math.abs(syr - 1));
           if (snappable) {
             if (driveX) {
               const hit = snapAxis(movingEdgeX(), movingEdgeX(), targets.v, thresh);
@@ -963,7 +981,13 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
             src={backgroundDataUrl}
             alt=""
             data-role="bg"
-            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
           />
         )}
       </div>
@@ -1055,7 +1079,9 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
         const isEditing = editingId === f.id;
         const showHandles = isSelected && single?.id === f.id && !isEditing;
         const isText = f.type !== "image" && f.type !== "shape";
-        const groupVertical = grouped ? directGroupOf(f.fieldKey)?.direction !== "horizontal" : false;
+        const groupVertical = grouped
+          ? directGroupOf(f.fieldKey)?.direction !== "horizontal"
+          : false;
         // The whole EDGE is the resize surface (strips below); the dots are
         // wayfinding. A mid-edge dot renders only where it has room between
         // the corners — on a short or narrow box it would crowd them — but
@@ -1120,9 +1146,7 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
               }
               let ids: string[];
               if (multi) {
-                ids = isSelected
-                  ? selectedIds.filter((id) => id !== f.id)
-                  : [...selectedIds, f.id];
+                ids = isSelected ? selectedIds.filter((id) => id !== f.id) : [...selectedIds, f.id];
                 onSelect(ids);
                 // Toggled OFF — a drag from a just-deselected element would
                 // move everything else out from under the pointer.
@@ -1192,7 +1216,14 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
                 onExit={() => setEditingId(null)}
               />
             ) : (
-              <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  overflow: "hidden",
+                  pointerEvents: "none",
+                }}
+              >
                 <div
                   data-field-content
                   style={{
@@ -1203,12 +1234,23 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
                     pointerEvents: "none",
                   }}
                 >
-                  <FieldContent
-                    field={grouped ? { ...v, width: box.width, height: box.height } : v}
-                    value={undefined}
-                    brandKit={kit}
-                    fontSize={layout.fontSizes.get(f.id)}
-                  />
+                  {/* Field boundary: a malformed element degrades to a
+                      placeholder that stays selectable, movable, and
+                      deletable — the admin can fix or remove it. Any edit
+                      to the field resets the boundary. */}
+                  <ErrorBoundary
+                    level="field"
+                    context={{ fieldId: f.id, fieldType: f.type }}
+                    resetKeys={[v]}
+                    fallback={() => <FieldCrashFallback width={box.width} height={box.height} />}
+                  >
+                    <FieldContent
+                      field={grouped ? { ...v, width: box.width, height: box.height } : v}
+                      value={undefined}
+                      brandKit={kit}
+                      fontSize={layout.fontSizes.get(f.id)}
+                    />
+                  </ErrorBoundary>
                 </div>
               </div>
             )}

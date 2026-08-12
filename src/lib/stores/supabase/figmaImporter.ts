@@ -1,4 +1,9 @@
-import type { AutoBuildResult, DesignImportResult, DesignSource, LayerRenderResult } from "../../types";
+import type {
+  AutoBuildResult,
+  DesignImportResult,
+  DesignSource,
+  LayerRenderResult,
+} from "../../types";
 import type { DesignImportProvider, StyleImportResult } from "../interfaces";
 import { isSupabaseConfigured, supabase } from "./client";
 
@@ -48,7 +53,11 @@ export class FigmaImporter implements DesignImportProvider {
     return data as StyleImportResult;
   }
 
-  async autoBuild(companyId: string, source: DesignSource, hint?: string): Promise<AutoBuildResult> {
+  async autoBuild(
+    companyId: string,
+    source: DesignSource,
+    hint?: string,
+  ): Promise<AutoBuildResult> {
     const { data, error } = await supabase().functions.invoke("template-autobuild", {
       body: { companyId, source, hint },
     });
@@ -64,7 +73,10 @@ export class FigmaImporter implements DesignImportProvider {
     return data as { enabled: boolean; connected: boolean };
   }
 
-  async canvaConnectStart(companyId: string, redirectUri: string): Promise<{ authorizeUrl: string }> {
+  async canvaConnectStart(
+    companyId: string,
+    redirectUri: string,
+  ): Promise<{ authorizeUrl: string }> {
     const { data, error } = await supabase().functions.invoke("canva-auth", {
       body: { companyId, action: "start", redirectUri },
     });
@@ -72,7 +84,12 @@ export class FigmaImporter implements DesignImportProvider {
     return data as { authorizeUrl: string };
   }
 
-  async canvaConnectCallback(companyId: string, code: string, state: string, redirectUri: string): Promise<void> {
+  async canvaConnectCallback(
+    companyId: string,
+    code: string,
+    state: string,
+    redirectUri: string,
+  ): Promise<void> {
     const { error } = await supabase().functions.invoke("canva-auth", {
       body: { companyId, action: "callback", code, state, redirectUri },
     });

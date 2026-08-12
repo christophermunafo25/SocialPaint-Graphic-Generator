@@ -126,7 +126,7 @@ export interface TemplateFieldRow {
   required: boolean;
 }
 
-const opt = <T,>(v: T | null): T | undefined => (v === null ? undefined : v);
+const opt = <T>(v: T | null): T | undefined => (v === null ? undefined : v);
 
 /** storage_path columns normally hold bucket-relative paths, but may hold a
  * full URL (e.g. a Figma-rendered background re-hosted elsewhere). */

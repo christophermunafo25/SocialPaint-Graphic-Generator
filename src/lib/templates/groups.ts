@@ -32,7 +32,11 @@ const ORIENTATION_LABEL: Record<Orientation, string> = {
  *  — the same platform reads the same way every visit. */
 const ORIENTATION_ORDER: Orientation[] = ["landscape", "square", "portrait", "vertical"];
 
-const slug = (s: string) => s.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase();
+const slug = (s: string) =>
+  s
+    .replace(/[^a-z0-9]+/gi, "-")
+    .replace(/^-|-$/g, "")
+    .toLowerCase();
 
 /** The group a template belongs to. Deriving this directly means a filter
  *  can be applied without rebuilding the groups off a filtered set — which
@@ -59,14 +63,11 @@ export function buildGroups(templates: CatalogTemplate[]): TemplateGroup[] {
   for (const platform of PLATFORMS) {
     // A bucket belongs to the shelf of its PRIMARY platform (first in the
     // list) — a shared size appears once, labelled with every platform.
-    const mine = [...buckets.values()].filter(
-      (members) => members[0].platform === platform.id,
-    );
+    const mine = [...buckets.values()].filter((members) => members[0].platform === platform.id);
 
     mine.sort(
       (a, b) =>
-        ORIENTATION_ORDER.indexOf(a[0].orientation) -
-          ORIENTATION_ORDER.indexOf(b[0].orientation) ||
+        ORIENTATION_ORDER.indexOf(a[0].orientation) - ORIENTATION_ORDER.indexOf(b[0].orientation) ||
         b[0].width / b[0].height - a[0].width / a[0].height,
     );
 

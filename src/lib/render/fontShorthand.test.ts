@@ -3,7 +3,11 @@ import { canvasFontShorthand } from "@/lib/render/autoFit";
 import { googleAxisQuery } from "@/lib/render/fonts";
 import { toFontStyle, type FontStyle } from "@/lib/render/fontCatalog";
 
-const face = (weight: number, italic = false, stretch: FontStyle["stretch"] = "normal"): FontStyle => ({
+const face = (
+  weight: number,
+  italic = false,
+  stretch: FontStyle["stretch"] = "normal",
+): FontStyle => ({
   weight,
   italic,
   stretch,
@@ -38,7 +42,9 @@ describe("the canvas font shorthand composes in the correct order", () => {
     expect(canvasFontShorthand({ fontStretch: "125%", fontSizePx: 45, fontFamily: "X" })).toBe(
       '400 45px "X", sans-serif',
     );
-    expect(canvasFontShorthand({ fontStretch: "sideways", fontSizePx: 45 })).toBe("400 45px sans-serif");
+    expect(canvasFontShorthand({ fontStretch: "sideways", fontSizePx: 45 })).toBe(
+      "400 45px sans-serif",
+    );
   });
 
   it("omits normal stretch and upright style rather than spelling them out", () => {
@@ -57,9 +63,9 @@ describe("the canvas font shorthand composes in the correct order", () => {
     // The old line was `${fontWeight ?? 400} ${size}px ${family}`. A field
     // carrying only fontWeight must still produce that string, character for
     // character, or every auto-fit measurement shifts.
-    expect(
-      canvasFontShorthand({ fontWeight: 700, fontSizePx: 45, fontFamily: "Montserrat" }),
-    ).toBe('700 45px "Montserrat", sans-serif');
+    expect(canvasFontShorthand({ fontWeight: 700, fontSizePx: 45, fontFamily: "Montserrat" })).toBe(
+      '700 45px "Montserrat", sans-serif',
+    );
     expect(canvasFontShorthand({ fontSizePx: 45, fontFamily: "Montserrat" })).toBe(
       '400 45px "Montserrat", sans-serif',
     );

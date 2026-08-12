@@ -12,11 +12,35 @@ import { canvasFontShorthand } from "./autoFit";
 
 /** Curated Google Fonts list offered in Brand Studio / onboarding. */
 export const GOOGLE_FONTS = [
-  "Archivo", "Bebas Neue", "Cabin", "DM Sans", "Fira Sans", "Inter",
-  "Josefin Sans", "Karla", "Lato", "Libre Baskerville", "Lora", "Manrope",
-  "Merriweather", "Montserrat", "Mulish", "Nunito", "Open Sans", "Oswald",
-  "Outfit", "Playfair Display", "Plus Jakarta Sans", "Poppins", "Raleway",
-  "Roboto", "Roboto Slab", "Rubik", "Sora", "Source Sans 3", "Space Grotesk",
+  "Archivo",
+  "Bebas Neue",
+  "Cabin",
+  "DM Sans",
+  "Fira Sans",
+  "Inter",
+  "Josefin Sans",
+  "Karla",
+  "Lato",
+  "Libre Baskerville",
+  "Lora",
+  "Manrope",
+  "Merriweather",
+  "Montserrat",
+  "Mulish",
+  "Nunito",
+  "Open Sans",
+  "Oswald",
+  "Outfit",
+  "Playfair Display",
+  "Plus Jakarta Sans",
+  "Poppins",
+  "Raleway",
+  "Roboto",
+  "Roboto Slab",
+  "Rubik",
+  "Sora",
+  "Source Sans 3",
+  "Space Grotesk",
   "Work Sans",
 ] as const;
 
@@ -38,8 +62,7 @@ const customFamilyCss = (family: string): string | undefined => {
 /** family → the faces that family actually renders with. */
 export type FontUsage = Map<string, FontStyle[]>;
 
-const familyParam = (family: string): string =>
-  encodeURIComponent(family).replace(/%20/g, "+");
+const familyParam = (family: string): string => encodeURIComponent(family).replace(/%20/g, "+");
 
 /** A FontStyle as the CSS font shorthand, for document.fonts.load — the same
  * composer the canvas measurement uses, so what we wait for is exactly what
@@ -161,7 +184,9 @@ export function customFontFaceCss(
         ? STRETCH_PERCENT[opts.stretch as keyof typeof STRETCH_PERCENT]
         : undefined;
     const variation = opts.axes
-      ? Object.entries(opts.axes).map(([tag, v]) => `"${tag}" ${v}`).join(", ")
+      ? Object.entries(opts.axes)
+          .map(([tag, v]) => `"${tag}" ${v}`)
+          .join(", ")
       : undefined;
     return [
       `@font-face {`,
@@ -169,7 +194,9 @@ export function customFontFaceCss(
       `  src: url("${src}") format("${format}");`,
       `  font-weight: ${opts.weight};`,
       `  font-style: ${opts.italic ? "italic" : "normal"};`,
-      ...(stretchPct !== undefined && stretchPct !== 100 ? [`  font-stretch: ${stretchPct}%;`] : []),
+      ...(stretchPct !== undefined && stretchPct !== 100
+        ? [`  font-stretch: ${stretchPct}%;`]
+        : []),
       ...(variation ? [`  font-variation-settings: ${variation};`] : []),
       `}`,
     ].join("\n");
@@ -259,7 +286,9 @@ export async function ensureSchemaFontsLoaded(
 ): Promise<void> {
   await Promise.all(
     [...schemaFontUsage(schema, kit)].flatMap(([family, styles]) =>
-      styles.map((style) => document.fonts.load(faceShorthand(family, style)).catch(() => undefined)),
+      styles.map((style) =>
+        document.fonts.load(faceShorthand(family, style)).catch(() => undefined),
+      ),
     ),
   );
   await document.fonts.ready;

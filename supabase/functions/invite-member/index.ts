@@ -15,8 +15,10 @@ Deno.serve(async (req) => {
   if (options) return options;
   try {
     const { companyId, email, role, redirectTo } = (await req.json()) as InviteBody;
-    if (!companyId || !email || !role) return json({ error: "companyId, email, role required" }, 400);
-    if (role !== "admin" && role !== "member") return json({ error: "role must be admin or member" }, 400);
+    if (!companyId || !email || !role)
+      return json({ error: "companyId, email, role required" }, 400);
+    if (role !== "admin" && role !== "member")
+      return json({ error: "role must be admin or member" }, 400);
 
     const caller = await requireRole(req, companyId, "admin");
     if ("error" in caller) return json({ error: caller.error }, caller.status);
@@ -32,7 +34,11 @@ Deno.serve(async (req) => {
     if (invited.data.user) {
       userId = invited.data.user.id;
     } else {
-      const { data: existing } = await db.from("users").select("id").eq("email", email).maybeSingle();
+      const { data: existing } = await db
+        .from("users")
+        .select("id")
+        .eq("email", email)
+        .maybeSingle();
       userId = (existing as { id: string } | null)?.id ?? null;
       if (!userId) {
         return json({ error: invited.error?.message ?? "Could not invite that address." }, 400);
@@ -41,7 +47,10 @@ Deno.serve(async (req) => {
 
     const { error } = await db
       .from("memberships")
-      .upsert({ user_id: userId, company_id: companyId, role }, { onConflict: "user_id,company_id" });
+      .upsert(
+        { user_id: userId, company_id: companyId, role },
+        { onConflict: "user_id,company_id" },
+      );
     if (error) return json({ error: error.message }, 500);
 
     return json({ ok: true, existing: !invited.data.user });

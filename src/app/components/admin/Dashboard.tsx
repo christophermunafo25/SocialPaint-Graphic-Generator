@@ -1,5 +1,13 @@
 import React from "react";
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { Download, Eye, Layers, Percent } from "lucide-react";
 import type { DailyActivityPoint, UsageSummary } from "@/lib/types";
 import { stores } from "@/lib/stores";
@@ -50,10 +58,15 @@ function Kpi({ label, value, Icon, chip, chipFg = "var(--text-on-accent)" }: Kpi
         <Icon style={{ width: 16, height: 16, color: chipFg }} />
       </span>
       <span className="min-w-0">
-        <span className="block truncate" style={{ ...mono, fontSize: 24, lineHeight: 1.1, color: "var(--text-primary)" }}>
+        <span
+          className="block truncate"
+          style={{ ...mono, fontSize: 24, lineHeight: 1.1, color: "var(--text-primary)" }}
+        >
           {value}
         </span>
-        <span className="sp-eyebrow block" style={{ marginTop: 3 }}>{label}</span>
+        <span className="sp-eyebrow block" style={{ marginTop: 3 }}>
+          {label}
+        </span>
       </span>
     </div>
   );
@@ -62,8 +75,14 @@ function Kpi({ label, value, Icon, chip, chipFg = "var(--text-on-accent)" }: Kpi
 /** Legend chip: colored dot + label + mono total (identity never color-alone). */
 function LegendChip({ color, label, total }: { color: string; label: string; total: number }) {
   return (
-    <span className="flex items-center gap-1.5" style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}>
-      <span aria-hidden style={{ width: 8, height: 8, borderRadius: "var(--radius-pill)", background: color }} />
+    <span
+      className="flex items-center gap-1.5"
+      style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}
+    >
+      <span
+        aria-hidden
+        style={{ width: 8, height: 8, borderRadius: "var(--radius-pill)", background: color }}
+      />
       {label}
       <span style={{ ...mono, fontSize: 11, color: "var(--text-muted)" }}>{total}</span>
     </span>
@@ -85,7 +104,14 @@ export function Dashboard() {
   );
 
   if (summaryState.status === "loading") {
-    return <p className="text-center py-24" style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>Loading usage…</p>;
+    return (
+      <p
+        className="text-center py-24"
+        style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}
+      >
+        Loading usage…
+      </p>
+    );
   }
   if (summaryState.status === "error") {
     return (
@@ -98,7 +124,14 @@ export function Dashboard() {
   }
   const summary = summaryState.data;
   if (!summary) {
-    return <p className="text-center py-24" style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>Loading usage…</p>;
+    return (
+      <p
+        className="text-center py-24"
+        style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}
+      >
+        Loading usage…
+      </p>
+    );
   }
   const trend = trendState.status === "ready" ? trendState.data : null;
 
@@ -122,20 +155,45 @@ export function Dashboard() {
           >
             <BrandMark width={280} />
           </span>
-          <p style={{ fontSize: 14, color: "var(--text-primary)", fontWeight: 500 }}>No usage yet</p>
-          <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)", marginTop: 6 }}>
-            Opens and downloads appear here as soon as members start using
-            published templates.
+          <p style={{ fontSize: 14, color: "var(--text-primary)", fontWeight: 500 }}>
+            No usage yet
+          </p>
+          <p
+            style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)", marginTop: 6 }}
+          >
+            Opens and downloads appear here as soon as members start using published templates.
           </p>
         </div>
       ) : (
         <div className="space-y-6">
           {/* KPI row — same 24px gap as every other grid on the page */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-            <Kpi label="Total exports" value={String(summary.totalDownloads)} Icon={Download} chip="var(--viz-downloads)" />
-            <Kpi label="Total opens" value={String(totalOpens)} Icon={Eye} chip="var(--viz-opens)" />
-            <Kpi label="Export rate" value={exportRate(summary.totalDownloads, totalOpens)} Icon={Percent} chip="var(--bg-hover)" chipFg="var(--text-primary)" />
-            <Kpi label="Templates in use" value={String(activeTemplates)} Icon={Layers} chip="var(--bg-hover)" chipFg="var(--text-primary)" />
+            <Kpi
+              label="Total exports"
+              value={String(summary.totalDownloads)}
+              Icon={Download}
+              chip="var(--viz-downloads)"
+            />
+            <Kpi
+              label="Total opens"
+              value={String(totalOpens)}
+              Icon={Eye}
+              chip="var(--viz-opens)"
+            />
+            <Kpi
+              label="Export rate"
+              value={exportRate(summary.totalDownloads, totalOpens)}
+              Icon={Percent}
+              chip="var(--bg-hover)"
+              chipFg="var(--text-primary)"
+            />
+            <Kpi
+              label="Templates in use"
+              value={String(activeTemplates)}
+              Icon={Layers}
+              chip="var(--bg-hover)"
+              chipFg="var(--text-primary)"
+            />
           </div>
 
           {/* 30-day trend */}
@@ -148,68 +206,85 @@ export function Dashboard() {
               </div>
             </div>
             {trendState.status === "error" ? (
-              <div className="flex flex-col items-center justify-center gap-3" style={{ height: 220 }}>
-                <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>We couldn't load the activity trend.</p>
+              <div
+                className="flex flex-col items-center justify-center gap-3"
+                style={{ height: 220 }}
+              >
+                <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>
+                  We couldn't load the activity trend.
+                </p>
                 <button className="sp-btn sp-btn-ghost" onClick={trendState.retry}>
                   Try again
                 </button>
               </div>
             ) : (
-            <div style={{ width: "100%", height: 220 }}>
-              <ResponsiveContainer>
-                <AreaChart data={trend ?? []} margin={{ top: 6, right: 6, left: -18, bottom: 0 }}>
-                  <CartesianGrid vertical={false} stroke="var(--viz-grid)" strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="date"
-                    tickFormatter={fmtDay}
-                    tick={{ fontSize: 10, fontFamily: "var(--font-mono)", fill: "var(--text-muted)" }}
-                    tickLine={false}
-                    axisLine={false}
-                    minTickGap={28}
-                  />
-                  <YAxis
-                    allowDecimals={false}
-                    tick={{ fontSize: 10, fontFamily: "var(--font-mono)", fill: "var(--text-muted)" }}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <Tooltip
-                    cursor={{ stroke: "var(--border-strong)", strokeDasharray: "3 3" }}
-                    labelFormatter={(v) => fmtDay(String(v))}
-                    contentStyle={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: "var(--type-caption-size)",
-                      background: "var(--bg-surface)",
-                      border: "1px solid var(--border)",
-                      borderRadius: "var(--radius-card)",
-                      color: "var(--text-primary)",
-                    }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="downloads"
-                    name="Downloads"
-                    stroke="var(--viz-downloads)"
-                    strokeWidth={2}
-                    fill="var(--viz-downloads)"
-                    fillOpacity={0.14}
-                    dot={false}
-                    activeDot={{ r: 4, strokeWidth: 0 }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="opens"
-                    name="Opens"
-                    stroke="var(--viz-opens)"
-                    strokeWidth={2}
-                    fill="var(--viz-opens)"
-                    fillOpacity={0.14}
-                    dot={false}
-                    activeDot={{ r: 4, strokeWidth: 0 }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
+              <div style={{ width: "100%", height: 220 }}>
+                <ResponsiveContainer>
+                  <AreaChart data={trend ?? []} margin={{ top: 6, right: 6, left: -18, bottom: 0 }}>
+                    <CartesianGrid
+                      vertical={false}
+                      stroke="var(--viz-grid)"
+                      strokeDasharray="3 3"
+                    />
+                    <XAxis
+                      dataKey="date"
+                      tickFormatter={fmtDay}
+                      tick={{
+                        fontSize: 10,
+                        fontFamily: "var(--font-mono)",
+                        fill: "var(--text-muted)",
+                      }}
+                      tickLine={false}
+                      axisLine={false}
+                      minTickGap={28}
+                    />
+                    <YAxis
+                      allowDecimals={false}
+                      tick={{
+                        fontSize: 10,
+                        fontFamily: "var(--font-mono)",
+                        fill: "var(--text-muted)",
+                      }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <Tooltip
+                      cursor={{ stroke: "var(--border-strong)", strokeDasharray: "3 3" }}
+                      labelFormatter={(v) => fmtDay(String(v))}
+                      contentStyle={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: "var(--type-caption-size)",
+                        background: "var(--bg-surface)",
+                        border: "1px solid var(--border)",
+                        borderRadius: "var(--radius-card)",
+                        color: "var(--text-primary)",
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="downloads"
+                      name="Downloads"
+                      stroke="var(--viz-downloads)"
+                      strokeWidth={2}
+                      fill="var(--viz-downloads)"
+                      fillOpacity={0.14}
+                      dot={false}
+                      activeDot={{ r: 4, strokeWidth: 0 }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="opens"
+                      name="Opens"
+                      stroke="var(--viz-opens)"
+                      strokeWidth={2}
+                      fill="var(--viz-opens)"
+                      fillOpacity={0.14}
+                      dot={false}
+                      activeDot={{ r: 4, strokeWidth: 0 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
             )}
           </div>
 
@@ -225,22 +300,43 @@ export function Dashboard() {
                         <span style={{ ...mono, fontSize: 10, color: "var(--text-muted)" }}>
                           {String(i + 1).padStart(2, "0")}
                         </span>
-                        <span className="truncate" style={{ fontSize: "var(--type-label-size)", fontWeight: 500, color: "var(--text-primary)" }}>
+                        <span
+                          className="truncate"
+                          style={{
+                            fontSize: "var(--type-label-size)",
+                            fontWeight: 500,
+                            color: "var(--text-primary)",
+                          }}
+                        >
                           {r.templateName}
                         </span>
                       </span>
-                      <span className="flex-shrink-0" style={{ ...mono, fontSize: 11, color: "var(--text-muted)" }}>
+                      <span
+                        className="flex-shrink-0"
+                        style={{ ...mono, fontSize: 11, color: "var(--text-muted)" }}
+                      >
                         {r.downloads} · {r.opens}
                       </span>
                     </div>
                     {/* thin rounded data bars, 2px apart — downloads then opens */}
                     <div
                       aria-hidden
-                      style={{ height: 6, borderRadius: "var(--radius-pill)", background: "var(--viz-downloads)", width: `${Math.max(2, (r.downloads / maxCount) * 100)}%` }}
+                      style={{
+                        height: 6,
+                        borderRadius: "var(--radius-pill)",
+                        background: "var(--viz-downloads)",
+                        width: `${Math.max(2, (r.downloads / maxCount) * 100)}%`,
+                      }}
                     />
                     <div
                       aria-hidden
-                      style={{ height: 6, borderRadius: "var(--radius-pill)", background: "var(--viz-opens)", width: `${Math.max(2, (r.opens / maxCount) * 100)}%`, marginTop: 2 }}
+                      style={{
+                        height: 6,
+                        borderRadius: "var(--radius-pill)",
+                        background: "var(--viz-opens)",
+                        width: `${Math.max(2, (r.opens / maxCount) * 100)}%`,
+                        marginTop: 2,
+                      }}
                     />
                   </div>
                 ))}
@@ -250,15 +346,25 @@ export function Dashboard() {
                   +{summary.rows.length - top.length} more in the table
                 </p>
               )}
-              <div className="flex items-center gap-4 mt-5 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
-                <LegendChip color="var(--viz-downloads)" label="Downloads" total={summary.totalDownloads} />
+              <div
+                className="flex items-center gap-4 mt-5 pt-4"
+                style={{ borderTop: "1px solid var(--border)" }}
+              >
+                <LegendChip
+                  color="var(--viz-downloads)"
+                  label="Downloads"
+                  total={summary.totalDownloads}
+                />
                 <LegendChip color="var(--viz-opens)" label="Opens" total={totalOpens} />
               </div>
             </div>
 
             {/* Full table */}
             <div className="sp-card overflow-hidden overflow-x-auto lg:col-span-3">
-              <table className="w-full" style={{ fontSize: "var(--type-label-size)", minWidth: 520 }}>
+              <table
+                className="w-full"
+                style={{ fontSize: "var(--type-label-size)", minWidth: 520 }}
+              >
                 <thead>
                   <tr className="text-left" style={{ borderBottom: "1px solid var(--border)" }}>
                     {["Template", "Opens", "Downloads", "Export rate", "Last used"].map((h) => (
@@ -271,13 +377,50 @@ export function Dashboard() {
                 <tbody>
                   {summary.rows.map((r) => (
                     <tr key={r.templateId} style={{ borderTop: "1px solid var(--border)" }}>
-                      <td className="px-4 py-3" style={{ color: "var(--text-primary)", fontWeight: 500 }}>{r.templateName}</td>
-                      <td className="px-4 py-3" style={{ ...mono, fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}>{r.opens}</td>
-                      <td className="px-4 py-3" style={{ ...mono, fontSize: "var(--type-caption-size)", color: "var(--text-primary)" }}>{r.downloads}</td>
-                      <td className="px-4 py-3" style={{ ...mono, fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}>
+                      <td
+                        className="px-4 py-3"
+                        style={{ color: "var(--text-primary)", fontWeight: 500 }}
+                      >
+                        {r.templateName}
+                      </td>
+                      <td
+                        className="px-4 py-3"
+                        style={{
+                          ...mono,
+                          fontSize: "var(--type-caption-size)",
+                          color: "var(--text-secondary)",
+                        }}
+                      >
+                        {r.opens}
+                      </td>
+                      <td
+                        className="px-4 py-3"
+                        style={{
+                          ...mono,
+                          fontSize: "var(--type-caption-size)",
+                          color: "var(--text-primary)",
+                        }}
+                      >
+                        {r.downloads}
+                      </td>
+                      <td
+                        className="px-4 py-3"
+                        style={{
+                          ...mono,
+                          fontSize: "var(--type-caption-size)",
+                          color: "var(--text-secondary)",
+                        }}
+                      >
                         {exportRate(r.downloads, r.opens)}
                       </td>
-                      <td className="px-4 py-3" style={{ ...mono, fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
+                      <td
+                        className="px-4 py-3"
+                        style={{
+                          ...mono,
+                          fontSize: "var(--type-caption-size)",
+                          color: "var(--text-muted)",
+                        }}
+                      >
                         {relativeDay(r.lastUsedAt)}
                       </td>
                     </tr>

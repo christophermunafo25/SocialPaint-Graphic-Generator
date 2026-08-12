@@ -54,7 +54,9 @@ describe("inspectFontBinary — static cut", () => {
 describe("inspectFontBinary — junk input", () => {
   it("rejects non-sfnt data instead of throwing", () => {
     expect(inspectFontBinary(new ArrayBuffer(4))).toBeNull();
-    expect(inspectFontBinary(new TextEncoder().encode("not a font at all").buffer as ArrayBuffer)).toBeNull();
+    expect(
+      inspectFontBinary(new TextEncoder().encode("not a font at all").buffer as ArrayBuffer),
+    ).toBeNull();
   });
 });
 

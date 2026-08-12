@@ -48,9 +48,18 @@ export function CaptionEditor({ value, fields, onChange }: CaptionEditorProps) {
             <button
               key={f.id}
               onClick={() => insertTag(f.fieldKey)}
-              style={{ fontFamily: "var(--font-mono)", fontSize: 11, padding: "3px 8px", borderRadius: "var(--radius-control)", background: "var(--bg-hover)", color: "var(--text-secondary)" }}
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                padding: "3px 8px",
+                borderRadius: "var(--radius-control)",
+                background: "var(--bg-hover)",
+                color: "var(--text-secondary)",
+              }}
             >
-              {"{"}{f.fieldKey}{"}"}
+              {"{"}
+              {f.fieldKey}
+              {"}"}
             </button>
           ))}
         </div>

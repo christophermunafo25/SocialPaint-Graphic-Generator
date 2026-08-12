@@ -38,7 +38,7 @@ export interface History<T> {
   reset(next: T | ((prev: T) => T)): void;
 }
 
-const apply = <T,>(updater: T | ((prev: T) => T), prev: T): T =>
+const apply = <T>(updater: T | ((prev: T) => T), prev: T): T =>
   typeof updater === "function" ? (updater as (prev: T) => T)(prev) : updater;
 
 export function useHistory<T>(initial: T | (() => T)): History<T> {

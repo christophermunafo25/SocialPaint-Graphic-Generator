@@ -22,10 +22,7 @@ export function handleOptions(req: Request): Response | null {
 
 /** Service-role client — bypasses RLS; only ever used server-side. */
 export function serviceClient(): SupabaseClient {
-  return createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
+  return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 }
 
 /** Authenticate the caller from their JWT and require a membership (or

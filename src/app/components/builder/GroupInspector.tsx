@@ -37,7 +37,13 @@ const ALIGN_LABELS: Record<GroupAxisPoint, string> = {
  * anchor choice is EXPLICIT (it decides which edge holds still as content
  * grows) — and switching it re-derives the anchor coordinate from the
  * current frame so the stack doesn't move at the moment of choosing. */
-export function GroupInspector({ group, computedRect, onChange, onUngroup, onDelete }: GroupInspectorProps) {
+export function GroupInspector({
+  group,
+  computedRect,
+  onChange,
+  onUngroup,
+  onDelete,
+}: GroupInspectorProps) {
   const vertical = group.direction === "vertical";
 
   const changeAnchor = (next: GroupAxisPoint) => {
@@ -51,8 +57,14 @@ export function GroupInspector({ group, computedRect, onChange, onUngroup, onDel
     const mainStart = vertical ? computedRect.y : computedRect.x;
     const mainSize = vertical ? computedRect.height : computedRect.width;
     const pos =
-      next === "start" ? mainStart : next === "center" ? mainStart + mainSize / 2 : mainStart + mainSize;
-    onChange(vertical ? { anchor: next, y: Math.round(pos) } : { anchor: next, x: Math.round(pos) });
+      next === "start"
+        ? mainStart
+        : next === "center"
+          ? mainStart + mainSize / 2
+          : mainStart + mainSize;
+    onChange(
+      vertical ? { anchor: next, y: Math.round(pos) } : { anchor: next, x: Math.round(pos) },
+    );
   };
 
   return (
@@ -136,7 +148,8 @@ export function GroupInspector({ group, computedRect, onChange, onUngroup, onDel
           />
           <span style={{ fontSize: 11, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
             {vertical ? "H" : "W"}{" "}
-            {computedRect ? Math.round(vertical ? computedRect.height : computedRect.width) : "—"} · computed
+            {computedRect ? Math.round(vertical ? computedRect.height : computedRect.width) : "—"} ·
+            computed
           </span>
         </PropertyRow>
       </InspectorSection>

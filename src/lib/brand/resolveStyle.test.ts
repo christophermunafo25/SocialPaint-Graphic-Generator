@@ -135,7 +135,11 @@ describe("the resolved face is one the family can actually draw", () => {
   });
 
   it("drops a width the family has no axis for", () => {
-    const field: TemplateField = { ...legacyField, fontFamily: "Montserrat", fontStretch: "condensed" };
+    const field: TemplateField = {
+      ...legacyField,
+      fontFamily: "Montserrat",
+      fontStretch: "condensed",
+    };
     expect(resolveFieldStyle(field, null).fontStretch).toBe("normal");
   });
 
@@ -326,7 +330,12 @@ describe("freezeBrandColors", () => {
   });
 
   it("a dangling key unbinds without inventing a color", () => {
-    const dangling: TemplateField = { ...legacyField, id: "f4", colorKey: "gone", colorHex: "#333333" };
+    const dangling: TemplateField = {
+      ...legacyField,
+      id: "f4",
+      colorKey: "gone",
+      colorHex: "#333333",
+    };
     const [f] = freezeBrandColors([dangling], paletteKit);
     expect(f.colorKey).toBeUndefined();
     expect(f.colorHex).toBe("#333333");

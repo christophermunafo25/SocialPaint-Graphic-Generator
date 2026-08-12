@@ -1,9 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { isSupabaseConfigured, supabaseAnonKey, supabaseUrl } from "@/lib/config/supabaseEnv";
 
-const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
-
-export const isSupabaseConfigured = Boolean(url && anonKey);
+export { isSupabaseConfigured };
 
 let client: SupabaseClient | null = null;
 
@@ -13,7 +11,7 @@ export function supabase(): SupabaseClient {
       "Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (see .env.example).",
     );
   }
-  if (!client) client = createClient(url!, anonKey!);
+  if (!client) client = createClient(supabaseUrl!, supabaseAnonKey!);
   return client;
 }
 

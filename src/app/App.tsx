@@ -8,6 +8,7 @@ import { BrandProvider, useBrand } from "@/lib/brand/BrandContext";
 import { ColorSchemeProvider } from "@/lib/colorScheme";
 import { RouterProvider, useRouter } from "./router";
 import { AppShell } from "./components/AppShell";
+import { DevBackendBanner } from "./components/DevBackendBanner";
 import { ErrorState } from "./components/ErrorState";
 import { Portal } from "./components/Portal";
 import { TemplateUsePage } from "./components/TemplateUsePage";
@@ -17,6 +18,24 @@ import { TemplateBuilder } from "./components/builder/TemplateBuilder";
 import { BrandStudio } from "./components/admin/BrandStudio";
 import { Dashboard } from "./components/admin/Dashboard";
 import { SettingsAdmin } from "./components/admin/SettingsAdmin";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { setMonitoringContext } from "@/lib/monitoring";
+
+/** Keeps the ambient error-report context current: route name, company id,
+ * opaque user id, role. Ids and enums only — never email or name. */
+function MonitoringBridge() {
+  const { company, role, user } = useAuth();
+  const { route } = useRouter();
+  React.useEffect(() => {
+    setMonitoringContext({
+      route: route.name,
+      companyId: company?.id,
+      userId: user?.id,
+      role: role ?? undefined,
+    });
+  }, [route.name, company?.id, user?.id, role]);
+  return null;
+}
 
 /** Completes the Canva OAuth round-trip: the authorize redirect lands on
  * `/?canva_oauth=1&code=…&state=…`; this exchanges the pair server-side (the
@@ -49,8 +68,13 @@ function Screen() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--background)" }}>
-        <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>Loading…</p>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: "var(--background)" }}
+      >
+        <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
+          Loading…
+        </p>
       </div>
     );
   }
@@ -59,7 +83,10 @@ function Screen() {
   // "signed out" or "no company" (both would point the user at the wrong fix).
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--background)" }}>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: "var(--background)" }}
+      >
         <ErrorState
           title="We couldn't load your account."
           detail="Check your connection and try again."
@@ -78,7 +105,10 @@ function Screen() {
   // kit that failed to load.
   if (!brand.loading && brand.error) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--background)" }}>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: "var(--background)" }}
+      >
         <ErrorState
           title="We couldn't load your brand."
           detail="Check your connection and try again."
@@ -93,29 +123,54 @@ function Screen() {
     return <OnboardingWizard firstRun={!company} />;
   }
 
-  const adminOnly = (node: React.ReactNode) =>
-    role === "admin" ? node : <Portal />;
+  const adminOnly = (node: React.ReactNode) => (role === "admin" ? node : <Portal />);
 
   return (
     <AppShell>
       {canvaReturn.notice && (
         <div className="sp-toast" role="status" aria-live="polite">
-          <span style={{ fontSize: "var(--type-label-size)", fontWeight: 500, color: "var(--text-primary)" }}>
+          <span
+            style={{
+              fontSize: "var(--type-label-size)",
+              fontWeight: 500,
+              color: "var(--text-primary)",
+            }}
+          >
             {canvaReturn.notice}
           </span>
-          <button onClick={canvaReturn.dismiss} aria-label="Dismiss" style={{ color: "var(--text-muted)" }}>
+          <button
+            onClick={canvaReturn.dismiss}
+            aria-label="Dismiss"
+            style={{ color: "var(--text-muted)" }}
+          >
             ×
           </button>
         </div>
       )}
-      {route.name === "portal" && <Portal />}
-      {route.name === "template" && <TemplateUsePage templateId={route.templateId} />}
-      {route.name === "adminTemplates" && adminOnly(<AdminTemplates />)}
-      {route.name === "builder" && adminOnly(<TemplateBuilder templateId={route.templateId} />)}
-      {route.name === "brandStudio" && adminOnly(<BrandStudio />)}
-      {route.name === "dashboard" && adminOnly(<Dashboard />)}
-      {route.name === "people" && adminOnly(<PeopleAdmin />)}
-      {route.name === "settings" && adminOnly(<SettingsAdmin />)}
+      {/* The ROUTE boundary: a crash inside any screen leaves the shell and
+          sidebar standing, so the user can retry or simply go somewhere
+          else. Navigation resets a crashed boundary via resetKeys. */}
+      <ErrorBoundary
+        level="route"
+        context={{ route: route.name }}
+        resetKeys={[route.name, "templateId" in route ? route.templateId : null]}
+        fallback={(retry) => (
+          <ErrorState
+            title="This screen ran into a problem."
+            detail="Everything up to your last save is safe. Try again, or head somewhere else from the sidebar."
+            onRetry={retry}
+          />
+        )}
+      >
+        {route.name === "portal" && <Portal />}
+        {route.name === "template" && <TemplateUsePage templateId={route.templateId} />}
+        {route.name === "adminTemplates" && adminOnly(<AdminTemplates />)}
+        {route.name === "builder" && adminOnly(<TemplateBuilder templateId={route.templateId} />)}
+        {route.name === "brandStudio" && adminOnly(<BrandStudio />)}
+        {route.name === "dashboard" && adminOnly(<Dashboard />)}
+        {route.name === "people" && adminOnly(<PeopleAdmin />)}
+        {route.name === "settings" && adminOnly(<SettingsAdmin />)}
+      </ErrorBoundary>
     </AppShell>
   );
 }
@@ -127,7 +182,9 @@ export default function App() {
       <AuthProvider>
         <BrandProvider>
           <RouterProvider>
+            <MonitoringBridge />
             <Screen />
+            <DevBackendBanner />
           </RouterProvider>
         </BrandProvider>
       </AuthProvider>

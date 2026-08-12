@@ -11,7 +11,11 @@ export class SupabaseCompanyStore implements CompanyStore {
   }
 
   async get(id: string): Promise<Company | null> {
-    const { data, error } = await supabase().from("companies").select("*").eq("id", id).maybeSingle();
+    const { data, error } = await supabase()
+      .from("companies")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
     if (error) throw error;
     return data ? toCompany(data as CompanyRow) : null;
   }

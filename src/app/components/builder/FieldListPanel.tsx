@@ -35,7 +35,13 @@ interface FieldListPanelProps {
 }
 
 type Row =
-  | { kind: "field"; field: TemplateField; stepNo: number | null; depth: number; group?: LayoutGroup }
+  | {
+      kind: "field";
+      field: TemplateField;
+      stepNo: number | null;
+      depth: number;
+      group?: LayoutGroup;
+    }
   | { kind: "group"; group: LayoutGroup; depth: number };
 
 type DragSource =
@@ -84,7 +90,14 @@ export function FieldListPanel({
         continue;
       }
       const f = byKey.get(ref);
-      if (f) rows.push({ kind: "field", field: f, stepNo: stepNoById.get(f.id) ?? null, depth: depth + 1, group: g });
+      if (f)
+        rows.push({
+          kind: "field",
+          field: f,
+          stepNo: stepNoById.get(f.id) ?? null,
+          depth: depth + 1,
+          group: g,
+        });
     }
   };
   for (const f of fields) {
@@ -172,10 +185,15 @@ export function FieldListPanel({
     <div className="sp-card p-3 space-y-2">
       <div className="flex items-baseline justify-between">
         <h3 className="sp-eyebrow">Form order</h3>
-        <span style={{ fontSize: 10, color: "var(--text-muted)" }}>The order your team fills these in.</span>
+        <span style={{ fontSize: 10, color: "var(--text-muted)" }}>
+          The order your team fills these in.
+        </span>
       </div>
       {fields.length === 0 ? (
-        <p className="py-4 text-center" style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
+        <p
+          className="py-4 text-center"
+          style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}
+        >
           No fields yet — drag an element onto the canvas.
         </p>
       ) : (
@@ -218,11 +236,21 @@ export function FieldListPanel({
                     marginLeft: r.depth * 14,
                     borderRadius: "var(--radius-control)",
                     border: `1px solid ${isSelected ? "var(--state-primary)" : "var(--border)"}`,
-                    background: isSelected ? "var(--accent-wash)" : isOver ? "var(--bg-raised)" : "var(--bg-surface)",
+                    background: isSelected
+                      ? "var(--accent-wash)"
+                      : isOver
+                        ? "var(--bg-raised)"
+                        : "var(--bg-surface)",
                   }}
                 >
                   <GripVertical
-                    style={{ width: 13, height: 13, color: "var(--text-disabled)", flexShrink: 0, cursor: "grab" }}
+                    style={{
+                      width: 13,
+                      height: 13,
+                      color: "var(--text-disabled)",
+                      flexShrink: 0,
+                      cursor: "grab",
+                    }}
                   />
                   <button
                     aria-label={isCollapsed ? "Expand group" : "Collapse group"}
@@ -244,11 +272,22 @@ export function FieldListPanel({
                       <ChevronDown style={{ width: 12, height: 12 }} />
                     )}
                   </button>
-                  <Frame style={{ width: 13, height: 13, color: "var(--text-muted)", flexShrink: 0 }} />
-                  <span className="flex-1 truncate" style={{ fontSize: 12.5, color: "var(--text-primary)" }}>
+                  <Frame
+                    style={{ width: 13, height: 13, color: "var(--text-muted)", flexShrink: 0 }}
+                  />
+                  <span
+                    className="flex-1 truncate"
+                    style={{ fontSize: 12.5, color: "var(--text-primary)" }}
+                  >
                     {r.group.name}
                   </span>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 9.5, color: "var(--text-disabled)" }}>
+                  <span
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 9.5,
+                      color: "var(--text-disabled)",
+                    }}
+                  >
                     stack
                   </span>
                 </div>
@@ -299,7 +338,13 @@ export function FieldListPanel({
                 }}
               >
                 <GripVertical
-                  style={{ width: 13, height: 13, color: "var(--text-disabled)", flexShrink: 0, cursor: "grab" }}
+                  style={{
+                    width: 13,
+                    height: 13,
+                    color: "var(--text-disabled)",
+                    flexShrink: 0,
+                    cursor: "grab",
+                  }}
                 />
                 <span
                   className="flex items-center"
@@ -317,13 +362,23 @@ export function FieldListPanel({
                     String(r.stepNo).padStart(2, "0")
                   )}
                 </span>
-                <Icon style={{ width: 13, height: 13, color: "var(--text-muted)", flexShrink: 0 }} />
-                <span className="flex-1 truncate" style={{ fontSize: 12.5, color: "var(--text-primary)" }}>
+                <Icon
+                  style={{ width: 13, height: 13, color: "var(--text-muted)", flexShrink: 0 }}
+                />
+                <span
+                  className="flex-1 truncate"
+                  style={{ fontSize: 12.5, color: "var(--text-primary)" }}
+                >
                   {f.label}
                 </span>
                 <span
                   className="truncate"
-                  style={{ fontFamily: "var(--font-mono)", fontSize: 9.5, color: "var(--text-disabled)", maxWidth: 90 }}
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 9.5,
+                    color: "var(--text-disabled)",
+                    maxWidth: 90,
+                  }}
                 >
                   {f.static ? "fixed" : `{${f.fieldKey}}`}
                 </span>
@@ -333,9 +388,8 @@ export function FieldListPanel({
         </div>
       )}
       <p style={{ fontSize: 10.5, color: "var(--text-muted)" }}>
-        Drag to reorder the form. Rows inside a stack reorder the stack
-        instead. Layer order — what sits on top on the graphic — is separate:
-        use "To front / To back" in the inspector.
+        Drag to reorder the form. Rows inside a stack reorder the stack instead. Layer order — what
+        sits on top on the graphic — is separate: use "To front / To back" in the inspector.
       </p>
     </div>
   );

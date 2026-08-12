@@ -90,20 +90,25 @@ describe("canva CDF parsing", () => {
   });
 
   it("skips unknown element types with a warning rather than throwing", () => {
-    const withUnknown = FIXTURE + `\n## VIDEO [PBF-LBvideo123]\npos: 0,0 size: 100×100 rotation: 0 opacity: 1\n`;
+    const withUnknown =
+      FIXTURE + `\n## VIDEO [PBF-LBvideo123]\npos: 0,0 size: 100×100 rotation: 0 opacity: 1\n`;
     const out = parseCanvaCdf(withUnknown);
     expect(out.elements).toHaveLength(3);
     expect(out.warnings.some((w) => w.includes('"VIDEO"'))).toBe(true);
   });
 
   it("repeated mediaIds at different positions stay distinct elements", () => {
-    const dup = FIXTURE + `\n## RECT [PBF-LBcopy2]\npos: 400,100 size: 282.104×630.4 rotation: 0 opacity: 1\nfill: IMAGE mediaId=MAF38MLi4k4 imageBox=(0,0 282.104×630.4 rotation=0) replaceable=true flipX=false flipY=false\n`;
+    const dup =
+      FIXTURE +
+      `\n## RECT [PBF-LBcopy2]\npos: 400,100 size: 282.104×630.4 rotation: 0 opacity: 1\nfill: IMAGE mediaId=MAF38MLi4k4 imageBox=(0,0 282.104×630.4 rotation=0) replaceable=true flipX=false flipY=false\n`;
     const out = parseCanvaCdf(dup);
     expect(out.elements.filter((e) => e.kind === "image")).toHaveLength(2);
   });
 
   it("only imports page 1 of a multi-page design", () => {
-    const twoPages = FIXTURE + `\n# Page 2 (FIXED) [PBF2]\nDimensions: 940×788\n\n## TEXT [PBF2-LBx]\npos: 0,0 size: 100×40 rotation: 0 opacity: 1\nregions:\n  [0] "Page two" fontSize=20 fontWeight=bold fontStyle=normal color=#000000 textAlign=left lineHeight=1.2 letterSpacing=0 fontRef=Z,0\n`;
+    const twoPages =
+      FIXTURE +
+      `\n# Page 2 (FIXED) [PBF2]\nDimensions: 940×788\n\n## TEXT [PBF2-LBx]\npos: 0,0 size: 100×40 rotation: 0 opacity: 1\nregions:\n  [0] "Page two" fontSize=20 fontWeight=bold fontStyle=normal color=#000000 textAlign=left lineHeight=1.2 letterSpacing=0 fontRef=Z,0\n`;
     const out = parseCanvaCdf(twoPages);
     expect(out.elements).toHaveLength(3);
     expect(out.warnings.some((w) => w.includes("multiple pages"))).toBe(true);

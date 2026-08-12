@@ -113,7 +113,10 @@ export function InspectorSection({
         {headerExtra}
       </div>
       {open && children && (
-        <div className="flex flex-col" style={{ gap: "var(--space-2xs)", paddingTop: "var(--space-xs)" }}>
+        <div
+          className="flex flex-col"
+          style={{ gap: "var(--space-2xs)", paddingTop: "var(--space-xs)" }}
+        >
           {children}
         </div>
       )}
@@ -138,7 +141,11 @@ export function PropertyRow({
   children: React.ReactNode;
 }) {
   if (full) {
-    return <div style={{ minHeight: "var(--row-h-compact)", display: "flex", alignItems: "center" }}>{children}</div>;
+    return (
+      <div style={{ minHeight: "var(--row-h-compact)", display: "flex", alignItems: "center" }}>
+        {children}
+      </div>
+    );
   }
   return (
     <div
@@ -150,7 +157,12 @@ export function PropertyRow({
         minHeight: "var(--row-h-compact)",
       }}
     >
-      <span style={{ ...inspectorLabelStyle, ...(align === "start" ? { paddingTop: "var(--space-2xs)" } : {}) }}>
+      <span
+        style={{
+          ...inspectorLabelStyle,
+          ...(align === "start" ? { paddingTop: "var(--space-2xs)" } : {}),
+        }}
+      >
         {label}
       </span>
       <div
@@ -259,7 +271,13 @@ export function NumericField({
    * draft in its closure, so without the flag it would commit the very value
    * Escape just threw away. */
   const cancelling = useRef(false);
-  const scrub = useRef<{ startX: number; base: number; last: number; pendingX: number; shift: boolean } | null>(null);
+  const scrub = useRef<{
+    startX: number;
+    base: number;
+    last: number;
+    pendingX: number;
+    shift: boolean;
+  } | null>(null);
   const scrubRaf = useRef(0);
 
   const clamp = (n: number): number => {
@@ -293,9 +311,10 @@ export function NumericField({
   };
 
   const stepBy = (direction: 1 | -1, big: boolean) => {
-    const base = draft !== null && !Number.isNaN(Number(draft.trim())) && draft.trim() !== ""
-      ? Number(draft.trim())
-      : value ?? 0;
+    const base =
+      draft !== null && !Number.isNaN(Number(draft.trim())) && draft.trim() !== ""
+        ? Number(draft.trim())
+        : (value ?? 0);
     const next = clamp(base + direction * step * (big ? 10 : 1));
     onCommit(next);
     setDraft(format(next));
@@ -327,7 +346,13 @@ export function NumericField({
     e.preventDefault();
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
     beginInspectorGesture();
-    scrub.current = { startX: e.clientX, base: value ?? 0, last: value ?? 0, pendingX: e.clientX, shift: e.shiftKey };
+    scrub.current = {
+      startX: e.clientX,
+      base: value ?? 0,
+      last: value ?? 0,
+      pendingX: e.clientX,
+      shift: e.shiftKey,
+    };
   };
   // rAF-throttled like every canvas drag: at most one commit per frame,
   // computed from the latest pointer position.

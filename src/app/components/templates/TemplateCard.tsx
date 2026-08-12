@@ -52,9 +52,7 @@ export function TemplateCard({
         <div
           style={{
             aspectRatio: `${template.width} / ${template.height}`,
-            ...(template.width / template.height >= 1
-              ? { width: "100%" }
-              : { height: "100%" }),
+            ...(template.width / template.height >= 1 ? { width: "100%" } : { height: "100%" }),
           }}
         >
           <TemplateThumbnail template={template.template} />

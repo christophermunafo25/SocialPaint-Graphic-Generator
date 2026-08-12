@@ -135,9 +135,7 @@ describe("dimension search", () => {
 
   it("matches by orientation", () => {
     expect(names("vertical")).toContain("Story teaser");
-    expect(names("square")).toEqual(
-      expect.arrayContaining(["Stat card", "Team welcome"]),
-    );
+    expect(names("square")).toEqual(expect.arrayContaining(["Stat card", "Team welcome"]));
   });
 });
 

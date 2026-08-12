@@ -17,7 +17,8 @@ Deno.serve(async (req) => {
   if (options) return options;
   try {
     const { companyId, kind, value } = (await req.json()) as ConnectBody;
-    if (!companyId || !kind || !value) return json({ error: "companyId, kind, value required" }, 400);
+    if (!companyId || !kind || !value)
+      return json({ error: "companyId, kind, value required" }, 400);
 
     const caller = await requireRole(req, companyId, "admin");
     if ("error" in caller) return json({ error: caller.error }, caller.status);
@@ -31,7 +32,10 @@ Deno.serve(async (req) => {
       const clientSecret = Deno.env.get("FIGMA_CLIENT_SECRET");
       const redirectUri = Deno.env.get("FIGMA_OAUTH_REDIRECT_URI");
       if (!clientId || !clientSecret || !redirectUri) {
-        return json({ error: "Figma OAuth is not configured on the server; use a personal access token." }, 400);
+        return json(
+          { error: "Figma OAuth is not configured on the server; use a personal access token." },
+          400,
+        );
       }
       const tokenRes = await fetch("https://api.figma.com/v1/oauth/token", {
         method: "POST",
@@ -39,7 +43,11 @@ Deno.serve(async (req) => {
           "Content-Type": "application/x-www-form-urlencoded",
           Authorization: `Basic ${btoa(`${clientId}:${clientSecret}`)}`,
         },
-        body: new URLSearchParams({ redirect_uri: redirectUri, code: value, grant_type: "authorization_code" }),
+        body: new URLSearchParams({
+          redirect_uri: redirectUri,
+          code: value,
+          grant_type: "authorization_code",
+        }),
       });
       if (!tokenRes.ok) return json({ error: `OAuth exchange failed (${tokenRes.status})` }, 400);
       const tokens = (await tokenRes.json()) as { access_token: string; refresh_token?: string };
@@ -57,7 +65,10 @@ Deno.serve(async (req) => {
         const scopeOnly = me.status === 403 && body.includes("scope");
         if (!scopeOnly) {
           return json(
-            { error: "Figma rejected that token — generate a personal access token with File content read access and try again." },
+            {
+              error:
+                "Figma rejected that token — generate a personal access token with File content read access and try again.",
+            },
             400,
           );
         }

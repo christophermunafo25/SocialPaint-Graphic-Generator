@@ -1,13 +1,13 @@
-import React, { useState, useCallback } from 'react';
-import Cropper from 'react-easy-crop';
+import React, { useState, useCallback } from "react";
+import Cropper from "react-easy-crop";
 
 // Helper to create the cropped image
 const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
     const image = new Image();
-    image.addEventListener('load', () => resolve(image));
-    image.addEventListener('error', (error) => reject(error));
-    image.setAttribute('crossOrigin', 'anonymous'); 
+    image.addEventListener("load", () => resolve(image));
+    image.addEventListener("error", (error) => reject(error));
+    image.setAttribute("crossOrigin", "anonymous");
     image.src = url;
   });
 
@@ -22,10 +22,8 @@ function rotateSize(width: number, height: number, rotation: number) {
   const rotRad = getRadianAngle(rotation);
 
   return {
-    width:
-      Math.abs(Math.cos(rotRad) * width) + Math.abs(Math.sin(rotRad) * height),
-    height:
-      Math.abs(Math.sin(rotRad) * width) + Math.abs(Math.cos(rotRad) * height),
+    width: Math.abs(Math.cos(rotRad) * width) + Math.abs(Math.sin(rotRad) * height),
+    height: Math.abs(Math.sin(rotRad) * width) + Math.abs(Math.cos(rotRad) * height),
   };
 }
 
@@ -33,24 +31,20 @@ async function getCroppedImg(
   imageSrc: string,
   pixelCrop: { x: number; y: number; width: number; height: number },
   rotation = 0,
-  flip = { horizontal: false, vertical: false }
+  flip = { horizontal: false, vertical: false },
 ): Promise<string> {
   const image = await createImage(imageSrc);
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
 
   if (!ctx) {
-    return '';
+    return "";
   }
 
   const rotRad = getRadianAngle(rotation);
 
   // calculate bounding box of the rotated image
-  const { width: bBoxWidth, height: bBoxHeight } = rotateSize(
-    image.width,
-    image.height,
-    rotation
-  );
+  const { width: bBoxWidth, height: bBoxHeight } = rotateSize(image.width, image.height, rotation);
 
   // set canvas size to match the bounding box
   canvas.width = bBoxWidth;
@@ -67,12 +61,7 @@ async function getCroppedImg(
 
   // croppedAreaPixels values are bounding box relative
   // extract the cropped image using these values
-  const data = ctx.getImageData(
-    pixelCrop.x,
-    pixelCrop.y,
-    pixelCrop.width,
-    pixelCrop.height
-  );
+  const data = ctx.getImageData(pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height);
 
   // set canvas width to final desired crop size - this will clear existing context
   canvas.width = pixelCrop.width;
@@ -82,7 +71,7 @@ async function getCroppedImg(
   ctx.putImageData(data, 0, 0);
 
   // As Base64 string
-  return canvas.toDataURL('image/png');
+  return canvas.toDataURL("image/png");
 }
 
 interface ImageCropperProps {
@@ -94,7 +83,12 @@ interface ImageCropperProps {
   aspect?: number;
 }
 
-export function ImageCropper({ imageSrc, onCancel, onCropComplete, aspect = 1 }: ImageCropperProps) {
+export function ImageCropper({
+  imageSrc,
+  onCancel,
+  onCropComplete,
+  aspect = 1,
+}: ImageCropperProps) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
@@ -113,10 +107,7 @@ export function ImageCropper({ imageSrc, onCancel, onCropComplete, aspect = 1 }:
 
   const showCroppedImage = useCallback(async () => {
     try {
-      const croppedImage = await getCroppedImg(
-        imageSrc,
-        croppedAreaPixels
-      );
+      const croppedImage = await getCroppedImg(imageSrc, croppedAreaPixels);
       onCropComplete(croppedImage);
     } catch (e) {
       console.error(e);
@@ -141,10 +132,12 @@ export function ImageCropper({ imageSrc, onCancel, onCropComplete, aspect = 1 }:
           onZoomChange={onZoomChange}
         />
       </div>
-      
+
       <div className="w-full max-w-2xl mt-6 space-y-6">
         <div className="flex items-center gap-4">
-          <span id="crop-zoom-label" className="text-sm" style={{ color: "var(--text-muted)" }}>Zoom</span>
+          <span id="crop-zoom-label" className="text-sm" style={{ color: "var(--text-muted)" }}>
+            Zoom
+          </span>
           <input
             type="range"
             value={zoom}
@@ -153,22 +146,16 @@ export function ImageCropper({ imageSrc, onCancel, onCropComplete, aspect = 1 }:
             step={0.1}
             aria-labelledby="crop-zoom-label"
             onChange={(e) => setZoom(Number(e.target.value))}
-            className="w-full h-2 appearance-none cursor-pointer accent-[var(--ring)]" style={{ background: "var(--bg-hover)", borderRadius: "var(--radius-control)" }}
+            className="w-full h-2 appearance-none cursor-pointer accent-[var(--ring)]"
+            style={{ background: "var(--bg-hover)", borderRadius: "var(--radius-control)" }}
           />
         </div>
 
         <div className="flex justify-end gap-3">
-          <button
-            onClick={onCancel}
-            autoFocus
-            className="sp-btn sp-btn-ghost px-6"
-          >
+          <button onClick={onCancel} autoFocus className="sp-btn sp-btn-ghost px-6">
             Cancel
           </button>
-          <button
-            onClick={showCroppedImage}
-            className="sp-btn sp-btn-primary px-6"
-          >
+          <button onClick={() => void showCroppedImage()} className="sp-btn sp-btn-primary px-6">
             Apply Crop
           </button>
         </div>

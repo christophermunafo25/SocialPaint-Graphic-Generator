@@ -16,10 +16,16 @@ const HEX_RE = /^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 const RGB_RE = /^rgba?\(/;
 
 const slug = (s: string) =>
-  s.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "token";
+  s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "") || "token";
 
 const titleCase = (s: string) =>
-  s.replace(/[_-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()).trim();
+  s
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .trim();
 
 function isColorValue(v: unknown): v is string {
   return typeof v === "string" && (HEX_RE.test(v.trim()) || RGB_RE.test(v.trim()));
@@ -54,7 +60,13 @@ const weightNum = (v: number | string | undefined): number | undefined => {
   if (v === undefined) return undefined;
   if (typeof v === "number") return v;
   const named: Record<string, number> = {
-    light: 300, regular: 400, normal: 400, medium: 500, semibold: 600, bold: 700, black: 900,
+    light: 300,
+    regular: 400,
+    normal: 400,
+    medium: 500,
+    semibold: 600,
+    bold: 700,
+    black: 900,
   };
   return named[v.toLowerCase()] ?? px(v);
 };
@@ -99,18 +111,29 @@ export function parseDesignTokens(json: unknown): DesignSystemImportResult {
             key,
             name: titleCase(name),
             font: t.fontFamily
-              ? { source: "google", family: String(t.fontFamily).split(",")[0].replace(/["']/g, "").trim() }
+              ? {
+                  source: "google",
+                  family: String(t.fontFamily).split(",")[0].replace(/["']/g, "").trim(),
+                }
               : undefined,
             weight: weightNum(t.fontWeight),
             fontSizePx: px(t.fontSize),
-            uppercase: typeof t.textTransform === "string" && /upper/i.test(t.textTransform) ? true : undefined,
+            uppercase:
+              typeof t.textTransform === "string" && /upper/i.test(t.textTransform)
+                ? true
+                : undefined,
             letterSpacingPx: px(t.letterSpacing),
             lineHeight: typeof t.lineHeight === "number" ? t.lineHeight : undefined,
           });
         }
         return;
       }
-      if (path.length === 1 && /spacing|space|radius|radii|shadow|elevation|breakpoint|z-?index|duration|easing/i.test(path[0])) {
+      if (
+        path.length === 1 &&
+        /spacing|space|radius|radii|shadow|elevation|breakpoint|z-?index|duration|easing/i.test(
+          path[0],
+        )
+      ) {
         skipped.add(path[0]);
         return; // recognized but not consumed by the portal (yet)
       }

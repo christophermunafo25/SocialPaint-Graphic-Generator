@@ -23,7 +23,11 @@ export class SupabaseTemplateStore implements TemplateStore {
   }
 
   async get(id: string): Promise<TemplateSchema | null> {
-    const { data, error } = await supabase().from("templates").select(SELECT).eq("id", id).maybeSingle();
+    const { data, error } = await supabase()
+      .from("templates")
+      .select(SELECT)
+      .eq("id", id)
+      .maybeSingle();
     if (error) throw error;
     return data ? toTemplate(data as TemplateRow) : null;
   }
@@ -64,7 +68,8 @@ export class SupabaseTemplateStore implements TemplateStore {
     if (patch.status !== undefined) row.status = patch.status;
     if (patch.canvasWidth !== undefined) row.canvas_width = patch.canvasWidth;
     if (patch.canvasHeight !== undefined) row.canvas_height = patch.canvasHeight;
-    if (patch.backgroundUrl !== undefined) row.background_storage_path = patch.backgroundUrl || null;
+    if (patch.backgroundUrl !== undefined)
+      row.background_storage_path = patch.backgroundUrl || null;
     if ("backgroundColor" in patch) row.background_color = patch.backgroundColor ?? null;
     if ("backgroundGradient" in patch) row.background_gradient = patch.backgroundGradient ?? null;
     if ("layoutGroups" in patch) row.layout_groups = patch.layoutGroups ?? null;

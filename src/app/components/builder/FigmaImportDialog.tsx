@@ -64,13 +64,26 @@ export function FigmaImportDialog({ onClose, onImported }: FigmaImportDialogProp
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
       <div
-        className="w-full max-w-lg p-6 space-y-4" style={{ background: "var(--bg-surface)", borderRadius: "var(--radius-card)" }}
+        className="w-full max-w-lg p-6 space-y-4"
+        style={{ background: "var(--bg-surface)", borderRadius: "var(--radius-card)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <h2 className="flex items-center gap-2" style={{ fontFamily: "var(--font-head)", fontWeight: "var(--weight-head)", fontSize: 21, letterSpacing: "-0.01em", color: "var(--text-primary)" }}>
+          <h2
+            className="flex items-center gap-2"
+            style={{
+              fontFamily: "var(--font-head)",
+              fontWeight: "var(--weight-head)",
+              fontSize: 21,
+              letterSpacing: "-0.01em",
+              color: "var(--text-primary)",
+            }}
+          >
             <Figma className="w-5 h-5" />
             Import from Figma
           </h2>
@@ -80,20 +93,23 @@ export function FigmaImportDialog({ onClose, onImported }: FigmaImportDialogProp
         </div>
 
         {connected === null ? (
-          <p className="text-sm py-6 text-center" style={{ color: "var(--muted-foreground)" }}>Checking connection…</p>
+          <p className="text-sm py-6 text-center" style={{ color: "var(--muted-foreground)" }}>
+            Checking connection…
+          </p>
         ) : !connected ? (
           <div className="space-y-3">
             <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
               Connect your company's Figma account with a personal access token (Figma → Settings →
-              Security → Personal access tokens, file-read scope). The token is stored server-side and
-              never reaches this browser again.
+              Security → Personal access tokens, file-read scope). The token is stored server-side
+              and never reaches this browser again.
             </p>
             <input
               type="password"
               value={pat}
               onChange={(e) => setPat(e.target.value)}
               placeholder="figd_…"
-              className="sp-input" style={{ fontFamily: "var(--font-mono)" }}
+              className="sp-input"
+              style={{ fontFamily: "var(--font-mono)" }}
             />
             <button
               onClick={() => void connect()}
@@ -128,12 +144,25 @@ export function FigmaImportDialog({ onClose, onImported }: FigmaImportDialogProp
         )}
 
         {error && (
-          <p className="text-sm px-4 py-3" data-radius-card style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}>
+          <p
+            className="text-sm px-4 py-3"
+            data-radius-card
+            style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}
+          >
             {error}
           </p>
         )}
         {warnings.map((w) => (
-          <p key={w} className="px-3 py-2" data-radius-control style={{ fontSize: "var(--type-caption-size)", background: "var(--bg-hover)", color: "var(--text-secondary)" }}>
+          <p
+            key={w}
+            className="px-3 py-2"
+            data-radius-control
+            style={{
+              fontSize: "var(--type-caption-size)",
+              background: "var(--bg-hover)",
+              color: "var(--text-secondary)",
+            }}
+          >
             {w}
           </p>
         ))}

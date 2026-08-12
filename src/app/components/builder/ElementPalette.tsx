@@ -82,10 +82,7 @@ function LogoTile({ asset, onAdd }: { asset: BrandAsset; onAdd(id: string): void
       }}
     >
       {/* The artwork itself is the tile — a logo is recognized, not read. */}
-      <span
-        className="flex items-center justify-center w-full"
-        style={{ height: 36 }}
-      >
+      <span className="flex items-center justify-center w-full" style={{ height: 36 }}>
         <img
           src={asset.url}
           alt={name}

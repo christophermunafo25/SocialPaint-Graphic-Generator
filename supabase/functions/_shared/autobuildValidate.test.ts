@@ -37,7 +37,10 @@ const field = (overrides: Partial<ProposedField>): ProposedField => ({
   ...overrides,
 });
 
-const proposal = (fields: ProposedField[], template: Partial<ModelProposal["template"]> = {}): ModelProposal => ({
+const proposal = (
+  fields: ProposedField[],
+  template: Partial<ModelProposal["template"]> = {},
+): ModelProposal => ({
   fields,
   template: {
     name: "Work anniversary post",
@@ -78,10 +81,7 @@ describe("proposals must reference real elements", () => {
 describe("fieldKey discipline", () => {
   it("re-slugs a duplicate fieldKey instead of dropping the field", () => {
     const out = validateProposal(
-      proposal([
-        field({}),
-        field({ sourceId: "1:11", label: "Subtitle", fieldKey: "headline" }),
-      ]),
+      proposal([field({}), field({ sourceId: "1:11", label: "Subtitle", fieldKey: "headline" })]),
       extraction([element("1:10"), element("1:11")]),
       brand,
       "figma",
@@ -154,12 +154,7 @@ describe("caption merge tags", () => {
 describe("hard failures", () => {
   it("zero surviving fields throws, never succeeds", () => {
     expect(() =>
-      validateProposal(
-        proposal([field({ sourceId: "9:99" })]),
-        extraction([]),
-        brand,
-        "figma",
-      ),
+      validateProposal(proposal([field({ sourceId: "9:99" })]), extraction([]), brand, "figma"),
     ).toThrow(AutobuildValidationError);
   });
 });
@@ -224,7 +219,12 @@ describe("the image path clamps hard", () => {
     const out = validateProposal(
       proposal([
         field({ sourceId: undefined, box: { x: 0, y: 0, width: 1440, height: 1400 } }),
-        field({ sourceId: undefined, label: "Name", fieldKey: "name", box: { x: 10, y: 10, width: 400, height: 60 } }),
+        field({
+          sourceId: undefined,
+          label: "Name",
+          fieldKey: "name",
+          box: { x: 10, y: 10, width: 400, height: 60 },
+        }),
       ]),
       imgExtraction,
       brand,
@@ -274,7 +274,9 @@ describe("select and static rules", () => {
 
   it("caps select options at 12", () => {
     const out = validateProposal(
-      proposal([field({ type: "select", options: Array.from({ length: 20 }, (_, i) => `Opt ${i}`) })]),
+      proposal([
+        field({ type: "select", options: Array.from({ length: 20 }, (_, i) => `Opt ${i}`) }),
+      ]),
       extraction([element("1:10")]),
       brand,
       "figma",

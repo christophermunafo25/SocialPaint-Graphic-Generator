@@ -1,5 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, ArrowLeft, ArrowRight, Check, CheckCircle2, Copy, Download, RefreshCw } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  CheckCircle2,
+  Copy,
+  Download,
+  RefreshCw,
+} from "lucide-react";
 import type { FieldValues } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
@@ -7,6 +16,7 @@ import { mergeCaption } from "@/lib/caption";
 import { useBrand } from "@/lib/brand/BrandContext";
 import { useRouter } from "../router";
 import { resolveFieldStyle } from "@/lib/brand/resolveStyle";
+import { ErrorBoundary } from "./ErrorBoundary";
 import { ErrorState } from "./ErrorState";
 import { SchemaRenderer, type SchemaRendererHandle } from "./SchemaRenderer";
 import { FieldInput } from "./FieldInput";
@@ -38,15 +48,16 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
     // Land focus on the step's input so members can type immediately —
     // but not on first render, where it would yank the page down.
     if (step === 0) return;
-    stepCardRef.current
-      ?.querySelector<HTMLElement>("input, textarea, select")
-      ?.focus();
+    stepCardRef.current?.querySelector<HTMLElement>("input, textarea, select")?.focus();
   }, [step]);
 
   const showToast = (kind: "downloaded" | "shared" | "error") => {
     window.clearTimeout(toastTimer.current);
     setExportToast(kind);
-    toastTimer.current = window.setTimeout(() => setExportToast(null), kind === "error" ? 6000 : 4000);
+    toastTimer.current = window.setTimeout(
+      () => setExportToast(null),
+      kind === "error" ? 6000 : 4000,
+    );
   };
 
   const suggestedCaption = template ? mergeCaption(template, values) : "";
@@ -62,7 +73,14 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
   );
 
   if (templateState.status === "loading") {
-    return <p className="text-center py-24" style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>Loading template…</p>;
+    return (
+      <p
+        className="text-center py-24"
+        style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}
+      >
+        Loading template…
+      </p>
+    );
   }
   if (templateState.status === "error") {
     return (
@@ -74,7 +92,14 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
     );
   }
   if (!template) {
-    return <p className="text-center py-24" style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>Template not found.</p>;
+    return (
+      <p
+        className="text-center py-24"
+        style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}
+      >
+        Template not found.
+      </p>
+    );
   }
 
   const handleDownload = async () => {
@@ -108,17 +133,43 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
           aria-live={exportToast === "error" ? "assertive" : "polite"}
         >
           {exportToast === "error" ? (
-            <AlertTriangle style={{ width: 16, height: 16, color: "var(--state-danger)", flexShrink: 0, marginTop: 1 }} />
+            <AlertTriangle
+              style={{
+                width: 16,
+                height: 16,
+                color: "var(--state-danger)",
+                flexShrink: 0,
+                marginTop: 1,
+              }}
+            />
           ) : (
-            <CheckCircle2 style={{ width: 16, height: 16, color: "var(--state-primary)", flexShrink: 0, marginTop: 1 }} />
+            <CheckCircle2
+              style={{
+                width: 16,
+                height: 16,
+                color: "var(--state-primary)",
+                flexShrink: 0,
+                marginTop: 1,
+              }}
+            />
           )}
           <span className="min-w-0">
-            <span className="block" style={{ fontSize: "var(--type-label-size)", fontWeight: 500, color: "var(--text-primary)" }}>
+            <span
+              className="block"
+              style={{
+                fontSize: "var(--type-label-size)",
+                fontWeight: 500,
+                color: "var(--text-primary)",
+              }}
+            >
               {exportToast === "downloaded" && "Graphic downloaded"}
               {exportToast === "shared" && "Graphic shared"}
               {exportToast === "error" && "Couldn't export the graphic"}
             </span>
-            <span className="block" style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
+            <span
+              className="block"
+              style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}
+            >
               {exportToast === "downloaded" && "It's in your downloads folder, ready to post."}
               {exportToast === "shared" && "Sent through your device's share sheet."}
               {exportToast === "error" && "Try again — if it keeps failing, re-upload the photo."}
@@ -141,7 +192,15 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
           <div>
             <h1 className="sp-page-title">{template.name}</h1>
             {template.description && (
-              <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)", marginTop: "var(--space-3xs)" }}>{template.description}</p>
+              <p
+                style={{
+                  fontSize: "var(--type-label-size)",
+                  color: "var(--text-muted)",
+                  marginTop: "var(--space-3xs)",
+                }}
+              >
+                {template.description}
+              </p>
             )}
           </div>
 
@@ -171,9 +230,14 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
                       alignItems: "center",
                       justifyContent: "center",
                       border: current ? "1px solid transparent" : "1px solid var(--border-strong)",
-                      background: current ? "var(--fill-primary)" : filled ? "var(--bg-hover)" : "transparent",
+                      background: current
+                        ? "var(--fill-primary)"
+                        : filled
+                          ? "var(--bg-hover)"
+                          : "transparent",
                       color: current ? "var(--text-on-volt)" : "var(--text-secondary)",
-                      transition: "background var(--dur-state) var(--ease), color var(--dur-state) var(--ease)",
+                      transition:
+                        "background var(--dur-state) var(--ease), color var(--dur-state) var(--ease)",
                     }}
                   >
                     {filled && !current ? <Check style={{ width: 12, height: 12 }} /> : i + 1}
@@ -193,10 +257,15 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
                   fontSize: 10,
                   letterSpacing: "0.04em",
                   textTransform: "uppercase",
-                  border: step === formFields.length ? "1px solid transparent" : "1px solid var(--border-strong)",
+                  border:
+                    step === formFields.length
+                      ? "1px solid transparent"
+                      : "1px solid var(--border-strong)",
                   background: step === formFields.length ? "var(--fill-primary)" : "transparent",
-                  color: step === formFields.length ? "var(--text-on-volt)" : "var(--text-secondary)",
-                  transition: "background var(--dur-state) var(--ease), color var(--dur-state) var(--ease)",
+                  color:
+                    step === formFields.length ? "var(--text-on-volt)" : "var(--text-secondary)",
+                  transition:
+                    "background var(--dur-state) var(--ease), color var(--dur-state) var(--ease)",
                 }}
               >
                 Finish
@@ -226,17 +295,26 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
                 >
                   <div>
                     <p className="sp-eyebrow">
-                      Step {String(step + 1).padStart(2, "0")} of {String(formFields.length).padStart(2, "0")}
+                      Step {String(step + 1).padStart(2, "0")} of{" "}
+                      {String(formFields.length).padStart(2, "0")}
                     </p>
                     <label
                       htmlFor={inputId}
                       className="block"
-                      style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)", marginTop: 2 }}
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 500,
+                        color: "var(--text-primary)",
+                        marginTop: 2,
+                      }}
                     >
                       {field.label}
                       {field.required && (
                         <>
-                          <span aria-hidden style={{ color: "var(--state-primary)" }}> *</span>
+                          <span aria-hidden style={{ color: "var(--state-primary)" }}>
+                            {" "}
+                            *
+                          </span>
                           <span className="sr-only"> (required)</span>
                         </>
                       )}
@@ -246,7 +324,12 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
                         role="status"
                         aria-live="polite"
                         aria-label={`${(values[field.fieldKey] ?? "").length} of ${maxLength} characters used`}
-                        style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          fontSize: 10,
+                          color: "var(--text-muted)",
+                          marginTop: 2,
+                        }}
                       >
                         {(values[field.fieldKey] ?? "").length}/{maxLength}
                       </p>
@@ -292,7 +375,11 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
                     {caption !== null && (
                       <button
                         onClick={() => setCaption(null)}
-                        style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--state-primary)" }}
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          fontSize: 10,
+                          color: "var(--state-primary)",
+                        }}
                       >
                         Reset to suggestion
                       </button>
@@ -306,8 +393,12 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
                     className="sp-input"
                     style={{ resize: "vertical" }}
                   />
-                  <button onClick={handleCopy} className="sp-btn sp-btn-ghost w-full">
-                    {copied ? <Check style={{ width: 14, height: 14 }} /> : <Copy style={{ width: 14, height: 14 }} />}
+                  <button onClick={() => void handleCopy()} className="sp-btn sp-btn-ghost w-full">
+                    {copied ? (
+                      <Check style={{ width: 14, height: 14 }} />
+                    ) : (
+                      <Copy style={{ width: 14, height: 14 }} />
+                    )}
                     {copied ? "Copied" : "Copy caption"}
                   </button>
                 </div>
@@ -315,13 +406,19 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
 
               <div className="sp-card p-4 space-y-2">
                 <button
-                  onClick={handleDownload}
+                  onClick={() => void handleDownload()}
                   disabled={exporting || missingRequired.length > 0}
-                  aria-describedby={missingRequired.length > 0 ? "download-blocked-reason" : undefined}
+                  aria-describedby={
+                    missingRequired.length > 0 ? "download-blocked-reason" : undefined
+                  }
                   className="sp-btn sp-btn-primary w-full"
                   style={{ padding: "11px 14px" }}
                 >
-                  {exporting ? <RefreshCw className="animate-spin" style={{ width: 14, height: 14 }} /> : <Download style={{ width: 14, height: 14 }} />}
+                  {exporting ? (
+                    <RefreshCw className="animate-spin" style={{ width: 14, height: 14 }} />
+                  ) : (
+                    <Download style={{ width: 14, height: 14 }} />
+                  )}
                   {exporting ? "Generating…" : "Download graphic"}
                 </button>
                 {missingRequired.length > 0 && (
@@ -360,13 +457,32 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
                 {template.canvasWidth}×{template.canvasHeight} · live
               </span>
             </div>
-            <div className="overflow-hidden" data-radius-card style={{ background: "var(--bg-hover)", border: "1px solid var(--border)" }}>
-              <SchemaRenderer
-                ref={rendererRef}
-                schema={template}
-                values={values}
-                brandKit={kit}
-              />
+            <div
+              className="overflow-hidden"
+              data-radius-card
+              style={{ background: "var(--bg-hover)", border: "1px solid var(--border)" }}
+            >
+              {/* Canvas boundary: the form beside it keeps working even if
+                  the live preview can't render this template. */}
+              <ErrorBoundary
+                level="canvas"
+                context={{ templateId: template.id }}
+                resetKeys={[template, values]}
+                fallback={(retry) => (
+                  <ErrorState
+                    title="We couldn't display this template."
+                    detail="Your other templates are fine — try again, and tell your admin about this one if it keeps happening."
+                    onRetry={retry}
+                  />
+                )}
+              >
+                <SchemaRenderer
+                  ref={rendererRef}
+                  schema={template}
+                  values={values}
+                  brandKit={kit}
+                />
+              </ErrorBoundary>
             </div>
           </div>
         </div>

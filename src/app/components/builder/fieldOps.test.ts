@@ -76,17 +76,45 @@ describe("logoFieldFromAsset", () => {
 
 describe("style clipboard", () => {
   const headline: TemplateField = {
-    id: "src", label: "Headline", fieldKey: "headline", type: "text",
-    x: 10, y: 20, width: 500, height: 100,
-    fontFamily: "Neuething Sans", fontWeight: 800, fontStretch: "expanded",
-    fontSizePx: 96, uppercase: false, letterSpacingPx: -1.9, lineHeight: 1.2,
-    align: "left", autoFit: true, colorHex: "#F9F9F8",
-    textGradient: { angle: 135, stops: [{ position: 0, color: "#FF4D12" }, { position: 1, color: "#FF8235" }] },
+    id: "src",
+    label: "Headline",
+    fieldKey: "headline",
+    type: "text",
+    x: 10,
+    y: 20,
+    width: 500,
+    height: 100,
+    fontFamily: "Neuething Sans",
+    fontWeight: 800,
+    fontStretch: "expanded",
+    fontSizePx: 96,
+    uppercase: false,
+    letterSpacingPx: -1.9,
+    lineHeight: 1.2,
+    align: "left",
+    autoFit: true,
+    colorHex: "#F9F9F8",
+    textGradient: {
+      angle: 135,
+      stops: [
+        { position: 0, color: "#FF4D12" },
+        { position: 1, color: "#FF8235" },
+      ],
+    },
   };
   const plain: TemplateField = {
-    id: "dst", label: "Body", fieldKey: "body", type: "multiline",
-    x: 700, y: 800, width: 400, height: 200,
-    fontFamily: "Inter Tight", fontWeight: 400, fontSizePx: 36, colorHex: "#121212",
+    id: "dst",
+    label: "Body",
+    fieldKey: "body",
+    type: "multiline",
+    x: 700,
+    y: 800,
+    width: 400,
+    height: 200,
+    fontFamily: "Inter Tight",
+    fontWeight: 400,
+    fontSizePx: 36,
+    colorHex: "#121212",
   };
 
   it("pastes the look, never content or geometry", () => {
@@ -114,8 +142,15 @@ describe("style clipboard", () => {
   it("applies only the type-appropriate subset across kinds", () => {
     copyStyle(headline);
     const image: TemplateField = {
-      id: "img", label: "Photo", fieldKey: "photo", type: "image",
-      x: 0, y: 0, width: 100, height: 100, objectFit: "cover",
+      id: "img",
+      label: "Photo",
+      fieldKey: "photo",
+      type: "image",
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 100,
+      objectFit: "cover",
       cornerRadius: { tl: 8, tr: 8, br: 8, bl: 8 },
     };
     const styled = applyClipboardStyle(image);
@@ -129,8 +164,17 @@ describe("style clipboard", () => {
   it("shape fill adopts a text style's color and gradient", () => {
     copyStyle(headline);
     const shape: TemplateField = {
-      id: "sh", label: "Rect", fieldKey: "rect", type: "shape", shape: "rect",
-      x: 0, y: 0, width: 50, height: 50, colorHex: "#d9d9d9", static: true,
+      id: "sh",
+      label: "Rect",
+      fieldKey: "rect",
+      type: "shape",
+      shape: "rect",
+      x: 0,
+      y: 0,
+      width: 50,
+      height: 50,
+      colorHex: "#d9d9d9",
+      static: true,
     };
     const styled = applyClipboardStyle(shape);
     expect(styled.colorHex).toBe("#F9F9F8");

@@ -9,7 +9,9 @@ import type { DetectFields } from "./stores/interfaces";
  * overlay editor is the reliable baseline and never depends on this.
  */
 export const detectFields: DetectFields = async (_imageUrl: string) => {
-  throw new Error("Automatic field suggestion is not available yet — draw fields on the image instead.");
+  throw new Error(
+    "Automatic field suggestion is not available yet — draw fields on the image instead.",
+  );
 };
 
 export const DETECT_FIELDS_AVAILABLE = false;

@@ -102,8 +102,7 @@ const WEIGHTS: Record<keyof IndexedFields, number> = {
 const EXACT_NAME_BONUS = 1000;
 
 /** Prefix, not equality: "carou" should find "carousel". */
-const hits = (tokens: string[], query: string): boolean =>
-  tokens.some((t) => t.startsWith(query));
+const hits = (tokens: string[], query: string): boolean => tokens.some((t) => t.startsWith(query));
 
 /**
  * Token-based AND matching: every token in the query must hit somewhere, so
@@ -111,10 +110,7 @@ const hits = (tokens: string[], query: string): boolean =>
  * landed. Synchronous and in-memory — the catalogue is one company's
  * published templates, not a corpus.
  */
-export function searchTemplates(
-  index: IndexedTemplate[],
-  rawQuery: string,
-): CatalogTemplate[] {
+export function searchTemplates(index: IndexedTemplate[], rawQuery: string): CatalogTemplate[] {
   const query = applyAliases(normalize(rawQuery));
   if (!query) return index.map((i) => i.template);
   const queryTokens = query.split(" ").filter(Boolean);

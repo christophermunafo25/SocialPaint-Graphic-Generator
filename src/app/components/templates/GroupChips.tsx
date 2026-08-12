@@ -93,9 +93,7 @@ export function GroupChips({
         aria-label="Filter by platform and shape"
       >
         {chip(null, 0, "All", total, LayoutGrid)}
-        {groups.map((g, i) =>
-          chip(g.id, i + 1, g.label, g.templates.length, g.platform.Icon),
-        )}
+        {groups.map((g, i) => chip(g.id, i + 1, g.label, g.templates.length, g.platform.Icon))}
       </div>
     </div>
   );

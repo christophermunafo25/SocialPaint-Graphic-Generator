@@ -134,7 +134,11 @@ export function AutoBuildDialog({ onClose, onBuilt }: AutoBuildDialogProps) {
       style={{
         fontSize: "var(--type-label-size)",
         background: tab === key ? "var(--accent-wash)" : "transparent",
-        color: disabled ? "var(--text-disabled)" : tab === key ? "var(--text-primary)" : "var(--text-secondary)",
+        color: disabled
+          ? "var(--text-disabled)"
+          : tab === key
+            ? "var(--text-primary)"
+            : "var(--text-secondary)",
         border: "1px solid",
         borderColor: tab === key ? "var(--border-strong)" : "transparent",
         cursor: disabled ? "default" : "pointer",
@@ -145,14 +149,26 @@ export function AutoBuildDialog({ onClose, onBuilt }: AutoBuildDialogProps) {
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
       <div
         className="w-full max-w-lg p-6 space-y-4"
         style={{ background: "var(--bg-surface)", borderRadius: "var(--radius-card)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <h2 className="flex items-center gap-2" style={{ fontFamily: "var(--font-head)", fontWeight: "var(--weight-head)", fontSize: 21, letterSpacing: "-0.01em", color: "var(--text-primary)" }}>
+          <h2
+            className="flex items-center gap-2"
+            style={{
+              fontFamily: "var(--font-head)",
+              fontWeight: "var(--weight-head)",
+              fontSize: 21,
+              letterSpacing: "-0.01em",
+              color: "var(--text-primary)",
+            }}
+          >
             <Sparkles className="w-5 h-5" style={{ color: "var(--state-primary)" }} />
             Auto-build with Claude
           </h2>
@@ -163,8 +179,13 @@ export function AutoBuildDialog({ onClose, onBuilt }: AutoBuildDialogProps) {
 
         {busy ? (
           <div className="py-8 text-center space-y-3" role="status" aria-live="polite">
-            <RefreshCw className="w-5 h-5 animate-spin mx-auto" style={{ color: "var(--state-primary)" }} />
-            <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>{STAGES[stage]}</p>
+            <RefreshCw
+              className="w-5 h-5 animate-spin mx-auto"
+              style={{ color: "var(--state-primary)" }}
+            />
+            <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>
+              {STAGES[stage]}
+            </p>
             <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
               This takes 15–40 seconds. Everything lands editable-or-fixed on the canvas — change
               anything in the inspector.
@@ -174,7 +195,12 @@ export function AutoBuildDialog({ onClose, onBuilt }: AutoBuildDialogProps) {
           <>
             <div className="flex items-center gap-1.5" role="tablist" aria-label="Design source">
               {tabButton("figma", "Figma link")}
-              {tabButton("canva", "Canva link", !(canva?.enabled), canva?.enabled ? undefined : "Coming soon")}
+              {tabButton(
+                "canva",
+                "Canva link",
+                !canva?.enabled,
+                canva?.enabled ? undefined : "Coming soon",
+              )}
               {tabButton("image", "Upload an image")}
             </div>
 
@@ -214,7 +240,10 @@ export function AutoBuildDialog({ onClose, onBuilt }: AutoBuildDialogProps) {
                       own Canva login; the tokens are stored server-side and never reach this
                       browser again.
                     </p>
-                    <button onClick={() => void connectCanva()} className="sp-btn sp-btn-primary w-full">
+                    <button
+                      onClick={() => void connectCanva()}
+                      className="sp-btn sp-btn-primary w-full"
+                    >
                       Connect Canva
                     </button>
                   </>
@@ -224,7 +253,15 @@ export function AutoBuildDialog({ onClose, onBuilt }: AutoBuildDialogProps) {
                       Paste a Canva design link. Elements Canva reports as locked arrive Fixed;
                       unlocked text arrives editable.
                     </p>
-                    <p className="px-3 py-2" data-radius-control style={{ fontSize: "var(--type-caption-size)", background: "var(--bg-hover)", color: "var(--text-secondary)" }}>
+                    <p
+                      className="px-3 py-2"
+                      data-radius-control
+                      style={{
+                        fontSize: "var(--type-caption-size)",
+                        background: "var(--bg-hover)",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
                       Canva templates import with the original artwork still visible behind editable
                       text — give editable text a fill or a background shape behind it.
                     </p>
@@ -259,9 +296,15 @@ export function AutoBuildDialog({ onClose, onBuilt }: AutoBuildDialogProps) {
                   }}
                 >
                   {uploadingImage ? (
-                    <RefreshCw className="w-4 h-4 animate-spin" style={{ color: "var(--state-primary)" }} />
+                    <RefreshCw
+                      className="w-4 h-4 animate-spin"
+                      style={{ color: "var(--state-primary)" }}
+                    />
                   ) : (
-                    <Upload className="sp-dropzone__icon w-4 h-4" style={{ color: "var(--state-primary)" }} />
+                    <Upload
+                      className="sp-dropzone__icon w-4 h-4"
+                      style={{ color: "var(--state-primary)" }}
+                    />
                   )}
                   {uploadingImage ? "Uploading…" : "Drop a PNG or JPEG, or click to browse"}
                   <input
@@ -280,7 +323,10 @@ export function AutoBuildDialog({ onClose, onBuilt }: AutoBuildDialogProps) {
             {tab !== "canva" && (
               <div>
                 <label className="sp-eyebrow block mb-1" htmlFor="autobuild-hint">
-                  Anything Claude should know? <span style={{ textTransform: "none", color: "var(--text-disabled)" }}>optional</span>
+                  Anything Claude should know?{" "}
+                  <span style={{ textTransform: "none", color: "var(--text-disabled)" }}>
+                    optional
+                  </span>
                 </label>
                 <input
                   id="autobuild-hint"
@@ -317,7 +363,11 @@ export function AutoBuildDialog({ onClose, onBuilt }: AutoBuildDialogProps) {
         )}
 
         {error && (
-          <p className="text-sm px-4 py-3" data-radius-card style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}>
+          <p
+            className="text-sm px-4 py-3"
+            data-radius-card
+            style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}
+          >
             {error}
           </p>
         )}

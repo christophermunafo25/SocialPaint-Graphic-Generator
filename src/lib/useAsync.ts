@@ -29,7 +29,11 @@ export function useAsync<T>(loader: () => Promise<T>, deps: React.DependencyList
       (e: unknown) => {
         console.error("Load failed", e);
         if (alive)
-          setState({ status: "error", error: e instanceof Error ? e : new Error(String(e)), retry });
+          setState({
+            status: "error",
+            error: e instanceof Error ? e : new Error(String(e)),
+            retry,
+          });
       },
     );
     return () => {

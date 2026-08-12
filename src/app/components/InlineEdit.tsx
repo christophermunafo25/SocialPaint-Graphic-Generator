@@ -64,8 +64,7 @@ export function InlineEdit({
   /** What the screen reader calls this field. */
   const fieldName = inputAriaLabel ?? label ?? ariaLabel;
   const reducedMotion =
-    typeof window !== "undefined" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   useEffect(() => () => window.clearTimeout(flashTimer.current), []);
 
@@ -203,7 +202,10 @@ export function InlineEdit({
           >
             <span
               className="sp-inline-edit__value"
-              style={{ ...valueStyle, ...(shown.trim() ? null : { color: "var(--text-disabled)" }) }}
+              style={{
+                ...valueStyle,
+                ...(shown.trim() ? null : { color: "var(--text-disabled)" }),
+              }}
             >
               {shown.trim() || placeholder}
             </span>

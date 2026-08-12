@@ -42,7 +42,12 @@ export function WizardStepper({ current, complete, canGo, onGo }: WizardStepperP
             {i > 0 && (
               <span
                 aria-hidden
-                style={{ width: 20, height: 1, background: "var(--border-strong)", margin: "0 2px" }}
+                style={{
+                  width: 20,
+                  height: 1,
+                  background: "var(--border-strong)",
+                  margin: "0 2px",
+                }}
               />
             )}
             <button
@@ -65,8 +70,16 @@ export function WizardStepper({ current, complete, canGo, onGo }: WizardStepperP
                   borderRadius: "var(--radius-pill)",
                   fontSize: 10,
                   fontFamily: "var(--font-mono)",
-                  background: isComplete ? "var(--volt)" : isCurrent ? "var(--btn-primary-bg)" : "var(--bg-hover)",
-                  color: isCurrent ? "var(--btn-primary-fg)" : isComplete ? "var(--text-on-accent)" : "var(--text-primary)",
+                  background: isComplete
+                    ? "var(--volt)"
+                    : isCurrent
+                      ? "var(--btn-primary-bg)"
+                      : "var(--bg-hover)",
+                  color: isCurrent
+                    ? "var(--btn-primary-fg)"
+                    : isComplete
+                      ? "var(--text-on-accent)"
+                      : "var(--text-primary)",
                 }}
               >
                 {isComplete ? <Check style={{ width: 11, height: 11 }} /> : i + 1}
@@ -80,8 +93,14 @@ export function WizardStepper({ current, complete, canGo, onGo }: WizardStepperP
               >
                 {s.title}
                 {s.optional && (
-                  <span style={{ fontSize: 10, color: isCurrent ? "var(--text-on-action)" : "var(--text-disabled)" }}>
-                    {" "}· optional
+                  <span
+                    style={{
+                      fontSize: 10,
+                      color: isCurrent ? "var(--text-on-action)" : "var(--text-disabled)",
+                    }}
+                  >
+                    {" "}
+                    · optional
                   </span>
                 )}
               </span>

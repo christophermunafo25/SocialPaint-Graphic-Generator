@@ -80,15 +80,25 @@ export function stretchFromName(name: string): FontStretch | undefined {
 
 /** OS/2 usWidthClass (1–9) → CSS keyword; the spec's own ladder. */
 const WIDTH_CLASS: FontStretch[] = [
-  "ultra-condensed", "extra-condensed", "condensed", "semi-condensed", "normal",
-  "semi-expanded", "expanded", "extra-expanded", "ultra-expanded",
+  "ultra-condensed",
+  "extra-condensed",
+  "condensed",
+  "semi-condensed",
+  "normal",
+  "semi-expanded",
+  "expanded",
+  "extra-expanded",
+  "ultra-expanded",
 ];
 
 // ---------------------------------------------------------------------------
 // sfnt plumbing
 // ---------------------------------------------------------------------------
 
-interface Table { offset: number; length: number }
+interface Table {
+  offset: number;
+  length: number;
+}
 
 function tableDirectory(view: DataView): Map<string, Table> | null {
   if (view.byteLength < 12) return null;
@@ -101,7 +111,10 @@ function tableDirectory(view: DataView): Map<string, Table> | null {
   for (let i = 0; i < numTables; i += 1) {
     const base = 12 + i * 16;
     const name = String.fromCharCode(
-      view.getUint8(base), view.getUint8(base + 1), view.getUint8(base + 2), view.getUint8(base + 3),
+      view.getUint8(base),
+      view.getUint8(base + 1),
+      view.getUint8(base + 2),
+      view.getUint8(base + 3),
     );
     tables.set(name, { offset: view.getUint32(base + 8), length: view.getUint32(base + 12) });
   }
@@ -110,7 +123,12 @@ function tableDirectory(view: DataView): Map<string, Table> | null {
 
 /** Decode one `name` table string record. Windows records are UTF-16BE; Mac
  * Roman is close enough to Latin-1 for family names. */
-function decodeNameString(view: DataView, offset: number, length: number, platformID: number): string {
+function decodeNameString(
+  view: DataView,
+  offset: number,
+  length: number,
+  platformID: number,
+): string {
   if (platformID === 3 || platformID === 0) {
     let out = "";
     for (let i = 0; i + 1 < length; i += 2) out += String.fromCharCode(view.getUint16(offset + i));
@@ -137,7 +155,8 @@ function readNames(view: DataView, table: Table): Map<number, string> {
     const offset = stringOffset + view.getUint16(rec + 10);
     if (offset + length > view.byteLength) continue;
     // Prefer Windows (3) over Unicode (0) over Mac (1); English over the rest.
-    const score = (platformID === 3 ? 40 : platformID === 0 ? 30 : 20) +
+    const score =
+      (platformID === 3 ? 40 : platformID === 0 ? 30 : 20) +
       (languageID === 0x409 || languageID === 0 ? 5 : 0);
     if ((scores.get(nameID) ?? -1) >= score) continue;
     const value = decodeNameString(view, offset, length, platformID).trim();
@@ -167,7 +186,10 @@ function readFvar(view: DataView, table: Table): FvarData | null {
     const a = axesOffset + i * axisSize;
     if (a + 20 > view.byteLength) return null;
     const tag = String.fromCharCode(
-      view.getUint8(a), view.getUint8(a + 1), view.getUint8(a + 2), view.getUint8(a + 3),
+      view.getUint8(a),
+      view.getUint8(a + 1),
+      view.getUint8(a + 2),
+      view.getUint8(a + 3),
     );
     axes.push({ tag, min: fixed(a + 4), def: fixed(a + 8), max: fixed(a + 12) });
   }
@@ -241,7 +263,9 @@ export function inspectFontBinary(buffer: ArrayBuffer): InspectedFont | null {
       if (seen.has(key)) continue;
       seen.add(key);
       const axes: Record<string, number> = {};
-      fvar.axes.forEach((axis, i) => { axes[axis.tag] = inst.coords[i]; });
+      fvar.axes.forEach((axis, i) => {
+        axes[axis.tag] = inst.coords[i];
+      });
       cuts.push({ name, weight, stretch, italic, axes });
     }
     if (cuts.length > 0) result.cuts = cuts;

@@ -7,13 +7,7 @@ import React from "react";
  * (--page-max / --page-pad on .sp-page) — one knob, no per-page overrides.
  * `narrow` caps the inner content (People 900, Settings 760) and centres it
  * inside the column. */
-export function Page({
-  narrow,
-  children,
-}: {
-  narrow?: 760 | 900;
-  children: React.ReactNode;
-}) {
+export function Page({ narrow, children }: { narrow?: 760 | 900; children: React.ReactNode }) {
   return (
     <div className="sp-page">
       <div style={narrow ? { maxWidth: narrow, marginInline: "auto" } : undefined}>{children}</div>
@@ -36,7 +30,10 @@ export function PageHeader({
   action?: React.ReactNode;
 }) {
   return (
-    <header className="flex items-start justify-between gap-4" style={{ marginBottom: "var(--space-lg)" }}>
+    <header
+      className="flex items-start justify-between gap-4"
+      style={{ marginBottom: "var(--space-lg)" }}
+    >
       <div className="min-w-0">
         {eyebrow && (
           <p className="sp-eyebrow" style={{ marginBottom: 6 }}>
@@ -45,7 +42,15 @@ export function PageHeader({
         )}
         <h1 className="sp-page-title">{title}</h1>
         {description && (
-          <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)", marginTop: "var(--space-2xs)" }}>{description}</p>
+          <p
+            style={{
+              fontSize: "var(--type-label-size)",
+              color: "var(--text-muted)",
+              marginTop: "var(--space-2xs)",
+            }}
+          >
+            {description}
+          </p>
         )}
       </div>
       {action && <div className="flex-shrink-0">{action}</div>}

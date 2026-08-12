@@ -28,8 +28,8 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   const retry = useCallback(() => setTick((t) => t + 1), []);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [roleByCompany, setRoleByCompany] = useState<Record<string, Role>>({});
-  const [selectedId, setSelectedId] = useState<string | null>(
-    () => localStorage.getItem(LS_COMPANY),
+  const [selectedId, setSelectedId] = useState<string | null>(() =>
+    localStorage.getItem(LS_COMPANY),
   );
   const prevUserIdRef = useRef<string | null>(null);
 
@@ -65,7 +65,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     let cancelled = false;
-    supabase()
+    void supabase()
       .auth.getSession()
       .then(({ data }) => {
         if (!cancelled) setSession(data.session);
@@ -141,7 +141,18 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       refresh: loadMemberships,
       signOut,
     }),
-    [loading, error, retry, company, roleByCompany, session, companies, setCompany, loadMemberships, signOut],
+    [
+      loading,
+      error,
+      retry,
+      company,
+      roleByCompany,
+      session,
+      companies,
+      setCompany,
+      loadMemberships,
+      signOut,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

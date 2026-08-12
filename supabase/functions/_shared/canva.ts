@@ -36,7 +36,8 @@ export async function getCanvaToken(db: SupabaseClient, companyId: string): Prom
   const row = data as ConnectionRow | null;
   if (!row) return null;
 
-  const fresh = row.expires_at && new Date(row.expires_at).getTime() - Date.now() > EXPIRY_MARGIN_MS;
+  const fresh =
+    row.expires_at && new Date(row.expires_at).getTime() - Date.now() > EXPIRY_MARGIN_MS;
   if (fresh || !row.refresh_token) return row.access_token;
 
   // Claim the refresh lease atomically. Only one worker's UPDATE matches the
@@ -107,7 +108,10 @@ export async function getCanvaToken(db: SupabaseClient, companyId: string): Prom
 // ---------------------------------------------------------------------------
 
 const b64url = (bytes: Uint8Array): string =>
-  btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
 
 export function makePkcePair(): { verifier: string; state: string } {
   const rand = (n: number) => {
@@ -147,5 +151,9 @@ export async function exchangeCanvaCode(
     const detail = await res.text().catch(() => "");
     throw new Error(`Canva token exchange failed (${res.status}). ${detail.slice(0, 200)}`);
   }
-  return (await res.json()) as { access_token: string; refresh_token?: string; expires_in?: number };
+  return (await res.json()) as {
+    access_token: string;
+    refresh_token?: string;
+    expires_in?: number;
+  };
 }

@@ -30,7 +30,11 @@ export function parseHex(input: string): RGBA | null {
   };
 }
 
-const byte = (n: number): string => Math.round(Math.max(0, Math.min(255, n))).toString(16).padStart(2, "0").toUpperCase();
+const byte = (n: number): string =>
+  Math.round(Math.max(0, Math.min(255, n)))
+    .toString(16)
+    .padStart(2, "0")
+    .toUpperCase();
 
 /** #RRGGBB, with an AA byte only when alpha is not fully opaque. */
 export function toHex({ r, g, b, a }: RGBA): string {
@@ -39,8 +43,11 @@ export function toHex({ r, g, b, a }: RGBA): string {
 }
 
 export function rgbToHsv({ r, g, b }: Pick<RGBA, "r" | "g" | "b">): HSV {
-  const rn = r / 255, gn = g / 255, bn = b / 255;
-  const max = Math.max(rn, gn, bn), min = Math.min(rn, gn, bn);
+  const rn = r / 255,
+    gn = g / 255,
+    bn = b / 255;
+  const max = Math.max(rn, gn, bn),
+    min = Math.min(rn, gn, bn);
   const d = max - min;
   let h = 0;
   if (d !== 0) {
@@ -56,7 +63,9 @@ export function hsvToRgb({ h, s, v }: HSV): Pick<RGBA, "r" | "g" | "b"> {
   const c = v * s;
   const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
   const m = v - c;
-  let rn = 0, gn = 0, bn = 0;
+  let rn = 0,
+    gn = 0,
+    bn = 0;
   if (h < 60) [rn, gn, bn] = [c, x, 0];
   else if (h < 120) [rn, gn, bn] = [x, c, 0];
   else if (h < 180) [rn, gn, bn] = [0, c, x];
@@ -75,8 +84,11 @@ export function formatColor(rgba: RGBA, format: ColorFormat): string {
   const { r, g, b } = rgba;
   if (format === "rgb") return `${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}`;
   // hsl
-  const rn = r / 255, gn = g / 255, bn = b / 255;
-  const max = Math.max(rn, gn, bn), min = Math.min(rn, gn, bn);
+  const rn = r / 255,
+    gn = g / 255,
+    bn = b / 255;
+  const max = Math.max(rn, gn, bn),
+    min = Math.min(rn, gn, bn);
   const l = (max + min) / 2;
   const d = max - min;
   let h = 0;
@@ -99,7 +111,10 @@ export function parseColor(input: string, format: ColorFormat): Pick<RGBA, "r" |
     const p = parseHex(t);
     return p ? { r: p.r, g: p.g, b: p.b } : null;
   }
-  const nums = t.replace(/[^\d.,-]/g, "").split(",").map((s) => Number(s.trim()));
+  const nums = t
+    .replace(/[^\d.,-]/g, "")
+    .split(",")
+    .map((s) => Number(s.trim()));
   if (nums.length < 3 || nums.some((n) => Number.isNaN(n))) return null;
   if (format === "rgb") {
     const [r, g, b] = nums;
@@ -109,11 +124,14 @@ export function parseColor(input: string, format: ColorFormat): Pick<RGBA, "r" |
   // hsl → rgb
   const [h, sPct, lPct] = nums;
   if (h < 0 || h > 360 || sPct < 0 || sPct > 100 || lPct < 0 || lPct > 100) return null;
-  const s = sPct / 100, l = lPct / 100;
+  const s = sPct / 100,
+    l = lPct / 100;
   const c = (1 - Math.abs(2 * l - 1)) * s;
   const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
   const m = l - c / 2;
-  let rn = 0, gn = 0, bn = 0;
+  let rn = 0,
+    gn = 0,
+    bn = 0;
   if (h < 60) [rn, gn, bn] = [c, x, 0];
   else if (h < 120) [rn, gn, bn] = [x, c, 0];
   else if (h < 180) [rn, gn, bn] = [0, c, x];

@@ -129,7 +129,8 @@ export class CanvaMcpClient {
       (out.designContent as string | undefined) ??
       (out.text as string | undefined) ??
       "";
-    const transactionId = (out.transaction_id as string | undefined) ?? (out.transactionId as string | undefined);
+    const transactionId =
+      (out.transaction_id as string | undefined) ?? (out.transactionId as string | undefined);
     return { designContent, transactionId };
   }
 
@@ -140,8 +141,7 @@ export class CanvaMcpClient {
       format: "png",
     });
     const urls =
-      (out.urls as string[] | undefined) ??
-      (typeof out.url === "string" ? [out.url] : undefined);
+      (out.urls as string[] | undefined) ?? (typeof out.url === "string" ? [out.url] : undefined);
     const url = urls?.[0];
     if (!url) throw new Error("Canva export returned no file URL.");
     return url;

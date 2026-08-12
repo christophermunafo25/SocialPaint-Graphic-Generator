@@ -27,7 +27,10 @@ Deno.serve(async (req) => {
 
     const parsed = parseFigmaUrl(url);
     if (!parsed) {
-      return json({ error: "Could not read that link — copy a frame link (with node-id) from Figma." }, 400);
+      return json(
+        { error: "Could not read that link — copy a frame link (with node-id) from Figma." },
+        400,
+      );
     }
 
     const db = serviceClient();
@@ -39,7 +42,8 @@ Deno.serve(async (req) => {
       `/v1/files/${parsed.fileKey}/nodes?ids=${encodeURIComponent(parsed.nodeId)}&geometry=paths`,
       token,
     );
-    if (!nodesRes.ok) return json({ error: `Figma nodes request failed (${nodesRes.status}).` }, 400);
+    if (!nodesRes.ok)
+      return json({ error: `Figma nodes request failed (${nodesRes.status}).` }, 400);
     const nodesBody = (await nodesRes.json()) as {
       nodes: Record<string, { document: FigmaNode } | null>;
     };
@@ -74,12 +78,17 @@ Deno.serve(async (req) => {
     const taken = new Set<string>();
     const seenIds = new Set<string>();
     try {
-      for (const child of root.children ?? []) walk(child, frame, suggestedFields, warnings, taken, seenIds);
+      for (const child of root.children ?? [])
+        walk(child, frame, suggestedFields, warnings, taken, seenIds);
     } catch (e) {
-      warnings.push(`Field detection stopped early (${String(e)}) — background imported; map fields manually.`);
+      warnings.push(
+        `Field detection stopped early (${String(e)}) — background imported; map fields manually.`,
+      );
     }
     if (!suggestedFields.length) {
-      warnings.push("No text or image layers detected — draw fields manually on the imported background.");
+      warnings.push(
+        "No text or image layers detected — draw fields manually on the imported background.",
+      );
     }
 
     return json({

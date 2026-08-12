@@ -97,10 +97,26 @@ describe("deriveGroup", () => {
       children: ["a"],
     };
     expect(
-      deriveGroup({ fields: [a, b], groups: [existing], fieldIds: [a.id, b.id], groupIds: [], layout, kit: null, measure }),
+      deriveGroup({
+        fields: [a, b],
+        groups: [existing],
+        fieldIds: [a.id, b.id],
+        groupIds: [],
+        layout,
+        kit: null,
+        measure,
+      }),
     ).toBeNull();
     expect(
-      deriveGroup({ fields: [a], groups: [], fieldIds: [a.id], groupIds: [], layout, kit: null, measure }),
+      deriveGroup({
+        fields: [a],
+        groups: [],
+        fieldIds: [a.id],
+        groupIds: [],
+        layout,
+        kit: null,
+        measure,
+      }),
     ).toBeNull();
   });
 
@@ -230,9 +246,7 @@ describe("reference maintenance", () => {
     const fa = mkField({ fieldKey: "a" });
     const fb = mkField({ fieldKey: "b" });
     const parent: LayoutGroup = { ...base, id: "p", children: ["group:g1"] };
-    expect(fieldIdsInGroups(["p"], [fa, fb], [base, parent]).sort()).toEqual(
-      [fa.id, fb.id].sort(),
-    );
+    expect(fieldIdsInGroups(["p"], [fa, fb], [base, parent]).sort()).toEqual([fa.id, fb.id].sort());
     expect(groupIdsWithin(["p"], [base, parent]).sort()).toEqual(["g1", "p"]);
   });
 });

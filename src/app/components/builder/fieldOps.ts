@@ -24,14 +24,61 @@ export interface PaletteItem {
  * design-only, never in the member form. A line is a thin rect. */
 export const PALETTE_ITEMS: PaletteItem[] = [
   { id: "text", type: "text", label: "Text", width: 480, height: 90, group: "fields" },
-  { id: "multiline", type: "multiline", label: "Multiline text", width: 520, height: 220, group: "fields" },
+  {
+    id: "multiline",
+    type: "multiline",
+    label: "Multiline text",
+    width: 520,
+    height: 220,
+    group: "fields",
+  },
   { id: "image", type: "image", label: "Image", width: 420, height: 420, group: "fields" },
   { id: "select", type: "select", label: "Dropdown", width: 480, height: 90, group: "fields" },
-  { id: "rect", type: "shape", shape: "rect", label: "Rectangle", width: 420, height: 300, group: "shapes" },
-  { id: "ellipse", type: "shape", shape: "ellipse", label: "Ellipse", width: 320, height: 320, group: "shapes" },
-  { id: "triangle", type: "shape", shape: "triangle", label: "Triangle", width: 320, height: 280, group: "shapes" },
-  { id: "star", type: "shape", shape: "star", label: "Star", width: 320, height: 320, group: "shapes" },
-  { id: "line", type: "shape", shape: "rect", label: "Line", width: 480, height: 8, group: "shapes" },
+  {
+    id: "rect",
+    type: "shape",
+    shape: "rect",
+    label: "Rectangle",
+    width: 420,
+    height: 300,
+    group: "shapes",
+  },
+  {
+    id: "ellipse",
+    type: "shape",
+    shape: "ellipse",
+    label: "Ellipse",
+    width: 320,
+    height: 320,
+    group: "shapes",
+  },
+  {
+    id: "triangle",
+    type: "shape",
+    shape: "triangle",
+    label: "Triangle",
+    width: 320,
+    height: 280,
+    group: "shapes",
+  },
+  {
+    id: "star",
+    type: "shape",
+    shape: "star",
+    label: "Star",
+    width: 320,
+    height: 320,
+    group: "shapes",
+  },
+  {
+    id: "line",
+    type: "shape",
+    shape: "rect",
+    label: "Line",
+    width: 480,
+    height: 8,
+    group: "shapes",
+  },
 ];
 
 /** dataTransfer MIME key for palette drags (payload = PaletteItem.id). */
@@ -40,8 +87,7 @@ export const PALETTE_MIME = "application/x-sp-element";
 /** Palette-id prefix for brand logo tiles (payload = `logo:<assetId>`). */
 export const LOGO_PALETTE_PREFIX = "logo:";
 
-const maxZ = (fields: TemplateField[]) =>
-  fields.reduce((m, f) => Math.max(m, f.zIndex ?? 0), 0);
+const maxZ = (fields: TemplateField[]) => fields.reduce((m, f) => Math.max(m, f.zIndex ?? 0), 0);
 
 /** Build a new field of the given palette type centered at a canvas point,
  * clamped inside the canvas, painted on top of everything existing. */
@@ -103,9 +149,7 @@ export function logoFieldFromAsset(
 ): TemplateField {
   const DEFAULT = 360; // longest side, in canvas px — prominent but not dominant
   const ratio =
-    natural && natural.width > 0 && natural.height > 0
-      ? natural.width / natural.height
-      : 1;
+    natural && natural.width > 0 && natural.height > 0 ? natural.width / natural.height : 1;
   let width = ratio >= 1 ? DEFAULT : Math.round(DEFAULT * ratio);
   let height = ratio >= 1 ? Math.round(DEFAULT / ratio) : DEFAULT;
   // Clamp preserving the ratio — "contain" would mask distortion, but the
@@ -263,13 +307,32 @@ export function isTypingTarget(e: KeyboardEvent): boolean {
  * — pasting a gradient-free style onto a gradient field removes the gradient,
  * because paste-style means "adopt this look", not "merge looks". */
 const TEXT_STYLE_PROPS = [
-  "typeStyleKey", "fontFamily", "fontWeight", "fontStyle", "fontStretch",
-  "fontSizePx", "minFontSizePx", "uppercase", "letterSpacingPx", "lineHeight",
-  "align", "verticalAlign", "autoFit", "colorKey", "colorHex", "textGradient",
+  "typeStyleKey",
+  "fontFamily",
+  "fontWeight",
+  "fontStyle",
+  "fontStretch",
+  "fontSizePx",
+  "minFontSizePx",
+  "uppercase",
+  "letterSpacingPx",
+  "lineHeight",
+  "align",
+  "verticalAlign",
+  "autoFit",
+  "colorKey",
+  "colorHex",
+  "textGradient",
   "opacity",
 ] as const;
 const IMAGE_STYLE_PROPS = ["cornerRadius", "opacity", "objectFit"] as const;
-const SHAPE_STYLE_PROPS = ["colorKey", "colorHex", "textGradient", "cornerRadius", "opacity"] as const;
+const SHAPE_STYLE_PROPS = [
+  "colorKey",
+  "colorHex",
+  "textGradient",
+  "cornerRadius",
+  "opacity",
+] as const;
 
 type StyleProp =
   | (typeof TEXT_STYLE_PROPS)[number]
