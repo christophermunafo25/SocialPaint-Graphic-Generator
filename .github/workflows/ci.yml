@@ -1,0 +1,61 @@
+# CI gate: typecheck, lint, format, tests, Deno edge-function check, build.
+# Every step must pass; branch protection (documented in docs/CI.md) makes
+# these checks required before merge to main.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: npm
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Install (frozen lockfile)
+        run: npm ci
+
+      - name: Typecheck (app)
+        run: npm run typecheck
+
+      - name: Typecheck (edge functions, Deno)
+        run: npm run typecheck:deno
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Format check
+        run: npm run format:check
+
+      # Includes the edge-function suites (supabase/functions/_shared/*.test.ts) —
+      # they are vitest tests and run as part of the main suite.
+      - name: Test
+        run: npm test
+
+      # `build` runs scripts/check-production-env.mjs first (the configuration
+      # guard). Add VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY as repository
+      # variables to check against the real config; the fallbacks below are
+      # correctly-shaped placeholders so the guard's validation still executes.
+      # CI never deploys this bundle — Vercel builds with its own env.
+      - name: Build
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://ci-placeholder.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY || 'sb_publishable_ci_placeholder' }}
+        run: npm run build
