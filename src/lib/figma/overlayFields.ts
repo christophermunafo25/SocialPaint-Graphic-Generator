@@ -42,29 +42,29 @@ const unitGradient = (u: FigmaLayerUnit): TextGradient => ({
 });
 
 /**
- * Build static fields from the units marked `afterExcluded`, z-placed
- * directly above the imported field they painted over. `imported` must be
- * the lifted fields in the exact order their node ids were sent to the
+ * Merge static fields built from the units marked `afterExcluded` into the
+ * draft's field list, z-placed directly above the imported field each unit
+ * painted over. Returns the COMPLETE field array: originals in their array
+ * (form) order with renumbered z-indexes, overlays appended.
+ *
+ * z-indexes are renumbered 0..n-1 over the interleaved paint order — the
+ * z_index column is an integer, so slotting between two consecutive values
+ * must renumber, exactly like setLayerOrder does. `imported` must be the
+ * lifted fields in the exact order their node ids were sent to the
  * decomposer (walk order == paint order), since `afterExcluded` counts
  * excluded nodes in that order.
  */
-export function overlayUnitsToFields(
+export function mergeOverlayFields(
   units: FigmaLayerUnit[],
   imported: TemplateField[],
   existingFields: TemplateField[],
 ): TemplateField[] {
-  const overlays = units.filter((u) => u.afterExcluded && u.afterExcluded > 0);
-  const out: TemplateField[] = [];
+  const overlays: Array<{ anchorId: string; field: TemplateField }> = [];
   const taken = [...existingFields];
-  // Several overlays above the same field keep their relative order via
-  // fractional z between that field and the next imported one.
-  const perAnchor = new Map<number, number>();
-  for (const u of overlays) {
-    const k = Math.min(u.afterExcluded!, imported.length);
-    const anchor = imported[k - 1];
+  for (const u of units) {
+    if (!u.afterExcluded || u.afterExcluded <= 0) continue;
+    const anchor = imported[Math.min(u.afterExcluded, imported.length) - 1];
     if (!anchor) continue;
-    const seq = (perAnchor.get(k) ?? 0) + 1;
-    perAnchor.set(k, seq);
     const label = u.name?.trim() || "Background detail";
     const base: TemplateField = {
       id: newId(),
@@ -77,10 +77,10 @@ export function overlayUnitsToFields(
       y: u.y,
       width: u.width,
       height: u.height,
-      zIndex: (anchor.zIndex ?? 0) + seq / 100,
     };
+    let field: TemplateField;
     if ((u.kind === "node" || u.kind === "imageFill") && u.url) {
-      out.push({
+      field = {
         ...base,
         type: "image",
         shape: undefined,
@@ -88,25 +88,39 @@ export function overlayUnitsToFields(
         // The render is an exact capture of the unit's box, so cover === 1:1.
         objectFit: "cover",
         opacity: u.opacity !== undefined ? Math.round(u.opacity * 100) : undefined,
-      });
+      };
     } else if (u.kind === "solid" && u.color) {
       const { hex, alpha } = parseRgba(u.color);
-      out.push({
-        ...base,
-        colorHex: hex,
-        opacity: alpha < 1 ? Math.round(alpha * 100) : undefined,
-      });
+      field = { ...base, colorHex: hex, opacity: alpha < 1 ? Math.round(alpha * 100) : undefined };
     } else if (u.kind === "gradient" && u.stops?.length) {
-      out.push({
+      field = {
         ...base,
         textGradient: unitGradient(u),
         opacity:
           u.opacity !== undefined && u.opacity < 1 ? Math.round(u.opacity * 100) : undefined,
-      });
+      };
     } else {
       continue;
     }
-    taken.push(out[out.length - 1]);
+    overlays.push({ anchorId: anchor.id, field });
+    taken.push(field);
   }
-  return out;
+  if (!overlays.length) return existingFields;
+
+  // Interleave into paint order (zIndex ascending, ties by array order —
+  // the renderer's convention), then renumber every z to an integer.
+  const painted = existingFields
+    .map((f, i) => ({ f, i }))
+    .sort((a, b) => (a.f.zIndex ?? 0) - (b.f.zIndex ?? 0) || a.i - b.i)
+    .map((e) => e.f);
+  const sequence: TemplateField[] = [];
+  for (const f of painted) {
+    sequence.push(f);
+    for (const o of overlays) if (o.anchorId === f.id) sequence.push(o.field);
+  }
+  const z = new Map(sequence.map((f, i) => [f.id, i]));
+  return [
+    ...existingFields.map((f) => ({ ...f, zIndex: z.get(f.id) ?? 0 })),
+    ...overlays.map((o) => ({ ...o.field, zIndex: z.get(o.field.id) ?? 0 })),
+  ];
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { FigmaLayerUnit, TemplateField } from "../types";
-import { gradientAngle, overlayUnitsToFields, parseRgba } from "./overlayFields";
+import { gradientAngle, mergeOverlayFields, parseRgba } from "./overlayFields";
 
 const mkImported = (n: number): TemplateField[] =>
   Array.from({ length: n }, (_, i) => ({
@@ -51,9 +51,9 @@ describe("overlayUnitsToFields", () => {
         afterExcluded: 5,
       },
     ];
-    const fields = overlayUnitsToFields(units, imported, imported);
-    expect(fields).toHaveLength(1);
-    const fade = fields[0];
+    const fields = mergeOverlayFields(units, imported, imported);
+    expect(fields).toHaveLength(8);
+    const fade = fields[7];
     expect(fade).toMatchObject({
       type: "image",
       static: true,
@@ -62,8 +62,11 @@ describe("overlayUnitsToFields", () => {
       y: 993,
       label: "Portrait Border",
     });
-    expect(fade.zIndex!).toBeGreaterThan(imported[4].zIndex!);
-    expect(fade.zIndex!).toBeLessThan(imported[5].zIndex!);
+    const zOf = (id: string) => fields.find((f) => f.id === id)!.zIndex!;
+    expect(fade.zIndex!).toBeGreaterThan(zOf("f5"));
+    expect(fade.zIndex!).toBeLessThan(zOf("f6"));
+    // Integer z only — the z_index column is an int.
+    for (const f of fields) expect(Number.isInteger(f.zIndex)).toBe(true);
   });
 
   it("maps solid and gradient overlays to static shapes", () => {
@@ -96,7 +99,8 @@ describe("overlayUnitsToFields", () => {
         afterExcluded: 1,
       },
     ];
-    const fields = overlayUnitsToFields(units, imported, imported);
+    const all = mergeOverlayFields(units, imported, imported);
+    const fields = all.slice(imported.length);
     expect(fields[0]).toMatchObject({
       type: "shape",
       shape: "rect",
@@ -105,9 +109,11 @@ describe("overlayUnitsToFields", () => {
       opacity: 40,
     });
     expect(fields[1].textGradient).toMatchObject({ angle: 180 });
-    // Both above field 1, in paint order, below field 2.
+    // Both above field 1, in paint order, below field 2 — integers only.
+    const zOf = (id: string) => all.find((f) => f.id === id)!.zIndex!;
     expect(fields[0].zIndex!).toBeLessThan(fields[1].zIndex!);
-    expect(fields[1].zIndex!).toBeLessThan(imported[1].zIndex!);
+    expect(fields[1].zIndex!).toBeLessThan(zOf("f2"));
+    for (const f of all) expect(Number.isInteger(f.zIndex)).toBe(true);
   });
 
   it("ignores units without an order mark and clamps out-of-range anchors", () => {
@@ -123,8 +129,10 @@ describe("overlayUnitsToFields", () => {
         afterExcluded: 99,
       },
     ];
-    const fields = overlayUnitsToFields(units, imported, imported);
-    expect(fields).toHaveLength(1);
-    expect(fields[0].zIndex!).toBeGreaterThan(imported[6].zIndex!);
+    const all = mergeOverlayFields(units, imported, imported);
+    expect(all).toHaveLength(8);
+    const overlay = all[7];
+    const zOf = (id: string) => all.find((f) => f.id === id)!.zIndex!;
+    expect(overlay.zIndex!).toBeGreaterThan(zOf("f7"));
   });
 });

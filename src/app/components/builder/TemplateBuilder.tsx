@@ -72,7 +72,7 @@ import {
   worstCaseText,
 } from "./fieldOps";
 import { composeFigmaBackground } from "@/lib/figma/composeLayers";
-import { overlayUnitsToFields } from "@/lib/figma/overlayFields";
+import { mergeOverlayFields } from "@/lib/figma/overlayFields";
 import { unavailableFamilies } from "@/lib/render/fonts";
 import { freezeBrandColors } from "@/lib/brand/resolveStyle";
 import { createCanvasMeasurer } from "@/lib/render/autoFit";
@@ -1190,8 +1190,11 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
             // over the photo, a badge across a headline) can't live in the
             // background plate — it sits under every field. They land as
             // static fields z-placed exactly where they painted.
-            const overlays = overlayUnitsToFields(layers.units, imported, d.fields);
-            return { ...d, backgroundUrl: bgUrl, fields: [...d.fields, ...overlays] };
+            return {
+              ...d,
+              backgroundUrl: bgUrl,
+              fields: mergeOverlayFields(layers.units, imported, d.fields),
+            };
           });
           if (layers.warnings.length) {
             setError(layers.warnings.join(" "));
