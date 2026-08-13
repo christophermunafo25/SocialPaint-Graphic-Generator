@@ -18,7 +18,7 @@ export interface ResolvedFieldStyle {
   colorHex?: string;
   textGradient?: import("../types").TextGradient;
   maxLength?: number;
-  autoFit?: boolean;
+  textSizing?: "free" | "shrink";
   /** The style that supplied the locked properties, if any. */
   boundStyle?: BrandTypeStyle;
 }
@@ -69,7 +69,7 @@ export function resolveFieldStyle(field: TemplateField, kit: BrandKit | null): R
     colorHex: field.colorHex,
     textGradient: field.textGradient,
     maxLength: style?.maxLength ?? field.maxLength,
-    autoFit: style?.autoFit ?? field.autoFit,
+    textSizing: style?.textSizing ?? field.textSizing,
     boundStyle: style,
   };
 }
@@ -106,7 +106,7 @@ export function lockedProperties(style: BrandTypeStyle | undefined): Set<string>
   if (style.lineHeight !== undefined) locked.add("lineHeight");
   if (style.colorKey !== undefined) locked.add("colorKey");
   if (style.maxLength !== undefined) locked.add("maxLength");
-  if (style.autoFit !== undefined) locked.add("autoFit");
+  if (style.textSizing !== undefined) locked.add("textSizing");
   return locked;
 }
 
@@ -148,6 +148,8 @@ export function ruleSentences(style: BrandTypeStyle, kit: BrandKit | null): stri
     rules.push(`${style.name} is fixed at ${style.fontSizePx}px.`);
   if (style.maxLength !== undefined)
     rules.push(`${style.name} never exceeds ${style.maxLength} characters.`);
-  if (style.autoFit) rules.push(`${style.name} auto-shrinks to fit its box.`);
+  if (style.textSizing === "shrink") rules.push(`${style.name} shrinks to fit its box.`);
+  if (style.textSizing === "free")
+    rules.push(`${style.name} keeps its set size — the box grows with content.`);
   return rules;
 }

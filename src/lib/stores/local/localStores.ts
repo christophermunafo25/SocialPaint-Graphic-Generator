@@ -283,7 +283,7 @@ export class LocalDesignImportProvider implements DesignImportProvider {
         placeholder: "Big announcement",
         required: true,
         maxLength: 60,
-        autoFit: true,
+        textSizing: "shrink",
       },
       {
         id: newId(),

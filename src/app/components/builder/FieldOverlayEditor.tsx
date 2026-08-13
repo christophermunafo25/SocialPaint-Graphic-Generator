@@ -4,7 +4,7 @@ import { groupChildRef, isFreeGroup, parseGroupChildRef } from "@/lib/types";
 import { useDataUrl } from "@/lib/render/useDataUrl";
 import { useBrand } from "@/lib/brand/BrandContext";
 import { fieldsFontUsage, loadGoogleFonts } from "@/lib/render/fonts";
-import { fittedFontSize, fixedWidthFontSize } from "@/lib/render/autoFit";
+import { fitText } from "@/lib/render/autoFit";
 import {
   groupFieldKeys,
   outermostGroupOf,
@@ -30,6 +30,9 @@ interface FieldOverlayEditorProps {
   /** The builder's layout pass over the current draft: computed rects for
    * grouped children, group frames, and shrink-adjusted font sizes. */
   layout: LayoutResult;
+  /** Preview values painted instead of placeholders (the inspector's
+   * worst-case preview). Must be the same values the layout pass ran on. */
+  values?: import("@/lib/types").FieldValues;
   /** Groups currently outgrowing the canvas — their frames flag it. */
   overflowGroupIds: string[];
   /** Selection entries are field ids or "group:<id>" refs. */
@@ -229,10 +232,10 @@ function InlineTextEditor({
   const style = resolveFieldStyle(field, brandKit);
   const singleLine = field.type !== "multiline";
   const shown = text || " ";
-  const fontSize =
-    field.fixedWidth && singleLine
-      ? fixedWidthFontSize({ width: field.width, ...style }, shown)
-      : fittedFontSize({ width: field.width, ...style }, shown);
+  const fontSize = fitText(
+    { ...style, multiline: !singleLine, width: field.width, height: field.height },
+    shown,
+  ).fontSizePx;
   const brandHex = style.colorKey
     ? brandKit?.colors.find((c) => c.key === style.colorKey)?.hex
     : undefined;
@@ -337,6 +340,7 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
     fields,
     groups,
     layout,
+    values,
     overflowGroupIds,
     selectedIds,
     onSelect,
@@ -1097,12 +1101,20 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
         // dropping a dot never costs the interaction, because its edge strip
         // stays grabbable at any size.
         //
-        // Stacked TEXT children hug their main axis — only the cross-axis
-        // edges stay resizable; corners (which resize both axes) drop too.
-        // Plain-group children keep every handle.
+        // Computed extents aren't draggable. Text height is computed
+        // wherever it hugs content: Free fields (any context) and children
+        // of a vertical stack — their vertical edges drop, corners (which
+        // resize both axes) too. Children of a horizontal stack hug their
+        // width instead. Shrink fields keep every handle: their box is the
+        // constraint the admin draws.
+        const hugsHeight =
+          isText &&
+          (resolveFieldStyle(f, kit).textSizing !== "shrink" || (stackChild && groupVertical));
         const allowDir = (dx: number, dy: number): boolean => {
-          if (!stackChild || !isText) return true;
-          return groupVertical ? dy === 0 && dx !== 0 : dx === 0 && dy !== 0;
+          if (!isText) return true;
+          if (dy !== 0 && hugsHeight) return false;
+          if (dx !== 0 && stackChild && !groupVertical) return false;
+          return true;
         };
         const handleDirs = RESIZE_DIRS.filter(
           ({ dx, dy }) =>
@@ -1259,7 +1271,7 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
                   >
                     <FieldContent
                       field={grouped ? { ...v, width: box.width, height: box.height } : v}
-                      value={undefined}
+                      value={values?.[f.fieldKey]}
                       brandKit={kit}
                       fontSize={layout.fontSizes.get(f.id)}
                     />

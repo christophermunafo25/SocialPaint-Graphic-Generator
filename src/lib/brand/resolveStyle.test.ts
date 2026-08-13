@@ -258,14 +258,14 @@ describe("rule sentences read as names, not raw values", () => {
 
   it("still emits the non-typographic rules unchanged", () => {
     const rules = ruleSentences(
-      { key: "b", name: "Body", uppercase: true, fontSizePx: 32, maxLength: 120, autoFit: true },
+      { key: "b", name: "Body", uppercase: true, fontSizePx: 32, maxLength: 120, textSizing: "shrink" },
       kit,
     );
     expect(rules).toEqual([
       "Body is always UPPERCASE.",
       "Body is fixed at 32px.",
       "Body never exceeds 120 characters.",
-      "Body auto-shrinks to fit its box.",
+      "Body shrinks to fit its box.",
     ]);
   });
 });

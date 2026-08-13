@@ -20,6 +20,7 @@ import type {
   AutoBuildResult,
   CanvasPreset,
   DesignImportResult,
+  FieldValues,
   LayoutGroup,
   NewTemplateInput,
   TemplateField,
@@ -68,6 +69,7 @@ import {
   logoFieldFromAsset,
   pasteFromClipboard,
   setLayerOrder,
+  worstCaseText,
 } from "./fieldOps";
 import { composeFigmaBackground } from "@/lib/figma/composeLayers";
 import { freezeBrandColors } from "@/lib/brand/resolveStyle";
@@ -319,10 +321,29 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
   }, []);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- fontsTick deliberately busts the cache
   const measurer = useMemo(() => createCanvasMeasurer(), [fontsTick]);
+
+  // Worst-case preview: the inspector can fill ONE field with its longest
+  // possible entry so the admin sees the sizing mode's consequence live —
+  // the whole layout pass (rects, font sizes, warnings) runs on it.
+  const [worstCaseFieldId, setWorstCaseFieldId] = useState<string | null>(null);
+  const worstCaseValues = useMemo<FieldValues>(() => {
+    const f = draft.fields.find((x) => x.id === worstCaseFieldId);
+    return f && !f.static ? { [f.fieldKey]: worstCaseText(f) } : {};
+  }, [worstCaseFieldId, draft.fields]);
+  useEffect(() => setWorstCaseFieldId(null), [selectedIds]);
+
   const builderLayout = useMemo(
-    () => computeLayout(draft, {}, kit, measurer),
+    () => computeLayout(draft, worstCaseValues, kit, measurer),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [draft.fields, draft.layoutGroups, draft.canvasWidth, draft.canvasHeight, kit, measurer],
+    [
+      draft.fields,
+      draft.layoutGroups,
+      draft.canvasWidth,
+      draft.canvasHeight,
+      worstCaseValues,
+      kit,
+      measurer,
+    ],
   );
 
   const groups = useMemo(() => draft.layoutGroups ?? [], [draft.layoutGroups]);
@@ -547,7 +568,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       fontSizePx: Math.max(18, Math.min(90, Math.round(rect.height * 0.55))),
       colorKey: kit?.colors.find((c) => c.key === "text")?.key ?? kit?.colors[0]?.key,
       align: "left",
-      autoFit: true,
+      textSizing: "shrink",
     };
     setFields([...draft.fields, field]);
     setSelectedIds([field.id]);
@@ -1882,6 +1903,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                             fields={draft.fields}
                             groups={groups}
                             layout={builderLayout}
+                            values={worstCaseValues}
                             overflowGroupIds={overflowGroupIds}
                             selectedIds={selectedIds}
                             onSelect={setSelectedIds}
@@ -1898,7 +1920,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                         ) : (
                           <SchemaRenderer
                             schema={previewSchema}
-                            values={{}}
+                            values={worstCaseValues}
                             brandKit={kit}
                             instrument={false}
                           />
@@ -1986,6 +2008,11 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                         g.children.includes(singleSelected.fieldKey),
                       )}
                       computedRect={builderLayout.fieldRects.get(singleSelected.id)}
+                      computedFontSize={builderLayout.fontSizes.get(singleSelected.id)}
+                      worstCasePreview={worstCaseFieldId === singleSelected.id}
+                      onWorstCasePreview={(on) =>
+                        setWorstCaseFieldId(on ? singleSelected.id : null)
+                      }
                       onChange={(patch, stream) => patchField(singleSelected.id, patch, stream)}
                       onDelete={() => deleteFields([singleSelected.id])}
                       onBringToFront={() => reorderLayer([singleSelected.id], "front")}

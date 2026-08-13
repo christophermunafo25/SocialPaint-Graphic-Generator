@@ -92,7 +92,7 @@ describe("style clipboard", () => {
     letterSpacingPx: -1.9,
     lineHeight: 1.2,
     align: "left",
-    autoFit: true,
+    textSizing: "shrink",
     colorHex: "#F9F9F8",
     textGradient: {
       angle: 135,

@@ -74,7 +74,7 @@ export interface ValidatedField {
   uppercase?: boolean;
   letterSpacingPx?: number;
   lineHeight?: number;
-  autoFit?: boolean;
+  textSizing?: "free" | "shrink";
   objectFit?: "cover";
 }
 
@@ -302,7 +302,7 @@ export function validateProposal(
       maxLength: !isStatic && type !== "image" ? maxLength : undefined,
       typeStyleKey,
       colorKey,
-      autoFit: type === "text" || type === "multiline" ? true : undefined,
+      textSizing: type === "text" || type === "multiline" ? ("shrink" as const) : undefined,
       objectFit: type === "image" ? "cover" : undefined,
     });
   }
@@ -323,7 +323,7 @@ export function validateProposal(
         ...geometryFrom(el),
         static: true,
         staticValue: el.kind === "text" ? el.text : undefined,
-        autoFit: el.kind === "text" ? true : undefined,
+        textSizing: el.kind === "text" ? ("shrink" as const) : undefined,
         objectFit: el.kind === "image" ? "cover" : undefined,
       });
       warnings.push(

@@ -76,6 +76,13 @@ interface FieldInspectorProps {
   containingGroup?: import("@/lib/types").LayoutGroup;
   /** This field's rect from the layout pass (shown when values are computed). */
   computedRect?: import("@/lib/render/layout").Rect;
+  /** This field's font size from the layout pass — under Shrink it can sit
+   * below the set size, and the inspector says so. */
+  computedFontSize?: number;
+  /** Worst-case preview: while on, the builder canvas fills THIS field with
+   * its longest possible entry so the admin sees the mode's consequence. */
+  worstCasePreview?: boolean;
+  onWorstCasePreview?(on: boolean): void;
   /** `stream` marks a per-keystroke source (text inputs): successive
    * commits coalesce into one undo entry. Discrete commits (numeric fields,
    * toggles) omit it and land one undo entry each. */
@@ -104,7 +111,7 @@ const SHAPE_KINDS: Array<{ value: NonNullable<TemplateField["shape"]>; label: st
   { value: "star", label: "Star" },
 ];
 
-type ResizeMode = "free" | "shrink" | "fixed";
+type TextSizingMode = "free" | "shrink";
 
 /** Inspector for the selected field: a flat, hairline-divided stack of
  * collapsible sections — Field, Position, Layout, Appearance, Typography,
@@ -121,6 +128,9 @@ export function FieldInspector(props: FieldInspectorProps) {
     canvasHeight,
     containingGroup,
     computedRect,
+    computedFontSize,
+    worstCasePreview,
+    onWorstCasePreview,
     onChange,
     onDelete,
     focusLabelFieldId,
@@ -195,12 +205,9 @@ export function FieldInspector(props: FieldInspectorProps) {
     onChange({ y: Math.round(centered ? top + field.height / 2 : top) });
   };
 
-  const canLockWidth = field.type === "text" || field.type === "multiline";
-  const resizeMode: ResizeMode = field.fixedWidth ? "fixed" : field.autoFit ? "shrink" : "free";
-  const setResizeMode = (mode: ResizeMode) => {
-    if (mode === "free") onChange({ autoFit: undefined, fixedWidth: undefined });
-    else if (mode === "shrink") onChange({ autoFit: true, fixedWidth: undefined });
-    else onChange({ fixedWidth: true, autoFit: undefined });
+  const canSetSizing = field.type === "text" || field.type === "multiline";
+  const setSizingMode = (mode: TextSizingMode) => {
+    onChange({ textSizing: mode === "shrink" ? "shrink" : undefined });
   };
 
   /** Constrain-proportions for the W/H pair — a panel behavior (linked
@@ -231,6 +238,10 @@ export function FieldInspector(props: FieldInspectorProps) {
   const boundStyle = getTypeStyle(kit, field.typeStyleKey);
   const locked = lockedProperties(boundStyle);
   const resolved = resolveFieldStyle(field, kit);
+  /** The sizing mode the field actually renders with — a bound type style
+   * can lock it, exactly like any other locked property. */
+  const sizingMode: TextSizingMode = resolved.textSizing ?? "free";
+  const sizingLocked = locked.has("textSizing");
   const displayFamily = resolved.fontFamily;
   const currentStyle = toFontStyle(resolved.fontWeight, resolved.fontStyle, resolved.fontStretch);
   const fontAssets = useMemo(() => assets.filter((a) => a.kind === "font"), [assets]);
@@ -639,35 +650,55 @@ export function FieldInspector(props: FieldInspectorProps) {
       </InspectorSection>
 
       <InspectorSection id="layout" title="Layout">
-        {canLockWidth && (
-          <PropertyRow label="Resizing">
-            <SegmentedIconGroup
-              stretch
-              ariaLabel="Text resizing behavior"
-              value={resizeMode}
-              options={[
-                {
-                  key: "free",
-                  label: "Free",
-                  title: "Text renders at its set size — it may escape the box",
-                },
-                {
-                  key: "shrink",
-                  label: "Shrink",
-                  title: "Text shrinks to fit as it gets longer (estimate)",
-                },
-                {
-                  key: "fixed",
-                  label: "Fixed",
-                  title:
-                    field.type === "multiline"
-                      ? "Text wraps at the box edge and never escapes"
-                      : "Text shrinks at exactly the box edge and never escapes",
-                },
-              ]}
-              onSelect={setResizeMode}
-            />
-          </PropertyRow>
+        {canSetSizing && (
+          <>
+            <PropertyRow label="Text sizing">
+              <SegmentedIconGroup
+                stretch
+                ariaLabel="Text sizing behavior"
+                value={sizingMode}
+                disabled={sizingLocked}
+                options={[
+                  {
+                    key: "free",
+                    label: "Box grows",
+                    title: "The text stays at its set size; the box gets taller as more is entered",
+                  },
+                  {
+                    key: "shrink",
+                    label: "Text shrinks",
+                    title: "The box stays exactly as drawn; the text gets smaller until it fits",
+                  },
+                ]}
+                onSelect={setSizingMode}
+              />
+            </PropertyRow>
+            {sizingLocked && boundStyle && (
+              <p style={hintStyle}>Set by the “{boundStyle.name}” style.</p>
+            )}
+            {!isStatic && onWorstCasePreview && (
+              <PropertyRow label="Preview">
+                <button
+                  type="button"
+                  aria-pressed={worstCasePreview}
+                  onClick={() => onWorstCasePreview(!worstCasePreview)}
+                  className="sp-input"
+                  style={{
+                    fontSize: "var(--type-caption-size)",
+                    color: worstCasePreview ? "var(--state-primary)" : "var(--text-secondary)",
+                    cursor: "pointer",
+                  }}
+                  title={
+                    field.maxLength
+                      ? `Fill the canvas preview with a ${field.maxLength}-character entry`
+                      : "Fill the canvas preview with a long entry (set Max chars to bound it)"
+                  }
+                >
+                  {worstCasePreview ? "Showing longest entry" : "Show longest entry"}
+                </button>
+              </PropertyRow>
+            )}
+          </>
         )}
         <PropertyRow label="Dimensions">
           {mainSizeComputed && !groupVertical ? (
@@ -684,7 +715,7 @@ export function FieldInspector(props: FieldInspectorProps) {
               onCommit={commitW}
             />
           )}
-          {mainSizeComputed && groupVertical ? (
+          {(mainSizeComputed && groupVertical) || (isText && sizingMode === "free") ? (
             <span style={{ fontSize: 11, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
               H {Math.round(computedRect?.height ?? field.height)} · hugs content
             </span>
@@ -721,7 +752,9 @@ export function FieldInspector(props: FieldInspectorProps) {
             )}
           </button>
         </PropertyRow>
-        {isText && field.type !== "select" && resizeMode !== "free" && (
+        {/* The control that decides whether the chosen mode can fail: the
+            shrink floor under Shrink, the entry bound under Free. */}
+        {isText && field.type !== "select" && sizingMode === "shrink" && (
           <PropertyRow label="Min text">
             <NumericField
               suffix="px"
@@ -732,6 +765,20 @@ export function FieldInspector(props: FieldInspectorProps) {
               placeholder="18"
               value={field.minFontSizePx}
               onCommit={(v) => onChange({ minFontSizePx: v })}
+            />
+          </PropertyRow>
+        )}
+        {isText && field.type !== "select" && sizingMode === "free" && !isStatic && (
+          <PropertyRow label="Max chars">
+            <NumericField
+              ariaLabel="Maximum characters"
+              precision={0}
+              min={1}
+              allowEmpty
+              placeholder="none"
+              disabled={locked.has("maxLength")}
+              value={field.maxLength}
+              onCommit={(v) => onChange({ maxLength: v })}
             />
           </PropertyRow>
         )}
@@ -937,6 +984,14 @@ export function FieldInspector(props: FieldInspectorProps) {
                 onCommit={(v) => onChange({ fontSizePx: v ?? field.fontSizePx })}
               />
             </PropertyRow>
+            {sizingMode === "shrink" &&
+              computedFontSize !== undefined &&
+              computedFontSize < (resolved.fontSizePx ?? 45) - 0.5 && (
+                <p style={hintStyle}>
+                  This is the size at rest — the current content fits at{" "}
+                  {Math.round(computedFontSize)}px.
+                </p>
+              )}
             {fontCatalog && !fontCatalog.verified && (
               <p style={hintStyle}>
                 We don't have {displayFamily} on file, so these styles are a guess — upload the font
@@ -1177,7 +1232,9 @@ export function FieldInspector(props: FieldInspectorProps) {
           elements. Same write paths the old panel used. */}
       {!isStatic && (
         <InspectorSection id="member-input" title="Member input">
-          {isText && field.type !== "select" && (
+          {/* Under Free this control lives in Layout — it bounds how far the
+              box can grow, which is that mode's failure question. */}
+          {isText && field.type !== "select" && sizingMode === "shrink" && (
             <PropertyRow label="Max chars">
               <NumericField
                 ariaLabel="Maximum characters"

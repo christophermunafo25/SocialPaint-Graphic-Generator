@@ -41,6 +41,10 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
   const [exportToast, setExportToast] = useState<"downloaded" | "shared" | "error" | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
   const rendererRef = useRef<SchemaRendererHandle>(null);
+  /** Layout warnings (text at its minimum size that still doesn't fit) —
+   * shown quietly under the preview; shortening the entry is the fix and
+   * only the member can do it. */
+  const [layoutWarnings, setLayoutWarnings] = useState<string[]>([]);
 
   useEffect(() => () => window.clearTimeout(toastTimer.current), []);
 
@@ -481,8 +485,18 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
                   schema={template}
                   values={values}
                   brandKit={kit}
+                  onWarnings={setLayoutWarnings}
                 />
               </ErrorBoundary>
+              {layoutWarnings.length > 0 && (
+                <p
+                  role="status"
+                  className="mt-2"
+                  style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}
+                >
+                  {layoutWarnings[0]}
+                </p>
+              )}
             </div>
           </div>
         </div>

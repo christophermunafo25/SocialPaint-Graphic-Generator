@@ -250,10 +250,12 @@ export function TypeStylesEditor({
                   >
                     <input
                       type="checkbox"
-                      checked={s.autoFit ?? false}
-                      onChange={(e) => update(s.key, { autoFit: e.target.checked || undefined })}
+                      checked={s.textSizing === "shrink"}
+                      onChange={(e) =>
+                        update(s.key, { textSizing: e.target.checked ? "shrink" : undefined })
+                      }
                     />
-                    Auto-shrink to fit
+                    Shrink to fit the box
                   </label>
                 </div>
 

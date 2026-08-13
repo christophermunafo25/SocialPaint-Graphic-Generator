@@ -41,7 +41,8 @@ export interface BrandTypeStyle {
   colorKey?: string; // brand palette key
   fontSizePx?: number; // set only when the brand fixes the size globally
   maxLength?: number; // "never exceeds N characters"
-  autoFit?: boolean;
+  /** Locks the field's text sizing mode (see TemplateField.textSizing). */
+  textSizing?: "free" | "shrink";
 }
 
 export interface BrandKit {
@@ -170,7 +171,7 @@ export interface TemplateField {
   fontStyle?: "normal" | "italic";
   fontStretch?: string; // CSS font-stretch keyword; see FontStretch in render/fontCatalog
   fontSizePx?: number;
-  minFontSizePx?: number; // autoFit floor
+  minFontSizePx?: number; // shrink floor
   colorKey?: string;
   /** Literal color fallback (e.g. from a Figma import) — used only when no
    * type style or palette colorKey applies. */
@@ -185,11 +186,13 @@ export interface TemplateField {
   lineHeight?: number;
   // Guardrails
   maxLength?: number;
-  autoFit?: boolean;
-  /** The box width is a hard constraint: single-line text shrinks (measured,
-   * not estimated) until it fits, multi-line text wraps at it, and nothing
-   * ever escapes the box. */
-  fixedWidth?: boolean;
+  /** How text responds to content length. "free" (or absent): the font size
+   * is fixed and the box grows taller as lines wrap — height is computed,
+   * never authored. "shrink": the box is exactly what the admin drew and the
+   * font size decreases (measured, never estimated) until the content fits —
+   * single-line text is width-constrained, multiline is height-constrained
+   * with wrapping at the box width. */
+  textSizing?: "free" | "shrink";
   objectFit?: "cover" | "contain";
   aspectRatio?: number;
   options?: string[];
@@ -242,7 +245,7 @@ export interface LayoutGroup {
    * stack order — a third ordering, separate from form order and zIndex. */
   children: string[];
   /** Overflow policy: proportionally shrink text children (never below their
-   * autoFit floors) until the stack fits inside the canvas. Off by default —
+   * minimum font sizes) until the stack fits inside the canvas. Off by default —
    * overflow stays visible, with a builder-only warning. */
   shrinkToFit?: boolean;
 }

@@ -10,7 +10,7 @@ import React, {
 import type { BrandKit, FieldValues, TemplateField, TemplateSchema } from "@/lib/types";
 import { ErrorBoundary, FieldCrashFallback } from "./ErrorBoundary";
 import { useDataUrl } from "@/lib/render/useDataUrl";
-import { createCanvasMeasurer, fittedFontSize, fixedWidthFontSize } from "@/lib/render/autoFit";
+import { createCanvasMeasurer, fitText } from "@/lib/render/autoFit";
 import { computeLayout, renderedText, type Rect } from "@/lib/render/layout";
 import { resolveFieldStyle } from "@/lib/brand/resolveStyle";
 import { loadGoogleFonts, schemaFontUsage } from "@/lib/render/fonts";
@@ -31,6 +31,9 @@ interface SchemaRendererProps {
   instrument?: boolean;
   /** Optional overlay painted in canvas space (Template Builder field boxes). */
   overlay?: React.ReactNode;
+  /** Layout warnings for the hosting page (e.g. text that can't fit at its
+   * minimum size). Called whenever the layout pass re-runs. */
+  onWarnings?(warnings: string[]): void;
 }
 
 /** Renders ANY TemplateSchema onto a live-scaled canvas sized from
@@ -38,7 +41,10 @@ interface SchemaRendererProps {
  * ported from the reference Signature generators. The ONLY thing member input
  * changes is field content — positions and styling are locked in the schema. */
 export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererProps>(
-  function SchemaRenderer({ schema, values, brandKit, instrument = true, overlay }, ref) {
+  function SchemaRenderer(
+    { schema, values, brandKit, instrument = true, overlay, onWarnings },
+    ref,
+  ) {
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLDivElement>(null);
     const [scale, setScale] = useState(1);
@@ -87,6 +93,12 @@ export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererPro
       () => computeLayout(schema, values, brandKit, measurer),
       [schema, values, brandKit, measurer],
     );
+
+    // Surface layout warnings (text at its floor that still overflows) to
+    // the hosting page — the member is the only one who can shorten it.
+    useEffect(() => {
+      onWarnings?.(layout.warnings);
+    }, [layout, onWarnings]);
 
     // One instrumentation point covers every template (Feature 3).
     useEffect(() => {
@@ -374,19 +386,22 @@ function TextFieldBox({ field, value, brandKit, fontSize: layoutFontSize }: Fiel
   // placeholders a member has yet to fill.
   const text = renderedText(field, value);
   const atFullStrength = Boolean(value) || Boolean(field.static);
-  // Fixed width: the box edge is a hard constraint — single-line text shrinks
-  // (real glyph measurement) at exactly the point it would escape; multi-line
-  // wraps as usual. Both clip so nothing ever leaves the box.
-  //
   // The layout pass owns the size when it ran (identical math, plus
   // shrinkToFit for grouped stacks); the inline computation remains for
-  // hosts without a pass (the builder's interaction boxes).
-  const singleLine = field.type !== "multiline";
+  // hosts without a pass (the builder's interaction boxes). Shrink never
+  // clips: content that can't fit at the floor overflows visibly and the
+  // layout pass warns.
   const fontSize =
     layoutFontSize ??
-    (field.fixedWidth && singleLine
-      ? fixedWidthFontSize({ width: field.width, ...style }, text)
-      : fittedFontSize({ width: field.width, ...style }, text));
+    fitText(
+      {
+        ...style,
+        multiline: field.type === "multiline",
+        width: field.width,
+        height: field.height,
+      },
+      text,
+    ).fontSizePx;
   const justify =
     field.align === "center" ? "center" : field.align === "right" ? "flex-end" : "flex-start";
   const alignItems =
@@ -402,7 +417,6 @@ function TextFieldBox({ field, value, brandKit, fontSize: layoutFontSize }: Fiel
         display: "flex",
         alignItems,
         justifyContent: justify,
-        overflow: field.fixedWidth ? "hidden" : undefined,
       }}
     >
       <p

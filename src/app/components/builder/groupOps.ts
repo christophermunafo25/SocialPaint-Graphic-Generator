@@ -52,6 +52,9 @@ function memberExtents(
   const box = authoredRect(f);
   if (f.type !== "text" && f.type !== "multiline" && f.type !== "select") return { v: box, h: box };
   const style = resolveFieldStyle(f, kit);
+  // A multiline Shrink field IS its fixed box on both axes — the stack
+  // reproduces the box, not a hugged block, so grouping stays lossless.
+  if (f.type === "multiline" && style.textSizing === "shrink") return { v: box, h: box };
   const text = renderedText(f, undefined);
   const size = resolvedFontSize(f, style, text, measure);
   const contentH = measuredTextHeight(f, style, text, size, f.width, measure);

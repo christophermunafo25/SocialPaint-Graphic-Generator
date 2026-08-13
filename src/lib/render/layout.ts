@@ -20,11 +20,19 @@ import type { BrandKit, FieldValues, LayoutGroup, TemplateField, TemplateSchema 
 import { isFreeGroup, parseGroupChildRef } from "../types";
 import { resolveFieldStyle, type ResolvedFieldStyle } from "../brand/resolveStyle";
 import {
-  canvasFontShorthand,
-  fittedFontSize,
-  fixedWidthFontSizeWith,
+  DEFAULT_MIN_FONT_SIZE,
+  fitTextWith,
+  measuredTextHeight as measuredHeight,
+  measuredTextWidth,
+  wrapLines,
   type LineMeasurer,
+  type TextFit,
 } from "./autoFit";
+
+// The measurement and wrapping implementations live in autoFit.ts (the one
+// module every surface shares); re-exported here so layout consumers keep a
+// single import site.
+export { measuredTextWidth, wrapLines };
 
 export interface Rect {
   x: number;
@@ -63,6 +71,21 @@ const isTextual = (f: TemplateField): boolean =>
 
 const lineHeightOf = (style: ResolvedFieldStyle): number => style.lineHeight ?? 1.1;
 
+/** Full fit for a field: the size it renders at, plus whether shrink
+ * bottomed out at the floor with content still not fitting. */
+export function fitFieldText(
+  field: TemplateField,
+  style: ResolvedFieldStyle,
+  text: string,
+  measure: LineMeasurer,
+): TextFit {
+  return fitTextWith(
+    measure,
+    { ...style, multiline: field.type === "multiline", width: field.width, height: field.height },
+    text,
+  );
+}
+
 /** The font size a text field renders at — the exact decision TextFieldBox
  * made inline before the layout pass owned it. */
 export function resolvedFontSize(
@@ -71,75 +94,11 @@ export function resolvedFontSize(
   text: string,
   measure: LineMeasurer,
 ): number {
-  const singleLine = field.type !== "multiline";
-  return field.fixedWidth && singleLine
-    ? fixedWidthFontSizeWith(measure, { width: field.width, ...style }, text)
-    : fittedFontSize({ width: field.width, ...style }, text);
+  return fitFieldText(field, style, text, measure).fontSizePx;
 }
 
-/** One line's painted width: glyphs plus the per-gap letter spacing. Matches
- * the (len - 1) gap convention fixedWidthFontSize already uses. */
-function lineWidth(
-  line: string,
-  style: ResolvedFieldStyle,
-  fontSizePx: number,
-  measure: LineMeasurer,
-): number {
-  if (!line) return 0;
-  const font = canvasFontShorthand({ ...style, fontSizePx });
-  const spacing = (style.letterSpacingPx ?? 0) * Math.max(0, line.length - 1);
-  return measure(line, font) + spacing;
-}
-
-/** Greedy word wrap mirroring the multiline renderer (white-space: pre-wrap;
- * word-break: break-word): explicit newlines are hard breaks, words wrap at
- * the box width, and a single word wider than the box breaks mid-word. The
- * uppercase transform applies BEFORE measuring, exactly as it paints. */
-export function wrapLines(
-  text: string,
-  width: number,
-  style: ResolvedFieldStyle,
-  fontSizePx: number,
-  measure: LineMeasurer,
-): string[] {
-  const sample = style.uppercase ? text.toUpperCase() : text;
-  const fits = (s: string) => lineWidth(s, style, fontSizePx, measure) <= width;
-  const lines: string[] = [];
-
-  for (const paragraph of sample.split("\n")) {
-    if (paragraph === "") {
-      lines.push("");
-      continue;
-    }
-    let current = "";
-    for (const word of paragraph.split(" ")) {
-      const candidate = current ? `${current} ${word}` : word;
-      if (fits(candidate)) {
-        current = candidate;
-        continue;
-      }
-      if (current) lines.push(current);
-      if (fits(word) || word.length <= 1) {
-        current = word;
-        continue;
-      }
-      // break-word: chop the overlong word greedily, one chunk per line.
-      let rest = word;
-      while (rest.length > 1 && !fits(rest)) {
-        let take = rest.length - 1;
-        while (take > 1 && !fits(rest.slice(0, take))) take--;
-        lines.push(rest.slice(0, take));
-        rest = rest.slice(take);
-      }
-      current = rest;
-    }
-    lines.push(current);
-  }
-  return lines;
-}
-
-/** A text field's hugged content height at the given size: line boxes times
- * the CSS line height, the same arithmetic the browser applies to the <p>. */
+/** A text field's hugged content height at the given size — the field-shaped
+ * entry to the shared implementation in autoFit.ts. */
 export function measuredTextHeight(
   field: TemplateField,
   style: ResolvedFieldStyle,
@@ -148,20 +107,31 @@ export function measuredTextHeight(
   width: number,
   measure: LineMeasurer,
 ): number {
-  const lines =
-    field.type === "multiline" ? wrapLines(text, width, style, fontSizePx, measure).length : 1;
-  return lines * fontSizePx * lineHeightOf(style);
+  return measuredHeight(field.type === "multiline", style, text, fontSizePx, width, measure);
 }
 
-/** A single-line field's painted width (horizontal stacks hug on this). */
-export function measuredTextWidth(
+/** A field under Free hugs its content vertically: the box height is the
+ * wrapped block's height, and the authored rect supplies the growth anchor —
+ * verticalAlign top grows down from the authored top, bottom grows up from
+ * the authored bottom, middle grows both ways from the authored center. The
+ * anchor math is identical to where the flex renderer painted the block
+ * inside the authored box, so existing templates keep their painted pixels. */
+function freeTextRect(
+  field: TemplateField,
   style: ResolvedFieldStyle,
   text: string,
   fontSizePx: number,
   measure: LineMeasurer,
-): number {
-  const sample = style.uppercase ? text.toUpperCase() : text;
-  return lineWidth(sample, style, fontSizePx, measure);
+): Rect {
+  const box = authoredRect(field);
+  const contentH = measuredTextHeight(field, style, text, fontSizePx, field.width, measure);
+  const y =
+    field.verticalAlign === "top"
+      ? box.y
+      : field.verticalAlign === "bottom"
+        ? box.y + box.height - contentH
+        : box.y + (box.height - contentH) / 2;
+  return { x: box.x, y, width: box.width, height: contentH };
 }
 
 /** Authored rect normalized to top-left space. */
@@ -356,11 +326,16 @@ function sizedChildren(
     const style = styleOf(ctx, f);
     const text = renderedText(f, ctx.values[f.fieldKey]);
     const size = ctx.result.fontSizes.get(f.id) ?? resolvedFontSize(f, style, text, ctx.measure);
+    // A multiline field under Shrink is a FIXED box — its font adapts to its
+    // authored extents, so it contributes constants to the stack. Everything
+    // else hugs as before: Free text hugs its wrapped height, single-line
+    // text hugs its measured width/line box.
+    const fixedBox = f.type === "multiline" && style.textSizing === "shrink";
     if (vertical) {
       out.push({
         kind: "field",
         field: f,
-        main: measuredTextHeight(f, style, text, size, f.width, ctx.measure),
+        main: fixedBox ? f.height : measuredTextHeight(f, style, text, size, f.width, ctx.measure),
         cross: f.width,
       });
     } else {
@@ -368,7 +343,12 @@ function sizedChildren(
         kind: "field",
         field: f,
         main: f.type === "multiline" ? f.width : measuredTextWidth(style, text, size, ctx.measure),
-        cross: f.type === "multiline" ? f.height : size * lineHeightOf(style),
+        cross:
+          f.type === "multiline"
+            ? fixedBox
+              ? f.height
+              : measuredTextHeight(f, style, text, size, f.width, ctx.measure)
+            : size * lineHeightOf(style),
       });
     }
   }
@@ -541,7 +521,7 @@ function placeFreeGroup(ctx: Ctx, group: LayoutGroup, ancestors: Set<string>): v
 }
 
 /** shrinkToFit: proportionally drive text descendants' font sizes down
- * (never below their autoFit floors) until the stack fits the canvas span
+ * (never below their minimum font sizes) until the stack fits the canvas span
  * available from its anchor. Iterative because shrinking re-wraps multiline
  * text; sizes are monotonically decreasing and floored, so it terminates. */
 function applyShrink(ctx: Ctx, group: LayoutGroup, anchorPos: number, vertical: boolean): void {
@@ -554,9 +534,12 @@ function applyShrink(ctx: Ctx, group: LayoutGroup, anchorPos: number, vertical: 
         : 2 * Math.min(anchorPos, canvasMain - anchorPos);
   if (available <= 0) return;
 
+  // Fixed-box children (multiline Shrink) contribute constant extents —
+  // scaling their font would shrink the text without freeing any space.
   const textFields = groupFieldKeys(group, [...ctx.groups.values()])
     .map((k) => ctx.fields.get(k))
-    .filter((f): f is TemplateField => Boolean(f && isTextual(f)));
+    .filter((f): f is TemplateField => Boolean(f && isTextual(f)))
+    .filter((f) => !(f.type === "multiline" && styleOf(ctx, f).textSizing === "shrink"));
 
   for (let i = 0; i < 8; i++) {
     const contentMain = contentMainSize(ctx, group, new Set());
@@ -568,7 +551,7 @@ function applyShrink(ctx: Ctx, group: LayoutGroup, anchorPos: number, vertical: 
       const text = renderedText(f, ctx.values[f.fieldKey]);
       const current =
         ctx.result.fontSizes.get(f.id) ?? resolvedFontSize(f, style, text, ctx.measure);
-      const floor = style.minFontSizePx ?? 8;
+      const floor = style.minFontSizePx ?? DEFAULT_MIN_FONT_SIZE;
       const next = Math.max(floor, Math.floor(current * scale));
       if (next < current) {
         ctx.result.fontSizes.set(f.id, next);
@@ -614,15 +597,32 @@ export function computeLayout(
     warned: new Set(),
   };
 
-  // Baseline: every field at its authored rect and renderer-identical font
-  // size. Groups then override their children's rects (and, under shrink,
-  // sizes) — so a template with no groups is a pure passthrough.
+  // Baseline: every field at its rect and renderer-identical font size.
+  // Free text hugs — its height is computed from the wrapped content, grown
+  // from the verticalAlign anchor; everything else keeps its authored rect.
+  // Groups then override their children's rects (and, under shrink, sizes).
   for (const f of schema.fields) {
-    result.fieldRects.set(f.id, authoredRect(f));
-    if (isTextual(f)) {
-      const style = styleOf(ctx, f);
-      const text = renderedText(f, values[f.fieldKey]);
-      result.fontSizes.set(f.id, resolvedFontSize(f, style, text, measure));
+    if (!isTextual(f)) {
+      result.fieldRects.set(f.id, authoredRect(f));
+      continue;
+    }
+    const style = styleOf(ctx, f);
+    const text = renderedText(f, values[f.fieldKey]);
+    const fit = fitFieldText(f, style, text, measure);
+    result.fontSizes.set(f.id, fit.fontSizePx);
+    result.fieldRects.set(
+      f.id,
+      style.textSizing === "shrink"
+        ? authoredRect(f)
+        : freeTextRect(f, style, text, fit.fontSizePx, measure),
+    );
+    if (fit.overflows) {
+      warnOnce(
+        ctx,
+        `"${f.label}": the text doesn't fit even at the minimum size (${Math.round(
+          style.minFontSizePx ?? DEFAULT_MIN_FONT_SIZE,
+        )}px) — shorten it or enlarge the box.`,
+      );
     }
   }
 

@@ -119,7 +119,7 @@ export function fieldFromPalette(
           fontSizePx: Math.max(18, Math.min(90, Math.round(height * 0.5))),
           colorKey: kit?.colors.find((c) => c.key === "text")?.key ?? kit?.colors[0]?.key,
           align: "left" as const,
-          autoFit: true,
+          textSizing: "shrink" as const,
         }
       : {}),
     ...(item.type === "shape"
@@ -319,7 +319,7 @@ const TEXT_STYLE_PROPS = [
   "lineHeight",
   "align",
   "verticalAlign",
-  "autoFit",
+  "textSizing",
   "colorKey",
   "colorHex",
   "textGradient",
@@ -379,4 +379,15 @@ export function applyClipboardStyle(field: TemplateField): TemplateField {
 /** Test-only: reset the style clipboard between cases. */
 export function clearStyleClipboard(): void {
   styleClipboard = null;
+}
+
+/** The longest entry a member could make in a field — what the worst-case
+ * preview fills the canvas with. Bounded by maxLength when set; otherwise a
+ * long-but-plausible sample so the admin still sees the failure shape. */
+export function worstCaseText(field: TemplateField): string {
+  const sample = "The quick brown fox jumps over the lazy dog and keeps right on running";
+  const target = field.maxLength ?? (field.type === "multiline" ? 240 : 80);
+  let out = sample;
+  while (out.length < target) out = `${out} ${sample}`;
+  return out.slice(0, target).trimEnd();
 }

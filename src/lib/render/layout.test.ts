@@ -58,7 +58,9 @@ const layout = (
 ) => computeLayout({ fields, layoutGroups: groups, ...canvas }, values, null, measure);
 
 describe("passthrough (no groups)", () => {
-  it("returns authored rects untouched, center anchors normalized", () => {
+  it("free text hugs its line box, grown from the middle of the authored rect", () => {
+    // Both are single-line Free text at 40px/lineHeight 1: the box height is
+    // the one line box (40), centered where verticalAlign middle painted it.
     const plain = mkField({ fieldKey: "a", x: 10, y: 20, width: 300, height: 80 });
     const centered = mkField({
       fieldKey: "b",
@@ -69,14 +71,29 @@ describe("passthrough (no groups)", () => {
       anchor: "center",
     });
     const r = layout([plain, centered]);
-    expect(r.fieldRects.get(plain.id)).toEqual({ x: 10, y: 20, width: 300, height: 80 });
-    expect(r.fieldRects.get(centered.id)).toEqual({ x: 400, y: 450, width: 200, height: 100 });
+    expect(r.fieldRects.get(plain.id)).toEqual({ x: 10, y: 40, width: 300, height: 40 });
+    expect(r.fieldRects.get(centered.id)).toEqual({ x: 400, y: 480, width: 200, height: 40 });
     expect(r.warnings).toEqual([]);
   });
 
-  it("computes renderer-identical font sizes (fixedWidth measures, autoFit estimates)", () => {
+  it("keeps authored rects for non-text and Shrink text fields", () => {
+    const image = mkField({ fieldKey: "img", type: "image", x: 10, y: 20, width: 300, height: 80 });
+    const shrink = mkField({
+      fieldKey: "s",
+      x: 50,
+      y: 60,
+      width: 300,
+      height: 80,
+      textSizing: "shrink",
+    });
+    const r = layout([image, shrink]);
+    expect(r.fieldRects.get(image.id)).toEqual({ x: 10, y: 20, width: 300, height: 80 });
+    expect(r.fieldRects.get(shrink.id)).toEqual({ x: 50, y: 60, width: 300, height: 80 });
+  });
+
+  it("computes renderer-identical font sizes (single-line shrink is width-measured)", () => {
     // 20 chars × 0.5 × 40px = 400 wide at base size; box is 300 → shrink.
-    const fixed = mkField({ fieldKey: "fw", width: 300, fixedWidth: true });
+    const fixed = mkField({ fieldKey: "fw", width: 300, textSizing: "shrink" });
     const r = layout([fixed], undefined, { fw: "abcdefghijklmnopqrst" });
     // floor(40 × 300/400) = 30
     expect(r.fontSizes.get(fixed.id)).toBe(30);
@@ -263,7 +280,7 @@ describe("robustness", () => {
     expect(r.groupRects.get(g.id)!.overflows).toBe(true);
   });
 
-  it("shrinkToFit drives text down to fit, floored at the autoFit minimum", () => {
+  it("shrinkToFit drives text down to fit, floored at the minimum size", () => {
     const t1 = mkField({
       fieldKey: "t1",
       type: "multiline",
@@ -321,7 +338,8 @@ describe("plain (free) groups", () => {
     expect(r.fieldRects.get(a.id)).toEqual(none.fieldRects.get(a.id));
     expect(r.fieldRects.get(b.id)).toEqual(none.fieldRects.get(b.id));
     expect(r.fontSizes.get(a.id)).toBe(none.fontSizes.get(a.id));
-    expect(r.groupRects.get("free")).toMatchObject({ x: 100, y: 100, width: 400, height: 350 });
+    // a hugs its 20px line box (y 120..140); b's image spans to 450.
+    expect(r.groupRects.get("free")).toMatchObject({ x: 100, y: 120, width: 400, height: 330 });
     expect(r.warnings).toEqual([]);
   });
 
@@ -331,7 +349,8 @@ describe("plain (free) groups", () => {
     const free = mkGroup({ id: "free", mode: "free", children: ["a"] });
     const stack = mkGroup({ id: "stack", children: ["a", "b"], x: 500, y: 500 });
     const r = layout([a, b], [free, stack], { a: "x", b: "x" });
-    expect(r.fieldRects.get(a.id)).toEqual({ x: 100, y: 100, width: 400, height: 100 });
+    // a keeps its ungrouped (hugged) rect — the free group claimed it first.
+    expect(r.fieldRects.get(a.id)).toEqual({ x: 100, y: 140, width: 400, height: 20 });
     expect(r.fieldRects.get(b.id)!.y).toBe(500); // the stack still places b
     expect(r.warnings.some((w) => w.includes("already belongs"))).toBe(true);
   });
@@ -403,13 +422,13 @@ describe("horizontal stack verification", () => {
     expect(r.fieldRects.get(b.id)!.x).toBeCloseTo(50 + ra.width + 12, 5);
   });
 
-  it("hugs at the shrunk autoFit size, not the authored one", () => {
+  it("hugs at the shrunk size, not the authored one", () => {
     const a = mkField({
       fieldKey: "a",
       width: 100,
       fontSizePx: 40,
       minFontSizePx: 8,
-      autoFit: true,
+      textSizing: "shrink",
     });
     const b = mkField({ fieldKey: "b", type: "image", width: 60, height: 60 });
     const g = mkGroup({

@@ -40,7 +40,7 @@ export const DEFAULT_TYPE_STYLES = [
     weight: 700,
     uppercase: true,
     colorKey: "text",
-    autoFit: true,
+    textSizing: "shrink" as const,
   },
   {
     key: "subhead",
