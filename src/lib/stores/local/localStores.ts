@@ -241,6 +241,9 @@ export class LocalDesignImportProvider implements DesignImportProvider {
   async importFromUrl(): Promise<DesignImportResult> {
     throw new Error("Figma integration requires the Supabase backend (see .env.example).");
   }
+  async importElementsFromUrl(): Promise<never> {
+    throw new Error("Figma integration requires the Supabase backend (see .env.example).");
+  }
   async importStylesFromUrl(): Promise<never> {
     throw new Error("Figma integration requires the Supabase backend (see .env.example).");
   }

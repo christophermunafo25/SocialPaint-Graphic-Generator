@@ -67,12 +67,15 @@ import {
   fieldFromPalette,
   isTypingTarget,
   logoFieldFromAsset,
+  imageFieldFromUpload,
   pasteFromClipboard,
   setLayerOrder,
+  textFieldFromPaste,
   worstCaseText,
 } from "./fieldOps";
 import { composeFigmaBackground } from "@/lib/figma/composeLayers";
-import { mergeOverlayFields } from "@/lib/figma/overlayFields";
+import { assembleElementFields, mergeOverlayFields } from "@/lib/figma/overlayFields";
+import { isFigmaNodeUrl } from "@/lib/figma/figmaUrl";
 import { unavailableFamilies } from "@/lib/render/fonts";
 import { freezeBrandColors } from "@/lib/brand/resolveStyle";
 import { createCanvasMeasurer } from "@/lib/render/autoFit";
@@ -626,6 +629,125 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     if (item.type !== "shape") setFocusLabelFieldId(field.id);
   };
 
+  // -------------------------------------------------------------------------
+  // Paste & drop onto the canvas: image files (paste or drag from disk),
+  // Figma layer links (element-level import), and plain text. Everything
+  // lands as a FIXED element — same philosophy as import.
+  // -------------------------------------------------------------------------
+
+  /** Fixed image elements from files: upload (Storage in prod, data URL in
+   * dev), measure the natural size, land at the point — cascaded a little
+   * when several arrive together. */
+  const addImageFiles = async (files: File[], at: { x: number; y: number }) => {
+    if (!company) return;
+    const canvas = { width: draft.canvasWidth, height: draft.canvasHeight };
+    const created: TemplateField[] = [];
+    for (const [i, file] of files.entries()) {
+      if (!file.type.startsWith("image/")) continue;
+      try {
+        const url = await stores.templates.uploadBackground(company.id, file, file.name);
+        let natural: { width: number; height: number } | null = null;
+        try {
+          const bmp = await createImageBitmap(file);
+          natural = { width: bmp.width, height: bmp.height };
+          bmp.close();
+        } catch {
+          natural = null;
+        }
+        created.push(
+          imageFieldFromUpload(
+            url,
+            file.name,
+            natural,
+            { x: at.x + i * 24, y: at.y + i * 24 },
+            [...draft.fields, ...created],
+            canvas,
+          ),
+        );
+      } catch (e) {
+        console.error("Image drop upload failed", e);
+        setError("Couldn't add that image — try again, or upload it from the inspector.");
+      }
+    }
+    if (!created.length) return;
+    setFields([...draft.fields, ...created]);
+    setSelectedIds(created.map((f) => f.id));
+  };
+
+  /** A pasted Figma layer link becomes live elements at the paste point —
+   * text and images as fixed fields, everything else as rendered pieces,
+   * in exact paint order. Needs the Supabase backend + Figma connection. */
+  const importElementsAt = async (url: string, at: { x: number; y: number }) => {
+    if (!company) return;
+    if (!stores.designImport.isConfigured()) {
+      setError("Pasting Figma layers needs the Supabase backend with Figma connected.");
+      return;
+    }
+    setImportSummary("Importing that Figma layer…");
+    try {
+      const result = await stores.designImport.importElementsFromUrl(company.id, url);
+      const fields = assembleElementFields(result, at, draft.fields, {
+        width: draft.canvasWidth,
+        height: draft.canvasHeight,
+      });
+      setFields([...draft.fields, ...fields]);
+      setSelectedIds(fields.map((f) => f.id));
+      const missingFonts = unavailableFamilies(
+        fields,
+        brandAssets.filter((a) => a.kind === "font"),
+      );
+      setImportSummary(
+        `${fields.length} element${fields.length !== 1 ? "s" : ""} pasted from Figma — all fixed. Turn off Fixed on anything members should fill in.` +
+          (missingFonts.length
+            ? ` Fonts not available here: ${missingFonts.join(", ")} — upload them in Brand Studio.`
+            : ""),
+      );
+      window.clearTimeout(importSummaryTimer.current);
+      importSummaryTimer.current = window.setTimeout(() => setImportSummary(null), 8000);
+      if (result.warnings.length) setError(result.warnings.join(" "));
+    } catch (e) {
+      setImportSummary(null);
+      setError(e instanceof Error ? e.message : "Couldn't import that Figma layer.");
+    }
+  };
+
+  // System-clipboard paste. The internal field clipboard (copied canvas
+  // elements) owns ⌘V when it has content — this handler covers what the
+  // OS clipboard brings in from outside.
+  useEffect(() => {
+    if (!started || mode !== "edit") return;
+    const onPaste = (e: ClipboardEvent) => {
+      if (isTypingTarget(e as unknown as KeyboardEvent)) return;
+      if (clipboardHasFields()) return;
+      const dt = e.clipboardData;
+      if (!dt) return;
+      const center = { x: draft.canvasWidth / 2, y: draft.canvasHeight / 2 };
+      const image = Array.from(dt.items)
+        .find((i) => i.type.startsWith("image/"))
+        ?.getAsFile();
+      if (image) {
+        e.preventDefault();
+        void addImageFiles([image], center);
+        return;
+      }
+      const text = dt.getData("text/plain").trim();
+      if (!text) return;
+      e.preventDefault();
+      if (isFigmaNodeUrl(text)) {
+        void importElementsAt(text, center);
+        return;
+      }
+      const field = textFieldFromPaste(text, center, draft.fields, kit, {
+        width: draft.canvasWidth,
+        height: draft.canvasHeight,
+      });
+      setFields([...draft.fields, field]);
+      setSelectedIds([field.id]);
+    };
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
+  });
+
   // The naming focus applies only while the just-added field stays the sole
   // selection; any other selection clears it.
   useEffect(() => {
@@ -1076,8 +1198,9 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     return imported;
   };
 
-  /** Every detected element lands member-editable; the admin subtracts by
-   * marking chrome as Fixed. Counts from the data, never hardcoded. */
+  /** Every detected element lands FIXED, exactly as designed — the admin
+   * opts elements IN to being member fields by turning Fixed off. Counts
+   * from the data, never hardcoded. */
   const applyImport = (result: DesignImportResult) => {
     landImport({
       backgroundUrl: result.backgroundUrl,
@@ -1089,7 +1212,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       summary: (imported) =>
         imported.length === 0
           ? "Nothing was detected — the background imported. Draw fields on the canvas."
-          : `${imported.length} element${imported.length !== 1 ? "s" : ""} imported — all editable. Mark anything that shouldn't be as fixed.`,
+          : `${imported.length} element${imported.length !== 1 ? "s" : ""} imported — all fixed, exactly as designed. Select the elements members should fill in and turn off Fixed.`,
     });
   };
 
@@ -1933,6 +2056,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                             onReorderChildren={(id, children) => patchGroup(id, { children })}
                             onDraw={addDrawnField}
                             onDropElement={(id, at) => addPaletteField(id, at)}
+                            onDropFiles={(files, at) => void addImageFiles(files, at)}
                             onContextMenu={(pos, fieldId, canvasPoint) =>
                               setMenu({ x: pos.x, y: pos.y, fieldId, canvasPoint })
                             }

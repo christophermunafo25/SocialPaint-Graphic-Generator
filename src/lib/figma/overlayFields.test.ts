@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { FigmaLayerUnit, TemplateField } from "../types";
-import { gradientAngle, mergeOverlayFields, parseRgba } from "./overlayFields";
+import { assembleElementFields, gradientAngle, mergeOverlayFields, parseRgba } from "./overlayFields";
 
 const mkImported = (n: number): TemplateField[] =>
   Array.from({ length: n }, (_, i) => ({
@@ -134,5 +134,84 @@ describe("overlayUnitsToFields", () => {
     const overlay = all[7];
     const zOf = (id: string) => all.find((f) => f.id === id)!.zIndex!;
     expect(overlay.zIndex!).toBeGreaterThan(zOf("f7"));
+  });
+});
+
+describe("assembleElementFields", () => {
+  const payload = {
+    elementWidth: 200,
+    elementHeight: 100,
+    fields: [
+      {
+        id: "t1",
+        label: "Button label",
+        fieldKey: "button_label",
+        type: "text" as const,
+        static: true,
+        staticValue: "Join me!",
+        x: 20,
+        y: 30,
+        width: 160,
+        height: 40,
+      },
+    ],
+    units: [
+      // Paints BEFORE the text (afterExcluded 0): the button plate.
+      {
+        kind: "gradient" as const,
+        name: "Plate",
+        x: 0,
+        y: 0,
+        width: 200,
+        height: 100,
+        stops: [
+          { position: 0, color: "rgba(0, 255, 153, 1.000)" },
+          { position: 1, color: "rgba(181, 255, 106, 1.000)" },
+        ],
+        handles: [
+          { x: 0, y: 1 },
+          { x: 1, y: 0 },
+        ],
+      },
+      // Paints AFTER the text: a shine overlay.
+      {
+        kind: "node" as const,
+        name: "Shine",
+        x: 0,
+        y: 0,
+        width: 200,
+        height: 30,
+        url: "https://storage/shine.png",
+        afterExcluded: 1,
+      },
+    ],
+  };
+
+  it("reassembles exact paint order, centered at the point, above the draft", () => {
+    const existing = mkImported(2); // z 1..2
+    const out = assembleElementFields(payload, { x: 500, y: 500 }, existing, {
+      width: 1000,
+      height: 1000,
+    });
+    expect(out.map((f) => f.label)).toEqual(["Plate", "Button label", "Shine"]);
+    // Centered: element origin at (400, 450); child offsets preserved.
+    expect(out[0]).toMatchObject({ x: 400, y: 450 });
+    expect(out[1]).toMatchObject({ x: 420, y: 480 });
+    // z stacks above everything existing, in sequence order.
+    expect(out[0].zIndex).toBe(3);
+    expect(out[1].zIndex).toBe(4);
+    expect(out[2].zIndex).toBe(5);
+    // All fixed; the text keeps its designed copy.
+    expect(out.every((f) => f.static)).toBe(true);
+    expect(out[1].staticValue).toBe("Join me!");
+  });
+
+  it("clamps the landing so the element stays on the canvas", () => {
+    const out = assembleElementFields(payload, { x: 0, y: 0 }, [], {
+      width: 1000,
+      height: 1000,
+    });
+    expect(out[0].x).toBe(0);
+    expect(out[0].y).toBe(0);
   });
 });

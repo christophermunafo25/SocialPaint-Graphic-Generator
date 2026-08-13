@@ -74,6 +74,12 @@ export interface SuggestedField {
   opacity?: number;
   /** Per-corner radius, matching TemplateField.cornerRadius. */
   cornerRadius?: { tl: number; tr: number; br: number; bl: number };
+  /** Every imported element lands FIXED — the design stays exactly as
+   * drawn, and the admin opts elements IN to being member fields. Text
+   * carries its source copy as the fixed content; image staticValue is
+   * filled by the caller after rendering the node. */
+  static?: boolean;
+  staticValue?: string;
 }
 
 /** A node's rounded corners in the field shape, or undefined when square. */
@@ -160,6 +166,8 @@ export function walk(
       placeholder: node.characters?.slice(0, 80),
       textSizing: "shrink",
       opacity: opacityOf(node),
+      static: true,
+      staticValue: node.characters,
     });
     return;
   }
@@ -183,6 +191,7 @@ export function walk(
       objectFit: "cover",
       opacity: opacityOf(node),
       cornerRadius: cornerRadiusOf(node),
+      static: true,
     });
     if ((node.effects ?? []).some((e) => e.visible !== false)) {
       warnings.push(

@@ -45,6 +45,17 @@ export class FigmaImporter implements DesignImportProvider {
     return data as DesignImportResult;
   }
 
+  async importElementsFromUrl(
+    companyId: string,
+    url: string,
+  ): Promise<import("../../types").ElementImportResult> {
+    const { data, error } = await supabase().functions.invoke("figma-import", {
+      body: { companyId, url, mode: "elements" },
+    });
+    if (error) throw new Error(`Figma element import failed: ${error.message}`);
+    return data as import("../../types").ElementImportResult;
+  }
+
   async importStylesFromUrl(companyId: string, url: string): Promise<StyleImportResult> {
     const { data, error } = await supabase().functions.invoke("figma-styles", {
       body: { companyId, url },

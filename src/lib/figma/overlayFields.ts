@@ -41,6 +41,47 @@ const unitGradient = (u: FigmaLayerUnit): TextGradient => ({
   stops: (u.stops ?? []).map((s) => ({ position: s.position, color: s.color })),
 });
 
+/** One unit as a static field at the unit's own (frame-relative) geometry:
+ * node renders and image fills become fixed images, solid and gradient
+ * fills become fixed rects. Null when the unit has nothing paintable. */
+function unitField(u: FigmaLayerUnit, label: string): TemplateField | null {
+  const base: TemplateField = {
+    id: newId(),
+    label,
+    fieldKey: label,
+    type: "shape",
+    shape: "rect",
+    static: true,
+    x: u.x,
+    y: u.y,
+    width: u.width,
+    height: u.height,
+  };
+  if ((u.kind === "node" || u.kind === "imageFill") && u.url) {
+    return {
+      ...base,
+      type: "image",
+      shape: undefined,
+      staticValue: u.url,
+      // The render is an exact capture of the unit's box, so cover === 1:1.
+      objectFit: "cover",
+      opacity: u.opacity !== undefined ? Math.round(u.opacity * 100) : undefined,
+    };
+  }
+  if (u.kind === "solid" && u.color) {
+    const { hex, alpha } = parseRgba(u.color);
+    return { ...base, colorHex: hex, opacity: alpha < 1 ? Math.round(alpha * 100) : undefined };
+  }
+  if (u.kind === "gradient" && u.stops?.length) {
+    return {
+      ...base,
+      textGradient: unitGradient(u),
+      opacity: u.opacity !== undefined && u.opacity < 1 ? Math.round(u.opacity * 100) : undefined,
+    };
+  }
+  return null;
+}
+
 /**
  * Merge static fields built from the units marked `afterExcluded` into the
  * draft's field list, z-placed directly above the imported field each unit
@@ -65,43 +106,9 @@ export function mergeOverlayFields(
     if (!u.afterExcluded || u.afterExcluded <= 0) continue;
     const anchor = imported[Math.min(u.afterExcluded, imported.length) - 1];
     if (!anchor) continue;
-    const label = u.name?.trim() || "Background detail";
-    const base: TemplateField = {
-      id: newId(),
-      label,
-      fieldKey: suggestFieldKey(label, taken),
-      type: "shape",
-      shape: "rect",
-      static: true,
-      x: u.x,
-      y: u.y,
-      width: u.width,
-      height: u.height,
-    };
-    let field: TemplateField;
-    if ((u.kind === "node" || u.kind === "imageFill") && u.url) {
-      field = {
-        ...base,
-        type: "image",
-        shape: undefined,
-        staticValue: u.url,
-        // The render is an exact capture of the unit's box, so cover === 1:1.
-        objectFit: "cover",
-        opacity: u.opacity !== undefined ? Math.round(u.opacity * 100) : undefined,
-      };
-    } else if (u.kind === "solid" && u.color) {
-      const { hex, alpha } = parseRgba(u.color);
-      field = { ...base, colorHex: hex, opacity: alpha < 1 ? Math.round(alpha * 100) : undefined };
-    } else if (u.kind === "gradient" && u.stops?.length) {
-      field = {
-        ...base,
-        textGradient: unitGradient(u),
-        opacity:
-          u.opacity !== undefined && u.opacity < 1 ? Math.round(u.opacity * 100) : undefined,
-      };
-    } else {
-      continue;
-    }
+    const mapped = unitField(u, u.name?.trim() || "Background detail");
+    if (!mapped) continue;
+    const field = { ...mapped, fieldKey: suggestFieldKey(mapped.label, taken) };
     overlays.push({ anchorId: anchor.id, field });
     taken.push(field);
   }
@@ -123,4 +130,57 @@ export function mergeOverlayFields(
     ...existingFields.map((f) => ({ ...f, zIndex: z.get(f.id) ?? 0 })),
     ...overlays.map((o) => ({ ...o.field, zIndex: z.get(o.field.id) ?? 0 })),
   ];
+}
+
+/** Server payload for an element-level import (a pasted Figma layer link):
+ * the walk's fields plus every leftover unit, both relative to the
+ * element's own box. */
+export interface ElementImportPayload {
+  elementWidth: number;
+  elementHeight: number;
+  fields: TemplateField[];
+  units: FigmaLayerUnit[];
+}
+
+/** Build the fields a pasted Figma layer lands as: text/image fields and
+ * leftover units interleaved back into EXACT paint order (a unit with
+ * afterExcluded k paints between the k-th and k+1-th claimed field), the
+ * whole element centered on the paste point, clamped into the canvas,
+ * keyed against the draft, and z-stacked above everything existing. */
+export function assembleElementFields(
+  payload: ElementImportPayload,
+  at: { x: number; y: number },
+  existingFields: TemplateField[],
+  canvas: { width: number; height: number },
+): TemplateField[] {
+  const { fields: claimed, units } = payload;
+  const w = Math.max(1, payload.elementWidth);
+  const h = Math.max(1, payload.elementHeight);
+  const x0 = Math.round(Math.max(0, Math.min(canvas.width - w, at.x - w / 2)));
+  const y0 = Math.round(Math.max(0, Math.min(canvas.height - h, at.y - h / 2)));
+
+  const taken = [...existingFields];
+  let z = existingFields.reduce((m, f) => Math.max(m, f.zIndex ?? 0), 0);
+  const out: TemplateField[] = [];
+  const place = (f: TemplateField) => {
+    const placed: TemplateField = {
+      ...f,
+      x: f.x + x0,
+      y: f.y + y0,
+      fieldKey: suggestFieldKey(f.label, taken),
+      zIndex: ++z,
+    };
+    out.push(placed);
+    taken.push(placed);
+  };
+
+  for (let k = 0; k <= claimed.length; k++) {
+    for (const u of units) {
+      if ((u.afterExcluded ?? 0) !== k) continue;
+      const f = unitField(u, u.name?.trim() || "Element");
+      if (f) place(f);
+    }
+    if (k < claimed.length) place(claimed[k]);
+  }
+  return out;
 }

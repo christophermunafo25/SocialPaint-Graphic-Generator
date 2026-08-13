@@ -391,3 +391,65 @@ export function worstCaseText(field: TemplateField): string {
   while (out.length < target) out = `${out} ${sample}`;
   return out.slice(0, target).trimEnd();
 }
+
+/** Fixed image element from a pasted or dropped file: box at the image's
+ * natural aspect ratio, scaled to a hand-sized default and clamped into the
+ * canvas — the same landing logoFieldFromAsset gives brand logos, but with
+ * the artwork as the fixed content. */
+export function imageFieldFromUpload(
+  url: string,
+  name: string,
+  natural: { width: number; height: number } | null,
+  at: { x: number; y: number },
+  existing: TemplateField[],
+  canvas: { width: number; height: number },
+): TemplateField {
+  const DEFAULT = Math.round(Math.min(canvas.width, canvas.height) * 0.45);
+  const ratio =
+    natural && natural.width > 0 && natural.height > 0 ? natural.width / natural.height : 1;
+  let width = ratio >= 1 ? DEFAULT : Math.round(DEFAULT * ratio);
+  let height = ratio >= 1 ? Math.round(DEFAULT / ratio) : DEFAULT;
+  const scale = Math.min(1, canvas.width / width, canvas.height / height);
+  width = Math.max(1, Math.round(width * scale));
+  height = Math.max(1, Math.round(height * scale));
+  const x = Math.round(Math.max(0, Math.min(canvas.width - width, at.x - width / 2)));
+  const y = Math.round(Math.max(0, Math.min(canvas.height - height, at.y - height / 2)));
+  const base = name.replace(/\.[^.]+$/, "").trim() || "Image";
+  const label = existing.some((f) => f.label === base) ? `${base} copy` : base;
+  return {
+    id: newId(),
+    label,
+    fieldKey: suggestFieldKey(label, existing),
+    type: "image",
+    x,
+    y,
+    width,
+    height,
+    zIndex: maxZ(existing) + 1,
+    objectFit: "cover",
+    ...(natural ? { aspectRatio: ratio } : {}),
+    static: true,
+    staticValue: url,
+  };
+}
+
+/** Fixed text element from pasted plain text — the palette's text defaults
+ * with the pasted copy as fixed content. */
+export function textFieldFromPaste(
+  text: string,
+  at: { x: number; y: number },
+  existing: TemplateField[],
+  kit: BrandKit | null,
+  canvas: { width: number; height: number },
+): TemplateField {
+  const multiline = text.includes("\n") || text.length > 60;
+  const item = PALETTE_ITEMS.find((p) => p.id === (multiline ? "multiline" : "text"))!;
+  const f = fieldFromPalette(item, at, existing, kit, canvas);
+  return {
+    ...f,
+    label: "Pasted text",
+    fieldKey: suggestFieldKey("Pasted text", existing),
+    static: true,
+    staticValue: text,
+  };
+}

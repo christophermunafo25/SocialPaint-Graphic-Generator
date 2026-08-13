@@ -93,6 +93,12 @@ export interface DesignImportProvider {
     credential: { kind: "oauth-code" | "pat"; value: string },
   ): Promise<void>;
   importFromUrl(companyId: string, url: string): Promise<DesignImportResult>;
+  /** A single Figma layer (pasted as a link) as live elements — no
+   * background replacement, no canvas change. */
+  importElementsFromUrl(
+    companyId: string,
+    url: string,
+  ): Promise<import("../types").ElementImportResult>;
   /** Design-system import: pull the color + text styles of a Figma FILE into
    * palette entries + brand type styles (Feature 4 → design-system import). */
   importStylesFromUrl(companyId: string, url: string): Promise<StyleImportResult>;

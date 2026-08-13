@@ -30,6 +30,7 @@ describe("image field extraction", () => {
       y: 559,
       cornerRadius: { tl: 10, tr: 10, br: 10, bl: 10 },
       opacity: 80,
+      static: true, // staticValue arrives after the caller renders the node
     });
     expect(warnings.some((w) => w.includes("Portrait") && w.includes("shadow"))).toBe(true);
   });
@@ -67,6 +68,10 @@ describe("text field extraction", () => {
       align: "center",
       colorHex: "#FFFFFF",
       opacity: 50,
+      // Everything lands FIXED with its designed copy — the admin opts
+      // elements IN to being member fields.
+      static: true,
+      staticValue: "I'm Attending!",
     });
   });
 });

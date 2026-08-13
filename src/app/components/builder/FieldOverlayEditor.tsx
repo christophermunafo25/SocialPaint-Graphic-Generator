@@ -48,6 +48,8 @@ interface FieldOverlayEditorProps {
   onDraw(rect: { x: number; y: number; width: number; height: number }): void;
   /** Primary path: a palette element was dropped at a canvas point. */
   onDropElement(paletteId: string, at: { x: number; y: number }): void;
+  /** Image files dragged from disk (or another app) onto the canvas. */
+  onDropFiles(files: File[], at: { x: number; y: number }): void;
   /** Right-click on a field (id), a group frame ("group:<id>"), or empty
    * canvas (null, with canvas point). */
   onContextMenu(
@@ -349,6 +351,7 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
     onReorderChildren,
     onDraw,
     onDropElement,
+    onDropFiles,
     onContextMenu,
     onRequestLabelFocus,
   } = props;
@@ -950,16 +953,28 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
       className="relative w-full select-none touch-none overflow-hidden"
       style={{ aspectRatio: `${canvasWidth} / ${canvasHeight}`, cursor: "crosshair" }}
       onDragOver={(e) => {
-        if (e.dataTransfer.types.includes(PALETTE_MIME)) {
+        if (
+          e.dataTransfer.types.includes(PALETTE_MIME) ||
+          e.dataTransfer.types.includes("Files")
+        ) {
           e.preventDefault();
           e.dataTransfer.dropEffect = "copy";
         }
       }}
       onDrop={(e) => {
         const paletteId = e.dataTransfer.getData(PALETTE_MIME);
-        if (!paletteId) return;
-        e.preventDefault();
-        onDropElement(paletteId, toCanvas(e));
+        if (paletteId) {
+          e.preventDefault();
+          onDropElement(paletteId, toCanvas(e));
+          return;
+        }
+        const files = Array.from(e.dataTransfer.files).filter((f) =>
+          f.type.startsWith("image/"),
+        );
+        if (files.length) {
+          e.preventDefault();
+          onDropFiles(files, toCanvas(e));
+        }
       }}
       onContextMenu={(e) => {
         const target = e.target as HTMLElement;

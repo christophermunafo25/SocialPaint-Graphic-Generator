@@ -372,6 +372,19 @@ export interface DesignImportResult {
   sourceUrl?: string;
 }
 
+/** Element-level import: a single Figma layer (pasted as a link) becomes
+ * live elements — no background, no canvas change. Fields and units are
+ * relative to the element's own box; `afterExcluded` on a unit interleaves
+ * it back into paint order among the fields. */
+export interface ElementImportResult {
+  elementWidth: number;
+  elementHeight: number;
+  fields: TemplateField[];
+  units: FigmaLayerUnit[];
+  warnings: string[];
+  sourceUrl?: string;
+}
+
 /** One paintable unit of a decomposed Figma frame (frame-relative, scale 1). */
 export interface FigmaLayerUnit {
   kind: "node" | "solid" | "gradient" | "imageFill";
