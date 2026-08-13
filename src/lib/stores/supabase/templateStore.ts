@@ -81,13 +81,37 @@ export class SupabaseTemplateStore implements TemplateStore {
     return (await this.get(id))!;
   }
 
+  /** Replace a template's fields. The unique (template_id, field_key)
+   * constraint forces delete-before-insert, which risks the worst failure a
+   * save can have: a rejected insert (schema drift, bad payload) after a
+   * successful delete would WIPE the template. So the old rows are captured
+   * first and restored verbatim if the insert fails — a failed save must
+   * cost nothing. */
   private async replaceFields(templateId: string, input: Pick<NewTemplateInput, "fields">) {
+    const existing = await supabase()
+      .from("template_fields")
+      .select("*")
+      .eq("template_id", templateId);
+    if (existing.error) throw existing.error;
+
     const del = await supabase().from("template_fields").delete().eq("template_id", templateId);
     if (del.error) throw del.error;
     if (!input.fields.length) return;
     const rows = input.fields.map((f, i) => fieldToRow(templateId, f, i));
     const ins = await supabase().from("template_fields").insert(rows);
-    if (ins.error) throw ins.error;
+    if (ins.error) {
+      if (existing.data?.length) {
+        // Put back the exact rows (ids included) that were just deleted.
+        const restore = await supabase().from("template_fields").insert(existing.data);
+        if (restore.error) {
+          throw new Error(
+            `Saving fields failed (${ins.error.message}) and restoring the previous fields ` +
+              `also failed (${restore.error.message}) — do not keep editing; contact support.`,
+          );
+        }
+      }
+      throw ins.error;
+    }
   }
 
   async duplicate(id: string, name: string): Promise<TemplateSchema> {
