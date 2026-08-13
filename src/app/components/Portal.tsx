@@ -125,7 +125,7 @@ export function Portal() {
   if (templatesState.status === "error") {
     return (
       <Page>
-        <PageHeader eyebrow={company?.name} title="Brand templates" />
+        <PageHeader eyebrow={company?.name} title="Brand Templates" />
         <ErrorState
           title="We couldn't load your templates."
           detail="Check your connection and try again."
@@ -139,7 +139,7 @@ export function Portal() {
     <Page>
       <PageHeader
         eyebrow={company?.name}
-        title="Brand templates"
+        title="Brand Templates"
         description="Starting points sized for every surface. Each one fills with your brand when you generate."
       />
 

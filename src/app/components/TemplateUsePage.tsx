@@ -187,7 +187,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
         style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}
       >
         <ArrowLeft style={{ width: 14, height: 14 }} />
-        Brand templates
+        Brand Templates
       </button>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">

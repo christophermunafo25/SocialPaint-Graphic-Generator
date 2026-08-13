@@ -58,7 +58,7 @@ interface NavItem {
  * Brand Studio · People · Settings & Admin. Members see only the first. */
 const NAV: NavItem[] = [
   {
-    label: "Brand templates",
+    label: "Brand Templates",
     route: { name: "portal" },
     Icon: Paintbrush,
     adminOnly: false,

@@ -174,7 +174,7 @@ export function AdminTemplates() {
       />
       <PageHeader
         title="Template Builder"
-        description="Create, edit, and publish — published templates appear in your team's Brand templates."
+        description="Create, edit, and publish — published templates appear in your team's Brand Templates."
         action={
           <button
             className="sp-btn sp-btn-primary"
