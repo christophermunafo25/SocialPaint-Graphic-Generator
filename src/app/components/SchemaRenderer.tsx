@@ -321,7 +321,10 @@ export function FieldBoxContent({ field, value, brandKit, fontSize }: FieldBoxPr
     return <ShapeFieldBox field={field} brandKit={brandKit} />;
   }
   if (field.type === "image") {
-    return <ImageFieldBox field={field} value={effective} />;
+    // A member image field previews its designed artwork until a value
+    // arrives — the image twin of a text field's placeholder copy, and what
+    // keeps an imported full-bleed photo visible after Fixed is turned off.
+    return <ImageFieldBox field={field} value={effective || field.staticValue} />;
   }
   return <TextFieldBox field={field} value={effective} brandKit={brandKit} fontSize={fontSize} />;
 }

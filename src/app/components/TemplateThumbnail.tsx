@@ -18,7 +18,9 @@ export function TemplateThumbnail({ template }: { template: TemplateSchema }) {
   const values = useMemo<FieldValues>(() => {
     const out: FieldValues = {};
     for (const f of template.fields) {
-      if (f.type === "image" && !f.static) out[f.fieldKey] = photoPlaceholder;
+      // Designed artwork (imported photos) beats the generic portrait —
+      // the renderer already falls back to staticValue on its own.
+      if (f.type === "image" && !f.static && !f.staticValue) out[f.fieldKey] = photoPlaceholder;
     }
     return out;
   }, [template]);

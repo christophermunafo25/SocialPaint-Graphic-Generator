@@ -470,7 +470,17 @@ export function FieldInspector(props: FieldInspectorProps) {
                           placeholder: undefined,
                           maxLength: undefined,
                         }
-                      : { static: undefined, staticValue: undefined },
+                      : {
+                          static: undefined,
+                          // The designed content survives as the member-facing
+                          // preview: images keep their artwork (the renderer
+                          // falls back to it), text keeps its copy as the
+                          // placeholder.
+                          staticValue: field.type === "image" ? field.staticValue : undefined,
+                          ...(field.type !== "image" && !field.placeholder && field.staticValue
+                            ? { placeholder: field.staticValue.slice(0, 80) }
+                            : {}),
+                        },
                   )
                 }
               />
