@@ -34,6 +34,27 @@ function drawGradient(ctx: CanvasRenderingContext2D, u: FigmaLayerUnit): void {
 function drawCover(ctx: CanvasRenderingContext2D, bmp: ImageBitmap, u: FigmaLayerUnit): void {
   const dw = u.width * SCALE;
   const dh = u.height * SCALE;
+  // A cropped fill (Figma scaleMode STRETCH) carries the exact source
+  // window in its transform: rows [a, c, tx] / [b, d, ty] map the layer's
+  // unit square onto normalized image space, so the visible portion of the
+  // image is the rect (tx, ty, a, d). Without it, center-crop cover.
+  const t = u.transform;
+  const a = t?.[0]?.[0];
+  const d = t?.[1]?.[1];
+  if (t && a && d) {
+    ctx.drawImage(
+      bmp,
+      (t[0][2] ?? 0) * bmp.width,
+      (t[1][2] ?? 0) * bmp.height,
+      a * bmp.width,
+      d * bmp.height,
+      u.x * SCALE,
+      u.y * SCALE,
+      dw,
+      dh,
+    );
+    return;
+  }
   const scale = Math.max(dw / bmp.width, dh / bmp.height);
   const sw = dw / scale;
   const sh = dh / scale;
@@ -50,6 +71,9 @@ export async function composeFigmaBackground(result: LayerRenderResult): Promise
   if (!ctx) throw new Error("Canvas 2D context unavailable");
 
   for (const unit of result.units) {
+    // Units marked afterExcluded paint above lifted fields — they become
+    // static fields (overlayFields.ts), never part of the background plate.
+    if (unit.afterExcluded) continue;
     if (unit.kind === "solid" && unit.color) {
       ctx.fillStyle = unit.color;
       ctx.fillRect(unit.x * SCALE, unit.y * SCALE, unit.width * SCALE, unit.height * SCALE);
@@ -59,7 +83,9 @@ export async function composeFigmaBackground(result: LayerRenderResult): Promise
       const bmp = await loadBitmap(unit.url);
       if (!bmp) continue;
       if (unit.kind === "imageFill") {
+        ctx.globalAlpha = unit.opacity ?? 1;
         drawCover(ctx, bmp, unit);
+        ctx.globalAlpha = 1;
       } else {
         // Node renders are exact 2× captures of their bounding box.
         ctx.drawImage(bmp, unit.x * SCALE, unit.y * SCALE, unit.width * SCALE, unit.height * SCALE);

@@ -15,6 +15,11 @@ export interface FigmaNode {
   type: string;
   visible?: boolean;
   characters?: string;
+  opacity?: number;
+  /** Uniform corner radius, or per-corner [tl, tr, br, bl]. */
+  cornerRadius?: number;
+  rectangleCornerRadii?: number[];
+  effects?: Array<{ type: string; visible?: boolean }>;
   absoluteBoundingBox?: { x: number; y: number; width: number; height: number };
   style?: {
     fontFamily?: string;
@@ -65,7 +70,32 @@ export interface SuggestedField {
   placeholder?: string;
   textSizing?: "free" | "shrink";
   objectFit?: "cover";
+  /** Element opacity 0–100, only when the node is not fully opaque. */
+  opacity?: number;
+  /** Per-corner radius, matching TemplateField.cornerRadius. */
+  cornerRadius?: { tl: number; tr: number; br: number; bl: number };
 }
+
+/** A node's rounded corners in the field shape, or undefined when square. */
+export function cornerRadiusOf(
+  node: FigmaNode,
+): { tl: number; tr: number; br: number; bl: number } | undefined {
+  const r = node.rectangleCornerRadii;
+  if (r?.length === 4 && r.some((v) => v > 0)) {
+    return { tl: r[0], tr: r[1], br: r[2], bl: r[3] };
+  }
+  if (node.cornerRadius && node.cornerRadius > 0) {
+    const v = node.cornerRadius;
+    return { tl: v, tr: v, br: v, bl: v };
+  }
+  return undefined;
+}
+
+/** Element opacity as the field stores it (0–100), or undefined at full. */
+export const opacityOf = (node: FigmaNode): number | undefined =>
+  node.opacity !== undefined && node.opacity < 1
+    ? Math.round(node.opacity * 100)
+    : undefined;
 
 export const ALIGN: Record<string, "left" | "center" | "right"> = {
   LEFT: "left",
@@ -129,6 +159,7 @@ export function walk(
         : undefined,
       placeholder: node.characters?.slice(0, 80),
       textSizing: "shrink",
+      opacity: opacityOf(node),
     });
     return;
   }
@@ -150,7 +181,14 @@ export function walk(
       width: Math.round(box.width),
       height: Math.round(box.height),
       objectFit: "cover",
+      opacity: opacityOf(node),
+      cornerRadius: cornerRadiusOf(node),
     });
+    if ((node.effects ?? []).some((e) => e.visible !== false)) {
+      warnings.push(
+        `"${node.name}": shadows/effects on this image aren't reproduced — the field renders the image alone.`,
+      );
+    }
     return;
   }
 

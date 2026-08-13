@@ -1,4 +1,11 @@
-import type { BrandAsset, BrandKit, FontRef, TemplateField, TemplateSchema } from "../types";
+import type {
+  BrandAsset,
+  BrandKit,
+  FontAssetMetadata,
+  FontRef,
+  TemplateField,
+  TemplateSchema,
+} from "../types";
 import { resolveFieldStyle } from "../brand/resolveStyle";
 import {
   STRETCH_PERCENT,
@@ -356,4 +363,25 @@ export async function buildExportFontEmbedCss(
   );
   const css = parts.filter((c): c is string => Boolean(c)).join("\n");
   return css || undefined;
+}
+
+/** Font families the given fields reference that this workspace cannot
+ * render faithfully: not a Google font and not among the uploaded font
+ * assets. Import paths surface these so a designed template doesn't
+ * silently fall back to a system face. */
+export function unavailableFamilies(
+  fields: TemplateField[],
+  fontAssets: Array<{ metadata: FontAssetMetadata }>,
+): string[] {
+  const uploaded = new Set<string>();
+  for (const a of fontAssets) {
+    if (a.metadata.family) uploaded.add(a.metadata.family);
+  }
+  const google = new Set<string>(GOOGLE_FONTS);
+  const missing = new Set<string>();
+  for (const f of fields) {
+    const family = f.fontFamily;
+    if (family && !google.has(family) && !uploaded.has(family)) missing.add(family);
+  }
+  return [...missing];
 }

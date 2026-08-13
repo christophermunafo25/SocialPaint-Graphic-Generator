@@ -375,6 +375,8 @@ export interface DesignImportResult {
 /** One paintable unit of a decomposed Figma frame (frame-relative, scale 1). */
 export interface FigmaLayerUnit {
   kind: "node" | "solid" | "gradient" | "imageFill";
+  /** Source layer name — the field label if this unit is lifted. */
+  name?: string;
   x: number;
   y: number;
   width: number;
@@ -384,6 +386,12 @@ export interface FigmaLayerUnit {
   opacity?: number;
   stops?: Array<{ position: number; color: string }>; // gradient
   handles?: Array<{ x: number; y: number }>; // gradient handle positions (normalized)
+  /** Image-fill crop: 2×3 affine mapping the layer's unit square onto
+   * normalized image coordinates (Figma scaleMode STRETCH). */
+  transform?: number[][];
+  /** This unit paints ABOVE the k-th lifted field (1-based, paint order) —
+   * it must become a static field at that z, never part of the background. */
+  afterExcluded?: number;
 }
 
 export interface LayerRenderResult {

@@ -72,6 +72,8 @@ import {
   worstCaseText,
 } from "./fieldOps";
 import { composeFigmaBackground } from "@/lib/figma/composeLayers";
+import { overlayUnitsToFields } from "@/lib/figma/overlayFields";
+import { unavailableFamilies } from "@/lib/render/fonts";
 import { freezeBrandColors } from "@/lib/brand/resolveStyle";
 import { createCanvasMeasurer } from "@/lib/render/autoFit";
 import { computeLayout } from "@/lib/render/layout";
@@ -1056,7 +1058,17 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     // Fields is Step 1; Name comes last in the wizard.
     goTo("fields");
 
-    setImportSummary(opts.summary(imported));
+    // A designed template that silently falls back to system faces reads as
+    // a broken import — name the missing families and the fix.
+    const missingFonts = unavailableFamilies(
+      imported,
+      brandAssets.filter((a) => a.kind === "font"),
+    );
+    const fontNote = missingFonts.length
+      ? ` Fonts not available here: ${missingFonts.join(", ")} — upload them in Brand Studio so text renders as designed.`
+      : "";
+
+    setImportSummary(opts.summary(imported) + fontNote);
     window.clearTimeout(importSummaryTimer.current);
     importSummaryTimer.current = window.setTimeout(() => setImportSummary(null), 8000);
 
@@ -1173,7 +1185,13 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
             // deletions are different: deleting a live element means "remove
             // it from the design", which the stripped plate already reflects.
             const importSurvives = d.fields.some((f) => imported.some((i) => i.id === f.id));
-            return importSurvives ? { ...d, backgroundUrl: bgUrl } : d;
+            if (!importSurvives) return d;
+            // Layers that painted ABOVE a lifted element (a fade gradient
+            // over the photo, a badge across a headline) can't live in the
+            // background plate — it sits under every field. They land as
+            // static fields z-placed exactly where they painted.
+            const overlays = overlayUnitsToFields(layers.units, imported, d.fields);
+            return { ...d, backgroundUrl: bgUrl, fields: [...d.fields, ...overlays] };
           });
           if (layers.warnings.length) {
             setError(layers.warnings.join(" "));
