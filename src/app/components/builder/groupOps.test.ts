@@ -283,9 +283,7 @@ describe("deriveFreeGroup", () => {
     const base = { fields: [a, b], groups: [], groupIds: [], layout, kit: null, measure };
     expect(deriveFreeGroup({ ...base, fieldIds: [a.id] })).toBeNull();
     const g = deriveFreeGroup({ ...base, fieldIds: [a.id, b.id] })!;
-    expect(
-      deriveFreeGroup({ ...base, groups: [g], fieldIds: [a.id, b.id] }),
-    ).toBeNull();
+    expect(deriveFreeGroup({ ...base, groups: [g], fieldIds: [a.id, b.id] })).toBeNull();
   });
 });
 

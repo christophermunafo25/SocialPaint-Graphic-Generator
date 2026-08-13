@@ -44,7 +44,11 @@ interface MemberExtents {
   h: Rect;
 }
 
-function memberExtents(f: TemplateField, kit: BrandKit | null, measure: LineMeasurer): MemberExtents {
+function memberExtents(
+  f: TemplateField,
+  kit: BrandKit | null,
+  measure: LineMeasurer,
+): MemberExtents {
   const box = authoredRect(f);
   if (f.type !== "text" && f.type !== "multiline" && f.type !== "select") return { v: box, h: box };
   const style = resolveFieldStyle(f, kit);
@@ -110,7 +114,10 @@ function inferDirection(extents: Rect[]): LayoutGroup["direction"] {
  * stack would place. */
 function deriveStackProps(
   members: Array<{ ref: string; ext: MemberExtents }>,
-): Pick<LayoutGroup, "direction" | "gap" | "anchor" | "align" | "x" | "y" | "crossSize" | "children"> {
+): Pick<
+  LayoutGroup,
+  "direction" | "gap" | "anchor" | "align" | "x" | "y" | "crossSize" | "children"
+> {
   const direction = inferDirection(members.map((m) => m.ext.h));
   const vertical = direction === "vertical";
   const picked = members.map((m) => ({ ref: m.ref, extent: vertical ? m.ext.v : m.ext.h }));

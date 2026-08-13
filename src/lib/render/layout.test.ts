@@ -340,7 +340,14 @@ describe("plain (free) groups", () => {
     const a = mkField({ fieldKey: "a", type: "image", x: 100, y: 100, width: 100, height: 100 });
     const b = mkField({ fieldKey: "b", fontSizePx: 20 });
     const c = mkField({ fieldKey: "c", fontSizePx: 20 });
-    const col = mkGroup({ id: "col", children: ["b", "c"], x: 600, y: 300, gap: 10, crossSize: 200 });
+    const col = mkGroup({
+      id: "col",
+      children: ["b", "c"],
+      x: 600,
+      y: 300,
+      gap: 10,
+      crossSize: 200,
+    });
     const free = mkGroup({ id: "free", mode: "free", children: ["a", "group:col"] });
     const r = layout([a, b, c], [col, free], { b: "x", c: "x" });
     expect(r.fieldRects.get(b.id)).toMatchObject({ x: 600, y: 300, height: 20 });

@@ -1449,7 +1449,6 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
         }}
       />
 
-
       {importSummary && (
         <div className="sp-toast" role="status" aria-live="polite">
           <CheckCircle2

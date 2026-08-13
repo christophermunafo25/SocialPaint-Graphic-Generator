@@ -252,7 +252,9 @@ export function GroupInspector({
               />
               <span style={{ fontSize: 11, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
                 {vertical ? "H" : "W"}{" "}
-                {computedRect ? Math.round(vertical ? computedRect.height : computedRect.width) : "—"}{" "}
+                {computedRect
+                  ? Math.round(vertical ? computedRect.height : computedRect.width)
+                  : "—"}{" "}
                 · computed
               </span>
             </PropertyRow>
