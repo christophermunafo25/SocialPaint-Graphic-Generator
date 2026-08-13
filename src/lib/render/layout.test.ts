@@ -310,3 +310,157 @@ describe("text semantics", () => {
     expect(authoredRect(f)).toEqual({ x: 75, y: 90, width: 50, height: 20 });
   });
 });
+
+describe("plain (free) groups", () => {
+  it("children keep their authored rects and font sizes; the frame is their bounding box", () => {
+    const a = mkField({ fieldKey: "a", x: 100, y: 100, width: 400, height: 60, fontSizePx: 20 });
+    const b = mkField({ fieldKey: "b", type: "image", x: 300, y: 400, width: 200, height: 50 });
+    const none = layout([a, b], undefined, { a: "hi" });
+    const g = mkGroup({ id: "free", mode: "free", children: ["a", "b"] });
+    const r = layout([a, b], [g], { a: "hi" });
+    expect(r.fieldRects.get(a.id)).toEqual(none.fieldRects.get(a.id));
+    expect(r.fieldRects.get(b.id)).toEqual(none.fieldRects.get(b.id));
+    expect(r.fontSizes.get(a.id)).toBe(none.fontSizes.get(a.id));
+    expect(r.groupRects.get("free")).toMatchObject({ x: 100, y: 100, width: 400, height: 350 });
+    expect(r.warnings).toEqual([]);
+  });
+
+  it("claims its children — a later stack can't steal them", () => {
+    const a = mkField({ fieldKey: "a", x: 100, y: 100, fontSizePx: 20 });
+    const b = mkField({ fieldKey: "b", x: 100, y: 300, fontSizePx: 20 });
+    const free = mkGroup({ id: "free", mode: "free", children: ["a"] });
+    const stack = mkGroup({ id: "stack", children: ["a", "b"], x: 500, y: 500 });
+    const r = layout([a, b], [free, stack], { a: "x", b: "x" });
+    expect(r.fieldRects.get(a.id)).toEqual({ x: 100, y: 100, width: 400, height: 100 });
+    expect(r.fieldRects.get(b.id)!.y).toBe(500); // the stack still places b
+    expect(r.warnings.some((w) => w.includes("already belongs"))).toBe(true);
+  });
+
+  it("a stack nested in a plain group places itself and joins the bounds", () => {
+    const a = mkField({ fieldKey: "a", type: "image", x: 100, y: 100, width: 100, height: 100 });
+    const b = mkField({ fieldKey: "b", fontSizePx: 20 });
+    const c = mkField({ fieldKey: "c", fontSizePx: 20 });
+    const col = mkGroup({ id: "col", children: ["b", "c"], x: 600, y: 300, gap: 10, crossSize: 200 });
+    const free = mkGroup({ id: "free", mode: "free", children: ["a", "group:col"] });
+    const r = layout([a, b, c], [col, free], { b: "x", c: "x" });
+    expect(r.fieldRects.get(b.id)).toMatchObject({ x: 600, y: 300, height: 20 });
+    expect(r.fieldRects.get(c.id)!.y).toBe(330);
+    expect(r.groupRects.get("col")).toMatchObject({ x: 600, y: 300, width: 200, height: 50 });
+    expect(r.groupRects.get("free")).toMatchObject({ x: 100, y: 100, width: 700, height: 250 });
+    expect(r.warnings).toEqual([]);
+  });
+
+  it("a plain group nested in a plain group composes bounds", () => {
+    const a = mkField({ fieldKey: "a", type: "image", x: 0, y: 0, width: 50, height: 50 });
+    const b = mkField({ fieldKey: "b", type: "image", x: 200, y: 200, width: 50, height: 50 });
+    const inner = mkGroup({ id: "inner", mode: "free", children: ["b"] });
+    const outer = mkGroup({ id: "outer", mode: "free", children: ["a", "group:inner"] });
+    const r = layout([a, b], [inner, outer], {});
+    expect(r.groupRects.get("inner")).toMatchObject({ x: 200, y: 200, width: 50, height: 50 });
+    expect(r.groupRects.get("outer")).toMatchObject({ x: 0, y: 0, width: 250, height: 250 });
+  });
+
+  it("a plain group nested inside a stack is skipped with a warning but keeps a frame", () => {
+    const a = mkField({ fieldKey: "a", type: "image", x: 100, y: 100, width: 80, height: 40 });
+    const b = mkField({ fieldKey: "b", fontSizePx: 20 });
+    const inner = mkGroup({ id: "inner", mode: "free", children: ["a"] });
+    const outer = mkGroup({ id: "outer", children: ["group:inner", "b"], x: 500, y: 500, gap: 8 });
+    const r = layout([a, b], [inner, outer], { b: "x" });
+    expect(r.warnings.some((w) => w.includes("can't sit inside an auto layout"))).toBe(true);
+    expect(r.warnings.some((w) => w.includes("circular"))).toBe(false);
+    // The stack lays out only b; a keeps its authored rect; the plain group
+    // still reports its bounding box for the builder.
+    expect(r.fieldRects.get(b.id)!.y).toBe(500);
+    expect(r.fieldRects.get(a.id)).toEqual({ x: 100, y: 100, width: 80, height: 40 });
+    expect(r.groupRects.get("inner")).toMatchObject({ x: 100, y: 100, width: 80, height: 40 });
+  });
+});
+
+describe("horizontal stack verification", () => {
+  it("applies uppercase and letter spacing to the hug at the resolved size", () => {
+    // "ß".toUpperCase() === "SS" — the transform must apply BEFORE measuring,
+    // so the hug is 2 glyphs wide, plus one letter-spacing gap.
+    const a = mkField({ fieldKey: "a", fontSizePx: 20, uppercase: true, letterSpacingPx: 2 });
+    const b = mkField({ fieldKey: "b", fontSizePx: 20 });
+    const g = mkGroup({
+      direction: "horizontal",
+      children: ["a", "b"],
+      x: 50,
+      y: 50,
+      gap: 12,
+      crossSize: 100,
+    });
+    const r = layout([a, b], [g], { a: "ß", b: "x" });
+    const ra = r.fieldRects.get(a.id)!;
+    expect(ra.width).toBeCloseTo(2 * 20 * 0.5 + 2, 5);
+    expect(r.fieldRects.get(b.id)!.x).toBeCloseTo(50 + ra.width + 12, 5);
+  });
+
+  it("hugs at the shrunk autoFit size, not the authored one", () => {
+    const a = mkField({
+      fieldKey: "a",
+      width: 100,
+      fontSizePx: 40,
+      minFontSizePx: 8,
+      autoFit: true,
+    });
+    const b = mkField({ fieldKey: "b", type: "image", width: 60, height: 60 });
+    const g = mkGroup({
+      direction: "horizontal",
+      children: ["a", "b"],
+      x: 0,
+      y: 0,
+      gap: 10,
+      crossSize: 100,
+    });
+    const text = "abcdefghij"; // 10 chars → fitted below 40px
+    const r = layout([a, b], [g], { a: text });
+    const size = r.fontSizes.get(a.id)!;
+    expect(size).toBeLessThan(40);
+    const ra = r.fieldRects.get(a.id)!;
+    expect(ra.width).toBeCloseTo(text.length * size * 0.5, 5);
+    expect(r.fieldRects.get(b.id)!.x).toBeCloseTo(ra.width + 10, 5);
+  });
+
+  it("anchor end holds the right edge; the row grows leftward", () => {
+    const a = mkField({ fieldKey: "a", type: "image", width: 100, height: 40 });
+    const b = mkField({ fieldKey: "b", type: "image", width: 50, height: 40 });
+    const g = mkGroup({
+      direction: "horizontal",
+      anchor: "end",
+      children: ["a", "b"],
+      x: 500,
+      y: 50,
+      gap: 10,
+      crossSize: 60,
+    });
+    const r = layout([a, b], [g], {});
+    expect(r.fieldRects.get(a.id)!.x).toBe(340); // 500 - (100 + 10 + 50)
+    expect(r.fieldRects.get(b.id)!.x).toBe(450);
+    expect(r.groupRects.get(g.id)).toMatchObject({ x: 340, width: 160 });
+  });
+
+  it("maps axes for a vertical stack nested in a horizontal one (the reverse case)", () => {
+    const lead = mkField({ fieldKey: "lead", fontSizePx: 20 });
+    const a = mkField({ fieldKey: "a", fontSizePx: 20 });
+    const b = mkField({ fieldKey: "b", fontSizePx: 20 });
+    const col = mkGroup({ id: "col", children: ["a", "b"], gap: 6, crossSize: 350 });
+    const row = mkGroup({
+      id: "row",
+      direction: "horizontal",
+      children: ["lead", "group:col"],
+      x: 0,
+      y: 0,
+      gap: 10,
+      crossSize: 500,
+    });
+    const r = layout([lead, a, b], [col, row], { lead: "xx", a: "x", b: "x" });
+    // lead hugs to 2 × 10 = 20; the column occupies its crossSize (350)
+    // along the row's main axis and its computed height (46) across it.
+    expect(r.fieldRects.get(lead.id)).toMatchObject({ x: 0, y: 0, width: 20 });
+    expect(r.fieldRects.get(a.id)).toMatchObject({ x: 30, y: 0, height: 20 });
+    expect(r.fieldRects.get(b.id)!.y).toBe(26);
+    expect(r.groupRects.get("col")).toMatchObject({ x: 30, y: 0, width: 350, height: 46 });
+    expect(r.groupRects.get("row")).toMatchObject({ x: 0, y: 0, width: 380, height: 500 });
+  });
+});

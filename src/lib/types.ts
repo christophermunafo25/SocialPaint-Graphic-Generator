@@ -222,6 +222,13 @@ export interface LayoutGroup {
    * row ids on every save, so groups never reference fields by row id). */
   id: string;
   name: string;
+  /** "free": a plain group — children keep their authored positions and the
+   * group is just a movable bounding box. "stack" (or absent, so every group
+   * saved before this field existed keeps its behavior): an auto-layout
+   * stack that places children along `direction`. In free mode `direction`,
+   * `gap`, `anchor`, `align`, `crossSize`, and `shrinkToFit` are retained
+   * but ignored; `x`/`y` are unused (the frame is computed from children). */
+  mode?: "free" | "stack";
   direction: "vertical" | "horizontal";
   /** Canvas px between adjacent children. */
   gap: number;
@@ -245,6 +252,10 @@ export interface LayoutGroup {
 export const groupChildRef = (groupId: string): string => `group:${groupId}`;
 export const parseGroupChildRef = (ref: string): string | null =>
   ref.startsWith("group:") ? ref.slice(6) : null;
+
+/** Absent mode means "stack" — the only kind that existed before free
+ * groups, so old templates keep their exact behavior. */
+export const isFreeGroup = (g: LayoutGroup): boolean => g.mode === "free";
 
 export type TemplateStatus = "draft" | "published";
 

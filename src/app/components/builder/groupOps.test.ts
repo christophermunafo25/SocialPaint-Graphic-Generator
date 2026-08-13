@@ -3,11 +3,15 @@ import type { LayoutGroup, TemplateField } from "@/lib/types";
 import type { LineMeasurer } from "@/lib/render/autoFit";
 import { computeLayout } from "@/lib/render/layout";
 import {
+  conversionShift,
+  deriveFreeGroup,
   deriveGroup,
   fieldIdsInGroups,
   groupIdsWithin,
   renameKeyInGroups,
   stripFieldsFromGroups,
+  toFreeGroup,
+  toStackGroup,
   ungroup,
 } from "./groupOps";
 
@@ -248,5 +252,193 @@ describe("reference maintenance", () => {
     const parent: LayoutGroup = { ...base, id: "p", children: ["group:g1"] };
     expect(fieldIdsInGroups(["p"], [fa, fb], [base, parent]).sort()).toEqual([fa.id, fb.id].sort());
     expect(groupIdsWithin(["p"], [base, parent]).sort()).toEqual(["g1", "p"]);
+  });
+});
+
+describe("deriveFreeGroup", () => {
+  const a = mkField({ fieldKey: "a", x: 100, y: 100, label: "A", placeholder: "aa" });
+  const b = mkField({ fieldKey: "b", x: 100, y: 184, label: "B", placeholder: "bb" });
+
+  it("is pure membership: nothing moves, children ordered by position", () => {
+    const before = layoutOf([a, b]);
+    const g = deriveFreeGroup({
+      fields: [a, b],
+      groups: [],
+      fieldIds: [a.id, b.id],
+      groupIds: [],
+      layout: before,
+      kit: null,
+      measure,
+    })!;
+    expect(g.mode).toBe("free");
+    expect(g.children).toEqual(["a", "b"]);
+    const after = layoutOf([a, b], [g]);
+    expect(after.fieldRects.get(a.id)).toEqual(before.fieldRects.get(a.id));
+    expect(after.fieldRects.get(b.id)).toEqual(before.fieldRects.get(b.id));
+    expect(after.warnings).toEqual([]);
+  });
+
+  it("refuses undersized selections and already-grouped fields", () => {
+    const layout = layoutOf([a, b]);
+    const base = { fields: [a, b], groups: [], groupIds: [], layout, kit: null, measure };
+    expect(deriveFreeGroup({ ...base, fieldIds: [a.id] })).toBeNull();
+    const g = deriveFreeGroup({ ...base, fieldIds: [a.id, b.id] })!;
+    expect(
+      deriveFreeGroup({ ...base, groups: [g], fieldIds: [a.id, b.id] }),
+    ).toBeNull();
+  });
+});
+
+describe("direction inference (deriveGroup)", () => {
+  it("side-by-side text derives a horizontal stack anchored at the painted run", () => {
+    // 150-wide boxes at x=100 and x=260, same row. The PAINTED runs ("aa" at
+    // 30px → 30 wide) separate cleanly on x and overlap fully on y.
+    const a = mkField({ fieldKey: "a", x: 100, y: 100, width: 150, placeholder: "aa" });
+    const b = mkField({ fieldKey: "b", x: 260, y: 100, width: 150, placeholder: "bb" });
+    const before = layoutOf([a, b]);
+    const g = deriveGroup({
+      fields: [a, b],
+      groups: [],
+      fieldIds: [a.id, b.id],
+      groupIds: [],
+      layout: before,
+      kit: null,
+      measure,
+    })!;
+    expect(g.direction).toBe("horizontal");
+    expect(g.children).toEqual(["a", "b"]);
+    expect(g.anchor).toBe("start");
+    expect(g.x).toBe(100); // first run's painted left edge
+    expect(g.y).toBe(100); // top of the row (verticalAlign top)
+    expect(g.gap).toBe(130); // 260 - (100 + 30)
+    expect(g.align).toBe("start"); // tops line up
+    expect(g.crossSize).toBe(30); // one 30px line
+    // Losslessness: the painted runs stay exactly where they were.
+    const after = layoutOf([a, b], [g]);
+    expect(after.fieldRects.get(a.id)).toMatchObject({ x: 100, y: 100, width: 30 });
+    expect(after.fieldRects.get(b.id)).toMatchObject({ x: 260, y: 100, width: 30 });
+  });
+
+  it("ambiguous overlap defaults to vertical", () => {
+    const a = mkField({ fieldKey: "a", x: 100, y: 100, placeholder: "aaaaaaaaaa" });
+    const b = mkField({ fieldKey: "b", x: 120, y: 110, placeholder: "bbbbbbbbbb" });
+    const layout = layoutOf([a, b]);
+    const g = deriveGroup({
+      fields: [a, b],
+      groups: [],
+      fieldIds: [a.id, b.id],
+      groupIds: [],
+      layout,
+      kit: null,
+      measure,
+    })!;
+    expect(g.direction).toBe("vertical");
+  });
+
+  it("refuses a plain group as a stack member", () => {
+    const a = mkField({ fieldKey: "a", x: 100, y: 100 });
+    const b = mkField({ fieldKey: "b", x: 100, y: 200 });
+    const c = mkField({ fieldKey: "c", x: 100, y: 400 });
+    let layout = layoutOf([a, b, c]);
+    const free = deriveFreeGroup({
+      fields: [a, b, c],
+      groups: [],
+      fieldIds: [a.id, b.id],
+      groupIds: [],
+      layout,
+      kit: null,
+      measure,
+    })!;
+    layout = layoutOf([a, b, c], [free]);
+    expect(
+      deriveGroup({
+        fields: [a, b, c],
+        groups: [free],
+        fieldIds: [c.id],
+        groupIds: [free.id],
+        layout,
+        kit: null,
+        measure,
+      }),
+    ).toBeNull();
+    // …while a plain group can nest it fine.
+    expect(
+      deriveFreeGroup({
+        fields: [a, b, c],
+        groups: [free],
+        fieldIds: [c.id],
+        groupIds: [free.id],
+        layout,
+        kit: null,
+        measure,
+      }),
+    ).not.toBeNull();
+  });
+});
+
+describe("mode conversion", () => {
+  const a = mkField({ fieldKey: "a", x: 100, y: 100, label: "A", placeholder: "aa" });
+  const b = mkField({ fieldKey: "b", x: 100, y: 184, label: "B", placeholder: "bb" });
+
+  it("stack → free freezes children exactly (always lossless)", () => {
+    const stack = deriveGroup({
+      fields: [a, b],
+      groups: [],
+      fieldIds: [a.id, b.id],
+      groupIds: [],
+      layout: layoutOf([a, b]),
+      kit: null,
+      measure,
+    })!;
+    const before = layoutOf([a, b], [stack]);
+    const res = toFreeGroup(stack, [a, b], [stack], before);
+    const freed = res.groups.find((g) => g.id === stack.id)!;
+    expect(freed.mode).toBe("free");
+    expect(freed.children).toEqual(stack.children);
+    const after = layoutOf(res.fields, res.groups);
+    for (const f of res.fields) {
+      expect(after.fieldRects.get(f.id)).toEqual(before.fieldRects.get(f.id));
+    }
+  });
+
+  it("free → stack on an already-stacked arrangement converts without movement", () => {
+    const layout = layoutOf([a, b]);
+    const free = deriveFreeGroup({
+      fields: [a, b],
+      groups: [],
+      fieldIds: [a.id, b.id],
+      groupIds: [],
+      layout,
+      kit: null,
+      measure,
+    })!;
+    const before = layoutOf([a, b], [free]);
+    const stacked = toStackGroup(free, [a, b], [free], before, null, measure);
+    expect(stacked.mode).toBe("stack");
+    expect(stacked.direction).toBe("vertical");
+    const after = layoutOf([a, b], [stacked]);
+    expect(conversionShift(stacked, [a, b], before, after, null, measure)).toBeLessThanOrEqual(1);
+    // The visual blocks hold: content tops at 100 and 184.
+    expect(after.fieldRects.get(a.id)!.y).toBe(100);
+    expect(after.fieldRects.get(b.id)!.y).toBe(184);
+  });
+
+  it("free → stack on a scattered arrangement reports a shift worth warning about", () => {
+    const s1 = mkField({ fieldKey: "s1", x: 100, y: 100, placeholder: "aa" });
+    const s2 = mkField({ fieldKey: "s2", x: 150, y: 120, placeholder: "bb" });
+    const layout = layoutOf([s1, s2]);
+    const free = deriveFreeGroup({
+      fields: [s1, s2],
+      groups: [],
+      fieldIds: [s1.id, s2.id],
+      groupIds: [],
+      layout,
+      kit: null,
+      measure,
+    })!;
+    const before = layoutOf([s1, s2], [free]);
+    const stacked = toStackGroup(free, [s1, s2], [free], before, null, measure);
+    const after = layoutOf([s1, s2], [stacked]);
+    expect(conversionShift(stacked, [s1, s2], before, after, null, measure)).toBeGreaterThan(2);
   });
 });

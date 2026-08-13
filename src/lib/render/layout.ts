@@ -17,7 +17,7 @@
 //    error accumulate into the gaps this feature exists to hold fixed.
 
 import type { BrandKit, FieldValues, LayoutGroup, TemplateField, TemplateSchema } from "../types";
-import { parseGroupChildRef } from "../types";
+import { isFreeGroup, parseGroupChildRef } from "../types";
 import { resolveFieldStyle, type ResolvedFieldStyle } from "../brand/resolveStyle";
 import {
   canvasFontShorthand,
@@ -154,7 +154,7 @@ export function measuredTextHeight(
 }
 
 /** A single-line field's painted width (horizontal stacks hug on this). */
-function measuredTextWidth(
+export function measuredTextWidth(
   style: ResolvedFieldStyle,
   text: string,
   fontSizePx: number,
@@ -303,6 +303,16 @@ function sizedChildren(
         warnOnce(ctx, `Group "${group.name}": circular nesting via "${nested.name}" — skipped.`);
         continue;
       }
+      // A free group has no main-axis extent to stack — its children sit at
+      // authored positions. Placing one from a slot would mean translating
+      // "unplaced" children, which free groups exist to avoid.
+      if (isFreeGroup(nested)) {
+        warnOnce(
+          ctx,
+          `Group "${group.name}": plain group "${nested.name}" can't sit inside an auto layout — skipped.`,
+        );
+        continue;
+      }
       // Nested extents map into the parent's axes: same direction → its
       // computed main size runs along ours; orthogonal → its authored
       // crossSize does, and its computed size becomes our cross extent.
@@ -440,15 +450,17 @@ function recordGroupRect(
   });
 }
 
-/** Place a TOP-LEVEL group from its own anchor: the anchor point holds still
- * and content grows away from it. */
-function placeTopLevel(ctx: Ctx, group: LayoutGroup): void {
+/** Place a TOP-LEVEL stack from its own anchor: the anchor point holds still
+ * and content grows away from it. Also used for a stack nested inside a free
+ * group — its x/y are absolute there too, so the same placement applies
+ * (`ancestors` carries the free chain for cycle safety). */
+function placeTopLevel(ctx: Ctx, group: LayoutGroup, ancestors: Set<string> = new Set()): void {
   const vertical = group.direction === "vertical";
   const anchorPos = vertical ? group.y : group.x;
 
   if (group.shrinkToFit) applyShrink(ctx, group, anchorPos, vertical);
 
-  const contentMain = contentMainSize(ctx, group, new Set());
+  const contentMain = contentMainSize(ctx, group, ancestors);
   const mainStart =
     group.anchor === "center"
       ? anchorPos - contentMain / 2
@@ -457,8 +469,75 @@ function placeTopLevel(ctx: Ctx, group: LayoutGroup): void {
         : anchorPos;
   const absX = vertical ? group.x : mainStart;
   const absY = vertical ? mainStart : group.y;
-  placeGroup(ctx, group, absX, absY, new Set());
+  placeGroup(ctx, group, absX, absY, ancestors);
   recordGroupRect(ctx, group, absX, absY, contentMain);
+}
+
+/** Place a FREE (plain) group: children keep whatever rect they already have
+ * — the authored baseline for fields, its own anchor placement for a nested
+ * stack — and the group frame is simply their bounding box. No measurement,
+ * no repositioning: this path must stay obviously cheap. */
+function placeFreeGroup(ctx: Ctx, group: LayoutGroup, ancestors: Set<string>): void {
+  const chain = new Set(ancestors).add(group.id);
+  let bounds: Rect | null = null;
+  const extend = (r: Rect) => {
+    if (!bounds) {
+      bounds = { ...r };
+      return;
+    }
+    const right = Math.max(bounds.x + bounds.width, r.x + r.width);
+    const bottom = Math.max(bounds.y + bounds.height, r.y + r.height);
+    bounds.x = Math.min(bounds.x, r.x);
+    bounds.y = Math.min(bounds.y, r.y);
+    bounds.width = right - bounds.x;
+    bounds.height = bottom - bounds.y;
+  };
+
+  for (const ref of group.children) {
+    const nestedId = parseGroupChildRef(ref);
+    if (nestedId !== null) {
+      const nested = ctx.groups.get(nestedId);
+      if (!nested) {
+        warnOnce(ctx, `Group "${group.name}": a nested group no longer exists — skipped.`);
+        continue;
+      }
+      if (chain.has(nestedId)) {
+        warnOnce(ctx, `Group "${group.name}": circular nesting via "${nested.name}" — skipped.`);
+        continue;
+      }
+      if (isFreeGroup(nested)) placeFreeGroup(ctx, nested, chain);
+      else placeTopLevel(ctx, nested, chain);
+      const r = ctx.result.groupRects.get(nested.id);
+      if (r) extend(r);
+      continue;
+    }
+    const f = ctx.fields.get(ref);
+    if (!f) {
+      warnOnce(ctx, `Group "${group.name}": field "${ref}" no longer exists — skipped.`);
+      continue;
+    }
+    if (ctx.claimed.has(ref)) {
+      warnOnce(
+        ctx,
+        `Group "${group.name}": field "${ref}" already belongs to another group — skipped.`,
+      );
+      continue;
+    }
+    ctx.claimed.add(ref);
+    // The baseline pass already wrote this field's authored rect — a free
+    // group never overrides it.
+    extend(ctx.result.fieldRects.get(f.id) ?? authoredRect(f));
+  }
+
+  const rect: Rect = bounds ?? { x: group.x, y: group.y, width: 0, height: 0 };
+  ctx.result.groupRects.set(group.id, {
+    ...rect,
+    overflows:
+      rect.x < 0 ||
+      rect.y < 0 ||
+      rect.x + rect.width > ctx.canvasWidth ||
+      rect.y + rect.height > ctx.canvasHeight,
+  });
 }
 
 /** shrinkToFit: proportionally drive text descendants' font sizes down
@@ -548,7 +627,17 @@ export function computeLayout(
   }
 
   const groups = schema.layoutGroups ?? [];
-  for (const g of topLevelGroups(groups)) placeTopLevel(ctx, g);
+  for (const g of topLevelGroups(groups)) {
+    if (isFreeGroup(g)) placeFreeGroup(ctx, g, new Set());
+    else placeTopLevel(ctx, g);
+  }
+
+  // A free group referenced by a stack is skipped there (sizedChildren
+  // warns) but must still exist for the builder: its frame is its
+  // children's bounding box, and the children keep their authored rects.
+  for (const g of groups) {
+    if (isFreeGroup(g) && !result.groupRects.has(g.id)) placeFreeGroup(ctx, g, new Set());
+  }
 
   // A group every other group claims as a child (a mutual cycle) is never
   // top-level, so the walk above never reaches it — its children safely keep

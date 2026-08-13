@@ -25,7 +25,7 @@ import type {
   TemplateField,
   TemplateSchema,
 } from "@/lib/types";
-import { groupChildRef } from "@/lib/types";
+import { groupChildRef, isFreeGroup, parseGroupChildRef } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useHistory } from "@/lib/useHistory";
@@ -74,15 +74,19 @@ import { freezeBrandColors } from "@/lib/brand/resolveStyle";
 import { createCanvasMeasurer } from "@/lib/render/autoFit";
 import { computeLayout } from "@/lib/render/layout";
 import {
-  deriveGroup,
+  conversionShift,
+  deriveFreeGroup,
   fieldIdsInGroups,
   groupIdsWithin,
   renameKeyInGroups,
   selectedFieldIds,
   selectedGroupIds,
   stripFieldsFromGroups,
+  toFreeGroup,
+  toStackGroup,
   ungroup,
 } from "./groupOps";
+import { ConfirmDialog } from "../ConfirmDialog";
 import { GroupInspector } from "./GroupInspector";
 
 /** The builder is a desktop tool: below this width the canvas + inspector
@@ -298,7 +302,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
   const singleSelected = selectedFields.length === 1 ? selectedFields[0] : null;
 
   // -------------------------------------------------------------------------
-  // Layout groups (auto-layout stacks)
+  // Layout groups (plain groups and auto-layout stacks)
   // -------------------------------------------------------------------------
 
   // Builder-side layout pass over the draft (placeholder values, same as the
@@ -360,10 +364,11 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     [setDraft],
   );
 
-  /** ⌘G: one history entry, derived so nothing moves at the moment of
-   * grouping. Selecting a group + fields nests the group as a child. */
+  /** ⌘G: one history entry. Creates a PLAIN group — pure membership, nothing
+   * moves — with auto layout available as a toggle in the inspector.
+   * Selecting a group + fields nests the group as a child. */
   const groupSelection = useCallback(() => {
-    const g = deriveGroup({
+    const g = deriveFreeGroup({
       fields: draft.fields,
       groups,
       fieldIds: selectedFieldIds(selectedIds),
@@ -376,6 +381,98 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     setDraft((d) => ({ ...d, layoutGroups: [...(d.layoutGroups ?? []), g] }));
     setSelectedIds([groupChildRef(g.id)]);
   }, [draft.fields, groups, selectedIds, selGroupIds, builderLayout, kit, measurer, setDraft]);
+
+  /** Commit a whole-group drag. A stack owns its children's positions, so
+   * one anchor patch moves everything; a plain group's children own theirs,
+   * so the delta writes through to everything that self-places — direct
+   * fields of free groups get authored x/y deltas, nested stacks get their
+   * anchors shifted (free frames sync their origin too). One setDraft — one
+   * undo entry. */
+  const moveGroup = useCallback(
+    (id: string, dx: number, dy: number) => {
+      setDraft((d) => {
+        const all = d.layoutGroups ?? [];
+        const g = all.find((x) => x.id === id);
+        if (!g) return d;
+        const shifted = (x: LayoutGroup) => ({
+          ...x,
+          x: Math.round(x.x + dx),
+          y: Math.round(x.y + dy),
+        });
+        if (!isFreeGroup(g)) {
+          return { ...d, layoutGroups: all.map((x) => (x.id === id ? shifted(x) : x)) };
+        }
+        const freeFieldKeys = new Set<string>();
+        const subtree = new Set<string>();
+        const visit = (grp: LayoutGroup) => {
+          if (subtree.has(grp.id)) return;
+          subtree.add(grp.id);
+          for (const ref of grp.children) {
+            const nid = parseGroupChildRef(ref);
+            if (nid) {
+              const nested = all.find((x) => x.id === nid);
+              if (nested) visit(nested);
+            } else if (isFreeGroup(grp)) {
+              freeFieldKeys.add(ref);
+            }
+          }
+        };
+        visit(g);
+        return {
+          ...d,
+          fields: d.fields.map((f) =>
+            freeFieldKeys.has(f.fieldKey)
+              ? { ...f, x: Math.round(f.x + dx), y: Math.round(f.y + dy) }
+              : f,
+          ),
+          layoutGroups: all.map((x) => (subtree.has(x.id) ? shifted(x) : x)),
+        };
+      });
+    },
+    [setDraft],
+  );
+
+  /** The inspector's Auto layout toggle. Stack → plain always applies (the
+   * freeze is lossless); plain → stack simulates the conversion first and
+   * asks before applying one that would visibly rearrange the composition. */
+  const [pendingStack, setPendingStack] = useState<{ name: string; next: LayoutGroup } | null>(
+    null,
+  );
+  const applyStackConversion = useCallback(
+    (next: LayoutGroup) => {
+      setDraft((d) => ({
+        ...d,
+        layoutGroups: (d.layoutGroups ?? []).map((g) => (g.id === next.id ? next : g)),
+      }));
+    },
+    [setDraft],
+  );
+  const setGroupMode = useCallback(
+    (id: string, nextMode: "free" | "stack") => {
+      const g = groups.find((x) => x.id === id);
+      if (!g || isFreeGroup(g) === (nextMode === "free")) return;
+      if (nextMode === "free") {
+        const res = toFreeGroup(g, draft.fields, groups, builderLayout);
+        setDraft((d) => ({ ...d, fields: res.fields, layoutGroups: res.groups }));
+        return;
+      }
+      const next = toStackGroup(g, draft.fields, groups, builderLayout, kit, measurer);
+      const after = computeLayout(
+        { ...draft, layoutGroups: groups.map((x) => (x.id === id ? next : x)) },
+        {},
+        kit,
+        measurer,
+      );
+      // Exact simulation, not a heuristic: a roughly-stacked arrangement
+      // converts within rounding; anything that would jump asks first.
+      if (conversionShift(next, draft.fields, builderLayout, after, kit, measurer) > 2) {
+        setPendingStack({ name: g.name, next });
+      } else {
+        applyStackConversion(next);
+      }
+    },
+    [groups, draft, builderLayout, kit, measurer, setDraft, applyStackConversion],
+  );
 
   /** ⇧⌘G: children freeze at their computed rects — also lossless. */
   const ungroupSelection = useCallback(() => {
@@ -1339,6 +1436,20 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
         />
       )}
 
+      <ConfirmDialog
+        open={pendingStack !== null}
+        title="Turn on auto layout?"
+        description={`The elements in "${pendingStack?.name ?? ""}" aren't arranged as a stack yet — auto layout will move them into one. Undo brings the current arrangement back.`}
+        confirmLabel="Turn on auto layout"
+        tone="primary"
+        onCancel={() => setPendingStack(null)}
+        onConfirm={() => {
+          if (pendingStack) applyStackConversion(pendingStack.next);
+          setPendingStack(null);
+        }}
+      />
+
+
       {importSummary && (
         <div className="sp-toast" role="status" aria-live="polite">
           <CheckCircle2
@@ -1776,7 +1887,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                             selectedIds={selectedIds}
                             onSelect={setSelectedIds}
                             onChange={setFields}
-                            onGroupChange={patchGroup}
+                            onGroupMove={moveGroup}
                             onReorderChildren={(id, children) => patchGroup(id, { children })}
                             onDraw={addDrawnField}
                             onDropElement={(id, at) => addPaletteField(id, at)}
@@ -1859,6 +1970,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                       group={selectedGroup}
                       computedRect={builderLayout.groupRects.get(selectedGroup.id)}
                       onChange={(patch, stream) => patchGroup(selectedGroup.id, patch, stream)}
+                      onModeChange={(m) => setGroupMode(selectedGroup.id, m)}
                       onUngroup={ungroupSelection}
                       onDelete={() => deleteFields([groupChildRef(selectedGroup.id)])}
                     />

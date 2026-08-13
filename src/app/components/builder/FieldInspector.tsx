@@ -130,12 +130,14 @@ export function FieldInspector(props: FieldInspectorProps) {
   const isText = field.type === "text" || field.type === "multiline" || field.type === "select";
   const isShape = field.type === "shape";
   const isStatic = Boolean(field.static);
-  /** Grouped children are PLACED by their stack: position is computed, and a
-   * text child's main-axis size hugs its content. The inspector says so
-   * instead of offering editors that would be silently overridden. */
-  const inGroup = Boolean(containingGroup);
+  /** Children of an auto-layout STACK are placed by it: position is
+   * computed, and a text child's main-axis size hugs its content. The
+   * inspector says so instead of offering editors that would be silently
+   * overridden. Children of a plain group keep their own geometry and get
+   * the full editors. */
+  const inStack = Boolean(containingGroup) && containingGroup?.mode !== "free";
   const groupVertical = containingGroup?.direction !== "horizontal";
-  const mainSizeComputed = inGroup && isText;
+  const mainSizeComputed = inStack && isText;
   const labelRef = useRef<HTMLInputElement>(null);
   const [uploadingStatic, setUploadingStatic] = useState(false);
 
@@ -531,8 +533,8 @@ export function FieldInspector(props: FieldInspectorProps) {
       </InspectorSection>
 
       <InspectorSection id="position" title="Position">
-        {inGroup ? (
-          // Grouped: the stack places this element. Show where it landed
+        {inStack ? (
+          // Stacked: the stack places this element. Show where it landed
           // rather than offering editors the layout pass would override.
           <PropertyRow label="Position">
             <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
@@ -620,7 +622,7 @@ export function FieldInspector(props: FieldInspectorProps) {
             }
           />
         </PropertyRow>
-        {!inGroup && (
+        {!inStack && (
           <PropertyRow label="Anchor">
             <select
               className="sp-input"

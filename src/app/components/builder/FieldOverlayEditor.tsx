@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import type { BrandKit, LayoutGroup, TemplateField } from "@/lib/types";
-import { groupChildRef, parseGroupChildRef } from "@/lib/types";
+import { groupChildRef, isFreeGroup, parseGroupChildRef } from "@/lib/types";
 import { useDataUrl } from "@/lib/render/useDataUrl";
 import { useBrand } from "@/lib/brand/BrandContext";
 import { fieldsFontUsage, loadGoogleFonts } from "@/lib/render/fonts";
@@ -25,7 +25,7 @@ interface FieldOverlayEditorProps {
   /** Canvas base fill (schemaBackgroundCss) — under the background image. */
   backgroundCss?: string;
   fields: TemplateField[];
-  /** Auto-layout stacks over the fields (may be empty). */
+  /** Groups over the fields — plain or auto-layout (may be empty). */
   groups: LayoutGroup[];
   /** The builder's layout pass over the current draft: computed rects for
    * grouped children, group frames, and shrink-adjusted font sizes. */
@@ -36,8 +36,9 @@ interface FieldOverlayEditorProps {
   selectedIds: string[];
   onSelect(ids: string[]): void;
   onChange(fields: TemplateField[]): void;
-  /** Commit a group geometry change (move, cross-axis resize) — one entry. */
-  onGroupChange(id: string, patch: Partial<LayoutGroup>): void;
+  /** Commit a whole-group drag as a delta. The builder decides what the
+   * delta writes to: a stack's anchor, or a plain group's children. */
+  onGroupMove(id: string, dx: number, dy: number): void;
   /** Commit a stack-order change from a child drag. */
   onReorderChildren(id: string, children: string[]): void;
   /** Secondary path: the admin drew a raw box (canvas-space rect). */
@@ -340,7 +341,7 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
     selectedIds,
     onSelect,
     onChange,
-    onGroupChange,
+    onGroupMove,
     onReorderChildren,
     onDraw,
     onDropElement,
@@ -366,8 +367,8 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
   onChangeRef.current = onChange;
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
-  const onGroupChangeRef = useRef(onGroupChange);
-  onGroupChangeRef.current = onGroupChange;
+  const onGroupMoveRef = useRef(onGroupMove);
+  onGroupMoveRef.current = onGroupMove;
   const onReorderChildrenRef = useRef(onReorderChildren);
   onReorderChildrenRef.current = onReorderChildren;
   const scaleRef = useRef(scale);
@@ -384,6 +385,13 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
     groupsRef.current.find((g) => g.children.includes(fieldKey));
 
   const isGrouped = (f: TemplateField): boolean => Boolean(directGroupOf(f.fieldKey));
+
+  /** Whether a STACK owns this field's position. Children of plain groups
+   * keep their own — they move and resize like ungrouped fields. */
+  const inStack = (f: TemplateField): boolean => {
+    const g = directGroupOf(f.fieldKey);
+    return Boolean(g && !isFreeGroup(g));
+  };
 
   /** A field's DISPLAY rect in canvas space: the layout pass's output for
    * grouped children, the authored box otherwise. Everything the overlay
@@ -488,12 +496,13 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
     primaryId: string,
     reduceOnTap: boolean,
   ) => {
-    // Grouped children have COMPUTED positions — a free move can't apply.
-    // They drop out of the drag set (their group moves via beginGroupMove).
+    // Stack children have COMPUTED positions — a free move can't apply.
+    // They drop out of the drag set (their stack moves via beginGroupMove).
+    // Plain-group children keep authored positions and move like any field.
     const dragSet = new Set(
       ids.filter((id) => {
         const f = fieldsRef.current.find((x) => x.id === id);
-        return f && !isGrouped(f);
+        return f && !inStack(f);
       }),
     );
     const startRects = fieldsRef.current
@@ -626,10 +635,7 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
       onEnd: () => {
         setFrame(null);
         if (latest && (latest.dx || latest.dy)) {
-          onGroupChangeRef.current(group.id, {
-            x: Math.round(group.x + latest.dx),
-            y: Math.round(group.y + latest.dy),
-          });
+          onGroupMoveRef.current(group.id, latest.dx, latest.dy);
         }
       },
       onCancel: () => setFrame(null),
@@ -644,7 +650,9 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
    * never zIndex). */
   const beginChildReorder = (e: React.PointerEvent, f: TemplateField) => {
     const group = directGroupOf(f.fieldKey);
-    if (!group) return;
+    // Plain-group children have no stack order to drag along — the pointer
+    // dispatch routes them to a free move instead.
+    if (!group || isFreeGroup(group)) return;
     const vertical = group.direction === "vertical";
     const myRect = displayRect(f);
     const slots = group.children.map((ref) => {
@@ -833,10 +841,10 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
         // (shrink / fixed) keep deriving their displayed size from the new
         // width exactly as they will render after release.
         if (!latest) return;
-        // A grouped child's position is computed by the stack, and a text
+        // A stack child's position is computed by the stack, and a text
         // child's main-axis size hugs its content — only the authored
-        // dimensions commit.
-        if (isGrouped(f)) {
+        // dimensions commit. (Plain-group children commit like any field.)
+        if (inStack(f)) {
           const stripped = new Map<string, Partial<TemplateField>>();
           for (const [id, o] of latest) {
             const isText = f.type !== "image" && f.type !== "shape";
@@ -1079,7 +1087,8 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
         const isEditing = editingId === f.id;
         const showHandles = isSelected && single?.id === f.id && !isEditing;
         const isText = f.type !== "image" && f.type !== "shape";
-        const groupVertical = grouped
+        const stackChild = inStack(f);
+        const groupVertical = stackChild
           ? directGroupOf(f.fieldKey)?.direction !== "horizontal"
           : false;
         // The whole EDGE is the resize surface (strips below); the dots are
@@ -1088,10 +1097,11 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
         // dropping a dot never costs the interaction, because its edge strip
         // stays grabbable at any size.
         //
-        // Grouped TEXT children hug their main axis — only the cross-axis
+        // Stacked TEXT children hug their main axis — only the cross-axis
         // edges stay resizable; corners (which resize both axes) drop too.
+        // Plain-group children keep every handle.
         const allowDir = (dx: number, dy: number): boolean => {
-          if (!grouped || !isText) return true;
+          if (!stackChild || !isText) return true;
           return groupVertical ? dy === 0 && dx !== 0 : dx === 0 && dy !== 0;
         };
         const handleDirs = RESIZE_DIRS.filter(
@@ -1124,14 +1134,16 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
                   const cur = stack.findIndex((sf) => selectedIds.includes(sf.id));
                   const next = stack[(cur + 1) % stack.length];
                   onSelect([next.id]);
-                  if (!isGrouped(next)) beginMove(e, [next.id], next.id, false);
+                  if (!inStack(next)) beginMove(e, [next.id], next.id, false);
                   return;
                 }
               }
               const multi = e.shiftKey || e.metaKey || e.ctrlKey;
               // Grouped child, plain click: FIRST click selects the whole
-              // stack (drag moves it); a click while the stack is selected
-              // goes down INTO the child (drag re-slots it in the stack).
+              // group (drag moves it); a click while the group is selected
+              // goes down INTO the child — dragging a stack child re-slots
+              // it, dragging a plain-group child just moves it (that is the
+              // point of a plain group).
               if (grouped && !multi) {
                 const outer = outermostGroupOf(f.fieldKey, groupsRef.current);
                 const outerRef = outer ? groupChildRef(outer.id) : null;
@@ -1141,7 +1153,8 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
                   return;
                 }
                 if (!isSelected) onSelect([f.id]);
-                beginChildReorder(e, f);
+                if (inStack(f)) beginChildReorder(e, f);
+                else beginMove(e, [f.id], f.id, false);
                 return;
               }
               let ids: string[];
@@ -1193,7 +1206,7 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
               // Content lives INSIDE the box — no fill, the outline and
               // handles carry selection.
               background: "transparent",
-              cursor: isEditing ? "text" : grouped ? "grab" : "move",
+              cursor: isEditing ? "text" : stackChild ? "grab" : "move",
             }}
           >
             {/* The field's real appearance, riding inside the interaction box.

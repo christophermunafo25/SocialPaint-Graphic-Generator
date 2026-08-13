@@ -288,7 +288,7 @@ export function FieldListPanel({
                       color: "var(--text-disabled)",
                     }}
                   >
-                    stack
+                    {r.group.mode === "free" ? "group" : "auto layout"}
                   </span>
                 </div>
               );
