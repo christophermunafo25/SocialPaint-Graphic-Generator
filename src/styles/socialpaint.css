@@ -32,7 +32,7 @@
      #FFFFFF or #F1F1F1, so brand colours are fill-only on light and
      never appear as text or as a border that carries information.
    - No gradients as surface, no drop shadows in either mode, no glass.
-   - Headings are Raveo Display SemiBold in sentence case (2026-08-08);
+   - Headings are Blauer Nue SemiBold in sentence case (2026-08-14);
      bold proper is banned everywhere in chrome. Small labels (eyebrows,
      table headers) stay ALL CAPS mono at 0.04em tracking.
 
@@ -46,29 +46,36 @@
 
 @import url("https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap");
 
-/* Raveo Display — the platform face (Raveo design system), vendored at
-   Regular, Medium, and SemiBold (headings run SemiBold at Chris's
-   direction, 2026-08-08 — the one sanctioned step past the DS's 400/500;
-   bold proper stays banned). Registered under a platform-private family so
-   a tenant's font upload can never shadow the chrome (@font-face is
-   document-global; see the Neuething incident, 2026-08-05). */
+/* Blauer Nue — the platform face (final brand, 2026-08-14), vendored at
+   Light, Regular, Medium, and SemiBold (page headings run SemiBold at
+   Chris's direction; bold proper stays banned). Registered under a
+   platform-private family so a tenant's font upload can never shadow the
+   chrome (@font-face is document-global; see the Neuething incident,
+   2026-08-05). */
 @font-face {
-  font-family: "Raveo Display Platform";
-  src: url("../assets/fonts/raveo/RaveoDisplay-Regular.otf") format("opentype");
+  font-family: "Blauer Nue Platform";
+  src: url("../assets/fonts/blauer-nue/BlauerNue-Light.woff2") format("woff2");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Blauer Nue Platform";
+  src: url("../assets/fonts/blauer-nue/BlauerNue-Regular.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
-  font-family: "Raveo Display Platform";
-  src: url("../assets/fonts/raveo/RaveoDisplay-Medium.otf") format("opentype");
+  font-family: "Blauer Nue Platform";
+  src: url("../assets/fonts/blauer-nue/BlauerNue-Medium.woff2") format("woff2");
   font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
-  font-family: "Raveo Display Platform";
-  src: url("../assets/fonts/raveo/RaveoDisplay-SemiBold.otf") format("opentype");
+  font-family: "Blauer Nue Platform";
+  src: url("../assets/fonts/blauer-nue/BlauerNue-SemiBold.woff2") format("woff2");
   font-weight: 600;
   font-style: normal;
   font-display: swap;
@@ -101,10 +108,10 @@ html {
   --ink: #272727;
 
   /* Typography */
-  --font-head: "Raveo Display Platform", "Raveo Display", system-ui, sans-serif;
-  --weight-head: 600; /* every heading step — Raveo SemiBold */
-  --font-body: "Raveo Display Platform", "Raveo Display", system-ui, -apple-system, sans-serif;
-  --font-ui: "Raveo Display Platform", "Raveo Display", system-ui, -apple-system, sans-serif;
+  --font-head: "Blauer Nue Platform", "Blauer Nue", system-ui, sans-serif;
+  --weight-head: 600; /* every heading step — Blauer Nue SemiBold */
+  --font-body: "Blauer Nue Platform", "Blauer Nue", system-ui, -apple-system, sans-serif;
+  --font-ui: "Blauer Nue Platform", "Blauer Nue", system-ui, -apple-system, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
   --weight-ui: 500;
 
@@ -429,7 +436,7 @@ html {
 
 html {
   font-family: var(--font-ui);
-  letter-spacing: -0.015em; /* Inter Tight at -1% per the DS body spec */
+  letter-spacing: -0.015em; /* −1% body tracking per the DS body spec */
   color: var(--text-primary);
   background: var(--bg-canvas);
   /* The page never scrolls horizontally — wide content (tables, canvases)
@@ -471,7 +478,7 @@ optgroup {
    departure from the published DS's sentence case (see the @font-face note
    above). Content set in the display face is a HEADING; anything that is
    really a data label — a template's name on a card, a field name — stays
-   in Inter Tight so the caps treatment never lands on user content. */
+   in the UI face so the caps treatment never lands on user content. */
 .sp-page-title {
   font-family: var(--font-head);
   font-size: var(--type-h4-size);
