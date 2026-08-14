@@ -18,23 +18,29 @@ import { useColorScheme } from "@/lib/colorScheme";
 import { useRouter, type Route } from "../router";
 import logoOnLight from "@/assets/socialpaint/logo-on-light.svg";
 import logoOnDark from "@/assets/socialpaint/logo-on-dark.svg";
-import markSvg from "@/assets/socialpaint/mark.svg";
+import markOnLight from "@/assets/socialpaint/mark-on-light.svg";
+import markOnDark from "@/assets/socialpaint/mark-on-dark.svg";
 
 const LS_COLLAPSED = "sp-sidebar-collapsed";
 
-/** The SocialPaint mark — the gradient monogram. The current artwork
- * predates the final brand palette and awaits a fresh export from the
- * Brand Assets Figma file. The gradient is baked into the artwork and
- * reads on light and dark surfaces alike. Used where the full lockup
- * doesn't fit (collapsed nav, dashboard hero). */
+/** The SocialPaint mark — the monochrome monogram from the final brand
+ * (2026-08): Ink on light chrome, White on dark. Monochrome by rule — the
+ * mark is identity, and identity carries no hue in the chrome. Used where
+ * the full lockup doesn't fit (collapsed nav, dashboard watermark). */
 export function BrandMark({ width = 28 }: { width?: number }) {
+  const { resolved } = useColorScheme();
   return (
-    <img src={markSvg} alt="" aria-hidden style={{ width, height: "auto", display: "block" }} />
+    <img
+      src={resolved === "dark" ? markOnDark : markOnLight}
+      alt=""
+      aria-hidden
+      style={{ width, height: "auto", display: "block" }}
+    />
   );
 }
 
-/** The official horizontal lockup — ink wordmark + gradient mark on light
- * chrome, white wordmark + gradient mark on dark. */
+/** The official horizontal lockup — mark + wordmark, monochrome: Ink on
+ * light chrome, White on dark. */
 function BrandLockup({ height = 16 }: { height?: number }) {
   const { resolved } = useColorScheme();
   return (
