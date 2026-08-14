@@ -72,7 +72,12 @@ export function ConfirmDialog({
           <AlertDialogAction
             className={tone === "primary" ? "sp-btn sp-btn-primary" : "sp-btn"}
             style={
-              tone === "danger" ? { background: "var(--state-danger)", color: "#fff" } : undefined
+              // The surface colour is the one neutral that clears AA on the
+              // danger fill in both themes (dark's lifted #E57373 needs a
+              // dark glyph; light's #C94040 needs a light one).
+              tone === "danger"
+                ? { background: "var(--state-danger)", color: "var(--bg-surface)" }
+                : undefined
             }
             onClick={onConfirm}
           >
