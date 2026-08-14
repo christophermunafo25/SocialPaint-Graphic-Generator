@@ -1,6 +1,6 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useDropzone, type FileRejection } from "react-dropzone";
-import { RefreshCw, Upload } from "lucide-react";
+import { Check, RefreshCw, Upload } from "lucide-react";
 import type { TemplateField } from "@/lib/types";
 import { downscaleImage } from "@/lib/render/downscaleImage";
 import { ImageCropper } from "./ImageCropper";
@@ -87,30 +87,118 @@ export function FieldInput({ field, value, onChange, inputId }: FieldInputProps)
   }
 }
 
+/** Transient processing chip under the dropzone — filename, an ease-out
+ * progress pass, a done tick, then it leaves as the cropper opens. Motion
+ * timings from the BYQ drop-zone gem; every colour is a platform token,
+ * and the gem's shimmer gradient and bar glow are omitted (the DS bans
+ * gradient surfaces and shadows). */
+interface UploadChip {
+  name: string;
+  progress: number;
+  done: boolean;
+  leaving: boolean;
+}
+
 function ImageFieldInput({ field, value, onChange, inputId }: FieldInputProps) {
   const [original, setOriginal] = useState<string | null>(null);
   const [cropping, setCropping] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [chip, setChip] = useState<UploadChip | null>(null);
+  const chipRafRef = useRef<number | null>(null);
+  const chipTimersRef = useRef<Array<ReturnType<typeof setTimeout>>>([]);
 
-  const onDrop = useCallback((accepted: File[]) => {
-    const file = accepted[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      downscaleImage(reader.result as string, MAX_UPLOAD_EDGE_PX)
-        .then((scaled) => {
-          setUploadError(null);
-          setOriginal(scaled);
-          setCropping(true);
-        })
-        .catch((e) => {
-          console.error("Upload decode failed", e);
-          setUploadError(rejectionMessage(undefined));
-        });
+  useEffect(
+    () => () => {
+      if (chipRafRef.current !== null) cancelAnimationFrame(chipRafRef.current);
+      chipTimersRef.current.forEach(clearTimeout);
+    },
+    [],
+  );
+
+  /** Gem lifecycle: 900ms ease-out cubic progress → 120ms pause → done row
+   * (0.25s in) → chip-out (0.28s) once the cropper takes over. Reduced
+   * motion jumps straight to done and leaves without travel. */
+  const runChip = useCallback((name: string, processing: Promise<void>) => {
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const timers = chipTimersRef.current;
+    setChip({ name, progress: reduced ? 100 : 0, done: false, leaving: false });
+
+    const finish = () => {
+      timers.push(
+        setTimeout(
+          () => {
+            setChip((c) => (c ? { ...c, done: true } : c));
+            timers.push(
+              setTimeout(() => {
+                setChip((c) => (c ? { ...c, leaving: true } : c));
+                timers.push(setTimeout(() => setChip(null), reduced ? 0 : 290));
+              }, 600),
+            );
+          },
+          reduced ? 80 : 120,
+        ),
+      );
     };
-    reader.onerror = () => setUploadError(rejectionMessage(undefined));
-    reader.readAsDataURL(file);
+
+    if (reduced) {
+      void processing.finally(finish);
+      return;
+    }
+    const start = performance.now();
+    let settled = false;
+    void processing.finally(() => {
+      settled = true;
+    });
+    const step = (now: number) => {
+      const t = Math.min((now - start) / 900, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setChip((c) => (c && !c.done ? { ...c, progress: eased * 100 } : c));
+      if (t < 1 || !settled) {
+        // Hold the last 2% until the real work lands — never a done lie.
+        if (t >= 1 && !settled) {
+          setChip((c) => (c && !c.done ? { ...c, progress: 98 } : c));
+        }
+        chipRafRef.current = requestAnimationFrame(step);
+      } else {
+        chipRafRef.current = null;
+        setChip((c) => (c ? { ...c, progress: 100 } : c));
+        finish();
+      }
+    };
+    chipRafRef.current = requestAnimationFrame(step);
   }, []);
+
+  const onDrop = useCallback(
+    (accepted: File[]) => {
+      const file = accepted[0];
+      if (!file) return;
+      const processing = new Promise<void>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          downscaleImage(reader.result as string, MAX_UPLOAD_EDGE_PX)
+            .then((scaled) => {
+              setUploadError(null);
+              setOriginal(scaled);
+              setCropping(true);
+              resolve();
+            })
+            .catch((e) => {
+              console.error("Upload decode failed", e);
+              setUploadError(rejectionMessage(undefined));
+              reject(e instanceof Error ? e : new Error(String(e)));
+            });
+        };
+        reader.onerror = () => {
+          setUploadError(rejectionMessage(undefined));
+          reject(new Error("read failed"));
+        };
+        reader.readAsDataURL(file);
+      });
+      processing.catch(() => setChip(null));
+      runChip(file.name, processing);
+    },
+    [runChip],
+  );
 
   const onDropRejected = useCallback((rejections: FileRejection[]) => {
     setUploadError(rejectionMessage(rejections[0]?.errors[0]?.code));
@@ -187,6 +275,24 @@ function ImageFieldInput({ field, value, onChange, inputId }: FieldInputProps) {
           {value ? "Replace image" : "Click or drag to upload"}
         </p>
       </div>
+      {chip && (
+        <div
+          className={chip.leaving ? "sp-upload-chip sp-upload-chip--leave" : "sp-upload-chip sp-chip-in"}
+          aria-live="polite"
+        >
+          <span className="sp-upload-chip__name">{chip.name}</span>
+          {chip.done ? (
+            <span className="sp-upload-chip__done">
+              <Check aria-hidden style={{ width: 12, height: 12 }} />
+              Ready to crop
+            </span>
+          ) : (
+            <span className="sp-upload-chip__track" aria-hidden>
+              <span className="sp-upload-chip__bar" style={{ width: `${chip.progress}%` }} />
+            </span>
+          )}
+        </div>
+      )}
       {uploadError && (
         <p
           role="alert"
