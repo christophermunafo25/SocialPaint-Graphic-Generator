@@ -1550,10 +1550,10 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                     width: 44,
                     height: 44,
                     borderRadius: "var(--radius-pill)",
-                    background: "var(--volt)",
+                    background: "var(--fill-action)",
                   }}
                 >
-                  <Check style={{ width: 22, height: 22, color: "var(--text-primary)" }} />
+                  <Check style={{ width: 22, height: 22, color: "var(--text-on-action)" }} />
                 </span>
                 <p
                   style={{
@@ -2226,8 +2226,8 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                       label="Gradient background"
                       gradient={draft.backgroundGradient}
                       defaultStops={[
-                        { position: 0, color: kit?.colors[0]?.hex ?? "#BCFF78" },
-                        { position: 1, color: kit?.colors[1]?.hex ?? "#082C1E" },
+                        { position: 0, color: kit?.colors[0]?.hex ?? "#8FFF6C" },
+                        { position: 1, color: kit?.colors[1]?.hex ?? "#272727" },
                       ]}
                       onChange={(backgroundGradient) =>
                         setDraft((d) => ({ ...d, backgroundGradient }), "bg:gradient")

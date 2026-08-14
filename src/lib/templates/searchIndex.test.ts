@@ -34,7 +34,7 @@ const TEMPLATES = [
     description: "A short pull quote over a solid field.",
     category: "Announcement",
     tags: ["hiring"],
-    backgroundColor: "#082C1E",
+    backgroundColor: "#272727",
   }),
   mk("Stat card", 1080, 1080, {
     description: "One number, one line of context.",

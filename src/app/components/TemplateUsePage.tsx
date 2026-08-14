@@ -239,7 +239,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
                         : filled
                           ? "var(--bg-hover)"
                           : "transparent",
-                      color: current ? "var(--text-on-volt)" : "var(--text-secondary)",
+                      color: current ? "var(--text-on-action)" : "var(--text-secondary)",
                       transition:
                         "background var(--dur-state) var(--ease), color var(--dur-state) var(--ease)",
                     }}
@@ -267,7 +267,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
                       : "1px solid var(--border-strong)",
                   background: step === formFields.length ? "var(--fill-primary)" : "transparent",
                   color:
-                    step === formFields.length ? "var(--text-on-volt)" : "var(--text-secondary)",
+                    step === formFields.length ? "var(--text-on-action)" : "var(--text-secondary)",
                   transition:
                     "background var(--dur-state) var(--ease), color var(--dur-state) var(--ease)",
                 }}

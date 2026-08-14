@@ -19,7 +19,7 @@
   --accent: var(--state-primary);
   --accent-foreground: var(--text-on-action);
   --destructive: var(--state-danger-on-surface);
-  --destructive-foreground: #f9f9f8;
+  --destructive-foreground: #ffffff;
   /* --border and --ring are design-system token names already — aliasing them
      here would shadow (and, self-referentially, destroy) the real ones. */
   --input: transparent;
@@ -27,12 +27,13 @@
   --switch-background: var(--border-strong);
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  /* Charts draw from the five-colour palette; there is no third hue to give,
-     so a third series has to separate by shape or label, not colour. */
-  --chart-1: var(--viz-downloads);
-  --chart-2: var(--viz-opens);
-  --chart-3: var(--border-strong);
-  --chart-4: var(--text-muted);
+  /* Four categorical series from the brand palette — hues label categories
+     here, never severity or state. A fifth series falls back to the border
+     neutral and has to separate by shape or label. */
+  --chart-1: var(--viz-series-1);
+  --chart-2: var(--viz-series-2);
+  --chart-3: var(--viz-series-3);
+  --chart-4: var(--viz-series-4);
   --chart-5: var(--border);
   /* Crisp controls — the soft 20px belongs to cards (.sp-card), and the DS
      forbids the two meeting in the middle. */

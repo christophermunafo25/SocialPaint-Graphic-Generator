@@ -93,7 +93,7 @@ describe("style clipboard", () => {
     lineHeight: 1.2,
     align: "left",
     textSizing: "shrink",
-    colorHex: "#F9F9F8",
+    colorHex: "#F1F1F1",
     textGradient: {
       angle: 135,
       stops: [
@@ -177,7 +177,7 @@ describe("style clipboard", () => {
       static: true,
     };
     const styled = applyClipboardStyle(shape);
-    expect(styled.colorHex).toBe("#F9F9F8");
+    expect(styled.colorHex).toBe("#F1F1F1");
     expect(styled.textGradient?.angle).toBe(135);
     expect(styled.static).toBe(true);
     expect(styled.shape).toBe("rect");
