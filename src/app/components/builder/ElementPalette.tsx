@@ -43,7 +43,7 @@ function Tile({ item, onAdd }: { item: PaletteItem; onAdd(id: string): void }) {
       }}
       onClick={() => onAdd(item.id)}
       title="Drag onto the canvas, or click to add at the center"
-      className="flex flex-col items-center gap-1.5 py-3 px-2 transition-colors"
+      className="sp-palette-tile flex flex-col items-center gap-1.5 py-3 px-2 transition-colors"
       style={{
         border: "1px solid var(--border-strong)",
         borderRadius: "var(--radius-control)",
@@ -53,7 +53,7 @@ function Tile({ item, onAdd }: { item: PaletteItem; onAdd(id: string): void }) {
         color: "var(--text-secondary)",
       }}
     >
-      <Icon style={{ width: 16, height: 16, color: "var(--state-primary)" }} />
+      <Icon style={{ width: 16, height: 16 }} />
       {item.label}
     </button>
   );

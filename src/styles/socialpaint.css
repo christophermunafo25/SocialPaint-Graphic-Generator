@@ -918,6 +918,59 @@ optgroup {
   }
 }
 
+/* ── Brand hover moments ────────────────────────────────────────────────────
+   Transient identity: the five brand colours take turns under the cursor
+   and exist nowhere else on screen — colour that only lives during a hover
+   can be playful without cluttering anything. Dark tints the GLYPH (every
+   hue clears 3:1 against the dark ladder); light tints the WASH behind an
+   ink glyph, because no brand hue clears 3:1 as a glyph on white (the
+   header's rule). Active rows keep their Voltage accent treatment. */
+.sp-sidebar-item,
+.sp-palette-tile,
+.sp-icon-btn {
+  --hover-hue: var(--voltage);
+}
+.sp-sidebar-item:nth-of-type(5n + 2),
+.sp-palette-tile:nth-of-type(5n + 2),
+.sp-icon-btn:nth-of-type(5n + 2) {
+  --hover-hue: var(--aqua);
+}
+.sp-sidebar-item:nth-of-type(5n + 3),
+.sp-palette-tile:nth-of-type(5n + 3),
+.sp-icon-btn:nth-of-type(5n + 3) {
+  --hover-hue: var(--wednesdays);
+}
+.sp-sidebar-item:nth-of-type(5n + 4),
+.sp-palette-tile:nth-of-type(5n + 4),
+.sp-icon-btn:nth-of-type(5n + 4) {
+  --hover-hue: var(--fire);
+}
+.sp-sidebar-item:nth-of-type(5n + 5),
+.sp-palette-tile:nth-of-type(5n + 5),
+.sp-icon-btn:nth-of-type(5n + 5) {
+  --hover-hue: var(--sunshine);
+}
+
+.sp-palette-tile svg {
+  color: var(--state-primary);
+}
+.sp-sidebar-item svg,
+.sp-palette-tile svg,
+.sp-icon-btn svg {
+  transition: color var(--dur-state) var(--ease);
+}
+
+[data-theme="dark"] .sp-sidebar-item:hover:not([data-active="true"]) svg,
+[data-theme="dark"] .sp-palette-tile:hover svg,
+[data-theme="dark"] .sp-icon-btn:hover svg {
+  color: var(--hover-hue);
+}
+[data-theme="light"] .sp-sidebar-item:hover:not([data-active="true"]),
+[data-theme="light"] .sp-palette-tile:hover,
+[data-theme="light"] .sp-icon-btn:hover {
+  background: color-mix(in srgb, var(--hover-hue) 22%, transparent);
+}
+
 /* Native checks and radios ride the accent: Voltage on dark, ink on
    light (the browser derives the glyph colour, so contrast holds). */
 input[type="checkbox"],
