@@ -237,3 +237,58 @@ describe("decomposeFrame edge behavior", () => {
     expect(scrim!.afterExcluded).toBe(1);
   });
 });
+
+describe("effects geometry", () => {
+  const mk = (over: Partial<LayerNode>): LayerNode => ({
+    id: "1:1",
+    name: "Frame",
+    type: "FRAME",
+    absoluteBoundingBox: { x: 100, y: 100, width: 400, height: 400 },
+    children: [
+      { id: "1:2", name: "t", type: "TEXT", absoluteBoundingBox: { x: 110, y: 110, width: 50, height: 20 } },
+      ...(over.children ?? []),
+    ],
+    ...over,
+  });
+
+  it("places a shadowed node at its render bounds, where the PNG paints", () => {
+    // A pill with a drop shadow: layout box 200×50, render bounds spill
+    // 30px on every side — Figma's PNG covers the spilled box.
+    const frame = mk({
+      children: [
+        {
+          id: "1:3",
+          name: "Pill",
+          type: "RECTANGLE",
+          absoluteBoundingBox: { x: 200, y: 300, width: 200, height: 50 },
+          absoluteRenderBounds: { x: 170, y: 270, width: 260, height: 110 },
+          effects: [{ type: "DROP_SHADOW" }],
+        },
+      ],
+    });
+    const { units } = decomposeFrame(frame, ["1:2"]);
+    const pill = units.find((u) => u.name === "Pill")!;
+    expect(pill).toMatchObject({ x: 70, y: 170, width: 260, height: 110 });
+  });
+
+  it("warns when a rendered subtree contains a background blur", () => {
+    const frame = mk({
+      children: [
+        {
+          id: "1:4",
+          name: "Glass Panel",
+          type: "RECTANGLE",
+          absoluteBoundingBox: { x: 120, y: 120, width: 100, height: 100 },
+          effects: [{ type: "BACKGROUND_BLUR" }],
+        },
+      ],
+    });
+    const { warnings } = decomposeFrame(frame, ["1:2"]);
+    expect(warnings.some((w) => w.includes("Glass Panel") && w.includes("frosted"))).toBe(true);
+  });
+
+  it("keeps layout-box placement when render bounds are absent", () => {
+    const { units } = decomposeFrame(mk({}), ["1:2"]);
+    expect(units.length).toBe(0); // only the excluded text — nothing else
+  });
+});

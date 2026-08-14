@@ -41,6 +41,11 @@ export interface LayerNode {
   type: string;
   visible?: boolean;
   absoluteBoundingBox?: { x: number; y: number; width: number; height: number };
+  /** The box the node actually PAINTS into — effects included. Figma's
+   * image renders cover THIS box, not the layout box: a drop shadow makes
+   * the PNG larger than absoluteBoundingBox, so a node unit must place at
+   * render bounds or the artwork lands squeezed and shifted. */
+  absoluteRenderBounds?: { x: number; y: number; width: number; height: number } | null;
   fills?: Paint[];
   strokes?: Paint[];
   effects?: Array<{ type: string; visible?: boolean }>;
@@ -76,6 +81,17 @@ export const rgba = (c: { r: number; g: number; b: number; a?: number }, opacity
 export function subtreeHasExcluded(node: LayerNode, excluded: Set<string>): boolean {
   if (excluded.has(node.id)) return true;
   return (node.children ?? []).some((c) => subtreeHasExcluded(c, excluded));
+}
+
+/** Frosted-glass panels blur whatever sits BEHIND them — rendered in
+ * isolation there is nothing to blur, so the pane comes back flat. The
+ * approximation ships (the translucent fill still reads), but the admin
+ * should hear about it. */
+function subtreeHasBackgroundBlur(node: LayerNode): boolean {
+  if ((node.effects ?? []).some((e) => e.type === "BACKGROUND_BLUR" && e.visible !== false)) {
+    return true;
+  }
+  return (node.children ?? []).some(subtreeHasBackgroundBlur);
 }
 
 interface Box {
@@ -179,9 +195,23 @@ export function decompose(node: LayerNode, ctx: DecomposeCtx): void {
   if (!box) return;
 
   if (!subtreeHasExcluded(node, ctx.excluded)) {
+    // Figma's PNG covers the RENDER bounds (effects included) — place the
+    // unit there, or a drop shadow squeezes the artwork into the smaller
+    // layout box and shifts everything by the shadow margin.
+    const paintBox = node.absoluteRenderBounds ?? box;
     ctx.units.push(
-      stampOrder(ctx, { kind: "node", name: node.name, nodeId: node.id, ...relBox(box, ctx.frame) }),
+      stampOrder(ctx, {
+        kind: "node",
+        name: node.name,
+        nodeId: node.id,
+        ...relBox(paintBox, ctx.frame),
+      }),
     );
+    if (subtreeHasBackgroundBlur(node)) {
+      ctx.warnings.push(
+        `"${node.name}": frosted-glass blur can't be reproduced — the panel renders with its tint only.`,
+      );
+    }
     return;
   }
 
