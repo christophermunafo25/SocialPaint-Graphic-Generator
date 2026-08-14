@@ -555,7 +555,10 @@ Deno.serve(async (req) => {
       validated = validateProposal(
         attempt.proposal,
         extraction,
-        { typeStyleKeys: typeStyles.map((s) => s.key), colorKeys: colors.map((c) => c.key) },
+        {
+          typeStyleKeys: typeStyles.map((s) => s.key),
+          colors: colors.map(({ key, hex }) => ({ key, hex })),
+        },
         source.kind,
       );
     } catch (e) {
@@ -569,7 +572,10 @@ Deno.serve(async (req) => {
         validated = validateProposal(
           attempt.proposal,
           extraction,
-          { typeStyleKeys: typeStyles.map((s) => s.key), colorKeys: colors.map((c) => c.key) },
+          {
+            typeStyleKeys: typeStyles.map((s) => s.key),
+            colors: colors.map(({ key, hex }) => ({ key, hex })),
+          },
           source.kind,
         );
       } catch {

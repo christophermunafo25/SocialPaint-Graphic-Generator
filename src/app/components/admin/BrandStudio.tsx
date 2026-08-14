@@ -77,8 +77,10 @@ export function BrandStudio() {
   const logoAssets = assets.filter((a) => a.kind === "logo");
 
   // The blast radius: which fields across which templates bind to each type
-  // style (typeStyleKey) and palette color (colorKey). Loaded alongside the
-  // kit; if it's slow or fails, rows simply render without counts.
+  // style (typeStyleKey). Fields carry no palette binding of their own — a
+  // palette color reaches templates only THROUGH a type style that names it,
+  // so color usage derives from style usage. Loaded alongside the kit; if
+  // it's slow or fails, rows simply render without counts.
   const templatesState = useAsync<TemplateSchema[]>(
     () => (company ? stores.templates.listAll(company.id) : Promise.resolve([])),
     [company],
@@ -93,14 +95,19 @@ export function BrandStudio() {
       if (!u.templateNames.includes(templateName)) u.templateNames.push(templateName);
       map.set(key, u);
     };
+    const styleColor = new Map(
+      (kit?.typeStyles ?? []).filter((s) => s.colorKey).map((s) => [s.key, s.colorKey!]),
+    );
     for (const t of templates ?? []) {
       for (const f of t.fields) {
-        if (f.typeStyleKey) add(styleUse, f.typeStyleKey, t.name);
-        if (f.colorKey) add(colorUse, f.colorKey, t.name);
+        if (!f.typeStyleKey) continue;
+        add(styleUse, f.typeStyleKey, t.name);
+        const ck = styleColor.get(f.typeStyleKey);
+        if (ck) add(colorUse, ck, t.name);
       }
     }
     return { styleUse, colorUse };
-  }, [templates]);
+  }, [templates, kit]);
 
   /** Pending impact confirmation for a save that restyles bound fields. */
   const [impact, setImpact] = useState<{

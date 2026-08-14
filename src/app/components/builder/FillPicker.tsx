@@ -30,15 +30,10 @@ import {
 // ---------------------------------------------------------------------------
 
 /** The structured view over the field's flat fill properties. */
-export type Fill =
-  { type: "solid"; hex: string; colorKey?: string } | { type: "gradient"; gradient: TextGradient };
+export type Fill = { type: "solid"; hex: string } | { type: "gradient"; gradient: TextGradient };
 
-export function getFill(field: TemplateField, kit: BrandKit | null): Fill | null {
+export function getFill(field: TemplateField): Fill | null {
   if (field.textGradient?.stops.length) return { type: "gradient", gradient: field.textGradient };
-  if (field.colorKey) {
-    const hex = kit?.colors.find((c) => c.key === field.colorKey)?.hex;
-    if (hex) return { type: "solid", hex: hex.toUpperCase(), colorKey: field.colorKey };
-  }
   if (field.colorHex) return { type: "solid", hex: field.colorHex.toUpperCase() };
   return null;
 }
@@ -194,7 +189,7 @@ export function FillPicker({
   const { navigate } = useRouter();
   const surfaceRef = useRef<HTMLDivElement>(null);
   const [tab, setTab] = useState<"custom" | "libraries">("custom");
-  const fill = getFill(field, kit);
+  const fill = getFill(field);
   const mode: "solid" | "gradient" = fill?.type === "gradient" ? "gradient" : "solid";
   const gradient = fill?.type === "gradient" ? fill.gradient : undefined;
   const [stopIndex, setStopIndex] = useState(0);
@@ -237,7 +232,7 @@ export function FillPicker({
           },
         });
       } else {
-        onChange({ colorHex: hex, colorKey: undefined, textGradient: undefined });
+        onChange({ colorHex: hex, textGradient: undefined });
       }
     },
     [mode, gradient, stopIndex, onChange],
@@ -250,9 +245,13 @@ export function FillPicker({
   };
 
   // Remember the custom color for the workspace when the picker closes.
+  // Brand-palette hexes are skipped — they already live in the brand grid,
+  // so echoing them under Recent would just duplicate the swatch.
   const close = useCallback(() => {
-    const f = getFill(field, kit);
-    if (f?.type === "solid" && !f.colorKey) pushRecentColor(companyId, f.hex);
+    const f = getFill(field);
+    const isBrandHex =
+      f?.type === "solid" && (kit?.colors ?? []).some((c) => c.hex.toUpperCase() === f.hex);
+    if (f?.type === "solid" && !isBrandHex) pushRecentColor(companyId, f.hex);
     onClose();
   }, [field, kit, companyId, onClose]);
 
@@ -298,8 +297,7 @@ export function FillPicker({
   const opaqueHex = toHex({ ...rgba, a: 1 });
   const recents = useMemo(() => readRecentColors(companyId), [companyId]);
 
-  const setGradient = (g: TextGradient) =>
-    onChange({ textGradient: g, colorHex: undefined, colorKey: undefined });
+  const setGradient = (g: TextGradient) => onChange({ textGradient: g, colorHex: undefined });
 
   const switchMode = (next: "solid" | "gradient") => {
     if (next === mode || locked) return;
@@ -315,7 +313,7 @@ export function FillPicker({
       });
     } else {
       const first = gradient?.stops[0]?.color ?? DEFAULT_FILL_HEX;
-      onChange({ colorHex: first.slice(0, 7), colorKey: undefined, textGradient: undefined });
+      onChange({ colorHex: first.slice(0, 7), textGradient: undefined });
     }
   };
 
@@ -637,8 +635,9 @@ export function FillPicker({
             />
           </div>
 
-          {/* Brand colors — one click binds by palette KEY so re-theming
-              propagates. Gradient stops take the hex (stops can't bind). */}
+          {/* Brand colors — the sanctioned values, one click away. Picking
+              one COPIES its hex onto the field; the palette is a convenience
+              at pick time, never a live binding back to Brand Studio. */}
           <span style={sectionLabel}>Brand colors</span>
           {(kit?.colors.length ?? 0) > 0 ? (
             <div className="flex flex-wrap" style={{ gap: "var(--space-3xs)" }}>
@@ -649,13 +648,13 @@ export function FillPicker({
                   title={c.name}
                   ariaLabel={`Use brand color ${c.name}`}
                   disabled={locked}
-                  selected={fill?.type === "solid" && fill.colorKey === c.key}
+                  selected={fill?.type === "solid" && fill.hex === c.hex.toUpperCase()}
                   onClick={() => {
                     if (mode === "gradient" && gradient) {
                       applyHex(c.hex.toUpperCase());
                     } else {
                       lastEmit.current = null;
-                      onChange({ colorKey: c.key, colorHex: undefined, textGradient: undefined });
+                      onChange({ colorHex: c.hex.toUpperCase(), textGradient: undefined });
                     }
                   }}
                 />

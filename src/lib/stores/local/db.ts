@@ -24,7 +24,8 @@ export function readDb(): Db {
   try {
     const raw = localStorage.getItem(KEY);
     const db = raw ? { ...empty(), ...(JSON.parse(raw) as Db) } : empty();
-    if (normalizeLegacyTextSizing(db)) writeDb(db);
+    const upgraded = normalizeLegacyTextSizing(db);
+    if (bakeLegacyColorKeys(db) || upgraded) writeDb(db);
     return db;
   } catch {
     return empty();
@@ -49,6 +50,31 @@ function normalizeLegacyTextSizing(db: Db): boolean {
   }
   for (const k of db.brandKits as Array<{ typeStyles?: unknown[] }>) {
     for (const s of k.typeStyles ?? []) upgrade(s as Record<string, unknown>);
+  }
+  return changed;
+}
+
+/** Bake legacy field-level brand color bindings (prompt 23): fields no
+ * longer reference the palette live, so a lingering colorKey resolves
+ * against the company's kit ONCE, writes the hex, and clears. Exactly what
+ * the renderer showed — an unresolvable key keeps the colorHex fallback.
+ * Type-style colorKey stays: styles are the sanctioned live channel. */
+function bakeLegacyColorKeys(db: Db): boolean {
+  let changed = false;
+  const kits = db.brandKits as Array<{
+    companyId?: string;
+    colors?: Array<{ key: string; hex: string }>;
+  }>;
+  for (const t of db.templates as Array<{ companyId?: string; fields?: unknown[] }>) {
+    const colors = kits.find((k) => k.companyId === t.companyId)?.colors ?? [];
+    for (const raw of t.fields ?? []) {
+      const f = raw as Record<string, unknown>;
+      if (typeof f.colorKey !== "string") continue;
+      const hex = colors.find((c) => c.key === f.colorKey)?.hex;
+      if (hex) f.colorHex = hex;
+      delete f.colorKey;
+      changed = true;
+    }
   }
   return changed;
 }

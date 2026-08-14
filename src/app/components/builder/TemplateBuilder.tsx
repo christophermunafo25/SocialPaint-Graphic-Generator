@@ -77,7 +77,6 @@ import { composeFigmaBackground } from "@/lib/figma/composeLayers";
 import { assembleElementFields, mergeOverlayFields } from "@/lib/figma/overlayFields";
 import { isFigmaNodeUrl } from "@/lib/figma/figmaUrl";
 import { unavailableFamilies } from "@/lib/render/fonts";
-import { freezeBrandColors } from "@/lib/brand/resolveStyle";
 import { createCanvasMeasurer } from "@/lib/render/autoFit";
 import { computeLayout } from "@/lib/render/layout";
 import {
@@ -571,7 +570,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       zIndex: maxZ(draft.fields) + 1,
       fontFamily: kit?.headingFont?.family,
       fontSizePx: Math.max(18, Math.min(90, Math.round(rect.height * 0.55))),
-      colorKey: kit?.colors.find((c) => c.key === "text")?.key ?? kit?.colors[0]?.key,
+      colorHex: kit?.colors.find((c) => c.key === "text")?.hex ?? kit?.colors[0]?.hex,
       align: "left",
       textSizing: "shrink",
     };
@@ -1033,11 +1032,6 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
         companyId: company.id,
         status: status ?? snapshot.status,
         name: snapshot.name.trim() || "Untitled template",
-        // Saving captures brand colors as they look right now — later Brand
-        // Studio palette edits must never restyle an already-saved template.
-        // The in-editor draft keeps its live colorKey bindings; only what
-        // persists is baked.
-        fields: freezeBrandColors(snapshot.fields, kit),
       };
       const saved = savedId
         ? await stores.templates.update(savedId, payload)

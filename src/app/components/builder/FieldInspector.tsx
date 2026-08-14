@@ -304,13 +304,13 @@ export function FieldInspector(props: FieldInspectorProps) {
   // --- Fill -----------------------------------------------------------------
 
   const hasFill = isText || isShape;
-  const fill = getFill(field, kit);
+  const fill = getFill(field);
   const fillLocked = locked.has("colorKey");
   const [pickerOpen, setPickerOpen] = useState(false);
   const fillSwatchRef = useRef<HTMLButtonElement>(null);
   useEffect(() => setPickerOpen(false), [field.id]);
 
-  /** Alpha byte of a solid fill's hex (100 when opaque or brand-bound). */
+  /** Alpha byte of a solid fill's hex (100 when opaque). */
   const fillAlpha = fill?.type === "solid" ? Math.round((parseHex(fill.hex)?.a ?? 1) * 100) : 100;
 
   // --- Appearance ----------------------------------------------------------
@@ -1104,13 +1104,7 @@ export function FieldInspector(props: FieldInspectorProps) {
             <button
               title="Add fill"
               aria-label="Add fill"
-              onClick={() =>
-                onChange({
-                  colorHex: DEFAULT_FILL_HEX,
-                  colorKey: undefined,
-                  textGradient: undefined,
-                })
-              }
+              onClick={() => onChange({ colorHex: DEFAULT_FILL_HEX, textGradient: undefined })}
               style={{ color: "var(--text-secondary)", display: "flex" }}
             >
               <Plus style={{ width: 13, height: 13 }} strokeWidth={1.5} />
@@ -1170,7 +1164,6 @@ export function FieldInspector(props: FieldInspectorProps) {
                       if (m) {
                         onChange({
                           colorHex: `#${m[1].toUpperCase()}${m[2] ? m[2].toUpperCase() : ""}`,
-                          colorKey: undefined,
                           textGradient: undefined,
                         });
                       } else {
@@ -1184,14 +1177,13 @@ export function FieldInspector(props: FieldInspectorProps) {
                     precision={0}
                     min={0}
                     max={100}
-                    disabled={fillLocked || Boolean(fill.colorKey)}
+                    disabled={fillLocked}
                     value={fillAlpha}
                     onCommit={(v) => {
                       const base = parseHex(fill.hex);
                       if (!base) return;
                       onChange({
                         colorHex: toHex({ ...base, a: (v ?? fillAlpha) / 100 }),
-                        colorKey: undefined,
                         textGradient: undefined,
                       });
                     }}
@@ -1214,7 +1206,7 @@ export function FieldInspector(props: FieldInspectorProps) {
                 disabled={fillLocked}
                 onClick={() => {
                   setPickerOpen(false);
-                  onChange({ colorHex: undefined, colorKey: undefined, textGradient: undefined });
+                  onChange({ colorHex: undefined, textGradient: undefined });
                 }}
                 style={{
                   color: fillLocked ? "var(--text-disabled)" : "var(--text-muted)",
@@ -1231,11 +1223,6 @@ export function FieldInspector(props: FieldInspectorProps) {
               one with the plus.
             </p>
           ))}
-        {fill?.type === "solid" && fill.colorKey && (
-          <p style={{ fontSize: 10, color: "var(--text-secondary)" }}>
-            Bound to brand color — re-theming the palette updates this field.
-          </p>
-        )}
       </InspectorSection>
 
       {/* Member input — what the member sees in their form; gone on fixed
