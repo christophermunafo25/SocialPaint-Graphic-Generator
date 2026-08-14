@@ -237,12 +237,14 @@ html {
 }
 
 /* ── Semantic: dark ─────────────────────────────────────────────────────────
-   The primary mode. #131313 is the floor; cards and every lifted fill
-   share #202020; elevation is surface colour, never shadow. One ladder:
-   #131313 canvas → #202020 surface/raised → #2a2a2a hover →
-   #323232 border-on-surface. */
+   The primary mode. #0B0B0C is the floor (2026-08-14, at Chris's
+   direction); cards and every lifted fill share #202020; the sidebar sits
+   on its own #171819 step between floor and surface; elevation is surface
+   colour, never shadow. One ladder: #0B0B0C canvas → #171819 sidebar →
+   #202020 surface/raised → #2a2a2a hover → #323232 border-on-surface. */
 [data-theme="dark"] {
-  --bg-canvas: #131313;
+  --bg-canvas: #0b0b0c;
+  --sb-bg: #171819; /* the left rail only — cards keep --bg-surface */
   --bg-surface: #202020;
   --bg-raised: #202020;
   --bg-hover: #2a2a2a;
@@ -269,15 +271,19 @@ html {
   --text-on-action: #272727;
   --border-control: #f1f1f1; /* the edge of a pressable outlined control */
 
-  /* Emphasis and status are neutral. Brand hues never appear here. */
-  --state-primary-on-surface: #f1f1f1;
-  --state-attention-on-surface: #f1f1f1;
-  --state-primary: #f1f1f1;
-  --fill-primary: #f1f1f1;
-  --state-info: #f1f1f1;
-  --fill-info: #f1f1f1;
-  --state-attention: #f1f1f1;
-  --fill-attention: #f1f1f1;
+  /* Interactive emphasis carries the brand (amended 2026-08-14, at
+     Chris's direction): Voltage is the working accent, and on this canvas
+     it clears text contrast outright (13.5:1), so it may carry text,
+     borders, and the ring here. Aqua informs. Danger and warning stay the
+     functional hues — severity never rides a brand colour. */
+  --state-primary-on-surface: var(--voltage);
+  --state-attention-on-surface: var(--voltage);
+  --state-primary: var(--voltage);
+  --fill-primary: var(--voltage);
+  --state-info: var(--aqua);
+  --fill-info: var(--aqua);
+  --state-attention: var(--voltage);
+  --fill-attention: var(--voltage);
 
   /* Functional signals, outside the brand palette. Clay is lifted from
      #c94040, which reaches only 3.8:1 on the canvas and 3.3:1 on surface.
@@ -292,9 +298,9 @@ html {
   /* Confirm-flash wash as a bare rgb triplet — the keyframes below need a
      literal rgba() because Chrome drops the alpha when it interpolates a
      color-mix()'d colour inside a keyframe. Neutral, like every wash. */
-  --flash-rgb: 241, 241, 241;
+  --flash-rgb: 143, 255, 108; /* the confirm flash is a Voltage wash */
 
-  --ring: #f1f1f1; /* 16.4:1 on canvas, 14.4:1 on surface */
+  --ring: var(--voltage); /* 13.5:1 on canvas, 11.4:1 on surface */
 
   --shadow-sm: none;
   --shadow-md: none;
@@ -306,6 +312,8 @@ html {
    The brand board's pairing: #F1F1F1 field with #FFFFFF cards; borders
    carry separation. */
 [data-theme="light"] {
+  --accent-wash: color-mix(in srgb, var(--voltage) 30%, transparent);
+  --accent-wash-strong: color-mix(in srgb, var(--voltage) 48%, transparent);
   --bg-canvas: #f1f1f1;
   --bg-surface: #ffffff;
   --bg-raised: #e8e8e8;
@@ -331,17 +339,18 @@ html {
   --text-on-action: #f1f1f1;
   --border-control: #272727;
 
-  /* Emphasis and status are neutral. Brand hues never appear here — no
-     brand colour clears 3:1 on this canvas anyway, so they are fill-only
-     on light and never text. */
+  /* On light the brand rides FILLS and washes only: no brand colour
+     clears 3:1 on this canvas, so text and information-bearing borders
+     stay ink while the fill tier carries Voltage (ink glyphs on it read
+     at 11.87:1) and Aqua for info. */
   --state-primary-on-surface: #272727;
   --state-attention-on-surface: #272727;
   --state-primary: #272727;
-  --fill-primary: #272727;
+  --fill-primary: var(--voltage);
   --state-info: #272727;
-  --fill-info: #272727;
+  --fill-info: var(--aqua);
   --state-attention: #272727;
-  --fill-attention: #272727;
+  --fill-attention: var(--voltage);
 
   /* Functional signals, outside the brand palette. */
   --state-danger-on-surface: #c94040;
@@ -351,8 +360,9 @@ html {
   --state-warning: #756200;
   --fill-warning: #ffd900;
 
-  /* See the dark block for why this is a bare rgb triplet. */
-  --flash-rgb: 39, 39, 39;
+  /* See the dark block for why this is a bare rgb triplet. The flash is
+     a wash — fill-tier, so Voltage is legal on light. */
+  --flash-rgb: 143, 255, 108;
 
   --ring: #272727; /* 13.23:1 on the light canvas */
 
@@ -374,10 +384,12 @@ html {
     0 0 0 calc(var(--focus-offset) + var(--focus-width)) var(--ring);
   --focus-ring-tight: 0 0 0 var(--focus-width) var(--ring);
 
-  /* Selection is neutral system-wide, so the wash is the standard 12% state
-     layer rather than an accent tint. */
-  --accent-wash: color-mix(in srgb, var(--text-primary) 12%, transparent);
-  --accent-wash-strong: color-mix(in srgb, var(--text-primary) 20%, transparent);
+  /* Selection and active states tint with the brand green — a wash is a
+     fill, so it is legal in both themes. Density differs per theme: dark
+     needs less pigment to read against #0B0B0C than light does against
+     white. */
+  --accent-wash: color-mix(in srgb, var(--voltage) 14%, transparent);
+  --accent-wash-strong: color-mix(in srgb, var(--voltage) 24%, transparent);
   --accent-border: color-mix(in srgb, var(--text-primary) 40%, transparent);
   --danger-wash: color-mix(in srgb, var(--state-danger) 16%, transparent);
 
@@ -689,7 +701,7 @@ optgroup {
   transition: background var(--dur-state) var(--ease);
 }
 .sp-switch input:checked + .sp-switch__track {
-  background: var(--fill-action);
+  background: var(--fill-attention); /* Voltage — a fill, legal in both themes */
 }
 .sp-switch input:focus-visible + .sp-switch__track {
   box-shadow: var(--focus-ring-tight);
@@ -708,7 +720,7 @@ optgroup {
 }
 .sp-switch input:checked + .sp-switch__track .sp-switch__knob {
   left: 19px;
-  background: var(--text-on-action);
+  background: var(--text-on-brand); /* Ink — the only legible glyph on Voltage */
 }
 @media (prefers-reduced-motion: reduce) {
   .sp-switch__track,
@@ -750,7 +762,7 @@ optgroup {
   padding: 12px 16px;
   background: var(--bg-surface);
   border: 1px solid var(--border);
-  border-top: 3px solid var(--state-primary);
+  border-top: 3px solid var(--fill-attention);
   border-radius: var(--radius-card);
   animation: sp-toast-in var(--dur-panel) var(--ease);
 }
@@ -904,6 +916,19 @@ optgroup {
   .sp-nav-toggle__bar {
     transition-duration: 0.001ms;
   }
+}
+
+/* Native checks and radios ride the accent: Voltage on dark, ink on
+   light (the browser derives the glyph colour, so contrast holds). */
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--state-primary);
+}
+
+/* The active sidebar item's icon carries the accent — Voltage on dark,
+   ink on light — over the Voltage wash the row already gets. */
+.sp-sidebar-item[data-active="true"] svg {
+  color: var(--state-primary-on-surface);
 }
 
 /* --- Upload interactions ---------------------------------------------------
