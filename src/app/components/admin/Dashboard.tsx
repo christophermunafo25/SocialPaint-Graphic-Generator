@@ -15,6 +15,7 @@ import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { Page, PageHeader } from "../layout/Page";
 import { ErrorState } from "../ErrorState";
+import { useCountUp } from "@/lib/useCountUp";
 import { BrandMark } from "../Sidebar";
 
 const TREND_DAYS = 30;
@@ -38,7 +39,8 @@ const exportRate = (downloads: number, opens: number): string =>
 
 interface KpiProps {
   label: string;
-  value: string;
+  /** A number counts up on load; a string ("—", "42%") renders as-is. */
+  value: string | number;
   Icon: typeof Download;
   chip: string; // background token for the icon chip
   /** Icon color on the chip. Brand fills (Volt/Aqua) take ink in both themes;
@@ -47,8 +49,12 @@ interface KpiProps {
   chipFg?: string;
 }
 
-/** Stat tile — a headline number needs no chart. Values are data → mono. */
+/** Stat tile — a headline number needs no chart. Values are data → mono.
+ * Numeric values count up once on load (useCountUp); strings render as-is. */
 function Kpi({ label, value, Icon, chip, chipFg = "var(--text-on-accent)" }: KpiProps) {
+  const numeric = typeof value === "number" ? value : 0;
+  const counted = useCountUp(numeric);
+  const shown = typeof value === "number" ? counted : value;
   return (
     <div className="sp-card sp-card--content flex items-center gap-4">
       <span
@@ -62,7 +68,7 @@ function Kpi({ label, value, Icon, chip, chipFg = "var(--text-on-accent)" }: Kpi
           className="block truncate"
           style={{ ...mono, fontSize: 24, lineHeight: 1.1, color: "var(--text-primary)" }}
         >
-          {value}
+          {shown}
         </span>
         <span className="sp-eyebrow block" style={{ marginTop: 3 }}>
           {label}
@@ -170,13 +176,13 @@ export function Dashboard() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             <Kpi
               label="Total exports"
-              value={String(summary.totalDownloads)}
+              value={summary.totalDownloads}
               Icon={Download}
               chip="var(--viz-series-1)"
             />
             <Kpi
               label="Total opens"
-              value={String(totalOpens)}
+              value={totalOpens}
               Icon={Eye}
               chip="var(--viz-series-2)"
             />
@@ -189,7 +195,7 @@ export function Dashboard() {
             />
             <Kpi
               label="Templates in use"
-              value={String(activeTemplates)}
+              value={activeTemplates}
               Icon={Layers}
               chip="var(--bg-hover)"
               chipFg="var(--text-primary)"
