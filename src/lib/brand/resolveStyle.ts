@@ -14,6 +14,8 @@ export interface ResolvedFieldStyle {
   uppercase?: boolean;
   letterSpacingPx?: number;
   lineHeight?: number;
+  /** Palette key from a bound type style ONLY — the one live brand channel.
+   * Fields themselves never carry a palette binding. */
   colorKey?: string;
   colorHex?: string;
   textGradient?: import("../types").TextGradient;
@@ -65,31 +67,13 @@ export function resolveFieldStyle(field: TemplateField, kit: BrandKit | null): R
     uppercase: style?.uppercase ?? field.uppercase,
     letterSpacingPx: style?.letterSpacingPx ?? field.letterSpacingPx,
     lineHeight: style?.lineHeight ?? field.lineHeight,
-    colorKey: style?.colorKey ?? field.colorKey,
+    colorKey: style?.colorKey,
     colorHex: field.colorHex,
     textGradient: field.textGradient,
     maxLength: style?.maxLength ?? field.maxLength,
     textSizing: style?.textSizing ?? field.textSizing,
     boundStyle: style,
   };
-}
-
-/** Bake direct brand-color picks into literal hex values.
- *
- * Called on the field list at SAVE time: a template captures the brand
- * colors as they look right now, so later palette edits in Brand Studio
- * never restyle already-saved templates. Only the field's own `colorKey`
- * bakes — a color set through a bound type style ("Heading is always
- * Volt") is an explicit live brand rule and keeps resolving at render.
- * A key that no longer exists in the palette simply unbinds, leaving the
- * field's own hex fallback exactly as the renderer would have used it. */
-export function freezeBrandColors(fields: TemplateField[], kit: BrandKit | null): TemplateField[] {
-  if (!kit) return fields;
-  return fields.map((f) => {
-    if (!f.colorKey) return f;
-    const hex = kit.colors.find((c) => c.key === f.colorKey)?.hex;
-    return { ...f, colorKey: undefined, ...(hex ? { colorHex: hex } : {}) };
-  });
 }
 
 /** Which field-level controls a bound style locks (for the builder UI). */

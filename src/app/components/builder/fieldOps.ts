@@ -117,7 +117,7 @@ export function fieldFromPalette(
       ? {
           fontFamily: kit?.headingFont?.family,
           fontSizePx: Math.max(18, Math.min(90, Math.round(height * 0.5))),
-          colorKey: kit?.colors.find((c) => c.key === "text")?.key ?? kit?.colors[0]?.key,
+          colorHex: kit?.colors.find((c) => c.key === "text")?.hex ?? kit?.colors[0]?.hex,
           align: "left" as const,
           textSizing: "shrink" as const,
         }
@@ -320,19 +320,12 @@ const TEXT_STYLE_PROPS = [
   "align",
   "verticalAlign",
   "textSizing",
-  "colorKey",
   "colorHex",
   "textGradient",
   "opacity",
 ] as const;
 const IMAGE_STYLE_PROPS = ["cornerRadius", "opacity", "objectFit"] as const;
-const SHAPE_STYLE_PROPS = [
-  "colorKey",
-  "colorHex",
-  "textGradient",
-  "cornerRadius",
-  "opacity",
-] as const;
+const SHAPE_STYLE_PROPS = ["colorHex", "textGradient", "cornerRadius", "opacity"] as const;
 
 type StyleProp =
   | (typeof TEXT_STYLE_PROPS)[number]

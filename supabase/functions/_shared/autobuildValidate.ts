@@ -64,7 +64,6 @@ export interface ValidatedField {
   maxLength?: number;
   placeholder?: string;
   typeStyleKey?: string;
-  colorKey?: string;
   options?: string[];
   fontFamily?: string;
   fontWeight?: number;
@@ -80,7 +79,9 @@ export interface ValidatedField {
 
 export interface BrandContext {
   typeStyleKeys: string[];
-  colorKeys: string[];
+  /** The palette with hexes: a proposed colorKey COPIES its hex onto the
+   * field (fields carry no live palette binding). */
+  colors: Array<{ key: string; hex: string }>;
 }
 
 export interface ValidationOutput {
@@ -156,7 +157,7 @@ export function validateProposal(
 
   const byId = new Map(extraction.elements.map((el) => [el.sourceId, el]));
   const typeStyles = new Set(brand.typeStyleKeys);
-  const colors = new Set(brand.colorKeys);
+  const colorHexByKey = new Map(brand.colors.map((c) => [c.key, c.hex]));
   const takenKeys = new Set<string>();
   const claimed = new Set<string>();
   const fields: ValidatedField[] = [];
@@ -235,12 +236,16 @@ export function validateProposal(
       warnings.push(`"${label}": type style "${typeStyleKey}" is not in the brand kit — unbound.`);
       typeStyleKey = undefined;
     }
-    let colorKey = p.colorKey;
-    if (colorKey !== undefined && !colors.has(colorKey)) {
-      warnings.push(
-        `"${label}": palette key "${colorKey}" is not in the brand kit — keeping the extracted color.`,
-      );
-      colorKey = undefined;
+    // A palette mapping COPIES the brand hex onto the field — templates
+    // carry no live palette binding.
+    let brandHex: string | undefined;
+    if (p.colorKey !== undefined) {
+      brandHex = colorHexByKey.get(p.colorKey);
+      if (brandHex === undefined) {
+        warnings.push(
+          `"${label}": palette key "${p.colorKey}" is not in the brand kit — keeping the extracted color.`,
+        );
+      }
     }
 
     let maxLength =
@@ -301,7 +306,7 @@ export function validateProposal(
       required: !isStatic && p.required === true ? true : undefined,
       maxLength: !isStatic && type !== "image" ? maxLength : undefined,
       typeStyleKey,
-      colorKey,
+      ...(brandHex !== undefined ? { colorHex: brandHex } : {}),
       textSizing: type === "text" || type === "multiline" ? ("shrink" as const) : undefined,
       objectFit: type === "image" ? "cover" : undefined,
     });

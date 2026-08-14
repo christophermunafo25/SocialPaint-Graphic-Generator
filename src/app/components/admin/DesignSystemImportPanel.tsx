@@ -9,7 +9,9 @@ import { useFileDrop } from "@/lib/useFileDrop";
 interface DesignSystemImportPanelProps {
   onImportColors(colors: BrandColor[]): void;
   onImportTypeStyles(styles: BrandTypeStyle[]): void;
-  onImportGuidelines(rules: string[]): void;
+  /** Absent hides the guidelines.md leg entirely — the free-text guidelines
+   * surface is retired from Brand Studio (data preserved in the kit). */
+  onImportGuidelines?(rules: string[]): void;
 }
 
 /** Design-system import: tokens.json (e.g. a Claude Design export) →
@@ -40,7 +42,7 @@ export function DesignSystemImportPanel(props: DesignSystemImportPanelProps) {
       setStatus(
         `Imported ${result.colors.length} colors and ${result.typeStyles.length} type styles` +
           (result.skipped.length ? ` (skipped: ${result.skipped.join(", ")})` : "") +
-          ". Review below, then save.",
+          ". They are saved to your brand.",
       );
     } catch {
       setError("Could not parse that file as JSON.");
@@ -59,8 +61,8 @@ export function DesignSystemImportPanel(props: DesignSystemImportPanelProps) {
   };
 
   const acceptSuggestions = () => {
-    props.onImportGuidelines(suggestions.filter((_, i) => accepted.has(i)));
-    setStatus(`Added ${accepted.size} brand rules. Review below, then save.`);
+    props.onImportGuidelines?.(suggestions.filter((_, i) => accepted.has(i)));
+    setStatus(`Added ${accepted.size} brand rules.`);
     setSuggestions([]);
   };
 
@@ -73,7 +75,7 @@ export function DesignSystemImportPanel(props: DesignSystemImportPanelProps) {
       if (result.colors.length) props.onImportColors(result.colors);
       if (result.typeStyles.length) props.onImportTypeStyles(result.typeStyles);
       setStatus(
-        `Imported ${result.colors.length} colors and ${result.typeStyles.length} type styles from Figma. Review below, then save.`,
+        `Imported ${result.colors.length} colors and ${result.typeStyles.length} type styles from Figma — saved to your brand.`,
       );
       setFigmaUrl("");
     } catch (e) {
@@ -85,19 +87,21 @@ export function DesignSystemImportPanel(props: DesignSystemImportPanelProps) {
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-2.5">
+      <div className={`grid ${props.onImportGuidelines ? "grid-cols-2" : "grid-cols-1"} gap-2.5`}>
         <UploadTile
           label="Design tokens (.json)"
           icon={<FileJson style={{ width: 16, height: 16, color: "var(--state-primary)" }} />}
           accept=".json,application/json"
           onFile={(f) => void handleTokens(f)}
         />
-        <UploadTile
-          label="Guidelines (.md)"
-          icon={<FileText style={{ width: 16, height: 16, color: "var(--state-primary)" }} />}
-          accept=".md,.txt,text/markdown,text/plain"
-          onFile={(f) => void handleGuidelines(f)}
-        />
+        {props.onImportGuidelines && (
+          <UploadTile
+            label="Guidelines (.md)"
+            icon={<FileText style={{ width: 16, height: 16, color: "var(--state-primary)" }} />}
+            accept=".md,.txt,text/markdown,text/plain"
+            onFile={(f) => void handleGuidelines(f)}
+          />
+        )}
       </div>
 
       {stores.designImport.isConfigured() && (

@@ -24,7 +24,7 @@ Cover every element in the list with exactly one field proposal. Anything you sk
 - placeholder: a realistic example value, not a description.
 - required: true only for fields the graphic is meaningless without.
 - typeStyleKey: bind to a brand type style when the element's role clearly matches one (a headline to the heading style, body copy to body). Leave unbound when unsure.
-- colorKey: map the element's extracted hex onto the nearest brand palette entry when they are visually close; leave unbound when nothing in the palette is close.
+- colorKey: map the element's extracted hex onto the nearest brand palette entry when they are visually close (the palette entry's hex is copied onto the field); leave unset when nothing in the palette is close.
 
 ## Template metadata
 

@@ -187,6 +187,8 @@ export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererPro
  * defaults reuse it so there is exactly one source for the value. */
 export const DEFAULT_FILL_HEX = "#111111";
 
+/** Text color: a bound type style's palette key (the one live brand
+ * channel) resolves against the kit; otherwise the field's own hex. */
 function resolveColor(
   colorKey: string | undefined,
   colorHex: string | undefined,
@@ -318,7 +320,7 @@ export function FieldBoxContent({ field, value, brandKit, fontSize }: FieldBoxPr
   // Static elements carry their own fixed content — member values never apply.
   const effective = field.static ? field.staticValue : value;
   if (field.type === "shape") {
-    return <ShapeFieldBox field={field} brandKit={brandKit} />;
+    return <ShapeFieldBox field={field} />;
   }
   if (field.type === "image") {
     // A member image field previews its designed artwork until a value
@@ -332,12 +334,12 @@ export function FieldBoxContent({ field, value, brandKit, fontSize }: FieldBoxPr
 /** 5-point star, unit square. */
 const STAR_POINTS = "50,0 61,35 98,35 68,57 79,91 50,70 21,91 32,57 2,35 39,35";
 
-/** Decorative shape: fill = gradient → brand color key → hex. Rects render
+/** Decorative shape: fill = gradient → hex. Rects render
  * as plain divs (corner radius applies); ellipse/triangle/star render as
  * inline SVG so gradients survive the PNG export. */
-function ShapeFieldBox({ field, brandKit }: { field: TemplateField; brandKit: BrandKit | null }) {
+function ShapeFieldBox({ field }: { field: TemplateField }) {
   const kind = field.shape ?? "rect";
-  const solid = resolveColor(field.colorKey, field.colorHex, brandKit);
+  const solid = field.colorHex ?? DEFAULT_FILL_HEX;
   const g = field.textGradient?.stops.length ? field.textGradient : undefined;
 
   if (kind === "rect") {

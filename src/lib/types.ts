@@ -10,7 +10,7 @@ export interface Company {
 }
 
 export interface BrandColor {
-  key: string; // palette key referenced by TemplateField.colorKey
+  key: string; // stable palette key (referenced by BrandTypeStyle.colorKey)
   name: string;
   hex: string;
 }
@@ -38,7 +38,12 @@ export interface BrandTypeStyle {
   uppercase?: boolean;
   letterSpacingPx?: number;
   lineHeight?: number;
-  colorKey?: string; // brand palette key
+  /** Brand palette key, resolved at RENDER time. Type styles are the one
+   * sanctioned live brand channel — a style locks font, weight, and color
+   * across templates by design, behind the impact confirmation in Brand
+   * Studio. Field-level color carries no such binding: picking a brand
+   * color copies its hex onto the field. */
+  colorKey?: string;
   fontSizePx?: number; // set only when the brand fixes the size globally
   maxLength?: number; // "never exceeds N characters"
   /** Locks the field's text sizing mode (see TemplateField.textSizing). */
@@ -150,7 +155,7 @@ export interface TemplateField {
   /** Element opacity, 0–100 (default 100). */
   opacity?: number;
   /** Shape fields only: which shape to draw. Fill comes from colorHex /
-   * colorKey / textGradient (same fill pipeline as text); rects also honor
+   * textGradient (same fill pipeline as text); rects also honor
    * cornerRadius. Shapes are always static — never member-editable. */
   shape?: ShapeKind;
   /** Figma node this field was imported from (transient import provenance —
@@ -160,8 +165,7 @@ export interface TemplateField {
    * style defines overrides the field-level values below and is locked by
    * the brand rules engine. */
   typeStyleKey?: string;
-  // Locked styling the member CANNOT change. colorKey references the brand
-  // kit palette so a palette change propagates everywhere.
+  // Locked styling the member CANNOT change.
   fontFamily?: string;
   fontWeight?: number; // exact weight from an import; type styles override
   /** The rest of the face. The numeric weight above stays the value the
@@ -172,9 +176,9 @@ export interface TemplateField {
   fontStretch?: string; // CSS font-stretch keyword; see FontStretch in render/fontCatalog
   fontSizePx?: number;
   minFontSizePx?: number; // shrink floor
-  colorKey?: string;
-  /** Literal color fallback (e.g. from a Figma import) — used only when no
-   * type style or palette colorKey applies. */
+  /** The field's own solid fill. Brand colors copy their hex here at pick
+   * time — no field-level binding back to the palette. A bound type style's
+   * colorKey (the sanctioned live channel) still wins at render. */
   colorHex?: string;
   /** Optional text fill gradient (wins over solid color when set). */
   textGradient?: TextGradient;

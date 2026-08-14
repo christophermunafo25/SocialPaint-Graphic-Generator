@@ -53,7 +53,13 @@ const proposal = (
   rationale: [],
 });
 
-const brand = { typeStyleKeys: ["heading", "body"], colorKeys: ["primary", "text"] };
+const brand = {
+  typeStyleKeys: ["heading", "body"],
+  colors: [
+    { key: "primary", hex: "#2F3B4C" },
+    { key: "text", hex: "#1A1F26" },
+  ],
+};
 
 describe("proposals must reference real elements", () => {
   it("drops a proposal whose sourceId is absent from the extraction", () => {
@@ -133,8 +139,18 @@ describe("brand bindings are dropped when unknown", () => {
       brand,
       "figma",
     );
-    expect(out.fields[0].colorKey).toBeUndefined();
     expect(out.fields[0].colorHex).toBe("#003B71");
+  });
+
+  it("copies a known palette key's hex onto the field — no binding survives", () => {
+    const out = validateProposal(
+      proposal([field({ colorKey: "primary" })]),
+      extraction([element("1:10", "text", { colorHex: "#003B71" })]),
+      brand,
+      "figma",
+    );
+    expect(out.fields[0].colorHex).toBe("#2F3B4C");
+    expect("colorKey" in out.fields[0]).toBe(false);
   });
 });
 
