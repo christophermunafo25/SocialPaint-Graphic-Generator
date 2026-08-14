@@ -21,6 +21,7 @@ import { ErrorState } from "./ErrorState";
 import { SchemaRenderer, type SchemaRendererHandle } from "./SchemaRenderer";
 import { FieldInput } from "./FieldInput";
 import { Page } from "./layout/Page";
+import { celebrate } from "@/lib/celebrate";
 
 /** Member self-service flow: fields on the left, live preview on the right,
  * suggested caption, PNG download. Members change field CONTENT only. */
@@ -41,6 +42,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
   const [exportToast, setExportToast] = useState<"downloaded" | "shared" | "error" | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
   const rendererRef = useRef<SchemaRendererHandle>(null);
+  const downloadBtnRef = useRef<HTMLButtonElement>(null);
   /** Layout warnings (text at its minimum size that still doesn't fit) —
    * shown quietly under the preview; shortening the entry is the fix and
    * only the member can do it. */
@@ -112,7 +114,11 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
     try {
       const outcome = await rendererRef.current.exportPng();
       // Canceling the share sheet needs no confirmation of anything.
-      if (outcome !== "canceled") showToast(outcome);
+      if (outcome !== "canceled") {
+        showToast(outcome);
+        // A finished graphic is the member's commit moment.
+        celebrate(downloadBtnRef.current);
+      }
     } catch (e) {
       console.error("Export failed", e);
       showToast("error");
@@ -410,6 +416,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
 
               <div className="sp-card p-4 space-y-2">
                 <button
+                  ref={downloadBtnRef}
                   onClick={() => void handleDownload()}
                   disabled={exporting || missingRequired.length > 0}
                   aria-describedby={

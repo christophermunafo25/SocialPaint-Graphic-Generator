@@ -77,6 +77,7 @@ import { composeFigmaBackground } from "@/lib/figma/composeLayers";
 import { assembleElementFields, mergeOverlayFields } from "@/lib/figma/overlayFields";
 import { isFigmaNodeUrl } from "@/lib/figma/figmaUrl";
 import { unavailableFamilies } from "@/lib/render/fonts";
+import { celebrate } from "@/lib/celebrate";
 import { createCanvasMeasurer } from "@/lib/render/autoFit";
 import { computeLayout } from "@/lib/render/layout";
 import {
@@ -1109,6 +1110,9 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       return;
     }
     setPublishState("success");
+    // Publishing sends work to the world — the one moment loud enough for
+    // confetti (brand primitives; motion from the BYQ gem, styling ours).
+    celebrate(document.activeElement instanceof Element ? document.activeElement : null);
     window.setTimeout(() => navigate({ name: "adminTemplates" }), 1400);
   };
 
