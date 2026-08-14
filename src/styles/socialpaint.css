@@ -46,37 +46,32 @@
 
 @import url("https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap");
 
-/* Blauer Nue — the platform face (final brand, 2026-08-14), vendored at
-   Light, Regular, Medium, and SemiBold (page headings run SemiBold at
-   Chris's direction; bold proper stays banned). Registered under a
-   platform-private family so a tenant's font upload can never shadow the
-   chrome (@font-face is document-global; see the Neuething incident,
-   2026-08-05). */
+/* Two platform families, both registered under platform-private names so a
+   tenant's font upload can never shadow the chrome (@font-face is
+   document-global; see the Neuething incident, 2026-08-05).
+
+   Blauer Nue SemiBold is the HEADING face only (final brand, 2026-08-14,
+   at Chris's direction) — every --font-head site pairs with --weight-head
+   600, so it ships as the single cut. Raveo Display remains the body/UI
+   face at Regular and Medium. Bold proper stays banned everywhere. */
 @font-face {
   font-family: "Blauer Nue Platform";
-  src: url("../assets/fonts/blauer-nue/BlauerNue-Light.woff2") format("woff2");
-  font-weight: 300;
+  src: url("../assets/fonts/blauer-nue/BlauerNue-SemiBold.woff2") format("woff2");
+  font-weight: 600;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
-  font-family: "Blauer Nue Platform";
-  src: url("../assets/fonts/blauer-nue/BlauerNue-Regular.woff2") format("woff2");
+  font-family: "Raveo Display Platform";
+  src: url("../assets/fonts/raveo/RaveoDisplay-Regular.otf") format("opentype");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
-  font-family: "Blauer Nue Platform";
-  src: url("../assets/fonts/blauer-nue/BlauerNue-Medium.woff2") format("woff2");
+  font-family: "Raveo Display Platform";
+  src: url("../assets/fonts/raveo/RaveoDisplay-Medium.otf") format("opentype");
   font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Blauer Nue Platform";
-  src: url("../assets/fonts/blauer-nue/BlauerNue-SemiBold.woff2") format("woff2");
-  font-weight: 600;
   font-style: normal;
   font-display: swap;
 }
@@ -107,11 +102,12 @@ html {
   --gray: #f1f1f1;
   --ink: #272727;
 
-  /* Typography */
+  /* Typography — Blauer Nue SemiBold carries headings; Raveo Display
+     carries body and UI. */
   --font-head: "Blauer Nue Platform", "Blauer Nue", system-ui, sans-serif;
   --weight-head: 600; /* every heading step — Blauer Nue SemiBold */
-  --font-body: "Blauer Nue Platform", "Blauer Nue", system-ui, -apple-system, sans-serif;
-  --font-ui: "Blauer Nue Platform", "Blauer Nue", system-ui, -apple-system, sans-serif;
+  --font-body: "Raveo Display Platform", "Raveo Display", system-ui, -apple-system, sans-serif;
+  --font-ui: "Raveo Display Platform", "Raveo Display", system-ui, -apple-system, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
   --weight-ui: 500;
 
