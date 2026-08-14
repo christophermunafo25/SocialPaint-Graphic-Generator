@@ -7,8 +7,8 @@
    Palette: five brand colours — Voltage #8FFF6C, Wednesdays #FF94F9,
    Fire #FF6D39, Aqua #7BF2FE, Sunshine #DDFF55 — over the neutrals
    Ink #272727, White #FFFFFF, and Canvas #F1F1F1. Two neutrals sit
-   outside the brand palette by design: #131313, the dark-mode canvas, and
-   #202020, the dark-mode card surface that sits on it. Never treat either
+   outside the brand palette by design: #070708, the dark-mode canvas, and
+   #18191A, the dark-mode lifted surface that sits on it. Never treat either
    as a brand colour or expose them on a brand-facing surface.
 
    THE GOVERNING RULE: brand colours carry no meaning. They are identity,
@@ -237,16 +237,15 @@ html {
 }
 
 /* ── Semantic: dark ─────────────────────────────────────────────────────────
-   The primary mode. #0B0B0C is the floor (2026-08-14, at Chris's
-   direction); cards and every lifted fill share #202020; the sidebar sits
-   on its own #171819 step between floor and surface; elevation is surface
-   colour, never shadow. One ladder: #0B0B0C canvas → #171819 sidebar →
-   #202020 surface/raised → #2a2a2a hover → #323232 border-on-surface. */
+   The primary mode. #070708 is the floor and #18191A is THE lifted
+   surface — every card, panel, and the sidebar share it (2026-08-14, at
+   Chris's direction); elevation is surface colour, never shadow. One
+   ladder: #070708 canvas → #18191A surface/raised → #2a2a2a hover →
+   #323232 border-on-surface. */
 [data-theme="dark"] {
-  --bg-canvas: #0b0b0c;
-  --sb-bg: #171819; /* the left rail only — cards keep --bg-surface */
-  --bg-surface: #202020;
-  --bg-raised: #202020;
+  --bg-canvas: #070708;
+  --bg-surface: #18191a;
+  --bg-raised: #18191a;
   --bg-hover: #2a2a2a;
   --bg-plate: #ffffff; /* imagery plate, never inverts */
   --border: rgba(241, 241, 241, 0.1); /* decorative separation only */
@@ -924,28 +923,24 @@ optgroup {
    can be playful without cluttering anything. Dark tints the GLYPH (every
    hue clears 3:1 against the dark ladder); light tints the WASH behind an
    ink glyph, because no brand hue clears 3:1 as a glyph on white (the
-   header's rule). Active rows keep their Voltage accent treatment. */
-.sp-sidebar-item,
+   header's rule). The sidebar nav stays neutral on hover (2026-08-14,
+   at Chris's direction) — its colour arrives only on the ACTIVE row. */
 .sp-palette-tile,
 .sp-icon-btn {
   --hover-hue: var(--voltage);
 }
-.sp-sidebar-item:nth-of-type(5n + 2),
 .sp-palette-tile:nth-of-type(5n + 2),
 .sp-icon-btn:nth-of-type(5n + 2) {
   --hover-hue: var(--aqua);
 }
-.sp-sidebar-item:nth-of-type(5n + 3),
 .sp-palette-tile:nth-of-type(5n + 3),
 .sp-icon-btn:nth-of-type(5n + 3) {
   --hover-hue: var(--wednesdays);
 }
-.sp-sidebar-item:nth-of-type(5n + 4),
 .sp-palette-tile:nth-of-type(5n + 4),
 .sp-icon-btn:nth-of-type(5n + 4) {
   --hover-hue: var(--fire);
 }
-.sp-sidebar-item:nth-of-type(5n + 5),
 .sp-palette-tile:nth-of-type(5n + 5),
 .sp-icon-btn:nth-of-type(5n + 5) {
   --hover-hue: var(--sunshine);
@@ -954,18 +949,15 @@ optgroup {
 .sp-palette-tile svg {
   color: var(--state-primary);
 }
-.sp-sidebar-item svg,
 .sp-palette-tile svg,
 .sp-icon-btn svg {
   transition: color var(--dur-state) var(--ease);
 }
 
-[data-theme="dark"] .sp-sidebar-item:hover:not([data-active="true"]) svg,
 [data-theme="dark"] .sp-palette-tile:hover svg,
 [data-theme="dark"] .sp-icon-btn:hover svg {
   color: var(--hover-hue);
 }
-[data-theme="light"] .sp-sidebar-item:hover:not([data-active="true"]),
 [data-theme="light"] .sp-palette-tile:hover,
 [data-theme="light"] .sp-icon-btn:hover {
   background: color-mix(in srgb, var(--hover-hue) 22%, transparent);
