@@ -6,10 +6,10 @@
 
    Palette: five brand colours — Voltage #8FFF6C, Wednesdays #FF94F9,
    Fire #FF6D39, Aqua #7BF2FE, Sunshine #DDFF55 — over the neutrals
-   Ink #272727, White #FFFFFF, and Canvas #F1F1F1. One neutral sits
-   outside the brand palette by design: #181818, the dark-mode canvas, a
-   floor below Ink so Ink can serve as the surface that sits on it. Never
-   treat #181818 as a brand colour or expose it on a brand-facing surface.
+   Ink #272727, White #FFFFFF, and Canvas #F1F1F1. Two neutrals sit
+   outside the brand palette by design: #131313, the dark-mode canvas, and
+   #202020, the dark-mode card surface that sits on it. Never treat either
+   as a brand colour or expose them on a brand-facing surface.
 
    THE GOVERNING RULE: brand colours carry no meaning. They are identity,
    and none of them encodes state — no brand colour means success, error,
@@ -237,22 +237,21 @@ html {
 }
 
 /* ── Semantic: dark ─────────────────────────────────────────────────────────
-   The primary mode. #181818 is the floor; Ink is the surface that sits on
-   it; elevation is surface colour, never shadow. One ladder:
-   #181818 canvas → #272727 surface → #2e2e2e raised → #353535 hover →
-   #3d3d3d border-on-surface. The old parallel canvas-level and on-surface
-   ramps are collapsed onto this single ladder. */
+   The primary mode. #131313 is the floor; cards and every lifted fill
+   share #202020; elevation is surface colour, never shadow. One ladder:
+   #131313 canvas → #202020 surface/raised → #2a2a2a hover →
+   #323232 border-on-surface. */
 [data-theme="dark"] {
-  --bg-canvas: #181818;
-  --bg-surface: #272727;
-  --bg-raised: #2e2e2e;
-  --bg-hover: #353535;
+  --bg-canvas: #131313;
+  --bg-surface: #202020;
+  --bg-raised: #202020;
+  --bg-hover: #2a2a2a;
   --bg-plate: #ffffff; /* imagery plate, never inverts */
   --border: rgba(241, 241, 241, 0.1); /* decorative separation only */
   --border-strong: rgba(241, 241, 241, 0.2);
 
   --text-primary: #f1f1f1;
-  --text-secondary: #a0a0a0; /* 5.71:1 on surface, 4.69:1 on hover */
+  --text-secondary: #a0a0a0; /* 6.2:1 on surface, 5.5:1 on hover */
   --text-muted: rgba(241, 241, 241, 0.4);
   --text-disabled: rgba(241, 241, 241, 0.25);
   --text-on-accent: #272727;
@@ -260,9 +259,9 @@ html {
   --text-on-surface: #f1f1f1;
   --text-on-surface-secondary: #c6c6c6;
   --text-on-surface-muted: #949494;
-  --border-on-surface: #3d3d3d;
-  --bg-surface-raised: #2e2e2e;
-  --bg-surface-hover: #353535;
+  --border-on-surface: #323232;
+  --bg-surface-raised: #202020;
+  --bg-surface-hover: #2a2a2a;
 
   /* Action fill — the primary button, and any control that fills to show it is on.
      Neutral by rule: it inverts against the surface instead of carrying a hue. */
@@ -281,8 +280,8 @@ html {
   --fill-attention: #f1f1f1;
 
   /* Functional signals, outside the brand palette. Clay is lifted from
-     #c94040, which reaches only 3.63:1 on the new canvas and 3.05:1 on
-     surface. #e57373 reads 5.95:1 on canvas and 5.0:1 on surface. */
+     #c94040, which reaches only 3.8:1 on the canvas and 3.3:1 on surface.
+     #e57373 reads 6.2:1 on canvas, 5.4:1 on surface, 4.8:1 on hover. */
   --state-danger-on-surface: #e57373;
   --state-warning-on-surface: #ffd900;
   --state-danger: #e57373;
@@ -295,7 +294,7 @@ html {
      color-mix()'d colour inside a keyframe. Neutral, like every wash. */
   --flash-rgb: 241, 241, 241;
 
-  --ring: #f1f1f1; /* 15.72:1 on canvas, 13.23:1 on surface */
+  --ring: #f1f1f1; /* 16.4:1 on canvas, 14.4:1 on surface */
 
   --shadow-sm: none;
   --shadow-md: none;
