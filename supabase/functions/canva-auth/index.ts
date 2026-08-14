@@ -3,7 +3,21 @@
 // verifier live server-side in canva_oauth_states — the browser sees only
 // the authorize URL and, on return, echoes the code+state pair back here.
 
-import { handleOptions, json, requireRole, serviceClient } from "../_shared/figma.ts";
+import { requireRole, serviceClient } from "../_shared/figma.ts";
+import {
+  GENERIC_ERROR,
+  HttpError,
+  handleOptions,
+  jsonResponder,
+  logError,
+} from "../_shared/http.ts";
+import {
+  optionalString,
+  parseBody,
+  requireAllowedRedirect,
+  requireEnum,
+  requireUuid,
+} from "../_shared/validate.ts";
 import { canvaEnabled, exchangeCanvaCode, makePkcePair, pkceChallenge } from "../_shared/canva.ts";
 
 const AUTHORIZE_URL = "https://www.canva.com/api/oauth/authorize";
@@ -13,15 +27,13 @@ const STATE_TTL_MS = 10 * 60 * 1000;
 Deno.serve(async (req) => {
   const options = handleOptions(req);
   if (options) return options;
+  const json = jsonResponder(req);
   try {
-    const { companyId, action, code, state, redirectUri } = (await req.json()) as {
-      companyId?: string;
-      action?: "status" | "start" | "callback";
-      code?: string;
-      state?: string;
-      redirectUri?: string;
-    };
-    if (!companyId || !action) return json({ error: "companyId and action required" }, 400);
+    const body = await parseBody(req);
+    const companyId = requireUuid(body.companyId, "companyId");
+    const action = requireEnum(body.action, "action", ["status", "start", "callback"] as const);
+    const code = optionalString(body.code, "code", 2048);
+    const state = optionalString(body.state, "state", 256);
 
     const caller = await requireRole(req, companyId, "admin");
     if ("error" in caller) return json({ error: caller.error }, caller.status);
@@ -41,14 +53,20 @@ Deno.serve(async (req) => {
 
     if (!canvaEnabled()) return json({ error: "Canva auto-build is not enabled." }, 501);
 
+    // Both remaining actions hand redirectUri to Canva — it must be one of
+    // OUR origins, same allowlist CORS uses.
+    const redirectUri = requireAllowedRedirect(body.redirectUri, "redirectUri");
+
     if (action === "start") {
-      if (!redirectUri) return json({ error: "redirectUri required" }, 400);
       const { verifier, state: newState } = makePkcePair();
       const challenge = await pkceChallenge(verifier);
       const { error } = await db
         .from("canva_oauth_states")
         .insert({ state: newState, company_id: companyId, code_verifier: verifier });
-      if (error) return json({ error: `Could not start the connection: ${error.message}` }, 500);
+      if (error) {
+        logError("canva-auth", error);
+        return json({ error: "Could not start the connection — try again." }, 500);
+      }
       const url = new URL(AUTHORIZE_URL);
       url.searchParams.set("response_type", "code");
       url.searchParams.set("client_id", Deno.env.get("CANVA_CLIENT_ID") ?? "");
@@ -60,48 +78,49 @@ Deno.serve(async (req) => {
       return json({ authorizeUrl: url.toString() });
     }
 
-    if (action === "callback") {
-      if (!code || !state || !redirectUri)
-        return json({ error: "code, state, redirectUri required" }, 400);
-      const { data: stateRow } = await db
-        .from("canva_oauth_states")
-        .select("state, company_id, code_verifier, created_at")
-        .eq("state", state)
-        .maybeSingle();
-      // Single-use, whatever happens next.
-      await db.from("canva_oauth_states").delete().eq("state", state);
-      const s = stateRow as {
-        company_id: string;
-        code_verifier: string;
-        created_at: string;
-      } | null;
-      if (!s || s.company_id !== companyId) {
-        return json({ error: "This connection attempt doesn't match — start again." }, 400);
-      }
-      if (Date.now() - new Date(s.created_at).getTime() > STATE_TTL_MS) {
-        return json({ error: "The connection attempt expired — start again." }, 400);
-      }
-      const tokens = await exchangeCanvaCode(code, s.code_verifier, redirectUri);
-      const { error } = await db.from("integration_connections").upsert(
-        {
-          company_id: companyId,
-          provider: "canva",
-          access_token: tokens.access_token,
-          refresh_token: tokens.refresh_token ?? null,
-          expires_at: tokens.expires_in
-            ? new Date(Date.now() + tokens.expires_in * 1000).toISOString()
-            : null,
-          scope: SCOPES,
-          connected_by: caller.userId,
-        },
-        { onConflict: "company_id,provider" },
-      );
-      if (error) return json({ error: `Could not save the connection: ${error.message}` }, 500);
-      return json({ connected: true });
+    // action === "callback"
+    if (!code || !state) return json({ error: "code and state required" }, 400);
+    const { data: stateRow } = await db
+      .from("canva_oauth_states")
+      .select("state, company_id, code_verifier, created_at")
+      .eq("state", state)
+      .maybeSingle();
+    // Single-use, whatever happens next.
+    await db.from("canva_oauth_states").delete().eq("state", state);
+    const s = stateRow as {
+      company_id: string;
+      code_verifier: string;
+      created_at: string;
+    } | null;
+    if (!s || s.company_id !== companyId) {
+      return json({ error: "This connection attempt doesn't match — start again." }, 400);
     }
-
-    return json({ error: "Unknown action." }, 400);
+    if (Date.now() - new Date(s.created_at).getTime() > STATE_TTL_MS) {
+      return json({ error: "The connection attempt expired — start again." }, 400);
+    }
+    const tokens = await exchangeCanvaCode(code, s.code_verifier, redirectUri);
+    const { error } = await db.from("integration_connections").upsert(
+      {
+        company_id: companyId,
+        provider: "canva",
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token ?? null,
+        expires_at: tokens.expires_in
+          ? new Date(Date.now() + tokens.expires_in * 1000).toISOString()
+          : null,
+        scope: SCOPES,
+        connected_by: caller.userId,
+      },
+      { onConflict: "company_id,provider" },
+    );
+    if (error) {
+      logError("canva-auth", error);
+      return json({ error: "Could not save the connection — try again." }, 500);
+    }
+    return json({ connected: true });
   } catch (e) {
-    return json({ error: String(e) }, 500);
+    if (e instanceof HttpError) return json({ error: e.message }, e.status);
+    logError("canva-auth", e);
+    return json({ error: GENERIC_ERROR }, 500);
   }
 });

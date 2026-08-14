@@ -1,12 +1,18 @@
 import {
   figmaGet,
   getFigmaToken,
-  handleOptions,
-  json,
   parseFigmaUrl,
   requireRole,
   serviceClient,
 } from "../_shared/figma.ts";
+import {
+  GENERIC_ERROR,
+  HttpError,
+  handleOptions,
+  jsonResponder,
+  logError,
+} from "../_shared/http.ts";
+import { parseBody, requireString, requireStringArray, requireUuid } from "../_shared/validate.ts";
 import { decomposeFrame, type LayerNode, type Unit } from "../_shared/figmaLayers.ts";
 
 /** Decompose a Figma frame into paintable layer units EXCLUDING the nodes the
@@ -21,20 +27,21 @@ import { decomposeFrame, type LayerNode, type Unit } from "../_shared/figmaLayer
 Deno.serve(async (req) => {
   const options = handleOptions(req);
   if (options) return options;
+  const json = jsonResponder(req);
   try {
-    const { companyId, url, excludeNodeIds } = (await req.json()) as {
-      companyId?: string;
-      url?: string;
-      excludeNodeIds?: string[];
-    };
-    if (!companyId || !url || !excludeNodeIds?.length) {
-      return json({ error: "companyId, url, excludeNodeIds required" }, 400);
-    }
+    const body = await parseBody(req);
+    const companyId = requireUuid(body.companyId, "companyId");
+    const url = requireString(body.url, "url", 2048);
+    const excludeNodeIds = requireStringArray(body.excludeNodeIds, "excludeNodeIds", {
+      maxItems: 200,
+      maxLen: 100,
+    });
+
     const caller = await requireRole(req, companyId, "admin");
     if ("error" in caller) return json({ error: caller.error }, caller.status);
 
     const parsed = parseFigmaUrl(url);
-    if (!parsed) return json({ error: "Could not read that frame link." }, 400);
+    if (!parsed) return json({ error: "url must be a figma.com frame link." }, 400);
     const db = serviceClient();
     const token = await getFigmaToken(db, companyId);
     if (!token) return json({ error: "Figma is not connected for this company." }, 400);
@@ -108,7 +115,10 @@ Deno.serve(async (req) => {
       const up = await db.storage
         .from("template-backgrounds")
         .upload(path, await res.arrayBuffer(), { contentType: "image/png" });
-      if (up.error) return json({ error: `Storage upload failed: ${up.error.message}` }, 500);
+      if (up.error) {
+        logError("figma-layers", up.error);
+        return json({ error: "Storage upload failed — try again." }, 500);
+      }
       u.url = db.storage.from("template-backgrounds").getPublicUrl(path).data.publicUrl;
     }
 
@@ -121,6 +131,8 @@ Deno.serve(async (req) => {
       warnings,
     });
   } catch (e) {
-    return json({ error: String(e) }, 500);
+    if (e instanceof HttpError) return json({ error: e.message }, e.status);
+    logError("figma-layers", e);
+    return json({ error: GENERIC_ERROR }, 500);
   }
 });

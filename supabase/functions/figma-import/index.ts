@@ -1,12 +1,18 @@
 import {
   figmaGet,
   getFigmaToken,
-  handleOptions,
-  json,
   parseFigmaUrl,
   requireRole,
   serviceClient,
 } from "../_shared/figma.ts";
+import {
+  GENERIC_ERROR,
+  HttpError,
+  handleOptions,
+  jsonResponder,
+  logError,
+} from "../_shared/http.ts";
+import { optionalEnum, parseBody, requireString, requireUuid } from "../_shared/validate.ts";
 import { type FigmaNode, type SuggestedField, walk } from "../_shared/extract.ts";
 import { decomposeFrame, type LayerNode, type Unit } from "../_shared/figmaLayers.ts";
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
@@ -62,13 +68,12 @@ async function rehost(
 Deno.serve(async (req) => {
   const options = handleOptions(req);
   if (options) return options;
+  const json = jsonResponder(req);
   try {
-    const { companyId, url, mode } = (await req.json()) as {
-      companyId?: string;
-      url?: string;
-      mode?: "template" | "elements";
-    };
-    if (!companyId || !url) return json({ error: "companyId and url required" }, 400);
+    const body = await parseBody(req);
+    const companyId = requireUuid(body.companyId, "companyId");
+    const url = requireString(body.url, "url", 2048);
+    const mode = optionalEnum(body.mode, "mode", ["template", "elements"] as const);
 
     const caller = await requireRole(req, companyId, "admin");
     if ("error" in caller) return json({ error: caller.error }, caller.status);
@@ -76,7 +81,10 @@ Deno.serve(async (req) => {
     const parsed = parseFigmaUrl(url);
     if (!parsed) {
       return json(
-        { error: "Could not read that link — copy a frame link (with node-id) from Figma." },
+        {
+          error:
+            "url must be a figma.com frame link — copy a frame link (with node-id) from Figma.",
+        },
         400,
       );
     }
@@ -114,9 +122,8 @@ Deno.serve(async (req) => {
       const roots = mode === "elements" ? [root] : (root.children ?? []);
       for (const child of roots) walk(child, frame, suggestedFields, warnings, taken, seenIds);
     } catch (e) {
-      warnings.push(
-        `Field detection stopped early (${String(e)}) — map fields manually.`,
-      );
+      logError("figma-import", e);
+      warnings.push("Field detection stopped early — map fields manually.");
     }
 
     // 3. Fixed image elements carry their designed artwork: render each
@@ -131,14 +138,21 @@ Deno.serve(async (req) => {
     for (const f of imageFields) {
       const renderUrl = fieldRenders[f.sourceNodeId];
       const hosted = renderUrl
-        ? await rehost(db, companyId, renderUrl, `${companyId}/elements/${stamp}-${assetIndex++}.png`)
+        ? await rehost(
+            db,
+            companyId,
+            renderUrl,
+            `${companyId}/elements/${stamp}-${assetIndex++}.png`,
+          )
         : null;
       if (hosted) f.staticValue = hosted;
       else {
         // Nothing to show fixed — land it as an (empty) member field so the
         // admin sees the gap instead of an invisible element.
         f.static = undefined;
-        warnings.push(`"${f.label}": the image couldn't be rendered — it landed as an empty field.`);
+        warnings.push(
+          `"${f.label}": the image couldn't be rendered — it landed as an empty field.`,
+        );
       }
     }
 
@@ -178,8 +192,12 @@ Deno.serve(async (req) => {
       for (const u of units) {
         if (!u.url || !u.url.startsWith("http")) continue;
         u.url =
-          (await rehost(db, companyId, u.url, `${companyId}/elements/${stamp}-${assetIndex++}.png`)) ??
-          undefined;
+          (await rehost(
+            db,
+            companyId,
+            u.url,
+            `${companyId}/elements/${stamp}-${assetIndex++}.png`,
+          )) ?? undefined;
         if (!u.url) warnings.push("A layer image failed to download and was skipped.");
       }
 
@@ -205,12 +223,7 @@ Deno.serve(async (req) => {
     const imgBody = (await imgRes.json()) as { images: Record<string, string | null> };
     const renderUrl = imgBody.images[parsed.nodeId];
     if (!renderUrl) return json({ error: "Figma could not render that frame." }, 400);
-    const backgroundUrl = await rehost(
-      db,
-      companyId,
-      renderUrl,
-      `${companyId}/figma-${stamp}.png`,
-    );
+    const backgroundUrl = await rehost(db, companyId, renderUrl, `${companyId}/figma-${stamp}.png`);
     if (!backgroundUrl) return json({ error: "Storage upload failed for the background." }, 500);
 
     if (!suggestedFields.length) {
@@ -228,6 +241,8 @@ Deno.serve(async (req) => {
       sourceUrl: url,
     });
   } catch (e) {
-    return json({ error: String(e) }, 500);
+    if (e instanceof HttpError) return json({ error: e.message }, e.status);
+    logError("figma-import", e);
+    return json({ error: GENERIC_ERROR }, 500);
   }
 });

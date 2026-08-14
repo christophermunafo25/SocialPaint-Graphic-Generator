@@ -218,7 +218,9 @@ export function decompose(node: LayerNode, ctx: DecomposeCtx): void {
   // Container holding an excluded node: paint its own fills, then recurse.
   ctx.units.push(...fillUnits(node, ctx));
   if (node.isMask || (node.effects ?? []).some((e) => e.visible !== false)) {
-    ctx.warnings.push(`"${node.name}": masks/effects on this container can't be reproduced exactly.`);
+    ctx.warnings.push(
+      `"${node.name}": masks/effects on this container can't be reproduced exactly.`,
+    );
   }
   if ((node.strokes ?? []).some((s) => s.visible !== false)) {
     ctx.warnings.push(`"${node.name}": this container's border can't be reproduced exactly.`);

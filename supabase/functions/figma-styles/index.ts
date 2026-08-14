@@ -1,11 +1,18 @@
 import {
   figmaGet,
   getFigmaToken,
-  handleOptions,
-  json,
+  parseFigmaFileKey,
   requireRole,
   serviceClient,
 } from "../_shared/figma.ts";
+import {
+  GENERIC_ERROR,
+  HttpError,
+  handleOptions,
+  jsonResponder,
+  logError,
+} from "../_shared/http.ts";
+import { parseBody, requireString, requireUuid } from "../_shared/validate.ts";
 
 /** Design-system import from Figma: pull a FILE's color + text styles into
  * brand palette entries and type styles. Prefers the file's published styles;
@@ -96,14 +103,16 @@ function textNodeToTypeStyle(name: string, node: StyleNode, taken: Set<string>):
 Deno.serve(async (req) => {
   const options = handleOptions(req);
   if (options) return options;
+  const json = jsonResponder(req);
   try {
-    const { companyId, url } = (await req.json()) as { companyId?: string; url?: string };
-    if (!companyId || !url) return json({ error: "companyId and url required" }, 400);
+    const body = await parseBody(req);
+    const companyId = requireUuid(body.companyId, "companyId");
+    const url = requireString(body.url, "url", 2048);
 
     const caller = await requireRole(req, companyId, "admin");
     if ("error" in caller) return json({ error: caller.error }, caller.status);
-    const fileKey = url.match(/figma\.com\/(?:file|design)\/([a-zA-Z0-9]+)/)?.[1];
-    if (!fileKey) return json({ error: "Could not read a file key from that link." }, 400);
+    const fileKey = parseFigmaFileKey(url);
+    if (!fileKey) return json({ error: "url must be a figma.com file link." }, 400);
 
     const token = await getFigmaToken(serviceClient(), companyId);
     if (!token) return json({ error: "Figma is not connected for this company." }, 400);
@@ -186,6 +195,8 @@ Deno.serve(async (req) => {
 
     return json({ colors, typeStyles });
   } catch (e) {
-    return json({ error: String(e) }, 500);
+    if (e instanceof HttpError) return json({ error: e.message }, e.status);
+    logError("figma-styles", e);
+    return json({ error: GENERIC_ERROR }, 500);
   }
 });

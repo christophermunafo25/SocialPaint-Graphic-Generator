@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { FigmaLayerUnit, TemplateField } from "../types";
-import { assembleElementFields, gradientAngle, mergeOverlayFields, parseRgba } from "./overlayFields";
+import {
+  assembleElementFields,
+  gradientAngle,
+  mergeOverlayFields,
+  parseRgba,
+} from "./overlayFields";
 
 const mkImported = (n: number): TemplateField[] =>
   Array.from({ length: n }, (_, i) => ({
@@ -26,11 +31,38 @@ describe("parseRgba", () => {
 describe("gradientAngle", () => {
   it("maps Figma handles onto the CSS angle convention", () => {
     // Top → bottom paints downward: CSS 180deg.
-    expect(gradientAngle([{ x: 0.5, y: 0 }, { x: 0.5, y: 1 }], 100, 100)).toBe(180);
+    expect(
+      gradientAngle(
+        [
+          { x: 0.5, y: 0 },
+          { x: 0.5, y: 1 },
+        ],
+        100,
+        100,
+      ),
+    ).toBe(180);
     // Bottom → top: CSS 0deg.
-    expect(gradientAngle([{ x: 0.5, y: 1 }, { x: 0.5, y: 0 }], 100, 100)).toBe(0);
+    expect(
+      gradientAngle(
+        [
+          { x: 0.5, y: 1 },
+          { x: 0.5, y: 0 },
+        ],
+        100,
+        100,
+      ),
+    ).toBe(0);
     // Left → right: CSS 90deg.
-    expect(gradientAngle([{ x: 0, y: 0.5 }, { x: 1, y: 0.5 }], 100, 100)).toBe(90);
+    expect(
+      gradientAngle(
+        [
+          { x: 0, y: 0.5 },
+          { x: 1, y: 0.5 },
+        ],
+        100,
+        100,
+      ),
+    ).toBe(90);
   });
 });
 

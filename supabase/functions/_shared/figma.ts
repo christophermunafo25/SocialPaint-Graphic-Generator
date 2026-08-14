@@ -4,21 +4,9 @@
 
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 
-export const corsHeaders: Record<string, string> = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-export function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
-
-export function handleOptions(req: Request): Response | null {
-  return req.method === "OPTIONS" ? new Response("ok", { headers: corsHeaders }) : null;
-}
+// URL parsers live in validate.ts (pure, vitest-covered); re-exported here so
+// the functions keep one import for all Figma plumbing.
+export { parseFigmaFileKey, parseFigmaUrl } from "./validate.ts";
 
 /** Service-role client — bypasses RLS; only ever used server-side. */
 export function serviceClient(): SupabaseClient {
@@ -68,12 +56,4 @@ export async function getFigmaToken(db: SupabaseClient, companyId: string): Prom
 
 export async function figmaGet(path: string, token: string): Promise<Response> {
   return fetch(`https://api.figma.com${path}`, { headers: { "X-Figma-Token": token } });
-}
-
-/** Parse a Figma file/design URL into { fileKey, nodeId }. */
-export function parseFigmaUrl(url: string): { fileKey: string; nodeId: string } | null {
-  const m = url.match(/figma\.com\/(?:file|design)\/([a-zA-Z0-9]+)[^?]*\?(?:.*&)?node-id=([^&]+)/);
-  if (!m) return null;
-  // URL node ids use "12-34"; the API wants "12:34".
-  return { fileKey: m[1], nodeId: decodeURIComponent(m[2]).replace(/-/g, ":") };
 }

@@ -99,9 +99,7 @@ export function cornerRadiusOf(
 
 /** Element opacity as the field stores it (0–100), or undefined at full. */
 export const opacityOf = (node: FigmaNode): number | undefined =>
-  node.opacity !== undefined && node.opacity < 1
-    ? Math.round(node.opacity * 100)
-    : undefined;
+  node.opacity !== undefined && node.opacity < 1 ? Math.round(node.opacity * 100) : undefined;
 
 export const ALIGN: Record<string, "left" | "center" | "right"> = {
   LEFT: "left",

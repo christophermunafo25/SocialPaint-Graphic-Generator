@@ -7,12 +7,26 @@
 import {
   figmaGet,
   getFigmaToken,
-  handleOptions,
-  json,
   parseFigmaUrl,
   requireRole,
   serviceClient,
 } from "../_shared/figma.ts";
+import {
+  GENERIC_ERROR,
+  HttpError,
+  handleOptions,
+  jsonResponder,
+  logError,
+} from "../_shared/http.ts";
+import {
+  optionalString,
+  parseBody,
+  requireEnum,
+  requireNumber,
+  requireOwnStorageUrl,
+  requireString,
+  requireUuid,
+} from "../_shared/validate.ts";
 import {
   figmaFieldsToElements,
   walk,
@@ -87,7 +101,10 @@ async function extractFigma(
   const upload = await db.storage
     .from("template-backgrounds")
     .upload(path, png, { contentType: "image/png" });
-  if (upload.error) throw new HttpError(500, `Storage upload failed: ${upload.error.message}`);
+  if (upload.error) {
+    logError("template-autobuild", upload.error);
+    throw new HttpError(500, "Storage upload failed — try again.");
+  }
   const backgroundUrl = db.storage.from("template-backgrounds").getPublicUrl(path).data.publicUrl;
 
   const scale1Res = await figmaGet(
@@ -108,7 +125,8 @@ async function extractFigma(
     for (const child of root.children ?? [])
       walk(child, frame, suggested, warnings, taken, seenIds);
   } catch (e) {
-    warnings.push(`Element detection stopped early (${String(e)}).`);
+    logError("template-autobuild", e);
+    warnings.push("Element detection stopped early.");
   }
 
   return {
@@ -154,7 +172,10 @@ async function extractCanva(
     const upload = await db.storage
       .from("template-backgrounds")
       .upload(path, png, { contentType: "image/png" });
-    if (upload.error) throw new HttpError(500, `Storage upload failed: ${upload.error.message}`);
+    if (upload.error) {
+      logError("template-autobuild", upload.error);
+      throw new HttpError(500, "Storage upload failed — try again.");
+    }
     const backgroundUrl = db.storage.from("template-backgrounds").getPublicUrl(path).data.publicUrl;
 
     return {
@@ -367,7 +388,8 @@ async function callClaude(
   });
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
-    throw new HttpError(502, `The model request failed (${res.status}). ${detail.slice(0, 200)}`);
+    logError("template-autobuild", `model request failed (${res.status}): ${detail.slice(0, 500)}`);
+    throw new HttpError(502, `The model request failed (${res.status}) — try again.`);
   }
   const body = (await res.json()) as {
     content: Array<{ type: string; id?: string; name?: string; input?: unknown }>;
@@ -443,25 +465,39 @@ async function bakeStaticImages(
 
 // ---------------------------------------------------------------------------
 
-class HttpError extends Error {
-  constructor(
-    readonly status: number,
-    message: string,
-  ) {
-    super(message);
+/** Validate the polymorphic `source` before anything runs. The image kind's
+ * backgroundUrl is fetched SERVER-SIDE later — pinning it to our own Storage
+ * bucket is what keeps this endpoint from being an SSRF primitive. */
+function validateSource(raw: unknown): DesignSource {
+  if (typeof raw !== "object" || raw === null) {
+    throw new HttpError(400, "source must be an object.");
   }
+  const src = raw as Record<string, unknown>;
+  const kind = requireEnum(src.kind, "source.kind", ["figma", "canva", "image"] as const);
+  if (kind === "image") {
+    return {
+      kind,
+      backgroundUrl: requireOwnStorageUrl(
+        src.backgroundUrl,
+        "source.backgroundUrl",
+        "template-backgrounds",
+      ),
+      canvasWidth: requireNumber(src.canvasWidth, "source.canvasWidth", { min: 1, max: 20000 }),
+      canvasHeight: requireNumber(src.canvasHeight, "source.canvasHeight", { min: 1, max: 20000 }),
+    };
+  }
+  return { kind, url: requireString(src.url, "source.url", 2048) };
 }
 
 Deno.serve(async (req) => {
   const options = handleOptions(req);
   if (options) return options;
+  const json = jsonResponder(req);
   try {
-    const { companyId, source, hint } = (await req.json()) as {
-      companyId?: string;
-      source?: DesignSource;
-      hint?: string;
-    };
-    if (!companyId || !source?.kind) return json({ error: "companyId and source required" }, 400);
+    const body = await parseBody(req);
+    const companyId = requireUuid(body.companyId, "companyId");
+    const source = validateSource(body.source);
+    const hint = optionalString(body.hint, "hint", 500);
 
     const caller = await requireRole(req, companyId, "admin");
     if ("error" in caller) return json({ error: caller.error }, caller.status);
@@ -477,7 +513,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    const cleanHint = typeof hint === "string" ? hint.slice(0, 500) : undefined;
     const db = serviceClient();
 
     // 1. Extract.
@@ -485,15 +520,10 @@ Deno.serve(async (req) => {
     if (source.kind === "figma") {
       extraction = await extractFigma(db, companyId, source.url);
     } else if (source.kind === "image") {
-      if (!source.backgroundUrl || !source.canvasWidth || !source.canvasHeight) {
-        return json({ error: "image source needs backgroundUrl, canvasWidth, canvasHeight" }, 400);
-      }
       extraction = extractImage(source);
-    } else if (source.kind === "canva") {
+    } else {
       if (!canvaEnabled()) return json({ error: "Canva auto-build is not enabled." }, 501);
       extraction = await extractCanva(db, companyId, source.url);
-    } else {
-      return json({ error: `Unknown source kind.` }, 400);
     }
 
     // 2. Brand kit + catalog context.
@@ -518,12 +548,7 @@ Deno.serve(async (req) => {
     const imageBase64 = await fetchPngBase64(extraction.modelImageUrl);
 
     // 4. One forced tool call; one retry carrying the validation errors.
-    const userText = buildUserText(
-      extraction,
-      { typeStyles, colors, catalog },
-      cleanHint,
-      source.kind,
-    );
+    const userText = buildUserText(extraction, { typeStyles, colors, catalog }, hint, source.kind);
     let attempt = await callClaude(apiKey, imageBase64, userText);
     let validated;
     try {
@@ -586,6 +611,7 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     if (e instanceof HttpError) return json({ error: e.message }, e.status);
-    return json({ error: String(e) }, 500);
+    logError("template-autobuild", e);
+    return json({ error: GENERIC_ERROR }, 500);
   }
 });

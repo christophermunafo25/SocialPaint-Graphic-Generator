@@ -258,7 +258,14 @@ describe("rule sentences read as names, not raw values", () => {
 
   it("still emits the non-typographic rules unchanged", () => {
     const rules = ruleSentences(
-      { key: "b", name: "Body", uppercase: true, fontSizePx: 32, maxLength: 120, textSizing: "shrink" },
+      {
+        key: "b",
+        name: "Body",
+        uppercase: true,
+        fontSizePx: 32,
+        maxLength: 120,
+        textSizing: "shrink",
+      },
       kit,
     );
     expect(rules).toEqual([

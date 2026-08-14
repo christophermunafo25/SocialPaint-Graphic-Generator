@@ -953,10 +953,7 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
       className="relative w-full select-none touch-none overflow-hidden"
       style={{ aspectRatio: `${canvasWidth} / ${canvasHeight}`, cursor: "crosshair" }}
       onDragOver={(e) => {
-        if (
-          e.dataTransfer.types.includes(PALETTE_MIME) ||
-          e.dataTransfer.types.includes("Files")
-        ) {
+        if (e.dataTransfer.types.includes(PALETTE_MIME) || e.dataTransfer.types.includes("Files")) {
           e.preventDefault();
           e.dataTransfer.dropEffect = "copy";
         }
@@ -968,9 +965,7 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
           onDropElement(paletteId, toCanvas(e));
           return;
         }
-        const files = Array.from(e.dataTransfer.files).filter((f) =>
-          f.type.startsWith("image/"),
-        );
+        const files = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith("image/"));
         if (files.length) {
           e.preventDefault();
           onDropFiles(files, toCanvas(e));

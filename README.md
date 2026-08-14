@@ -49,9 +49,10 @@ Open the printed localhost URL and the first-run wizard walks you through creati
 
 2. Apply the migrations in `supabase/migrations/` (via `supabase db push` or the SQL editor). The database ships empty of tenant data; onboarding creates everything.
 
-3. Deploy the Edge Functions:
+3. Set the CORS origin allowlist, then deploy the Edge Functions. `ALLOWED_ORIGINS` is a comma-separated list of exact origins; a `*` matches one run of letters/digits/hyphens (a Vercel preview hash, a localhost port) and never a dot or slash. Functions fail closed — with the secret unset, no browser origin is allowed and OAuth/invite redirect targets are all rejected.
 
    ```bash
+   supabase secrets set ALLOWED_ORIGINS="https://www.socialpaint.ai,https://socialpaint.ai,http://localhost:*"
    supabase functions deploy figma-status figma-connect figma-import figma-layers figma-styles invite-member
    ```
 

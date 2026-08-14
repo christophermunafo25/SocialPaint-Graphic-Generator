@@ -205,7 +205,12 @@ describe("decomposeFrame edge behavior", () => {
       absoluteBoundingBox: { x: 0, y: 0, width: 100, height: 100 },
       fills: [{ type: "IMAGE", imageRef: "tile", scaleMode: "TILE" }],
       children: [
-        { id: "1:2", name: "t", type: "TEXT", absoluteBoundingBox: { x: 0, y: 0, width: 10, height: 10 } },
+        {
+          id: "1:2",
+          name: "t",
+          type: "TEXT",
+          absoluteBoundingBox: { x: 0, y: 0, width: 10, height: 10 },
+        },
       ],
     };
     const { warnings } = decomposeFrame(f, ["1:2"]);
@@ -219,7 +224,12 @@ describe("decomposeFrame edge behavior", () => {
       type: "FRAME",
       absoluteBoundingBox: { x: 0, y: 0, width: 100, height: 100 },
       children: [
-        { id: "1:2", name: "photo", type: "RECTANGLE", absoluteBoundingBox: { x: 0, y: 0, width: 50, height: 50 } },
+        {
+          id: "1:2",
+          name: "photo",
+          type: "RECTANGLE",
+          absoluteBoundingBox: { x: 0, y: 0, width: 50, height: 50 },
+        },
         {
           id: "1:3",
           name: "Scrim",
@@ -227,7 +237,12 @@ describe("decomposeFrame edge behavior", () => {
           absoluteBoundingBox: { x: 10, y: 10, width: 50, height: 50 },
           fills: [{ type: "SOLID", color: { r: 0, g: 0, b: 0, a: 0.4 } }],
           children: [
-            { id: "1:4", name: "caption", type: "TEXT", absoluteBoundingBox: { x: 12, y: 12, width: 20, height: 10 } },
+            {
+              id: "1:4",
+              name: "caption",
+              type: "TEXT",
+              absoluteBoundingBox: { x: 12, y: 12, width: 20, height: 10 },
+            },
           ],
         },
       ],
@@ -245,7 +260,12 @@ describe("effects geometry", () => {
     type: "FRAME",
     absoluteBoundingBox: { x: 100, y: 100, width: 400, height: 400 },
     children: [
-      { id: "1:2", name: "t", type: "TEXT", absoluteBoundingBox: { x: 110, y: 110, width: 50, height: 20 } },
+      {
+        id: "1:2",
+        name: "t",
+        type: "TEXT",
+        absoluteBoundingBox: { x: 110, y: 110, width: 50, height: 20 },
+      },
       ...(over.children ?? []),
     ],
     ...over,

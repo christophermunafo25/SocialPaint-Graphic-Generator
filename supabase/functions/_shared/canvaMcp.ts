@@ -165,8 +165,17 @@ export class CanvaMcpClient {
   }
 }
 
-/** Parse a Canva design URL into its design id. */
+/** Parse a Canva design URL into its design id, with the host pinned to
+ * canva.com — a canva.com-shaped path on some other host does not pass. */
 export function parseCanvaUrl(url: string): { designId: string } | null {
-  const m = url.match(/canva\.com\/design\/([A-Za-z0-9_-]+)/);
+  let u: URL;
+  try {
+    u = new URL(url);
+  } catch {
+    return null;
+  }
+  if (u.protocol !== "https:") return null;
+  if (u.hostname !== "canva.com" && !u.hostname.endsWith(".canva.com")) return null;
+  const m = u.pathname.match(/^\/design\/([A-Za-z0-9_-]+)(?:\/|$)/);
   return m ? { designId: m[1] } : null;
 }

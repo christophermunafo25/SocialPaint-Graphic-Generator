@@ -1,10 +1,12 @@
-import { figmaGet, handleOptions, json, requireRole, serviceClient } from "../_shared/figma.ts";
-
-interface ConnectBody {
-  companyId?: string;
-  kind?: "pat" | "oauth-code";
-  value?: string;
-}
+import { figmaGet, requireRole, serviceClient } from "../_shared/figma.ts";
+import {
+  GENERIC_ERROR,
+  HttpError,
+  handleOptions,
+  jsonResponder,
+  logError,
+} from "../_shared/http.ts";
+import { parseBody, requireEnum, requireString, requireUuid } from "../_shared/validate.ts";
 
 /** Store a Figma credential for a company.
  *
@@ -15,10 +17,12 @@ interface ConnectBody {
 Deno.serve(async (req) => {
   const options = handleOptions(req);
   if (options) return options;
+  const json = jsonResponder(req);
   try {
-    const { companyId, kind, value } = (await req.json()) as ConnectBody;
-    if (!companyId || !kind || !value)
-      return json({ error: "companyId, kind, value required" }, 400);
+    const body = await parseBody(req);
+    const companyId = requireUuid(body.companyId, "companyId");
+    const kind = requireEnum(body.kind, "kind", ["pat", "oauth-code"] as const);
+    const value = requireString(body.value, "value", 2048);
 
     const caller = await requireRole(req, companyId, "admin");
     if ("error" in caller) return json({ error: caller.error }, caller.status);
@@ -86,9 +90,14 @@ Deno.serve(async (req) => {
       },
       { onConflict: "company_id,provider" },
     );
-    if (error) return json({ error: error.message }, 500);
+    if (error) {
+      logError("figma-connect", error);
+      return json({ error: "Could not save the connection — try again." }, 500);
+    }
     return json({ ok: true });
   } catch (e) {
-    return json({ error: String(e) }, 500);
+    if (e instanceof HttpError) return json({ error: e.message }, e.status);
+    logError("figma-connect", e);
+    return json({ error: GENERIC_ERROR }, 500);
   }
 });
