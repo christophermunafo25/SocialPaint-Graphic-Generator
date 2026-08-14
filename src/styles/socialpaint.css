@@ -2,23 +2,35 @@
    SocialPaint Design System — platform UI tokens.
    Ported from the "SocialPaint Design System" Claude Design project
    (tokens/*.css, SKILL.md, docs/02-tokens.md), 2026-07-30.
+   Final brand palette landed 2026-08-14 (Figma "Brand Assets").
 
-   Palette (Raveo design system, 2026-08-06; Fire removed from chrome
-   2026-08-07 — no orange anywhere in the platform UI): Ink #070708 and
-   Parchment #F9F9F8 are the floors; Volt #B5FF00 is THE primary, Spring
-   #86FF45 informs (2026-08 rebrand ramp: #B5FF00 → #86FF45 → #00FF99).
-   Error Clay #C94040, Warning #FFD900, and the editor's
-   selection Blue #0D99FF sit outside the palette as functional signals —
-   never brand colours, never decorative.
+   Palette: five brand colours — Voltage #8FFF6C, Wednesdays #FF94F9,
+   Fire #FF6D39, Aqua #7BF2FE, Sunshine #DDFF55 — over the neutrals
+   Ink #272727, White #FFFFFF, and Canvas #F1F1F1. One neutral sits
+   outside the brand palette by design: #181818, the dark-mode canvas, a
+   floor below Ink so Ink can serve as the surface that sits on it. Never
+   treat #181818 as a brand colour or expose it on a brand-facing surface.
+
+   THE GOVERNING RULE: brand colours carry no meaning. They are identity,
+   and none of them encodes state — no brand colour means success, error,
+   warning, info, attention, progress, or severity anywhere in the product.
+   A user must never be able to infer status from a hue. Brand colours
+   appear in exactly three places: the brand-moment gradient, chart series
+   (categorical labelling, not severity), and artwork. Emphasis and status
+   tokens resolve to neutrals. Error Clay, Warning #FFD900, and the
+   editor's selection Blue #0D99FF sit outside the palette as functional
+   signals — they keep their meaning and their hues.
 
    Non-negotiables carried from the DS:
    - Soft cards (20px) against crisp controls (5px). Never meet at 12px.
    - One UI weight. Never bold for emphasis — shift colour or use the
      display face.
-   - Volt #B5FF00 is THE primary brand colour: the commit/CTA signal and the
-     dark-mode focus ring, fill-only on light (it cannot clear contrast as
-     text on parchment). Icons and text ON Volt are always Ink #070708
-     (--text-on-volt) — in chrome and in template guidance alike.
+   - Ink #272727 is the only legible glyph colour on any brand fill
+     (--text-on-brand): Voltage 11.87:1, Sunshine 13.17:1, Aqua 11.36:1,
+     Wednesdays 7.72:1, Fire 5.33:1. White text on any of them lands
+     under 3:1 and is a defect. No brand colour clears 3:1 against
+     #FFFFFF or #F1F1F1, so brand colours are fill-only on light and
+     never appear as text or as a border that carries information.
    - No gradients as surface, no drop shadows in either mode, no glass.
    - Headings are Raveo Display SemiBold in sentence case (2026-08-08);
      bold proper is banned everywhere in chrome. Small labels (eyebrows,
@@ -72,20 +84,21 @@ html {
 }
 
 /* ── Primitives ─────────────────────────────────────────────────────────────
-   The five brand colours. These are the only tokens without a category
-   prefix — that is how you tell a primitive at a glance. Never reach past
-   the semantic tier to one of these in product code. */
+   The five brand colours. Identity only: none of these encodes state, and
+   none may be used to signal success, error, warning, or attention. These
+   are the only tokens without a category prefix — that is how you tell a
+   primitive at a glance. Never reach past the semantic tier to one of
+   these in product code. */
 :root {
-  --spring: #86ff45; /* Spring — informs; AI moments (was Aqua/--blue) */
-  --volt: #b5ff00; /* Volt — success, and the commit/CTA action */
-  /* RULE: any icon or text sitting ON Volt is Ink — no exceptions, either
-     theme. Volt is bright enough that only Ink clears contrast on it
-     (~13:1); anything else is a defect. Use this token for every glyph a
-     Volt surface carries. */
-  --text-on-volt: #070708;
-  --white: #f9f9f8;
-  --gray: #f9f9f8;
-  --ink: #070708;
+  --voltage: #8fff6c;
+  --wednesdays: #ff94f9;
+  --fire: #ff6d39;
+  --aqua: #7bf2fe;
+  --sunshine: #ddff55;
+  --text-on-brand: #272727; /* Ink is the only legible glyph on any of the five */
+  --white: #ffffff;
+  --gray: #f1f1f1;
+  --ink: #272727;
 
   /* Typography */
   --font-head: "Raveo Display Platform", "Raveo Display", system-ui, sans-serif;
@@ -221,54 +234,65 @@ html {
 }
 
 /* ── Semantic: dark ─────────────────────────────────────────────────────────
-   The primary mode. Ink is the floor; elevation is surface colour, never
-   shadow. */
+   The primary mode. #181818 is the floor; Ink is the surface that sits on
+   it; elevation is surface colour, never shadow. One ladder:
+   #181818 canvas → #272727 surface → #2e2e2e raised → #353535 hover →
+   #3d3d3d border-on-surface. The old parallel canvas-level and on-surface
+   ramps are collapsed onto this single ladder. */
 [data-theme="dark"] {
-  --bg-canvas: #070708;
-  --bg-surface: #18191a;
-  --bg-raised: #1f1f1f;
-  --bg-hover: #2a2a2b;
-  --bg-plate: #ffffff; /* imagery plate — never inverts */
+  --bg-canvas: #181818;
+  --bg-surface: #272727;
+  --bg-raised: #2e2e2e;
+  --bg-hover: #353535;
+  --bg-plate: #ffffff; /* imagery plate, never inverts */
   --border: rgba(241, 241, 241, 0.1); /* decorative separation only */
   --border-strong: rgba(241, 241, 241, 0.2);
 
   --text-primary: #f1f1f1;
-  --text-secondary: #a0a0a0;
+  --text-secondary: #a0a0a0; /* 5.71:1 on surface, 4.69:1 on hover */
   --text-muted: rgba(241, 241, 241, 0.4);
   --text-disabled: rgba(241, 241, 241, 0.25);
-  --text-on-accent: #070708;
+  --text-on-accent: #272727;
 
-  --text-on-surface: #f9f9f8;
-  --text-on-surface-secondary: #c6c6c2;
-  --text-on-surface-muted: #949490;
-  --border-on-surface: #2b2b2b;
-  --bg-surface-raised: #262626;
-  --bg-surface-hover: #303030;
+  --text-on-surface: #f1f1f1;
+  --text-on-surface-secondary: #c6c6c6;
+  --text-on-surface-muted: #949494;
+  --border-on-surface: #3d3d3d;
+  --bg-surface-raised: #2e2e2e;
+  --bg-surface-hover: #353535;
 
   /* Action fill — the primary button, and any control that fills to show it is on.
-     Neutral by rule: it inverts against the surface instead of carrying a hue,
-     which is what keeps Volt's meaning single: commit, success, primary. */
-  --fill-action: #f9f9f8;
-  --text-on-action: #070708;
-  --border-control: #f9f9f8; /* the edge of a pressable outlined control */
+     Neutral by rule: it inverts against the surface instead of carrying a hue. */
+  --fill-action: #f1f1f1;
+  --text-on-action: #272727;
+  --border-control: #f1f1f1; /* the edge of a pressable outlined control */
 
-  --state-primary-on-surface: #b5ff00; /* Volt — THE brand primary */
-  --state-attention-on-surface: #b5ff00;
-  --state-danger-on-surface: #c94040; /* 4.35:1 — one ramp step lighter than light mode */
+  /* Emphasis and status are neutral. Brand hues never appear here. */
+  --state-primary-on-surface: #f1f1f1;
+  --state-attention-on-surface: #f1f1f1;
+  --state-primary: #f1f1f1;
+  --fill-primary: #f1f1f1;
+  --state-info: #f1f1f1;
+  --fill-info: #f1f1f1;
+  --state-attention: #f1f1f1;
+  --fill-attention: #f1f1f1;
+
+  /* Functional signals, outside the brand palette. Clay is lifted from
+     #c94040, which reaches only 3.63:1 on the new canvas and 3.05:1 on
+     surface. #e57373 reads 5.95:1 on canvas and 5.0:1 on surface. */
+  --state-danger-on-surface: #e57373;
   --state-warning-on-surface: #ffd900;
-
-  --state-primary: #b5ff00;
-  --fill-primary: #b5ff00; /* Volt — THE brand primary */
-  --state-info: #86ff45;
-  --fill-info: #86ff45;
-  --state-attention: #b5ff00;
-  --fill-attention: #b5ff00;
-  --state-danger: #c94040;
-  --fill-danger: #c94040;
+  --state-danger: #e57373;
+  --fill-danger: #e57373;
   --state-warning: #ffd900;
   --fill-warning: #ffd900;
 
-  --ring: #b5ff00; /* Volt · ~15:1 against the deep-ink canvas */
+  /* Confirm-flash wash as a bare rgb triplet — the keyframes below need a
+     literal rgba() because Chrome drops the alpha when it interpolates a
+     color-mix()'d colour inside a keyframe. Neutral, like every wash. */
+  --flash-rgb: 241, 241, 241;
+
+  --ring: #f1f1f1; /* 15.72:1 on canvas, 13.23:1 on surface */
 
   --shadow-sm: none;
   --shadow-md: none;
@@ -277,54 +301,58 @@ html {
 }
 
 /* ── Semantic: light ────────────────────────────────────────────────────────
-   Gray canvas; borders carry separation. Signals keep their hue as text; the
-   brand accent does not. */
+   The brand board's pairing: #F1F1F1 field with #FFFFFF cards; borders
+   carry separation. */
 [data-theme="light"] {
-  --bg-canvas: #f9f9f8;
+  --bg-canvas: #f1f1f1;
   --bg-surface: #ffffff;
-  --bg-raised: #f1f1f1;
-  --bg-hover: #ececea;
+  --bg-raised: #e8e8e8;
+  --bg-hover: #e2e2e2;
   --bg-plate: #ffffff;
-  --border: rgba(7, 7, 8, 0.08);
-  --border-strong: rgba(7, 7, 8, 0.16);
+  --border: rgba(39, 39, 39, 0.08);
+  --border-strong: rgba(39, 39, 39, 0.16);
 
-  --text-primary: #070708;
+  --text-primary: #272727;
   --text-secondary: #666666;
-  --text-muted: rgba(7, 7, 8, 0.4);
-  --text-disabled: rgba(7, 7, 8, 0.25);
-  --text-on-accent: #070708;
+  --text-muted: rgba(39, 39, 39, 0.4);
+  --text-disabled: rgba(39, 39, 39, 0.25);
+  --text-on-accent: #272727;
 
-  --text-on-surface: #070708;
-  --text-on-surface-secondary: #4a4a46;
-  --text-on-surface-muted: #6e6e6a;
-  --border-on-surface: #e2e2de;
-  --bg-surface-raised: #f0f0ee;
-  --bg-surface-hover: #e7e7e4;
+  --text-on-surface: #272727;
+  --text-on-surface-secondary: #4a4a4a;
+  --text-on-surface-muted: #6e6e6e;
+  --border-on-surface: #e2e2e2;
+  --bg-surface-raised: #f0f0f0;
+  --bg-surface-hover: #e7e7e7;
 
-  --fill-action: #070708;
-  --text-on-action: #f9f9f8;
-  --border-control: #070708;
+  --fill-action: #272727;
+  --text-on-action: #f1f1f1;
+  --border-control: #272727;
 
-  /* Signals keep their hue as text; the brand accent does not. Success and warning drop
-     to the darkest step of their own ramp that clears AA. The primary collapses to Black —
-     a coloured word in running text would read as a status. The bright stays in --fill-*. */
-  --state-primary-on-surface: #070708; /* Volt is fill-only — as text the primary stays ink */
-  --state-attention-on-surface: #467200; /* Green holds its hue as text · 5.44:1 */
+  /* Emphasis and status are neutral. Brand hues never appear here — no
+     brand colour clears 3:1 on this canvas anyway, so they are fill-only
+     on light and never text. */
+  --state-primary-on-surface: #272727;
+  --state-attention-on-surface: #272727;
+  --state-primary: #272727;
+  --fill-primary: #272727;
+  --state-info: #272727;
+  --fill-info: #272727;
+  --state-attention: #272727;
+  --fill-attention: #272727;
+
+  /* Functional signals, outside the brand palette. */
   --state-danger-on-surface: #c94040;
   --state-warning-on-surface: #756200;
-
-  --state-primary: #070708;
-  --fill-primary: #b5ff00; /* Volt — THE brand primary, fill-only on light */
-  --state-info: #070708;
-  --fill-info: #86ff45;
-  --state-attention: #070708;
-  --fill-attention: #b5ff00;
   --state-danger: #c94040;
   --fill-danger: #c94040;
   --state-warning: #756200;
   --fill-warning: #ffd900;
 
-  --ring: #070708; /* ink — Volt (1.5:1) and Fire (2.3:1) both miss the 3:1 non-text floor on parchment */
+  /* See the dark block for why this is a bare rgb triplet. */
+  --flash-rgb: 39, 39, 39;
+
+  --ring: #272727; /* 13.23:1 on the light canvas */
 
   --shadow-sm: none;
   --shadow-md: none;
@@ -352,18 +380,25 @@ html {
   --danger-wash: color-mix(in srgb, var(--state-danger) 16%, transparent);
 
   /* Brand-moment surface — the sign-in and onboarding front doors. The one
-     sanctioned gradient in the chrome (Chris, 2026-08-07): Volt grounding
-     the bottom-left, Aqua lifting the top-right — the brand's two colours
-     in one sweep. Ink is the fg across the WHOLE ramp: it reads ~13:1 on
-     Volt and ~14:1 on Aqua, so --brand-surface-fg never changes. */
-  --brand-surface: linear-gradient(to top right, var(--volt), var(--spring));
-  --brand-surface-fg: var(--text-on-volt);
+     sanctioned gradient in the chrome: Voltage grounding the bottom-left,
+     Sunshine lifting the top-right — the two greens make the cleaner sweep
+     (Voltage into Aqua crosses too much hue for a surface). Ink is the fg
+     across the WHOLE ramp, so --brand-surface-fg never changes. */
+  --brand-surface: linear-gradient(to top right, var(--voltage), var(--sunshine));
+  --brand-surface-fg: var(--text-on-brand);
 
-  /* Charts are not controls, so accents are legitimate here. Two real series:
-     Volt and Aqua. A third has to separate by shape or label, not colour. */
-  --viz-downloads: var(--fill-primary);
-  --viz-opens: var(--fill-info);
+  /* Charts label categories, so distinct hues are legitimate here — they
+     carry no severity, and no series colour may ever be read as one.
+     Decoupled from the state tokens, which are neutral and would render
+     every series identically. */
+  --viz-series-1: var(--voltage);
+  --viz-series-2: var(--aqua);
+  --viz-series-3: var(--wednesdays);
+  --viz-series-4: var(--fire);
   --viz-grid: var(--border);
+  /* Aliases for existing consumers; migrate to the series tokens. */
+  --viz-downloads: var(--viz-series-1);
+  --viz-opens: var(--viz-series-2);
 
   /* Sidebar */
   --sb-width: 260px;
@@ -384,9 +419,10 @@ html {
   --btn-primary-bg-hover: color-mix(in srgb, var(--text-on-action) 8%, var(--fill-action));
 }
 
+/* Selection is neutral system-wide, like every other selection surface. */
 ::selection {
-  background: var(--volt);
-  color: var(--text-on-volt);
+  background: var(--accent-wash-strong);
+  color: var(--text-primary);
 }
 
 /* ── Base ───────────────────────────────────────────────────────────────── */
@@ -513,13 +549,14 @@ optgroup {
   background: var(--bg-hover);
   color: var(--text-primary);
 }
-/* Lime CTA — same fill both modes; deep green carries the text */
+/* Solar — the loud variant. Decorative volume, not meaning: Voltage leads
+   the artwork, so it leads here. Ink carries every glyph on it. */
 .sp-btn-solar {
-  background: var(--volt);
-  color: var(--text-on-volt);
+  background: var(--voltage);
+  color: var(--text-on-brand);
 }
 .sp-btn-solar:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--volt) 86%, #fff);
+  background: color-mix(in srgb, var(--voltage) 86%, #fff);
 }
 
 .sp-input {
@@ -684,9 +721,10 @@ optgroup {
   border-radius: var(--radius-card);
 }
 
-/* Brand-moment surface (hero headers, identity chips). The Volt→Aqua
-   gradient — everything ON it is Ink, no exceptions, both themes (the
-   on-Volt rule extends across the ramp; white never clears contrast here). */
+/* Brand-moment surface (hero headers, identity chips). The Voltage→Sunshine
+   gradient — everything ON it is Ink, no exceptions, both themes (Ink is
+   the only legible glyph on any brand fill; white never clears contrast
+   here). */
 .sp-mesh {
   background: var(--brand-surface);
   color: var(--brand-surface-fg);
@@ -1345,7 +1383,7 @@ optgroup {
 /* --- Inline edit ----------------------------------------------------------
    Click-to-edit-in-place: a value reads as plain text with a pencil that
    fades in on hover/focus, then swaps to a pre-filled input with save and
-   cancel buttons. Enter saves, Escape cancels, a lime flash confirms.
+   cancel buttons. Enter saves, Escape cancels, a neutral flash confirms.
 
    The interaction model and every timing value are lifted from the BYQ
    Supply "InlineEdit" gem; the colors, type, radii and focus ring are ours.
@@ -1494,8 +1532,8 @@ optgroup {
     color 0.13s ease;
 }
 
-/* Save wears the DS primary construction: deep green + lime on light, the
-   inverse on dark. */
+/* Save wears the primary construction: the neutral action fill, inverting
+   per theme. */
 .sp-inline-edit__save {
   background: var(--btn-primary-bg);
   color: var(--btn-primary-fg);
@@ -1520,18 +1558,19 @@ optgroup {
 }
 
 /* ── Confirm flash ──
-   Literal rgba of --volt (#B5FF00), not color-mix: Chrome drops the alpha
-   when it interpolates a color-mix()'d color() inside a keyframe, which
-   turns the wash into a solid lime bar. */
+   Neutral wash (the theme's --flash-rgb triplet), built as literal rgba()
+   rather than color-mix: Chrome drops the alpha when it interpolates a
+   color-mix()'d color() inside a keyframe, which turns the wash into a
+   solid bar. */
 @keyframes sp-inline-edit-flash {
   0% {
-    background-color: rgba(181, 255, 0, 0.18);
+    background-color: rgba(var(--flash-rgb), 0.18);
   }
   60% {
-    background-color: rgba(181, 255, 0, 0.12);
+    background-color: rgba(var(--flash-rgb), 0.12);
   }
   100% {
-    background-color: rgba(181, 255, 0, 0);
+    background-color: rgba(var(--flash-rgb), 0);
   }
 }
 
@@ -2032,16 +2071,17 @@ optgroup {
   color: var(--text-primary);
 }
 
-/* Solar is the system's commit variant: the action that sends work to the world.
-   Green is near-white in luminance, so the fill cannot bound itself on a light
-   canvas (1.13:1) and takes a darker green edge at 5.44:1 light / 3.27:1 dark. */
+/* Solar — the loud variant, restated here so it survives the cascade. It
+   carries no meaning. Voltage is near-white in luminance, so the fill
+   cannot bound itself on a light canvas and takes the neutral strong
+   border as a decorative edge. */
 .sp-btn-solar {
-  background: var(--fill-attention);
-  color: #070708;
-  border-color: #467200;
+  background: var(--voltage);
+  color: var(--text-on-brand);
+  border-color: var(--border-strong);
 }
 .sp-btn-solar:hover:not(:disabled) {
-  background: color-mix(in srgb, #070708 8%, var(--fill-attention));
+  background: color-mix(in srgb, var(--voltage) 86%, #fff);
 }
 
 /* Destructive is outlined, never filled: a red fill outranks the primary action
@@ -2073,7 +2113,8 @@ optgroup {
   border-color: var(--ring);
 }
 
-/* Tone-carrying feedback keeps its hue — these are signals, not controls. */
+/* Functional signals (danger, warning) keep their hue. Success takes the
+   neutral emphasis fill — no brand colour, and no hue, means success. */
 .sp-toast[data-tone="danger"] {
   border-top-color: var(--state-danger);
 }

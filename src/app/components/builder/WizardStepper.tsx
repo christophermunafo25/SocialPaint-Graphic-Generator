@@ -71,14 +71,14 @@ export function WizardStepper({ current, complete, canGo, onGo }: WizardStepperP
                   fontSize: 10,
                   fontFamily: "var(--font-mono)",
                   background: isComplete
-                    ? "var(--volt)"
+                    ? "var(--fill-action)"
                     : isCurrent
                       ? "var(--btn-primary-bg)"
                       : "var(--bg-hover)",
                   color: isCurrent
                     ? "var(--btn-primary-fg)"
                     : isComplete
-                      ? "var(--text-on-accent)"
+                      ? "var(--text-on-action)"
                       : "var(--text-primary)",
                 }}
               >

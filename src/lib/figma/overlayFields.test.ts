@@ -22,7 +22,7 @@ const mkImported = (n: number): TemplateField[] =>
 
 describe("parseRgba", () => {
   it("splits color and alpha", () => {
-    expect(parseRgba("rgba(7, 7, 8, 0.500)")).toEqual({ hex: "#070708", alpha: 0.5 });
+    expect(parseRgba("rgba(39, 39, 39, 0.500)")).toEqual({ hex: "#272727", alpha: 0.5 });
     expect(parseRgba("rgba(255, 255, 255, 1.000)")).toEqual({ hex: "#FFFFFF", alpha: 1 });
     expect(parseRgba("nonsense")).toEqual({ hex: "#111111", alpha: 1 });
   });
@@ -110,7 +110,7 @@ describe("overlayUnitsToFields", () => {
         y: 2,
         width: 3,
         height: 4,
-        color: "rgba(7, 7, 8, 0.4)",
+        color: "rgba(39, 39, 39, 0.4)",
         afterExcluded: 1,
       },
       {
@@ -121,8 +121,8 @@ describe("overlayUnitsToFields", () => {
         width: 100,
         height: 200,
         stops: [
-          { position: 0, color: "rgba(7, 7, 8, 0.000)" },
-          { position: 1, color: "rgba(7, 7, 8, 1.000)" },
+          { position: 0, color: "rgba(39, 39, 39, 0.000)" },
+          { position: 1, color: "rgba(39, 39, 39, 1.000)" },
         ],
         handles: [
           { x: 0.5, y: 0 },
@@ -137,7 +137,7 @@ describe("overlayUnitsToFields", () => {
       type: "shape",
       shape: "rect",
       static: true,
-      colorHex: "#070708",
+      colorHex: "#272727",
       opacity: 40,
     });
     expect(fields[1].textGradient).toMatchObject({ angle: 180 });

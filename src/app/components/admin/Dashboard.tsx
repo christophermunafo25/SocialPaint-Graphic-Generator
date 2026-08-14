@@ -172,13 +172,13 @@ export function Dashboard() {
               label="Total exports"
               value={String(summary.totalDownloads)}
               Icon={Download}
-              chip="var(--viz-downloads)"
+              chip="var(--viz-series-1)"
             />
             <Kpi
               label="Total opens"
               value={String(totalOpens)}
               Icon={Eye}
-              chip="var(--viz-opens)"
+              chip="var(--viz-series-2)"
             />
             <Kpi
               label="Export rate"
@@ -201,8 +201,8 @@ export function Dashboard() {
             <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
               <h2 className="sp-panel-title">Activity — last 30 days</h2>
               <div className="flex items-center gap-4">
-                <LegendChip color="var(--viz-downloads)" label="Downloads" total={trendDownloads} />
-                <LegendChip color="var(--viz-opens)" label="Opens" total={trendOpens} />
+                <LegendChip color="var(--viz-series-1)" label="Downloads" total={trendDownloads} />
+                <LegendChip color="var(--viz-series-2)" label="Opens" total={trendOpens} />
               </div>
             </div>
             {trendState.status === "error" ? (
@@ -264,9 +264,9 @@ export function Dashboard() {
                       type="monotone"
                       dataKey="downloads"
                       name="Downloads"
-                      stroke="var(--viz-downloads)"
+                      stroke="var(--viz-series-1)"
                       strokeWidth={2}
-                      fill="var(--viz-downloads)"
+                      fill="var(--viz-series-1)"
                       fillOpacity={0.14}
                       dot={false}
                       activeDot={{ r: 4, strokeWidth: 0 }}
@@ -275,9 +275,9 @@ export function Dashboard() {
                       type="monotone"
                       dataKey="opens"
                       name="Opens"
-                      stroke="var(--viz-opens)"
+                      stroke="var(--viz-series-2)"
                       strokeWidth={2}
-                      fill="var(--viz-opens)"
+                      fill="var(--viz-series-2)"
                       fillOpacity={0.14}
                       dot={false}
                       activeDot={{ r: 4, strokeWidth: 0 }}
@@ -324,7 +324,7 @@ export function Dashboard() {
                       style={{
                         height: 6,
                         borderRadius: "var(--radius-pill)",
-                        background: "var(--viz-downloads)",
+                        background: "var(--viz-series-1)",
                         width: `${Math.max(2, (r.downloads / maxCount) * 100)}%`,
                       }}
                     />
@@ -333,7 +333,7 @@ export function Dashboard() {
                       style={{
                         height: 6,
                         borderRadius: "var(--radius-pill)",
-                        background: "var(--viz-opens)",
+                        background: "var(--viz-series-2)",
                         width: `${Math.max(2, (r.opens / maxCount) * 100)}%`,
                         marginTop: 2,
                       }}
@@ -351,11 +351,11 @@ export function Dashboard() {
                 style={{ borderTop: "1px solid var(--border)" }}
               >
                 <LegendChip
-                  color="var(--viz-downloads)"
+                  color="var(--viz-series-1)"
                   label="Downloads"
                   total={summary.totalDownloads}
                 />
-                <LegendChip color="var(--viz-opens)" label="Opens" total={totalOpens} />
+                <LegendChip color="var(--viz-series-2)" label="Opens" total={totalOpens} />
               </div>
             </div>
 
