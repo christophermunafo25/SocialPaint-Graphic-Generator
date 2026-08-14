@@ -2,23 +2,35 @@
    SocialPaint Design System — platform UI tokens.
    Ported from the "SocialPaint Design System" Claude Design project
    (tokens/*.css, SKILL.md, docs/02-tokens.md), 2026-07-30.
+   Final brand palette landed 2026-08-14 (Figma "Brand Assets").
 
-   Palette (Raveo design system, 2026-08-06; Fire removed from chrome
-   2026-08-07 — no orange anywhere in the platform UI): Ink #070708 and
-   Parchment #F9F9F8 are the floors; Volt #B5FF00 is THE primary, Spring
-   #86FF45 informs (2026-08 rebrand ramp: #B5FF00 → #86FF45 → #00FF99).
-   Error Clay #C94040, Warning #FFD900, and the editor's
-   selection Blue #0D99FF sit outside the palette as functional signals —
-   never brand colours, never decorative.
+   Palette: five brand colours — Voltage #8FFF6C, Wednesdays #FF94F9,
+   Fire #FF6D39, Aqua #7BF2FE, Sunshine #DDFF55 — over the neutrals
+   Ink #272727, White #FFFFFF, and Canvas #F1F1F1. One neutral sits
+   outside the brand palette by design: #181818, the dark-mode canvas, a
+   floor below Ink so Ink can serve as the surface that sits on it. Never
+   treat #181818 as a brand colour or expose it on a brand-facing surface.
+
+   THE GOVERNING RULE: brand colours carry no meaning. They are identity,
+   and none of them encodes state — no brand colour means success, error,
+   warning, info, attention, progress, or severity anywhere in the product.
+   A user must never be able to infer status from a hue. Brand colours
+   appear in exactly three places: the brand-moment gradient, chart series
+   (categorical labelling, not severity), and artwork. Emphasis and status
+   tokens resolve to neutrals. Error Clay, Warning #FFD900, and the
+   editor's selection Blue #0D99FF sit outside the palette as functional
+   signals — they keep their meaning and their hues.
 
    Non-negotiables carried from the DS:
    - Soft cards (20px) against crisp controls (5px). Never meet at 12px.
    - One UI weight. Never bold for emphasis — shift colour or use the
      display face.
-   - Volt #B5FF00 is THE primary brand colour: the commit/CTA signal and the
-     dark-mode focus ring, fill-only on light (it cannot clear contrast as
-     text on parchment). Icons and text ON Volt are always Ink #070708
-     (--text-on-volt) — in chrome and in template guidance alike.
+   - Ink #272727 is the only legible glyph colour on any brand fill
+     (--text-on-brand): Voltage 11.87:1, Sunshine 13.17:1, Aqua 11.36:1,
+     Wednesdays 7.72:1, Fire 5.33:1. White text on any of them lands
+     under 3:1 and is a defect. No brand colour clears 3:1 against
+     #FFFFFF or #F1F1F1, so brand colours are fill-only on light and
+     never appear as text or as a border that carries information.
    - No gradients as surface, no drop shadows in either mode, no glass.
    - Headings are Raveo Display SemiBold in sentence case (2026-08-08);
      bold proper is banned everywhere in chrome. Small labels (eyebrows,
@@ -709,9 +721,10 @@ optgroup {
   border-radius: var(--radius-card);
 }
 
-/* Brand-moment surface (hero headers, identity chips). The Volt→Aqua
-   gradient — everything ON it is Ink, no exceptions, both themes (the
-   on-Volt rule extends across the ramp; white never clears contrast here). */
+/* Brand-moment surface (hero headers, identity chips). The Voltage→Sunshine
+   gradient — everything ON it is Ink, no exceptions, both themes (Ink is
+   the only legible glyph on any brand fill; white never clears contrast
+   here). */
 .sp-mesh {
   background: var(--brand-surface);
   color: var(--brand-surface-fg);
@@ -1370,7 +1383,7 @@ optgroup {
 /* --- Inline edit ----------------------------------------------------------
    Click-to-edit-in-place: a value reads as plain text with a pencil that
    fades in on hover/focus, then swaps to a pre-filled input with save and
-   cancel buttons. Enter saves, Escape cancels, a lime flash confirms.
+   cancel buttons. Enter saves, Escape cancels, a neutral flash confirms.
 
    The interaction model and every timing value are lifted from the BYQ
    Supply "InlineEdit" gem; the colors, type, radii and focus ring are ours.
@@ -1519,8 +1532,8 @@ optgroup {
     color 0.13s ease;
 }
 
-/* Save wears the DS primary construction: deep green + lime on light, the
-   inverse on dark. */
+/* Save wears the primary construction: the neutral action fill, inverting
+   per theme. */
 .sp-inline-edit__save {
   background: var(--btn-primary-bg);
   color: var(--btn-primary-fg);
@@ -2100,7 +2113,8 @@ optgroup {
   border-color: var(--ring);
 }
 
-/* Tone-carrying feedback keeps its hue — these are signals, not controls. */
+/* Functional signals (danger, warning) keep their hue. Success takes the
+   neutral emphasis fill — no brand colour, and no hue, means success. */
 .sp-toast[data-tone="danger"] {
   border-top-color: var(--state-danger);
 }

@@ -22,8 +22,9 @@ import markSvg from "@/assets/socialpaint/mark.svg";
 
 const LS_COLLAPSED = "sp-sidebar-collapsed";
 
-/** The SocialPaint mark — the gradient monogram from the 2026-08 rebrand
- * (#B5FF00 → #86FF45 → #00FF99). The gradient is baked into the artwork and
+/** The SocialPaint mark — the gradient monogram. The current artwork
+ * predates the final brand palette and awaits a fresh export from the
+ * Brand Assets Figma file. The gradient is baked into the artwork and
  * reads on light and dark surfaces alike. Used where the full lockup
  * doesn't fit (collapsed nav, dashboard hero). */
 export function BrandMark({ width = 28 }: { width?: number }) {
