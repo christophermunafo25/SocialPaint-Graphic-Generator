@@ -1,688 +1,361 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Check, Plus, Star, Trash2, Upload } from "lucide-react";
-import type { BrandColor, BrandTypeStyle, FontRef, TemplateSchema } from "@/lib/types";
-import { stores } from "@/lib/stores";
-import { useAsync } from "@/lib/useAsync";
-import { useAuth } from "@/lib/auth/AuthContext";
+import React, { useState } from "react";
+import { ArrowUpRight, Import, Star } from "lucide-react";
+import type { BrandColor, BrandTypeStyle } from "@/lib/types";
 import { useBrand } from "@/lib/brand/BrandContext";
-import { GOOGLE_FONTS, loadGoogleFonts, registerCustomFont } from "@/lib/render/fonts";
-import { FONT_ACCEPT, inspectFontFile } from "@/lib/brand/fontUpload";
+import { useRouter, type BrandCategory } from "../../router";
+import { styleName, toFontStyle } from "@/lib/render/fontCatalog";
 import { DEFAULT_PALETTE, DEFAULT_TYPE_STYLES } from "@/lib/theme";
-import { TypeStylesEditor } from "./TypeStylesEditor";
-import { DesignSystemImportPanel } from "./DesignSystemImportPanel";
-import { ColorControl } from "../ColorControl";
 import { Page, PageHeader } from "../layout/Page";
-import { ConfirmDialog } from "../ConfirmDialog";
-import { useFileDrop } from "@/lib/useFileDrop";
-import { useUnsavedChangesWarning } from "@/lib/useUnsavedChangesWarning";
+import { DesignSystemImportPanel } from "./DesignSystemImportPanel";
+import { ColorsDetail } from "./brand/ColorsDetail";
+import { TypographyDetail } from "./brand/TypographyDetail";
+import { LogosDetail } from "./brand/LogosDetail";
+import { TypeStylesDetail } from "./brand/TypeStylesDetail";
+import { useKitSave } from "./brand/kitPlumbing";
 
-/** A font file mid-upload: chip enters, shimmers, flips to done, leaves. */
-interface PendingFontChip {
-  key: string;
-  name: string;
-  done: boolean;
-  leaving: boolean;
+/** Brand Studio: an overview dashboard where each category card answers
+ * "what is our brand set to," and opening a card answers "change it."
+ * Categories are routes (/brand-studio/<category>) — linkable, back-button
+ * correct, refresh-safe. */
+export function BrandStudio({ category }: { category?: BrandCategory }) {
+  switch (category) {
+    case "colors":
+      return <ColorsDetail />;
+    case "typography":
+      return <TypographyDetail />;
+    case "logos":
+      return <LogosDetail />;
+    case "type-styles":
+      return <TypeStylesDetail />;
+    default:
+      return <BrandOverview />;
+  }
 }
 
-/** Fields/templates bound to one style or color key. */
-interface BindingUsage {
-  fields: number;
-  templateNames: string[];
-}
+const OVERVIEW_SWATCH_CAP = 8;
+const OVERVIEW_STYLE_CAP = 4;
 
-const usageLabel = (u: BindingUsage | undefined): string =>
-  !u || u.fields === 0
-    ? "Not used yet"
-    : `Used by ${u.fields} field${u.fields === 1 ? "" : "s"} in ${u.templateNames.length} template${u.templateNames.length === 1 ? "" : "s"}`;
+function BrandOverview() {
+  const { kit, assets } = useBrand();
+  const { navigate } = useRouter();
+  const { save } = useKitSave();
+  const [importOpen, setImportOpen] = useState(false);
 
-/** Brand Studio: the company's palette, fonts (Google + uploaded), and logos.
- * Every template field styles itself from here — nothing is hardcoded. */
-export function BrandStudio() {
-  const { company } = useAuth();
-  const { kit, assets, refresh } = useBrand();
-
-  const [colors, setColors] = useState<BrandColor[]>(kit?.colors ?? DEFAULT_PALETTE);
-  const [typeStyles, setTypeStyles] = useState<BrandTypeStyle[]>(
-    kit?.typeStyles ?? DEFAULT_TYPE_STYLES,
-  );
-  const [guidelines, setGuidelines] = useState<string[]>(kit?.guidelines ?? []);
-  const [headingFont, setHeadingFont] = useState<FontRef>(
-    kit?.headingFont ?? { source: "google", family: "Montserrat" },
-  );
-  const [bodyFont, setBodyFont] = useState<FontRef>(
-    kit?.bodyFont ?? { source: "google", family: "Inter" },
-  );
-  const [primaryLogoAssetId, setPrimaryLogoAssetId] = useState(kit?.primaryLogoAssetId);
-  const [saving, setSaving] = useState(false);
-  const [savedTick, setSavedTick] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Sync the working copy from the kit ONLY when a different kit arrives
-  // (company switch / first load). Plain object-identity deps would wipe
-  // unsaved edits every time BrandContext refreshes (e.g. after an asset
-  // upload) — the working copy must survive background refreshes.
-  const syncedKitIdRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (!kit || syncedKitIdRef.current === kit.id) return;
-    syncedKitIdRef.current = kit.id;
-    setColors(kit.colors);
-    setTypeStyles(kit.typeStyles?.length ? kit.typeStyles : DEFAULT_TYPE_STYLES);
-    setGuidelines(kit.guidelines ?? []);
-    if (kit.headingFont) setHeadingFont(kit.headingFont);
-    if (kit.bodyFont) setBodyFont(kit.bodyFont);
-    setPrimaryLogoAssetId(kit.primaryLogoAssetId);
-  }, [kit]);
-
-  const fontAssets = assets.filter((a) => a.kind === "font");
+  const colors = kit?.colors ?? DEFAULT_PALETTE;
+  const typeStyles = kit?.typeStyles?.length ? kit.typeStyles : DEFAULT_TYPE_STYLES;
   const logoAssets = assets.filter((a) => a.kind === "logo");
+  const headingFamily = kit?.headingFont?.family ?? "Montserrat";
+  const bodyFamily = kit?.bodyFont?.family ?? "Inter";
+  const primaryLogo =
+    logoAssets.find((a) => a.id === kit?.primaryLogoAssetId) ?? logoAssets[0] ?? null;
 
-  // The blast radius: which fields across which templates bind to each type
-  // style (typeStyleKey). Fields carry no palette binding of their own — a
-  // palette color reaches templates only THROUGH a type style that names it,
-  // so color usage derives from style usage. Loaded alongside the kit; if
-  // it's slow or fails, rows simply render without counts.
-  const templatesState = useAsync<TemplateSchema[]>(
-    () => (company ? stores.templates.listAll(company.id) : Promise.resolve([])),
-    [company],
-  );
-  const templates = templatesState.status === "ready" ? templatesState.data : null;
-  const bindings = useMemo(() => {
-    const styleUse = new Map<string, BindingUsage>();
-    const colorUse = new Map<string, BindingUsage>();
-    const add = (map: Map<string, BindingUsage>, key: string, templateName: string) => {
-      const u = map.get(key) ?? { fields: 0, templateNames: [] };
-      u.fields += 1;
-      if (!u.templateNames.includes(templateName)) u.templateNames.push(templateName);
-      map.set(key, u);
-    };
-    const styleColor = new Map(
-      (kit?.typeStyles ?? []).filter((s) => s.colorKey).map((s) => [s.key, s.colorKey!]),
-    );
-    for (const t of templates ?? []) {
-      for (const f of t.fields) {
-        if (!f.typeStyleKey) continue;
-        add(styleUse, f.typeStyleKey, t.name);
-        const ck = styleColor.get(f.typeStyleKey);
-        if (ck) add(colorUse, ck, t.name);
-      }
-    }
-    return { styleUse, colorUse };
-  }, [templates, kit]);
-
-  /** Pending impact confirmation for a save that restyles bound fields. */
-  const [impact, setImpact] = useState<{
-    fields: number;
-    templateNames: string[];
-    removals: boolean;
-  } | null>(null);
-
-  /** Diff the working copy against the saved kit; keys that changed or
-   * disappeared AND are bound somewhere are the blast radius. */
-  const computeImpact = () => {
-    if (!kit || !templates) return null; // no baseline or unknown usage → don't block
-    const affected: BindingUsage[] = [];
-    let removals = false;
-    for (const prev of kit.typeStyles ?? []) {
-      const next = typeStyles.find((s) => s.key === prev.key);
-      const use = bindings.styleUse.get(prev.key);
-      if (!use || use.fields === 0) continue;
-      if (!next) removals = true;
-      if (!next || JSON.stringify(next) !== JSON.stringify(prev)) affected.push(use);
-    }
-    for (const prev of kit.colors ?? []) {
-      const next = colors.find((c) => c.key === prev.key);
-      const use = bindings.colorUse.get(prev.key);
-      if (!use || use.fields === 0) continue;
-      if (!next) removals = true;
-      if (!next || next.hex !== prev.hex) affected.push(use);
-    }
-    if (!affected.length) return null;
-    const names = [...new Set(affected.flatMap((u) => u.templateNames))];
-    return { fields: affected.reduce((n, u) => n + u.fields, 0), templateNames: names, removals };
-  };
-
-  const requestSave = () => {
-    const i = computeImpact();
-    if (i) setImpact(i);
-    else void save();
-  };
-
-  // Warn on close/reload while the working copy differs from the saved kit.
-  const savedShape = JSON.stringify({
-    colors: kit?.colors ?? [],
-    typeStyles: kit?.typeStyles ?? [],
-    guidelines: kit?.guidelines ?? [],
-    headingFont: kit?.headingFont,
-    bodyFont: kit?.bodyFont,
-    primaryLogoAssetId: kit?.primaryLogoAssetId,
-  });
-  const workingShape = JSON.stringify({
-    colors,
-    typeStyles,
-    guidelines,
-    headingFont,
-    bodyFont,
-    primaryLogoAssetId,
-  });
-  useUnsavedChangesWarning(Boolean(kit) && savedShape !== workingShape);
-
-  const save = async () => {
-    if (!company) return;
-    setSaving(true);
-    setError(null);
-    try {
-      await stores.brandKits.upsert(company.id, {
-        colors,
-        typeStyles,
-        guidelines,
-        headingFont,
-        bodyFont,
-        primaryLogoAssetId,
-      });
-      await refresh(); // re-theme the app + reload fonts immediately
-      setSavedTick(true);
-      setTimeout(() => setSavedTick(false), 1500);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Save failed.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const [pendingFonts, setPendingFonts] = useState<PendingFontChip[]>([]);
-
-  const uploadFont = async (file: File) => {
-    if (!company) return;
-    const check = await inspectFontFile(file);
-    if (!check.ok) {
-      setError(check.error);
-      return;
-    }
-    setError(null);
-    const key = `${file.name}-${Date.now()}-${Math.random()}`;
-    setPendingFonts((prev) => [
-      ...prev,
-      { key, name: check.metadata.family ?? file.name, done: false, leaving: false },
-    ]);
-    try {
-      const asset = await stores.brandAssets.upload(company.id, "font", file, check.metadata);
-      await registerCustomFont(asset); // usable immediately, export-safe
-      // Done check → chip leaves → the real asset row enters in its place.
-      setPendingFonts((prev) => prev.map((p) => (p.key === key ? { ...p, done: true } : p)));
-      window.setTimeout(() => {
-        setPendingFonts((prev) => prev.map((p) => (p.key === key ? { ...p, leaving: true } : p)));
-        window.setTimeout(() => {
-          setPendingFonts((prev) => prev.filter((p) => p.key !== key));
-          void refresh();
-        }, 260);
-      }, 700);
-    } catch (e) {
-      setPendingFonts((prev) => prev.filter((p) => p.key !== key));
-      setError(e instanceof Error ? e.message : "Font upload failed.");
-    }
-  };
-
-  const uploadLogo = async (file: File) => {
-    if (!company) return;
-    const asset = await stores.brandAssets.upload(company.id, "logo", file);
-    if (!logoAssets.length) setPrimaryLogoAssetId(asset.id);
-    await refresh();
-  };
-
-  const fontDrop = useFileDrop((files) => {
-    for (const f of files) void uploadFont(f);
-  });
-  const logoDrop = useFileDrop((files) => {
-    if (files[0]) void uploadLogo(files[0]);
-  });
-
-  // Design-system import merges: existing keys win; new entries append.
+  // Design-system imports merge and save in one step: existing keys win,
+  // new entries append — appends can't redirect a bound style, so this
+  // needs no impact confirmation.
   const mergeColors = (incoming: BrandColor[]) =>
-    setColors((prev) => [...prev, ...incoming.filter((c) => !prev.some((p) => p.key === c.key))]);
+    void save({
+      colors: [...colors, ...incoming.filter((c) => !colors.some((p) => p.key === c.key))],
+    });
   const mergeTypeStyles = (incoming: BrandTypeStyle[]) =>
-    setTypeStyles((prev) => [
-      ...prev,
-      ...incoming.filter((t) => !prev.some((p) => p.key === t.key)),
-    ]);
-  const mergeGuidelines = (incoming: string[]) =>
-    setGuidelines((prev) => [...new Set([...prev, ...incoming])]);
-
-  const fontOptions = (current: FontRef, set: (r: FontRef) => void) => (
-    <select
-      value={current.source === "custom" ? `custom:${current.assetId}` : `google:${current.family}`}
-      onChange={(e) => {
-        const [source, value] = e.target.value.split(":");
-        if (source === "google") {
-          loadGoogleFonts([value]);
-          set({ source: "google", family: value });
-        } else {
-          const asset = fontAssets.find((a) => a.id === value);
-          if (asset)
-            set({
-              source: "custom",
-              family: asset.metadata.family ?? asset.name,
-              assetId: asset.id,
-            });
-        }
-      }}
-      className="sp-input"
-    >
-      {fontAssets.length > 0 && (
-        <optgroup label="Your uploaded fonts">
-          {fontAssets.map((a) => (
-            <option key={a.id} value={`custom:${a.id}`}>
-              {a.metadata.family ?? a.name}
-            </option>
-          ))}
-        </optgroup>
-      )}
-      <optgroup label="Google Fonts">
-        {GOOGLE_FONTS.map((f) => (
-          <option key={f} value={`google:${f}`}>
-            {f}
-          </option>
-        ))}
-      </optgroup>
-    </select>
-  );
+    void save({
+      typeStyles: [
+        ...typeStyles,
+        ...incoming.filter((t) => !typeStyles.some((p) => p.key === t.key)),
+      ],
+    });
 
   return (
     <Page>
       <PageHeader
         title="Brand Studio"
-        description="Colors, fonts, and logos every template inherits."
+        description="What your brand is set to, at a glance. Open a category to change it."
         action={
-          <button onClick={requestSave} disabled={saving} className="sp-btn sp-btn-primary">
-            {savedTick ? <Check className="w-4 h-4" /> : null}
-            {savedTick ? "Saved" : saving ? "Saving…" : "Save brand"}
+          <button
+            onClick={() => setImportOpen((o) => !o)}
+            className="sp-btn sp-btn-ghost"
+            aria-expanded={importOpen}
+          >
+            <Import className="w-4 h-4" />
+            Import design system
           </button>
         }
       />
-
-      <ConfirmDialog
-        open={impact !== null}
-        title="Apply brand changes?"
-        tone="primary"
-        description={
-          impact && (
-            <>
-              This restyles {impact.fields} field{impact.fields === 1 ? "" : "s"} across{" "}
-              {impact.templateNames.length} template{impact.templateNames.length === 1 ? "" : "s"}.
-              {impact.templateNames.length <= 10 && (
-                <span className="block mt-2">{impact.templateNames.join(" · ")}</span>
-              )}
-              {impact.removals && (
-                <span className="block mt-2">
-                  Removed styles and colors release their fields back to each field's own settings.
-                </span>
-              )}
-            </>
-          )
-        }
-        confirmLabel="Apply changes"
-        onCancel={() => setImpact(null)}
-        onConfirm={() => {
-          setImpact(null);
-          void save();
-        }}
-      />
-
-      {error && (
-        <p
-          className="mb-5 text-sm px-4 py-3"
-          data-radius-card
-          style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}
-        >
-          {error}
-        </p>
-      )}
 
       <div className="sp-grid-12">
-        {/* Colors */}
-        <section className="sp-span-6 sp-card sp-card--content space-y-4">
-          <h2 className="sp-panel-title">Colors</h2>
-          <div className="space-y-2.5">
-            {colors.map((c, i) => (
-              <div key={c.key} className="flex items-center gap-3" style={{ minHeight: 44 }}>
-                <ColorControl
-                  ariaLabel={`${c.name} color`}
-                  value={c.hex}
-                  onChange={(hex) => setColors(colors.map((x, j) => (j === i ? { ...x, hex } : x)))}
-                  /* This row IS the palette — offering the palette back would
-                     just be a circle. */
-                  brandSwatches={false}
-                />
-                <div className="flex-1 min-w-0">
-                  <input
-                    value={c.name}
-                    onChange={(e) =>
-                      setColors(
-                        colors.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)),
-                      )
-                    }
-                    aria-label={`Name for the ${c.name} brand color`}
-                    className="text-sm w-full bg-transparent outline-none"
-                    style={{ color: "var(--foreground)" }}
-                  />
-                  {templates && (
-                    <p style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                      {usageLabel(bindings.colorUse.get(c.key))}
-                    </p>
-                  )}
-                </div>
-                {!DEFAULT_PALETTE.some((d) => d.key === c.key) && (
-                  <button
-                    onClick={() => setColors(colors.filter((_, j) => j !== i))}
-                    aria-label={`Remove ${c.name}`}
-                  >
-                    <Trash2 className="w-4 h-4" style={{ color: "var(--muted-foreground)" }} />
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-          <button
-            onClick={() => {
-              const n = colors.filter((c) => c.key.startsWith("custom")).length + 1;
-              setColors([...colors, { key: `custom_${n}`, name: `Custom ${n}`, hex: "#888888" }]);
-            }}
-            style={{
-              fontSize: "var(--type-caption-size)",
-              color: "var(--state-primary)",
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-            }}
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Add color
-          </button>
-        </section>
-
-        {/* Fonts */}
-        <section className="sp-span-6 sp-card sp-card--content space-y-4">
-          <h2 className="sp-panel-title">Fonts</h2>
-          <div>
-            <label className="sp-eyebrow block mb-1">Heading</label>
-            {fontOptions(headingFont, setHeadingFont)}
-          </div>
-          <div>
-            <label className="sp-eyebrow block mb-1">Body</label>
-            {fontOptions(bodyFont, setBodyFont)}
-          </div>
-          <label
-            {...fontDrop.bind}
-            data-active={fontDrop.active}
-            className="sp-dropzone flex items-center justify-center gap-2 py-3 cursor-pointer"
-            style={{
-              border: "1.5px dashed var(--border-strong)",
-              borderRadius: "var(--radius-control)",
-              fontSize: "var(--type-label-size)",
-              color: "var(--text-secondary)",
-            }}
-          >
-            <Upload className="sp-dropzone__icon w-4 h-4" />
-            Upload font file
-            <input
-              type="file"
-              accept={FONT_ACCEPT}
-              multiple
-              className="hidden"
-              onChange={(e) => {
-                for (const f of Array.from(e.target.files ?? [])) void uploadFont(f);
-                e.target.value = "";
-              }}
-            />
-          </label>
-          {pendingFonts.map((p) => (
-            <div
-              key={p.key}
-              className={`${p.leaving ? "sp-chip-out" : "sp-chip-in"} flex items-center gap-2.5 px-3 py-2`}
-              style={{
-                border: "1px solid var(--border)",
-                borderRadius: "var(--radius-control)",
-                background: "var(--bg-surface)",
-              }}
-            >
-              <span className="flex-1 min-w-0">
-                <span
-                  className="block truncate"
-                  style={{
-                    fontSize: "var(--type-caption-size)",
-                    fontWeight: 500,
-                    color: "var(--text-primary)",
-                  }}
-                >
-                  {p.name}
-                </span>
-                {p.done ? (
-                  <span
-                    className="sp-done-in flex items-center gap-1 mt-1"
-                    style={{ fontSize: 10, color: "var(--state-primary)" }}
-                  >
-                    <Check style={{ width: 11, height: 11 }} />
-                    Added
-                  </span>
-                ) : (
-                  <span className="sp-upload-track block mt-1.5">
-                    <span className="sp-upload-bar" />
-                  </span>
-                )}
-              </span>
-            </div>
-          ))}
-          {fontAssets.map((a) => (
-            <div key={a.id} className="sp-chip-in flex items-center justify-between text-sm">
-              <span
+        {importOpen && (
+          <section className="sp-span-12 sp-card sp-card--content space-y-4">
+            <div>
+              <h2 className="sp-panel-title">Import design system</h2>
+              <p
                 style={{
-                  color: "var(--foreground)",
-                  fontFamily: `"${a.metadata.family ?? a.name}"`,
+                  fontSize: "var(--type-caption-size)",
+                  color: "var(--text-muted)",
+                  marginTop: 3,
                 }}
               >
-                {a.metadata.family ?? a.name}
-              </span>
-              <button
-                onClick={() => void stores.brandAssets.remove(a.id).then(refresh)}
-                aria-label={`Remove ${a.name}`}
-              >
-                <Trash2 className="w-4 h-4" style={{ color: "var(--muted-foreground)" }} />
-              </button>
+                Ingest a design-tokens JSON (colors, type scale) to populate the palette and type
+                styles, or pull styles from a Figma file. Imports merge into your brand and save
+                immediately; existing entries always win.
+              </p>
             </div>
-          ))}
-        </section>
+            <DesignSystemImportPanel
+              onImportColors={mergeColors}
+              onImportTypeStyles={mergeTypeStyles}
+            />
+          </section>
+        )}
+
+        {/* Colors */}
+        <CategoryCard
+          title="Colors"
+          count={`${colors.length} color${colors.length === 1 ? "" : "s"}`}
+          onOpen={() => navigate({ name: "brandStudio", category: "colors" })}
+        >
+          {colors.length === 0 ? (
+            <EmptyHint>
+              The sanctioned palette builders pick from — every swatch is one click away in the
+              template builder. Open to add your colors.
+            </EmptyHint>
+          ) : (
+            <span className="flex flex-wrap" style={{ gap: "var(--space-2xs)" }}>
+              {colors.slice(0, OVERVIEW_SWATCH_CAP).map((c) => (
+                <span key={c.key} className="flex items-center" style={{ gap: "var(--space-3xs)" }}>
+                  <span
+                    aria-hidden
+                    style={{
+                      width: 18,
+                      height: 18,
+                      borderRadius: "var(--radius-control)",
+                      background: c.hex,
+                      border: "1px solid var(--border)",
+                      display: "inline-block",
+                    }}
+                  />
+                  <span
+                    style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}
+                  >
+                    {c.name}
+                  </span>
+                </span>
+              ))}
+              {colors.length > OVERVIEW_SWATCH_CAP && (
+                <span style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
+                  +{colors.length - OVERVIEW_SWATCH_CAP} more
+                </span>
+              )}
+            </span>
+          )}
+        </CategoryCard>
+
+        {/* Typography */}
+        <CategoryCard
+          title="Typography"
+          onOpen={() => navigate({ name: "brandStudio", category: "typography" })}
+        >
+          <span className="block space-y-2">
+            <span className="block">
+              <span className="sp-eyebrow block">Heading</span>
+              <span
+                style={{
+                  fontFamily: `"${headingFamily}", sans-serif`,
+                  fontSize: "var(--type-cardtitle-size)",
+                  color: "var(--text-primary)",
+                }}
+              >
+                {headingFamily}
+              </span>
+            </span>
+            <span className="block">
+              <span className="sp-eyebrow block">Body</span>
+              <span
+                style={{
+                  fontFamily: `"${bodyFamily}", sans-serif`,
+                  fontSize: "var(--type-body-size)",
+                  color: "var(--text-primary)",
+                }}
+              >
+                {bodyFamily}
+              </span>
+            </span>
+          </span>
+        </CategoryCard>
 
         {/* Logos */}
-        <section className="sp-span-12 sp-card sp-card--content space-y-4">
-          <h2 className="sp-panel-title">Logos</h2>
-          <div className="grid grid-cols-3 gap-6">
-            {logoAssets.map((a) => (
-              <div
-                key={a.id}
-                className="sp-chip-in relative border p-3 flex items-center justify-center aspect-square"
-                style={{
-                  borderColor:
-                    a.id === primaryLogoAssetId ? "var(--state-primary)" : "var(--border)",
-                  borderRadius: "var(--radius-card)",
-                }}
-              >
-                <img src={a.url} alt={a.name} className="max-w-full max-h-full object-contain" />
-                <button
-                  onClick={() => setPrimaryLogoAssetId(a.id)}
-                  title="Make primary"
-                  className="absolute top-1.5 right-1.5"
+        <CategoryCard
+          title="Logos"
+          count={
+            logoAssets.length > 0
+              ? `${logoAssets.length} logo${logoAssets.length === 1 ? "" : "s"}`
+              : undefined
+          }
+          onOpen={() => navigate({ name: "brandStudio", category: "logos" })}
+        >
+          {logoAssets.length === 0 ? (
+            <EmptyHint>
+              Upload your logo once and builders can drop it onto any template from the element
+              palette. Open to add the first one.
+            </EmptyHint>
+          ) : (
+            <span className="flex flex-wrap items-center" style={{ gap: "var(--space-2xs)" }}>
+              {logoAssets.map((a) => (
+                <span
+                  key={a.id}
+                  className="relative inline-flex items-center justify-center"
+                  style={{
+                    width: 56,
+                    height: 56,
+                    border: "1px solid var(--border)",
+                    borderRadius: "var(--radius-control)",
+                    padding: "var(--space-3xs)",
+                  }}
                 >
-                  <Star
-                    className="w-4 h-4"
-                    style={{
-                      color:
-                        a.id === primaryLogoAssetId
-                          ? "var(--editor-accent)"
-                          : "var(--border-strong)",
-                    }}
-                    fill={a.id === primaryLogoAssetId ? "currentColor" : "none"}
-                  />
-                </button>
-                <button
-                  onClick={() => void stores.brandAssets.remove(a.id).then(refresh)}
-                  className="absolute bottom-1.5 right-1.5"
-                  aria-label={`Remove ${a.name}`}
-                >
-                  <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--muted-foreground)" }} />
-                </button>
-              </div>
-            ))}
-            <label
-              {...logoDrop.bind}
-              data-active={logoDrop.active}
-              className="sp-dropzone border-2 border-dashed flex flex-col items-center justify-center aspect-square cursor-pointer gap-1"
-              style={{ borderColor: "var(--border)" }}
-            >
-              <Upload
-                className="sp-dropzone__icon w-5 h-5"
-                style={{ color: "var(--muted-foreground)" }}
-              />
-              <span className="sp-eyebrow" style={{ fontSize: 9 }}>
-                Add logo
-              </span>
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) void uploadLogo(f);
-                  e.target.value = "";
-                }}
-              />
-            </label>
-          </div>
-        </section>
-
-        {/* Type styles — the brand rules engine */}
-        <section className="sp-span-12 sp-card sp-card--content space-y-4">
-          <div>
-            <h2 className="sp-panel-title">Type styles &amp; rules (optional)</h2>
-            <p
-              style={{
-                fontSize: "var(--type-caption-size)",
-                color: "var(--text-muted)",
-                marginTop: 3,
-              }}
-            >
-              An opt-in convenience for reuse: apply a saved style to a field if you want, or style
-              every field by hand — both are fully locked for end users. Every property a style
-              defines follows it across all templates. Unlimited styles.
-            </p>
-          </div>
-          <TypeStylesEditor
-            styles={typeStyles}
-            colors={colors}
-            customFamilies={fontAssets.map((a) => a.metadata.family ?? a.name)}
-            onChange={setTypeStyles}
-            usageLabelFor={templates ? (key) => usageLabel(bindings.styleUse.get(key)) : undefined}
-          />
-        </section>
-
-        {/* Design-system import */}
-        <section className="sp-span-6 sp-card sp-card--content space-y-4">
-          <div>
-            <h2 className="sp-panel-title">Import design system</h2>
-            <p
-              style={{
-                fontSize: "var(--type-caption-size)",
-                color: "var(--text-muted)",
-                marginTop: 3,
-              }}
-            >
-              Ingest a design-tokens JSON (colors, type scale) to populate the palette and type
-              styles, parse a guidelines.md into suggested rules, or pull styles from a Figma file.
-            </p>
-          </div>
-          <DesignSystemImportPanel
-            onImportColors={mergeColors}
-            onImportTypeStyles={mergeTypeStyles}
-            onImportGuidelines={mergeGuidelines}
-          />
-        </section>
-
-        {/* Brand guidelines (free-text rules) */}
-        <section className="sp-span-6 sp-card sp-card--content space-y-3">
-          <div>
-            <h2 className="sp-panel-title">Brand guidelines</h2>
-            <p
-              style={{
-                fontSize: "var(--type-caption-size)",
-                color: "var(--text-muted)",
-                marginTop: 3,
-              }}
-            >
-              Do/don't and voice rules for humans building templates. Imported from guidelines.md or
-              written here.
-            </p>
-          </div>
-          {guidelines.length === 0 && (
-            <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
-              No guidelines yet.
-            </p>
+                  <img src={a.url} alt={a.name} className="max-w-full max-h-full object-contain" />
+                  {a.id === (kit?.primaryLogoAssetId ?? logoAssets[0]?.id) && (
+                    <Star
+                      aria-label="Primary logo"
+                      className="absolute"
+                      style={{
+                        top: 2,
+                        right: 2,
+                        width: 11,
+                        height: 11,
+                        color: "var(--editor-accent)",
+                      }}
+                      fill="currentColor"
+                    />
+                  )}
+                </span>
+              ))}
+            </span>
           )}
-          {guidelines.map((g, i) => (
-            <div key={`${g}-${i}`} className="flex items-start gap-2">
-              <span
-                style={{
-                  color: "var(--state-primary)",
-                  fontSize: "var(--type-caption-size)",
-                  lineHeight: "1.5",
-                }}
-              >
-                —
-              </span>
-              <span
-                className="flex-1"
-                style={{
-                  fontSize: "var(--type-caption-size)",
-                  color: "var(--text-primary)",
-                  lineHeight: 1.5,
-                }}
-              >
-                {g}
-              </span>
-              <button
-                onClick={() => setGuidelines(guidelines.filter((_, j) => j !== i))}
-                aria-label="Remove rule"
-              >
-                <Trash2 style={{ width: 13, height: 13, color: "var(--text-muted)" }} />
-              </button>
-            </div>
-          ))}
-          <input
-            className="sp-input"
-            placeholder="Add a rule and press Enter…"
-            onKeyDown={(e) => {
-              const v = (e.target as HTMLInputElement).value.trim();
-              if (e.key === "Enter" && v) {
-                mergeGuidelines([v]);
-                (e.target as HTMLInputElement).value = "";
-              }
-            }}
-          />
-        </section>
+        </CategoryCard>
 
-        {/* Live preview */}
+        {/* Type styles */}
+        <CategoryCard
+          title="Type styles"
+          count={`${typeStyles.length} style${typeStyles.length === 1 ? "" : "s"}`}
+          onOpen={() => navigate({ name: "brandStudio", category: "type-styles" })}
+        >
+          {typeStyles.length === 0 ? (
+            <EmptyHint>
+              A saved style locks font, weight, and color on any field it's applied to — across
+              every template, always. Open to create one.
+            </EmptyHint>
+          ) : (
+            <span className="block space-y-1.5">
+              {typeStyles.slice(0, OVERVIEW_STYLE_CAP).map((s) => (
+                <span key={s.key} className="flex items-baseline justify-between gap-3">
+                  <span
+                    style={{
+                      fontSize: "var(--type-label-size)",
+                      fontWeight: 500,
+                      color: "var(--text-primary)",
+                    }}
+                  >
+                    {s.name}
+                  </span>
+                  <span
+                    className="truncate"
+                    style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}
+                  >
+                    {styleHint(s)}
+                  </span>
+                </span>
+              ))}
+              {typeStyles.length > OVERVIEW_STYLE_CAP && (
+                <span
+                  className="block"
+                  style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}
+                >
+                  +{typeStyles.length - OVERVIEW_STYLE_CAP} more
+                </span>
+              )}
+            </span>
+          )}
+        </CategoryCard>
+
+        {/* Assembled preview — the one thing a per-category card cannot show */}
         <section className="sp-span-12 sp-card sp-card--content space-y-4">
           <h2 className="sp-panel-title">Preview</h2>
           <BrandPreviewCard
             colors={colors}
-            headingFamily={headingFont.family}
-            bodyFamily={bodyFont.family}
-            logoUrl={logoAssets.find((a) => a.id === primaryLogoAssetId)?.url ?? logoAssets[0]?.url}
+            headingFamily={headingFamily}
+            bodyFamily={bodyFamily}
+            logoUrl={primaryLogo?.url}
           />
           <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
-            How your brand applies to your templates and graphics. Save to apply everywhere.
+            How your brand looks assembled — header, headline, body, and accent together.
           </p>
         </section>
       </div>
     </Page>
   );
+}
+
+/** One overview card: read plus a way in. Nothing on it is editable — the
+ * whole card opens its category's detail route. */
+function CategoryCard({
+  title,
+  count,
+  onOpen,
+  children,
+}: {
+  title: string;
+  count?: string;
+  onOpen(): void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="sp-span-6 sp-card sp-card--content sp-card-link"
+    >
+      <span className="flex items-center justify-between mb-3">
+        <span className="flex items-baseline gap-2">
+          <span className="sp-panel-title">{title}</span>
+          {count && (
+            <span style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
+              {count}
+            </span>
+          )}
+        </span>
+        <ArrowUpRight
+          aria-hidden
+          className="sp-card-link__arrow"
+          style={{ width: 15, height: 15, color: "var(--text-muted)" }}
+        />
+      </span>
+      {children}
+    </button>
+  );
+}
+
+/** An empty category teaches: what it's for, and the card itself is the
+ * action that populates it. */
+function EmptyHint({ children }: { children: React.ReactNode }) {
+  return (
+    <span
+      className="block"
+      style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)", lineHeight: 1.5 }}
+    >
+      {children}
+    </span>
+  );
+}
+
+/** A style's one-line hint for the overview: face and any fixed size. */
+function styleHint(s: BrandTypeStyle): string {
+  const face =
+    s.weight !== undefined || s.fontStyle !== undefined || s.fontStretch !== undefined
+      ? styleName(toFontStyle(s.weight, s.fontStyle, s.fontStretch))
+      : "";
+  const parts = [
+    s.font?.family ?? (face ? undefined : "Any face"),
+    face || undefined,
+    s.fontSizePx !== undefined ? `${s.fontSizePx}px` : undefined,
+  ].filter(Boolean);
+  return parts.join(" · ");
 }
 
 interface BrandPreviewCardProps {

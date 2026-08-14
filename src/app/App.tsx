@@ -166,7 +166,7 @@ function Screen() {
         {route.name === "template" && <TemplateUsePage templateId={route.templateId} />}
         {route.name === "adminTemplates" && adminOnly(<AdminTemplates />)}
         {route.name === "builder" && adminOnly(<TemplateBuilder templateId={route.templateId} />)}
-        {route.name === "brandStudio" && adminOnly(<BrandStudio />)}
+        {route.name === "brandStudio" && adminOnly(<BrandStudio category={route.category} />)}
         {route.name === "dashboard" && adminOnly(<Dashboard />)}
         {route.name === "people" && adminOnly(<PeopleAdmin />)}
         {route.name === "settings" && adminOnly(<SettingsAdmin />)}

@@ -723,6 +723,26 @@ optgroup {
   border-radius: var(--radius-card);
 }
 
+/* Overview card that opens a detail — read plus a way in, never editable in
+   place. Rest state is the plain card (no shadow, per the DS); hover
+   sharpens the edge and wakes the corner arrow. */
+.sp-card-link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--dur-state) var(--ease);
+}
+.sp-card-link:hover {
+  border-color: var(--border-strong);
+}
+.sp-card-link__arrow {
+  transition: color var(--dur-state) var(--ease);
+}
+.sp-card-link:hover .sp-card-link__arrow {
+  color: var(--text-primary);
+}
+
 /* Brand-moment surface (hero headers, identity chips). The Voltage→Sunshine
    gradient — everything ON it is Ink, no exceptions, both themes (Ink is
    the only legible glyph on any brand fill; white never clears contrast

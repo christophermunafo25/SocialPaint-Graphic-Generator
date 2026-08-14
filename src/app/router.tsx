@@ -8,13 +8,18 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
  * because the URL is the source of truth for that page — selecting a chip or
  * typing a query IS a navigation. `group` is a platform-and-shape id such as
  * `instagram-4-5`, which is the unit the gallery filters by. */
+/** Brand Studio's editable categories — each is a deep-linkable detail
+ * route under the overview. */
+export type BrandCategory = "colors" | "typography" | "logos" | "type-styles";
+const BRAND_CATEGORIES: readonly BrandCategory[] = ["colors", "typography", "logos", "type-styles"];
+
 export type Route =
   | { name: "onboarding" }
   | { name: "portal"; group?: string; q?: string }
   | { name: "template"; templateId: string }
   | { name: "adminTemplates" }
   | { name: "builder"; templateId: string | null }
-  | { name: "brandStudio" }
+  | { name: "brandStudio"; category?: BrandCategory }
   | { name: "dashboard" }
   | { name: "people" }
   | { name: "settings" };
@@ -54,7 +59,7 @@ export function routeToUrl(route: Route): string {
         ? `/template-builder/${encodeURIComponent(route.templateId)}`
         : "/template-builder/new";
     case "brandStudio":
-      return "/brand-studio";
+      return route.category ? `/brand-studio/${route.category}` : "/brand-studio";
     case "dashboard":
       return "/insights";
     case "people":
@@ -87,6 +92,9 @@ export function urlToRoute(pathname: string, search: string): Route {
         templateId: tail === "new" ? null : decodeURIComponent(tail),
       };
     case "brand-studio":
+      if (tail && (BRAND_CATEGORIES as readonly string[]).includes(tail)) {
+        return { name: "brandStudio", category: tail as BrandCategory };
+      }
       return { name: "brandStudio" };
     case "insights":
       return { name: "dashboard" };
