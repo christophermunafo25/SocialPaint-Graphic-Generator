@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Minus, Plus } from "lucide-react";
 import type { BrandKit, LayoutGroup, TemplateField } from "@/lib/types";
 import { groupChildRef, isFreeGroup, parseGroupChildRef } from "@/lib/types";
 import { useDataUrl } from "@/lib/render/useDataUrl";
@@ -15,7 +16,7 @@ import {
 import { resolveFieldStyle } from "@/lib/brand/resolveStyle";
 import { cornerRadiusCss, DEFAULT_FILL_HEX, FieldBoxContent } from "../SchemaRenderer";
 import { ErrorBoundary, FieldCrashFallback } from "../ErrorBoundary";
-import { PALETTE_MIME, paintOrder } from "./fieldOps";
+import { PALETTE_MIME, isTypingTarget, paintOrder } from "./fieldOps";
 import { cancelActiveGesture, startDrag } from "./canvasGesture";
 
 interface FieldOverlayEditorProps {
@@ -106,6 +107,12 @@ const MIN_VISIBLE = 24;
 /** Below this box size on screen (px), the mid-edge handles crowd the
  * corners and the body — only the corner handles render. */
 const HANDLE_CROWD_PX = 28;
+
+/** Zoom multiplies the fit scale, so 1 is always "the whole canvas". Zooming
+ * out past fit would only add empty space, hence the floor at 1. */
+const MIN_ZOOM = 1;
+const MAX_ZOOM = 8;
+const ZOOM_STEP = 1.25;
 
 /** Invisible resize strips along each border: the whole edge is grabbable,
  * Figma-style, whatever size the box is — the visible dots are wayfinding,
@@ -356,11 +363,20 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
     onRequestLabelFocus,
   } = props;
   const { kit } = useBrand();
+  /** The SCALED SURFACE — every pointer-to-canvas conversion measures against
+   * this element, so panning is free: the browser scrolls it and its
+   * bounding rect already reflects the offset. */
   const containerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(0.4);
+  /** The scrolling window the surface sits in. */
+  const viewportRef = useRef<HTMLDivElement>(null);
+  /** Scale at which the whole canvas fits the viewport — zoom 1. */
+  const [fitScale, setFitScale] = useState(0.4);
+  const [zoom, setZoom] = useState(1);
+  const scale = fitScale * zoom;
   const [draw, setDraw] = useState<DrawState | null>(null);
-  /** Chips show on hover + selection only — twelve fields ≠ twelve chips. */
+  /** Outlines and chips follow the pointer — twelve fields ≠ twelve chips. */
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null);
   const [frame, setFrame] = useState<GestureFrame | null>(null);
   /** Fixed text element whose content is being edited in place. */
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -378,6 +394,9 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
   onGroupMoveRef.current = onGroupMove;
   const onReorderChildrenRef = useRef(onReorderChildren);
   onReorderChildrenRef.current = onReorderChildren;
+  // Owned by applyZoom (which advances it eagerly), so it is NOT re-synced
+  // from the render's `zoom` the way the other mirrors below are.
+  const zoomRef = useRef(zoom);
   const scaleRef = useRef(scale);
   scaleRef.current = scale;
   const groupsRef = useRef(groups);
@@ -421,14 +440,98 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
   }, [editingId, selectedIds]);
 
   useEffect(() => {
-    const el = containerRef.current;
+    const el = viewportRef.current;
     if (!el) return;
-    const update = () => setScale(Math.min(el.offsetWidth / canvasWidth, 1));
+    // clientWidth, not offsetWidth: once zoomed in the viewport carries a
+    // scrollbar, and fit must be measured against the space actually left.
+    const update = () => setFitScale(Math.min(el.clientWidth / canvasWidth, 1));
     update();
     const observer = new ResizeObserver(update);
     observer.observe(el);
     return () => observer.disconnect();
   }, [canvasWidth]);
+
+  /** The canvas point to pin, and where in the viewport to pin it, captured
+   * before a zoom and applied after the surface has resized. */
+  const zoomAnchorRef = useRef<{ canvasX: number; canvasY: number; ax: number; ay: number } | null>(
+    null,
+  );
+
+  /** Zoom to `next`, holding a point still: whatever sits under the cursor
+   * (or the middle of the view, for the buttons and shortcuts) stays put. */
+  const applyZoom = useCallback((next: number, anchor?: { clientX: number; clientY: number }) => {
+    const clamped = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, next));
+    if (clamped === zoomRef.current) return;
+    const vp = viewportRef.current;
+    const surface = containerRef.current;
+    // Advance the ref NOW, not at the next render: repeated clicks and wheel
+    // ticks arrive faster than React re-renders, and each must step off the
+    // last rather than all recomputing from the same stale zoom.
+    zoomRef.current = clamped;
+    setZoom(clamped);
+    if (!vp || !surface) return;
+    // Only the FIRST pin of a batch is measured against un-stale geometry,
+    // and it stays valid: "hold canvas point P at viewport position A" is
+    // true whatever the intermediate steps were.
+    if (zoomAnchorRef.current) return;
+    const vpRect = vp.getBoundingClientRect();
+    const surfRect = surface.getBoundingClientRect();
+    const before = scaleRef.current;
+    const ax = (anchor?.clientX ?? vpRect.left + vp.clientWidth / 2) - vpRect.left;
+    const ay = (anchor?.clientY ?? vpRect.top + vp.clientHeight / 2) - vpRect.top;
+    zoomAnchorRef.current = {
+      canvasX: (vpRect.left + ax - surfRect.left) / before,
+      canvasY: (vpRect.top + ay - surfRect.top) / before,
+      ax,
+      ay,
+    };
+  }, []);
+
+  // Re-scroll to the pinned point in the same frame the resized surface is
+  // committed — a layout effect, so the canvas never visibly jumps.
+  useLayoutEffect(() => {
+    const pin = zoomAnchorRef.current;
+    const vp = viewportRef.current;
+    zoomAnchorRef.current = null;
+    if (!pin || !vp) return;
+    vp.scrollLeft = pin.canvasX * scale - pin.ax;
+    vp.scrollTop = pin.canvasY * scale - pin.ay;
+  }, [scale]);
+
+  // ⌘0 fits, ⌘+/⌘- step. Preventing the default takes the browser's own page
+  // zoom out of the way while the builder canvas has focus.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.altKey) return;
+      if (isTypingTarget(e)) return;
+      if (e.key === "0") {
+        e.preventDefault();
+        applyZoom(1);
+      } else if (e.key === "=" || e.key === "+") {
+        e.preventDefault();
+        applyZoom(zoomRef.current * ZOOM_STEP);
+      } else if (e.key === "-" || e.key === "_") {
+        e.preventDefault();
+        applyZoom(zoomRef.current / ZOOM_STEP);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [applyZoom]);
+
+  // Trackpad pinch and ctrl+wheel zoom about the pointer. Registered
+  // natively because React's onWheel is passive — it cannot preventDefault.
+  useEffect(() => {
+    const vp = viewportRef.current;
+    if (!vp) return;
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return; // plain wheel scrolls, as it should
+      e.preventDefault();
+      applyZoom(zoomRef.current * Math.exp(-e.deltaY / 240), e);
+    };
+    vp.addEventListener("wheel", onWheel, { passive: false });
+    return () => vp.removeEventListener("wheel", onWheel);
+  }, [applyZoom]);
 
   // The edit canvas shows real field content (name/placeholder in the real
   // styling), so the designed typefaces must load here too, not just in
@@ -947,562 +1050,641 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
   };
 
   return (
-    <div
-      ref={containerRef}
-      data-overlay-root
-      className="relative w-full select-none touch-none overflow-hidden"
-      style={{ aspectRatio: `${canvasWidth} / ${canvasHeight}`, cursor: "crosshair" }}
-      onDragOver={(e) => {
-        if (e.dataTransfer.types.includes(PALETTE_MIME) || e.dataTransfer.types.includes("Files")) {
-          e.preventDefault();
-          e.dataTransfer.dropEffect = "copy";
-        }
-      }}
-      onDrop={(e) => {
-        const paletteId = e.dataTransfer.getData(PALETTE_MIME);
-        if (paletteId) {
-          e.preventDefault();
-          onDropElement(paletteId, toCanvas(e));
-          return;
-        }
-        const files = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith("image/"));
-        if (files.length) {
-          e.preventDefault();
-          onDropFiles(files, toCanvas(e));
-        }
-      }}
-      onContextMenu={(e) => {
-        const target = e.target as HTMLElement;
-        if (target !== e.currentTarget && target.dataset.role !== "bg") return;
-        e.preventDefault();
-        onContextMenu({ x: e.clientX, y: e.clientY }, null, toCanvas(e));
-      }}
-      onPointerDown={(e) => {
-        if (e.button !== 0) return;
-        const target = e.target as HTMLElement;
-        if (target !== e.currentTarget && target.dataset.role !== "bg") return;
-        beginDraw(e);
-      }}
-    >
-      {/* Background at canvas scale */}
-      <div
-        style={{
-          width: canvasWidth,
-          height: canvasHeight,
-          transform: `scale(${scale})`,
-          transformOrigin: "top left",
-          position: "absolute",
-          top: 0,
-          left: 0,
-          background: backgroundCss ?? "#fff",
-          pointerEvents: "none",
-        }}
-      >
-        {backgroundDataUrl && (
-          <img
-            src={backgroundDataUrl}
-            alt=""
-            data-role="bg"
-            style={{
-              position: "absolute",
-              inset: 0,
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-            }}
-          />
-        )}
-      </div>
-
-      {/* Group frames: builder-only chrome (never in preview or export).
-          They sit UNDER the child boxes in DOM order, so children win clicks
-          and the frame catches the gaps. */}
-      {groups.map((g) => {
-        const r0 = layout.groupRects.get(g.id);
-        if (!r0) return null;
-        const gd = frame?.groupDelta;
-        const dgx = gd && gd.groupIds.has(g.id) ? gd.dx : 0;
-        const dgy = gd && gd.groupIds.has(g.id) ? gd.dy : 0;
-        const gref = groupChildRef(g.id);
-        const isSel = selectedIds.includes(gref);
-        const overflow = overflowGroupIds.includes(g.id);
-        const isTop = !parentGroupOf(g.id, groups);
-        return (
-          <div
-            key={g.id}
-            onPointerDown={(e) => {
-              if (e.button !== 0 || !isTop) return;
-              e.stopPropagation();
-              if (!isSel) onSelect([gref]);
-              beginGroupMove(e, g);
-            }}
-            onContextMenu={(e) => {
+    <div className="relative w-full" style={{ aspectRatio: `${canvasWidth} / ${canvasHeight}` }}>
+      <div ref={viewportRef} className="absolute inset-0 overflow-auto">
+        <div
+          ref={containerRef}
+          data-overlay-root
+          className="relative select-none touch-none overflow-hidden"
+          style={{
+            width: canvasWidth * scale,
+            height: canvasHeight * scale,
+            cursor: "crosshair",
+          }}
+          onDragOver={(e) => {
+            if (
+              e.dataTransfer.types.includes(PALETTE_MIME) ||
+              e.dataTransfer.types.includes("Files")
+            ) {
               e.preventDefault();
-              e.stopPropagation();
-              if (!isSel) onSelect([gref]);
-              onContextMenu({ x: e.clientX, y: e.clientY }, gref, toCanvas(e));
-            }}
+              e.dataTransfer.dropEffect = "copy";
+            }
+          }}
+          onDrop={(e) => {
+            const paletteId = e.dataTransfer.getData(PALETTE_MIME);
+            if (paletteId) {
+              e.preventDefault();
+              onDropElement(paletteId, toCanvas(e));
+              return;
+            }
+            const files = Array.from(e.dataTransfer.files).filter((f) =>
+              f.type.startsWith("image/"),
+            );
+            if (files.length) {
+              e.preventDefault();
+              onDropFiles(files, toCanvas(e));
+            }
+          }}
+          onContextMenu={(e) => {
+            const target = e.target as HTMLElement;
+            if (target !== e.currentTarget && target.dataset.role !== "bg") return;
+            e.preventDefault();
+            onContextMenu({ x: e.clientX, y: e.clientY }, null, toCanvas(e));
+          }}
+          onPointerDown={(e) => {
+            if (e.button !== 0) return;
+            const target = e.target as HTMLElement;
+            if (target !== e.currentTarget && target.dataset.role !== "bg") return;
+            beginDraw(e);
+          }}
+        >
+          {/* Background at canvas scale */}
+          <div
             style={{
+              width: canvasWidth,
+              height: canvasHeight,
+              transform: `scale(${scale})`,
+              transformOrigin: "top left",
               position: "absolute",
-              left: (r0.x + dgx) * scale,
-              top: (r0.y + dgy) * scale,
-              width: r0.width * scale,
-              height: r0.height * scale,
-              zIndex: 1,
-              border: isSel
-                ? "var(--editor-line) solid var(--editor-accent)"
-                : `var(--editor-line) dashed color-mix(in srgb, ${
-                    overflow ? "var(--destructive)" : "var(--editor-accent)"
-                  } 55%, transparent)`,
-              background: "transparent",
-              cursor: isTop ? "move" : "default",
+              top: 0,
+              left: 0,
+              background: backgroundCss ?? "#fff",
+              pointerEvents: "none",
             }}
           >
-            {/* Group chip: the overflow warning always shows (it carries real
-                information); the name shows only mid-drag. Plain selection
-                stays chip-free — the inspector names the group. */}
-            {(overflow || (gd && gd.groupIds.has(g.id))) && (
-              <span
-                className="absolute -top-4 left-0 rounded whitespace-nowrap"
+            {backgroundDataUrl && (
+              <img
+                src={backgroundDataUrl}
+                alt=""
+                data-role="bg"
                 style={{
-                  background: overflow ? "var(--destructive)" : "var(--editor-accent)",
-                  color: "var(--text-on-action)",
-                  fontSize: 9,
-                  fontWeight: 500,
-                  padding: "1px 4px",
-                  pointerEvents: "none",
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
                 }}
-              >
-                {g.name}
-                {overflow ? " · outside canvas" : ""}
-              </span>
+              />
             )}
           </div>
-        );
-      })}
 
-      {/* Field boxes (screen space = canvas × scale; z = canvas layer order) */}
-      {fields.map((f) => {
-        const v = viewOf(f);
-        const grouped = isGrouped(f);
-        // Display geometry: an active free gesture (move/resize/rotate) owns
-        // the box; otherwise the layout pass does — grouped children render
-        // at their computed, hugged rects, ungrouped at authored ones.
-        const hasOverride = Boolean(frame?.overrides.has(f.id));
-        const base: { x: number; y: number; width: number; height: number } = hasOverride
-          ? { x: displayX(v), y: displayY(v), width: v.width, height: v.height }
-          : displayRect(f);
-        const gd = frame?.groupDelta;
-        const rd = frame?.reorderDelta;
-        const box = {
-          x: base.x + (gd?.fieldIds.has(f.id) ? gd.dx : 0) + (rd?.fieldId === f.id ? rd.dx : 0),
-          y: base.y + (gd?.fieldIds.has(f.id) ? gd.dy : 0) + (rd?.fieldId === f.id ? rd.dy : 0),
-          width: base.width,
-          height: base.height,
-        };
-        const isSelected = selectedIds.includes(f.id);
-        const isEditing = editingId === f.id;
-        const showHandles = isSelected && single?.id === f.id && !isEditing;
-        const isText = f.type !== "image" && f.type !== "shape";
-        const stackChild = inStack(f);
-        const groupVertical = stackChild
-          ? directGroupOf(f.fieldKey)?.direction !== "horizontal"
-          : false;
-        // The whole EDGE is the resize surface (strips below); the dots are
-        // wayfinding. A mid-edge dot renders only where it has room between
-        // the corners — on a short or narrow box it would crowd them — but
-        // dropping a dot never costs the interaction, because its edge strip
-        // stays grabbable at any size.
-        //
-        // Computed extents aren't draggable. Text height is computed
-        // wherever it hugs content: Free fields (any context) and children
-        // of a vertical stack — their vertical edges drop, corners (which
-        // resize both axes) too. Children of a horizontal stack hug their
-        // width instead. Shrink fields keep every handle: their box is the
-        // constraint the admin draws.
-        const hugsHeight =
-          isText &&
-          (resolveFieldStyle(f, kit).textSizing !== "shrink" || (stackChild && groupVertical));
-        const allowDir = (dx: number, dy: number): boolean => {
-          if (!isText) return true;
-          if (dy !== 0 && hugsHeight) return false;
-          if (dx !== 0 && stackChild && !groupVertical) return false;
-          return true;
-        };
-        const handleDirs = RESIZE_DIRS.filter(
-          ({ dx, dy }) =>
-            allowDir(dx, dy) &&
-            ((dx !== 0 && dy !== 0) ||
-              (dy === 0
-                ? box.height * scale >= HANDLE_CROWD_PX
-                : box.width * scale >= HANDLE_CROWD_PX)),
-        );
-        const edgeStrips = EDGE_STRIPS.filter(({ dx, dy }) => allowDir(dx, dy));
-        return (
-          <div
-            key={f.id}
-            onPointerDown={(e) => {
-              if (e.button !== 0) return;
-              e.stopPropagation();
-              // While editing text in this box, the pointer belongs to the
-              // editor — no drags, no reselection.
-              if (editingId === f.id) return;
-              // Alt-click digs through the stack: each click selects the
-              // next element beneath the pointer, wrapping at the bottom —
-              // and drags it in the same gesture.
-              if (e.altKey && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
-                const p = toCanvas(e);
-                const stack = paintOrder(fieldsRef.current)
-                  .reverse()
-                  .filter((sf) => hitTestRect(displayRect(sf), sf.rotation, p));
-                if (stack.length > 1) {
-                  const cur = stack.findIndex((sf) => selectedIds.includes(sf.id));
-                  const next = stack[(cur + 1) % stack.length];
-                  onSelect([next.id]);
-                  if (!inStack(next)) beginMove(e, [next.id], next.id, false);
-                  return;
-                }
-              }
-              const multi = e.shiftKey || e.metaKey || e.ctrlKey;
-              // Grouped child, plain click: FIRST click selects the whole
-              // group (drag moves it); a click while the group is selected
-              // goes down INTO the child — dragging a stack child re-slots
-              // it, dragging a plain-group child just moves it (that is the
-              // point of a plain group).
-              if (grouped && !multi) {
-                const outer = outermostGroupOf(f.fieldKey, groupsRef.current);
-                const outerRef = outer ? groupChildRef(outer.id) : null;
-                if (outerRef && !selectedIds.includes(outerRef) && !isSelected) {
-                  onSelect([outerRef]);
-                  if (outer) beginGroupMove(e, outer);
-                  return;
-                }
-                if (!isSelected) onSelect([f.id]);
-                if (inStack(f)) beginChildReorder(e, f);
-                else beginMove(e, [f.id], f.id, false);
-                return;
-              }
-              let ids: string[];
-              if (multi) {
-                ids = isSelected ? selectedIds.filter((id) => id !== f.id) : [...selectedIds, f.id];
-                onSelect(ids);
-                // Toggled OFF — a drag from a just-deselected element would
-                // move everything else out from under the pointer.
-                if (!ids.includes(f.id)) return;
-              } else {
-                ids = isSelected ? selectedIds : [f.id];
-                if (!isSelected) onSelect([f.id]);
-              }
-              // Selection and drag are ONE gesture — pressing an unselected
-              // element and pulling moves it immediately, first time.
-              beginMove(e, ids, f.id, !multi && isSelected && selectedIds.length > 1);
-            }}
-            onDoubleClick={(e) => {
-              e.stopPropagation();
-              if (f.static && (f.type === "text" || f.type === "multiline")) {
-                // Fixed text: its content lives on the canvas — edit it there.
-                setEditingId(f.id);
-              } else {
-                // Member-editable elements have no builder-side content; the
-                // double-clickable text is their NAME, over in the inspector.
-                onRequestLabelFocus(f.id);
-              }
-            }}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              if (!isSelected) onSelect([f.id]);
-              onContextMenu({ x: e.clientX, y: e.clientY }, f.id, toCanvas(e));
-            }}
-            onMouseEnter={() => setHoveredId(f.id)}
-            onMouseLeave={() => setHoveredId((id) => (id === f.id ? null : id))}
-            style={{
-              position: "absolute",
-              left: box.x * scale,
-              top: box.y * scale,
-              width: box.width * scale,
-              height: box.height * scale,
-              zIndex: (f.zIndex ?? 0) + 2, // above the background AND group frames
-              transform: v.rotation ? `rotate(${v.rotation}deg)` : undefined,
-              border: isSelected
-                ? "var(--editor-line) solid var(--editor-accent)"
-                : "var(--editor-line) dashed color-mix(in srgb, var(--editor-accent) 65%, transparent)",
-              // The outline follows the element's corner radius wherever the
-              // renderer honors one (images, rect shapes) — a square outline
-              // over a rounded element reads as "the radius didn't apply".
-              borderRadius:
-                f.type === "image" || (f.type === "shape" && (f.shape ?? "rect") === "rect")
-                  ? cornerRadiusCss(f)
-                  : undefined,
-              // Content lives INSIDE the box — no fill, the outline and
-              // handles carry selection.
-              background: "transparent",
-              cursor: isEditing ? "text" : stackChild ? "grab" : "move",
-            }}
-          >
-            {/* The field's real appearance, riding inside the interaction box.
+          {/* Group frames: builder-only chrome (never in preview or export).
+          They sit UNDER the child boxes in DOM order, so children win clicks
+          and the frame catches the gaps. */}
+          {groups.map((g) => {
+            const r0 = layout.groupRects.get(g.id);
+            if (!r0) return null;
+            const gd = frame?.groupDelta;
+            const dgx = gd && gd.groupIds.has(g.id) ? gd.dx : 0;
+            const dgy = gd && gd.groupIds.has(g.id) ? gd.dy : 0;
+            const gref = groupChildRef(g.id);
+            const isSel = selectedIds.includes(gref);
+            const overflow = overflowGroupIds.includes(g.id);
+            const isTop = !parentGroupOf(g.id, groups);
+            return (
+              <div
+                key={g.id}
+                onPointerDown={(e) => {
+                  if (e.button !== 0 || !isTop) return;
+                  e.stopPropagation();
+                  if (!isSel) onSelect([gref]);
+                  beginGroupMove(e, g);
+                }}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (!isSel) onSelect([gref]);
+                  onContextMenu({ x: e.clientX, y: e.clientY }, gref, toCanvas(e));
+                }}
+                style={{
+                  position: "absolute",
+                  left: (r0.x + dgx) * scale,
+                  top: (r0.y + dgy) * scale,
+                  width: r0.width * scale,
+                  height: r0.height * scale,
+                  zIndex: 1,
+                  // Same rule as elements — except an overflowing frame keeps
+                  // its warning outline whether or not you are looking at it.
+                  border: isSel
+                    ? "var(--editor-line) solid var(--editor-accent)"
+                    : overflow
+                      ? "var(--editor-line) dashed color-mix(in srgb, var(--destructive) 55%, transparent)"
+                      : hoveredGroupId === g.id
+                        ? "var(--editor-line) dashed color-mix(in srgb, var(--editor-accent) 55%, transparent)"
+                        : "var(--editor-line) solid transparent",
+                  background: "transparent",
+                  cursor: isTop ? "move" : "default",
+                }}
+                onMouseEnter={() => isTop && setHoveredGroupId(g.id)}
+                onMouseLeave={() => setHoveredGroupId((id) => (id === g.id ? null : id))}
+              >
+                {/* Group chip: the overflow warning always shows (it carries real
+                information); the name shows only mid-drag. Plain selection
+                stays chip-free — the inspector names the group. */}
+                {(overflow || (gd && gd.groupIds.has(g.id))) && (
+                  <span
+                    className="absolute -top-4 left-0 rounded whitespace-nowrap"
+                    style={{
+                      background: overflow ? "var(--destructive)" : "var(--editor-accent)",
+                      color: "var(--text-on-action)",
+                      fontSize: 9,
+                      fontWeight: 500,
+                      padding: "1px 4px",
+                      pointerEvents: "none",
+                    }}
+                  >
+                    {g.name}
+                    {overflow ? " · outside canvas" : ""}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Field boxes (screen space = canvas × scale; z = canvas layer order) */}
+          {fields.map((f) => {
+            const v = viewOf(f);
+            const grouped = isGrouped(f);
+            // Display geometry: an active free gesture (move/resize/rotate) owns
+            // the box; otherwise the layout pass does — grouped children render
+            // at their computed, hugged rects, ungrouped at authored ones.
+            const hasOverride = Boolean(frame?.overrides.has(f.id));
+            const base: { x: number; y: number; width: number; height: number } = hasOverride
+              ? { x: displayX(v), y: displayY(v), width: v.width, height: v.height }
+              : displayRect(f);
+            const gd = frame?.groupDelta;
+            const rd = frame?.reorderDelta;
+            const box = {
+              x: base.x + (gd?.fieldIds.has(f.id) ? gd.dx : 0) + (rd?.fieldId === f.id ? rd.dx : 0),
+              y: base.y + (gd?.fieldIds.has(f.id) ? gd.dy : 0) + (rd?.fieldId === f.id ? rd.dy : 0),
+              width: base.width,
+              height: base.height,
+            };
+            const isSelected = selectedIds.includes(f.id);
+            const isEditing = editingId === f.id;
+            const showHandles = isSelected && single?.id === f.id && !isEditing;
+            const isText = f.type !== "image" && f.type !== "shape";
+            const stackChild = inStack(f);
+            const groupVertical = stackChild
+              ? directGroupOf(f.fieldKey)?.direction !== "horizontal"
+              : false;
+            // The whole EDGE is the resize surface (strips below); the dots are
+            // wayfinding. A mid-edge dot renders only where it has room between
+            // the corners — on a short or narrow box it would crowd them — but
+            // dropping a dot never costs the interaction, because its edge strip
+            // stays grabbable at any size.
+            //
+            // Computed extents aren't draggable. Text height is computed
+            // wherever it hugs content: Free fields (any context) and children
+            // of a vertical stack — their vertical edges drop, corners (which
+            // resize both axes) too. Children of a horizontal stack hug their
+            // width instead. Shrink fields keep every handle: their box is the
+            // constraint the admin draws.
+            const hugsHeight =
+              isText &&
+              (resolveFieldStyle(f, kit).textSizing !== "shrink" || (stackChild && groupVertical));
+            const allowDir = (dx: number, dy: number): boolean => {
+              if (!isText) return true;
+              if (dy !== 0 && hugsHeight) return false;
+              if (dx !== 0 && stackChild && !groupVertical) return false;
+              return true;
+            };
+            const handleDirs = RESIZE_DIRS.filter(
+              ({ dx, dy }) =>
+                allowDir(dx, dy) &&
+                ((dx !== 0 && dy !== 0) ||
+                  (dy === 0
+                    ? box.height * scale >= HANDLE_CROWD_PX
+                    : box.width * scale >= HANDLE_CROWD_PX)),
+            );
+            const edgeStrips = EDGE_STRIPS.filter(({ dx, dy }) => allowDir(dx, dy));
+            return (
+              <div
+                key={f.id}
+                onPointerDown={(e) => {
+                  if (e.button !== 0) return;
+                  e.stopPropagation();
+                  // While editing text in this box, the pointer belongs to the
+                  // editor — no drags, no reselection.
+                  if (editingId === f.id) return;
+                  // Alt-click digs through the stack: each click selects the
+                  // next element beneath the pointer, wrapping at the bottom —
+                  // and drags it in the same gesture.
+                  if (e.altKey && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
+                    const p = toCanvas(e);
+                    const stack = paintOrder(fieldsRef.current)
+                      .reverse()
+                      .filter((sf) => hitTestRect(displayRect(sf), sf.rotation, p));
+                    if (stack.length > 1) {
+                      const cur = stack.findIndex((sf) => selectedIds.includes(sf.id));
+                      const next = stack[(cur + 1) % stack.length];
+                      onSelect([next.id]);
+                      if (!inStack(next)) beginMove(e, [next.id], next.id, false);
+                      return;
+                    }
+                  }
+                  const multi = e.shiftKey || e.metaKey || e.ctrlKey;
+                  // Grouped child, plain click: FIRST click selects the whole
+                  // group (drag moves it); a click while the group is selected
+                  // goes down INTO the child — dragging a stack child re-slots
+                  // it, dragging a plain-group child just moves it (that is the
+                  // point of a plain group).
+                  if (grouped && !multi) {
+                    const outer = outermostGroupOf(f.fieldKey, groupsRef.current);
+                    const outerRef = outer ? groupChildRef(outer.id) : null;
+                    if (outerRef && !selectedIds.includes(outerRef) && !isSelected) {
+                      onSelect([outerRef]);
+                      if (outer) beginGroupMove(e, outer);
+                      return;
+                    }
+                    if (!isSelected) onSelect([f.id]);
+                    if (inStack(f)) beginChildReorder(e, f);
+                    else beginMove(e, [f.id], f.id, false);
+                    return;
+                  }
+                  let ids: string[];
+                  if (multi) {
+                    ids = isSelected
+                      ? selectedIds.filter((id) => id !== f.id)
+                      : [...selectedIds, f.id];
+                    onSelect(ids);
+                    // Toggled OFF — a drag from a just-deselected element would
+                    // move everything else out from under the pointer.
+                    if (!ids.includes(f.id)) return;
+                  } else {
+                    ids = isSelected ? selectedIds : [f.id];
+                    if (!isSelected) onSelect([f.id]);
+                  }
+                  // Selection and drag are ONE gesture — pressing an unselected
+                  // element and pulling moves it immediately, first time.
+                  beginMove(e, ids, f.id, !multi && isSelected && selectedIds.length > 1);
+                }}
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  if (f.static && (f.type === "text" || f.type === "multiline")) {
+                    // Fixed text: its content lives on the canvas — edit it there.
+                    setEditingId(f.id);
+                  } else {
+                    // Member-editable elements have no builder-side content; the
+                    // double-clickable text is their NAME, over in the inspector.
+                    onRequestLabelFocus(f.id);
+                  }
+                }}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (!isSelected) onSelect([f.id]);
+                  onContextMenu({ x: e.clientX, y: e.clientY }, f.id, toCanvas(e));
+                }}
+                onMouseEnter={() => setHoveredId(f.id)}
+                onMouseLeave={() => setHoveredId((id) => (id === f.id ? null : id))}
+                style={{
+                  position: "absolute",
+                  left: box.x * scale,
+                  top: box.y * scale,
+                  width: box.width * scale,
+                  height: box.height * scale,
+                  zIndex: (f.zIndex ?? 0) + 2, // above the background AND group frames
+                  transform: v.rotation ? `rotate(${v.rotation}deg)` : undefined,
+                  // Outlines are for the element you are working with, not for
+                  // every element at once — a canvas of dashed boxes hides the
+                  // design it is supposed to show. The border stays declared at
+                  // the same width and only loses its color, so nothing shifts.
+                  border: isSelected
+                    ? "var(--editor-line) solid var(--editor-accent)"
+                    : hoveredId === f.id || hasOverride
+                      ? "var(--editor-line) dashed color-mix(in srgb, var(--editor-accent) 65%, transparent)"
+                      : "var(--editor-line) solid transparent",
+                  // The outline follows the element's corner radius wherever the
+                  // renderer honors one (images, rect shapes) — a square outline
+                  // over a rounded element reads as "the radius didn't apply".
+                  borderRadius:
+                    f.type === "image" || (f.type === "shape" && (f.shape ?? "rect") === "rect")
+                      ? cornerRadiusCss(f)
+                      : undefined,
+                  // Content lives INSIDE the box — no fill, the outline and
+                  // handles carry selection.
+                  background: "transparent",
+                  cursor: isEditing ? "text" : stackChild ? "grab" : "move",
+                }}
+              >
+                {/* The field's real appearance, riding inside the interaction box.
                 Sized in canvas units from the LIVE view geometry and scaled
                 down uniformly — during a resize the box gets real dimensions
                 every frame, so text reflows as it will look, never a
                 stretched glyph preview. */}
-            {isEditing ? (
-              <InlineTextEditor
-                field={{ ...v, width: box.width, height: box.height }}
-                brandKit={kit}
-                scale={scale}
-                onCommit={(text) =>
-                  onChangeRef.current(
-                    fieldsRef.current.map((cf) =>
-                      cf.id === f.id ? { ...cf, staticValue: text || undefined } : cf,
-                    ),
-                  )
-                }
-                onExit={() => setEditingId(null)}
-              />
-            ) : (
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  overflow: "hidden",
-                  pointerEvents: "none",
-                }}
-              >
-                <div
-                  data-field-content
-                  style={{
-                    width: box.width,
-                    height: box.height,
-                    transform: `scale(${scale})`,
-                    transformOrigin: "top left",
-                    pointerEvents: "none",
-                  }}
-                >
-                  {/* Field boundary: a malformed element degrades to a
+                {isEditing ? (
+                  <InlineTextEditor
+                    field={{ ...v, width: box.width, height: box.height }}
+                    brandKit={kit}
+                    scale={scale}
+                    onCommit={(text) =>
+                      onChangeRef.current(
+                        fieldsRef.current.map((cf) =>
+                          cf.id === f.id ? { ...cf, staticValue: text || undefined } : cf,
+                        ),
+                      )
+                    }
+                    onExit={() => setEditingId(null)}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      overflow: "hidden",
+                      pointerEvents: "none",
+                    }}
+                  >
+                    <div
+                      data-field-content
+                      style={{
+                        width: box.width,
+                        height: box.height,
+                        transform: `scale(${scale})`,
+                        transformOrigin: "top left",
+                        pointerEvents: "none",
+                      }}
+                    >
+                      {/* Field boundary: a malformed element degrades to a
                       placeholder that stays selectable, movable, and
                       deletable — the admin can fix or remove it. Any edit
                       to the field resets the boundary. */}
-                  <ErrorBoundary
-                    level="field"
-                    context={{ fieldId: f.id, fieldType: f.type }}
-                    resetKeys={[v]}
-                    fallback={() => <FieldCrashFallback width={box.width} height={box.height} />}
-                  >
-                    <FieldContent
-                      field={grouped ? { ...v, width: box.width, height: box.height } : v}
-                      value={values?.[f.fieldKey]}
-                      brandKit={kit}
-                      fontSize={layout.fontSizes.get(f.id)}
-                    />
-                  </ErrorBoundary>
-                </div>
-              </div>
-            )}
-            {/* Name chip: wayfinding while the pointer is involved — hover,
+                      <ErrorBoundary
+                        level="field"
+                        context={{ fieldId: f.id, fieldType: f.type }}
+                        resetKeys={[v]}
+                        fallback={() => (
+                          <FieldCrashFallback width={box.width} height={box.height} />
+                        )}
+                      >
+                        <FieldContent
+                          field={grouped ? { ...v, width: box.width, height: box.height } : v}
+                          value={values?.[f.fieldKey]}
+                          brandKit={kit}
+                          fontSize={layout.fontSizes.get(f.id)}
+                        />
+                      </ErrorBoundary>
+                    </div>
+                  </div>
+                )}
+                {/* Name chip: wayfinding while the pointer is involved — hover,
                 or this element's own drag. NOT on mere selection: chips sit
                 over the element above, and the inspector and field list
                 already name the selection. */}
-            {(hoveredId === f.id ||
-              Boolean(frame?.overrides.has(f.id)) ||
-              frame?.reorderDelta?.fieldId === f.id) && (
-              <span
-                className="absolute -top-4 left-0 rounded whitespace-nowrap"
-                style={{
-                  background: "var(--editor-accent)",
-                  color: "#fff",
-                  fontSize: 9,
-                  fontWeight: 500,
-                  padding: "1px 4px",
-                  pointerEvents: "none",
-                }}
-              >
-                {f.label}
-                {(() => {
-                  // "Image · image" says nothing — suppress the type when it
-                  // duplicates the label. "fixed" carries information except
-                  // on shapes, which are always design-only.
-                  const segment =
-                    f.type === "shape"
-                      ? null
-                      : f.static
-                        ? "fixed"
-                        : f.label.trim().toLowerCase() === f.type
-                          ? null
-                          : f.type;
-                  return segment ? ` · ${segment}` : "";
-                })()}
-              </span>
-            )}
-
-            {/* Transform chrome: 8 resize handles + the rotate handle, only
-                on a single selection. Children of the box, so they rotate
-                and travel with it for free. */}
-            {showHandles && (
-              <>
-                <div
-                  title="Rotate (shift snaps to 15°)"
-                  onPointerDown={(e) => {
-                    if (e.button !== 0) return;
-                    e.stopPropagation();
-                    beginRotate(e, f);
-                  }}
-                  style={{
-                    position: "absolute",
-                    left: "50%",
-                    top: -26,
-                    transform: "translateX(-50%)",
-                    width: 16,
-                    height: 16,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "grab",
-                  }}
-                >
+                {(hoveredId === f.id ||
+                  Boolean(frame?.overrides.has(f.id)) ||
+                  frame?.reorderDelta?.fieldId === f.id) && (
                   <span
+                    className="absolute -top-4 left-0 rounded whitespace-nowrap"
                     style={{
-                      width: 9,
-                      height: 9,
-                      borderRadius: "50%",
-                      background: "var(--bg-surface)",
-                      border: "var(--editor-line) solid var(--editor-accent)",
-                    }}
-                  />
-                </div>
-                <div
-                  style={{
-                    position: "absolute",
-                    left: "50%",
-                    top: -12,
-                    width: 1,
-                    height: 12,
-                    background: "var(--editor-accent)",
-                    pointerEvents: "none",
-                  }}
-                />
-                {edgeStrips.map(({ dx, dy, cursor, style }) => (
-                  <div
-                    key={`edge${dx},${dy}`}
-                    data-resize-edge={`${dx},${dy}`}
-                    onPointerDown={(e) => {
-                      if (e.button !== 0) return;
-                      e.stopPropagation();
-                      beginResize(e, f, dx, dy);
-                    }}
-                    style={{ position: "absolute", cursor, ...style }}
-                  />
-                ))}
-                {handleDirs.map(({ dx, dy, cursor }) => (
-                  <div
-                    key={`${dx},${dy}`}
-                    onPointerDown={(e) => {
-                      if (e.button !== 0) return;
-                      e.stopPropagation();
-                      beginResize(e, f, dx, dy);
-                    }}
-                    style={{
-                      position: "absolute",
-                      left: `${(dx + 1) * 50}%`,
-                      top: `${(dy + 1) * 50}%`,
-                      transform: "translate(-50%, -50%)",
-                      width: 14,
-                      height: 14,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      cursor,
+                      background: "var(--editor-accent)",
+                      color: "#fff",
+                      fontSize: 9,
+                      fontWeight: 500,
+                      padding: "1px 4px",
+                      pointerEvents: "none",
                     }}
                   >
-                    <span
+                    {f.label}
+                    {(() => {
+                      // "Image · image" says nothing — suppress the type when it
+                      // duplicates the label. "fixed" carries information except
+                      // on shapes, which are always design-only.
+                      const segment =
+                        f.type === "shape"
+                          ? null
+                          : f.static
+                            ? "fixed"
+                            : f.label.trim().toLowerCase() === f.type
+                              ? null
+                              : f.type;
+                      return segment ? ` · ${segment}` : "";
+                    })()}
+                  </span>
+                )}
+
+                {/* Transform chrome: 8 resize handles + the rotate handle, only
+                on a single selection. Children of the box, so they rotate
+                and travel with it for free. */}
+                {showHandles && (
+                  <>
+                    <div
+                      title="Rotate (shift snaps to 15°)"
+                      onPointerDown={(e) => {
+                        if (e.button !== 0) return;
+                        e.stopPropagation();
+                        beginRotate(e, f);
+                      }}
                       style={{
-                        width: 8,
-                        height: 8,
-                        background: "var(--bg-surface)",
-                        border: "var(--editor-line) solid var(--editor-accent)",
+                        position: "absolute",
+                        left: "50%",
+                        top: -26,
+                        transform: "translateX(-50%)",
+                        width: 16,
+                        height: 16,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "grab",
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: 9,
+                          height: 9,
+                          borderRadius: "50%",
+                          background: "var(--bg-surface)",
+                          border: "var(--editor-line) solid var(--editor-accent)",
+                        }}
+                      />
+                    </div>
+                    <div
+                      style={{
+                        position: "absolute",
+                        left: "50%",
+                        top: -12,
+                        width: 1,
+                        height: 12,
+                        background: "var(--editor-accent)",
+                        pointerEvents: "none",
                       }}
                     />
-                  </div>
-                ))}
-              </>
-            )}
+                    {edgeStrips.map(({ dx, dy, cursor, style }) => (
+                      <div
+                        key={`edge${dx},${dy}`}
+                        data-resize-edge={`${dx},${dy}`}
+                        onPointerDown={(e) => {
+                          if (e.button !== 0) return;
+                          e.stopPropagation();
+                          beginResize(e, f, dx, dy);
+                        }}
+                        style={{ position: "absolute", cursor, ...style }}
+                      />
+                    ))}
+                    {handleDirs.map(({ dx, dy, cursor }) => (
+                      <div
+                        key={`${dx},${dy}`}
+                        onPointerDown={(e) => {
+                          if (e.button !== 0) return;
+                          e.stopPropagation();
+                          beginResize(e, f, dx, dy);
+                        }}
+                        style={{
+                          position: "absolute",
+                          left: `${(dx + 1) * 50}%`,
+                          top: `${(dy + 1) * 50}%`,
+                          transform: "translate(-50%, -50%)",
+                          width: 14,
+                          height: 14,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          cursor,
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: 8,
+                            height: 8,
+                            background: "var(--bg-surface)",
+                            border: "var(--editor-line) solid var(--editor-accent)",
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </>
+                )}
 
-            {/* Live readout under the box: dimensions while moving/resizing,
+                {/* Live readout under the box: dimensions while moving/resizing,
                 the angle while rotating. Derived from the same frame state
                 that renders the box — it can never disagree with what shows. */}
-            {showHandles && frame && (
-              <span
-                className="absolute whitespace-nowrap rounded"
+                {showHandles && frame && (
+                  <span
+                    className="absolute whitespace-nowrap rounded"
+                    style={{
+                      top: "100%",
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      marginTop: 6,
+                      background: "var(--editor-accent)",
+                      color: "#fff",
+                      fontSize: 9,
+                      fontWeight: 500,
+                      padding: "1px 4px",
+                      pointerEvents: "none",
+                    }}
+                  >
+                    {frame.kind === "rotate"
+                      ? `${Math.round(v.rotation ?? 0)}°`
+                      : `${Math.round(box.width)} × ${Math.round(box.height)}`}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Smart guides for the active snap */}
+          {frame?.guides.map((g, i) =>
+            g.axis === "v" ? (
+              <div
+                key={`g${i}`}
                 style={{
-                  top: "100%",
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  marginTop: 6,
+                  position: "absolute",
+                  left: g.pos * scale,
+                  top: 0,
+                  width: 1,
+                  height: "100%",
                   background: "var(--editor-accent)",
-                  color: "#fff",
-                  fontSize: 9,
-                  fontWeight: 500,
-                  padding: "1px 4px",
                   pointerEvents: "none",
+                  zIndex: 9998,
                 }}
-              >
-                {frame.kind === "rotate"
-                  ? `${Math.round(v.rotation ?? 0)}°`
-                  : `${Math.round(box.width)} × ${Math.round(box.height)}`}
-              </span>
-            )}
-          </div>
-        );
-      })}
+              />
+            ) : (
+              <div
+                key={`g${i}`}
+                style={{
+                  position: "absolute",
+                  top: g.pos * scale,
+                  left: 0,
+                  height: 1,
+                  width: "100%",
+                  background: "var(--editor-accent)",
+                  pointerEvents: "none",
+                  zIndex: 9998,
+                }}
+              />
+            ),
+          )}
 
-      {/* Smart guides for the active snap */}
-      {frame?.guides.map((g, i) =>
-        g.axis === "v" ? (
-          <div
-            key={`g${i}`}
-            style={{
-              position: "absolute",
-              left: g.pos * scale,
-              top: 0,
-              width: 1,
-              height: "100%",
-              background: "var(--editor-accent)",
-              pointerEvents: "none",
-              zIndex: 9998,
-            }}
-          />
-        ) : (
-          <div
-            key={`g${i}`}
-            style={{
-              position: "absolute",
-              top: g.pos * scale,
-              left: 0,
-              height: 1,
-              width: "100%",
-              background: "var(--editor-accent)",
-              pointerEvents: "none",
-              zIndex: 9998,
-            }}
-          />
-        ),
-      )}
+          {/* Draw preview */}
+          {draw && draw.w > 4 && (
+            <div
+              style={{
+                position: "absolute",
+                left: draw.x * scale,
+                top: draw.y * scale,
+                width: draw.w * scale,
+                height: draw.h * scale,
+                border: "var(--editor-line) dashed var(--editor-accent)",
+                background: "color-mix(in srgb, var(--editor-accent) 8%, transparent)",
+                pointerEvents: "none",
+                zIndex: 10000,
+              }}
+            />
+          )}
+        </div>
+      </div>
 
-      {/* Draw preview */}
-      {draw && draw.w > 4 && (
-        <div
+      {/* Zoom, outside the scrolling viewport so it holds its corner. The
+          percentage is of true canvas pixels; clicking it fits the canvas. */}
+      <div
+        className="absolute flex items-center"
+        style={{
+          right: 8,
+          bottom: 8,
+          gap: 2,
+          padding: 2,
+          borderRadius: "var(--radius-control)",
+          border: "1px solid var(--border)",
+          background: "var(--bg-surface)",
+        }}
+      >
+        <button
+          aria-label="Zoom out"
+          title="Zoom out (⌘−)"
+          disabled={zoom <= MIN_ZOOM}
+          // From the ref, not the render's `zoom`: clicks land faster than
+          // React re-renders, and each one must step off the last.
+          onClick={() => applyZoom(zoomRef.current / ZOOM_STEP)}
+          style={{ display: "flex", padding: 4, opacity: zoom <= MIN_ZOOM ? 0.4 : 1 }}
+        >
+          <Minus style={{ width: 13, height: 13 }} strokeWidth={1.5} />
+        </button>
+        <button
+          aria-label={zoom === 1 ? "Canvas fits the view" : "Fit the canvas to the view"}
+          title="Fit (⌘0)"
+          onClick={() => applyZoom(1)}
           style={{
-            position: "absolute",
-            left: draw.x * scale,
-            top: draw.y * scale,
-            width: draw.w * scale,
-            height: draw.h * scale,
-            border: "var(--editor-line) dashed var(--editor-accent)",
-            background: "color-mix(in srgb, var(--editor-accent) 8%, transparent)",
-            pointerEvents: "none",
-            zIndex: 10000,
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            color: "var(--text-secondary)",
+            minWidth: 38,
+            textAlign: "center",
           }}
-        />
-      )}
+        >
+          {Math.round(scale * 100)}%
+        </button>
+        <button
+          aria-label="Zoom in"
+          title="Zoom in (⌘+)"
+          disabled={zoom >= MAX_ZOOM}
+          onClick={() => applyZoom(zoomRef.current * ZOOM_STEP)}
+          style={{ display: "flex", padding: 4, opacity: zoom >= MAX_ZOOM ? 0.4 : 1 }}
+        >
+          <Plus style={{ width: 13, height: 13 }} strokeWidth={1.5} />
+        </button>
+      </div>
     </div>
   );
 }

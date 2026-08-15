@@ -124,6 +124,36 @@ export function svgIntrinsicSize(svgText: string): { width: number; height: numb
 export const isSvgSource = (nameOrUrl: string): boolean =>
   /\.svg(\?|#|$)/i.test(nameOrUrl) || nameOrUrl.startsWith("data:image/svg");
 
+/** Diagonal offset between elements added to the same spot, canvas px. */
+const CASCADE_STEP = 40;
+
+/** Nudge a landing point until nothing already sits there. Clicking a
+ * palette tile repeatedly aims at the same canvas center every time, which
+ * drops elements exactly on top of each other and reads as "nothing
+ * happened". Each occupied spot pushes the next one down and right,
+ * Finder-style; the cascade restarts at the original point once it would
+ * leave the canvas, so it can never walk an element out of reach. */
+export function cascadePoint(
+  at: { x: number; y: number },
+  existing: TemplateField[],
+  canvas: { width: number; height: number },
+): { x: number; y: number } {
+  const taken = (p: { x: number; y: number }) =>
+    existing.some((f) => {
+      const cx = f.anchor === "center" ? f.x : f.x + f.width / 2;
+      const cy = f.anchor === "center" ? f.y : f.y + f.height / 2;
+      return Math.abs(cx - p.x) < 1 && Math.abs(cy - p.y) < 1;
+    });
+  let point = at;
+  // Bounded by the canvas, so this terminates even with hundreds of fields.
+  for (let i = 1; taken(point); i++) {
+    const next = { x: at.x + i * CASCADE_STEP, y: at.y + i * CASCADE_STEP };
+    if (next.x > canvas.width || next.y > canvas.height) return at;
+    point = next;
+  }
+  return point;
+}
+
 /** Build a new field of the given palette type centered at a canvas point,
  * clamped inside the canvas, painted on top of everything existing. */
 export function fieldFromPalette(

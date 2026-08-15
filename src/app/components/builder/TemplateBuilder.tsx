@@ -59,6 +59,7 @@ import {
   LOGO_PALETTE_PREFIX,
   PALETTE_ITEMS,
   applyClipboardStyle,
+  cascadePoint,
   clipboardHasFields,
   clipboardHasStyle,
   copyStyle,
@@ -636,8 +637,12 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
    * need a name — they're design-only, and neither do logos — the asset
    * name is already right). */
   const addPaletteField = (paletteId: string, at?: { x: number; y: number }) => {
-    const point = at ?? { x: draft.canvasWidth / 2, y: draft.canvasHeight / 2 };
     const canvas = { width: draft.canvasWidth, height: draft.canvasHeight };
+    // A drop lands where it was released. A CLICK aims at the canvas center
+    // every time, so it cascades off whatever is already sitting there.
+    const point = at
+      ? at
+      : cascadePoint({ x: canvas.width / 2, y: canvas.height / 2 }, draft.fields, canvas);
     if (paletteId.startsWith(LOGO_PALETTE_PREFIX)) {
       const asset = logoAssets.find((a) => a.id === paletteId.slice(LOGO_PALETTE_PREFIX.length));
       if (!asset) return;

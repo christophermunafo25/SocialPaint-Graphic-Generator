@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   applyClipboardStyle,
+  cascadePoint,
   clearStyleClipboard,
   clipboardHasStyle,
   copyStyle,
@@ -231,5 +232,48 @@ describe("isSvgSource", () => {
     expect(isSvgSource("data:image/svg+xml;utf8,<svg/>")).toBe(true);
     expect(isSvgSource("logo.png")).toBe(false);
     expect(isSvgSource("https://cdn.example.com/svg-icons/logo.png")).toBe(false);
+  });
+});
+
+describe("cascadePoint", () => {
+  const canvas = { width: 1440, height: 1440 };
+  const center = { x: 720, y: 720 };
+  const at = (x: number, y: number, over: Partial<TemplateField> = {}): TemplateField => ({
+    id: `c${x}-${y}`,
+    label: "F",
+    fieldKey: `c${x}_${y}`,
+    type: "text",
+    x,
+    y,
+    width: 100,
+    height: 100,
+    ...over,
+  });
+
+  it("leaves an empty spot alone", () => {
+    expect(cascadePoint(center, [], canvas)).toEqual(center);
+  });
+
+  it("steps off an occupied spot, and again for each repeat", () => {
+    // A top-left field at (670,670) with a 100×100 box is centered on 720,720.
+    const first = at(670, 670);
+    const second = { ...at(710, 710), id: "second" };
+    expect(cascadePoint(center, [first], canvas)).toEqual({ x: 760, y: 760 });
+    expect(cascadePoint(center, [first, second], canvas)).toEqual({ x: 800, y: 800 });
+  });
+
+  it("matches center-anchored fields on their own coordinates", () => {
+    const centered = at(720, 720, { anchor: "center" });
+    expect(cascadePoint(center, [centered], canvas)).toEqual({ x: 760, y: 760 });
+  });
+
+  it("gives up rather than walking off the canvas", () => {
+    const corner = { x: 1430, y: 1430 };
+    const occupied = at(1380, 1380); // centered on 1430,1430
+    expect(cascadePoint(corner, [occupied], canvas)).toEqual(corner);
+  });
+
+  it("ignores elements that are merely nearby", () => {
+    expect(cascadePoint(center, [at(600, 600)], canvas)).toEqual(center);
   });
 });
