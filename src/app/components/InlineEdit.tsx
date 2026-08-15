@@ -20,11 +20,19 @@ interface InlineEditProps {
   /** Fires on open and close. Use it to get neighbouring controls out of the
    *  way — a cramped input is the usual failure of inline edit in a toolbar. */
   onEditingChange?(editing: boolean): void;
+  /** Open the editor when this flips true, for renames started from elsewhere
+   *  (double-clicking the thing on a canvas, dropping a new element). The
+   *  caller is expected to flip it back once the rename is under way. */
+  autoEdit?: boolean;
   className?: string;
   /** Type treatment for the value and the input — they share it so the swap
    *  doesn't reflow. Use for display-face titles. */
   valueStyle?: React.CSSProperties;
   iconSize?: number;
+  /** Drop the pencil. It reserves its width even at rest, which is worth it
+   *  on a roomy row and not worth it in a dense list — where the convention
+   *  is a bare name you click anyway. */
+  hideIcon?: boolean;
 }
 
 /** Click-to-edit-in-place. The value reads as plain text with a pencil that
@@ -44,9 +52,11 @@ export function InlineEdit({
   maxLength,
   disabled = false,
   onEditingChange,
+  autoEdit = false,
   className,
   valueStyle,
   iconSize = 14,
+  hideIcon = false,
 }: InlineEditProps) {
   const [editing, setEditing] = useState(false);
   const [inputVal, setInputVal] = useState(value);
@@ -77,8 +87,18 @@ export function InlineEdit({
   // Focus and select on open, so typing replaces the current value.
   useEffect(() => {
     if (!editing) return;
-    inputRef.current?.focus();
-    inputRef.current?.select();
+    const input = inputRef.current;
+    if (!input) return;
+    input.focus();
+    input.select();
+    // The input opens under the pointer that opened it, and the browser puts
+    // a caret where that click landed — mid-word, selection gone, so the
+    // first keystroke inserts instead of replacing. A parent re-render off
+    // onEditingChange can land here too. Re-assert once layout has settled.
+    const raf = requestAnimationFrame(() => {
+      if (inputRef.current === input && document.activeElement === input) input.select();
+    });
+    return () => cancelAnimationFrame(raf);
   }, [editing]);
 
   const enterEdit = () => {
@@ -87,6 +107,17 @@ export function InlineEdit({
     setEditing(true);
     onEditingChange?.(true);
   };
+
+  // A rename asked for from outside opens the editor the same way a click
+  // does. Keyed on the flag alone: re-running as the value settles would
+  // re-open the row after the user had closed it.
+  useEffect(() => {
+    if (!autoEdit || disabled) return;
+    setInputVal(shown);
+    setEditing(true);
+    onEditingChange?.(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoEdit, disabled]);
 
   const exitEdit = useCallback(
     (save: boolean) => {
@@ -209,7 +240,7 @@ export function InlineEdit({
             >
               {shown.trim() || placeholder}
             </span>
-            {!disabled && (
+            {!disabled && !hideIcon && (
               <span className="sp-inline-edit__icon" aria-hidden="true">
                 <Pencil style={{ width: iconSize, height: iconSize }} />
               </span>

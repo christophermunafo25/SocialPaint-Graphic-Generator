@@ -13,6 +13,7 @@ import {
 import type { FieldType, LayoutGroup, TemplateField } from "@/lib/types";
 import { groupChildRef, parseGroupChildRef } from "@/lib/types";
 import { outermostGroupOf, parentGroupOf } from "@/lib/render/layout";
+import { InlineEdit } from "../InlineEdit";
 
 const ICONS: Record<FieldType, React.ComponentType<{ style?: React.CSSProperties }>> = {
   text: TypeIcon,
@@ -32,6 +33,8 @@ interface FieldListPanelProps {
   /** Reorder a group's STACK order (a third ordering — not the form order). */
   onReorderChildren(groupId: string, children: string[]): void;
   onContextMenu(e: React.MouseEvent, fieldId: string): void;
+  /** Rename in place. The caller owns the fieldKey follow-through. */
+  onRenameField(fieldId: string, label: string): void;
 }
 
 type Row =
@@ -63,10 +66,14 @@ export function FieldListPanel({
   onReorder,
   onReorderChildren,
   onContextMenu,
+  onRenameField,
 }: FieldListPanelProps) {
   const dragSrc = useRef<DragSource | null>(null);
   const [overKey, setOverKey] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  // A row being renamed can't also be draggable: HTML5 drag swallows the
+  // caret and text selection inside the input.
+  const [renamingId, setRenamingId] = useState<string | null>(null);
 
   // Form-step numbers come from the FLAT fields order — nesting is display.
   const stepNoById = new Map<string, number | null>();
@@ -299,7 +306,7 @@ export function FieldListPanel({
             return (
               <div
                 key={key}
-                draggable
+                draggable={renamingId !== f.id}
                 onDragStart={() => {
                   dragSrc.current = r.group
                     ? { kind: "child", groupId: r.group.id, ref: f.fieldKey }
@@ -365,23 +372,45 @@ export function FieldListPanel({
                 <Icon
                   style={{ width: 13, height: 13, color: "var(--text-muted)", flexShrink: 0 }}
                 />
-                <span
-                  className="flex-1 truncate"
-                  style={{ fontSize: 12.5, color: "var(--text-primary)" }}
-                >
-                  {f.label}
-                </span>
-                <span
-                  className="truncate"
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 9.5,
-                    color: "var(--text-muted)",
-                    maxWidth: 90,
-                  }}
-                >
-                  {f.static ? "fixed" : `{${f.fieldKey}}`}
-                </span>
+                {/* Rename is the SECOND click, the way it is in a file list:
+                    an unselected row is plain text so one click can select it
+                    without opening an editor nobody asked for. */}
+                {isSelected ? (
+                  <div className="flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
+                    <InlineEdit
+                      value={f.label}
+                      onSave={(label) => onRenameField(f.id, label)}
+                      onEditingChange={(editing) => setRenamingId(editing ? f.id : null)}
+                      ariaLabel={`Rename ${f.label}`}
+                      inputAriaLabel="Field name"
+                      valueStyle={{ fontSize: 12.5, color: "var(--text-primary)" }}
+                      hideIcon
+                    />
+                  </div>
+                ) : (
+                  <span
+                    className="flex-1 truncate"
+                    style={{ fontSize: 12.5, color: "var(--text-primary)" }}
+                  >
+                    {f.label}
+                  </span>
+                )}
+                {/* The key chip stands aside while the row is renamed — it
+                    costs 90px the input badly needs, and it's about to be
+                    rewritten from the new name anyway. */}
+                {renamingId !== f.id && (
+                  <span
+                    className="truncate"
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 9.5,
+                      color: "var(--text-muted)",
+                      maxWidth: 90,
+                    }}
+                  >
+                    {f.static ? "fixed" : `{${f.fieldKey}}`}
+                  </span>
+                )}
               </div>
             );
           })}
