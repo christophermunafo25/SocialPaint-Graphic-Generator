@@ -54,6 +54,7 @@ import {
   ruleSentences,
 } from "@/lib/brand/resolveStyle";
 import { DEFAULT_FILL_HEX, gradientCss } from "../SchemaRenderer";
+import { InlineEdit } from "../InlineEdit";
 import { Switch } from "../Switch";
 import {
   InspectorSection,
@@ -148,7 +149,6 @@ export function FieldInspector(props: FieldInspectorProps) {
   const inStack = Boolean(containingGroup) && containingGroup?.mode !== "free";
   const groupVertical = containingGroup?.direction !== "horizontal";
   const mainSizeComputed = inStack && isText;
-  const labelRef = useRef<HTMLInputElement>(null);
   const [uploadingStatic, setUploadingStatic] = useState(false);
 
   const uploadStaticImage = async (file: File) => {
@@ -168,14 +168,9 @@ export function FieldInspector(props: FieldInspectorProps) {
     if (files[0]) void uploadStaticImage(files[0]);
   });
 
-  // A freshly-dropped palette element opens for naming immediately; the
-  // parent clears focusLabelFieldId once selection moves on, so merely
-  // re-selecting a field never steals focus into the label input.
-  useEffect(() => {
-    if (focusLabelFieldId !== field.id) return;
-    labelRef.current?.focus();
-    labelRef.current?.select();
-  }, [focusLabelFieldId, field.id]);
+  // A freshly-dropped palette element opens for naming immediately — the name
+  // row's `autoEdit` does the focusing. The parent clears focusLabelFieldId
+  // once selection moves on, so re-selecting a field never re-opens the row.
 
   // Secondary, not muted — teaching copy in the panel clears 4.5:1.
   const hintStyle: React.CSSProperties = {
@@ -424,15 +419,13 @@ export function FieldInspector(props: FieldInspectorProps) {
             placeholder. */}
         <PropertyRow label="Name">
           <div className="flex flex-col flex-1" style={{ gap: "var(--space-3xs)", minWidth: 0 }}>
-            <input
-              ref={labelRef}
-              className="sp-input"
-              style={compactControlStyle}
-              aria-label="Field name"
+            <InlineEdit
               value={field.label}
-              placeholder={field.placeholder || undefined}
-              onChange={(e) => {
-                const label = e.target.value;
+              autoEdit={focusLabelFieldId === field.id}
+              ariaLabel={`Rename ${field.label || "this field"}`}
+              inputAriaLabel="Field name"
+              placeholder={field.placeholder || "Untitled"}
+              onSave={(label) => {
                 onChange(
                   {
                     label,

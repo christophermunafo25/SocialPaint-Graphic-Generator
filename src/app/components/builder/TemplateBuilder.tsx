@@ -41,7 +41,7 @@ import { useUnsavedChangesWarning } from "@/lib/useUnsavedChangesWarning";
 import { useRouter } from "../../router";
 import { ColorControl } from "../ColorControl";
 import { Page } from "../layout/Page";
-import { InlineEdit } from "../InlineEdit";
+import { InlineEdit, InlineEditGroup } from "../InlineEdit";
 import { SchemaRenderer, schemaBackgroundCss } from "../SchemaRenderer";
 import { GradientEditor } from "./GradientEditor";
 import { FieldOverlayEditor } from "./FieldOverlayEditor";
@@ -2094,6 +2094,15 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                     if (!selectedIds.includes(fieldId)) setSelectedIds([fieldId]);
                     setMenu({ x: e.clientX, y: e.clientY, fieldId, canvasPoint: { x: 0, y: 0 } });
                   }}
+                  onRenameField={(fieldId, label) =>
+                    patchField(fieldId, {
+                      label,
+                      fieldKey: suggestFieldKey(
+                        label,
+                        draft.fields.filter((f) => f.id !== fieldId),
+                      ),
+                    })
+                  }
                 />
               </div>
 
@@ -2540,30 +2549,36 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                     Shown on the template's card in the members' gallery.
                   </p>
                 </div>
-                <input
-                  value={draft.description}
-                  onChange={(e) =>
-                    setDraft((d) => ({ ...d, description: e.target.value }), "text:description")
-                  }
-                  placeholder="Short description shown on the portal card"
-                  className="sp-input"
-                />
-                <div className="grid grid-cols-2 gap-3">
-                  <input
-                    value={draft.category}
-                    onChange={(e) =>
-                      setDraft((d) => ({ ...d, category: e.target.value }), "text:category")
+                {/* Labelled rows rather than placeholder-only inputs: the
+                    label survives being filled in, so a stale category is
+                    still readable as one. */}
+                <InlineEditGroup>
+                  <InlineEdit
+                    label="Description"
+                    value={draft.description}
+                    onSave={(description) =>
+                      setDraft((d) => ({ ...d, description }), "text:description")
                     }
-                    placeholder="Category"
-                    className="sp-input"
+                    ariaLabel="Edit the description"
+                    inputAriaLabel="Description"
+                    placeholder="Shown on the portal card"
                   />
-                  <input
+                  <InlineEdit
+                    label="Category"
+                    value={draft.category}
+                    onSave={(category) => setDraft((d) => ({ ...d, category }), "text:category")}
+                    ariaLabel="Edit the category"
+                    inputAriaLabel="Category"
+                    placeholder="Uncategorised"
+                  />
+                  <InlineEdit
+                    label="Tags"
                     value={draft.tags.join(", ")}
-                    onChange={(e) =>
+                    onSave={(next) =>
                       setDraft(
                         (d) => ({
                           ...d,
-                          tags: e.target.value
+                          tags: next
                             .split(",")
                             .map((t) => t.trim())
                             .filter(Boolean),
@@ -2571,10 +2586,11 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                         "text:tags",
                       )
                     }
-                    placeholder="Tags (comma-separated)"
-                    className="sp-input"
+                    ariaLabel="Edit the tags"
+                    inputAriaLabel="Tags, comma-separated"
+                    placeholder="Comma-separated"
                   />
-                </div>
+                </InlineEditGroup>
                 <label
                   {...bgDrop.bind}
                   data-active={bgDrop.active}

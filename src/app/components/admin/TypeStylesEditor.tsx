@@ -3,6 +3,7 @@ import { ChevronDown, ChevronRight, Lock, Plus, Trash2 } from "lucide-react";
 import type { BrandColor, BrandTypeStyle, FontRef } from "@/lib/types";
 import { GOOGLE_FONTS, loadGoogleFonts } from "@/lib/render/fonts";
 import { ruleSentences } from "@/lib/brand/resolveStyle";
+import { InlineEdit } from "../InlineEdit";
 
 interface TypeStylesEditorProps {
   styles: BrandTypeStyle[];
@@ -53,33 +54,52 @@ export function TypeStylesEditor({
             key={s.key}
             style={{ border: "1px solid var(--border)", borderRadius: "var(--radius-card)" }}
           >
-            <button
-              className="w-full flex items-center gap-2 px-3 py-2.5 text-left"
-              onClick={() => setOpen(expanded ? null : s.key)}
-            >
-              {expanded ? (
-                <ChevronDown style={{ width: 14, height: 14, color: "var(--text-muted)" }} />
-              ) : (
-                <ChevronRight style={{ width: 14, height: 14, color: "var(--text-muted)" }} />
-              )}
-              <span
-                style={{
+            {/* The name renames in place, so the row can't be one big button.
+                The chevron is the real disclosure control; the meta strip
+                after the name repeats it for the mouse. */}
+            <div className="w-full flex items-center gap-2 px-3 py-2.5">
+              <button
+                type="button"
+                aria-label={`${expanded ? "Collapse" : "Expand"} ${s.name}`}
+                aria-expanded={expanded}
+                className="flex items-center"
+                onClick={() => setOpen(expanded ? null : s.key)}
+              >
+                {expanded ? (
+                  <ChevronDown style={{ width: 14, height: 14, color: "var(--text-muted)" }} />
+                ) : (
+                  <ChevronRight style={{ width: 14, height: 14, color: "var(--text-muted)" }} />
+                )}
+              </button>
+              <InlineEdit
+                className="flex-1 min-w-0"
+                value={s.name}
+                onSave={(name) => update(s.key, { name })}
+                ariaLabel={`Rename ${s.name}`}
+                inputAriaLabel="Type style name"
+                valueStyle={{
                   fontSize: "var(--type-label-size)",
                   fontWeight: 500,
                   color: "var(--text-primary)",
                 }}
+              />
+              {/* A plain div, not a button: it's a mouse-only shortcut to the
+                  same disclosure the chevron owns, and the text inside it has
+                  to stay readable to a screen reader. */}
+              <div
+                className="flex items-center gap-2 shrink-0 self-stretch cursor-pointer"
+                onClick={() => setOpen(expanded ? null : s.key)}
               >
-                {s.name}
-              </span>
-              {usageLabelFor?.(s.key) && (
-                <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                  {usageLabelFor(s.key)}
+                {usageLabelFor?.(s.key) && (
+                  <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                    {usageLabelFor(s.key)}
+                  </span>
+                )}
+                <span className="sp-eyebrow" style={{ fontSize: 9 }}>
+                  {rules.length} rule{rules.length !== 1 ? "s" : ""}
                 </span>
-              )}
-              <span className="sp-eyebrow ml-auto" style={{ fontSize: 9 }}>
-                {rules.length} rule{rules.length !== 1 ? "s" : ""}
-              </span>
-            </button>
+              </div>
+            </div>
 
             {!expanded && rules.length > 0 && (
               <div className="px-9 pb-2.5 -mt-1">
@@ -92,16 +112,8 @@ export function TypeStylesEditor({
                 className="px-3 pb-3 space-y-3"
                 style={{ borderTop: "1px solid var(--border)", paddingTop: "var(--space-xs)" }}
               >
+                {/* No Name field here — the header row renames in place. */}
                 <div className="grid grid-cols-2 gap-2.5">
-                  <div>
-                    <label className="sp-eyebrow block mb-1">Name</label>
-                    <input
-                      aria-label="Name"
-                      className="sp-input"
-                      value={s.name}
-                      onChange={(e) => update(s.key, { name: e.target.value })}
-                    />
-                  </div>
                   <div>
                     <label className="sp-eyebrow block mb-1">Font</label>
                     <select

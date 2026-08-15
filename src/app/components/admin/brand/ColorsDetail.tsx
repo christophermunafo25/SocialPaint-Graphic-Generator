@@ -3,6 +3,7 @@ import { Plus, Trash2 } from "lucide-react";
 import type { BrandColor } from "@/lib/types";
 import { DEFAULT_PALETTE } from "@/lib/theme";
 import { ColorControl } from "../../ColorControl";
+import { InlineEdit } from "../../InlineEdit";
 import { BrandDetailPage, ImpactDialog } from "./BrandDetailPage";
 import {
   summarizeImpact,
@@ -87,14 +88,16 @@ export function ColorsDetail() {
                 brandSwatches={false}
               />
               <div className="flex-1 min-w-0">
-                <input
+                <InlineEdit
                   value={c.name}
-                  onChange={(e) =>
-                    setColors(colors.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))
+                  /* Local commit only — the page's "Save colors" button owns the
+                     kit write, behind the impact dialog. */
+                  onSave={(name) =>
+                    setColors(colors.map((x, j) => (j === i ? { ...x, name } : x)))
                   }
-                  aria-label={`Name for the ${c.name} brand color`}
-                  className="text-sm w-full bg-transparent outline-none"
-                  style={{ color: "var(--foreground)" }}
+                  ariaLabel={`Rename the ${c.name} brand color`}
+                  inputAriaLabel="Color name"
+                  valueStyle={{ fontSize: 14 }}
                 />
                 {bindings.templates && (
                   <p style={{ fontSize: 11, color: "var(--text-muted)" }}>
