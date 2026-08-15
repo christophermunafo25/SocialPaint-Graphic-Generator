@@ -1028,6 +1028,8 @@ optgroup {
   .sp-goo__blob,
   .sp-goo__drop {
     transition-duration: 0.001ms;
+  }
+}
 
 /* Upload processing chip (FieldInput) — the BYQ drop-zone gem's chip
    lifecycle on platform tokens: enter rides the existing sp-chip-in,
