@@ -277,3 +277,51 @@ describe("cascadePoint", () => {
     expect(cascadePoint(center, [at(600, 600)], canvas)).toEqual(center);
   });
 });
+
+describe("cascadePoint with a box size (clamping)", () => {
+  const canvas = { width: 1440, height: 1440 };
+  const size = { width: 480, height: 90 };
+  const boxAt = (cx: number, cy: number): TemplateField => ({
+    id: `b${cx}-${cy}`,
+    label: "B",
+    fieldKey: `b${cx}_${cy}`,
+    type: "text",
+    x: cx - size.width / 2,
+    y: cy - size.height / 2,
+    width: size.width,
+    height: size.height,
+  });
+
+  it("gives up once the BOX would clamp, instead of proposing points that all land together", () => {
+    // Fill the diagonal from the centre until the next step would clamp.
+    const placed: TemplateField[] = [];
+    const centre = { x: 720, y: 720 };
+    let gaveUp = false;
+    for (let i = 0; i < 40 && !gaveUp; i++) {
+      const p = cascadePoint(centre, placed, canvas, size);
+      if (i > 0 && p.x === centre.x && p.y === centre.y) {
+        // Returning the original point IS the give-up signal.
+        gaveUp = true;
+        break;
+      }
+      // Until then, every point it hands back must be genuinely free.
+      expect(placed.some((f) => f.x + f.width / 2 === p.x && f.y + f.height / 2 === p.y)).toBe(
+        false,
+      );
+      placed.push(boxAt(p.x, p.y));
+    }
+    // It must stop while the box still fits, not walk off the canvas.
+    expect(gaveUp).toBe(true);
+    for (const f of placed) {
+      expect(f.x).toBeGreaterThanOrEqual(0);
+      expect(f.x + f.width).toBeLessThanOrEqual(canvas.width);
+    }
+  });
+
+  it("still steps off an occupied centre when there is room", () => {
+    expect(cascadePoint({ x: 720, y: 720 }, [boxAt(720, 720)], canvas, size)).toEqual({
+      x: 760,
+      y: 760,
+    });
+  });
+});

@@ -48,7 +48,8 @@ export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererPro
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLDivElement>(null);
     const [scale, setScale] = useState(1);
-    const backgroundDataUrl = useDataUrl(schema.backgroundUrl || undefined);
+    const background = useDataUrl(schema.backgroundUrl || undefined);
+    const backgroundDataUrl = background.dataUrl;
 
     // Live scale-to-fit, generalized from the reference's parentWidth/1440.
     useEffect(() => {
@@ -148,6 +149,15 @@ export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererPro
               background: schemaBackgroundCss(schema),
             }}
           >
+            {schema.backgroundUrl && !backgroundDataUrl && (
+              // Not painted yet (or not painted at all) — the export gate
+              // reads these markers so it never rasterizes a missing image.
+              <div
+                data-image-status={background.failed ? "failed" : "loading"}
+                data-field-label="the background image"
+                style={{ display: "none" }}
+              />
+            )}
             {backgroundDataUrl && (
               <img
                 src={backgroundDataUrl}
@@ -266,10 +276,14 @@ export function schemaBackgroundCss(
   return schema.backgroundColor || "#ffffff";
 }
 
-export function cornerRadiusCss(field: TemplateField): string | undefined {
+/** Corner radius as CSS, in CANVAS pixels — correct anywhere the element is
+ * drawn at canvas scale (the renderer, the export, the builder's scaled
+ * content layer). A surface measured in SCREEN pixels must pass its display
+ * scale, or the radius comes out wrong by exactly that factor. */
+export function cornerRadiusCss(field: TemplateField, scale = 1): string | undefined {
   const r = field.cornerRadius;
   if (!r || (!r.tl && !r.tr && !r.br && !r.bl)) return undefined;
-  return `${r.tl}px ${r.tr}px ${r.br}px ${r.bl}px`;
+  return `${r.tl * scale}px ${r.tr * scale}px ${r.br * scale}px ${r.bl * scale}px`;
 }
 
 interface FieldBoxProps {
@@ -462,8 +476,24 @@ function TextFieldBox({ field, value, brandKit, fontSize: layoutFontSize }: Fiel
 }
 
 function ImageFieldBox({ field, value }: { field: TemplateField; value: string | undefined }) {
+  // EVERY image the canvas paints has to be a data URL before toPng runs.
+  // html-to-image refetches remote sources in an isolated context, and when
+  // that fetch fails it substitutes an empty string and resolves happily —
+  // so a raw Storage URL here exports as a hole in an otherwise fine
+  // graphic, with a success message. Admin artwork arrives as a URL; member
+  // uploads are already data URLs and pass straight through.
+  const image = useDataUrl(value || undefined);
+  const status = !value
+    ? undefined
+    : image.failed
+      ? "failed"
+      : image.loading
+        ? "loading"
+        : undefined;
   return (
     <div
+      data-image-status={status}
+      data-field-label={field.label}
       style={{
         ...contentBaseStyle(field),
         overflow: "hidden",
@@ -475,13 +505,13 @@ function ImageFieldBox({ field, value }: { field: TemplateField; value: string |
         border: value ? undefined : "1.5px dashed rgba(0,0,0,0.25)",
       }}
     >
-      {value ? (
+      {image.dataUrl ? (
         <img
-          src={value}
+          src={image.dataUrl}
           alt={field.label}
           style={{ width: "100%", height: "100%", objectFit: field.objectFit ?? "cover" }}
         />
-      ) : (
+      ) : value ? null : ( // the export gate above will wait or refuse on the marker. // In flight, or gone. Either way there is nothing to paint yet, and
         <span
           style={{
             color: "rgba(0,0,0,0.35)",
