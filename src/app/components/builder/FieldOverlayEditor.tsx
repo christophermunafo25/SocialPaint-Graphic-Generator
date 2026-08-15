@@ -392,7 +392,7 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
   const [frame, setFrame] = useState<GestureFrame | null>(null);
   /** Fixed text element whose content is being edited in place. */
   const [editingId, setEditingId] = useState<string | null>(null);
-  const backgroundDataUrl = useDataUrl(backgroundUrl || undefined);
+  const backgroundDataUrl = useDataUrl(backgroundUrl || undefined).dataUrl;
 
   // Gesture callbacks fire outside the render cycle; refs keep them reading
   // the current props/scale instead of the closure they were created in.

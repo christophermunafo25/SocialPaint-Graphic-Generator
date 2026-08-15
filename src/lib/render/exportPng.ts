@@ -15,11 +15,45 @@ export type ExportOutcome = "downloaded" | "shared" | "canceled";
  * isolated context on Safari/Firefox with no access to the document's font
  * cache, so anything not embedded exports as a system fallback.
  */
+/** How long to wait for in-flight images before giving up on the export. */
+const IMAGE_READY_TIMEOUT_MS = 15000;
+
+/** Refuse to rasterize a canvas whose images aren't all embedded.
+ *
+ * html-to-image resolves happily when it can't fetch an image — it
+ * substitutes an empty string, caches that, and returns a PNG with a hole.
+ * The renderer marks each image's readiness (`data-image-status`), so the
+ * only safe moment to snapshot is when nothing is loading and nothing has
+ * failed. Failing loudly here turns a silently broken graphic into an error
+ * the member can act on. */
+async function ensureImagesReady(node: HTMLElement): Promise<void> {
+  const deadline = Date.now() + IMAGE_READY_TIMEOUT_MS;
+  while (node.querySelector('[data-image-status="loading"]')) {
+    if (Date.now() > deadline) {
+      throw new Error("Timed out waiting for images to load — check the connection and try again.");
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  const failed = [
+    ...new Set(
+      Array.from(node.querySelectorAll('[data-image-status="failed"]'), (el) =>
+        (el.getAttribute("data-field-label") || "an image").trim(),
+      ),
+    ),
+  ];
+  if (failed.length) {
+    throw new Error(
+      `Couldn't load ${failed.join(", ")} — the graphic would export with it missing.`,
+    );
+  }
+}
+
 export async function exportSchemaPng(
   schema: TemplateSchema,
   node: HTMLElement,
   brandKit?: BrandKit | null,
 ): Promise<ExportOutcome> {
+  await ensureImagesReady(node);
   await ensureSchemaFontsLoaded(schema, brandKit);
   const fontEmbedCss = await buildExportFontEmbedCss(schema, brandKit);
   const options = {
