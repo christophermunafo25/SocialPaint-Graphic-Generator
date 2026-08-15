@@ -20,7 +20,7 @@ export interface ResolvedFieldStyle {
   colorHex?: string;
   textGradient?: import("../types").TextGradient;
   maxLength?: number;
-  textSizing?: "free" | "shrink";
+  textSizing?: "free" | "shrink" | "fill";
   /** The style that supplied the locked properties, if any. */
   boundStyle?: BrandTypeStyle;
 }
@@ -133,6 +133,7 @@ export function ruleSentences(style: BrandTypeStyle, kit: BrandKit | null): stri
   if (style.maxLength !== undefined)
     rules.push(`${style.name} never exceeds ${style.maxLength} characters.`);
   if (style.textSizing === "shrink") rules.push(`${style.name} shrinks to fit its box.`);
+  if (style.textSizing === "fill") rules.push(`${style.name} is sized to fill its box.`);
   if (style.textSizing === "free")
     rules.push(`${style.name} keeps its set size — the box grows with content.`);
   return rules;

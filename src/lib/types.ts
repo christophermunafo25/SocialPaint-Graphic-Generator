@@ -47,7 +47,7 @@ export interface BrandTypeStyle {
   fontSizePx?: number; // set only when the brand fixes the size globally
   maxLength?: number; // "never exceeds N characters"
   /** Locks the field's text sizing mode (see TemplateField.textSizing). */
-  textSizing?: "free" | "shrink";
+  textSizing?: "free" | "shrink" | "fill";
 }
 
 export interface BrandKit {
@@ -196,7 +196,7 @@ export interface TemplateField {
    * font size decreases (measured, never estimated) until the content fits —
    * single-line text is width-constrained, multiline is height-constrained
    * with wrapping at the box width. */
-  textSizing?: "free" | "shrink";
+  textSizing?: "free" | "shrink" | "fill";
   objectFit?: "cover" | "contain";
   aspectRatio?: number;
   options?: string[];

@@ -252,3 +252,132 @@ describe("stacks: fixed boxes and hugging children coexist", () => {
     expect(sh.y - (fr.y + fr.height)).toBe(24);
   });
 });
+
+describe("shrink respects BOTH axes", () => {
+  const base = { multiline: false, lineHeight: 1, textSizing: "shrink" as const };
+
+  it("shrinks a line that fits the width but not the height", () => {
+    // 5 chars at 200px = 500px wide (fits 1000), but the line box is 200px
+    // tall in a 60px box — it must come down to 60.
+    const fit = fitTextWith(
+      measure,
+      { ...base, width: 1000, height: 60, fontSizePx: 200, minFontSizePx: 8 },
+      "Tall!",
+    );
+    expect(fit.fontSizePx).toBeLessThanOrEqual(60);
+    expect(fit.overflows).toBe(false);
+  });
+
+  it("still shrinks on width when height is generous", () => {
+    // 40 chars at 48px = 960px, box 600 wide → must come down to ~30.
+    const fit = fitTextWith(
+      measure,
+      { ...base, width: 600, height: 1000, fontSizePx: 48, minFontSizePx: 8 },
+      "x".repeat(40),
+    );
+    expect(fit.fontSizePx).toBe(30);
+  });
+
+  it("never grows past the set size, however roomy the box", () => {
+    const fit = fitTextWith(
+      measure,
+      { ...base, width: 4000, height: 4000, fontSizePx: 48, minFontSizePx: 8 },
+      "Hi",
+    );
+    expect(fit.fontSizePx).toBe(48);
+  });
+
+  it("reports overflow when even the floor cannot fit", () => {
+    const fit = fitTextWith(
+      measure,
+      { ...base, width: 10, height: 10, fontSizePx: 48, minFontSizePx: 20 },
+      "far too long for this",
+    );
+    expect(fit.fontSizePx).toBe(20);
+    expect(fit.overflows).toBe(true);
+  });
+});
+
+describe("fill sizes text to the box", () => {
+  const base = { multiline: false, lineHeight: 1, textSizing: "fill" as const };
+
+  it("grows a short line well past its set size", () => {
+    // "Hi" is 2 chars → width allows size 300 (2 * 0.5 * 300 = 300px);
+    // height 200 is the binding constraint at lineHeight 1.
+    const fit = fitTextWith(
+      measure,
+      { ...base, width: 300, height: 200, fontSizePx: 20, minFontSizePx: 8 },
+      "Hi",
+    );
+    expect(fit.fontSizePx).toBe(200);
+    expect(fit.overflows).toBe(false);
+  });
+
+  it("is bound by whichever axis runs out first", () => {
+    // 10 chars: width 300 allows 60px (10 * 0.5 * 60 = 300); height allows 500.
+    const fit = fitTextWith(
+      measure,
+      { ...base, width: 300, height: 500, fontSizePx: 20, minFontSizePx: 8 },
+      "x".repeat(10),
+    );
+    expect(fit.fontSizePx).toBe(60);
+  });
+
+  it("shrinks as well as grows — long content still fits", () => {
+    const fit = fitTextWith(
+      measure,
+      { ...base, width: 300, height: 100, fontSizePx: 200, minFontSizePx: 8 },
+      "x".repeat(50),
+    );
+    expect(fit.fontSizePx).toBe(12); // 50 * 0.5 * 12 = 300
+    expect(fit.overflows).toBe(false);
+  });
+
+  it("honours the floor and reports overflow below it", () => {
+    const fit = fitTextWith(
+      measure,
+      { ...base, width: 50, height: 50, fontSizePx: 20, minFontSizePx: 30 },
+      "x".repeat(20),
+    );
+    expect(fit.fontSizePx).toBe(30);
+    expect(fit.overflows).toBe(true);
+  });
+
+  it("fills a multiline box by wrapping, not by overflowing", () => {
+    const fit = fitTextWith(
+      measure,
+      {
+        multiline: true,
+        lineHeight: 1,
+        textSizing: "fill",
+        width: 600,
+        height: 192,
+        fontSizePx: 10,
+        minFontSizePx: 8,
+      },
+      entryOfLines(4),
+    );
+    // Bigger than the set 10px, and the wrapped block still fits the box.
+    expect(fit.fontSizePx).toBeGreaterThan(10);
+    const lines = wrapLines(
+      entryOfLines(4),
+      600,
+      { lineHeight: 1 },
+      fit.fontSizePx,
+      measure,
+    ).length;
+    expect(lines * fit.fontSizePx).toBeLessThanOrEqual(192);
+  });
+
+  it("keeps the box as drawn, unlike free", () => {
+    const filled = mkField({
+      fieldKey: "fill_me",
+      textSizing: "fill",
+      static: true,
+      staticValue: "Hi",
+    });
+    const r = layout([filled]).fieldRects.get(filled.id)!;
+    expect(r.height).toBe(192); // the authored box, not a hugged line
+    expect(r.width).toBe(600);
+  });
+});
