@@ -19,6 +19,7 @@ import { useRouter, type Route } from "../router";
 import logoOnLight from "@/assets/socialpaint/logo-on-light.svg";
 import logoOnDark from "@/assets/socialpaint/logo-on-dark.svg";
 import markOnLight from "@/assets/socialpaint/mark-on-light.svg";
+import { GooeyNavPill } from "./GooeyNavPill";
 import markOnDark from "@/assets/socialpaint/mark-on-dark.svg";
 
 const LS_COLLAPSED = "sp-sidebar-collapsed";
@@ -249,6 +250,8 @@ function AccountBlock({ onNavigate }: { onNavigate(route: Route): void }) {
 export function Sidebar() {
   const { role, company, backend } = useAuth();
   const { route, navigate } = useRouter();
+  const mobileNavRef = React.useRef<HTMLDivElement>(null);
+  const railNavRef = React.useRef<HTMLElement>(null);
 
   // Right-aligned nav counts — only where a REAL count exists: Templates
   // (admin), People (Supabase backend only; the dev backend has no real
@@ -386,7 +389,8 @@ export function Sidebar() {
                 className="px-3 pb-3 pt-1"
                 style={{ maxHeight: "calc(100vh - 72px)", overflowY: "auto" }}
               >
-                <div className="flex flex-col gap-1.5">
+                <div ref={mobileNavRef} className="relative flex flex-col gap-1.5">
+                  <GooeyNavPill containerRef={mobileNavRef} watch={route.name} />
                   {items.map(({ label, route: target, Icon, matches }) => {
                     const active = matches.includes(route.name);
                     return (
@@ -477,9 +481,11 @@ export function Sidebar() {
         {/* Nav — scrolls on short viewports so the user block stays reachable. */}
         <nav
           className="flex flex-col flex-1 min-h-0 overflow-y-auto"
-          style={{ gap: 2 }}
+          style={{ gap: 2, position: "relative" }}
           aria-label="Primary"
+          ref={railNavRef}
         >
+          <GooeyNavPill containerRef={railNavRef} watch={`${route.name}:${collapsed}`} />
           {items.map(({ label, route: target, Icon, matches }) => {
             const active = matches.includes(route.name);
             const count = countFor(label);
@@ -501,7 +507,7 @@ export function Sidebar() {
                     style={{
                       fontFamily: "var(--font-mono)",
                       fontSize: 11,
-                      color: "var(--text-muted)",
+                      color: active ? "inherit" : "var(--text-muted)",
                     }}
                   >
                     {count}
