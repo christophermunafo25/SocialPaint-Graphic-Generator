@@ -1,4 +1,4 @@
-import React, { useId, useLayoutEffect, useRef } from "react";
+import React, { useEffect, useId, useRef } from "react";
 
 /** The active-nav pill, flowing between rows like liquid — the BYQ Supply
  * "Gooey Nav Indicator" gem turned vertical and bound to the ACTIVE row
@@ -27,7 +27,12 @@ export function GooeyNavPill({
   const firstRef = useRef(true);
   const filterId = useId().replace(/[^a-zA-Z0-9_-]/g, "") + "-goo";
 
-  useLayoutEffect(() => {
+  // useEffect, not useLayoutEffect: the container ref lives on the PARENT
+  // nav element, and a child's layout effect fires before the parent host
+  // ref attaches — the first run would always see null and bail until the
+  // next navigation. After paint every ref is attached; the initial place
+  // is animate=false, so appearing one frame later never travels.
+  useEffect(() => {
     const container = containerRef.current;
     const blob = blobRef.current;
     const drop = dropRef.current;
@@ -96,12 +101,15 @@ export function GooeyNavPill({
         style={{ position: "absolute", width: 0, height: 0, pointerEvents: "none" }}
       >
         <defs>
+          {/* Tighter than the gem's blur 7 / 22 -10: less blur and a harder
+              alpha threshold keep the pill's 5px control-radius corners
+              crisp at rest while the liquid merge still forms in transit. */}
           <filter id={filterId}>
-            <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="blur" />
+            <feGaussianBlur in="SourceGraphic" stdDeviation="3.5" result="blur" />
             <feColorMatrix
               in="blur"
               mode="matrix"
-              values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -10"
+              values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 30 -13"
             />
           </filter>
         </defs>
