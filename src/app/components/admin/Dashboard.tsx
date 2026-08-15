@@ -180,12 +180,7 @@ export function Dashboard() {
               Icon={Download}
               chip="var(--viz-series-1)"
             />
-            <Kpi
-              label="Total opens"
-              value={totalOpens}
-              Icon={Eye}
-              chip="var(--viz-series-2)"
-            />
+            <Kpi label="Total opens" value={totalOpens} Icon={Eye} chip="var(--viz-series-2)" />
             <Kpi
               label="Export rate"
               value={exportRate(summary.totalDownloads, totalOpens)}

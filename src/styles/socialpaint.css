@@ -1122,7 +1122,8 @@ optgroup {
 @media (prefers-reduced-motion: reduce) {
   .sp-upload-chip--leave,
   .sp-upload-chip__done {
-    animation: none;  }
+    animation: none;
+  }
 }
 
 /* Native checks and radios ride the accent: Voltage on dark, ink on
