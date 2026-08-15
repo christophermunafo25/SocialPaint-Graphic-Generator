@@ -1,14 +1,19 @@
 import { useEffect, useState } from "react";
+import { resolveImageUrl } from "@/lib/stores/supabase/signedUrls";
 
+/** Keyed by the ORIGINAL source (storage reference or URL), not the signed
+ * URL — signatures rotate, the underlying object doesn't, so one fetch
+ * serves the whole session regardless of signature renewals. */
 const cache = new Map<string, string>();
 
-export interface DataUrlState {
+export interface DataUrlResult {
   /** The embeddable data URL, once resolved. */
   dataUrl: string | null;
-  /** A fetch is in flight — the canvas is NOT ready to rasterize yet. */
+  /** A fetch (or signing) is in flight — the canvas is NOT ready to
+   * rasterize yet, and the export gate waits on this. */
   loading: boolean;
-  /** The image could not be fetched. It will not appear in an export, so
-   * the export must refuse rather than hand over a picture with a hole. */
+  /** Signing or fetching failed. The image will not appear in an export, so
+   * the export refuses rather than hand over a picture with a hole. */
   failed: boolean;
 }
 
@@ -21,45 +26,49 @@ const resolvedNow = (url: string | undefined): string | null =>
  * Load-bearing for export: html-to-image silently drops cross-origin images,
  * so everything rendered on the canvas — Storage backgrounds, logos, member
  * uploads — must be a data URL before toPng runs. URLs that are already
- * data: pass through. The loading/failed flags exist so the export gate can
- * wait for images and refuse when one is missing.
+ * data: pass through. Storage references are signed first (signedUrls.ts);
+ * once the bytes are in this cache, signature expiry can't touch them. The
+ * loading/failed flags let the export gate wait for images and refuse when
+ * one is missing.
  */
-export function useDataUrl(url: string | undefined): DataUrlState {
-  const [state, setState] = useState<DataUrlState>(() => {
+export function useDataUrl(url: string | undefined): DataUrlResult {
+  const [result, setResult] = useState<DataUrlResult>(() => {
     const hit = resolvedNow(url);
     return { dataUrl: hit, loading: Boolean(url) && !hit, failed: false };
   });
 
   useEffect(() => {
     if (!url) {
-      setState({ dataUrl: null, loading: false, failed: false });
+      setResult({ dataUrl: null, loading: false, failed: false });
       return;
     }
     const hit = resolvedNow(url);
     if (hit) {
-      setState({ dataUrl: hit, loading: false, failed: false });
+      setResult({ dataUrl: hit, loading: false, failed: false });
       return;
     }
-    setState({ dataUrl: null, loading: true, failed: false });
+    setResult({ dataUrl: null, loading: true, failed: false });
     let cancelled = false;
     void (async () => {
       try {
-        const response = await fetch(url);
+        const fetchable = await resolveImageUrl(url);
+        if (fetchable === null) throw new Error("could not sign the storage reference");
+        const response = await fetch(fetchable);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const blob = await response.blob();
-        const result = await new Promise<string>((resolve, reject) => {
+        const dataUrl = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onloadend = () => resolve(reader.result as string);
           reader.onerror = reject;
           reader.readAsDataURL(blob);
         });
-        cache.set(url, result);
-        if (!cancelled) setState({ dataUrl: result, loading: false, failed: false });
+        cache.set(url, dataUrl);
+        if (!cancelled) setResult({ dataUrl, loading: false, failed: false });
       } catch (e) {
-        // Deliberately NOT cached: a network blip must not permanently
-        // poison this URL for the rest of the session.
+        // Deliberately NOT cached: a network blip, or a signature that
+        // failed once, must not permanently poison this source.
         console.error("Image load failed", url, e);
-        if (!cancelled) setState({ dataUrl: null, loading: false, failed: true });
+        if (!cancelled) setResult({ dataUrl: null, loading: false, failed: true });
       }
     })();
     return () => {
@@ -67,5 +76,5 @@ export function useDataUrl(url: string | undefined): DataUrlState {
     };
   }, [url]);
 
-  return state;
+  return result;
 }

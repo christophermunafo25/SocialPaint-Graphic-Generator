@@ -49,7 +49,6 @@ export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererPro
     const canvasRef = useRef<HTMLDivElement>(null);
     const [scale, setScale] = useState(1);
     const background = useDataUrl(schema.backgroundUrl || undefined);
-    const backgroundDataUrl = background.dataUrl;
 
     // Live scale-to-fit, generalized from the reference's parentWidth/1440.
     useEffect(() => {
@@ -149,18 +148,19 @@ export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererPro
               background: schemaBackgroundCss(schema),
             }}
           >
-            {schema.backgroundUrl && !backgroundDataUrl && (
-              // Not painted yet (or not painted at all) — the export gate
-              // reads these markers so it never rasterizes a missing image.
+            {schema.backgroundUrl && !background.dataUrl && (
+              // The gate can only wait for images it can see, and an
+              // unloaded background paints no <img> at all — mark it so the
+              // export never snapshots a canvas that is still missing it.
               <div
                 data-image-status={background.failed ? "failed" : "loading"}
                 data-field-label="the background image"
                 style={{ display: "none" }}
               />
             )}
-            {backgroundDataUrl && (
+            {background.dataUrl && (
               <img
-                src={backgroundDataUrl}
+                src={background.dataUrl}
                 alt=""
                 style={{
                   position: "absolute",
@@ -170,6 +170,30 @@ export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererPro
                   objectFit: "cover",
                 }}
               />
+            )}
+            {background.failed && (
+              <div
+                data-image-status="failed"
+                data-field-label="Background"
+                style={{
+                  position: "absolute",
+                  top: 12,
+                  left: 12,
+                  padding: "6px 10px",
+                  background: "rgba(0,0,0,0.65)",
+                  color: "#fff",
+                  fontSize: 13,
+                  borderRadius: 6,
+                  zIndex: 1000,
+                }}
+              >
+                Background image failed to load
+              </div>
+            )}
+            {Boolean(schema.backgroundUrl) && !background.dataUrl && !background.failed && (
+              // Invisible readiness marker: the export gate must wait for the
+              // background the same way it waits for image fields.
+              <div data-image-status="loading" data-field-label="Background" hidden />
             )}
             {schema.fields.map((field) => (
               <FieldBox
@@ -476,23 +500,46 @@ function TextFieldBox({ field, value, brandKit, fontSize: layoutFontSize }: Fiel
 }
 
 function ImageFieldBox({ field, value }: { field: TemplateField; value: string | undefined }) {
-  // EVERY image the canvas paints has to be a data URL before toPng runs.
-  // html-to-image refetches remote sources in an isolated context, and when
-  // that fetch fails it substitutes an empty string and resolves happily —
-  // so a raw Storage URL here exports as a hole in an otherwise fine
-  // graphic, with a success message. Admin artwork arrives as a URL; member
-  // uploads are already data URLs and pass straight through.
+  // Everything the canvas paints must be a DATA URL before toPng runs —
+  // html-to-image silently drops images it can't fetch in its isolated
+  // rasterizing context, and a signed URL can expire. useDataUrl signs
+  // storage references, fetches once, and caches by reference for the
+  // session; member values are data URLs already and pass through.
+  // data-image-status markers are the export gate's readiness contract
+  // (ensureImagesReady in exportPng.ts).
   const image = useDataUrl(value || undefined);
-  const status = !value
-    ? undefined
-    : image.failed
-      ? "failed"
-      : image.loading
-        ? "loading"
-        : undefined;
+  if (image.failed) {
+    return (
+      <div
+        data-image-status="failed"
+        data-field-label={field.label}
+        style={{
+          ...contentBaseStyle(field),
+          overflow: "hidden",
+          borderRadius: cornerRadiusCss(field),
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "rgba(200,30,30,0.06)",
+          border: "1.5px dashed rgba(200,30,30,0.45)",
+        }}
+      >
+        <span
+          style={{
+            color: "rgba(160,25,25,0.75)",
+            fontSize: Math.max(14, field.width / 18),
+            textAlign: "center",
+            padding: 8,
+          }}
+        >
+          {field.label}: image unavailable
+        </span>
+      </div>
+    );
+  }
   return (
     <div
-      data-image-status={status}
+      data-image-status={value && !image.dataUrl ? "loading" : undefined}
       data-field-label={field.label}
       style={{
         ...contentBaseStyle(field),
@@ -511,7 +558,7 @@ function ImageFieldBox({ field, value }: { field: TemplateField; value: string |
           alt={field.label}
           style={{ width: "100%", height: "100%", objectFit: field.objectFit ?? "cover" }}
         />
-      ) : value ? null : ( // the export gate above will wait or refuse on the marker. // In flight, or gone. Either way there is nothing to paint yet, and
+      ) : value ? null : ( // fetch in flight: an empty box, not a placeholder flash
         <span
           style={{
             color: "rgba(0,0,0,0.35)",

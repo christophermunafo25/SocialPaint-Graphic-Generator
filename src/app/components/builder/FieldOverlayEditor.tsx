@@ -392,7 +392,8 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
   const [frame, setFrame] = useState<GestureFrame | null>(null);
   /** Fixed text element whose content is being edited in place. */
   const [editingId, setEditingId] = useState<string | null>(null);
-  const backgroundDataUrl = useDataUrl(backgroundUrl || undefined).dataUrl;
+  const background = useDataUrl(backgroundUrl || undefined);
+  const backgroundDataUrl = background.dataUrl;
 
   // Gesture callbacks fire outside the render cycle; refs keep them reading
   // the current props/scale instead of the closure they were created in.
@@ -1126,6 +1127,28 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
             beginDraw(e);
           }}
         >
+          {/* A background that can't be signed or fetched leaves the canvas
+              looking merely blank — say so, or the admin designs against a
+              backdrop that isn't there. Screen space, so it stays readable
+              at any zoom. */}
+          {background.failed && (
+            <div
+              style={{
+                position: "absolute",
+                top: 12,
+                left: 12,
+                zIndex: 10001,
+                padding: "6px 10px",
+                background: "rgba(0,0,0,0.65)",
+                color: "#fff",
+                fontSize: 13,
+                borderRadius: 6,
+                pointerEvents: "none",
+              }}
+            >
+              Background image failed to load
+            </div>
+          )}
           {/* Background at canvas scale */}
           <div
             style={{

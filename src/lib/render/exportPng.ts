@@ -4,6 +4,59 @@ import { buildExportFontEmbedCss, ensureSchemaFontsLoaded } from "./fonts";
 
 export type ExportOutcome = "downloaded" | "shared" | "canceled";
 
+/** An export blocked because an image isn't in the canvas. The message is
+ * member-facing — export UIs show it verbatim. */
+export class ExportAssetError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ExportAssetError";
+  }
+}
+
+const labelList = (els: HTMLElement[]): string =>
+  [...new Set(els.map((el) => `“${el.dataset.fieldLabel ?? "Image"}”`))].join(", ");
+
+/** The export gate: every image the canvas paints must be a loaded data URL
+ * before toPng runs. html-to-image rasterizes in an isolated context that
+ * silently drops anything it can't fetch — a missing logo in a downloaded
+ * PNG is worse than an error, so this fails LOUDLY instead. Waits out
+ * in-flight fetches (canvas images convert to data URLs on mount; clicking
+ * export during that window is normal), then refuses on failure. */
+export async function ensureImagesReady(node: HTMLElement): Promise<void> {
+  const deadline = Date.now() + 15_000;
+  for (;;) {
+    const marked = Array.from(node.querySelectorAll<HTMLElement>("[data-image-status]"));
+    const failed = marked.filter((el) => el.dataset.imageStatus === "failed");
+    if (failed.length) {
+      throw new ExportAssetError(
+        `${labelList(failed)} failed to load, so the export was stopped — a graphic with a ` +
+          `missing image shouldn't go out. Check your connection or re-add the image, then try again.`,
+      );
+    }
+    // Belt and braces: a non-data src here means some path bypassed the
+    // data-URL pipeline — the exact silent-hole bug this gate exists for.
+    // Waiting won't fix it, so fail immediately.
+    const remote = Array.from(node.querySelectorAll("img")).filter(
+      (img) => !img.src.startsWith("data:"),
+    );
+    if (remote.length) {
+      throw new ExportAssetError(
+        "An image on this graphic isn't export-safe. Reload the page and try again — " +
+          "if it keeps happening, contact support.",
+      );
+    }
+    const loading = marked.filter((el) => el.dataset.imageStatus === "loading");
+    if (!loading.length) return;
+    if (Date.now() > deadline) {
+      throw new ExportAssetError(
+        `${labelList(loading)} ${loading.length === 1 ? "is" : "are"} still loading. ` +
+          `Give it a moment and try again.`,
+      );
+    }
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+}
+
 /** Export a rendered schema node to PNG and hand it to the user.
  *
  * Ported from the reference Generator's handleDownload:
@@ -15,39 +68,6 @@ export type ExportOutcome = "downloaded" | "shared" | "canceled";
  * isolated context on Safari/Firefox with no access to the document's font
  * cache, so anything not embedded exports as a system fallback.
  */
-/** How long to wait for in-flight images before giving up on the export. */
-const IMAGE_READY_TIMEOUT_MS = 15000;
-
-/** Refuse to rasterize a canvas whose images aren't all embedded.
- *
- * html-to-image resolves happily when it can't fetch an image — it
- * substitutes an empty string, caches that, and returns a PNG with a hole.
- * The renderer marks each image's readiness (`data-image-status`), so the
- * only safe moment to snapshot is when nothing is loading and nothing has
- * failed. Failing loudly here turns a silently broken graphic into an error
- * the member can act on. */
-async function ensureImagesReady(node: HTMLElement): Promise<void> {
-  const deadline = Date.now() + IMAGE_READY_TIMEOUT_MS;
-  while (node.querySelector('[data-image-status="loading"]')) {
-    if (Date.now() > deadline) {
-      throw new Error("Timed out waiting for images to load — check the connection and try again.");
-    }
-    await new Promise((resolve) => setTimeout(resolve, 100));
-  }
-  const failed = [
-    ...new Set(
-      Array.from(node.querySelectorAll('[data-image-status="failed"]'), (el) =>
-        (el.getAttribute("data-field-label") || "an image").trim(),
-      ),
-    ),
-  ];
-  if (failed.length) {
-    throw new Error(
-      `Couldn't load ${failed.join(", ")} — the graphic would export with it missing.`,
-    );
-  }
-}
-
 export async function exportSchemaPng(
   schema: TemplateSchema,
   node: HTMLElement,
