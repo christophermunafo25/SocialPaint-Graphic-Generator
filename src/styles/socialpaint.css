@@ -802,6 +802,8 @@ optgroup {
   border-radius: var(--radius-card);
 }
 .sp-sidebar-item {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -825,8 +827,8 @@ optgroup {
   color: var(--sb-fg-active);
 }
 .sp-sidebar-item[data-active="true"] {
-  background: var(--sb-active-bg);
-  color: var(--sb-fg-active);
+  background: transparent;
+  color: var(--text-on-brand); /* Ink — the only legible glyph on Voltage */
 }
 
 /* --- Canvas editor chrome (Template builder) ------------------------------
@@ -983,6 +985,52 @@ optgroup {
   background: color-mix(in srgb, var(--hover-hue) 22%, transparent);
 }
 
+/* Gooey nav pill — the BYQ gem's liquid indicator, vertical, bound to the
+   ACTIVE row only. A solid Voltage fill (the goo filter's alpha threshold
+   crushes translucent washes) with the gem's exact motion: 0.55s travel on
+   the standard exit curve, a 0.62s overshoot drop that the filter fuses
+   into a liquid bridge mid-flight. Reduced motion snaps. */
+.sp-goo {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.sp-goo__blob {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--w, 0px);
+  height: var(--h, 0px);
+  border-radius: var(--radius-control);
+  background: var(--voltage);
+  transform: translate(var(--x, 0px), var(--y, 0px));
+  transition:
+    transform 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+    width 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+    height 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, width, height;
+}
+.sp-goo__drop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1.6rem;
+  height: 1.6rem;
+  margin: -0.8rem 0 0 -0.8rem;
+  border-radius: var(--radius-pill);
+  background: var(--voltage);
+  transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(var(--ds, 0));
+  transition: transform 0.62s cubic-bezier(0.34, 1.4, 0.5, 1);
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sp-goo__blob,
+  .sp-goo__drop {
+    transition-duration: 0.001ms;
+  }
+}
+
 /* Upload processing chip (FieldInput) — the BYQ drop-zone gem's chip
    lifecycle on platform tokens: enter rides the existing sp-chip-in,
    progress is a 3px Voltage bar (no shimmer, no glow — the DS bans
@@ -1056,8 +1104,7 @@ optgroup {
 @media (prefers-reduced-motion: reduce) {
   .sp-upload-chip--leave,
   .sp-upload-chip__done {
-    animation: none;
-  }
+    animation: none;  }
 }
 
 /* Native checks and radios ride the accent: Voltage on dark, ink on
@@ -1065,12 +1112,6 @@ optgroup {
 input[type="checkbox"],
 input[type="radio"] {
   accent-color: var(--state-primary);
-}
-
-/* The active sidebar item's icon carries the accent — Voltage on dark,
-   ink on light — over the Voltage wash the row already gets. */
-.sp-sidebar-item[data-active="true"] svg {
-  color: var(--state-primary-on-surface);
 }
 
 /* --- Upload interactions ---------------------------------------------------
@@ -2271,8 +2312,8 @@ input[type="radio"] {
   border-color: var(--border-control);
 }
 .sp-sidebar-item[data-active="true"] {
-  background: var(--sb-active-bg);
-  color: var(--sb-fg-active);
+  background: transparent;
+  color: var(--text-on-brand); /* Ink — the only legible glyph on Voltage */
 }
 
 /* The one selection exception: a swatch shows a colour, so a neutral marker can
