@@ -8,10 +8,18 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
  * because the URL is the source of truth for that page — selecting a chip or
  * typing a query IS a navigation. `group` is a platform-and-shape id such as
  * `instagram-4-5`, which is the unit the gallery filters by. */
-/** Brand Studio's editable categories — each is a deep-linkable detail
- * route under the overview. */
-export type BrandCategory = "colors" | "typography" | "logos" | "type-styles";
-const BRAND_CATEGORIES: readonly BrandCategory[] = ["colors", "typography", "logos", "type-styles"];
+/** Brand Studio's categories. The studio is one autosaving page of cards
+ * that open in place, so a category no longer names a separate screen — it
+ * names which card is open when the page loads. The URLs are unchanged, so
+ * every link that used to reach a detail route still lands on its section. */
+export type BrandCategory = "colors" | "typography" | "logos" | "type-styles" | "import";
+const BRAND_CATEGORIES: readonly BrandCategory[] = [
+  "colors",
+  "typography",
+  "logos",
+  "type-styles",
+  "import",
+];
 
 export type Route =
   | { name: "onboarding" }
