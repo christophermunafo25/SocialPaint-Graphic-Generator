@@ -330,7 +330,8 @@ function sizedChildren(
     // authored extents, so it contributes constants to the stack. Everything
     // else hugs as before: Free text hugs its wrapped height, single-line
     // text hugs its measured width/line box.
-    const fixedBox = f.type === "multiline" && style.textSizing === "shrink";
+    const fixedBox =
+      f.type === "multiline" && (style.textSizing === "shrink" || style.textSizing === "fill");
     if (vertical) {
       out.push({
         kind: "field",
@@ -539,7 +540,10 @@ function applyShrink(ctx: Ctx, group: LayoutGroup, anchorPos: number, vertical: 
   const textFields = groupFieldKeys(group, [...ctx.groups.values()])
     .map((k) => ctx.fields.get(k))
     .filter((f): f is TemplateField => Boolean(f && isTextual(f)))
-    .filter((f) => !(f.type === "multiline" && styleOf(ctx, f).textSizing === "shrink"));
+    .filter((f) => {
+      const mode = styleOf(ctx, f).textSizing;
+      return !(f.type === "multiline" && (mode === "shrink" || mode === "fill"));
+    });
 
   for (let i = 0; i < 8; i++) {
     const contentMain = contentMainSize(ctx, group, new Set());
@@ -612,7 +616,9 @@ export function computeLayout(
     result.fontSizes.set(f.id, fit.fontSizePx);
     result.fieldRects.set(
       f.id,
-      style.textSizing === "shrink"
+      // "free" is the only mode whose box follows the text; shrink and
+      // fill both keep the box exactly as drawn.
+      style.textSizing === "shrink" || style.textSizing === "fill"
         ? authoredRect(f)
         : freeTextRect(f, style, text, fit.fontSizePx, measure),
     );

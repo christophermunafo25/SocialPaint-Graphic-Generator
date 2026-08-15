@@ -3,14 +3,22 @@
 // always MEASURED against real glyphs via a canvas context — the old
 // character-count estimate (`width * 2 / (len * 0.58)`) is gone.
 //
-// Two modes, named for what the member sees happen:
+// Three modes, named for what the member sees happen:
 //  - "free":   the font size is fixed; the box grows taller as lines wrap.
 //  - "shrink": the box is fixed; the font size decreases until content fits.
-//    Single-line text is width-constrained. Multiline text wraps at the box
-//    width and is height-constrained — it shrinks only when the wrapped
-//    block would spill out the bottom.
+//    The set size is a CEILING — text never grows, so a short entry leaves
+//    the rest of the box empty. Both axes constrain: a line that fits the
+//    width but not the height still shrinks.
+//  - "fill":   the box is fixed and the text is sized to FILL it — growing
+//    as well as shrinking, so the block is as large as both axes allow.
+//    The set size is ignored (the box decides); minFontSizePx still floors
+//    it, and the result is reported back to the inspector as computed.
 
-export type TextSizingMode = "free" | "shrink";
+export type TextSizingMode = "free" | "shrink" | "fill";
+
+/** Ceiling for "fill": text can never need to be taller than the box it is
+ * filling, and this keeps the search bounded when a box is enormous. */
+const FILL_MAX_FONT_SIZE = 800;
 
 /** Style subset measurement needs. Structural — ResolvedFieldStyle
  * satisfies it, so callers can spread a resolved style straight in. */
@@ -222,78 +230,69 @@ export interface TextFit {
  * Free returns the set size untouched; shrink searches downward from it. */
 export function fitTextWith(measure: LineMeasurer, input: TextFitInput, text: string): TextFit {
   const base = input.fontSizePx ?? DEFAULT_FONT_SIZE;
-  if (input.textSizing !== "shrink" || !text) return { fontSizePx: base, overflows: false };
+  const mode = input.textSizing ?? "free";
+  if (mode === "free" || !text) return { fontSizePx: base, overflows: false };
+  if (mode === "fill") {
+    // The box decides, not the set size: search the whole range upward.
+    const min = input.minFontSizePx ?? DEFAULT_MIN_FONT_SIZE;
+    return largestFittingSize(measure, input, text, min, FILL_MAX_FONT_SIZE);
+  }
   const min = Math.min(input.minFontSizePx ?? DEFAULT_MIN_FONT_SIZE, base);
-  return input.multiline
-    ? heightConstrainedFit(measure, input, text, base, min)
-    : widthConstrainedFit(measure, input, text, base, min);
+  return largestFittingSize(measure, input, text, min, base);
 }
 
 /** Single-line shrink: the box width is the constraint. Glyph width scales
  * linearly with font size (letter-spacing does not), so one measurement at
  * the base size gives the exact fit in one step — no search needed. */
-function widthConstrainedFit(
-  measure: LineMeasurer,
-  input: TextFitInput,
-  text: string,
-  base: number,
-  min: number,
-): TextFit {
-  const sample = input.uppercase ? text.toUpperCase() : text;
-  const spacing = (input.letterSpacingPx ?? 0) * Math.max(0, sample.length - 1);
-  const glyphs = measure(sample, canvasFontShorthand({ ...input, fontSizePx: base }));
-  if (glyphs + spacing <= input.width) return { fontSizePx: base, overflows: false };
-  const avail = Math.max(4, input.width - spacing);
-  const fitted = Math.floor(base * (avail / glyphs));
-  if (fitted >= min) return { fontSizePx: fitted, overflows: false };
-  return { fontSizePx: min, overflows: true };
-}
-
-/** Multiline shrink: wrap at the box width, constrain the wrapped block's
- * height against the box height. Wrapping is not linear in font size — a
- * smaller size moves the break points — so this binary-searches integer
- * sizes between the floor and the set size, re-wrapping at each candidate,
- * and keeps the largest that fits. The measurer's memo makes each probe
- * cheap; the search is at most ~log2(base − min) probes.
+/** Does `size` fit the box on BOTH axes?
  *
- * Width still binds in exactly one case: a single unbreakable word wider
- * than the box. The renderer would chop it mid-word (break-word), so the
- * search prefers a size at which every word fits whole; only below the
- * floor does chopping (and a warning) take over. */
-function heightConstrainedFit(
+ * Single-line: the painted run (glyphs plus per-gap letter spacing) must fit
+ * the width, and its line box must fit the height — the height half is what
+ * "the box stays exactly as drawn" always promised and never delivered.
+ * Multiline: no word may be wider than the box (an unbreakable word would
+ * spill however small the rest gets), and the wrapped block must fit the
+ * height. */
+function fitsAtSize(
   measure: LineMeasurer,
   input: TextFitInput,
   text: string,
-  base: number,
-  min: number,
-): TextFit {
+  size: number,
+): boolean {
   const lineH = input.lineHeight ?? DEFAULT_LINE_HEIGHT;
   const sample = input.uppercase ? text.toUpperCase() : text;
+  const font = canvasFontShorthand({ ...input, fontSizePx: size });
   const perGap = input.letterSpacingPx ?? 0;
-  // Word widths scale linearly with size — measure once at base, scale per
-  // candidate, so the unbreakable-word check costs no extra measurements.
-  const baseFont = canvasFontShorthand({ ...input, fontSizePx: base });
+  if (!input.multiline) {
+    const width = measure(sample, font) + perGap * Math.max(0, sample.length - 1);
+    return width <= input.width && size * lineH <= input.height;
+  }
   const words = sample.split(/[\s\n]+/).filter(Boolean);
-  const wordExtents = words.map((w) => ({
-    glyphs: measure(w, baseFont),
-    spacing: perGap * Math.max(0, w.length - 1),
-  }));
-  const wordsFitAt = (size: number) =>
-    wordExtents.every((w) => w.glyphs * (size / base) + w.spacing <= input.width);
+  const widest = words.every(
+    (w) => measure(w, font) + perGap * Math.max(0, w.length - 1) <= input.width,
+  );
+  if (!widest) return false;
+  const lines = wrapLines(text, input.width, input, size, measure).length;
+  return lines * size * lineH <= input.height;
+}
 
-  const fitsAt = (size: number) => {
-    if (!wordsFitAt(size)) return false;
-    const lines = wrapLines(text, input.width, input, size, measure).length;
-    return lines * size * lineH <= input.height;
-  };
-
-  if (fitsAt(base)) return { fontSizePx: base, overflows: false };
-  let lo = Math.ceil(min);
-  let hi = Math.floor(base);
+/** The largest whole-pixel size in [min, max] that fits, by binary search.
+ * `overflows` means even `min` doesn't fit — the caller warns, and the text
+ * is rendered at min rather than disappearing. */
+function largestFittingSize(
+  measure: LineMeasurer,
+  input: TextFitInput,
+  text: string,
+  min: number,
+  max: number,
+): TextFit {
+  let lo = Math.ceil(Math.max(1, min));
+  let hi = Math.floor(max);
+  if (hi < lo) return { fontSizePx: Math.max(1, Math.floor(max)), overflows: true };
+  if (fitsAtSize(measure, input, text, hi)) return { fontSizePx: hi, overflows: false };
   let best = -1;
   while (lo <= hi) {
     const mid = (lo + hi) >> 1;
-    if (fitsAt(mid)) {
+    if (fitsAtSize(measure, input, text, mid)) {
       best = mid;
       lo = mid + 1;
     } else {
@@ -301,7 +300,7 @@ function heightConstrainedFit(
     }
   }
   if (best !== -1) return { fontSizePx: best, overflows: false };
-  return { fontSizePx: min, overflows: true };
+  return { fontSizePx: Math.ceil(Math.max(1, min)), overflows: true };
 }
 
 /** fitTextWith bound to the shared canvas context — for hosts without a

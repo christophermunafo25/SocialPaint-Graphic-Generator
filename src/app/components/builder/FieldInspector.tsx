@@ -111,7 +111,7 @@ const SHAPE_KINDS: Array<{ value: NonNullable<TemplateField["shape"]>; label: st
   { value: "star", label: "Star" },
 ];
 
-type TextSizingMode = "free" | "shrink";
+type TextSizingMode = "free" | "shrink" | "fill";
 
 /** Inspector for the selected field: a flat, hairline-divided stack of
  * collapsible sections — Field, Position, Layout, Appearance, Typography,
@@ -207,7 +207,7 @@ export function FieldInspector(props: FieldInspectorProps) {
 
   const canSetSizing = field.type === "text" || field.type === "multiline";
   const setSizingMode = (mode: TextSizingMode) => {
-    onChange({ textSizing: mode === "shrink" ? "shrink" : undefined });
+    onChange({ textSizing: mode === "free" ? undefined : mode });
   };
 
   /** Constrain-proportions for the W/H pair — a panel behavior (linked
@@ -677,7 +677,14 @@ export function FieldInspector(props: FieldInspectorProps) {
                   {
                     key: "shrink",
                     label: "Text shrinks",
-                    title: "The box stays exactly as drawn; the text gets smaller until it fits",
+                    title:
+                      "The box stays exactly as drawn; the text gets smaller until it fits — it never grows past its set size",
+                  },
+                  {
+                    key: "fill",
+                    label: "Fill box",
+                    title:
+                      "The box stays exactly as drawn; the text is sized to fill it, growing as well as shrinking",
                   },
                 ]}
                 onSelect={setSizingMode}
@@ -763,8 +770,8 @@ export function FieldInspector(props: FieldInspectorProps) {
           </button>
         </PropertyRow>
         {/* The control that decides whether the chosen mode can fail: the
-            shrink floor under Shrink, the entry bound under Free. */}
-        {isText && field.type !== "select" && sizingMode === "shrink" && (
+            size floor under Shrink and Fill, the entry bound under Free. */}
+        {isText && field.type !== "select" && sizingMode !== "free" && (
           <PropertyRow label="Min text">
             <NumericField
               suffix="px"
@@ -994,6 +1001,12 @@ export function FieldInspector(props: FieldInspectorProps) {
                 onCommit={(v) => onChange({ fontSizePx: v ?? field.fontSizePx })}
               />
             </PropertyRow>
+            {sizingMode === "fill" && computedFontSize !== undefined && (
+              <p style={hintStyle}>
+                Fill box ignores this — the box sets the size, currently{" "}
+                {Math.round(computedFontSize)}px.
+              </p>
+            )}
             {sizingMode === "shrink" &&
               computedFontSize !== undefined &&
               computedFontSize < (resolved.fontSizePx ?? 45) - 0.5 && (
@@ -1231,7 +1244,7 @@ export function FieldInspector(props: FieldInspectorProps) {
         <InspectorSection id="member-input" title="Member input">
           {/* Under Free this control lives in Layout — it bounds how far the
               box can grow, which is that mode's failure question. */}
-          {isText && field.type !== "select" && sizingMode === "shrink" && (
+          {isText && field.type !== "select" && sizingMode !== "free" && (
             <PropertyRow label="Max chars">
               <NumericField
                 ariaLabel="Maximum characters"
