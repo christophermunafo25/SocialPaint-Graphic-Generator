@@ -324,7 +324,7 @@ export function AutoBuildDialog({ onClose, onBuilt }: AutoBuildDialogProps) {
               <div>
                 <label className="sp-eyebrow block mb-1" htmlFor="autobuild-hint">
                   Anything Claude should know?{" "}
-                  <span style={{ textTransform: "none", color: "var(--text-disabled)" }}>
+                  <span style={{ textTransform: "none", color: "var(--text-muted)" }}>
                     optional
                   </span>
                 </label>

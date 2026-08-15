@@ -122,7 +122,7 @@ export function ElementPalette({ onAdd, logos = [] }: ElementPaletteProps) {
             <Tile key={item.id} item={item} onAdd={onAdd} />
           ))}
         </div>
-        <p style={{ fontSize: 10.5, color: "var(--text-disabled)" }}>
+        <p style={{ fontSize: 10.5, color: "var(--text-muted)" }}>
           Shapes are design-only — members never see them as fields.
         </p>
       </div>
@@ -134,7 +134,7 @@ export function ElementPalette({ onAdd, logos = [] }: ElementPaletteProps) {
               <LogoTile key={asset.id} asset={asset} onAdd={onAdd} />
             ))}
           </div>
-          <p style={{ fontSize: 10.5, color: "var(--text-disabled)" }}>
+          <p style={{ fontSize: 10.5, color: "var(--text-muted)" }}>
             Logos land fixed and always fit inside their box — no cropping.
           </p>
         </div>

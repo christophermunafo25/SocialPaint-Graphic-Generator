@@ -140,3 +140,33 @@ export function parseColor(input: string, format: ColorFormat): Pick<RGBA, "r" |
   else [rn, gn, bn] = [c, 0, x];
   return { r: (rn + m) * 255, g: (gn + m) * 255, b: (bn + m) * 255 };
 }
+
+/** Relative luminance (WCAG 2.x) of an opaque colour. */
+export function luminance({ r, g, b }: Pick<RGBA, "r" | "g" | "b">): number {
+  const f = (c: number) => {
+    const s = c / 255;
+    return s <= 0.04045 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+}
+
+/** Contrast ratio between two opaque colours (1–21). */
+export function contrastRatio(
+  a: Pick<RGBA, "r" | "g" | "b">,
+  b: Pick<RGBA, "r" | "g" | "b">,
+): number {
+  const [l1, l2] = [luminance(a), luminance(b)];
+  return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+}
+
+/** The legible glyph colour for an arbitrary background — whichever of
+ * near-black or white contrasts better. Tenant brand colours are arbitrary
+ * (a pale accent gets ink, a deep one gets white), so anywhere tenant colour
+ * becomes a fill, the text on it must be CHOSEN, never hardcoded. */
+export function readableOn(background: string): string {
+  const bg = parseHex(background);
+  if (!bg) return "#111111";
+  return contrastRatio(bg, { r: 17, g: 17, b: 17 }) >= contrastRatio(bg, { r: 255, g: 255, b: 255 })
+    ? "#111111"
+    : "#FFFFFF";
+}

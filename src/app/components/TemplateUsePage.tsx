@@ -245,7 +245,11 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
                         : filled
                           ? "var(--bg-hover)"
                           : "transparent",
-                      color: current ? "var(--text-on-action)" : "var(--text-secondary)",
+                      // --fill-primary is a BRAND fill (Voltage) — Ink is the
+                      // only legible glyph on it in either theme. The inverted
+                      // --text-on-action pairs with the neutral --fill-action
+                      // only, and reads ~1.3:1 on Voltage in light mode.
+                      color: current ? "var(--text-on-accent)" : "var(--text-secondary)",
                       transition:
                         "background var(--dur-state) var(--ease), color var(--dur-state) var(--ease)",
                     }}
@@ -273,7 +277,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
                       : "1px solid var(--border-strong)",
                   background: step === formFields.length ? "var(--fill-primary)" : "transparent",
                   color:
-                    step === formFields.length ? "var(--text-on-action)" : "var(--text-secondary)",
+                    step === formFields.length ? "var(--text-on-accent)" : "var(--text-secondary)",
                   transition:
                     "background var(--dur-state) var(--ease), color var(--dur-state) var(--ease)",
                 }}

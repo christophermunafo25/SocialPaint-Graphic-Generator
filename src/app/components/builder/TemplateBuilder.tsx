@@ -2278,7 +2278,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                           Remove image
                         </button>
                       )}
-                      <p style={{ fontSize: 10.5, color: "var(--text-disabled)" }}>
+                      <p style={{ fontSize: 10.5, color: "var(--text-muted)" }}>
                         An image covers the gradient, which covers the color.
                       </p>
                     </div>
@@ -2305,7 +2305,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                     <span
                       style={{
                         fontSize: "var(--type-caption-size)",
-                        color: "var(--text-disabled)",
+                        color: "var(--text-muted)",
                         fontWeight: 400,
                       }}
                     >
@@ -2346,7 +2346,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                     <span
                       style={{
                         fontSize: "var(--type-caption-size)",
-                        color: "var(--text-disabled)",
+                        color: "var(--text-muted)",
                         fontWeight: 400,
                       }}
                     >

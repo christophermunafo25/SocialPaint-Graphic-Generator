@@ -96,7 +96,7 @@ export function WizardStepper({ current, complete, canGo, onGo }: WizardStepperP
                   <span
                     style={{
                       fontSize: 10,
-                      color: isCurrent ? "var(--text-on-action)" : "var(--text-disabled)",
+                      color: isCurrent ? "var(--text-on-action)" : "var(--text-muted)",
                     }}
                   >
                     {" "}

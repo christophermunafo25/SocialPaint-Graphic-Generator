@@ -348,7 +348,7 @@ export function Dashboard() {
                 ))}
               </div>
               {summary.rows.length > top.length && (
-                <p className="mt-4" style={{ fontSize: 11, color: "var(--text-disabled)" }}>
+                <p className="mt-4" style={{ fontSize: 11, color: "var(--text-muted)" }}>
                   +{summary.rows.length - top.length} more in the table
                 </p>
               )}
