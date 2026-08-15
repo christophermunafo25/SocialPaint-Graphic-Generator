@@ -182,17 +182,23 @@ export function isOwnStorageUrl(raw: string, supabaseUrl: string, bucket: string
   );
 }
 
-/** A URL the server will fetch as an uploaded asset must point at OUR own
- * public Storage bucket — never an arbitrary host (that would be an SSRF
- * primitive). Reads env; not pure. */
-export function requireOwnStorageUrl(v: unknown, field: string, bucket: string): string {
+/** An asset the server will read must be a storage REFERENCE
+ * ("{bucket}/{path}") into the named private bucket — never an arbitrary
+ * URL, which would be an SSRF primitive the moment the server fetches it.
+ * The legacy own-public-URL form (clients deployed before the
+ * private-storage cutover) is still accepted and normalized to a reference.
+ * Always returns the reference form. Reads env; not pure. */
+export function requireOwnStorageRef(v: unknown, field: string, bucket: string): string {
   const raw = requireString(v, field);
+  if (raw.startsWith(`${bucket}/`) && raw.length > bucket.length + 1 && !raw.includes("..")) {
+    return raw;
+  }
   const supabaseUrl =
     (globalThis as { Deno?: { env: { get(n: string): string | undefined } } }).Deno?.env.get(
       "SUPABASE_URL",
     ) ?? "";
-  if (!isOwnStorageUrl(raw, supabaseUrl, bucket)) {
-    throw new HttpError(400, `${field} must be a file uploaded to this workspace.`);
+  if (isOwnStorageUrl(raw, supabaseUrl, bucket)) {
+    return raw.replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/public\//, "");
   }
-  return raw;
+  throw new HttpError(400, `${field} must be a file uploaded to this workspace.`);
 }

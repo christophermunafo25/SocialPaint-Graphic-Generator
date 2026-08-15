@@ -15,11 +15,7 @@ export function supabase(): SupabaseClient {
   return client;
 }
 
-export function publicUrl(bucket: string, path: string): string {
-  return supabase().storage.from(bucket).getPublicUrl(path).data.publicUrl;
-}
-
-export const BUCKETS = {
-  brandAssets: "brand-assets",
-  templateBackgrounds: "template-backgrounds",
-} as const;
+// The buckets are private (migration 0022): there is no publicUrl() any
+// more. Reads go through signedUrls.ts; persisted values are storage
+// references (storageRef.ts).
+export { BUCKETS } from "../storageRef";

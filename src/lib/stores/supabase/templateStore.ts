@@ -1,6 +1,7 @@
 import type { NewTemplateInput, TemplateSchema, TemplateStatus } from "../../types";
 import type { TemplateStore } from "../interfaces";
-import { BUCKETS, publicUrl, supabase } from "./client";
+import { BUCKETS, supabase } from "./client";
+import { formatStorageRef } from "../storageRef";
 import { fieldToRow, toTemplate, type TemplateRow } from "./rows";
 
 const SELECT = "*, template_fields(*)";
@@ -143,6 +144,8 @@ export class SupabaseTemplateStore implements TemplateStore {
       .storage.from(BUCKETS.templateBackgrounds)
       .upload(path, file, { upsert: false });
     if (error) throw error;
-    return publicUrl(BUCKETS.templateBackgrounds, path);
+    // A storage REFERENCE, not a URL — it gets persisted (background_storage_path,
+    // static_value) and signed at render time.
+    return formatStorageRef(BUCKETS.templateBackgrounds, path);
   }
 }

@@ -119,7 +119,9 @@ Deno.serve(async (req) => {
         logError("figma-layers", up.error);
         return json({ error: "Storage upload failed — try again." }, 500);
       }
-      u.url = db.storage.from("template-backgrounds").getPublicUrl(path).data.publicUrl;
+      // Storage REFERENCE, not a URL — the buckets are private; the client
+      // signs it (and persists it as-is into static_value).
+      u.url = `template-backgrounds/${path}`;
     }
 
     return json({

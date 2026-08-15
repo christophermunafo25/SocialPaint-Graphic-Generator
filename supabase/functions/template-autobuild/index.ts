@@ -23,7 +23,7 @@ import {
   parseBody,
   requireEnum,
   requireNumber,
-  requireOwnStorageUrl,
+  requireOwnStorageRef,
   requireString,
   requireUuid,
 } from "../_shared/validate.ts";
@@ -105,7 +105,8 @@ async function extractFigma(
     logError("template-autobuild", upload.error);
     throw new HttpError(500, "Storage upload failed — try again.");
   }
-  const backgroundUrl = db.storage.from("template-backgrounds").getPublicUrl(path).data.publicUrl;
+  // Storage REFERENCE — the buckets are private; the client signs it.
+  const backgroundUrl = `template-backgrounds/${path}`;
 
   const scale1Res = await figmaGet(
     `/v1/images/${parsed.fileKey}?ids=${encodeURIComponent(parsed.nodeId)}&format=png&scale=1`,
@@ -176,7 +177,7 @@ async function extractCanva(
       logError("template-autobuild", upload.error);
       throw new HttpError(500, "Storage upload failed — try again.");
     }
-    const backgroundUrl = db.storage.from("template-backgrounds").getPublicUrl(path).data.publicUrl;
+    const backgroundUrl = `template-backgrounds/${path}`;
 
     return {
       backgroundUrl,
@@ -295,10 +296,23 @@ interface BrandContextFull {
   catalog: Array<{ name: string; category: string }>;
 }
 
-async function fetchPngBase64(url: string): Promise<string> {
-  const res = await fetch(url);
-  if (!res.ok) throw new HttpError(502, `Could not fetch the design image (${res.status}).`);
-  const buf = new Uint8Array(await res.arrayBuffer());
+/** Read the model's design image. A storage reference is downloaded via the
+ * service client (the buckets are private); only non-reference URLs — the
+ * Figma render CDN — are fetched over HTTP. */
+async function fetchPngBase64(db: ReturnType<typeof serviceClient>, src: string): Promise<string> {
+  let buf: Uint8Array;
+  const ref = /^(brand-assets|template-backgrounds)\/(.+)$/.exec(src);
+  if (ref) {
+    const { data, error } = await db.storage.from(ref[1]).download(ref[2]);
+    if (error || !data) {
+      throw new HttpError(502, "Could not read the design image from storage.");
+    }
+    buf = new Uint8Array(await data.arrayBuffer());
+  } else {
+    const res = await fetch(src);
+    if (!res.ok) throw new HttpError(502, `Could not fetch the design image (${res.status}).`);
+    buf = new Uint8Array(await res.arrayBuffer());
+  }
   let binary = "";
   const chunk = 0x8000;
   for (let i = 0; i < buf.length; i += chunk) {
@@ -454,7 +468,7 @@ async function bakeStaticImages(
         degrade(f, "its artwork upload failed");
         continue;
       }
-      f.staticValue = db.storage.from("template-backgrounds").getPublicUrl(path).data.publicUrl;
+      f.staticValue = `template-backgrounds/${path}`;
     }
   } catch {
     targets
@@ -477,7 +491,7 @@ function validateSource(raw: unknown): DesignSource {
   if (kind === "image") {
     return {
       kind,
-      backgroundUrl: requireOwnStorageUrl(
+      backgroundUrl: requireOwnStorageRef(
         src.backgroundUrl,
         "source.backgroundUrl",
         "template-backgrounds",
@@ -545,7 +559,7 @@ Deno.serve(async (req) => {
     const catalog = (templateRows ?? []) as Array<{ name: string; category: string }>;
 
     // 3. The design, as the model sees it.
-    const imageBase64 = await fetchPngBase64(extraction.modelImageUrl);
+    const imageBase64 = await fetchPngBase64(db, extraction.modelImageUrl);
 
     // 4. One forced tool call; one retry carrying the validation errors.
     const userText = buildUserText(extraction, { typeStyles, colors, catalog }, hint, source.kind);

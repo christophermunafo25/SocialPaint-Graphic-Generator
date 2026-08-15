@@ -12,7 +12,7 @@ import type {
   TemplateSchema,
   TemplateStatus,
 } from "../../types";
-import { BUCKETS, publicUrl } from "./client";
+import { BUCKETS, toImageSource } from "../storageRef";
 
 export interface CompanyRow {
   id: string;
@@ -129,10 +129,12 @@ export interface TemplateFieldRow {
 
 const opt = <T>(v: T | null): T | undefined => (v === null ? undefined : v);
 
-/** storage_path columns normally hold bucket-relative paths, but may hold a
- * full URL (e.g. a Figma-rendered background re-hosted elsewhere). */
-export const resolveUrl = (bucket: string, path: string): string =>
-  /^https?:\/\//.test(path) ? path : publicUrl(bucket, path);
+/** storage_path columns hold storage references, bare bucket-relative paths
+ * (legacy rows; bucket implied by the column), or a genuinely external URL
+ * (e.g. a Figma-rendered background re-hosted elsewhere). Domain objects
+ * carry the normalized SOURCE, not a fetchable URL — rendering resolves it
+ * through the signed-URL layer. */
+const resolveUrl = toImageSource;
 
 export const toTemplateField = (r: TemplateFieldRow): TemplateField => ({
   id: r.id,
