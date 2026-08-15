@@ -89,6 +89,41 @@ export const LOGO_PALETTE_PREFIX = "logo:";
 
 const maxZ = (fields: TemplateField[]) => fields.reduce((m, f) => Math.max(m, f.zIndex ?? 0), 0);
 
+/** Intrinsic size of an SVG document, from its markup. Logo SVGs are often
+ * exported without width/height attributes; the browser then reports the
+ * replaced-element fallback (300×150) as the natural size, which is NOT the
+ * artwork and produces a wrong-aspect box that "contain" can't save. Explicit
+ * absolute width/height win; a viewBox is the truth otherwise; null when the
+ * document declares neither (nothing trustworthy to size from). Regex-based
+ * so it runs identically in the browser and under vitest. */
+export function svgIntrinsicSize(svgText: string): { width: number; height: number } | null {
+  const open = /<svg\b[^>]*>/i.exec(svgText)?.[0];
+  if (!open) return null;
+  const attr = (name: string): string | null =>
+    new RegExp(`\\b${name}\\s*=\\s*["']([^"']+)["']`, "i").exec(open)?.[1] ?? null;
+  // Percentages and other relative units resolve against the CONTAINER, not
+  // the artwork — only unitless/px values describe the document itself.
+  const absolute = (v: string | null): number | null => {
+    if (!v) return null;
+    const m = /^\s*(\d+(?:\.\d+)?)(?:px)?\s*$/.exec(v);
+    return m ? parseFloat(m[1]) : null;
+  };
+  const w = absolute(attr("width"));
+  const h = absolute(attr("height"));
+  if (w && h && w > 0 && h > 0) return { width: w, height: h };
+  const vb = attr("viewBox")
+    ?.trim()
+    .split(/[\s,]+/)
+    .map(parseFloat);
+  if (vb?.length === 4 && vb.every((n) => Number.isFinite(n)) && vb[2] > 0 && vb[3] > 0) {
+    return { width: vb[2], height: vb[3] };
+  }
+  return null;
+}
+
+export const isSvgSource = (nameOrUrl: string): boolean =>
+  /\.svg(\?|#|$)/i.test(nameOrUrl) || nameOrUrl.startsWith("data:image/svg");
+
 /** Build a new field of the given palette type centered at a canvas point,
  * clamped inside the canvas, painted on top of everything existing. */
 export function fieldFromPalette(

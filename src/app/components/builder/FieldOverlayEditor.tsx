@@ -1075,7 +1075,10 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
               cursor: isTop ? "move" : "default",
             }}
           >
-            {(isSel || overflow) && (
+            {/* Group chip: the overflow warning always shows (it carries real
+                information); the name shows only mid-drag. Plain selection
+                stays chip-free — the inspector names the group. */}
+            {(overflow || (gd && gd.groupIds.has(g.id))) && (
               <span
                 className="absolute -top-4 left-0 rounded whitespace-nowrap"
                 style={{
@@ -1241,7 +1244,13 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
               border: isSelected
                 ? "var(--editor-line) solid var(--editor-accent)"
                 : "var(--editor-line) dashed color-mix(in srgb, var(--editor-accent) 65%, transparent)",
-              borderRadius: f.type === "image" ? cornerRadiusCss(f) : undefined,
+              // The outline follows the element's corner radius wherever the
+              // renderer honors one (images, rect shapes) — a square outline
+              // over a rounded element reads as "the radius didn't apply".
+              borderRadius:
+                f.type === "image" || (f.type === "shape" && (f.shape ?? "rect") === "rect")
+                  ? cornerRadiusCss(f)
+                  : undefined,
               // Content lives INSIDE the box — no fill, the outline and
               // handles carry selection.
               background: "transparent",
@@ -1306,7 +1315,13 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
                 </div>
               </div>
             )}
-            {(isSelected || hoveredId === f.id) && (
+            {/* Name chip: wayfinding while the pointer is involved — hover,
+                or this element's own drag. NOT on mere selection: chips sit
+                over the element above, and the inspector and field list
+                already name the selection. */}
+            {(hoveredId === f.id ||
+              Boolean(frame?.overrides.has(f.id)) ||
+              frame?.reorderDelta?.fieldId === f.id) && (
               <span
                 className="absolute -top-4 left-0 rounded whitespace-nowrap"
                 style={{
@@ -1321,12 +1336,16 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
                 {f.label}
                 {(() => {
                   // "Image · image" says nothing — suppress the type when it
-                  // duplicates the label. "fixed" always carries information.
-                  const segment = f.static
-                    ? "fixed"
-                    : f.label.trim().toLowerCase() === f.type
+                  // duplicates the label. "fixed" carries information except
+                  // on shapes, which are always design-only.
+                  const segment =
+                    f.type === "shape"
                       ? null
-                      : f.type;
+                      : f.static
+                        ? "fixed"
+                        : f.label.trim().toLowerCase() === f.type
+                          ? null
+                          : f.type;
                   return segment ? ` · ${segment}` : "";
                 })()}
               </span>
