@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
+import { resolveImageUrl } from "@/lib/stores/supabase/signedUrls";
 
+/** Keyed by the ORIGINAL source (storage reference or URL), never the signed
+ * URL — signatures rotate, the underlying object doesn't, so one fetch
+ * serves the whole session and expiry can't reach the cached bytes. */
 const cache = new Map<string, string>();
 
 export interface DataUrlState {
@@ -21,8 +25,9 @@ const resolvedNow = (url: string | undefined): string | null =>
  * Load-bearing for export: html-to-image silently drops cross-origin images,
  * so everything rendered on the canvas — Storage backgrounds, logos, member
  * uploads — must be a data URL before toPng runs. URLs that are already
- * data: pass through. The loading/failed flags exist so the export gate can
- * wait for images and refuse when one is missing.
+ * data: pass through. Storage references are signed first (signedUrls.ts) —
+ * the buckets are private. The loading/failed flags exist so the export gate
+ * can wait for images and refuse when one is missing.
  */
 export function useDataUrl(url: string | undefined): DataUrlState {
   const [state, setState] = useState<DataUrlState>(() => {
@@ -44,7 +49,9 @@ export function useDataUrl(url: string | undefined): DataUrlState {
     let cancelled = false;
     void (async () => {
       try {
-        const response = await fetch(url);
+        const fetchable = await resolveImageUrl(url);
+        if (fetchable === null) throw new Error("could not sign the storage reference");
+        const response = await fetch(fetchable);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const blob = await response.blob();
         const result = await new Promise<string>((resolve, reject) => {

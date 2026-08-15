@@ -35,7 +35,7 @@ export interface TemplateStore {
    *  captionTemplate stays valid. Always lands as a draft. */
   duplicate(id: string, name: string): Promise<TemplateSchema>;
   delete(id: string): Promise<void>;
-  uploadBackground(companyId: string, file: Blob, name: string): Promise<string>; // → public URL
+  uploadBackground(companyId: string, file: Blob, name: string): Promise<string>; // → storage reference (storageRef.ts) or data URL in local mode
 }
 
 export interface BrandKitStore {

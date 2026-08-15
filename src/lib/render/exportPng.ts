@@ -18,6 +18,16 @@ export type ExportOutcome = "downloaded" | "shared" | "canceled";
 /** How long to wait for in-flight images before giving up on the export. */
 const IMAGE_READY_TIMEOUT_MS = 15000;
 
+/** An export refused because an image isn't in the canvas. The message names
+ * the field and is written for the member — export UIs show it verbatim,
+ * which a bare Error's message can't be trusted to be. */
+export class ExportAssetError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ExportAssetError";
+  }
+}
+
 /** Refuse to rasterize a canvas whose images aren't all embedded.
  *
  * html-to-image resolves happily when it can't fetch an image — it
@@ -30,7 +40,9 @@ async function ensureImagesReady(node: HTMLElement): Promise<void> {
   const deadline = Date.now() + IMAGE_READY_TIMEOUT_MS;
   while (node.querySelector('[data-image-status="loading"]')) {
     if (Date.now() > deadline) {
-      throw new Error("Timed out waiting for images to load — check the connection and try again.");
+      throw new ExportAssetError(
+        "Timed out waiting for images to load — check the connection and try again.",
+      );
     }
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
@@ -42,7 +54,7 @@ async function ensureImagesReady(node: HTMLElement): Promise<void> {
     ),
   ];
   if (failed.length) {
-    throw new Error(
+    throw new ExportAssetError(
       `Couldn't load ${failed.join(", ")} — the graphic would export with it missing.`,
     );
   }

@@ -19,6 +19,7 @@ import { resolveFieldStyle } from "@/lib/brand/resolveStyle";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { ErrorState } from "./ErrorState";
 import { SchemaRenderer, type SchemaRendererHandle } from "./SchemaRenderer";
+import { ExportAssetError } from "@/lib/render/exportPng";
 import { FieldInput } from "./FieldInput";
 import { Page } from "./layout/Page";
 import { celebrate } from "@/lib/celebrate";
@@ -40,6 +41,11 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
   const [exporting, setExporting] = useState(false);
   /** Post-export feedback toast; auto-dismisses. */
   const [exportToast, setExportToast] = useState<"downloaded" | "shared" | "error" | null>(null);
+  /** The refusal reason, when the export gate named one — it says WHICH
+   * image is missing, which the generic line cannot. Only an
+   * ExportAssetError message is member-facing; anything else stays
+   * behind the generic copy. */
+  const [exportErrorDetail, setExportErrorDetail] = useState<string | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
   const rendererRef = useRef<SchemaRendererHandle>(null);
   const downloadBtnRef = useRef<HTMLButtonElement>(null);
@@ -121,6 +127,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
       }
     } catch (e) {
       console.error("Export failed", e);
+      setExportErrorDetail(e instanceof ExportAssetError ? e.message : null);
       showToast("error");
     } finally {
       setExporting(false);
@@ -182,7 +189,8 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
             >
               {exportToast === "downloaded" && "It's in your downloads folder, ready to post."}
               {exportToast === "shared" && "Sent through your device's share sheet."}
-              {exportToast === "error" && "Try again — if it keeps failing, re-upload the photo."}
+              {exportToast === "error" &&
+                (exportErrorDetail ?? "Try again — if it keeps failing, re-upload the photo.")}
             </span>
           </span>
         </div>

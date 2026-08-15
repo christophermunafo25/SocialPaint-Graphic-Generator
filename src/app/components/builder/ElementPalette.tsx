@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import type { BrandAsset } from "@/lib/types";
 import { LOGO_PALETTE_PREFIX, PALETTE_ITEMS, PALETTE_MIME, type PaletteItem } from "./fieldOps";
+import { SignedImg } from "../SignedImg";
 
 const ICONS: Record<string, React.ComponentType<{ style?: React.CSSProperties }>> = {
   text: TypeIcon,
@@ -83,7 +84,7 @@ function LogoTile({ asset, onAdd }: { asset: BrandAsset; onAdd(id: string): void
     >
       {/* The artwork itself is the tile — a logo is recognized, not read. */}
       <span className="flex items-center justify-center w-full" style={{ height: 36 }}>
-        <img
+        <SignedImg
           src={asset.url}
           alt={name}
           draggable={false}

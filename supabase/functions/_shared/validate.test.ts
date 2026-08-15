@@ -7,6 +7,7 @@ import {
   requireEmail,
   requireEnum,
   requireNumber,
+  requireOwnStorageRef,
   requireString,
   requireStringArray,
   requireUuid,
@@ -186,4 +187,32 @@ describe("isOwnStorageUrl", () => {
       isOwnStorageUrl("http://169.254.169.254/latest/meta-data", SB, "template-backgrounds"),
     ).toBe(false);
   });
+});
+
+describe("requireOwnStorageRef", () => {
+  it("accepts references into the named bucket", () => {
+    expect(
+      requireOwnStorageRef("template-backgrounds/c1/bg.png", "f", "template-backgrounds"),
+    ).toBe("template-backgrounds/c1/bg.png");
+  });
+  it("rejects other buckets, traversal, arbitrary URLs, and empty paths", () => {
+    expect(() =>
+      requireOwnStorageRef("brand-assets/c1/logo.png", "f", "template-backgrounds"),
+    ).toThrow();
+    expect(() =>
+      requireOwnStorageRef("template-backgrounds/../secrets", "f", "template-backgrounds"),
+    ).toThrow();
+    expect(() =>
+      requireOwnStorageRef("https://evil.com/img.png", "f", "template-backgrounds"),
+    ).toThrow();
+    expect(() =>
+      requireOwnStorageRef("http://169.254.169.254/latest/meta-data", "f", "template-backgrounds"),
+    ).toThrow();
+    expect(() =>
+      requireOwnStorageRef("template-backgrounds/", "f", "template-backgrounds"),
+    ).toThrow();
+  });
+  // The legacy own-public-URL branch reads SUPABASE_URL from Deno.env, which
+  // doesn't exist under vitest — it collapses to "must be uploaded" there,
+  // so the normalization path is covered by isOwnStorageUrl above.
 });

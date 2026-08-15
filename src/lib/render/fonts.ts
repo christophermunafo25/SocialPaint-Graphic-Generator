@@ -16,6 +16,7 @@ import {
   type FontStyle,
 } from "./fontCatalog";
 import { canvasFontShorthand } from "./autoFit";
+import { resolveImageUrl } from "@/lib/stores/supabase/signedUrls";
 
 /** Curated Google Fonts list offered in Brand Studio / onboarding. */
 export const GOOGLE_FONTS = [
@@ -228,7 +229,10 @@ export async function registerCustomFont(asset: BrandAsset): Promise<void> {
     const dataUrl = asset.url.startsWith("data:")
       ? asset.url
       : await (async () => {
-          const blob = await (await fetch(asset.url)).blob();
+          // asset.url may be a storage reference — sign before fetching.
+          const fetchable = await resolveImageUrl(asset.url);
+          if (!fetchable) throw new Error("could not sign the font's storage reference");
+          const blob = await (await fetch(fetchable)).blob();
           return new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
             reader.onloadend = () => resolve(reader.result as string);
