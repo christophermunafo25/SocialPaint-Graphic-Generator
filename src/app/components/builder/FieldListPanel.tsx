@@ -285,7 +285,7 @@ export function FieldListPanel({
                     style={{
                       fontFamily: "var(--font-mono)",
                       fontSize: 9.5,
-                      color: "var(--text-disabled)",
+                      color: "var(--text-muted)",
                     }}
                   >
                     {r.group.mode === "free" ? "group" : "auto layout"}
@@ -376,7 +376,7 @@ export function FieldListPanel({
                   style={{
                     fontFamily: "var(--font-mono)",
                     fontSize: 9.5,
-                    color: "var(--text-disabled)",
+                    color: "var(--text-muted)",
                     maxWidth: 90,
                   }}
                 >

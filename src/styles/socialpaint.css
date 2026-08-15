@@ -253,7 +253,12 @@ html {
 
   --text-primary: #f1f1f1;
   --text-secondary: #a0a0a0; /* 6.2:1 on surface, 5.5:1 on hover */
-  --text-muted: rgba(241, 241, 241, 0.4);
+  /* Muted must still clear AA: 0.56 reads 4.6:1 on --bg-hover (its worst
+     seat), 5.6:1 on surface. Quieter-than-secondary comes from size and
+     casing, not from dipping under the contrast floor (a11y audit,
+     2026-08-14). Truly disabled controls use --text-disabled, which is
+     AA-exempt and must never style readable text. */
+  --text-muted: rgba(241, 241, 241, 0.56);
   --text-disabled: rgba(241, 241, 241, 0.25);
   --text-on-accent: #272727;
 
@@ -274,7 +279,13 @@ html {
      Chris's direction): Voltage is the working accent, and on this canvas
      it clears text contrast outright (13.5:1), so it may carry text,
      borders, and the ring here. Aqua informs. Danger and warning stay the
-     functional hues — severity never rides a brand colour. */
+     functional hues — severity never rides a brand colour.
+
+     PAIRING RULE: --fill-primary/--fill-attention/--fill-info are BRAND
+     fills in both themes now — any glyph on them takes --text-on-accent
+     (Ink, both themes), never --text-on-action. The inverted
+     --text-on-action pairs exclusively with the neutral --fill-action;
+     on a brand fill it reads ~1.3:1 in light mode. */
   --state-primary-on-surface: var(--voltage);
   --state-attention-on-surface: var(--voltage);
   --state-primary: var(--voltage);
@@ -322,8 +333,12 @@ html {
   --border-strong: rgba(39, 39, 39, 0.16);
 
   --text-primary: #272727;
-  --text-secondary: #666666;
-  --text-muted: rgba(39, 39, 39, 0.4);
+  /* #666 reached only 4.43:1 on --bg-hover, its worst seat; one step down
+     clears AA on every rung (4.6:1 hover, 5.3:1 canvas, 6:1 on cards). */
+  --text-secondary: #636363;
+  /* 0.7 reads 4.6:1 on --bg-hover, 5.9:1 on white cards — see the dark
+     block's muted note. */
+  --text-muted: rgba(39, 39, 39, 0.7);
   --text-disabled: rgba(39, 39, 39, 0.25);
   --text-on-accent: #272727;
 
@@ -1603,9 +1618,12 @@ input[type="radio"] {
     box-shadow 0.15s ease;
 }
 
+/* Same construction as .sp-input: the control's own 1px edge takes the ring
+   colour, never a halo on top of it. */
 .sp-inline-edit__input:focus {
-  border-color: transparent;
-  box-shadow: var(--focus-ring-tight);
+  border-color: var(--ring);
+  box-shadow: none;
+  outline: none;
 }
 
 .sp-inline-edit__save,

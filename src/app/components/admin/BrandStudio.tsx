@@ -4,6 +4,7 @@ import type { BrandColor, BrandTypeStyle } from "@/lib/types";
 import { useBrand } from "@/lib/brand/BrandContext";
 import { useRouter, type BrandCategory } from "../../router";
 import { styleName, toFontStyle } from "@/lib/render/fontCatalog";
+import { readableOn } from "@/lib/color";
 import { DEFAULT_PALETTE, DEFAULT_TYPE_STYLES } from "@/lib/theme";
 import { Page, PageHeader } from "../layout/Page";
 import { DesignSystemImportPanel } from "./DesignSystemImportPanel";
@@ -367,19 +368,20 @@ interface BrandPreviewCardProps {
 
 function BrandPreviewCard({ colors, headingFamily, bodyFamily, logoUrl }: BrandPreviewCardProps) {
   const hex = (key: string, fallback: string) => colors.find((c) => c.key === key)?.hex ?? fallback;
+  // Tenant colours are arbitrary — a pale primary or accent needs ink, not
+  // white. Every glyph sitting on tenant colour picks the legible option.
+  const primaryBg = hex("primary", "#2F3B4C");
+  const accentBg = hex("accent", "#C9A227");
   return (
     <div
       className="overflow-hidden"
       style={{ border: "1px solid var(--border)", borderRadius: "var(--radius-card-sm)" }}
     >
-      <div
-        className="px-5 py-4 flex items-center gap-3"
-        style={{ background: hex("primary", "#2F3B4C") }}
-      >
+      <div className="px-5 py-4 flex items-center gap-3" style={{ background: primaryBg }}>
         {logoUrl && <img src={logoUrl} alt="" className="h-6 w-auto" />}
         <span
-          className="text-white font-extrabold uppercase text-sm"
-          style={{ fontFamily: `"${headingFamily}", sans-serif` }}
+          className="font-extrabold uppercase text-sm"
+          style={{ fontFamily: `"${headingFamily}", sans-serif`, color: readableOn(primaryBg) }}
         >
           Sample Header
         </span>
@@ -400,7 +402,7 @@ function BrandPreviewCard({ colors, headingFamily, bodyFamily, logoUrl }: BrandP
         <span
           className="sp-eyebrow inline-block px-2.5 py-1 "
           data-radius-control
-          style={{ background: hex("accent", "#C9A227"), color: "#fff" }}
+          style={{ background: accentBg, color: readableOn(accentBg) }}
         >
           Accent chip
         </span>
