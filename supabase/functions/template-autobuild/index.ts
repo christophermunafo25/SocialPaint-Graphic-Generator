@@ -299,10 +299,7 @@ interface BrandContextFull {
 /** Read the model's design image. A storage reference is downloaded via the
  * service client (the buckets are private); only non-reference URLs — the
  * Figma render CDN — are fetched over HTTP. */
-async function fetchPngBase64(
-  db: ReturnType<typeof serviceClient>,
-  src: string,
-): Promise<string> {
+async function fetchPngBase64(db: ReturnType<typeof serviceClient>, src: string): Promise<string> {
   let buf: Uint8Array;
   const ref = /^(brand-assets|template-backgrounds)\/(.+)$/.exec(src);
   if (ref) {

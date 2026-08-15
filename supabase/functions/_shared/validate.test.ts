@@ -191,9 +191,9 @@ describe("isOwnStorageUrl", () => {
 
 describe("requireOwnStorageRef", () => {
   it("accepts references into the named bucket", () => {
-    expect(requireOwnStorageRef("template-backgrounds/c1/bg.png", "f", "template-backgrounds")).toBe(
-      "template-backgrounds/c1/bg.png",
-    );
+    expect(
+      requireOwnStorageRef("template-backgrounds/c1/bg.png", "f", "template-backgrounds"),
+    ).toBe("template-backgrounds/c1/bg.png");
   });
   it("rejects other buckets, traversal, arbitrary URLs, and empty paths", () => {
     expect(() =>
@@ -208,7 +208,9 @@ describe("requireOwnStorageRef", () => {
     expect(() =>
       requireOwnStorageRef("http://169.254.169.254/latest/meta-data", "f", "template-backgrounds"),
     ).toThrow();
-    expect(() => requireOwnStorageRef("template-backgrounds/", "f", "template-backgrounds")).toThrow();
+    expect(() =>
+      requireOwnStorageRef("template-backgrounds/", "f", "template-backgrounds"),
+    ).toThrow();
   });
   // The legacy own-public-URL branch reads SUPABASE_URL from Deno.env, which
   // doesn't exist under vitest — it collapses to "must be uploaded" there,

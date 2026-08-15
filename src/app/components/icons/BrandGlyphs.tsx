@@ -37,9 +37,7 @@ function glyph(name: string, paths: React.ReactNode): LucideIcon {
         stroke={color}
         // Mirrors lucide: keep the stroke visually constant when the icon is
         // scaled, rather than letting it thicken with the box.
-        strokeWidth={
-          absoluteStrokeWidth ? (Number(strokeWidth) * 24) / Number(size) : strokeWidth
-        }
+        strokeWidth={absoluteStrokeWidth ? (Number(strokeWidth) * 24) / Number(size) : strokeWidth}
         strokeLinecap="round"
         strokeLinejoin="round"
         className={["lucide", `lucide-${name}`, className].filter(Boolean).join(" ")}

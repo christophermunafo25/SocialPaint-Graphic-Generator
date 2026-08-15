@@ -46,8 +46,7 @@ export function parseStorageRef(src: string): StorageRef | null {
   return null;
 }
 
-export const formatStorageRef = (bucket: BucketName, path: string): string =>
-  `${bucket}/${path}`;
+export const formatStorageRef = (bucket: BucketName, path: string): string => `${bucket}/${path}`;
 
 /** Normalize a persisted column value into an image source: references and
  * external URLs pass through, bare paths pick up the column's implied
