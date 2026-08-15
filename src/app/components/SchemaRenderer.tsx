@@ -266,10 +266,14 @@ export function schemaBackgroundCss(
   return schema.backgroundColor || "#ffffff";
 }
 
-export function cornerRadiusCss(field: TemplateField): string | undefined {
+/** Corner radius as CSS, in CANVAS pixels — correct anywhere the element is
+ * drawn at canvas scale (the renderer, the export, the builder's scaled
+ * content layer). A surface measured in SCREEN pixels must pass its display
+ * scale, or the radius comes out wrong by exactly that factor. */
+export function cornerRadiusCss(field: TemplateField, scale = 1): string | undefined {
   const r = field.cornerRadius;
   if (!r || (!r.tl && !r.tr && !r.br && !r.bl)) return undefined;
-  return `${r.tl}px ${r.tr}px ${r.br}px ${r.bl}px`;
+  return `${r.tl * scale}px ${r.tr * scale}px ${r.br * scale}px ${r.bl * scale}px`;
 }
 
 interface FieldBoxProps {

@@ -137,18 +137,36 @@ export function cascadePoint(
   at: { x: number; y: number },
   existing: TemplateField[],
   canvas: { width: number; height: number },
+  /** The element's size, so occupancy is judged on where the box actually
+   * LANDS. Callers clamp boxes into the canvas, so past a point the cascade
+   * would keep proposing fresh points that all clamp to the same spot —
+   * stacking elements again, which is the very thing this prevents. */
+  size?: { width: number; height: number },
 ): { x: number; y: number } {
-  const taken = (p: { x: number; y: number }) =>
-    existing.some((f) => {
+  const w = size?.width ?? 0;
+  const h = size?.height ?? 0;
+  /** Where a click at `p` really puts the box centre, clamping included. */
+  const landedCentre = (p: { x: number; y: number }) => {
+    if (!size) return p;
+    const x = Math.max(0, Math.min(canvas.width - w, p.x - w / 2));
+    const y = Math.max(0, Math.min(canvas.height - h, p.y - h / 2));
+    return { x: x + w / 2, y: y + h / 2 };
+  };
+  const taken = (p: { x: number; y: number }) => {
+    const c = landedCentre(p);
+    return existing.some((f) => {
       const cx = f.anchor === "center" ? f.x : f.x + f.width / 2;
       const cy = f.anchor === "center" ? f.y : f.y + f.height / 2;
-      return Math.abs(cx - p.x) < 1 && Math.abs(cy - p.y) < 1;
+      return Math.abs(cx - c.x) < 1 && Math.abs(cy - c.y) < 1;
     });
+  };
   let point = at;
   // Bounded by the canvas, so this terminates even with hundreds of fields.
   for (let i = 1; taken(point); i++) {
     const next = { x: at.x + i * CASCADE_STEP, y: at.y + i * CASCADE_STEP };
-    if (next.x > canvas.width || next.y > canvas.height) return at;
+    // Give up once the BOX would clamp — past that, every further step lands
+    // in the same place and the cascade stops meaning anything.
+    if (next.x - w / 2 > canvas.width - w || next.y - h / 2 > canvas.height - h) return at;
     point = next;
   }
   return point;

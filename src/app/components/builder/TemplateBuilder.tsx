@@ -82,7 +82,7 @@ import { isFigmaNodeUrl } from "@/lib/figma/figmaUrl";
 import { unavailableFamilies } from "@/lib/render/fonts";
 import { celebrate } from "@/lib/celebrate";
 import { createCanvasMeasurer } from "@/lib/render/autoFit";
-import { computeLayout } from "@/lib/render/layout";
+import { computeLayout, outermostGroupOf } from "@/lib/render/layout";
 import {
   conversionShift,
   deriveFreeGroup,
@@ -222,9 +222,14 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
   const [recomposing, setRecomposing] = useState(false);
   /** One-line import summary ("12 elements imported — all editable") so the
    * admin knows what they're looking at when the canvas opens full. */
-  const [importSummary, setImportSummary] = useState<string | null>(null);
-  const importSummaryTimer = useRef<number | undefined>(undefined);
-  useEffect(() => () => window.clearTimeout(importSummaryTimer.current), []);
+  /** Transient confirmation toast (imports, grouping) — proof it worked. */
+  const [notice, setNotice] = useState<string | null>(null);
+  /** A just-created group, highlighted briefly so the admin sees it. */
+  const [flashGroupId, setFlashGroupId] = useState<string | null>(null);
+  const flashTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(flashTimer.current), []);
+  const noticeTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(noticeTimer.current), []);
   const [publishState, setPublishState] = useState<"idle" | "publishing" | "success">("idle");
   const [error, setError] = useState<string | null>(null);
   /** Field whose label should open for naming (a just-added element);
@@ -406,9 +411,31 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       kit,
       measure: measurer,
     });
-    if (!g) return;
+    if (!g) {
+      // Silence is the worst answer to ⌘G. Say why nothing happened.
+      const alreadyGrouped = draft.fields.some(
+        (f) => selectedIds.includes(f.id) && outermostGroupOf(f.fieldKey, groups),
+      );
+      setNotice(
+        alreadyGrouped
+          ? "Those elements are already in a group — ungroup them first."
+          : "Select at least two elements to group them.",
+      );
+      window.clearTimeout(noticeTimer.current);
+      noticeTimer.current = window.setTimeout(() => setNotice(null), 5000);
+      return;
+    }
     setDraft((d) => ({ ...d, layoutGroups: [...(d.layoutGroups ?? []), g] }));
     setSelectedIds([groupChildRef(g.id)]);
+    // Three confirmations, because grouping is otherwise invisible: the
+    // frame flashes on the canvas, the group is selected (so the inspector
+    // shows it), and a toast names what just happened.
+    setFlashGroupId(g.id);
+    window.clearTimeout(flashTimer.current);
+    flashTimer.current = window.setTimeout(() => setFlashGroupId(null), 1600);
+    setNotice(`Grouped ${g.children.length} elements — “${g.name}”`);
+    window.clearTimeout(noticeTimer.current);
+    noticeTimer.current = window.setTimeout(() => setNotice(null), 5000);
   }, [draft.fields, groups, selectedIds, selGroupIds, builderLayout, kit, measurer, setDraft]);
 
   /** Commit a whole-group drag. A stack owns its children's positions, so
@@ -417,20 +444,33 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
    * fields of free groups get authored x/y deltas, nested stacks get their
    * anchors shifted (free frames sync their origin too). One setDraft — one
    * undo entry. */
-  const moveGroup = useCallback(
-    (id: string, dx: number, dy: number) => {
+  /** Commit a selection move: loose fields land at their new geometry and
+   * every selected group is translated, in ONE draft write — a mixed
+   * selection is a single undo entry, not one per element. A stack moves by
+   * its anchor; a plain group moves by translating everything that
+   * self-places inside it. */
+  const moveSelection = useCallback(
+    (
+      move: {
+        fields: Array<{ id: string } & Partial<TemplateField>>;
+        groupIds: string[];
+        dx: number;
+        dy: number;
+      },
+      /** History key: successive nudges with the same key collapse into one
+       * undo entry, the way a drag is one entry. */
+      coalesceKey?: string,
+    ) => {
+      const { dx, dy } = move;
       setDraft((d) => {
         const all = d.layoutGroups ?? [];
-        const g = all.find((x) => x.id === id);
-        if (!g) return d;
         const shifted = (x: LayoutGroup) => ({
           ...x,
           x: Math.round(x.x + dx),
           y: Math.round(x.y + dy),
         });
-        if (!isFreeGroup(g)) {
-          return { ...d, layoutGroups: all.map((x) => (x.id === id ? shifted(x) : x)) };
-        }
+        // Groups: collect the frames to translate and, for plain groups, the
+        // authored fields that travel with them.
         const freeFieldKeys = new Set<string>();
         const subtree = new Set<string>();
         const visit = (grp: LayoutGroup) => {
@@ -446,17 +486,34 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
             }
           }
         };
-        visit(g);
+        for (const id of move.groupIds) {
+          const g = all.find((x) => x.id === id);
+          if (!g) continue;
+          if (isFreeGroup(g)) visit(g);
+          else subtree.add(g.id); // a stack re-places its children from its anchor
+        }
+        const patches = new Map(move.fields.map((p) => [p.id, p]));
         return {
           ...d,
-          fields: d.fields.map((f) =>
-            freeFieldKeys.has(f.fieldKey)
+          fields: d.fields.map((f) => {
+            const patch = patches.get(f.id);
+            if (patch) {
+              const merged = { ...f, ...patch };
+              return {
+                ...merged,
+                x: Math.round(merged.x),
+                y: Math.round(merged.y),
+                width: Math.round(merged.width),
+                height: Math.round(merged.height),
+              };
+            }
+            return freeFieldKeys.has(f.fieldKey)
               ? { ...f, x: Math.round(f.x + dx), y: Math.round(f.y + dy) }
-              : f,
-          ),
-          layoutGroups: all.map((x) => (subtree.has(x.id) ? shifted(x) : x)),
+              : f;
+          }),
+          layoutGroups: subtree.size ? all.map((x) => (subtree.has(x.id) ? shifted(x) : x)) : all,
         };
-      });
+      }, coalesceKey);
     },
     [setDraft],
   );
@@ -640,9 +697,15 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     const canvas = { width: draft.canvasWidth, height: draft.canvasHeight };
     // A drop lands where it was released. A CLICK aims at the canvas center
     // every time, so it cascades off whatever is already sitting there.
+    const item = PALETTE_ITEMS.find((p) => p.id === paletteId);
     const point = at
       ? at
-      : cascadePoint({ x: canvas.width / 2, y: canvas.height / 2 }, draft.fields, canvas);
+      : cascadePoint(
+          { x: canvas.width / 2, y: canvas.height / 2 },
+          draft.fields,
+          canvas,
+          item ? { width: item.width, height: item.height } : undefined,
+        );
     if (paletteId.startsWith(LOGO_PALETTE_PREFIX)) {
       const asset = logoAssets.find((a) => a.id === paletteId.slice(LOGO_PALETTE_PREFIX.length));
       if (!asset) return;
@@ -695,7 +758,6 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       }
       return;
     }
-    const item = PALETTE_ITEMS.find((p) => p.id === paletteId);
     if (!item) return;
     const field = fieldFromPalette(item, point, draft.fields, kit, canvas);
     setFields([...draft.fields, field]);
@@ -755,7 +817,10 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       }
     }
     if (!created.length) return;
-    setFields([...draft.fields, ...created]);
+    // Append to whatever the draft is NOW, not to the array captured before
+    // the upload: anything the admin moved or typed while it was in flight
+    // would otherwise be silently reverted.
+    setDraft((d) => ({ ...d, fields: [...d.fields, ...created] }));
     setSelectedIds(created.map((f) => f.id));
   };
 
@@ -768,7 +833,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       setError("Pasting Figma layers needs the Supabase backend with Figma connected.");
       return;
     }
-    setImportSummary("Importing that Figma layer…");
+    setNotice("Importing that Figma layer…");
     try {
       const result = await stores.designImport.importElementsFromUrl(company.id, url);
       const fields = assembleElementFields(result, at, draft.fields, {
@@ -781,17 +846,17 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
         fields,
         brandAssets.filter((a) => a.kind === "font"),
       );
-      setImportSummary(
+      setNotice(
         `${fields.length} element${fields.length !== 1 ? "s" : ""} pasted from Figma — all fixed. Turn off Fixed on anything members should fill in.` +
           (missingFonts.length
             ? ` Fonts not available here: ${missingFonts.join(", ")} — upload them in Brand Studio.`
             : ""),
       );
-      window.clearTimeout(importSummaryTimer.current);
-      importSummaryTimer.current = window.setTimeout(() => setImportSummary(null), 8000);
+      window.clearTimeout(noticeTimer.current);
+      noticeTimer.current = window.setTimeout(() => setNotice(null), 8000);
       if (result.warnings.length) setError(result.warnings.join(" "));
     } catch (e) {
-      setImportSummary(null);
+      setNotice(null);
       setError(e instanceof Error ? e.message : "Couldn't import that Figma layer.");
     }
   };
@@ -845,24 +910,30 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
   /** Arrow-key nudge: 1 canvas px, shift ×10. A rapid streak of presses
    * coalesces into one undo entry (the time window); spaced, deliberate
    * nudges stay separate steps. */
+  /** Arrow-key nudge. Routed through the same translation as a drag, so a
+   * plain group moves its children (its frame is their bounding box, not an
+   * authored coordinate) and a stack child is skipped rather than having a
+   * coordinate written that the layout pass will ignore. Coalesced into one
+   * history entry per burst of key presses. */
   const nudgeFields = useCallback(
     (ids: string[], dx: number, dy: number) => {
-      const idSet = new Set(selectedFieldIds(ids));
-      const gidSet = new Set(selectedGroupIds(ids));
-      setDraft(
-        (d) => ({
-          ...d,
-          fields: d.fields.map((f) => (idSet.has(f.id) ? { ...f, x: f.x + dx, y: f.y + dy } : f)),
-          layoutGroups: gidSet.size
-            ? d.layoutGroups?.map((g) =>
-                gidSet.has(g.id) ? { ...g, x: g.x + dx, y: g.y + dy } : g,
-              )
-            : d.layoutGroups,
-        }),
-        `nudge:${ids.join(",")}`,
-      );
+      const movableFieldIds = selectedFieldIds(ids).filter((id) => {
+        const f = draftRef.current.fields.find((x) => x.id === id);
+        if (!f) return false;
+        const g = (draftRef.current.layoutGroups ?? []).find((grp) =>
+          grp.children.includes(f.fieldKey),
+        );
+        return !g || isFreeGroup(g); // a stack owns its children's positions
+      });
+      const groupIds = selectedGroupIds(ids);
+      if (!movableFieldIds.length && !groupIds.length) return;
+      const fields = movableFieldIds.map((id) => {
+        const f = draftRef.current.fields.find((x) => x.id === id)!;
+        return { id, x: f.x + dx, y: f.y + dy };
+      });
+      moveSelection({ fields, groupIds, dx, dy }, `nudge:${ids.join(",")}`);
     },
-    [setDraft],
+    [moveSelection],
   );
 
   const deleteFields = useCallback(
@@ -1273,9 +1344,9 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       ? ` Fonts not available here: ${missingFonts.join(", ")} — upload them in Brand Studio so text renders as designed.`
       : "";
 
-    setImportSummary(opts.summary(imported) + fontNote);
-    window.clearTimeout(importSummaryTimer.current);
-    importSummaryTimer.current = window.setTimeout(() => setImportSummary(null), 8000);
+    setNotice(opts.summary(imported) + fontNote);
+    window.clearTimeout(noticeTimer.current);
+    noticeTimer.current = window.setTimeout(() => setNotice(null), 8000);
 
     recomposeBackground(opts.sourceUrl, imported);
     return imported;
@@ -1697,7 +1768,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
         }}
       />
 
-      {importSummary && (
+      {notice && (
         <div className="sp-toast" role="status" aria-live="polite">
           <CheckCircle2
             style={{
@@ -1715,7 +1786,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
               color: "var(--text-primary)",
             }}
           >
-            {importSummary}
+            {notice}
           </span>
         </div>
       )}
@@ -2135,7 +2206,8 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                             selectedIds={selectedIds}
                             onSelect={setSelectedIds}
                             onChange={setFields}
-                            onGroupMove={moveGroup}
+                            onMoveSelection={moveSelection}
+                            flashGroupId={flashGroupId}
                             onReorderChildren={(id, children) => patchGroup(id, { children })}
                             onDraw={addDrawnField}
                             onDropElement={(id, at) => addPaletteField(id, at)}
