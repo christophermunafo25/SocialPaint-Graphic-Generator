@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Figma, RefreshCw, Sparkles, Upload, X } from "lucide-react";
+import { LoaderCircle, Sparkles, Upload, X } from "lucide-react";
+import { Figma } from "../icons/BrandGlyphs";
 import type { AutoBuildResult, DesignSource } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -179,7 +180,7 @@ export function AutoBuildDialog({ onClose, onBuilt }: AutoBuildDialogProps) {
 
         {busy ? (
           <div className="py-8 text-center space-y-3" role="status" aria-live="polite">
-            <RefreshCw
+            <LoaderCircle
               className="w-5 h-5 animate-spin mx-auto"
               style={{ color: "var(--state-primary)" }}
             />
@@ -296,7 +297,7 @@ export function AutoBuildDialog({ onClose, onBuilt }: AutoBuildDialogProps) {
                   }}
                 >
                   {uploadingImage ? (
-                    <RefreshCw
+                    <LoaderCircle
                       className="w-4 h-4 animate-spin"
                       style={{ color: "var(--state-primary)" }}
                     />

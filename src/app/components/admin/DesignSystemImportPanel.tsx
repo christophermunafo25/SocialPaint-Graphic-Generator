@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Check, FileJson, FileText, Figma, RefreshCw, Upload } from "lucide-react";
+import { Check, FileJson, FileText, LoaderCircle, Upload } from "lucide-react";
+import { Figma } from "../icons/BrandGlyphs";
 import type { BrandColor, BrandTypeStyle } from "@/lib/types";
 import { parseDesignTokens, parseGuidelines } from "@/lib/brand/designSystemImport";
 import { stores } from "@/lib/stores";
@@ -132,7 +133,7 @@ export function DesignSystemImportPanel(props: DesignSystemImportPanelProps) {
             onClick={() => void importFigmaStyles()}
           >
             {figmaBusy ? (
-              <RefreshCw className="animate-spin" style={{ width: 13, height: 13 }} />
+              <LoaderCircle className="animate-spin" style={{ width: 13, height: 13 }} />
             ) : (
               <Upload style={{ width: 13, height: 13 }} />
             )}

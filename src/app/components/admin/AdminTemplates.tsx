@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { CheckCircle2, Copy, Eye, EyeOff, Pencil, Plus, Trash2 } from "lucide-react";
+import { CircleCheck, Copy, Eye, EyeOff, Pencil, Plus, Trash2 } from "lucide-react";
 import type { TemplateSchema, UsageSummary } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
@@ -144,7 +144,7 @@ export function AdminTemplates() {
     <Page>
       {toast && (
         <div className="sp-toast" role="status" aria-live="polite">
-          <CheckCircle2
+          <CircleCheck
             style={{
               width: 16,
               height: 16,

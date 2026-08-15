@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Figma, RefreshCw, X } from "lucide-react";
+import { LoaderCircle, X } from "lucide-react";
+import { Figma } from "../icons/BrandGlyphs";
 import type { DesignImportResult } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -137,7 +138,7 @@ export function FigmaImportDialog({ onClose, onImported }: FigmaImportDialogProp
               disabled={busy || !url.trim()}
               className="sp-btn sp-btn-primary w-full"
             >
-              {busy && <RefreshCw className="w-4 h-4 animate-spin" />}
+              {busy && <LoaderCircle className="w-4 h-4 animate-spin" />}
               {busy ? "Importing…" : "Import frame"}
             </button>
           </div>

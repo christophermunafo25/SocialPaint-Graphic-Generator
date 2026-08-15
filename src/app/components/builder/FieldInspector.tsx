@@ -23,7 +23,7 @@ import {
   Lock,
   Minus,
   Plus,
-  RefreshCw,
+  LoaderCircle,
   RotateCw,
   Trash2,
   Unlink,
@@ -517,7 +517,7 @@ export function FieldInspector(props: FieldInspectorProps) {
               }}
             >
               {uploadingStatic ? (
-                <RefreshCw
+                <LoaderCircle
                   className="w-3.5 h-3.5 animate-spin"
                   style={{ color: "var(--state-primary)" }}
                 />
