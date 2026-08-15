@@ -277,7 +277,9 @@ function ImageFieldInput({ field, value, onChange, inputId }: FieldInputProps) {
       </div>
       {chip && (
         <div
-          className={chip.leaving ? "sp-upload-chip sp-upload-chip--leave" : "sp-upload-chip sp-chip-in"}
+          className={
+            chip.leaving ? "sp-upload-chip sp-upload-chip--leave" : "sp-upload-chip sp-chip-in"
+          }
           aria-live="polite"
         >
           <span className="sp-upload-chip__name">{chip.name}</span>
