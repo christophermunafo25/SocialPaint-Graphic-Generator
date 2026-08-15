@@ -106,6 +106,26 @@ const BUILDER_MIN_VIEWPORT_PX = 1024;
 
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
 
+/** Turn a save failure into something an admin can act on. The raw text is
+ * kept — it is the only clue when the cause is novel — but the common
+ * classes get a sentence that says what to DO about it. A rejected column
+ * value in particular means the app is ahead of the database, which is a
+ * deploy problem, not something to retry forever. */
+export function saveErrorMessage(e: unknown): string {
+  const raw = e instanceof Error ? e.message : String(e);
+  const lower = raw.toLowerCase();
+  if (lower.includes("check constraint") || lower.includes("invalid input value for enum")) {
+    return `The database rejected part of this template — it may be running behind the app (a migration is probably pending). Nothing was saved. Details: ${raw}`;
+  }
+  if (lower.includes("row-level security") || lower.includes("permission denied")) {
+    return `You don't have permission to save this template. Details: ${raw}`;
+  }
+  if (lower.includes("failed to fetch") || lower.includes("networkerror")) {
+    return "Couldn't reach the server — check your connection. Your work is still here and will save when the connection returns.";
+  }
+  return `Couldn't save this template. Details: ${raw}`;
+}
+
 /** "Saved just now" → "Saved N minutes ago". nowTick only forces re-renders. */
 function savedAgo(savedAt: number, _nowTick: number): string {
   const mins = Math.floor((Date.now() - savedAt) / 60_000);
@@ -1196,6 +1216,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       setSavedId(saved.id);
       setLastSavedAt(Date.now());
       setSaveFailed(false);
+      setError(null);
       if (quiet) {
         // Autosave: the store now matches what was sent; history stays —
         // undoing past an autosave is safe because the undone state simply
@@ -1212,8 +1233,11 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       return saved;
     } catch (e) {
       console.error("Save failed", e);
+      // A silent autosave failure looks exactly like "the app isn't saving",
+      // which is how the check-constraint bug hid. Say what happened, and
+      // say it the same way whether the save was automatic or deliberate.
+      setError(saveErrorMessage(e));
       if (quiet) setSaveFailed(true);
-      else setError(e instanceof Error ? e.message : "Save failed.");
       return null;
     } finally {
       saveInFlight.current = false;
@@ -1834,13 +1858,14 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
               role="status"
               style={{
                 fontSize: "var(--type-caption-size)",
-                color: saveFailed ? "var(--state-primary)" : "var(--text-muted)",
+                color: saveFailed ? "var(--destructive)" : "var(--text-muted)",
+                fontWeight: saveFailed ? 500 : undefined,
               }}
             >
               {saving
                 ? "Saving…"
                 : saveFailed
-                  ? "Couldn't save — retrying"
+                  ? "Not saved — see the message below"
                   : dirty
                     ? "Unsaved changes"
                     : lastSavedAt
