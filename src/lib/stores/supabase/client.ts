@@ -15,7 +15,7 @@ export function supabase(): SupabaseClient {
   return client;
 }
 
-// The buckets are private (migration 0022): there is no publicUrl() any
+// The buckets are private (migration 0025): there is no publicUrl() any
 // more. Reads go through signedUrls.ts; persisted values are storage
 // references (storageRef.ts).
 export { BUCKETS } from "../storageRef";

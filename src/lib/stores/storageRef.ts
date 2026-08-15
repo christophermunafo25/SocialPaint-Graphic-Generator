@@ -4,7 +4,7 @@
  * buckets. Persisted image columns (templates.background_storage_path,
  * template_fields.static_value, brand_assets.storage_path) hold either a
  * reference, a bare object path (legacy rows; the bucket is implied by the
- * column), or a genuinely external URL. Migration 0022 rewrote our own
+ * column), or a genuinely external URL. Migration 0025 rewrote our own
  * public-bucket URLs into references; parsing still accepts that URL form as
  * defense in depth — e.g. a tab opened before the cutover saving a draft
  * after it.

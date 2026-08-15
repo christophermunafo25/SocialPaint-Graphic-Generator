@@ -2,7 +2,7 @@ import { supabase } from "./client";
 import { parseStorageRef, type StorageRef } from "../storageRef";
 
 /** Signed-URL layer: turns storage references into short-lived fetchable
- * URLs. Replaces publicUrl() — the buckets are private as of migration 0022.
+ * URLs. Replaces publicUrl() — the buckets are private as of migration 0025.
  *
  * TTL 600s: every canvas image becomes a session-cached data URL on first
  * fetch (useDataUrl), and anything showing a raw signed URL sits behind
