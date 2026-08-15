@@ -65,11 +65,13 @@ import {
   copyToClipboard,
   duplicateFields,
   fieldFromPalette,
+  isSvgSource,
   isTypingTarget,
   logoFieldFromAsset,
   imageFieldFromUpload,
   pasteFromClipboard,
   setLayerOrder,
+  svgIntrinsicSize,
   textFieldFromPaste,
   worstCaseText,
 } from "./fieldOps";
@@ -583,22 +585,51 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
   const logoAssets = useMemo(() => brandAssets.filter((a) => a.kind === "logo"), [brandAssets]);
   /** Natural pixel size per logo asset, warmed as soon as the logos are known
    * so a drop can size its box to the artwork synchronously. A drop that
-   * beats the preload falls back to a square box — "contain" still shows the
-   * whole logo, just letterboxed until resized. */
+   * beats the measurement lands in a square box and is re-fit the moment the
+   * real dimensions arrive (below, in addPaletteField). */
   const logoDimsRef = useRef(new Map<string, { width: number; height: number }>());
+
+  /** The artwork's true pixel size, or null when it can't be known. SVGs are
+   * measured from their own markup — the browser reports the 300×150
+   * replaced-element fallback for an SVG without width/height attributes,
+   * which is not the artwork and must never size a box. Rasters measure via
+   * Image, guarding the 0×0 error case. */
+  const measureLogoAsset = useCallback(
+    async (asset: {
+      url: string;
+      name: string;
+    }): Promise<{ width: number; height: number } | null> => {
+      try {
+        if (isSvgSource(asset.name) || isSvgSource(asset.url)) {
+          const text = await (await fetch(asset.url)).text();
+          return svgIntrinsicSize(text);
+        }
+        return await new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () =>
+            resolve(
+              img.naturalWidth > 0 && img.naturalHeight > 0
+                ? { width: img.naturalWidth, height: img.naturalHeight }
+                : null,
+            );
+          img.onerror = () => resolve(null);
+          img.src = asset.url;
+        });
+      } catch {
+        return null;
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
     for (const asset of logoAssets) {
       if (logoDimsRef.current.has(asset.id)) continue;
-      const img = new Image();
-      img.onload = () => {
-        logoDimsRef.current.set(asset.id, {
-          width: img.naturalWidth,
-          height: img.naturalHeight,
-        });
-      };
-      img.src = asset.url;
+      void measureLogoAsset(asset).then((dims) => {
+        if (dims) logoDimsRef.current.set(asset.id, dims);
+      });
     }
-  }, [logoAssets]);
+  }, [logoAssets, measureLogoAsset]);
 
   /** Primary path: a palette element dropped (or clicked) onto the canvas —
    * pre-sized, pre-typed; fields immediately open for naming (shapes don't
@@ -610,15 +641,53 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     if (paletteId.startsWith(LOGO_PALETTE_PREFIX)) {
       const asset = logoAssets.find((a) => a.id === paletteId.slice(LOGO_PALETTE_PREFIX.length));
       if (!asset) return;
-      const field = logoFieldFromAsset(
-        asset,
-        logoDimsRef.current.get(asset.id) ?? null,
-        point,
-        draft.fields,
-        canvas,
-      );
+      const known = logoDimsRef.current.get(asset.id) ?? null;
+      const field = logoFieldFromAsset(asset, known, point, draft.fields, canvas);
       setFields([...draft.fields, field]);
       setSelectedIds([field.id]);
+      if (!known) {
+        // The drop beat the measurement: the box landed square. Re-fit it to
+        // the artwork when the true dimensions arrive — but only while the
+        // admin hasn't touched its geometry; their own edit always wins.
+        void measureLogoAsset(asset).then((dims) => {
+          if (!dims) return;
+          logoDimsRef.current.set(asset.id, dims);
+          setDraft((d) => {
+            const cur = d.fields.find((f) => f.id === field.id);
+            if (
+              !cur ||
+              cur.x !== field.x ||
+              cur.y !== field.y ||
+              cur.width !== field.width ||
+              cur.height !== field.height
+            ) {
+              return d;
+            }
+            const refit = logoFieldFromAsset(
+              asset,
+              dims,
+              point,
+              d.fields.filter((f) => f.id !== field.id),
+              canvas,
+            );
+            return {
+              ...d,
+              fields: d.fields.map((f) =>
+                f.id === field.id
+                  ? {
+                      ...cur,
+                      x: refit.x,
+                      y: refit.y,
+                      width: refit.width,
+                      height: refit.height,
+                      aspectRatio: refit.aspectRatio,
+                    }
+                  : f,
+              ),
+            };
+          });
+        });
+      }
       return;
     }
     const item = PALETTE_ITEMS.find((p) => p.id === paletteId);
@@ -647,12 +716,23 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       try {
         const url = await stores.templates.uploadBackground(company.id, file, file.name);
         let natural: { width: number; height: number } | null = null;
-        try {
-          const bmp = await createImageBitmap(file);
-          natural = { width: bmp.width, height: bmp.height };
-          bmp.close();
-        } catch {
-          natural = null;
+        if (file.type === "image/svg+xml") {
+          // createImageBitmap rejects SVG files in several browsers, and the
+          // Image fallback reports 300×150 for dimensionless documents — the
+          // markup itself is the only trustworthy source.
+          try {
+            natural = svgIntrinsicSize(await file.text());
+          } catch {
+            natural = null;
+          }
+        } else {
+          try {
+            const bmp = await createImageBitmap(file);
+            natural = { width: bmp.width, height: bmp.height };
+            bmp.close();
+          } catch {
+            natural = null;
+          }
         }
         created.push(
           imageFieldFromUpload(

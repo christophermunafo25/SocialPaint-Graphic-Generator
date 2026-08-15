@@ -4,7 +4,9 @@ import {
   clearStyleClipboard,
   clipboardHasStyle,
   copyStyle,
+  isSvgSource,
   logoFieldFromAsset,
+  svgIntrinsicSize,
 } from "./fieldOps";
 import type { TemplateField } from "@/lib/types";
 
@@ -187,5 +189,47 @@ describe("style clipboard", () => {
     clearStyleClipboard();
     expect(clipboardHasStyle()).toBe(false);
     expect(applyClipboardStyle(plain)).toEqual(plain);
+  });
+});
+
+describe("svgIntrinsicSize", () => {
+  it("prefers absolute width/height attributes", () => {
+    expect(
+      svgIntrinsicSize('<svg xmlns="http://www.w3.org/2000/svg" width="240" height="80"></svg>'),
+    ).toEqual({ width: 240, height: 80 });
+    expect(svgIntrinsicSize('<svg width="240px" height="80px"></svg>')).toEqual({
+      width: 240,
+      height: 80,
+    });
+  });
+
+  it("falls back to the viewBox when width/height are missing or relative", () => {
+    expect(svgIntrinsicSize('<svg viewBox="0 0 400 100"><rect/></svg>')).toEqual({
+      width: 400,
+      height: 100,
+    });
+    // Percentages size against the container, not the artwork.
+    expect(svgIntrinsicSize('<svg width="100%" height="100%" viewBox="0,0,50,200"/>')).toEqual({
+      width: 50,
+      height: 200,
+    });
+  });
+
+  it("returns null when the document declares nothing trustworthy", () => {
+    expect(svgIntrinsicSize('<svg xmlns="http://www.w3.org/2000/svg"><circle r="48"/></svg>')).toBe(
+      null,
+    );
+    expect(svgIntrinsicSize("not svg at all")).toBe(null);
+    expect(svgIntrinsicSize('<svg viewBox="0 0 0 100"/>')).toBe(null);
+  });
+});
+
+describe("isSvgSource", () => {
+  it("matches svg files, urls with query strings, and data urls", () => {
+    expect(isSvgSource("logo.svg")).toBe(true);
+    expect(isSvgSource("https://cdn.example.com/a/logo.SVG?token=x")).toBe(true);
+    expect(isSvgSource("data:image/svg+xml;utf8,<svg/>")).toBe(true);
+    expect(isSvgSource("logo.png")).toBe(false);
+    expect(isSvgSource("https://cdn.example.com/svg-icons/logo.png")).toBe(false);
   });
 });
