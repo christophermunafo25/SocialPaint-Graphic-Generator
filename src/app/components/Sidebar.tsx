@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
-  BarChart3,
+  ChartColumn,
   Frame,
   LogOut,
   Moon,
@@ -82,7 +82,7 @@ const NAV: NavItem[] = [
   {
     label: "Insights & Analytics",
     route: { name: "dashboard" },
-    Icon: BarChart3,
+    Icon: ChartColumn,
     adminOnly: true,
     matches: ["dashboard"],
   },

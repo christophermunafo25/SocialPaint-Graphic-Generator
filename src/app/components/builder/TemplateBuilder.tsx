@@ -3,19 +3,19 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
-  CheckCircle2,
+  CircleCheck,
   Eye,
   Sparkles,
-  Figma,
   Pencil,
   Plus,
-  RefreshCw,
+  LoaderCircle,
   Redo2,
   Save,
   Send,
   Undo2,
   Upload,
 } from "lucide-react";
+import { Figma } from "../icons/BrandGlyphs";
 import type {
   AutoBuildResult,
   CanvasPreset,
@@ -1700,7 +1700,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
           >
             {publishState === "publishing" ? (
               <>
-                <RefreshCw
+                <LoaderCircle
                   className="animate-spin mx-auto"
                   style={{ width: 28, height: 28, color: "var(--state-primary)" }}
                 />
@@ -1794,7 +1794,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
 
       {notice && (
         <div className="sp-toast" role="status" aria-live="polite">
-          <CheckCircle2
+          <CircleCheck
             style={{
               width: 16,
               height: 16,
@@ -2436,7 +2436,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                         }}
                       >
                         {uploading ? (
-                          <RefreshCw
+                          <LoaderCircle
                             className="w-3.5 h-3.5 animate-spin"
                             style={{ color: "var(--state-primary)" }}
                           />
@@ -2604,7 +2604,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                   }}
                 >
                   {uploading ? (
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <LoaderCircle className="w-3.5 h-3.5 animate-spin" />
                   ) : (
                     <Upload className="sp-dropzone__icon w-3.5 h-3.5" />
                   )}

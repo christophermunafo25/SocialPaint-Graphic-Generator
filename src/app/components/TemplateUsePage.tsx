@@ -4,10 +4,10 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
-  CheckCircle2,
+  CircleCheck,
   Copy,
   Download,
-  RefreshCw,
+  LoaderCircle,
 } from "lucide-react";
 import type { FieldValues } from "@/lib/types";
 import { stores } from "@/lib/stores";
@@ -153,7 +153,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
               }}
             />
           ) : (
-            <CheckCircle2
+            <CircleCheck
               style={{
                 width: 16,
                 height: 16,
@@ -430,7 +430,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
                   style={{ padding: "11px 14px" }}
                 >
                   {exporting ? (
-                    <RefreshCw className="animate-spin" style={{ width: 14, height: 14 }} />
+                    <LoaderCircle className="animate-spin" style={{ width: 14, height: 14 }} />
                   ) : (
                     <Download style={{ width: 14, height: 14 }} />
                   )}

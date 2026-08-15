@@ -1,18 +1,15 @@
 import {
   AtSign,
-  Facebook,
   Globe,
-  Instagram,
   LayoutTemplate,
-  Linkedin,
   Mail,
   Megaphone,
   Music2,
   Pin,
   Printer,
   X as XIcon,
-  Youtube,
 } from "lucide-react";
+import { Facebook, Instagram, Linkedin, Youtube } from "@/app/components/icons/BrandGlyphs";
 
 /** Every platform the catalogue can group by. The order here IS the shelf
  *  order on the Brand templates page — deliberate, never by template count. */
