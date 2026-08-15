@@ -364,7 +364,8 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
   const [frame, setFrame] = useState<GestureFrame | null>(null);
   /** Fixed text element whose content is being edited in place. */
   const [editingId, setEditingId] = useState<string | null>(null);
-  const backgroundDataUrl = useDataUrl(backgroundUrl || undefined);
+  const background = useDataUrl(backgroundUrl || undefined);
+  const backgroundDataUrl = background.dataUrl;
 
   // Gesture callbacks fire outside the render cycle; refs keep them reading
   // the current props/scale instead of the closure they were created in.
@@ -998,6 +999,22 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
           pointerEvents: "none",
         }}
       >
+        {background.failed && (
+          <div
+            style={{
+              position: "absolute",
+              top: 12,
+              left: 12,
+              padding: "6px 10px",
+              background: "rgba(0,0,0,0.65)",
+              color: "#fff",
+              fontSize: 13,
+              borderRadius: 6,
+            }}
+          >
+            Background image failed to load
+          </div>
+        )}
         {backgroundDataUrl && (
           <img
             src={backgroundDataUrl}

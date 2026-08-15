@@ -1,4 +1,5 @@
 import type { FigmaLayerUnit, LayerRenderResult } from "../types";
+import { resolveImageUrl } from "../stores/supabase/signedUrls";
 
 /** Recompose a decomposed Figma frame into a single background PNG on a
  * browser canvas. Units arrive in paint order, frame-relative at scale 1;
@@ -7,7 +8,11 @@ const SCALE = 2;
 
 async function loadBitmap(url: string): Promise<ImageBitmap | null> {
   try {
-    const blob = await (await fetch(url)).blob();
+    // Unit urls are storage references since the buckets went private —
+    // sign before fetching. External URLs pass through.
+    const fetchable = await resolveImageUrl(url);
+    if (!fetchable) throw new Error("could not sign the storage reference");
+    const blob = await (await fetch(fetchable)).blob();
     return await createImageBitmap(blob);
   } catch (e) {
     console.error("Layer image load failed", url, e);

@@ -49,7 +49,8 @@ async function renderNodes(
 }
 
 /** Download a remote image and re-host it in our Storage (Figma URLs expire
- * and lack reliable CORS). Returns the public URL, or null on failure. */
+ * and lack reliable CORS). Returns a storage reference ("bucket/path" — the
+ * buckets are private; the client signs it), or null on failure. */
 async function rehost(
   db: SupabaseClient,
   companyId: string,
@@ -62,7 +63,7 @@ async function rehost(
     .from("template-backgrounds")
     .upload(path, await res.arrayBuffer(), { contentType: "image/png" });
   if (up.error) return null;
-  return db.storage.from("template-backgrounds").getPublicUrl(path).data.publicUrl;
+  return `template-backgrounds/${path}`;
 }
 
 Deno.serve(async (req) => {
