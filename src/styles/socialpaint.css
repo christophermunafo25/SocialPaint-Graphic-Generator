@@ -769,6 +769,145 @@ optgroup {
   color: var(--text-primary);
 }
 
+/* Disclosure card — a category that opens in place instead of navigating.
+   The whole header is the toggle: eyebrow, title, an at-a-glance summary of
+   what the section is currently set to, and a chevron. The body opens with
+   the 0fr→1fr grid trick so the panel measures its own content and no one
+   has to hard-code a height. Soft card (20px) outside, crisp controls (5px)
+   inside — the two radii never meet in the middle. */
+.sp-card--disclosure {
+  overflow: hidden;
+}
+.sp-disclosure__toggle {
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--dur-state) var(--ease);
+}
+.sp-disclosure__toggle:hover {
+  background: var(--bg-hover);
+}
+.sp-disclosure__toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-tight);
+}
+.sp-disclosure__heading {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.sp-disclosure__glance {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  font-size: var(--type-label-size);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.sp-disclosure__chevron {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform var(--dur-panel) var(--ease);
+}
+.sp-card--disclosure[data-open="true"] .sp-disclosure__chevron {
+  transform: rotate(180deg);
+}
+.sp-disclosure__panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--dur-panel) var(--ease);
+}
+.sp-card--disclosure[data-open="true"] .sp-disclosure__panel {
+  grid-template-rows: 1fr;
+}
+/* The body stays mounted so both directions can animate (and so an upload
+   survives being collapsed). `visibility` is what actually takes a shut
+   panel out of tab order and off the AT tree — held until the collapse
+   finishes on the way closed, dropped instantly on the way open. */
+.sp-disclosure__clip {
+  overflow: hidden;
+  min-height: 0;
+  visibility: hidden;
+  transition: visibility 0s linear var(--dur-panel);
+}
+.sp-card--disclosure[data-open="true"] .sp-disclosure__clip {
+  visibility: visible;
+  transition-delay: 0s;
+}
+.sp-disclosure__body {
+  border-top: 1px solid var(--border);
+  padding: var(--space-md);
+}
+@media (prefers-reduced-motion: reduce) {
+  .sp-disclosure__panel,
+  .sp-disclosure__chevron,
+  .sp-disclosure__clip {
+    transition: none;
+  }
+}
+
+/* Brand Studio — categories left, the assembled preview and the readiness
+   rail right. The rail drops under the stack before it would get too narrow
+   to show a post at a believable size. */
+.sp-brand-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-lg);
+  align-items: start;
+}
+.sp-brand-rail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  /* Stacked under the categories, the rail keeps a rail's width — a post
+     preview blown out to the full column stops reading as a post. */
+  max-width: 420px;
+}
+@media (min-width: 1100px) {
+  .sp-brand-layout {
+    grid-template-columns: minmax(0, 1fr) 360px;
+  }
+  .sp-brand-rail {
+    max-width: none;
+    position: sticky;
+    top: var(--space-lg);
+  }
+}
+
+/* One readiness row: state dot, label, count — and the whole row is the way
+   to the section that changes it. */
+.sp-checklist-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  margin: 0 -10px;
+  border-radius: var(--radius-control);
+  font-size: var(--type-label-size);
+  color: var(--text-secondary);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background var(--dur-state) var(--ease),
+    color var(--dur-state) var(--ease);
+}
+.sp-checklist-row:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+.sp-checklist-row:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-tight);
+}
+
 /* Brand-moment surface (hero headers, identity chips). The Voltage→Sunshine
    gradient — everything ON it is Ink, no exceptions, both themes (Ink is
    the only legible glyph on any brand fill; white never clears contrast
@@ -1122,7 +1261,8 @@ optgroup {
 @media (prefers-reduced-motion: reduce) {
   .sp-upload-chip--leave,
   .sp-upload-chip__done {
-    animation: none;  }
+    animation: none;
+  }
 }
 
 /* Native checks and radios ride the accent: Voltage on dark, ink on
