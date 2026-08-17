@@ -32,9 +32,9 @@
      #FFFFFF or #F1F1F1, so brand colours are fill-only on light and
      never appear as text or as a border that carries information.
    - No gradients as surface, no drop shadows in either mode, no glass.
-   - Headings are Blauer Nue SemiBold in sentence case (2026-08-14);
-     bold proper is banned everywhere in chrome. Small labels (eyebrows,
-     table headers) stay ALL CAPS mono at 0.04em tracking.
+   - Headings are Gopadel SemiBold at −2% tracking in sentence case
+     (2026-08-17); bold proper is banned everywhere in chrome. Small labels
+     (eyebrows, table headers) stay ALL CAPS mono at 0.04em tracking.
 
    Themes are scoped to [data-theme="light" | "dark"], which
    ColorSchemeProvider sets on <html> alongside the .dark class that
@@ -50,13 +50,14 @@
    tenant's font upload can never shadow the chrome (@font-face is
    document-global; see the Neuething incident, 2026-08-05).
 
-   Blauer Nue SemiBold is the HEADING face only (final brand, 2026-08-14,
-   at Chris's direction) — every --font-head site pairs with --weight-head
-   600, so it ships as the single cut. Raveo Display remains the body/UI
-   face at Regular and Medium. Bold proper stays banned everywhere. */
+   Gopadel SemiBold is the HEADING face only (final brand, 2026-08-17, at
+   Chris's direction — it replaces Blauer Nue) — every --font-head site
+   pairs with --weight-head 600, so it ships as the single cut, and every
+   heading step tracks at −2%. Raveo Display remains the body/UI face at
+   Regular and Medium. Bold proper stays banned everywhere. */
 @font-face {
-  font-family: "Blauer Nue Platform";
-  src: url("../assets/fonts/blauer-nue/BlauerNue-SemiBold.woff2") format("woff2");
+  font-family: "Gopadel Platform";
+  src: url("../assets/fonts/gopadel/Gopadel-SemiBold.woff2") format("woff2");
   font-weight: 600;
   font-style: normal;
   font-display: swap;
@@ -102,10 +103,11 @@ html {
   --gray: #f1f1f1;
   --ink: #272727;
 
-  /* Typography — Blauer Nue SemiBold carries headings; Raveo Display
+  /* Typography — Gopadel SemiBold carries headings; Raveo Display
      carries body and UI. */
-  --font-head: "Blauer Nue Platform", "Blauer Nue", system-ui, sans-serif;
-  --weight-head: 600; /* every heading step — Blauer Nue SemiBold */
+  --font-head: "Gopadel Platform", "Gopadel", system-ui, sans-serif;
+  --weight-head: 600; /* every heading step — Gopadel SemiBold */
+  --track-head: -0.02em; /* −2% on every heading step — the display face's spec */
   --font-body: "Raveo Display Platform", "Raveo Display", system-ui, -apple-system, sans-serif;
   --font-ui: "Raveo Display Platform", "Raveo Display", system-ui, -apple-system, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
@@ -113,22 +115,22 @@ html {
 
   --type-display-size: 80px;
   --type-display-lh: 0.92;
-  --type-display-track: -0.01em;
+  --type-display-track: var(--track-head);
   --type-h1-size: 48px;
   --type-h1-lh: 0.95;
-  --type-h1-track: -0.01em;
+  --type-h1-track: var(--track-head);
   --type-h2-size: 40px;
   --type-h2-lh: 1;
-  --type-h2-track: -0.01em;
+  --type-h2-track: var(--track-head);
   --type-h3-size: 32px;
   --type-h3-lh: 1.1;
-  --type-h3-track: -0.01em;
+  --type-h3-track: var(--track-head);
   --type-h4-size: 30px;
   --type-h4-lh: 1.2;
-  --type-h4-track: -0.01em; /* page titles */
+  --type-h4-track: var(--track-head); /* page titles */
   --type-cardtitle-size: 20px;
   --type-cardtitle-lh: 1.3;
-  --type-cardtitle-track: -0.01em;
+  --type-cardtitle-track: var(--track-head);
   --type-body-size: 15px;
   --type-body-lh: 1.5;
   --type-body-track: -0.015em;

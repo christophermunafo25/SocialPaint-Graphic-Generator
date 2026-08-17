@@ -18,30 +18,22 @@ import { useColorScheme } from "@/lib/colorScheme";
 import { useRouter, type Route } from "../router";
 import logoOnLight from "@/assets/socialpaint/logo-on-light.svg";
 import logoOnDark from "@/assets/socialpaint/logo-on-dark.svg";
-import markOnLight from "@/assets/socialpaint/mark-on-light.svg";
+import mark from "@/assets/socialpaint/mark.svg";
 import { GooeyNavPill } from "./GooeyNavPill";
-import markOnDark from "@/assets/socialpaint/mark-on-dark.svg";
 
 const LS_COLLAPSED = "sp-sidebar-collapsed";
 
-/** The SocialPaint mark — the monochrome monogram from the final brand
- * (2026-08): Ink on light chrome, White on dark. Monochrome by rule — the
- * mark is identity, and identity carries no hue in the chrome. Used where
- * the full lockup doesn't fit (collapsed nav, dashboard watermark). */
+/** The SocialPaint mark — the Voltage monogram from the brand refresh
+ * (2026-08-17). One file for both themes: the mark reads in Voltage on
+ * light and dark alike, exactly as it does inside the lockup, so it no
+ * longer flips with the colour scheme. Used where the full lockup doesn't
+ * fit (collapsed nav, dashboard watermark). */
 export function BrandMark({ width = 28 }: { width?: number }) {
-  const { resolved } = useColorScheme();
-  return (
-    <img
-      src={resolved === "dark" ? markOnDark : markOnLight}
-      alt=""
-      aria-hidden
-      style={{ width, height: "auto", display: "block" }}
-    />
-  );
+  return <img src={mark} alt="" aria-hidden style={{ width, height: "auto", display: "block" }} />;
 }
 
-/** The official horizontal lockup — mark + wordmark, monochrome: Ink on
- * light chrome, White on dark. */
+/** The official horizontal lockup — Voltage mark + wordmark, the wordmark
+ * in Ink on light chrome and White on dark. */
 function BrandLockup({ height = 16 }: { height?: number }) {
   const { resolved } = useColorScheme();
   return (

@@ -189,7 +189,7 @@ export function PeopleAdmin() {
                     fontFamily: "var(--font-head)",
                     fontWeight: "var(--weight-head)",
                     fontSize: 11,
-                    letterSpacing: "-0.01em",
+                    letterSpacing: "var(--track-head)",
                   }}
                 >
                   {(m.name ?? m.email).slice(0, 1).toUpperCase()}

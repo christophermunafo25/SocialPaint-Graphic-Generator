@@ -1628,7 +1628,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
             fontFamily: "var(--font-head)",
             fontWeight: "var(--weight-head)",
             fontSize: 22,
-            letterSpacing: "-0.01em",
+            letterSpacing: "var(--track-head)",
             color: "var(--text-primary)",
           }}
         >
@@ -1709,7 +1709,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                     fontFamily: "var(--font-head)",
                     fontWeight: "var(--weight-head)",
                     fontSize: 21,
-                    letterSpacing: "-0.01em",
+                    letterSpacing: "var(--track-head)",
                     color: "var(--text-primary)",
                   }}
                 >
@@ -1738,7 +1738,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                     fontFamily: "var(--font-head)",
                     fontWeight: "var(--weight-head)",
                     fontSize: 21,
-                    letterSpacing: "-0.01em",
+                    letterSpacing: "var(--track-head)",
                     color: "var(--text-primary)",
                   }}
                 >
@@ -1904,7 +1904,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                 fontFamily: "var(--font-head)",
                 fontWeight: "var(--weight-head)",
                 fontSize: 22,
-                letterSpacing: "-0.01em",
+                letterSpacing: "var(--track-head)",
                 color: "var(--text-primary)",
               }}
             >
@@ -2023,7 +2023,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                       fontFamily: "var(--font-head)",
                       fontWeight: "var(--weight-head)",
                       fontSize: 22,
-                      letterSpacing: "-0.01em",
+                      letterSpacing: "var(--track-head)",
                       color: "var(--text-primary)",
                     }}
                   >
@@ -2479,7 +2479,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                       fontFamily: "var(--font-head)",
                       fontWeight: "var(--weight-head)",
                       fontSize: 22,
-                      letterSpacing: "-0.01em",
+                      letterSpacing: "var(--track-head)",
                       color: "var(--text-primary)",
                     }}
                   >
@@ -2520,7 +2520,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                       fontFamily: "var(--font-head)",
                       fontWeight: "var(--weight-head)",
                       fontSize: 22,
-                      letterSpacing: "-0.01em",
+                      letterSpacing: "var(--track-head)",
                       color: "var(--text-primary)",
                     }}
                   >
