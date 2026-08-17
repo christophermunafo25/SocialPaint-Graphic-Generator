@@ -80,7 +80,7 @@ export function FigmaImportDialog({ onClose, onImported }: FigmaImportDialogProp
               fontFamily: "var(--font-head)",
               fontWeight: "var(--weight-head)",
               fontSize: 21,
-              letterSpacing: "-0.01em",
+              letterSpacing: "var(--track-head)",
               color: "var(--text-primary)",
             }}
           >

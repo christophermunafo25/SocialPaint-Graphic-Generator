@@ -267,7 +267,7 @@ export function AdminTemplates() {
               fontFamily: "var(--font-head)",
               fontWeight: "var(--weight-head)",
               fontSize: "var(--type-cardtitle-size)",
-              letterSpacing: "-0.01em",
+              letterSpacing: "var(--track-head)",
               color: "var(--text-primary)",
               marginBottom: 6,
             }}
