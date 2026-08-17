@@ -3,6 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- The Voltage mark, pointed straight at the one copy in src/assets so
+         the tab icon can never drift from the mark the app renders. Vite
+         hashes and emits it like any other asset. Voltage reads on both a
+         light and a dark tab strip, so one file covers both. -->
+    <link rel="icon" type="image/svg+xml" href="/src/assets/socialpaint/mark.svg" />
+
     <title>Brand Template Portal</title>
     <meta
       name="description"
