@@ -32,7 +32,7 @@
      #FFFFFF or #F1F1F1, so brand colours are fill-only on light and
      never appear as text or as a border that carries information.
    - No gradients as surface, no drop shadows in either mode, no glass.
-   - Headings are Gopadel SemiBold at −2% tracking in sentence case
+   - Headings are Gopadel SemiBold at −1% tracking in sentence case
      (2026-08-17); bold proper is banned everywhere in chrome. Small labels
      (eyebrows, table headers) stay ALL CAPS mono at 0.04em tracking.
 
@@ -53,7 +53,7 @@
    Gopadel SemiBold is the HEADING face only (final brand, 2026-08-17, at
    Chris's direction — it replaces Blauer Nue) — every --font-head site
    pairs with --weight-head 600, so it ships as the single cut, and every
-   heading step tracks at −2%. Raveo Display remains the body/UI face at
+   heading step tracks at −1%. Raveo Display remains the body/UI face at
    Regular and Medium. Bold proper stays banned everywhere. */
 @font-face {
   font-family: "Gopadel Platform";
@@ -107,7 +107,7 @@ html {
      carries body and UI. */
   --font-head: "Gopadel Platform", "Gopadel", system-ui, sans-serif;
   --weight-head: 600; /* every heading step — Gopadel SemiBold */
-  --track-head: -0.02em; /* −2% on every heading step — the display face's spec */
+  --track-head: -0.01em; /* −1% on every heading step — the display face's spec */
   --font-body: "Raveo Display Platform", "Raveo Display", system-ui, -apple-system, sans-serif;
   --font-ui: "Raveo Display Platform", "Raveo Display", system-ui, -apple-system, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
