@@ -16,6 +16,7 @@ import type {
   BrandKitStore,
   CompanyStore,
   DesignImportProvider,
+  PublicLinkStore,
   TemplateStore,
   UsageStore,
 } from "../interfaces";
@@ -188,6 +189,10 @@ export class LocalUsageStore implements UsageStore {
         templateName: templates.find((t) => t.id === e.templateId)?.name ?? "(deleted template)",
         opens: 0,
         downloads: 0,
+        // The local dev backend has no Edge Functions and therefore no
+        // public links, so nothing here can be public traffic.
+        publicOpens: 0,
+        publicDownloads: 0,
         lastUsedAt: null,
       };
       if (e.action === "open") row.opens += 1;
@@ -227,6 +232,33 @@ export class LocalPeopleStore {
 
 /** Dev mode has no Edge Functions, so Figma import is unavailable — the
  * Template Builder detects this and shows only the manual PNG path. */
+/** Public links need a server: a token has to be minted and hashed where the
+ * browser cannot reach, and the read path has to bypass RLS under the
+ * service role. Neither exists on the localStorage backend, so this says so
+ * rather than pretending. The admin UI checks isAvailable() and explains
+ * instead of offering a button that cannot work. */
+export class LocalPublicLinkStore implements PublicLinkStore {
+  private static readonly REASON = "Public links require the Supabase backend (see .env.example).";
+  isAvailable(): boolean {
+    return false;
+  }
+  async list(): Promise<never[]> {
+    return [];
+  }
+  async create(): Promise<never> {
+    throw new Error(LocalPublicLinkStore.REASON);
+  }
+  async update(): Promise<never> {
+    throw new Error(LocalPublicLinkStore.REASON);
+  }
+  async revoke(): Promise<never> {
+    throw new Error(LocalPublicLinkStore.REASON);
+  }
+  async regenerate(): Promise<never> {
+    throw new Error(LocalPublicLinkStore.REASON);
+  }
+}
+
 export class LocalDesignImportProvider implements DesignImportProvider {
   readonly providers: import("../../types").DesignSourceKind[] = [];
   isConfigured(): boolean {

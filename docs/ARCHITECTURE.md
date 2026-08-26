@@ -59,7 +59,15 @@ from the platform in migration 0009.)
 - `templates` + `template_fields` — the heart of the system; see
   `docs/TEMPLATE_SCHEMA.md`
 - `usage_events` (`open` | `download`) — recorded inside `SchemaRenderer` so
-  one code path covers every template
+  one code path covers every template. `actor` (`member` | `public`) and
+  `link_id` separate public-link traffic from the team's own; a public fill
+  has no `user_id` and is never given a fabricated one.
+- `template_links` — public share links (migration 0026). Tokens are stored
+  **hashed**; the plaintext exists only in the response that mints it.
+- `template_link_events` — who created, renamed, revoked, or regenerated a
+  link. Folds into the audit log when that lands.
+- `rate_limit_counters` — fixed-window counters keyed by an opaque string.
+  **No client access, ever** — service role only.
 - `integration_connections` — Figma tokens. **No client access, ever** —
   Edge Functions only, via service role.
 
@@ -86,13 +94,74 @@ pass-through policies and activated production RLS:
   admins write; usage events are insert-only for members, readable by admins;
   Storage writes are tenant-scoped by the `{company_id}/` path prefix;
   `integration_connections` has no client policies at all.
-- **Edge Functions**: every function calls `requireRole(req, companyId, …)` —
-  callers must be a member (status) or admin (connect/import/styles/invite)
-  of the company they name.
+- **Edge Functions**: every authenticated function calls
+  `requireRole(req, companyId, …)` — callers must be a member (status) or
+  admin (connect/import/styles/invite/links) of the company they name. The
+  two public-link functions are the exceptions and are described below.
 
 Dashboard checklist (Authentication → URL Configuration): set the Site URL to
 the production domain and add `http://localhost:5199` + the Vercel URL to
 additional redirect URLs so confirmation/invite/reset links land correctly.
+
+## Public template links
+
+An admin generates a link for a **published** template; anyone with it fills
+the template in and exports a PNG with no account, no session, and no
+membership. See `supabase/migrations/0026_public_links.sql`.
+
+This is a second, deliberately narrow, unauthenticated read path — not a new
+route over the existing data path. **RLS is not relaxed anywhere for it.**
+
+- **Entry point.** `main.tsx` matches `/l/<token>` and imports
+  `app/public/PublicApp` instead of `app/App`. No AuthProvider, no
+  BrandProvider, no RouterProvider, no app shell. The auth gate in `App.tsx`
+  is not bypassed; it never runs. (`SchemaRenderer` imports the store module
+  for its usage instrumentation, so the factory is still evaluated — but the
+  public page passes `instrument={false}`, and the Supabase client is
+  constructed lazily inside a store method, so no authenticated call is made
+  and no anon client is created.)
+- **Token.** 32 bytes from `crypto.getRandomValues`, base64url (43 chars),
+  minted server-side and stored as its SHA-256. Not derived from the template
+  id. Shown once, at creation — regenerate is the recovery path for a lost
+  link.
+- **The gate.** `public_link_lookup(token_hash, consume)` applies every
+  eligibility rule in ONE locked statement: not revoked, not expired, under
+  its cap, template still exists and is still published, company's links
+  still enabled (`public_links_enabled` is the seam for billing state). The
+  cap is claimed under a row lock, so two simultaneous visitors cannot both
+  take the last use. Nothing is cached, so revoking or unpublishing takes
+  effect on the very next request.
+- **The read.** `public-template` (verify_jwt = false) takes a token in the
+  BODY and nothing else. After the lookup, every query key is server-derived
+  — there is no id parameter to tamper with. The response is built by an
+  allowlist in `_shared/publicTemplate.ts`, swept for unsigned storage
+  references, and refuses outright if any asset could not be signed.
+- **Uniform refusal.** Every rejection returns the same 404 body whatever the
+  cause. A revoked token and a never-existed token are indistinguishable, or
+  the endpoint becomes an oracle for probing which tokens exist. The admin UI
+  is the one place the distinction is shown, to the one person who can act
+  on it.
+- **Assets.** Per-object signed URLs, 300s, minted by the service role for
+  exactly the objects the template paints. They land in the same fields that
+  hold storage references for a member, so `SchemaRenderer`, `useDataUrl`,
+  `registerCustomFont`, and `exportSchemaPng` run unmodified — which is what
+  makes the exported PNG identical on both paths.
+- **Uploads.** Nothing is uploaded. Member photo uploads already never reach
+  storage: `FieldInput` crops to a data URL in the browser and it goes
+  straight into the PNG. So a public fill is not an unauthenticated write,
+  and there is no quarantine bucket, no magic-byte check, and no cleanup
+  schedule to run. The per-link switch is a product control, not a security
+  one.
+- **Rate limiting.** `consume_rate_limit` — per IP, global, and per token,
+  before the lookup. Keys are a peppered digest of the address with one day
+  of retention: events are counted, people are not.
+- **Resume.** localStorage, text and select values only (a cropped photo is a
+  multi-megabyte data URL that would blow the quota). The page says so.
+- **Rendering.** `TemplateFill` is THE fill surface, shared verbatim with the
+  member page, so a fix in one is a fix in both.
+
+Run `./supabase/verify/run.sh` against any Postgres to re-check tenant
+isolation, the lifecycle, the cascades, and cap concurrency.
 
 ## App shell
 

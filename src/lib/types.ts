@@ -296,6 +296,45 @@ export interface TemplateSchema {
 
 export type NewTemplateInput = Omit<TemplateSchema, "id" | "createdAt" | "updatedAt">;
 
+/** A public share link for a published template.
+ *
+ * The token itself is NOT here and cannot be: it is stored hashed, and the
+ * plaintext exists only in the response to the request that minted it. An
+ * admin who loses a link regenerates it — there is nothing to look up. */
+export interface TemplateLink {
+  id: string;
+  /** Admin's own label ("Speaker confirmation email"). Never shown to a
+   * visitor; it is how an admin tells five links apart when revoking one. */
+  name: string;
+  /** Whether image fields are offered to whoever opens this link. */
+  allowUploads: boolean;
+  expiresAt: string | null;
+  /** Cap on opens, or null for no cap. */
+  useCap: number | null;
+  useCount: number;
+  revokedAt: string | null;
+  createdAt: string;
+  lastUsedAt: string | null;
+}
+
+/** A newly minted link and its one and only sight of the plaintext token. */
+export interface TemplateLinkWithToken {
+  link: TemplateLink;
+  token: string;
+}
+
+/** The fields an admin may change after a link exists. The token is not one
+ * of them — changing a token is `regenerate`, which is a different action
+ * with different consequences. */
+export interface TemplateLinkPatch {
+  name?: string;
+  allowUploads?: boolean;
+  /** ISO-8601, or null to remove the expiry. */
+  expiresAt?: string | null;
+  /** A positive integer, or null to remove the cap. */
+  useCap?: number | null;
+}
+
 export type UsageAction = "open" | "download";
 
 export interface UsageSummaryRow {
@@ -303,6 +342,12 @@ export interface UsageSummaryRow {
   templateName: string;
   opens: number;
   downloads: number;
+  /** The subset of `downloads` that came through a public link. An admin who
+   * sent a link out wants to know it is working, and a public fill is not a
+   * member fill — so it is counted separately rather than folded in. */
+  publicDownloads: number;
+  /** The subset of `opens` that came through a public link. */
+  publicOpens: number;
   lastUsedAt: string | null;
 }
 

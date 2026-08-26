@@ -68,6 +68,46 @@ export function requireNumber(
   return v;
 }
 
+/** An optional future instant, as an ISO-8601 string.
+ *
+ * Rejects the past outright: a link that expired before it was created is a
+ * mistake at the moment of the request, and letting it through would produce
+ * a link the admin believes works and which refuses on its first open. The
+ * ceiling keeps a stray year like 9999 out of the column. */
+export function optionalFutureIso(
+  v: unknown,
+  field: string,
+  { maxYearsAhead }: { maxYearsAhead: number },
+): string | undefined {
+  if (v === undefined || v === null || v === "") return undefined;
+  if (typeof v !== "string" || v.length > 40) {
+    throw new HttpError(400, `${field} must be an ISO-8601 timestamp.`);
+  }
+  const at = Date.parse(v);
+  if (!Number.isFinite(at)) throw new HttpError(400, `${field} must be an ISO-8601 timestamp.`);
+  const now = Date.now();
+  if (at <= now) throw new HttpError(400, `${field} must be in the future.`);
+  if (at > now + maxYearsAhead * 365 * 24 * 60 * 60 * 1000) {
+    throw new HttpError(400, `${field} must be within ${maxYearsAhead} years.`);
+  }
+  return new Date(at).toISOString();
+}
+
+/** An optional whole number in range. Absent and null both mean "no value",
+ * which for a use cap means unlimited — distinct from zero, which would mean
+ * a link that is dead on arrival and is refused. */
+export function optionalInt(
+  v: unknown,
+  field: string,
+  { min, max }: { min: number; max: number },
+): number | undefined {
+  if (v === undefined || v === null) return undefined;
+  if (typeof v !== "number" || !Number.isInteger(v) || v < min || v > max) {
+    throw new HttpError(400, `${field} must be a whole number between ${min} and ${max}.`);
+  }
+  return v;
+}
+
 export function requireStringArray(
   v: unknown,
   field: string,

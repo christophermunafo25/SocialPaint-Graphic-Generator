@@ -9,6 +9,9 @@ import type {
   DailyActivityPoint,
   DesignImportResult,
   NewTemplateInput,
+  TemplateLink,
+  TemplateLinkPatch,
+  TemplateLinkWithToken,
   TemplateSchema,
   TemplateStatus,
   UsageAction,
@@ -36,6 +39,31 @@ export interface TemplateStore {
   duplicate(id: string, name: string): Promise<TemplateSchema>;
   delete(id: string): Promise<void>;
   uploadBackground(companyId: string, file: Blob, name: string): Promise<string>; // → storage reference (storageRef.ts) or data URL in local mode
+}
+
+/** Public share links for a published template.
+ *
+ * Every method here goes through the template-links Edge Function rather
+ * than a table write: tokens are minted server-side and stored hashed, and
+ * every action lands in the link audit trail. A client that could write this
+ * table directly would be a client that decides what a token is. */
+export interface PublicLinkStore {
+  /** True when this backend can issue links at all. The localStorage dev
+   * backend has no Edge Functions and no hashing, so it says false and the
+   * admin UI explains rather than offering a button that cannot work. */
+  isAvailable(): boolean;
+  list(companyId: string, templateId: string): Promise<TemplateLink[]>;
+  /** Returns the plaintext token, which is visible exactly once — here. */
+  create(
+    companyId: string,
+    templateId: string,
+    input: TemplateLinkPatch,
+  ): Promise<TemplateLinkWithToken>;
+  update(companyId: string, linkId: string, patch: TemplateLinkPatch): Promise<TemplateLink>;
+  /** Immediate: the next request through this link fails. */
+  revoke(companyId: string, linkId: string): Promise<TemplateLink>;
+  /** New token, old token dead, in one action. */
+  regenerate(companyId: string, linkId: string): Promise<TemplateLinkWithToken>;
 }
 
 export interface BrandKitStore {
@@ -147,6 +175,7 @@ export interface Stores {
   brandAssets: BrandAssetStore;
   usage: UsageStore;
   people: PeopleStore;
+  publicLinks: PublicLinkStore;
   designImport: DesignImportProvider;
   /** "supabase" or "local" — surfaced in the dev switcher so it's obvious
    * which backend is active. */
