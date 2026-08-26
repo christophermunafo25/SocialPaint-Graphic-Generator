@@ -1,0 +1,20 @@
+# Edge Function deployment settings.
+#
+# This file exists for exactly one reason: two functions must accept a caller
+# with no JWT. Everything else in supabase/functions authenticates from the
+# caller's token and keeps the CLI's default `verify_jwt = true`, which is why
+# there was no config.toml before this feature.
+#
+# Do not add a global `[functions] verify_jwt = false`. The default has to
+# stay closed, so that a new function is authenticated unless someone
+# deliberately writes it down here.
+
+# The anonymous read path. Takes a token, returns one template. See the
+# header comment in supabase/functions/public-template/index.ts.
+[functions.public-template]
+verify_jwt = false
+
+# Records that an anonymous visitor exported a graphic. Takes a token and the
+# word "download".
+[functions.public-link-event]
+verify_jwt = false

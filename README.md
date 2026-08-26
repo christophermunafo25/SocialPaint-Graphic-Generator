@@ -22,7 +22,8 @@ The core design principle is **subtraction**: the only thing an end user can cha
 - Guarded member inputs: max length, required, auto-fit and fixed-width text, aspect-ratio-enforced image cropping
 - Caption templates with `{field_key}` merge tags
 - Reliable PNG export (fonts embedded, cross-origin images pre-converted, mobile share sheet support)
-- Insights dashboard: opens, downloads, 30-day trend, template leaderboard
+- Public template links: an admin shares a link, and anyone who opens it fills the template in and downloads a PNG — no account, no sign-in. Links can be named, capped, given an expiry, revoked immediately, and regenerated
+- Insights dashboard: opens, downloads, 30-day trend, template leaderboard, with public-link traffic counted apart from the team's own
 - Multi-tenant auth on Supabase (email/password, invites, admin and member roles, row-level security), with light and dark themes throughout
 
 ## Quick start
@@ -53,7 +54,14 @@ Open the printed localhost URL and the first-run wizard walks you through creati
 
    ```bash
    supabase secrets set ALLOWED_ORIGINS="https://www.socialpaint.ai,https://socialpaint.ai,http://localhost:*"
-   supabase functions deploy figma-status figma-connect figma-import figma-layers figma-styles invite-member
+   supabase functions deploy figma-status figma-connect figma-import figma-layers figma-styles invite-member template-links
+   ```
+
+   The two public-link functions are the only ones that accept a caller with no JWT, which `supabase/config.toml` records per function — do not add a global `verify_jwt = false`. Deploying them reads that file, so no extra flag is needed:
+
+   ```bash
+   supabase secrets set PUBLIC_LINK_IP_PEPPER="$(openssl rand -hex 32)"
+   supabase functions deploy public-template public-link-event
    ```
 
 4. In the Supabase dashboard (Authentication → URL Configuration), set the Site URL to your production domain and add your local and hosted URLs to the additional redirect URLs so confirmation, invite, and reset links land correctly.
@@ -77,20 +85,24 @@ src/lib/render/               Canvas math, fonts, auto-fit, PNG export
 src/app/components/           App shell, portal, SchemaRenderer
 src/app/components/builder/   Admin template builder (wizard + canvas editor)
 supabase/migrations/          Schema, RLS, storage policies
-supabase/functions/           Figma + invite Edge Functions (Deno)
+supabase/functions/           Edge Functions (Deno): Figma, invites, public links
+supabase/verify/              Tenant-isolation checks for public links (needs only psql)
 ```
 
 Full details:
 
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): stack, layers, data model, auth, theming, export pipeline
 - [docs/TEMPLATE_SCHEMA.md](docs/TEMPLATE_SCHEMA.md): the template and field schema contract
+- [docs/public-links-privacy.md](docs/public-links-privacy.md): exactly what a public link records about a visitor, and what it deliberately does not
 
 ## Scripts
 
-| Command         | What it does                                          |
-| --------------- | ----------------------------------------------------- |
-| `npm run dev`   | Start the Vite dev server (set `PORT` to pick a port) |
-| `npm run build` | Production build                                      |
+| Command                    | What it does                                                                    |
+| -------------------------- | ------------------------------------------------------------------------------- |
+| `npm run dev`              | Start the Vite dev server (set `PORT` to pick a port)                           |
+| `npm run build`            | Production build                                                                |
+| `npm run verify`           | Typecheck (app + Deno), lint, format check, unit tests                          |
+| `./supabase/verify/run.sh` | Tenant-isolation and lifecycle checks for public links, against a real Postgres |
 
 ## Origins
 

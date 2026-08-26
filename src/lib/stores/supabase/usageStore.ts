@@ -6,6 +6,7 @@ import { supabase } from "./client";
 interface EventRow {
   template_id: string;
   action: UsageAction;
+  actor: "member" | "public";
   created_at: string;
   templates: { name: string } | null;
 }
@@ -25,6 +26,10 @@ export class SupabaseUsageStore implements UsageStore {
           template_id: templateId,
           action,
           user_id: userId ?? null,
+          // The member path is the only thing that reaches this store. A
+          // public fill is written server-side by the link's own endpoint,
+          // and the insert policy refuses a client that claims otherwise.
+          actor: "member",
         });
     } catch (e) {
       // Instrumentation must never break the member flow.
@@ -35,7 +40,7 @@ export class SupabaseUsageStore implements UsageStore {
   async getUsageSummary(companyId: string): Promise<UsageSummary> {
     const { data, error } = await supabase()
       .from("usage_events")
-      .select("template_id, action, created_at, templates(name)")
+      .select("template_id, action, actor, created_at, templates(name)")
       .eq("company_id", companyId);
     if (error) throw error;
     const byTemplate = new Map<string, UsageSummaryRow>();
@@ -45,10 +50,17 @@ export class SupabaseUsageStore implements UsageStore {
         templateName: e.templates?.name ?? "(deleted template)",
         opens: 0,
         downloads: 0,
+        publicOpens: 0,
+        publicDownloads: 0,
         lastUsedAt: null,
       };
-      if (e.action === "open") row.opens += 1;
-      else row.downloads += 1;
+      if (e.action === "open") {
+        row.opens += 1;
+        if (e.actor === "public") row.publicOpens += 1;
+      } else {
+        row.downloads += 1;
+        if (e.actor === "public") row.publicDownloads += 1;
+      }
       if (!row.lastUsedAt || e.created_at > row.lastUsedAt) row.lastUsedAt = e.created_at;
       byTemplate.set(e.template_id, row);
     }

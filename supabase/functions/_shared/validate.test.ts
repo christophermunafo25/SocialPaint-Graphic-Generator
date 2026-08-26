@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { HttpError } from "./http.ts";
 import {
   hostOnDomain,
+  optionalFutureIso,
+  optionalInt,
   isOwnStorageUrl,
   redirectAllowed,
   requireEmail,
@@ -215,4 +217,57 @@ describe("requireOwnStorageRef", () => {
   // The legacy own-public-URL branch reads SUPABASE_URL from Deno.env, which
   // doesn't exist under vitest — it collapses to "must be uploaded" there,
   // so the normalization path is covered by isOwnStorageUrl above.
+});
+
+describe("optionalFutureIso", () => {
+  const inAYear = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+
+  it("accepts absent, null, and empty as no expiry", () => {
+    for (const v of [undefined, null, ""]) {
+      expect(optionalFutureIso(v, "expiresAt", { maxYearsAhead: 5 })).toBeUndefined();
+    }
+  });
+
+  it("normalises a future instant to ISO", () => {
+    expect(optionalFutureIso(inAYear, "expiresAt", { maxYearsAhead: 5 })).toBe(inAYear);
+  });
+
+  it("refuses the past", () => {
+    // A link that expired before it was created is a mistake at the moment
+    // of the request, not a link that quietly refuses on its first open.
+    expect(() =>
+      optionalFutureIso("2020-01-01T00:00:00.000Z", "expiresAt", { maxYearsAhead: 5 }),
+    ).toThrow(HttpError);
+  });
+
+  it("refuses a stray far-future year", () => {
+    expect(() =>
+      optionalFutureIso("9999-01-01T00:00:00.000Z", "expiresAt", { maxYearsAhead: 5 }),
+    ).toThrow(HttpError);
+  });
+
+  it("refuses anything that is not a timestamp", () => {
+    for (const v of ["next tuesday", 12345, {}, "x".repeat(41)]) {
+      expect(() => optionalFutureIso(v, "expiresAt", { maxYearsAhead: 5 })).toThrow(HttpError);
+    }
+  });
+});
+
+describe("optionalInt", () => {
+  it("treats absent and null as no value", () => {
+    expect(optionalInt(undefined, "useCap", { min: 1, max: 100 })).toBeUndefined();
+    expect(optionalInt(null, "useCap", { min: 1, max: 100 })).toBeUndefined();
+  });
+
+  it("accepts a whole number in range", () => {
+    expect(optionalInt(50, "useCap", { min: 1, max: 100 })).toBe(50);
+  });
+
+  it("refuses zero, negatives, fractions, and out-of-range", () => {
+    // Zero would be a link that is dead on arrival, which is a mistake
+    // rather than a setting.
+    for (const v of [0, -1, 1.5, 101, "50", NaN]) {
+      expect(() => optionalInt(v, "useCap", { min: 1, max: 100 })).toThrow(HttpError);
+    }
+  });
 });
