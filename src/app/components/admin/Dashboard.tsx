@@ -47,11 +47,15 @@ interface KpiProps {
    * neutral chips (--bg-hover) need the theme-following text color instead —
    * ink on a dark-mode --bg-hover chip disappears. */
   chipFg?: string;
+  /** A quiet second line under the number. Used for the public-link share,
+   * which is a SUBSET of the headline figure rather than a separate total —
+   * a second tile would read as something to add on. */
+  sub?: string;
 }
 
 /** Stat tile — a headline number needs no chart. Values are data → mono.
  * Numeric values count up once on load (useCountUp); strings render as-is. */
-function Kpi({ label, value, Icon, chip, chipFg = "var(--text-on-accent)" }: KpiProps) {
+function Kpi({ label, value, Icon, chip, chipFg = "var(--text-on-accent)", sub }: KpiProps) {
   const numeric = typeof value === "number" ? value : 0;
   const counted = useCountUp(numeric);
   const shown = typeof value === "number" ? counted : value;
@@ -73,22 +77,54 @@ function Kpi({ label, value, Icon, chip, chipFg = "var(--text-on-accent)" }: Kpi
         <span className="sp-eyebrow block" style={{ marginTop: 3 }}>
           {label}
         </span>
+        {sub && (
+          <span
+            className="block truncate"
+            style={{
+              fontSize: "var(--type-caption-size)",
+              color: "var(--text-muted)",
+              marginTop: 2,
+            }}
+          >
+            {sub}
+          </span>
+        )}
       </span>
     </div>
   );
 }
 
-/** Legend chip: colored dot + label + mono total (identity never color-alone). */
-function LegendChip({ color, label, total }: { color: string; label: string; total: number }) {
+/** Legend chip: colored swatch + label + mono total (identity never
+ * color-alone). `dashed` draws a short dashed rule instead of a dot, so the
+ * public-link overlay is decodable as the dashed line it actually is rather
+ * than mistaken for a third filled band. */
+function LegendChip({
+  color,
+  label,
+  total,
+  dashed,
+}: {
+  color: string;
+  label: string;
+  total: number;
+  dashed?: boolean;
+}) {
   return (
     <span
       className="flex items-center gap-1.5"
       style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}
     >
-      <span
-        aria-hidden
-        style={{ width: 8, height: 8, borderRadius: "var(--radius-pill)", background: color }}
-      />
+      {dashed ? (
+        <span
+          aria-hidden
+          style={{ width: 12, height: 0, borderTop: `2px dashed ${color}`, display: "block" }}
+        />
+      ) : (
+        <span
+          aria-hidden
+          style={{ width: 8, height: 8, borderRadius: "var(--radius-pill)", background: color }}
+        />
+      )}
       {label}
       <span style={{ ...mono, fontSize: 11, color: "var(--text-muted)" }}>{total}</span>
     </span>
@@ -142,15 +178,25 @@ export function Dashboard() {
   const trend = trendState.status === "ready" ? trendState.data : null;
 
   const totalOpens = summary.rows.reduce((n, r) => n + r.opens, 0);
+  // Public traffic is a SUBSET of the totals above, never added to them: one
+  // fill through a link is one open and one export, the same as a member's.
+  const publicOpens = summary.rows.reduce((n, r) => n + r.publicOpens, 0);
+  const publicDownloads = summary.rows.reduce((n, r) => n + r.publicDownloads, 0);
+  const viaLink = (n: number): string | undefined =>
+    n === 0 ? undefined : `${n} via public link${n === 1 ? "" : "s"}`;
   const activeTemplates = summary.rows.filter((r) => r.opens + r.downloads > 0).length;
   const trendOpens = (trend ?? []).reduce((n, p) => n + p.opens, 0);
   const trendDownloads = (trend ?? []).reduce((n, p) => n + p.downloads, 0);
+  const trendPublicDownloads = (trend ?? []).reduce((n, p) => n + p.publicDownloads, 0);
   const top = summary.rows.slice(0, 8);
   const maxCount = Math.max(1, ...top.map((r) => Math.max(r.downloads, r.opens)));
 
   return (
     <Page>
-      <PageHeader title="Insights" description="Which templates your team actually uses." />
+      <PageHeader
+        title="Insights"
+        description="Which templates actually get used — by your team, and through public links."
+      />
 
       {summary.rows.length === 0 ? (
         <div className="sp-card relative overflow-hidden text-center py-20 px-6">
@@ -167,7 +213,8 @@ export function Dashboard() {
           <p
             style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)", marginTop: 6 }}
           >
-            Opens and downloads appear here as soon as members start using published templates.
+            Opens and downloads appear here as soon as people start using published templates — your
+            own team, and anyone filling one in through a public link.
           </p>
         </div>
       ) : (
@@ -179,8 +226,15 @@ export function Dashboard() {
               value={summary.totalDownloads}
               Icon={Download}
               chip="var(--viz-series-1)"
+              sub={viaLink(publicDownloads)}
             />
-            <Kpi label="Total opens" value={totalOpens} Icon={Eye} chip="var(--viz-series-2)" />
+            <Kpi
+              label="Total opens"
+              value={totalOpens}
+              Icon={Eye}
+              chip="var(--viz-series-2)"
+              sub={viaLink(publicOpens)}
+            />
             <Kpi
               label="Export rate"
               value={exportRate(summary.totalDownloads, totalOpens)}
@@ -204,6 +258,14 @@ export function Dashboard() {
               <div className="flex items-center gap-4">
                 <LegendChip color="var(--viz-series-1)" label="Downloads" total={trendDownloads} />
                 <LegendChip color="var(--viz-series-2)" label="Opens" total={trendOpens} />
+                {trendPublicDownloads > 0 && (
+                  <LegendChip
+                    color="var(--viz-series-3)"
+                    label="of which via link"
+                    total={trendPublicDownloads}
+                    dashed
+                  />
+                )}
               </div>
             </div>
             {trendState.status === "error" ? (
@@ -283,6 +345,25 @@ export function Dashboard() {
                       dot={false}
                       activeDot={{ r: 4, strokeWidth: 0 }}
                     />
+                    {/* Exports made through a public link. Deliberately
+                        UNFILLED and dashed: this is a slice of the Downloads
+                        area above it, not a third quantity stacked on top,
+                        and a filled band would invite reading the chart as a
+                        sum. Hidden entirely until a link has produced
+                        something, so the common case keeps two series. */}
+                    {trendPublicDownloads > 0 && (
+                      <Area
+                        type="monotone"
+                        dataKey="publicDownloads"
+                        name="of which via link"
+                        stroke="var(--viz-series-3)"
+                        strokeWidth={2}
+                        strokeDasharray="4 3"
+                        fill="none"
+                        dot={false}
+                        activeDot={{ r: 4, strokeWidth: 0 }}
+                      />
+                    )}
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -357,6 +438,14 @@ export function Dashboard() {
                   total={summary.totalDownloads}
                 />
                 <LegendChip color="var(--viz-series-2)" label="Opens" total={totalOpens} />
+                {publicDownloads > 0 && (
+                  <LegendChip
+                    color="var(--viz-series-3)"
+                    label="of which via link"
+                    total={publicDownloads}
+                    dashed
+                  />
+                )}
               </div>
             </div>
 
@@ -364,15 +453,17 @@ export function Dashboard() {
             <div className="sp-card overflow-hidden overflow-x-auto lg:col-span-3">
               <table
                 className="w-full"
-                style={{ fontSize: "var(--type-label-size)", minWidth: 520 }}
+                style={{ fontSize: "var(--type-label-size)", minWidth: 620 }}
               >
                 <thead>
                   <tr className="text-left" style={{ borderBottom: "1px solid var(--border)" }}>
-                    {["Template", "Opens", "Downloads", "Export rate", "Last used"].map((h) => (
-                      <th key={h} className="sp-eyebrow px-4 py-3" style={{ fontWeight: 400 }}>
-                        {h}
-                      </th>
-                    ))}
+                    {["Template", "Opens", "Downloads", "Via link", "Export rate", "Last used"].map(
+                      (h) => (
+                        <th key={h} className="sp-eyebrow px-4 py-3" style={{ fontWeight: 400 }}>
+                          {h}
+                        </th>
+                      ),
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -403,6 +494,25 @@ export function Dashboard() {
                         }}
                       >
                         {r.downloads}
+                      </td>
+                      {/* Exports through a public link. A dash rather than a
+                          zero: nobody has shared this template publicly, which
+                          is different from having shared it and got nothing. */}
+                      <td
+                        className="px-4 py-3"
+                        title={
+                          r.publicOpens + r.publicDownloads > 0
+                            ? `${r.publicDownloads} export${r.publicDownloads === 1 ? "" : "s"} from ${r.publicOpens} open${r.publicOpens === 1 ? "" : "s"} through public links`
+                            : undefined
+                        }
+                        style={{
+                          ...mono,
+                          fontSize: "var(--type-caption-size)",
+                          color:
+                            r.publicDownloads > 0 ? "var(--text-primary)" : "var(--text-muted)",
+                        }}
+                      >
+                        {r.publicOpens + r.publicDownloads === 0 ? "—" : r.publicDownloads}
                       </td>
                       <td
                         className="px-4 py-3"

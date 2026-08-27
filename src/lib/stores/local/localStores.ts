@@ -8,6 +8,7 @@ import type {
   TemplateSchema,
   TemplateStatus,
   UsageAction,
+  UsageActor,
   UsageSummary,
   UsageSummaryRow,
 } from "../../types";
@@ -34,6 +35,12 @@ interface UsageEventRec {
   templateId: string;
   action: UsageAction;
   userId: string | null;
+  /** Mirrors the Supabase column so the Insights page exercises the same
+   * branches on either backend. This store only ever WRITES "member" — it
+   * has no Edge Functions and so no public links — but it reads whatever is
+   * there rather than hardcoding zeroes, which would make the public half of
+   * the dashboard unreachable in development. */
+  actor?: UsageActor;
   createdAt: string;
 }
 
@@ -175,6 +182,7 @@ export class LocalUsageStore implements UsageStore {
       templateId,
       action,
       userId: userId ?? null,
+      actor: "member",
       createdAt: new Date().toISOString(),
     };
     mutate((db) => db.usageEvents.push(event));
@@ -189,14 +197,18 @@ export class LocalUsageStore implements UsageStore {
         templateName: templates.find((t) => t.id === e.templateId)?.name ?? "(deleted template)",
         opens: 0,
         downloads: 0,
-        // The local dev backend has no Edge Functions and therefore no
-        // public links, so nothing here can be public traffic.
         publicOpens: 0,
         publicDownloads: 0,
         lastUsedAt: null,
       };
-      if (e.action === "open") row.opens += 1;
-      else row.downloads += 1;
+      const viaLink = e.actor === "public";
+      if (e.action === "open") {
+        row.opens += 1;
+        if (viaLink) row.publicOpens += 1;
+      } else {
+        row.downloads += 1;
+        if (viaLink) row.publicDownloads += 1;
+      }
       if (!row.lastUsedAt || e.createdAt > row.lastUsedAt) row.lastUsedAt = e.createdAt;
       byTemplate.set(e.templateId, row);
     }

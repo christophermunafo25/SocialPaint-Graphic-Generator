@@ -337,6 +337,11 @@ export interface TemplateLinkPatch {
 
 export type UsageAction = "open" | "download";
 
+/** Where a usage event came from. A public fill has no user to attribute it
+ * to and is never given a fabricated one — this is how the two are told
+ * apart instead. */
+export type UsageActor = "member" | "public";
+
 export interface UsageSummaryRow {
   templateId: string;
   templateName: string;
@@ -361,6 +366,12 @@ export interface DailyActivityPoint {
   date: string;
   opens: number;
   downloads: number;
+  /** The SUBSET of `opens` that came through a public link — not a separate
+   * category to be added on top. The chart draws it as an overlay for
+   * exactly that reason. */
+  publicOpens: number;
+  /** The subset of `downloads` that came through a public link. */
+  publicDownloads: number;
 }
 
 /** The values a member has entered for a template's fields, keyed by fieldKey.
