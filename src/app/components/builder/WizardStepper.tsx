@@ -19,7 +19,7 @@ export const WIZARD_STEPS: StepDef[] = [
   { key: "name", title: "Name" },
 ];
 
-interface WizardStepperProps {
+interface WizardStepBarProps {
   current: WizardStep;
   /** Steps whose requirements are met (jumpable at any time). */
   complete: Set<WizardStep>;
@@ -28,84 +28,56 @@ interface WizardStepperProps {
   onGo(step: WizardStep): void;
 }
 
-/** Persistent progress indicator: numbered steps, check marks on completed
- * ones, click any reachable step to jump. */
-export function WizardStepper({ current, complete, canGo, onGo }: WizardStepperProps) {
+/** The wizard, compacted into the editor's top bar. Fields is no longer a
+ * page — it IS the editor — so this reads as a segmented control over the
+ * three panels that sit beside it, with the same check marks and the same
+ * reachability rules the stepper had. */
+export function WizardStepBar({ current, complete, canGo, onGo }: WizardStepBarProps) {
   return (
-    <nav aria-label="Template creation steps" className="flex items-center gap-1 flex-wrap mb-6">
+    <nav
+      aria-label="Template creation steps"
+      className="flex items-center flex-shrink-0 overflow-hidden"
+      data-radius-control
+      style={{ border: "1px solid var(--border-strong)", borderRadius: "var(--radius-control)" }}
+    >
       {WIZARD_STEPS.map((s, i) => {
         const isCurrent = s.key === current;
         const isComplete = complete.has(s.key) && !isCurrent;
         const reachable = canGo(s.key);
         return (
-          <React.Fragment key={s.key}>
-            {i > 0 && (
+          <button
+            key={s.key}
+            onClick={() => reachable && onGo(s.key)}
+            disabled={!reachable}
+            aria-current={isCurrent ? "step" : undefined}
+            title={s.optional ? `${s.title} — optional` : s.title}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 whitespace-nowrap"
+            style={{
+              fontSize: "var(--type-caption-size)",
+              fontWeight: isCurrent ? 500 : 400,
+              borderLeft: i > 0 ? "1px solid var(--border)" : undefined,
+              background: isCurrent ? "var(--fill-action)" : "var(--bg-surface)",
+              color: isCurrent ? "var(--text-on-action)" : "var(--text-secondary)",
+              cursor: reachable ? "pointer" : "default",
+              opacity: reachable || isCurrent ? 1 : 0.45,
+            }}
+          >
+            {isComplete ? (
+              <Check aria-hidden style={{ width: 11, height: 11, color: "var(--state-primary)" }} />
+            ) : (
               <span
                 aria-hidden
                 style={{
-                  width: 20,
-                  height: 1,
-                  background: "var(--border-strong)",
-                  margin: "0 2px",
-                }}
-              />
-            )}
-            <button
-              onClick={() => reachable && onGo(s.key)}
-              disabled={!reachable}
-              aria-current={isCurrent ? "step" : undefined}
-              className="flex items-center gap-2 px-2.5 py-1.5"
-              style={{
-                borderRadius: "var(--radius-pill)",
-                background: isCurrent ? "var(--fill-action)" : "transparent",
-                cursor: reachable ? "pointer" : "default",
-                opacity: reachable || isCurrent ? 1 : 0.45,
-              }}
-            >
-              <span
-                className="flex items-center justify-center"
-                style={{
-                  width: 18,
-                  height: 18,
-                  borderRadius: "var(--radius-pill)",
-                  fontSize: 10,
                   fontFamily: "var(--font-mono)",
-                  background: isComplete
-                    ? "var(--fill-action)"
-                    : isCurrent
-                      ? "var(--btn-primary-bg)"
-                      : "var(--bg-hover)",
-                  color: isCurrent
-                    ? "var(--btn-primary-fg)"
-                    : isComplete
-                      ? "var(--text-on-action)"
-                      : "var(--text-primary)",
+                  fontSize: 10,
+                  color: isCurrent ? "var(--text-on-action)" : "var(--text-muted)",
                 }}
               >
-                {isComplete ? <Check style={{ width: 11, height: 11 }} /> : i + 1}
+                {i + 1}
               </span>
-              <span
-                style={{
-                  fontSize: "var(--type-caption-size)",
-                  color: isCurrent ? "var(--text-on-action)" : "var(--text-secondary)",
-                  fontWeight: isCurrent ? 500 : 400,
-                }}
-              >
-                {s.title}
-                {s.optional && (
-                  <span
-                    style={{
-                      fontSize: 10,
-                      color: isCurrent ? "var(--text-on-action)" : "var(--text-muted)",
-                    }}
-                  >
-                    {" "}
-                    · optional
-                  </span>
-                )}
-              </span>
-            </button>
-          </React.Fragment>
+            )}
+            {s.title}
+          </button>
         );
       })}
     </nav>

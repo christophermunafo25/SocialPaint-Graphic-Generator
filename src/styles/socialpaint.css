@@ -1000,6 +1000,31 @@ optgroup {
   --editor-accent: #0d99ff; /* selection blue — functional, never brand; foreign to artwork by design */
   --editor-line: 1px;
   --editor-handle: 7px;
+  /* The pasteboard the artboard floats on. Light gets the raised step so a
+     white artboard still reads as a distinct object; dark gets the canvas
+     floor, which is the deepest surface and makes the artwork carry. Both
+     are token-derived, and the separation is colour plus a hairline —
+     never a shadow. */
+  --editor-pasteboard: var(--bg-raised);
+  --editor-artboard-edge: var(--border-strong);
+}
+[data-theme="dark"] {
+  --editor-pasteboard: var(--bg-canvas);
+}
+
+/* While a canvas gesture is live the body forces one cursor and everything
+   inherits it — pointer capture routes events, not hover styling, so
+   without this the cursor flickers across every element the drag passes
+   over. Set and cleared by canvasGesture.ts. */
+body[data-sp-gesture] * {
+  cursor: inherit !important;
+}
+
+/* The pan/zoom window. It clips; the artboard inside it carries its own
+   clip so bleeding content crops exactly as it exports. */
+.sp-canvas-viewport {
+  background: var(--editor-pasteboard);
+  overscroll-behavior: none;
 }
 
 /* Scoped to the builder canvas so a future Moveable elsewhere keeps its own
@@ -1032,6 +1057,126 @@ optgroup {
   border-radius: 50%;
   background: #fff;
   border-color: var(--editor-accent);
+}
+
+/* --- Full-viewport surfaces ------------------------------------------------
+   The Template Builder is a design environment, not a page: it owns the
+   whole viewport and scrolls only inside its own regions. Scoped to an
+   attribute the surface sets on `html` while it is mounted, so every other
+   route keeps the normal document scroll and the sidebar's sticky
+   positioning. */
+html[data-sp-fullscreen],
+html[data-sp-fullscreen] body {
+  height: 100%;
+  overflow: hidden;
+}
+html[data-sp-fullscreen] .sp-appshell {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+html[data-sp-fullscreen] .sp-appshell > main {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* --- Builder shell ---------------------------------------------------------
+   Four regions: a full-width top bar, a left rail, the canvas viewport, and
+   the right inspector. Rails resize and collapse; every region scrolls on
+   its own. Elevation is surface colour and a hairline, never a shadow. */
+.sp-builder {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg-canvas);
+}
+.sp-builder__bar {
+  grid-column: 1 / -1;
+  min-width: 0;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+}
+.sp-builder__rail {
+  position: relative;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface);
+  overflow: hidden;
+}
+.sp-builder__rail--left {
+  border-right: 1px solid var(--border);
+}
+.sp-builder__rail--right {
+  border-left: 1px solid var(--border);
+}
+.sp-builder__rail-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+/* The grab strip between a rail and the canvas. Invisible until you are on
+   it — a hairline is the rail's border, not an affordance. */
+.sp-builder__grip {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 9px;
+  cursor: col-resize;
+  z-index: 3;
+  background: transparent;
+}
+.sp-builder__grip--left {
+  right: -5px;
+}
+.sp-builder__grip--right {
+  left: -5px;
+}
+.sp-builder__grip:hover::after,
+.sp-builder__grip[data-dragging="true"]::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 4px;
+  width: 1px;
+  background: var(--editor-accent);
+}
+.sp-builder__canvas {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+/* A collapsed rail keeps a strip so the way back is where the rail was. */
+.sp-builder__stub {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding: var(--space-2xs) 0;
+  background: var(--bg-surface);
+}
+/* The step panels (Caption, Tags & details, Name) ride over the inspector
+   rather than replacing it — the canvas never moves when one opens. */
+.sp-builder__slideover {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface);
+  border-left: 1px solid var(--border-strong);
 }
 
 /* --- Mobile nav toggle -----------------------------------------------------

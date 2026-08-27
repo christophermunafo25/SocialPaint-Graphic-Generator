@@ -8,6 +8,7 @@ import {
   deriveGroup,
   fieldIdsInGroups,
   groupIdsWithin,
+  groupMoveTargets,
   renameKeyInGroups,
   stripFieldsFromGroups,
   toFreeGroup,
@@ -438,5 +439,53 @@ describe("mode conversion", () => {
     const stacked = toStackGroup(free, [s1, s2], [free], before, null, measure);
     const after = layoutOf([s1, s2], [stacked]);
     expect(conversionShift(stacked, [s1, s2], before, after, null, measure)).toBeGreaterThan(2);
+  });
+});
+
+describe("groupMoveTargets", () => {
+  const mkGroup = (over: Partial<LayoutGroup> & { id: string }): LayoutGroup => ({
+    name: "Group",
+    x: 0,
+    y: 0,
+    children: [],
+    direction: "vertical",
+    gap: 0,
+    anchor: "start",
+    align: "start",
+    crossSize: 400,
+    ...over,
+  });
+
+  it("a plain group carries its own fields' coordinates", () => {
+    const g = mkGroup({ id: "g1", mode: "free", children: ["a", "b"] });
+    const out = groupMoveTargets(["g1"], [g]);
+    expect([...out.frameIds]).toEqual(["g1"]);
+    expect([...out.fieldKeys].sort()).toEqual(["a", "b"]);
+  });
+
+  it("a stack lists only its frame — it re-places its children from the anchor", () => {
+    const g = mkGroup({ id: "g1", direction: "vertical", children: ["a", "b"] });
+    const out = groupMoveTargets(["g1"], [g]);
+    expect([...out.frameIds]).toEqual(["g1"]);
+    expect(out.fieldKeys.size).toBe(0);
+  });
+
+  it("descends into nested groups, and a nested stack contributes no field keys", () => {
+    const inner = mkGroup({ id: "inner", direction: "horizontal", children: ["c", "d"] });
+    const outer = mkGroup({ id: "outer", mode: "free", children: ["a", "group:inner"] });
+    const out = groupMoveTargets(["outer"], [outer, inner]);
+    expect([...out.frameIds].sort()).toEqual(["inner", "outer"]);
+    expect([...out.fieldKeys]).toEqual(["a"]);
+  });
+
+  it("survives a circular nesting without looping forever", () => {
+    const a = mkGroup({ id: "a", mode: "free", children: ["group:b"] });
+    const b = mkGroup({ id: "b", mode: "free", children: ["group:a"] });
+    const out = groupMoveTargets(["a"], [a, b]);
+    expect([...out.frameIds].sort()).toEqual(["a", "b"]);
+  });
+
+  it("ignores ids that no longer exist", () => {
+    expect(groupMoveTargets(["gone"], []).frameIds.size).toBe(0);
   });
 });
