@@ -8,6 +8,12 @@ interface Db {
   brandAssets: unknown[];
   templates: unknown[];
   usageEvents: unknown[];
+  /** Read-only in dev: this backend cannot ISSUE a public link (no Edge
+   * Functions, no hashing), but reading a seeded collection keeps the
+   * per-link half of Insights reachable instead of permanently blank.
+   * `readDb` spreads `empty()`, so a store written before this key existed
+   * upgrades without a migration. */
+  templateLinks: unknown[];
 }
 
 const KEY = "brand-portal-dev-db";
@@ -18,6 +24,7 @@ const empty = (): Db => ({
   brandAssets: [],
   templates: [],
   usageEvents: [],
+  templateLinks: [],
 });
 
 export function readDb(): Db {

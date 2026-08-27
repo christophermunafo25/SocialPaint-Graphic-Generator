@@ -9,6 +9,7 @@ import type {
   DailyActivityPoint,
   DesignImportResult,
   NewTemplateInput,
+  PublicLinkUsageRow,
   TemplateLink,
   TemplateLinkPatch,
   TemplateLinkWithToken,
@@ -109,6 +110,9 @@ export interface UsageStore {
   getUsageSummary(companyId: string): Promise<UsageSummary>;
   /** Zero-filled day buckets for the Insights trend chart. */
   getDailyActivity(companyId: string, days: number): Promise<DailyActivityPoint[]>;
+  /** Per-link traffic, for an admin running several links to one template.
+   * Links with no traffic are included — an untouched link is a finding. */
+  getPublicLinkUsage(companyId: string): Promise<PublicLinkUsageRow[]>;
 }
 
 export interface DesignImportProvider {

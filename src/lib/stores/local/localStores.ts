@@ -5,6 +5,7 @@ import type {
   Company,
   DesignImportResult,
   NewTemplateInput,
+  PublicLinkUsageRow,
   TemplateSchema,
   TemplateStatus,
   UsageAction,
@@ -22,6 +23,7 @@ import type {
   UsageStore,
 } from "../interfaces";
 import { bucketDailyActivity } from "../dailyActivity";
+import { joinLinkUsage } from "../publicLinkUsage";
 import { fileToDataUrl, mutate, newId, readDb } from "./db";
 
 // Mirrors supabase/seed.sql — v1 enables only the square preset.
@@ -41,6 +43,16 @@ interface UsageEventRec {
    * there rather than hardcoding zeroes, which would make the public half of
    * the dashboard unreachable in development. */
   actor?: UsageActor;
+  /** Which public link produced the event, when one did. */
+  linkId?: string | null;
+  createdAt: string;
+}
+
+interface TemplateLinkRec {
+  id: string;
+  name: string;
+  templateId: string;
+  revokedAt?: string | null;
   createdAt: string;
 }
 
@@ -223,6 +235,27 @@ export class LocalUsageStore implements UsageStore {
       (db.usageEvents as UsageEventRec[]).filter((e) => e.companyId === companyId),
       days,
     );
+  }
+  /** Joined exactly as the Supabase store joins it, over whatever links the
+   * local document store holds. Normally none — this backend cannot issue
+   * one — in which case the Insights card simply does not appear. */
+  async getPublicLinkUsage(companyId: string): Promise<PublicLinkUsageRow[]> {
+    const db = readDb();
+    const templates = db.templates as TemplateSchema[];
+    const links = (db.templateLinks as TemplateLinkRec[])
+      .map((l) => ({
+        id: l.id,
+        name: l.name,
+        templateId: l.templateId,
+        templateName: templates.find((t) => t.id === l.templateId)?.name ?? "(deleted template)",
+        revokedAt: l.revokedAt ?? null,
+        createdAt: l.createdAt,
+      }))
+      .filter((l) => templates.some((t) => t.id === l.templateId && t.companyId === companyId));
+    const events = (db.usageEvents as UsageEventRec[])
+      .filter((e) => e.companyId === companyId && e.actor === "public" && e.linkId)
+      .map((e) => ({ linkId: e.linkId!, action: e.action, createdAt: e.createdAt }));
+    return joinLinkUsage(links, events);
   }
 }
 

@@ -361,6 +361,28 @@ export interface UsageSummary {
   totalDownloads: number;
 }
 
+/** Usage for one public link. Answers the question an admin actually has
+ * when they are running several links to the same template: which one is
+ * pulling?
+ *
+ * Counts here come from usage_events, NOT from template_links.use_count.
+ * The two measure different things on purpose: use_count is what the gate
+ * claimed against the open cap and includes a refresh, while this is what
+ * was recorded as activity. */
+export interface PublicLinkUsageRow {
+  linkId: string;
+  /** The admin's own label, or empty if they never named it. */
+  linkName: string;
+  templateId: string;
+  templateName: string;
+  opens: number;
+  downloads: number;
+  lastUsedAt: string | null;
+  /** Set when the link has been revoked — the counts are history, and this
+   * is why they stopped growing. */
+  revokedAt: string | null;
+}
+
 /** One day of activity for the Insights trend chart (date = YYYY-MM-DD). */
 export interface DailyActivityPoint {
   date: string;
