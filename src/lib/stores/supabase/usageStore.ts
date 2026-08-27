@@ -1,4 +1,10 @@
-import type { DailyActivityPoint, UsageAction, UsageSummary, UsageSummaryRow } from "../../types";
+import type {
+  DailyActivityPoint,
+  UsageAction,
+  UsageActor,
+  UsageSummary,
+  UsageSummaryRow,
+} from "../../types";
 import type { UsageStore } from "../interfaces";
 import { bucketDailyActivity } from "../dailyActivity";
 import { supabase } from "./client";
@@ -6,7 +12,7 @@ import { supabase } from "./client";
 interface EventRow {
   template_id: string;
   action: UsageAction;
-  actor: "member" | "public";
+  actor: UsageActor;
   created_at: string;
   templates: { name: string } | null;
 }
@@ -76,13 +82,14 @@ export class SupabaseUsageStore implements UsageStore {
     since.setDate(since.getDate() - (days - 1));
     const { data, error } = await supabase()
       .from("usage_events")
-      .select("action, created_at")
+      .select("action, actor, created_at")
       .eq("company_id", companyId)
       .gte("created_at", since.toISOString());
     if (error) throw error;
     return bucketDailyActivity(
-      (data as Array<{ action: UsageAction; created_at: string }>).map((e) => ({
+      (data as Array<{ action: UsageAction; actor: UsageActor; created_at: string }>).map((e) => ({
         action: e.action,
+        actor: e.actor,
         createdAt: e.created_at,
       })),
       days,
