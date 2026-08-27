@@ -35,6 +35,7 @@ export function joinLinkUsage(links: LinkRecord[], events: LinkEvent[]): PublicL
         templateName: l.templateName,
         opens: 0,
         downloads: 0,
+        shares: 0,
         lastUsedAt: null,
         revokedAt: l.revokedAt,
       },
@@ -49,8 +50,10 @@ export function joinLinkUsage(links: LinkRecord[], events: LinkEvent[]): PublicL
     // is gone, which is the correct outcome rather than inventing a row for
     // a link that no longer exists.
     if (!row) continue;
+    // Named explicitly — see the note in 0027_share_events.sql.
     if (event.action === "open") row.opens += 1;
-    else row.downloads += 1;
+    else if (event.action === "download") row.downloads += 1;
+    else if (event.action === "share") row.shares += 1;
     if (!row.lastUsedAt || event.createdAt > row.lastUsedAt) row.lastUsedAt = event.createdAt;
   }
 

@@ -335,7 +335,11 @@ export interface TemplateLinkPatch {
   useCap?: number | null;
 }
 
-export type UsageAction = "open" | "download";
+/** "open" is a page view, "download" an exported PNG, "share" the person
+ * taking that PNG to LinkedIn. Adding a fourth means revisiting every
+ * tally — they name each action explicitly rather than treating one as the
+ * default, precisely so a new one cannot be silently miscounted. */
+export type UsageAction = "open" | "download" | "share";
 
 /** Where a usage event came from. A public fill has no user to attribute it
  * to and is never given a fabricated one — this is how the two are told
@@ -347,6 +351,10 @@ export interface UsageSummaryRow {
   templateName: string;
   opens: number;
   downloads: number;
+  /** Exports that went on to LinkedIn. The gap between this and `downloads`
+   * is the interesting number: a template exported forty times and posted
+   * twice has a caption problem, not a template problem. */
+  shares: number;
   /** The subset of `downloads` that came through a public link. An admin who
    * sent a link out wants to know it is working, and a public fill is not a
    * member fill — so it is counted separately rather than folded in. */
@@ -377,6 +385,8 @@ export interface PublicLinkUsageRow {
   templateName: string;
   opens: number;
   downloads: number;
+  /** Exports from this link that went on to LinkedIn. */
+  shares: number;
   lastUsedAt: string | null;
   /** Set when the link has been revoked — the counts are history, and this
    * is why they stopped growing. */

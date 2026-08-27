@@ -24,10 +24,12 @@ export function bucketDailyActivity(
     // the fact and backfilled that way, and the local dev backend has no
     // public links at all.
     const viaLink = e.actor === "public";
+    // Every action is named. An `else` here would have quietly folded
+    // shares into downloads the day a third action was added.
     if (e.action === "open") {
       point.opens += 1;
       if (viaLink) point.publicOpens += 1;
-    } else {
+    } else if (e.action === "download") {
       point.downloads += 1;
       if (viaLink) point.publicDownloads += 1;
     }

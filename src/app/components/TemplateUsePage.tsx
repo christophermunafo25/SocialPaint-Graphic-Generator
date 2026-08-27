@@ -87,7 +87,15 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
         )}
       </div>
 
-      <TemplateFill template={template} brandKit={kit} values={values} onValuesChange={setValues} />
+      <TemplateFill
+        template={template}
+        brandKit={kit}
+        values={values}
+        onValuesChange={setValues}
+        // Opens and downloads are recorded inside SchemaRenderer; a share
+        // happens outside the canvas, so this is its one recording point.
+        onShared={() => void stores.usage.record(template.companyId, template.id, "share")}
+      />
     </Page>
   );
 }

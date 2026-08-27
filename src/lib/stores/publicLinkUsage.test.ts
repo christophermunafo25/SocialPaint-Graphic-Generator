@@ -105,4 +105,29 @@ describe("joinLinkUsage", () => {
     );
     expect(rows.map((r) => r.linkName)).toEqual(["Busy", "Opened only", "Quiet"]);
   });
+
+  it("counts shares apart from downloads", () => {
+    const rows = joinLinkUsage(
+      [link({ id: "a" })],
+      [
+        ev("a", "open", "2026-08-01T10:00:00.000Z"),
+        ev("a", "download", "2026-08-01T10:01:00.000Z"),
+        ev("a", "download", "2026-08-01T10:02:00.000Z"),
+        ev("a", "share", "2026-08-01T10:03:00.000Z"),
+      ],
+    );
+    // Two exports, one of which went to LinkedIn — the gap is the point.
+    expect(rows[0]).toMatchObject({ opens: 1, downloads: 2, shares: 1 });
+  });
+
+  it("counts a share toward last-used", () => {
+    const rows = joinLinkUsage(
+      [link({ id: "a" })],
+      [
+        ev("a", "download", "2026-08-01T10:00:00.000Z"),
+        ev("a", "share", "2026-08-04T10:00:00.000Z"),
+      ],
+    );
+    expect(rows[0].lastUsedAt).toBe("2026-08-04T10:00:00.000Z");
+  });
 });
