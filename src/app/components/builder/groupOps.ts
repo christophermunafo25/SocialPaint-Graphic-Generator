@@ -448,6 +448,41 @@ export function fieldIdsInGroups(
 }
 
 /** Group ids inside the given groups, themselves included (delete cascade). */
+/** What moving a whole group touches. The frames that travel with it, and
+ * the fieldKeys inside it that carry their own coordinates — a plain group's
+ * children self-place, so a delta writes through to each of them, while a
+ * STACK re-places its children from its anchor, so only its frame is listed.
+ *
+ * One definition, two callers: a selection drag and an alignment both have to
+ * answer this identically or the two would move a group differently. */
+export function groupMoveTargets(
+  groupIds: string[],
+  groups: LayoutGroup[],
+): { frameIds: Set<string>; fieldKeys: Set<string> } {
+  const frameIds = new Set<string>();
+  const fieldKeys = new Set<string>();
+  const visit = (grp: LayoutGroup) => {
+    if (frameIds.has(grp.id)) return;
+    frameIds.add(grp.id);
+    for (const ref of grp.children) {
+      const nested = parseGroupChildRef(ref);
+      if (nested !== null) {
+        const child = groups.find((x) => x.id === nested);
+        if (child) visit(child);
+      } else if (isFreeGroup(grp)) {
+        fieldKeys.add(ref);
+      }
+    }
+  };
+  for (const id of groupIds) {
+    const g = groups.find((x) => x.id === id);
+    if (!g) continue;
+    if (isFreeGroup(g)) visit(g);
+    else frameIds.add(g.id);
+  }
+  return { frameIds, fieldKeys };
+}
+
 export function groupIdsWithin(groupIds: string[], groups: LayoutGroup[]): string[] {
   const out = new Set<string>();
   const visit = (id: string) => {

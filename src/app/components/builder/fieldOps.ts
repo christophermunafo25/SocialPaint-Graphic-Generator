@@ -81,6 +81,41 @@ export const PALETTE_ITEMS: PaletteItem[] = [
   },
 ];
 
+/** The active canvas tool. Every draw tool is backed by an element the
+ * palette already offers — a tool is a way to PLACE an existing element, not
+ * a new kind of element, so nothing here reaches the data model. */
+export type BuilderTool = "move" | "text" | "rect" | "ellipse" | "line" | "image";
+
+/** Tool → the PALETTE_ITEMS id it draws. Move draws nothing. */
+export const TOOL_PALETTE_ID: Record<Exclude<BuilderTool, "move">, string> = {
+  text: "text",
+  rect: "rect",
+  ellipse: "ellipse",
+  line: "line",
+  image: "image",
+};
+
+/** Physical key → tool, matched on e.code so the letters land the same on
+ * every layout. These are the industry's letters: muscle memory transfers. */
+export const TOOL_KEYS: Record<string, BuilderTool> = {
+  KeyV: "move",
+  KeyT: "text",
+  KeyR: "rect",
+  KeyO: "ellipse",
+  KeyL: "line",
+  KeyM: "image",
+};
+
+/** The letter that reaches a tool, for labels and tooltips. */
+export const TOOL_LETTER: Record<BuilderTool, string> = {
+  move: "V",
+  text: "T",
+  rect: "R",
+  ellipse: "O",
+  line: "L",
+  image: "M",
+};
+
 /** dataTransfer MIME key for palette drags (payload = PaletteItem.id). */
 export const PALETTE_MIME = "application/x-sp-element";
 
@@ -292,8 +327,33 @@ export function setLayerOrder(
   const moved = ordered.filter((f) => idSet.has(f.id));
   const rest = ordered.filter((f) => !idSet.has(f.id));
   const next = where === "front" ? [...rest, ...moved] : [...moved, ...rest];
-  const z = new Map(next.map((f, i) => [f.id, i]));
-  return fields.map((f) => ({ ...f, zIndex: z.get(f.id)! }));
+  return applyPaintOrder(
+    fields,
+    next.map((f) => f.id),
+  );
+}
+
+/** THE z-writing function: take an explicit BACK-TO-FRONT list of field ids
+ * and renumber every zIndex to 0..n-1. Ids the list omits keep their existing
+ * relative order behind everything it names, so a caller can hand over a
+ * partial order without silently losing elements. Never negative — a
+ * negative z would paint behind the background image. Array (form) order is
+ * untouched, as always.
+ *
+ * The Layers panel's drag-to-reorder and the Bring-to-front / Send-to-back
+ * buttons both land here, so paint order can only ever be written one way. */
+export function applyPaintOrder(fields: TemplateField[], backToFront: string[]): TemplateField[] {
+  const named = new Set(backToFront);
+  const known = new Set(fields.map((f) => f.id));
+  const missing = paintOrder(fields)
+    .filter((f) => !named.has(f.id))
+    .map((f) => f.id);
+  const order = [...missing, ...backToFront.filter((id) => known.has(id))];
+  const z = new Map(order.map((id, i) => [id, i]));
+  return fields.map((f) => {
+    const next = z.get(f.id);
+    return next === undefined || next === f.zIndex ? f : { ...f, zIndex: next };
+  });
 }
 
 // ---------------------------------------------------------------------------

@@ -4,15 +4,24 @@ import {
   ArrowRight,
   Check,
   CheckCircle2,
+  ChevronDown,
+  Circle,
+  Image as ImageIcon,
+  Minus,
+  MousePointer2,
   Eye,
   Sparkles,
   Figma,
+  PanelLeftClose,
+  PanelRightClose,
   Pencil,
   Plus,
   RefreshCw,
   Redo2,
   Save,
   Send,
+  Square,
+  Type,
   Undo2,
   Upload,
 } from "lucide-react";
@@ -26,7 +35,7 @@ import type {
   TemplateField,
   TemplateSchema,
 } from "@/lib/types";
-import { groupChildRef, isFreeGroup, parseGroupChildRef } from "@/lib/types";
+import { groupChildRef, isFreeGroup } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useHistory } from "@/lib/useHistory";
@@ -40,24 +49,37 @@ import { useFileDrop } from "@/lib/useFileDrop";
 import { useUnsavedChangesWarning } from "@/lib/useUnsavedChangesWarning";
 import { useRouter } from "../../router";
 import { ColorControl } from "../ColorControl";
-import { Page } from "../layout/Page";
+import { useChrome, useFullViewport } from "../layout/ChromeContext";
 import { InlineEdit } from "../InlineEdit";
 import { SchemaRenderer, schemaBackgroundCss } from "../SchemaRenderer";
 import { GradientEditor } from "./GradientEditor";
-import { FieldOverlayEditor } from "./FieldOverlayEditor";
+import { FieldOverlayEditor, type CanvasViewApi } from "./FieldOverlayEditor";
 import { FieldInspector } from "./FieldInspector";
 import { CaptionEditor } from "./CaptionEditor";
 import { FigmaImportDialog } from "./FigmaImportDialog";
 import { AutoBuildDialog } from "./AutoBuildDialog";
 import { ElementPalette } from "./ElementPalette";
 import { FieldListPanel } from "./FieldListPanel";
+import { LayersPanel } from "./LayersPanel";
 import { FieldContextMenu, type MenuAction } from "./FieldContextMenu";
 import { inspectorGestureActive } from "./InspectorControls";
 import { canvasGestureActive } from "./canvasGesture";
-import { WIZARD_STEPS, WizardStepper, type WizardStep } from "./WizardStepper";
+import { WIZARD_STEPS, WizardStepBar, type WizardStep } from "./WizardStepper";
+import {
+  BuilderRail,
+  BuilderSlideOver,
+  RailHeader,
+  RailTabs,
+  useRailCollapsed,
+  useRailWidth,
+} from "./BuilderShell";
 import {
   LOGO_PALETTE_PREFIX,
   PALETTE_ITEMS,
+  TOOL_KEYS,
+  TOOL_LETTER,
+  TOOL_PALETTE_ID,
+  type BuilderTool,
   applyClipboardStyle,
   cascadePoint,
   clipboardHasFields,
@@ -71,6 +93,7 @@ import {
   logoFieldFromAsset,
   imageFieldFromUpload,
   pasteFromClipboard,
+  applyPaintOrder,
   setLayerOrder,
   svgIntrinsicSize,
   textFieldFromPaste,
@@ -80,14 +103,16 @@ import { composeFigmaBackground } from "@/lib/figma/composeLayers";
 import { assembleElementFields, mergeOverlayFields } from "@/lib/figma/overlayFields";
 import { isFigmaNodeUrl } from "@/lib/figma/figmaUrl";
 import { unavailableFamilies } from "@/lib/render/fonts";
+import { lockedProperties } from "@/lib/brand/resolveStyle";
 import { celebrate } from "@/lib/celebrate";
 import { createCanvasMeasurer } from "@/lib/render/autoFit";
-import { computeLayout, outermostGroupOf } from "@/lib/render/layout";
+import { computeLayout, outermostGroupOf, parentGroupOf } from "@/lib/render/layout";
 import {
   conversionShift,
   deriveFreeGroup,
   fieldIdsInGroups,
   groupIdsWithin,
+  groupMoveTargets,
   renameKeyInGroups,
   selectedFieldIds,
   selectedGroupIds,
@@ -97,12 +122,46 @@ import {
   ungroup,
 } from "./groupOps";
 import { ConfirmDialog } from "../ConfirmDialog";
+import { ShortcutsPanel } from "./ShortcutsPanel";
+import { AlignControls } from "./AlignControls";
+import { SelectionToolbar } from "./SelectionToolbar";
+import {
+  alignDeltas,
+  boundsOf,
+  distributeDeltas,
+  type AlignBox,
+  type AlignEdge,
+  type Axis,
+} from "./alignOps";
 import { GroupInspector } from "./GroupInspector";
 
 /** The builder is a desktop tool: below this width the canvas + inspector
  * layout breaks, so we explain rather than attempt a responsive builder.
  * The member path (Portal / TemplateUsePage) stays fully responsive. */
 const BUILDER_MIN_VIEWPORT_PX = 1024;
+
+/** Rail bounds. The minimums are the narrowest width at which each rail's
+ * own content still reads (the palette's two-across tiles; the inspector's
+ * label + control row); the maximums stop a rail from eating the canvas. */
+/** The tool strip, in the order every design tool puts it. Each one is
+ * backed by an element the palette already offers. */
+const TOOL_ORDER: Array<{
+  key: BuilderTool;
+  label: string;
+  Icon: typeof MousePointer2;
+}> = [
+  { key: "move", label: "Move and select", Icon: MousePointer2 },
+  { key: "text", label: "Text", Icon: Type },
+  { key: "rect", label: "Rectangle", Icon: Square },
+  { key: "ellipse", label: "Ellipse", Icon: Circle },
+  { key: "line", label: "Line", Icon: Minus },
+  { key: "image", label: "Image", Icon: ImageIcon },
+];
+
+const RAIL_LEFT_MIN = 200;
+const RAIL_LEFT_MAX = 420;
+const RAIL_RIGHT_MIN = 260;
+const RAIL_RIGHT_MAX = 520;
 
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
 
@@ -233,6 +292,64 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
   const [step, setStep] = useState<WizardStep>("fields");
   const [visited, setVisited] = useState<Set<WizardStep>>(() => new Set(["fields"]));
   const [mode, setMode] = useState<"edit" | "preview">("edit");
+  /** The active canvas tool. Move marquee-selects; every other tool draws
+   * its element. A plain letter arms a tool for ONE draw and then returns to
+   * Move; SHIFT + the same letter locks it for repeated draws. One
+   * convention, and the shortcuts panel states it. */
+  const [tool, setTool] = useState<BuilderTool>("move");
+  const [toolLocked, setToolLocked] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  /** Which list the left rail is showing. Two orderings, two tabs — the whole
+   * point is that an admin can tell which one they are editing. */
+  const [railTab, setRailTab] = useState<"layers" | "form">("layers");
+  /** Lock and hide are EDITING AIDS, held for this session only. They never
+   * reach the schema, the export, or the member form — so a template that
+   * leaves this browser carries no trace of them. Persisting them would mean
+   * new TemplateField properties, which is a schema decision, not this
+   * work's to make. */
+  const [lockedIds, setLockedIds] = useState<Set<string>>(new Set());
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
+  const toggleIn = (set: Set<string>, id: string) => {
+    const next = new Set(set);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    return next;
+  };
+  const toggleLocked = useCallback((id: string) => setLockedIds((prev) => toggleIn(prev, id)), []);
+  const toggleHidden = useCallback((id: string) => setHiddenIds((prev) => toggleIn(prev, id)), []);
+  // Chrome the admin owns, remembered per browser and never in the schema.
+  const [leftWidth, setLeftWidth] = useRailWidth("rail-left", 260, RAIL_LEFT_MIN, RAIL_LEFT_MAX);
+  const [rightWidth, setRightWidth] = useRailWidth(
+    "rail-right",
+    300,
+    RAIL_RIGHT_MIN,
+    RAIL_RIGHT_MAX,
+  );
+  const [leftCollapsed, setLeftCollapsed] = useRailCollapsed("rail-left-collapsed");
+  const [rightCollapsed, setRightCollapsed] = useRailCollapsed("rail-right-collapsed");
+  /** The step panels carry forms, not property rows — they get their own
+   * comfortable width rather than inheriting the inspector's. */
+  const stepPanelWidth = Math.max(380, Math.min(520, rightWidth));
+
+  /** The canvas owns its own zoom and pan; the top bar only reads the scale
+   * and calls the commands. Keeping the view state in the editor is what
+   * lets the shortcuts and the menu run the same code. */
+  const canvasViewRef = useRef<CanvasViewApi | null>(null);
+  const [canvasScale, setCanvasScale] = useState(1);
+  const onCanvasScale = useCallback((s: number) => setCanvasScale(s), []);
+  /** Anchor for the zoom menu; separate from the canvas context menu, which
+   * carries a field and a canvas point. */
+  const [viewMenuAt, setViewMenuAt] = useState<{ x: number; y: number } | null>(null);
+
+  // The builder owns the viewport: no document scroll, and the app rail out
+  // of the way. Both are borrowed, and both are handed back on unmount.
+  useFullViewport(viewportOk);
+  const { overrideSidebarCollapsed } = useChrome();
+  useEffect(() => {
+    if (!viewportOk) return;
+    overrideSidebarCollapsed(true);
+    return () => overrideSidebarCollapsed(false);
+  }, [viewportOk, overrideSidebarCollapsed]);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [figmaOpen, setFigmaOpen] = useState(false);
@@ -489,29 +606,13 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
           x: Math.round(x.x + dx),
           y: Math.round(x.y + dy),
         });
-        // Groups: collect the frames to translate and, for plain groups, the
-        // authored fields that travel with them.
-        const freeFieldKeys = new Set<string>();
-        const subtree = new Set<string>();
-        const visit = (grp: LayoutGroup) => {
-          if (subtree.has(grp.id)) return;
-          subtree.add(grp.id);
-          for (const ref of grp.children) {
-            const nid = parseGroupChildRef(ref);
-            if (nid) {
-              const nested = all.find((x) => x.id === nid);
-              if (nested) visit(nested);
-            } else if (isFreeGroup(grp)) {
-              freeFieldKeys.add(ref);
-            }
-          }
-        };
-        for (const id of move.groupIds) {
-          const g = all.find((x) => x.id === id);
-          if (!g) continue;
-          if (isFreeGroup(g)) visit(g);
-          else subtree.add(g.id); // a stack re-places its children from its anchor
-        }
+        // Groups: the frames to translate and, for plain groups, the authored
+        // fields that travel with them. Shared with alignment, so a group
+        // moves the same way however it was asked to move.
+        const { frameIds: subtree, fieldKeys: freeFieldKeys } = groupMoveTargets(
+          move.groupIds,
+          all,
+        );
         const patches = new Map(move.fields.map((p) => [p.id, p]));
         return {
           ...d,
@@ -537,6 +638,215 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     },
     [setDraft],
   );
+
+  /** Commit a multi-selection transform. Field geometry and any stack
+   * anchors that travelled are written in ONE setDraft, so however mixed the
+   * selection was the whole gesture is a single undo entry. Geometry rounds
+   * to whole canvas px here and only here, exactly as commitOverrides does
+   * for a single element — and fontSizePx is never in the patch, because a
+   * resize changes the box and only the box. */
+  const transformSelection = useCallback(
+    (next: {
+      fields: Array<{ id: string } & Partial<TemplateField>>;
+      groups: Array<{ id: string } & Partial<LayoutGroup>>;
+    }) => {
+      const fieldPatches = new Map(next.fields.map((p) => [p.id, p]));
+      const groupPatches = new Map(next.groups.map((p) => [p.id, p]));
+      if (!fieldPatches.size && !groupPatches.size) return;
+      setDraft((d) => ({
+        ...d,
+        fields: d.fields.map((f) => {
+          const patch = fieldPatches.get(f.id);
+          if (!patch) return f;
+          const merged: TemplateField = { ...f, ...patch };
+          merged.x = Math.round(merged.x);
+          merged.y = Math.round(merged.y);
+          merged.width = Math.round(merged.width);
+          merged.height = Math.round(merged.height);
+          if (merged.rotation !== undefined) {
+            const deg = Math.round(merged.rotation) % 360;
+            merged.rotation = deg === 0 ? undefined : deg;
+          }
+          return merged;
+        }),
+        layoutGroups: (d.layoutGroups ?? []).map((g) => {
+          const patch = groupPatches.get(g.id);
+          return patch
+            ? { ...g, ...patch, x: Math.round(patch.x ?? g.x), y: Math.round(patch.y ?? g.y) }
+            : g;
+        }),
+      }));
+    },
+    [setDraft],
+  );
+
+  // -------------------------------------------------------------------------
+  // Align and distribute
+  // -------------------------------------------------------------------------
+
+  /** What the current selection aligns AS. A loose field is one entry at its
+   * display rect; a top-level selected group is one entry at its frame, and
+   * moving it writes through to exactly what a drag would move. Stack
+   * children never appear — a stack owns their positions, so aligning one
+   * would write a coordinate the layout pass then ignores. */
+  const alignEntries = useMemo(() => {
+    const entries: Array<{ box: AlignBox; fieldIds: string[]; groupIds: string[] }> = [];
+    let droppedStackChildren = 0;
+    for (const id of selectedFieldIds(selectedIds)) {
+      const f = draft.fields.find((x) => x.id === id);
+      if (!f) continue;
+      const owner = groups.find((g) => g.children.includes(f.fieldKey));
+      if (owner && !isFreeGroup(owner)) {
+        droppedStackChildren += 1;
+        continue;
+      }
+      const r = builderLayout.fieldRects.get(f.id);
+      entries.push({
+        box: {
+          key: f.id,
+          x: r?.x ?? f.x,
+          y: r?.y ?? f.y,
+          width: r?.width ?? f.width,
+          height: r?.height ?? f.height,
+        },
+        fieldIds: [f.id],
+        groupIds: [],
+      });
+    }
+    for (const gid of selectedGroupIds(selectedIds)) {
+      const g = groups.find((x) => x.id === gid);
+      // Only top-level groups act under their own steam; a nested one is
+      // carried by its parent.
+      if (!g || parentGroupOf(g.id, groups)) continue;
+      const rect = builderLayout.groupRects.get(g.id);
+      if (!rect) continue;
+      const { frameIds, fieldKeys } = groupMoveTargets([g.id], groups);
+      entries.push({
+        box: { key: groupChildRef(g.id), ...rect },
+        fieldIds: draft.fields.filter((f) => fieldKeys.has(f.fieldKey)).map((f) => f.id),
+        groupIds: [...frameIds],
+      });
+    }
+    return { entries, droppedStackChildren };
+  }, [selectedIds, draft.fields, groups, builderLayout]);
+
+  /** Turn per-entry deltas into ONE draft write. It takes a pass per axis so
+   * "centre on the canvas" — which moves on both — is still a single undo
+   * entry. Real x/y values, through the same patch shape a move commits. */
+  const applyAlignPasses = useCallback(
+    (passes: Array<{ deltas: Map<string, number>; axis: Axis }>) => {
+      const fieldPatch = new Map<string, { id: string } & Partial<TemplateField>>();
+      const groupPatch = new Map<string, { id: string } & Partial<LayoutGroup>>();
+      for (const { deltas, axis } of passes) {
+        if (!deltas.size) continue;
+        for (const entry of alignEntries.entries) {
+          const d = deltas.get(entry.box.key);
+          if (d === undefined || d === 0) continue;
+          for (const id of entry.fieldIds) {
+            const f = draft.fields.find((x) => x.id === id);
+            if (!f) continue;
+            const prev = fieldPatch.get(id) ?? { id };
+            fieldPatch.set(id, {
+              ...prev,
+              ...(axis === "h" ? { x: (prev.x ?? f.x) + d } : { y: (prev.y ?? f.y) + d }),
+            });
+          }
+          for (const gid of entry.groupIds) {
+            const g = groups.find((x) => x.id === gid);
+            if (!g) continue;
+            const prev = groupPatch.get(gid) ?? { id: gid };
+            groupPatch.set(gid, {
+              ...prev,
+              ...(axis === "h" ? { x: (prev.x ?? g.x) + d } : { y: (prev.y ?? g.y) + d }),
+            });
+          }
+        }
+      }
+      if (!fieldPatch.size && !groupPatch.size) return;
+      transformSelection({ fields: [...fieldPatch.values()], groups: [...groupPatch.values()] });
+    },
+    [alignEntries, draft.fields, groups, transformSelection],
+  );
+
+  /** Multi-selection: line up on the selection's own bounds. */
+  const alignSelection = useCallback(
+    (axis: Axis, edge: AlignEdge) => {
+      const boxes = alignEntries.entries.map((e) => e.box);
+      const bounds = boundsOf(boxes);
+      if (!bounds || boxes.length < 2) return;
+      applyAlignPasses([{ deltas: alignDeltas(boxes, axis, edge, bounds), axis }]);
+    },
+    [alignEntries, applyAlignPasses],
+  );
+
+  /** Line the selection up on the CANVAS instead — what the inspector's own
+   * Align row does for one element, reachable from the context menu for any
+   * selection. Both axes at once is ONE commit, not two. */
+  const alignToCanvas = useCallback(
+    (edges: Array<{ axis: Axis; edge: AlignEdge }>) => {
+      const boxes = alignEntries.entries.map((e) => e.box);
+      if (!boxes.length) return;
+      const canvas = { x: 0, y: 0, width: draft.canvasWidth, height: draft.canvasHeight };
+      applyAlignPasses(
+        edges.map(({ axis, edge }) => ({ deltas: alignDeltas(boxes, axis, edge, canvas), axis })),
+      );
+    },
+    [alignEntries, applyAlignPasses, draft.canvasWidth, draft.canvasHeight],
+  );
+
+  const distributeSelection = useCallback(
+    (axis: Axis) => {
+      const boxes = alignEntries.entries.map((e) => e.box);
+      if (boxes.length < 3) return;
+      applyAlignPasses([{ deltas: distributeDeltas(boxes, axis), axis }]);
+    },
+    [alignEntries, applyAlignPasses],
+  );
+
+  /** Everything on the canvas, as the marquee would pick it: top-level
+   * entries only, so a grouped element selects its group. */
+  const selectAll = useCallback(() => {
+    const ids: string[] = [];
+    const seen = new Set<string>();
+    for (const f of draft.fields) {
+      if (lockedIds.has(f.id) || hiddenIds.has(f.id)) continue;
+      const outer = outermostGroupOf(f.fieldKey, groups);
+      const key = outer ? groupChildRef(outer.id) : f.id;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      ids.push(key);
+    }
+    setSelectedIds(ids);
+  }, [draft.fields, groups, lockedIds, hiddenIds]);
+
+  /** Why the controls are off, in the admin's terms. A greyed control that
+   * explains nothing is worse than no control at all. */
+  const alignDisabledReason = useMemo(() => {
+    const n = alignEntries.entries.length;
+    if (n >= 2) return undefined;
+    if (alignEntries.droppedStackChildren > 0) {
+      return "Elements inside an auto-layout stack are placed by the stack — move the stack, or turn auto layout off.";
+    }
+    return "Select at least two elements to align them to each other.";
+  }, [alignEntries]);
+
+  /** Aligning to the CANVAS needs only one thing to align — the ≥2 rule
+   * belongs to aligning things to each other, not to the artboard. */
+  const canvasAlignDisabledReason = useMemo(() => {
+    if (alignEntries.entries.length >= 1) return undefined;
+    if (alignEntries.droppedStackChildren > 0) {
+      return "Elements inside an auto-layout stack are placed by the stack — move the stack, or turn auto layout off.";
+    }
+    return "Select an element to align it to the canvas.";
+  }, [alignEntries]);
+
+  const distributeDisabledReason = useMemo(() => {
+    if (alignEntries.entries.length >= 3) return undefined;
+    if (alignEntries.droppedStackChildren > 0 && alignEntries.entries.length < 3) {
+      return "Elements inside an auto-layout stack are spaced by the stack's gap, not by distributing them.";
+    }
+    return "Select at least three elements to space them evenly.";
+  }, [alignEntries]);
 
   /** The inspector's Auto layout toggle. Stack → plain always applies (the
    * freeze is lossless); plain → stack simulates the conversion first and
@@ -639,8 +949,44 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
 
   const maxZ = (fields: TemplateField[]) => fields.reduce((m, f) => Math.max(m, f.zIndex ?? 0), 0);
 
-  /** Secondary path: a raw drawn box becomes a text field. */
-  const addDrawnField = (rect: { x: number; y: number; width: number; height: number }) => {
+  /** A drawn box becomes the ACTIVE TOOL's element. Text keeps the original
+   * raw-box path; every other tool routes through the same palette factory
+   * the palette itself uses and then takes the drawn rect — a tool is only
+   * ever a way to place an element that already exists. */
+  const addDrawnField = (
+    rect: { x: number; y: number; width: number; height: number },
+    drawTool: BuilderTool,
+    fromClick: boolean,
+  ) => {
+    if (!toolLocked) setTool("move");
+    if (drawTool !== "text" && drawTool !== "move") {
+      const paletteId = TOOL_PALETTE_ID[drawTool];
+      // A click places the element at its own size on the point; a drag
+      // sizes it to the box that was drawn.
+      if (fromClick) {
+        addPaletteField(paletteId, { x: rect.x, y: rect.y });
+        return;
+      }
+      const item = PALETTE_ITEMS.find((p) => p.id === paletteId);
+      if (!item) return;
+      const canvas = { width: draft.canvasWidth, height: draft.canvasHeight };
+      const base = fieldFromPalette(
+        item,
+        { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 },
+        draft.fields,
+        kit,
+        canvas,
+      );
+      const field: TemplateField = { ...base, ...rect };
+      setFields([...draft.fields, field]);
+      setSelectedIds([field.id]);
+      if (item.type !== "shape") setFocusLabelFieldId(field.id);
+      return;
+    }
+    if (fromClick) {
+      addPaletteField("text", { x: rect.x, y: rect.y });
+      return;
+    }
     const label = `Field ${draft.fields.length + 1}`;
     const field: TemplateField = {
       id: newId(),
@@ -1036,6 +1382,22 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     [draft.fields, setFields],
   );
 
+  /** The Layers panel's drag. Writes zIndex and only zIndex — the fields
+   * array (form order) and every group's children (stack order) are left
+   * exactly as they were. */
+  const setPaintOrder = useCallback(
+    (backToFront: string[]) => setFields(applyPaintOrder(draft.fields, backToFront)),
+    [draft.fields, setFields],
+  );
+
+  /** Rename from the Layers panel. `label` and nothing else: fieldKey is the
+   * merge tag the caption template references, and renaming what an admin
+   * calls something must never silently re-point a caption. */
+  const renameField = useCallback(
+    (id: string, label: string) => patchField(id, { label }),
+    [patchField],
+  );
+
   const reorderLayer = useCallback(
     (ids: string[], where: "front" | "back") => setFields(setLayerOrder(draft.fields, ids, where)),
     [draft.fields, setFields],
@@ -1112,6 +1474,9 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       } else if (mod && key === "v" && !e.altKey && clipboardHasFields()) {
         e.preventDefault();
         pasteFields();
+      } else if (mod && key === "a" && !e.altKey && draft.fields.length) {
+        e.preventDefault();
+        selectAll();
       } else if (mod && key === "d" && selectedIds.length) {
         e.preventDefault();
         duplicateSelected(selectedIds);
@@ -1131,7 +1496,23 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
         const dy = e.key === "ArrowUp" ? -step : e.key === "ArrowDown" ? step : 0;
         if (dx || dy) nudgeFields(selectedIds, dx, dy);
       } else if (e.key === "Escape") {
-        setSelectedIds([]);
+        // A live tool is the first thing Escape puts down; only once Move is
+        // active again does Escape mean "deselect".
+        if (tool !== "move") {
+          setTool("move");
+          setToolLocked(false);
+        } else {
+          setSelectedIds([]);
+        }
+      } else if (!mod && e.key === "?") {
+        e.preventDefault();
+        setShortcutsOpen((open) => !open);
+      } else if (!mod && !e.altKey && TOOL_KEYS[e.code]) {
+        // Shift LOCKS the tool for repeated draws; plain is one draw and
+        // back to Move. Every other modifier belongs to another shortcut.
+        e.preventDefault();
+        setTool(TOOL_KEYS[e.code]);
+        setToolLocked(e.shiftKey && TOOL_KEYS[e.code] !== "move");
       }
     };
     window.addEventListener("keydown", handler);
@@ -1152,6 +1533,9 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     doRedo,
     groupSelection,
     ungroupSelection,
+    selectAll,
+    draft.fields.length,
+    tool,
   ]);
 
   // -------------------------------------------------------------------------
@@ -1522,11 +1906,24 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     if (menu.fieldId === null) {
       return [
         {
+          label: "Paste",
+          shortcut: isMac ? "⌘V" : "Ctrl+V",
+          disabled: !clipboardHasFields(),
+          onSelect: () => pasteFields(),
+        },
+        {
           label: "Paste here",
-          shortcut: "⌘V",
           disabled: !clipboardHasFields(),
           onSelect: () => pasteFields(menu.canvasPoint),
         },
+        {
+          label: "Select all",
+          shortcut: isMac ? "⌘A" : "Ctrl+A",
+          disabled: draft.fields.length === 0,
+          separated: true,
+          onSelect: selectAll,
+        },
+        { label: "Zoom to fit", shortcut: "⇧1", onSelect: () => canvasViewRef.current?.fit() },
       ];
     }
     // Right-click on a group frame: the overlay passes the group ref.
@@ -1534,14 +1931,98 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       return [
         { label: "Ungroup", shortcut: isMac ? "⇧⌘G" : "Ctrl+Shift+G", onSelect: ungroupSelection },
         {
+          label: "Center on canvas",
+          separated: true,
+          onSelect: () =>
+            alignToCanvas([
+              { axis: "h", edge: "center" },
+              { axis: "v", edge: "center" },
+            ]),
+        },
+        {
           label: "Delete group",
           shortcut: "⌫",
           destructive: true,
+          separated: true,
           onSelect: () => deleteFields([menu.fieldId!]),
         },
       ];
     }
     const ids = selectedIds.includes(menu.fieldId) ? selectedIds : [menu.fieldId];
+    // Align and distribute, spelled out. The floating toolbar is the fast
+    // path; this is the discoverable one, and disabled entries carry the
+    // same reason the controls do.
+    const alignOff = Boolean(alignDisabledReason);
+    const canvasAlignOff = Boolean(canvasAlignDisabledReason);
+    const distOff = Boolean(distributeDisabledReason);
+    const centerOnCanvas = (edges: Array<{ axis: Axis; edge: AlignEdge }>) => () =>
+      alignToCanvas(edges);
+    const alignItems: MenuAction[] =
+      ids.length >= 2
+        ? [
+            {
+              label: "Align left",
+              separated: true,
+              disabled: alignOff,
+              onSelect: () => alignSelection("h", "start"),
+            },
+            {
+              label: "Align horizontal centers",
+              disabled: alignOff,
+              onSelect: () => alignSelection("h", "center"),
+            },
+            {
+              label: "Align right",
+              disabled: alignOff,
+              onSelect: () => alignSelection("h", "end"),
+            },
+            {
+              label: "Align top",
+              disabled: alignOff,
+              onSelect: () => alignSelection("v", "start"),
+            },
+            {
+              label: "Align vertical centers",
+              disabled: alignOff,
+              onSelect: () => alignSelection("v", "center"),
+            },
+            {
+              label: "Align bottom",
+              disabled: alignOff,
+              onSelect: () => alignSelection("v", "end"),
+            },
+            {
+              label: "Distribute horizontally",
+              disabled: distOff,
+              onSelect: () => distributeSelection("h"),
+            },
+            {
+              label: "Distribute vertically",
+              disabled: distOff,
+              onSelect: () => distributeSelection("v"),
+            },
+          ]
+        : [
+            {
+              label: "Center on canvas",
+              separated: true,
+              disabled: canvasAlignOff,
+              onSelect: centerOnCanvas([
+                { axis: "h", edge: "center" },
+                { axis: "v", edge: "center" },
+              ]),
+            },
+            {
+              label: "Center horizontally on canvas",
+              disabled: canvasAlignOff,
+              onSelect: centerOnCanvas([{ axis: "h", edge: "center" }]),
+            },
+            {
+              label: "Center vertically on canvas",
+              disabled: canvasAlignOff,
+              onSelect: centerOnCanvas([{ axis: "v", edge: "center" }]),
+            },
+          ];
     const groupable =
       ids.length >= 2 &&
       draft.fields
@@ -1598,9 +2079,16 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                 },
           ]
         : []),
-      { label: "Bring to front", onSelect: () => reorderLayer(ids, "front") },
+      ...alignItems,
+      { label: "Bring to front", separated: true, onSelect: () => reorderLayer(ids, "front") },
       { label: "Send to back", onSelect: () => reorderLayer(ids, "back") },
-      { label: "Delete", shortcut: "⌫", destructive: true, onSelect: () => deleteFields(ids) },
+      {
+        label: "Delete",
+        shortcut: "⌫",
+        destructive: true,
+        separated: true,
+        onSelect: () => deleteFields(ids),
+      },
     ];
   }, [
     menu,
@@ -1618,7 +2106,57 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     deleteFields,
     groupSelection,
     ungroupSelection,
+    selectAll,
+    alignSelection,
+    alignToCanvas,
+    distributeSelection,
+    alignDisabledReason,
+    canvasAlignDisabledReason,
+    distributeDisabledReason,
   ]);
+
+  /** Properties the lone selection's bound brand type style owns. The
+   * floating toolbar greys those out for the same reason the inspector
+   * does: the rules engine overrides them at render. */
+  const singleLockedProps = useMemo(
+    () =>
+      lockedProperties(
+        singleSelected?.typeStyleKey
+          ? kit?.typeStyles?.find((t) => t.key === singleSelected.typeStyleKey)
+          : undefined,
+      ),
+    [singleSelected, kit],
+  );
+
+  /** The view commands, in one place, so the menu and the shortcut hints
+   * can never disagree about what a key does. */
+  const viewMenuActions: MenuAction[] = useMemo(
+    () => [
+      {
+        label: "Zoom in",
+        shortcut: isMac ? "⌘+" : "Ctrl++",
+        onSelect: () => canvasViewRef.current?.zoomIn(),
+      },
+      {
+        label: "Zoom out",
+        shortcut: isMac ? "⌘−" : "Ctrl+−",
+        onSelect: () => canvasViewRef.current?.zoomOut(),
+      },
+      {
+        label: "Zoom to 100%",
+        shortcut: isMac ? "⌘0" : "Ctrl+0",
+        onSelect: () => canvasViewRef.current?.zoomActual(),
+      },
+      { label: "Zoom to fit", shortcut: "⇧1", onSelect: () => canvasViewRef.current?.fit() },
+      {
+        label: "Zoom to selection",
+        shortcut: "⇧2",
+        disabled: selectedIds.length === 0,
+        onSelect: () => canvasViewRef.current?.zoomToSelection(),
+      },
+    ],
+    [selectedIds.length],
+  );
 
   if (!viewportOk) {
     return (
@@ -1656,9 +2194,14 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
   }
   if (templateId && templateState.status === "loading") {
     return (
-      <p className="text-center py-24 text-sm" style={{ color: "var(--muted-foreground)" }}>
-        Loading…
-      </p>
+      <div
+        className="flex items-center justify-center"
+        style={{ height: "100dvh", background: "var(--bg-canvas)" }}
+      >
+        <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>
+          Loading this template…
+        </p>
+      </div>
     );
   }
   if (templateId && templateState.status === "error") {
@@ -1683,7 +2226,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
   }
 
   return (
-    <Page>
+    <div className="sp-builder">
       {publishState !== "idle" && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -1779,6 +2322,17 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
         />
       )}
 
+      {shortcutsOpen && <ShortcutsPanel isMac={isMac} onClose={() => setShortcutsOpen(false)} />}
+
+      {viewMenuAt && (
+        <FieldContextMenu
+          x={viewMenuAt.x}
+          y={viewMenuAt.y}
+          actions={viewMenuActions}
+          onClose={() => setViewMenuAt(null)}
+        />
+      )}
+
       <ConfirmDialog
         open={pendingStack !== null}
         title="Turn on auto layout?"
@@ -1815,273 +2369,447 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
         </div>
       )}
 
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <button
-          onClick={() => navigate({ name: "adminTemplates" })}
-          style={{
-            fontSize: "var(--type-label-size)",
-            color: "var(--text-secondary)",
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-          }}
+      {/* ── Top bar ─────────────────────────────────────────────────────── */}
+      <div className="sp-builder__bar">
+        <div
+          className="flex items-center gap-2 overflow-x-auto"
+          style={{ height: 52, padding: "0 var(--space-xs)" }}
         >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          Templates
-        </button>
-        <InlineEdit
-          className="flex-1 min-w-[200px]"
-          value={draft.name}
-          ariaLabel="Rename this template"
-          inputAriaLabel="Template name"
-          placeholder="Untitled template"
-          valueStyle={{
-            fontFamily: "var(--font-ui)",
-            fontWeight: 500,
-            fontSize: "var(--type-cardtitle-size)",
-            letterSpacing: "-0.01em",
-            color: "var(--text-primary)",
-          }}
-          onSave={(name) => setDraft((d) => ({ ...d, name }), "text:name")}
-        />
-        <span
-          className="sp-eyebrow px-2 py-1"
-          style={{ background: "var(--bg-hover)", borderRadius: "var(--radius-control)" }}
-        >
-          {draft.canvasWidth}×{draft.canvasHeight} · {draft.status}
-          {recomposing ? " · lifting elements off background…" : ""}
-        </span>
-        {sourceChosen && (
-          <>
-            <span
-              role="status"
-              style={{
-                fontSize: "var(--type-caption-size)",
-                color: saveFailed ? "var(--destructive)" : "var(--text-muted)",
-                fontWeight: saveFailed ? 500 : undefined,
-              }}
-            >
-              {saving
-                ? "Saving…"
-                : saveFailed
-                  ? "Not saved — see the message below"
-                  : dirty
-                    ? "Unsaved changes"
-                    : lastSavedAt
-                      ? savedAgo(lastSavedAt, nowTick)
-                      : null}
-            </span>
-            {saveFailed && !saving && (
-              <button onClick={() => void doSave(undefined, true)} className="sp-btn sp-btn-ghost">
-                Retry
+          <button
+            onClick={() => navigate({ name: "adminTemplates" })}
+            className="flex items-center gap-1.5 flex-shrink-0"
+            style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Templates
+          </button>
+          <span
+            aria-hidden
+            style={{ width: 1, height: 20, background: "var(--border)", flexShrink: 0 }}
+          />
+          <InlineEdit
+            className="min-w-0"
+            // The name is the only shrinkable item in a crowded bar; a floor
+            // keeps it readable, and a cap stops a long name from pushing the
+            // step control off the end.
+            style={{ flex: "0 1 auto", minWidth: 150, maxWidth: 320 }}
+            value={draft.name}
+            ariaLabel="Rename this template"
+            inputAriaLabel="Template name"
+            placeholder="Untitled template"
+            valueStyle={{
+              fontFamily: "var(--font-ui)",
+              fontWeight: 500,
+              fontSize: "var(--type-label-size)",
+              letterSpacing: "-0.01em",
+              color: "var(--text-primary)",
+            }}
+            onSave={(name) => setDraft((d) => ({ ...d, name }), "text:name")}
+          />
+          <span
+            className="sp-eyebrow px-2 py-1 flex-shrink-0 whitespace-nowrap"
+            style={{ background: "var(--bg-hover)", borderRadius: "var(--radius-control)" }}
+          >
+            {draft.canvasWidth}×{draft.canvasHeight} · {draft.status}
+            {recomposing ? " · lifting elements off background…" : ""}
+          </span>
+          {sourceChosen && (
+            <>
+              <span
+                role="status"
+                className="flex-shrink-0 whitespace-nowrap"
+                style={{
+                  fontSize: "var(--type-caption-size)",
+                  color: saveFailed ? "var(--destructive)" : "var(--text-muted)",
+                  fontWeight: saveFailed ? 500 : undefined,
+                }}
+              >
+                {saving
+                  ? "Saving…"
+                  : saveFailed
+                    ? "Not saved — see the message below"
+                    : dirty
+                      ? "Unsaved changes"
+                      : lastSavedAt
+                        ? savedAgo(lastSavedAt, nowTick)
+                        : null}
+              </span>
+              {saveFailed && !saving && (
+                <button
+                  onClick={() => void doSave(undefined, true)}
+                  className="sp-btn sp-btn-ghost flex-shrink-0"
+                  style={{ minHeight: 30, padding: "4px 10px" }}
+                >
+                  Retry
+                </button>
+              )}
+              <button
+                onClick={() => void save()}
+                disabled={saving}
+                className="sp-btn sp-btn-ghost flex-shrink-0"
+                style={{ minHeight: 30, padding: "4px 10px" }}
+              >
+                <Save className="w-3.5 h-3.5" />
+                Save draft
               </button>
-            )}
-            <button onClick={() => void save()} disabled={saving} className="sp-btn sp-btn-ghost">
-              <Save className="w-3.5 h-3.5" />
-              Save draft
-            </button>
-          </>
+            </>
+          )}
+
+          <span className="flex-1" style={{ minWidth: "var(--space-2xs)" }} />
+
+          {sourceChosen && (
+            <>
+              {mode === "edit" && (
+                <div
+                  className="flex overflow-hidden flex-shrink-0"
+                  data-radius-control
+                  style={{ border: "1px solid var(--border-strong)" }}
+                >
+                  <button
+                    onClick={doUndo}
+                    disabled={!canUndo}
+                    title={`Undo (${isMac ? "⌘" : "Ctrl+"}Z)`}
+                    aria-label="Undo"
+                    className="px-2.5 py-1.5"
+                    style={{
+                      background: "var(--bg-surface)",
+                      color: canUndo ? "var(--text-secondary)" : "var(--text-disabled)",
+                      cursor: canUndo ? "pointer" : "default",
+                    }}
+                  >
+                    <Undo2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={doRedo}
+                    disabled={!canRedo}
+                    title={`Redo (${isMac ? "⇧⌘" : "Ctrl+Shift+"}Z)`}
+                    aria-label="Redo"
+                    className="px-2.5 py-1.5"
+                    style={{
+                      background: "var(--bg-surface)",
+                      color: canRedo ? "var(--text-secondary)" : "var(--text-disabled)",
+                      cursor: canRedo ? "pointer" : "default",
+                      borderLeft: "1px solid var(--border)",
+                    }}
+                  >
+                    <Redo2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+              {mode === "edit" && (
+                <div
+                  role="radiogroup"
+                  aria-label="Canvas tool"
+                  className="flex overflow-hidden flex-shrink-0"
+                  data-radius-control
+                  style={{ border: "1px solid var(--border-strong)" }}
+                >
+                  {TOOL_ORDER.map(({ key, label, Icon }, i) => {
+                    const on = tool === key;
+                    return (
+                      <button
+                        key={key}
+                        role="radio"
+                        aria-checked={on}
+                        aria-label={`${label} (${TOOL_LETTER[key]})`}
+                        title={`${label} — ${TOOL_LETTER[key]}${
+                          key === "move" ? "" : `, ⇧${TOOL_LETTER[key]} to keep it active`
+                        }`}
+                        onClick={() => {
+                          setTool(key);
+                          setToolLocked(false);
+                        }}
+                        className="px-2 py-1.5"
+                        style={{
+                          borderLeft: i > 0 ? "1px solid var(--border)" : undefined,
+                          background: on ? "var(--fill-action)" : "var(--bg-surface)",
+                          color: on ? "var(--text-on-action)" : "var(--text-secondary)",
+                        }}
+                      >
+                        <Icon style={{ width: 14, height: 14 }} />
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {mode === "edit" && (
+                <button
+                  onClick={() => setShortcutsOpen(true)}
+                  title="Keyboard shortcuts (?)"
+                  aria-label="Keyboard shortcuts"
+                  className="flex items-center justify-center flex-shrink-0"
+                  data-radius-control
+                  style={{
+                    width: 28,
+                    height: 28,
+                    border: "1px solid var(--border-strong)",
+                    background: "var(--bg-surface)",
+                    color: "var(--text-secondary)",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 12,
+                  }}
+                >
+                  ?
+                </button>
+              )}
+              {mode === "edit" && (
+                <button
+                  onClick={(e) => {
+                    const r = e.currentTarget.getBoundingClientRect();
+                    setViewMenuAt({ x: r.left, y: r.bottom + 4 });
+                  }}
+                  title="View commands"
+                  aria-label={`Zoom ${Math.round(canvasScale * 100)} percent — view commands`}
+                  aria-haspopup="menu"
+                  className="flex items-center gap-1 px-2 py-1.5 flex-shrink-0"
+                  data-radius-control
+                  style={{
+                    border: "1px solid var(--border-strong)",
+                    background: "var(--bg-surface)",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 11,
+                    color: "var(--text-secondary)",
+                    minWidth: 62,
+                    justifyContent: "center",
+                  }}
+                >
+                  {Math.round(canvasScale * 100)}%
+                  <ChevronDown style={{ width: 11, height: 11 }} />
+                </button>
+              )}
+              <div
+                className="flex overflow-hidden flex-shrink-0"
+                data-radius-control
+                style={{ border: "1px solid var(--border-strong)" }}
+              >
+                {(["edit", "preview"] as const).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setMode(m)}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 capitalize"
+                    style={{
+                      fontSize: "var(--type-caption-size)",
+                      ...(mode === m
+                        ? { background: "var(--fill-action)", color: "var(--text-on-action)" }
+                        : { background: "var(--bg-surface)", color: "var(--text-secondary)" }),
+                    }}
+                  >
+                    {m === "edit" ? <Pencil className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                    {m}
+                  </button>
+                ))}
+              </div>
+              <WizardStepBar current={step} complete={complete} canGo={canGo} onGo={goTo} />
+            </>
+          )}
+        </div>
+
+        {error && (
+          <p
+            role="alert"
+            className="px-4 py-2"
+            style={{
+              fontSize: "var(--type-caption-size)",
+              background: "var(--danger-wash)",
+              color: "var(--destructive)",
+              borderTop: "1px solid var(--border)",
+            }}
+          >
+            {error}
+          </p>
         )}
       </div>
 
-      {error && (
-        <p
-          className="mb-4 text-sm px-4 py-3"
-          data-radius-card
-          style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}
-        >
-          {error}
-        </p>
-      )}
-
       {!sourceChosen ? (
         /* Source pick: two co-equal creation paths */
-        <div className="max-w-3xl mx-auto py-10 space-y-5">
-          <div className="text-center space-y-1 mb-2">
-            <h2
-              style={{
-                fontFamily: "var(--font-head)",
-                fontWeight: "var(--weight-head)",
-                fontSize: 22,
-                letterSpacing: "var(--track-head)",
-                color: "var(--text-primary)",
-              }}
-            >
-              Start your template
-            </h2>
-            <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
-              Build from scratch, or import a designed frame — both end at the same place: locked
-              design, editable fields.
-              {presets[0] && ` Canvas: ${presets[0].label}.`}
-            </p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-stretch">
-            {/* Path A — blank canvas */}
-            <button
-              onClick={() => {
-                setStarted(true);
-                // Straight to the canvas: Fields is Step 1.
-                goTo("fields");
-              }}
-              className="p-8 text-center transition-all flex flex-col items-center justify-center gap-3"
-              style={{
-                border: "1.5px dashed var(--border-strong)",
-                borderRadius: "var(--radius-card)",
-                background: "var(--bg-surface)",
-                minHeight: 220,
-                cursor: "pointer",
-              }}
-            >
-              <Plus className="w-6 h-6" style={{ color: "var(--state-primary)" }} />
-              <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>
-                Start blank
-              </p>
-              <p
+        <div style={{ gridColumn: "1 / -1", minHeight: 0, overflowY: "auto" }}>
+          <div className="max-w-3xl mx-auto py-10 px-6 space-y-5">
+            <div className="text-center space-y-1 mb-2">
+              <h2
                 style={{
-                  fontSize: "var(--type-caption-size)",
-                  color: "var(--text-secondary)",
-                  maxWidth: 240,
+                  fontFamily: "var(--font-head)",
+                  fontWeight: "var(--weight-head)",
+                  fontSize: 22,
+                  letterSpacing: "var(--track-head)",
+                  color: "var(--text-primary)",
                 }}
               >
-                Build the design from scratch on an empty canvas — drag on text, images, and fixed
-                elements.
+                Start your template
+              </h2>
+              <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
+                Build from scratch, or import a designed frame — both end at the same place: locked
+                design, editable fields.
+                {presets[0] && ` Canvas: ${presets[0].label}.`}
               </p>
-            </button>
-            {/* Path B — Figma link */}
-            <button
-              onClick={() => stores.designImport.isConfigured() && setFigmaOpen(true)}
-              disabled={!stores.designImport.isConfigured()}
-              className="p-8 text-center transition-all flex flex-col items-center justify-center gap-3"
-              style={{
-                border: "1.5px dashed var(--border-strong)",
-                borderRadius: "var(--radius-card)",
-                background: "var(--bg-surface)",
-                minHeight: 220,
-                cursor: stores.designImport.isConfigured() ? "pointer" : "default",
-                opacity: stores.designImport.isConfigured() ? 1 : 0.55,
-              }}
-            >
-              <Figma className="w-6 h-6" style={{ color: "var(--state-primary)" }} />
-              <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>
-                Import from Figma
-              </p>
-              <p
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-stretch">
+              {/* Path A — blank canvas */}
+              <button
+                onClick={() => {
+                  setStarted(true);
+                  // Straight to the canvas: Fields is Step 1.
+                  goTo("fields");
+                }}
+                className="p-8 text-center transition-all flex flex-col items-center justify-center gap-3"
                 style={{
-                  fontSize: "var(--type-caption-size)",
-                  color: "var(--text-secondary)",
-                  maxWidth: 240,
+                  border: "1.5px dashed var(--border-strong)",
+                  borderRadius: "var(--radius-card)",
+                  background: "var(--bg-surface)",
+                  minHeight: 220,
+                  cursor: "pointer",
                 }}
               >
-                {stores.designImport.isConfigured()
-                  ? "Paste a frame link — every element lands on the canvas as an editable field. Mark anything that shouldn't be as fixed."
-                  : "Requires the Supabase backend with the Figma connection configured (see docs/ARCHITECTURE.md)."}
-              </p>
-            </button>
-            {/* Path C — auto-build with Claude */}
-            <button
-              onClick={() => stores.designImport.isConfigured() && setAutoBuildOpen(true)}
-              disabled={!stores.designImport.isConfigured()}
-              className="p-8 text-center transition-all flex flex-col items-center justify-center gap-3"
-              style={{
-                border: "1.5px dashed var(--border-strong)",
-                borderRadius: "var(--radius-card)",
-                background: "var(--bg-surface)",
-                minHeight: 220,
-                cursor: stores.designImport.isConfigured() ? "pointer" : "default",
-                opacity: stores.designImport.isConfigured() ? 1 : 0.55,
-              }}
-            >
-              <Sparkles className="w-6 h-6" style={{ color: "var(--state-primary)" }} />
-              <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>
-                Auto-build with Claude
-              </p>
-              <p
+                <Plus className="w-6 h-6" style={{ color: "var(--state-primary)" }} />
+                <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>
+                  Start blank
+                </p>
+                <p
+                  style={{
+                    fontSize: "var(--type-caption-size)",
+                    color: "var(--text-secondary)",
+                    maxWidth: 240,
+                  }}
+                >
+                  Build the design from scratch on an empty canvas — drag on text, images, and fixed
+                  elements.
+                </p>
+              </button>
+              {/* Path B — Figma link */}
+              <button
+                onClick={() => stores.designImport.isConfigured() && setFigmaOpen(true)}
+                disabled={!stores.designImport.isConfigured()}
+                className="p-8 text-center transition-all flex flex-col items-center justify-center gap-3"
                 style={{
-                  fontSize: "var(--type-caption-size)",
-                  color: "var(--text-secondary)",
-                  maxWidth: 240,
+                  border: "1.5px dashed var(--border-strong)",
+                  borderRadius: "var(--radius-card)",
+                  background: "var(--bg-surface)",
+                  minHeight: 220,
+                  cursor: stores.designImport.isConfigured() ? "pointer" : "default",
+                  opacity: stores.designImport.isConfigured() ? 1 : 0.55,
                 }}
               >
-                {stores.designImport.isConfigured()
-                  ? "Paste a Figma link or upload an image — Claude decides what's editable, names every field, and writes the caption. You correct in the inspector."
-                  : "Requires the Supabase backend with auto-build configured (see docs/ARCHITECTURE.md)."}
-              </p>
-            </button>
+                <Figma className="w-6 h-6" style={{ color: "var(--state-primary)" }} />
+                <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>
+                  Import from Figma
+                </p>
+                <p
+                  style={{
+                    fontSize: "var(--type-caption-size)",
+                    color: "var(--text-secondary)",
+                    maxWidth: 240,
+                  }}
+                >
+                  {stores.designImport.isConfigured()
+                    ? "Paste a frame link — every element lands on the canvas as an editable field. Mark anything that shouldn't be as fixed."
+                    : "Requires the Supabase backend with the Figma connection configured (see docs/ARCHITECTURE.md)."}
+                </p>
+              </button>
+              {/* Path C — auto-build with Claude */}
+              <button
+                onClick={() => stores.designImport.isConfigured() && setAutoBuildOpen(true)}
+                disabled={!stores.designImport.isConfigured()}
+                className="p-8 text-center transition-all flex flex-col items-center justify-center gap-3"
+                style={{
+                  border: "1.5px dashed var(--border-strong)",
+                  borderRadius: "var(--radius-card)",
+                  background: "var(--bg-surface)",
+                  minHeight: 220,
+                  cursor: stores.designImport.isConfigured() ? "pointer" : "default",
+                  opacity: stores.designImport.isConfigured() ? 1 : 0.55,
+                }}
+              >
+                <Sparkles className="w-6 h-6" style={{ color: "var(--state-primary)" }} />
+                <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>
+                  Auto-build with Claude
+                </p>
+                <p
+                  style={{
+                    fontSize: "var(--type-caption-size)",
+                    color: "var(--text-secondary)",
+                    maxWidth: 240,
+                  }}
+                >
+                  {stores.designImport.isConfigured()
+                    ? "Paste a Figma link or upload an image — Claude decides what's editable, names every field, and writes the caption. You correct in the inspector."
+                    : "Requires the Supabase backend with auto-build configured (see docs/ARCHITECTURE.md)."}
+                </p>
+              </button>
+            </div>
           </div>
         </div>
       ) : (
         <>
-          <WizardStepper current={step} complete={complete} canGo={canGo} onGo={goTo} />
-
-          {step === "name" && (
-            <div className="max-w-xl mx-auto py-8">
-              <div className="sp-card p-6 space-y-4">
-                <div className="space-y-1">
-                  <h2
-                    style={{
-                      fontFamily: "var(--font-head)",
-                      fontWeight: "var(--weight-head)",
-                      fontSize: 22,
-                      letterSpacing: "var(--track-head)",
-                      color: "var(--text-primary)",
-                    }}
-                  >
-                    What should this template be called?
-                  </h2>
-                  <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
-                    Members see this name in their template gallery. This is the last step — name it
-                    and publish.
-                  </p>
-                </div>
-                <input
-                  autoFocus
-                  value={draft.name}
-                  onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }), "text:name")}
-                  onFocus={(e) => {
-                    // The default is a placeholder, not a choice — typing
-                    // should replace it, not append to it.
-                    if (e.target.value.trim() === "Untitled template") e.target.select();
-                  }}
-                  placeholder="e.g. Employee anniversary post"
-                  className="sp-input"
-                  style={{ fontSize: "var(--type-cardtitle-size)", padding: "12px 14px" }}
+          {/* ── Left rail ─────────────────────────────────────────────── */}
+          <BuilderRail
+            side="left"
+            label="Elements and fields"
+            width={leftWidth}
+            onWidth={setLeftWidth}
+            minWidth={RAIL_LEFT_MIN}
+            maxWidth={RAIL_LEFT_MAX}
+            collapsed={leftCollapsed}
+            onCollapsed={setLeftCollapsed}
+          >
+            <RailHeader title="Elements">
+              <button
+                onClick={() => setLeftCollapsed(true)}
+                className="sp-icon-btn"
+                title="Hide this rail"
+                aria-label="Hide the elements rail"
+              >
+                <PanelLeftClose style={{ width: 15, height: 15 }} />
+              </button>
+            </RailHeader>
+            {/* Two orderings, two tabs. The titles spell out the difference
+                because it is the one thing about this rail that is not
+                self-evident, and getting it wrong quietly reorders either the
+                graphic or the member form. */}
+            <RailTabs
+              tabs={[
+                {
+                  key: "layers",
+                  label: "Layers",
+                  title: "Layers — what paints on top of what",
+                },
+                {
+                  key: "form",
+                  label: "Form",
+                  title: "Form — what your team fills in, in order",
+                },
+              ]}
+              active={railTab}
+              onSelect={(key) => setRailTab(key)}
+            />
+            <div
+              className="sp-builder__rail-body space-y-3"
+              style={{ padding: "var(--space-2xs)" }}
+            >
+              {mode === "edit" && (
+                <ElementPalette
+                  onAdd={(id) => addPaletteField(id)}
+                  logos={logoAssets}
+                  activeTool={tool}
                 />
-                {nameNeeded && (
-                  <p
-                    role="alert"
-                    style={{ fontSize: "var(--type-caption-size)", color: "var(--state-primary)" }}
-                  >
-                    Name the template before publishing — members find it by this name in their
-                    gallery.
-                  </p>
-                )}
-              </div>
-              <div className="sp-card p-6 space-y-3">
-                <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
-                  "{draft.name.trim() || "Untitled template"}" · {draft.fields.length} field
-                  {draft.fields.length !== 1 ? "s" : ""} ·{" "}
-                  {draft.captionTemplate ? "caption set" : "no caption"}
-                </p>
-                <button
-                  onClick={() => void publish()}
-                  disabled={saving || publishState !== "idle" || draft.fields.length === 0}
-                  className="sp-btn sp-btn-primary w-full"
-                  style={{ padding: "11px 14px" }}
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  {draft.status === "published" ? "Publish changes" : "Publish template"}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {step === "fields" && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-              <div className="lg:col-span-3 space-y-4 w-full max-w-xl mx-auto lg:max-w-none">
-                {mode === "edit" && (
-                  <ElementPalette onAdd={(id) => addPaletteField(id)} logos={logoAssets} />
-                )}
+              )}
+              {railTab === "layers" ? (
+                <LayersPanel
+                  fields={draft.fields}
+                  groups={groups}
+                  selectedIds={selectedIds}
+                  onSelect={setSelectedIds}
+                  onPaintOrder={setPaintOrder}
+                  onRename={renameField}
+                  lockedIds={lockedIds}
+                  hiddenIds={hiddenIds}
+                  onToggleLocked={toggleLocked}
+                  onToggleHidden={toggleHidden}
+                  onContextMenu={(e, fieldId) => {
+                    e.preventDefault();
+                    if (!selectedIds.includes(fieldId)) setSelectedIds([fieldId]);
+                    setMenu({ x: e.clientX, y: e.clientY, fieldId, canvasPoint: { x: 0, y: 0 } });
+                  }}
+                />
+              ) : (
                 <FieldListPanel
                   fields={draft.fields}
                   groups={groups}
@@ -2095,460 +2823,504 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                     setMenu({ x: e.clientX, y: e.clientY, fieldId, canvasPoint: { x: 0, y: 0 } });
                   }}
                 />
-              </div>
+              )}
+            </div>
+          </BuilderRail>
 
-              {/* The canvas column stretches to the full row height (its
-                  siblings stay items-start) so the sticky card inside it has
-                  room to travel; it releases naturally at the region's end. */}
-              <div className="lg:col-span-5 w-full max-w-xl mx-auto lg:max-w-none lg:self-stretch">
-                <div className="lg:sticky space-y-3" style={{ top: "var(--space-lg)" }}>
-                  <div className="sp-card p-4">
-                    <div className="flex items-center justify-between gap-3 flex-wrap-reverse mb-3">
-                      <p
-                        style={{
-                          fontSize: "var(--type-caption-size)",
-                          color: "var(--text-muted)",
-                          flex: "1 1 260px",
-                          minWidth: 0,
-                        }}
-                      >
-                        {mode === "edit"
-                          ? "Drag elements from the palette onto the canvas. Drag to move, handles resize, top handle rotates. Right-click for copy/paste."
-                          : "Member preview — placeholder content, locked styling."}
-                      </p>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {mode === "edit" && (
-                          <div
-                            className="flex overflow-hidden"
-                            data-radius-control
-                            style={{ border: "1px solid var(--border-strong)" }}
-                          >
-                            <button
-                              onClick={doUndo}
-                              disabled={!canUndo}
-                              title={`Undo (${isMac ? "⌘" : "Ctrl+"}Z)`}
-                              aria-label="Undo"
-                              className="px-2.5 py-1.5"
-                              style={{
-                                background: "var(--bg-surface)",
-                                color: canUndo ? "var(--text-secondary)" : "var(--text-disabled)",
-                                cursor: canUndo ? "pointer" : "default",
-                              }}
-                            >
-                              <Undo2 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={doRedo}
-                              disabled={!canRedo}
-                              title={`Redo (${isMac ? "⇧⌘" : "Ctrl+Shift+"}Z)`}
-                              aria-label="Redo"
-                              className="px-2.5 py-1.5"
-                              style={{
-                                background: "var(--bg-surface)",
-                                color: canRedo ? "var(--text-secondary)" : "var(--text-disabled)",
-                                cursor: canRedo ? "pointer" : "default",
-                                borderLeft: "1px solid var(--border)",
-                              }}
-                            >
-                              <Redo2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        )}
-                        <div
-                          className="flex overflow-hidden"
-                          data-radius-control
-                          style={{ border: "1px solid var(--border-strong)" }}
-                        >
-                          {(["edit", "preview"] as const).map((m) => (
-                            <button
-                              key={m}
-                              onClick={() => setMode(m)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 capitalize"
-                              style={{
-                                fontSize: "var(--type-caption-size)",
-                                ...(mode === m
-                                  ? {
-                                      background: "var(--fill-action)",
-                                      color: "var(--text-on-action)",
-                                    }
-                                  : {
-                                      background: "var(--bg-surface)",
-                                      color: "var(--text-secondary)",
-                                    }),
-                              }}
-                            >
-                              {m === "edit" ? (
-                                <Pencil className="w-3 h-3" />
-                              ) : (
-                                <Eye className="w-3 h-3" />
-                              )}
-                              {m}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    {/* The canvas sizes from its width (aspect-ratio +
-                      ResizeObserver), so capping the height means capping the
-                      width: never wider than what fits the viewport minus the
-                      pinned chrome around it. Keeps the stuck card fully in
-                      view instead of clipping. */}
-                    <div
+          {/* ── Canvas viewport ───────────────────────────────────────── */}
+          <div className="sp-builder__canvas">
+            <div
+              className={`flex-1 min-h-0 flex justify-center ${
+                mode === "edit" ? "items-stretch" : "items-center"
+              }`}
+              style={{ padding: "var(--space-sm)" }}
+            >
+              {/* Canvas boundary: a crash on the design surface leaves the
+                  top bar, rails, and inspector standing; the draft is
+                  autosaved up to the last change. Mode switches and edits
+                  reset a crashed boundary. */}
+              <ErrorBoundary
+                level="canvas"
+                context={{ templateId: savedId ?? undefined }}
+                resetKeys={[mode, draft.fields]}
+                fallback={(retry) => (
+                  <ErrorState
+                    title="The canvas ran into a problem."
+                    detail="Everything up to your last save is safe. Try again — if it keeps happening, undo your last change."
+                    onRetry={retry}
+                  />
+                )}
+              >
+                {mode === "edit" ? (
+                  <FieldOverlayEditor
+                    canvasWidth={draft.canvasWidth}
+                    canvasHeight={draft.canvasHeight}
+                    backgroundUrl={draft.backgroundUrl}
+                    backgroundCss={schemaBackgroundCss(draft)}
+                    fields={draft.fields}
+                    groups={groups}
+                    layout={builderLayout}
+                    values={worstCaseValues}
+                    overflowGroupIds={overflowGroupIds}
+                    selectedIds={selectedIds}
+                    onSelect={setSelectedIds}
+                    onChange={setFields}
+                    onMoveSelection={moveSelection}
+                    flashGroupId={flashGroupId}
+                    onReorderChildren={(id, children) => patchGroup(id, { children })}
+                    tool={tool}
+                    lockedIds={lockedIds}
+                    hiddenIds={hiddenIds}
+                    emptyHint={
+                      draft.fields.length === 0
+                        ? stores.designImport.isConfigured()
+                          ? "Drag an element from the palette onto the canvas — or import a designed frame from Figma."
+                          : "Drag an element from the palette onto the canvas. You can also paste an image or a Figma layer straight in."
+                        : undefined
+                    }
+                    onDraw={addDrawnField}
+                    onTransformSelection={transformSelection}
+                    onDropElement={(id, at) => addPaletteField(id, at)}
+                    onDropFiles={(files, at) => void addImageFiles(files, at)}
+                    onContextMenu={(pos, fieldId, canvasPoint) =>
+                      setMenu({ x: pos.x, y: pos.y, fieldId, canvasPoint })
+                    }
+                    onRequestLabelFocus={setFocusLabelFieldId}
+                    selectionToolbar={
+                      selectedIds.length > 0 ? (
+                        <SelectionToolbar
+                          count={selectedIds.length}
+                          single={singleSelected}
+                          isGroup={Boolean(selectedGroup)}
+                          groupable={
+                            selectedFields.length >= 2 &&
+                            selectedFields.every(
+                              (f) => !groups.some((g) => g.children.includes(f.fieldKey)),
+                            )
+                          }
+                          onAlign={alignSelection}
+                          onDistribute={distributeSelection}
+                          alignDisabledReason={alignDisabledReason}
+                          distributeDisabledReason={distributeDisabledReason}
+                          onGroup={groupSelection}
+                          onUngroup={ungroupSelection}
+                          onBringForward={() => reorderLayer(selectedIds, "front")}
+                          onDelete={() => deleteFields(selectedIds)}
+                          onPatchSingle={(patch) =>
+                            singleSelected && patchField(singleSelected.id, patch)
+                          }
+                          singleLocked={singleLockedProps}
+                        />
+                      ) : null
+                    }
+                    apiRef={canvasViewRef}
+                    onScaleChange={onCanvasScale}
+                    viewKey={savedId ?? "new"}
+                  />
+                ) : (
+                  /* Preview letterboxes inside the region: full height, width
+                     from the canvas ratio, never wider than the region. */
+                  <div
+                    style={{
+                      height: "100%",
+                      maxWidth: "100%",
+                      aspectRatio: `${draft.canvasWidth} / ${draft.canvasHeight}`,
+                    }}
+                  >
+                    <SchemaRenderer
+                      schema={previewSchema}
+                      values={worstCaseValues}
+                      brandKit={kit}
+                      instrument={false}
+                    />
+                  </div>
+                )}
+              </ErrorBoundary>
+            </div>
+
+            {/* Canvas footer: the hint line, the import paths, and any layout
+                warnings — everything that describes the canvas without
+                sitting on top of it. */}
+            <div
+              className="flex-shrink-0"
+              style={{ borderTop: "1px solid var(--border)", background: "var(--bg-surface)" }}
+            >
+              {mode === "edit" && layoutWarnings.length > 0 && (
+                <div
+                  role="status"
+                  className="px-3 py-2 space-y-1"
+                  style={{ borderBottom: "1px solid var(--border)" }}
+                >
+                  {layoutWarnings.map((w, i) => (
+                    <p
+                      key={i}
                       style={{
-                        maxWidth: `min(100%, calc((100dvh - (var(--space-2xl) + var(--space-3xl))) * ${
-                          draft.canvasWidth / draft.canvasHeight
-                        }))`,
-                        marginInline: "auto",
+                        fontSize: "var(--type-caption-size)",
+                        color: "var(--text-secondary)",
                       }}
                     >
-                      {/* Canvas boundary: a crash on the design surface leaves
-                      the wizard, toolbar, and inspector standing; the draft
-                      is autosaved up to the last change. Mode switches and
-                      edits reset a crashed boundary. */}
-                      <ErrorBoundary
-                        level="canvas"
-                        context={{ templateId: savedId ?? undefined }}
-                        resetKeys={[mode, draft.fields]}
-                        fallback={(retry) => (
-                          <ErrorState
-                            title="The canvas ran into a problem."
-                            detail="Everything up to your last save is safe. Try again — if it keeps happening, undo your last change."
-                            onRetry={retry}
-                          />
-                        )}
-                      >
-                        {mode === "edit" ? (
-                          <FieldOverlayEditor
-                            canvasWidth={draft.canvasWidth}
-                            canvasHeight={draft.canvasHeight}
-                            backgroundUrl={draft.backgroundUrl}
-                            backgroundCss={schemaBackgroundCss(draft)}
-                            fields={draft.fields}
-                            groups={groups}
-                            layout={builderLayout}
-                            values={worstCaseValues}
-                            overflowGroupIds={overflowGroupIds}
-                            selectedIds={selectedIds}
-                            onSelect={setSelectedIds}
-                            onChange={setFields}
-                            onMoveSelection={moveSelection}
-                            flashGroupId={flashGroupId}
-                            onReorderChildren={(id, children) => patchGroup(id, { children })}
-                            onDraw={addDrawnField}
-                            onDropElement={(id, at) => addPaletteField(id, at)}
-                            onDropFiles={(files, at) => void addImageFiles(files, at)}
-                            onContextMenu={(pos, fieldId, canvasPoint) =>
-                              setMenu({ x: pos.x, y: pos.y, fieldId, canvasPoint })
-                            }
-                            onRequestLabelFocus={setFocusLabelFieldId}
-                          />
-                        ) : (
-                          <SchemaRenderer
-                            schema={previewSchema}
-                            values={worstCaseValues}
-                            brandKit={kit}
-                            instrument={false}
-                          />
-                        )}
-                      </ErrorBoundary>
-                    </div>
-                    {mode === "edit" && layoutWarnings.length > 0 && (
-                      <div
-                        role="status"
-                        className="mt-3 px-3 py-2 space-y-1"
-                        style={{
-                          borderRadius: "var(--radius-control)",
-                          border: "1px solid var(--border-strong)",
-                          background: "var(--bg-raised)",
-                        }}
-                      >
-                        {layoutWarnings.map((w, i) => (
-                          <p
-                            key={i}
-                            style={{
-                              fontSize: "var(--type-caption-size)",
-                              color: "var(--text-secondary)",
-                            }}
-                          >
-                            {w}
-                          </p>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  {stores.designImport.isConfigured() && mode === "edit" && (
-                    <div className="flex items-center gap-4">
-                      <button
-                        onClick={() => setFigmaOpen(true)}
-                        style={{
-                          fontSize: "var(--type-caption-size)",
-                          color: "var(--text-secondary)",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 6,
-                        }}
-                      >
-                        <Figma className="w-3.5 h-3.5" />
-                        Import more fields from Figma
-                      </button>
-                      <button
-                        onClick={() => setAutoBuildOpen(true)}
-                        style={{
-                          fontSize: "var(--type-caption-size)",
-                          color: "var(--text-secondary)",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 6,
-                        }}
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        Auto-build with Claude
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="lg:col-span-4 space-y-4 w-full max-w-xl mx-auto lg:max-w-none">
-                {selectedGroup ? (
-                  <div className="sp-card p-4">
-                    <GroupInspector
-                      group={selectedGroup}
-                      computedRect={builderLayout.groupRects.get(selectedGroup.id)}
-                      onChange={(patch, stream) => patchGroup(selectedGroup.id, patch, stream)}
-                      onModeChange={(m) => setGroupMode(selectedGroup.id, m)}
-                      onUngroup={ungroupSelection}
-                      onDelete={() => deleteFields([groupChildRef(selectedGroup.id)])}
-                    />
-                  </div>
-                ) : singleSelected ? (
-                  <div className="sp-card p-4">
-                    <FieldInspector
-                      field={singleSelected}
-                      allFields={draft.fields}
-                      canvasWidth={draft.canvasWidth}
-                      canvasHeight={draft.canvasHeight}
-                      focusLabelFieldId={focusLabelFieldId}
-                      containingGroup={groups.find((g) =>
-                        g.children.includes(singleSelected.fieldKey),
-                      )}
-                      computedRect={builderLayout.fieldRects.get(singleSelected.id)}
-                      computedFontSize={builderLayout.fontSizes.get(singleSelected.id)}
-                      worstCasePreview={worstCaseFieldId === singleSelected.id}
-                      onWorstCasePreview={(on) =>
-                        setWorstCaseFieldId(on ? singleSelected.id : null)
-                      }
-                      onChange={(patch, stream) => patchField(singleSelected.id, patch, stream)}
-                      onDelete={() => deleteFields([singleSelected.id])}
-                      onBringToFront={() => reorderLayer([singleSelected.id], "front")}
-                      onSendToBack={() => reorderLayer([singleSelected.id], "back")}
-                    />
-                  </div>
-                ) : selectedFields.length > 1 ? (
-                  <div className="sp-card p-4 space-y-3">
-                    <h3 className="sp-panel-title">{selectedFields.length} fields selected</h3>
-                    <button className="sp-btn sp-btn-primary w-full" onClick={groupSelection}>
-                      Group selection {isMac ? "⌘G" : "Ctrl+G"}
-                    </button>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        className="sp-btn sp-btn-ghost"
-                        onClick={() => copyFields(selectedIds)}
-                      >
-                        Copy
-                      </button>
-                      <button
-                        className="sp-btn sp-btn-ghost"
-                        onClick={() => duplicateSelected(selectedIds)}
-                      >
-                        Duplicate
-                      </button>
-                      <button
-                        className="sp-btn sp-btn-ghost"
-                        onClick={() => reorderLayer(selectedIds, "front")}
-                      >
-                        To front
-                      </button>
-                      <button
-                        className="sp-btn sp-btn-ghost"
-                        onClick={() => reorderLayer(selectedIds, "back")}
-                      >
-                        To back
-                      </button>
-                    </div>
-                    <button
-                      className="sp-btn sp-btn-ghost w-full"
-                      style={{ color: "var(--destructive)" }}
-                      onClick={() => deleteFields(selectedIds)}
-                    >
-                      Delete {selectedFields.length} fields
-                    </button>
-                  </div>
-                ) : (
-                  <div className="sp-card p-4 space-y-4">
-                    <h3 className="sp-panel-title">Canvas</h3>
-                    <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
-                      {draft.fields.length === 0
-                        ? "Drag your first element from the palette onto the canvas. Style the template background below."
-                        : "Select a field to edit it — or style the template background here."}
+                      {w}
                     </p>
-                    <div className="space-y-2">
-                      <label className="sp-eyebrow block">Background color</label>
-                      <ColorControl
-                        ariaLabel="Template background color"
-                        value={draft.backgroundColor ?? "#ffffff"}
-                        onChange={(hex) =>
-                          setDraft((d) => ({ ...d, backgroundColor: hex }), "bg:color")
-                        }
-                      />
-                    </div>
-                    <GradientEditor
-                      label="Gradient background"
-                      gradient={draft.backgroundGradient}
-                      defaultStops={[
-                        { position: 0, color: kit?.colors[0]?.hex ?? "#8FFF6C" },
-                        { position: 1, color: kit?.colors[1]?.hex ?? "#272727" },
-                      ]}
-                      onChange={(backgroundGradient) =>
-                        setDraft((d) => ({ ...d, backgroundGradient }), "bg:gradient")
-                      }
-                    />
-                    <div className="space-y-2">
-                      <label className="sp-eyebrow block">Background image</label>
-                      <label
-                        {...bgDrop.bind}
-                        data-active={bgDrop.active}
-                        className="sp-dropzone flex items-center justify-center gap-2 cursor-pointer py-2.5"
-                        style={{
-                          border: "1.5px dashed var(--border-strong)",
-                          borderRadius: "var(--radius-control)",
-                          fontSize: "var(--type-caption-size)",
-                          color: "var(--text-secondary)",
-                        }}
-                      >
-                        {uploading ? (
-                          <RefreshCw
-                            className="w-3.5 h-3.5 animate-spin"
-                            style={{ color: "var(--state-primary)" }}
-                          />
-                        ) : (
-                          <Upload
-                            className="sp-dropzone__icon w-3.5 h-3.5"
-                            style={{ color: "var(--state-primary)" }}
-                          />
-                        )}
-                        {uploading
-                          ? "Uploading…"
-                          : draft.backgroundUrl
-                            ? "Replace image"
-                            : "Upload image"}
-                        <input
-                          type="file"
-                          accept="image/png,image/jpeg"
-                          className="hidden"
-                          onChange={(e) => {
-                            const f = e.target.files?.[0];
-                            if (f) void onDropBackground([f]);
-                          }}
-                        />
-                      </label>
-                      {draft.backgroundUrl && (
-                        <button
-                          onClick={() => setDraft((d) => ({ ...d, backgroundUrl: "" }))}
-                          style={{ fontSize: 11, color: "var(--destructive)" }}
-                        >
-                          Remove image
-                        </button>
-                      )}
-                      <p style={{ fontSize: 10.5, color: "var(--text-muted)" }}>
-                        An image covers the gradient, which covers the color.
-                      </p>
-                    </div>
-                  </div>
+                  ))}
+                </div>
+              )}
+              <div
+                className="flex items-center gap-4 px-3 flex-wrap"
+                style={{ minHeight: 34, paddingBlock: 6 }}
+              >
+                <p
+                  style={{
+                    fontSize: "var(--type-caption-size)",
+                    color: "var(--text-muted)",
+                    flex: "1 1 260px",
+                    minWidth: 0,
+                  }}
+                >
+                  {mode === "edit"
+                    ? "Drag elements from the palette onto the canvas. Drag to move, handles resize, top handle rotates. Right-click for copy/paste."
+                    : "Member preview — placeholder content, locked styling."}
+                </p>
+                {stores.designImport.isConfigured() && mode === "edit" && (
+                  <>
+                    <button
+                      onClick={() => setFigmaOpen(true)}
+                      className="flex items-center gap-1.5 flex-shrink-0"
+                      style={{
+                        fontSize: "var(--type-caption-size)",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      <Figma className="w-3.5 h-3.5" />
+                      Import more fields from Figma
+                    </button>
+                    <button
+                      onClick={() => setAutoBuildOpen(true)}
+                      className="flex items-center gap-1.5 flex-shrink-0"
+                      style={{
+                        fontSize: "var(--type-caption-size)",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      Auto-build with Claude
+                    </button>
+                  </>
                 )}
               </div>
             </div>
-          )}
+          </div>
 
-          {step === "caption" && (
-            <div className="max-w-2xl mx-auto py-8">
-              <div className="sp-card p-6 space-y-4">
-                <div className="space-y-1">
-                  <h2
-                    style={{
-                      fontFamily: "var(--font-head)",
-                      fontWeight: "var(--weight-head)",
-                      fontSize: 22,
-                      letterSpacing: "var(--track-head)",
-                      color: "var(--text-primary)",
-                    }}
+          {/* ── Right inspector ───────────────────────────────────────── */}
+          <BuilderRail
+            side="right"
+            label="Inspector"
+            width={rightWidth}
+            onWidth={setRightWidth}
+            minWidth={RAIL_RIGHT_MIN}
+            maxWidth={RAIL_RIGHT_MAX}
+            collapsed={rightCollapsed}
+            onCollapsed={setRightCollapsed}
+          >
+            <RailHeader
+              title={
+                selectedGroup
+                  ? "Group"
+                  : singleSelected
+                    ? "Element"
+                    : selectedFields.length > 1
+                      ? `${selectedFields.length} selected`
+                      : "Canvas"
+              }
+            >
+              <button
+                onClick={() => setRightCollapsed(true)}
+                className="sp-icon-btn"
+                title="Hide the inspector"
+                aria-label="Hide the inspector"
+              >
+                <PanelRightClose style={{ width: 15, height: 15 }} />
+              </button>
+            </RailHeader>
+            <div
+              className="sp-builder__rail-body"
+              style={{ padding: "var(--space-2xs) var(--space-xs) var(--space-md)" }}
+            >
+              {selectedGroup ? (
+                <GroupInspector
+                  group={selectedGroup}
+                  computedRect={builderLayout.groupRects.get(selectedGroup.id)}
+                  onChange={(patch, stream) => patchGroup(selectedGroup.id, patch, stream)}
+                  onModeChange={(m) => setGroupMode(selectedGroup.id, m)}
+                  onUngroup={ungroupSelection}
+                  onDelete={() => deleteFields([groupChildRef(selectedGroup.id)])}
+                />
+              ) : singleSelected ? (
+                <FieldInspector
+                  field={singleSelected}
+                  allFields={draft.fields}
+                  canvasWidth={draft.canvasWidth}
+                  canvasHeight={draft.canvasHeight}
+                  focusLabelFieldId={focusLabelFieldId}
+                  containingGroup={groups.find((g) => g.children.includes(singleSelected.fieldKey))}
+                  computedRect={builderLayout.fieldRects.get(singleSelected.id)}
+                  computedFontSize={builderLayout.fontSizes.get(singleSelected.id)}
+                  worstCasePreview={worstCaseFieldId === singleSelected.id}
+                  onWorstCasePreview={(on) => setWorstCaseFieldId(on ? singleSelected.id : null)}
+                  onChange={(patch, stream) => patchField(singleSelected.id, patch, stream)}
+                  onDelete={() => deleteFields([singleSelected.id])}
+                  onBringToFront={() => reorderLayer([singleSelected.id], "front")}
+                  onSendToBack={() => reorderLayer([singleSelected.id], "back")}
+                />
+              ) : selectedFields.length > 1 ? (
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <label className="sp-eyebrow block">Align to selection</label>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <AlignControls
+                        scope="selection"
+                        onAlign={alignSelection}
+                        onDistribute={distributeSelection}
+                        alignDisabledReason={alignDisabledReason}
+                        distributeDisabledReason={distributeDisabledReason}
+                      />
+                    </div>
+                  </div>
+                  <button className="sp-btn sp-btn-primary w-full" onClick={groupSelection}>
+                    Group selection {isMac ? "⌘G" : "Ctrl+G"}
+                  </button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button className="sp-btn sp-btn-ghost" onClick={() => copyFields(selectedIds)}>
+                      Copy
+                    </button>
+                    <button
+                      className="sp-btn sp-btn-ghost"
+                      onClick={() => duplicateSelected(selectedIds)}
+                    >
+                      Duplicate
+                    </button>
+                    <button
+                      className="sp-btn sp-btn-ghost"
+                      onClick={() => reorderLayer(selectedIds, "front")}
+                    >
+                      To front
+                    </button>
+                    <button
+                      className="sp-btn sp-btn-ghost"
+                      onClick={() => reorderLayer(selectedIds, "back")}
+                    >
+                      To back
+                    </button>
+                  </div>
+                  <button
+                    className="sp-btn sp-btn-ghost w-full"
+                    style={{ color: "var(--destructive)" }}
+                    onClick={() => deleteFields(selectedIds)}
                   >
-                    Suggested caption
-                    <span
+                    Delete {selectedFields.length} fields
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
+                    {draft.fields.length === 0
+                      ? "Drag your first element from the palette onto the canvas. Style the template background below."
+                      : "Select a field to edit it — or style the template background here."}
+                  </p>
+                  <div className="space-y-2">
+                    <label className="sp-eyebrow block">Background color</label>
+                    <ColorControl
+                      ariaLabel="Template background color"
+                      value={draft.backgroundColor ?? "#ffffff"}
+                      onChange={(hex) =>
+                        setDraft((d) => ({ ...d, backgroundColor: hex }), "bg:color")
+                      }
+                    />
+                  </div>
+                  <GradientEditor
+                    label="Gradient background"
+                    gradient={draft.backgroundGradient}
+                    defaultStops={[
+                      { position: 0, color: kit?.colors[0]?.hex ?? "#8FFF6C" },
+                      { position: 1, color: kit?.colors[1]?.hex ?? "#272727" },
+                    ]}
+                    onChange={(backgroundGradient) =>
+                      setDraft((d) => ({ ...d, backgroundGradient }), "bg:gradient")
+                    }
+                  />
+                  <div className="space-y-2">
+                    <label className="sp-eyebrow block">Background image</label>
+                    <label
+                      {...bgDrop.bind}
+                      data-active={bgDrop.active}
+                      className="sp-dropzone flex items-center justify-center gap-2 cursor-pointer py-2.5"
                       style={{
+                        border: "1.5px dashed var(--border-strong)",
+                        borderRadius: "var(--radius-control)",
                         fontSize: "var(--type-caption-size)",
-                        color: "var(--text-muted)",
-                        fontWeight: 400,
+                        color: "var(--text-secondary)",
                       }}
                     >
-                      {" "}
-                      · optional
-                    </span>
-                  </h2>
-                  <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
-                    Members get this caption next to the finished graphic, with the tags filled from
-                    what they typed. Click a tag chip to insert it.
-                  </p>
+                      {uploading ? (
+                        <RefreshCw
+                          className="w-3.5 h-3.5 animate-spin"
+                          style={{ color: "var(--state-primary)" }}
+                        />
+                      ) : (
+                        <Upload
+                          className="sp-dropzone__icon w-3.5 h-3.5"
+                          style={{ color: "var(--state-primary)" }}
+                        />
+                      )}
+                      {uploading
+                        ? "Uploading…"
+                        : draft.backgroundUrl
+                          ? "Replace image"
+                          : "Upload image"}
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) void onDropBackground([f]);
+                        }}
+                      />
+                    </label>
+                    {draft.backgroundUrl && (
+                      <button
+                        onClick={() => setDraft((d) => ({ ...d, backgroundUrl: "" }))}
+                        style={{ fontSize: 11, color: "var(--destructive)" }}
+                      >
+                        Remove image
+                      </button>
+                    )}
+                    <p style={{ fontSize: 10.5, color: "var(--text-muted)" }}>
+                      An image covers the gradient, which covers the color.
+                    </p>
+                  </div>
                 </div>
-                <CaptionEditor
-                  value={draft.captionTemplate}
-                  fields={draft.fields}
-                  onChange={(captionTemplate) =>
-                    setDraft((d) => ({ ...d, captionTemplate }), "text:caption")
-                  }
-                />
-              </div>
+              )}
             </div>
-          )}
+          </BuilderRail>
 
-          {step === "details" && (
-            <div className="max-w-2xl mx-auto py-8 space-y-4">
-              <div className="sp-card p-6 space-y-4">
-                <div className="space-y-1">
-                  <h2
-                    style={{
-                      fontFamily: "var(--font-head)",
-                      fontWeight: "var(--weight-head)",
-                      fontSize: 22,
-                      letterSpacing: "var(--track-head)",
-                      color: "var(--text-primary)",
-                    }}
+          {/* ── Step panels: Caption, Tags & details, Name ─────────────── */}
+          {step !== "fields" && (
+            <BuilderSlideOver
+              title={WIZARD_STEPS.find((s) => s.key === step)?.title ?? ""}
+              width={stepPanelWidth}
+              onClose={() => goTo("fields")}
+              footer={
+                <>
+                  {prevStep ? (
+                    <button
+                      onClick={() => goTo(prevStep)}
+                      className="sp-btn sp-btn-ghost"
+                      style={{ minHeight: 32 }}
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      Back
+                    </button>
+                  ) : (
+                    <span />
+                  )}
+                  {nextStep ? (
+                    <button
+                      onClick={() => goTo(nextStep)}
+                      disabled={!canGo(nextStep)}
+                      className="sp-btn sp-btn-primary"
+                      style={{ minHeight: 32 }}
+                    >
+                      Next
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  ) : (
+                    <span />
+                  )}
+                </>
+              }
+            >
+              {step === "name" && (
+                <div className="space-y-4">
+                  <p
+                    style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}
                   >
-                    Tags & details
-                    <span
+                    Members see this name in their template gallery. This is the last step — name it
+                    and publish.
+                  </p>
+                  <input
+                    autoFocus
+                    value={draft.name}
+                    onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }), "text:name")}
+                    onFocus={(e) => {
+                      // The default is a placeholder, not a choice — typing
+                      // should replace it, not append to it.
+                      if (e.target.value.trim() === "Untitled template") e.target.select();
+                    }}
+                    placeholder="e.g. Employee anniversary post"
+                    className="sp-input"
+                  />
+                  {nameNeeded && (
+                    <p
+                      role="alert"
                       style={{
                         fontSize: "var(--type-caption-size)",
-                        color: "var(--text-muted)",
-                        fontWeight: 400,
+                        color: "var(--state-primary)",
                       }}
                     >
-                      {" "}
-                      · optional
-                    </span>
-                  </h2>
-                  <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
-                    Shown on the template's card in the members' gallery.
+                      Name the template before publishing — members find it by this name in their
+                      gallery.
+                    </p>
+                  )}
+                  <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
+                    "{draft.name.trim() || "Untitled template"}" · {draft.fields.length} field
+                    {draft.fields.length !== 1 ? "s" : ""} ·{" "}
+                    {draft.captionTemplate ? "caption set" : "no caption"}
                   </p>
+                  <button
+                    onClick={() => void publish()}
+                    disabled={saving || publishState !== "idle" || draft.fields.length === 0}
+                    className="sp-btn sp-btn-primary w-full"
+                    style={{ padding: "11px 14px" }}
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    {draft.status === "published" ? "Publish changes" : "Publish template"}
+                  </button>
                 </div>
-                <input
-                  value={draft.description}
-                  onChange={(e) =>
-                    setDraft((d) => ({ ...d, description: e.target.value }), "text:description")
-                  }
-                  placeholder="Short description shown on the portal card"
-                  className="sp-input"
-                />
-                <div className="grid grid-cols-2 gap-3">
+              )}
+
+              {step === "caption" && (
+                <div className="space-y-4">
+                  <p
+                    style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}
+                  >
+                    Members get this caption next to the finished graphic, with the tags filled from
+                    what they typed. Click a tag chip to insert it. Optional.
+                  </p>
+                  <CaptionEditor
+                    value={draft.captionTemplate}
+                    fields={draft.fields}
+                    onChange={(captionTemplate) =>
+                      setDraft((d) => ({ ...d, captionTemplate }), "text:caption")
+                    }
+                  />
+                </div>
+              )}
+
+              {step === "details" && (
+                <div className="space-y-3">
+                  <p
+                    style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}
+                  >
+                    Shown on the template's card in the members' gallery. Optional.
+                  </p>
+                  <input
+                    value={draft.description}
+                    onChange={(e) =>
+                      setDraft((d) => ({ ...d, description: e.target.value }), "text:description")
+                    }
+                    placeholder="Short description shown on the portal card"
+                    className="sp-input"
+                  />
                   <input
                     value={draft.category}
                     onChange={(e) =>
@@ -2574,66 +3346,44 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                     placeholder="Tags (comma-separated)"
                     className="sp-input"
                   />
-                </div>
-                <label
-                  {...bgDrop.bind}
-                  data-active={bgDrop.active}
-                  className="sp-dropzone flex items-center gap-2 cursor-pointer "
-                  data-radius-control
-                  style={{
-                    fontSize: "var(--type-caption-size)",
-                    color: "var(--text-secondary)",
-                    padding: "4px 6px",
-                    margin: "-4px -6px",
-                  }}
-                >
-                  {uploading ? (
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Upload className="sp-dropzone__icon w-3.5 h-3.5" />
-                  )}
-                  {uploading
-                    ? "Uploading…"
-                    : draft.backgroundUrl
-                      ? "Replace background PNG"
-                      : "Add a background PNG (optional)"}
-                  <input
-                    type="file"
-                    accept="image/png,image/jpeg"
-                    className="hidden"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) void onDropBackground([f]);
+                  <label
+                    {...bgDrop.bind}
+                    data-active={bgDrop.active}
+                    className="sp-dropzone flex items-center gap-2 cursor-pointer"
+                    data-radius-control
+                    style={{
+                      fontSize: "var(--type-caption-size)",
+                      color: "var(--text-secondary)",
+                      padding: "4px 6px",
+                      margin: "-4px -6px",
                     }}
-                  />
-                </label>
-              </div>
-            </div>
+                  >
+                    {uploading ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Upload className="sp-dropzone__icon w-3.5 h-3.5" />
+                    )}
+                    {uploading
+                      ? "Uploading…"
+                      : draft.backgroundUrl
+                        ? "Replace background PNG"
+                        : "Add a background PNG (optional)"}
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) void onDropBackground([f]);
+                      }}
+                    />
+                  </label>
+                </div>
+              )}
+            </BuilderSlideOver>
           )}
-
-          {/* Back / Next */}
-          <div className="flex items-center justify-between mt-6">
-            {prevStep ? (
-              <button onClick={() => goTo(prevStep)} className="sp-btn sp-btn-ghost">
-                <ArrowLeft className="w-3.5 h-3.5" />
-                Back
-              </button>
-            ) : (
-              <span />
-            )}
-            {nextStep && (
-              <button
-                onClick={() => goTo(nextStep)}
-                disabled={!canGo(nextStep)}
-                className="sp-btn sp-btn-primary"
-              >
-                Next
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
         </>
       )}
-    </Page>
+    </div>
   );
 }

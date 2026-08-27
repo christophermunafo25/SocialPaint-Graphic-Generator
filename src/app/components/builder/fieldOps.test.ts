@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  PALETTE_ITEMS,
+  applyPaintOrder,
+  paintOrder,
+  setLayerOrder,
+  TOOL_KEYS,
+  TOOL_LETTER,
+  TOOL_PALETTE_ID,
   applyClipboardStyle,
   cascadePoint,
   clearStyleClipboard,
@@ -323,5 +330,93 @@ describe("cascadePoint with a box size (clamping)", () => {
       x: 760,
       y: 760,
     });
+  });
+});
+
+describe("canvas tools", () => {
+  it("every draw tool is backed by a real palette element", () => {
+    for (const [tool, paletteId] of Object.entries(TOOL_PALETTE_ID)) {
+      const item = PALETTE_ITEMS.find((p) => p.id === paletteId);
+      expect(item, `${tool} -> ${paletteId}`).toBeDefined();
+    }
+  });
+
+  it("every tool key reaches a tool that has a letter and a draw target", () => {
+    for (const tool of Object.values(TOOL_KEYS)) {
+      expect(TOOL_LETTER[tool]).toBeTruthy();
+      if (tool !== "move") expect(TOOL_PALETTE_ID[tool]).toBeTruthy();
+    }
+  });
+
+  it("the tool letters match the keys that select them", () => {
+    for (const [code, tool] of Object.entries(TOOL_KEYS)) {
+      expect(code).toBe(`Key${TOOL_LETTER[tool]}`);
+    }
+  });
+
+  it("move draws nothing", () => {
+    expect(Object.values(TOOL_KEYS)).toContain("move");
+    expect((TOOL_PALETTE_ID as Record<string, string>).move).toBeUndefined();
+  });
+});
+
+describe("paint order", () => {
+  const mk = (id: string, zIndex: number): TemplateField => ({
+    id,
+    label: id,
+    fieldKey: id,
+    type: "text",
+    x: 0,
+    y: 0,
+    width: 10,
+    height: 10,
+    zIndex,
+  });
+  const ids = (fs: TemplateField[]) => paintOrder(fs).map((f) => f.id);
+
+  it("renumbers to 0..n-1 from an explicit back-to-front list", () => {
+    const fs = [mk("a", 5), mk("b", 9), mk("c", 2)];
+    const out = applyPaintOrder(fs, ["c", "a", "b"]);
+    expect(out.map((f) => [f.id, f.zIndex])).toEqual([
+      ["a", 1],
+      ["b", 2],
+      ["c", 0],
+    ]);
+    expect(ids(out)).toEqual(["c", "a", "b"]);
+  });
+
+  it("never writes a negative z", () => {
+    const out = applyPaintOrder([mk("a", 0), mk("b", 1)], ["b", "a"]);
+    expect(out.every((f) => (f.zIndex ?? 0) >= 0)).toBe(true);
+  });
+
+  it("keeps unnamed fields behind the ones the list names, in their old order", () => {
+    const fs = [mk("a", 0), mk("b", 1), mk("c", 2)];
+    const out = applyPaintOrder(fs, ["c"]);
+    expect(ids(out)).toEqual(["a", "b", "c"]);
+  });
+
+  it("ignores ids that are not fields", () => {
+    const fs = [mk("a", 0), mk("b", 1)];
+    expect(ids(applyPaintOrder(fs, ["ghost", "b", "a"]))).toEqual(["b", "a"]);
+  });
+
+  it("leaves the array (form) order alone", () => {
+    const fs = [mk("a", 0), mk("b", 1), mk("c", 2)];
+    expect(applyPaintOrder(fs, ["c", "b", "a"]).map((f) => f.id)).toEqual(["a", "b", "c"]);
+  });
+
+  it("returns the same object for a field whose z did not change", () => {
+    const fs = [mk("a", 0), mk("b", 1)];
+    const out = applyPaintOrder(fs, ["a", "b"]);
+    expect(out[0]).toBe(fs[0]);
+    expect(out[1]).toBe(fs[1]);
+  });
+
+  it("front and back still behave, now that they route through it", () => {
+    const fs = [mk("a", 0), mk("b", 1), mk("c", 2)];
+    expect(ids(setLayerOrder(fs, ["a"], "front"))).toEqual(["b", "c", "a"]);
+    expect(ids(setLayerOrder(fs, ["c"], "back"))).toEqual(["c", "a", "b"]);
+    expect(ids(setLayerOrder(fs, ["a", "b"], "front"))).toEqual(["c", "a", "b"]);
   });
 });

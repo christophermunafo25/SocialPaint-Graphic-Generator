@@ -21,6 +21,9 @@ interface InlineEditProps {
    *  way — a cramped input is the usual failure of inline edit in a toolbar. */
   onEditingChange?(editing: boolean): void;
   className?: string;
+  /** Layout for the root — the component owns no width of its own, so a
+   * crowded toolbar can give it a floor and a cap. */
+  style?: React.CSSProperties;
   /** Type treatment for the value and the input — they share it so the swap
    *  doesn't reflow. Use for display-face titles. */
   valueStyle?: React.CSSProperties;
@@ -45,6 +48,7 @@ export function InlineEdit({
   disabled = false,
   onEditingChange,
   className,
+  style,
   valueStyle,
   iconSize = 14,
 }: InlineEditProps) {
@@ -143,6 +147,7 @@ export function InlineEdit({
     <div
       ref={rootRef}
       className={`sp-inline-edit${className ? ` ${className}` : ""}`}
+      style={style}
       data-flash={flashing ? "true" : undefined}
       onAnimationEnd={() => {
         if (!reducedMotion) setFlashing(false);

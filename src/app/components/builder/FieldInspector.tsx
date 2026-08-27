@@ -1,17 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlignCenter,
-  AlignCenterHorizontal,
   Blend,
   CaseUpper,
   SquareRoundCorner,
-  AlignCenterVertical,
-  AlignEndHorizontal,
-  AlignEndVertical,
   AlignLeft,
   AlignRight,
-  AlignStartHorizontal,
-  AlignStartVertical,
   AlignVerticalJustifyCenter,
   AlignVerticalJustifyEnd,
   AlignVerticalJustifyStart,
@@ -62,6 +56,7 @@ import {
   SegmentedIconGroup,
   compactControlStyle,
 } from "./InspectorControls";
+import { AlignControls } from "./AlignControls";
 import { FillPicker, getFill } from "./FillPicker";
 import { parseHex, toHex } from "@/lib/color";
 
@@ -566,31 +561,11 @@ export function FieldInspector(props: FieldInspectorProps) {
         ) : (
           <>
             <PropertyRow label="Align">
-              <SegmentedIconGroup
-                ariaLabel="Align horizontally on the canvas"
-                options={[
-                  { key: "start", Icon: AlignStartVertical, title: "Align left edge of canvas" },
-                  {
-                    key: "center",
-                    Icon: AlignCenterVertical,
-                    title: "Center horizontally on canvas",
-                  },
-                  { key: "end", Icon: AlignEndVertical, title: "Align right edge of canvas" },
-                ]}
-                onSelect={alignBoxH}
-              />
-              <SegmentedIconGroup
-                ariaLabel="Align vertically on the canvas"
-                options={[
-                  { key: "start", Icon: AlignStartHorizontal, title: "Align top edge of canvas" },
-                  {
-                    key: "center",
-                    Icon: AlignCenterHorizontal,
-                    title: "Center vertically on canvas",
-                  },
-                  { key: "end", Icon: AlignEndHorizontal, title: "Align bottom edge of canvas" },
-                ]}
-                onSelect={alignBoxV}
+              {/* The same control the multi-selection panel and the floating
+                  toolbar use — only the reference frame differs. */}
+              <AlignControls
+                scope="canvas"
+                onAlign={(axis, edge) => (axis === "h" ? alignBoxH(edge) : alignBoxV(edge))}
               />
             </PropertyRow>
             <PropertyRow label="Position">

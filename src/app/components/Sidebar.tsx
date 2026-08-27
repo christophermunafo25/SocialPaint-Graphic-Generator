@@ -16,12 +16,11 @@ import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useColorScheme } from "@/lib/colorScheme";
 import { useRouter, type Route } from "../router";
+import { useChrome } from "./layout/ChromeContext";
 import logoOnLight from "@/assets/socialpaint/logo-on-light.svg";
 import logoOnDark from "@/assets/socialpaint/logo-on-dark.svg";
 import mark from "@/assets/socialpaint/mark.svg";
 import { GooeyNavPill } from "./GooeyNavPill";
-
-const LS_COLLAPSED = "sp-sidebar-collapsed";
 
 /** The SocialPaint mark — the Voltage monogram from the brand refresh
  * (2026-08-17). One file for both themes: the mark reads in Voltage on
@@ -273,13 +272,9 @@ export function Sidebar() {
     countsState.status === "ready" ? (countsState.data[label] ?? null) : null;
   const [isNarrow, setIsNarrow] = useState(() => window.matchMedia("(max-width: 1023px)").matches);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [collapsedPref, setCollapsedPref] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem(LS_COLLAPSED) === "1";
-    } catch {
-      return false;
-    }
-  });
+  // Collapse state lives in ChromeContext: the Template Builder borrows the
+  // rail for as long as it owns the viewport, and hands it back untouched.
+  const { sidebarCollapsed, setSidebarCollapsed } = useChrome();
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 1023px)");
@@ -290,14 +285,6 @@ export function Sidebar() {
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
   }, []);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(LS_COLLAPSED, collapsedPref ? "1" : "0");
-    } catch {
-      // persistence is best-effort
-    }
-  }, [collapsedPref]);
 
   // Escape closes the mobile menu.
   useEffect(() => {
@@ -411,7 +398,7 @@ export function Sidebar() {
   }
 
   // ── Desktop: persistent left sidebar ────────────────────────────────────
-  const collapsed = collapsedPref;
+  const collapsed = sidebarCollapsed;
   return (
     <div
       className="flex-shrink-0"
@@ -450,7 +437,7 @@ export function Sidebar() {
           <div className="flex items-center gap-2">
             {!collapsed && <QuickThemeToggle />}
             <button
-              onClick={() => setCollapsedPref((c) => !c)}
+              onClick={() => setSidebarCollapsed(!collapsed)}
               title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
               className="sp-icon-btn"

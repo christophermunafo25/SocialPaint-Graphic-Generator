@@ -5,6 +5,10 @@ export interface MenuAction {
   shortcut?: string;
   disabled?: boolean;
   destructive?: boolean;
+  /** Hairline above this item. The menus now carry align and distribute as
+   * well as the clipboard, and an undivided list of fifteen reads as one
+   * undifferentiated wall. */
+  separated?: boolean;
   onSelect(): void;
 }
 
@@ -33,18 +37,23 @@ export function FieldContextMenu({ x, y, actions, onClose }: FieldContextMenuPro
     };
   }, [onClose]);
 
-  // Keep the menu on-screen near the pointer.
+  // Keep the menu on-screen near the pointer. A long menu scrolls rather
+  // than running off the bottom, so the estimate is capped at what the
+  // panel will actually be allowed to grow to.
+  const maxHeight = Math.round(window.innerHeight * 0.7);
+  const estimated = Math.min(actions.length * 30 + 12, maxHeight);
   const left = Math.min(x, window.innerWidth - 200);
-  const top = Math.min(y, window.innerHeight - actions.length * 34 - 16);
+  const top = Math.max(8, Math.min(y, window.innerHeight - estimated - 8));
 
   return (
     <div
       ref={ref}
-      className="fixed z-50 py-1.5"
+      className="fixed z-50 py-1.5 overflow-y-auto"
       style={{
         left,
         top,
         minWidth: 180,
+        maxHeight,
         background: "var(--bg-surface)",
         border: "1px solid var(--border-strong)",
         borderRadius: "var(--radius-card)",
@@ -65,6 +74,9 @@ export function FieldContextMenu({ x, y, actions, onClose }: FieldContextMenuPro
             color: a.destructive ? "var(--destructive)" : "var(--text-primary)",
             opacity: a.disabled ? 0.4 : 1,
             cursor: a.disabled ? "default" : "pointer",
+            borderTop: a.separated ? "1px solid var(--border)" : undefined,
+            marginTop: a.separated ? 4 : undefined,
+            paddingTop: a.separated ? 6 : undefined,
           }}
           onMouseEnter={(e) => {
             if (!a.disabled) (e.currentTarget as HTMLElement).style.background = "var(--bg-raised)";

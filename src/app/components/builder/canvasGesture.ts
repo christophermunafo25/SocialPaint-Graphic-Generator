@@ -32,6 +32,12 @@ export interface DragCallbacks {
   onCancel?(): void;
   /** Released before the threshold — a click, not a drag. */
   onTap?(ev: PointerEvent): void;
+  /** CSS cursor to force on the whole document for the gesture's lifetime.
+   * Pointer capture routes the EVENTS to one element but leaves hover
+   * styling alone, so without this the cursor flickers every time the
+   * pointer crosses another element mid-drag. Cleared on teardown, cancel
+   * included. */
+  cursor?: string;
 }
 
 interface ActiveGesture {
@@ -73,6 +79,13 @@ export function startDrag(
   } catch {
     // Synthetic/secondary pointers may not be capturable; window-level mouse
     // tracking still covers the common cases.
+  }
+
+  // Set from the press, not from the threshold: the cursor must not change
+  // between "pressed on a resize handle" and "resizing".
+  if (cb.cursor) {
+    document.body.style.setProperty("cursor", cb.cursor, "important");
+    document.body.setAttribute("data-sp-gesture", "");
   }
 
   const flush = () => {
@@ -149,6 +162,10 @@ export function startDrag(
   window.addEventListener("keydown", onKeyDown, true);
 
   const teardown = () => {
+    if (cb.cursor) {
+      document.body.style.removeProperty("cursor");
+      document.body.removeAttribute("data-sp-gesture");
+    }
     captureEl.removeEventListener("pointermove", onPointerMove);
     captureEl.removeEventListener("pointerup", onPointerUp);
     captureEl.removeEventListener("pointercancel", onPointerCancel);

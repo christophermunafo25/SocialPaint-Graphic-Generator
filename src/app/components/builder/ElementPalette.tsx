@@ -11,7 +11,14 @@ import {
   Type as TypeIcon,
 } from "lucide-react";
 import type { BrandAsset } from "@/lib/types";
-import { LOGO_PALETTE_PREFIX, PALETTE_ITEMS, PALETTE_MIME, type PaletteItem } from "./fieldOps";
+import {
+  LOGO_PALETTE_PREFIX,
+  PALETTE_ITEMS,
+  PALETTE_MIME,
+  TOOL_PALETTE_ID,
+  type BuilderTool,
+  type PaletteItem,
+} from "./fieldOps";
 import { SignedImg } from "../SignedImg";
 
 const ICONS: Record<string, React.ComponentType<{ style?: React.CSSProperties }>> = {
@@ -31,27 +38,45 @@ interface ElementPaletteProps {
   onAdd(paletteId: string): void;
   /** The company's uploaded logo assets — each becomes a draggable tile. */
   logos?: BrandAsset[];
+  /** The canvas tool that is armed right now. The palette does not SET the
+   * tool — clicking a tile still adds the element at the canvas centre, as
+   * it always has — but it marks the tile the active tool will draw, so the
+   * top bar and this rail never disagree about state. */
+  activeTool?: BuilderTool;
 }
 
-function Tile({ item, onAdd }: { item: PaletteItem; onAdd(id: string): void }) {
+function Tile({
+  item,
+  onAdd,
+  armed,
+}: {
+  item: PaletteItem;
+  onAdd(id: string): void;
+  armed?: boolean;
+}) {
   const Icon = ICONS[item.id] ?? Square;
   return (
     <button
       draggable
+      data-armed={armed ? "true" : undefined}
       onDragStart={(e) => {
         e.dataTransfer.setData(PALETTE_MIME, item.id);
         e.dataTransfer.effectAllowed = "copy";
       }}
       onClick={() => onAdd(item.id)}
-      title="Drag onto the canvas, or click to add at the center"
+      title={
+        armed
+          ? `${item.label} — the active tool. Drag on the canvas to draw one, or click here to add at the center.`
+          : "Drag onto the canvas, or click to add at the center"
+      }
       className="sp-palette-tile flex flex-col items-center gap-1.5 py-3 px-2 transition-colors"
       style={{
-        border: "1px solid var(--border-strong)",
+        border: `1px solid ${armed ? "var(--editor-accent)" : "var(--border-strong)"}`,
         borderRadius: "var(--radius-control)",
-        background: "var(--bg-surface)",
+        background: armed ? "var(--bg-hover)" : "var(--bg-surface)",
         cursor: "grab",
         fontSize: 11,
-        color: "var(--text-secondary)",
+        color: armed ? "var(--text-primary)" : "var(--text-secondary)",
       }}
     >
       <Icon style={{ width: 16, height: 16 }} />
@@ -101,9 +126,10 @@ function LogoTile({ asset, onAdd }: { asset: BrandAsset; onAdd(id: string): void
  * tile onto the canvas to drop it where it lands; clicking adds at the
  * center. A dropped logo lands as a fixed image sized to its artwork and
  * always fits inside its box ("contain") — it never crops. */
-export function ElementPalette({ onAdd, logos = [] }: ElementPaletteProps) {
+export function ElementPalette({ onAdd, logos = [], activeTool = "move" }: ElementPaletteProps) {
   const fields = PALETTE_ITEMS.filter((i) => i.group === "fields");
   const shapes = PALETTE_ITEMS.filter((i) => i.group === "shapes");
+  const armedId = activeTool === "move" ? null : TOOL_PALETTE_ID[activeTool];
   return (
     <div className="sp-card p-3 space-y-3">
       <div className="space-y-2">
@@ -112,7 +138,7 @@ export function ElementPalette({ onAdd, logos = [] }: ElementPaletteProps) {
             the full content width — four-across keeps the tiles hand-sized. */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-2">
           {fields.map((item) => (
-            <Tile key={item.id} item={item} onAdd={onAdd} />
+            <Tile key={item.id} item={item} onAdd={onAdd} armed={item.id === armedId} />
           ))}
         </div>
       </div>
@@ -120,7 +146,7 @@ export function ElementPalette({ onAdd, logos = [] }: ElementPaletteProps) {
         <h3 className="sp-eyebrow">Shapes</h3>
         <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-3 gap-2">
           {shapes.map((item) => (
-            <Tile key={item.id} item={item} onAdd={onAdd} />
+            <Tile key={item.id} item={item} onAdd={onAdd} armed={item.id === armedId} />
           ))}
         </div>
         <p style={{ fontSize: 10.5, color: "var(--text-muted)" }}>
