@@ -9,7 +9,7 @@ import {
   YAxis,
 } from "recharts";
 import { Download, Eye, Layers, Percent } from "lucide-react";
-import type { DailyActivityPoint, UsageSummary } from "@/lib/types";
+import type { DailyActivityPoint, PublicLinkUsageRow, UsageSummary } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -33,6 +33,14 @@ const relativeDay = (iso: string | null): string => {
   if (days < 30) return `${days}d ago`;
   return new Date(iso).toLocaleDateString();
 };
+
+/** Numbers in a table are data: mono, caption size, secondary unless the
+ * figure is the one being compared. */
+const numCell = {
+  fontFamily: "var(--font-mono)",
+  fontSize: "var(--type-caption-size)",
+  color: "var(--text-secondary)",
+} as const;
 
 const exportRate = (downloads: number, opens: number): string =>
   opens === 0 ? "—" : `${Math.round((downloads / opens) * 100)}%`;
@@ -78,8 +86,12 @@ function Kpi({ label, value, Icon, chip, chipFg = "var(--text-on-accent)", sub }
           {label}
         </span>
         {sub && (
+          // Wraps rather than truncating: on a phone the tile is half the
+          // screen and "80 via public links" clipped to "80 via pu…" tells
+          // the reader nothing. The headline number above it is the thing
+          // that must stay on one line, and it does.
           <span
-            className="block truncate"
+            className="block"
             style={{
               fontSize: "var(--type-caption-size)",
               color: "var(--text-muted)",
@@ -140,6 +152,14 @@ export function Dashboard() {
     () => (company ? stores.usage.getUsageSummary(company.id) : Promise.resolve(null)),
     [company],
   );
+  const linkUsageState = useAsync<PublicLinkUsageRow[]>(
+    () => (company ? stores.usage.getPublicLinkUsage(company.id) : Promise.resolve([])),
+    [company],
+  );
+  // A failure here must not take the page down with it: the rest of Insights
+  // is independent, and the card simply does not render.
+  const linkRows = linkUsageState.status === "ready" ? linkUsageState.data : [];
+
   const trendState = useAsync<DailyActivityPoint[]>(
     () => (company ? stores.usage.getDailyActivity(company.id, TREND_DAYS) : Promise.resolve([])),
     [company],
@@ -540,6 +560,93 @@ export function Dashboard() {
               </table>
             </div>
           </div>
+
+          {/* Per-link breakdown — only once a link exists. An admin running
+              one link per template already has this answer from the table
+              above; this card earns its place when there are several links
+              to the same template and the question becomes which one is
+              pulling. */}
+          {linkRows.length > 0 && (
+            <div className="sp-card overflow-hidden">
+              <div className="px-4 pt-4 pb-3">
+                <h2 className="sp-panel-title">Public links</h2>
+                <p
+                  style={{
+                    fontSize: "var(--type-caption-size)",
+                    color: "var(--text-muted)",
+                    marginTop: 2,
+                  }}
+                >
+                  Every link you've created, busiest first. A link with no opens has been created
+                  but not yet used.
+                </p>
+              </div>
+              <div className="overflow-x-auto">
+                <table
+                  className="w-full"
+                  style={{ fontSize: "var(--type-label-size)", minWidth: 620 }}
+                >
+                  <thead>
+                    <tr className="text-left" style={{ borderBottom: "1px solid var(--border)" }}>
+                      {["Link", "Template", "Opens", "Exports", "Export rate", "Last used"].map(
+                        (h) => (
+                          <th key={h} className="sp-eyebrow px-4 py-3" style={{ fontWeight: 400 }}>
+                            {h}
+                          </th>
+                        ),
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {linkRows.map((r) => (
+                      <tr key={r.linkId} style={{ borderTop: "1px solid var(--border)" }}>
+                        <td className="px-4 py-3">
+                          <span
+                            className="block"
+                            style={{
+                              color: r.revokedAt ? "var(--text-muted)" : "var(--text-primary)",
+                              fontWeight: 500,
+                            }}
+                          >
+                            {r.linkName || "Untitled link"}
+                          </span>
+                          {/* Revoked links keep their history and say why it
+                              stopped, rather than vanishing and taking the
+                              numbers with them. */}
+                          {r.revokedAt && (
+                            <span className="sp-eyebrow" style={{ color: "var(--text-muted)" }}>
+                              Revoked {relativeDay(r.revokedAt)}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3" style={{ color: "var(--text-secondary)" }}>
+                          {r.templateName}
+                        </td>
+                        <td className="px-4 py-3" style={{ ...numCell }}>
+                          {r.opens}
+                        </td>
+                        <td
+                          className="px-4 py-3"
+                          style={{ ...numCell, color: "var(--text-primary)" }}
+                        >
+                          {r.downloads}
+                        </td>
+                        <td className="px-4 py-3" style={{ ...numCell }}>
+                          {exportRate(r.downloads, r.opens)}
+                        </td>
+                        <td
+                          className="px-4 py-3"
+                          style={{ ...numCell, color: "var(--text-muted)" }}
+                        >
+                          {r.lastUsedAt ? relativeDay(r.lastUsedAt) : "Never"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </Page>

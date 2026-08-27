@@ -1,5 +1,6 @@
 import type {
   DailyActivityPoint,
+  PublicLinkUsageRow,
   UsageAction,
   UsageActor,
   UsageSummary,
@@ -7,6 +8,7 @@ import type {
 } from "../../types";
 import type { UsageStore } from "../interfaces";
 import { bucketDailyActivity } from "../dailyActivity";
+import { joinLinkUsage, type LinkEvent, type LinkRecord } from "../publicLinkUsage";
 import { supabase } from "./client";
 
 interface EventRow {
@@ -94,5 +96,51 @@ export class SupabaseUsageStore implements UsageStore {
       })),
       days,
     );
+  }
+
+  /** Two reads rather than one embedded query: a link that nobody has opened
+   * has no events to embed, and it still has to appear in the table. Both
+   * are RLS-scoped — usage_events to company admins, template_links through
+   * the parent template — so this returns nothing for a member and nothing
+   * for another tenant. */
+  async getPublicLinkUsage(companyId: string): Promise<PublicLinkUsageRow[]> {
+    const [linksResult, eventsResult] = await Promise.all([
+      supabase()
+        .from("template_links")
+        .select("id, name, revoked_at, created_at, template_id, templates!inner(name, company_id)")
+        .eq("templates.company_id", companyId),
+      supabase()
+        .from("usage_events")
+        .select("link_id, action, created_at")
+        .eq("company_id", companyId)
+        .eq("actor", "public")
+        .not("link_id", "is", null),
+    ]);
+    if (linksResult.error) throw linksResult.error;
+    if (eventsResult.error) throw eventsResult.error;
+
+    const links: LinkRecord[] = (
+      linksResult.data as unknown as Array<{
+        id: string;
+        name: string;
+        revoked_at: string | null;
+        created_at: string;
+        template_id: string;
+        templates: { name: string } | null;
+      }>
+    ).map((l) => ({
+      id: l.id,
+      name: l.name,
+      templateId: l.template_id,
+      templateName: l.templates?.name ?? "(deleted template)",
+      revokedAt: l.revoked_at,
+      createdAt: l.created_at,
+    }));
+
+    const events: LinkEvent[] = (
+      eventsResult.data as Array<{ link_id: string; action: UsageAction; created_at: string }>
+    ).map((e) => ({ linkId: e.link_id, action: e.action, createdAt: e.created_at }));
+
+    return joinLinkUsage(links, events);
   }
 }
