@@ -77,4 +77,20 @@ describe("bucketDailyActivity", () => {
     const dates = bucketDailyActivity([], 5).map((p) => p.date);
     expect([...dates].sort()).toEqual(dates);
   });
+
+  it("does not fold a share into the download count", () => {
+    // The regression this guards: every tally used to branch
+    // `if open … else download`, which would have reported shares as
+    // downloads the moment a third action existed.
+    const points = bucketDailyActivity(
+      [
+        { action: "download", actor: "public", createdAt: daysAgo(0) },
+        { action: "share", actor: "public", createdAt: daysAgo(0) },
+        { action: "share", actor: "member", createdAt: daysAgo(0) },
+      ],
+      3,
+    );
+    const today = points[points.length - 1];
+    expect(today).toMatchObject({ opens: 0, downloads: 1, publicDownloads: 1 });
+  });
 });

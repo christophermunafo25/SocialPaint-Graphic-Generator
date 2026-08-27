@@ -202,6 +202,7 @@ export function Dashboard() {
   // fill through a link is one open and one export, the same as a member's.
   const publicOpens = summary.rows.reduce((n, r) => n + r.publicOpens, 0);
   const publicDownloads = summary.rows.reduce((n, r) => n + r.publicDownloads, 0);
+  const totalShares = summary.rows.reduce((n, r) => n + r.shares, 0);
   const viaLink = (n: number): string | undefined =>
     n === 0 ? undefined : `${n} via public link${n === 1 ? "" : "s"}`;
   const activeTemplates = summary.rows.filter((r) => r.opens + r.downloads > 0).length;
@@ -261,6 +262,15 @@ export function Dashboard() {
               Icon={Percent}
               chip="var(--bg-hover)"
               chipFg="var(--text-primary)"
+              sub={
+                totalShares === 0
+                  ? undefined
+                  : `${totalShares} sent to LinkedIn${
+                      summary.totalDownloads > 0
+                        ? ` · ${Math.round((totalShares / summary.totalDownloads) * 100)}% of exports`
+                        : ""
+                    }`
+              }
             />
             <Kpi
               label="Templates in use"
@@ -473,17 +483,23 @@ export function Dashboard() {
             <div className="sp-card overflow-hidden overflow-x-auto lg:col-span-3">
               <table
                 className="w-full"
-                style={{ fontSize: "var(--type-label-size)", minWidth: 620 }}
+                style={{ fontSize: "var(--type-label-size)", minWidth: 720 }}
               >
                 <thead>
                   <tr className="text-left" style={{ borderBottom: "1px solid var(--border)" }}>
-                    {["Template", "Opens", "Downloads", "Via link", "Export rate", "Last used"].map(
-                      (h) => (
-                        <th key={h} className="sp-eyebrow px-4 py-3" style={{ fontWeight: 400 }}>
-                          {h}
-                        </th>
-                      ),
-                    )}
+                    {[
+                      "Template",
+                      "Opens",
+                      "Downloads",
+                      "Posted",
+                      "Via link",
+                      "Export rate",
+                      "Last used",
+                    ].map((h) => (
+                      <th key={h} className="sp-eyebrow px-4 py-3" style={{ fontWeight: 400 }}>
+                        {h}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
@@ -514,6 +530,17 @@ export function Dashboard() {
                         }}
                       >
                         {r.downloads}
+                      </td>
+                      {/* Taken to LinkedIn. Muted at zero so the eye lands on
+                          the templates that are actually being posted. */}
+                      <td
+                        className="px-4 py-3"
+                        style={{
+                          ...numCell,
+                          color: r.shares > 0 ? "var(--text-primary)" : "var(--text-muted)",
+                        }}
+                      >
+                        {r.shares}
                       </td>
                       {/* Exports through a public link. A dash rather than a
                           zero: nobody has shared this template publicly, which
@@ -578,23 +605,30 @@ export function Dashboard() {
                   }}
                 >
                   Every link you've created, busiest first. A link with no opens has been created
-                  but not yet used.
+                  but not yet used. "Posted" counts people who opened LinkedIn with their caption —
+                  LinkedIn doesn't tell us whether they hit publish.
                 </p>
               </div>
               <div className="overflow-x-auto">
                 <table
                   className="w-full"
-                  style={{ fontSize: "var(--type-label-size)", minWidth: 620 }}
+                  style={{ fontSize: "var(--type-label-size)", minWidth: 720 }}
                 >
                   <thead>
                     <tr className="text-left" style={{ borderBottom: "1px solid var(--border)" }}>
-                      {["Link", "Template", "Opens", "Exports", "Export rate", "Last used"].map(
-                        (h) => (
-                          <th key={h} className="sp-eyebrow px-4 py-3" style={{ fontWeight: 400 }}>
-                            {h}
-                          </th>
-                        ),
-                      )}
+                      {[
+                        "Link",
+                        "Template",
+                        "Opens",
+                        "Exports",
+                        "Posted",
+                        "Export rate",
+                        "Last used",
+                      ].map((h) => (
+                        <th key={h} className="sp-eyebrow px-4 py-3" style={{ fontWeight: 400 }}>
+                          {h}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
@@ -630,6 +664,15 @@ export function Dashboard() {
                           style={{ ...numCell, color: "var(--text-primary)" }}
                         >
                           {r.downloads}
+                        </td>
+                        <td
+                          className="px-4 py-3"
+                          style={{
+                            ...numCell,
+                            color: r.shares > 0 ? "var(--text-primary)" : "var(--text-muted)",
+                          }}
+                        >
+                          {r.shares}
                         </td>
                         <td className="px-4 py-3" style={{ ...numCell }}>
                           {exportRate(r.downloads, r.opens)}

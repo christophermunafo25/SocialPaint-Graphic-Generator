@@ -7,6 +7,7 @@ import {
   PublicLinkError,
   fetchPublicTemplate,
   recordPublicDownload,
+  recordPublicShare,
   type PublicLinkFailure,
   type PublicTemplate,
 } from "@/lib/publicLink/client";
@@ -86,6 +87,8 @@ function PublicFill({ token, data }: { token: string; data: PublicTemplate }) {
     clearDraft(token);
   }, [token]);
 
+  const onShared = useCallback(() => recordPublicShare(token), [token]);
+
   return (
     <PublicFrame>
       <TemplateFill
@@ -97,6 +100,7 @@ function PublicFill({ token, data }: { token: string; data: PublicTemplate }) {
         // endpoints count the open and the export instead.
         instrument={false}
         onExported={onExported}
+        onShared={onShared}
         allowUploads={allowUploads}
         previewFirstOnMobile
         footer={<ResumeNote resumable={resumable} resumed={resumed} />}

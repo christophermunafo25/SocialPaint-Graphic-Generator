@@ -33,6 +33,12 @@ interface TemplateFillProps {
   /** Fired after an export that actually produced a graphic (a dismissed
    * share sheet is not one). */
   onExported?(outcome: Exclude<ExportOutcome, "canceled">): void;
+  /** Fired when the person sends the graphic to LinkedIn. Reported on the
+   * CLICK, not on a confirmed post — LinkedIn tells us nothing about what
+   * happens in their composer, so intent is the honest thing to measure and
+   * the dashboard says so. Fires even when the popup is blocked: the intent
+   * was the same and the caption went to their clipboard either way. */
+  onShared?(): void;
   /** Whether member-fillable image fields are offered. A public link can turn
    * them off; the member path never does. */
   allowUploads?: boolean;
@@ -61,6 +67,7 @@ export function TemplateFill({
   onValuesChange,
   instrument = true,
   onExported,
+  onShared,
   allowUploads = true,
   footer,
   previewFirstOnMobile = false,
@@ -164,6 +171,7 @@ export function TemplateFill({
    * a file to attach. */
   const handlePostToLinkedIn = () => {
     const opened = openLinkedInComposer(shownCaption);
+    onShared?.();
     showToast(opened ? "linkedin" : "popup-blocked");
   };
 

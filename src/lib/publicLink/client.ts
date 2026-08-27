@@ -93,10 +93,19 @@ export async function fetchPublicTemplate(token: string): Promise<PublicTemplate
   };
 }
 
-/** Tell the admin who sent this link that it produced a graphic.
+/** Tell the admin who sent this link what it produced.
  *
  * Fire and forget in every sense: it counts an event, it identifies nobody,
  * and a failure here must never be something the visitor sees. */
-export function recordPublicDownload(token: string): void {
-  void post("public-link-event", { token, action: "download" }).catch(() => undefined);
+function recordPublicEvent(token: string, action: "download" | "share"): void {
+  void post("public-link-event", { token, action }).catch(() => undefined);
 }
+
+/** The visitor exported a PNG. */
+export const recordPublicDownload = (token: string): void => recordPublicEvent(token, "download");
+
+/** The visitor took that PNG to LinkedIn. Recorded on the CLICK, not on a
+ * confirmed post — LinkedIn tells us nothing about what happens in their
+ * composer, and intent to post is the honest thing to measure. The admin
+ * dashboard labels it accordingly. */
+export const recordPublicShare = (token: string): void => recordPublicEvent(token, "share");

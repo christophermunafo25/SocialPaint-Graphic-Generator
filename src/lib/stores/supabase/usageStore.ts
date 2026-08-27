@@ -58,16 +58,20 @@ export class SupabaseUsageStore implements UsageStore {
         templateName: e.templates?.name ?? "(deleted template)",
         opens: 0,
         downloads: 0,
+        shares: 0,
         publicOpens: 0,
         publicDownloads: 0,
         lastUsedAt: null,
       };
+      // Named explicitly — see the note in 0027_share_events.sql.
       if (e.action === "open") {
         row.opens += 1;
         if (e.actor === "public") row.publicOpens += 1;
-      } else {
+      } else if (e.action === "download") {
         row.downloads += 1;
         if (e.actor === "public") row.publicDownloads += 1;
+      } else if (e.action === "share") {
+        row.shares += 1;
       }
       if (!row.lastUsedAt || e.created_at > row.lastUsedAt) row.lastUsedAt = e.created_at;
       byTemplate.set(e.template_id, row);

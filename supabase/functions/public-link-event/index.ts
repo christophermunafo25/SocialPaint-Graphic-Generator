@@ -2,10 +2,10 @@
 // finished a graphic, and the admin who sent the link wants to know it
 // worked.
 //
-// It takes a token and the word "download". Nothing else. It does not read
-// the template, does not return anything about it, and answers identically
-// whether the token was good, revoked, or invented — a link's own analytics
-// are not a channel for probing which links exist.
+// It takes a token and one of two fixed words. Nothing else. It does not
+// read the template, does not return anything about it, and answers
+// identically whether the token was good, revoked, or invented — a link's
+// own analytics are not a channel for probing which links exist.
 //
 // It resolves the token WITHOUT consuming a use: one fill is one open, and a
 // visitor exporting twice should not burn through the admin's cap twice.
@@ -83,10 +83,13 @@ Deno.serve(async (req) => {
 
     const body = await parseBody(req);
     const token = typeof body.token === "string" ? body.token : "";
-    // The action is fixed. An "open" is the read request itself, and there
-    // is no third kind of public event — leaving this open-ended would let a
+    // The action is an ALLOWLIST, not a pass-through. An "open" is the read
+    // request itself and is recorded there; these two are the only events a
+    // public visitor can produce. Accepting whatever arrived would let a
     // caller write arbitrary rows into a tenant's analytics.
-    if (body.action !== "download" || !token || token.length > MAX_TOKEN_CHARS) {
+    const action = body.action;
+    const knownAction = action === "download" || action === "share";
+    if (!knownAction || !token || token.length > MAX_TOKEN_CHARS) {
       console.warn("[public-link-event] ignored", { reason: "malformed", ipKey });
       return json(ACK);
     }
@@ -108,7 +111,7 @@ Deno.serve(async (req) => {
     const { error: insertError } = await db.from("usage_events").insert({
       company_id: link.company_id,
       template_id: link.template_id,
-      action: "download",
+      action,
       actor: "public",
       link_id: link.link_id,
       user_id: null,

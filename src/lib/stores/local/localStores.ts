@@ -209,17 +209,21 @@ export class LocalUsageStore implements UsageStore {
         templateName: templates.find((t) => t.id === e.templateId)?.name ?? "(deleted template)",
         opens: 0,
         downloads: 0,
+        shares: 0,
         publicOpens: 0,
         publicDownloads: 0,
         lastUsedAt: null,
       };
       const viaLink = e.actor === "public";
+      // Named explicitly — see the note in 0027_share_events.sql.
       if (e.action === "open") {
         row.opens += 1;
         if (viaLink) row.publicOpens += 1;
-      } else {
+      } else if (e.action === "download") {
         row.downloads += 1;
         if (viaLink) row.publicDownloads += 1;
+      } else if (e.action === "share") {
+        row.shares += 1;
       }
       if (!row.lastUsedAt || e.createdAt > row.lastUsedAt) row.lastUsedAt = e.createdAt;
       byTemplate.set(e.templateId, row);
