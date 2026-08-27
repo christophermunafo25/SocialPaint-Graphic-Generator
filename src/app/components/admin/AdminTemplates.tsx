@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { CheckCircle2, Copy, Eye, EyeOff, Link2, Pencil, Plus, Trash2 } from "lucide-react";
+import { CheckCircle2, Copy, Eye, EyeOff, Pencil, Plus, Trash2 } from "lucide-react";
 import type { TemplateSchema, UsageSummary } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
@@ -13,7 +13,6 @@ import { toCatalogTemplate } from "@/lib/templates/catalog";
 import { buildSearchIndex, searchTemplates } from "@/lib/templates/searchIndex";
 import { ErrorState } from "../ErrorState";
 import { TemplateThumbnail } from "../TemplateThumbnail";
-import { TemplateLinksDialog } from "./TemplateLinksDialog";
 
 type StatusFilter = "all" | "published" | "draft";
 type SortKey = "recent" | "name" | "downloads";
@@ -94,8 +93,6 @@ export function AdminTemplates() {
   const [deleting, setDeleting] = useState<TemplateSchema | null>(null);
   /** Template whose name is open for inline rename. */
   const [renaming, setRenaming] = useState<string | null>(null);
-  /** Template whose public links are open. */
-  const [sharing, setSharing] = useState<TemplateSchema | null>(null);
 
   const confirmDelete = async () => {
     if (!deleting) return;
@@ -167,7 +164,6 @@ export function AdminTemplates() {
           </span>
         </div>
       )}
-      {sharing && <TemplateLinksDialog template={sharing} onClose={() => setSharing(null)} />}
       <ConfirmDialog
         open={deleting !== null}
         title={`Delete template "${deleting?.name ?? ""}"?`}
@@ -342,16 +338,6 @@ export function AdminTemplates() {
                       would squeeze it down to a couple of characters. */}
                     {renaming !== t.id && (
                       <>
-                        {t.status === "published" && (
-                          <button
-                            style={iconBtn}
-                            onClick={() => setSharing(t)}
-                            title="Public links"
-                            aria-label={`Public links for ${t.name}`}
-                          >
-                            <Link2 style={{ width: 16, height: 16, color: "var(--text-muted)" }} />
-                          </button>
-                        )}
                         <button
                           style={iconBtn}
                           onClick={() => void toggleStatus(t)}
