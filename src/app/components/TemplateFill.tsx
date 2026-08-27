@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Copy,
   Download,
+  Linkedin,
   RefreshCw,
 } from "lucide-react";
 import type { BrandKit, FieldValues, TemplateSchema } from "@/lib/types";
@@ -18,6 +19,7 @@ import { SchemaRenderer, type SchemaRendererHandle } from "./SchemaRenderer";
 import { ExportAssetError, type ExportOutcome } from "@/lib/render/exportPng";
 import { FieldInput } from "./FieldInput";
 import { celebrate } from "@/lib/celebrate";
+import { openLinkedInComposer } from "@/lib/share/linkedin";
 
 interface TemplateFillProps {
   template: TemplateSchema;
@@ -71,7 +73,12 @@ export function TemplateFill({
   const [copied, setCopied] = useState(false);
   const [exporting, setExporting] = useState(false);
   /** Post-export feedback toast; auto-dismisses. */
-  const [exportToast, setExportToast] = useState<"downloaded" | "shared" | "error" | null>(null);
+  type ToastKind = "downloaded" | "shared" | "error" | "linkedin" | "popup-blocked";
+  const [exportToast, setExportToast] = useState<ToastKind | null>(null);
+  /** Whether this session has produced a file yet. LinkedIn cannot take the
+   * image from us, so the guidance under the post button changes once the
+   * person actually has something to attach. */
+  const [exported, setExported] = useState(false);
   /** The refusal reason, when the export gate named one — it says WHICH
    * image is missing, which the generic line cannot. Only an
    * ExportAssetError message is filler-facing; anything else stays behind
@@ -94,12 +101,12 @@ export function TemplateFill({
     stepCardRef.current?.querySelector<HTMLElement>("input, textarea, select")?.focus();
   }, [step]);
 
-  const showToast = (kind: "downloaded" | "shared" | "error") => {
+  const showToast = (kind: ToastKind) => {
     window.clearTimeout(toastTimer.current);
     setExportToast(kind);
     toastTimer.current = window.setTimeout(
       () => setExportToast(null),
-      kind === "error" ? 6000 : 4000,
+      kind === "error" || kind === "popup-blocked" ? 6000 : 4000,
     );
   };
 
@@ -133,6 +140,7 @@ export function TemplateFill({
       const outcome = await rendererRef.current.exportPng();
       // Canceling the share sheet needs no confirmation of anything.
       if (outcome !== "canceled") {
+        setExported(true);
         showToast(outcome);
         onExported?.(outcome);
         // A finished graphic is the commit moment.
@@ -145,6 +153,18 @@ export function TemplateFill({
     } finally {
       setExporting(false);
     }
+  };
+
+  /** Hand the caption to LinkedIn's composer.
+   *
+   * The graphic does NOT go with it — LinkedIn accepts no image from a URL,
+   * so the person attaches the file themselves. That is a real limitation of
+   * their platform, not something to paper over, so the copy under the
+   * button says it plainly and the wording changes once they actually have
+   * a file to attach. */
+  const handlePostToLinkedIn = () => {
+    const opened = openLinkedInComposer(shownCaption);
+    showToast(opened ? "linkedin" : "popup-blocked");
   };
 
   const handleCopy = async () => {
@@ -195,6 +215,8 @@ export function TemplateFill({
               {exportToast === "downloaded" && "Graphic downloaded"}
               {exportToast === "shared" && "Graphic shared"}
               {exportToast === "error" && "Couldn't export the graphic"}
+              {exportToast === "linkedin" && "LinkedIn is open in a new tab"}
+              {exportToast === "popup-blocked" && "Your browser blocked the new tab"}
             </span>
             <span
               className="block"
@@ -204,6 +226,10 @@ export function TemplateFill({
               {exportToast === "shared" && "Sent through your device's share sheet."}
               {exportToast === "error" &&
                 (exportErrorDetail ?? "Try again — if it keeps failing, re-upload the photo.")}
+              {exportToast === "linkedin" &&
+                "Your caption is copied too, in case it didn't carry across. Attach the graphic from your downloads."}
+              {exportToast === "popup-blocked" &&
+                "Your caption is copied — open LinkedIn and paste it into a new post."}
             </span>
           </span>
         </div>
@@ -465,6 +491,28 @@ export function TemplateFill({
                     Fill required: {missingRequired.map((f) => f.label).join(", ")}
                   </p>
                 )}
+
+                {/* Posting is the point of the whole graphic, so the path to
+                    it sits with the download rather than a step away. Gated
+                    on the same required fields, because a caption built from
+                    half-filled merge tags is worse than no caption. */}
+                <button
+                  onClick={handlePostToLinkedIn}
+                  disabled={missingRequired.length > 0}
+                  className="sp-btn sp-btn-ghost w-full"
+                  style={{ padding: "11px 14px" }}
+                >
+                  <Linkedin style={{ width: 14, height: 14 }} />
+                  Post to LinkedIn
+                </button>
+                <p
+                  className="text-center"
+                  style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}
+                >
+                  {exported
+                    ? "Opens a new post with your caption. Attach the graphic from your downloads — LinkedIn can't take it from us."
+                    : "Download the graphic first. LinkedIn can't take the image from us, so you'll attach it to the post yourself."}
+                </p>
               </div>
 
               {formFields.length > 0 && (
