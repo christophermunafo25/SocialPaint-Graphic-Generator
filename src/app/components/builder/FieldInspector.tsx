@@ -57,7 +57,7 @@ import {
   compactControlStyle,
 } from "./InspectorControls";
 import { AlignControls } from "./AlignControls";
-import { FillPicker, getFill } from "./FillPicker";
+import { FillPicker, fillSwatchCss, getFill } from "./FillPicker";
 import { parseHex, toHex } from "@/lib/color";
 
 interface FieldInspectorProps {
@@ -1118,10 +1118,15 @@ export function FieldInspector(props: FieldInspectorProps) {
                   flexShrink: 0,
                   borderRadius: "var(--radius-control)",
                   border: "1px solid var(--border-strong)",
-                  background:
+                  // Through the shared helper: a bare colour in a non-final
+                  // background layer is invalid CSS, and this row used to
+                  // write exactly that — so every solid fill previewed empty.
+                  background: fillSwatchCss(
                     fill.type === "gradient"
-                      ? `${gradientCss({ ...fill.gradient, angle: 90 })}, var(--bg-plate)`
-                      : `${fill.hex}, var(--bg-plate)`,
+                      ? gradientCss({ ...fill.gradient, angle: 90 })
+                      : fill.hex,
+                    fill.type === "gradient",
+                  ),
                   cursor: "pointer",
                 }}
               />
