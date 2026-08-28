@@ -2319,13 +2319,23 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
                   transform: v.rotation ? `rotate(${v.rotation}deg)` : undefined,
                   // Outlines are for the element you are working with, not for
                   // every element at once — a canvas of dashed boxes hides the
-                  // design it is supposed to show. The border stays declared at
-                  // the same width and only loses its color, so nothing shifts.
-                  border: isSelected
+                  // design it is supposed to show.
+                  //
+                  // An OUTLINE, not a border. A border is part of the box: with
+                  // border-box sizing it eats 1px off each side of the padding
+                  // box, and the artwork inside — sized to the FULL box and
+                  // clipped to the padding box — lost 2px off its right and
+                  // bottom edge. Constant 2px, so the smaller the element the
+                  // larger the share: 1% of a 400px box, 6% of an 80px one,
+                  // taking a visible bite out of any corner radius. An outline
+                  // occupies no layout at all, and the negative offset puts it
+                  // exactly where the border used to sit, so nothing moves.
+                  outline: isSelected
                     ? "var(--editor-line) solid var(--editor-accent)"
                     : hoveredId === f.id || hasOverride
                       ? "var(--editor-line) dashed color-mix(in srgb, var(--editor-accent) 65%, transparent)"
                       : "var(--editor-line) solid transparent",
+                  outlineOffset: "calc(var(--editor-line) * -1)",
                   // The outline follows the element's corner radius wherever the
                   // renderer honors one (images, rect shapes) — a square outline
                   // over a rounded element reads as "the radius didn't apply".
