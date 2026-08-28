@@ -637,7 +637,10 @@ export function FieldInspector(props: FieldInspectorProps) {
       <InspectorSection id="layout" title="Layout">
         {canSetSizing && (
           <>
-            <PropertyRow label="Text sizing">
+            {/* Stacked: three worded options need more width than the label
+                column leaves, and squeezing them wraps every one onto a
+                second line. */}
+            <PropertyRow label="Text sizing" stack>
               <SegmentedIconGroup
                 stretch
                 ariaLabel="Text sizing behavior"

@@ -126,20 +126,38 @@ export function InspectorSection({
 
 /** One property line: label column + control column on a compact 32px row.
  * Rows with no label keep the empty column so controls align down the panel;
- * `full` opts a control (font family select, swatch grids) out of the split. */
+ * `full` opts a control (font family select, swatch grids) out of the split,
+ * and `stack` keeps the label but drops it onto its own line so the control
+ * gets the panel's whole width. */
 export function PropertyRow({
   label,
   full,
+  stack,
   align = "center",
   children,
 }: {
   label?: React.ReactNode;
   /** Control spans both columns (no label gutter). */
   full?: boolean;
+  /** Label above, control across the full width. For a control whose own
+   * labels need more room than the 1fr column leaves — a segmented group of
+   * worded options, say, which otherwise wraps every word onto a second
+   * line and doubles the row's height. */
+  stack?: boolean;
   /** "start" keeps the label on the first line of a tall control (textarea). */
   align?: "center" | "start";
   children: React.ReactNode;
 }) {
+  if (stack) {
+    return (
+      <div style={{ display: "grid", gap: "var(--space-3xs)", paddingBlock: "var(--space-3xs)" }}>
+        <span style={inspectorLabelStyle}>{label}</span>
+        <div className="flex" style={{ gap: "var(--space-2xs)", minWidth: 0 }}>
+          {children}
+        </div>
+      </div>
+    );
+  }
   if (full) {
     return (
       <div style={{ minHeight: "var(--row-h-compact)", display: "flex", alignItems: "center" }}>

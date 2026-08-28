@@ -682,9 +682,16 @@ optgroup {
 .sp-seg[data-stretch] button {
   flex: 1;
   width: auto;
-  padding: 0 var(--space-2xs);
+  /* Tighter than the icon segments: these carry words, and at the panel's
+     narrowest the difference between 8px and 4px either side is the
+     difference between "Text shrinks" fitting and not. */
+  padding: 0 var(--space-3xs);
   font-size: var(--type-caption-size);
   letter-spacing: -0.01em;
+  /* One line, always. A wrapped segment silently doubles the row's height
+     and reads as two options; if a label ever outgrows its share, that
+     should show as a visible clip someone fixes, not as a quiet reflow. */
+  white-space: nowrap;
 }
 
 /* Switch — the DS core Switch pattern (40×24 pill, sliding knob) on platform
