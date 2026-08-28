@@ -1,5 +1,9 @@
 // Domain types shared across the app. Mirrors supabase/migrations/0001_schema.sql.
 
+// Type-only: erased at compile time, so this pulls none of that module's
+// icon imports into consumers of types.ts.
+import type { PlatformId } from "./templates/platforms";
+
 export type Role = "admin" | "member";
 
 export interface Company {
@@ -452,6 +456,90 @@ export interface AutoBuildResult {
   rationale: Array<{ fieldKey: string; why: string }>;
   warnings: string[];
   meta: AutoBuildMeta;
+}
+
+/** Input to the Generate flow: a member's brief plus optional narrowing
+ * hints. Mirrors the template-generate Edge Function's request body, minus
+ * companyId, which the store supplies. */
+export interface GenerateInput {
+  /** What the member wants to post, in their own words. The one control that
+   * matters; capped at 1,500 characters server-side. */
+  brief: string;
+  /** Prefer templates sized for this platform. A preference, not a filter
+   * that can empty the set — the server falls back to the whole library with
+   * a warning when nothing matches. */
+  platformHint?: PlatformId;
+  /** "Use this one" from a template card: the server fills exactly this
+   * template instead of choosing. */
+  templateIdHint?: string;
+  /** How many proposals to return (1–3; the server defaults to 3). */
+  count?: number;
+}
+
+/** One generated proposal: a fill of an existing published template. Values
+ * only — the model never touches layout, type, color, or any locked
+ * property, which is what makes the output on-brand by construction. */
+export interface GeneratedProposal {
+  templateId: string;
+  /** Echoed so a result card can be labeled without a second lookup. */
+  templateName: string;
+  /** Seeds TemplateUsePage's values state. Every entry was validated
+   * server-side against the template's own fields; image fields are never
+   * present. */
+  values: FieldValues;
+  /** One or two sentences the member would post alongside the graphic. */
+  caption: string;
+  /** The model's one-sentence case for this template, shown on the card. */
+  why: string;
+  /** Image fields the member still has to fill — reported so the client can
+   * say so honestly before the member commits to a choice. */
+  imageFieldsNeeded: Array<{ fieldKey: string; label: string; required: boolean }>;
+}
+
+/** Provenance for a generate call — AutoBuildMeta's spirit: every generated
+ * thing can answer which model made it, from which library, and when. */
+export interface GenerateMeta {
+  model: string;
+  generatedAt: string;
+  /** How many published templates the model chose among. */
+  candidateCount: number;
+  briefLength: number;
+}
+
+/** The template-generate Edge Function's response. Nothing is persisted
+ * server-side — the client renders these and seeds the fill page with the
+ * chosen one. */
+export interface GenerateResult {
+  proposals: GeneratedProposal[];
+  warnings: string[];
+  meta: GenerateMeta;
+}
+
+/** One field the client-side measurement pass found overflowing: the value
+ * that ran over, and the largest character count that measurably fits —
+ * derived from real glyph measurement, never guessed. */
+export interface GenerateRepairField {
+  fieldKey: string;
+  value: string;
+  characterBudget: number;
+}
+
+/** A repair round: rewrite ONLY the named fields of one proposal's template,
+ * keeping everything that fit. The Edge Function can check character counts
+ * and nothing else (Deno has no font stack), so the budgets come from the
+ * browser's measurement pass. */
+export interface GenerateRepairInput {
+  templateId: string;
+  /** The original brief, so the rewrite keeps its facts and voice. */
+  brief: string;
+  fields: GenerateRepairField[];
+}
+
+export interface GenerateRepairResult {
+  /** A rewrite for exactly each requested fieldKey, each within its budget. */
+  values: FieldValues;
+  warnings: string[];
+  meta: { model: string; generatedAt: string };
 }
 
 export interface DesignImportResult {

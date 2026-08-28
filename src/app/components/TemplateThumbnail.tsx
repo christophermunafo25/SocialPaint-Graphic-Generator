@@ -13,7 +13,15 @@ import photoPlaceholder from "@/assets/socialpaint/photo-placeholder.jpg";
  * should look like a finished graphic, not a form. Thumbnails ONLY: the
  * member flow keeps the empty upload state, where "no photo yet" is the
  * honest signal. */
-export function TemplateThumbnail({ template }: { template: TemplateSchema }) {
+export function TemplateThumbnail({
+  template,
+  values: seededValues,
+}: {
+  template: TemplateSchema;
+  /** Overrides on top of the placeholders — the Generate results pass their
+   * proposal's values so a card previews the actual filled graphic. */
+  values?: FieldValues;
+}) {
   const { kit } = useBrand();
   const values = useMemo<FieldValues>(() => {
     const out: FieldValues = {};
@@ -22,14 +30,14 @@ export function TemplateThumbnail({ template }: { template: TemplateSchema }) {
       // the renderer already falls back to staticValue on its own.
       if (f.type === "image" && !f.static && !f.staticValue) out[f.fieldKey] = photoPlaceholder;
     }
-    return out;
-  }, [template]);
+    return { ...out, ...seededValues };
+  }, [template, seededValues]);
   return (
     <div className="w-full h-full pointer-events-none">
       <ErrorBoundary
         level="canvas"
         context={{ templateId: template.id }}
-        resetKeys={[template]}
+        resetKeys={[template, seededValues]}
         fallback={() => (
           <div
             className="w-full h-full flex items-center justify-center"
