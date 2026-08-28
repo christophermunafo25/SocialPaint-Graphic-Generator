@@ -128,7 +128,12 @@ export function GroupInspector({
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between gap-2 pb-2">
+        {/* The name takes the row; the mode label beside it is fixed-width
+            and never squeezes it. Without the min-width the flex row let the
+            name shrink to its content-free minimum and even "Group" — the
+            default — came out as "Gr…". */}
         <InlineEdit
+          style={{ flex: "1 1 auto", minWidth: 0 }}
           value={group.name}
           onSave={(name) => onChange({ name: name.trim() || "Group" })}
           ariaLabel="Group name"

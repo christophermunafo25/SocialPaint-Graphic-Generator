@@ -419,7 +419,10 @@ export function NumericField({
       style={{
         gap: "var(--space-2xs)",
         height: "var(--row-h-compact)",
-        padding: "0 var(--space-2xs)",
+        // Tight on purpose: two of these plus a link toggle share one row in
+        // Dimensions, and at 8px either side a four-digit value ("1440", the
+        // largest canvas dimension) clipped by a pixel.
+        padding: "0 var(--space-3xs)",
         minWidth: 0,
         background: "var(--bg-surface)",
         border: "1px solid var(--border)",

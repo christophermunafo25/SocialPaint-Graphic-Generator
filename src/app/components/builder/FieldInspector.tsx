@@ -781,8 +781,11 @@ export function FieldInspector(props: FieldInspectorProps) {
 
       <InspectorSection id="appearance" title="Appearance">
         {/* Opacity + corner radius on one row, X/Y rhythm. Radius appears
-            only where the renderer honors it (images, rect shapes). */}
-        <PropertyRow>
+            only where the renderer honors it (images, rect shapes).
+            Full width: the row has no label to put in the gutter, and two
+            numeric fields plus the link toggle sharing 171px left each input
+            about 12px of room — not enough for "100", let alone "999". */}
+        <PropertyRow full>
           <NumericField
             icon={<Blend style={{ width: 12, height: 12 }} strokeWidth={1.5} />}
             suffix="%"
