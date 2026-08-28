@@ -1105,7 +1105,12 @@ export function FieldInspector(props: FieldInspectorProps) {
       >
         {hasFill &&
           (fill ? (
-            <PropertyRow>
+            /* Full width: this row has no label to put in the gutter, and it
+               carries four controls — a hex that must show all nine
+               characters of #RRGGBBAA, at that. Spending 104px on an empty
+               column to align with rows that DO have labels cost more than
+               the alignment was worth. */
+            <PropertyRow full>
               <button
                 ref={fillSwatchRef}
                 title="Edit fill"
@@ -1167,23 +1172,30 @@ export function FieldInspector(props: FieldInspectorProps) {
                       }
                     }}
                   />
-                  <NumericField
-                    suffix="%"
-                    ariaLabel="Fill opacity"
-                    precision={0}
-                    min={0}
-                    max={100}
-                    disabled={fillLocked}
-                    value={fillAlpha}
-                    onCommit={(v) => {
-                      const base = parseHex(fill.hex);
-                      if (!base) return;
-                      onChange({
-                        colorHex: toHex({ ...base, a: (v ?? fillAlpha) / 100 }),
-                        textGradient: undefined,
-                      });
-                    }}
-                  />
+                  {/* Sized to its content instead of splitting the row with
+                      the hex: NumericField is flex-1 by default, which is
+                      right for the paired X/Y and W/H rows and wrong here,
+                      where one field holds "100" and the other nine hex
+                      characters. */}
+                  <div style={{ width: 68, flexShrink: 0 }}>
+                    <NumericField
+                      suffix="%"
+                      ariaLabel="Fill opacity"
+                      precision={0}
+                      min={0}
+                      max={100}
+                      disabled={fillLocked}
+                      value={fillAlpha}
+                      onCommit={(v) => {
+                        const base = parseHex(fill.hex);
+                        if (!base) return;
+                        onChange({
+                          colorHex: toHex({ ...base, a: (v ?? fillAlpha) / 100 }),
+                          textGradient: undefined,
+                        });
+                      }}
+                    />
+                  </div>
                 </>
               ) : (
                 <span
