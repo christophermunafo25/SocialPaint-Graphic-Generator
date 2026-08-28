@@ -73,6 +73,21 @@ export function pushRecentColor(companyId: string | undefined, hex: string): voi
 const checkerCss =
   "repeating-conic-gradient(var(--border-strong) 0% 25%, transparent 0% 50%) 0 0 / 12px 12px, var(--bg-plate)";
 
+/** A fill as a background LAYER STACK over the alpha checker.
+ *
+ * The rule that makes this necessary: in the `background` shorthand a bare
+ * colour is only legal in the FINAL layer. Put one in front of another layer
+ * — `#D9D9D9, <checker>` — and the whole declaration is invalid, so the
+ * browser drops it and the swatch paints empty rather than wrong. A solid is
+ * therefore wrapped as a one-colour gradient, which IS an image layer; a
+ * gradient is already one and stacks as it is.
+ *
+ * One definition, every swatch: the inspector's fill row hand-rolled its own
+ * version of this and hit exactly the bug above. */
+export function fillSwatchCss(css: string, isGradient = false): string {
+  return `${isGradient ? css : `linear-gradient(${css}, ${css})`}, ${checkerCss}`;
+}
+
 function Swatch({
   css,
   size = 24,
@@ -104,10 +119,7 @@ function Swatch({
         flexShrink: 0,
         borderRadius: "var(--radius-control)",
         border: selected ? "2px solid var(--ring)" : "1px solid var(--border-strong)",
-        // A bare color is only valid in the FINAL background layer; layered
-        // over the checker it must be wrapped as an image (gradient) or the
-        // whole declaration is dropped and the swatch paints empty.
-        background: `linear-gradient(${css}, ${css}), ${checkerCss}`,
+        background: fillSwatchCss(css),
         cursor: disabled ? "default" : "pointer",
         opacity: disabled ? 0.5 : 1,
       }}
