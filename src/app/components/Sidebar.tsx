@@ -8,6 +8,7 @@ import {
   PanelLeft,
   PencilRuler,
   Settings,
+  Sparkles,
   Sun,
   Users,
 } from "lucide-react";
@@ -62,6 +63,13 @@ const NAV: NavItem[] = [
     Icon: Paintbrush,
     adminOnly: false,
     matches: ["portal", "template"],
+  },
+  {
+    label: "Generate",
+    route: { name: "generate" },
+    Icon: Sparkles,
+    adminOnly: false,
+    matches: ["generate"],
   },
   {
     label: "Template Builder",

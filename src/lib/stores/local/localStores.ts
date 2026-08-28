@@ -18,6 +18,7 @@ import type {
   BrandKitStore,
   CompanyStore,
   DesignImportProvider,
+  GenerateProvider,
   PublicLinkStore,
   TemplateStore,
   UsageStore,
@@ -305,6 +306,25 @@ export class LocalPublicLinkStore implements PublicLinkStore {
   }
   async regenerate(): Promise<never> {
     throw new Error(LocalPublicLinkStore.REASON);
+  }
+}
+
+/** Generate needs Edge Functions and a model key, neither of which the dev
+ * backend has — so it says so, and the surface shows an honest disabled
+ * state instead of a button that cannot work (the designImport precedent). */
+export class LocalGenerateProvider implements GenerateProvider {
+  isConfigured(): boolean {
+    return false;
+  }
+  async generate(): Promise<never> {
+    throw new Error(
+      "Generate requires the Supabase backend and an Anthropic API key (see .env.example).",
+    );
+  }
+  async repair(): Promise<never> {
+    throw new Error(
+      "Generate requires the Supabase backend and an Anthropic API key (see .env.example).",
+    );
   }
 }
 

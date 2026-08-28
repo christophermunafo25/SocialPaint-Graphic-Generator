@@ -8,6 +8,10 @@ import type {
   Company,
   DailyActivityPoint,
   DesignImportResult,
+  GenerateInput,
+  GenerateRepairInput,
+  GenerateRepairResult,
+  GenerateResult,
   NewTemplateInput,
   PublicLinkUsageRow,
   TemplateLink,
@@ -163,6 +167,22 @@ export interface DesignImportProvider {
   ): Promise<void>;
 }
 
+/** Generate: a member's brief in, filled-template proposals out, through the
+ * template-generate Edge Function. The function reads the published library
+ * and writes nothing — the client renders the proposals and seeds the
+ * existing fill page with the chosen one. */
+export interface GenerateProvider {
+  /** Backend reachable at all. The localStorage dev backend has no Edge
+   * Functions and no model key, so it says false and the surface explains
+   * rather than offering a button that cannot work. */
+  isConfigured(): boolean;
+  generate(companyId: string, input: GenerateInput): Promise<GenerateResult>;
+  /** One repair round for one proposal: the measurement pass names the
+   * overflowing fields and their measured character budgets; the server
+   * rewrites only those values. */
+  repair(companyId: string, input: GenerateRepairInput): Promise<GenerateRepairResult>;
+}
+
 export interface StyleImportResult {
   colors: import("../types").BrandColor[];
   typeStyles: import("../types").BrandTypeStyle[];
@@ -181,6 +201,7 @@ export interface Stores {
   people: PeopleStore;
   publicLinks: PublicLinkStore;
   designImport: DesignImportProvider;
+  generate: GenerateProvider;
   /** "supabase" or "local" — surfaced in the dev switcher so it's obvious
    * which backend is active. */
   backend: "supabase" | "local";

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { ArrowLeft, Link2 } from "lucide-react";
 import type { FieldValues } from "@/lib/types";
+import { takeSeed } from "@/lib/generate/seedHandoff";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -20,7 +21,9 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
   const { navigate } = useRouter();
   const templateState = useAsync(() => stores.templates.get(templateId), [templateId]);
   const template = templateState.status === "ready" ? templateState.data : null;
-  const [values, setValues] = useState<FieldValues>({});
+  // Seeded by Generate when a member chose a proposal; empty otherwise (the
+  // handoff is single-shot, so a refresh lands on the ordinary empty form).
+  const [values, setValues] = useState<FieldValues>(() => takeSeed(templateId) ?? {});
   const [sharing, setSharing] = useState(false);
 
   if (templateState.status === "loading") {

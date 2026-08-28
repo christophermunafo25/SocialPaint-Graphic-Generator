@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Sparkles } from "lucide-react";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -141,6 +142,16 @@ export function Portal() {
         eyebrow={company?.name}
         title="Brand Templates"
         description="Starting points sized for every surface. Each one fills with your brand when you generate."
+        action={
+          <button
+            type="button"
+            className="sp-btn sp-btn-primary"
+            onClick={() => navigate({ name: "generate" })}
+          >
+            <Sparkles style={{ width: 14, height: 14 }} />
+            Generate a post
+          </button>
+        }
       />
 
       <div ref={sentinel} aria-hidden style={{ height: 1 }} />

@@ -12,6 +12,7 @@ import { DevBackendBanner } from "./components/DevBackendBanner";
 import { ErrorState } from "./components/ErrorState";
 import { Portal } from "./components/Portal";
 import { TemplateUsePage } from "./components/TemplateUsePage";
+import { GeneratePage } from "./components/generate/GeneratePage";
 import { OnboardingWizard } from "./components/onboarding/OnboardingWizard";
 import { AdminTemplates } from "./components/admin/AdminTemplates";
 import { TemplateBuilder } from "./components/builder/TemplateBuilder";
@@ -164,6 +165,7 @@ function Screen() {
       >
         {route.name === "portal" && <Portal />}
         {route.name === "template" && <TemplateUsePage templateId={route.templateId} />}
+        {route.name === "generate" && <GeneratePage templateIdHint={route.templateId} />}
         {route.name === "adminTemplates" && adminOnly(<AdminTemplates />)}
         {route.name === "builder" && adminOnly(<TemplateBuilder templateId={route.templateId} />)}
         {route.name === "brandStudio" && adminOnly(<BrandStudio category={route.category} />)}

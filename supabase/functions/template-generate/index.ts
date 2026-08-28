@@ -1,0 +1,555 @@
+// Generate: a member's brief in, filled template proposals out. This function
+// EXTRACTS (the published library as a candidate list), ASKS (one forced tool
+// call), VALIDATES (never trusting model output), and RESPONDS. It writes
+// nothing to the database beyond the shared rate-limit counters — the client
+// renders the proposals and seeds the existing fill page with the chosen one.
+//
+// The model's only degrees of freedom are a templateId from the candidate
+// set and string values for fields an admin deliberately exposed. Layout,
+// type, color, and every locked property are unreachable by construction.
+//
+// v1 is the authenticated portal. The public-link variant would change how
+// companyId and the candidate list are resolved — which is why candidates
+// are built here and passed into the model call explicitly, never queried
+// implicitly inside it.
+
+import { requireRole, serviceClient } from "../_shared/figma.ts";
+import {
+  GENERIC_ERROR,
+  HttpError,
+  corsHeadersFor,
+  handleOptions,
+  jsonResponder,
+  logError,
+} from "../_shared/http.ts";
+import {
+  optionalEnum,
+  optionalInt,
+  parseBody,
+  requireNumber,
+  requireString,
+  requireUuid,
+} from "../_shared/validate.ts";
+import {
+  GENERATE_PLATFORM_IDS,
+  GenerateValidationError,
+  buildRepairRequests,
+  candidateFromRows,
+  modelCandidates,
+  validateGeneration,
+  validateRepair,
+  type CandidateTemplate,
+  type FieldRowLike,
+  type GenerateModelOutput,
+  type RepairFieldRequest,
+  type RepairModelOutput,
+  type TemplateRowLike,
+} from "../_shared/generateValidate.ts";
+import { GENERATE_SYSTEM_PROMPT } from "./prompt.ts";
+
+const ANTHROPIC_MODEL = Deno.env.get("ANTHROPIC_MODEL") ?? "claude-sonnet-4-6";
+
+/** Real retrieval is a later problem; this cap is where it will go. Ordered
+ * by most recently updated, and the response says so when it truncates. */
+const CANDIDATE_CAP = 40;
+
+/** Rate limits. Unlike auto-build (admin-only, rare), this endpoint is
+ * member-facing and every call costs money. Both buckets ride the shared
+ * consume_rate_limit counters from the public-links work — reusing that
+ * primitive instead of growing a second one.
+ *
+ *  - Per user: enough for honest iteration on a post, a wall for a loop.
+ *  - Per company: a ceiling so one company's members cannot collectively
+ *    turn this into a load generator. */
+const LIMITS = {
+  perUser: { limit: 10, windowSeconds: 600 },
+  perCompany: { limit: 40, windowSeconds: 600 },
+} as const;
+
+// ---------------------------------------------------------------------------
+// Anthropic call
+// ---------------------------------------------------------------------------
+
+const PROPOSE_POSTS_TOOL = {
+  name: "propose_posts",
+  description:
+    "Propose ready-to-edit posts: for each, a candidate templateId, values for its fields, a caption, and one sentence on why the template fits.",
+  input_schema: {
+    type: "object",
+    additionalProperties: false,
+    required: ["proposals"],
+    properties: {
+      proposals: {
+        type: "array",
+        minItems: 1,
+        maxItems: 3,
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["templateId", "values", "caption", "why"],
+          properties: {
+            templateId: {
+              type: "string",
+              description: "The id of one candidate template.",
+            },
+            values: {
+              type: "array",
+              description:
+                "One entry per non-image field of the chosen template. Never include image fields.",
+              items: {
+                type: "object",
+                additionalProperties: false,
+                required: ["fieldKey", "value"],
+                properties: {
+                  fieldKey: { type: "string" },
+                  value: { type: "string" },
+                },
+              },
+            },
+            caption: {
+              type: "string",
+              description: "One or two sentences the member would post alongside the graphic.",
+            },
+            why: {
+              type: "string",
+              description: "One sentence: why this template fits this brief.",
+            },
+          },
+        },
+      },
+    },
+  },
+};
+
+function buildUserText(
+  brief: string,
+  candidates: CandidateTemplate[],
+  count: number,
+  platformHint: string | undefined,
+  hinted: boolean,
+): string {
+  const parts: string[] = [];
+  parts.push(`Brief: ${brief}`);
+  if (platformHint) parts.push(`The member is posting on: ${platformHint}.`);
+  if (hinted) {
+    parts.push(
+      `The member picked this template themselves — fill it. Return ${count === 1 ? "one proposal" : `${count} proposals, each a distinct take on the brief`}.`,
+    );
+  } else {
+    parts.push(
+      `Return exactly ${count} proposal${count === 1 ? "" : "s"}${count > 1 ? ", each using a different template where the library allows it" : ""}.`,
+    );
+  }
+  parts.push(
+    `Candidate templates (choose templateId from these; the fields listed are the only ones you may write):\n${JSON.stringify(modelCandidates(candidates))}`,
+  );
+  return parts.join("\n\n");
+}
+
+/** The repair round's tool: rewrites for exactly the named fields, nothing
+ * else — no caption, no why, no template choice. */
+const REPAIR_VALUES_TOOL = {
+  name: "repair_values",
+  description: "Rewrite the named field values so each fits its measured character budget.",
+  input_schema: {
+    type: "object",
+    additionalProperties: false,
+    required: ["values"],
+    properties: {
+      values: {
+        type: "array",
+        description: "One entry per field listed in the repair request.",
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["fieldKey", "value"],
+          properties: {
+            fieldKey: { type: "string" },
+            value: { type: "string" },
+          },
+        },
+      },
+    },
+  },
+};
+
+async function callClaude<T>(
+  apiKey: string,
+  userText: string,
+  tool: { name: string } & Record<string, unknown>,
+  retryErrors?: { priorContent: unknown[]; toolUseId: string; errors: string[] },
+): Promise<{ output: T; toolUseId: string; raw: unknown[] }> {
+  const messages: unknown[] = [{ role: "user", content: [{ type: "text", text: userText }] }];
+  if (retryErrors) {
+    messages.push({ role: "assistant", content: retryErrors.priorContent });
+    messages.push({
+      role: "user",
+      content: [
+        {
+          type: "tool_result",
+          tool_use_id: retryErrors.toolUseId,
+          is_error: true,
+          content: `Your proposals failed validation: ${retryErrors.errors.join(" ")} Correct these and call ${tool.name} again.`,
+        },
+      ],
+    });
+  }
+
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model: ANTHROPIC_MODEL,
+      max_tokens: 4000,
+      system: [
+        { type: "text", text: GENERATE_SYSTEM_PROMPT, cache_control: { type: "ephemeral" } },
+      ],
+      tools: [tool],
+      tool_choice: { type: "tool", name: tool.name },
+      messages,
+    }),
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    logError("template-generate", `model request failed (${res.status}): ${detail.slice(0, 500)}`);
+    throw new HttpError(502, `The model request failed (${res.status}) — try again.`);
+  }
+  const body = (await res.json()) as {
+    content: Array<{ type: string; id?: string; name?: string; input?: unknown }>;
+  };
+  const toolUse = body.content.find((b) => b.type === "tool_use" && b.name === tool.name);
+  if (!toolUse?.input) throw new HttpError(502, "The model returned no proposals.");
+  return {
+    output: toolUse.input as T,
+    toolUseId: toolUse.id ?? "",
+    raw: body.content,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Rate limiting — the shared fixed-window counters (migration 0026)
+// ---------------------------------------------------------------------------
+
+async function consume(
+  db: ReturnType<typeof serviceClient>,
+  buckets: Array<{ key: string; limit: number; windowSeconds: number }>,
+): Promise<boolean> {
+  const results = await Promise.all(
+    buckets.map(async ({ key, limit, windowSeconds }) => {
+      const { data, error } = await db.rpc("consume_rate_limit", {
+        p_key: key,
+        p_limit: limit,
+        p_window_seconds: windowSeconds,
+      });
+      if (error) {
+        // A limiter that cannot answer fails CLOSED — this endpoint spends
+        // money per call, and running it unmetered is the worse failure.
+        logError("template-generate", error);
+        return false;
+      }
+      return data === true;
+    }),
+  );
+  return results.every(Boolean);
+}
+
+function tooMany(req: Request): Response {
+  return new Response(
+    JSON.stringify({
+      error: `You've hit the generate limit (${LIMITS.perUser.limit} in ${LIMITS.perUser.windowSeconds / 60} minutes) — try again in a few minutes. The library and the manual fill path are unaffected.`,
+    }),
+    {
+      status: 429,
+      headers: {
+        ...corsHeadersFor(req),
+        "Content-Type": "application/json",
+        "Retry-After": String(LIMITS.perUser.windowSeconds),
+      },
+    },
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Repair — round two of the client's measurement pass (see the shared module
+// for the contract). Same auth, same quota buckets: a repair is a model call
+// and costs exactly what a generate does.
+// ---------------------------------------------------------------------------
+
+interface RepairBody {
+  templateId: string;
+  brief: string;
+  fields: Array<{ fieldKey: string; value: string; characterBudget: number }>;
+}
+
+function parseRepair(raw: unknown): RepairBody {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+    throw new HttpError(400, "repair must be an object.");
+  }
+  const r = raw as Record<string, unknown>;
+  const templateId = requireUuid(r.templateId, "repair.templateId");
+  const brief = requireString(r.brief, "repair.brief", 1500);
+  if (!Array.isArray(r.fields) || r.fields.length < 1 || r.fields.length > 20) {
+    throw new HttpError(400, "repair.fields must be an array of 1 to 20 entries.");
+  }
+  const fields = r.fields.map((f, i) => {
+    if (typeof f !== "object" || f === null) {
+      throw new HttpError(400, `repair.fields[${i}] must be an object.`);
+    }
+    const e = f as Record<string, unknown>;
+    return {
+      fieldKey: requireString(e.fieldKey, `repair.fields[${i}].fieldKey`, 60),
+      value: requireString(e.value, `repair.fields[${i}].value`, 4000),
+      characterBudget: requireNumber(e.characterBudget, `repair.fields[${i}].characterBudget`, {
+        min: 1,
+        max: 4000,
+      }),
+    };
+  });
+  return { templateId, brief, fields };
+}
+
+function buildRepairUserText(
+  brief: string,
+  candidate: CandidateTemplate,
+  requests: RepairFieldRequest[],
+): string {
+  return [
+    `Repair request for template "${candidate.name}". The member's brief: ${brief}`,
+    `Template fields, for context:\n${JSON.stringify(modelCandidates([candidate])[0].fields)}`,
+    `These values measured too long against the real template. Rewrite each one within its hard characterBudget (count characters):\n${JSON.stringify(requests)}`,
+    "Every other value is staying exactly as it is.",
+  ].join("\n\n");
+}
+
+async function handleRepair(
+  json: ReturnType<typeof jsonResponder>,
+  db: ReturnType<typeof serviceClient>,
+  apiKey: string,
+  companyId: string,
+  rawRepair: unknown,
+): Promise<Response> {
+  const repair = parseRepair(rawRepair);
+
+  const { data: templateRow, error: templateErr } = await db
+    .from("templates")
+    .select("id, name, description, category, tags, canvas_width, canvas_height")
+    .eq("id", repair.templateId)
+    .eq("company_id", companyId)
+    .eq("status", "published")
+    .maybeSingle();
+  if (templateErr) {
+    logError("template-generate", templateErr);
+    return json({ error: GENERIC_ERROR }, 500);
+  }
+  if (!templateRow) {
+    throw new HttpError(400, "That template is not in the published library any more.");
+  }
+  const { data: fieldRows, error: fieldsErr } = await db
+    .from("template_fields")
+    .select("field_key, label, type, is_static, required, max_length, placeholder, options")
+    .eq("template_id", repair.templateId)
+    .order("sort_order", { ascending: true });
+  if (fieldsErr) {
+    logError("template-generate", fieldsErr);
+    return json({ error: GENERIC_ERROR }, 500);
+  }
+  const candidate = candidateFromRows(
+    templateRow as TemplateRowLike,
+    (fieldRows ?? []) as FieldRowLike[],
+  );
+  const { requests, errors } = buildRepairRequests(candidate, repair.fields);
+  if (errors.length > 0) throw new HttpError(400, errors.join(" "));
+
+  const userText = buildRepairUserText(repair.brief, candidate, requests);
+  let attempt = await callClaude<RepairModelOutput>(apiKey, userText, REPAIR_VALUES_TOOL);
+  let validated;
+  try {
+    validated = validateRepair(attempt.output, requests);
+  } catch (e) {
+    if (!(e instanceof GenerateValidationError)) throw e;
+    attempt = await callClaude<RepairModelOutput>(apiKey, userText, REPAIR_VALUES_TOOL, {
+      priorContent: attempt.raw,
+      toolUseId: attempt.toolUseId,
+      errors: e.errors,
+    });
+    try {
+      validated = validateRepair(attempt.output, requests);
+    } catch {
+      return json(
+        { error: "The rewrite couldn't fit the measured budgets — drop that proposal." },
+        502,
+      );
+    }
+  }
+
+  return json({
+    values: validated.values,
+    warnings: validated.warnings,
+    meta: { model: ANTHROPIC_MODEL, generatedAt: new Date().toISOString() },
+  });
+}
+
+// ---------------------------------------------------------------------------
+
+Deno.serve(async (req) => {
+  const options = handleOptions(req);
+  if (options) return options;
+  const json = jsonResponder(req);
+  try {
+    const body = await parseBody(req);
+    const companyId = requireUuid(body.companyId, "companyId");
+
+    const caller = await requireRole(req, companyId, "member");
+    if ("error" in caller) return json({ error: caller.error }, caller.status);
+
+    const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!apiKey) {
+      return json(
+        {
+          error:
+            "Generate is not configured: set the ANTHROPIC_API_KEY secret (supabase secrets set) and redeploy.",
+        },
+        503,
+      );
+    }
+
+    const db = serviceClient();
+
+    const allowed = await consume(db, [
+      { key: `gen:user:${caller.userId}`, ...LIMITS.perUser },
+      { key: `gen:company:${companyId}`, ...LIMITS.perCompany },
+    ]);
+    if (!allowed) return tooMany(req);
+
+    if (body.repair !== undefined) {
+      return await handleRepair(json, db, apiKey, companyId, body.repair);
+    }
+
+    const brief = requireString(body.brief, "brief", 1500);
+    const platformHint = optionalEnum(body.platformHint, "platformHint", GENERATE_PLATFORM_IDS);
+    const templateIdHint =
+      body.templateIdHint === undefined || body.templateIdHint === null
+        ? undefined
+        : requireUuid(body.templateIdHint, "templateIdHint");
+    const count = optionalInt(body.count, "count", { min: 1, max: 3 }) ?? 3;
+
+    // 1. The candidate list — published templates plus their field lists.
+    //    The field list is what actually lets the model judge fit; a
+    //    template's name alone is not enough.
+    const warnings: string[] = [];
+    const { data: templateRows, error: templatesErr } = await db
+      .from("templates")
+      .select("id, name, description, category, tags, canvas_width, canvas_height")
+      .eq("company_id", companyId)
+      .eq("status", "published")
+      .order("updated_at", { ascending: false })
+      .limit(CANDIDATE_CAP + 1);
+    if (templatesErr) {
+      logError("template-generate", templatesErr);
+      return json({ error: GENERIC_ERROR }, 500);
+    }
+    let rows = (templateRows ?? []) as TemplateRowLike[];
+    if (rows.length === 0) {
+      throw new HttpError(400, "No published templates to generate from — publish one first.");
+    }
+    if (rows.length > CANDIDATE_CAP) {
+      rows = rows.slice(0, CANDIDATE_CAP);
+      warnings.push(
+        `The library has more than ${CANDIDATE_CAP} published templates — considering the ${CANDIDATE_CAP} most recently updated.`,
+      );
+    }
+
+    const { data: fieldRows, error: fieldsErr } = await db
+      .from("template_fields")
+      .select(
+        "template_id, field_key, label, type, is_static, required, max_length, placeholder, options",
+      )
+      .in(
+        "template_id",
+        rows.map((r) => r.id),
+      )
+      .order("sort_order", { ascending: true });
+    if (fieldsErr) {
+      logError("template-generate", fieldsErr);
+      return json({ error: GENERIC_ERROR }, 500);
+    }
+    const fieldsByTemplate = new Map<string, FieldRowLike[]>();
+    for (const row of (fieldRows ?? []) as Array<FieldRowLike & { template_id: string }>) {
+      const list = fieldsByTemplate.get(row.template_id) ?? [];
+      list.push(row);
+      fieldsByTemplate.set(row.template_id, list);
+    }
+    let candidates = rows.map((r) => candidateFromRows(r, fieldsByTemplate.get(r.id) ?? []));
+
+    // 2. Hints narrow the set. A named template is an instruction; a platform
+    //    is a preference that falls back rather than emptying the list.
+    if (templateIdHint) {
+      candidates = candidates.filter((c) => c.id === templateIdHint);
+      if (candidates.length === 0) {
+        throw new HttpError(
+          400,
+          "That template is not in the published library any more — pick another or generate without it.",
+        );
+      }
+    } else if (platformHint) {
+      const matching = candidates.filter((c) => c.platforms.includes(platformHint));
+      if (matching.length > 0) {
+        candidates = matching;
+      } else {
+        warnings.push(
+          "No published templates match that platform — considering the whole library.",
+        );
+      }
+    }
+
+    // 3. One forced tool call; one retry carrying the validation errors.
+    //    No vision input: the templates are known structured data and the
+    //    field list carries the signal (unlike auto-build, which reads an
+    //    unknown design and needs the pixels).
+    const userText = buildUserText(brief, candidates, count, platformHint, Boolean(templateIdHint));
+    let attempt = await callClaude<GenerateModelOutput>(apiKey, userText, PROPOSE_POSTS_TOOL);
+    let validated;
+    try {
+      validated = validateGeneration(attempt.output, candidates, count);
+    } catch (e) {
+      if (!(e instanceof GenerateValidationError)) throw e;
+      attempt = await callClaude<GenerateModelOutput>(apiKey, userText, PROPOSE_POSTS_TOOL, {
+        priorContent: attempt.raw,
+        toolUseId: attempt.toolUseId,
+        errors: e.errors,
+      });
+      try {
+        validated = validateGeneration(attempt.output, candidates, count);
+      } catch {
+        return json(
+          {
+            error:
+              "Generate couldn't produce a usable post from this brief. The library and the manual fill path are unaffected — try rewording the brief, or fill a template directly.",
+          },
+          502,
+        );
+      }
+    }
+
+    return json({
+      proposals: validated.proposals,
+      warnings: [...warnings, ...validated.warnings],
+      // Provenance is the product's stated position: every generated thing
+      // can answer which model made it, from which library, and when.
+      meta: {
+        model: ANTHROPIC_MODEL,
+        generatedAt: new Date().toISOString(),
+        candidateCount: candidates.length,
+        briefLength: brief.length,
+      },
+    });
+  } catch (e) {
+    if (e instanceof HttpError) return json({ error: e.message }, e.status);
+    logError("template-generate", e);
+    return json({ error: GENERIC_ERROR }, 500);
+  }
+});

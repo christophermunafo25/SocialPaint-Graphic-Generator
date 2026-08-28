@@ -25,6 +25,10 @@ export type Route =
   | { name: "onboarding" }
   | { name: "portal"; group?: string; q?: string }
   | { name: "template"; templateId: string }
+  /** Generate: brief in, filled templates out. `templateId` is the "use this
+   * one" hint from a template card — in the URL so the intent survives a
+   * refresh; the seeded VALUES deliberately do not (see seedHandoff.ts). */
+  | { name: "generate"; templateId?: string }
   | { name: "adminTemplates" }
   | { name: "builder"; templateId: string | null }
   | { name: "brandStudio"; category?: BrandCategory }
@@ -60,6 +64,10 @@ export function routeToUrl(route: Route): string {
     }
     case "template":
       return `/templates/${encodeURIComponent(route.templateId)}`;
+    case "generate":
+      return route.templateId
+        ? `/generate?template=${encodeURIComponent(route.templateId)}`
+        : "/generate";
     case "adminTemplates":
       return "/template-builder";
     case "builder":
@@ -93,6 +101,8 @@ export function urlToRoute(pathname: string, search: string): Route {
         group: params.get("group") ?? undefined,
         q: params.get("q") ?? undefined,
       };
+    case "generate":
+      return { name: "generate", templateId: params.get("template") ?? undefined };
     case "template-builder":
       if (!tail) return { name: "adminTemplates" };
       return {
