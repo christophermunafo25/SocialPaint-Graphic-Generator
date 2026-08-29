@@ -3,14 +3,19 @@ import {
   GenerateValidationError,
   buildRepairRequests,
   candidateFromRows,
+  canvasForPlatform,
   classifyPlatforms,
   modelCandidates,
   orientationOf,
+  validateFreestyle,
   validateGeneration,
   validateRepair,
   type CandidateField,
   type CandidateTemplate,
+  type FreestyleContext,
   type GenerateModelOutput,
+  type ProposedDesign,
+  type ProposedDesignField,
   type ProposedGeneration,
 } from "./generateValidate.ts";
 
@@ -369,6 +374,174 @@ describe("repair requests", () => {
 
   it("rejects an empty rewrite", () => {
     expectRepairErrors({ values: [{ fieldKey: "headline", value: "   " }] }, oneRequest, "empty");
+  });
+});
+
+describe("freestyle designs", () => {
+  const ctx: FreestyleContext = {
+    canvasWidth: 1200,
+    canvasHeight: 1200,
+    palette: [
+      { key: "primary", hex: "#2f3b4c" },
+      { key: "paper", hex: "#f4f1ea" },
+    ],
+    typeStyleKeys: ["heading", "body"],
+  };
+
+  const designField = (over: Partial<ProposedDesignField> = {}): ProposedDesignField => ({
+    label: "Headline",
+    fieldKey: "headline",
+    type: "text",
+    value: "Now hiring in Evanston",
+    box: { x: 100, y: 100, width: 1000, height: 200 },
+    ...over,
+  });
+
+  const design = (over: Partial<ProposedDesign> = {}): ProposedDesign => ({
+    name: "Hiring card",
+    backgroundColorKey: "paper",
+    fields: [
+      designField(),
+      designField({ label: "Details", fieldKey: "details", value: "Starts in October" }),
+    ],
+    caption: "We're hiring in Evanston.",
+    why: "A clean announcement layout.",
+    ...over,
+  });
+
+  it("resolves palette keys to hexes and pre-fills editable values", () => {
+    const out = validateFreestyle({ proposals: [design()] }, ctx, 3);
+    const d = out.designs[0];
+    expect(d.backgroundColor).toBe("#f4f1ea");
+    expect(d.canvasWidth).toBe(1200);
+    expect(d.values).toEqual({
+      headline: "Now hiring in Evanston",
+      details: "Starts in October",
+    });
+    // Text is shrink-sized so length can never escape the model's box.
+    expect(d.fields.every((f) => f.type !== "text" || f.textSizing === "shrink")).toBe(true);
+  });
+
+  it("clamps geometry to the canvas and drops unusable boxes", () => {
+    const out = validateFreestyle(
+      {
+        proposals: [
+          design({
+            fields: [
+              designField({ box: { x: 1000, y: 100, width: 900, height: 200 } }),
+              designField({
+                label: "Sliver",
+                fieldKey: "sliver",
+                box: { x: 0, y: 0, width: 4, height: 4 },
+              }),
+              designField({ label: "Details", fieldKey: "details", value: "x" }),
+            ],
+          }),
+        ],
+      },
+      ctx,
+      3,
+    );
+    const d = out.designs[0];
+    expect(d.fields.find((f) => f.fieldKey === "headline")?.width).toBe(200);
+    expect(d.fields.some((f) => f.fieldKey === "sliver")).toBe(false);
+    expect(out.warnings.some((w) => w.includes("Sliver"))).toBe(true);
+  });
+
+  it("drops shapes without a real palette color and unbinds unknown type styles", () => {
+    const out = validateFreestyle(
+      {
+        proposals: [
+          design({
+            fields: [
+              designField({ typeStyleKey: "display" }),
+              designField({ label: "Details", fieldKey: "details", value: "x" }),
+              designField({
+                label: "Block",
+                fieldKey: "block",
+                type: "shape",
+                shape: "rect",
+                colorKey: "neon",
+              }),
+            ],
+          }),
+        ],
+      },
+      ctx,
+      3,
+    );
+    const d = out.designs[0];
+    expect(d.fields.find((f) => f.fieldKey === "headline")?.typeStyleKey).toBeUndefined();
+    expect(d.fields.some((f) => f.type === "shape")).toBe(false);
+  });
+
+  it("keeps a valid shape, fixed, filled from the palette", () => {
+    const out = validateFreestyle(
+      {
+        proposals: [
+          design({
+            fields: [
+              designField({
+                label: "Block",
+                fieldKey: "block",
+                type: "shape",
+                shape: "rect",
+                colorKey: "primary",
+                box: { x: 0, y: 0, width: 1200, height: 1200 },
+              }),
+              designField(),
+              designField({ label: "Details", fieldKey: "details", value: "x" }),
+            ],
+          }),
+        ],
+      },
+      ctx,
+      3,
+    );
+    const shape = out.designs[0].fields.find((f) => f.type === "shape");
+    expect(shape).toMatchObject({ static: true, colorHex: "#2f3b4c", width: 1200 });
+  });
+
+  it("forces image slots member-editable — the model cannot supply artwork", () => {
+    const out = validateFreestyle(
+      {
+        proposals: [
+          design({
+            fields: [
+              designField(),
+              designField({ label: "Photo", fieldKey: "photo", type: "image", static: true }),
+            ],
+          }),
+        ],
+      },
+      ctx,
+      3,
+    );
+    const photo = out.designs[0].fields.find((f) => f.type === "image");
+    expect(photo?.static).toBeUndefined();
+    expect(out.designs[0].imageFieldsNeeded).toEqual([
+      { fieldKey: "photo", label: "Photo", required: false },
+    ]);
+  });
+
+  it("rejects a design with too little left after validation", () => {
+    let thrown: unknown;
+    try {
+      validateFreestyle(
+        { proposals: [design({ fields: [designField({ static: true, value: "" })] })] },
+        ctx,
+        3,
+      );
+    } catch (e) {
+      thrown = e;
+    }
+    expect(thrown).toBeInstanceOf(GenerateValidationError);
+  });
+
+  it("picks the canvas from the platform, falling back to the neutral square", () => {
+    expect(canvasForPlatform("linkedin")).toEqual({ width: 1080, height: 1350 });
+    expect(canvasForPlatform(undefined)).toEqual({ width: 1440, height: 1440 });
+    expect(canvasForPlatform("print")).toEqual({ width: 1440, height: 1440 });
   });
 });
 

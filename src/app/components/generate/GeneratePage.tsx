@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ArrowRight, ArrowUp, Globe, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUp, Globe, Image as ImageIcon } from "lucide-react";
 import type { FieldValues, GeneratedProposal, TemplateSchema } from "@/lib/types";
 import { PLATFORMS, type PlatformId } from "@/lib/templates/platforms";
 import { stores } from "@/lib/stores";
@@ -8,10 +8,13 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { useBrand } from "@/lib/brand/BrandContext";
 import { mergeCaption } from "@/lib/caption";
 import { createCanvasMeasurer } from "@/lib/render/autoFit";
+import { designToSchema } from "@/lib/generate/designToSchema";
+import { measureProposal } from "@/lib/generate/measureProposal";
 import { repairProposal } from "@/lib/generate/repairProposal";
 import { stashSeed } from "@/lib/generate/seedHandoff";
 import { useRouter } from "../../router";
 import { Page } from "../layout/Page";
+import { TemplateFill } from "../TemplateFill";
 import { TemplateThumbnail } from "../TemplateThumbnail";
 
 /** One proposal, ready to show: the model's output, the template it fills,
@@ -27,6 +30,15 @@ interface Results {
   warnings: string[];
   model: string;
   candidateCount: number;
+  mode: "library" | "freestyle";
+}
+
+/** A freestyle draft opened for editing — filled and exported entirely in
+ * place, since there is no stored template to navigate to. Dies with the
+ * page; nothing is persisted. */
+interface EditingDraft {
+  schema: TemplateSchema;
+  values: FieldValues;
 }
 
 /** Example briefs behind the starter pills — full sentences in the product's
@@ -60,27 +72,35 @@ const STARTERS: Array<{ label: string; brief: string }> = [
   },
 ];
 
-/** Generate: a member describes what they want to post; the system picks
- * templates from the company's own published library, writes the copy into
- * fields an admin exposed, and hands back editable pre-filled graphics. The
- * model never draws anything — choosing a card lands on the ordinary fill
- * page with the values seeded, where the usual open/download instrumentation
- * applies.
+/** Generate: a member describes what they want to post and gets editable
+ * pre-filled graphics back. Two modes, the member's choice:
+ *
+ *  - "My templates" (default): fills existing published templates — the
+ *    model writes values only, and choosing a card lands on the ordinary
+ *    fill page with the values seeded, where the usual open/download
+ *    instrumentation applies.
+ *  - "Something new": the model proposes a NEW layout, kept on brand by
+ *    constraint — palette keys and brand type styles only, the published
+ *    library as reference. The draft is ephemeral: filled and exported in
+ *    place, never saved to the library.
  *
  * Composition: a centred hero (headline, one line under it), one big prompt
- * card that IS the interface — borderless textarea, a compact platform
- * picker, a round submit — with starter pills beneath, and results below.
- * Plain canvas background; the brand lives in the graphics, not the chrome. */
+ * card that IS the interface — borderless textarea, mode toggle, a compact
+ * platform picker, a round submit — with starter pills beneath, and results
+ * below. Plain canvas background; the brand lives in the graphics, not the
+ * chrome. */
 export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
-  const { company, role } = useAuth();
+  const { company } = useAuth();
   const { kit } = useBrand();
   const { navigate } = useRouter();
 
   const [brief, setBrief] = useState("");
   const [platform, setPlatform] = useState<PlatformId | null>(null);
+  const [mode, setMode] = useState<"library" | "freestyle">("library");
   const [phase, setPhase] = useState<"idle" | "asking" | "measuring">("idle");
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<Results | null>(null);
+  const [editing, setEditing] = useState<EditingDraft | null>(null);
 
   const publishedState = useAsync(
     () => (company ? stores.templates.listPublished(company.id) : Promise.resolve([])),
@@ -90,6 +110,10 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
   // A stale hint (unpublished since the member left that card) degrades to a
   // library-wide generate rather than a server error.
   const hinted = templateIdHint ? published?.find((t) => t.id === templateIdHint) : undefined;
+  // With no published templates the library mode has nothing to fill, but
+  // freestyle still works from the brand kit — so the composer stays, forced
+  // to freestyle, and says why.
+  const libraryEmpty = published !== null && published.length === 0;
 
   const busy = phase !== "idle";
 
@@ -100,21 +124,35 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
     setPhase("asking");
     try {
       const trimmedBrief = brief.trim();
+      const effectiveMode = hinted ? "library" : libraryEmpty ? "freestyle" : mode;
       const res = await stores.generate.generate(company.id, {
         brief: trimmedBrief,
         platformHint: hinted ? undefined : (platform ?? undefined),
         templateIdHint: hinted?.id,
         count: 3,
+        mode: effectiveMode,
       });
 
       // The measurement pass: the function checked character counts; only a
       // browser can check glyphs. Overflowing values get one repair round;
-      // a proposal that still overflows is dropped, never shown.
+      // a proposal that still overflows is dropped, never shown. Freestyle
+      // designs have no stored template to repair against — the server
+      // forces shrink sizing on all their text, so measure and drop honestly.
       setPhase("measuring");
       const measure = createCanvasMeasurer();
       const warnings = [...res.warnings];
       const cards: ResultCard[] = [];
-      for (const proposal of res.proposals) {
+      for (const [i, proposal] of res.proposals.entries()) {
+        if (proposal.design) {
+          const schema = designToSchema(proposal.design, company.id, i + 1);
+          const measured = measureProposal(schema, proposal.values, kit, measure);
+          if (!measured.ok) {
+            warnings.push(`Dropped the "${proposal.templateName}" design — its copy overflows.`);
+            continue;
+          }
+          cards.push({ proposal, schema, values: proposal.values });
+          continue;
+        }
         const schema = await stores.templates.get(proposal.templateId);
         if (!schema) {
           warnings.push(`"${proposal.templateName}" is no longer available — skipped.`);
@@ -149,6 +187,7 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
           warnings,
           model: res.meta.model,
           candidateCount: res.meta.candidateCount,
+          mode: effectiveMode,
         });
       }
     } catch (e) {
@@ -159,6 +198,13 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
   };
 
   const choose = (card: ResultCard) => {
+    // A library fill lands on the ordinary fill page. A freestyle design has
+    // no stored template to navigate to, so it is filled and exported right
+    // here — the fill surface takes a schema directly.
+    if (card.proposal.design) {
+      setEditing({ schema: card.schema, values: card.values });
+      return;
+    }
     stashSeed(card.schema.id, card.values);
     navigate({ name: "template", templateId: card.schema.id });
   };
@@ -192,7 +238,7 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
           color: "var(--text-muted)",
         }}
       >
-        Your brief, written into templates your design team already locked. Edit and export as
+        Filled from your template library, or drafted fresh from your brand kit. Edit and export as
         usual.
       </p>
     </div>
@@ -215,28 +261,32 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
     );
   }
 
-  if (published && published.length === 0) {
+  // A freestyle draft being filled: the fill surface takes the ephemeral
+  // schema directly, no store fetch, no usage instrumentation (there is no
+  // template row to attribute it to). Leaving discards it — it says so.
+  if (editing) {
     return (
-      <Page narrow={760}>
-        {hero}
-        <div className="sp-emptystate" style={{ marginTop: "var(--space-lg)" }}>
-          <p className="sp-emptystate__title">Nothing to generate from yet</p>
-          <p className="sp-emptystate__body">
-            Generate fills templates your design team has published — that's what keeps every result
-            on brand. There are no published templates yet.
+      <Page>
+        <div className="flex items-center justify-between gap-3 mb-5">
+          <button
+            onClick={() => setEditing(null)}
+            className="flex items-center gap-1.5"
+            style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}
+          >
+            <ArrowLeft style={{ width: 14, height: 14 }} />
+            Back to drafts
+          </button>
+          <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
+            A new design from your brand kit — not saved to the library, so export before you leave.
           </p>
-          {role === "admin" && (
-            <div className="sp-emptystate__actions">
-              <button
-                type="button"
-                className="sp-btn sp-btn-primary"
-                onClick={() => navigate({ name: "adminTemplates" })}
-              >
-                Open the Template Builder
-              </button>
-            </div>
-          )}
         </div>
+        <TemplateFill
+          template={editing.schema}
+          brandKit={kit}
+          values={editing.values}
+          onValuesChange={(next) => setEditing({ ...editing, values: next })}
+          instrument={false}
+        />
       </Page>
     );
   }
@@ -289,38 +339,81 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
                 </button>
               </p>
             ) : (
-              <label
-                className="flex items-center gap-1.5"
-                style={{
-                  padding: "var(--space-3xs) var(--space-2xs)",
-                  borderRadius: "var(--radius-control)",
-                  background: "var(--bg-surface-raised)",
-                  color: "var(--text-secondary)",
-                }}
-              >
-                <Globe style={{ width: 14, height: 14, flexShrink: 0 }} aria-hidden />
-                <select
-                  value={platform ?? ""}
-                  onChange={(e) => setPlatform((e.target.value || null) as PlatformId | null)}
-                  aria-label="Platform"
-                  disabled={busy}
+              <div className="flex items-center flex-wrap gap-2">
+                {libraryEmpty ? (
+                  <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
+                    No published templates yet — drafts come fresh from your brand kit.
+                  </p>
+                ) : (
+                  <div
+                    className="flex items-center"
+                    role="group"
+                    aria-label="How to generate"
+                    style={{
+                      padding: 2,
+                      gap: 2,
+                      borderRadius: "var(--radius-control)",
+                      background: "var(--bg-surface-raised)",
+                    }}
+                  >
+                    {(
+                      [
+                        { id: "library", label: "My templates" },
+                        { id: "freestyle", label: "Something new" },
+                      ] as const
+                    ).map((m) => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        disabled={busy}
+                        aria-pressed={mode === m.id}
+                        onClick={() => setMode(m.id)}
+                        style={{
+                          padding: "var(--space-3xs) var(--space-2xs)",
+                          borderRadius: "var(--radius-control)",
+                          fontSize: "var(--type-label-size)",
+                          background: mode === m.id ? "var(--bg-surface)" : "transparent",
+                          color: mode === m.id ? "var(--text-primary)" : "var(--text-muted)",
+                        }}
+                      >
+                        {m.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <label
+                  className="flex items-center gap-1.5"
                   style={{
-                    background: "transparent",
-                    border: "none",
-                    outline: "none",
-                    fontFamily: "var(--font-ui)",
-                    fontSize: "var(--type-label-size)",
-                    color: "inherit",
+                    padding: "var(--space-3xs) var(--space-2xs)",
+                    borderRadius: "var(--radius-control)",
+                    background: "var(--bg-surface-raised)",
+                    color: "var(--text-secondary)",
                   }}
                 >
-                  <option value="">Any platform</option>
-                  {PLATFORMS.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  <Globe style={{ width: 14, height: 14, flexShrink: 0 }} aria-hidden />
+                  <select
+                    value={platform ?? ""}
+                    onChange={(e) => setPlatform((e.target.value || null) as PlatformId | null)}
+                    aria-label="Platform"
+                    disabled={busy}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      outline: "none",
+                      fontFamily: "var(--font-ui)",
+                      fontSize: "var(--type-label-size)",
+                      color: "inherit",
+                    }}
+                  >
+                    <option value="">Any platform</option>
+                    {PLATFORMS.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
             )}
             <button
               type="button"
@@ -342,6 +435,20 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
             </button>
           </div>
         </div>
+
+        {mode === "freestyle" && !hinted && !libraryEmpty && !busy && (
+          <p
+            style={{
+              marginTop: "var(--space-2xs)",
+              textAlign: "center",
+              fontSize: "var(--type-caption-size)",
+              color: "var(--text-muted)",
+            }}
+          >
+            New layouts stay inside your brand palette and type styles, guided by your published
+            templates.
+          </p>
+        )}
 
         {!results && !busy && (
           <div
@@ -443,11 +550,18 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
               color: "var(--text-muted)",
             }}
           >
-            Drafted by {results.model} from{" "}
-            {results.candidateCount === 1
-              ? "the template you picked"
-              : `${results.candidateCount} published templates`}
-            . Everything stays editable before you export.
+            {results.mode === "freestyle"
+              ? `Drafted by ${results.model} from your brand kit${
+                  results.candidateCount > 0
+                    ? `, with ${results.candidateCount} published templates as reference`
+                    : ""
+                }.`
+              : `Drafted by ${results.model} from ${
+                  results.candidateCount === 1
+                    ? "the template you picked"
+                    : `${results.candidateCount} published templates`
+                }.`}{" "}
+            Everything stays editable before you export.
           </p>
         </div>
       )}
@@ -479,6 +593,7 @@ function ProposalCard({ card, onChoose }: { card: ResultCard; onChoose(card: Res
         <TemplateThumbnail template={schema} values={values} />
       </div>
       <p
+        className="flex items-center gap-1.5"
         style={{
           fontSize: "var(--type-label-size)",
           fontWeight: 500,
@@ -486,6 +601,20 @@ function ProposalCard({ card, onChoose }: { card: ResultCard; onChoose(card: Res
         }}
       >
         {schema.name}
+        {proposal.design && (
+          <span
+            style={{
+              padding: "1px var(--space-3xs)",
+              borderRadius: "var(--radius-control)",
+              background: "var(--bg-surface-raised)",
+              fontSize: "var(--type-caption-size)",
+              fontWeight: 400,
+              color: "var(--text-muted)",
+            }}
+          >
+            New design
+          </span>
+        )}
       </p>
       {proposal.why && (
         <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>

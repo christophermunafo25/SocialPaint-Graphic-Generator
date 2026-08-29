@@ -35,12 +35,16 @@ import {
   GenerateValidationError,
   buildRepairRequests,
   candidateFromRows,
+  canvasForPlatform,
   modelCandidates,
+  validateFreestyle,
   validateGeneration,
   validateRepair,
   type CandidateTemplate,
   type FieldRowLike,
+  type FreestyleModelOutput,
   type GenerateModelOutput,
+  type GeneratePlatform,
   type RepairFieldRequest,
   type RepairModelOutput,
   type TemplateRowLike,
@@ -274,6 +278,279 @@ function tooMany(req: Request): Response {
 }
 
 // ---------------------------------------------------------------------------
+// Freestyle — a new design instead of a library fill (opt-in per request).
+// The model proposes layout for once; the palette, the type styles, and the
+// published library as reference are what keep it on brand. See the shared
+// module for the constraint set.
+// ---------------------------------------------------------------------------
+
+const PROPOSE_DESIGNS_TOOL = {
+  name: "propose_designs",
+  description:
+    "Propose new on-brand designs: for each, a name, an optional background palette key, elements with geometry, a caption, and one sentence on the design.",
+  input_schema: {
+    type: "object",
+    additionalProperties: false,
+    required: ["proposals"],
+    properties: {
+      proposals: {
+        type: "array",
+        minItems: 1,
+        maxItems: 3,
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["name", "fields", "caption", "why"],
+          properties: {
+            name: { type: "string" },
+            backgroundColorKey: {
+              type: "string",
+              description: "Brand palette key for the canvas fill; omit for white.",
+            },
+            fields: {
+              type: "array",
+              items: {
+                type: "object",
+                additionalProperties: false,
+                required: ["label", "fieldKey", "type", "box"],
+                properties: {
+                  label: { type: "string" },
+                  fieldKey: { type: "string" },
+                  type: { type: "string", enum: ["text", "multiline", "image", "shape"] },
+                  shape: { type: "string", enum: ["rect", "ellipse"] },
+                  static: {
+                    type: "boolean",
+                    description: "true = part of the design; false = a per-post fact.",
+                  },
+                  value: {
+                    type: "string",
+                    description:
+                      "Fixed content for static text; the pre-filled member value otherwise. Never for images.",
+                  },
+                  box: {
+                    type: "object",
+                    additionalProperties: false,
+                    required: ["x", "y", "width", "height"],
+                    properties: {
+                      x: { type: "number" },
+                      y: { type: "number" },
+                      width: { type: "number" },
+                      height: { type: "number" },
+                    },
+                  },
+                  typeStyleKey: { type: "string" },
+                  colorKey: { type: "string" },
+                  fontSizePx: { type: "number" },
+                  align: { type: "string", enum: ["left", "center", "right"] },
+                  uppercase: { type: "boolean" },
+                },
+              },
+            },
+            caption: { type: "string" },
+            why: { type: "string" },
+          },
+        },
+      },
+    },
+  },
+};
+
+interface BrandKitRow {
+  colors: Array<{ key: string; name: string; hex: string }> | null;
+  type_styles: Array<{ key: string; name: string }> | null;
+  guidelines: string[] | null;
+}
+
+/** Reference digest rows: enough of each published template's anatomy for
+ * the model to learn the house style — never the whole record. */
+interface ReferenceFieldRow {
+  template_id: string;
+  label: string;
+  type: string;
+  is_static: boolean | null;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  font_size_px: number | null;
+  type_style_key: string | null;
+  color_hex: string | null;
+}
+
+function buildFreestyleUserText(input: {
+  brief: string;
+  canvas: { width: number; height: number };
+  platform: GeneratePlatform | undefined;
+  kit: BrandKitRow;
+  references: unknown[];
+  count: number;
+}): string {
+  const parts: string[] = [];
+  parts.push(`Brief: ${input.brief}`);
+  if (input.platform) parts.push(`The member is posting on: ${input.platform}.`);
+  parts.push(
+    `Design NEW graphics for a ${input.canvas.width}x${input.canvas.height}px canvas. Return exactly ${input.count} proposal${input.count === 1 ? "" : "s"}, each a genuinely different composition.`,
+  );
+  parts.push(
+    `Brand palette (use these KEYS, nothing else): ${JSON.stringify(input.kit.colors ?? [])}`,
+  );
+  parts.push(`Brand type styles: ${JSON.stringify(input.kit.type_styles ?? [])}`);
+  if (input.kit.guidelines?.length) {
+    parts.push(`Brand guidelines: ${JSON.stringify(input.kit.guidelines)}`);
+  }
+  parts.push(
+    input.references.length
+      ? `The team's published templates, as style reference (match their spacing, hierarchy, and voice):\n${JSON.stringify(input.references)}`
+      : "The team has no published templates to reference — design cleanly from the palette and type styles alone.",
+  );
+  return parts.join("\n\n");
+}
+
+async function handleFreestyle(
+  json: ReturnType<typeof jsonResponder>,
+  db: ReturnType<typeof serviceClient>,
+  apiKey: string,
+  companyId: string,
+  input: { brief: string; platformHint: GeneratePlatform | undefined; count: number },
+): Promise<Response> {
+  const warnings: string[] = [];
+  const { data: kitRow } = await db
+    .from("brand_kits")
+    .select("colors, type_styles, guidelines")
+    .eq("company_id", companyId)
+    .eq("is_active", true)
+    .maybeSingle();
+  const kit: BrandKitRow = (kitRow as BrandKitRow | null) ?? {
+    colors: [],
+    type_styles: [],
+    guidelines: [],
+  };
+  if (!kit.colors?.length) {
+    throw new HttpError(
+      400,
+      "Freestyle needs a brand palette to stay on brand — add colors in Brand Studio first.",
+    );
+  }
+
+  // Style reference: the most recent published templates, digested. Unlike
+  // library mode this is context, not a candidate set — no hint narrowing.
+  const { data: templateRows } = await db
+    .from("templates")
+    .select("id, name, category, canvas_width, canvas_height, background_color")
+    .eq("company_id", companyId)
+    .eq("status", "published")
+    .order("updated_at", { ascending: false })
+    .limit(12);
+  const refRows = (templateRows ?? []) as Array<
+    TemplateRowLike & { background_color: string | null }
+  >;
+  let references: unknown[] = [];
+  if (refRows.length > 0) {
+    const { data: fieldRows } = await db
+      .from("template_fields")
+      .select(
+        "template_id, label, type, is_static, x, y, width, height, font_size_px, type_style_key, color_hex",
+      )
+      .in(
+        "template_id",
+        refRows.map((r) => r.id),
+      )
+      .order("sort_order", { ascending: true });
+    const byTemplate = new Map<string, ReferenceFieldRow[]>();
+    for (const row of (fieldRows ?? []) as ReferenceFieldRow[]) {
+      const list = byTemplate.get(row.template_id) ?? [];
+      if (list.length < 15) list.push(row);
+      byTemplate.set(row.template_id, list);
+    }
+    references = refRows.map((r) => ({
+      name: r.name,
+      category: r.category,
+      canvasWidth: r.canvas_width,
+      canvasHeight: r.canvas_height,
+      backgroundColor: r.background_color,
+      elements: (byTemplate.get(r.id) ?? []).map((f) => ({
+        label: f.label,
+        type: f.type,
+        static: f.is_static === true || undefined,
+        x: f.x,
+        y: f.y,
+        width: f.width,
+        height: f.height,
+        fontSizePx: f.font_size_px ?? undefined,
+        typeStyleKey: f.type_style_key ?? undefined,
+        colorHex: f.color_hex ?? undefined,
+      })),
+    }));
+  }
+
+  const canvas = canvasForPlatform(input.platformHint);
+  const ctx = {
+    canvasWidth: canvas.width,
+    canvasHeight: canvas.height,
+    palette: (kit.colors ?? []).map(({ key, hex }) => ({ key, hex })),
+    typeStyleKeys: (kit.type_styles ?? []).map((s) => s.key),
+  };
+  const userText = buildFreestyleUserText({
+    brief: input.brief,
+    canvas,
+    platform: input.platformHint,
+    kit,
+    references,
+    count: input.count,
+  });
+
+  let attempt = await callClaude<FreestyleModelOutput>(apiKey, userText, PROPOSE_DESIGNS_TOOL);
+  let validated;
+  try {
+    validated = validateFreestyle(attempt.output, ctx, input.count);
+  } catch (e) {
+    if (!(e instanceof GenerateValidationError)) throw e;
+    attempt = await callClaude<FreestyleModelOutput>(apiKey, userText, PROPOSE_DESIGNS_TOOL, {
+      priorContent: attempt.raw,
+      toolUseId: attempt.toolUseId,
+      errors: e.errors,
+    });
+    try {
+      validated = validateFreestyle(attempt.output, ctx, input.count);
+    } catch {
+      return json(
+        {
+          error:
+            "Freestyle couldn't produce a usable design from this brief. The library and the manual fill path are unaffected — try again, or generate from your templates instead.",
+        },
+        502,
+      );
+    }
+  }
+
+  return json({
+    proposals: validated.designs.map((d, i) => ({
+      templateId: `freestyle-${i + 1}`,
+      templateName: d.name,
+      values: d.values,
+      caption: d.caption,
+      why: d.why,
+      imageFieldsNeeded: d.imageFieldsNeeded,
+      design: {
+        name: d.name,
+        canvasWidth: d.canvasWidth,
+        canvasHeight: d.canvasHeight,
+        backgroundColor: d.backgroundColor,
+        fields: d.fields,
+      },
+    })),
+    warnings: [...warnings, ...validated.warnings],
+    meta: {
+      model: ANTHROPIC_MODEL,
+      generatedAt: new Date().toISOString(),
+      candidateCount: references.length,
+      briefLength: input.brief.length,
+      mode: "freestyle",
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Repair — round two of the client's measurement pass (see the shared module
 // for the contract). Same auth, same quota buckets: a repair is a model call
 // and costs exactly what a generate does.
@@ -436,6 +713,11 @@ Deno.serve(async (req) => {
         ? undefined
         : requireUuid(body.templateIdHint, "templateIdHint");
     const count = optionalInt(body.count, "count", { min: 1, max: 3 }) ?? 3;
+    const mode = optionalEnum(body.mode, "mode", ["library", "freestyle"] as const) ?? "library";
+
+    if (mode === "freestyle") {
+      return await handleFreestyle(json, db, apiKey, companyId, { brief, platformHint, count });
+    }
 
     // 1. The candidate list — published templates plus their field lists.
     //    The field list is what actually lets the model judge fit; a

@@ -474,6 +474,23 @@ export interface GenerateInput {
   templateIdHint?: string;
   /** How many proposals to return (1–3; the server defaults to 3). */
   count?: number;
+  /** "library" (default) fills existing published templates — on-brand by
+   * construction. "freestyle" lets the model propose NEW layouts, kept on
+   * brand by constraint: palette keys and brand type styles only, with the
+   * published library fed in as style reference. */
+  mode?: "library" | "freestyle";
+}
+
+/** A freestyle proposal's design: a complete, ephemeral template the client
+ * renders and fills WITHOUT persisting anything — assembled into a
+ * TemplateSchema by designToSchema. Every color arrived as a brand palette
+ * key and left the server as its resolved hex. */
+export interface GeneratedDesign {
+  name: string;
+  canvasWidth: number;
+  canvasHeight: number;
+  backgroundColor?: string;
+  fields: TemplateField[];
 }
 
 /** One generated proposal: a fill of an existing published template. Values
@@ -494,6 +511,9 @@ export interface GeneratedProposal {
   /** Image fields the member still has to fill — reported so the client can
    * say so honestly before the member commits to a choice. */
   imageFieldsNeeded: Array<{ fieldKey: string; label: string; required: boolean }>;
+  /** Freestyle mode only: the new design itself. When present, templateId is
+   * a synthetic marker and the client renders this instead of fetching. */
+  design?: GeneratedDesign;
 }
 
 /** Provenance for a generate call — AutoBuildMeta's spirit: every generated
