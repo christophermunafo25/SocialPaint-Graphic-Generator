@@ -382,30 +382,41 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
     }
   };
 
+  // Once a run starts, the question is answered: the hero collapses so the
+  // page's weight moves to the drafts — and the shift happens on the
+  // member's own submit, not when results land.
+  const heroCollapsed = busy || results !== null;
   const hero = (
-    <div style={{ textAlign: "center", paddingTop: "var(--space-2xl)" }}>
+    <div
+      style={{
+        textAlign: "center",
+        paddingTop: heroCollapsed ? "var(--space-md)" : "var(--space-2xl)",
+      }}
+    >
       <h1
         style={{
           fontFamily: "var(--font-head)",
           fontWeight: "var(--weight-head)",
-          fontSize: "var(--type-h3-size)",
-          lineHeight: "var(--type-h3-lh)",
-          letterSpacing: "var(--type-h3-track)",
+          fontSize: heroCollapsed ? "var(--type-cardtitle-size)" : "var(--type-h1-size)",
+          lineHeight: heroCollapsed ? "var(--type-cardtitle-lh)" : "var(--type-h1-lh)",
+          letterSpacing: "var(--track-head)",
           color: "var(--text-primary)",
         }}
       >
         What are we painting today?
       </h1>
-      <p
-        style={{
-          marginTop: "var(--space-xs)",
-          fontSize: "var(--type-body-size)",
-          color: "var(--text-muted)",
-        }}
-      >
-        Filled from your template library, or drafted fresh from your brand kit. Edit and export as
-        usual.
-      </p>
+      {!heroCollapsed && (
+        <p
+          style={{
+            marginTop: "var(--space-xs)",
+            fontSize: "var(--type-label-size)",
+            color: "var(--text-muted)",
+          }}
+        >
+          Filled from your template library, or drafted fresh from your brand kit. Edit and export
+          as usual.
+        </p>
+      )}
     </div>
   );
 
@@ -514,10 +525,13 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
         {hero}
 
         {/* The prompt card — the one control that matters, so it gets the
-            stage. Elevation through surface colour, per the DS. */}
+            stage: card padding at the content step, the photo well and the
+            brief sharing one field, the controls as one footer strip, and a
+            wash halo on focus. Elevation through surface colour, per the
+            DS. */}
         <div
-          className="sp-card"
-          style={{ marginTop: "var(--space-lg)", padding: "var(--space-sm)" }}
+          className="sp-card sp-gen-composer"
+          style={{ marginTop: "var(--space-lg)", padding: "var(--space-md)" }}
           onPaste={onComposerPaste}
         >
           <div className="flex" style={{ gap: "var(--space-xs)", alignItems: "stretch" }}>
@@ -630,7 +644,11 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
           )}
           <div
             className="flex items-center justify-between gap-3"
-            style={{ marginTop: "var(--space-2xs)" }}
+            style={{
+              marginTop: "var(--space-xs)",
+              paddingTop: "var(--space-xs)",
+              borderTop: "1px solid var(--border)",
+            }}
           >
             {hinted ? (
               <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
@@ -722,7 +740,7 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
             )}
             <button
               type="button"
-              className="sp-btn sp-btn-primary"
+              className="sp-btn sp-gen-submit"
               disabled={!brief.trim() || busy}
               onClick={() => void run()}
               aria-label="Generate"
@@ -755,7 +773,10 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
           </p>
         )}
 
-        {!results && !busy && (
+        {/* Six pills, five hues, wash strength. They stay reachable after
+            drafts exist — in the quiet form, so a second idea doesn't need
+            the field cleared by hand. */}
+        {!busy && (
           <div
             className="flex flex-wrap justify-center"
             style={{ gap: "var(--space-2xs)", marginTop: "var(--space-sm)" }}
@@ -764,10 +785,12 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
               <button
                 key={s.label}
                 type="button"
-                className="sp-chip"
+                className={
+                  results ? "sp-gen-hue sp-gen-pill sp-gen-pill--quiet" : "sp-gen-hue sp-gen-pill"
+                }
                 onClick={() => setBrief(s.brief)}
               >
-                <span className="sp-chip__label">{s.label}</span>
+                {s.label}
               </button>
             ))}
           </div>
@@ -790,10 +813,23 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
 
       {busy && (
         <div aria-busy="true" style={{ marginTop: "var(--space-lg)" }}>
+          <h2
+            style={{
+              fontFamily: "var(--font-head)",
+              fontWeight: "var(--weight-head)",
+              fontSize: "var(--type-cardtitle-size)",
+              lineHeight: "var(--type-cardtitle-lh)",
+              letterSpacing: "var(--type-cardtitle-track)",
+              color: "var(--text-primary)",
+              marginBottom: "var(--space-3xs)",
+            }}
+          >
+            Your drafts
+          </h2>
           <p
             role="status"
             style={{
-              textAlign: "center",
+              marginBottom: "var(--space-sm)",
               fontSize: "var(--type-label-size)",
               color: "var(--text-muted)",
             }}
@@ -802,14 +838,24 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
               ? "Reading your brief and choosing templates from your library…"
               : "Checking every line of copy fits its design…"}
           </p>
-          <div className="sp-grid-media" style={{ marginTop: "var(--space-sm)" }}>
+          {/* Skeletons share the real card's classes, so the identity
+              rotation arrives before the content and the swap to real
+              drafts happens in place. */}
+          <div className="sp-grid-media">
             {[0, 1, 2].map((i) => (
               <div
                 key={i}
-                className="sp-skeleton__block"
+                className="sp-card sp-media-card sp-skeleton-card sp-gen-hue sp-gen-card"
                 aria-hidden
-                style={{ aspectRatio: "1 / 1", borderRadius: "var(--radius-card)" }}
-              />
+              >
+                <div className="sp-media-card__preview sp-skeleton__block" />
+                <div className="sp-gen-card__namerow">
+                  <span className="sp-gen-card__index" />
+                  <span className="sp-skeleton__block sp-skeleton__line" style={{ width: "50%" }} />
+                </div>
+                <span className="sp-skeleton__block sp-skeleton__line" style={{ width: "90%" }} />
+                <span className="sp-skeleton__block sp-skeleton__line" style={{ width: "70%" }} />
+              </div>
             ))}
           </div>
         </div>
@@ -858,6 +904,7 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
               <ProposalCard
                 key={`${card.schema.id}-${i}`}
                 card={card}
+                index={i}
                 image={results.image?.dataUrl ?? null}
                 onChoose={choose}
               />
@@ -892,10 +939,13 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
 
 function ProposalCard({
   card,
+  index,
   image,
   onChoose,
 }: {
   card: ResultCard;
+  /** Position in the grid — the identity marker's numeral. */
+  index: number;
   /** The photo these drafts were made with, or null. */
   image: string | null;
   onChoose(card: ResultCard): void;
@@ -909,77 +959,97 @@ function ProposalCard({
   const imagesStillNeeded = proposal.imageFieldsNeeded.filter((f) => f.fieldKey !== target);
   const caption = proposal.caption || mergeCaption(schema, values);
   return (
-    <div
-      className="sp-card"
-      style={{
-        padding: "var(--space-xs)",
-        display: "flex",
-        flexDirection: "column",
-        gap: "var(--space-2xs)",
-      }}
+    // The whole card is the choice — one control, one keyboard stop, the
+    // template-card rule; the button at the bottom is the visible
+    // affordance, decoration over this target.
+    <button
+      type="button"
+      className="sp-card sp-media-card sp-template-card sp-gen-hue sp-gen-card"
+      onClick={() => onChoose(card)}
+      aria-label={`Edit and export "${schema.name}"${proposal.design ? " — a new design" : ""}`}
     >
-      <div
-        style={{
-          aspectRatio: `${schema.canvasWidth} / ${schema.canvasHeight}`,
-          overflow: "hidden",
-          borderRadius: "var(--radius-control)",
-          border: "1px solid var(--border)",
-        }}
-      >
-        <TemplateThumbnail template={schema} values={values} />
-      </div>
-      <p
-        className="flex items-center gap-1.5"
-        style={{
-          fontSize: "var(--type-label-size)",
-          fontWeight: 500,
-          color: "var(--text-primary)",
-        }}
-      >
-        {schema.name}
-        {proposal.design && (
-          <span
-            style={{
-              padding: "1px var(--space-3xs)",
-              borderRadius: "var(--radius-control)",
-              background: "var(--bg-surface-raised)",
-              fontSize: "var(--type-caption-size)",
-              fontWeight: 400,
-              color: "var(--text-muted)",
-            }}
-          >
-            New design
-          </span>
-        )}
-      </p>
+      {/* The catalogue's square letterboxing frame: mixed proposal ratios
+          sit even in the grid; contain, never crop. */}
+      <span className="sp-media-card__preview">
+        <span
+          style={{
+            display: "block",
+            aspectRatio: `${schema.canvasWidth} / ${schema.canvasHeight}`,
+            ...(schema.canvasWidth / schema.canvasHeight >= 1
+              ? { width: "100%" }
+              : { height: "100%" }),
+          }}
+        >
+          <TemplateThumbnail template={schema} values={values} />
+        </span>
+      </span>
+      <span className="sp-gen-card__namerow">
+        <span className="sp-gen-card__index" aria-hidden>
+          {index + 1}
+        </span>
+        <span
+          className="truncate"
+          style={{
+            flex: 1,
+            minWidth: 0,
+            fontSize: "var(--type-label-size)",
+            fontWeight: 500,
+            color: "var(--text-primary)",
+          }}
+        >
+          {schema.name}
+        </span>
+        {proposal.design && <span className="sp-gen-badge">New design</span>}
+      </span>
       {proposal.why && (
-        <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
+        <span
+          style={{
+            display: "block",
+            fontSize: "var(--type-caption-size)",
+            lineHeight: "var(--type-caption-lh)",
+            color: "var(--text-secondary)",
+          }}
+        >
           {proposal.why}
-        </p>
+        </span>
       )}
       {caption && (
-        <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}>
-          Caption: {caption}
-        </p>
+        <span style={{ display: "block" }}>
+          <span
+            className="sp-eyebrow"
+            style={{ display: "block", marginBottom: "var(--space-3xs)" }}
+          >
+            Caption
+          </span>
+          <span
+            style={{
+              display: "block",
+              fontSize: "var(--type-caption-size)",
+              lineHeight: "var(--type-caption-lh)",
+              color: "var(--text-secondary)",
+            }}
+          >
+            {caption}
+          </span>
+        </span>
       )}
       {imagesStillNeeded.length > 0 && (
-        <p
+        <span
           className="flex items-center gap-1.5"
           style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}
         >
           <ImageIcon style={{ width: 13, height: 13, flexShrink: 0 }} aria-hidden />
           You'll add: {imagesStillNeeded.map((f) => f.label).join(", ")}
-        </p>
+        </span>
       )}
-      <button
-        type="button"
+      <span
         className="sp-btn sp-btn-primary"
         style={{ marginTop: "auto", alignSelf: "start" }}
-        onClick={() => onChoose(card)}
+        aria-hidden
       >
         Edit and export
         <ArrowRight style={{ width: 14, height: 14 }} />
-      </button>
-    </div>
+      </span>
+    </button>
   );
 }
