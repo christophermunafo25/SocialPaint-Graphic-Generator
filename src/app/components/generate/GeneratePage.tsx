@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, ArrowUp, Globe, Image as ImageIcon } from "lucide-react";
 import type { FieldValues, GeneratedProposal, TemplateSchema } from "@/lib/types";
-import { PLATFORMS, type PlatformId } from "@/lib/templates/platforms";
+import { PLATFORMS, classifySize, platformById, type PlatformId } from "@/lib/templates/platforms";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -16,6 +16,7 @@ import { useRouter } from "../../router";
 import { Page } from "../layout/Page";
 import { TemplateFill } from "../TemplateFill";
 import { TemplateThumbnail } from "../TemplateThumbnail";
+import { Select, type SelectOption } from "../ui/Select";
 
 /** One proposal, ready to show: the model's output, the template it fills,
  * and the values after the measurement pass (repaired where needed). */
@@ -72,6 +73,8 @@ const STARTERS: Array<{ label: string; brief: string }> = [
   },
 ];
 
+const platformIconStyle: React.CSSProperties = { width: 14, height: 14, flexShrink: 0 };
+
 /** Generate: a member describes what they want to post and gets editable
  * pre-filled graphics back. Two modes, the member's choice:
  *
@@ -120,6 +123,37 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
   const libraryEmpty = published !== null && published.length === 0;
 
   const busy = phase !== "idle";
+
+  // Platforms the published library actually covers, derived from each
+  // template's canvas size — the same classification the catalogue's
+  // shelves use. Uncovered platforms stay pickable but dim: the hint is a
+  // preference, and the server already falls back to the whole library
+  // with a warning when nothing matches.
+  const libraryPlatforms = useMemo(() => {
+    const covered = new Set<PlatformId>();
+    for (const t of published ?? []) {
+      for (const p of classifySize(t.canvasWidth, t.canvasHeight).platforms) covered.add(p);
+    }
+    return covered;
+  }, [published]);
+  // In freestyle the hint picks a canvas size, not a template, so nothing
+  // dims there — every platform is equally reachable.
+  const dimUncovered = mode === "library" && published !== null && !libraryEmpty;
+  const anyDimmed = dimUncovered && PLATFORMS.some((p) => !libraryPlatforms.has(p.id));
+
+  const platformOptions = useMemo<Array<SelectOption<string>>>(
+    () => [
+      { value: "", label: "Any platform", icon: <Globe style={platformIconStyle} aria-hidden /> },
+      ...PLATFORMS.map((p) => ({
+        value: p.id as string,
+        label: p.label,
+        icon: <p.Icon style={platformIconStyle} aria-hidden />,
+        dimmed: dimUncovered && !libraryPlatforms.has(p.id),
+      })),
+    ],
+    [dimUncovered, libraryPlatforms],
+  );
+  const PlatformTriggerIcon = platform ? platformById(platform).Icon : Globe;
 
   const run = async () => {
     if (!company || !brief.trim() || busy) return;
@@ -408,10 +442,11 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
                   </p>
                 ) : (
                   <div
-                    className="flex items-center"
+                    className="flex items-stretch"
                     role="group"
                     aria-label="How to generate"
                     style={{
+                      height: "var(--control-sm)",
                       padding: 2,
                       gap: 2,
                       borderRadius: "var(--radius-control)",
@@ -431,9 +466,13 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
                         aria-pressed={mode === m.id}
                         onClick={() => setMode(m.id)}
                         style={{
-                          padding: "var(--space-3xs) var(--space-2xs)",
+                          padding: "0 var(--space-2xs)",
                           borderRadius: "var(--radius-control)",
                           fontSize: "var(--type-label-size)",
+                          // One line, always — the .sp-seg rule. A wrapped
+                          // label overflows the fixed control height; the
+                          // row's flex-wrap handles narrow windows instead.
+                          whiteSpace: "nowrap",
                           background: mode === m.id ? "var(--bg-surface)" : "transparent",
                           color: mode === m.id ? "var(--text-primary)" : "var(--text-muted)",
                         }}
@@ -443,38 +482,33 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
                     ))}
                   </div>
                 )}
-                <label
-                  className="flex items-center gap-1.5"
-                  style={{
-                    padding: "var(--space-3xs) var(--space-2xs)",
-                    borderRadius: "var(--radius-control)",
-                    background: "var(--bg-surface-raised)",
-                    color: "var(--text-secondary)",
+                <Select
+                  id="sp-gen-platform"
+                  ariaLabel="Platform"
+                  value={platform ?? ""}
+                  options={platformOptions}
+                  onSelect={(v) => setPlatform((v || null) as PlatformId | null)}
+                  placeholder="Any platform"
+                  disabled={busy}
+                  triggerIcon={
+                    <PlatformTriggerIcon
+                      style={{ ...platformIconStyle, color: "var(--text-secondary)" }}
+                      aria-hidden
+                    />
+                  }
+                  triggerStyle={{
+                    width: "auto",
+                    height: "var(--control-sm)",
+                    padding: "0 var(--space-2xs)",
+                    fontSize: "var(--type-label-size)",
                   }}
-                >
-                  <Globe style={{ width: 14, height: 14, flexShrink: 0 }} aria-hidden />
-                  <select
-                    value={platform ?? ""}
-                    onChange={(e) => setPlatform((e.target.value || null) as PlatformId | null)}
-                    aria-label="Platform"
-                    disabled={busy}
-                    style={{
-                      background: "transparent",
-                      border: "none",
-                      outline: "none",
-                      fontFamily: "var(--font-ui)",
-                      fontSize: "var(--type-label-size)",
-                      color: "inherit",
-                    }}
-                  >
-                    <option value="">Any platform</option>
-                    {PLATFORMS.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                  menuMinWidth={220}
+                  menuCaption={
+                    anyDimmed
+                      ? "Dimmed platforms have no published templates yet — picking one is a preference, and the whole library is still considered."
+                      : undefined
+                  }
+                />
               </div>
             )}
             <button

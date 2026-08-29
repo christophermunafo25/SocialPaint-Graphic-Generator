@@ -47,6 +47,7 @@ export function MenuSurface({
   id,
   onKeyDown,
   autoFocus,
+  minWidth,
 }: {
   triggerRef: React.RefObject<HTMLElement | null>;
   surfaceRef: React.RefObject<HTMLDivElement | null>;
@@ -55,6 +56,9 @@ export function MenuSurface({
   id?: string;
   onKeyDown?(e: React.KeyboardEvent): void;
   autoFocus?: boolean;
+  /** Floor under the trigger-width default — a compact trigger can open a
+   * menu whose rows need more room than the trigger occupies. */
+  minWidth?: number;
 }) {
   // autoFocus is not honoured on a div — focus it explicitly, or the menu's
   // arrow/Enter/Escape handling never receives a key.
@@ -79,6 +83,7 @@ export function MenuSurface({
         top: flip ? undefined : (rect?.bottom ?? 0) + 4,
         bottom: flip && rect ? window.innerHeight - rect.top + 4 : undefined,
         width: rect?.width,
+        minWidth,
         maxHeight: Math.min(maxHeight, Math.max(160, flip ? (rect?.top ?? 0) - 12 : below)),
         background: "var(--bg-surface)",
         border: "1px solid var(--border)",
@@ -101,6 +106,7 @@ export function MenuRow({
   icon,
   selected,
   active,
+  dimmed,
   previewStyle,
   onSelect,
   onHover,
@@ -114,6 +120,9 @@ export function MenuRow({
   icon?: React.ReactNode;
   selected: boolean;
   active: boolean;
+  /** Still selectable, quietly discouraged — a preference the caller will
+   * honor loosely rather than an option that would fail. */
+  dimmed?: boolean;
   previewStyle?: React.CSSProperties;
   onSelect(): void;
   onHover(): void;
@@ -133,7 +142,7 @@ export function MenuRow({
       className="flex items-center justify-between gap-2 px-2.5 py-1.5 cursor-pointer"
       style={{
         background: selected ? "var(--accent-wash)" : active ? "var(--bg-hover)" : "transparent",
-        color: "var(--text-primary)",
+        color: dimmed ? "var(--text-muted)" : "var(--text-primary)",
         transition: "background var(--dur-state) var(--ease)",
       }}
     >
@@ -263,6 +272,9 @@ export interface SelectOption<T extends string> {
   icon?: React.ReactNode;
   /** Row label styling (font menus preview each family in its own face). */
   previewStyle?: React.CSSProperties;
+  /** Rendered muted but still selectable — a preference the caller honors
+   * loosely, not an option that would fail. Pair with menuCaption. */
+  dimmed?: boolean;
 }
 
 interface SelectProps<T extends string> {
@@ -293,6 +305,12 @@ interface SelectProps<T extends string> {
    * the font menu uses it to load only the faces on screen. Wrap it in
    * useCallback; it sits in an effect's dependency list. */
   onVisibleOptions?(visible: Array<SelectOption<T>>): void;
+  /** Floor on the open menu's width — a compact trigger can open a menu
+   * whose rows need more room than the trigger occupies. */
+  menuMinWidth?: number;
+  /** One caption line pinned under the options — where a dimmed option
+   * says what dimming means. */
+  menuCaption?: React.ReactNode;
 }
 
 /** The general-purpose select. Full keyboard operation: ArrowDown/Enter/Space
@@ -316,6 +334,8 @@ export function Select<T extends string>({
   searchPlaceholder,
   searchEmptyText,
   onVisibleOptions,
+  menuMinWidth,
+  menuCaption,
 }: SelectProps<T>) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -383,6 +403,20 @@ export function Select<T extends string>({
   const selected = options.find((o) => o.value === value);
   const shownLabel = triggerLabel !== undefined ? triggerLabel : (selected?.label ?? "");
 
+  const caption = menuCaption ? (
+    <p
+      style={{
+        fontSize: "var(--type-caption-size)",
+        color: "var(--text-muted)",
+        padding: "6px 10px 4px",
+        borderTop: "1px solid var(--border)",
+        marginTop: 4,
+      }}
+    >
+      {menuCaption}
+    </p>
+  ) : null;
+
   let lastGroup = "";
   const rows = visible.map((o, i) => {
     const group = o.group ?? "";
@@ -408,6 +442,7 @@ export function Select<T extends string>({
           icon={o.icon}
           selected={o.value === value}
           active={i === active}
+          dimmed={o.dimmed}
           previewStyle={o.previewStyle}
           onSelect={() => commit(i)}
           onHover={() => setActive(i)}
@@ -440,7 +475,12 @@ export function Select<T extends string>({
       />
       {open &&
         (searchable ? (
-          <MenuSurface triggerRef={triggerRef} surfaceRef={surfaceRef} id={`${id}-menu`}>
+          <MenuSurface
+            triggerRef={triggerRef}
+            surfaceRef={surfaceRef}
+            id={`${id}-menu`}
+            minWidth={menuMinWidth}
+          >
             <div style={{ padding: "2px 6px 6px" }}>
               <input
                 autoFocus
@@ -466,6 +506,7 @@ export function Select<T extends string>({
               )}
               {rows}
             </div>
+            {caption}
           </MenuSurface>
         ) : (
           <MenuSurface
@@ -475,8 +516,10 @@ export function Select<T extends string>({
             role="listbox"
             autoFocus
             onKeyDown={onKeyDown}
+            minWidth={menuMinWidth}
           >
             {rows}
+            {caption}
           </MenuSurface>
         ))}
     </>
