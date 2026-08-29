@@ -177,13 +177,13 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
         style={{
           fontFamily: "var(--font-head)",
           fontWeight: "var(--weight-head)",
-          fontSize: "var(--type-h1-size)",
-          lineHeight: "var(--type-h1-lh)",
-          letterSpacing: "var(--type-h1-track)",
+          fontSize: "var(--type-h3-size)",
+          lineHeight: "var(--type-h3-lh)",
+          letterSpacing: "var(--type-h3-track)",
           color: "var(--text-primary)",
         }}
       >
-        Say it. We'll keep it on brand.
+        What are we painting today?
       </h1>
       <p
         style={{
