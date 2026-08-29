@@ -2609,6 +2609,27 @@ input[type="radio"] {
   --gen-wash: color-mix(in srgb, var(--gen-hue) 24%, transparent);
   --gen-wash-strong: color-mix(in srgb, var(--gen-hue) 38%, transparent);
 }
+/* Explicit slots, for the one grid nth-of-type cannot govern: while
+   drafts resolve one by one, real cards (buttons) and skeletons (divs)
+   share the row, and nth-of-type counts each element type separately —
+   the same hue would repeat. The slot index comes from the component;
+   the hue stays bound here. These outrank the nth defaults by source
+   order. */
+.sp-gen-hue[data-hue="1"] {
+  --gen-hue: var(--voltage);
+}
+.sp-gen-hue[data-hue="2"] {
+  --gen-hue: var(--aqua);
+}
+.sp-gen-hue[data-hue="3"] {
+  --gen-hue: var(--wednesdays);
+}
+.sp-gen-hue[data-hue="4"] {
+  --gen-hue: var(--fire);
+}
+.sp-gen-hue[data-hue="5"] {
+  --gen-hue: var(--sunshine);
+}
 
 /* The composer — the page's one field, so the whole card is the control
    and focus is a soft accent halo rather than a 1px input ring. The halo
@@ -2713,6 +2734,79 @@ input[type="radio"] {
   font-size: 11px;
   line-height: 1;
 }
+/* The two-phase wait, read as progress: step dots and labels stay
+   NEUTRAL — progress never rides a brand colour. The current step fills
+   with the inverting action neutral (the "filled = on" rule); a finished
+   step keeps its ring and takes a quiet check. */
+.sp-gen-steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xs);
+  margin-bottom: var(--space-sm);
+}
+.sp-gen-step {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  font-size: var(--type-label-size);
+  color: var(--text-muted);
+  transition: color var(--dur-state) var(--ease);
+}
+.sp-gen-step[data-state="current"] {
+  color: var(--text-primary);
+}
+.sp-gen-step__dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1;
+  transition:
+    background var(--dur-state) var(--ease),
+    color var(--dur-state) var(--ease),
+    border-color var(--dur-state) var(--ease);
+}
+.sp-gen-step[data-state="current"] .sp-gen-step__dot {
+  background: var(--fill-action);
+  border-color: var(--fill-action);
+  color: var(--text-on-action);
+}
+.sp-gen-step[data-state="done"] .sp-gen-step__dot {
+  color: var(--text-secondary);
+}
+
+/* Skeleton pulse — slow, breathing toward the slot's own identity wash,
+   so the colour arrives before the content and the swap to the real card
+   is continuous. A pulse, never a shimmer: the DS bans gradients as a
+   surface treatment. Built on the motion ladder (--dur-reveal, --ease). */
+@keyframes sp-gen-skeleton-pulse {
+  0%,
+  100% {
+    background-color: var(--bg-raised);
+  }
+  50% {
+    background-color: var(--gen-wash);
+  }
+}
+.sp-gen-skeleton .sp-skeleton__block {
+  animation: sp-gen-skeleton-pulse calc(var(--dur-reveal) * 6) var(--ease) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  /* The compound selector outranks the generic skeleton opt-out, so this
+     needs saying explicitly: hold still on the resting surface. */
+  .sp-gen-skeleton .sp-skeleton__block {
+    animation: none;
+  }
+}
+
 /* Freestyle's "New design" badge — a real distinction the member should
    see at a glance, so it wears the identity instead of grey-on-grey. */
 .sp-gen-badge {

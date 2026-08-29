@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ArrowRight,
   ArrowUp,
+  Check,
   Globe,
   Image as ImageIcon,
   ImagePlus,
@@ -158,6 +159,13 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
   // A photo added or removed after drafts were made leaves them alone; one
   // line of copy says regenerating applies the change.
   const [photoChanged, setPhotoChanged] = useState(false);
+  // The measuring pass, mid-flight: drafts land on screen as each one
+  // resolves, skeletons holding the unresolved slots. Dies with the run.
+  const [partial, setPartial] = useState<{
+    total: number;
+    processed: number;
+    cards: ResultCard[];
+  } | null>(null);
   const { chip, runChip, clearChip } = useUploadChip();
 
   const publishedState = useAsync(
@@ -294,24 +302,29 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
       const measure = createCanvasMeasurer();
       const warnings = [...res.warnings];
       const cards: ResultCard[] = [];
-      for (const [i, proposal] of res.proposals.entries()) {
+      // Per-proposal resolution, verbatim from the old loop body — pulled
+      // into a function only so each finished draft can land on screen
+      // while the next one is still measuring or repairing.
+      const resolveProposal = async (
+        proposal: GeneratedProposal,
+        i: number,
+      ): Promise<ResultCard | null> => {
         if (proposal.design) {
           const schema = designToSchema(proposal.design, company.id, i + 1, {
             model: res.meta.model,
             generatedAt: res.meta.generatedAt,
           });
-          const measured = measureProposal(schema, proposal.values, kit, measure);
-          if (!measured.ok) {
+          const fit = measureProposal(schema, proposal.values, kit, measure);
+          if (!fit.ok) {
             warnings.push(`Dropped the "${proposal.templateName}" design — its copy overflows.`);
-            continue;
+            return null;
           }
-          cards.push({ proposal, schema, values: proposal.values });
-          continue;
+          return { proposal, schema, values: proposal.values };
         }
         const schema = await stores.templates.get(proposal.templateId);
         if (!schema) {
           warnings.push(`"${proposal.templateName}" is no longer available — skipped.`);
-          continue;
+          return null;
         }
         const outcome = await repairProposal(
           { templateId: proposal.templateId, values: proposal.values },
@@ -327,9 +340,19 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
           warnings.push(
             `Dropped a "${proposal.templateName}" draft — its copy couldn't be made to fit the design.`,
           );
-          continue;
+          return null;
         }
-        cards.push({ proposal, schema, values: outcome.values });
+        return { proposal, schema, values: outcome.values };
+      };
+
+      const total = res.proposals.length;
+      setPartial({ total, processed: 0, cards: [] });
+      for (const [i, proposal] of res.proposals.entries()) {
+        const card = await resolveProposal(proposal, i);
+        if (card) cards.push(card);
+        // The grid swaps this slot's skeleton for the real draft; a dropped
+        // proposal just retires its skeleton.
+        setPartial({ total, processed: i + 1, cards: [...cards] });
       }
 
       if (cards.length === 0) {
@@ -350,14 +373,17 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
       setError(e instanceof Error ? e.message : "Generate failed — try again.");
     } finally {
       setPhase("idle");
+      setPartial(null);
     }
   };
 
   const choose = (card: ResultCard) => {
     // The photo the drafts were made with rides along, seeded into its
     // target image field — uncropped, exactly as the card previewed it; the
-    // fill page's crop control runs at the real field's aspect.
-    const chosen = results?.image ?? null;
+    // fill page's crop control runs at the real field's aspect. A card
+    // chosen mid-measure has no results snapshot yet; the live photo is the
+    // run's photo, since the well is disabled while busy.
+    const chosen = results ? results.image : image;
     const target = chosen ? imageTargetFor(card.proposal, card.schema) : null;
     const values = chosen && target ? { ...card.values, [target]: chosen.dataUrl } : card.values;
     // A library fill lands on the ordinary fill page. A freestyle design has
@@ -821,42 +847,51 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
               lineHeight: "var(--type-cardtitle-lh)",
               letterSpacing: "var(--type-cardtitle-track)",
               color: "var(--text-primary)",
-              marginBottom: "var(--space-3xs)",
+              marginBottom: "var(--space-2xs)",
             }}
           >
             Your drafts
           </h2>
-          <p
-            role="status"
-            style={{
-              marginBottom: "var(--space-sm)",
-              fontSize: "var(--type-label-size)",
-              color: "var(--text-muted)",
-            }}
-          >
-            {phase === "asking"
-              ? "Reading your brief and choosing templates from your library…"
-              : "Checking every line of copy fits its design…"}
-          </p>
-          {/* Skeletons share the real card's classes, so the identity
-              rotation arrives before the content and the swap to real
-              drafts happens in place. */}
+          {/* The two phases as progress — same honest copy, now with the
+              current step marked. No progress bar: the duration cannot be
+              predicted, so a bar would be a guess. */}
+          <div role="status" className="sp-gen-steps">
+            <span className="sp-gen-step" data-state={phase === "asking" ? "current" : "done"}>
+              <span className="sp-gen-step__dot" aria-hidden>
+                {phase === "asking" ? "1" : <Check style={{ width: 11, height: 11 }} />}
+              </span>
+              Reading your brief and choosing templates from your library…
+            </span>
+            <span
+              className="sp-gen-step"
+              data-state={phase === "measuring" ? "current" : "pending"}
+            >
+              <span className="sp-gen-step__dot" aria-hidden>
+                2
+              </span>
+              Checking every line of copy fits its design…
+            </span>
+          </div>
+          {/* While measuring, drafts land as each one resolves — real cards
+              fill the leading slots, skeletons hold the rest, and every
+              slot keeps its hue across the swap. */}
           <div className="sp-grid-media">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="sp-card sp-media-card sp-skeleton-card sp-gen-hue sp-gen-card"
-                aria-hidden
-              >
-                <div className="sp-media-card__preview sp-skeleton__block" />
-                <div className="sp-gen-card__namerow">
-                  <span className="sp-gen-card__index" />
-                  <span className="sp-skeleton__block sp-skeleton__line" style={{ width: "50%" }} />
-                </div>
-                <span className="sp-skeleton__block sp-skeleton__line" style={{ width: "90%" }} />
-                <span className="sp-skeleton__block sp-skeleton__line" style={{ width: "70%" }} />
-              </div>
+            {(partial?.cards ?? []).map((card, i) => (
+              <ProposalCard
+                key={`${card.schema.id}-${i}`}
+                card={card}
+                index={i}
+                hue={(i % 5) + 1}
+                image={image?.dataUrl ?? null}
+                onChoose={choose}
+              />
             ))}
+            {Array.from({
+              length: partial ? Math.max(0, partial.total - partial.processed) : 3,
+            }).map((_, j) => {
+              const slot = (partial?.cards.length ?? 0) + j;
+              return <SkeletonCard key={`slot-${slot}`} hue={(slot % 5) + 1} />;
+            })}
           </div>
         </div>
       )}
@@ -905,6 +940,7 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
                 key={`${card.schema.id}-${i}`}
                 card={card}
                 index={i}
+                hue={(i % 5) + 1}
                 image={results.image?.dataUrl ?? null}
                 onChoose={choose}
               />
@@ -937,15 +973,39 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
   );
 }
 
+/** A resolving slot: the real card's geometry and classes, so the swap to
+ * the finished draft happens in place, its hue already on. */
+function SkeletonCard({ hue }: { hue: number }) {
+  return (
+    <div
+      className="sp-card sp-media-card sp-skeleton-card sp-gen-hue sp-gen-card sp-gen-skeleton"
+      data-hue={hue}
+      aria-hidden
+    >
+      <div className="sp-media-card__preview sp-skeleton__block" />
+      <div className="sp-gen-card__namerow">
+        <span className="sp-gen-card__index" />
+        <span className="sp-skeleton__block sp-skeleton__line" style={{ width: "50%" }} />
+      </div>
+      <span className="sp-skeleton__block sp-skeleton__line" style={{ width: "90%" }} />
+      <span className="sp-skeleton__block sp-skeleton__line" style={{ width: "70%" }} />
+    </div>
+  );
+}
+
 function ProposalCard({
   card,
   index,
+  hue,
   image,
   onChoose,
 }: {
   card: ResultCard;
   /** Position in the grid — the identity marker's numeral. */
   index: number;
+  /** Identity slot (1–5) — explicit because the measuring grid mixes card
+   * and skeleton element types, which nth-of-type counts separately. */
+  hue: number;
   /** The photo these drafts were made with, or null. */
   image: string | null;
   onChoose(card: ResultCard): void;
@@ -965,6 +1025,7 @@ function ProposalCard({
     <button
       type="button"
       className="sp-card sp-media-card sp-template-card sp-gen-hue sp-gen-card"
+      data-hue={hue}
       onClick={() => onChoose(card)}
       aria-label={`Edit and export "${schema.name}"${proposal.design ? " — a new design" : ""}`}
     >
