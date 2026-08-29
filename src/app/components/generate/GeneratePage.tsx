@@ -1,5 +1,14 @@
 import React, { useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, ArrowUp, Globe, Image as ImageIcon } from "lucide-react";
+import { useDropzone, type FileRejection } from "react-dropzone";
+import {
+  ArrowLeft,
+  ArrowRight,
+  ArrowUp,
+  Globe,
+  Image as ImageIcon,
+  ImagePlus,
+  X,
+} from "lucide-react";
 import type { FieldValues, GeneratedProposal, TemplateSchema } from "@/lib/types";
 import { PLATFORMS, classifySize, platformById, type PlatformId } from "@/lib/templates/platforms";
 import { stores } from "@/lib/stores";
@@ -13,6 +22,15 @@ import { measureProposal } from "@/lib/generate/measureProposal";
 import { repairProposal } from "@/lib/generate/repairProposal";
 import { stashSeed } from "@/lib/generate/seedHandoff";
 import { useRouter } from "../../router";
+import {
+  MAX_UPLOAD_BYTES,
+  UPLOAD_ACCEPT,
+  UploadChipView,
+  imageAspectOf,
+  readAndDownscale,
+  rejectionMessage,
+  useUploadChip,
+} from "../imageUpload";
 import { Page } from "../layout/Page";
 import { TemplateFill } from "../TemplateFill";
 import { TemplateThumbnail } from "../TemplateThumbnail";
@@ -32,6 +50,32 @@ interface Results {
   model: string;
   candidateCount: number;
   mode: "library" | "freestyle";
+  /** The photo these drafts were made with, snapshotted at run time — a
+   * later add or remove leaves shown drafts alone rather than silently
+   * re-deriving them. */
+  image: ComposerImage | null;
+}
+
+/** The member's photo, held in page state as a data URL. It NEVER leaves the
+ * browser: it is not uploaded to Storage and not sent to the model — the
+ * server sees only that a photo exists (hasImage) and its aspect. That is a
+ * deliberate privacy property of this design, exactly how member photos work
+ * on the fill page today. */
+interface ComposerImage {
+  dataUrl: string;
+  aspect: number;
+}
+
+/** The image field a supplied photo lands in: the server-validated hint when
+ * it names a member image slot, else the first member image field. Null when
+ * the design has no member image slot at all. */
+function imageTargetFor(proposal: GeneratedProposal, schema: TemplateSchema): string | null {
+  const slots = schema.fields.filter((f) => f.type === "image" && !f.static);
+  if (slots.length === 0) return null;
+  const hinted = proposal.imageTargetFieldKey
+    ? slots.find((f) => f.fieldKey === proposal.imageTargetFieldKey)
+    : undefined;
+  return (hinted ?? slots[0]).fieldKey;
 }
 
 /** A freestyle draft opened for editing — filled and exported entirely in
@@ -108,6 +152,13 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
   const [saveState, setSaveState] = useState<"idle" | "busy">("idle");
   const [savedId, setSavedId] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // The member's photo (see ComposerImage — it never leaves the browser).
+  const [image, setImage] = useState<ComposerImage | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
+  // A photo added or removed after drafts were made leaves them alone; one
+  // line of copy says regenerating applies the change.
+  const [photoChanged, setPhotoChanged] = useState(false);
+  const { chip, runChip, clearChip } = useUploadChip();
 
   const publishedState = useAsync(
     () => (company ? stores.templates.listPublished(company.id) : Promise.resolve([])),
@@ -155,10 +206,69 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
   );
   const PlatformTriggerIcon = platform ? platformById(platform).Icon : Globe;
 
+  // The photo pipeline is FieldInput's, from the shared module: same accept,
+  // same cap, same downscale, same rejection copy, same chip. No crop here —
+  // candidate templates have different slot aspects, so a crop chosen now
+  // would be wrong for most results; the fill page crops at the real
+  // field's aspect.
+  const acceptImage = (file: File) => {
+    const processing = readAndDownscale(file)
+      .then(async (scaled) => {
+        const aspect = await imageAspectOf(scaled);
+        setImageError(null);
+        setImage({ dataUrl: scaled, aspect });
+        if (results) setPhotoChanged(true);
+      })
+      .catch((e: unknown) => {
+        console.error("Photo decode failed", e);
+        setImageError(rejectionMessage(undefined));
+        throw e instanceof Error ? e : new Error(String(e));
+      });
+    processing.catch(() => clearChip());
+    runChip(file.name, processing);
+  };
+
+  const removeImage = () => {
+    setImage(null);
+    setImageError(null);
+    if (results) setPhotoChanged(true);
+  };
+
+  const imageDrop = useDropzone({
+    onDrop: (accepted) => {
+      if (accepted[0]) acceptImage(accepted[0]);
+    },
+    onDropRejected: (rejections: FileRejection[]) =>
+      setImageError(rejectionMessage(rejections[0]?.errors[0]?.code)),
+    accept: UPLOAD_ACCEPT,
+    maxFiles: 1,
+    maxSize: MAX_UPLOAD_BYTES,
+    disabled: busy,
+  });
+
+  // Pasting an image anywhere in the composer lands it in the well, under
+  // the same guardrails the dropzone enforces.
+  const onComposerPaste = (e: React.ClipboardEvent) => {
+    if (busy) return;
+    const file = Array.from(e.clipboardData.files).find((f) => f.type.startsWith("image/"));
+    if (!file) return;
+    e.preventDefault();
+    if (!/^image\/(png|jpe?g|webp)$/.test(file.type)) {
+      setImageError(rejectionMessage("file-invalid-type"));
+      return;
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setImageError(rejectionMessage("file-too-large"));
+      return;
+    }
+    acceptImage(file);
+  };
+
   const run = async () => {
     if (!company || !brief.trim() || busy) return;
     setError(null);
     setResults(null);
+    setPhotoChanged(false);
     setPhase("asking");
     try {
       const trimmedBrief = brief.trim();
@@ -169,6 +279,10 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
         templateIdHint: hinted?.id,
         count: 3,
         mode: effectiveMode,
+        // Only the flag and the shape cross the wire — never the photo.
+        ...(image
+          ? { hasImage: true, imageAspect: Math.min(10, Math.max(0.1, image.aspect)) }
+          : {}),
       });
 
       // The measurement pass: the function checked character counts; only a
@@ -229,6 +343,7 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
           model: res.meta.model,
           candidateCount: res.meta.candidateCount,
           mode: effectiveMode,
+          image,
         });
       }
     } catch (e) {
@@ -239,17 +354,23 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
   };
 
   const choose = (card: ResultCard) => {
+    // The photo the drafts were made with rides along, seeded into its
+    // target image field — uncropped, exactly as the card previewed it; the
+    // fill page's crop control runs at the real field's aspect.
+    const chosen = results?.image ?? null;
+    const target = chosen ? imageTargetFor(card.proposal, card.schema) : null;
+    const values = chosen && target ? { ...card.values, [target]: chosen.dataUrl } : card.values;
     // A library fill lands on the ordinary fill page. A freestyle design has
     // no stored template to navigate to, so it is filled and exported right
     // here — the fill surface takes a schema directly.
     if (card.proposal.design) {
-      setEditing({ schema: card.schema, values: card.values });
+      setEditing({ schema: card.schema, values });
       setSaveState("idle");
       setSavedId(null);
       setSaveError(null);
       return;
     }
-    stashSeed(card.schema.id, card.values);
+    stashSeed(card.schema.id, values);
     navigate({ name: "template", templateId: card.schema.id });
   };
 
@@ -397,28 +518,116 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
         <div
           className="sp-card"
           style={{ marginTop: "var(--space-lg)", padding: "var(--space-sm)" }}
+          onPaste={onComposerPaste}
         >
-          <textarea
-            rows={3}
-            value={brief}
-            maxLength={1500}
-            onChange={(e) => setBrief(e.target.value)}
-            onKeyDown={onBriefKeyDown}
-            placeholder="We're hiring a senior nurse practitioner for the Evanston clinic, posting on LinkedIn this week."
-            aria-label="Describe the post"
-            disabled={busy}
-            style={{
-              width: "100%",
-              background: "transparent",
-              border: "none",
-              outline: "none",
-              resize: "none",
-              fontFamily: "var(--font-ui)",
-              fontSize: "var(--type-body-size)",
-              lineHeight: "var(--type-body-lh)",
-              color: "var(--text-primary)",
-            }}
-          />
+          <div className="flex" style={{ gap: "var(--space-xs)", alignItems: "stretch" }}>
+            {/* The photo well — the member's photo arrives BEFORE the
+                choice, so every result card previews a finished graphic.
+                Uncropped on purpose: slot aspects differ per template. */}
+            {image ? (
+              <div style={{ position: "relative", flexShrink: 0 }}>
+                <img
+                  src={image.dataUrl}
+                  alt="Your photo"
+                  style={{
+                    width: 72,
+                    height: 72,
+                    objectFit: "cover",
+                    display: "block",
+                    borderRadius: "var(--radius-control)",
+                    border: "1px solid var(--border)",
+                  }}
+                />
+                <button
+                  type="button"
+                  aria-label="Remove photo"
+                  title="Remove photo"
+                  disabled={busy}
+                  onClick={removeImage}
+                  style={{
+                    position: "absolute",
+                    top: -6,
+                    right: -6,
+                    width: 20,
+                    height: 20,
+                    borderRadius: "var(--radius-pill)",
+                    background: "var(--fill-action)",
+                    color: "var(--text-on-action)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <X style={{ width: 12, height: 12 }} aria-hidden />
+                </button>
+              </div>
+            ) : (
+              <div
+                {...imageDrop.getRootProps({
+                  role: "button",
+                  "aria-label": "Add a photo (optional): JPG, PNG, or WEBP up to 10MB",
+                })}
+                data-active={imageDrop.isDragActive}
+                className="sp-dropzone flex flex-col items-center justify-center cursor-pointer"
+                style={{
+                  width: 72,
+                  minHeight: 72,
+                  flexShrink: 0,
+                  gap: "var(--space-3xs)",
+                  border: `1.5px dashed ${
+                    imageDrop.isDragActive ? "var(--state-primary)" : "var(--border-strong)"
+                  }`,
+                  borderRadius: "var(--radius-control)",
+                  background: imageDrop.isDragActive ? "var(--accent-wash)" : "transparent",
+                }}
+              >
+                <input {...imageDrop.getInputProps()} />
+                <ImagePlus
+                  className="sp-dropzone__icon"
+                  style={{ width: 16, height: 16, color: "var(--text-secondary)" }}
+                  aria-hidden
+                />
+                <span style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
+                  Photo
+                </span>
+              </div>
+            )}
+            <textarea
+              rows={3}
+              value={brief}
+              maxLength={1500}
+              onChange={(e) => setBrief(e.target.value)}
+              onKeyDown={onBriefKeyDown}
+              placeholder="We're hiring a senior nurse practitioner for the Evanston clinic, posting on LinkedIn this week."
+              aria-label="Describe the post"
+              disabled={busy}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                background: "transparent",
+                border: "none",
+                outline: "none",
+                resize: "none",
+                fontFamily: "var(--font-ui)",
+                fontSize: "var(--type-body-size)",
+                lineHeight: "var(--type-body-lh)",
+                color: "var(--text-primary)",
+              }}
+            />
+          </div>
+          {chip && <UploadChipView chip={chip} />}
+          {imageError && (
+            <p
+              role="alert"
+              style={{
+                marginTop: "var(--space-3xs)",
+                fontSize: "var(--type-caption-size)",
+                color: "var(--state-danger-on-surface)",
+              }}
+            >
+              {imageError}
+            </p>
+          )}
           <div
             className="flex items-center justify-between gap-3"
             style={{ marginTop: "var(--space-2xs)" }}
@@ -621,6 +830,17 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
           >
             Your drafts
           </h2>
+          {photoChanged && (
+            <p
+              style={{
+                marginBottom: "var(--space-sm)",
+                fontSize: "var(--type-caption-size)",
+                color: "var(--text-muted)",
+              }}
+            >
+              These drafts were made before your photo change — generate again to use it.
+            </p>
+          )}
           {results.warnings.length > 0 && (
             <div style={{ marginBottom: "var(--space-sm)" }}>
               {results.warnings.map((w) => (
@@ -635,7 +855,12 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
           )}
           <div className="sp-grid-media">
             {results.cards.map((card, i) => (
-              <ProposalCard key={`${card.schema.id}-${i}`} card={card} onChoose={choose} />
+              <ProposalCard
+                key={`${card.schema.id}-${i}`}
+                card={card}
+                image={results.image?.dataUrl ?? null}
+                onChoose={choose}
+              />
             ))}
           </div>
           {/* Provenance, in the open: which model, from which library. */}
@@ -665,8 +890,23 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
   );
 }
 
-function ProposalCard({ card, onChoose }: { card: ResultCard; onChoose(card: ResultCard): void }) {
-  const { proposal, schema, values } = card;
+function ProposalCard({
+  card,
+  image,
+  onChoose,
+}: {
+  card: ResultCard;
+  /** The photo these drafts were made with, or null. */
+  image: string | null;
+  onChoose(card: ResultCard): void;
+}) {
+  const { proposal, schema, values: baseValues } = card;
+  // The supplied photo previews in its slot, and the "you'll add" line
+  // subtracts that slot — a card whose only image slot is filled says
+  // nothing about images, because there is nothing left to say.
+  const target = image ? imageTargetFor(proposal, schema) : null;
+  const values = image && target ? { ...baseValues, [target]: image } : baseValues;
+  const imagesStillNeeded = proposal.imageFieldsNeeded.filter((f) => f.fieldKey !== target);
   const caption = proposal.caption || mergeCaption(schema, values);
   return (
     <div
@@ -722,13 +962,13 @@ function ProposalCard({ card, onChoose }: { card: ResultCard; onChoose(card: Res
           Caption: {caption}
         </p>
       )}
-      {proposal.imageFieldsNeeded.length > 0 && (
+      {imagesStillNeeded.length > 0 && (
         <p
           className="flex items-center gap-1.5"
           style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}
         >
           <ImageIcon style={{ width: 13, height: 13, flexShrink: 0 }} aria-hidden />
-          You'll add: {proposal.imageFieldsNeeded.map((f) => f.label).join(", ")}
+          You'll add: {imagesStillNeeded.map((f) => f.label).join(", ")}
         </p>
       )}
       <button

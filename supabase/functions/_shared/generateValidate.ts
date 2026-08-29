@@ -180,6 +180,10 @@ export interface ProposedGeneration {
   values: Array<{ fieldKey: string; value: string }>;
   caption: string;
   why: string;
+  /** When the request said the member supplied a photo: the image field it
+   * belongs in. Optional, and only ever advisory — an invalid key is
+   * dropped with a warning, never an error. */
+  imageTargetFieldKey?: string;
 }
 
 export interface GenerateModelOutput {
@@ -203,6 +207,8 @@ export interface ValidatedGeneration {
   caption: string;
   why: string;
   imageFieldsNeeded: ImageFieldNeeded[];
+  /** Verified to name a member-editable image field on this template. */
+  imageTargetFieldKey?: string;
 }
 
 export interface GenerateValidationOutput {
@@ -317,6 +323,24 @@ export function validateGeneration(
       }
     }
 
+    // The photo target is advisory: a key that does not name a member image
+    // slot is dropped with a warning, never an error — the client falls back
+    // to the first member image field, and a bad hint must not cost a retry.
+    let imageTargetFieldKey: string | undefined;
+    if (p.imageTargetFieldKey !== undefined) {
+      const target =
+        typeof p.imageTargetFieldKey === "string"
+          ? fieldsByKey.get(p.imageTargetFieldKey)
+          : undefined;
+      if (target && target.type === "image" && target.static !== true) {
+        imageTargetFieldKey = target.fieldKey;
+      } else {
+        warnings.push(
+          `${label}: imageTargetFieldKey "${String(p.imageTargetFieldKey)}" is not a member image slot on "${template.name}" — ignored.`,
+        );
+      }
+    }
+
     proposals.push({
       templateId: template.id,
       templateName: template.name,
@@ -326,6 +350,7 @@ export function validateGeneration(
       imageFieldsNeeded: template.fields
         .filter((f) => !f.static && f.type === "image")
         .map((f) => ({ fieldKey: f.fieldKey, label: f.label, required: f.required === true })),
+      imageTargetFieldKey,
     });
   });
 
