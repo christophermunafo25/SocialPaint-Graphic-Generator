@@ -505,7 +505,11 @@ export interface ValidatedDesign {
   fields: FreestyleField[];
   /** Pre-filled member values for the editable text fields. */
   values: Record<string, string>;
+  /** The caption with its {field_key} merge tags resolved — display copy. */
   caption: string;
+  /** The caption as authored, tags intact — this is what makes a saved
+   * design a REAL template: future fills merge their own values in. */
+  captionTemplate: string;
   why: string;
   imageFieldsNeeded: ImageFieldNeeded[];
 }
@@ -761,6 +765,24 @@ export function validateFreestyle(
       }
     }
 
+    // The caption is a TEMPLATE: {field_key} tags referencing editable
+    // fields survive (autobuild's policy), anything else is stripped — so a
+    // design saved to the library carries a caption future fills can merge
+    // their own values into. The resolved form is what today's card shows.
+    const editableKeys = new Set(fields.filter((x) => !x.static).map((x) => x.fieldKey));
+    const captionTemplate = (typeof p.caption === "string" ? p.caption.trim().slice(0, 600) : "")
+      .replace(/\{([a-z][a-z0-9_]*)\}/g, (tag, key: string) => {
+        if (editableKeys.has(key)) return tag;
+        warnings.push(`${label}: caption tag {${key}} doesn't match any field — removed.`);
+        return "";
+      })
+      .replace(/[ \t]{2,}/g, " ")
+      .trim();
+    const caption = captionTemplate
+      .replace(/\{([a-z][a-z0-9_]*)\}/g, (_tag, key: string) => values[key] ?? "")
+      .replace(/[ \t]{2,}/g, " ")
+      .trim();
+
     designs.push({
       name: (typeof p.name === "string" && p.name.trim() ? p.name.trim() : "New design").slice(
         0,
@@ -771,7 +793,8 @@ export function validateFreestyle(
       backgroundColor,
       fields,
       values,
-      caption: typeof p.caption === "string" ? p.caption.trim().slice(0, 600) : "",
+      caption,
+      captionTemplate,
       why: typeof p.why === "string" ? p.why.trim().slice(0, 200) : "",
       imageFieldsNeeded: fields
         .filter((x) => !x.static && x.type === "image")

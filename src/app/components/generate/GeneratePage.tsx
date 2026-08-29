@@ -90,7 +90,7 @@ const STARTERS: Array<{ label: string; brief: string }> = [
  * below. Plain canvas background; the brand lives in the graphics, not the
  * chrome. */
 export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
-  const { company } = useAuth();
+  const { company, role } = useAuth();
   const { kit } = useBrand();
   const { navigate } = useRouter();
 
@@ -101,6 +101,10 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<Results | null>(null);
   const [editing, setEditing] = useState<EditingDraft | null>(null);
+  // Saving a draft to the library: idle → busy → the created template's id.
+  const [saveState, setSaveState] = useState<"idle" | "busy">("idle");
+  const [savedId, setSavedId] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const publishedState = useAsync(
     () => (company ? stores.templates.listPublished(company.id) : Promise.resolve([])),
@@ -144,7 +148,10 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
       const cards: ResultCard[] = [];
       for (const [i, proposal] of res.proposals.entries()) {
         if (proposal.design) {
-          const schema = designToSchema(proposal.design, company.id, i + 1);
+          const schema = designToSchema(proposal.design, company.id, i + 1, {
+            model: res.meta.model,
+            generatedAt: res.meta.generatedAt,
+          });
           const measured = measureProposal(schema, proposal.values, kit, measure);
           if (!measured.ok) {
             warnings.push(`Dropped the "${proposal.templateName}" design — its copy overflows.`);
@@ -203,6 +210,9 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
     // here — the fill surface takes a schema directly.
     if (card.proposal.design) {
       setEditing({ schema: card.schema, values: card.values });
+      setSaveState("idle");
+      setSavedId(null);
+      setSaveError(null);
       return;
     }
     stashSeed(card.schema.id, card.values);
@@ -263,8 +273,28 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
 
   // A freestyle draft being filled: the fill surface takes the ephemeral
   // schema directly, no store fetch, no usage instrumentation (there is no
-  // template row to attribute it to). Leaving discards it — it says so.
+  // template row to attribute it to — until an admin saves it). Leaving
+  // without saving discards it, and the header says so.
   if (editing) {
+    // Saving publishes through the ordinary templateStore — the design lands
+    // in Brand Templates for everyone and in the Template Builder for the
+    // marketing team to edit and republish, provenance stamped. The store
+    // mints the real identity; the ephemeral one is stripped.
+    const saveToLibrary = async () => {
+      if (saveState === "busy" || savedId) return;
+      setSaveState("busy");
+      setSaveError(null);
+      try {
+        const { id: _id, createdAt: _c, updatedAt: _u, ...rest } = editing.schema;
+        const created = await stores.templates.create({ ...rest, status: "published" });
+        setSavedId(created.id);
+      } catch (e) {
+        setSaveError(e instanceof Error ? e.message : "Saving failed — try again.");
+      } finally {
+        setSaveState("idle");
+      }
+    };
+
     return (
       <Page>
         <div className="flex items-center justify-between gap-3 mb-5">
@@ -276,9 +306,41 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
             <ArrowLeft style={{ width: 14, height: 14 }} />
             Back to drafts
           </button>
-          <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
-            A new design from your brand kit — not saved to the library, so export before you leave.
-          </p>
+          <div className="flex items-center gap-3">
+            {savedId ? (
+              <>
+                <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
+                  Saved to Brand Templates.
+                </p>
+                <button
+                  type="button"
+                  className="sp-btn sp-btn-ghost"
+                  onClick={() => navigate({ name: "builder", templateId: savedId })}
+                >
+                  Open in the builder
+                </button>
+              </>
+            ) : (
+              <>
+                <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
+                  {saveError ??
+                    (role === "admin"
+                      ? "A new design from your brand kit — save it to the library, or export and leave it behind."
+                      : "A new design from your brand kit — not saved to the library, so export before you leave.")}
+                </p>
+                {role === "admin" && (
+                  <button
+                    type="button"
+                    className="sp-btn sp-btn-ghost"
+                    disabled={saveState === "busy"}
+                    onClick={() => void saveToLibrary()}
+                  >
+                    {saveState === "busy" ? "Saving…" : "Save to library"}
+                  </button>
+                )}
+              </>
+            )}
+          </div>
         </div>
         <TemplateFill
           template={editing.schema}

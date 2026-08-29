@@ -536,6 +536,7 @@ async function handleFreestyle(
         canvasWidth: d.canvasWidth,
         canvasHeight: d.canvasHeight,
         backgroundColor: d.backgroundColor,
+        captionTemplate: d.captionTemplate,
         fields: d.fields,
       },
     })),

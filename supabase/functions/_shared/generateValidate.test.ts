@@ -524,6 +524,18 @@ describe("freestyle designs", () => {
     ]);
   });
 
+  it("keeps caption tags for editable fields, strips the rest, and resolves for display", () => {
+    const out = validateFreestyle(
+      { proposals: [design({ caption: "We're hiring: {headline} {ghost}" })] },
+      ctx,
+      3,
+    );
+    const d = out.designs[0];
+    expect(d.captionTemplate).toBe("We're hiring: {headline}");
+    expect(d.caption).toBe("We're hiring: Now hiring in Evanston");
+    expect(out.warnings.some((w) => w.includes("{ghost}"))).toBe(true);
+  });
+
   it("rejects a design with too little left after validation", () => {
     let thrown: unknown;
     try {

@@ -490,6 +490,9 @@ export interface GeneratedDesign {
   canvasWidth: number;
   canvasHeight: number;
   backgroundColor?: string;
+  /** Caption with {field_key} merge tags intact, so a design saved to the
+   * library carries a caption that works for every future fill. */
+  captionTemplate: string;
   fields: TemplateField[];
 }
 
