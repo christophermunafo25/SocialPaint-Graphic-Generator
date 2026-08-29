@@ -118,6 +118,11 @@ const PROPOSE_POSTS_TOOL = {
               type: "string",
               description: "One sentence: why this template fits this brief.",
             },
+            imageTargetFieldKey: {
+              type: "string",
+              description:
+                "Only when the member has supplied a photo: the fieldKey of the image field it belongs in.",
+            },
           },
         },
       },
@@ -131,10 +136,18 @@ function buildUserText(
   count: number,
   platformHint: string | undefined,
   hinted: boolean,
+  image: { aspect: number | undefined } | undefined,
 ): string {
   const parts: string[] = [];
   parts.push(`Brief: ${brief}`);
   if (platformHint) parts.push(`The member is posting on: ${platformHint}.`);
+  if (image) {
+    parts.push(
+      `The member has already supplied a photo${
+        image.aspect !== undefined ? ` (width over height about ${image.aspect.toFixed(2)})` : ""
+      }. Prefer candidates with a member image slot, and set imageTargetFieldKey to the field their photo belongs in. Still never write a value for any image field.`,
+    );
+  }
   if (hinted) {
     parts.push(
       `The member picked this template themselves — fill it. Return ${count === 1 ? "one proposal" : `${count} proposals, each a distinct take on the brief`}.`,
@@ -384,10 +397,20 @@ function buildFreestyleUserText(input: {
   kit: BrandKitRow;
   references: unknown[];
   count: number;
+  image: { aspect: number | undefined } | undefined;
 }): string {
   const parts: string[] = [];
   parts.push(`Brief: ${input.brief}`);
   if (input.platform) parts.push(`The member is posting on: ${input.platform}.`);
+  if (input.image) {
+    parts.push(
+      `The member has already supplied a photo${
+        input.image.aspect !== undefined
+          ? ` (width over height about ${input.image.aspect.toFixed(2)})`
+          : ""
+      }. Give each design one member image element shaped to suit it.`,
+    );
+  }
   parts.push(
     `Design NEW graphics for a ${input.canvas.width}x${input.canvas.height}px canvas. Return exactly ${input.count} proposal${input.count === 1 ? "" : "s"}, each a genuinely different composition.`,
   );
@@ -411,7 +434,12 @@ async function handleFreestyle(
   db: ReturnType<typeof serviceClient>,
   apiKey: string,
   companyId: string,
-  input: { brief: string; platformHint: GeneratePlatform | undefined; count: number },
+  input: {
+    brief: string;
+    platformHint: GeneratePlatform | undefined;
+    count: number;
+    image: { aspect: number | undefined } | undefined;
+  },
 ): Promise<Response> {
   const warnings: string[] = [];
   const { data: kitRow } = await db
@@ -497,6 +525,7 @@ async function handleFreestyle(
     kit,
     references,
     count: input.count,
+    image: input.image,
   });
 
   let attempt = await callClaude<FreestyleModelOutput>(apiKey, userText, PROPOSE_DESIGNS_TOOL);
@@ -716,8 +745,28 @@ Deno.serve(async (req) => {
     const count = optionalInt(body.count, "count", { min: 1, max: 3 }) ?? 3;
     const mode = optionalEnum(body.mode, "mode", ["library", "freestyle"] as const) ?? "library";
 
+    // The photo never crosses the wire — only that one exists, and its
+    // shape. Absent both, this request is byte-for-byte what it always was.
+    if (
+      body.hasImage !== undefined &&
+      body.hasImage !== null &&
+      typeof body.hasImage !== "boolean"
+    ) {
+      throw new HttpError(400, "hasImage must be a boolean.");
+    }
+    const imageAspect =
+      body.imageAspect === undefined || body.imageAspect === null
+        ? undefined
+        : requireNumber(body.imageAspect, "imageAspect", { min: 0.1, max: 10 });
+    const image = body.hasImage === true ? { aspect: imageAspect } : undefined;
+
     if (mode === "freestyle") {
-      return await handleFreestyle(json, db, apiKey, companyId, { brief, platformHint, count });
+      return await handleFreestyle(json, db, apiKey, companyId, {
+        brief,
+        platformHint,
+        count,
+        image,
+      });
     }
 
     // 1. The candidate list — published templates plus their field lists.
@@ -793,7 +842,14 @@ Deno.serve(async (req) => {
     //    No vision input: the templates are known structured data and the
     //    field list carries the signal (unlike auto-build, which reads an
     //    unknown design and needs the pixels).
-    const userText = buildUserText(brief, candidates, count, platformHint, Boolean(templateIdHint));
+    const userText = buildUserText(
+      brief,
+      candidates,
+      count,
+      platformHint,
+      Boolean(templateIdHint),
+      image,
+    );
     let attempt = await callClaude<GenerateModelOutput>(apiKey, userText, PROPOSE_POSTS_TOOL);
     let validated;
     try {

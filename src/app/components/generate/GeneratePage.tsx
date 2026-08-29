@@ -1,7 +1,17 @@
-import React, { useState } from "react";
-import { ArrowLeft, ArrowRight, ArrowUp, Globe, Image as ImageIcon } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { useDropzone, type FileRejection } from "react-dropzone";
+import {
+  ArrowLeft,
+  ArrowRight,
+  ArrowUp,
+  Check,
+  Globe,
+  Image as ImageIcon,
+  ImagePlus,
+  X,
+} from "lucide-react";
 import type { FieldValues, GeneratedProposal, TemplateSchema } from "@/lib/types";
-import { PLATFORMS, type PlatformId } from "@/lib/templates/platforms";
+import { PLATFORMS, classifySize, platformById, type PlatformId } from "@/lib/templates/platforms";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -13,9 +23,19 @@ import { measureProposal } from "@/lib/generate/measureProposal";
 import { repairProposal } from "@/lib/generate/repairProposal";
 import { stashSeed } from "@/lib/generate/seedHandoff";
 import { useRouter } from "../../router";
+import {
+  MAX_UPLOAD_BYTES,
+  UPLOAD_ACCEPT,
+  UploadChipView,
+  imageAspectOf,
+  readAndDownscale,
+  rejectionMessage,
+  useUploadChip,
+} from "../imageUpload";
 import { Page } from "../layout/Page";
 import { TemplateFill } from "../TemplateFill";
 import { TemplateThumbnail } from "../TemplateThumbnail";
+import { Select, type SelectOption } from "../ui/Select";
 
 /** One proposal, ready to show: the model's output, the template it fills,
  * and the values after the measurement pass (repaired where needed). */
@@ -31,6 +51,32 @@ interface Results {
   model: string;
   candidateCount: number;
   mode: "library" | "freestyle";
+  /** The photo these drafts were made with, snapshotted at run time — a
+   * later add or remove leaves shown drafts alone rather than silently
+   * re-deriving them. */
+  image: ComposerImage | null;
+}
+
+/** The member's photo, held in page state as a data URL. It NEVER leaves the
+ * browser: it is not uploaded to Storage and not sent to the model — the
+ * server sees only that a photo exists (hasImage) and its aspect. That is a
+ * deliberate privacy property of this design, exactly how member photos work
+ * on the fill page today. */
+interface ComposerImage {
+  dataUrl: string;
+  aspect: number;
+}
+
+/** The image field a supplied photo lands in: the server-validated hint when
+ * it names a member image slot, else the first member image field. Null when
+ * the design has no member image slot at all. */
+function imageTargetFor(proposal: GeneratedProposal, schema: TemplateSchema): string | null {
+  const slots = schema.fields.filter((f) => f.type === "image" && !f.static);
+  if (slots.length === 0) return null;
+  const hinted = proposal.imageTargetFieldKey
+    ? slots.find((f) => f.fieldKey === proposal.imageTargetFieldKey)
+    : undefined;
+  return (hinted ?? slots[0]).fieldKey;
 }
 
 /** A freestyle draft opened for editing — filled and exported entirely in
@@ -72,6 +118,8 @@ const STARTERS: Array<{ label: string; brief: string }> = [
   },
 ];
 
+const platformIconStyle: React.CSSProperties = { width: 14, height: 14, flexShrink: 0 };
+
 /** Generate: a member describes what they want to post and gets editable
  * pre-filled graphics back. Two modes, the member's choice:
  *
@@ -105,6 +153,20 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
   const [saveState, setSaveState] = useState<"idle" | "busy">("idle");
   const [savedId, setSavedId] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // The member's photo (see ComposerImage — it never leaves the browser).
+  const [image, setImage] = useState<ComposerImage | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
+  // A photo added or removed after drafts were made leaves them alone; one
+  // line of copy says regenerating applies the change.
+  const [photoChanged, setPhotoChanged] = useState(false);
+  // The measuring pass, mid-flight: drafts land on screen as each one
+  // resolves, skeletons holding the unresolved slots. Dies with the run.
+  const [partial, setPartial] = useState<{
+    total: number;
+    processed: number;
+    cards: ResultCard[];
+  } | null>(null);
+  const { chip, runChip, clearChip } = useUploadChip();
 
   const publishedState = useAsync(
     () => (company ? stores.templates.listPublished(company.id) : Promise.resolve([])),
@@ -121,10 +183,100 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
 
   const busy = phase !== "idle";
 
+  // Platforms the published library actually covers, derived from each
+  // template's canvas size — the same classification the catalogue's
+  // shelves use. Uncovered platforms stay pickable but dim: the hint is a
+  // preference, and the server already falls back to the whole library
+  // with a warning when nothing matches.
+  const libraryPlatforms = useMemo(() => {
+    const covered = new Set<PlatformId>();
+    for (const t of published ?? []) {
+      for (const p of classifySize(t.canvasWidth, t.canvasHeight).platforms) covered.add(p);
+    }
+    return covered;
+  }, [published]);
+  // In freestyle the hint picks a canvas size, not a template, so nothing
+  // dims there — every platform is equally reachable.
+  const dimUncovered = mode === "library" && published !== null && !libraryEmpty;
+  const anyDimmed = dimUncovered && PLATFORMS.some((p) => !libraryPlatforms.has(p.id));
+
+  const platformOptions = useMemo<Array<SelectOption<string>>>(
+    () => [
+      { value: "", label: "Any platform", icon: <Globe style={platformIconStyle} aria-hidden /> },
+      ...PLATFORMS.map((p) => ({
+        value: p.id as string,
+        label: p.label,
+        icon: <p.Icon style={platformIconStyle} aria-hidden />,
+        dimmed: dimUncovered && !libraryPlatforms.has(p.id),
+      })),
+    ],
+    [dimUncovered, libraryPlatforms],
+  );
+  const PlatformTriggerIcon = platform ? platformById(platform).Icon : Globe;
+
+  // The photo pipeline is FieldInput's, from the shared module: same accept,
+  // same cap, same downscale, same rejection copy, same chip. No crop here —
+  // candidate templates have different slot aspects, so a crop chosen now
+  // would be wrong for most results; the fill page crops at the real
+  // field's aspect.
+  const acceptImage = (file: File) => {
+    const processing = readAndDownscale(file)
+      .then(async (scaled) => {
+        const aspect = await imageAspectOf(scaled);
+        setImageError(null);
+        setImage({ dataUrl: scaled, aspect });
+        if (results) setPhotoChanged(true);
+      })
+      .catch((e: unknown) => {
+        console.error("Photo decode failed", e);
+        setImageError(rejectionMessage(undefined));
+        throw e instanceof Error ? e : new Error(String(e));
+      });
+    processing.catch(() => clearChip());
+    runChip(file.name, processing);
+  };
+
+  const removeImage = () => {
+    setImage(null);
+    setImageError(null);
+    if (results) setPhotoChanged(true);
+  };
+
+  const imageDrop = useDropzone({
+    onDrop: (accepted) => {
+      if (accepted[0]) acceptImage(accepted[0]);
+    },
+    onDropRejected: (rejections: FileRejection[]) =>
+      setImageError(rejectionMessage(rejections[0]?.errors[0]?.code)),
+    accept: UPLOAD_ACCEPT,
+    maxFiles: 1,
+    maxSize: MAX_UPLOAD_BYTES,
+    disabled: busy,
+  });
+
+  // Pasting an image anywhere in the composer lands it in the well, under
+  // the same guardrails the dropzone enforces.
+  const onComposerPaste = (e: React.ClipboardEvent) => {
+    if (busy) return;
+    const file = Array.from(e.clipboardData.files).find((f) => f.type.startsWith("image/"));
+    if (!file) return;
+    e.preventDefault();
+    if (!/^image\/(png|jpe?g|webp)$/.test(file.type)) {
+      setImageError(rejectionMessage("file-invalid-type"));
+      return;
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setImageError(rejectionMessage("file-too-large"));
+      return;
+    }
+    acceptImage(file);
+  };
+
   const run = async () => {
     if (!company || !brief.trim() || busy) return;
     setError(null);
     setResults(null);
+    setPhotoChanged(false);
     setPhase("asking");
     try {
       const trimmedBrief = brief.trim();
@@ -135,6 +287,10 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
         templateIdHint: hinted?.id,
         count: 3,
         mode: effectiveMode,
+        // Only the flag and the shape cross the wire — never the photo.
+        ...(image
+          ? { hasImage: true, imageAspect: Math.min(10, Math.max(0.1, image.aspect)) }
+          : {}),
       });
 
       // The measurement pass: the function checked character counts; only a
@@ -146,24 +302,29 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
       const measure = createCanvasMeasurer();
       const warnings = [...res.warnings];
       const cards: ResultCard[] = [];
-      for (const [i, proposal] of res.proposals.entries()) {
+      // Per-proposal resolution, verbatim from the old loop body — pulled
+      // into a function only so each finished draft can land on screen
+      // while the next one is still measuring or repairing.
+      const resolveProposal = async (
+        proposal: GeneratedProposal,
+        i: number,
+      ): Promise<ResultCard | null> => {
         if (proposal.design) {
           const schema = designToSchema(proposal.design, company.id, i + 1, {
             model: res.meta.model,
             generatedAt: res.meta.generatedAt,
           });
-          const measured = measureProposal(schema, proposal.values, kit, measure);
-          if (!measured.ok) {
+          const fit = measureProposal(schema, proposal.values, kit, measure);
+          if (!fit.ok) {
             warnings.push(`Dropped the "${proposal.templateName}" design — its copy overflows.`);
-            continue;
+            return null;
           }
-          cards.push({ proposal, schema, values: proposal.values });
-          continue;
+          return { proposal, schema, values: proposal.values };
         }
         const schema = await stores.templates.get(proposal.templateId);
         if (!schema) {
           warnings.push(`"${proposal.templateName}" is no longer available — skipped.`);
-          continue;
+          return null;
         }
         const outcome = await repairProposal(
           { templateId: proposal.templateId, values: proposal.values },
@@ -179,9 +340,19 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
           warnings.push(
             `Dropped a "${proposal.templateName}" draft — its copy couldn't be made to fit the design.`,
           );
-          continue;
+          return null;
         }
-        cards.push({ proposal, schema, values: outcome.values });
+        return { proposal, schema, values: outcome.values };
+      };
+
+      const total = res.proposals.length;
+      setPartial({ total, processed: 0, cards: [] });
+      for (const [i, proposal] of res.proposals.entries()) {
+        const card = await resolveProposal(proposal, i);
+        if (card) cards.push(card);
+        // The grid swaps this slot's skeleton for the real draft; a dropped
+        // proposal just retires its skeleton.
+        setPartial({ total, processed: i + 1, cards: [...cards] });
       }
 
       if (cards.length === 0) {
@@ -195,27 +366,37 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
           model: res.meta.model,
           candidateCount: res.meta.candidateCount,
           mode: effectiveMode,
+          image,
         });
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Generate failed — try again.");
     } finally {
       setPhase("idle");
+      setPartial(null);
     }
   };
 
   const choose = (card: ResultCard) => {
+    // The photo the drafts were made with rides along, seeded into its
+    // target image field — uncropped, exactly as the card previewed it; the
+    // fill page's crop control runs at the real field's aspect. A card
+    // chosen mid-measure has no results snapshot yet; the live photo is the
+    // run's photo, since the well is disabled while busy.
+    const chosen = results ? results.image : image;
+    const target = chosen ? imageTargetFor(card.proposal, card.schema) : null;
+    const values = chosen && target ? { ...card.values, [target]: chosen.dataUrl } : card.values;
     // A library fill lands on the ordinary fill page. A freestyle design has
     // no stored template to navigate to, so it is filled and exported right
     // here — the fill surface takes a schema directly.
     if (card.proposal.design) {
-      setEditing({ schema: card.schema, values: card.values });
+      setEditing({ schema: card.schema, values });
       setSaveState("idle");
       setSavedId(null);
       setSaveError(null);
       return;
     }
-    stashSeed(card.schema.id, card.values);
+    stashSeed(card.schema.id, values);
     navigate({ name: "template", templateId: card.schema.id });
   };
 
@@ -227,30 +408,41 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
     }
   };
 
+  // Once a run starts, the question is answered: the hero collapses so the
+  // page's weight moves to the drafts — and the shift happens on the
+  // member's own submit, not when results land.
+  const heroCollapsed = busy || results !== null;
   const hero = (
-    <div style={{ textAlign: "center", paddingTop: "var(--space-2xl)" }}>
+    <div
+      style={{
+        textAlign: "center",
+        paddingTop: heroCollapsed ? "var(--space-md)" : "var(--space-2xl)",
+      }}
+    >
       <h1
         style={{
           fontFamily: "var(--font-head)",
           fontWeight: "var(--weight-head)",
-          fontSize: "var(--type-h3-size)",
-          lineHeight: "var(--type-h3-lh)",
-          letterSpacing: "var(--type-h3-track)",
+          fontSize: heroCollapsed ? "var(--type-cardtitle-size)" : "var(--type-h1-size)",
+          lineHeight: heroCollapsed ? "var(--type-cardtitle-lh)" : "var(--type-h1-lh)",
+          letterSpacing: "var(--track-head)",
           color: "var(--text-primary)",
         }}
       >
         What are we painting today?
       </h1>
-      <p
-        style={{
-          marginTop: "var(--space-xs)",
-          fontSize: "var(--type-body-size)",
-          color: "var(--text-muted)",
-        }}
-      >
-        Filled from your template library, or drafted fresh from your brand kit. Edit and export as
-        usual.
-      </p>
+      {!heroCollapsed && (
+        <p
+          style={{
+            marginTop: "var(--space-xs)",
+            fontSize: "var(--type-label-size)",
+            color: "var(--text-muted)",
+          }}
+        >
+          Filled from your template library, or drafted fresh from your brand kit. Edit and export
+          as usual.
+        </p>
+      )}
     </div>
   );
 
@@ -359,35 +551,130 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
         {hero}
 
         {/* The prompt card — the one control that matters, so it gets the
-            stage. Elevation through surface colour, per the DS. */}
+            stage: card padding at the content step, the photo well and the
+            brief sharing one field, the controls as one footer strip, and a
+            wash halo on focus. Elevation through surface colour, per the
+            DS. */}
         <div
-          className="sp-card"
-          style={{ marginTop: "var(--space-lg)", padding: "var(--space-sm)" }}
+          className="sp-card sp-gen-composer"
+          style={{ marginTop: "var(--space-lg)", padding: "var(--space-md)" }}
+          onPaste={onComposerPaste}
         >
-          <textarea
-            rows={3}
-            value={brief}
-            maxLength={1500}
-            onChange={(e) => setBrief(e.target.value)}
-            onKeyDown={onBriefKeyDown}
-            placeholder="We're hiring a senior nurse practitioner for the Evanston clinic, posting on LinkedIn this week."
-            aria-label="Describe the post"
-            disabled={busy}
-            style={{
-              width: "100%",
-              background: "transparent",
-              border: "none",
-              outline: "none",
-              resize: "none",
-              fontFamily: "var(--font-ui)",
-              fontSize: "var(--type-body-size)",
-              lineHeight: "var(--type-body-lh)",
-              color: "var(--text-primary)",
-            }}
-          />
+          <div className="flex" style={{ gap: "var(--space-xs)", alignItems: "stretch" }}>
+            {/* The photo well — the member's photo arrives BEFORE the
+                choice, so every result card previews a finished graphic.
+                Uncropped on purpose: slot aspects differ per template. */}
+            {image ? (
+              <div style={{ position: "relative", flexShrink: 0 }}>
+                <img
+                  src={image.dataUrl}
+                  alt="Your photo"
+                  style={{
+                    width: 72,
+                    height: 72,
+                    objectFit: "cover",
+                    display: "block",
+                    borderRadius: "var(--radius-control)",
+                    border: "1px solid var(--border)",
+                  }}
+                />
+                <button
+                  type="button"
+                  aria-label="Remove photo"
+                  title="Remove photo"
+                  disabled={busy}
+                  onClick={removeImage}
+                  style={{
+                    position: "absolute",
+                    top: -6,
+                    right: -6,
+                    width: 20,
+                    height: 20,
+                    borderRadius: "var(--radius-pill)",
+                    background: "var(--fill-action)",
+                    color: "var(--text-on-action)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <X style={{ width: 12, height: 12 }} aria-hidden />
+                </button>
+              </div>
+            ) : (
+              <div
+                {...imageDrop.getRootProps({
+                  role: "button",
+                  "aria-label": "Add a photo (optional): JPG, PNG, or WEBP up to 10MB",
+                })}
+                data-active={imageDrop.isDragActive}
+                className="sp-dropzone flex flex-col items-center justify-center cursor-pointer"
+                style={{
+                  width: 72,
+                  minHeight: 72,
+                  flexShrink: 0,
+                  gap: "var(--space-3xs)",
+                  border: `1.5px dashed ${
+                    imageDrop.isDragActive ? "var(--state-primary)" : "var(--border-strong)"
+                  }`,
+                  borderRadius: "var(--radius-control)",
+                  background: imageDrop.isDragActive ? "var(--accent-wash)" : "transparent",
+                }}
+              >
+                <input {...imageDrop.getInputProps()} />
+                <ImagePlus
+                  className="sp-dropzone__icon"
+                  style={{ width: 16, height: 16, color: "var(--text-secondary)" }}
+                  aria-hidden
+                />
+                <span style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
+                  Photo
+                </span>
+              </div>
+            )}
+            <textarea
+              rows={3}
+              value={brief}
+              maxLength={1500}
+              onChange={(e) => setBrief(e.target.value)}
+              onKeyDown={onBriefKeyDown}
+              placeholder="We're hiring a senior nurse practitioner for the Evanston clinic, posting on LinkedIn this week."
+              aria-label="Describe the post"
+              disabled={busy}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                background: "transparent",
+                border: "none",
+                outline: "none",
+                resize: "none",
+                fontFamily: "var(--font-ui)",
+                fontSize: "var(--type-body-size)",
+                lineHeight: "var(--type-body-lh)",
+                color: "var(--text-primary)",
+              }}
+            />
+          </div>
+          {chip && <UploadChipView chip={chip} />}
+          {imageError && (
+            <p
+              role="alert"
+              style={{
+                marginTop: "var(--space-3xs)",
+                fontSize: "var(--type-caption-size)",
+                color: "var(--state-danger-on-surface)",
+              }}
+            >
+              {imageError}
+            </p>
+          )}
           <div
             className="flex items-center justify-between gap-3"
-            style={{ marginTop: "var(--space-2xs)" }}
+            style={{
+              marginTop: "var(--space-xs)",
+              paddingTop: "var(--space-xs)",
+              borderTop: "1px solid var(--border)",
+            }}
           >
             {hinted ? (
               <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
@@ -408,10 +695,11 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
                   </p>
                 ) : (
                   <div
-                    className="flex items-center"
+                    className="flex items-stretch"
                     role="group"
                     aria-label="How to generate"
                     style={{
+                      height: "var(--control-sm)",
                       padding: 2,
                       gap: 2,
                       borderRadius: "var(--radius-control)",
@@ -431,9 +719,13 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
                         aria-pressed={mode === m.id}
                         onClick={() => setMode(m.id)}
                         style={{
-                          padding: "var(--space-3xs) var(--space-2xs)",
+                          padding: "0 var(--space-2xs)",
                           borderRadius: "var(--radius-control)",
                           fontSize: "var(--type-label-size)",
+                          // One line, always — the .sp-seg rule. A wrapped
+                          // label overflows the fixed control height; the
+                          // row's flex-wrap handles narrow windows instead.
+                          whiteSpace: "nowrap",
                           background: mode === m.id ? "var(--bg-surface)" : "transparent",
                           color: mode === m.id ? "var(--text-primary)" : "var(--text-muted)",
                         }}
@@ -443,43 +735,38 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
                     ))}
                   </div>
                 )}
-                <label
-                  className="flex items-center gap-1.5"
-                  style={{
-                    padding: "var(--space-3xs) var(--space-2xs)",
-                    borderRadius: "var(--radius-control)",
-                    background: "var(--bg-surface-raised)",
-                    color: "var(--text-secondary)",
+                <Select
+                  id="sp-gen-platform"
+                  ariaLabel="Platform"
+                  value={platform ?? ""}
+                  options={platformOptions}
+                  onSelect={(v) => setPlatform((v || null) as PlatformId | null)}
+                  placeholder="Any platform"
+                  disabled={busy}
+                  triggerIcon={
+                    <PlatformTriggerIcon
+                      style={{ ...platformIconStyle, color: "var(--text-secondary)" }}
+                      aria-hidden
+                    />
+                  }
+                  triggerStyle={{
+                    width: "auto",
+                    height: "var(--control-sm)",
+                    padding: "0 var(--space-2xs)",
+                    fontSize: "var(--type-label-size)",
                   }}
-                >
-                  <Globe style={{ width: 14, height: 14, flexShrink: 0 }} aria-hidden />
-                  <select
-                    value={platform ?? ""}
-                    onChange={(e) => setPlatform((e.target.value || null) as PlatformId | null)}
-                    aria-label="Platform"
-                    disabled={busy}
-                    style={{
-                      background: "transparent",
-                      border: "none",
-                      outline: "none",
-                      fontFamily: "var(--font-ui)",
-                      fontSize: "var(--type-label-size)",
-                      color: "inherit",
-                    }}
-                  >
-                    <option value="">Any platform</option>
-                    {PLATFORMS.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                  menuMinWidth={220}
+                  menuCaption={
+                    anyDimmed
+                      ? "Dimmed platforms have no published templates yet — picking one is a preference, and the whole library is still considered."
+                      : undefined
+                  }
+                />
               </div>
             )}
             <button
               type="button"
-              className="sp-btn sp-btn-primary"
+              className="sp-btn sp-gen-submit"
               disabled={!brief.trim() || busy}
               onClick={() => void run()}
               aria-label="Generate"
@@ -512,7 +799,10 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
           </p>
         )}
 
-        {!results && !busy && (
+        {/* Six pills, five hues, wash strength. They stay reachable after
+            drafts exist — in the quiet form, so a second idea doesn't need
+            the field cleared by hand. */}
+        {!busy && (
           <div
             className="flex flex-wrap justify-center"
             style={{ gap: "var(--space-2xs)", marginTop: "var(--space-sm)" }}
@@ -521,10 +811,12 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
               <button
                 key={s.label}
                 type="button"
-                className="sp-chip"
+                className={
+                  results ? "sp-gen-hue sp-gen-pill sp-gen-pill--quiet" : "sp-gen-hue sp-gen-pill"
+                }
                 onClick={() => setBrief(s.brief)}
               >
-                <span className="sp-chip__label">{s.label}</span>
+                {s.label}
               </button>
             ))}
           </div>
@@ -547,27 +839,59 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
 
       {busy && (
         <div aria-busy="true" style={{ marginTop: "var(--space-lg)" }}>
-          <p
-            role="status"
+          <h2
             style={{
-              textAlign: "center",
-              fontSize: "var(--type-label-size)",
-              color: "var(--text-muted)",
+              fontFamily: "var(--font-head)",
+              fontWeight: "var(--weight-head)",
+              fontSize: "var(--type-cardtitle-size)",
+              lineHeight: "var(--type-cardtitle-lh)",
+              letterSpacing: "var(--type-cardtitle-track)",
+              color: "var(--text-primary)",
+              marginBottom: "var(--space-2xs)",
             }}
           >
-            {phase === "asking"
-              ? "Reading your brief and choosing templates from your library…"
-              : "Checking every line of copy fits its design…"}
-          </p>
-          <div className="sp-grid-media" style={{ marginTop: "var(--space-sm)" }}>
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="sp-skeleton__block"
-                aria-hidden
-                style={{ aspectRatio: "1 / 1", borderRadius: "var(--radius-card)" }}
+            Your drafts
+          </h2>
+          {/* The two phases as progress — same honest copy, now with the
+              current step marked. No progress bar: the duration cannot be
+              predicted, so a bar would be a guess. */}
+          <div role="status" className="sp-gen-steps">
+            <span className="sp-gen-step" data-state={phase === "asking" ? "current" : "done"}>
+              <span className="sp-gen-step__dot" aria-hidden>
+                {phase === "asking" ? "1" : <Check style={{ width: 11, height: 11 }} />}
+              </span>
+              Reading your brief and choosing templates from your library…
+            </span>
+            <span
+              className="sp-gen-step"
+              data-state={phase === "measuring" ? "current" : "pending"}
+            >
+              <span className="sp-gen-step__dot" aria-hidden>
+                2
+              </span>
+              Checking every line of copy fits its design…
+            </span>
+          </div>
+          {/* While measuring, drafts land as each one resolves — real cards
+              fill the leading slots, skeletons hold the rest, and every
+              slot keeps its hue across the swap. */}
+          <div className="sp-grid-media">
+            {(partial?.cards ?? []).map((card, i) => (
+              <ProposalCard
+                key={`${card.schema.id}-${i}`}
+                card={card}
+                index={i}
+                hue={(i % 5) + 1}
+                image={image?.dataUrl ?? null}
+                onChoose={choose}
               />
             ))}
+            {Array.from({
+              length: partial ? Math.max(0, partial.total - partial.processed) : 3,
+            }).map((_, j) => {
+              const slot = (partial?.cards.length ?? 0) + j;
+              return <SkeletonCard key={`slot-${slot}`} hue={(slot % 5) + 1} />;
+            })}
           </div>
         </div>
       )}
@@ -587,6 +911,17 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
           >
             Your drafts
           </h2>
+          {photoChanged && (
+            <p
+              style={{
+                marginBottom: "var(--space-sm)",
+                fontSize: "var(--type-caption-size)",
+                color: "var(--text-muted)",
+              }}
+            >
+              These drafts were made before your photo change — generate again to use it.
+            </p>
+          )}
           {results.warnings.length > 0 && (
             <div style={{ marginBottom: "var(--space-sm)" }}>
               {results.warnings.map((w) => (
@@ -601,7 +936,14 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
           )}
           <div className="sp-grid-media">
             {results.cards.map((card, i) => (
-              <ProposalCard key={`${card.schema.id}-${i}`} card={card} onChoose={choose} />
+              <ProposalCard
+                key={`${card.schema.id}-${i}`}
+                card={card}
+                index={i}
+                hue={(i % 5) + 1}
+                image={results.image?.dataUrl ?? null}
+                onChoose={choose}
+              />
             ))}
           </div>
           {/* Provenance, in the open: which model, from which library. */}
@@ -631,81 +973,144 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
   );
 }
 
-function ProposalCard({ card, onChoose }: { card: ResultCard; onChoose(card: ResultCard): void }) {
-  const { proposal, schema, values } = card;
-  const caption = proposal.caption || mergeCaption(schema, values);
+/** A resolving slot: the real card's geometry and classes, so the swap to
+ * the finished draft happens in place, its hue already on. */
+function SkeletonCard({ hue }: { hue: number }) {
   return (
     <div
-      className="sp-card"
-      style={{
-        padding: "var(--space-xs)",
-        display: "flex",
-        flexDirection: "column",
-        gap: "var(--space-2xs)",
-      }}
+      className="sp-card sp-media-card sp-skeleton-card sp-gen-hue sp-gen-card sp-gen-skeleton"
+      data-hue={hue}
+      aria-hidden
     >
-      <div
-        style={{
-          aspectRatio: `${schema.canvasWidth} / ${schema.canvasHeight}`,
-          overflow: "hidden",
-          borderRadius: "var(--radius-control)",
-          border: "1px solid var(--border)",
-        }}
-      >
-        <TemplateThumbnail template={schema} values={values} />
+      <div className="sp-media-card__preview sp-skeleton__block" />
+      <div className="sp-gen-card__namerow">
+        <span className="sp-gen-card__index" />
+        <span className="sp-skeleton__block sp-skeleton__line" style={{ width: "50%" }} />
       </div>
-      <p
-        className="flex items-center gap-1.5"
-        style={{
-          fontSize: "var(--type-label-size)",
-          fontWeight: 500,
-          color: "var(--text-primary)",
-        }}
-      >
-        {schema.name}
-        {proposal.design && (
-          <span
-            style={{
-              padding: "1px var(--space-3xs)",
-              borderRadius: "var(--radius-control)",
-              background: "var(--bg-surface-raised)",
-              fontSize: "var(--type-caption-size)",
-              fontWeight: 400,
-              color: "var(--text-muted)",
-            }}
-          >
-            New design
-          </span>
-        )}
-      </p>
+      <span className="sp-skeleton__block sp-skeleton__line" style={{ width: "90%" }} />
+      <span className="sp-skeleton__block sp-skeleton__line" style={{ width: "70%" }} />
+    </div>
+  );
+}
+
+function ProposalCard({
+  card,
+  index,
+  hue,
+  image,
+  onChoose,
+}: {
+  card: ResultCard;
+  /** Position in the grid — the identity marker's numeral. */
+  index: number;
+  /** Identity slot (1–5) — explicit because the measuring grid mixes card
+   * and skeleton element types, which nth-of-type counts separately. */
+  hue: number;
+  /** The photo these drafts were made with, or null. */
+  image: string | null;
+  onChoose(card: ResultCard): void;
+}) {
+  const { proposal, schema, values: baseValues } = card;
+  // The supplied photo previews in its slot, and the "you'll add" line
+  // subtracts that slot — a card whose only image slot is filled says
+  // nothing about images, because there is nothing left to say.
+  const target = image ? imageTargetFor(proposal, schema) : null;
+  const values = image && target ? { ...baseValues, [target]: image } : baseValues;
+  const imagesStillNeeded = proposal.imageFieldsNeeded.filter((f) => f.fieldKey !== target);
+  const caption = proposal.caption || mergeCaption(schema, values);
+  return (
+    // The whole card is the choice — one control, one keyboard stop, the
+    // template-card rule; the button at the bottom is the visible
+    // affordance, decoration over this target.
+    <button
+      type="button"
+      className="sp-card sp-media-card sp-template-card sp-gen-hue sp-gen-card"
+      data-hue={hue}
+      onClick={() => onChoose(card)}
+      aria-label={`Edit and export "${schema.name}"${proposal.design ? " — a new design" : ""}`}
+    >
+      {/* The catalogue's square letterboxing frame: mixed proposal ratios
+          sit even in the grid; contain, never crop. */}
+      <span className="sp-media-card__preview">
+        <span
+          style={{
+            display: "block",
+            aspectRatio: `${schema.canvasWidth} / ${schema.canvasHeight}`,
+            ...(schema.canvasWidth / schema.canvasHeight >= 1
+              ? { width: "100%" }
+              : { height: "100%" }),
+          }}
+        >
+          <TemplateThumbnail template={schema} values={values} />
+        </span>
+      </span>
+      <span className="sp-gen-card__namerow">
+        <span className="sp-gen-card__index" aria-hidden>
+          {index + 1}
+        </span>
+        <span
+          className="truncate"
+          style={{
+            flex: 1,
+            minWidth: 0,
+            fontSize: "var(--type-label-size)",
+            fontWeight: 500,
+            color: "var(--text-primary)",
+          }}
+        >
+          {schema.name}
+        </span>
+        {proposal.design && <span className="sp-gen-badge">New design</span>}
+      </span>
       {proposal.why && (
-        <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
+        <span
+          style={{
+            display: "block",
+            fontSize: "var(--type-caption-size)",
+            lineHeight: "var(--type-caption-lh)",
+            color: "var(--text-secondary)",
+          }}
+        >
           {proposal.why}
-        </p>
+        </span>
       )}
       {caption && (
-        <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}>
-          Caption: {caption}
-        </p>
+        <span style={{ display: "block" }}>
+          <span
+            className="sp-eyebrow"
+            style={{ display: "block", marginBottom: "var(--space-3xs)" }}
+          >
+            Caption
+          </span>
+          <span
+            style={{
+              display: "block",
+              fontSize: "var(--type-caption-size)",
+              lineHeight: "var(--type-caption-lh)",
+              color: "var(--text-secondary)",
+            }}
+          >
+            {caption}
+          </span>
+        </span>
       )}
-      {proposal.imageFieldsNeeded.length > 0 && (
-        <p
+      {imagesStillNeeded.length > 0 && (
+        <span
           className="flex items-center gap-1.5"
           style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}
         >
           <ImageIcon style={{ width: 13, height: 13, flexShrink: 0 }} aria-hidden />
-          You'll add: {proposal.imageFieldsNeeded.map((f) => f.label).join(", ")}
-        </p>
+          You'll add: {imagesStillNeeded.map((f) => f.label).join(", ")}
+        </span>
       )}
-      <button
-        type="button"
+      <span
         className="sp-btn sp-btn-primary"
         style={{ marginTop: "auto", alignSelf: "start" }}
-        onClick={() => onChoose(card)}
+        aria-hidden
       >
         Edit and export
         <ArrowRight style={{ width: 14, height: 14 }} />
-      </button>
-    </div>
+      </span>
+    </button>
   );
 }

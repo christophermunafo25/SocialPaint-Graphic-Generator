@@ -2580,6 +2580,249 @@ input[type="radio"] {
   border-radius: var(--radius-control);
 }
 
+/* --- Generate: composer and results ----------------------------------------
+   The one member surface where the five brand colours rotate through the
+   chrome. Same legitimacy as the chart series and the hover rotation: the
+   hue says WHICH draft or WHICH pill — categorical identity, never state
+   or severity — and it arrives thin (a top rule, an index marker, a wash)
+   on neutral ground, never as a surface. Ink (--text-on-brand) is the only
+   glyph on a full-strength hue. */
+.sp-gen-hue {
+  --gen-hue: var(--voltage);
+  --gen-wash: color-mix(in srgb, var(--gen-hue) 16%, transparent);
+  --gen-wash-strong: color-mix(in srgb, var(--gen-hue) 28%, transparent);
+}
+.sp-gen-hue:nth-of-type(5n + 2) {
+  --gen-hue: var(--aqua);
+}
+.sp-gen-hue:nth-of-type(5n + 3) {
+  --gen-hue: var(--wednesdays);
+}
+.sp-gen-hue:nth-of-type(5n + 4) {
+  --gen-hue: var(--fire);
+}
+.sp-gen-hue:nth-of-type(5n + 5) {
+  --gen-hue: var(--sunshine);
+}
+/* Light needs more pigment against white — the hover-wash precedent. */
+[data-theme="light"] .sp-gen-hue {
+  --gen-wash: color-mix(in srgb, var(--gen-hue) 24%, transparent);
+  --gen-wash-strong: color-mix(in srgb, var(--gen-hue) 38%, transparent);
+}
+/* Explicit slots, for the one grid nth-of-type cannot govern: while
+   drafts resolve one by one, real cards (buttons) and skeletons (divs)
+   share the row, and nth-of-type counts each element type separately —
+   the same hue would repeat. The slot index comes from the component;
+   the hue stays bound here. These outrank the nth defaults by source
+   order. */
+.sp-gen-hue[data-hue="1"] {
+  --gen-hue: var(--voltage);
+}
+.sp-gen-hue[data-hue="2"] {
+  --gen-hue: var(--aqua);
+}
+.sp-gen-hue[data-hue="3"] {
+  --gen-hue: var(--wednesdays);
+}
+.sp-gen-hue[data-hue="4"] {
+  --gen-hue: var(--fire);
+}
+.sp-gen-hue[data-hue="5"] {
+  --gen-hue: var(--sunshine);
+}
+
+/* The composer — the page's one field, so the whole card is the control
+   and focus is a soft accent halo rather than a 1px input ring. The halo
+   is the focus-ring mechanism (box-shadow), not an elevation shadow. */
+.sp-gen-composer {
+  transition:
+    border-color var(--dur-state) var(--ease),
+    box-shadow var(--dur-state) var(--ease);
+}
+.sp-gen-composer:focus-within {
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 3px var(--accent-wash);
+}
+
+/* The submit — the one action the whole surface exists for, and the single
+   loudest element on the page: the sanctioned brand-moment gradient while
+   there is a brief to send. Decorative volume, not meaning (the solar
+   rule); Ink carries the glyph. Disabled returns to neutral rather than a
+   dimmed gradient. */
+.sp-gen-submit {
+  background: var(--brand-surface);
+  color: var(--brand-surface-fg);
+}
+.sp-gen-submit:disabled {
+  background: var(--bg-surface-raised);
+  color: var(--text-disabled);
+  opacity: 1;
+}
+
+/* Starter pills: six pills, five hues at wash strength — six things, not a
+   grey row. Once drafts exist they drop to the quiet outline form (still
+   reachable — a second idea shouldn't need the field cleared by hand) and
+   hover brings the hue back. */
+.sp-gen-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-sm);
+  padding: 0 var(--space-sm);
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  background: var(--gen-wash);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: var(--type-label-size);
+  font-weight: var(--weight-ui);
+  letter-spacing: var(--type-label-track);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background var(--dur-state) var(--ease),
+    color var(--dur-state) var(--ease),
+    border-color var(--dur-state) var(--ease);
+}
+.sp-gen-pill:hover {
+  background: var(--gen-wash-strong);
+}
+.sp-gen-pill--quiet {
+  min-height: var(--row-h-compact);
+  padding: 0 var(--space-xs);
+  font-size: var(--type-caption-size);
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+.sp-gen-pill--quiet:hover {
+  background: var(--gen-wash);
+  border-color: transparent;
+  color: var(--text-primary);
+}
+
+/* One generated draft. Composition rides the catalogue card (sp-card +
+   sp-media-card + sp-template-card: one control, square letterboxing
+   frame, hover lift); this class adds the flex column and the identity —
+   a top rule, an index marker, a wash behind the name row. Never the card
+   ground: a draft wearing Fire is draft number four, not an error. */
+.sp-gen-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  border-top: 2px solid var(--gen-hue);
+}
+.sp-gen-card__namerow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  min-width: 0;
+  padding: var(--space-3xs) var(--space-2xs);
+  border-radius: var(--radius-control);
+  background: var(--gen-wash);
+}
+.sp-gen-card__index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  background: var(--gen-hue);
+  color: var(--text-on-brand);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1;
+}
+/* The two-phase wait, read as progress: step dots and labels stay
+   NEUTRAL — progress never rides a brand colour. The current step fills
+   with the inverting action neutral (the "filled = on" rule); a finished
+   step keeps its ring and takes a quiet check. */
+.sp-gen-steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xs);
+  margin-bottom: var(--space-sm);
+}
+.sp-gen-step {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  font-size: var(--type-label-size);
+  color: var(--text-muted);
+  transition: color var(--dur-state) var(--ease);
+}
+.sp-gen-step[data-state="current"] {
+  color: var(--text-primary);
+}
+.sp-gen-step__dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1;
+  transition:
+    background var(--dur-state) var(--ease),
+    color var(--dur-state) var(--ease),
+    border-color var(--dur-state) var(--ease);
+}
+.sp-gen-step[data-state="current"] .sp-gen-step__dot {
+  background: var(--fill-action);
+  border-color: var(--fill-action);
+  color: var(--text-on-action);
+}
+.sp-gen-step[data-state="done"] .sp-gen-step__dot {
+  color: var(--text-secondary);
+}
+
+/* Skeleton pulse — slow, breathing toward the slot's own identity wash,
+   so the colour arrives before the content and the swap to the real card
+   is continuous. A pulse, never a shimmer: the DS bans gradients as a
+   surface treatment. Built on the motion ladder (--dur-reveal, --ease). */
+@keyframes sp-gen-skeleton-pulse {
+  0%,
+  100% {
+    background-color: var(--bg-raised);
+  }
+  50% {
+    background-color: var(--gen-wash);
+  }
+}
+.sp-gen-skeleton .sp-skeleton__block {
+  animation: sp-gen-skeleton-pulse calc(var(--dur-reveal) * 6) var(--ease) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  /* The compound selector outranks the generic skeleton opt-out, so this
+     needs saying explicitly: hold still on the resting surface. */
+  .sp-gen-skeleton .sp-skeleton__block {
+    animation: none;
+  }
+}
+
+/* Freestyle's "New design" badge — a real distinction the member should
+   see at a glance, so it wears the identity instead of grey-on-grey. */
+.sp-gen-badge {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 2px var(--space-2xs);
+  border-radius: var(--radius-pill);
+  background: var(--gen-hue);
+  color: var(--text-on-brand);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 /* ── Component colour overrides (design-system distribution, section 8) ─────
    Appended after the platform's component rules so it wins on cascade order.
    Colour properties only — no geometry, no layout, no shadow. */

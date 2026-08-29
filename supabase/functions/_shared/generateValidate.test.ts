@@ -96,6 +96,64 @@ describe("a valid proposal passes through", () => {
   });
 });
 
+describe("imageTargetFieldKey — advisory, dropped with a warning when wrong", () => {
+  const targetWarnings = (out: { warnings: string[] }) =>
+    out.warnings.filter((w) => w.includes("imageTargetFieldKey"));
+
+  it("passes a key naming a member image slot through", () => {
+    const out = validateGeneration(
+      output([proposed({ imageTargetFieldKey: "photo" })]),
+      LIBRARY,
+      3,
+    );
+    expect(out.proposals[0].imageTargetFieldKey).toBe("photo");
+    expect(targetWarnings(out)).toHaveLength(0);
+  });
+
+  it("is absent when the model sent none, with no warning", () => {
+    const out = validateGeneration(output([proposed()]), LIBRARY, 3);
+    expect(out.proposals[0].imageTargetFieldKey).toBeUndefined();
+    expect(targetWarnings(out)).toHaveLength(0);
+  });
+
+  it("drops an unknown fieldKey with a warning, keeping the proposal", () => {
+    const out = validateGeneration(
+      output([proposed({ imageTargetFieldKey: "ghost" })]),
+      LIBRARY,
+      3,
+    );
+    expect(out.proposals).toHaveLength(1);
+    expect(out.proposals[0].imageTargetFieldKey).toBeUndefined();
+    expect(targetWarnings(out).some((w) => w.includes('"ghost"'))).toBe(true);
+  });
+
+  it("drops a fixed image field — the member cannot fill it", () => {
+    const out = validateGeneration(output([proposed({ imageTargetFieldKey: "logo" })]), LIBRARY, 3);
+    expect(out.proposals[0].imageTargetFieldKey).toBeUndefined();
+    expect(targetWarnings(out).some((w) => w.includes('"logo"'))).toBe(true);
+  });
+
+  it("drops a non-image field", () => {
+    const out = validateGeneration(
+      output([proposed({ imageTargetFieldKey: "headline" })]),
+      LIBRARY,
+      3,
+    );
+    expect(out.proposals[0].imageTargetFieldKey).toBeUndefined();
+    expect(targetWarnings(out).some((w) => w.includes('"headline"'))).toBe(true);
+  });
+
+  it("drops a non-string value", () => {
+    const out = validateGeneration(
+      output([proposed({ imageTargetFieldKey: 42 as unknown as string })]),
+      LIBRARY,
+      3,
+    );
+    expect(out.proposals[0].imageTargetFieldKey).toBeUndefined();
+    expect(targetWarnings(out).some((w) => w.includes('"42"'))).toBe(true);
+  });
+});
+
 describe("rejection paths (retry with errors)", () => {
   const expectErrors = (proposals: ProposedGeneration[], needle: string) => {
     let thrown: unknown;

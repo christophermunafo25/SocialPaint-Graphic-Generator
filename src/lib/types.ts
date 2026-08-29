@@ -479,6 +479,13 @@ export interface GenerateInput {
    * brand by constraint: palette keys and brand type styles only, with the
    * published library fed in as style reference. */
   mode?: "library" | "freestyle";
+  /** The member already supplied a photo. ONLY this flag and its aspect
+   * cross the wire — the image itself is a data URL in page state and never
+   * reaches the server or the model. */
+  hasImage?: boolean;
+  /** The supplied photo's width over height, so the model can prefer a
+   * template whose image slot suits it. */
+  imageAspect?: number;
 }
 
 /** A freestyle proposal's design: a complete, ephemeral template the client
@@ -514,6 +521,12 @@ export interface GeneratedProposal {
   /** Image fields the member still has to fill — reported so the client can
    * say so honestly before the member commits to a choice. */
   imageFieldsNeeded: Array<{ fieldKey: string; label: string; required: boolean }>;
+  /** When the member supplied a photo (hasImage), the field it belongs in —
+   * the model has the field labels, so it can tell a headshot slot from a
+   * background. Validated server-side to name a member image slot on the
+   * chosen template; the client falls back to the first member image field
+   * when absent. */
+  imageTargetFieldKey?: string;
   /** Freestyle mode only: the new design itself. When present, templateId is
    * a synthetic marker and the client renders this instead of fetching. */
   design?: GeneratedDesign;

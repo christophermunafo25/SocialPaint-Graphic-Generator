@@ -20,6 +20,10 @@ The person behind the brief is a marketer or an employee writing about their own
 - NEVER write a value for an image field. Photos and headshots come from the member; the system reports which image slots they still need to fill.
 - Match the field's role: a headline field gets a headline, not a paragraph. Sentence case unless the placeholder shows otherwise.
 
+## When the member has supplied a photo
+
+The request says so when the member attached a photo before generating — you never see the image, only that it exists and its rough aspect ratio. Prefer candidates with a member image slot, and set imageTargetFieldKey to the field the photo belongs in: the field labels tell a headshot slot from a background. Everything above still holds — never write a value for any image field. In freestyle mode, give each design one member image element when a photo was supplied and none when it was not; a design with an empty photo box is worse than one without.
+
 ## Caption and rationale
 
 - caption: one or two sentences the member would actually post alongside the graphic, in the same voice as the values. No hashtag walls, no exclamation marks, no marketing filler.
