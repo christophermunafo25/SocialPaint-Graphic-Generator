@@ -155,6 +155,9 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
   const [saveError, setSaveError] = useState<string | null>(null);
   // The member's photo (see ComposerImage — it never leaves the browser).
   const [image, setImage] = useState<ComposerImage | null>(null);
+  // The photo well hides until asked for: "Upload photo" opens it above the
+  // brief. A paste lands the photo regardless — the well then shows it.
+  const [wellOpen, setWellOpen] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
   // A photo added or removed after drafts were made leaves them alone; one
   // line of copy says regenerating applies the change.
@@ -239,6 +242,7 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
   const removeImage = () => {
     setImage(null);
     setImageError(null);
+    setWellOpen(false);
     if (results) setPhotoChanged(true);
   };
 
@@ -560,101 +564,115 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
           style={{ marginTop: "var(--space-lg)", padding: "var(--space-md)" }}
           onPaste={onComposerPaste}
         >
-          <div className="flex" style={{ gap: "var(--space-xs)", alignItems: "stretch" }}>
-            {/* The photo well — the member's photo arrives BEFORE the
-                choice, so every result card previews a finished graphic.
-                Uncropped on purpose: slot aspects differ per template. */}
-            {image ? (
-              <div style={{ position: "relative", flexShrink: 0 }}>
-                <img
-                  src={image.dataUrl}
-                  alt="Your photo"
-                  style={{
-                    width: 72,
-                    height: 72,
-                    objectFit: "cover",
-                    display: "block",
-                    borderRadius: "var(--radius-control)",
-                    border: "1px solid var(--border)",
-                  }}
-                />
-                <button
-                  type="button"
-                  aria-label="Remove photo"
-                  title="Remove photo"
-                  disabled={busy}
-                  onClick={removeImage}
-                  style={{
-                    position: "absolute",
-                    top: -6,
-                    right: -6,
-                    width: 20,
-                    height: 20,
-                    borderRadius: "var(--radius-pill)",
-                    background: "var(--fill-action)",
-                    color: "var(--text-on-action)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <X style={{ width: 12, height: 12 }} aria-hidden />
-                </button>
-              </div>
-            ) : (
-              <div
-                {...imageDrop.getRootProps({
-                  role: "button",
-                  "aria-label": "Add a photo (optional): JPG, PNG, or WEBP up to 10MB",
-                })}
-                data-active={imageDrop.isDragActive}
-                className="sp-dropzone flex flex-col items-center justify-center cursor-pointer"
-                style={{
-                  width: 72,
-                  minHeight: 72,
-                  flexShrink: 0,
-                  gap: "var(--space-3xs)",
-                  border: `1.5px dashed ${
-                    imageDrop.isDragActive ? "var(--state-primary)" : "var(--border-strong)"
-                  }`,
-                  borderRadius: "var(--radius-control)",
-                  background: imageDrop.isDragActive ? "var(--accent-wash)" : "transparent",
-                }}
-              >
-                <input {...imageDrop.getInputProps()} />
-                <ImagePlus
-                  className="sp-dropzone__icon"
-                  style={{ width: 16, height: 16, color: "var(--text-secondary)" }}
-                  aria-hidden
-                />
-                <span style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
-                  Photo
-                </span>
-              </div>
-            )}
-            <textarea
-              rows={3}
-              value={brief}
-              maxLength={1500}
-              onChange={(e) => setBrief(e.target.value)}
-              onKeyDown={onBriefKeyDown}
-              placeholder="We're hiring a senior nurse practitioner for the Evanston clinic, posting on LinkedIn this week."
-              aria-label="Describe the post"
-              disabled={busy}
-              style={{
-                flex: 1,
-                minWidth: 0,
-                background: "transparent",
-                border: "none",
-                outline: "none",
-                resize: "none",
-                fontFamily: "var(--font-ui)",
-                fontSize: "var(--type-body-size)",
-                lineHeight: "var(--type-body-lh)",
-                color: "var(--text-primary)",
-              }}
-            />
-          </div>
+          {/* The photo well — hidden until "Upload photo" opens it (or a
+              paste lands one), then it sits ABOVE the brief. The member's
+              photo arrives BEFORE the choice, so every result card
+              previews a finished graphic. Uncropped on purpose: slot
+              aspects differ per template. */}
+          {(wellOpen || image) && (
+            <div style={{ marginBottom: "var(--space-xs)" }}>
+              {image ? (
+                <div style={{ position: "relative", display: "inline-block" }}>
+                  <img
+                    src={image.dataUrl}
+                    alt="Your photo"
+                    style={{
+                      width: 72,
+                      height: 72,
+                      objectFit: "cover",
+                      display: "block",
+                      borderRadius: "var(--radius-control)",
+                      border: "1px solid var(--border)",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    aria-label="Remove photo"
+                    title="Remove photo"
+                    disabled={busy}
+                    onClick={removeImage}
+                    style={{
+                      position: "absolute",
+                      top: -6,
+                      right: -6,
+                      width: 20,
+                      height: 20,
+                      borderRadius: "var(--radius-pill)",
+                      background: "var(--fill-action)",
+                      color: "var(--text-on-action)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <X style={{ width: 12, height: 12 }} aria-hidden />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center" style={{ gap: "var(--space-2xs)" }}>
+                  <div
+                    {...imageDrop.getRootProps({
+                      role: "button",
+                      "aria-label": "Add a photo (optional): JPG, PNG, or WEBP up to 10MB",
+                    })}
+                    data-active={imageDrop.isDragActive}
+                    className="sp-dropzone flex flex-1 items-center justify-center cursor-pointer"
+                    style={{
+                      minHeight: 64,
+                      gap: "var(--space-2xs)",
+                      border: `1.5px dashed ${
+                        imageDrop.isDragActive ? "var(--state-primary)" : "var(--border-strong)"
+                      }`,
+                      borderRadius: "var(--radius-control)",
+                      background: imageDrop.isDragActive ? "var(--accent-wash)" : "transparent",
+                    }}
+                  >
+                    <input {...imageDrop.getInputProps()} />
+                    <ImagePlus
+                      className="sp-dropzone__icon"
+                      style={{ width: 16, height: 16, color: "var(--text-secondary)" }}
+                      aria-hidden
+                    />
+                    <span
+                      style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}
+                    >
+                      Click or drag to upload — JPG, PNG, or WEBP up to 10MB
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    aria-label="Hide photo upload"
+                    title="Hide photo upload"
+                    onClick={() => setWellOpen(false)}
+                    style={{ color: "var(--text-muted)", display: "flex", flexShrink: 0 }}
+                  >
+                    <X style={{ width: 14, height: 14 }} aria-hidden />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+          <textarea
+            rows={3}
+            value={brief}
+            maxLength={1500}
+            onChange={(e) => setBrief(e.target.value)}
+            onKeyDown={onBriefKeyDown}
+            placeholder="We're hiring a senior nurse practitioner for the Evanston clinic, posting on LinkedIn this week."
+            aria-label="Describe the post"
+            disabled={busy}
+            style={{
+              width: "100%",
+              background: "transparent",
+              border: "none",
+              outline: "none",
+              resize: "none",
+              fontFamily: "var(--font-ui)",
+              fontSize: "var(--type-body-size)",
+              lineHeight: "var(--type-body-lh)",
+              color: "var(--text-primary)",
+            }}
+          />
           {chip && <UploadChipView chip={chip} />}
           {imageError && (
             <p
@@ -676,94 +694,119 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
               borderTop: "1px solid var(--border)",
             }}
           >
-            {hinted ? (
-              <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
-                Using {hinted.name}.{" "}
+            <div className="flex items-center flex-wrap gap-2">
+              {hinted ? (
+                <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
+                  Using {hinted.name}.{" "}
+                  <button
+                    type="button"
+                    onClick={() => navigate({ name: "generate" }, { replace: true })}
+                    style={{ textDecoration: "underline", color: "var(--text-secondary)" }}
+                  >
+                    Search the whole library instead
+                  </button>
+                </p>
+              ) : (
+                <>
+                  {libraryEmpty ? (
+                    <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
+                      No published templates yet — drafts come fresh from your brand kit.
+                    </p>
+                  ) : (
+                    <div
+                      className="flex items-stretch"
+                      role="group"
+                      aria-label="How to generate"
+                      style={{
+                        height: "var(--control-sm)",
+                        padding: 2,
+                        gap: 2,
+                        borderRadius: "var(--radius-control)",
+                        background: "var(--bg-surface-raised)",
+                      }}
+                    >
+                      {(
+                        [
+                          { id: "library", label: "My templates" },
+                          { id: "freestyle", label: "Something new" },
+                        ] as const
+                      ).map((m) => (
+                        <button
+                          key={m.id}
+                          type="button"
+                          disabled={busy}
+                          aria-pressed={mode === m.id}
+                          onClick={() => setMode(m.id)}
+                          style={{
+                            padding: "0 var(--space-2xs)",
+                            borderRadius: "var(--radius-control)",
+                            fontSize: "var(--type-label-size)",
+                            // One line, always — the .sp-seg rule. A wrapped
+                            // label overflows the fixed control height; the
+                            // row's flex-wrap handles narrow windows instead.
+                            whiteSpace: "nowrap",
+                            background: mode === m.id ? "var(--bg-surface)" : "transparent",
+                            color: mode === m.id ? "var(--text-primary)" : "var(--text-muted)",
+                          }}
+                        >
+                          {m.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <Select
+                    id="sp-gen-platform"
+                    ariaLabel="Platform"
+                    value={platform ?? ""}
+                    options={platformOptions}
+                    onSelect={(v) => setPlatform((v || null) as PlatformId | null)}
+                    placeholder="Any platform"
+                    disabled={busy}
+                    triggerIcon={
+                      <PlatformTriggerIcon
+                        style={{ ...platformIconStyle, color: "var(--text-secondary)" }}
+                        aria-hidden
+                      />
+                    }
+                    triggerStyle={{
+                      width: "auto",
+                      height: "var(--control-sm)",
+                      padding: "0 var(--space-2xs)",
+                      fontSize: "var(--type-label-size)",
+                    }}
+                    menuMinWidth={220}
+                    menuCaption={
+                      anyDimmed
+                        ? "Dimmed platforms have no published templates yet — picking one is a preference, and the whole library is still considered."
+                        : undefined
+                    }
+                  />
+                </>
+              )}
+              {/* Opens the photo well above the brief; once the well is on
+                  screen (or holds a photo) it is its own affordance. */}
+              {!wellOpen && !image && (
                 <button
                   type="button"
-                  onClick={() => navigate({ name: "generate" }, { replace: true })}
-                  style={{ textDecoration: "underline", color: "var(--text-secondary)" }}
-                >
-                  Search the whole library instead
-                </button>
-              </p>
-            ) : (
-              <div className="flex items-center flex-wrap gap-2">
-                {libraryEmpty ? (
-                  <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
-                    No published templates yet — drafts come fresh from your brand kit.
-                  </p>
-                ) : (
-                  <div
-                    className="flex items-stretch"
-                    role="group"
-                    aria-label="How to generate"
-                    style={{
-                      height: "var(--control-sm)",
-                      padding: 2,
-                      gap: 2,
-                      borderRadius: "var(--radius-control)",
-                      background: "var(--bg-surface-raised)",
-                    }}
-                  >
-                    {(
-                      [
-                        { id: "library", label: "My templates" },
-                        { id: "freestyle", label: "Something new" },
-                      ] as const
-                    ).map((m) => (
-                      <button
-                        key={m.id}
-                        type="button"
-                        disabled={busy}
-                        aria-pressed={mode === m.id}
-                        onClick={() => setMode(m.id)}
-                        style={{
-                          padding: "0 var(--space-2xs)",
-                          borderRadius: "var(--radius-control)",
-                          fontSize: "var(--type-label-size)",
-                          // One line, always — the .sp-seg rule. A wrapped
-                          // label overflows the fixed control height; the
-                          // row's flex-wrap handles narrow windows instead.
-                          whiteSpace: "nowrap",
-                          background: mode === m.id ? "var(--bg-surface)" : "transparent",
-                          color: mode === m.id ? "var(--text-primary)" : "var(--text-muted)",
-                        }}
-                      >
-                        {m.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                <Select
-                  id="sp-gen-platform"
-                  ariaLabel="Platform"
-                  value={platform ?? ""}
-                  options={platformOptions}
-                  onSelect={(v) => setPlatform((v || null) as PlatformId | null)}
-                  placeholder="Any platform"
+                  className="sp-input flex items-center gap-1.5"
                   disabled={busy}
-                  triggerIcon={
-                    <PlatformTriggerIcon
-                      style={{ ...platformIconStyle, color: "var(--text-secondary)" }}
-                      aria-hidden
-                    />
-                  }
-                  triggerStyle={{
+                  onClick={() => setWellOpen(true)}
+                  style={{
                     width: "auto",
                     height: "var(--control-sm)",
                     padding: "0 var(--space-2xs)",
                     fontSize: "var(--type-label-size)",
+                    cursor: "pointer",
                   }}
-                  menuMinWidth={220}
-                  menuCaption={
-                    anyDimmed
-                      ? "Dimmed platforms have no published templates yet — picking one is a preference, and the whole library is still considered."
-                      : undefined
-                  }
-                />
-              </div>
-            )}
+                >
+                  <ImagePlus
+                    style={{ ...platformIconStyle, color: "var(--text-secondary)" }}
+                    aria-hidden
+                  />
+                  Upload photo
+                </button>
+              )}
+            </div>
             <button
               type="button"
               className="sp-btn sp-gen-submit"
@@ -799,9 +842,9 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
           </p>
         )}
 
-        {/* Six pills, five hues, wash strength. They stay reachable after
-            drafts exist — in the quiet form, so a second idea doesn't need
-            the field cleared by hand. */}
+        {/* Neutral starter pills. They stay reachable after drafts exist —
+            in the quiet form, so a second idea doesn't need the field
+            cleared by hand. */}
         {!busy && (
           <div
             className="flex flex-wrap justify-center"
@@ -811,9 +854,7 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
               <button
                 key={s.label}
                 type="button"
-                className={
-                  results ? "sp-gen-hue sp-gen-pill sp-gen-pill--quiet" : "sp-gen-hue sp-gen-pill"
-                }
+                className={results ? "sp-gen-pill sp-gen-pill--quiet" : "sp-gen-pill"}
                 onClick={() => setBrief(s.brief)}
               >
                 {s.label}

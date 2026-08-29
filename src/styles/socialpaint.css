@@ -2583,10 +2583,10 @@ input[type="radio"] {
 /* --- Generate: composer and results ----------------------------------------
    The one member surface where the five brand colours rotate through the
    chrome. Same legitimacy as the chart series and the hover rotation: the
-   hue says WHICH draft or WHICH pill — categorical identity, never state
-   or severity — and it arrives thin (a top rule, an index marker, a wash)
-   on neutral ground, never as a surface. Ink (--text-on-brand) is the only
-   glyph on a full-strength hue. */
+   hue says WHICH draft — categorical identity, never state or severity —
+   and it arrives thin (a top rule, an index marker, a wash) on neutral
+   ground, never as a surface. Ink (--text-on-brand) is the only glyph on
+   a full-strength hue. */
 .sp-gen-hue {
   --gen-hue: var(--voltage);
   --gen-wash: color-mix(in srgb, var(--gen-hue) 16%, transparent);
@@ -2659,18 +2659,19 @@ input[type="radio"] {
   opacity: 1;
 }
 
-/* Starter pills: six pills, five hues at wash strength — six things, not a
-   grey row. Once drafts exist they drop to the quiet outline form (still
-   reachable — a second idea shouldn't need the field cleared by hand) and
-   hover brings the hue back. */
+/* Starter pills: NEUTRAL, at Chris's direction (2026-08-28) — the identity
+   rotation lives on the drafts, and the pills read as quiet suggestions
+   rather than six coloured things. Once drafts exist they drop to the
+   smaller quiet form (still reachable — a second idea shouldn't need the
+   field cleared by hand). */
 .sp-gen-pill {
   display: inline-flex;
   align-items: center;
   min-height: var(--control-sm);
   padding: 0 var(--space-sm);
-  border: 1px solid transparent;
+  border: 1px solid var(--border);
   border-radius: var(--radius-pill);
-  background: var(--gen-wash);
+  background: var(--bg-surface);
   color: var(--text-primary);
   font-family: var(--font-ui);
   font-size: var(--type-label-size);
@@ -2684,19 +2685,18 @@ input[type="radio"] {
     border-color var(--dur-state) var(--ease);
 }
 .sp-gen-pill:hover {
-  background: var(--gen-wash-strong);
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
 }
 .sp-gen-pill--quiet {
   min-height: var(--row-h-compact);
   padding: 0 var(--space-xs);
   font-size: var(--type-caption-size);
   background: transparent;
-  border-color: var(--border);
   color: var(--text-secondary);
 }
 .sp-gen-pill--quiet:hover {
-  background: var(--gen-wash);
-  border-color: transparent;
+  background: var(--bg-hover);
   color: var(--text-primary);
 }
 
