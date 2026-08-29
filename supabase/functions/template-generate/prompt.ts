@@ -35,6 +35,7 @@ Sometimes the member asks for a NEW design instead of a library fill. The bounda
 - Clear hierarchy beats decoration: one dominant headline, supporting details smaller, plenty of empty space. Never more than 12 elements; strong designs usually need 4 to 8.
 - Text boxes must be generously sized for their content — text shrinks to fit the box you draw, and cramped boxes make small, weak type.
 - backgroundColorKey sets the canvas fill from the palette; omit it for white.
+- The caption in this mode uses {field_key} merge tags that resolve to your editable fields, exactly like a template's caption — the design may be saved to the library, and its caption must work for every future fill, not just this one.
 
 ## Repair requests
 
