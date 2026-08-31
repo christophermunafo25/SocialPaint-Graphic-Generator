@@ -32,9 +32,9 @@
      #FFFFFF or #F1F1F1, so brand colours are fill-only on light and
      never appear as text or as a border that carries information.
    - No gradients as surface, no drop shadows in either mode, no glass.
-   - Headings are Gopadel SemiBold at −1% tracking in sentence case
-     (2026-08-17); bold proper is banned everywhere in chrome. Small labels
-     (eyebrows, table headers) stay ALL CAPS mono at 0.04em tracking.
+   - Headings are Plus Jakarta Sans SemiBold at −3% tracking in sentence
+     case (2026-08-31); bold proper is banned everywhere in chrome. Small
+     labels (eyebrows, table headers) stay ALL CAPS mono at 0.04em tracking.
 
    Themes are scoped to [data-theme="light" | "dark"], which
    ColorSchemeProvider sets on <html> alongside the .dark class that
@@ -50,17 +50,33 @@
    tenant's font upload can never shadow the chrome (@font-face is
    document-global; see the Neuething incident, 2026-08-05).
 
-   Gopadel SemiBold is the HEADING face only (final brand, 2026-08-17, at
-   Chris's direction — it replaces Blauer Nue) — every --font-head site
-   pairs with --weight-head 600, so it ships as the single cut, and every
-   heading step tracks at −1%. Raveo Display remains the body/UI face at
-   Regular and Medium. Bold proper stays banned everywhere. */
+   Plus Jakarta Sans SemiBold is the HEADING face only (2026-08-31, at
+   Chris's direction — it replaces Gopadel) — every --font-head site pairs
+   with --weight-head 600, so it ships as the single cut (self-hosted from
+   the Google Fonts latin + latin-ext subsets, keeping the private-name
+   policy a CDN @import would break), and every heading step tracks at −3%.
+   Raveo Display remains the body/UI face at Regular and Medium. Bold
+   proper stays banned everywhere. */
 @font-face {
-  font-family: "Gopadel Platform";
-  src: url("../assets/fonts/gopadel/Gopadel-SemiBold.woff2") format("woff2");
+  font-family: "Plus Jakarta Platform";
+  src: url("../assets/fonts/jakarta/PlusJakartaSans-SemiBold-latin.woff2") format("woff2");
   font-weight: 600;
   font-style: normal;
   font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Plus Jakarta Platform";
+  src: url("../assets/fonts/jakarta/PlusJakartaSans-SemiBold-latin-ext.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+    U+A720-A7FF;
 }
 @font-face {
   font-family: "Raveo Display Platform";
@@ -103,11 +119,11 @@ html {
   --gray: #f1f1f1;
   --ink: #272727;
 
-  /* Typography — Gopadel SemiBold carries headings; Raveo Display
-     carries body and UI. */
-  --font-head: "Gopadel Platform", "Gopadel", system-ui, sans-serif;
-  --weight-head: 600; /* every heading step — Gopadel SemiBold */
-  --track-head: -0.01em; /* −1% on every heading step — the display face's spec */
+  /* Typography — Plus Jakarta Sans SemiBold carries headings; Raveo
+     Display carries body and UI. */
+  --font-head: "Plus Jakarta Platform", "Plus Jakarta Sans", system-ui, sans-serif;
+  --weight-head: 600; /* every heading step — Plus Jakarta Sans SemiBold */
+  --track-head: -0.03em; /* −3% on every heading step — the heading face's spec */
   --font-body: "Raveo Display Platform", "Raveo Display", system-ui, -apple-system, sans-serif;
   --font-ui: "Raveo Display Platform", "Raveo Display", system-ui, -apple-system, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
