@@ -1179,6 +1179,21 @@ html[data-sp-fullscreen] .sp-appshell > main {
   flex-direction: column;
   overflow: hidden;
 }
+/* The drawing tools, floating on the canvas's left edge — next to the work,
+   out of the top bar (which must never scroll). Surface + hairline, no
+   shadow, above the rail grip (3) and below the step slide-over (20). */
+.sp-builder__tools {
+  position: absolute;
+  left: var(--space-xs);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  overflow: hidden;
+}
 /* A collapsed rail keeps a strip so the way back is where the rail was. */
 .sp-builder__stub {
   display: flex;
