@@ -32,6 +32,7 @@ import {
   rejectionMessage,
   useUploadChip,
 } from "../imageUpload";
+import { BrandMark } from "../BrandMark";
 import { Page } from "../layout/Page";
 import { TemplateFill } from "../TemplateFill";
 import { TemplateThumbnail } from "../TemplateThumbnail";
@@ -132,11 +133,12 @@ const platformIconStyle: React.CSSProperties = { width: 14, height: 14, flexShri
  *    library as reference. The draft is ephemeral: filled and exported in
  *    place, never saved to the library.
  *
- * Composition: a centred hero (headline, one line under it), one big prompt
- * card that IS the interface — borderless textarea, mode toggle, a compact
- * platform picker, a round submit — with starter pills beneath, and results
- * below. Plain canvas background; the brand lives in the graphics, not the
- * chrome. */
+ * Composition (Figma 72:27 / 72:148): the brand mark over a centred
+ * headline, one big prompt card that IS the interface — borderless
+ * textarea, mode toggle, a compact platform picker, a round submit — with
+ * starter chips beneath, the whole block vertically centred until a run
+ * starts, and results below. Plain canvas background; the brand lives in
+ * the graphics, not the chrome. */
 export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
   const { company, role } = useAuth();
   const { kit } = useBrand();
@@ -416,37 +418,41 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
   // page's weight moves to the drafts — and the shift happens on the
   // member's own submit, not when results land.
   const heroCollapsed = busy || results !== null;
+  // Expanded (Figma 72:27): the brand mark over an h2-step headline, no
+  // subline — the mark carries the space, and the freestyle helper under
+  // the composer still explains "Something new". Vertical centring of the
+  // whole block replaces the old top padding. Collapsed stays the bare
+  // single line.
   const hero = (
     <div
       style={{
         textAlign: "center",
-        paddingTop: heroCollapsed ? "var(--space-md)" : "var(--space-2xl)",
+        paddingTop: heroCollapsed ? "var(--space-md)" : 0,
       }}
     >
+      {!heroCollapsed && (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            marginBottom: "var(--space-sm)",
+          }}
+        >
+          <BrandMark width={46} />
+        </div>
+      )}
       <h1
         style={{
           fontFamily: "var(--font-head)",
           fontWeight: "var(--weight-head)",
-          fontSize: heroCollapsed ? "var(--type-cardtitle-size)" : "var(--type-h1-size)",
-          lineHeight: heroCollapsed ? "var(--type-cardtitle-lh)" : "var(--type-h1-lh)",
+          fontSize: heroCollapsed ? "var(--type-cardtitle-size)" : "var(--type-h2-size)",
+          lineHeight: heroCollapsed ? "var(--type-cardtitle-lh)" : "var(--type-h2-lh)",
           letterSpacing: "var(--track-head)",
           color: "var(--text-primary)",
         }}
       >
         What are we painting today?
       </h1>
-      {!heroCollapsed && (
-        <p
-          style={{
-            marginTop: "var(--space-xs)",
-            fontSize: "var(--type-label-size)",
-            color: "var(--text-muted)",
-          }}
-        >
-          Filled from your template library, or drafted fresh from your brand kit. Edit and export
-          as usual.
-        </p>
-      )}
     </div>
   );
 
@@ -551,331 +557,352 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
 
   return (
     <Page>
-      <div style={{ maxWidth: 760, marginInline: "auto" }}>
-        {hero}
+      {/* The 860px stage (the frames' composer width) closes before the
+          drafts section so the results grid keeps the full column. Empty
+          state: the block centres vertically; once a run starts the flag
+          flips and the flow re-anchors to the top. */}
+      <div className={heroCollapsed ? "sp-gen-stage" : "sp-gen-stage sp-gen-stage--centered"}>
+        <div className="sp-gen-stage__inner">
+          {hero}
 
-        {/* The prompt card — the one control that matters, so it gets the
+          {/* The prompt card — the one control that matters, so it gets the
             stage: card padding at the content step, the photo well and the
             brief sharing one field, the controls as one footer strip, and a
             wash halo on focus. Elevation through surface colour, per the
             DS. */}
-        <div
-          className="sp-card sp-gen-composer"
-          style={{ marginTop: "var(--space-lg)", padding: "var(--space-md)" }}
-          onPaste={onComposerPaste}
-        >
-          {/* The photo well — hidden until "Upload photo" opens it (or a
+          <div
+            className="sp-card sp-gen-composer"
+            style={{
+              marginTop: "var(--space-xl)",
+              // Trimmed right/bottom so the 42px round submit optically
+              // centres against the card edge (Figma 22/18/16/22).
+              padding: "var(--space-md) var(--space-sm) var(--space-sm) var(--space-md)",
+            }}
+            onPaste={onComposerPaste}
+          >
+            {/* The photo well — hidden until "Upload photo" opens it (or a
               paste lands one), then it sits ABOVE the brief. The member's
               photo arrives BEFORE the choice, so every result card
               previews a finished graphic. Uncropped on purpose: slot
               aspects differ per template. */}
-          {(wellOpen || image) && (
-            <div style={{ marginBottom: "var(--space-xs)" }}>
-              {image ? (
-                <div style={{ position: "relative", display: "inline-block" }}>
-                  <img
-                    src={image.dataUrl}
-                    alt="Your photo"
-                    style={{
-                      width: 72,
-                      height: 72,
-                      objectFit: "cover",
-                      display: "block",
-                      borderRadius: "var(--radius-control)",
-                      border: "1px solid var(--border)",
-                    }}
-                  />
-                  <button
-                    type="button"
-                    aria-label="Remove photo"
-                    title="Remove photo"
-                    disabled={busy}
-                    onClick={removeImage}
-                    style={{
-                      position: "absolute",
-                      top: -6,
-                      right: -6,
-                      width: 20,
-                      height: 20,
-                      borderRadius: "var(--radius-pill)",
-                      background: "var(--fill-action)",
-                      color: "var(--text-on-action)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <X style={{ width: 12, height: 12 }} aria-hidden />
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center" style={{ gap: "var(--space-2xs)" }}>
-                  <div
-                    {...imageDrop.getRootProps({
-                      role: "button",
-                      "aria-label": "Add a photo (optional): JPG, PNG, or WEBP up to 10MB",
-                    })}
-                    data-active={imageDrop.isDragActive}
-                    className="sp-dropzone flex flex-1 items-center justify-center cursor-pointer"
-                    style={{
-                      minHeight: 64,
-                      gap: "var(--space-2xs)",
-                      border: `1.5px dashed ${
-                        imageDrop.isDragActive ? "var(--state-primary)" : "var(--border-strong)"
-                      }`,
-                      borderRadius: "var(--radius-control)",
-                      background: imageDrop.isDragActive ? "var(--accent-wash)" : "transparent",
-                    }}
-                  >
-                    <input {...imageDrop.getInputProps()} />
-                    <ImagePlus
-                      className="sp-dropzone__icon"
-                      style={{ width: 16, height: 16, color: "var(--text-secondary)" }}
-                      aria-hidden
-                    />
-                    <span
-                      style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}
-                    >
-                      Click or drag to upload — JPG, PNG, or WEBP up to 10MB
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    aria-label="Hide photo upload"
-                    title="Hide photo upload"
-                    onClick={() => setWellOpen(false)}
-                    style={{ color: "var(--text-muted)", display: "flex", flexShrink: 0 }}
-                  >
-                    <X style={{ width: 14, height: 14 }} aria-hidden />
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-          <textarea
-            rows={3}
-            value={brief}
-            maxLength={1500}
-            onChange={(e) => setBrief(e.target.value)}
-            onKeyDown={onBriefKeyDown}
-            placeholder="We're hiring a senior nurse practitioner for the Evanston clinic, posting on LinkedIn this week."
-            aria-label="Describe the post"
-            disabled={busy}
-            style={{
-              width: "100%",
-              background: "transparent",
-              border: "none",
-              outline: "none",
-              resize: "none",
-              fontFamily: "var(--font-ui)",
-              fontSize: "var(--type-body-size)",
-              lineHeight: "var(--type-body-lh)",
-              color: "var(--text-primary)",
-            }}
-          />
-          {chip && <UploadChipView chip={chip} />}
-          {imageError && (
-            <p
-              role="alert"
-              style={{
-                marginTop: "var(--space-3xs)",
-                fontSize: "var(--type-caption-size)",
-                color: "var(--state-danger-on-surface)",
-              }}
-            >
-              {imageError}
-            </p>
-          )}
-          <div
-            className="flex items-center justify-between gap-3"
-            style={{
-              marginTop: "var(--space-xs)",
-              paddingTop: "var(--space-xs)",
-              borderTop: "1px solid var(--border)",
-            }}
-          >
-            <div className="flex items-center flex-wrap gap-2">
-              {hinted ? (
-                <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
-                  Using {hinted.name}.{" "}
-                  <button
-                    type="button"
-                    onClick={() => navigate({ name: "generate" }, { replace: true })}
-                    style={{ textDecoration: "underline", color: "var(--text-secondary)" }}
-                  >
-                    Search the whole library instead
-                  </button>
-                </p>
-              ) : (
-                <>
-                  {libraryEmpty ? (
-                    <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
-                      No published templates yet — drafts come fresh from your brand kit.
-                    </p>
-                  ) : (
-                    <div
-                      className="flex items-stretch"
-                      role="group"
-                      aria-label="How to generate"
+            {(wellOpen || image) && (
+              <div style={{ marginBottom: "var(--space-xs)" }}>
+                {image ? (
+                  <div style={{ position: "relative", display: "inline-block" }}>
+                    <img
+                      src={image.dataUrl}
+                      alt="Your photo"
                       style={{
-                        height: "var(--control-sm)",
-                        padding: 2,
-                        gap: 2,
+                        width: 72,
+                        height: 72,
+                        objectFit: "cover",
+                        display: "block",
                         borderRadius: "var(--radius-control)",
-                        background: "var(--bg-surface-raised)",
+                        border: "1px solid var(--border)",
+                      }}
+                    />
+                    <button
+                      type="button"
+                      aria-label="Remove photo"
+                      title="Remove photo"
+                      disabled={busy}
+                      onClick={removeImage}
+                      style={{
+                        position: "absolute",
+                        top: -6,
+                        right: -6,
+                        width: 20,
+                        height: 20,
+                        borderRadius: "var(--radius-pill)",
+                        background: "var(--fill-action)",
+                        color: "var(--text-on-action)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
                       }}
                     >
-                      {(
-                        [
-                          { id: "library", label: "My templates" },
-                          { id: "freestyle", label: "Something new" },
-                        ] as const
-                      ).map((m) => (
-                        <button
-                          key={m.id}
-                          type="button"
-                          disabled={busy}
-                          aria-pressed={mode === m.id}
-                          onClick={() => setMode(m.id)}
-                          style={{
-                            padding: "0 var(--space-2xs)",
-                            borderRadius: "var(--radius-control)",
-                            fontSize: "var(--type-label-size)",
-                            // One line, always — the .sp-seg rule. A wrapped
-                            // label overflows the fixed control height; the
-                            // row's flex-wrap handles narrow windows instead.
-                            whiteSpace: "nowrap",
-                            background: mode === m.id ? "var(--bg-surface)" : "transparent",
-                            color: mode === m.id ? "var(--text-primary)" : "var(--text-muted)",
-                          }}
-                        >
-                          {m.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  <Select
-                    id="sp-gen-platform"
-                    ariaLabel="Platform"
-                    value={platform ?? ""}
-                    options={platformOptions}
-                    onSelect={(v) => setPlatform((v || null) as PlatformId | null)}
-                    placeholder="Any platform"
-                    disabled={busy}
-                    triggerIcon={
-                      <PlatformTriggerIcon
-                        style={{ ...platformIconStyle, color: "var(--text-secondary)" }}
+                      <X style={{ width: 12, height: 12 }} aria-hidden />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center" style={{ gap: "var(--space-2xs)" }}>
+                    <div
+                      {...imageDrop.getRootProps({
+                        role: "button",
+                        "aria-label": "Add a photo (optional): JPG, PNG, or WEBP up to 10MB",
+                      })}
+                      data-active={imageDrop.isDragActive}
+                      className="sp-dropzone flex flex-1 items-center justify-center cursor-pointer"
+                      style={{
+                        minHeight: 64,
+                        gap: "var(--space-2xs)",
+                        border: `1.5px dashed ${
+                          imageDrop.isDragActive ? "var(--state-primary)" : "var(--border-strong)"
+                        }`,
+                        borderRadius: "var(--radius-control)",
+                        background: imageDrop.isDragActive ? "var(--accent-wash)" : "transparent",
+                      }}
+                    >
+                      <input {...imageDrop.getInputProps()} />
+                      <ImagePlus
+                        className="sp-dropzone__icon"
+                        style={{ width: 16, height: 16, color: "var(--text-secondary)" }}
                         aria-hidden
                       />
-                    }
-                    triggerStyle={{
+                      <span
+                        style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}
+                      >
+                        Click or drag to upload — JPG, PNG, or WEBP up to 10MB
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      aria-label="Hide photo upload"
+                      title="Hide photo upload"
+                      onClick={() => setWellOpen(false)}
+                      style={{ color: "var(--text-muted)", display: "flex", flexShrink: 0 }}
+                    >
+                      <X style={{ width: 14, height: 14 }} aria-hidden />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+            <textarea
+              rows={2}
+              value={brief}
+              maxLength={1500}
+              onChange={(e) => setBrief(e.target.value)}
+              onKeyDown={onBriefKeyDown}
+              placeholder="We're hiring a senior nurse practitioner for the Evanston clinic, posting on LinkedIn this week."
+              aria-label="Describe the post"
+              disabled={busy}
+              style={{
+                width: "100%",
+                background: "transparent",
+                border: "none",
+                outline: "none",
+                resize: "none",
+                fontFamily: "var(--font-ui)",
+                fontSize: "var(--type-composer-size)",
+                lineHeight: "var(--type-composer-lh)",
+                color: "var(--text-primary)",
+              }}
+            />
+            {chip && <UploadChipView chip={chip} />}
+            {imageError && (
+              <p
+                role="alert"
+                style={{
+                  marginTop: "var(--space-3xs)",
+                  fontSize: "var(--type-caption-size)",
+                  color: "var(--state-danger-on-surface)",
+                }}
+              >
+                {imageError}
+              </p>
+            )}
+            <div
+              className="flex items-center justify-between gap-3"
+              style={{
+                marginTop: "var(--space-xs)",
+                paddingTop: "var(--space-xs)",
+                borderTop: "1px solid var(--border)",
+              }}
+            >
+              <div className="flex items-center flex-wrap gap-2">
+                {hinted ? (
+                  <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
+                    Using {hinted.name}.{" "}
+                    <button
+                      type="button"
+                      onClick={() => navigate({ name: "generate" }, { replace: true })}
+                      style={{ textDecoration: "underline", color: "var(--text-secondary)" }}
+                    >
+                      Search the whole library instead
+                    </button>
+                  </p>
+                ) : (
+                  <>
+                    {libraryEmpty ? (
+                      <p
+                        style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}
+                      >
+                        No published templates yet — drafts come fresh from your brand kit.
+                      </p>
+                    ) : (
+                      <div
+                        className="flex items-stretch"
+                        role="group"
+                        aria-label="How to generate"
+                        style={{
+                          height: "var(--control-sm)",
+                          padding: 3,
+                          gap: 2,
+                          borderRadius: "var(--radius-control-lg)",
+                          background: "var(--bg-surface-raised)",
+                        }}
+                      >
+                        {(
+                          [
+                            { id: "library", label: "My templates" },
+                            { id: "freestyle", label: "Something new" },
+                          ] as const
+                        ).map((m) => (
+                          <button
+                            key={m.id}
+                            type="button"
+                            disabled={busy}
+                            aria-pressed={mode === m.id}
+                            onClick={() => setMode(m.id)}
+                            style={{
+                              padding: "0 var(--space-2xs)",
+                              // Nested-radius math: the 12px track less its
+                              // 3px inner padding.
+                              borderRadius: 9,
+                              fontSize: "var(--type-label-size)",
+                              // One line, always — the .sp-seg rule. A wrapped
+                              // label overflows the fixed control height; the
+                              // row's flex-wrap handles narrow windows instead.
+                              whiteSpace: "nowrap",
+                              // The selected segment is the strip's brand
+                              // moment: Voltage under Ink in both themes
+                              // (the --fill-primary / --text-on-accent
+                              // pairing rule).
+                              background: mode === m.id ? "var(--fill-primary)" : "transparent",
+                              color: mode === m.id ? "var(--text-on-accent)" : "var(--text-muted)",
+                            }}
+                          >
+                            {m.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <Select
+                      id="sp-gen-platform"
+                      ariaLabel="Platform"
+                      value={platform ?? ""}
+                      options={platformOptions}
+                      onSelect={(v) => setPlatform((v || null) as PlatformId | null)}
+                      placeholder="Any platform"
+                      disabled={busy}
+                      triggerIcon={
+                        <PlatformTriggerIcon
+                          style={{ ...platformIconStyle, color: "var(--text-secondary)" }}
+                          aria-hidden
+                        />
+                      }
+                      triggerStyle={{
+                        width: "auto",
+                        height: "var(--control-sm)",
+                        padding: "0 var(--space-2xs)",
+                        fontSize: "var(--type-label-size)",
+                        borderRadius: "var(--radius-control-lg)",
+                      }}
+                      menuMinWidth={220}
+                      menuCaption={
+                        anyDimmed
+                          ? "Dimmed platforms have no published templates yet — picking one is a preference, and the whole library is still considered."
+                          : undefined
+                      }
+                    />
+                  </>
+                )}
+                {/* Opens the photo well above the brief; once the well is on
+                  screen (or holds a photo) it is its own affordance. */}
+                {!wellOpen && !image && (
+                  <button
+                    type="button"
+                    className="sp-input flex items-center gap-1.5"
+                    disabled={busy}
+                    onClick={() => setWellOpen(true)}
+                    style={{
                       width: "auto",
                       height: "var(--control-sm)",
                       padding: "0 var(--space-2xs)",
                       fontSize: "var(--type-label-size)",
+                      borderRadius: "var(--radius-control-lg)",
+                      cursor: "pointer",
                     }}
-                    menuMinWidth={220}
-                    menuCaption={
-                      anyDimmed
-                        ? "Dimmed platforms have no published templates yet — picking one is a preference, and the whole library is still considered."
-                        : undefined
-                    }
-                  />
-                </>
-              )}
-              {/* Opens the photo well above the brief; once the well is on
-                  screen (or holds a photo) it is its own affordance. */}
-              {!wellOpen && !image && (
-                <button
-                  type="button"
-                  className="sp-input flex items-center gap-1.5"
-                  disabled={busy}
-                  onClick={() => setWellOpen(true)}
-                  style={{
-                    width: "auto",
-                    height: "var(--control-sm)",
-                    padding: "0 var(--space-2xs)",
-                    fontSize: "var(--type-label-size)",
-                    cursor: "pointer",
-                  }}
-                >
-                  <ImagePlus
-                    style={{ ...platformIconStyle, color: "var(--text-secondary)" }}
-                    aria-hidden
-                  />
-                  Upload photo
-                </button>
-              )}
+                  >
+                    <ImagePlus
+                      style={{ ...platformIconStyle, color: "var(--text-secondary)" }}
+                      aria-hidden
+                    />
+                    Upload photo
+                  </button>
+                )}
+              </div>
+              <button
+                type="button"
+                className="sp-btn sp-gen-submit"
+                disabled={!brief.trim() || busy}
+                onClick={() => void run()}
+                aria-label="Generate"
+                title="Generate"
+                style={{
+                  width: 42,
+                  height: 42,
+                  padding: 0,
+                  justifyContent: "center",
+                  borderRadius: "var(--radius-pill)",
+                  flexShrink: 0,
+                }}
+              >
+                <ArrowUp style={{ width: 16, height: 16 }} />
+              </button>
             </div>
-            <button
-              type="button"
-              className="sp-btn sp-gen-submit"
-              disabled={!brief.trim() || busy}
-              onClick={() => void run()}
-              aria-label="Generate"
-              title="Generate"
+          </div>
+
+          {mode === "freestyle" && !hinted && !libraryEmpty && !busy && (
+            <p
               style={{
-                width: 38,
-                height: 38,
-                padding: 0,
-                justifyContent: "center",
-                borderRadius: "var(--radius-pill)",
-                flexShrink: 0,
+                marginTop: "var(--space-2xs)",
+                textAlign: "center",
+                fontSize: "var(--type-caption-size)",
+                color: "var(--text-muted)",
               }}
             >
-              <ArrowUp style={{ width: 16, height: 16 }} />
-            </button>
-          </div>
-        </div>
+              New layouts stay inside your brand palette and type styles, guided by your published
+              templates.
+            </p>
+          )}
 
-        {mode === "freestyle" && !hinted && !libraryEmpty && !busy && (
-          <p
-            style={{
-              marginTop: "var(--space-2xs)",
-              textAlign: "center",
-              fontSize: "var(--type-caption-size)",
-              color: "var(--text-muted)",
-            }}
-          >
-            New layouts stay inside your brand palette and type styles, guided by your published
-            templates.
-          </p>
-        )}
-
-        {/* Neutral starter pills. They stay reachable after drafts exist —
+          {/* Neutral starter pills. They stay reachable after drafts exist —
             in the quiet form, so a second idea doesn't need the field
             cleared by hand. */}
-        {!busy && (
-          <div
-            className="flex flex-wrap justify-center"
-            style={{ gap: "var(--space-2xs)", marginTop: "var(--space-sm)" }}
-          >
-            {STARTERS.map((s) => (
-              <button
-                key={s.label}
-                type="button"
-                className={results ? "sp-gen-pill sp-gen-pill--quiet" : "sp-gen-pill"}
-                onClick={() => setBrief(s.brief)}
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
-        )}
+          {!busy && (
+            <div
+              className="flex flex-wrap justify-center"
+              style={{ gap: "var(--space-xs)", marginTop: "var(--space-lg)" }}
+            >
+              {STARTERS.map((s) => (
+                <button
+                  key={s.label}
+                  type="button"
+                  className={results ? "sp-gen-pill sp-gen-pill--quiet" : "sp-gen-pill"}
+                  onClick={() => setBrief(s.brief)}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          )}
 
-        {error && (
-          <p
-            role="alert"
-            style={{
-              marginTop: "var(--space-sm)",
-              textAlign: "center",
-              fontSize: "var(--type-label-size)",
-              color: "var(--state-danger-on-surface)",
-            }}
-          >
-            {error}
-          </p>
-        )}
+          {error && (
+            <p
+              role="alert"
+              style={{
+                marginTop: "var(--space-sm)",
+                textAlign: "center",
+                fontSize: "var(--type-label-size)",
+                color: "var(--state-danger-on-surface)",
+              }}
+            >
+              {error}
+            </p>
+          )}
+        </div>
       </div>
 
       {busy && (
