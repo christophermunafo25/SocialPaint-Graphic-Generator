@@ -57,3 +57,49 @@ export async function getFigmaToken(db: SupabaseClient, companyId: string): Prom
 export async function figmaGet(path: string, token: string): Promise<Response> {
   return fetch(`https://api.figma.com${path}`, { headers: { "X-Figma-Token": token } });
 }
+
+/** Fetch a node's subtree ONCE, with geometry=paths — the same tree serves
+ * the field walk and the background decomposition. geometry=paths is what
+ * makes relativeTransform, size, and fillGeometry appear, i.e. rotation,
+ * true unrotated bounds, and the raster-leaf test all depend on it. */
+export async function fetchNodeTree<T>(
+  fileKey: string,
+  nodeId: string,
+  token: string,
+): Promise<{ root: T } | { error: string; status: number }> {
+  const res = await figmaGet(
+    `/v1/files/${fileKey}/nodes?ids=${encodeURIComponent(nodeId)}&geometry=paths`,
+    token,
+  );
+  if (!res.ok) return { error: `Figma nodes request failed (${res.status}).`, status: 400 };
+  const body = (await res.json()) as { nodes: Record<string, { document?: T } | null> };
+  const root = body.nodes[nodeId]?.document;
+  if (!root) return { error: "That node was not found in the file.", status: 400 };
+  return { root };
+}
+
+/** How many node ids go into one /v1/images call. The image endpoint is the
+ * rate constraint on big frames — batching (not refusal) is how a detailed
+ * template imports. */
+const RENDER_BATCH = 25;
+
+/** Batched node render at 2×, keyed by node id. Ids are chunked into
+ * sequential /v1/images calls so a frame with hundreds of pieces renders
+ * instead of tripping a URL-length or rate limit. */
+export async function renderNodes(
+  fileKey: string,
+  ids: string[],
+  token: string,
+): Promise<Record<string, string | null>> {
+  const out: Record<string, string | null> = {};
+  for (let i = 0; i < ids.length; i += RENDER_BATCH) {
+    const batch = ids.slice(i, i + RENDER_BATCH);
+    const res = await figmaGet(
+      `/v1/images/${fileKey}?ids=${encodeURIComponent(batch.join(","))}&format=png&scale=2`,
+      token,
+    );
+    if (!res.ok) continue;
+    Object.assign(out, ((await res.json()) as { images: Record<string, string | null> }).images);
+  }
+  return out;
+}

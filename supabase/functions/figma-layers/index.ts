@@ -1,7 +1,9 @@
 import {
+  fetchNodeTree,
   figmaGet,
   getFigmaToken,
   parseFigmaUrl,
+  renderNodes,
   requireRole,
   serviceClient,
 } from "../_shared/figma.ts";
@@ -13,16 +15,29 @@ import {
   logError,
 } from "../_shared/http.ts";
 import { parseBody, requireString, requireStringArray, requireUuid } from "../_shared/validate.ts";
-import { decomposeFrame, type LayerNode, type Unit } from "../_shared/figmaLayers.ts";
+import {
+  decomposeFrame,
+  warningStrings,
+  type ImportWarning,
+  type LayerNode,
+  type Unit,
+} from "../_shared/figmaLayers.ts";
 
 /** Decompose a Figma frame into paintable layer units EXCLUDING the nodes the
  * admin turned into editable fields, so the client can recompose a background
  * with those elements lifted off (instead of baked under the field overlays).
  *
- * The walk itself (paint order, container fills, crop transforms, and the
- * above-excluded marking) lives in _shared/figmaLayers.ts — this function
- * only does the network half: fetch the tree, render the node units, resolve
- * image fills, and re-host every bitmap in our Storage. */
+ * The walk itself (paint order, container fills, crop transforms, masks, and
+ * the above-excluded marking) lives in _shared/figmaLayers.ts — this function
+ * only does the network half: obtain the tree, render the node units, resolve
+ * image fills, and re-host every bitmap in our Storage.
+ *
+ * The import that preceded this call already fetched the node tree, so the
+ * caller may supply it (pruned) in `tree` — one fetch, one tree, no drift if
+ * the file was edited in between. Without it, the tree is fetched fresh
+ * (recompose-after-edit path). */
+
+const MAX_UNITS = 300;
 
 Deno.serve(async (req) => {
   const options = handleOptions(req);
@@ -36,6 +51,10 @@ Deno.serve(async (req) => {
       maxItems: 200,
       maxLen: 100,
     });
+    const suppliedTree =
+      body.tree && typeof body.tree === "object" && typeof (body.tree as LayerNode).id === "string"
+        ? (body.tree as LayerNode)
+        : undefined;
 
     const caller = await requireRole(req, companyId, "admin");
     if ("error" in caller) return json({ error: caller.error }, caller.status);
@@ -46,38 +65,44 @@ Deno.serve(async (req) => {
     const token = await getFigmaToken(db, companyId);
     if (!token) return json({ error: "Figma is not connected for this company." }, 400);
 
-    const nodesRes = await figmaGet(
-      `/v1/files/${parsed.fileKey}/nodes?ids=${encodeURIComponent(parsed.nodeId)}`,
-      token,
-    );
-    if (!nodesRes.ok)
-      return json({ error: `Figma nodes request failed (${nodesRes.status}).` }, 400);
-    const nodesBody = (await nodesRes.json()) as {
-      nodes: Record<string, { document: LayerNode } | null>;
-    };
-    const root = nodesBody.nodes[parsed.nodeId]?.document;
-    if (!root?.absoluteBoundingBox) return json({ error: "Pick a frame link." }, 400);
+    let root = suppliedTree;
+    if (!root) {
+      const fetched = await fetchNodeTree<LayerNode>(parsed.fileKey, parsed.nodeId, token);
+      if ("error" in fetched) return json({ error: fetched.error }, fetched.status);
+      root = fetched.root;
+    }
+    if (!root.absoluteBoundingBox) return json({ error: "Pick a frame link." }, 400);
     const frame = root.absoluteBoundingBox;
 
     const { units, warnings } = decomposeFrame(root, excludeNodeIds);
+    const details: ImportWarning[] = [...warnings];
 
-    // Render the node units in one batched call.
+    // Render the node units — batched, so a detailed frame imports instead
+    // of being refused.
     const nodeUnits = units.filter((u: Unit) => u.kind === "node" && u.nodeId);
-    if (nodeUnits.length > 60) {
-      return json({ error: "Frame too complex to decompose (over 60 layers)." }, 400);
+    if (nodeUnits.length > MAX_UNITS) {
+      return json(
+        {
+          error: `Frame decomposes into ${nodeUnits.length} layers — more than the ${MAX_UNITS} this import supports. Simplify or flatten part of it in Figma.`,
+        },
+        400,
+      );
     }
     if (nodeUnits.length) {
-      const ids = nodeUnits.map((u: Unit) => u.nodeId).join(",");
-      const imgRes = await figmaGet(
-        `/v1/images/${parsed.fileKey}?ids=${encodeURIComponent(ids)}&format=png&scale=2`,
+      const images = await renderNodes(
+        parsed.fileKey,
+        nodeUnits.map((u: Unit) => u.nodeId!),
         token,
       );
-      if (!imgRes.ok) return json({ error: `Figma render failed (${imgRes.status}).` }, 400);
-      const images = ((await imgRes.json()) as { images: Record<string, string | null> }).images;
       for (const u of nodeUnits) {
         const renderUrl = images[u.nodeId!];
         if (!renderUrl) {
-          warnings.push(`A layer could not be rendered (${u.nodeId}) — it was skipped.`);
+          details.push({
+            layer: u.name ?? "layer",
+            nodeId: u.nodeId!,
+            issue: "this layer could not be rendered — it was skipped.",
+            severity: "degraded",
+          });
           continue;
         }
         u.url = renderUrl;
@@ -94,7 +119,14 @@ Deno.serve(async (req) => {
       for (const u of units) {
         if (u.url?.startsWith("imageref:")) {
           u.url = fillMap[u.url.slice("imageref:".length)] ?? undefined;
-          if (!u.url) warnings.push("An image fill could not be resolved and was skipped.");
+          if (!u.url) {
+            details.push({
+              layer: u.name ?? "layer",
+              nodeId: "",
+              issue: "an image fill could not be resolved and was skipped.",
+              severity: "degraded",
+            });
+          }
         }
       }
     }
@@ -107,7 +139,12 @@ Deno.serve(async (req) => {
       if (!u.url || u.url.startsWith("http") === false) continue;
       const res = await fetch(u.url);
       if (!res.ok) {
-        warnings.push("A layer image failed to download and was skipped.");
+        details.push({
+          layer: u.name ?? "layer",
+          nodeId: "",
+          issue: "a layer image failed to download and was skipped.",
+          severity: "degraded",
+        });
         u.url = undefined;
         continue;
       }
@@ -130,7 +167,8 @@ Deno.serve(async (req) => {
       units: units
         .filter((u: Unit) => u.kind !== "node" || u.url)
         .map(({ nodeId: _n, ...rest }: Unit) => rest),
-      warnings,
+      warnings: warningStrings(details),
+      warningDetails: details,
     });
   } catch (e) {
     if (e instanceof HttpError) return json({ error: e.message }, e.status);

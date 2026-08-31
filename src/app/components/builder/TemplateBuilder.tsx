@@ -30,6 +30,7 @@ import type {
   CanvasPreset,
   DesignImportResult,
   FieldValues,
+  ImportIssue,
   LayoutGroup,
   NewTemplateInput,
   TemplateField,
@@ -1709,6 +1710,9 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     canvasWidth: number;
     canvasHeight: number;
     sourceUrl?: string;
+    /** The (pruned) node tree the import walked — forwarded to the layered
+     * re-render so both passes decompose one consistent snapshot. */
+    tree?: unknown;
     fields: TemplateField[];
     /** How to key each incoming field against what already exists. */
     fieldKeyFor(field: TemplateField, existing: TemplateField[]): string;
@@ -1745,21 +1749,36 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     goTo("fields");
 
     // A designed template that silently falls back to system faces reads as
-    // a broken import — name the missing families and the fix.
+    // a broken import — name the missing families and the fix. Text in a
+    // missing family also stays BAKED in the background plate (see
+    // recomposeBackground): pixel-exact Figma glyphs beat a reflow into a
+    // fallback face, and the field on top becomes right once the font lands.
     const missingFonts = unavailableFamilies(
       imported,
       brandAssets.filter((a) => a.kind === "font"),
     );
     const fontNote = missingFonts.length
-      ? ` Fonts not available here: ${missingFonts.join(", ")} — upload them in Brand Studio so text renders as designed.`
+      ? ` Fonts not available here: ${missingFonts.join(", ")} — that text shows its Figma render until you upload them in Brand Studio.`
       : "";
 
     setNotice(opts.summary(imported) + fontNote);
     window.clearTimeout(noticeTimer.current);
     noticeTimer.current = window.setTimeout(() => setNotice(null), 8000);
 
-    recomposeBackground(opts.sourceUrl, imported);
+    recomposeBackground(opts.sourceUrl, imported, opts.tree, missingFonts);
     return imported;
+  };
+
+  /** The import report's degraded half: which layers survived only
+   * approximately, named so the admin can fix them in Figma and re-import
+   * instead of guessing. */
+  const degradedReport = (details: ImportIssue[] | undefined): string | null => {
+    const degraded = (details ?? []).filter((d) => d.severity === "degraded");
+    if (!degraded.length) return null;
+    const names = [...new Set(degraded.map((d) => `"${d.layer}"`))];
+    return `${degraded.length} thing${degraded.length !== 1 ? "s" : ""} couldn't import exactly — ${names
+      .slice(0, 6)
+      .join(", ")}${names.length > 6 ? ` and ${names.length - 6} more` : ""}. ${degraded[0].issue}`;
   };
 
   /** Every detected element lands FIXED, exactly as designed — the admin
@@ -1771,6 +1790,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       canvasWidth: result.canvasWidth,
       canvasHeight: result.canvasHeight,
       sourceUrl: result.sourceUrl,
+      tree: result.tree,
       fields: result.suggestedFields,
       fieldKeyFor: (f, existing) => suggestFieldKey(f.label, existing),
       summary: (imported) =>
@@ -1778,6 +1798,10 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
           ? "Nothing was detected — the background imported. Draw fields on the canvas."
           : `${imported.length} element${imported.length !== 1 ? "s" : ""} imported — all fixed, exactly as designed. Select the elements members should fill in and turn off Fixed.`,
     });
+    // The import report: the dialog closes on success, so anything that
+    // degraded must surface here or the admin never learns what to fix.
+    const report = degradedReport(result.warningDetails);
+    if (report) setError(report);
   };
 
   /** Claude's proposal lands exactly like a manual import — fields with
@@ -1837,7 +1861,12 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
    * Runs for every import path, auto-build included: excludeIds derives from
    * every imported field, Fixed ones too — a Fixed element is a live object
    * on the canvas, so leaving it in the plate would render it twice. */
-  const recomposeBackground = (sourceUrl: string | undefined, imported: TemplateField[]) => {
+  const recomposeBackground = (
+    sourceUrl: string | undefined,
+    imported: TemplateField[],
+    tree?: unknown,
+    missingFonts: string[] = [],
+  ) => {
     //
     // The invariant that matters: every id excluded from the background must
     // belong to a field in the draft. An id lifted off the background with no
@@ -1847,17 +1876,30 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     // draft above, never from `result.suggestedFields` — the two differ the
     // moment a merge drops or rewrites an entry.
     //
+    // Text in a font this workspace can't render is the one deliberate
+    // exception: it stays BAKED in the plate (not excluded), because lifting
+    // it would re-typeset the design into a fallback face. The field still
+    // exists on top for editing; once the font is uploaded a re-import
+    // lands it live.
+    //
     // This runs ONCE per import. Toggling Fixed later never re-renders the
     // background: a Fixed element stays a live object on the canvas, so the
     // plate underneath it has no reason to change.
-    const excludeIds = imported
-      .map((f) => f.sourceNodeId)
-      .filter((id): id is string => Boolean(id));
+    const missing = new Set(missingFonts);
+    const lifted = imported.filter(
+      (f) => Boolean(f.sourceNodeId) && !(f.fontFamily && missing.has(f.fontFamily)),
+    );
+    const excludeIds = lifted.map((f) => f.sourceNodeId).filter((id): id is string => Boolean(id));
     if (company && sourceUrl && excludeIds.length) {
       setRecomposing(true);
       void (async () => {
         try {
-          const layers = await stores.designImport.renderLayers(company.id, sourceUrl, excludeIds);
+          const layers = await stores.designImport.renderLayers(
+            company.id,
+            sourceUrl,
+            excludeIds,
+            tree,
+          );
           const blob = await composeFigmaBackground(layers);
           const bgUrl = await stores.templates.uploadBackground(
             company.id,
@@ -1880,12 +1922,15 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
             return {
               ...d,
               backgroundUrl: bgUrl,
-              fields: mergeOverlayFields(layers.units, imported, d.fields),
+              // Anchors index into the EXCLUDED fields in paint order —
+              // `lifted`, not `imported` (baked missing-font text never
+              // reached the decomposer).
+              fields: mergeOverlayFields(layers.units, lifted, d.fields),
             };
           });
-          if (layers.warnings.length) {
-            setError(layers.warnings.join(" "));
-          }
+          const report = degradedReport(layers.warningDetails);
+          if (report) setError(report);
+          else if (layers.warnings.length) setError(layers.warnings.join(" "));
         } catch (e) {
           console.error("Background recomposition failed", e);
           setError(

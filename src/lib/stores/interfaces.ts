@@ -139,11 +139,14 @@ export interface DesignImportProvider {
    * palette entries + brand type styles (Feature 4 → design-system import). */
   importStylesFromUrl(companyId: string, url: string): Promise<StyleImportResult>;
   /** Re-render a frame's layers EXCLUDING the given node ids so the client
-   * can recompose a background with the field elements lifted off. */
+   * can recompose a background with the field elements lifted off. `tree`
+   * is the (pruned) node tree the import already fetched — supplying it
+   * keeps both walks on one consistent snapshot and skips a Figma fetch. */
   renderLayers(
     companyId: string,
     url: string,
     excludeNodeIds: string[],
+    tree?: unknown,
   ): Promise<import("../types").LayerRenderResult>;
   /** Auto-build: Claude turns a design into a complete template proposal —
    * fields with Fixed marks, labels, guardrails, brand bindings, metadata,

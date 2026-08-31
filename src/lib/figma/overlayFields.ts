@@ -56,6 +56,11 @@ function unitField(u: FigmaLayerUnit, label: string): TemplateField | null {
     y: u.y,
     width: u.width,
     height: u.height,
+    // Fill units of a rotated node carry the rotation (about the box
+    // center — the renderer's convention); node renders never do, since
+    // Figma bakes their rotation into the PNG.
+    rotation: u.rotation,
+    cornerRadius: u.cornerRadius,
   };
   if ((u.kind === "node" || u.kind === "imageFill") && u.url) {
     return {
@@ -73,12 +78,16 @@ function unitField(u: FigmaLayerUnit, label: string): TemplateField | null {
     return { ...base, colorHex: hex, opacity: alpha < 1 ? Math.round(alpha * 100) : undefined };
   }
   if (u.kind === "gradient" && u.stops?.length) {
+    // Radial/angular gradients approximate as linear here — TemplateField
+    // has one gradient primitive. The plate path draws them exactly.
     return {
       ...base,
       textGradient: unitGradient(u),
       opacity: u.opacity !== undefined && u.opacity < 1 ? Math.round(u.opacity * 100) : undefined,
     };
   }
+  // Stroke units have no field representation (TemplateField has no outline
+  // property) — an above-field border stays out rather than approximating.
   return null;
 }
 
