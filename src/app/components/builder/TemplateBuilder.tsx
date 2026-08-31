@@ -205,13 +205,15 @@ function useViewportAtLeast(px: number): boolean {
   return matches;
 }
 
-/** Admin Template Builder: a guided wizard. Pick the source (PNG upload or
- * Figma import), then Step 1 Fields (element palette + canvas + field list +
- * inspector) → Step 2 Caption (optional) → Step 3 Tags & details (optional)
- * → Step 4 Name, which carries Publish. Naming last means the admin names
- * something they can see; the default "Untitled template" keeps the wizard
- * unblocked until then, and Publish refuses it. Save draft is available at
- * every step; completed steps are jumpable from the progress indicator. */
+/** Admin Template Builder. Pick the source (blank canvas, Figma import, or
+ * auto-build), then the editor (element palette + canvas + field list +
+ * inspector) is the home state, with three side panels opening over the
+ * inspector: Caption (optional), Tags & details (optional), and Name, which
+ * carries Publish. The top bar's primary button is the way forward — it
+ * publishes, or first routes through naming, because publishing needs a real
+ * name and the default "Untitled template" is refused. Naming last means the
+ * admin names something they can see. Save draft is available throughout;
+ * completed panels stay jumpable from the panel control in the bar. */
 export function TemplateBuilder({ templateId }: { templateId: string | null }) {
   const { company } = useAuth();
   const { kit, assets: brandAssets } = useBrand();
@@ -2154,6 +2156,12 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
         disabled: selectedIds.length === 0,
         onSelect: () => canvasViewRef.current?.zoomToSelection(),
       },
+      {
+        label: "Keyboard shortcuts",
+        shortcut: "?",
+        separated: true,
+        onSelect: () => setShortcutsOpen(true),
+      },
     ],
     [selectedIds.length],
   );
@@ -2371,8 +2379,13 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
 
       {/* ── Top bar ─────────────────────────────────────────────────────── */}
       <div className="sp-builder__bar">
+        {/* This row must NEVER scroll or clip at any viewport ≥ 1024px, with
+            the app sidebar expanded or collapsed. That budget is already
+            spent: before adding a control here, move something out (the
+            tools, zoom, and canvas info live with the canvas for exactly
+            this reason). The name is the only child allowed to shrink. */}
         <div
-          className="flex items-center gap-2 overflow-x-auto"
+          className="flex items-center gap-2 min-w-0 flex-nowrap"
           style={{ height: 52, padding: "0 var(--space-xs)" }}
         >
           <button
@@ -2389,10 +2402,11 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
           />
           <InlineEdit
             className="min-w-0"
-            // The name is the only shrinkable item in a crowded bar; a floor
-            // keeps it readable, and a cap stops a long name from pushing the
+            // The name is the only shrinkable item in a crowded bar; it
+            // already truncates, so the floor is just enough to stay
+            // clickable, and a cap stops a long name from pushing the
             // step control off the end.
-            style={{ flex: "0 1 auto", minWidth: 150, maxWidth: 320 }}
+            style={{ flex: "0 1 auto", minWidth: 72, maxWidth: 320 }}
             value={draft.name}
             ariaLabel="Rename this template"
             inputAriaLabel="Template name"
@@ -2406,35 +2420,56 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
             }}
             onSave={(name) => setDraft((d) => ({ ...d, name }), "text:name")}
           />
-          <span
-            className="sp-eyebrow px-2 py-1 flex-shrink-0 whitespace-nowrap"
-            style={{ background: "var(--bg-hover)", borderRadius: "var(--radius-control)" }}
-          >
-            {draft.canvasWidth}×{draft.canvasHeight} · {draft.status}
-            {recomposing ? " · lifting elements off background…" : ""}
-          </span>
           {sourceChosen && (
             <>
+              {/* Save state, compressed to a dot and a word so its width is
+                  stable. The full sentence lives in the tooltip — and, for a
+                  failure, in the error region below the bar, which doSave
+                  always fills. The dot goes destructive on failure so the
+                  short word still reads as trouble at a glance. */}
               <span
                 role="status"
-                className="flex-shrink-0 whitespace-nowrap"
+                className="flex items-center gap-1.5 flex-shrink-0 whitespace-nowrap"
+                title={
+                  saveFailed
+                    ? "Not saved — see the message below the bar"
+                    : lastSavedAt && !dirty && !saving
+                      ? savedAgo(lastSavedAt, nowTick)
+                      : undefined
+                }
                 style={{
+                  width: 78,
                   fontSize: "var(--type-caption-size)",
                   color: saveFailed ? "var(--destructive)" : "var(--text-muted)",
                   fontWeight: saveFailed ? 500 : undefined,
                 }}
               >
+                {(saving || saveFailed || dirty || lastSavedAt) && (
+                  <span
+                    aria-hidden
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      background: "currentColor",
+                      flexShrink: 0,
+                    }}
+                  />
+                )}
                 {saving
                   ? "Saving…"
                   : saveFailed
-                    ? "Not saved — see the message below"
+                    ? "Not saved"
                     : dirty
-                      ? "Unsaved changes"
+                      ? "Unsaved"
                       : lastSavedAt
-                        ? savedAgo(lastSavedAt, nowTick)
+                        ? "Saved"
                         : null}
               </span>
-              {saveFailed && !saving && (
+              {/* Retry stands in for Save draft while a save has failed —
+                  same operation, and the loud red state stays a real button
+                  rather than moving into a menu. */}
+              {saveFailed && !saving ? (
                 <button
                   onClick={() => void doSave(undefined, true)}
                   className="sp-btn sp-btn-ghost flex-shrink-0"
@@ -2442,16 +2477,17 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                 >
                   Retry
                 </button>
+              ) : (
+                <button
+                  onClick={() => void save()}
+                  disabled={saving}
+                  className="sp-btn sp-btn-ghost flex-shrink-0"
+                  style={{ minHeight: 30, padding: "4px 10px" }}
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  Save draft
+                </button>
               )}
-              <button
-                onClick={() => void save()}
-                disabled={saving}
-                className="sp-btn sp-btn-ghost flex-shrink-0"
-                style={{ minHeight: 30, padding: "4px 10px" }}
-              >
-                <Save className="w-3.5 h-3.5" />
-                Save draft
-              </button>
             </>
           )}
 
@@ -2459,124 +2495,6 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
 
           {sourceChosen && (
             <>
-              {mode === "edit" && (
-                <div
-                  className="flex overflow-hidden flex-shrink-0"
-                  data-radius-control
-                  style={{ border: "1px solid var(--border-strong)" }}
-                >
-                  <button
-                    onClick={doUndo}
-                    disabled={!canUndo}
-                    title={`Undo (${isMac ? "⌘" : "Ctrl+"}Z)`}
-                    aria-label="Undo"
-                    className="px-2.5 py-1.5"
-                    style={{
-                      background: "var(--bg-surface)",
-                      color: canUndo ? "var(--text-secondary)" : "var(--text-disabled)",
-                      cursor: canUndo ? "pointer" : "default",
-                    }}
-                  >
-                    <Undo2 className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={doRedo}
-                    disabled={!canRedo}
-                    title={`Redo (${isMac ? "⇧⌘" : "Ctrl+Shift+"}Z)`}
-                    aria-label="Redo"
-                    className="px-2.5 py-1.5"
-                    style={{
-                      background: "var(--bg-surface)",
-                      color: canRedo ? "var(--text-secondary)" : "var(--text-disabled)",
-                      cursor: canRedo ? "pointer" : "default",
-                      borderLeft: "1px solid var(--border)",
-                    }}
-                  >
-                    <Redo2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
-              {mode === "edit" && (
-                <div
-                  role="radiogroup"
-                  aria-label="Canvas tool"
-                  className="flex overflow-hidden flex-shrink-0"
-                  data-radius-control
-                  style={{ border: "1px solid var(--border-strong)" }}
-                >
-                  {TOOL_ORDER.map(({ key, label, Icon }, i) => {
-                    const on = tool === key;
-                    return (
-                      <button
-                        key={key}
-                        role="radio"
-                        aria-checked={on}
-                        aria-label={`${label} (${TOOL_LETTER[key]})`}
-                        title={`${label} — ${TOOL_LETTER[key]}${
-                          key === "move" ? "" : `, ⇧${TOOL_LETTER[key]} to keep it active`
-                        }`}
-                        onClick={() => {
-                          setTool(key);
-                          setToolLocked(false);
-                        }}
-                        className="px-2 py-1.5"
-                        style={{
-                          borderLeft: i > 0 ? "1px solid var(--border)" : undefined,
-                          background: on ? "var(--fill-action)" : "var(--bg-surface)",
-                          color: on ? "var(--text-on-action)" : "var(--text-secondary)",
-                        }}
-                      >
-                        <Icon style={{ width: 14, height: 14 }} />
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-              {mode === "edit" && (
-                <button
-                  onClick={() => setShortcutsOpen(true)}
-                  title="Keyboard shortcuts (?)"
-                  aria-label="Keyboard shortcuts"
-                  className="flex items-center justify-center flex-shrink-0"
-                  data-radius-control
-                  style={{
-                    width: 28,
-                    height: 28,
-                    border: "1px solid var(--border-strong)",
-                    background: "var(--bg-surface)",
-                    color: "var(--text-secondary)",
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 12,
-                  }}
-                >
-                  ?
-                </button>
-              )}
-              {mode === "edit" && (
-                <button
-                  onClick={(e) => {
-                    const r = e.currentTarget.getBoundingClientRect();
-                    setViewMenuAt({ x: r.left, y: r.bottom + 4 });
-                  }}
-                  title="View commands"
-                  aria-label={`Zoom ${Math.round(canvasScale * 100)} percent — view commands`}
-                  aria-haspopup="menu"
-                  className="flex items-center gap-1 px-2 py-1.5 flex-shrink-0"
-                  data-radius-control
-                  style={{
-                    border: "1px solid var(--border-strong)",
-                    background: "var(--bg-surface)",
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 11,
-                    color: "var(--text-secondary)",
-                    minWidth: 62,
-                    justifyContent: "center",
-                  }}
-                >
-                  {Math.round(canvasScale * 100)}%
-                  <ChevronDown style={{ width: 11, height: 11 }} />
-                </button>
-              )}
               <div
                 className="flex overflow-hidden flex-shrink-0"
                 data-radius-control
@@ -2586,20 +2504,67 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                   <button
                     key={m}
                     onClick={() => setMode(m)}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 capitalize"
+                    title={m === "edit" ? "Edit" : "Preview"}
+                    aria-label={m === "edit" ? "Edit" : "Preview"}
+                    aria-pressed={mode === m}
+                    className="flex items-center px-2.5 py-1.5"
                     style={{
-                      fontSize: "var(--type-caption-size)",
+                      borderLeft: m === "preview" ? "1px solid var(--border)" : undefined,
                       ...(mode === m
                         ? { background: "var(--fill-action)", color: "var(--text-on-action)" }
                         : { background: "var(--bg-surface)", color: "var(--text-secondary)" }),
                     }}
                   >
-                    {m === "edit" ? <Pencil className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                    {m}
+                    {m === "edit" ? (
+                      <Pencil className="w-3.5 h-3.5" />
+                    ) : (
+                      <Eye className="w-3.5 h-3.5" />
+                    )}
                   </button>
                 ))}
               </div>
-              <WizardStepBar current={step} complete={complete} canGo={canGo} onGo={goTo} />
+              {fieldsComplete ? (
+                <WizardStepBar current={step} complete={complete} canGo={canGo} onGo={goTo} />
+              ) : (
+                /* Until a field exists nothing past the editor is reachable,
+                   so three dimmed panel buttons would only restate the
+                   dimmed Publish. Say what is missing instead. */
+                <span
+                  className="flex-shrink-0 whitespace-nowrap"
+                  style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}
+                >
+                  Add a field to continue
+                </span>
+              )}
+              {step === "fields" && (
+                /* The editor's one primary control: the answer to "what
+                   now". With the default name still in place, publish()
+                   opens the Name panel with the field focused and the
+                   name-needed note showing — the same guard the panel's own
+                   Publish runs. */
+                <button
+                  onClick={() => void publish()}
+                  disabled={!fieldsComplete || saving || publishState !== "idle"}
+                  title={
+                    !fieldsComplete
+                      ? "Add a field to continue"
+                      : hasRealName
+                        ? draft.status === "published"
+                          ? "Publish these changes to your team"
+                          : "Publish this template to your team"
+                        : "Name the template, then publish"
+                  }
+                  className="sp-btn sp-btn-primary flex-shrink-0"
+                  style={{ minHeight: 32, padding: "6px 12px" }}
+                >
+                  {hasRealName ? (
+                    <Send className="w-3.5 h-3.5" />
+                  ) : (
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  )}
+                  Publish
+                </button>
+              )}
             </>
           )}
         </div>
@@ -2829,6 +2794,74 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
 
           {/* ── Canvas viewport ───────────────────────────────────────── */}
           <div className="sp-builder__canvas">
+            {/* The tool strip floats on the canvas edge, next to the work it
+                acts on — moving it out of the top bar is what keeps the bar
+                from scrolling. Same tools, same letters, same shift-to-lock;
+                only the orientation changed. */}
+            {mode === "edit" && (
+              <div className="sp-builder__tools" data-radius-control>
+                <div role="radiogroup" aria-label="Canvas tool" className="flex flex-col">
+                  {TOOL_ORDER.map(({ key, label, Icon }, i) => {
+                    const on = tool === key;
+                    return (
+                      <button
+                        key={key}
+                        role="radio"
+                        aria-checked={on}
+                        aria-label={`${label} (${TOOL_LETTER[key]})`}
+                        title={`${label} — ${TOOL_LETTER[key]}${
+                          key === "move" ? "" : `, ⇧${TOOL_LETTER[key]} to keep it active`
+                        }`}
+                        onClick={() => {
+                          setTool(key);
+                          setToolLocked(false);
+                        }}
+                        className="px-2 py-2"
+                        style={{
+                          borderTop: i > 0 ? "1px solid var(--border)" : undefined,
+                          background: on ? "var(--fill-action)" : "var(--bg-surface)",
+                          color: on ? "var(--text-on-action)" : "var(--text-secondary)",
+                        }}
+                      >
+                        <Icon style={{ width: 14, height: 14 }} />
+                      </button>
+                    );
+                  })}
+                </div>
+                {/* Undo and redo ride below the tools: same strip, own
+                    group. The keyboard shortcuts are unchanged. */}
+                <button
+                  onClick={doUndo}
+                  disabled={!canUndo}
+                  title={`Undo (${isMac ? "⌘" : "Ctrl+"}Z)`}
+                  aria-label="Undo"
+                  className="px-2 py-2"
+                  style={{
+                    borderTop: "1px solid var(--border-strong)",
+                    background: "var(--bg-surface)",
+                    color: canUndo ? "var(--text-secondary)" : "var(--text-disabled)",
+                    cursor: canUndo ? "pointer" : "default",
+                  }}
+                >
+                  <Undo2 style={{ width: 14, height: 14 }} />
+                </button>
+                <button
+                  onClick={doRedo}
+                  disabled={!canRedo}
+                  title={`Redo (${isMac ? "⇧⌘" : "Ctrl+Shift+"}Z)`}
+                  aria-label="Redo"
+                  className="px-2 py-2"
+                  style={{
+                    borderTop: "1px solid var(--border)",
+                    background: "var(--bg-surface)",
+                    color: canRedo ? "var(--text-secondary)" : "var(--text-disabled)",
+                    cursor: canRedo ? "pointer" : "default",
+                  }}
+                >
+                  <Redo2 style={{ width: 14, height: 14 }} />
+                </button>
+              </div>
+            )}
             <div
               className={`flex-1 min-h-0 flex justify-center ${
                 mode === "edit" ? "items-stretch" : "items-center"
@@ -3005,6 +3038,38 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                       Auto-build with Claude
                     </button>
                   </>
+                )}
+                {/* Canvas facts live with the canvas: size, status, and the
+                    view controls all describe this region, not the document
+                    chrome above it. */}
+                <span className="sp-eyebrow flex-shrink-0 whitespace-nowrap">
+                  {draft.canvasWidth}×{draft.canvasHeight} · {draft.status}
+                  {recomposing ? " · lifting elements off background…" : ""}
+                </span>
+                {mode === "edit" && (
+                  <button
+                    onClick={(e) => {
+                      const r = e.currentTarget.getBoundingClientRect();
+                      setViewMenuAt({ x: r.left, y: r.top });
+                    }}
+                    title="View commands"
+                    aria-label={`Zoom ${Math.round(canvasScale * 100)} percent — view commands`}
+                    aria-haspopup="menu"
+                    className="flex items-center gap-1 px-2 py-1 flex-shrink-0"
+                    data-radius-control
+                    style={{
+                      border: "1px solid var(--border-strong)",
+                      background: "var(--bg-surface)",
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 11,
+                      color: "var(--text-secondary)",
+                      minWidth: 62,
+                      justifyContent: "center",
+                    }}
+                  >
+                    {Math.round(canvasScale * 100)}%
+                    <ChevronDown style={{ width: 11, height: 11 }} />
+                  </button>
                 )}
               </div>
             </div>
