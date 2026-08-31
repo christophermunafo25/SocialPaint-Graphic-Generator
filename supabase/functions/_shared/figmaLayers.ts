@@ -23,7 +23,13 @@
 //    approximation of a true alpha mask). Containers with clipsContent clip
 //    the units their descent produces the same way.
 
-import { cornerRadiusOf, isRasterLeaf, transformOf, type ImportWarning } from "./extract.ts";
+import {
+  cornerRadiusOf,
+  isRasterLeaf,
+  liftDescends,
+  transformOf,
+  type ImportWarning,
+} from "./extract.ts";
 
 export type { ImportWarning };
 export { warningStrings } from "./extract.ts";
@@ -334,7 +340,23 @@ export function fillUnits(node: LayerNode, ctx: DecomposeCtx, clip?: Box): Unit[
       warn(ctx, node, "this border style can't be reproduced exactly.");
     }
   }
-  if (clip) for (const u of units) u.clip = clip;
+  if (clip) {
+    for (const u of units) {
+      // A clipped axis-aligned solid rect IS its intersection with the clip —
+      // fold the clip into the geometry so the unit stays exact even if it is
+      // later lifted into a field (fields have no clip concept). Gradients
+      // and image fills keep the clip: their paint maps to the full box.
+      if (u.kind === "solid" && !u.rotation && !u.cornerRadius) {
+        const boxed = intersect(clip, u);
+        u.x = boxed.x;
+        u.y = boxed.y;
+        u.width = boxed.width;
+        u.height = boxed.height;
+      } else {
+        u.clip = clip;
+      }
+    }
+  }
   return units.map((u) => stampOrder(ctx, u));
 }
 
@@ -343,13 +365,17 @@ export function decompose(node: LayerNode, ctx: DecomposeCtx, clip?: Box): void 
   const box = node.absoluteBoundingBox;
   if (ctx.excluded.has(node.id)) {
     // Lifted off the background entirely — but remember where it painted:
-    // anything after this point that overlaps it must stay above it. If the
-    // lifted node is a container whose children the field extraction ALSO
-    // descended (its artwork is the bare fill), classify those children too
-    // instead of swallowing them — nested lifts and leftover decoration both
-    // live inside.
+    // anything after this point that overlaps it must stay above it. When
+    // the field extraction descended this container (liftDescends — its
+    // artwork is the bare fill), classify the children too, so nested lifts
+    // and leftover decoration both survive. When the walk BAKED the children
+    // into a whole-node render, do NOT descend — emitting them here would
+    // paint every nested element twice.
     if (box) ctx.passedExcluded.push(relBox(box, ctx.frame));
-    if (!isRasterLeaf(node)) descendChildren(node, ctx, clip);
+    if (liftDescends(node)) {
+      const childClip = node.clipsContent && box ? intersect(clip, relBox(box, ctx.frame)) : clip;
+      descendChildren(node, ctx, childClip);
+    }
     return;
   }
   if (!box) return;

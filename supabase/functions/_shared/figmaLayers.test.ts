@@ -324,6 +324,40 @@ describe("masks and clipping", () => {
     expect(photo!.clip).toEqual({ x: 50, y: 50, width: 200, height: 200 });
   });
 
+  it("folds the clip into a clipped axis-aligned solid's geometry", () => {
+    // Fields have no clip concept, so a solid that may later lift as an
+    // overlay field must already BE its clipped rect.
+    const f: LayerNode = {
+      id: "1:1",
+      name: "Frame",
+      type: "FRAME",
+      absoluteBoundingBox: { x: 0, y: 0, width: 400, height: 400 },
+      children: [
+        {
+          id: "1:2",
+          name: "Window",
+          type: "FRAME",
+          clipsContent: true,
+          absoluteBoundingBox: { x: 100, y: 100, width: 100, height: 100 },
+          children: [
+            {
+              id: "1:3",
+              name: "Wide Panel",
+              type: "FRAME",
+              absoluteBoundingBox: { x: 50, y: 120, width: 300, height: 40 },
+              fills: [{ type: "SOLID", color: { r: 0, g: 0, b: 1 } }],
+              children: [text2("1:4", "t", { x: 110, y: 125, width: 10, height: 10 })],
+            },
+          ],
+        },
+      ],
+    };
+    const { units } = decomposeFrame(f, ["1:4"]);
+    const panel = units.find((u) => u.name === "Wide Panel" && u.kind === "solid");
+    expect(panel).toMatchObject({ x: 100, y: 120, width: 100, height: 40 });
+    expect(panel!.clip).toBeUndefined();
+  });
+
   it("warns when a non-rectangular mask is approximated", () => {
     const f: LayerNode = {
       id: "1:1",
@@ -422,6 +456,39 @@ describe("excluded containers", () => {
     expect(flourish!.afterExcluded).toBe(1);
   });
 
+  it("does NOT descend into a lifted image container whose fill has no imageRef", () => {
+    // Without a resolvable imageRef the field walk keeps a whole-node render
+    // (children baked in) — decompose must match, or the children paint
+    // twice: once inside the field's pixels, once as overlay units.
+    const f: LayerNode = {
+      id: "1:1",
+      name: "Frame",
+      type: "FRAME",
+      absoluteBoundingBox: { x: 0, y: 0, width: 400, height: 400 },
+      children: [
+        {
+          id: "1:2",
+          name: "Photo Card",
+          type: "FRAME",
+          absoluteBoundingBox: { x: 0, y: 0, width: 200, height: 200 },
+          fills: [{ type: "IMAGE" }], // no imageRef
+          children: [
+            {
+              id: "1:3",
+              name: "Corner Flourish",
+              type: "RECTANGLE",
+              absoluteBoundingBox: { x: 10, y: 10, width: 30, height: 30 },
+              fills: [{ type: "SOLID", color: { r: 1, g: 0, b: 0 } }],
+            },
+          ],
+        },
+        text2("1:5", "t", { x: 300, y: 300, width: 10, height: 10 }),
+      ],
+    };
+    const { units } = decomposeFrame(f, ["1:2", "1:5"]);
+    expect(units.some((u) => u.name === "Corner Flourish")).toBe(false);
+  });
+
   it("does NOT descend into a lifted raster leaf (its children are in the render)", () => {
     const f: LayerNode = {
       id: "1:1",
@@ -482,9 +549,10 @@ describe("fills, strokes, and gradients", () => {
     const { units } = decomposeFrame(
       withChild({
         cornerRadius: 16,
+        // A clockwise-on-screen 8° tilt: m10 = +sin(8°) → CSS rotation +8.
         relativeTransform: [
-          [Math.cos(deg), Math.sin(deg), 100],
-          [-Math.sin(deg), Math.cos(deg), 100],
+          [Math.cos(deg), -Math.sin(deg), 100],
+          [Math.sin(deg), Math.cos(deg), 100],
         ],
         size: { x: 190, y: 90 },
         fills: [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }],

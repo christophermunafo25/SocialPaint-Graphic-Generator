@@ -1,8 +1,12 @@
 import {
+  MAX_UNITS,
+  fetchFillMap,
   fetchNodeTree,
   figmaGet,
   getFigmaToken,
+  mapLimit,
   parseFigmaUrl,
+  rehost,
   renderNodes,
   requireRole,
   serviceClient,
@@ -23,7 +27,6 @@ import {
   type SuggestedField,
 } from "../_shared/extract.ts";
 import { decomposeFrame, pruneTree, type LayerNode, type Unit } from "../_shared/figmaLayers.ts";
-import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 
 /** Import from Figma. Two modes:
  *
@@ -41,35 +44,6 @@ import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
  * suspicious lands in `warnings` (with per-layer detail in
  * `warningDetails`) and the admin confirms every suggestion. The manual PNG
  * path never depends on this function. */
-
-/** Hard ceiling on decomposed pieces. Renders are batched, so the limit is
- * about total wall time, not one URL's length. */
-const MAX_UNITS = 300;
-
-/** Download a remote image and re-host it in our Storage (Figma URLs expire
- * and lack reliable CORS). Returns a storage reference ("bucket/path" — the
- * buckets are private; the client signs it), or null on failure. */
-async function rehost(
-  db: SupabaseClient,
-  companyId: string,
-  url: string,
-  path: string,
-): Promise<string | null> {
-  const res = await fetch(url);
-  if (!res.ok) return null;
-  const up = await db.storage
-    .from("template-backgrounds")
-    .upload(path, await res.arrayBuffer(), { contentType: "image/png" });
-  if (up.error) return null;
-  return `template-backgrounds/${path}`;
-}
-
-/** The file's image-fill map (imageRef → source bitmap URL), fetched once. */
-async function fetchFillMap(fileKey: string, token: string): Promise<Record<string, string>> {
-  const res = await figmaGet(`/v1/files/${fileKey}/images`, token);
-  if (!res.ok) return {};
-  return ((await res.json()) as { meta?: { images?: Record<string, string> } }).meta?.images ?? {};
-}
 
 Deno.serve(async (req) => {
   const options = handleOptions(req);
@@ -141,23 +115,29 @@ Deno.serve(async (req) => {
     //    render would bake the lifted children into the pixels twice);
     //    everything else keeps the exact node render.
     const imageFields = suggestedFields.filter((f) => f.type === "image");
-    const nodeRenderFields = imageFields.filter((f) => !f.fillImageRef);
+    const fillMap = imageFields.some((f) => f.fillImageRef)
+      ? await fetchFillMap(parsed.fileKey, token)
+      : {};
+    const unresolvedFillFields = imageFields.filter(
+      (f) => f.fillImageRef && !fillMap[f.fillImageRef],
+    );
+    // Node renders in one batched pass: plain image fields, plus the
+    // fallback for fills the map couldn't resolve (children bake in there,
+    // but the element staying visible beats an empty hole).
     const fieldRenders = await renderNodes(
       parsed.fileKey,
-      nodeRenderFields.map((f) => f.sourceNodeId),
+      [...imageFields.filter((f) => !f.fillImageRef), ...unresolvedFillFields].map(
+        (f) => f.sourceNodeId,
+      ),
       token,
     );
-    let fillMap: Record<string, string> | null = null;
     let assetIndex = 0;
     for (const f of imageFields) {
       let renderUrl: string | null | undefined;
       if (f.fillImageRef) {
-        fillMap ??= await fetchFillMap(parsed.fileKey, token);
         renderUrl = fillMap[f.fillImageRef];
         if (!renderUrl) {
-          // Fall back to the node render — children bake in, but the element
-          // stays visible, which beats an empty hole.
-          renderUrl = (await renderNodes(parsed.fileKey, [f.sourceNodeId], token))[f.sourceNodeId];
+          renderUrl = fieldRenders[f.sourceNodeId];
           details.push({
             layer: f.label,
             nodeId: f.sourceNodeId,
@@ -170,12 +150,7 @@ Deno.serve(async (req) => {
         renderUrl = fieldRenders[f.sourceNodeId];
       }
       const hosted = renderUrl
-        ? await rehost(
-            db,
-            companyId,
-            renderUrl,
-            `${companyId}/elements/${stamp}-${assetIndex++}.png`,
-          )
+        ? await rehost(db, renderUrl, `${companyId}/elements/${stamp}-${assetIndex++}.png`)
         : null;
       if (hosted) f.staticValue = hosted;
       else {
@@ -195,8 +170,34 @@ Deno.serve(async (req) => {
       // 4a. Everything the walk didn't claim becomes paintable units in
       //     exact paint order — there is no background to bake them into.
       const claimed = suggestedFields.map((f) => f.sourceNodeId);
-      const { units, warnings: unitWarnings } = decomposeFrame(root as LayerNode, claimed);
-      details.push(...unitWarnings);
+      const decomposed = decomposeFrame(root as LayerNode, claimed);
+      details.push(...decomposed.warnings);
+
+      // There is no background plate in elements mode: every unit becomes a
+      // static field, and fields can represent neither outlines nor clip
+      // rects. Drop what can't land, and say so per layer.
+      const units: Unit[] = [];
+      for (const u of decomposed.units) {
+        if (u.kind === "stroke") {
+          details.push({
+            layer: u.name ?? "layer",
+            nodeId: "",
+            issue: "this border can't be reproduced as an element — it was left out.",
+            severity: "degraded",
+          });
+          continue;
+        }
+        if (u.clip && u.kind !== "node") {
+          details.push({
+            layer: u.name ?? "layer",
+            nodeId: "",
+            issue: "this layer's mask/clip is dropped when pasted as an element.",
+            severity: "degraded",
+          });
+          delete u.clip;
+        }
+        units.push(u);
+      }
 
       const nodeUnits = units.filter((u: Unit) => u.kind === "node" && u.nodeId);
       if (nodeUnits.length > MAX_UNITS) {
@@ -224,10 +225,10 @@ Deno.serve(async (req) => {
         }
       }
       if (units.some((u: Unit) => u.url?.startsWith("imageref:"))) {
-        fillMap ??= await fetchFillMap(parsed.fileKey, token);
+        const unitFillMap = await fetchFillMap(parsed.fileKey, token);
         for (const u of units) {
           if (u.url?.startsWith("imageref:")) {
-            u.url = fillMap[u.url.slice("imageref:".length)] ?? undefined;
+            u.url = unitFillMap[u.url.slice("imageref:".length)] ?? undefined;
             if (!u.url) {
               details.push({
                 layer: u.name ?? "layer",
@@ -239,15 +240,9 @@ Deno.serve(async (req) => {
           }
         }
       }
-      for (const u of units) {
-        if (!u.url || !u.url.startsWith("http")) continue;
-        u.url =
-          (await rehost(
-            db,
-            companyId,
-            u.url,
-            `${companyId}/elements/${stamp}-${assetIndex++}.png`,
-          )) ?? undefined;
+      const toRehost = units.filter((u) => u.url?.startsWith("http"));
+      await mapLimit(toRehost, 8, async (u, i) => {
+        u.url = (await rehost(db, u.url!, `${companyId}/elements/${stamp}-r${i}.png`)) ?? undefined;
         if (!u.url) {
           details.push({
             layer: u.name ?? "layer",
@@ -256,7 +251,7 @@ Deno.serve(async (req) => {
             severity: "degraded",
           });
         }
-      }
+      });
 
       return json({
         elementWidth: Math.round(frame.width),
@@ -281,7 +276,7 @@ Deno.serve(async (req) => {
     const imgBody = (await imgRes.json()) as { images: Record<string, string | null> };
     const renderUrl = imgBody.images[parsed.nodeId];
     if (!renderUrl) return json({ error: "Figma could not render that frame." }, 400);
-    const backgroundUrl = await rehost(db, companyId, renderUrl, `${companyId}/figma-${stamp}.png`);
+    const backgroundUrl = await rehost(db, renderUrl, `${companyId}/figma-${stamp}.png`);
     if (!backgroundUrl) return json({ error: "Storage upload failed for the background." }, 500);
 
     if (!suggestedFields.length) {

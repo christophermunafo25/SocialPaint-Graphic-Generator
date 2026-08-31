@@ -19,11 +19,13 @@ const run = (node: FigmaNode) => {
   return { out, warnings, strings: warningStrings(warnings) };
 };
 
-// An 8° clockwise rotation in the renderer's convention:
-// rotation = -atan2(m[1][0], m[0][0]) = 8 → m[1][0] = sin(-8°).
+// A node Figma shows tilted 8° CLOCKWISE (Figma rotation -8, CCW-positive):
+// its matrix maps local right (1,0) to (cos8, sin8) in y-down parent space,
+// so m10 = +sin(8°). The importer must land rotation +8 — the CSS/canvas
+// clockwise-positive convention the renderer and the Canva path use.
 const DEG8: number[][] = [
-  [Math.cos((8 * Math.PI) / 180), Math.sin((8 * Math.PI) / 180), 250],
-  [-Math.sin((8 * Math.PI) / 180), Math.cos((8 * Math.PI) / 180), 400],
+  [Math.cos((8 * Math.PI) / 180), -Math.sin((8 * Math.PI) / 180), 250],
+  [Math.sin((8 * Math.PI) / 180), Math.cos((8 * Math.PI) / 180), 400],
 ];
 
 describe("image field extraction", () => {
@@ -231,6 +233,15 @@ describe("text field extraction", () => {
     });
   });
 
+  it("folds a translucent ink's alpha into the element opacity", () => {
+    const { out } = run({
+      ...headline,
+      opacity: undefined,
+      fills: [{ type: "SOLID", color: { r: 0, g: 0, b: 0, a: 0.4 } }],
+    });
+    expect(out[0]).toMatchObject({ colorHex: "#000000", opacity: 40 });
+  });
+
   it("warns (naming the layer) when character styling is mixed", () => {
     const { warnings } = run({
       ...headline,
@@ -331,6 +342,35 @@ describe("shape field extraction", () => {
 });
 
 describe("raster leaves", () => {
+  it("warns when a flattened group swallows text", () => {
+    const { out, warnings } = run({
+      id: "4:0",
+      name: "Masked Badge",
+      type: "GROUP",
+      absoluteBoundingBox: { x: 0, y: 0, width: 100, height: 100 },
+      children: [
+        {
+          id: "4:0m",
+          name: "Mask",
+          type: "ELLIPSE",
+          isMask: true,
+          absoluteBoundingBox: { x: 0, y: 0, width: 100, height: 100 },
+        },
+        {
+          id: "4:0t",
+          name: "Label",
+          type: "TEXT",
+          characters: "NEW",
+          absoluteBoundingBox: { x: 10, y: 10, width: 80, height: 20 },
+        },
+      ],
+    });
+    expect(out).toHaveLength(0);
+    expect(
+      warnings.some((w) => w.layer === "Masked Badge" && w.issue.includes("can't become a field")),
+    ).toBe(true);
+  });
+
   it("never lifts fields from inside a boolean operation", () => {
     const { out } = run({
       id: "4:1",

@@ -184,7 +184,13 @@ export function transformOf(node: {
   size?: { x: number; y: number };
 }): { rotation: number | undefined; size: { x: number; y: number } | undefined } {
   const m = node.relativeTransform;
-  const rotation = m ? -Math.atan2(m[1][0], m[0][0]) * (180 / Math.PI) : 0;
+  // Figma's matrix encodes its CCW-positive rotation (their own formula is
+  // atan2(-m10, m00)); TemplateField.rotation is CSS/canvas CW-positive (the
+  // Canva path already lands CW degrees), so the sign flips here: for a node
+  // Figma shows tilted A° counter-clockwise, m10 = -sin(A) and this yields
+  // -A — which CSS rotate() renders as A° counter-clockwise. Verified against
+  // both conventions; do not "simplify" the sign away.
+  const rotation = m ? Math.atan2(m[1][0], m[0][0]) * (180 / Math.PI) : 0;
   return {
     rotation: Math.abs(rotation) < 0.01 ? undefined : Math.round(rotation * 100) / 100,
     size: node.size,
@@ -212,6 +218,42 @@ export function isRasterLeaf(node: {
     return true;
   }
   return false;
+}
+
+/** Whether a LIFTED container's children were walked into their own fields
+ * (so its artwork is the bare image fill) — versus staying baked into a
+ * whole-node render. The field walk and the background decomposition MUST
+ * answer this identically: if the walk bakes the children but decompose
+ * still emits units for them, every nested element paints twice. */
+export function liftDescends(node: {
+  type: string;
+  visible?: boolean;
+  effects?: Array<{ type: string; visible?: boolean }>;
+  fillGeometry?: unknown[];
+  hasFillGeometry?: boolean;
+  fills?: Array<{ type: string; visible?: boolean; imageRef?: string }>;
+  children?: Array<{ isMask?: boolean; visible?: boolean }>;
+}): boolean {
+  const kids = (node.children ?? []).filter((c) => c.visible !== false);
+  if (!kids.length) return false;
+  if (isRasterLeaf(node)) return false;
+  return (node.fills ?? []).some(
+    (f) => f.type === "IMAGE" && f.visible !== false && Boolean(f.imageRef),
+  );
+}
+
+/** Any visible TEXT anywhere under this node — used to tell the admin when a
+ * flattened subtree swallows copy that will never become a field. */
+export function subtreeHasText(node: {
+  type: string;
+  visible?: boolean;
+  children?: Array<{ type: string; visible?: boolean; children?: unknown[] }>;
+}): boolean {
+  if (node.visible === false) return false;
+  if (node.type === "TEXT") return true;
+  return (node.children ?? []).some((c) =>
+    subtreeHasText(c as Parameters<typeof subtreeHasText>[0]),
+  );
 }
 
 export const ALIGN: Record<string, "left" | "center" | "right"> = {
@@ -431,7 +473,9 @@ export function walk(
       // The box and size come from Figma — the designed size IS the size.
       // Shrinking to fit is the admin's opt-in, not the importer's default.
       textSizing: "free",
-      opacity: opacityOf(node),
+      // colorHex carries no alpha, so a translucent ink folds its alpha (and
+      // the paint's opacity) into the element opacity alongside the node's.
+      opacity: fill?.type === "SOLID" ? foldedOpacity(node, fill) : opacityOf(node),
       static: true,
       staticValue: content,
     });
@@ -463,10 +507,15 @@ export function walk(
     // Descend into the container's children so nested content (a headline
     // inside a photo card) lifts as real fields instead of baking into the
     // image's pixels. The field's artwork must then be the bare image FILL —
-    // a node render would include the lifted children twice.
-    const kids = (node.children ?? []).filter((c) => c.visible !== false);
-    if (kids.length && !isRasterLeaf(node) && imageFill.imageRef) {
-      field.fillImageRef = imageFill.imageRef;
+    // a node render would include the lifted children twice. liftDescends is
+    // the shared predicate: decompose skips an excluded container's children
+    // exactly when this walk baked them.
+    if (liftDescends(node)) {
+      // The ref-bearing fill, which may not be the first image fill —
+      // liftDescends guarantees one exists.
+      field.fillImageRef = visibleFills(node).find(
+        (f) => f.type === "IMAGE" && f.imageRef,
+      )?.imageRef;
       if (imageFill.scaleMode && imageFill.scaleMode !== "FILL") {
         warn("the image's crop is approximated as a centered cover fit.", "info");
       }
@@ -541,8 +590,15 @@ export function walk(
 
   // A raster leaf's artwork can't be reconstructed from properties — its
   // whole subtree ships as one render in the plate, so nothing inside it
-  // may lift (a lifted child would paint twice).
-  if (isRasterLeaf(node)) return;
+  // may lift (a lifted child would paint twice). Text swallowed this way
+  // silently disappearing from the field list reads as a broken import, so
+  // say where it went.
+  if (isRasterLeaf(node)) {
+    if (subtreeHasText(node)) {
+      warn("text inside this flattened group ships as artwork — it can't become a field.", "info");
+    }
+    return;
+  }
   for (const child of node.children ?? []) walk(child, frame, out, warnings, taken, seenIds);
 }
 
@@ -558,6 +614,9 @@ export interface ExtractedElement {
   width: number;
   height: number;
   rotation?: number;
+  /** Rotated elements are center-anchored (x/y are the box center — the
+   * rotation origin); dropping this renders them offset by half their size. */
+  anchor?: "topLeft" | "center";
   opacity?: number;
   text?: string; // source content, for Claude's context
   fontFamily?: string; // Figma only — Canva has no family name
@@ -601,6 +660,7 @@ export function figmaFieldsToElements(fields: SuggestedField[]): ExtractedElemen
     width: f.width,
     height: f.height,
     rotation: f.rotation,
+    anchor: f.anchor,
     opacity: f.opacity,
     text: f.placeholder,
     fontFamily: f.fontFamily,

@@ -136,6 +136,20 @@ export async function composeFigmaBackground(result: LayerRenderResult): Promise
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas 2D context unavailable");
 
+  // Fetch every drawable bitmap up front, concurrently — the signed-URL
+  // batcher coalesces same-tick requests, and a big plate would otherwise
+  // serialize hundreds of sign+download round trips through the paint loop.
+  const urls = [
+    ...new Set(
+      result.units
+        .filter((u) => !u.afterExcluded && (u.kind === "node" || u.kind === "imageFill") && u.url)
+        .map((u) => u.url!),
+    ),
+  ];
+  const bitmaps = new Map<string, ImageBitmap | null>(
+    await Promise.all(urls.map(async (u) => [u, await loadBitmap(u)] as const)),
+  );
+
   for (const unit of result.units) {
     // Units marked afterExcluded paint above lifted fields — they become
     // static fields (overlayFields.ts), never part of the background plate.
@@ -156,7 +170,7 @@ export async function composeFigmaBackground(result: LayerRenderResult): Promise
     } else if (unit.kind === "gradient") {
       withUnitTransform(ctx, unit, () => drawGradient(ctx, unit));
     } else if ((unit.kind === "node" || unit.kind === "imageFill") && unit.url) {
-      const bmp = await loadBitmap(unit.url);
+      const bmp = bitmaps.get(unit.url);
       if (!bmp) continue;
       withUnitTransform(ctx, unit, () => {
         ctx.globalAlpha = unit.opacity ?? 1;
@@ -179,9 +193,10 @@ export async function composeFigmaBackground(result: LayerRenderResult): Promise
         }
         ctx.globalAlpha = 1;
       });
-      bmp.close();
     }
   }
+  // A url can back several units — close bitmaps only once every unit drew.
+  for (const bmp of bitmaps.values()) bmp?.close();
 
   return await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Canvas export failed"))), "image/png");

@@ -1,8 +1,11 @@
 import {
+  MAX_UNITS,
+  fetchFillMap,
   fetchNodeTree,
-  figmaGet,
   getFigmaToken,
+  mapLimit,
   parseFigmaUrl,
+  rehost,
   renderNodes,
   requireRole,
   serviceClient,
@@ -37,8 +40,6 @@ import {
  * the file was edited in between. Without it, the tree is fetched fresh
  * (recompose-after-edit path). */
 
-const MAX_UNITS = 300;
-
 Deno.serve(async (req) => {
   const options = handleOptions(req);
   if (options) return options;
@@ -47,8 +48,10 @@ Deno.serve(async (req) => {
     const body = await parseBody(req);
     const companyId = requireUuid(body.companyId, "companyId");
     const url = requireString(body.url, "url", 2048);
+    // Above MAX_UNITS on purpose: lifted FIELDS aren't units, so a frame can
+    // legitimately exclude more ids than the plate has pieces.
     const excludeNodeIds = requireStringArray(body.excludeNodeIds, "excludeNodeIds", {
-      maxItems: 200,
+      maxItems: 400,
       maxLen: 100,
     });
     const suppliedTree =
@@ -76,6 +79,28 @@ Deno.serve(async (req) => {
 
     const { units, warnings } = decomposeFrame(root, excludeNodeIds);
     const details: ImportWarning[] = [...warnings];
+
+    // Units above a lifted field become static fields client-side, and
+    // fields can represent neither outlines nor clip rects — those pieces
+    // are lost. Losing them silently is worse than losing them.
+    for (const u of units) {
+      if (!u.afterExcluded) continue;
+      if (u.kind === "stroke") {
+        details.push({
+          layer: u.name ?? "layer",
+          nodeId: "",
+          issue: "a border above a lifted element can't be reproduced — it was left out.",
+          severity: "degraded",
+        });
+      } else if (u.clip && u.kind !== "node") {
+        details.push({
+          layer: u.name ?? "layer",
+          nodeId: "",
+          issue: "this layer sits above a lifted element, so its mask/clip is dropped.",
+          severity: "degraded",
+        });
+      }
+    }
 
     // Render the node units — batched, so a detailed frame imports instead
     // of being refused.
@@ -111,11 +136,7 @@ Deno.serve(async (req) => {
 
     // Resolve image fills to their source bitmaps.
     if (units.some((u: Unit) => u.url?.startsWith("imageref:"))) {
-      const fillsRes = await figmaGet(`/v1/files/${parsed.fileKey}/images`, token);
-      const fillMap = fillsRes.ok
-        ? (((await fillsRes.json()) as { meta?: { images?: Record<string, string> } }).meta
-            ?.images ?? {})
-        : {};
+      const fillMap = await fetchFillMap(parsed.fileKey, token);
       for (const u of units) {
         if (u.url?.startsWith("imageref:")) {
           u.url = fillMap[u.url.slice("imageref:".length)] ?? undefined;
@@ -132,34 +153,23 @@ Deno.serve(async (req) => {
     }
 
     // Re-host every remote image in our Storage (Figma URLs expire and lack
-    // reliable CORS for canvas compositing).
+    // reliable CORS for canvas compositing). Bounded-parallel, and a single
+    // failure degrades that one unit instead of discarding the whole frame.
     const stamp = Date.now();
-    let i = 0;
-    for (const u of units) {
-      if (!u.url || u.url.startsWith("http") === false) continue;
-      const res = await fetch(u.url);
-      if (!res.ok) {
+    const toRehost = units.filter((u) => u.url?.startsWith("http"));
+    await mapLimit(toRehost, 8, async (u, i) => {
+      // Storage REFERENCE, not a URL — the buckets are private; the client
+      // signs it (and persists it as-is into static_value).
+      u.url = (await rehost(db, u.url!, `${companyId}/layers/${stamp}-${i}.png`)) ?? undefined;
+      if (!u.url) {
         details.push({
           layer: u.name ?? "layer",
           nodeId: "",
-          issue: "a layer image failed to download and was skipped.",
+          issue: "a layer image failed to re-host and was skipped.",
           severity: "degraded",
         });
-        u.url = undefined;
-        continue;
       }
-      const path = `${companyId}/layers/${stamp}-${i++}.png`;
-      const up = await db.storage
-        .from("template-backgrounds")
-        .upload(path, await res.arrayBuffer(), { contentType: "image/png" });
-      if (up.error) {
-        logError("figma-layers", up.error);
-        return json({ error: "Storage upload failed — try again." }, 500);
-      }
-      // Storage REFERENCE, not a URL — the buckets are private; the client
-      // signs it (and persists it as-is into static_value).
-      u.url = `template-backgrounds/${path}`;
-    }
+    });
 
     return json({
       canvasWidth: Math.round(frame.width),

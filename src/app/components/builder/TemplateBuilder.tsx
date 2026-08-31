@@ -1775,10 +1775,13 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
   const degradedReport = (details: ImportIssue[] | undefined): string | null => {
     const degraded = (details ?? []).filter((d) => d.severity === "degraded");
     if (!degraded.length) return null;
+    if (degraded.length === 1) {
+      return `"${degraded[0].layer}" couldn't import exactly — ${degraded[0].issue}`;
+    }
     const names = [...new Set(degraded.map((d) => `"${d.layer}"`))];
-    return `${degraded.length} thing${degraded.length !== 1 ? "s" : ""} couldn't import exactly — ${names
-      .slice(0, 6)
-      .join(", ")}${names.length > 6 ? ` and ${names.length - 6} more` : ""}. ${degraded[0].issue}`;
+    return `${degraded.length} things couldn't import exactly — ${names.slice(0, 6).join(", ")}${
+      names.length > 6 ? ` and ${names.length - 6} more` : ""
+    }. Fix them in Figma and re-import for an exact match.`;
   };
 
   /** Every detected element lands FIXED, exactly as designed — the admin
