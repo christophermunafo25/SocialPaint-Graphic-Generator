@@ -266,12 +266,40 @@ describe("coverage — nothing the extractor found goes missing", () => {
     expect(synthesized!.staticValue).toBe("Legal disclaimer");
   });
 
-  it("never synthesizes fields for shapes", () => {
+  it("lands an unclaimed Figma shape as a Fixed shape field, styling intact", () => {
+    const out = validateProposal(
+      proposal([field({})]),
+      extraction([
+        element("1:10"),
+        element("1:12", "shape", {
+          label: "Pill",
+          shape: "rect",
+          colorHex: "#082E17",
+          cornerRadius: { tl: 999, tr: 999, br: 999, bl: 999 },
+        }),
+      ]),
+      brand,
+      "figma",
+    );
+    const pill = out.fields.find((f) => f.sourceNodeId === "1:12");
+    expect(pill).toMatchObject({
+      type: "shape",
+      shape: "rect",
+      label: "Pill",
+      colorHex: "#082E17",
+      cornerRadius: { tl: 999, tr: 999, br: 999, bl: 999 },
+      static: true,
+    });
+    // Shapes were never proposal candidates — landing them is not a warning.
+    expect(out.warnings.some((w) => w.includes("Pill"))).toBe(false);
+  });
+
+  it("still keeps Canva shapes baked in the artwork (no recompose there)", () => {
     const out = validateProposal(
       proposal([field({})]),
       extraction([element("1:10"), element("1:12", "shape")]),
       brand,
-      "figma",
+      "canva",
     );
     expect(out.fields.some((f) => f.sourceNodeId === "1:12")).toBe(false);
   });
