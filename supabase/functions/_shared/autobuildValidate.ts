@@ -57,6 +57,7 @@ export interface ValidatedField {
   width: number;
   height: number;
   rotation?: number;
+  anchor?: "topLeft" | "center";
   opacity?: number;
   static?: boolean;
   staticValue?: string;
@@ -133,6 +134,9 @@ function geometryFrom(
     width: el.width,
     height: el.height,
     rotation: el.rotation,
+    // Rotated elements are center-anchored; without this the renderer
+    // treats their center point as the top-left corner.
+    anchor: el.anchor,
     opacity: el.opacity,
     fontFamily: el.fontFamily,
     fontWeight: el.fontWeight,

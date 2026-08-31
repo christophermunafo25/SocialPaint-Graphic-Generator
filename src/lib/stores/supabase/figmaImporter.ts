@@ -111,9 +111,10 @@ export class FigmaImporter implements DesignImportProvider {
     companyId: string,
     url: string,
     excludeNodeIds: string[],
+    tree?: unknown,
   ): Promise<LayerRenderResult> {
     const { data, error } = await supabase().functions.invoke("figma-layers", {
-      body: { companyId, url, excludeNodeIds },
+      body: { companyId, url, excludeNodeIds, tree },
     });
     if (error) throw new Error(`Layered render failed: ${error.message}`);
     return data as LayerRenderResult;

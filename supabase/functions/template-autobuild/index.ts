@@ -30,8 +30,10 @@ import {
 import {
   figmaFieldsToElements,
   walk,
+  warningStrings,
   type ExtractionResult,
   type FigmaNode,
+  type ImportWarning,
   type SuggestedField,
 } from "../_shared/extract.ts";
 import {
@@ -119,16 +121,17 @@ async function extractFigma(
   }
 
   const suggested: SuggestedField[] = [];
-  const warnings: string[] = [];
+  const details: ImportWarning[] = [];
   const taken = new Set<string>();
   const seenIds = new Set<string>();
+  const warnings: string[] = [];
   try {
-    for (const child of root.children ?? [])
-      walk(child, frame, suggested, warnings, taken, seenIds);
+    for (const child of root.children ?? []) walk(child, frame, suggested, details, taken, seenIds);
   } catch (e) {
     logError("template-autobuild", e);
     warnings.push("Element detection stopped early.");
   }
+  warnings.unshift(...warningStrings(details));
 
   return {
     backgroundUrl,

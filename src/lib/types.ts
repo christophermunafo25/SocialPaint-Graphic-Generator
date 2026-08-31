@@ -578,14 +578,28 @@ export interface GenerateRepairResult {
   meta: { model: string; generatedAt: string };
 }
 
+/** One per-layer import issue — lets the builder point at the layer that
+ * degraded instead of dumping a joined paragraph. */
+export interface ImportIssue {
+  layer: string;
+  nodeId: string;
+  issue: string;
+  severity: "info" | "degraded";
+}
+
 export interface DesignImportResult {
   backgroundUrl: string;
   canvasWidth: number;
   canvasHeight: number;
   suggestedFields: TemplateField[];
   warnings: string[];
+  warningDetails?: ImportIssue[];
   /** Echo of the imported frame link — used for the layered re-render. */
   sourceUrl?: string;
+  /** The (pruned) node tree the import walked — handed back to the layered
+   * re-render so both passes decompose one consistent snapshot instead of
+   * re-fetching a tree that may have drifted. */
+  tree?: unknown;
 }
 
 /** Element-level import: a single Figma layer (pasted as a link) becomes
@@ -598,12 +612,13 @@ export interface ElementImportResult {
   fields: TemplateField[];
   units: FigmaLayerUnit[];
   warnings: string[];
+  warningDetails?: ImportIssue[];
   sourceUrl?: string;
 }
 
 /** One paintable unit of a decomposed Figma frame (frame-relative, scale 1). */
 export interface FigmaLayerUnit {
-  kind: "node" | "solid" | "gradient" | "imageFill";
+  kind: "node" | "solid" | "gradient" | "imageFill" | "stroke";
   /** Source layer name — the field label if this unit is lifted. */
   name?: string;
   x: number;
@@ -611,13 +626,26 @@ export interface FigmaLayerUnit {
   width: number;
   height: number;
   url?: string; // node render / image fill (re-hosted in our Storage)
-  color?: string; // solid
+  color?: string; // solid / stroke
   opacity?: number;
   stops?: Array<{ position: number; color: string }>; // gradient
   handles?: Array<{ x: number; y: number }>; // gradient handle positions (normalized)
+  /** Which gradient primitive ("linear" when absent). */
+  gradientType?: "linear" | "radial" | "angular";
   /** Image-fill crop: 2×3 affine mapping the layer's unit square onto
    * normalized image coordinates (Figma scaleMode STRETCH). */
   transform?: number[][];
+  /** Degrees about the unit's center (fills of a rotated node — node
+   * renders bake their rotation into the PNG). */
+  rotation?: number;
+  /** Rounded corners for rect fills, strokes, and image fills. */
+  cornerRadius?: CornerRadius;
+  /** Frame-relative clip rect (mask or clipsContent ancestor). */
+  clip?: { x: number; y: number; width: number; height: number };
+  /** Stroke units: outline width in px. */
+  strokeWeight?: number;
+  /** VECTOR nodes: SVG path data recorded for a future vector-native pass. */
+  pathData?: string;
   /** This unit paints ABOVE the k-th lifted field (1-based, paint order) —
    * it must become a static field at that z, never part of the background. */
   afterExcluded?: number;
@@ -628,4 +656,5 @@ export interface LayerRenderResult {
   canvasHeight: number;
   units: FigmaLayerUnit[];
   warnings: string[];
+  warningDetails?: ImportIssue[];
 }
