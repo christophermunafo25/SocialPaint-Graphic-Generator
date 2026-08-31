@@ -20,17 +20,12 @@ import { useRouter, type Route } from "../router";
 import { useChrome } from "./layout/ChromeContext";
 import logoOnLight from "@/assets/socialpaint/logo-on-light.svg";
 import logoOnDark from "@/assets/socialpaint/logo-on-dark.svg";
-import mark from "@/assets/socialpaint/mark.svg";
 import { GooeyNavPill } from "./GooeyNavPill";
+import { BrandMark } from "./BrandMark";
 
-/** The SocialPaint mark — the Voltage monogram from the brand refresh
- * (2026-08-17). One file for both themes: the mark reads in Voltage on
- * light and dark alike, exactly as it does inside the lockup, so it no
- * longer flips with the colour scheme. Used where the full lockup doesn't
- * fit (collapsed nav, dashboard watermark). */
-export function BrandMark({ width = 28 }: { width?: number }) {
-  return <img src={mark} alt="" aria-hidden style={{ width, height: "auto", display: "block" }} />;
-}
+// Re-exported so existing `import { BrandMark } from "../Sidebar"` call sites
+// keep working; the component itself lives in BrandMark.tsx.
+export { BrandMark };
 
 /** The official horizontal lockup — Voltage mark + wordmark, the wordmark
  * in Ink on light chrome and White on dark. */

@@ -162,6 +162,8 @@ html {
   --type-data-size: 13px;
   --type-data-lh: 1.4;
   --type-data-track: 0;
+  --type-composer-size: 16px; /* the Generate brief — one step above body, per Figma 72:27 */
+  --type-composer-lh: 1.45;
 
   /* Spacing — 4px base, nothing off the scale. */
   --space-3xs: 4px;
@@ -176,6 +178,7 @@ html {
 
   /* Shape — hold the gap between soft containers and crisp controls. */
   --radius-control: 5px;
+  --radius-control-lg: 12px; /* larger toolbar controls (Generate composer strip) */
   --radius-card: 20px;
   --radius-pill: 999px;
   --control-sm: 38px;
@@ -2662,6 +2665,29 @@ input[type="radio"] {
   --gen-hue: var(--sunshine);
 }
 
+/* The Generate stage — the hero + composer + chips column (Figma 72:27 /
+   72:148: an 860px column). In the empty state the block is vertically
+   centred in the region right of the sidebar; the min-height subtracts
+   .sp-page's 40px top + 64px bottom padding. Auto block margins do the
+   centring so a short viewport degrades to normal flow instead of
+   clipping the hero. Once a run starts the --centered class comes off and
+   the page returns to top-anchored flow. Desktop only: below lg the
+   sidebar stacks above the content and there is no region to centre in. */
+.sp-gen-stage {
+  max-width: 860px;
+  margin-inline: auto;
+}
+@media (min-width: 1024px) {
+  .sp-gen-stage--centered {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 104px);
+  }
+  .sp-gen-stage--centered > .sp-gen-stage__inner {
+    margin-block: auto;
+  }
+}
+
 /* The composer — the page's one field, so the whole card is the control
    and focus is a soft accent halo rather than a 1px input ring. The halo
    is the focus-ring mechanism (box-shadow), not an elevation shadow. */
@@ -2675,14 +2701,14 @@ input[type="radio"] {
   box-shadow: 0 0 0 3px var(--accent-wash);
 }
 
-/* The submit — the one action the whole surface exists for, and the single
-   loudest element on the page: the sanctioned brand-moment gradient while
-   there is a brief to send. Decorative volume, not meaning (the solar
-   rule); Ink carries the glyph. Disabled returns to neutral rather than a
-   dimmed gradient. */
+/* The submit — a neutral 42px circle, per the approved frames (72:27 /
+   72:148). The gradient came off on purpose: the selected mode segment now
+   carries Voltage, and two brand fills in the same strip would leave
+   neither reading as the emphasis. --bg-hover is the frames' neutral in
+   both themes. Disabled steps down to the raised surface. */
 .sp-gen-submit {
-  background: var(--brand-surface);
-  color: var(--brand-surface-fg);
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 .sp-gen-submit:disabled {
   background: var(--bg-surface-raised);
@@ -2698,14 +2724,16 @@ input[type="radio"] {
 .sp-gen-pill {
   display: inline-flex;
   align-items: center;
-  min-height: var(--control-sm);
-  padding: 0 var(--space-sm);
+  /* 42px height and 14px label from the frames; the fill sits one step
+     BELOW the composer card — chips on the canvas, card on the surface. */
+  min-height: 42px;
+  padding: 0 var(--space-md);
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
-  background: var(--bg-surface);
+  background: var(--bg-canvas);
   color: var(--text-primary);
   font-family: var(--font-ui);
-  font-size: var(--type-label-size);
+  font-size: 14px;
   font-weight: var(--weight-ui);
   letter-spacing: var(--type-label-track);
   cursor: pointer;
