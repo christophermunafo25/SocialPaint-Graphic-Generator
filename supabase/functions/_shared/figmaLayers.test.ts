@@ -456,6 +456,75 @@ describe("excluded containers", () => {
     expect(flourish!.afterExcluded).toBe(1);
   });
 
+  it("descends into a lifted solid-container (pill) so leftover decoration survives", () => {
+    // The pill's backdrop lifted as a shape field and its text as a text
+    // field; a decorative child nobody lifted must still paint — above the
+    // lifted pill, never into the plate beneath it.
+    const f: LayerNode = {
+      id: "1:1",
+      name: "Frame",
+      type: "FRAME",
+      absoluteBoundingBox: { x: 0, y: 0, width: 400, height: 400 },
+      children: [
+        {
+          id: "1:2",
+          name: "Pill",
+          type: "FRAME",
+          cornerRadius: 999,
+          absoluteBoundingBox: { x: 50, y: 50, width: 200, height: 74 },
+          fills: [{ type: "SOLID", color: { r: 0.03, g: 0.18, b: 0.09 } }],
+          children: [
+            {
+              id: "1:3",
+              name: "Dot",
+              type: "ELLIPSE",
+              absoluteBoundingBox: { x: 60, y: 80, width: 10, height: 10 },
+              fills: [
+                { type: "SOLID", color: { r: 1, g: 1, b: 1 } },
+                { type: "SOLID", color: { r: 0, g: 0, b: 0, a: 0.2 } },
+              ],
+            },
+            text2("1:4", "Typescript", { x: 90, y: 70, width: 140, height: 30 }),
+          ],
+        },
+      ],
+    };
+    // Pill backdrop + its text both lifted; the two-fill dot was not.
+    const { units } = decomposeFrame(f, ["1:2", "1:4"]);
+    const dot = units.find((u) => u.name === "Dot");
+    expect(dot).toBeDefined();
+    expect(dot!.afterExcluded).toBe(1);
+  });
+
+  it("does NOT descend into a lifted all-vector group (it lifted whole)", () => {
+    const f: LayerNode = {
+      id: "1:1",
+      name: "Frame",
+      type: "FRAME",
+      absoluteBoundingBox: { x: 0, y: 0, width: 400, height: 400 },
+      children: [
+        {
+          id: "1:2",
+          name: "Logo",
+          type: "GROUP",
+          absoluteBoundingBox: { x: 50, y: 50, width: 299, height: 52 },
+          children: [
+            {
+              id: "1:3",
+              name: "Union",
+              type: "VECTOR",
+              absoluteBoundingBox: { x: 50, y: 50, width: 48, height: 48 },
+              fillGeometry: [{ path: "M0 0Z" }],
+            },
+          ],
+        },
+        text2("1:5", "t", { x: 300, y: 300, width: 10, height: 10 }),
+      ],
+    };
+    const { units } = decomposeFrame(f, ["1:2", "1:5"]);
+    expect(units.some((u) => u.name === "Union")).toBe(false);
+  });
+
   it("does NOT descend into a lifted image container whose fill has no imageRef", () => {
     // Without a resolvable imageRef the field walk keeps a whole-node render
     // (children baked in) — decompose must match, or the children paint
