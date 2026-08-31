@@ -220,26 +220,95 @@ export function isRasterLeaf(node: {
   return false;
 }
 
-/** Whether a LIFTED container's children were walked into their own fields
- * (so its artwork is the bare image fill) — versus staying baked into a
- * whole-node render. The field walk and the background decomposition MUST
- * answer this identically: if the walk bakes the children but decompose
- * still emits units for them, every nested element paints twice. */
-export function liftDescends(node: {
+/** Structural node shape the shared walk/decompose predicates read —
+ * satisfied by FigmaNode, figmaLayers' LayerNode, and pruned trees alike. */
+export interface PredicateNode {
   type: string;
   visible?: boolean;
+  isMask?: boolean;
   effects?: Array<{ type: string; visible?: boolean }>;
   fillGeometry?: unknown[];
   hasFillGeometry?: boolean;
-  fills?: Array<{ type: string; visible?: boolean; imageRef?: string }>;
-  children?: Array<{ isMask?: boolean; visible?: boolean }>;
-}): boolean {
+  strokes?: Array<{ type: string; visible?: boolean }>;
+  fills?: FigmaPaint[];
+  children?: PredicateNode[];
+}
+
+const VECTOR_LEAF_TYPES = new Set([
+  "VECTOR",
+  "BOOLEAN_OPERATION",
+  "STAR",
+  "LINE",
+  "ELLIPSE",
+  "RECTANGLE",
+  "REGULAR_POLYGON",
+  "POLYGON",
+]);
+const VECTOR_CONTAINER_TYPES = new Set(["GROUP", "FRAME", "COMPONENT", "INSTANCE"]);
+
+/** Pure vector artwork: a subtree of shapes/vectors (containers included)
+ * holding no text and no image fills. Such a subtree — a logo, an icon — is
+ * one visual object to a designer, so the walk lifts it WHOLE as a single
+ * static image (Figma's own render, masks and all) instead of leaving it
+ * baked into the background plate. */
+export function isVectorArtwork(node: PredicateNode): boolean {
+  if (node.visible === false) return false;
+  if ((node.fills ?? []).some((f) => f.type === "IMAGE" && f.visible !== false)) return false;
+  if (VECTOR_LEAF_TYPES.has(node.type)) return true;
+  if (!VECTOR_CONTAINER_TYPES.has(node.type)) return false;
+  const kids = (node.children ?? []).filter((c) => c.visible !== false);
+  return kids.length > 0 && kids.every(isVectorArtwork);
+}
+
+/** At least one true vector under this node — pure-primitive subtrees stay
+ * with the shape branch / the plate; only genuinely vector artwork (which
+ * shape fields cannot reconstruct) earns the whole-object lift. */
+export function subtreeHasVector(node: PredicateNode): boolean {
+  if (node.visible === false) return false;
+  if (node.type === "VECTOR" || node.type === "BOOLEAN_OPERATION") return true;
+  return (node.children ?? []).some(subtreeHasVector);
+}
+
+/** The single representable fill of a container (FRAME/COMPONENT/INSTANCE)
+ * whose own backdrop can lift as a SHAPE field — a pill, a card, a color
+ * block — while its children keep lifting as their own fields. Undefined
+ * when the container's paint needs more than a shape field can carry
+ * (strokes, effects, multiple fills, image fills). */
+export function shapeContainerFill(node: PredicateNode): FigmaPaint | undefined {
+  if (node.type !== "FRAME" && node.type !== "COMPONENT" && node.type !== "INSTANCE") {
+    return undefined;
+  }
+  if (isRasterLeaf(node)) return undefined;
+  if ((node.strokes ?? []).some((s) => s.visible !== false)) return undefined;
+  if ((node.effects ?? []).some((e) => e.visible !== false)) return undefined;
+  const fills = (node.fills ?? []).filter((f) => f.visible !== false);
+  if (fills.length !== 1) return undefined;
+  const fill = fills[0];
+  if (fill.type === "SOLID" && fill.color) return fill;
+  if (fill.type === "GRADIENT_LINEAR" && fill.gradientStops?.length) return fill;
+  return undefined;
+}
+
+/** Whether a LIFTED container's children were walked into their own fields
+ * (its own artwork being the bare image fill or a shape field) — versus the
+ * whole subtree baking into one render. The field walk and the background
+ * decomposition MUST answer this identically, mirroring the walk's branch
+ * order: if the walk bakes the children but decompose still emits units for
+ * them, every nested element paints twice. */
+export function liftDescends(node: PredicateNode): boolean {
   const kids = (node.children ?? []).filter((c) => c.visible !== false);
   if (!kids.length) return false;
   if (isRasterLeaf(node)) return false;
-  return (node.fills ?? []).some(
-    (f) => f.type === "IMAGE" && f.visible !== false && Boolean(f.imageRef),
-  );
+  // Whole-object vector lift: children are inside the render.
+  if (isVectorArtwork(node) && subtreeHasVector(node)) return false;
+  // Image container whose artwork is the bare fill.
+  if (
+    (node.fills ?? []).some((f) => f.type === "IMAGE" && f.visible !== false && Boolean(f.imageRef))
+  ) {
+    return true;
+  }
+  // Container whose backdrop lifted as a shape field.
+  return Boolean(shapeContainerFill(node));
 }
 
 /** Any visible TEXT anywhere under this node — used to tell the admin when a
@@ -586,6 +655,58 @@ export function walk(
     }
     // Strokes, effects, or exotic fills the field can't represent — leave
     // the node in the plate, where its own render is exact.
+  }
+
+  // Pure vector artwork — a logo, an icon group, a decorative mark — is one
+  // visual object to a designer. Lift the WHOLE subtree as a single static
+  // image (Figma's own render, masks and effects included) so it can be
+  // moved, scaled, and layered instead of freezing into the plate.
+  if (place && !imageFill && isVectorArtwork(node) && subtreeHasVector(node)) {
+    out.push({
+      id: crypto.randomUUID(),
+      label: node.name,
+      fieldKey: slug(node.name, taken),
+      type: "image",
+      sourceNodeId: node.id,
+      ...place,
+      objectFit: "cover",
+      opacity: opacityOf(node),
+      static: true,
+    });
+    return;
+  }
+
+  // A container whose own backdrop is one representable fill — a pill, a
+  // card, a color block. The backdrop lifts as a SHAPE field (recolorable,
+  // movable) and the children keep lifting as their own fields on top.
+  const containerFill = !imageFill && place ? shapeContainerFill(node) : undefined;
+  if (place && containerFill) {
+    const common = {
+      id: crypto.randomUUID(),
+      label: node.name,
+      fieldKey: slug(node.name, taken),
+      type: "shape" as const,
+      shape: "rect" as const,
+      sourceNodeId: node.id,
+      ...place,
+      cornerRadius: cornerRadiusOf(node),
+      static: true as const,
+    };
+    if (containerFill.type === "SOLID" && containerFill.color) {
+      out.push({
+        ...common,
+        colorHex: toHex(containerFill.color),
+        opacity: foldedOpacity(node, containerFill),
+      });
+    } else {
+      out.push({
+        ...common,
+        textGradient: linearGradientOf(containerFill, place.width, place.height),
+        opacity: foldedOpacity(node, containerFill),
+      });
+    }
+    for (const child of node.children ?? []) walk(child, frame, out, warnings, taken, seenIds);
+    return;
   }
 
   // A raster leaf's artwork can't be reconstructed from properties — its

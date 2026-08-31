@@ -371,7 +371,7 @@ describe("raster leaves", () => {
     ).toBe(true);
   });
 
-  it("never lifts fields from inside a boolean operation", () => {
+  it("lifts a boolean operation whole as one image object, never its operands", () => {
     const { out } = run({
       id: "4:1",
       name: "Cutout",
@@ -387,7 +387,135 @@ describe("raster leaves", () => {
         },
       ],
     });
-    expect(out).toHaveLength(0);
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ type: "image", sourceNodeId: "4:1", static: true });
+  });
+});
+
+describe("container and vector object extraction", () => {
+  it("lifts a solid pill frame as a rounded shape field plus its text", () => {
+    // The SocialPaint job-post pill: a FRAME with one solid fill and a full
+    // corner radius holding a skill name. Both must be objects — the pill
+    // body a recolorable shape, the text its own field on top.
+    const { out } = run({
+      id: "7:1",
+      name: "Pill",
+      type: "FRAME",
+      cornerRadius: 999,
+      absoluteBoundingBox: { x: 229, y: 1158, width: 293, height: 74 },
+      fills: [{ type: "SOLID", color: { r: 0.03, g: 0.18, b: 0.09 } }],
+      children: [
+        {
+          id: "7:2",
+          name: "Typescript",
+          type: "TEXT",
+          characters: "Typescript",
+          absoluteBoundingBox: { x: 286, y: 1180, width: 178, height: 30 },
+          fills: [{ type: "SOLID", color: { r: 0.61, g: 1, b: 0.29 } }],
+        },
+      ],
+    });
+    expect(out).toHaveLength(2);
+    expect(out[0]).toMatchObject({
+      type: "shape",
+      shape: "rect",
+      sourceNodeId: "7:1",
+      cornerRadius: { tl: 999, tr: 999, br: 999, bl: 999 },
+      colorHex: "#082E17",
+      static: true,
+    });
+    expect(out[1]).toMatchObject({ type: "text", staticValue: "Typescript" });
+  });
+
+  it("keeps a stroked container's backdrop in the plate but still lifts its text", () => {
+    const { out } = run({
+      id: "7:3",
+      name: "Outlined Pill",
+      type: "FRAME",
+      absoluteBoundingBox: { x: 100, y: 200, width: 200, height: 60 },
+      fills: [{ type: "SOLID", color: { r: 0, g: 0, b: 0 } }],
+      strokes: [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }],
+      strokeWeight: 2,
+      children: [
+        {
+          id: "7:4",
+          name: "Label",
+          type: "TEXT",
+          characters: "MySQL",
+          absoluteBoundingBox: { x: 120, y: 215, width: 89, height: 30 },
+        },
+      ],
+    });
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ type: "text", staticValue: "MySQL" });
+  });
+
+  it("lifts an all-vector group as a single image object", () => {
+    // The SocialPaint logo: a group of two vectors (mark + wordmark). One
+    // movable object, not pixels frozen into the plate.
+    const { out } = run({
+      id: "8:1",
+      name: "Logo",
+      type: "GROUP",
+      absoluteBoundingBox: { x: 172, y: 358, width: 299, height: 52 },
+      children: [
+        {
+          id: "8:2",
+          name: "Union",
+          type: "VECTOR",
+          absoluteBoundingBox: { x: 172, y: 358, width: 48, height: 48 },
+          fillGeometry: [{ path: "M0 0L48 48Z" }],
+        },
+        {
+          id: "8:3",
+          name: "socialpaint",
+          type: "VECTOR",
+          absoluteBoundingBox: { x: 232, y: 363, width: 239, height: 47 },
+          fillGeometry: [{ path: "M0 0L239 47Z" }],
+        },
+      ],
+    });
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({
+      type: "image",
+      sourceNodeId: "8:1",
+      label: "Logo",
+      x: 72,
+      y: 158,
+      width: 299,
+      height: 52,
+      static: true,
+    });
+    expect(out[0].fillImageRef).toBeUndefined();
+  });
+
+  it("does not object-lift subtrees containing text or images", () => {
+    const { out } = run({
+      id: "8:4",
+      name: "Card",
+      type: "GROUP",
+      absoluteBoundingBox: { x: 100, y: 200, width: 200, height: 100 },
+      children: [
+        {
+          id: "8:5",
+          name: "mark",
+          type: "VECTOR",
+          absoluteBoundingBox: { x: 100, y: 200, width: 40, height: 40 },
+          fillGeometry: [{ path: "M0 0Z" }],
+        },
+        {
+          id: "8:6",
+          name: "Caption",
+          type: "TEXT",
+          characters: "hello",
+          absoluteBoundingBox: { x: 150, y: 210, width: 80, height: 20 },
+        },
+      ],
+    });
+    // The group is NOT one object — the vector lifts alone, the text lifts
+    // as its own field.
+    expect(out).toHaveLength(2);
+    expect(out.map((f) => f.sourceNodeId).sort()).toEqual(["8:5", "8:6"]);
   });
 });
 
