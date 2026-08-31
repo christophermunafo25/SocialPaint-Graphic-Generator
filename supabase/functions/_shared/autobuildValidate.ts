@@ -50,7 +50,12 @@ export interface ValidatedField {
   id: string;
   label: string;
   fieldKey: string;
-  type: "text" | "multiline" | "image" | "select";
+  type: "text" | "multiline" | "image" | "select" | "shape";
+  /** Shape fields only (always Fixed, synthesized by coverage — the model
+   * never proposes them). */
+  shape?: "rect" | "ellipse" | "triangle" | "star";
+  cornerRadius?: { tl: number; tr: number; br: number; bl: number };
+  textGradient?: { angle: number; stops: Array<{ position: number; color: string }> };
   sourceNodeId?: string;
   x: number;
   y: number;
@@ -138,6 +143,9 @@ function geometryFrom(
     // treats their center point as the top-left corner.
     anchor: el.anchor,
     opacity: el.opacity,
+    shape: el.shape,
+    cornerRadius: el.cornerRadius,
+    textGradient: el.textGradient,
     fontFamily: el.fontFamily,
     fontWeight: el.fontWeight,
     fontSizePx: el.fontSizePx,
@@ -186,12 +194,15 @@ export function validateProposal(
       }
       element = byId.get(p.sourceId)!;
       if (element.kind === "shape") {
-        // Shapes are context, never field candidates: the platform's shape
-        // fields are geometric primitives that can't reproduce arbitrary
-        // vector artwork, and on the Canva path (no recompose) a shape field
-        // would paint an approximation over the real artwork.
+        // Shapes are never MEMBER-field candidates — a shape has no content
+        // for a member to fill in. On the Figma path the coverage pass below
+        // lands it as a Fixed shape field (the recompose lifts it off the
+        // background); on the Canva path (no recompose) a shape field would
+        // paint an approximation over the real artwork, so it stays baked.
         warnings.push(
-          `Dropped "${p.label}": ${p.sourceId} is a shape — shapes stay in the artwork.`,
+          sourceKind === "figma"
+            ? `"${p.label}": shapes can't be member fields — it landed Fixed instead.`
+            : `Dropped "${p.label}": ${p.sourceId} is a shape — shapes stay in the artwork.`,
         );
         continue;
       }
@@ -322,8 +333,30 @@ export function validateProposal(
   // still land as a field or it vanishes from the design entirely.
   if (!isImagePath) {
     for (const el of extraction.elements) {
-      if (claimed.has(el.sourceId) || el.kind === "shape") continue;
-      const label = el.text?.trim().slice(0, 40) || (el.kind === "image" ? "Image" : "Text");
+      if (claimed.has(el.sourceId)) continue;
+      if (el.kind === "shape") {
+        // Figma shapes are faithful primitives the recompose lifts off the
+        // background — land them Fixed so pills, cards, and dividers are
+        // objects, not plate pixels. Canva has no recompose: a shape field
+        // there would paint over its own baked artwork, so it stays.
+        // No warning either way — shapes were never proposal candidates.
+        if (sourceKind !== "figma") continue;
+        const label = el.label?.trim().slice(0, 40) || "Shape";
+        fields.push({
+          id: crypto.randomUUID(),
+          label,
+          fieldKey: reslug(label, takenKeys),
+          type: "shape",
+          ...geometryFrom(el),
+          shape: el.shape ?? "rect",
+          static: true,
+        });
+        continue;
+      }
+      const label =
+        el.text?.trim().slice(0, 40) ||
+        el.label?.trim().slice(0, 40) ||
+        (el.kind === "image" ? "Image" : "Text");
       fields.push({
         id: crypto.randomUUID(),
         label,

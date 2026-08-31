@@ -730,6 +730,14 @@ export function walk(
 export interface ExtractedElement {
   sourceId: string; // Figma node id or Canva locator_id
   kind: "text" | "image" | "shape";
+  /** Source layer name — the label a synthesized Fixed field lands with. */
+  label?: string;
+  /** Shape elements: which primitive, plus the styling a shape field needs
+   * to reconstruct the artwork exactly (Figma path only — Canva shapes stay
+   * baked in the flat export). */
+  shape?: "rect" | "ellipse" | "triangle" | "star";
+  cornerRadius?: { tl: number; tr: number; br: number; bl: number };
+  textGradient?: { angle: number; stops: Array<{ position: number; color: string }> };
   x: number;
   y: number;
   width: number;
@@ -776,6 +784,10 @@ export function figmaFieldsToElements(fields: SuggestedField[]): ExtractedElemen
         : f.type === "shape"
           ? ("shape" as const)
           : ("text" as const),
+    label: f.label,
+    shape: f.shape,
+    cornerRadius: f.cornerRadius,
+    textGradient: f.textGradient,
     x: f.x,
     y: f.y,
     width: f.width,
