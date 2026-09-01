@@ -112,7 +112,11 @@ export function BackgroundReflowDialog({
         </div>
 
         <div className="flex gap-4 items-start">
-          <CropPreview url={backgroundUrl} size={source} label={`Now — ${source.width}×${source.height}`} />
+          <CropPreview
+            url={backgroundUrl}
+            size={source}
+            label={`Now — ${source.width}×${source.height}`}
+          />
           <CropPreview
             url={backgroundUrl}
             size={target}

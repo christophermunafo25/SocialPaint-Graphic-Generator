@@ -244,8 +244,8 @@ export function AdminTemplates() {
                   marginTop: 2,
                 }}
               >
-                "{versionFor.name}" stays untouched — the version lands as a reflowed draft copy
-                you review in the builder.
+                "{versionFor.name}" stays untouched — the version lands as a reflowed draft copy you
+                review in the builder.
               </p>
             </div>
             <CanvasSizePicker

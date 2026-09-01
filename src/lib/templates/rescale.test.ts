@@ -165,10 +165,7 @@ describe("rescaleTemplate — layout groups", () => {
     // 1080×1080 → 2160×1080: sx = 2, sy = 1.
     const draft = baseDraft({
       fields: [baseField()],
-      layoutGroups: [
-        group(),
-        group({ id: "g2", direction: "horizontal", children: ["group:g1"] }),
-      ],
+      layoutGroups: [group(), group({ id: "g2", direction: "horizontal", children: ["group:g1"] })],
     });
     const { draft: out } = rescaleTemplate(draft, { width: 2160, height: 1080 });
     const [v, hz] = out.layoutGroups!;

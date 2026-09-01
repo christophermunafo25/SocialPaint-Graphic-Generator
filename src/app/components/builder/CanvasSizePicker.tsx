@@ -181,7 +181,10 @@ export function CanvasSizePicker({
                       <span className="min-w-0 flex-1">
                         <span
                           className="block truncate"
-                          style={{ fontSize: "var(--type-label-size)", color: "var(--text-primary)" }}
+                          style={{
+                            fontSize: "var(--type-label-size)",
+                            color: "var(--text-primary)",
+                          }}
                         >
                           {s.assetType}
                         </span>
@@ -232,7 +235,8 @@ export function CanvasSizePicker({
                   onChange={(e) => {
                     setVal(e.target.value);
                     const n = Number(e.target.value);
-                    if (linked && Number.isFinite(n) && n > 0) setOther(String(Math.round(other(n))));
+                    if (linked && Number.isFinite(n) && n > 0)
+                      setOther(String(Math.round(other(n))));
                   }}
                   className="w-full px-2 py-1.5"
                   data-radius-control

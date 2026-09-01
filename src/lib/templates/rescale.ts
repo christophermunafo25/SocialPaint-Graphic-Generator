@@ -111,15 +111,13 @@ export function rescaleTemplate(
 
   // gap runs along the stack's main axis and crossSize across it, so each
   // takes the factor of the axis it actually measures.
-  const layoutGroups = draft.layoutGroups?.map(
-    (g): LayoutGroup => ({
-      ...g,
-      x: roundPx(g.x * sx),
-      y: roundPx(g.y * sy),
-      gap: roundPx(g.gap * (g.direction === "vertical" ? sy : sx)),
-      crossSize: roundPx(g.crossSize * (g.direction === "vertical" ? sx : sy)),
-    }),
-  );
+  const layoutGroups = draft.layoutGroups?.map((g): LayoutGroup => ({
+    ...g,
+    x: roundPx(g.x * sx),
+    y: roundPx(g.y * sy),
+    gap: roundPx(g.gap * (g.direction === "vertical" ? sy : sx)),
+    crossSize: roundPx(g.crossSize * (g.direction === "vertical" ? sx : sy)),
+  }));
 
   return {
     draft: {
