@@ -2230,10 +2230,14 @@ input[type="radio"] {
    tokens above; the DS bans shadows in both themes, so the pinned filter bar
    separates with a hairline rather than lifting. */
 
-/* Search field — the icon and clear button sit inside the input's box. */
+/* Search field — the icon and clear button sit inside the input's box.
+   Capped: a query is a few words, and an input stretched across the whole
+   content column reads as a form, not a filter. One cap here, no per-page
+   wrapper widths. */
 .sp-searchfield {
   position: relative;
   width: 100%;
+  max-width: 440px;
 }
 .sp-searchfield__icon {
   position: absolute;
