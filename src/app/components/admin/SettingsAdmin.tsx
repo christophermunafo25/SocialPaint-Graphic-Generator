@@ -101,7 +101,7 @@ export function SettingsAdmin({ section }: { section?: SettingsSection }) {
   }, [section, active.key, navigate]);
 
   return (
-    <Page wide>
+    <Page>
       <PageHeader
         eyebrow={company?.name}
         title="Settings & Admin"

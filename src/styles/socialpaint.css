@@ -191,8 +191,7 @@ html {
   --border-width: 1px;
 
   /* Layout */
-  --page-max: 1240px; /* THE content column cap — one knob, see .sp-page */
-  --page-max-wide: 1720px; /* the wide variant's cap (Settings) — see .sp-page--wide */
+  --page-max: 1720px; /* THE content column cap — one knob, see .sp-page */
   --page-pad: 32px; /* column gutter; 16px under 768 */
   --bp-sm: 480px;
   --bp-md: 768px;
@@ -1881,11 +1880,6 @@ input[type="radio"] {
   margin-inline: auto;
   padding: 40px var(--page-pad) 64px;
   box-sizing: border-box;
-}
-/* Wide variant: pages built as rail + content (Settings) waste the standard
-   cap — tables and switch rows want the room. Same gutters, bigger cap. */
-.sp-page--wide {
-  max-width: var(--page-max-wide);
 }
 /* Content-panel card padding (Insights, Brand Studio, Settings, People). */
 .sp-card--content {
