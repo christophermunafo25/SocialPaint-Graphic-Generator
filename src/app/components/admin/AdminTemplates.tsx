@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { CheckCircle2, Copy, Eye, EyeOff, Pencil, Plus, Trash2 } from "lucide-react";
+import { CheckCircle2, Copy, Eye, EyeOff, Pencil, Plus, Proportions, Trash2 } from "lucide-react";
 import type { TemplateSchema, UsageSummary } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
@@ -11,6 +11,9 @@ import { InlineEdit } from "../InlineEdit";
 import { TemplateSearchField } from "../templates/TemplateSearchField";
 import { toCatalogTemplate } from "@/lib/templates/catalog";
 import { buildSearchIndex, searchTemplates } from "@/lib/templates/searchIndex";
+import { versionName } from "@/lib/templates/reflow";
+import type { CanvasSize } from "@/lib/templates/platforms";
+import { CanvasSizePicker } from "../builder/CanvasSizePicker";
 import { ErrorState } from "../ErrorState";
 import { TemplateThumbnail } from "../TemplateThumbnail";
 
@@ -118,6 +121,38 @@ export function AdminTemplates() {
     }
   };
 
+  /** Template whose "Create a version for…" picker is open. */
+  const [versionFor, setVersionFor] = useState<TemplateSchema | null>(null);
+  // The workspace's enabled sizes, for the version picker.
+  const sizesState = useAsync<CanvasSize[]>(
+    () => (company ? stores.companies.listCanvasSizes(company.id) : Promise.resolve([])),
+    [company],
+  );
+
+  /** Create a version for another platform: duplicate — the original is
+   * never touched — then open the copy with the reflow handoff so the
+   * builder reflows it for review. Named from what the size MEANS
+   * ("Hiring announcement — Story"), deduped like plain duplicates. */
+  const createVersion = async (t: TemplateSchema, target: { width: number; height: number }) => {
+    setVersionFor(null);
+    const names = new Set(templates.map((x) => x.name));
+    const base = versionName(t.name, target);
+    let name = base;
+    for (let n = 2; names.has(name); n++) name = `${base} ${n}`;
+    try {
+      const copy = await stores.templates.duplicate(t.id, name);
+      navigate({
+        name: "builder",
+        templateId: copy.id,
+        reflow: `${target.width}x${target.height}`,
+      });
+    } catch (e) {
+      console.error("Version create failed", e);
+      setToast("Couldn't create the version. Try again.");
+      toastTimer.current = window.setTimeout(() => setToast(null), 4000);
+    }
+  };
+
   const duplicateTemplate = async (t: TemplateSchema) => {
     // "<name> copy", then "<name> copy 2", 3, … on collision.
     const names = new Set(templates.map((x) => x.name));
@@ -172,6 +207,55 @@ export function AdminTemplates() {
         onCancel={() => setDeleting(null)}
         onConfirm={() => void confirmDelete()}
       />
+      {versionFor && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Create a version of ${versionFor.name}`}
+          style={{ background: "color-mix(in srgb, var(--text-on-accent) 55%, transparent)" }}
+          onClick={() => setVersionFor(null)}
+        >
+          <div
+            className="w-full max-w-sm p-4 space-y-3"
+            style={{
+              background: "var(--bg-surface)",
+              border: "1px solid var(--border-strong)",
+              borderRadius: "var(--radius-card)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div>
+              <h2
+                style={{
+                  fontFamily: "var(--font-head)",
+                  fontWeight: "var(--weight-head)",
+                  fontSize: "var(--type-cardtitle-size)",
+                  letterSpacing: "var(--track-head)",
+                  color: "var(--text-primary)",
+                }}
+              >
+                Create a version for…
+              </h2>
+              <p
+                style={{
+                  fontSize: "var(--type-caption-size)",
+                  color: "var(--text-secondary)",
+                  marginTop: 2,
+                }}
+              >
+                "{versionFor.name}" stays untouched — the version lands as a reflowed draft copy you
+                review in the builder.
+              </p>
+            </div>
+            <CanvasSizePicker
+              sizes={sizesState.status === "ready" ? sizesState.data : []}
+              value={{ width: versionFor.canvasWidth, height: versionFor.canvasHeight }}
+              onPick={(next) => void createVersion(versionFor, next)}
+            />
+          </div>
+        </div>
+      )}
       <PageHeader
         title="Template Builder"
         description="Create, edit, and publish — published templates appear in your team's Brand Templates."
@@ -360,6 +444,15 @@ export function AdminTemplates() {
                           title="Duplicate"
                         >
                           <Copy style={{ width: 16, height: 16, color: "var(--text-muted)" }} />
+                        </button>
+                        <button
+                          style={iconBtn}
+                          onClick={() => setVersionFor(t)}
+                          title="Create a version for another size"
+                        >
+                          <Proportions
+                            style={{ width: 16, height: 16, color: "var(--text-muted)" }}
+                          />
                         </button>
                         <button style={iconBtn} onClick={() => setDeleting(t)} title="Delete">
                           <Trash2 style={{ width: 16, height: 16, color: "var(--state-danger)" }} />

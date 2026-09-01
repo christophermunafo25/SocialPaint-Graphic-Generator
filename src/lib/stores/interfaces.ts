@@ -53,9 +53,7 @@ export interface CompanyStore {
   listCanvasSizes(companyId?: string): Promise<CanvasSize[]>;
   /** Settings → Workspace: every catalogue size with this company's on/off
    * state. */
-  listCanvasSizeSettings(
-    companyId: string,
-  ): Promise<Array<{ size: CanvasSize; enabled: boolean }>>;
+  listCanvasSizeSettings(companyId: string): Promise<Array<{ size: CanvasSize; enabled: boolean }>>;
   setCanvasSizeEnabled(companyId: string, sizeId: string, enabled: boolean): Promise<void>;
 }
 

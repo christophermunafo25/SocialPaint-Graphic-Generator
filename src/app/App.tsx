@@ -167,7 +167,17 @@ function Screen() {
         {route.name === "template" && <TemplateUsePage templateId={route.templateId} />}
         {route.name === "generate" && <GeneratePage templateIdHint={route.templateId} />}
         {route.name === "adminTemplates" && adminOnly(<AdminTemplates />)}
-        {route.name === "builder" && adminOnly(<TemplateBuilder templateId={route.templateId} />)}
+        {route.name === "builder" &&
+          adminOnly(
+            // Keyed: the builder's saved-id and wizard state assume one
+            // template per mount, and create-a-version navigates builder →
+            // builder (the freshly duplicated copy).
+            <TemplateBuilder
+              key={route.templateId ?? "new"}
+              templateId={route.templateId}
+              reflowParam={route.reflow ?? null}
+            />,
+          )}
         {route.name === "brandStudio" && adminOnly(<BrandStudio category={route.category} />)}
         {route.name === "dashboard" && adminOnly(<Dashboard />)}
         {route.name === "people" && adminOnly(<PeopleAdmin />)}
