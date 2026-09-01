@@ -3,7 +3,10 @@ import type {
   BrandKit,
   CanvasPreset,
   Company,
+  CompanyPatch,
+  CompanyTemplateLink,
   DesignImportResult,
+  MonthlyUsage,
   NewTemplateInput,
   PublicLinkUsageRow,
   TemplateSchema,
@@ -14,6 +17,7 @@ import type {
   UsageSummaryRow,
 } from "../../types";
 import type {
+  AccountStore,
   BrandAssetStore,
   BrandKitStore,
   CompanyStore,
@@ -23,7 +27,10 @@ import type {
   TemplateStore,
   UsageStore,
 } from "../interfaces";
+import { browserTimeZone } from "../../companySettings";
 import { bucketDailyActivity } from "../dailyActivity";
+import { joinCompanyLinks } from "../linkInventory";
+import { monthStartIso, summarizeMonthlyUsage } from "../monthlyUsage";
 import { joinLinkUsage } from "../publicLinkUsage";
 import { fileToDataUrl, mutate, newId, readDb } from "./db";
 
@@ -57,23 +64,113 @@ interface TemplateLinkRec {
   createdAt: string;
 }
 
+/** Companies saved before the settings columns existed lack them — fill the
+ * same defaults the migration would have. */
+const normalizeCompany = (c: Partial<Company> & Company): Company => ({
+  ...c,
+  timezone: c.timezone ?? browserTimeZone(),
+  linkDefaults: c.linkDefaults ?? { allowUploads: true, expiryDays: null, useCap: null },
+});
+
+interface CompanyPresetRec {
+  companyId: string;
+  presetId: string;
+  enabled: boolean;
+}
+
 export class LocalCompanyStore implements CompanyStore {
   async list(): Promise<Company[]> {
-    return (readDb().companies as Company[]).slice().sort((a, b) => a.name.localeCompare(b.name));
+    return (readDb().companies as Company[])
+      .map(normalizeCompany)
+      .sort((a, b) => a.name.localeCompare(b.name));
   }
   async get(id: string): Promise<Company | null> {
-    return (readDb().companies as Company[]).find((c) => c.id === id) ?? null;
+    const found = (readDb().companies as Company[]).find((c) => c.id === id);
+    return found ? normalizeCompany(found) : null;
   }
   async create(input: { name: string; slug: string }): Promise<Company> {
-    const company: Company = { id: newId(), ...input, createdAt: new Date().toISOString() };
+    const company: Company = {
+      id: newId(),
+      ...input,
+      createdAt: new Date().toISOString(),
+      timezone: browserTimeZone(),
+      linkDefaults: { allowUploads: true, expiryDays: null, useCap: null },
+    };
     mutate((db) => db.companies.push(company));
     return company;
+  }
+  async update(id: string, patch: CompanyPatch): Promise<Company> {
+    return mutate((db) => {
+      const companies = db.companies as Company[];
+      const i = companies.findIndex((c) => c.id === id);
+      if (i < 0) throw new Error(`Company ${id} not found`);
+      companies[i] = { ...normalizeCompany(companies[i]), ...patch };
+      return companies[i];
+    });
+  }
+  /** Mirrors the schema's cascades: every collection scoped to the company
+   * goes with it, so a dev-mode deletion behaves like the real one. */
+  async delete(id: string): Promise<void> {
+    mutate((db) => {
+      const templateIds = new Set(
+        (db.templates as TemplateSchema[]).filter((t) => t.companyId === id).map((t) => t.id),
+      );
+      db.companies = (db.companies as Company[]).filter((c) => c.id !== id);
+      db.templates = (db.templates as TemplateSchema[]).filter((t) => t.companyId !== id);
+      db.brandKits = (db.brandKits as BrandKit[]).filter((k) => k.companyId !== id);
+      db.brandAssets = (db.brandAssets as BrandAsset[]).filter((a) => a.companyId !== id);
+      db.usageEvents = (db.usageEvents as UsageEventRec[]).filter((e) => e.companyId !== id);
+      db.templateLinks = (db.templateLinks as TemplateLinkRec[]).filter(
+        (l) => !templateIds.has(l.templateId),
+      );
+      db.companyCanvasPresets = (db.companyCanvasPresets as CompanyPresetRec[]).filter(
+        (p) => p.companyId !== id,
+      );
+    });
+  }
+  async isSlugAvailable(slug: string, excludeCompanyId: string): Promise<boolean> {
+    return !(readDb().companies as Company[]).some(
+      (c) => c.slug === slug && c.id !== excludeCompanyId,
+    );
   }
   async hasAnyCompany(): Promise<boolean> {
     return readDb().companies.length > 0;
   }
-  async listCanvasPresets(): Promise<CanvasPreset[]> {
-    return PRESETS.filter((p) => p.enabled);
+  async listCanvasPresets(companyId?: string): Promise<CanvasPreset[]> {
+    const enabled = PRESETS.filter((p) => p.enabled);
+    if (!companyId) return enabled;
+    const disabled = new Set(
+      (readDb().companyCanvasPresets as CompanyPresetRec[])
+        .filter((r) => r.companyId === companyId && !r.enabled)
+        .map((r) => r.presetId),
+    );
+    const filtered = enabled.filter((p) => !disabled.has(p.id));
+    return filtered.length > 0 ? filtered : enabled;
+  }
+  async listCanvasPresetSettings(
+    companyId: string,
+  ): Promise<Array<{ preset: CanvasPreset; enabled: boolean }>> {
+    const disabled = new Set(
+      (readDb().companyCanvasPresets as CompanyPresetRec[])
+        .filter((r) => r.companyId === companyId && !r.enabled)
+        .map((r) => r.presetId),
+    );
+    return PRESETS.filter((p) => p.enabled).map((preset) => ({
+      preset,
+      enabled: !disabled.has(preset.id),
+    }));
+  }
+  async setCanvasPresetEnabled(
+    companyId: string,
+    presetId: string,
+    enabled: boolean,
+  ): Promise<void> {
+    mutate((db) => {
+      const rows = db.companyCanvasPresets as CompanyPresetRec[];
+      const i = rows.findIndex((r) => r.companyId === companyId && r.presetId === presetId);
+      if (i >= 0) rows[i] = { ...rows[i], enabled };
+      else rows.push({ companyId, presetId, enabled });
+    });
   }
 }
 
@@ -234,12 +331,34 @@ export class LocalUsageStore implements UsageStore {
     );
     return { rows, totalDownloads: rows.reduce((n, r) => n + r.downloads, 0) };
   }
-  async getDailyActivity(companyId: string, days: number) {
+  async getDailyActivity(companyId: string, days: number, timeZone?: string) {
     const db = readDb();
     return bucketDailyActivity(
       (db.usageEvents as UsageEventRec[]).filter((e) => e.companyId === companyId),
       days,
+      timeZone,
     );
+  }
+  async getMonthlyUsage(companyId: string, timeZone = "UTC"): Promise<MonthlyUsage> {
+    const since = monthStartIso(timeZone);
+    return summarizeMonthlyUsage(
+      (readDb().usageEvents as UsageEventRec[]).filter(
+        (e) => e.companyId === companyId && e.createdAt >= since,
+      ),
+      timeZone,
+    );
+  }
+  async listEvents(companyId: string) {
+    return (readDb().usageEvents as UsageEventRec[])
+      .filter((e) => e.companyId === companyId)
+      .map((e) => ({
+        templateId: e.templateId,
+        action: e.action,
+        actor: e.actor ?? ("member" as UsageActor),
+        userId: e.userId,
+        createdAt: e.createdAt,
+      }))
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   }
   /** Joined exactly as the Supabase store joins it, over whatever links the
    * local document store holds. Normally none — this backend cannot issue
@@ -261,6 +380,29 @@ export class LocalUsageStore implements UsageStore {
       .filter((e) => e.companyId === companyId && e.actor === "public" && e.linkId)
       .map((e) => ({ linkId: e.linkId!, action: e.action, createdAt: e.createdAt }));
     return joinLinkUsage(links, events);
+  }
+}
+
+/** Dev mode has no real users, so there is no profile to edit and no row to
+ * hold notification preferences — the Account section checks isAvailable()
+ * and says so instead of offering controls that cannot persist. */
+export class LocalAccountStore implements AccountStore {
+  private static readonly REASON =
+    "Account settings need the Supabase backend with auth enabled — this dev backend has no real accounts.";
+  isAvailable(): boolean {
+    return false;
+  }
+  async getDisplayName(): Promise<null> {
+    return null;
+  }
+  async setDisplayName(): Promise<never> {
+    throw new Error(LocalAccountStore.REASON);
+  }
+  async getNotificationPrefs() {
+    return { inviteAccepted: true, weeklyDigest: true, linkExpiring: true };
+  }
+  async setNotificationPrefs(): Promise<never> {
+    throw new Error(LocalAccountStore.REASON);
   }
 }
 
@@ -294,6 +436,32 @@ export class LocalPublicLinkStore implements PublicLinkStore {
   }
   async list(): Promise<never[]> {
     return [];
+  }
+  /** READ-ONLY, like Insights' per-link card: this backend cannot issue a
+   * link, but a seeded collection still renders in the Sharing inventory so
+   * the surface is demoable. The join is the shared, tested predicate. */
+  async listAll(companyId: string): Promise<CompanyTemplateLink[]> {
+    const db = readDb();
+    const templates = (db.templates as TemplateSchema[]).map((t) => ({
+      id: t.id,
+      name: t.name,
+      companyId: t.companyId,
+    }));
+    const links = (db.templateLinks as TemplateLinkRec[]).map((l) => ({
+      id: l.id,
+      name: l.name,
+      templateId: l.templateId,
+      // The dev collection stores only the fields Insights needs; the rest
+      // take the column defaults from 0026.
+      allowUploads: true,
+      expiresAt: null,
+      useCap: null,
+      useCount: 0,
+      revokedAt: l.revokedAt ?? null,
+      createdAt: l.createdAt,
+      lastUsedAt: null,
+    }));
+    return joinCompanyLinks(links, templates, companyId);
   }
   async create(): Promise<never> {
     throw new Error(LocalPublicLinkStore.REASON);
@@ -353,6 +521,14 @@ export class LocalDesignImportProvider implements DesignImportProvider {
   }
   async canvaStatus(): Promise<{ enabled: boolean; connected: boolean }> {
     return { enabled: false, connected: false };
+  }
+  /** Nothing to report: the Integrations section checks isConfigured() first
+   * and explains the dev backend instead of rendering these rows. */
+  async connectionInfo(): Promise<never[]> {
+    return [];
+  }
+  async disconnect(): Promise<never> {
+    throw new Error("Integrations require the Supabase backend (see .env.example).");
   }
   async canvaConnectStart(): Promise<never> {
     throw new Error("Canva integration requires the Supabase backend.");

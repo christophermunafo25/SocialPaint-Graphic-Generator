@@ -31,7 +31,12 @@ Deno.serve(async (req) => {
   try {
     const body = await parseBody(req);
     const companyId = requireUuid(body.companyId, "companyId");
-    const action = requireEnum(body.action, "action", ["status", "start", "callback"] as const);
+    const action = requireEnum(body.action, "action", [
+      "status",
+      "start",
+      "callback",
+      "disconnect",
+    ] as const);
     const code = optionalString(body.code, "code", 2048);
     const state = optionalString(body.state, "state", 256);
 
@@ -49,6 +54,21 @@ Deno.serve(async (req) => {
         .eq("provider", "canva")
         .maybeSingle();
       return json({ enabled: true, connected: Boolean(data) });
+    }
+
+    // Disconnect works even when the feature flag is off: a stored token
+    // should always be severable, whatever the flag says today.
+    if (action === "disconnect") {
+      const { error } = await db
+        .from("integration_connections")
+        .delete()
+        .eq("company_id", companyId)
+        .eq("provider", "canva");
+      if (error) {
+        logError("canva-auth", error);
+        return json({ error: "Could not disconnect — try again." }, 500);
+      }
+      return json({ ok: true });
     }
 
     if (!canvaEnabled()) return json({ error: "Canva auto-build is not enabled." }, 501);

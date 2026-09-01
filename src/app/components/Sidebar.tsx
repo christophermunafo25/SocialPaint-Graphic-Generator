@@ -89,10 +89,12 @@ const NAV: NavItem[] = [
   },
   { label: "People", route: { name: "people" }, Icon: Users, adminOnly: true, matches: ["people"] },
   {
+    // Members reach Settings too — the page lands them on Account (theme,
+    // sign out) and hides the admin sections.
     label: "Settings & Admin",
     route: { name: "settings" },
     Icon: Settings,
-    adminOnly: true,
+    adminOnly: false,
     matches: ["settings"],
   },
 ];

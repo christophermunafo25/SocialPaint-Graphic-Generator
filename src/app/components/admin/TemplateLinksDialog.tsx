@@ -201,6 +201,9 @@ export function TemplateLinksDialog({
 
             <CreateLinkForm
               busy={busy}
+              defaults={
+                company?.linkDefaults ?? { allowUploads: true, expiryDays: null, useCap: null }
+              }
               onCreate={(input) => {
                 if (!company) return;
                 void run(async () => {
@@ -299,9 +302,13 @@ function FreshLink({ url, copied, onCopy }: { url: string; copied: boolean; onCo
 
 function CreateLinkForm({
   busy,
+  defaults,
   onCreate,
 }: {
   busy: boolean;
+  /** Workspace-level starting values (Settings → Sharing). Defaults, not
+   * caps — everything below stays editable per link. */
+  defaults: import("@/lib/types").CompanyLinkDefaults;
   onCreate(input: {
     name?: string;
     expiresAt?: string | null;
@@ -310,9 +317,14 @@ function CreateLinkForm({
   }): void;
 }) {
   const [name, setName] = useState("");
-  const [expires, setExpires] = useState("");
-  const [cap, setCap] = useState("");
-  const [allowUploads, setAllowUploads] = useState(true);
+  const [expires, setExpires] = useState(() => {
+    if (defaults.expiryDays === null) return "";
+    const d = new Date();
+    d.setDate(d.getDate() + defaults.expiryDays);
+    return d.toISOString().slice(0, 10);
+  });
+  const [cap, setCap] = useState(defaults.useCap === null ? "" : String(defaults.useCap));
+  const [allowUploads, setAllowUploads] = useState(defaults.allowUploads);
 
   const submit = () => {
     const capValue = cap.trim() ? Number(cap.trim()) : null;

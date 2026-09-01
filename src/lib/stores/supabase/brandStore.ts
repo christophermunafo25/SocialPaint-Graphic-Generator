@@ -25,6 +25,8 @@ export class SupabaseBrandKitStore implements BrandKitStore {
       heading_font: kit.headingFont ?? null,
       body_font: kit.bodyFont ?? null,
       primary_logo_asset_id: kit.primaryLogoAssetId ?? null,
+      allow_style_override: kit.allowStyleOverride ?? false,
+      allow_off_palette: kit.allowOffPalette ?? true,
       is_active: true,
       updated_at: new Date().toISOString(),
     };

@@ -1,5 +1,6 @@
 import type {
   DailyActivityPoint,
+  MonthlyUsage,
   PublicLinkUsageRow,
   UsageAction,
   UsageActor,
@@ -8,6 +9,7 @@ import type {
 } from "../../types";
 import type { UsageStore } from "../interfaces";
 import { bucketDailyActivity } from "../dailyActivity";
+import { monthStartIso, summarizeMonthlyUsage } from "../monthlyUsage";
 import { joinLinkUsage, type LinkEvent, type LinkRecord } from "../publicLinkUsage";
 import { supabase } from "./client";
 
@@ -82,10 +84,17 @@ export class SupabaseUsageStore implements UsageStore {
     return { rows, totalDownloads: rows.reduce((n, r) => n + r.downloads, 0) };
   }
 
-  async getDailyActivity(companyId: string, days: number): Promise<DailyActivityPoint[]> {
+  async getDailyActivity(
+    companyId: string,
+    days: number,
+    timeZone?: string,
+  ): Promise<DailyActivityPoint[]> {
+    // A day of slack on the fetch window: the exact day boundaries belong to
+    // bucketDailyActivity (which follows the workspace timezone); this filter
+    // only has to be generous.
     const since = new Date();
     since.setHours(0, 0, 0, 0);
-    since.setDate(since.getDate() - (days - 1));
+    since.setDate(since.getDate() - days);
     const { data, error } = await supabase()
       .from("usage_events")
       .select("action, actor, created_at")
@@ -99,7 +108,59 @@ export class SupabaseUsageStore implements UsageStore {
         createdAt: e.created_at,
       })),
       days,
+      timeZone,
     );
+  }
+
+  async getMonthlyUsage(companyId: string, timeZone = "UTC"): Promise<MonthlyUsage> {
+    const { data, error } = await supabase()
+      .from("usage_events")
+      .select("template_id, user_id, action, actor, created_at")
+      .eq("company_id", companyId)
+      .gte("created_at", monthStartIso(timeZone));
+    if (error) throw error;
+    return summarizeMonthlyUsage(
+      (
+        data as Array<{
+          template_id: string;
+          user_id: string | null;
+          action: UsageAction;
+          actor: UsageActor;
+          created_at: string;
+        }>
+      ).map((e) => ({
+        templateId: e.template_id,
+        userId: e.user_id,
+        action: e.action,
+        actor: e.actor,
+        createdAt: e.created_at,
+      })),
+      timeZone,
+    );
+  }
+
+  async listEvents(companyId: string) {
+    const { data, error } = await supabase()
+      .from("usage_events")
+      .select("template_id, user_id, action, actor, created_at")
+      .eq("company_id", companyId)
+      .order("created_at");
+    if (error) throw error;
+    return (
+      data as Array<{
+        template_id: string;
+        user_id: string | null;
+        action: UsageAction;
+        actor: UsageActor;
+        created_at: string;
+      }>
+    ).map((e) => ({
+      templateId: e.template_id,
+      userId: e.user_id,
+      action: e.action,
+      actor: e.actor,
+      createdAt: e.created_at,
+    }));
   }
 
   /** Two reads rather than one embedded query: a link that nobody has opened

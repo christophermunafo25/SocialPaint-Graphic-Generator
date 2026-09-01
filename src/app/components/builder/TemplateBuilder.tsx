@@ -221,7 +221,12 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
   const { navigate } = useRouter();
   const viewportOk = useViewportAtLeast(BUILDER_MIN_VIEWPORT_PX);
 
-  const presetsState = useAsync<CanvasPreset[]>(() => stores.companies.listCanvasPresets(), []);
+  // Scoped to the company: sizes the workspace turned off in Settings do
+  // not appear in the picker.
+  const presetsState = useAsync<CanvasPreset[]>(
+    () => stores.companies.listCanvasPresets(company?.id),
+    [company],
+  );
   const presets = presetsState.status === "ready" ? presetsState.data : [];
   const templateState = useAsync<TemplateSchema | null>(
     () => (templateId ? stores.templates.get(templateId) : Promise.resolve(null)),
@@ -2174,6 +2179,7 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
         singleSelected?.typeStyleKey
           ? kit?.typeStyles?.find((t) => t.key === singleSelected.typeStyleKey)
           : undefined,
+        kit,
       ),
     [singleSelected, kit],
   );

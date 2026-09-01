@@ -8,12 +8,16 @@ import {
 } from "../_shared/http.ts";
 import { parseBody, requireEnum, requireString, requireUuid } from "../_shared/validate.ts";
 
-/** Store a Figma credential for a company.
+/** Store — or sever — a Figma credential for a company.
  *
  * v1 primary path: a personal access token (kind "pat"), validated against
  * /v1/me before storing. OAuth (kind "oauth-code") exchanges the code using
  * FIGMA_CLIENT_ID / FIGMA_CLIENT_SECRET — set those secrets and register
- * FIGMA_OAUTH_REDIRECT_URI to enable it (see docs/ARCHITECTURE.md). */
+ * FIGMA_OAUTH_REDIRECT_URI to enable it (see docs/ARCHITECTURE.md).
+ *
+ * action "disconnect" (Settings → Integrations) deletes the connection row,
+ * so a departed admin's token stops working against their Figma account the
+ * moment someone severs it. Admin-only, like connecting. */
 Deno.serve(async (req) => {
   const options = handleOptions(req);
   if (options) return options;
@@ -21,11 +25,29 @@ Deno.serve(async (req) => {
   try {
     const body = await parseBody(req);
     const companyId = requireUuid(body.companyId, "companyId");
-    const kind = requireEnum(body.kind, "kind", ["pat", "oauth-code"] as const);
-    const value = requireString(body.value, "value", 2048);
+    const action =
+      body.action === undefined
+        ? "connect"
+        : requireEnum(body.action, "action", ["connect", "disconnect"] as const);
 
     const caller = await requireRole(req, companyId, "admin");
     if ("error" in caller) return json({ error: caller.error }, caller.status);
+
+    if (action === "disconnect") {
+      const { error } = await serviceClient()
+        .from("integration_connections")
+        .delete()
+        .eq("company_id", companyId)
+        .eq("provider", "figma");
+      if (error) {
+        logError("figma-connect", error);
+        return json({ error: "Could not disconnect — try again." }, 500);
+      }
+      return json({ ok: true });
+    }
+
+    const kind = requireEnum(body.kind, "kind", ["pat", "oauth-code"] as const);
+    const value = requireString(body.value, "value", 2048);
 
     let accessToken = value;
     let refreshToken: string | null = null;
@@ -87,6 +109,7 @@ Deno.serve(async (req) => {
         access_token: accessToken,
         refresh_token: refreshToken,
         scope,
+        connected_by: caller.userId,
       },
       { onConflict: "company_id,provider" },
     );

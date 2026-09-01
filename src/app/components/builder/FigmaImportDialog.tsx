@@ -3,6 +3,7 @@ import { Figma, RefreshCw, X } from "lucide-react";
 import type { DesignImportResult } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { useRouter } from "../../router";
 
 interface FigmaImportDialogProps {
   onClose(): void;
@@ -15,8 +16,8 @@ interface FigmaImportDialogProps {
  * the client. */
 export function FigmaImportDialog({ onClose, onImported }: FigmaImportDialogProps) {
   const { company } = useAuth();
+  const { navigate } = useRouter();
   const [connected, setConnected] = useState<boolean | null>(null);
-  const [pat, setPat] = useState("");
   const [url, setUrl] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,21 +30,6 @@ export function FigmaImportDialog({ onClose, onImported }: FigmaImportDialogProp
       .then(setConnected)
       .catch(() => setConnected(false));
   }, [company]);
-
-  const connect = async () => {
-    if (!company || !pat.trim()) return;
-    setBusy(true);
-    setError(null);
-    try {
-      await stores.designImport.connect(company.id, { kind: "pat", value: pat.trim() });
-      setConnected(true);
-      setPat("");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not connect to Figma.");
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const runImport = async () => {
     if (!company || !url.trim()) return;
@@ -97,26 +83,21 @@ export function FigmaImportDialog({ onClose, onImported }: FigmaImportDialogProp
             Checking connection…
           </p>
         ) : !connected ? (
+          // Credential entry lives in Settings → Integrations, not inside a
+          // modal about importing a frame — this keeps the short path only.
           <div className="space-y-3">
             <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
-              Connect your company's Figma account with a personal access token (Figma → Settings →
-              Security → Personal access tokens, file-read scope). The token is stored server-side
-              and never reaches this browser again.
+              Figma isn't connected for this workspace. An admin connects it once, in Settings, and
+              imports work for everyone from then on.
             </p>
-            <input
-              type="password"
-              value={pat}
-              onChange={(e) => setPat(e.target.value)}
-              placeholder="figd_…"
-              className="sp-input"
-              style={{ fontFamily: "var(--font-mono)" }}
-            />
             <button
-              onClick={() => void connect()}
-              disabled={busy || !pat.trim()}
+              onClick={() => {
+                onClose();
+                navigate({ name: "settings", section: "integrations" });
+              }}
               className="sp-btn sp-btn-primary w-full"
             >
-              {busy ? "Connecting…" : "Connect Figma"}
+              Open integration settings
             </button>
           </div>
         ) : (

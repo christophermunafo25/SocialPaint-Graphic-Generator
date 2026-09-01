@@ -6,13 +6,18 @@ import type {
   BrandKit,
   CanvasPreset,
   Company,
+  CompanyPatch,
+  CompanyTemplateLink,
   DailyActivityPoint,
   DesignImportResult,
   GenerateInput,
   GenerateRepairInput,
   GenerateRepairResult,
   GenerateResult,
+  IntegrationConnectionInfo,
+  MonthlyUsage,
   NewTemplateInput,
+  NotificationPrefs,
   PublicLinkUsageRow,
   TemplateLink,
   TemplateLinkPatch,
@@ -27,8 +32,30 @@ export interface CompanyStore {
   list(): Promise<Company[]>; // dev switcher needs the full list
   get(id: string): Promise<Company | null>;
   create(input: { name: string; slug: string }): Promise<Company>;
+  /** Settings → Workspace. Admin-only server-side (RLS admin_update_companies
+   * under real auth), same shape of check invite-member makes. */
+  update(id: string, patch: CompanyPatch): Promise<Company>;
+  /** Settings → Advanced. Removes every row for the company (the schema's
+   * cascades do the walking) via the delete-company Edge Function under real
+   * auth. The caller signs the actor out afterwards. */
+  delete(id: string): Promise<void>;
+  /** Live availability for the slug editor. RLS hides other tenants'
+   * companies, so this goes through the slug_available RPC rather than a
+   * select. `excludeCompanyId` is the company being renamed — its own
+   * current slug is always available to itself. */
+  isSlugAvailable(slug: string, excludeCompanyId: string): Promise<boolean>;
   hasAnyCompany(): Promise<boolean>; // first-run / onboarding routing
-  listCanvasPresets(): Promise<CanvasPreset[]>;
+  /** Globally enabled presets, minus the ones `companyId` has turned off in
+   * Settings. Omitting companyId returns the global list (onboarding runs
+   * before a company exists). Never returns empty when the global list is
+   * not: a workspace that somehow disabled everything falls back to all. */
+  listCanvasPresets(companyId?: string): Promise<CanvasPreset[]>;
+  /** Settings → Workspace: every globally enabled preset with this
+   * company's on/off state. */
+  listCanvasPresetSettings(
+    companyId: string,
+  ): Promise<Array<{ preset: CanvasPreset; enabled: boolean }>>;
+  setCanvasPresetEnabled(companyId: string, presetId: string, enabled: boolean): Promise<void>;
 }
 
 export interface TemplateStore {
@@ -69,6 +96,9 @@ export interface PublicLinkStore {
   revoke(companyId: string, linkId: string): Promise<TemplateLink>;
   /** New token, old token dead, in one action. */
   regenerate(companyId: string, linkId: string): Promise<TemplateLinkWithToken>;
+  /** Every link across the company's templates, newest first — the Sharing
+   * inventory. Includes revoked and expired links; the UI filters. */
+  listAll(companyId: string): Promise<CompanyTemplateLink[]>;
 }
 
 export interface BrandKitStore {
@@ -112,11 +142,30 @@ export interface UsageStore {
     userId?: string,
   ): Promise<void>;
   getUsageSummary(companyId: string): Promise<UsageSummary>;
-  /** Zero-filled day buckets for the Insights trend chart. */
-  getDailyActivity(companyId: string, days: number): Promise<DailyActivityPoint[]>;
+  /** Zero-filled day buckets for the Insights trend chart. `timeZone` is the
+   * workspace's IANA zone — day boundaries follow it, so every admin reads
+   * the same chart (defaults to UTC, matching companies.timezone). */
+  getDailyActivity(
+    companyId: string,
+    days: number,
+    timeZone?: string,
+  ): Promise<DailyActivityPoint[]>;
+  /** Current-calendar-month totals for Settings → Usage & plan. The month
+   * boundary follows `timeZone` too. */
+  getMonthlyUsage(companyId: string, timeZone?: string): Promise<MonthlyUsage>;
   /** Per-link traffic, for an admin running several links to one template.
    * Links with no traffic are included — an untouched link is a finding. */
   getPublicLinkUsage(companyId: string): Promise<PublicLinkUsageRow[]>;
+  /** Every raw event, for the workspace data export (admin-read under RLS). */
+  listEvents(companyId: string): Promise<
+    Array<{
+      templateId: string;
+      action: UsageAction;
+      actor: import("../types").UsageActor;
+      userId: string | null;
+      createdAt: string;
+    }>
+  >;
 }
 
 export interface DesignImportProvider {
@@ -168,6 +217,12 @@ export interface DesignImportProvider {
     state: string,
     redirectUri: string,
   ): Promise<void>;
+  /** Settings → Integrations: connection state and provenance for every
+   * provider. Never the token — status rows show who connected and when. */
+  connectionInfo(companyId: string): Promise<IntegrationConnectionInfo[]>;
+  /** Severs a provider connection (admin-verified server-side). Imports and
+   * auto-build stop working until someone reconnects. */
+  disconnect(companyId: string, provider: "figma" | "canva"): Promise<void>;
 }
 
 /** Generate: a member's brief in, filled-template proposals out, through the
@@ -195,8 +250,23 @@ export interface StyleImportResult {
  * v1 ships a stub; a vision-model implementation can drop in later. */
 export type DetectFields = (imageUrl: string) => Promise<import("../types").TemplateField[]>;
 
+/** The signed-in user's own profile and preferences (Settings → Account).
+ * Real accounts only: the localStorage dev backend has no users, says so via
+ * isAvailable(), and the Account section explains instead of offering
+ * controls that cannot work. */
+export interface AccountStore {
+  isAvailable(): boolean;
+  getDisplayName(userId: string): Promise<string | null>;
+  setDisplayName(userId: string, name: string): Promise<void>;
+  /** Absent row resolves to all-on defaults — flipping delivery on later
+   * honors what people chose rather than starting everyone silent. */
+  getNotificationPrefs(userId: string): Promise<NotificationPrefs>;
+  setNotificationPrefs(userId: string, prefs: NotificationPrefs): Promise<void>;
+}
+
 export interface Stores {
   companies: CompanyStore;
+  account: AccountStore;
   templates: TemplateStore;
   brandKits: BrandKitStore;
   brandAssets: BrandAssetStore;

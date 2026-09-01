@@ -230,7 +230,7 @@ export function FieldInspector(props: FieldInspectorProps) {
   // the style list only ever offers faces the chosen family really has.
 
   const boundStyle = getTypeStyle(kit, field.typeStyleKey);
-  const locked = lockedProperties(boundStyle);
+  const locked = lockedProperties(boundStyle, kit);
   const resolved = resolveFieldStyle(field, kit);
   /** The sizing mode the field actually renders with — a bound type style
    * can lock it, exactly like any other locked property. */

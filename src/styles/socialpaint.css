@@ -936,6 +936,64 @@ optgroup {
   box-shadow: var(--focus-ring-tight);
 }
 
+/* Settings & Admin: persistent section rail + content pane. Below 900px the
+   rail collapses to a horizontal scroller above the content — same
+   one-column-first shape as .sp-brand-layout, with the rail leading because
+   it is navigation, not a preview. */
+.sp-settings-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-lg);
+  align-items: start;
+}
+.sp-settings-rail {
+  display: flex;
+  flex-direction: row;
+  gap: 2px;
+  overflow-x: auto;
+  /* Room for the focus ring so the scroller doesn't clip it. */
+  padding: 2px;
+  margin: -2px;
+}
+.sp-settings-rail button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius-control);
+  font-size: var(--type-label-size);
+  color: var(--text-secondary);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background var(--dur-state) var(--ease),
+    color var(--dur-state) var(--ease);
+}
+.sp-settings-rail button:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+.sp-settings-rail button[data-active="true"] {
+  background: var(--sb-active-bg);
+  color: var(--sb-fg-active);
+}
+.sp-settings-rail button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-tight);
+}
+@media (min-width: 900px) {
+  .sp-settings-layout {
+    grid-template-columns: 200px minmax(0, 1fr);
+  }
+  .sp-settings-rail {
+    flex-direction: column;
+    overflow-x: visible;
+    position: sticky;
+    top: var(--space-lg);
+  }
+}
+
 /* Brand-moment surface (hero headers, identity chips). The Voltage→Sunshine
    gradient — everything ON it is Ink, no exceptions, both themes (Ink is
    the only legible glyph on any brand fill; white never clears contrast
