@@ -431,12 +431,11 @@ html {
   --accent-border: color-mix(in srgb, var(--text-primary) 40%, transparent);
   --danger-wash: color-mix(in srgb, var(--state-danger) 16%, transparent);
 
-  /* Brand-moment surface — the sign-in and onboarding front doors. The one
-     sanctioned gradient in the chrome: Voltage grounding the bottom-left,
-     Sunshine lifting the top-right — the two greens make the cleaner sweep
-     (Voltage into Aqua crosses too much hue for a surface). Ink is the fg
-     across the WHOLE ramp, so --brand-surface-fg never changes. */
-  --brand-surface: linear-gradient(to top right, var(--voltage), var(--sunshine));
+  /* Brand-moment surface — the sign-in and onboarding front doors. Flat in
+     the logo green since the 2026-09 brand refresh: the ramp read as a
+     second green against the lockup sitting right above it. Ink stays the
+     fg, as on every brand fill. */
+  --brand-surface: var(--voltage-logo);
   --brand-surface-fg: var(--text-on-brand);
 
   /* Charts label categories, so distinct hues are legitimate here — they
@@ -1001,18 +1000,12 @@ optgroup {
   }
 }
 
-/* Brand-moment surface (hero headers, identity chips). The Voltage→Sunshine
-   gradient — everything ON it is Ink, no exceptions, both themes (Ink is
-   the only legible glyph on any brand fill; white never clears contrast
-   here). */
+/* Brand-moment surface (hero headers, identity chips). Flat logo green —
+   everything ON it is Ink, no exceptions, both themes (Ink is the only
+   legible glyph on any brand fill; white never clears contrast here). */
 .sp-mesh {
   background: var(--brand-surface);
   color: var(--brand-surface-fg);
-}
-/* Flat variant (sign-in): the logo green, no ramp — Ink stays the glyph
-   color, same as on every brand fill. */
-.sp-mesh--flat {
-  background: var(--voltage-logo);
 }
 .sp-mesh .sp-eyebrow {
   color: var(--brand-surface-fg);
