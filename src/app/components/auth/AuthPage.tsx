@@ -109,7 +109,7 @@ export function AuthPage() {
           borderRadius: "var(--radius-card)",
         }}
       >
-        <div className="sp-mesh px-7 pt-7 pb-6">
+        <div className="sp-mesh sp-mesh--flat px-7 pt-7 pb-6">
           <p className="sp-eyebrow mb-1" style={{ color: "var(--brand-surface-fg)" }}>
             Brand template portal
           </p>
