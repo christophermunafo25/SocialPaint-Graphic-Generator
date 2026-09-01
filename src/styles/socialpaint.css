@@ -110,6 +110,9 @@ html {
    these in product code. */
 :root {
   --voltage: #8fff6c;
+  /* The green the 2026-09 logo set is drawn in — the sign-in header holds
+     this flat so the lockup above it and the surface below it match. */
+  --voltage-logo: #9bff49;
   --wednesdays: #ff94f9;
   --fire: #ff6d39;
   --aqua: #7bf2fe;
@@ -1005,6 +1008,11 @@ optgroup {
 .sp-mesh {
   background: var(--brand-surface);
   color: var(--brand-surface-fg);
+}
+/* Flat variant (sign-in): the logo green, no ramp — Ink stays the glyph
+   color, same as on every brand fill. */
+.sp-mesh--flat {
+  background: var(--voltage-logo);
 }
 .sp-mesh .sp-eyebrow {
   color: var(--brand-surface-fg);
