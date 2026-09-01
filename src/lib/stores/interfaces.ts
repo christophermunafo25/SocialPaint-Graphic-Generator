@@ -1,10 +1,10 @@
 // Data-layer contracts. Components import ONLY these interfaces (via the
 // factory in ./index.ts) — nothing outside src/lib touches a backend client.
 
+import type { CanvasSize } from "../templates/platforms";
 import type {
   BrandAsset,
   BrandKit,
-  CanvasPreset,
   Company,
   CompanyPatch,
   CompanyTemplateLink,
@@ -45,17 +45,18 @@ export interface CompanyStore {
    * current slug is always available to itself. */
   isSlugAvailable(slug: string, excludeCompanyId: string): Promise<boolean>;
   hasAnyCompany(): Promise<boolean>; // first-run / onboarding routing
-  /** Globally enabled presets, minus the ones `companyId` has turned off in
-   * Settings. Omitting companyId returns the global list (onboarding runs
-   * before a company exists). Never returns empty when the global list is
-   * not: a workspace that somehow disabled everything falls back to all. */
-  listCanvasPresets(companyId?: string): Promise<CanvasPreset[]>;
-  /** Settings → Workspace: every globally enabled preset with this
-   * company's on/off state. */
-  listCanvasPresetSettings(
+  /** The company's ENABLED subset of SIZE_CATALOG — dimension data always
+   * comes from the catalogue in code; the store only records which entries a
+   * workspace turned off. Omitting companyId returns the full catalogue
+   * (onboarding runs before a company exists). Never returns empty: a
+   * workspace that somehow disabled everything falls back to all. */
+  listCanvasSizes(companyId?: string): Promise<CanvasSize[]>;
+  /** Settings → Workspace: every catalogue size with this company's on/off
+   * state. */
+  listCanvasSizeSettings(
     companyId: string,
-  ): Promise<Array<{ preset: CanvasPreset; enabled: boolean }>>;
-  setCanvasPresetEnabled(companyId: string, presetId: string, enabled: boolean): Promise<void>;
+  ): Promise<Array<{ size: CanvasSize; enabled: boolean }>>;
+  setCanvasSizeEnabled(companyId: string, sizeId: string, enabled: boolean): Promise<void>;
 }
 
 export interface TemplateStore {

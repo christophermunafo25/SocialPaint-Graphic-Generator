@@ -5,7 +5,6 @@ import type {
   BrandColor,
   BrandKit,
   BrandTypeStyle,
-  CanvasPreset,
   Company,
   FontRef,
   TemplateField,
@@ -44,16 +43,6 @@ export const toCompany = (r: CompanyRow): Company => ({
     useCap: r.link_default_use_cap ?? null,
   },
 });
-
-export interface CanvasPresetRow {
-  id: string;
-  label: string;
-  width: number;
-  height: number;
-  enabled: boolean;
-}
-
-export const toCanvasPreset = (r: CanvasPresetRow): CanvasPreset => ({ ...r });
 
 export interface BrandKitRow {
   id: string;

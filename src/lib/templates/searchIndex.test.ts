@@ -27,8 +27,8 @@ const mk = (
   ...extra,
 });
 
-/** Sizes are the seeded canvas_presets, plus one deliberately unseeded size
- *  to prove a custom canvas still indexes and searches. */
+/** A mix of catalogue sizes, to prove any canvas — catalogue or custom —
+ *  indexes and searches by its own dimensions. */
 const TEMPLATES = [
   mk("Quote card — centered", 1200, 627, {
     description: "A short pull quote over a solid field.",
@@ -124,7 +124,7 @@ describe("dimension search", () => {
   });
 
   it("matches an unseeded custom size", () => {
-    // 1080×1350 is not a canvas_presets row; it still has to be findable.
+    // Dimensions index from the template itself, not from any size table.
     expect(names("1080 1350")).toEqual(["Portrait promo"]);
   });
 

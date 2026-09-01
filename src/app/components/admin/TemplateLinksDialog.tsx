@@ -536,8 +536,10 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 /** The admin's view of why a link would refuse. The PUBLIC page shows one
  * message for all of these — a visitor cannot act on the difference — but an
- * admin absolutely can, and this is the one place the distinction belongs. */
-function linkState(link: TemplateLink): { label: string; live: boolean } {
+ * admin absolutely can, and this is the one place the distinction belongs.
+ * Exported: the builder's resize confirmation counts live links with the
+ * same definition, so the two surfaces can never disagree. */
+export function linkState(link: TemplateLink): { label: string; live: boolean } {
   if (link.revokedAt) return { label: `Revoked ${shortDate(link.revokedAt)}`, live: false };
   if (link.expiresAt && Date.parse(link.expiresAt) <= Date.now()) {
     return { label: `Expired ${shortDate(link.expiresAt)}`, live: false };

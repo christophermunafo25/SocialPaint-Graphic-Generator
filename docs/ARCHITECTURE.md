@@ -53,9 +53,9 @@ from the platform in migration 0009.)
   font refs, primary logo) — one active per company. Unlimited colors, type
   styles, and rules.
 - `brand_assets` (logo | font | image; Storage-backed)
-- `canvas_presets` — reference data; the ONLY seeded table. v1 enables just
-  `square-1440`. Adding Instagram/Story/etc. sizes is a data change, not code:
-  flip/insert a row.
+- `company_canvas_presets` — per-workspace canvas-size opt-outs, keyed by
+  `SIZE_CATALOG` ids (`src/lib/templates/platforms.ts`, the single source of
+  size dimension data since 0029; the old `canvas_presets` table is gone).
 - `templates` + `template_fields` — the heart of the system; see
   `docs/TEMPLATE_SCHEMA.md`
 - `usage_events` (`open` | `download`) — recorded inside `SchemaRenderer` so

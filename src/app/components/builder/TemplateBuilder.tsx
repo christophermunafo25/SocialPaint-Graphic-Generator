@@ -27,13 +27,13 @@ import {
 } from "lucide-react";
 import type {
   AutoBuildResult,
-  CanvasPreset,
   DesignImportResult,
   FieldValues,
   ImportIssue,
   LayoutGroup,
   NewTemplateInput,
   TemplateField,
+  TemplateLink,
   TemplateSchema,
 } from "@/lib/types";
 import { groupChildRef, isFreeGroup } from "@/lib/types";
@@ -123,6 +123,10 @@ import {
   ungroup,
 } from "./groupOps";
 import { ConfirmDialog } from "../ConfirmDialog";
+import { linkState } from "../admin/TemplateLinksDialog";
+import type { CanvasSize } from "@/lib/templates/platforms";
+import { rescaleTemplate } from "@/lib/templates/rescale";
+import { CanvasSizePicker } from "./CanvasSizePicker";
 import { ShortcutsPanel } from "./ShortcutsPanel";
 import { AlignControls } from "./AlignControls";
 import { SelectionToolbar } from "./SelectionToolbar";
@@ -223,11 +227,11 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
 
   // Scoped to the company: sizes the workspace turned off in Settings do
   // not appear in the picker.
-  const presetsState = useAsync<CanvasPreset[]>(
-    () => stores.companies.listCanvasPresets(company?.id),
+  const sizesState = useAsync<CanvasSize[]>(
+    () => stores.companies.listCanvasSizes(company?.id),
     [company],
   );
-  const presets = presetsState.status === "ready" ? presetsState.data : [];
+  const sizes = sizesState.status === "ready" ? sizesState.data : [];
   const templateState = useAsync<TemplateSchema | null>(
     () => (templateId ? stores.templates.get(templateId) : Promise.resolve(null)),
     [templateId],
@@ -386,16 +390,79 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     fieldId: string | null;
     canvasPoint: { x: number; y: number };
   } | null>(null);
+  /** Anchor for the canvas-size popover (the footer's size eyebrow). */
+  const [sizeMenuAt, setSizeMenuAt] = useState<{ x: number; y: number } | null>(null);
+  /** A resize waiting on the live-link confirmation: a published template
+   * with active share links never changes size silently. */
+  const [pendingResize, setPendingResize] = useState<{
+    next: { width: number; height: number };
+    liveLinks: TemplateLink[];
+  } | null>(null);
 
   useEffect(() => {
-    // v1: the creation picker is locked to the single enabled preset, but
-    // dimensions always flow preset → schema → renderer/export.
-    if (presetsState.status !== "ready" || templateId) return;
-    const first = presetsState.data[0];
-    // Baseline, not an edit: applying the preset dims must not be undoable.
+    // A new template defaults to the company's first enabled size; the start
+    // screen's picker changes it from there. Dimensions always flow
+    // size → schema → renderer/export.
+    if (sizesState.status !== "ready" || templateId) return;
+    const first = sizesState.data[0];
+    // Baseline, not an edit: establishing the canvas must not be undoable.
     if (first)
       resetHistory((d) => ({ ...d, canvasWidth: first.width, canvasHeight: first.height }));
-  }, [presetsState, templateId, resetHistory]);
+  }, [sizesState, templateId, resetHistory]);
+
+  /** Start-screen size pick. Same baseline rule as the default above —
+   * establishing the canvas is not an undoable edit. */
+  const pickCreationSize = useCallback(
+    (next: { width: number; height: number }) =>
+      resetHistory((d) => ({ ...d, canvasWidth: next.width, canvasHeight: next.height })),
+    [resetHistory],
+  );
+
+  /** Rescale the open template in place — one history entry, so a single
+   * undo restores the previous canvas. */
+  const applyResize = (next: { width: number; height: number }) => {
+    setSizeMenuAt(null);
+    if (next.width === draft.canvasWidth && next.height === draft.canvasHeight) return;
+    const { draft: rescaled, warnings } = rescaleTemplate(draft, next);
+    setDraft(() => rescaled);
+    setNotice(
+      `Canvas resized to ${next.width}×${next.height}.` +
+        (warnings.length ? ` ${warnings.map((w) => w.message).join(" ")}` : ""),
+    );
+    window.clearTimeout(noticeTimer.current);
+    noticeTimer.current = window.setTimeout(() => setNotice(null), warnings.length ? 15000 : 8000);
+  };
+
+  /** Resize entry point. A published template served through live share
+   * links gets a confirmation naming them first — resizing changes what
+   * every holder of those links receives, with no notice to them. */
+  const requestResize = (next: { width: number; height: number }) => {
+    if (next.width === draft.canvasWidth && next.height === draft.canvasHeight) {
+      setSizeMenuAt(null);
+      return;
+    }
+    if (draft.status === "published" && savedId && company && stores.publicLinks.isAvailable()) {
+      void stores.publicLinks
+        .list(company.id, savedId)
+        .then((links) => {
+          const live = links.filter((l) => linkState(l).live);
+          if (live.length > 0) {
+            setSizeMenuAt(null);
+            setPendingResize({ next, liveLinks: live });
+          } else {
+            applyResize(next);
+          }
+        })
+        .catch(() => {
+          // Fail closed: without knowing who holds a live link, the resize
+          // does not happen.
+          setSizeMenuAt(null);
+          setError("We couldn't check this template's share links, so the size wasn't changed.");
+        });
+      return;
+    }
+    applyResize(next);
+  };
 
   useEffect(() => {
     if (templateState.status !== "ready" || !templateState.data) return;
@@ -1766,7 +1833,13 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       ? ` Fonts not available here: ${missingFonts.join(", ")} — that text shows its Figma render until you upload them in Brand Studio.`
       : "";
 
-    setNotice(opts.summary(imported) + fontNote);
+    // An import sizes the canvas from the frame, not from the picker — said
+    // out loud rather than silently replacing the admin's choice.
+    const sizeNote =
+      opts.canvasWidth !== draft.canvasWidth || opts.canvasHeight !== draft.canvasHeight
+        ? ` Canvas set to the frame's own size, ${opts.canvasWidth}×${opts.canvasHeight}.`
+        : "";
+    setNotice(opts.summary(imported) + sizeNote + fontNote);
     window.clearTimeout(noticeTimer.current);
     noticeTimer.current = window.setTimeout(() => setNotice(null), 8000);
 
@@ -2275,14 +2348,14 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
       />
     );
   }
-  // A new template needs the canvas presets before the source picker makes
+  // A new template needs the canvas sizes before the source picker makes
   // sense; when editing, dimensions come from the loaded template instead.
-  if (!templateId && presetsState.status === "error") {
+  if (!templateId && sizesState.status === "error") {
     return (
       <ErrorState
         title="We couldn't load the canvas sizes."
         detail="Check your connection and try again."
-        onRetry={presetsState.retry}
+        onRetry={sizesState.retry}
       />
     );
   }
@@ -2394,6 +2467,66 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
           onClose={() => setViewMenuAt(null)}
         />
       )}
+
+      {sizeMenuAt && (
+        <>
+          {/* Click-away backdrop; the popover itself sits above it. */}
+          <div className="fixed inset-0 z-40" onClick={() => setSizeMenuAt(null)} />
+          <div
+            role="dialog"
+            aria-label="Canvas size"
+            className="fixed z-50 p-3 overflow-y-auto"
+            style={{
+              left: Math.max(8, Math.min(sizeMenuAt.x, window.innerWidth - 336)),
+              bottom: Math.max(8, window.innerHeight - sizeMenuAt.y + 6),
+              width: 328,
+              maxHeight: Math.round(window.innerHeight * 0.7),
+              background: "var(--bg-surface)",
+              border: "1px solid var(--border-strong)",
+              borderRadius: "var(--radius-card)",
+            }}
+          >
+            <CanvasSizePicker
+              sizes={sizes}
+              value={{ width: draft.canvasWidth, height: draft.canvasHeight }}
+              onPick={requestResize}
+              aspectLock={
+                draft.backgroundUrl
+                  ? {
+                      reason:
+                        "This template has a background image, so only sizes with the same aspect ratio can apply in place — a different shape is a redesign, not a resize.",
+                    }
+                  : undefined
+              }
+            />
+          </div>
+        </>
+      )}
+
+      <ConfirmDialog
+        open={pendingResize !== null}
+        title="Resize a live template?"
+        description={
+          pendingResize
+            ? `This template is live through ${pendingResize.liveLinks.length} share link${
+                pendingResize.liveLinks.length === 1 ? "" : "s"
+              } (${pendingResize.liveLinks
+                .map((l) => (l.name.trim() ? `"${l.name}"` : "unnamed"))
+                .join(", ")}). Everyone holding ${
+                pendingResize.liveLinks.length === 1 ? "it" : "them"
+              } will start receiving the new ${pendingResize.next.width}×${
+                pendingResize.next.height
+              } size.`
+            : undefined
+        }
+        confirmLabel="Resize"
+        tone="primary"
+        onCancel={() => setPendingResize(null)}
+        onConfirm={() => {
+          if (pendingResize) applyResize(pendingResize.next);
+          setPendingResize(null);
+        }}
+      />
 
       <ConfirmDialog
         open={pendingStack !== null}
@@ -2658,7 +2791,36 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
               <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
                 Build from scratch, or import a designed frame — both end at the same place: locked
                 design, editable fields.
-                {presets[0] && ` Canvas: ${presets[0].label}.`}
+              </p>
+            </div>
+            {/* The size is chosen here, before a path — a baseline, never an
+                undoable edit. Imports state their own exception below. */}
+            <div
+              className="p-4"
+              data-radius-control
+              style={{
+                border: "1px solid var(--border)",
+                borderRadius: "var(--radius-card)",
+                background: "var(--bg-surface)",
+              }}
+            >
+              <p className="sp-eyebrow" style={{ marginBottom: 8 }}>
+                Canvas size — {draft.canvasWidth}×{draft.canvasHeight}
+              </p>
+              <CanvasSizePicker
+                sizes={sizes}
+                value={{ width: draft.canvasWidth, height: draft.canvasHeight }}
+                onPick={pickCreationSize}
+              />
+              <p
+                style={{
+                  fontSize: "var(--type-caption-size)",
+                  color: "var(--text-muted)",
+                  marginTop: 8,
+                }}
+              >
+                Applies when you start blank. A Figma or Canva import replaces this with the
+                imported frame's own size.
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-stretch">
@@ -3095,11 +3257,29 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                 )}
                 {/* Canvas facts live with the canvas: size, status, and the
                     view controls all describe this region, not the document
-                    chrome above it. */}
-                <span className="sp-eyebrow flex-shrink-0 whitespace-nowrap">
-                  {draft.canvasWidth}×{draft.canvasHeight} · {draft.status}
-                  {recomposing ? " · lifting elements off background…" : ""}
-                </span>
+                    chrome above it. In edit mode the size is a control — it
+                    opens the same picker creation uses, for rescaling in
+                    place. */}
+                {mode === "edit" ? (
+                  <button
+                    onClick={(e) => {
+                      const r = e.currentTarget.getBoundingClientRect();
+                      setSizeMenuAt({ x: r.left, y: r.top });
+                    }}
+                    title="Change the canvas size"
+                    aria-haspopup="dialog"
+                    className="sp-eyebrow flex-shrink-0 whitespace-nowrap flex items-center gap-1"
+                    style={{ cursor: "pointer" }}
+                  >
+                    {draft.canvasWidth}×{draft.canvasHeight} · {draft.status}
+                    {recomposing ? " · lifting elements off background…" : ""}
+                    <ChevronDown style={{ width: 11, height: 11 }} />
+                  </button>
+                ) : (
+                  <span className="sp-eyebrow flex-shrink-0 whitespace-nowrap">
+                    {draft.canvasWidth}×{draft.canvasHeight} · {draft.status}
+                  </span>
+                )}
                 {mode === "edit" && (
                   <button
                     onClick={(e) => {

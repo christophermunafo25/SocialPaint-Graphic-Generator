@@ -39,9 +39,9 @@ export interface Platform {
 }
 
 /** Fixed display order. `general` sits last: it is not a social platform but
- *  the bucket for platform-neutral sizes, which the repo ships one of
- *  (square-1440). Without it, every template built on the default canvas
- *  would be unclassifiable. */
+ *  the bucket for platform-neutral sizes, which the catalogue ships one of
+ *  (general-square-1440). Without it, every template built on the default
+ *  canvas would be unclassifiable. */
 export const PLATFORMS: Platform[] = [
   { id: "linkedin", label: "LinkedIn", Icon: Linkedin },
   { id: "instagram", label: "Instagram", Icon: Instagram },
@@ -74,31 +74,137 @@ export interface SizeMeaning {
   assetType: string;
 }
 
-export const KNOWN_SIZES: Array<{ width: number; height: number } & SizeMeaning> = [
+/** One entry of the canonical size catalogue: a known canvas size, its
+ *  meaning, and a stable id derived from the primary platform and the
+ *  dimensions. The id is what `company_canvas_presets` rows and the size
+ *  picker reference — it must never change once shipped. */
+export interface CanvasSize extends SizeMeaning {
+  id: string;
+  width: number;
+  height: number;
+}
+
+/** THE size catalogue — the single source of dimension data for the whole
+ *  product. The picker, the Settings enable list, classification, and search
+ *  all read from here; nothing else stores a width or height per size. */
+export const SIZE_CATALOG: CanvasSize[] = [
+  // First on purpose: the first enabled entry is the default for a blank
+  // template, and the platform-neutral square has been that default since v1.
   {
+    id: "general-square-1440",
+    width: 1440,
+    height: 1440,
+    platforms: ["general"],
+    assetType: "Square canvas",
+  },
+  {
+    id: "ig-portrait-1080x1350",
     width: 1080,
     height: 1350,
     platforms: ["instagram", "facebook", "linkedin"],
     assetType: "Portrait post",
   },
-  { width: 1080, height: 1080, platforms: ["instagram", "facebook"], assetType: "Square post" },
-  { width: 1080, height: 566, platforms: ["instagram"], assetType: "Landscape post" },
   {
+    id: "ig-square-1080x1080",
+    width: 1080,
+    height: 1080,
+    platforms: ["instagram", "facebook"],
+    assetType: "Square post",
+  },
+  {
+    id: "ig-landscape-1080x566",
+    width: 1080,
+    height: 566,
+    platforms: ["instagram"],
+    assetType: "Landscape post",
+  },
+  {
+    id: "ig-story-1080x1920",
     width: 1080,
     height: 1920,
-    platforms: ["instagram", "facebook", "linkedin"],
+    platforms: ["instagram", "facebook", "linkedin", "tiktok"],
     assetType: "Story · Reel · Vertical video",
   },
-  { width: 1200, height: 630, platforms: ["facebook"], assetType: "Link preview" },
-  { width: 1200, height: 1200, platforms: ["linkedin"], assetType: "Square post" },
-  { width: 1200, height: 627, platforms: ["linkedin"], assetType: "Landscape post · Link preview" },
-  { width: 1440, height: 1440, platforms: ["general"], assetType: "Square canvas" },
+  {
+    id: "fb-link-1200x630",
+    width: 1200,
+    height: 630,
+    platforms: ["facebook", "web"],
+    assetType: "Link preview · Open Graph",
+  },
+  {
+    id: "li-square-1200x1200",
+    width: 1200,
+    height: 1200,
+    platforms: ["linkedin"],
+    assetType: "Square post",
+  },
+  {
+    id: "li-landscape-1200x627",
+    width: 1200,
+    height: 627,
+    platforms: ["linkedin"],
+    assetType: "Landscape post · Link preview",
+  },
+  {
+    id: "x-landscape-1600x900",
+    width: 1600,
+    height: 900,
+    platforms: ["x"],
+    assetType: "Landscape post",
+  },
+  {
+    id: "yt-thumbnail-1280x720",
+    width: 1280,
+    height: 720,
+    platforms: ["youtube"],
+    assetType: "Thumbnail",
+  },
+  {
+    id: "pinterest-pin-1000x1500",
+    width: 1000,
+    height: 1500,
+    platforms: ["pinterest"],
+    assetType: "Pin",
+  },
+  {
+    id: "email-header-600x200",
+    width: 600,
+    height: 200,
+    platforms: ["email"],
+    assetType: "Email header",
+  },
+  {
+    id: "display-medium-rectangle-300x250",
+    width: 300,
+    height: 250,
+    platforms: ["display"],
+    assetType: "Medium rectangle",
+  },
+  {
+    id: "display-leaderboard-728x90",
+    width: 728,
+    height: 90,
+    platforms: ["display"],
+    assetType: "Leaderboard",
+  },
+  {
+    id: "display-half-page-300x600",
+    width: 300,
+    height: 600,
+    platforms: ["display"],
+    assetType: "Half page",
+  },
 ];
+
+const SIZE_BY_ID = new Map(SIZE_CATALOG.map((s) => [s.id, s]));
+
+export const sizeById = (id: string): CanvasSize | undefined => SIZE_BY_ID.get(id);
 
 /** Exact dimension match only. A near-miss is a different size, not a typo —
  *  guessing would put templates on shelves they don't belong to. */
 export function classifySize(width: number, height: number): SizeMeaning {
-  const hit = KNOWN_SIZES.find((s) => s.width === width && s.height === height);
+  const hit = SIZE_CATALOG.find((s) => s.width === width && s.height === height);
   if (hit) return { platforms: hit.platforms, assetType: hit.assetType };
   // An unseeded size is honestly unclassifiable; it still belongs somewhere
   // the member can find it.
