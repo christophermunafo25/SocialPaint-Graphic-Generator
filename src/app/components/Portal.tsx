@@ -4,7 +4,7 @@ import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { toCatalogTemplate, type CatalogTemplate } from "@/lib/templates/catalog";
-import { buildGroups, groupIdOf, type TemplateGroup } from "@/lib/templates/groups";
+import { buildGroups, groupIdsOf, type TemplateGroup } from "@/lib/templates/groups";
 import { buildSearchIndex, searchTemplates } from "@/lib/templates/searchIndex";
 import { useRouter } from "../router";
 import { Page, PageHeader } from "./layout/Page";
@@ -75,8 +75,10 @@ export function Portal() {
    *  widen the filter. */
   const group = allGroups.find((g) => g.id === rawGroup) ?? null;
 
+  // Membership is inclusive: a multi-platform template answers every one of
+  // its platforms' chips.
   const results = useMemo(
-    () => (group ? searched.filter((t) => groupIdOf(t) === group.id) : searched),
+    () => (group ? searched.filter((t) => groupIdsOf(t).includes(group.id)) : searched),
     [group, searched],
   );
 

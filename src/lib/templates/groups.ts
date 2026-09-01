@@ -1,12 +1,14 @@
 import type { CatalogTemplate } from "./catalog";
-import { PLATFORMS, type Orientation, type Platform } from "./platforms";
+import { PLATFORMS, type Orientation, type Platform, type PlatformId } from "./platforms";
 
-/** A shelf/chip unit: one platform at one shape. Grouping this far down is
- *  what lets a rail's frames all be the same ratio — a row of banners and a
- *  row of stories each sit evenly, instead of every card being letterboxed
- *  into a common square. */
+/** A shelf/chip unit: ONE platform at one shape — never a platform list. A
+ *  template that serves several platforms belongs to each platform's group,
+ *  so a member can filter by just the platform they're posting to. Grouping
+ *  down to the shape is what lets a rail's frames all be the same ratio — a
+ *  row of banners and a row of stories each sit evenly, instead of every
+ *  card being letterboxed into a common square. */
 export interface TemplateGroup {
-  /** URL-safe, stable: "facebook-1-91x1". */
+  /** URL-safe, stable: "facebook-1-91-1". */
   id: string;
   platform: Platform;
   orientation: Orientation;
@@ -38,32 +40,40 @@ const slug = (s: string) =>
     .replace(/^-|-$/g, "")
     .toLowerCase();
 
-/** The group a template belongs to. Deriving this directly means a filter
- *  can be applied without rebuilding the groups off a filtered set — which
- *  would make a selected group vanish the moment a search excluded it. */
-export const groupIdOf = (t: CatalogTemplate): string =>
-  `${t.platforms.join("-")}-${slug(t.aspectRatio)}`;
+/** Every group a template belongs to — one per platform it serves. Deriving
+ *  this directly means a filter can be applied without rebuilding the groups
+ *  off a filtered set — which would make a selected group vanish the moment
+ *  a search excluded it. */
+export const groupIdsOf = (t: CatalogTemplate): string[] =>
+  t.platforms.map((p) => `${p}-${slug(t.aspectRatio)}`);
 
 /**
  * Build the catalogue's groups: platform order first (the fixed list), then
  * shape order within each platform. Empty combinations never appear.
+ *
+ * One group per PLATFORM per shape. A template that serves several platforms
+ * joins each one's group — it shows on the Instagram shelf AND the LinkedIn
+ * shelf, and either chip finds it. The chip label stays a single platform;
+ * multi-platform membership lives on the template, not on the filter.
  */
 export function buildGroups(templates: CatalogTemplate[]): TemplateGroup[] {
-  const buckets = new Map<string, CatalogTemplate[]>();
+  // platform → named ratio → members. The named ratio keeps near-identical
+  // dimensions together (1200×627 and 1200×630 are both "1.91:1") while the
+  // platform axis keeps LinkedIn's and Facebook's shelves apart.
+  const byPlatform = new Map<PlatformId, Map<string, CatalogTemplate[]>>();
   for (const t of templates) {
-    // The platform SET is part of the bucket: 1200×627 (LinkedIn) must not
-    // merge with 1200×630 (Facebook) just because both are 1.91:1.
-    const key = `${t.platforms.join("+")}|${t.aspectRatio}`;
-    const bucket = buckets.get(key);
-    if (bucket) bucket.push(t);
-    else buckets.set(key, [t]);
+    for (const p of t.platforms) {
+      let ratios = byPlatform.get(p);
+      if (!ratios) byPlatform.set(p, (ratios = new Map()));
+      const bucket = ratios.get(t.aspectRatio);
+      if (bucket) bucket.push(t);
+      else ratios.set(t.aspectRatio, [t]);
+    }
   }
 
   const groups: TemplateGroup[] = [];
   for (const platform of PLATFORMS) {
-    // A bucket belongs to the shelf of its PRIMARY platform (first in the
-    // list) — a shared size appears once, labelled with every platform.
-    const mine = [...buckets.values()].filter((members) => members[0].platform === platform.id);
+    const mine = [...(byPlatform.get(platform.id)?.values() ?? [])];
 
     mine.sort(
       (a, b) =>
@@ -83,10 +93,10 @@ export function buildGroups(templates: CatalogTemplate[]): TemplateGroup[] {
 
     for (const members of mine) {
       const head = members[0];
-      const base = `${head.platformLabel} ${ORIENTATION_LABEL[head.orientation]}`;
+      const base = `${platform.label} ${ORIENTATION_LABEL[head.orientation]}`;
       const ambiguous = (orientationCounts.get(head.orientation) ?? 0) > 1;
       groups.push({
-        id: groupIdOf(head),
+        id: `${platform.id}-${slug(head.aspectRatio)}`,
         platform,
         orientation: head.orientation,
         aspectRatio: head.aspectRatio,
