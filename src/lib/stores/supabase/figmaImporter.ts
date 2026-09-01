@@ -107,6 +107,30 @@ export class FigmaImporter implements DesignImportProvider {
     if (error) throw new Error(`Canva connect failed: ${error.message}`);
   }
 
+  async connectionInfo(
+    companyId: string,
+  ): Promise<import("../../types").IntegrationConnectionInfo[]> {
+    const { data, error } = await supabase().functions.invoke("integration-status", {
+      body: { companyId },
+    });
+    if (error) throw new Error(`Could not load integration status: ${error.message}`);
+    return (data as { connections: import("../../types").IntegrationConnectionInfo[] }).connections;
+  }
+
+  async disconnect(companyId: string, provider: "figma" | "canva"): Promise<void> {
+    // Each provider's own auth function owns its lifecycle; disconnect is an
+    // action on it rather than a third place that touches the tokens table.
+    const { error } =
+      provider === "figma"
+        ? await supabase().functions.invoke("figma-connect", {
+            body: { companyId, action: "disconnect" },
+          })
+        : await supabase().functions.invoke("canva-auth", {
+            body: { companyId, action: "disconnect" },
+          });
+    if (error) throw new Error(`Disconnect failed: ${error.message}`);
+  }
+
   async renderLayers(
     companyId: string,
     url: string,

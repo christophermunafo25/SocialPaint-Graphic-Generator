@@ -24,6 +24,10 @@ export function kitShape(kit: BrandKit | null): KitShape {
     headingFont: kit?.headingFont ?? { source: "google", family: "Montserrat" },
     bodyFont: kit?.bodyFont ?? { source: "google", family: "Inter" },
     primaryLogoAssetId: kit?.primaryLogoAssetId,
+    // Enforcement lives in Settings, not the studio — but the studio's saves
+    // write the whole kit, so dropping these here would silently reset them.
+    allowStyleOverride: kit?.allowStyleOverride ?? false,
+    allowOffPalette: kit?.allowOffPalette ?? true,
   };
 }
 

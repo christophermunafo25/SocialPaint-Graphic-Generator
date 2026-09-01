@@ -171,7 +171,9 @@ function Screen() {
         {route.name === "brandStudio" && adminOnly(<BrandStudio category={route.category} />)}
         {route.name === "dashboard" && adminOnly(<Dashboard />)}
         {route.name === "people" && adminOnly(<PeopleAdmin />)}
-        {route.name === "settings" && adminOnly(<SettingsAdmin />)}
+        {/* NOT adminOnly: members reach Account (theme, sign out). The page
+            itself gates the admin sections and lands a member on Account. */}
+        {route.name === "settings" && <SettingsAdmin section={route.section} />}
       </ErrorBoundary>
     </AppShell>
   );

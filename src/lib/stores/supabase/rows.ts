@@ -19,13 +19,30 @@ export interface CompanyRow {
   name: string;
   slug: string;
   created_at: string;
+  timezone: string;
+  link_default_allow_uploads: boolean;
+  link_default_expiry_days: number | null;
+  link_default_use_cap: number | null;
 }
+
+/** Columns every Company read must select — the auth provider's membership
+ * join and the store share this so neither can hand out a company missing
+ * its settings. */
+export const COMPANY_COLUMNS =
+  "id, name, slug, created_at, timezone, link_default_allow_uploads, " +
+  "link_default_expiry_days, link_default_use_cap";
 
 export const toCompany = (r: CompanyRow): Company => ({
   id: r.id,
   name: r.name,
   slug: r.slug,
   createdAt: r.created_at,
+  timezone: r.timezone ?? "UTC",
+  linkDefaults: {
+    allowUploads: r.link_default_allow_uploads ?? true,
+    expiryDays: r.link_default_expiry_days ?? null,
+    useCap: r.link_default_use_cap ?? null,
+  },
 });
 
 export interface CanvasPresetRow {
@@ -47,6 +64,8 @@ export interface BrandKitRow {
   heading_font: FontRef | null;
   body_font: FontRef | null;
   primary_logo_asset_id: string | null;
+  allow_style_override: boolean | null;
+  allow_off_palette: boolean | null;
 }
 
 export const toBrandKit = (r: BrandKitRow): BrandKit => ({
@@ -58,6 +77,8 @@ export const toBrandKit = (r: BrandKitRow): BrandKit => ({
   headingFont: r.heading_font ?? undefined,
   bodyFont: r.body_font ?? undefined,
   primaryLogoAssetId: r.primary_logo_asset_id ?? undefined,
+  allowStyleOverride: r.allow_style_override ?? false,
+  allowOffPalette: r.allow_off_palette ?? true,
 });
 
 export interface BrandAssetRow {

@@ -1,4 +1,9 @@
-import type { TemplateLink, TemplateLinkPatch, TemplateLinkWithToken } from "../../types";
+import type {
+  CompanyTemplateLink,
+  TemplateLink,
+  TemplateLinkPatch,
+  TemplateLinkWithToken,
+} from "../../types";
 import type { PublicLinkStore } from "../interfaces";
 import { isSupabaseConfigured, supabase } from "./client";
 
@@ -59,6 +64,49 @@ export class SupabasePublicLinkStore implements PublicLinkStore {
 
   async regenerate(companyId: string, linkId: string): Promise<TemplateLinkWithToken> {
     return this.call<TemplateLinkWithToken>({ companyId, action: "regenerate", linkId });
+  }
+
+  /** The Sharing inventory is a READ, so it goes straight to the table under
+   * RLS (admin_read_template_links already scopes rows to the caller's own
+   * company; the inner join makes the companyId contract explicit) rather
+   * than through the Edge Function, which exists for mutations. */
+  async listAll(companyId: string): Promise<CompanyTemplateLink[]> {
+    const { data, error } = await supabase()
+      .from("template_links")
+      .select(
+        "id, name, allow_uploads, expires_at, use_cap, use_count, revoked_at, created_at, " +
+          "last_used_at, template_id, templates!inner(name, company_id)",
+      )
+      .eq("templates.company_id", companyId)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return (
+      data as unknown as Array<{
+        id: string;
+        name: string;
+        allow_uploads: boolean;
+        expires_at: string | null;
+        use_cap: number | null;
+        use_count: number;
+        revoked_at: string | null;
+        created_at: string;
+        last_used_at: string | null;
+        template_id: string;
+        templates: { name: string } | null;
+      }>
+    ).map((r) => ({
+      id: r.id,
+      name: r.name,
+      allowUploads: r.allow_uploads,
+      expiresAt: r.expires_at,
+      useCap: r.use_cap,
+      useCount: r.use_count,
+      revokedAt: r.revoked_at,
+      createdAt: r.created_at,
+      lastUsedAt: r.last_used_at,
+      templateId: r.template_id,
+      templateName: r.templates?.name ?? "(deleted template)",
+    }));
   }
 
   /** The function answers a refusal with `{ error }` and a 4xx, which

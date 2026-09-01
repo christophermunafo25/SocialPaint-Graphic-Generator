@@ -14,6 +14,8 @@ interface Db {
    * `readDb` spreads `empty()`, so a store written before this key existed
    * upgrades without a migration. */
   templateLinks: unknown[];
+  /** Per-company canvas-size opt-outs (mirrors company_canvas_presets). */
+  companyCanvasPresets: unknown[];
 }
 
 const KEY = "brand-portal-dev-db";
@@ -25,6 +27,7 @@ const empty = (): Db => ({
   templates: [],
   usageEvents: [],
   templateLinks: [],
+  companyCanvasPresets: [],
 });
 
 export function readDb(): Db {

@@ -39,12 +39,51 @@ export function getTypeStyle(
 const keepAbsent = <T>(raw: T | undefined, next: T, dflt: T): T | undefined =>
   raw === undefined && next === dflt ? undefined : next;
 
+/** #RRGGBB (or #RGB) → [r, g, b], or null when it isn't a parseable hex. */
+const hexToRgb = (hex: string): [number, number, number] | null => {
+  const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return null;
+  const h = m[1].length === 3 ? [...m[1]].map((c) => c + c).join("") : m[1];
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+};
+
+/** Brand enforcement (Settings → Workspace): when the kit forbids off-palette
+ * fills, a hex that is not in the palette renders as the NEAREST palette
+ * color — deterministic and never blank, where dropping the fill would
+ * re-color the field to the browser default. Exact palette members (any
+ * case) and unparsable values pass through untouched. */
+export function clampToPalette(hex: string, kit: BrandKit | null): string {
+  if (!kit || kit.allowOffPalette !== false) return hex;
+  const palette = kit.colors.filter((c) => hexToRgb(c.hex));
+  if (palette.length === 0) return hex;
+  if (palette.some((c) => c.hex.toLowerCase() === hex.toLowerCase())) return hex;
+  const rgb = hexToRgb(hex);
+  if (!rgb) return hex;
+  let best = palette[0].hex;
+  let bestDist = Infinity;
+  for (const c of palette) {
+    const [r, g, b] = hexToRgb(c.hex)!;
+    const dist = (r - rgb[0]) ** 2 + (g - rgb[1]) ** 2 + (b - rgb[2]) ** 2;
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = c.hex;
+    }
+  }
+  return best;
+}
+
 export function resolveFieldStyle(field: TemplateField, kit: BrandKit | null): ResolvedFieldStyle {
   const style = getTypeStyle(kit, field.typeStyleKey);
-  const fontFamily = style?.font?.family ?? field.fontFamily;
-  const rawWeight = style?.weight ?? field.fontWeight;
-  const rawStyle = style?.fontStyle ?? field.fontStyle;
-  const rawStretch = style?.fontStretch ?? field.fontStretch;
+  // Enforcement switch #1: normally a bound style's properties win over the
+  // field's own; when the kit allows overrides the precedence flips and the
+  // style only fills the gaps the field left.
+  const override = kit?.allowStyleOverride === true;
+  const pick = <T>(styleVal: T | undefined, fieldVal: T | undefined): T | undefined =>
+    override ? (fieldVal ?? styleVal) : (styleVal ?? fieldVal);
+  const fontFamily = pick(style?.font?.family, field.fontFamily);
+  const rawWeight = pick(style?.weight, field.fontWeight);
+  const rawStyle = pick(style?.fontStyle, field.fontStyle);
+  const rawStretch = pick(style?.fontStretch, field.fontStretch);
 
   // Snap onto a face the family actually has. A brand rule can name a weight
   // the chosen family cannot draw — "Subhead is always Bold" over Bebas Neue,
@@ -62,24 +101,44 @@ export function resolveFieldStyle(field: TemplateField, kit: BrandKit | null): R
     fontWeight: face ? keepAbsent(rawWeight, face.weight, 400) : rawWeight,
     fontStyle: face ? keepAbsent(rawStyle, face.italic ? "italic" : "normal", "normal") : rawStyle,
     fontStretch: face ? keepAbsent(rawStretch, face.stretch, "normal") : rawStretch,
-    fontSizePx: style?.fontSizePx ?? field.fontSizePx,
+    fontSizePx: pick(style?.fontSizePx, field.fontSizePx),
     minFontSizePx: field.minFontSizePx,
-    uppercase: style?.uppercase ?? field.uppercase,
-    letterSpacingPx: style?.letterSpacingPx ?? field.letterSpacingPx,
-    lineHeight: style?.lineHeight ?? field.lineHeight,
-    colorKey: style?.colorKey,
-    colorHex: field.colorHex,
-    textGradient: field.textGradient,
-    maxLength: style?.maxLength ?? field.maxLength,
-    textSizing: style?.textSizing ?? field.textSizing,
+    uppercase: pick(style?.uppercase, field.uppercase),
+    letterSpacingPx: pick(style?.letterSpacingPx, field.letterSpacingPx),
+    lineHeight: pick(style?.lineHeight, field.lineHeight),
+    // The style's palette binding stays the live channel — except when the
+    // kit allows overrides AND the field carries its own fill, which is the
+    // one case a field-level value may displace it.
+    colorKey: override && (field.colorHex || field.textGradient) ? undefined : style?.colorKey,
+    colorHex: field.colorHex ? clampToPalette(field.colorHex, kit) : field.colorHex,
+    // Enforcement switch #2 applies to gradients too — every stop snaps, so
+    // "no off-palette colors" cannot be routed around with a two-stop
+    // gradient of the same hex.
+    textGradient:
+      field.textGradient && kit?.allowOffPalette === false
+        ? {
+            ...field.textGradient,
+            stops: field.textGradient.stops.map((s) => ({
+              ...s,
+              color: clampToPalette(s.color, kit),
+            })),
+          }
+        : field.textGradient,
+    maxLength: pick(style?.maxLength, field.maxLength),
+    textSizing: pick(style?.textSizing, field.textSizing),
     boundStyle: style,
   };
 }
 
-/** Which field-level controls a bound style locks (for the builder UI). */
-export function lockedProperties(style: BrandTypeStyle | undefined): Set<string> {
+/** Which field-level controls a bound style locks (for the builder UI).
+ * When the kit allows style overrides, nothing is locked — the bound style
+ * becomes a default rather than a rule. */
+export function lockedProperties(
+  style: BrandTypeStyle | undefined,
+  kit?: BrandKit | null,
+): Set<string> {
   const locked = new Set<string>();
-  if (!style) return locked;
+  if (!style || kit?.allowStyleOverride === true) return locked;
   if (style.font) locked.add("fontFamily");
   if (style.weight !== undefined) locked.add("weight");
   if (style.fontStyle !== undefined) locked.add("fontStyle");

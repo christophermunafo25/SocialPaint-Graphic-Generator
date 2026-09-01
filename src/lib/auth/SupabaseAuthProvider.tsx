@@ -3,12 +3,13 @@ import type { Session } from "@supabase/supabase-js";
 import type { Company, Role } from "../types";
 import { stores } from "../stores";
 import { supabase } from "../stores/supabase/client";
+import { COMPANY_COLUMNS, toCompany, type CompanyRow } from "../stores/supabase/rows";
 import { AuthContext, LS_COMPANY, type AuthState } from "./AuthContext";
 
 interface MembershipRow {
   company_id: string;
   role: Role;
-  companies: { id: string; name: string; slug: string; created_at: string } | null;
+  companies: CompanyRow | null;
 }
 
 /** Real auth: Supabase Auth session → memberships → company + role.
@@ -49,16 +50,11 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   const loadMemberships = useCallback(async () => {
     const { data, error } = await supabase()
       .from("memberships")
-      .select("company_id, role, companies(id, name, slug, created_at)")
+      .select(`company_id, role, companies(${COMPANY_COLUMNS})`)
       .order("created_at", { ascending: true });
     if (error) throw error;
     const rows = (data as unknown as MembershipRow[]).filter((r) => r.companies);
-    const list: Company[] = rows.map((r) => ({
-      id: r.companies!.id,
-      name: r.companies!.name,
-      slug: r.companies!.slug,
-      createdAt: r.companies!.created_at,
-    }));
+    const list: Company[] = rows.map((r) => toCompany(r.companies!));
     setCompanies(list);
     setRoleByCompany(Object.fromEntries(rows.map((r) => [r.company_id, r.role])));
   }, []);

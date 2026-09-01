@@ -15,7 +15,7 @@ import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { Page, PageHeader } from "../layout/Page";
 import { ErrorState } from "../ErrorState";
-import { useCountUp } from "@/lib/useCountUp";
+import { Kpi } from "./Kpi";
 import { BrandMark } from "../Sidebar";
 
 const TREND_DAYS = 30;
@@ -44,67 +44,6 @@ const numCell = {
 
 const exportRate = (downloads: number, opens: number): string =>
   opens === 0 ? "—" : `${Math.round((downloads / opens) * 100)}%`;
-
-interface KpiProps {
-  label: string;
-  /** A number counts up on load; a string ("—", "42%") renders as-is. */
-  value: string | number;
-  Icon: typeof Download;
-  chip: string; // background token for the icon chip
-  /** Icon color on the chip. Brand fills (Volt/Aqua) take ink in both themes;
-   * neutral chips (--bg-hover) need the theme-following text color instead —
-   * ink on a dark-mode --bg-hover chip disappears. */
-  chipFg?: string;
-  /** A quiet second line under the number. Used for the public-link share,
-   * which is a SUBSET of the headline figure rather than a separate total —
-   * a second tile would read as something to add on. */
-  sub?: string;
-}
-
-/** Stat tile — a headline number needs no chart. Values are data → mono.
- * Numeric values count up once on load (useCountUp); strings render as-is. */
-function Kpi({ label, value, Icon, chip, chipFg = "var(--text-on-accent)", sub }: KpiProps) {
-  const numeric = typeof value === "number" ? value : 0;
-  const counted = useCountUp(numeric);
-  const shown = typeof value === "number" ? counted : value;
-  return (
-    <div className="sp-card sp-card--content flex items-center gap-4">
-      <span
-        className="flex items-center justify-center flex-shrink-0"
-        style={{ width: 38, height: 38, borderRadius: "var(--radius-control)", background: chip }}
-      >
-        <Icon style={{ width: 16, height: 16, color: chipFg }} />
-      </span>
-      <span className="min-w-0">
-        <span
-          className="block truncate"
-          style={{ ...mono, fontSize: 24, lineHeight: 1.1, color: "var(--text-primary)" }}
-        >
-          {shown}
-        </span>
-        <span className="sp-eyebrow block" style={{ marginTop: 3 }}>
-          {label}
-        </span>
-        {sub && (
-          // Wraps rather than truncating: on a phone the tile is half the
-          // screen and "80 via public links" clipped to "80 via pu…" tells
-          // the reader nothing. The headline number above it is the thing
-          // that must stay on one line, and it does.
-          <span
-            className="block"
-            style={{
-              fontSize: "var(--type-caption-size)",
-              color: "var(--text-muted)",
-              marginTop: 2,
-            }}
-          >
-            {sub}
-          </span>
-        )}
-      </span>
-    </div>
-  );
-}
 
 /** Legend chip: colored swatch + label + mono total (identity never
  * color-alone). `dashed` draws a short dashed rule instead of a dot, so the
@@ -160,8 +99,13 @@ export function Dashboard() {
   // is independent, and the card simply does not render.
   const linkRows = linkUsageState.status === "ready" ? linkUsageState.data : [];
 
+  // Day buckets follow the WORKSPACE timezone (Settings → Workspace), not
+  // the viewer's browser — two admins in different places read one chart.
   const trendState = useAsync<DailyActivityPoint[]>(
-    () => (company ? stores.usage.getDailyActivity(company.id, TREND_DAYS) : Promise.resolve([])),
+    () =>
+      company
+        ? stores.usage.getDailyActivity(company.id, TREND_DAYS, company.timezone)
+        : Promise.resolve([]),
     [company],
   );
 

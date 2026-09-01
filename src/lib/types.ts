@@ -11,6 +11,27 @@ export interface Company {
   name: string;
   slug: string;
   createdAt: string;
+  /** IANA zone every admin-facing date follows ("UTC" until an admin sets
+   * one) — so two people in the same company read the same day boundaries. */
+  timezone: string;
+  /** Initial state for TemplateLinksDialog's create form. Defaults, not
+   * caps — each link still sets its own values. */
+  linkDefaults: CompanyLinkDefaults;
+}
+
+export interface CompanyLinkDefaults {
+  allowUploads: boolean;
+  /** Days from creation until a new link expires, or null for no expiry. */
+  expiryDays: number | null;
+  useCap: number | null;
+}
+
+/** The fields an admin may change about a company after it exists. */
+export interface CompanyPatch {
+  name?: string;
+  slug?: string;
+  timezone?: string;
+  linkDefaults?: CompanyLinkDefaults;
 }
 
 export interface BrandColor {
@@ -64,6 +85,14 @@ export interface BrandKit {
   headingFont?: FontRef;
   bodyFont?: FontRef;
   primaryLogoAssetId?: string;
+  /** Enforcement (Settings → Workspace), read by resolveFieldStyle. When
+   * true, a field's own values win over its bound type style — the style
+   * fills gaps only. Absent = false: bound properties stay locked. */
+  allowStyleOverride?: boolean;
+  /** When false, a field's solid fill that is not a brand palette hex
+   * renders as the nearest palette color. Absent = true: any hex renders
+   * as authored. */
+  allowOffPalette?: boolean;
 }
 
 export type AssetKind = "logo" | "font" | "image";
@@ -337,6 +366,49 @@ export interface TemplateLinkPatch {
   expiresAt?: string | null;
   /** A positive integer, or null to remove the cap. */
   useCap?: number | null;
+}
+
+/** A link joined to its template, for the workspace-wide Sharing inventory.
+ * The per-template dialog stays the editor; this row exists so an admin can
+ * answer "what of ours is on the open internet right now" in one place. */
+export interface CompanyTemplateLink extends TemplateLink {
+  templateId: string;
+  templateName: string;
+}
+
+/** One provider's connection state, for Settings → Integrations. Status and
+ * provenance only — the token itself never travels to a browser, masked or
+ * otherwise. */
+export interface IntegrationConnectionInfo {
+  provider: "figma" | "canva";
+  /** Canva can be disabled server-side; Figma is always offered. */
+  enabled: boolean;
+  connected: boolean;
+  connectedByEmail: string | null;
+  connectedAt: string | null;
+  /** Canva only: when the current access token lapses (refreshed in place —
+   * an expired stamp does not mean the connection is dead). */
+  expiresAt: string | null;
+}
+
+/** Per-user notification switches. Preferences only in this phase — nothing
+ * sends mail yet, and the Account section says so. */
+export interface NotificationPrefs {
+  inviteAccepted: boolean;
+  weeklyDigest: boolean;
+  linkExpiring: boolean;
+}
+
+/** Current-calendar-month activity for Settings → Usage & plan. Public
+ * counts are SUBSETS of the totals, same convention as UsageSummaryRow. */
+export interface MonthlyUsage {
+  opens: number;
+  downloads: number;
+  publicOpens: number;
+  /** Distinct templates with at least one event this month. */
+  templatesUsed: number;
+  /** Distinct signed-in members with at least one event this month. */
+  membersActive: number;
 }
 
 /** "open" is a page view, "download" an exported PNG, "share" the person

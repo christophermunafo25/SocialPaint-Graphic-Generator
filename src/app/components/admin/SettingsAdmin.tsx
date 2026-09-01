@@ -1,107 +1,131 @@
-import React from "react";
-import { LogOut, Monitor, Moon, Sun } from "lucide-react";
+import React, { useEffect } from "react";
+import {
+  Building2,
+  Gauge,
+  Link2,
+  Plug,
+  Settings2,
+  UserRound,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthContext";
-import { useColorScheme, type ColorScheme } from "@/lib/colorScheme";
+import { useRouter, type SettingsSection } from "../../router";
 import { Page, PageHeader } from "../layout/Page";
+import { AccountSection } from "./settings/AccountSection";
+import { AdvancedSection } from "./settings/AdvancedSection";
+import { IntegrationsSection } from "./settings/IntegrationsSection";
+import { SharingSection } from "./settings/SharingSection";
+import { TeamSection } from "./settings/TeamSection";
+import { UsageSection } from "./settings/UsageSection";
+import { WorkspaceSection } from "./settings/WorkspaceSection";
 
-const SCHEMES: Array<{ key: ColorScheme; label: string; Icon: typeof Sun; hint: string }> = [
-  { key: "system", label: "System", Icon: Monitor, hint: "Follow the OS preference" },
-  { key: "light", label: "Light", Icon: Sun, hint: "Always light chrome" },
-  { key: "dark", label: "Dark", Icon: Moon, hint: "Always dark chrome" },
+interface SectionDef {
+  key: SettingsSection;
+  label: string;
+  Icon: LucideIcon;
+  adminOnly: boolean;
+  render(): React.ReactNode;
+}
+
+/** Rail order = the questions admins actually ask, safety first. Account is
+ * the one section members can reach. */
+const SECTIONS: SectionDef[] = [
+  {
+    key: "workspace",
+    label: "Workspace",
+    Icon: Building2,
+    adminOnly: true,
+    render: () => <WorkspaceSection />,
+  },
+  { key: "team", label: "Team", Icon: Users, adminOnly: true, render: () => <TeamSection /> },
+  {
+    key: "integrations",
+    label: "Integrations",
+    Icon: Plug,
+    adminOnly: true,
+    render: () => <IntegrationsSection />,
+  },
+  {
+    key: "usage",
+    label: "Usage & plan",
+    Icon: Gauge,
+    adminOnly: true,
+    render: () => <UsageSection />,
+  },
+  {
+    key: "sharing",
+    label: "Sharing",
+    Icon: Link2,
+    adminOnly: true,
+    render: () => <SharingSection />,
+  },
+  {
+    key: "account",
+    label: "Account",
+    Icon: UserRound,
+    adminOnly: false,
+    render: () => <AccountSection />,
+  },
+  {
+    key: "advanced",
+    label: "Advanced",
+    Icon: Settings2,
+    adminOnly: true,
+    render: () => <AdvancedSection />,
+  },
 ];
 
-/** Settings & Admin — the sidebar's sixth destination. Workspace facts,
- * appearance, and account. People management lives on its own page. */
-export function SettingsAdmin() {
-  const { company, role, user, backend, signOut } = useAuth();
-  const { scheme, setScheme } = useColorScheme();
+/** Settings & Admin: a two-column settings surface — persistent section rail
+ * left, one section right, each section URL-addressable
+ * (/settings/integrations is a shareable link). Role gating happens HERE,
+ * not at the route: a member lands on Account with the admin sections
+ * hidden, never shown-and-disabled. */
+export function SettingsAdmin({ section }: { section?: SettingsSection }) {
+  const { company, role } = useAuth();
+  const { navigate } = useRouter();
+
+  const isAdmin = role === "admin";
+  const visible = SECTIONS.filter((s) => isAdmin || !s.adminOnly);
+  // Unknown or absent section → workspace for admins; anything a member
+  // cannot see → account.
+  const fallback: SettingsSection = isAdmin ? "workspace" : "account";
+  const active = visible.find((s) => s.key === section) ?? visible.find((s) => s.key === fallback)!;
+
+  // Keep the URL honest when the request was corrected (a member deep-linked
+  // to an admin section, or no section was given) — without a history entry.
+  useEffect(() => {
+    if (section !== active.key) {
+      navigate({ name: "settings", section: active.key }, { replace: true });
+    }
+  }, [section, active.key, navigate]);
 
   return (
-    <Page narrow={760}>
+    <Page>
       <PageHeader
+        eyebrow={company?.name}
         title="Settings & Admin"
-        description="Workspace, appearance, and account. Members and roles are managed on the People page."
+        description={
+          isAdmin
+            ? "Workspace facts, integrations, sharing, usage, and the ways out."
+            : "Your account: appearance and sign out."
+        }
       />
-      <div className="space-y-6">
-        <div className="sp-card sp-card--content space-y-3">
-          <h2 className="sp-panel-title">Workspace</h2>
-          <div
-            className="grid gap-x-6 gap-y-2"
-            style={{ gridTemplateColumns: "140px 1fr", fontSize: "var(--type-label-size)" }}
-          >
-            <span style={{ color: "var(--text-muted)" }}>Name</span>
-            <span style={{ color: "var(--text-primary)" }}>{company?.name ?? "—"}</span>
-            <span style={{ color: "var(--text-muted)" }}>Slug</span>
-            <span
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: "var(--type-caption-size)",
-                color: "var(--text-primary)",
-              }}
+      <div className="sp-settings-layout">
+        <nav className="sp-settings-rail" aria-label="Settings sections">
+          {visible.map(({ key, label, Icon }) => (
+            <button
+              key={key}
+              data-active={key === active.key}
+              aria-current={key === active.key ? "page" : undefined}
+              onClick={() => navigate({ name: "settings", section: key })}
             >
-              {company?.slug ?? "—"}
-            </span>
-            <span style={{ color: "var(--text-muted)" }}>Backend</span>
-            <span style={{ color: "var(--text-primary)" }}>
-              {backend === "supabase" ? "Supabase (live)" : "Local dev (browser storage)"}
-            </span>
-          </div>
-        </div>
-
-        <div className="sp-card sp-card--content space-y-3">
-          <h2 className="sp-panel-title">Appearance</h2>
-          <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
-            Applies to the SocialPaint chrome only — template graphics and exports are identical in
-            both modes.
-          </p>
-          <div className="grid grid-cols-3 gap-2">
-            {SCHEMES.map(({ key, label, Icon, hint }) => (
-              <button
-                key={key}
-                onClick={() => setScheme(key)}
-                title={hint}
-                className="flex flex-col items-center gap-1.5 py-3"
-                data-radius-card
-                style={{
-                  border: `1px solid ${scheme === key ? "transparent" : "var(--border-strong)"}`,
-                  background: scheme === key ? "var(--sb-active-bg)" : "var(--bg-surface)",
-                  color: scheme === key ? "var(--sb-fg-active)" : "var(--text-primary)",
-                  fontSize: 12.5,
-                }}
-              >
-                <Icon
-                  style={{
-                    width: 16,
-                    height: 16,
-                    color: scheme === key ? "var(--sb-fg-active)" : "var(--text-secondary)",
-                  }}
-                />
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="sp-card sp-card--content space-y-3">
-          <h2 className="sp-panel-title">Account</h2>
-          <div
-            className="grid gap-x-6 gap-y-2"
-            style={{ gridTemplateColumns: "140px 1fr", fontSize: "var(--type-label-size)" }}
-          >
-            <span style={{ color: "var(--text-muted)" }}>Email</span>
-            <span style={{ color: "var(--text-primary)" }}>{user?.email ?? "— (dev backend)"}</span>
-            <span style={{ color: "var(--text-muted)" }}>Role</span>
-            <span className="capitalize" style={{ color: "var(--text-primary)" }}>
-              {role}
-            </span>
-          </div>
-          {signOut && (
-            <button onClick={() => void signOut()} className="sp-btn sp-btn-ghost">
-              <LogOut className="w-3.5 h-3.5" />
-              Sign out
+              <Icon style={{ width: 16, height: 16, flexShrink: 0 }} />
+              {label}
             </button>
-          )}
-        </div>
+          ))}
+        </nav>
+        <div className="min-w-0">{active.render()}</div>
       </div>
     </Page>
   );

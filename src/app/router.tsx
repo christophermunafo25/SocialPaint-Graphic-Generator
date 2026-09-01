@@ -21,6 +21,23 @@ const BRAND_CATEGORIES: readonly BrandCategory[] = [
   "import",
 ];
 
+/** Settings sections — brandStudio's category pattern, reused rather than
+ * invented twice. Every section is URL-addressable (/settings/integrations
+ * is a shareable link); an unknown or absent section resolves inside
+ * SettingsAdmin, which also owns the role gating (Account is the one
+ * section members can reach). */
+export type SettingsSection =
+  "workspace" | "team" | "integrations" | "usage" | "sharing" | "account" | "advanced";
+const SETTINGS_SECTIONS: readonly SettingsSection[] = [
+  "workspace",
+  "team",
+  "integrations",
+  "usage",
+  "sharing",
+  "account",
+  "advanced",
+];
+
 export type Route =
   | { name: "onboarding" }
   | { name: "portal"; group?: string; q?: string }
@@ -34,7 +51,7 @@ export type Route =
   | { name: "brandStudio"; category?: BrandCategory }
   | { name: "dashboard" }
   | { name: "people" }
-  | { name: "settings" };
+  | { name: "settings"; section?: SettingsSection };
 
 interface NavigateOptions {
   /** Replace the current history entry instead of pushing a new one. The
@@ -81,7 +98,7 @@ export function routeToUrl(route: Route): string {
     case "people":
       return "/people";
     case "settings":
-      return "/settings";
+      return route.section ? `/settings/${route.section}` : "/settings";
   }
 }
 
@@ -119,6 +136,9 @@ export function urlToRoute(pathname: string, search: string): Route {
     case "people":
       return { name: "people" };
     case "settings":
+      if (tail && (SETTINGS_SECTIONS as readonly string[]).includes(tail)) {
+        return { name: "settings", section: tail as SettingsSection };
+      }
       return { name: "settings" };
     default:
       return { name: "portal" };

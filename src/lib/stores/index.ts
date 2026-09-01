@@ -10,6 +10,7 @@
 import type { Stores } from "./interfaces";
 import { isSupabaseConfigured } from "./supabase/client";
 import { supabaseAnonKey, supabaseEnvProblems, supabaseUrl } from "@/lib/config/supabaseEnv";
+import { SupabaseAccountStore } from "./supabase/accountStore";
 import { SupabaseCompanyStore } from "./supabase/companyStore";
 import { SupabaseTemplateStore } from "./supabase/templateStore";
 import { SupabaseBrandAssetStore, SupabaseBrandKitStore } from "./supabase/brandStore";
@@ -19,6 +20,7 @@ import { SupabasePublicLinkStore } from "./supabase/publicLinkStore";
 import { FigmaImporter } from "./supabase/figmaImporter";
 import { SupabaseGenerateProvider } from "./supabase/generateProvider";
 import {
+  LocalAccountStore,
   LocalBrandAssetStore,
   LocalBrandKitStore,
   LocalCompanyStore,
@@ -34,6 +36,7 @@ function createStores(): Stores {
   if (isSupabaseConfigured) {
     return {
       companies: new SupabaseCompanyStore(),
+      account: new SupabaseAccountStore(),
       templates: new SupabaseTemplateStore(),
       brandKits: new SupabaseBrandKitStore(),
       brandAssets: new SupabaseBrandAssetStore(),
@@ -59,6 +62,7 @@ function createStores(): Stores {
   }
   return {
     companies: new LocalCompanyStore(),
+    account: new LocalAccountStore(),
     templates: new LocalTemplateStore(),
     brandKits: new LocalBrandKitStore(),
     brandAssets: new LocalBrandAssetStore(),
