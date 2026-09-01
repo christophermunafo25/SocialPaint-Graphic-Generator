@@ -1,13 +1,8 @@
-import type { CanvasPreset, Company, CompanyPatch } from "../../types";
+import { SIZE_CATALOG, type CanvasSize } from "../../templates/platforms";
+import type { Company, CompanyPatch } from "../../types";
 import type { CompanyStore } from "../interfaces";
 import { supabase } from "./client";
-import {
-  COMPANY_COLUMNS,
-  toCanvasPreset,
-  toCompany,
-  type CanvasPresetRow,
-  type CompanyRow,
-} from "./rows";
+import { COMPANY_COLUMNS, toCompany, type CompanyRow } from "./rows";
 
 export class SupabaseCompanyStore implements CompanyStore {
   async list(): Promise<Company[]> {
@@ -92,51 +87,35 @@ export class SupabaseCompanyStore implements CompanyStore {
     return (count ?? 0) > 0;
   }
 
-  async listCanvasPresets(companyId?: string): Promise<CanvasPreset[]> {
-    const presets = await this.globalPresets();
-    if (!companyId) return presets;
-    const disabled = await this.disabledPresetIds(companyId);
-    const filtered = presets.filter((p) => !disabled.has(p.id));
+  // Dimension data lives in SIZE_CATALOG (code); company_canvas_presets only
+  // records which catalogue ids a workspace turned off.
+  async listCanvasSizes(companyId?: string): Promise<CanvasSize[]> {
+    if (!companyId) return SIZE_CATALOG;
+    const disabled = await this.disabledSizeIds(companyId);
+    const filtered = SIZE_CATALOG.filter((s) => !disabled.has(s.id));
     // A workspace that disabled everything still has to be able to create —
-    // fall back to the global list rather than an empty size picker.
-    return filtered.length > 0 ? filtered : presets;
+    // fall back to the full catalogue rather than an empty size picker.
+    return filtered.length > 0 ? filtered : SIZE_CATALOG;
   }
 
-  async listCanvasPresetSettings(
+  async listCanvasSizeSettings(
     companyId: string,
-  ): Promise<Array<{ preset: CanvasPreset; enabled: boolean }>> {
-    const [presets, disabled] = await Promise.all([
-      this.globalPresets(),
-      this.disabledPresetIds(companyId),
-    ]);
-    return presets.map((preset) => ({ preset, enabled: !disabled.has(preset.id) }));
+  ): Promise<Array<{ size: CanvasSize; enabled: boolean }>> {
+    const disabled = await this.disabledSizeIds(companyId);
+    return SIZE_CATALOG.map((size) => ({ size, enabled: !disabled.has(size.id) }));
   }
 
-  async setCanvasPresetEnabled(
-    companyId: string,
-    presetId: string,
-    enabled: boolean,
-  ): Promise<void> {
+  async setCanvasSizeEnabled(companyId: string, sizeId: string, enabled: boolean): Promise<void> {
     const { error } = await supabase()
       .from("company_canvas_presets")
       .upsert(
-        { company_id: companyId, preset_id: presetId, enabled },
+        { company_id: companyId, preset_id: sizeId, enabled },
         { onConflict: "company_id,preset_id" },
       );
     if (error) throw error;
   }
 
-  private async globalPresets(): Promise<CanvasPreset[]> {
-    const { data, error } = await supabase()
-      .from("canvas_presets")
-      .select("*")
-      .eq("enabled", true)
-      .order("id");
-    if (error) throw error;
-    return (data as CanvasPresetRow[]).map(toCanvasPreset);
-  }
-
-  private async disabledPresetIds(companyId: string): Promise<Set<string>> {
+  private async disabledSizeIds(companyId: string): Promise<Set<string>> {
     const { data, error } = await supabase()
       .from("company_canvas_presets")
       .select("preset_id")

@@ -127,14 +127,6 @@ export interface BrandAsset {
   createdAt: string;
 }
 
-export interface CanvasPreset {
-  id: string;
-  label: string;
-  width: number;
-  height: number;
-  enabled: boolean;
-}
-
 export interface TextGradient {
   angle: number; // degrees, CSS linear-gradient convention
   stops: Array<{ position: number; color: string }>; // position 0..1, #RRGGBB
@@ -307,8 +299,8 @@ export interface TemplateSchema {
   category: string;
   tags: string[];
   status: TemplateStatus;
-  // v1 is always 1440×1440 (square-1440 preset) but ALWAYS read from here —
-  // the renderer, builder, and export never hardcode a dimension.
+  // Chosen at creation (SIZE_CATALOG preset or custom) and ALWAYS read from
+  // here — the renderer, builder, and export never hardcode a dimension.
   canvasWidth: number;
   canvasHeight: number;
   backgroundUrl: string;

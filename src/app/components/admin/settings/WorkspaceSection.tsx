@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import type { CanvasPreset } from "@/lib/types";
+import { platformById, type CanvasSize } from "@/lib/templates/platforms";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -36,7 +36,7 @@ export function WorkspaceSection() {
         <SlugField onError={setError} />
         <TimezoneField onError={setError} />
       </SettingsCard>
-      <CanvasPresetsCard companyId={company.id} onError={setError} />
+      <CanvasSizesCard companyId={company.id} onError={setError} />
       <BrandEnforcementCard onError={setError} />
       <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
         Changes save as you make them — there is no page-level save button.
@@ -271,10 +271,10 @@ function TimezoneField({ onError }: { onError(msg: string | null): void }) {
   );
 }
 
-/** Which of the globally offered canvas sizes this workspace shows in the
- * builder's size picker. Turning one off hides it here only — the global
- * preset rows are reference data and are never modified. */
-function CanvasPresetsCard({
+/** Which of the catalogue's canvas sizes this workspace shows in the
+ * builder's size picker. Turning one off hides it here only — the catalogue
+ * itself (SIZE_CATALOG in code) is never modified. */
+function CanvasSizesCard({
   companyId,
   onError,
 }: {
@@ -282,17 +282,17 @@ function CanvasPresetsCard({
   onError(msg: string | null): void;
 }) {
   const [version, setVersion] = useState(0);
-  const state = useAsync<Array<{ preset: CanvasPreset; enabled: boolean }>>(
-    () => stores.companies.listCanvasPresetSettings(companyId),
+  const state = useAsync<Array<{ size: CanvasSize; enabled: boolean }>>(
+    () => stores.companies.listCanvasSizeSettings(companyId),
     [companyId, version],
   );
   const rows = state.status === "ready" ? state.data : [];
   const enabledCount = rows.filter((r) => r.enabled).length;
 
-  const toggle = (presetId: string, enabled: boolean) => {
+  const toggle = (sizeId: string, enabled: boolean) => {
     onError(null);
     void stores.companies
-      .setCanvasPresetEnabled(companyId, presetId, enabled)
+      .setCanvasSizeEnabled(companyId, sizeId, enabled)
       .then(() => setVersion((v) => v + 1))
       .catch((e) => onError(e instanceof Error ? e.message : "Could not save that change."));
   };
@@ -300,7 +300,7 @@ function CanvasPresetsCard({
   return (
     <SettingsCard
       title="Canvas sizes"
-      description="Sizes offered when someone creates a template. Turn off the ones this workspace never uses."
+      description="Sizes offered when someone creates a template. Turn off the ones this workspace never uses; custom sizes stay available in the builder."
     >
       {state.status === "loading" ? (
         <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>Loading…</p>
@@ -312,21 +312,21 @@ function CanvasPresetsCard({
         />
       ) : (
         <div className="space-y-3">
-          {rows.map(({ preset, enabled }) => (
+          {rows.map(({ size, enabled }) => (
             <ControlRow
-              key={preset.id}
-              title={preset.label}
+              key={size.id}
+              title={`${size.assetType} (${size.width}×${size.height})`}
               description={
                 enabled && enabledCount === 1
                   ? "The last enabled size can't be turned off."
-                  : undefined
+                  : size.platforms.map((p) => platformById(p).label).join(" · ")
               }
               control={
                 <Switch
                   checked={enabled}
                   disabled={enabled && enabledCount === 1}
-                  onChange={(next) => toggle(preset.id, next)}
-                  ariaLabel={`Offer ${preset.label}`}
+                  onChange={(next) => toggle(size.id, next)}
+                  ariaLabel={`Offer ${size.assetType} ${size.width}×${size.height}`}
                 />
               }
             />

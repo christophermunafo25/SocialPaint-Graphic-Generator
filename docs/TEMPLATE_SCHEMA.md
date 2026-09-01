@@ -9,7 +9,7 @@ exists anywhere. Source of truth: `src/lib/types.ts` (`TemplateSchema`,
 
 | Field | Notes |
 |---|---|
-| `canvasWidth` / `canvasHeight` | Pixel size of the canvas. v1 creation is locked to the `square-1440` preset (1440×1440) but **every consumer reads from here** — renderer scale math, builder overlay, `toPng` export. New sizes = new `canvas_presets` rows, zero code changes. |
+| `canvasWidth` / `canvasHeight` | Pixel size of the canvas. Chosen at creation — a `SIZE_CATALOG` preset (`src/lib/templates/platforms.ts`) or a custom size — and **every consumer reads from here** — renderer scale math, builder overlay, `toPng` export. New preset sizes = new catalogue entries, one file. |
 | `backgroundUrl` | Storage URL of the uploaded/imported PNG. Converted to a data URL before render/export. |
 | `fields` | Ordered `TemplateField[]`. **Array order is the member FORM order** (the sequence fields appear in the end-user's form — reordered by dragging in the builder's field list). Canvas paint order is the separate per-field `zIndex`. |
 | `captionTemplate` | Merge string with `{field_key}` placeholders, e.g. `"{name} celebrated {years} incredible years!"`. Members see the merged result, can edit it, and copy it. Image fields have no caption value. |

@@ -1,7 +1,7 @@
+import { SIZE_CATALOG, type CanvasSize } from "../../templates/platforms";
 import type {
   BrandAsset,
   BrandKit,
-  CanvasPreset,
   Company,
   CompanyPatch,
   CompanyTemplateLink,
@@ -33,11 +33,6 @@ import { joinCompanyLinks } from "../linkInventory";
 import { monthStartIso, summarizeMonthlyUsage } from "../monthlyUsage";
 import { joinLinkUsage } from "../publicLinkUsage";
 import { fileToDataUrl, mutate, newId, readDb } from "./db";
-
-// Mirrors supabase/seed.sql — v1 enables only the square preset.
-const PRESETS: CanvasPreset[] = [
-  { id: "square-1440", label: "Square (1440×1440)", width: 1440, height: 1440, enabled: true },
-];
 
 interface UsageEventRec {
   id: string;
@@ -136,41 +131,34 @@ export class LocalCompanyStore implements CompanyStore {
   async hasAnyCompany(): Promise<boolean> {
     return readDb().companies.length > 0;
   }
-  async listCanvasPresets(companyId?: string): Promise<CanvasPreset[]> {
-    const enabled = PRESETS.filter((p) => p.enabled);
-    if (!companyId) return enabled;
-    const disabled = new Set(
-      (readDb().companyCanvasPresets as CompanyPresetRec[])
-        .filter((r) => r.companyId === companyId && !r.enabled)
-        .map((r) => r.presetId),
-    );
-    const filtered = enabled.filter((p) => !disabled.has(p.id));
-    return filtered.length > 0 ? filtered : enabled;
+  // Dimension data lives in SIZE_CATALOG (code); the stored rows only record
+  // which catalogue ids this workspace turned off.
+  async listCanvasSizes(companyId?: string): Promise<CanvasSize[]> {
+    if (!companyId) return SIZE_CATALOG;
+    const disabled = this.disabledSizeIds(companyId);
+    const filtered = SIZE_CATALOG.filter((s) => !disabled.has(s.id));
+    return filtered.length > 0 ? filtered : SIZE_CATALOG;
   }
-  async listCanvasPresetSettings(
+  async listCanvasSizeSettings(
     companyId: string,
-  ): Promise<Array<{ preset: CanvasPreset; enabled: boolean }>> {
-    const disabled = new Set(
-      (readDb().companyCanvasPresets as CompanyPresetRec[])
-        .filter((r) => r.companyId === companyId && !r.enabled)
-        .map((r) => r.presetId),
-    );
-    return PRESETS.filter((p) => p.enabled).map((preset) => ({
-      preset,
-      enabled: !disabled.has(preset.id),
-    }));
+  ): Promise<Array<{ size: CanvasSize; enabled: boolean }>> {
+    const disabled = this.disabledSizeIds(companyId);
+    return SIZE_CATALOG.map((size) => ({ size, enabled: !disabled.has(size.id) }));
   }
-  async setCanvasPresetEnabled(
-    companyId: string,
-    presetId: string,
-    enabled: boolean,
-  ): Promise<void> {
+  async setCanvasSizeEnabled(companyId: string, sizeId: string, enabled: boolean): Promise<void> {
     mutate((db) => {
       const rows = db.companyCanvasPresets as CompanyPresetRec[];
-      const i = rows.findIndex((r) => r.companyId === companyId && r.presetId === presetId);
+      const i = rows.findIndex((r) => r.companyId === companyId && r.presetId === sizeId);
       if (i >= 0) rows[i] = { ...rows[i], enabled };
-      else rows.push({ companyId, presetId, enabled });
+      else rows.push({ companyId, presetId: sizeId, enabled });
     });
+  }
+  private disabledSizeIds(companyId: string): Set<string> {
+    return new Set(
+      (readDb().companyCanvasPresets as CompanyPresetRec[])
+        .filter((r) => r.companyId === companyId && !r.enabled)
+        .map((r) => r.presetId),
+    );
   }
 }
 
