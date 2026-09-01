@@ -47,7 +47,11 @@ export type Route =
    * refresh; the seeded VALUES deliberately do not (see seedHandoff.ts). */
   | { name: "generate"; templateId?: string }
   | { name: "adminTemplates" }
-  | { name: "builder"; templateId: string | null }
+  /** `reflow` ("1080x1920") is the create-a-version handoff: the builder
+   * loads the (freshly duplicated) template and reflows it to this size as
+   * an unsaved change for review, then strips the param so a refresh after
+   * saving cannot reflow the already-reflowed copy a second time. */
+  | { name: "builder"; templateId: string | null; reflow?: string }
   | { name: "brandStudio"; category?: BrandCategory }
   | { name: "dashboard" }
   | { name: "people" }
@@ -87,10 +91,12 @@ export function routeToUrl(route: Route): string {
         : "/generate";
     case "adminTemplates":
       return "/template-builder";
-    case "builder":
-      return route.templateId
+    case "builder": {
+      const base = route.templateId
         ? `/template-builder/${encodeURIComponent(route.templateId)}`
         : "/template-builder/new";
+      return route.reflow ? `${base}?reflow=${encodeURIComponent(route.reflow)}` : base;
+    }
     case "brandStudio":
       return route.category ? `/brand-studio/${route.category}` : "/brand-studio";
     case "dashboard":
@@ -125,6 +131,7 @@ export function urlToRoute(pathname: string, search: string): Route {
       return {
         name: "builder",
         templateId: tail === "new" ? null : decodeURIComponent(tail),
+        reflow: params.get("reflow") ?? undefined,
       };
     case "brand-studio":
       if (tail && (BRAND_CATEGORIES as readonly string[]).includes(tail)) {

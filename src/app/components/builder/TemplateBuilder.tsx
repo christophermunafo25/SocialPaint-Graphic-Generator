@@ -125,8 +125,10 @@ import {
 import { ConfirmDialog } from "../ConfirmDialog";
 import { linkState } from "../admin/TemplateLinksDialog";
 import type { CanvasSize } from "@/lib/templates/platforms";
-import { rescaleTemplate } from "@/lib/templates/rescale";
+import { rescaleTemplate, sameAspect, type RescaleWarning } from "@/lib/templates/rescale";
+import { reflowTemplate, versionName } from "@/lib/templates/reflow";
 import { CanvasSizePicker } from "./CanvasSizePicker";
+import { BackgroundReflowDialog } from "./BackgroundReflowDialog";
 import { ShortcutsPanel } from "./ShortcutsPanel";
 import { AlignControls } from "./AlignControls";
 import { SelectionToolbar } from "./SelectionToolbar";
@@ -219,7 +221,15 @@ function useViewportAtLeast(px: number): boolean {
  * name and the default "Untitled template" is refused. Naming last means the
  * admin names something they can see. Save draft is available throughout;
  * completed panels stay jumpable from the panel control in the bar. */
-export function TemplateBuilder({ templateId }: { templateId: string | null }) {
+export function TemplateBuilder({
+  templateId,
+  reflowParam = null,
+}: {
+  templateId: string | null;
+  /** Create-a-version handoff from the route ("1080x1920"): reflow the
+   * loaded template to this size as an unsaved change for review. */
+  reflowParam?: string | null;
+}) {
   const { company } = useAuth();
   const { kit, assets: brandAssets } = useBrand();
   const { navigate } = useRouter();
@@ -398,6 +408,26 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     next: { width: number; height: number };
     liveLinks: TemplateLink[];
   } | null>(null);
+  /** The create-a-version reflow target, captured ONCE at mount (the builder
+   * is keyed per template, so a mount is a load) and consumed by the load
+   * effect below. A ref, not a dep: re-running the load effect after the
+   * param is stripped from the URL would wipe the reflowed draft. */
+  const pendingReflowRef = useRef<{ width: number; height: number } | null>(
+    (() => {
+      const m = /^(\d+)x(\d+)$/.exec(reflowParam ?? "");
+      return m ? { width: Number(m[1]), height: Number(m[2]) } : null;
+    })(),
+  );
+  /** Post-reflow review: every warning the reflow raised, each selectable so
+   * the admin can jump to the field. Automatic reflow is a starting point,
+   * not a finished layout — this panel is how the UI says that. */
+  const [reflowWarnings, setReflowWarnings] = useState<RescaleWarning[] | null>(null);
+  /** The 3.2 background decision, pending the admin's explicit choice. */
+  const [bgReflow, setBgReflow] = useState<{
+    backgroundUrl: string;
+    source: { width: number; height: number };
+    target: { width: number; height: number };
+  } | null>(null);
 
   useEffect(() => {
     // A new template defaults to the company's first enabled size; the start
@@ -472,6 +502,42 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
     // Editing an existing template: every step is already completed.
     setVisited(new Set<WizardStep>(["name", "fields", "caption", "details"]));
     setStep("fields");
+
+    // Create-a-version handoff: the loaded template is a fresh duplicate and
+    // this session reflows it to the target size as an UNSAVED change over
+    // the baseline — one undo shows the copy before the reflow.
+    const target = pendingReflowRef.current;
+    if (!target) return;
+    pendingReflowRef.current = null;
+    // Strip the param so a refresh after saving can't reflow the
+    // already-reflowed copy a second time.
+    navigate({ name: "builder", templateId }, { replace: true });
+    if (rest.canvasWidth === target.width && rest.canvasHeight === target.height) return;
+    const aspectChanged = !sameAspect(
+      { width: rest.canvasWidth, height: rest.canvasHeight },
+      target,
+    );
+    const { draft: reflowed, warnings } = reflowTemplate(rest, target);
+    setDraft(() => reflowed);
+    setReflowWarnings(warnings);
+    // An uploaded background image cannot follow an aspect change — the
+    // admin picks what happens to it, never the code (3.2). Computed fills
+    // (color, gradient) follow perfectly and need no decision.
+    if (rest.backgroundUrl && aspectChanged) {
+      setBgReflow({
+        backgroundUrl: rest.backgroundUrl,
+        source: { width: rest.canvasWidth, height: rest.canvasHeight },
+        target,
+      });
+    }
+    setNotice(
+      `Version created at ${target.width}×${target.height} — automatic reflow applied. Review the layout, then publish.`,
+    );
+    window.clearTimeout(noticeTimer.current);
+    noticeTimer.current = window.setTimeout(() => setNotice(null), 10000);
+    // pendingReflowRef is consumed here exactly once; navigate/setDraft are
+    // stable for the life of this keyed mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [templateState, resetHistory]);
 
   const sourceChosen = started || Boolean(draft.backgroundUrl);
@@ -1706,6 +1772,27 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
 
   const save = (status?: "draft" | "published") => doSave(status, false);
 
+  /** Create a version for another platform: save (so the copy carries the
+   * latest edits), duplicate — the original is never touched — and open the
+   * copy with the reflow handoff in the route. The reflow itself happens on
+   * load, as an unsaved change the admin reviews. */
+  const requestVersion = async (next: { width: number; height: number }) => {
+    setSizeMenuAt(null);
+    const saved = await save();
+    if (!saved) return; // save() already surfaced the error
+    try {
+      const copy = await stores.templates.duplicate(saved.id, versionName(saved.name, next));
+      navigate({
+        name: "builder",
+        templateId: copy.id,
+        reflow: `${next.width}x${next.height}`,
+      });
+    } catch (e) {
+      console.error("Version create failed", e);
+      setError("We couldn't create the version. Try again.");
+    }
+  };
+
   // Warn on close/reload while the draft differs from what's saved. The
   // default name alone is not content — an untouched blank canvas should
   // neither warn nor autosave.
@@ -2494,13 +2581,40 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
                 draft.backgroundUrl
                   ? {
                       reason:
-                        "This template has a background image, so only sizes with the same aspect ratio can apply in place — a different shape is a redesign, not a resize.",
+                        "This template has a background image, so only sizes with the same aspect ratio can apply in place. A different shape becomes a new version — a draft copy, reflowed for review; this template stays untouched.",
                     }
                   : undefined
               }
+              onPickVersion={(next) => void requestVersion(next)}
             />
           </div>
         </>
+      )}
+
+      {bgReflow && (
+        <BackgroundReflowDialog
+          backgroundUrl={bgReflow.backgroundUrl}
+          source={bgReflow.source}
+          target={bgReflow.target}
+          hasFigmaProvenance={draft.fields.some((f) => f.sourceNodeId)}
+          onKeep={() => setBgReflow(null)}
+          onRemove={() => {
+            // The choice is an ordinary edit: undoable, and the canvas
+            // inspector's background upload is right there for the retake.
+            setDraft((d) => ({ ...d, backgroundUrl: "" }));
+            setBgReflow(null);
+          }}
+          onSolid={(hex) => {
+            if (hex) {
+              setDraft((d) => ({ ...d, backgroundUrl: "", backgroundColor: hex }));
+            } else {
+              // Sampling failed (unreadable image) — keep the image and say
+              // so instead of guessing a color.
+              setError("We couldn't read the image's colors, so the background image was kept.");
+            }
+            setBgReflow(null);
+          }}
+        />
       )}
 
       <ConfirmDialog
@@ -3194,6 +3308,46 @@ export function TemplateBuilder({ templateId }: { templateId: string | null }) {
               className="flex-shrink-0"
               style={{ borderTop: "1px solid var(--border)", background: "var(--bg-surface)" }}
             >
+              {mode === "edit" && reflowWarnings && reflowWarnings.length > 0 && (
+                <div
+                  role="status"
+                  className="px-3 py-2 space-y-1"
+                  style={{ borderBottom: "1px solid var(--border)" }}
+                >
+                  <div className="flex items-center gap-3">
+                    <p className="sp-eyebrow flex-1" style={{ color: "var(--text-primary)" }}>
+                      Reflow review — the automatic layout is a starting point, not a finished one
+                    </p>
+                    <button
+                      onClick={() => setReflowWarnings(null)}
+                      className="flex-shrink-0"
+                      style={{
+                        fontSize: "var(--type-caption-size)",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      Done reviewing
+                    </button>
+                  </div>
+                  {reflowWarnings.map((w) => (
+                    <button
+                      key={w.fieldId}
+                      onClick={() => setSelectedIds([w.fieldId])}
+                      className="block text-left"
+                      style={{
+                        fontSize: "var(--type-caption-size)",
+                        color: "var(--text-secondary)",
+                        textDecoration: "underline",
+                        textDecorationColor: "var(--border-strong)",
+                        textUnderlineOffset: 2,
+                      }}
+                      title="Select this field on the canvas"
+                    >
+                      {w.message}
+                    </button>
+                  ))}
+                </div>
+              )}
               {mode === "edit" && layoutWarnings.length > 0 && (
                 <div
                   role="status"

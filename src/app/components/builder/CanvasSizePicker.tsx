@@ -57,12 +57,15 @@ function ShapeSwatch({ width, height }: { width: number; height: number }) {
  *
  * `aspectLock` is the resize-mode constraint: when set, sizes whose aspect
  * differs from the current canvas are not offered in place, and the reason
- * is stated in one line rather than a control being disabled unexplained. */
+ * is stated in one line rather than a control being disabled unexplained.
+ * With `onPickVersion` those targets stay clickable — they create a new
+ * version instead of resizing this template. */
 export function CanvasSizePicker({
   sizes,
   value,
   onPick,
   aspectLock,
+  onPickVersion,
 }: {
   /** The workspace's enabled subset of the size catalogue. */
   sizes: CanvasSize[];
@@ -72,6 +75,9 @@ export function CanvasSizePicker({
   /** Resize-in-place restriction: only same-aspect targets are offered, and
    * this one-line reason says why. */
   aspectLock?: { reason: string };
+  /** When aspectLock is on, a different-aspect target routes here instead of
+   * onPick: it becomes a NEW template version, never an in-place change. */
+  onPickVersion?(next: { width: number; height: number }): void;
 }) {
   const [tab, setTab] = useState<"presets" | "custom">("presets");
   const [customW, setCustomW] = useState(String(value.width));
@@ -102,7 +108,9 @@ export function CanvasSizePicker({
     !customErr && aspectLock && !sameAspect(value, { width: w, height: h });
   const customMeaning = customErr ? null : classifySize(w, h);
 
-  const offered = (s: CanvasSize): boolean => !aspectLock || sameAspect(value, s);
+  /** How a target applies: in place, as a new version, or not at all. */
+  const modeFor = (s: { width: number; height: number }): "inPlace" | "version" | "blocked" =>
+    !aspectLock || sameAspect(value, s) ? "inPlace" : onPickVersion ? "version" : "blocked";
 
   return (
     <div className="space-y-2" style={{ minWidth: 280 }}>
@@ -149,20 +157,24 @@ export function CanvasSizePicker({
               <div className="space-y-0.5">
                 {groupSizes.map((s) => {
                   const current = s.width === value.width && s.height === value.height;
-                  const allowed = offered(s);
+                  const mode = modeFor(s);
                   return (
                     <button
                       key={s.id}
-                      onClick={() => allowed && onPick({ width: s.width, height: s.height })}
-                      disabled={!allowed}
+                      onClick={() => {
+                        if (mode === "inPlace") onPick({ width: s.width, height: s.height });
+                        else if (mode === "version")
+                          onPickVersion?.({ width: s.width, height: s.height });
+                      }}
+                      disabled={mode === "blocked"}
                       aria-pressed={current}
                       className="w-full flex items-center gap-2 px-2 py-1.5 text-left"
                       data-radius-control
                       style={{
                         border: `1px solid ${current ? "var(--border-strong)" : "transparent"}`,
                         background: current ? "var(--bg-inset)" : "transparent",
-                        opacity: allowed ? 1 : 0.45,
-                        cursor: allowed ? "pointer" : "default",
+                        opacity: mode === "blocked" ? 0.45 : 1,
+                        cursor: mode === "blocked" ? "default" : "pointer",
                       }}
                     >
                       <ShapeSwatch width={s.width} height={s.height} />
@@ -183,6 +195,14 @@ export function CanvasSizePicker({
                           {s.width}×{s.height} · {aspectRatioOf(s.width, s.height)}
                         </span>
                       </span>
+                      {mode === "version" && (
+                        <span
+                          className="sp-eyebrow flex-shrink-0"
+                          style={{ color: "var(--state-primary)" }}
+                        >
+                          new version
+                        </span>
+                      )}
                     </button>
                   );
                 })}
@@ -262,16 +282,26 @@ export function CanvasSizePicker({
           )}
           {customAspectBlocked && (
             <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}>
-              That changes the aspect ratio, so it can’t apply here.
+              {onPickVersion
+                ? "That changes the aspect ratio, so it becomes a new version."
+                : "That changes the aspect ratio, so it can’t apply here."}
             </p>
           )}
           <button
-            onClick={() => !customErr && !customAspectBlocked && onPick({ width: w, height: h })}
-            disabled={Boolean(customErr) || Boolean(customAspectBlocked)}
+            onClick={() => {
+              if (customErr) return;
+              if (customAspectBlocked) onPickVersion?.({ width: w, height: h });
+              else onPick({ width: w, height: h });
+            }}
+            disabled={Boolean(customErr) || Boolean(customAspectBlocked && !onPickVersion)}
             className="sp-btn w-full"
             style={{ minHeight: 30 }}
           >
-            Use {customErr ? "custom size" : `${w}×${h}`}
+            {customErr
+              ? "Use custom size"
+              : customAspectBlocked && onPickVersion
+                ? `Create a ${w}×${h} version`
+                : `Use ${w}×${h}`}
           </button>
         </div>
       )}
