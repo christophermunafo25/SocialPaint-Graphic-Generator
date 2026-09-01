@@ -5,11 +5,20 @@ import React from "react";
  * the gutter off the rail equals the gutter off the window edge at every
  * viewport and in both sidebar states. The width cap and gutter are tokens
  * (--page-max / --page-pad on .sp-page) — one knob, no per-page overrides.
- * `narrow` caps the inner content (People 900, Settings 760) and centres it
- * inside the column. */
-export function Page({ narrow, children }: { narrow?: 760 | 900; children: React.ReactNode }) {
+ * `narrow` caps the inner content (People 900) and centres it inside the
+ * column; `wide` raises the column cap itself (--page-max-wide) for pages
+ * built as rail + content (Settings), where tables want the room. */
+export function Page({
+  narrow,
+  wide,
+  children,
+}: {
+  narrow?: 760 | 900;
+  wide?: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="sp-page">
+    <div className={wide ? "sp-page sp-page--wide" : "sp-page"}>
       <div style={narrow ? { maxWidth: narrow, marginInline: "auto" } : undefined}>{children}</div>
     </div>
   );
