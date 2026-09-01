@@ -18,27 +18,12 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { useColorScheme } from "@/lib/colorScheme";
 import { useRouter, type Route } from "../router";
 import { useChrome } from "./layout/ChromeContext";
-import logoOnLight from "@/assets/socialpaint/logo-on-light.svg";
-import logoOnDark from "@/assets/socialpaint/logo-on-dark.svg";
 import { GooeyNavPill } from "./GooeyNavPill";
-import { BrandMark } from "./BrandMark";
+import { BrandLockup, BrandMark } from "./BrandMark";
 
 // Re-exported so existing `import { BrandMark } from "../Sidebar"` call sites
-// keep working; the component itself lives in BrandMark.tsx.
+// keep working; the components themselves live in BrandMark.tsx.
 export { BrandMark };
-
-/** The official horizontal lockup — Voltage mark + wordmark, the wordmark
- * in Ink on light chrome and White on dark. */
-function BrandLockup({ height = 16 }: { height?: number }) {
-  const { resolved } = useColorScheme();
-  return (
-    <img
-      src={resolved === "dark" ? logoOnDark : logoOnLight}
-      alt="SocialPaint"
-      style={{ height, width: "auto", display: "block" }}
-    />
-  );
-}
 
 interface NavItem {
   label: string;

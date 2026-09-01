@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/stores/supabase/client";
+import { BrandLockup } from "../BrandMark";
 
 type View = "signin" | "signup" | "forgot" | "checkEmail" | "setPassword";
 
@@ -94,9 +95,12 @@ export function AuthPage() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4"
+      className="min-h-screen flex flex-col items-center justify-center p-4"
       style={{ background: "var(--bg-canvas)" }}
     >
+      <div className="flex justify-center" style={{ marginBottom: "var(--space-md)" }}>
+        <BrandLockup height={22} />
+      </div>
       <div
         className="w-full max-w-sm overflow-hidden"
         style={{
