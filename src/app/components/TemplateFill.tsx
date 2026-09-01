@@ -553,7 +553,17 @@ export function TemplateFill({
             <div
               className="overflow-hidden"
               data-radius-card
-              style={{ background: "var(--bg-hover)", border: "1px solid var(--border)" }}
+              style={{
+                background: "var(--bg-hover)",
+                border: "1px solid var(--border)",
+                // The renderer scales to this box's WIDTH, so the width is
+                // capped from the viewport HEIGHT (minus the sticky offset
+                // and the card's own chrome) via the canvas aspect ratio —
+                // the whole graphic is visible without scrolling, portrait
+                // formats included.
+                maxWidth: `calc((100vh - 180px) * ${template.canvasWidth / template.canvasHeight})`,
+                marginInline: "auto",
+              }}
             >
               {/* Canvas boundary: the form beside it keeps working even if
                   the live preview can't render this template. */}

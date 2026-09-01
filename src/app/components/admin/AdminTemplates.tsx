@@ -188,9 +188,7 @@ export function AdminTemplates() {
 
       {templatesState.status === "ready" && templates.length > 0 && (
         <div className="flex flex-wrap items-center mb-6" style={{ gap: "var(--space-xs)" }}>
-          <div style={{ width: 420, maxWidth: "100%" }}>
-            <TemplateSearchField value={query} onChange={setQuery} />
-          </div>
+          <TemplateSearchField value={query} onChange={setQuery} />
           <div
             className="flex overflow-hidden"
             data-radius-control
