@@ -192,6 +192,7 @@ html {
 
   /* Layout */
   --page-max: 1240px; /* THE content column cap — one knob, see .sp-page */
+  --page-max-wide: 1720px; /* the wide variant's cap (Settings) — see .sp-page--wide */
   --page-pad: 32px; /* column gutter; 16px under 768 */
   --bp-sm: 480px;
   --bp-md: 768px;
@@ -572,6 +573,10 @@ optgroup {
   align-items: center;
   justify-content: center;
   gap: 6px;
+  /* A button's label is one line, always: a wrapped button reads as two
+     actions and doubles the row height. If a label ever clips, shorten the
+     label — never let it fold. */
+  white-space: nowrap;
   transition:
     background var(--dur-state) var(--ease),
     color var(--dur-state) var(--ease),
@@ -1876,6 +1881,11 @@ input[type="radio"] {
   margin-inline: auto;
   padding: 40px var(--page-pad) 64px;
   box-sizing: border-box;
+}
+/* Wide variant: pages built as rail + content (Settings) waste the standard
+   cap — tables and switch rows want the room. Same gutters, bigger cap. */
+.sp-page--wide {
+  max-width: var(--page-max-wide);
 }
 /* Content-panel card padding (Insights, Brand Studio, Settings, People). */
 .sp-card--content {
