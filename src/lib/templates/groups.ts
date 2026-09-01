@@ -40,12 +40,18 @@ const slug = (s: string) =>
     .replace(/^-|-$/g, "")
     .toLowerCase();
 
+/** The chip id for one platform at one shape — the shared vocabulary between
+ *  the chip groups, the per-template membership list, and a shelf's
+ *  "View all" target. */
+export const groupId = (platform: PlatformId, aspectRatio: string): string =>
+  `${platform}-${slug(aspectRatio)}`;
+
 /** Every group a template belongs to — one per platform it serves. Deriving
  *  this directly means a filter can be applied without rebuilding the groups
  *  off a filtered set — which would make a selected group vanish the moment
  *  a search excluded it. */
 export const groupIdsOf = (t: CatalogTemplate): string[] =>
-  t.platforms.map((p) => `${p}-${slug(t.aspectRatio)}`);
+  t.platforms.map((p) => groupId(p, t.aspectRatio));
 
 /**
  * Build the catalogue's groups: platform order first (the fixed list), then
@@ -96,7 +102,7 @@ export function buildGroups(templates: CatalogTemplate[]): TemplateGroup[] {
       const base = `${platform.label} ${ORIENTATION_LABEL[head.orientation]}`;
       const ambiguous = (orientationCounts.get(head.orientation) ?? 0) > 1;
       groups.push({
-        id: `${platform.id}-${slug(head.aspectRatio)}`,
+        id: groupId(platform.id, head.aspectRatio),
         platform,
         orientation: head.orientation,
         aspectRatio: head.aspectRatio,
@@ -107,4 +113,64 @@ export function buildGroups(templates: CatalogTemplate[]): TemplateGroup[] {
     }
   }
   return groups;
+}
+
+/**
+ * Build the browse/search SECTIONS: one per platform SET at one shape, so a
+ * template appears exactly once, labelled with every platform it serves —
+ * "Instagram · Facebook · LinkedIn Portrait". The section sits in the shelf
+ * order of its PRIMARY platform (first in the size's list).
+ *
+ * This is deliberately the other half of `buildGroups`: the chips filter by
+ * ONE platform (inclusive membership), the sections show each template ONCE
+ * (exact-set membership). A section's "View all" bridges the two by
+ * targeting its primary platform's chip.
+ */
+export function buildShelves(templates: CatalogTemplate[]): TemplateGroup[] {
+  const buckets = new Map<string, CatalogTemplate[]>();
+  for (const t of templates) {
+    // The platform SET is part of the bucket: 1200×627 (LinkedIn) must not
+    // merge with 1200×630 (Facebook) just because both are 1.91:1.
+    const key = `${t.platforms.join("+")}|${t.aspectRatio}`;
+    const bucket = buckets.get(key);
+    if (bucket) bucket.push(t);
+    else buckets.set(key, [t]);
+  }
+
+  const shelves: TemplateGroup[] = [];
+  for (const platform of PLATFORMS) {
+    const mine = [...buckets.values()].filter((members) => members[0].platform === platform.id);
+
+    mine.sort(
+      (a, b) =>
+        ORIENTATION_ORDER.indexOf(a[0].orientation) - ORIENTATION_ORDER.indexOf(b[0].orientation) ||
+        b[0].width / b[0].height - a[0].width / a[0].height,
+    );
+
+    const orientationCounts = new Map<Orientation, number>();
+    for (const members of mine) {
+      orientationCounts.set(
+        members[0].orientation,
+        (orientationCounts.get(members[0].orientation) ?? 0) + 1,
+      );
+    }
+
+    for (const members of mine) {
+      const head = members[0];
+      const base = `${head.platformLabel} ${ORIENTATION_LABEL[head.orientation]}`;
+      const ambiguous = (orientationCounts.get(head.orientation) ?? 0) > 1;
+      shelves.push({
+        // Distinct id space from the chips ("instagram-facebook-4-5" vs
+        // "instagram-4-5") — a shelf is never a filter target itself.
+        id: `${head.platforms.join("-")}-${slug(head.aspectRatio)}`,
+        platform,
+        orientation: head.orientation,
+        aspectRatio: head.aspectRatio,
+        label: ambiguous ? `${base} (${head.aspectRatio})` : base,
+        frame: `${head.width} / ${head.height}`,
+        templates: members,
+      });
+    }
+  }
+  return shelves;
 }

@@ -4,7 +4,13 @@ import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { toCatalogTemplate, type CatalogTemplate } from "@/lib/templates/catalog";
-import { buildGroups, groupIdsOf, type TemplateGroup } from "@/lib/templates/groups";
+import {
+  buildGroups,
+  buildShelves,
+  groupId,
+  groupIdsOf,
+  type TemplateGroup,
+} from "@/lib/templates/groups";
 import { buildSearchIndex, searchTemplates } from "@/lib/templates/searchIndex";
 import { useRouter } from "../router";
 import { Page, PageHeader } from "./layout/Page";
@@ -19,14 +25,17 @@ import { revealIndex, useReveal } from "./templates/useReveal";
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 /** Member-facing template library. Three views on one surface, all driven by
- * the URL: browse (a rail per group), filtered (one group's grid), and search
- * (matches across every group).
+ * the URL: browse (a rail per section), filtered (one chip's grid), and
+ * search (matches across every section).
  *
- * The unit throughout is a GROUP — one platform at one shape, e.g. "Facebook
- * Landscape". Grouping this far down is what lets every frame in a rail or a
- * grid share one ratio, so nothing is letterboxed to a common square and
- * rows sit even. Platform, shape and ratio are all derived from a template's
- * canvas; see lib/templates/platforms.ts. */
+ * Two grains of grouping, on purpose. The FILTER CHIPS are one platform at
+ * one shape ("LinkedIn Portrait") with inclusive membership, so a member
+ * filters by just the platform they're posting to. The SECTIONS are one
+ * platform SET at one shape ("Instagram · Facebook · LinkedIn Portrait"), so
+ * every template appears exactly once. Both group down to the shape, which
+ * is what lets every frame in a rail or grid share one ratio — nothing is
+ * letterboxed to a common square, and rows sit even. Platform, shape and
+ * ratio all derive from a template's canvas; see lib/templates/platforms.ts. */
 export function Portal() {
   const { company } = useAuth();
   const { route, navigate } = useRouter();
@@ -57,7 +66,11 @@ export function Portal() {
   // ── Derive the catalogue ────────────────────────────────────────────────
   const catalog = useMemo<CatalogTemplate[]>(() => templates.map(toCatalogTemplate), [templates]);
   const index = useMemo(() => buildSearchIndex(catalog), [catalog]);
+  /** The chip vocabulary: one platform at one shape, inclusive membership. */
   const allGroups = useMemo(() => buildGroups(catalog), [catalog]);
+  /** The browse sections: one platform SET at one shape — every template
+   *  exactly once, labelled with all the platforms it serves. */
+  const allShelves = useMemo(() => buildShelves(catalog), [catalog]);
 
   /** Query applies first; the chip then narrows within it. */
   const searched = useMemo(
@@ -94,9 +107,10 @@ export function Portal() {
 
   /** The grid renders a section per group so each one keeps its own frame
    *  ratio — a mixed search result never forces stories and banners into a
-   *  single shared shape. */
+   *  single shared shape. Un-chipped results use the SHELF grouping, so a
+   *  multi-platform template appears once, not once per platform. */
   const resultGroups = useMemo(
-    () => (group ? [{ ...group, templates: results }] : buildGroups(results)),
+    () => (group ? [{ ...group, templates: results }] : buildShelves(results)),
     [group, results],
   );
 
@@ -186,12 +200,15 @@ export function Portal() {
           </p>
         </div>
       ) : browsing ? (
-        allGroups.map((g) => (
+        allShelves.map((g) => (
           <PlatformShelf
             key={g.id}
             group={g}
             onOpen={openTemplate}
-            onViewAll={() => setState({ group: g.id })}
+            // A shelf isn't a filter target itself — "View all" selects its
+            // PRIMARY platform's chip, which holds everything this shelf
+            // holds (chip membership is inclusive).
+            onViewAll={() => setState({ group: groupId(g.platform.id, g.aspectRatio) })}
           />
         ))
       ) : (

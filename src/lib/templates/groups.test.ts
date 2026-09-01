@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { TemplateSchema } from "@/lib/types";
 import { toCatalogTemplate } from "./catalog";
-import { buildGroups, groupIdsOf } from "./groups";
+import { buildGroups, buildShelves, groupId, groupIdsOf } from "./groups";
 
 let seq = 0;
 const mk = (name: string, width: number, height: number): ReturnType<typeof toCatalogTemplate> => {
@@ -79,6 +79,42 @@ describe("buildGroups — one platform per group", () => {
     const facebook = g.find((x) => x.id === "facebook-1-91-1")!;
     expect(linkedin.templates).toEqual([li]);
     expect(facebook.templates).toEqual([fb]);
+  });
+
+  describe("buildShelves — every template exactly once", () => {
+    const shelves = buildShelves([portrait, square]);
+
+    it("holds each template in exactly one section", () => {
+      for (const t of [portrait, square]) {
+        expect(shelves.filter((s) => s.templates.includes(t))).toHaveLength(1);
+      }
+    });
+
+    it("labels a section with every platform its size serves", () => {
+      const s = shelves.find((x) => x.templates.includes(portrait))!;
+      expect(s.label).toBe("Instagram · Facebook · LinkedIn Portrait");
+      // Shelved under the PRIMARY platform (first in the size's list).
+      expect(s.platform.id).toBe("instagram");
+    });
+
+    it("keeps same-ratio platform sets apart", () => {
+      const li = mk("LI banner", 1200, 627);
+      const fb = mk("FB link", 1200, 630);
+      const s = buildShelves([li, fb]);
+      expect(s).toHaveLength(2);
+      expect(s.map((x) => x.templates)).toEqual([[li], [fb]]); // PLATFORMS order: LinkedIn first
+    });
+
+    it("a shelf's primary chip covers everything the shelf holds", () => {
+      // The View-all bridge: chip membership is inclusive, so the primary
+      // platform's chip is always a superset of the section.
+      for (const s of shelves) {
+        const chip = buildGroups([portrait, square]).find(
+          (g) => g.id === groupId(s.platform.id, s.aspectRatio),
+        )!;
+        for (const t of s.templates) expect(chip.templates).toContain(t);
+      }
+    });
   });
 
   it("disambiguates only when a platform holds two shapes of one orientation", () => {
