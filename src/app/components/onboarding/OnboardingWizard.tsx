@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowLeft, ArrowRight, Check, Trash2, Upload } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Plus, Trash2, Upload, X } from "lucide-react";
 import type { BrandColor, FontRef } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -374,10 +374,24 @@ function StepCompany({
   );
 }
 
+/** Palette keys templates bind to. The five defaults can never be removed:
+ * deleting Primary during onboarding would orphan every downstream binding. */
+const LOCKED_KEYS = new Set(DEFAULT_PALETTE.map((c) => c.key));
+const PALETTE_CAP = 12;
+
 /** The palette as a four-up grid of tiles (Figma 154:1654): a swatch on
  * the chip fill with the name and hex beneath. The swatch is ColorControl
  * itself, styled to the tile — the hover veil, the pencil scaled to the
- * box, and the editor are the same control every other screen uses. */
+ * box, and the editor are the same control every other screen uses.
+ *
+ * The sixth slot adds a colour: a dashed empty slot, visibly not a
+ * swatch. Adding appends an entry with a stable key and a "Custom N" name
+ * that is editable inline, and opens the editor on the new tile straight
+ * away so the user is choosing a colour, not looking at a grey square.
+ * User-added colours remove from a control that appears on hover beside
+ * the pencil; the defaults cannot. Twelve is the cap, and past it the Add
+ * tile says so rather than going quiet. Tiles enter, leave, and reflow on
+ * the motion tokens. */
 function StepColors({
   colors,
   onChange,
@@ -385,34 +399,102 @@ function StepColors({
   colors: BrandColor[];
   onChange(c: BrandColor[]): void;
 }) {
+  const m = useMotionTokens();
+  const [openKey, setOpenKey] = useState<string | null>(null);
   const set = (i: number, patch: Partial<BrandColor>) =>
     onChange(colors.map((c, j) => (j === i ? { ...c, ...patch } : c)));
+  const full = colors.length >= PALETTE_CAP;
+
+  const add = () => {
+    if (full) return;
+    const used = new Set(colors.map((c) => c.name));
+    let n = 1;
+    while (used.has(`Custom ${n}`)) n += 1;
+    const key = `custom-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+    setOpenKey(key);
+    onChange([...colors, { key, name: `Custom ${n}`, hex: "#808080" }]);
+  };
+
   return (
     <ul className="sp-gate__tiles" aria-label="Brand palette">
-      {colors.map((c, i) => (
-        <li key={c.key} className="sp-gate__tile">
-          <ColorControl
-            ariaLabel={`${c.name} color`}
-            value={c.hex}
-            onChange={(hex) => set(i, { hex })}
-            /* The palette is being defined here — there is nothing to
-               quick-select from yet. */
-            brandSwatches={false}
-            hexField={false}
-            pencilSize={38}
-            swatchStyle={{
-              width: "100%",
-              height: "auto",
-              aspectRatio: "181 / 127",
-              borderRadius: "var(--radius-media-inner)",
-            }}
-          />
-          <div className="sp-gate__tile-label">
-            <span className="sp-gate__tile-name">{c.name}</span>
-            <span className="sp-gate__tile-hex">{c.hex.toUpperCase()}</span>
-          </div>
-        </li>
-      ))}
+      <AnimatePresence initial={false}>
+        {colors.map((c, i) => {
+          const locked = LOCKED_KEYS.has(c.key);
+          return (
+            <motion.li
+              key={c.key}
+              layout
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: m.state, ease: m.ease }}
+              className="sp-gate__tile"
+            >
+              <ColorControl
+                ariaLabel={`${c.name} color`}
+                value={c.hex}
+                onChange={(hex) => set(i, { hex })}
+                /* The palette is being defined here — there is nothing to
+                   quick-select from yet. */
+                brandSwatches={false}
+                hexField={false}
+                pencilSize={38}
+                defaultOpen={c.key === openKey}
+                swatchStyle={{
+                  width: "100%",
+                  height: "auto",
+                  aspectRatio: "181 / 127",
+                  borderRadius: "var(--radius-media-inner)",
+                }}
+              />
+              {!locked && (
+                <button
+                  type="button"
+                  className="sp-gate__tile-remove"
+                  aria-label={`Remove ${c.name}`}
+                  title="Remove color"
+                  onClick={() => onChange(colors.filter((_, j) => j !== i))}
+                >
+                  <X className="w-3.5 h-3.5" aria-hidden />
+                </button>
+              )}
+              <div className="sp-gate__tile-label">
+                {locked ? (
+                  <span className="sp-gate__tile-name">{c.name}</span>
+                ) : (
+                  <input
+                    type="text"
+                    value={c.name}
+                    maxLength={24}
+                    aria-label="Color name"
+                    className="sp-gate__tile-name-input"
+                    onChange={(e) => set(i, { name: e.target.value })}
+                    onBlur={(e) => {
+                      if (!e.target.value.trim()) set(i, { name: `Custom ${i + 1}` });
+                    }}
+                  />
+                )}
+                <span className="sp-gate__tile-hex">{c.hex.toUpperCase()}</span>
+              </div>
+            </motion.li>
+          );
+        })}
+      </AnimatePresence>
+      <motion.li layout className="sp-gate__tile sp-gate__tile--add" key="add">
+        <button
+          type="button"
+          className="sp-gate__tile-add"
+          onClick={add}
+          disabled={full}
+          aria-disabled={full}
+        >
+          <span className="sp-gate__tile-plus" aria-hidden>
+            <Plus className="w-3 h-3" />
+          </span>
+          <span>{full ? "Palette is full" : "Add color"}</span>
+          {full && <span className="sp-gate__tile-add-why">{PALETTE_CAP} colors at most</span>}
+        </button>
+      </motion.li>
     </ul>
   );
 }

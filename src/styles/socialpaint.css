@@ -1344,6 +1344,112 @@ optgroup {
   color: var(--text-muted);
 }
 
+/* Add colour: a dashed empty slot with a circular plus badge — visibly a
+   slot, not a swatch. Past the cap it disables and says why. */
+.sp-gate__tile--add {
+  padding: 0;
+  aspect-ratio: 197 / 175;
+  background: color-mix(in srgb, var(--text-primary) 2%, transparent);
+  border-style: dashed;
+  border-color: var(--border);
+}
+.sp-gate__tile-add {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2xs);
+  padding: var(--space-2xs);
+  border-radius: inherit;
+  font-size: var(--type-caption-size);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background var(--dur-state) var(--ease),
+    color var(--dur-state) var(--ease);
+}
+.sp-gate__tile-add:hover:not(:disabled),
+.sp-gate__tile-add:focus-visible {
+  background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  color: var(--text-primary);
+}
+.sp-gate__tile-add:disabled {
+  cursor: default;
+  color: var(--text-muted);
+}
+.sp-gate__tile-plus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--text-primary) 10%, transparent);
+  transition: background var(--dur-state) var(--ease);
+}
+.sp-gate__tile-add:hover:not(:disabled) .sp-gate__tile-plus {
+  background: color-mix(in srgb, var(--text-primary) 16%, transparent);
+}
+.sp-gate__tile-add-why {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+/* Remove, for user-added colours only: appears with the pencil on hover
+   and on keyboard focus within the tile. */
+.sp-gate__tile-remove {
+  position: absolute;
+  top: calc(var(--space-2xs) + var(--space-2xs));
+  right: calc(var(--space-2xs) + var(--space-2xs));
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--ink) 60%, transparent);
+  color: var(--white);
+  opacity: 0;
+  cursor: pointer;
+  transition:
+    opacity var(--dur-state) var(--ease),
+    background var(--dur-state) var(--ease);
+}
+.sp-gate__tile:hover .sp-gate__tile-remove,
+.sp-gate__tile:focus-within .sp-gate__tile-remove {
+  opacity: 1;
+}
+.sp-gate__tile-remove:hover {
+  background: color-mix(in srgb, var(--ink) 80%, transparent);
+}
+/* The name of a user-added colour edits in place: plain text at rest, an
+   underline on approach, the ring colour as the underline when focused. */
+.sp-gate__tile-name-input {
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  border-radius: 0;
+  font-family: var(--font-ui);
+  font-size: var(--type-label-size);
+  font-weight: var(--weight-ui);
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color var(--dur-state) var(--ease);
+}
+.sp-gate__tile-name-input:hover {
+  border-bottom-color: var(--border-strong);
+}
+.sp-gate__tile-name-input:focus-visible {
+  outline: none;
+  border-bottom-color: var(--ring);
+}
+
 /* The colour swatch (ColorControl): the veil with the pencil is always in
    the tree and fades in on --dur-state — on hover, on keyboard focus, and
    while its editor is open — so the affordance appears on approach. */
