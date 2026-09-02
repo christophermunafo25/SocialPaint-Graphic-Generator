@@ -1378,6 +1378,82 @@ optgroup {
   opacity: 1;
 }
 
+/* The colour editor (ColorControl): an in-app popover in the card's own
+   language — the chip fill, the media radius, the lit edge — holding the
+   saturation/value area, the hue slider, and the hex field. It anchors to
+   the swatch and flips above when there is no room below; under --bp-lg
+   it is a bottom sheet, since a popover pinned to a two-column tile on a
+   phone has nowhere to go. No drop shadow: elevation is surface colour on
+   this system, and the lit edge carries the separation. */
+.sp-color-pop {
+  --edge-color: rgb(var(--edge-rgb) / var(--edge-alpha));
+  --edge-color-bottom: rgb(var(--edge-rgb) / calc(var(--edge-alpha) * var(--edge-bottom-ratio)));
+  --edge-lit: inset 0 1px 0 var(--edge-color), inset 0 -1px 0 var(--edge-color-bottom);
+  box-sizing: border-box;
+  width: 240px;
+  padding: var(--space-xs);
+  background: var(--chip-raised, var(--bg-raised));
+  border: 1px solid transparent;
+  border-radius: var(--radius-media);
+  box-shadow: var(--edge-lit);
+  z-index: var(--z-popover);
+  outline: none;
+}
+.sp-color-pop .react-colorful {
+  width: 100%;
+  height: 168px;
+  gap: var(--space-2xs);
+}
+.sp-color-pop .react-colorful__saturation {
+  border-radius: var(--radius-media-inner);
+  border-bottom: none;
+}
+.sp-color-pop .react-colorful__last-control {
+  height: 12px;
+  border-radius: var(--radius-pill);
+}
+.sp-color-pop .react-colorful__pointer {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--white);
+}
+/* The picker's two areas take the arrow keys; give them the system's ring
+   when reached by keyboard so the focused channel is never a mystery. */
+.sp-color-pop .react-colorful__interactive:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+.sp-color-pop__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  margin-top: var(--space-xs);
+}
+.sp-color-pop__chip {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--border-strong);
+}
+@media (max-width: 1023px) {
+  [data-radix-popper-content-wrapper]:has(> .sp-color-pop) {
+    position: fixed !important;
+    inset: auto 0 0 0 !important;
+    transform: none !important;
+    min-width: 0 !important;
+  }
+  .sp-color-pop {
+    width: 100%;
+    border-radius: var(--radius-media) var(--radius-media) 0 0;
+    padding: var(--space-sm) var(--space-sm) calc(var(--space-sm) + env(safe-area-inset-bottom));
+  }
+  .sp-color-pop .react-colorful {
+    height: 200px;
+  }
+}
+
 /* The auth headline: the login frame's 38 maps to the H3 step, the
    onboarding frames' 45 to H2 — the two containers differ by more than 2×
    in width and the proportion between them holds. */
