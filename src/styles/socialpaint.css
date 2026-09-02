@@ -2705,7 +2705,11 @@ input[type="radio"] {
 }
 
 /* --- Responsive ----------------------------------------------------------- */
-@media (max-width: 767px) {
+/* Shell boundary: --bp-lg (1024px). The rail exists at >= 1024; the mobile
+   top bar below. This block must break where the JS shell switch does
+   (Sidebar.tsx matchMedia), so it fires at 1023 — var() is not valid inside
+   a media query, hence the literal. */
+@media (max-width: 1023px) {
   /* 16px page gutter on mobile, per the DS layout spec. :root so the
      bands' column padding follows the same token. */
   :root {
