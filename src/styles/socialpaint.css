@@ -1560,6 +1560,116 @@ optgroup {
   }
 }
 
+/* Fonts (Figma 158:202): two pickers side by side on the 833 column with
+   a sample line beneath each, set in the chosen face and reserved at one
+   line so a swap moves nothing; the full-width dashed upload zone; then a
+   row per uploaded file on the chip fill. */
+.sp-gate__fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+.sp-gate__field-label {
+  font-family: var(--font-ui);
+  font-size: var(--type-label-size);
+  line-height: var(--type-label-lh);
+  color: var(--text-primary);
+}
+.sp-gate__sample {
+  min-height: calc(var(--type-label-size) * var(--type-label-lh) + var(--space-3xs));
+  font-size: var(--type-label-size);
+  line-height: var(--type-label-lh);
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* The dropzone: dashed on a 2% lift, brightening on approach and lighting
+   in the accent on drag-over (the .sp-dropzone rules). The file input is
+   visually hidden rather than display:none so Tab reaches it and the zone
+   shows the ring through focus-within. */
+.sp-gate__drop {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2xs);
+  min-height: 100px;
+  margin-top: var(--space-md);
+  padding: var(--space-sm);
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, var(--text-primary) 2%, transparent);
+  font-size: var(--type-body-size);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.sp-gate__drop:hover {
+  border-color: var(--border-control);
+  color: var(--text-primary);
+}
+.sp-gate__drop:focus-within {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.sp-gate__rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  margin: var(--space-xs) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-gate__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: 52px;
+  padding: 0 var(--space-xs) 0 var(--space-sm);
+  background: var(--chip-raised, var(--bg-raised));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control-lg);
+}
+.sp-gate__row-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--type-label-size);
+  color: var(--text-primary);
+}
+.sp-gate__row .sp-input {
+  flex: none;
+  width: auto;
+  min-height: 32px;
+  padding: 0 var(--space-2xs);
+  font-size: var(--type-label-size);
+}
+.sp-gate__row-remove {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-control);
+  color: var(--text-muted);
+  opacity: 0.5;
+  cursor: pointer;
+  transition:
+    opacity var(--dur-state) var(--ease),
+    color var(--dur-state) var(--ease),
+    background var(--dur-state) var(--ease);
+}
+.sp-gate__row:hover .sp-gate__row-remove,
+.sp-gate__row:focus-within .sp-gate__row-remove {
+  opacity: 1;
+}
+.sp-gate__row-remove:hover {
+  color: var(--state-danger-on-surface);
+  background: var(--danger-wash);
+}
+
 /* The auth headline: the login frame's 38 maps to the H3 step, the
    onboarding frames' 45 to H2 — the two containers differ by more than 2×
    in width and the proportion between them holds. */

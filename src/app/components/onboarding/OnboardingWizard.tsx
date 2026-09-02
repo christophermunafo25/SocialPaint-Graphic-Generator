@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useId, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, ArrowRight, Check, Plus, Trash2, Upload, X } from "lucide-react";
 import type { BrandColor, FontRef } from "@/lib/types";
@@ -59,6 +59,7 @@ const DESCRIPTIONS: readonly (string | null)[] = [
 ];
 
 interface PendingFont {
+  id: string; // row identity for enter/leave animation; not persisted
   file: File;
   family: string;
   use: "heading" | "body" | "none";
@@ -499,6 +500,10 @@ function StepColors({
   );
 }
 
+/** A Google font picker with a sample line beneath rendered in the chosen
+ * face, so the choice is visible before it is committed. The face loads
+ * through loadGoogleFonts; the sample's height is reserved, so a swap
+ * moves nothing. */
 function FontSelect({
   label,
   value,
@@ -508,16 +513,20 @@ function FontSelect({
   value: string;
   onChange(v: string): void;
 }) {
+  const id = useId();
+  useEffect(() => {
+    loadGoogleFonts([value]);
+  }, [value]);
   return (
-    <label className="block">
-      <span className="sp-eyebrow">{label}</span>
+    <div className="sp-gate__field">
+      <label htmlFor={id} className="sp-gate__field-label">
+        {label}
+      </label>
       <select
+        id={id}
         value={value}
-        onChange={(e) => {
-          loadGoogleFonts([e.target.value]);
-          onChange(e.target.value);
-        }}
-        className="sp-input sp-input-lg mt-1"
+        onChange={(e) => onChange(e.target.value)}
+        className="sp-input sp-input-lg"
       >
         {GOOGLE_FONTS.map((f) => (
           <option key={f} value={f}>
@@ -525,7 +534,14 @@ function FontSelect({
           </option>
         ))}
       </select>
-    </label>
+      <p
+        className="sp-gate__sample"
+        aria-hidden
+        style={{ fontFamily: `"${value}", var(--font-body)` }}
+      >
+        The quick brown fox jumps over the lazy dog
+      </p>
+    </div>
   );
 }
 
@@ -539,7 +555,13 @@ interface StepFontsProps {
   onError(e: string | null): void;
 }
 
+/** Fonts (Figma 158:202): two pickers with live samples, the full-width
+ * dashed upload zone, and a row per uploaded file — family, the use
+ * select, and a remove control that appears on approach. Rows enter and
+ * leave on the motion tokens. inspectFontFile and its error path are
+ * unchanged; the error lands in the column's reserved status line. */
 function StepFonts(props: StepFontsProps) {
+  const m = useMotionTokens();
   const addFonts = async (files: File[]) => {
     props.onError(null);
     for (const file of files) {
@@ -550,14 +572,19 @@ function StepFonts(props: StepFontsProps) {
       }
       props.setPendingFonts((prev) => [
         ...prev,
-        { file, family: check.metadata.family ?? file.name, use: "none" },
+        {
+          id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+          file,
+          family: check.metadata.family ?? file.name,
+          use: "none",
+        },
       ]);
     }
   };
   const drop = useFileDrop((files) => void addFonts(files));
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <div>
+      <div className="sp-gate__fields">
         <FontSelect
           label="Heading font"
           value={props.headingGoogle}
@@ -565,69 +592,64 @@ function StepFonts(props: StepFontsProps) {
         />
         <FontSelect label="Body font" value={props.bodyGoogle} onChange={props.setBodyGoogle} />
       </div>
-      <div>
-        <label
-          {...drop.bind}
-          data-active={drop.active}
-          className="sp-dropzone flex items-center justify-center gap-2 py-3.5 cursor-pointer"
-          style={{
-            border: "1.5px dashed var(--border-strong)",
-            borderRadius: "var(--radius-control)",
-            fontSize: "var(--type-label-size)",
-            color: "var(--text-secondary)",
+      <label {...drop.bind} data-active={drop.active} className="sp-dropzone sp-gate__drop">
+        <Upload className="sp-dropzone__icon w-4 h-4" aria-hidden />
+        Upload custom font
+        <input
+          type="file"
+          accept={FONT_ACCEPT}
+          multiple
+          className="sr-only"
+          onChange={(e) => {
+            void addFonts(Array.from(e.target.files ?? []));
+            e.target.value = "";
           }}
-        >
-          <Upload className="sp-dropzone__icon w-4 h-4" />
-          Upload custom font
-          <input
-            type="file"
-            accept={FONT_ACCEPT}
-            multiple
-            className="hidden"
-            onChange={(e) => {
-              void addFonts(Array.from(e.target.files ?? []));
-              e.target.value = "";
-            }}
-          />
-        </label>
-        {props.pendingFonts.map((pf, i) => (
-          <div
-            key={`${pf.file.name}-${i}`}
-            className="sp-chip-in flex flex-wrap items-center gap-2 mt-2"
-          >
-            <span
-              className="text-sm flex-1 truncate"
-              style={{ color: "var(--foreground)", minWidth: 120 }}
+        />
+      </label>
+      <ul className="sp-gate__rows" aria-label="Uploaded fonts">
+        <AnimatePresence initial={false}>
+          {props.pendingFonts.map((pf, i) => (
+            <motion.li
+              key={pf.id}
+              layout
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: m.state, ease: m.ease }}
+              className="sp-gate__row"
             >
-              {pf.family}
-            </span>
-            <select
-              value={pf.use}
-              aria-label={`Use for ${pf.family}`}
-              onChange={(e) =>
-                props.setPendingFonts((prev) =>
-                  prev.map((p, j) =>
-                    j === i ? { ...p, use: e.target.value as PendingFont["use"] } : p,
-                  ),
-                )
-              }
-              className="sp-input"
-              style={{ width: "auto", padding: "5px 8px", fontSize: "var(--type-caption-size)" }}
-            >
-              <option value="none">Library only</option>
-              <option value="heading">Use as heading</option>
-              <option value="body">Use as body</option>
-            </select>
-            <button
-              type="button"
-              onClick={() => props.setPendingFonts((prev) => prev.filter((_, j) => j !== i))}
-              aria-label="Remove font"
-            >
-              <Trash2 className="w-4 h-4" style={{ color: "var(--muted-foreground)" }} />
-            </button>
-          </div>
-        ))}
-      </div>
+              <span className="sp-gate__row-name" title={pf.file.name}>
+                {pf.family}
+              </span>
+              <select
+                value={pf.use}
+                aria-label={`Use for ${pf.family}`}
+                onChange={(e) =>
+                  props.setPendingFonts((prev) =>
+                    prev.map((p, j) =>
+                      j === i ? { ...p, use: e.target.value as PendingFont["use"] } : p,
+                    ),
+                  )
+                }
+                className="sp-input"
+              >
+                <option value="none">Library only</option>
+                <option value="heading">Use as heading</option>
+                <option value="body">Use as body</option>
+              </select>
+              <button
+                type="button"
+                className="sp-gate__row-remove"
+                onClick={() => props.setPendingFonts((prev) => prev.filter((_, j) => j !== i))}
+                aria-label={`Remove ${pf.family}`}
+                title="Remove font"
+              >
+                <Trash2 className="w-4 h-4" aria-hidden />
+              </button>
+            </motion.li>
+          ))}
+        </AnimatePresence>
+      </ul>
     </div>
   );
 }
