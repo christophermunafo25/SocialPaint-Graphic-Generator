@@ -116,6 +116,10 @@ html {
   --wednesdays: #ff94f9;
   --fire: #ff6d39;
   --aqua: #7bf2fe;
+  /* Brand Aqua as the board draws it (2026-09-02, at Chris's direction) —
+     the web platform mark's fill. The lifted --aqua above is the
+     working accent; this is the flat brand cut, like --voltage-logo. */
+  --aqua-logo: #00dbee;
   --sunshine: #ddff55;
   --text-on-brand: #272727; /* Ink is the only legible glyph on any of the five */
   --white: #ffffff;
