@@ -307,7 +307,7 @@ function FontSelect({
           loadGoogleFonts([e.target.value]);
           onChange(e.target.value);
         }}
-        className="sp-input mt-1"
+        className="sp-input sp-input-lg mt-1"
       >
         {GOOGLE_FONTS.map((f) => (
           <option key={f} value={f}>
