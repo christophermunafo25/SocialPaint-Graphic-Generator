@@ -1895,11 +1895,17 @@ input[type="radio"] {
   color: var(--sb-fg-active);
 }
 
-/* THE content column. Centred in the region right of the sidebar —
-   margin-inline: auto splits the surplus equally, so the gutter off the rail
-   equals the gutter off the window edge at every viewport and in both
-   sidebar states. Width and gutter are tokens (--page-max / --page-pad);
-   nothing else may cap or offset the column. */
+/* THE content column. Beside the rail (>= --bp-lg) it is centred in the
+   region to the rail's right; below --bp-lg the shell is the 56px top bar
+   and the nav-to-content relationship is vertical — 24px of top padding
+   under the header (see the responsive block) instead of this rule's 48px.
+   Width and gutter are tokens (--page-max / --page-pad — 48/32/24/16 by
+   tier); nothing else may cap or offset the column. margin-inline: auto
+   splits any surplus equally, so the rail gutter and the window gutter stay
+   equal in both sidebar states — and both sit at exactly --page-pad only
+   until the region outgrows --page-max (1720px). Past that (viewport >
+   1984px expanded, > 1812px collapsed) the auto margins grow both gutters
+   beyond --page-pad, together. */
 .sp-page {
   max-width: var(--page-max);
   margin-inline: auto;
