@@ -24,6 +24,7 @@ import {
   Type,
   Undo2,
   Upload,
+  X,
 } from "lucide-react";
 import type {
   AutoBuildResult,
@@ -377,6 +378,20 @@ export function TemplateBuilder({
   const [uploading, setUploading] = useState(false);
   const [figmaOpen, setFigmaOpen] = useState(false);
   const [autoBuildOpen, setAutoBuildOpen] = useState(false);
+  /** The blank path's size chooser. Imports never see it — a Figma or Canva
+   * frame imposes its own size. */
+  const [sizeDialogOpen, setSizeDialogOpen] = useState(false);
+  useEffect(() => {
+    if (!sizeDialogOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setSizeDialogOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [sizeDialogOpen]);
   /** Snapshot of the last loaded/saved draft — anything else is unsaved. */
   const savedSnapshotRef = useRef<string>("");
   const [recomposing, setRecomposing] = useState(false);
@@ -2890,7 +2905,7 @@ export function TemplateBuilder({
       {!sourceChosen ? (
         /* Source pick: two co-equal creation paths */
         <div style={{ gridColumn: "1 / -1", minHeight: 0, overflowY: "auto" }}>
-          <div className="max-w-5xl mx-auto py-10 px-6 space-y-5">
+          <div className="max-w-3xl mx-auto py-10 px-6 space-y-5">
             <div className="text-center space-y-1 mb-2">
               <h2
                 style={{
@@ -2908,44 +2923,12 @@ export function TemplateBuilder({
                 design, editable fields.
               </p>
             </div>
-            {/* The size is chosen here, before a path — a baseline, never an
-                undoable edit. Imports state their own exception below. */}
-            <div
-              className="p-4"
-              data-radius-control
-              style={{
-                border: "1px solid var(--border)",
-                borderRadius: "var(--radius-card)",
-                background: "var(--bg-surface)",
-              }}
-            >
-              <p className="sp-eyebrow" style={{ marginBottom: 8 }}>
-                Canvas size — {draft.canvasWidth}×{draft.canvasHeight}
-              </p>
-              <SizeGallery
-                sizes={sizes}
-                value={{ width: draft.canvasWidth, height: draft.canvasHeight }}
-                onPick={pickCreationSize}
-              />
-              <p
-                style={{
-                  fontSize: "var(--type-caption-size)",
-                  color: "var(--text-muted)",
-                  marginTop: 8,
-                }}
-              >
-                Applies when you start blank. A Figma or Canva import replaces this with the
-                imported frame's own size.
-              </p>
-            </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-stretch">
-              {/* Path A — blank canvas */}
+              {/* Path A — blank canvas. The size gallery gates this path: it
+                  opens as a dialog and picking a size goes straight to the
+                  canvas. Imports skip it — the frame imposes its own size. */}
               <button
-                onClick={() => {
-                  setStarted(true);
-                  // Straight to the canvas: Fields is Step 1.
-                  goTo("fields");
-                }}
+                onClick={() => setSizeDialogOpen(true)}
                 className="p-8 text-center transition-all flex flex-col items-center justify-center gap-3"
                 style={{
                   border: "1.5px dashed var(--border-strong)",
@@ -3032,6 +3015,76 @@ export function TemplateBuilder({
               </button>
             </div>
           </div>
+
+          {sizeDialogOpen && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center p-6"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Choose a canvas size"
+              style={{ background: "color-mix(in srgb, var(--text-on-accent) 45%, transparent)" }}
+              onClick={() => setSizeDialogOpen(false)}
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="w-full overflow-y-auto"
+                style={{
+                  maxWidth: 960,
+                  maxHeight: "80dvh",
+                  background: "var(--bg-surface)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "var(--radius-card)",
+                  padding: "var(--space-md)",
+                }}
+              >
+                <header className="flex items-start justify-between gap-4 mb-4">
+                  <div>
+                    <h2
+                      style={{
+                        fontFamily: "var(--font-head)",
+                        fontWeight: "var(--weight-head)",
+                        fontSize: 21,
+                        letterSpacing: "var(--track-head)",
+                        color: "var(--text-primary)",
+                      }}
+                    >
+                      Choose a canvas size
+                    </h2>
+                    <p
+                      style={{
+                        fontSize: "var(--type-label-size)",
+                        color: "var(--text-secondary)",
+                        marginTop: 2,
+                      }}
+                    >
+                      Your blank canvas opens at this size — you can resize it later from the
+                      toolbar.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="sp-icon-btn flex-shrink-0"
+                    onClick={() => setSizeDialogOpen(false)}
+                    aria-label="Close"
+                  >
+                    <X style={{ width: 16, height: 16 }} />
+                  </button>
+                </header>
+                <SizeGallery
+                  sizes={sizes}
+                  value={{ width: draft.canvasWidth, height: draft.canvasHeight }}
+                  onPick={(next) => {
+                    // Picking IS starting: baseline the canvas, then straight
+                    // to Fields — Step 1, same as the old Start blank click.
+                    pickCreationSize(next);
+                    setSizeDialogOpen(false);
+                    setStarted(true);
+                    goTo("fields");
+                  }}
+                />
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <>
