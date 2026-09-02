@@ -336,6 +336,17 @@ html {
 
   --ring: var(--voltage); /* 13.5:1 on canvas, 11.4:1 on surface */
 
+  /* Size-gallery cover plates. The field runs OPPOSITE the page — a light
+     plate on this dark canvas holding a dark app mock — because inverting
+     only the field would strip the mock's separation. Neutrals only; the
+     covers' artwork palette is baked into the assets, never tokenised. */
+  --cover-ground: #f9f9f8;
+  --cover-card: #171819;
+  --cover-back: #2f3133;
+  --cover-chrome-1: #ececec;
+  --cover-chrome-2: #2f3133;
+  --cover-chrome-3: #0b0b0c;
+
   --shadow-sm: none;
   --shadow-md: none;
 
@@ -403,6 +414,16 @@ html {
   --flash-rgb: 143, 255, 108;
 
   --ring: #272727; /* 13.23:1 on the light canvas */
+
+  /* Size-gallery cover plates — see the dark block: the field runs opposite
+     the page, so light mode gets the near-black plate with a white app mock
+     inside it. Same six neutrals, roles swapped. */
+  --cover-ground: #0b0b0c;
+  --cover-card: #ffffff;
+  --cover-back: #2f3133;
+  --cover-chrome-1: #2f3133;
+  --cover-chrome-2: #ececec;
+  --cover-chrome-3: #f9f9f8;
 
   --shadow-sm: none;
   --shadow-md: none;
@@ -1959,6 +1980,61 @@ input[type="radio"] {
 /* Equal-height media cards across a grid row. */
 .sp-grid-media .sp-template-card,
 .sp-grid-media .sp-reveal__item {
+  height: 100%;
+}
+
+/* --- Size gallery ----------------------------------------------------------
+   The builder start screen's size cards. Same construction as the media
+   card — soft card, concentric inner plate, border-borne elevation — but
+   the plate holds cover ART, not a template preview, so it carries the
+   --cover-ground field the inlined SVGs are drawn against. */
+.sp-sizegrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+  gap: var(--space-md);
+  align-items: stretch;
+}
+
+.sp-sizecard {
+  display: block;
+  width: 100%;
+  height: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--dur-state) var(--ease);
+}
+.sp-sizecard:hover {
+  border-color: var(--border-strong);
+}
+.sp-sizecard:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-tight);
+}
+/* The chosen size. Border weight is the whole signal — no fill, no check:
+   the pressed card and the header's dimension line agree, and that is
+   enough. */
+.sp-sizecard[aria-pressed="true"] {
+  border-color: var(--border-strong);
+}
+
+/* A uniform 4:3 well, NOT the size's own ratio — a true-ratio story tile
+   would run three times the height of a link preview and shred the rows.
+   The mock inside the cover carries the real proportions; the well just
+   keeps the grid even, exactly like .sp-media-card__preview. The covers
+   paint no background of their own, so this field is the one rule both
+   themes share. */
+.sp-sizecard__plate {
+  border-radius: calc(var(--radius-card) - var(--media-pad));
+  aspect-ratio: 4 / 3;
+  background: var(--cover-ground);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+.sp-sizecard__plate svg {
+  width: 100%;
   height: 100%;
 }
 
