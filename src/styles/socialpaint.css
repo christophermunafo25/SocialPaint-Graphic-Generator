@@ -1923,12 +1923,12 @@ input[type="radio"] {
   padding: 24px;
 }
 
-/* Media card: 10px uniform padding; the preview is its own inset surface.
-   The frame is square — most templates are 1:1 social posts, so a square
-   well crops the least and keeps the grid rows even. Both call sites compare
-   a template's own ratio against 1 to decide which axis to pin. */
+/* Media card: an 8px frame on every side; the preview is its own inset
+   surface. The frame is square — most templates are 1:1 social posts, so a
+   square well crops the least and keeps the grid rows even. Both call sites
+   compare a template's own ratio against 1 to decide which axis to pin. */
 .sp-media-card {
-  --media-pad: var(--space-xs);
+  --media-pad: var(--space-2xs);
   padding: var(--media-pad);
   border-radius: var(--radius-media);
 }
