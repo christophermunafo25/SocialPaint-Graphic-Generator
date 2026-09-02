@@ -937,9 +937,13 @@ optgroup {
    at 15%; 20 is the card rung, and the edge is the 15/6/0 language every
    surface now speaks. Its 50px padding and 58px block gap sit off the 4px
    scale and take 48 / 64. The frame's fields lift to #252627 on the panel:
-   the same value the platform chips hold, so the split layout raises
-   --input-bg to that rung (dark-only, like the rung). The solo layout
-   themes with the app and its fields stay flat, as on every card. */
+   the same value the platform chips hold, so the forced-dark door raises
+   --input-bg to that rung (dark-only, like the rung). The app-toned solo
+   layout themes with the app and its fields stay flat, as on every card.
+
+   The hero belongs to the front door only. Once the user has hit Create
+   account — check email, first-run onboarding — the panel stands alone in
+   the middle of the screen, sized to its content (2026-09-02). */
 .sp-gate {
   min-height: 100dvh;
   box-sizing: border-box;
@@ -953,6 +957,7 @@ optgroup {
 .sp-gate[data-layout="solo"] {
   grid-template-columns: minmax(0, 584px);
   justify-content: center;
+  align-content: center;
 }
 .sp-gate__panel {
   min-width: 0;
@@ -966,16 +971,16 @@ optgroup {
   justify-content: center;
   gap: var(--space-2xl);
 }
-.sp-gate[data-layout="split"] .sp-gate__panel {
+.sp-gate[data-theme="dark"] .sp-gate__panel {
   --input-bg: var(--chip-raised);
 }
 /* The frame bounds its lifted fields at 15% white; the strong hairline
    (20%) is the nearer rung. Focus still recolours the edge to the ring. */
-.sp-gate[data-layout="split"] .sp-input {
+.sp-gate[data-theme="dark"] .sp-input {
   border-color: var(--border-strong);
 }
-.sp-gate[data-layout="split"] .sp-input:focus,
-.sp-gate[data-layout="split"] .sp-input:focus-visible {
+.sp-gate[data-theme="dark"] .sp-input:focus,
+.sp-gate[data-theme="dark"] .sp-input:focus-visible {
   border-color: var(--ring);
 }
 .sp-gate__hero {

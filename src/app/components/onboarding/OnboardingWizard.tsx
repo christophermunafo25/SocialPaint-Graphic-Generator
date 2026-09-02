@@ -12,7 +12,6 @@ import { useFileDrop } from "@/lib/useFileDrop";
 import { ColorControl } from "../ColorControl";
 import { BrandMark } from "../BrandMark";
 import { PreAppShell } from "../PreAppShell";
-import authHero from "@/assets/socialpaint/auth-hero.webp";
 
 /** First-run onboarding: walks a user from an empty database to a themed,
  * ready-to-use company workspace. Also reachable any time via "Create
@@ -20,8 +19,9 @@ import authHero from "@/assets/socialpaint/auth-hero.webp";
  * Everything set here is editable later in Brand Studio.
  *
  * Housed in the pre-app shell (Figma 148:1421) so sign-in and first-run
- * setup are one door: the split layout with the hero for firstRun, the
- * same panel centred and app-themed for the in-app "Create company" task.
+ * setup are one door: the panel centred on the canvas with no hero — the
+ * picture has done its job by now — forced dark for firstRun, app-themed
+ * for the in-app "Create company" task.
  * The headline names the current step and a labelled stepper says what is
  * coming. The four steps and finish() are unchanged — this is a rehousing,
  * not a rewrite of the setup logic. */
@@ -130,7 +130,7 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
   const exitHidden = firstRun && step === 0;
 
   return (
-    <PreAppShell layout={firstRun ? "split" : "solo"} hero={authHero}>
+    <PreAppShell layout="solo" tone={firstRun ? "dark" : "app"}>
       <div className="sp-gate__intro">
         {firstRun && <BrandMark width={72} />}
         <p className="sp-eyebrow">
