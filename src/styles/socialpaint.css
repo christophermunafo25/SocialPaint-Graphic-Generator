@@ -1995,12 +1995,12 @@ input[type="radio"] {
   width: 100%;
 }
 
-/* Media card grid: 24px gap; 4 / 3 / 2 / 1 columns. minmax(0, 1fr), not 1fr
-   — a plain 1fr track can't go below its card's min-content, so one card
-   with a wide title row steals width from the rest of the row. */
+/* Media card grid: --space-md gap; 4 / 3 / 2 / 1 columns. minmax(0, 1fr),
+   not 1fr — a plain 1fr track can't go below its card's min-content, so one
+   card with a wide title row steals width from the rest of the row. */
 .sp-grid-media {
   display: grid;
-  gap: 24px;
+  gap: var(--space-md);
   grid-template-columns: minmax(0, 1fr);
   align-items: stretch;
 }
@@ -2020,10 +2020,10 @@ input[type="radio"] {
   }
 }
 
-/* Content-panel grid: 12 columns, same 24px gap. */
+/* Content-panel grid: 12 columns, same --space-md gap. */
 .sp-grid-12 {
   display: grid;
-  gap: 24px;
+  gap: var(--space-md);
   grid-template-columns: repeat(12, 1fr);
   align-items: stretch;
 }
@@ -2748,9 +2748,6 @@ input[type="radio"] {
 }
 .sp-skeleton-card {
   pointer-events: none;
-}
-.sp-skeleton-card .sp-media-card__preview {
-  border: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
