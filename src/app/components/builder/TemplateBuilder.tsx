@@ -2695,217 +2695,250 @@ export function TemplateBuilder({
       )}
 
       {/* ── Top bar ─────────────────────────────────────────────────────── */}
-      <div className="sp-builder__bar">
-        {/* This row must NEVER scroll or clip at any viewport ≥ 1024px, with
+      {/* The bar exists for the EDITOR — save state, steps, publish, a name
+          worth showing. Before a path is chosen there is nothing to save and
+          nothing named, so the start screen renders without it and carries
+          its own quiet way back instead of a near-empty 52px strip. */}
+      {sourceChosen && (
+        <div className="sp-builder__bar">
+          {/* This row must NEVER scroll or clip at any viewport ≥ 1024px, with
             the app sidebar expanded or collapsed. That budget is already
             spent: before adding a control here, move something out (the
             tools, zoom, and canvas info live with the canvas for exactly
             this reason). The name is the only child allowed to shrink. */}
-        <div
-          className="flex items-center gap-2 min-w-0 flex-nowrap"
-          style={{ height: 52, padding: "0 var(--space-xs)" }}
-        >
-          <button
-            onClick={() => navigate({ name: "adminTemplates" })}
-            className="flex items-center gap-1.5 flex-shrink-0"
-            style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}
+          <div
+            className="flex items-center gap-2 min-w-0 flex-nowrap"
+            style={{ height: 52, padding: "0 var(--space-xs)" }}
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Templates
-          </button>
-          <span
-            aria-hidden
-            style={{ width: 1, height: 20, background: "var(--border)", flexShrink: 0 }}
-          />
-          <InlineEdit
-            className="min-w-0"
-            // The name is the only shrinkable item in a crowded bar; it
-            // already truncates, so the floor is just enough to stay
-            // clickable, and a cap stops a long name from pushing the
-            // step control off the end.
-            style={{ flex: "0 1 auto", minWidth: 72, maxWidth: 320 }}
-            value={draft.name}
-            ariaLabel="Rename this template"
-            inputAriaLabel="Template name"
-            placeholder="Untitled template"
-            valueStyle={{
-              fontFamily: "var(--font-ui)",
-              fontWeight: 500,
-              fontSize: "var(--type-label-size)",
-              letterSpacing: "-0.01em",
-              color: "var(--text-primary)",
-            }}
-            onSave={(name) => setDraft((d) => ({ ...d, name }), "text:name")}
-          />
-          {sourceChosen && (
-            <>
-              {/* Save state, compressed to a dot and a word so its width is
+            <button
+              onClick={() => navigate({ name: "adminTemplates" })}
+              className="flex items-center gap-1.5 flex-shrink-0"
+              style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              Templates
+            </button>
+            <span
+              aria-hidden
+              style={{ width: 1, height: 20, background: "var(--border)", flexShrink: 0 }}
+            />
+            <InlineEdit
+              className="min-w-0"
+              // The name is the only shrinkable item in a crowded bar; it
+              // already truncates, so the floor is just enough to stay
+              // clickable, and a cap stops a long name from pushing the
+              // step control off the end.
+              style={{ flex: "0 1 auto", minWidth: 72, maxWidth: 320 }}
+              value={draft.name}
+              ariaLabel="Rename this template"
+              inputAriaLabel="Template name"
+              placeholder="Untitled template"
+              valueStyle={{
+                fontFamily: "var(--font-ui)",
+                fontWeight: 500,
+                fontSize: "var(--type-label-size)",
+                letterSpacing: "-0.01em",
+                color: "var(--text-primary)",
+              }}
+              onSave={(name) => setDraft((d) => ({ ...d, name }), "text:name")}
+            />
+            {sourceChosen && (
+              <>
+                {/* Save state, compressed to a dot and a word so its width is
                   stable. The full sentence lives in the tooltip — and, for a
                   failure, in the error region below the bar, which doSave
                   always fills. The dot goes destructive on failure so the
                   short word still reads as trouble at a glance. */}
-              <span
-                role="status"
-                className="flex items-center gap-1.5 flex-shrink-0 whitespace-nowrap"
-                title={
-                  saveFailed
-                    ? "Not saved — see the message below the bar"
-                    : lastSavedAt && !dirty && !saving
-                      ? savedAgo(lastSavedAt, nowTick)
-                      : undefined
-                }
-                style={{
-                  width: 78,
-                  fontSize: "var(--type-caption-size)",
-                  color: saveFailed ? "var(--destructive)" : "var(--text-muted)",
-                  fontWeight: saveFailed ? 500 : undefined,
-                }}
-              >
-                {(saving || saveFailed || dirty || lastSavedAt) && (
-                  <span
-                    aria-hidden
-                    style={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: "50%",
-                      background: "currentColor",
-                      flexShrink: 0,
-                    }}
-                  />
-                )}
-                {saving
-                  ? "Saving…"
-                  : saveFailed
-                    ? "Not saved"
-                    : dirty
-                      ? "Unsaved"
-                      : lastSavedAt
-                        ? "Saved"
-                        : null}
-              </span>
-              {/* Retry stands in for Save draft while a save has failed —
+                <span
+                  role="status"
+                  className="flex items-center gap-1.5 flex-shrink-0 whitespace-nowrap"
+                  title={
+                    saveFailed
+                      ? "Not saved — see the message below the bar"
+                      : lastSavedAt && !dirty && !saving
+                        ? savedAgo(lastSavedAt, nowTick)
+                        : undefined
+                  }
+                  style={{
+                    width: 78,
+                    fontSize: "var(--type-caption-size)",
+                    color: saveFailed ? "var(--destructive)" : "var(--text-muted)",
+                    fontWeight: saveFailed ? 500 : undefined,
+                  }}
+                >
+                  {(saving || saveFailed || dirty || lastSavedAt) && (
+                    <span
+                      aria-hidden
+                      style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: "50%",
+                        background: "currentColor",
+                        flexShrink: 0,
+                      }}
+                    />
+                  )}
+                  {saving
+                    ? "Saving…"
+                    : saveFailed
+                      ? "Not saved"
+                      : dirty
+                        ? "Unsaved"
+                        : lastSavedAt
+                          ? "Saved"
+                          : null}
+                </span>
+                {/* Retry stands in for Save draft while a save has failed —
                   same operation, and the loud red state stays a real button
                   rather than moving into a menu. */}
-              {saveFailed && !saving ? (
-                <button
-                  onClick={() => void doSave(undefined, true)}
-                  className="sp-btn sp-btn-ghost flex-shrink-0"
-                  style={{ minHeight: 30, padding: "4px 10px" }}
-                >
-                  Retry
-                </button>
-              ) : (
-                <button
-                  onClick={() => void save()}
-                  disabled={saving}
-                  className="sp-btn sp-btn-ghost flex-shrink-0"
-                  style={{ minHeight: 30, padding: "4px 10px" }}
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  Save draft
-                </button>
-              )}
-            </>
-          )}
-
-          <span className="flex-1" style={{ minWidth: "var(--space-2xs)" }} />
-
-          {sourceChosen && (
-            <>
-              <div
-                className="flex overflow-hidden flex-shrink-0"
-                data-radius-control
-                style={{ border: "1px solid var(--border-strong)" }}
-              >
-                {(["edit", "preview"] as const).map((m) => (
+                {saveFailed && !saving ? (
                   <button
-                    key={m}
-                    onClick={() => setMode(m)}
-                    title={m === "edit" ? "Edit" : "Preview"}
-                    aria-label={m === "edit" ? "Edit" : "Preview"}
-                    aria-pressed={mode === m}
-                    className="flex items-center px-2.5 py-1.5"
-                    style={{
-                      borderLeft: m === "preview" ? "1px solid var(--border)" : undefined,
-                      ...(mode === m
-                        ? { background: "var(--fill-action)", color: "var(--text-on-action)" }
-                        : { background: "var(--bg-surface)", color: "var(--text-secondary)" }),
-                    }}
+                    onClick={() => void doSave(undefined, true)}
+                    className="sp-btn sp-btn-ghost flex-shrink-0"
+                    style={{ minHeight: 30, padding: "4px 10px" }}
                   >
-                    {m === "edit" ? (
-                      <Pencil className="w-3.5 h-3.5" />
-                    ) : (
-                      <Eye className="w-3.5 h-3.5" />
-                    )}
+                    Retry
                   </button>
-                ))}
-              </div>
-              {fieldsComplete ? (
-                <WizardStepBar current={step} complete={complete} canGo={canGo} onGo={goTo} />
-              ) : (
-                /* Until a field exists nothing past the editor is reachable,
+                ) : (
+                  <button
+                    onClick={() => void save()}
+                    disabled={saving}
+                    className="sp-btn sp-btn-ghost flex-shrink-0"
+                    style={{ minHeight: 30, padding: "4px 10px" }}
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    Save draft
+                  </button>
+                )}
+              </>
+            )}
+
+            <span className="flex-1" style={{ minWidth: "var(--space-2xs)" }} />
+
+            {sourceChosen && (
+              <>
+                <div
+                  className="flex overflow-hidden flex-shrink-0"
+                  data-radius-control
+                  style={{ border: "1px solid var(--border-strong)" }}
+                >
+                  {(["edit", "preview"] as const).map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => setMode(m)}
+                      title={m === "edit" ? "Edit" : "Preview"}
+                      aria-label={m === "edit" ? "Edit" : "Preview"}
+                      aria-pressed={mode === m}
+                      className="flex items-center px-2.5 py-1.5"
+                      style={{
+                        borderLeft: m === "preview" ? "1px solid var(--border)" : undefined,
+                        ...(mode === m
+                          ? { background: "var(--fill-action)", color: "var(--text-on-action)" }
+                          : { background: "var(--bg-surface)", color: "var(--text-secondary)" }),
+                      }}
+                    >
+                      {m === "edit" ? (
+                        <Pencil className="w-3.5 h-3.5" />
+                      ) : (
+                        <Eye className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+                {fieldsComplete ? (
+                  <WizardStepBar current={step} complete={complete} canGo={canGo} onGo={goTo} />
+                ) : (
+                  /* Until a field exists nothing past the editor is reachable,
                    so three dimmed panel buttons would only restate the
                    dimmed Publish. Say what is missing instead. */
-                <span
-                  className="flex-shrink-0 whitespace-nowrap"
-                  style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}
-                >
-                  Add a field to continue
-                </span>
-              )}
-              {step === "fields" && (
-                /* The editor's one primary control: the answer to "what
+                  <span
+                    className="flex-shrink-0 whitespace-nowrap"
+                    style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}
+                  >
+                    Add a field to continue
+                  </span>
+                )}
+                {step === "fields" && (
+                  /* The editor's one primary control: the answer to "what
                    now". With the default name still in place, publish()
                    opens the Name panel with the field focused and the
                    name-needed note showing — the same guard the panel's own
                    Publish runs. */
-                <button
-                  onClick={() => void publish()}
-                  disabled={!fieldsComplete || saving || publishState !== "idle"}
-                  title={
-                    !fieldsComplete
-                      ? "Add a field to continue"
-                      : hasRealName
-                        ? draft.status === "published"
-                          ? "Publish these changes to your team"
-                          : "Publish this template to your team"
-                        : "Name the template, then publish"
-                  }
-                  className="sp-btn sp-btn-primary flex-shrink-0"
-                  style={{ minHeight: 32, padding: "6px 12px" }}
-                >
-                  {hasRealName ? (
-                    <Send className="w-3.5 h-3.5" />
-                  ) : (
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  )}
-                  Publish
-                </button>
-              )}
-            </>
+                  <button
+                    onClick={() => void publish()}
+                    disabled={!fieldsComplete || saving || publishState !== "idle"}
+                    title={
+                      !fieldsComplete
+                        ? "Add a field to continue"
+                        : hasRealName
+                          ? draft.status === "published"
+                            ? "Publish these changes to your team"
+                            : "Publish this template to your team"
+                          : "Name the template, then publish"
+                    }
+                    className="sp-btn sp-btn-primary flex-shrink-0"
+                    style={{ minHeight: 32, padding: "6px 12px" }}
+                  >
+                    {hasRealName ? (
+                      <Send className="w-3.5 h-3.5" />
+                    ) : (
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    )}
+                    Publish
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+
+          {error && (
+            <p
+              role="alert"
+              className="px-4 py-2"
+              style={{
+                fontSize: "var(--type-caption-size)",
+                background: "var(--danger-wash)",
+                color: "var(--destructive)",
+                borderTop: "1px solid var(--border)",
+              }}
+            >
+              {error}
+            </p>
           )}
         </div>
-
-        {error && (
-          <p
-            role="alert"
-            className="px-4 py-2"
-            style={{
-              fontSize: "var(--type-caption-size)",
-              background: "var(--danger-wash)",
-              color: "var(--destructive)",
-              borderTop: "1px solid var(--border)",
-            }}
-          >
-            {error}
-          </p>
-        )}
-      </div>
+      )}
 
       {!sourceChosen ? (
-        /* Source pick: two co-equal creation paths */
-        <div style={{ gridColumn: "1 / -1", minHeight: 0, overflowY: "auto" }}>
+        /* Source pick: two co-equal creation paths. Spans BOTH grid rows —
+           with no bar above it, staying in the auto row would collapse the
+           region to content height inside the overflow-hidden builder. */
+        <div style={{ gridColumn: "1 / -1", gridRow: "1 / -1", minHeight: 0, overflowY: "auto" }}>
+          {/* The quiet way back, in place of the bar's back button. */}
+          <div style={{ padding: "var(--space-sm) var(--space-md) 0" }}>
+            <button
+              onClick={() => navigate({ name: "adminTemplates" })}
+              className="flex items-center gap-1.5"
+              style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              Templates
+            </button>
+          </div>
           <div className="max-w-3xl mx-auto py-10 px-6 space-y-5">
+            {error && (
+              <p
+                role="alert"
+                className="px-4 py-3 text-center"
+                data-radius-card
+                style={{
+                  fontSize: "var(--type-caption-size)",
+                  background: "var(--danger-wash)",
+                  color: "var(--destructive)",
+                }}
+              >
+                {error}
+              </p>
+            )}
             <div className="text-center space-y-1 mb-2">
               <h2
                 style={{
