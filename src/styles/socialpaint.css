@@ -908,7 +908,8 @@ optgroup {
    assembly. */
 .sp-card,
 .sp-sidebar,
-.sp-platform-chip {
+.sp-platform-chip,
+.sp-gate__panel {
   --edge-color: rgb(var(--edge-rgb) / var(--edge-alpha));
   --edge-color-bottom: rgb(var(--edge-rgb) / calc(var(--edge-alpha) * var(--edge-bottom-ratio)));
   --edge-lit: inset 0 1px 0 var(--edge-color), inset 0 -1px 0 var(--edge-color-bottom);
@@ -918,6 +919,163 @@ optgroup {
   border: 1px solid transparent;
   border-radius: var(--radius-card);
   box-shadow: var(--edge-lit);
+}
+
+/* ── Pre-app shell ─────────────────────────────────────────────────────────
+   Sign in, account creation, and first-run onboarding (Figma 148:1421,
+   "Login Page Dark"). The frame: a 584 form panel and a 1060 hero panel on
+   a 1920 canvas, 105 above and below. Here the split is a grid — the form
+   column holds 584 and the hero takes the remainder — with the page gutter
+   as the margin, so 1440 and 1600 are first-class rather than a scaled
+   1920. Tiers: two panels down to --bp-lg; below it the hero goes away
+   entirely (never a sliver) and the column centres; below --container-sm
+   the panel padding steps down. The page scrolls when a column outgrows
+   the viewport; the panels never clip.
+
+   The panel is a surface: --bg-surface, the lit edge, the card radius. The
+   frame draws a 25 radius and a 1px-top, 1px-bottom, 0.25px-side stroke
+   at 15%; 20 is the card rung, and the edge is the 15/6/0 language every
+   surface now speaks. Its 50px padding and 58px block gap sit off the 4px
+   scale and take 48 / 64. The frame's fields lift to #252627 on the panel:
+   the same value the platform chips hold, so the split layout raises
+   --input-bg to that rung (dark-only, like the rung). The solo layout
+   themes with the app and its fields stay flat, as on every card. */
+.sp-gate {
+  min-height: 100dvh;
+  box-sizing: border-box;
+  padding: var(--page-pad);
+  background: var(--bg-canvas);
+  display: grid;
+  grid-template-columns: minmax(0, 584px) minmax(0, 1fr);
+  gap: var(--space-xl);
+  align-items: stretch;
+}
+.sp-gate[data-layout="solo"] {
+  grid-template-columns: minmax(0, 584px);
+  justify-content: center;
+}
+.sp-gate__panel {
+  min-width: 0;
+  background: var(--bg-surface);
+  border: 1px solid transparent;
+  border-radius: var(--radius-card);
+  box-shadow: var(--edge-lit);
+  padding: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-2xl);
+}
+.sp-gate[data-layout="split"] .sp-gate__panel {
+  --input-bg: var(--chip-raised);
+}
+.sp-gate__hero {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--brand-surface);
+  border-radius: var(--radius-card);
+}
+/* 924 of the frame's 1060: the image sits flush to the panel's right edge
+   and leaves a band of Voltage exposed on the left. Deliberate. */
+.sp-gate__hero img {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: calc(100% * 924 / 1060);
+  object-fit: cover;
+  object-position: 50% 50%;
+  display: block;
+}
+
+/* The column's blocks. Intro (mark + headline) / form / footer — three
+   blocks on the panel's gap, and the seam between form and footer stays
+   where the frame's social block sat, so the block can return without a
+   reflow (Google sign-in, deferred 2026-09-02). */
+.sp-gate__intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-xs);
+}
+.sp-gate__intro .sp-hero-title {
+  color: var(--text-primary);
+}
+.sp-gate__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  width: 100%;
+}
+.sp-gate__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+.sp-gate__label {
+  font-family: var(--font-ui);
+  font-size: var(--type-composer-size);
+  line-height: 1;
+  color: var(--text-primary);
+}
+.sp-gate__help {
+  font-size: var(--type-label-size);
+  line-height: var(--type-label-lh);
+  color: var(--text-secondary);
+}
+/* An inline text action in the column — Forgot password, Sign up, Back to
+   sign in. A real button with the global focus ring, in the accent that
+   clears contrast on this surface (14:1 on the panel). */
+.sp-gate__link {
+  display: inline;
+  padding: 0;
+  font-family: var(--font-ui);
+  font-size: var(--type-composer-size);
+  line-height: 1.4;
+  color: var(--state-primary-on-surface);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+.sp-gate__link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.sp-gate__footer {
+  text-align: center;
+  font-size: var(--type-composer-size);
+  line-height: 1.4;
+  color: var(--text-on-surface-secondary);
+}
+.sp-gate__error {
+  padding: var(--space-2xs) var(--space-xs);
+  border-radius: var(--radius-control);
+  font-size: var(--type-label-size);
+  line-height: var(--type-label-lh);
+  background: var(--danger-wash);
+  color: var(--state-danger-on-surface);
+}
+.sp-gate__notice {
+  font-size: var(--type-label-size);
+  line-height: var(--type-label-lh);
+  color: var(--state-primary-on-surface);
+}
+
+@media (max-width: 1023px) {
+  .sp-gate {
+    grid-template-columns: minmax(0, 584px);
+    justify-content: center;
+  }
+  .sp-gate__hero {
+    display: none;
+  }
+}
+@media (max-width: 639px) {
+  .sp-gate__panel {
+    padding: var(--space-md);
+    gap: var(--space-xl);
+  }
 }
 
 /* Overview card that opens a detail — read plus a way in, never editable in
