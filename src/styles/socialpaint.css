@@ -1062,6 +1062,57 @@ optgroup {
   color: var(--state-primary-on-surface);
 }
 
+/* Onboarding's labelled stepper — four named steps under the headline, so
+   a user knows step three asks for fonts before they get there. Done
+   steps fill with the neutral action fill and a check; the current step
+   rings in the accent; the rest wait in muted ink. */
+.sp-gate__steps {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2xs) var(--space-sm);
+  margin: var(--space-2xs) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-gate__step {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  font-family: var(--font-ui);
+  font-size: var(--type-label-size);
+  line-height: var(--type-label-lh);
+  letter-spacing: var(--type-label-track);
+  color: var(--text-muted);
+}
+.sp-gate__step-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-strong);
+  font-size: var(--type-caption-size);
+  font-weight: var(--weight-ui);
+  color: var(--text-muted);
+}
+.sp-gate__step[data-state="current"] {
+  color: var(--text-primary);
+}
+.sp-gate__step[data-state="current"] .sp-gate__step-dot {
+  border-color: var(--state-primary-on-surface);
+  color: var(--text-primary);
+}
+.sp-gate__step[data-state="done"] {
+  color: var(--text-secondary);
+}
+.sp-gate__step[data-state="done"] .sp-gate__step-dot {
+  background: var(--fill-action);
+  border-color: var(--fill-action);
+  color: var(--text-on-action);
+}
+
 @media (max-width: 1023px) {
   .sp-gate {
     grid-template-columns: minmax(0, 584px);
