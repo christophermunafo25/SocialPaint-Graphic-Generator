@@ -12,9 +12,16 @@ const DEBOUNCE_MS = 150;
 export function TemplateSearchField({
   value,
   onChange,
+  placeholder = "Search templates, platforms, sizes, or use cases",
+  ariaLabel = "Search templates",
 }: {
   value: string;
   onChange(next: string): void;
+  /** Call-site overrides for reuse outside the template catalogue (the size
+   *  gallery searches sizes). The defaults are the catalogue's own strings,
+   *  so the Portal call site stays untouched. */
+  placeholder?: string;
+  ariaLabel?: string;
 }) {
   const [draft, setDraft] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -48,8 +55,8 @@ export function TemplateSearchField({
             clear();
           }
         }}
-        placeholder="Search templates, platforms, sizes, or use cases"
-        aria-label="Search templates"
+        placeholder={placeholder}
+        aria-label={ariaLabel}
         autoComplete="off"
         spellCheck={false}
       />

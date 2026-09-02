@@ -12,13 +12,15 @@ import { sameAspect } from "@/lib/templates/rescale";
 
 /** Custom-size bounds. Below 200px nothing legible fits; above 4096px the
  * export path (original + crop + double toPng in memory) stops surviving on
- * mobile Safari — and above 4 megapixels we warn on the way there. */
-const MIN_SIDE = 200;
-const MAX_SIDE = 4096;
-const WARN_MEGAPIXELS = 4_000_000;
+ * mobile Safari — and above 4 megapixels we warn on the way there.
+ * Exported for the start screen's SizeGallery, whose custom mode must apply
+ * these exact rules — one source, never re-derived. */
+export const MIN_SIDE = 200;
+export const MAX_SIDE = 4096;
+export const WARN_MEGAPIXELS = 4_000_000;
 
 /** Validates one custom side. Returns the error naming the bound, or null. */
-const sideError = (v: number): string | null => {
+export const sideError = (v: number): string | null => {
   if (!Number.isInteger(v)) return "Whole pixels only.";
   if (v < MIN_SIDE) return `At least ${MIN_SIDE}px per side.`;
   if (v > MAX_SIDE) return `At most ${MAX_SIDE}px per side.`;
@@ -172,7 +174,7 @@ export function CanvasSizePicker({
                       data-radius-control
                       style={{
                         border: `1px solid ${current ? "var(--border-strong)" : "transparent"}`,
-                        background: current ? "var(--bg-inset)" : "transparent",
+                        background: current ? "var(--bg-hover)" : "transparent",
                         opacity: mode === "blocked" ? 0.45 : 1,
                         cursor: mode === "blocked" ? "default" : "pointer",
                       }}

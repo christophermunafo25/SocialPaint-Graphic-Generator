@@ -27,7 +27,7 @@ function CropPreview({
           aspectRatio: `${size.width} / ${size.height}`,
           ...(r >= 1 ? { width: "100%", maxWidth: 200 } : { height: 150, width: 150 * r }),
           border: "1px solid var(--border-strong)",
-          background: "var(--bg-inset)",
+          background: "var(--bg-hover)",
         }}
       >
         <SignedImg

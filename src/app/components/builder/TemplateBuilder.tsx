@@ -128,6 +128,7 @@ import type { CanvasSize } from "@/lib/templates/platforms";
 import { rescaleTemplate, sameAspect, type RescaleWarning } from "@/lib/templates/rescale";
 import { reflowTemplate, versionName } from "@/lib/templates/reflow";
 import { CanvasSizePicker } from "./CanvasSizePicker";
+import { SizeGallery } from "./SizeGallery";
 import { BackgroundReflowDialog } from "./BackgroundReflowDialog";
 import { ShortcutsPanel } from "./ShortcutsPanel";
 import { AlignControls } from "./AlignControls";
@@ -2889,7 +2890,7 @@ export function TemplateBuilder({
       {!sourceChosen ? (
         /* Source pick: two co-equal creation paths */
         <div style={{ gridColumn: "1 / -1", minHeight: 0, overflowY: "auto" }}>
-          <div className="max-w-3xl mx-auto py-10 px-6 space-y-5">
+          <div className="max-w-5xl mx-auto py-10 px-6 space-y-5">
             <div className="text-center space-y-1 mb-2">
               <h2
                 style={{
@@ -2921,7 +2922,7 @@ export function TemplateBuilder({
               <p className="sp-eyebrow" style={{ marginBottom: 8 }}>
                 Canvas size — {draft.canvasWidth}×{draft.canvasHeight}
               </p>
-              <CanvasSizePicker
+              <SizeGallery
                 sizes={sizes}
                 value={{ width: draft.canvasWidth, height: draft.canvasHeight }}
                 onPick={pickCreationSize}
