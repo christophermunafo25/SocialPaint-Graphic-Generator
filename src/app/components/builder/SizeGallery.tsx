@@ -231,9 +231,9 @@ function SizeCard({
           </div>
         </div>
       )}
-      {/* Same caption rhythm as .sp-template-card__meta — the two card
-          families read as one system. */}
-      <div style={{ padding: "var(--space-xs) 0 var(--space-3xs)" }}>
+      {/* The media card's own two-tier inset — the two card families read
+          as one system. */}
+      <div className="sp-template-card__meta sp-template-card__meta--stack">
         <span
           className="block truncate"
           style={{

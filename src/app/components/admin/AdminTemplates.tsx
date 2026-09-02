@@ -403,7 +403,7 @@ export function AdminTemplates() {
                     <TemplateThumbnail template={t} />
                   </div>
                 </button>
-                <div style={{ padding: "12px 2px 4px" }}>
+                <div className="sp-template-card__meta sp-template-card__meta--stack">
                   {/* Line 1: title + icon action row on the same line */}
                   <div className="flex items-center" style={{ gap: "var(--space-2xs)" }}>
                     <InlineEdit

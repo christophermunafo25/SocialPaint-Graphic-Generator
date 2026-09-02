@@ -183,6 +183,12 @@ html {
   --radius-control: 5px;
   --radius-control-lg: 12px; /* larger toolbar controls (Generate composer strip) */
   --radius-card: 20px;
+  /* Media cards run a tighter pair than content panels — a small card
+     carries a small radius, a large panel a large one. Both values are set
+     explicitly and chosen optically: at 8px on an 8px frame there is no
+     outer-minus-inset arithmetic left to derive the inner from. */
+  --radius-media: 8px; /* the media card itself */
+  --radius-media-inner: 6px; /* its thumbnail well */
   --radius-pill: 999px;
   --control-sm: 38px;
   --control-md: 46px;
@@ -275,6 +281,14 @@ html {
   --bg-plate: #ffffff; /* imagery plate, never inverts */
   --border: rgba(241, 241, 241, 0.1); /* decorative separation only */
   --border-strong: rgba(241, 241, 241, 0.2);
+  /* Lit edge — a surface lit from above. The top edge catches the light,
+     the bottom catches a little bounce, the sides carry nothing: their
+     separation is the fill being lighter than the canvas. 0.13 of the
+     system white lands on rgb(52,52,53) over the surface, 0.06 on
+     rgb(37,38,39). Consumed through --edge-lit; see .sp-card. */
+  --edge-top: rgba(241, 241, 241, 0.13);
+  --edge-bottom: rgba(241, 241, 241, 0.06);
+  --edge-side: transparent;
 
   --text-primary: #f1f1f1;
   --text-secondary: #a0a0a0; /* 6.2:1 on surface, 5.5:1 on hover */
@@ -367,6 +381,15 @@ html {
   --bg-plate: #ffffff;
   --border: rgba(39, 39, 39, 0.08);
   --border-strong: rgba(39, 39, 39, 0.16);
+  /* Lit edge, light theme. A white surface cannot be lit any further, so
+     the highlight is the fill itself and the treatment shows where the
+     light does not reach: a faint ink hairline along the underside, the
+     contact shadow of the same object lit from above. 0.12 ink on white
+     is #e5e5e5 — visibly below the #f1f1f1 canvas, well short of a border.
+     Not the dark values ported: a white highlight is invisible here. */
+  --edge-top: transparent;
+  --edge-bottom: rgba(39, 39, 39, 0.12);
+  --edge-side: transparent;
 
   --text-primary: #272727;
   /* #666 reached only 4.43:1 on --bg-hover, its worst seat; one step down
@@ -443,6 +466,15 @@ html {
     0 0 0 var(--focus-offset) var(--bg-surface),
     0 0 0 calc(var(--focus-offset) + var(--focus-width)) var(--ring);
   --focus-ring-tight: 0 0 0 var(--focus-width) var(--ring);
+
+  /* The lit-edge treatment as one box-shadow value, so a surface that
+     sets box-shadow for another reason (a focus ring, the Generate
+     accent) composes it instead of replacing it: `box-shadow: <yours>,
+     var(--edge-lit)`. Inset hairlines rather than per-side border colours
+     because they follow the radius: an offset inset shadow tapers to
+     nothing around the corner arc, where a two-colour border would meet
+     in a hard mitre. */
+  --edge-lit: inset 0 1px 0 var(--edge-top), inset 0 -1px 0 var(--edge-bottom);
 
   /* Selection and active states tint with the brand green — a wash is a
      fill, so it is legal in both themes. Density differs per theme: dark
@@ -799,10 +831,19 @@ optgroup {
   }
 }
 
+/* THE surface recipe: lifted fill, the lit edge, soft radius. The 1px
+   frame stays in the box for layout and for the states that colour it
+   (hover, pressed, focus-within), but at rest it is --edge-side, which is
+   transparent in both themes — the lit edge lives in --edge-lit, an inset
+   box-shadow pair that no border-color shorthand can flatten. A state
+   that sets border-color therefore ADDS a uniform ring around a still-lit
+   card; one that sets box-shadow must compose var(--edge-lit) or the
+   edges vanish for the duration of the state. */
 .sp-card {
   background: var(--bg-surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--edge-side);
   border-radius: var(--radius-card);
+  box-shadow: var(--edge-lit);
 }
 
 /* Overview card that opens a detail — read plus a way in, never editable in
@@ -815,6 +856,7 @@ optgroup {
   cursor: pointer;
   transition: border-color var(--dur-state) var(--ease);
 }
+/* Adds the ring; the lit edge underneath stays (it is not border-borne). */
 .sp-card-link:hover {
   border-color: var(--border-strong);
 }
@@ -1698,21 +1740,31 @@ input[type="radio"] {
   cursor: pointer;
   transition: border-color var(--dur-state) var(--ease);
 }
+/* Adds the ring; the lit edge underneath stays (it is not border-borne). */
 .sp-template-card:hover {
   border-color: var(--border-strong);
 }
 .sp-template-card:focus-visible {
   outline: none;
-  box-shadow: var(--focus-ring-tight);
+  box-shadow: var(--focus-ring-tight), var(--edge-lit);
 }
 
-/* Title block. Zero horizontal padding so the text aligns flush with the
-   media plate above it — the card's own inset is the only gutter. */
+/* Title block — the second tier of a deliberate two-tier inset. The plate
+   sits --media-pad (8px) from the card edge; the text block sits a further
+   8px in, 16px from the edge, with 16px of air above it and 16px of card
+   below it (8px here + the frame). Every media-card call site shares this
+   one rule — the offset is the design, so it must never differ per card. */
 .sp-template-card__meta {
   display: flex;
   align-items: center;
   gap: var(--space-xs);
-  padding: var(--space-xs) 0 var(--space-3xs);
+  padding: var(--space-sm) var(--space-2xs) var(--space-2xs);
+}
+/* Same inset, stacked flow: the admin card's title row and status line and
+   the size card's caption are vertical stacks rather than a text + arrow
+   row. Only the direction differs — the spacing is the rule above. */
+.sp-template-card__meta--stack {
+  display: block;
 }
 .sp-template-card__text {
   flex: 1;
@@ -1917,19 +1969,20 @@ input[type="radio"] {
   padding: 24px;
 }
 
-/* Media card: 10px uniform padding; the preview is its own inset surface.
-   The frame is square — most templates are 1:1 social posts, so a square
-   well crops the least and keeps the grid rows even. Both call sites compare
-   a template's own ratio against 1 to decide which axis to pin. */
+/* Media card: an 8px frame on every side; the preview is its own inset
+   surface. The frame is square — most templates are 1:1 social posts, so a
+   square well crops the least and keeps the grid rows even. Both call sites
+   compare a template's own ratio against 1 to decide which axis to pin. */
 .sp-media-card {
-  --media-pad: var(--space-xs);
+  --media-pad: var(--space-2xs);
   padding: var(--media-pad);
+  border-radius: var(--radius-media);
 }
 .sp-media-card__preview {
-  /* Concentric with the card it sits in — inner radius = outer minus the
-     inset — so the two curves stay parallel. Derived rather than picked,
-     which also keeps it off the banned 12px it used to sit at. */
-  border-radius: calc(var(--radius-card) - var(--media-pad));
+  /* The card's 8px and the well's 6px are a matched pair, both set
+     explicitly (see --radius-media-inner). At this scale an inner radius
+     cannot be derived from the outer one: 8px minus the 8px inset is zero. */
+  border-radius: var(--radius-media-inner);
   /* Square unless a caller sets the group's own ratio. Grouping the gallery
      by platform AND shape means every card in a rail shares one ratio, so
      the frame can simply BE that ratio and nothing letterboxes. */
@@ -1942,12 +1995,12 @@ input[type="radio"] {
   width: 100%;
 }
 
-/* Media card grid: 24px gap; 4 / 3 / 2 / 1 columns. minmax(0, 1fr), not 1fr
-   — a plain 1fr track can't go below its card's min-content, so one card
-   with a wide title row steals width from the rest of the row. */
+/* Media card grid: --space-md gap; 4 / 3 / 2 / 1 columns. minmax(0, 1fr),
+   not 1fr — a plain 1fr track can't go below its card's min-content, so one
+   card with a wide title row steals width from the rest of the row. */
 .sp-grid-media {
   display: grid;
-  gap: 24px;
+  gap: var(--space-md);
   grid-template-columns: minmax(0, 1fr);
   align-items: stretch;
 }
@@ -1967,10 +2020,10 @@ input[type="radio"] {
   }
 }
 
-/* Content-panel grid: 12 columns, same 24px gap. */
+/* Content-panel grid: 12 columns, same --space-md gap. */
 .sp-grid-12 {
   display: grid;
-  gap: 24px;
+  gap: var(--space-md);
   grid-template-columns: repeat(12, 1fr);
   align-items: stretch;
 }
@@ -2012,12 +2065,13 @@ input[type="radio"] {
   cursor: pointer;
   transition: border-color var(--dur-state) var(--ease);
 }
+/* Hover and pressed add the ring; the lit edge stays under both. */
 .sp-sizecard:hover {
   border-color: var(--border-strong);
 }
 .sp-sizecard:focus-visible {
   outline: none;
-  box-shadow: var(--focus-ring-tight);
+  box-shadow: var(--focus-ring-tight), var(--edge-lit);
 }
 /* The chosen size. Border weight is the whole signal — no fill, no check:
    the pressed card and the header's dimension line agree, and that is
@@ -2033,7 +2087,7 @@ input[type="radio"] {
    paint no background of their own, so this field is the one rule both
    themes share. */
 .sp-sizecard__plate {
-  border-radius: calc(var(--radius-card) - var(--media-pad));
+  border-radius: var(--radius-media-inner);
   aspect-ratio: 4 / 3;
   background: var(--cover-ground);
   overflow: hidden;
@@ -2695,9 +2749,6 @@ input[type="radio"] {
 .sp-skeleton-card {
   pointer-events: none;
 }
-.sp-skeleton-card .sp-media-card__preview {
-  border: none;
-}
 
 @media (prefers-reduced-motion: reduce) {
   /* State still changes; it just doesn't travel or pulse. */
@@ -2885,7 +2936,9 @@ input[type="radio"] {
 }
 .sp-gen-composer:focus-within {
   border-color: var(--accent-border);
-  box-shadow: 0 0 0 3px var(--accent-wash);
+  box-shadow:
+    0 0 0 3px var(--accent-wash),
+    var(--edge-lit);
 }
 
 /* The submit — a neutral 42px circle, per the approved frames (72:27 /
@@ -2950,12 +3003,38 @@ input[type="radio"] {
    sp-media-card + sp-template-card: one control, square letterboxing
    frame, hover lift); this class adds the flex column and the identity —
    a top rule, an index marker, a wash behind the name row. Never the card
-   ground: a draft wearing Fire is draft number four, not an error. */
+   ground: a draft wearing Fire is draft number four, not an error.
+
+   The top rule is an inset shadow, not a thicker border-top: a 2px top on
+   a 1px frame is mitred across the corner arc and shows a wedge, which the
+   8px media radius makes more visible, not less. An inset layer follows
+   the radius and tapers out at the corners. Same 2px weight, same hue.
+
+   The top edge has two owners — the accent and .sp-card's lit edge — so
+   they are settled here in one declaration: the accent is listed first
+   and covers the 1px top highlight; the lit bottom edge still shows. */
 .sp-gen-card {
+  --gen-accent: inset 0 2px 0 var(--gen-hue);
   display: flex;
   flex-direction: column;
   gap: var(--space-2xs);
-  border-top: 2px solid var(--gen-hue);
+  padding-bottom: var(--space-sm);
+  box-shadow: var(--gen-accent), var(--edge-lit);
+}
+/* The focus ring is a box-shadow too; compose, or the ring would drop the
+   accent while the card is focused. Outranks .sp-template-card:focus-visible. */
+.sp-gen-card:focus-visible {
+  box-shadow: var(--focus-ring-tight), var(--gen-accent), var(--edge-lit);
+}
+/* The two-tier inset (see .sp-template-card__meta) without the meta
+   wrapper: the plate keeps the 8px frame, and everything below it — the
+   name row, the notes, the button — steps a further 8px in, with 16px of
+   air between the plate and the name row. */
+.sp-gen-card > .sp-media-card__preview {
+  margin-bottom: var(--space-2xs);
+}
+.sp-gen-card > :not(.sp-media-card__preview) {
+  margin-inline: var(--space-2xs);
 }
 .sp-gen-card__namerow {
   display: flex;
