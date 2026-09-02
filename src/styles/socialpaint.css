@@ -1712,13 +1712,22 @@ input[type="radio"] {
   box-shadow: var(--focus-ring-tight);
 }
 
-/* Title block. Zero horizontal padding so the text aligns flush with the
-   media plate above it — the card's own inset is the only gutter. */
+/* Title block — the second tier of a deliberate two-tier inset. The plate
+   sits --media-pad (8px) from the card edge; the text block sits a further
+   8px in, 16px from the edge, with 16px of air above it and 16px of card
+   below it (8px here + the frame). Every media-card call site shares this
+   one rule — the offset is the design, so it must never differ per card. */
 .sp-template-card__meta {
   display: flex;
   align-items: center;
   gap: var(--space-xs);
-  padding: var(--space-xs) 0 var(--space-3xs);
+  padding: var(--space-sm) var(--space-2xs) var(--space-2xs);
+}
+/* Same inset, stacked flow: the admin card's title row and status line and
+   the size card's caption are vertical stacks rather than a text + arrow
+   row. Only the direction differs — the spacing is the rule above. */
+.sp-template-card__meta--stack {
+  display: block;
 }
 .sp-template-card__text {
   flex: 1;
@@ -2962,7 +2971,18 @@ input[type="radio"] {
   display: flex;
   flex-direction: column;
   gap: var(--space-2xs);
+  padding-bottom: var(--space-sm);
   border-top: 2px solid var(--gen-hue);
+}
+/* The two-tier inset (see .sp-template-card__meta) without the meta
+   wrapper: the plate keeps the 8px frame, and everything below it — the
+   name row, the notes, the button — steps a further 8px in, with 16px of
+   air between the plate and the name row. */
+.sp-gen-card > .sp-media-card__preview {
+  margin-bottom: var(--space-2xs);
+}
+.sp-gen-card > :not(.sp-media-card__preview) {
+  margin-inline: var(--space-2xs);
 }
 .sp-gen-card__namerow {
   display: flex;
