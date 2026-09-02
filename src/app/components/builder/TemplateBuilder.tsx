@@ -3029,15 +3029,20 @@ export function TemplateBuilder({
                 onClick={(e) => e.stopPropagation()}
                 className="w-full overflow-y-auto"
                 style={{
-                  maxWidth: 960,
-                  maxHeight: "80dvh",
+                  maxWidth: 1040,
+                  maxHeight: "85dvh",
                   background: "var(--bg-surface)",
                   border: "1px solid var(--border)",
                   borderRadius: "var(--radius-card)",
-                  padding: "var(--space-md)",
+                  // The headline-card padding token, not the default — this
+                  // is a full-screen decision surface, not a dense card.
+                  padding: "var(--space-lg)",
                 }}
               >
-                <header className="flex items-start justify-between gap-4 mb-4">
+                <header
+                  className="flex items-start justify-between gap-4"
+                  style={{ marginBottom: "var(--space-md)" }}
+                >
                   <div>
                     <h2
                       style={{
@@ -3054,7 +3059,7 @@ export function TemplateBuilder({
                       style={{
                         fontSize: "var(--type-label-size)",
                         color: "var(--text-secondary)",
-                        marginTop: 2,
+                        marginTop: "var(--space-3xs)",
                       }}
                     >
                       Your blank canvas opens at this size — you can resize it later from the

@@ -76,8 +76,8 @@ function CategoryRail({
     <div
       role="radiogroup"
       aria-label="Size category"
-      className="flex-shrink-0 space-y-0.5"
-      style={{ width: 180, overflowY: "auto" }}
+      className="flex-shrink-0 space-y-1"
+      style={{ width: 188, overflowY: "auto" }}
     >
       {entries.map((entry, i) => {
         const isSelected = entry.id === selected;
@@ -231,6 +231,8 @@ function SizeCard({
           </div>
         </div>
       )}
+      {/* Same caption rhythm as .sp-template-card__meta — the two card
+          families read as one system. */}
       <div style={{ padding: "var(--space-xs) 0 var(--space-3xs)" }}>
         <span
           className="block truncate"
@@ -286,7 +288,7 @@ function CustomSizePane({
   const customMeaning = customErr ? null : classifySize(w, h);
 
   return (
-    <div className="space-y-2" style={{ maxWidth: 360 }}>
+    <div className="space-y-3" style={{ maxWidth: 400 }}>
       <div className="flex items-center gap-1.5">
         {(
           [
@@ -361,7 +363,7 @@ function CustomSizePane({
         }}
         disabled={Boolean(customErr)}
         className="sp-btn w-full"
-        style={{ minHeight: 30 }}
+        style={{ minHeight: 36 }}
       >
         {customErr ? "Use custom size" : `Use ${w}×${h}`}
       </button>
@@ -437,10 +439,10 @@ export function SizeGallery({
       : "";
 
   return (
-    <div className="flex items-stretch" style={{ gap: "var(--space-md)" }}>
+    <div className="flex items-stretch" style={{ gap: "var(--space-lg)" }}>
       <CategoryRail entries={railEntries} selected={category} onSelect={selectCategory} />
 
-      <div className="flex-1 min-w-0 space-y-3">
+      <div className="flex-1 min-w-0 space-y-4">
         {isCustom ? (
           <CustomSizePane value={value} onPick={onPick} />
         ) : (
