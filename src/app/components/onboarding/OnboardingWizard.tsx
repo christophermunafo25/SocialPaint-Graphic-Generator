@@ -233,9 +233,6 @@ function StepCompany({
 }) {
   return (
     <div className="space-y-3">
-      <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
-        The tenant everything belongs to — templates, brand kit, and usage stay private to it.
-      </p>
       <input
         autoFocus
         type="text"
