@@ -1741,6 +1741,35 @@ optgroup {
   letter-spacing: var(--type-h3-track);
 }
 
+/* The onboarding tiers below the frame's 1920. ≥ 1280 the card is as
+   drawn; 1024–1279 it fills the width minus the page gutter and the
+   four-column grid holds (833 fits in the 960 card at 1024); 768–1023 the
+   swatch grid drops to three and the font pickers stack; below 640 the
+   grid drops to two, the card padding steps down, and the logo dropzone
+   shortens. The colour editor is already a bottom sheet under 1024. */
+@media (max-width: 1023px) {
+  .sp-gate__tiles {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .sp-gate__fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 639px) {
+  .sp-gate__tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .sp-gate[data-width="wide"] .sp-gate__panel {
+    padding: var(--space-lg) var(--space-md) var(--space-md);
+  }
+  .sp-gate__drop--logo {
+    height: 200px;
+  }
+  .sp-gate__drop {
+    min-height: 80px;
+  }
+}
+
 @media (max-width: 1279px) {
   /* One column: the panel takes its content height and centres in the
      viewport rather than stretching to it — a form-sized card, not a
