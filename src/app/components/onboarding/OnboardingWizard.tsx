@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from "react";
-import { Check, Trash2, Upload } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { ArrowLeft, ArrowRight, Check, Trash2, Upload } from "lucide-react";
 import type { BrandColor, FontRef } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -9,6 +10,7 @@ import { DEFAULT_PALETTE, DEFAULT_TYPE_STYLES } from "@/lib/theme";
 import { GOOGLE_FONTS, loadGoogleFonts } from "@/lib/render/fonts";
 import { FONT_ACCEPT, inspectFontFile } from "@/lib/brand/fontUpload";
 import { useFileDrop } from "@/lib/useFileDrop";
+import { useMotionTokens } from "@/lib/motionTokens";
 import { ColorControl } from "../ColorControl";
 import { BrandMark } from "../BrandMark";
 import { PreAppShell } from "../PreAppShell";
@@ -18,21 +20,43 @@ import { PreAppShell } from "../PreAppShell";
  * company" — every new client starts from this identical blank slate.
  * Everything set here is editable later in Brand Studio.
  *
- * Housed in the pre-app shell (Figma 148:1421) so sign-in and first-run
- * setup are one door: the panel centred on the canvas with no hero — the
- * picture has done its job by now — forced dark for firstRun, app-themed
- * for the in-app "Create company" task.
- * The headline names the current step and a labelled stepper says what is
- * coming. The four steps and finish() are unchanged — this is a rehousing,
- * not a rewrite of the setup logic. */
+ * Four frames (Figma 154:1576, 154:1654, 158:202, 158:267) in the pre-app
+ * shell's wide card: one rhythm — intro, description, stepper, body,
+ * footer — where only the body changes between steps. The body crossfades
+ * with a short translate in the direction of travel on --dur-panel; the
+ * chrome around it persists and does not re-animate. Focus lands on the
+ * headline after each move so it is never lost.
+ *
+ * The four steps and finish() are unchanged — this is a rehousing, not a
+ * rewrite of the setup logic. */
 
-const STEPS = ["Company", "Colors", "Fonts", "Logo"] as const;
-const STEP_HEADLINES = [
-  "Name your company",
-  "Pick your colors",
-  "Choose your fonts",
-  "Add your logo",
-] as const;
+const STEPS = ["Company", "Brand colors", "Fonts", "Logo"] as const;
+
+/** Per-step headlines carry the firstRun distinction that the old eyebrow
+ * held ("Welcome" versus "New company"): a first admin is asked about their
+ * brand, a signed-in user creating another company is asked about that
+ * company. */
+const HEADLINES = {
+  firstRun: [
+    "What is the name of your brand?",
+    "What colors are in your palette?",
+    "What fonts are we working with?",
+    "Let’s add your logos!",
+  ],
+  inApp: [
+    "Name the new company",
+    "What colors are in its palette?",
+    "What fonts does it use?",
+    "Add its logo",
+  ],
+} as const;
+
+const DESCRIPTIONS: readonly (string | null)[] = [
+  null,
+  "Sensible defaults — override them with your palette. Template text colors are always picked from these, keeping every graphic on-brand.",
+  "Pick from Google Fonts, or upload your own brand font files (.woff2, .woff, .ttf, .otf) and assign them.",
+  "Optional now — you can add more logos later in Brand Studio.",
+];
 
 interface PendingFont {
   file: File;
@@ -44,8 +68,10 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
   const { setCompany, setRole, refresh } = useAuth();
   const { refresh: refreshBrand } = useBrand();
   const { navigate } = useRouter();
+  const m = useMotionTokens();
 
-  const [step, setStep] = useState(0);
+  const [step, setStepState] = useState(0);
+  const [direction, setDirection] = useState<1 | -1>(1);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -67,6 +93,20 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
   );
 
   const canNext = step === 0 ? companyName.trim().length > 1 : true;
+
+  const setStep = (next: number) => {
+    setDirection(next > step ? 1 : -1);
+    setStepState(next);
+  };
+
+  // Focus follows the step: the headline takes it after every move, so a
+  // keyboard user is never left on a control that just unmounted.
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const mounted = useRef(false);
+  useEffect(() => {
+    if (mounted.current) headingRef.current?.focus({ preventScroll: true });
+    else mounted.current = true;
+  }, [step]);
 
   const finish = async () => {
     setSaving(true);
@@ -126,99 +166,156 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
 
   // The only way out for a signed-in user: Cancel at step 0 on the in-app
   // path navigates to the portal; Back otherwise. Hidden (and disabled)
-  // only when firstRun && step === 0, where there is nowhere to go.
+  // only when firstRun && step === 0, where there is nowhere to go — and
+  // on that step the footer itself is gone, since a single question should
+  // look like one.
   const exitHidden = firstRun && step === 0;
+  const headline = (firstRun ? HEADLINES.firstRun : HEADLINES.inApp)[step];
+  const description = DESCRIPTIONS[step];
+
+  const variants = {
+    enter: (d: 1 | -1) => ({ opacity: 0, y: 12 * d }),
+    center: { opacity: 1, y: 0 },
+    exit: (d: 1 | -1) => ({ opacity: 0, y: -12 * d }),
+  };
 
   return (
-    <PreAppShell layout="solo" tone={firstRun ? "dark" : "app"}>
+    <PreAppShell layout="solo" width="wide" tone={firstRun ? "dark" : "app"}>
       <div className="sp-gate__intro">
-        {firstRun && <BrandMark width={72} />}
-        <p className="sp-eyebrow">
-          {firstRun ? "Welcome · Set up your brand portal" : "New company · Create a company"}
-        </p>
-        <h1 className="sp-hero-title">{STEP_HEADLINES[step]}</h1>
-        <ol className="sp-gate__steps" aria-label="Setup steps">
-          {STEPS.map((label, i) => (
-            <li
-              key={label}
-              className="sp-gate__step"
-              data-state={i < step ? "done" : i === step ? "current" : "todo"}
-              aria-current={i === step ? "step" : undefined}
-            >
-              <span className="sp-gate__step-dot" aria-hidden>
-                {i < step ? <Check className="w-3 h-3" /> : i + 1}
-              </span>
-              <span className="sp-gate__step-label">{label}</span>
-            </li>
-          ))}
-        </ol>
+        {firstRun && <BrandMark width={55} />}
+        <h1 ref={headingRef} tabIndex={-1} className="sp-hero-title">
+          {headline}
+        </h1>
       </div>
+      <p className="sp-gate__desc">{description ?? ""}</p>
+      <Stepper step={step} pulse={m.panel} ease={m.ease} />
 
-      <div className="sp-gate__form min-h-[280px]">
-        {step === 0 && <StepCompany name={companyName} slug={slug} onChange={setCompanyName} />}
-        {step === 1 && <StepColors colors={colors} onChange={setColors} />}
-        {step === 2 && (
-          <StepFonts
-            headingGoogle={headingGoogle}
-            bodyGoogle={bodyGoogle}
-            setHeadingGoogle={setHeadingGoogle}
-            setBodyGoogle={setBodyGoogle}
-            pendingFonts={pendingFonts}
-            setPendingFonts={setPendingFonts}
-            onError={setError}
-          />
-        )}
-        {step === 3 && (
-          <StepLogo
-            preview={logoPreview}
-            onPick={(file) => {
-              setLogoFile(file);
-              const reader = new FileReader();
-              reader.onload = () => setLogoPreview(reader.result as string);
-              reader.readAsDataURL(file);
-            }}
-          />
-        )}
+      <div className="sp-gate__body">
+        <AnimatePresence mode="popLayout" custom={direction} initial={false}>
+          <motion.div
+            key={step}
+            className="sp-gate__step-body"
+            custom={direction}
+            variants={variants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ duration: m.panel, ease: m.ease }}
+          >
+            {step === 0 && (
+              <StepCompany
+                name={companyName}
+                slug={slug}
+                onChange={setCompanyName}
+                onSubmit={() => canNext && setStep(1)}
+              />
+            )}
+            {step === 1 && <StepColors colors={colors} onChange={setColors} />}
+            {step === 2 && (
+              <StepFonts
+                headingGoogle={headingGoogle}
+                bodyGoogle={bodyGoogle}
+                setHeadingGoogle={setHeadingGoogle}
+                setBodyGoogle={setBodyGoogle}
+                pendingFonts={pendingFonts}
+                setPendingFonts={setPendingFonts}
+                onError={setError}
+              />
+            )}
+            {step === 3 && (
+              <StepLogo
+                preview={logoPreview}
+                onPick={(file) => {
+                  setLogoFile(file);
+                  const reader = new FileReader();
+                  reader.onload = () => setLogoPreview(reader.result as string);
+                  reader.readAsDataURL(file);
+                }}
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
         {/* finish() can fail after creating the company; the message stays
-            in the column until the next attempt clears it. */}
-        {error && (
-          <p className="sp-gate__error" role="alert">
-            {error}
-          </p>
-        )}
+            in this reserved line until the next attempt clears it. */}
+        <div className="sp-gate__status" role="alert" aria-live="assertive">
+          {error && <p className="sp-gate__error">{error}</p>}
+        </div>
       </div>
 
-      <div className="flex items-center justify-between gap-3">
-        <button
-          type="button"
-          onClick={() => (step === 0 ? navigate({ name: "portal" }) : setStep(step - 1))}
-          disabled={exitHidden}
-          className="sp-btn sp-btn-ghost sp-btn-lg"
-          style={exitHidden ? { visibility: "hidden" } : undefined}
-        >
-          {step === 0 ? "Cancel" : "Back"}
-        </button>
-        {step < STEPS.length - 1 ? (
+      {!exitHidden && (
+        <nav className="sp-gate__nav" aria-label="Setup navigation">
           <button
             type="button"
-            onClick={() => setStep(step + 1)}
-            disabled={!canNext}
-            className="sp-btn sp-btn-primary sp-btn-lg"
+            className="sp-gate__back"
+            onClick={() => (step === 0 ? navigate({ name: "portal" }) : setStep(step - 1))}
           >
-            Next
+            <ArrowLeft className="w-3.5 h-3.5" aria-hidden />
+            {step === 0 ? "Cancel" : "Back"}
           </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => void finish()}
-            disabled={saving}
-            className="sp-btn sp-btn-primary sp-btn-lg"
-          >
-            {saving ? "Saving…" : "Finish"}
-          </button>
-        )}
-      </div>
+          {step > 0 && step < STEPS.length - 1 && (
+            <button
+              type="button"
+              onClick={() => setStep(step + 1)}
+              disabled={!canNext}
+              className="sp-gate__cta"
+            >
+              Continue
+              <ArrowRight className="w-4 h-4" aria-hidden />
+            </button>
+          )}
+          {step === STEPS.length - 1 && (
+            <button
+              type="button"
+              onClick={() => void finish()}
+              disabled={saving}
+              className="sp-gate__cta"
+            >
+              {saving ? "Creating…" : "Create workspace"}
+              <Check className="w-4 h-4" aria-hidden />
+            </button>
+          )}
+        </nav>
+      )}
     </PreAppShell>
+  );
+}
+
+/** Four named steps. The circle colours transition in CSS on --dur-state;
+ * a step completing also pulses once on --dur-panel, the one moment of
+ * progress feedback in the flow. */
+function Stepper({
+  step,
+  pulse,
+  ease,
+}: {
+  step: number;
+  pulse: number;
+  ease: [number, number, number, number];
+}) {
+  return (
+    <ol className="sp-gate__steps" aria-label="Setup steps">
+      {STEPS.map((label, i) => {
+        const state = i < step ? "done" : i === step ? "current" : "todo";
+        return (
+          <li
+            key={label}
+            className="sp-gate__step"
+            data-state={state}
+            aria-current={i === step ? "step" : undefined}
+          >
+            <motion.span
+              className="sp-gate__step-dot"
+              aria-hidden
+              animate={state === "done" ? { scale: [1, 1.18, 1] } : { scale: 1 }}
+              transition={{ duration: pulse, ease }}
+            >
+              {i + 1}
+            </motion.span>
+            <span className="sp-gate__step-label">{label}</span>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
@@ -226,19 +323,27 @@ function StepCompany({
   name,
   slug,
   onChange,
+  onSubmit,
 }: {
   name: string;
   slug: string;
   onChange(v: string): void;
+  onSubmit(): void;
 }) {
   return (
-    <div className="space-y-3">
+    <form
+      className="space-y-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit();
+      }}
+    >
       <input
         autoFocus
         type="text"
         value={name}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="e.g. Acme Senior Living"
+        placeholder="Acme Studios"
         aria-label="Company name"
         className="sp-input sp-input-lg"
       />
@@ -247,7 +352,7 @@ function StepCompany({
           Workspace id: <span className="font-mono">{slug}</span>
         </p>
       )}
-    </div>
+    </form>
   );
 }
 
@@ -261,28 +366,22 @@ function StepColors({
   const set = (i: number, patch: Partial<BrandColor>) =>
     onChange(colors.map((c, j) => (j === i ? { ...c, ...patch } : c)));
   return (
-    <div className="space-y-3">
-      <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
-        Sensible defaults — override them with your palette. Template text colors are always picked
-        from these, keeping every graphic on-brand.
-      </p>
-      <div className="space-y-2">
-        {colors.map((c, i) => (
-          <div key={c.key} className="flex items-center gap-3">
-            <ColorControl
-              ariaLabel={`${c.name} color`}
-              value={c.hex}
-              onChange={(hex) => set(i, { hex })}
-              /* The palette is being defined here — there is nothing to
-                 quick-select from yet. */
-              brandSwatches={false}
-            />
-            <span className="text-sm flex-1" style={{ color: "var(--foreground)" }}>
-              {c.name}
-            </span>
-          </div>
-        ))}
-      </div>
+    <div className="space-y-2">
+      {colors.map((c, i) => (
+        <div key={c.key} className="flex items-center gap-3">
+          <ColorControl
+            ariaLabel={`${c.name} color`}
+            value={c.hex}
+            onChange={(hex) => set(i, { hex })}
+            /* The palette is being defined here — there is nothing to
+               quick-select from yet. */
+            brandSwatches={false}
+          />
+          <span className="text-sm flex-1" style={{ color: "var(--foreground)" }}>
+            {c.name}
+          </span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -345,12 +444,6 @@ function StepFonts(props: StepFontsProps) {
   const drop = useFileDrop((files) => void addFonts(files));
   return (
     <div className="space-y-4">
-      <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
-        Pick from Google Fonts, or upload your own brand font files (.woff2, .woff, .ttf, .otf) and
-        assign them.
-      </p>
-      {/* Two pickers side by side in the 484 column; one under the other
-          below 640, where each would drop under 150px. */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <FontSelect
           label="Heading font"
@@ -431,40 +524,35 @@ function StepLogo({ preview, onPick }: { preview: string | null; onPick(f: File)
     if (files[0]) onPick(files[0]);
   });
   return (
-    <div className="space-y-3">
-      <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
-        Optional now — you can add more logos later in Brand Studio.
-      </p>
-      <label
-        {...drop.bind}
-        data-active={drop.active}
-        className="sp-dropzone flex flex-col items-center justify-center gap-3 py-8 cursor-pointer"
-        style={{
-          border: "1.5px dashed var(--border-strong)",
-          borderRadius: "var(--radius-card-sm)",
-        }}
-      >
-        {preview ? (
-          <img src={preview} alt="Logo preview" className="max-h-20 max-w-[240px] object-contain" />
-        ) : (
-          <Upload
-            className="sp-dropzone__icon w-6 h-6"
-            style={{ color: "var(--muted-foreground)" }}
-          />
-        )}
-        <span style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
-          {preview ? "Replace logo" : "Upload logo (PNG or SVG)"}
-        </span>
-        <input
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) onPick(f);
-          }}
+    <label
+      {...drop.bind}
+      data-active={drop.active}
+      className="sp-dropzone flex flex-col items-center justify-center gap-3 py-8 cursor-pointer"
+      style={{
+        border: "1.5px dashed var(--border-strong)",
+        borderRadius: "var(--radius-card-sm)",
+      }}
+    >
+      {preview ? (
+        <img src={preview} alt="Logo preview" className="max-h-20 max-w-[240px] object-contain" />
+      ) : (
+        <Upload
+          className="sp-dropzone__icon w-6 h-6"
+          style={{ color: "var(--muted-foreground)" }}
         />
-      </label>
-    </div>
+      )}
+      <span style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
+        {preview ? "Replace logo" : "Upload logo (PNG or SVG)"}
+      </span>
+      <input
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) onPick(f);
+        }}
+      />
+    </label>
   );
 }

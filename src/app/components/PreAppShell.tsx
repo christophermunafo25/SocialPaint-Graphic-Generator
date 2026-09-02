@@ -38,15 +38,25 @@ export function PreAppShell({
   hero,
   layout = "split",
   tone = "dark",
+  width = "form",
 }: {
   children: React.ReactNode;
   hero?: string;
   layout?: "split" | "solo";
   tone?: "dark" | "app";
+  /** "form" is the 584 column of the auth frames; "wide" is the 1220 card
+   * of the onboarding frames (154:1576 → 158:267), whose 833 content column
+   * holds the four-up swatch grid. */
+  width?: "form" | "wide";
 }) {
   const split = layout === "split";
   return (
-    <div className="sp-gate" data-layout={layout} data-theme={tone === "dark" ? "dark" : undefined}>
+    <div
+      className="sp-gate"
+      data-layout={layout}
+      data-width={width}
+      data-theme={tone === "dark" ? "dark" : undefined}
+    >
       <main className="sp-gate__panel">{children}</main>
       {split && (
         <div className="sp-gate__hero" aria-hidden>

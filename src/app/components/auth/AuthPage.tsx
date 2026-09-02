@@ -196,7 +196,7 @@ export function AuthPage() {
     <PreAppShell layout={view === "checkEmail" ? "solo" : "split"} hero={authHero}>
       <div className="sp-gate__intro">
         <BrandMark width={72} />
-        <h1 className="sp-hero-title">{headline}</h1>
+        <h1 className="sp-hero-title sp-gate__title">{headline}</h1>
       </div>
 
       {view === "checkEmail" ? (

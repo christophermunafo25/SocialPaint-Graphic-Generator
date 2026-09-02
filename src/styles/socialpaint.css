@@ -1076,16 +1076,20 @@ optgroup {
   color: var(--state-primary-on-surface);
 }
 
-/* Onboarding's labelled stepper — four named steps under the headline, so
-   a user knows step three asks for fonts before they get there. Done
-   steps fill with the neutral action fill and a check; the current step
-   rings in the accent; the rest wait in muted ink. */
+/* Onboarding's stepper (Figma 154:1576 → 158:267): four named steps under
+   the description, each a 28px circle carrying its number and a label.
+     done   — solid Voltage, Ink number, muted label
+     active — a 5% lift ringed in Voltage, primary number, medium label
+     todo   — a 2% lift ringed in the hairline, muted number and label
+   The circle's colours ride --dur-state so a step completing is felt
+   rather than repainted; the pulse on completion is a motion keyframe in
+   the component, on --dur-panel. */
 .sp-gate__steps {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: var(--space-2xs) var(--space-sm);
-  margin: var(--space-2xs) 0 0;
+  gap: var(--space-2xs) var(--space-md);
+  margin: 0;
   padding: 0;
   list-style: none;
 }
@@ -1098,33 +1102,154 @@ optgroup {
   line-height: var(--type-label-lh);
   letter-spacing: var(--type-label-track);
   color: var(--text-muted);
+  transition:
+    color var(--dur-state) var(--ease),
+    font-weight var(--dur-state) var(--ease);
 }
 .sp-gate__step-dot {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border-radius: var(--radius-pill);
-  border: 1px solid var(--border-strong);
-  font-size: var(--type-caption-size);
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--text-primary) 2%, transparent);
+  font-size: var(--type-label-size);
   font-weight: var(--weight-ui);
   color: var(--text-muted);
+  transition:
+    background var(--dur-state) var(--ease),
+    border-color var(--dur-state) var(--ease),
+    color var(--dur-state) var(--ease);
 }
 .sp-gate__step[data-state="current"] {
   color: var(--text-primary);
+  font-weight: var(--weight-ui);
 }
 .sp-gate__step[data-state="current"] .sp-gate__step-dot {
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent);
   border-color: var(--state-primary-on-surface);
   color: var(--text-primary);
 }
-.sp-gate__step[data-state="done"] {
-  color: var(--text-secondary);
-}
 .sp-gate__step[data-state="done"] .sp-gate__step-dot {
-  background: var(--fill-action);
-  border-color: var(--fill-action);
-  color: var(--text-on-action);
+  background: var(--fill-primary);
+  border-color: var(--fill-primary);
+  color: var(--text-on-accent);
+}
+
+/* ── The onboarding card ────────────────────────────────────────────────────
+   Figma 154:1576 → 158:267: 1220 wide, 869 tall at 1080, an 833 content
+   column centred inside it. One rhythm on every step — intro, description,
+   stepper, body, footer — so only the body changes between steps and the
+   chrome around it holds still. The description line is reserved at two
+   lines even on the step that has none, so the stepper never moves. The
+   card holds the frame's height until a step outgrows it; below 1280 it
+   fills the width minus the page gutter and the column padding gives way
+   before the column does. */
+.sp-gate[data-width="wide"] {
+  grid-template-columns: minmax(0, 1220px);
+}
+.sp-gate[data-width="wide"] .sp-gate__panel {
+  justify-content: flex-start;
+  gap: 0;
+  min-height: min(869px, calc(100dvh - 2 * var(--page-pad)));
+  padding: var(--space-3xl) max(var(--space-md), calc((100% - 833px) / 2)) var(--space-xl);
+}
+.sp-gate[data-width="wide"] .sp-gate__intro {
+  gap: var(--space-xs);
+}
+.sp-gate__intro h1:focus {
+  outline: none;
+}
+.sp-gate__desc {
+  margin: var(--space-2xs) auto 0;
+  max-width: 547px;
+  min-height: calc(2 * var(--type-body-size) * var(--type-body-lh));
+  text-align: center;
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-lh);
+  letter-spacing: var(--type-body-track);
+  color: var(--text-on-surface-secondary);
+}
+.sp-gate[data-width="wide"] .sp-gate__steps {
+  margin-top: var(--space-xs);
+}
+.sp-gate__body {
+  position: relative;
+  flex: 1 0 auto;
+  margin-top: var(--space-xl);
+  min-width: 0;
+}
+.sp-gate__step-body {
+  width: 100%;
+}
+/* Reserved status line at the foot of every step: an error appears here
+   without moving anything above or below it. */
+.sp-gate__status {
+  min-height: calc(var(--type-label-size) * var(--type-label-lh) + 2 * var(--space-2xs));
+  margin-top: var(--space-sm);
+}
+.sp-gate__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+  min-height: 48px;
+  margin-top: var(--space-lg);
+}
+.sp-gate__back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  font-family: var(--font-ui);
+  font-size: var(--type-body-size);
+  color: var(--text-muted);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  transition: color var(--dur-state) var(--ease);
+}
+.sp-gate__back:hover:not(:disabled) {
+  color: var(--text-primary);
+}
+/* The Voltage primary the onboarding frames draw (radius 10 → the
+   large-control rung, 48 tall → --control-md). Ink on the brand fill, as
+   on every brand fill. Disabled drops to 40% like every .sp-btn, which on
+   Voltage over the panel reads as a dulled green — visibly not live. */
+.sp-gate__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2xs);
+  min-height: var(--control-md);
+  padding: 0 var(--space-md);
+  border-radius: var(--radius-control-lg);
+  background: var(--fill-primary);
+  color: var(--text-on-accent);
+  font-family: var(--font-ui);
+  font-size: var(--type-composer-size);
+  font-weight: var(--weight-ui);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background var(--dur-state) var(--ease),
+    opacity var(--dur-state) var(--ease);
+}
+.sp-gate__cta:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--fill-primary) 86%, var(--white));
+}
+.sp-gate__cta:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+/* The auth headline: the login frame's 38 maps to the H3 step, the
+   onboarding frames' 45 to H2 — the two containers differ by more than 2×
+   in width and the proportion between them holds. */
+.sp-gate__title {
+  font-size: var(--type-h3-size);
+  line-height: var(--type-h3-lh);
+  letter-spacing: var(--type-h3-track);
 }
 
 @media (max-width: 1279px) {
