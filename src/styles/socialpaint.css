@@ -281,6 +281,14 @@ html {
   --bg-plate: #ffffff; /* imagery plate, never inverts */
   --border: rgba(241, 241, 241, 0.1); /* decorative separation only */
   --border-strong: rgba(241, 241, 241, 0.2);
+  /* Lit edge — a surface lit from above. The top edge catches the light,
+     the bottom catches a little bounce, the sides carry nothing: their
+     separation is the fill being lighter than the canvas. 0.13 of the
+     system white lands on rgb(52,52,53) over the surface, 0.06 on
+     rgb(37,38,39). Consumed through --edge-lit; see .sp-card. */
+  --edge-top: rgba(241, 241, 241, 0.13);
+  --edge-bottom: rgba(241, 241, 241, 0.06);
+  --edge-side: transparent;
 
   --text-primary: #f1f1f1;
   --text-secondary: #a0a0a0; /* 6.2:1 on surface, 5.5:1 on hover */
@@ -373,6 +381,15 @@ html {
   --bg-plate: #ffffff;
   --border: rgba(39, 39, 39, 0.08);
   --border-strong: rgba(39, 39, 39, 0.16);
+  /* Lit edge, light theme. A white surface cannot be lit any further, so
+     the highlight is the fill itself and the treatment shows where the
+     light does not reach: a faint ink hairline along the underside, the
+     contact shadow of the same object lit from above. 0.12 ink on white
+     is #e5e5e5 — visibly below the #f1f1f1 canvas, well short of a border.
+     Not the dark values ported: a white highlight is invisible here. */
+  --edge-top: transparent;
+  --edge-bottom: rgba(39, 39, 39, 0.12);
+  --edge-side: transparent;
 
   --text-primary: #272727;
   /* #666 reached only 4.43:1 on --bg-hover, its worst seat; one step down
@@ -449,6 +466,15 @@ html {
     0 0 0 var(--focus-offset) var(--bg-surface),
     0 0 0 calc(var(--focus-offset) + var(--focus-width)) var(--ring);
   --focus-ring-tight: 0 0 0 var(--focus-width) var(--ring);
+
+  /* The lit-edge treatment as one box-shadow value, so a surface that
+     sets box-shadow for another reason (a focus ring, the Generate
+     accent) composes it instead of replacing it: `box-shadow: <yours>,
+     var(--edge-lit)`. Inset hairlines rather than per-side border colours
+     because they follow the radius: an offset inset shadow tapers to
+     nothing around the corner arc, where a two-colour border would meet
+     in a hard mitre. */
+  --edge-lit: inset 0 1px 0 var(--edge-top), inset 0 -1px 0 var(--edge-bottom);
 
   /* Selection and active states tint with the brand green — a wash is a
      fill, so it is legal in both themes. Density differs per theme: dark
@@ -805,10 +831,19 @@ optgroup {
   }
 }
 
+/* THE surface recipe: lifted fill, the lit edge, soft radius. The 1px
+   frame stays in the box for layout and for the states that colour it
+   (hover, pressed, focus-within), but at rest it is --edge-side, which is
+   transparent in both themes — the lit edge lives in --edge-lit, an inset
+   box-shadow pair that no border-color shorthand can flatten. A state
+   that sets border-color therefore ADDS a uniform ring around a still-lit
+   card; one that sets box-shadow must compose var(--edge-lit) or the
+   edges vanish for the duration of the state. */
 .sp-card {
   background: var(--bg-surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--edge-side);
   border-radius: var(--radius-card);
+  box-shadow: var(--edge-lit);
 }
 
 /* Overview card that opens a detail — read plus a way in, never editable in
@@ -821,6 +856,7 @@ optgroup {
   cursor: pointer;
   transition: border-color var(--dur-state) var(--ease);
 }
+/* Adds the ring; the lit edge underneath stays (it is not border-borne). */
 .sp-card-link:hover {
   border-color: var(--border-strong);
 }
@@ -1704,12 +1740,13 @@ input[type="radio"] {
   cursor: pointer;
   transition: border-color var(--dur-state) var(--ease);
 }
+/* Adds the ring; the lit edge underneath stays (it is not border-borne). */
 .sp-template-card:hover {
   border-color: var(--border-strong);
 }
 .sp-template-card:focus-visible {
   outline: none;
-  box-shadow: var(--focus-ring-tight);
+  box-shadow: var(--focus-ring-tight), var(--edge-lit);
 }
 
 /* Title block — the second tier of a deliberate two-tier inset. The plate
@@ -2028,12 +2065,13 @@ input[type="radio"] {
   cursor: pointer;
   transition: border-color var(--dur-state) var(--ease);
 }
+/* Hover and pressed add the ring; the lit edge stays under both. */
 .sp-sizecard:hover {
   border-color: var(--border-strong);
 }
 .sp-sizecard:focus-visible {
   outline: none;
-  box-shadow: var(--focus-ring-tight);
+  box-shadow: var(--focus-ring-tight), var(--edge-lit);
 }
 /* The chosen size. Border weight is the whole signal — no fill, no check:
    the pressed card and the header's dimension line agree, and that is
@@ -2901,7 +2939,9 @@ input[type="radio"] {
 }
 .sp-gen-composer:focus-within {
   border-color: var(--accent-border);
-  box-shadow: 0 0 0 3px var(--accent-wash);
+  box-shadow:
+    0 0 0 3px var(--accent-wash),
+    var(--edge-lit);
 }
 
 /* The submit — a neutral 42px circle, per the approved frames (72:27 /
@@ -2971,19 +3011,23 @@ input[type="radio"] {
    The top rule is an inset shadow, not a thicker border-top: a 2px top on
    a 1px frame is mitred across the corner arc and shows a wedge, which the
    8px media radius makes more visible, not less. An inset layer follows
-   the radius and tapers out at the corners. Same 2px weight, same hue. */
+   the radius and tapers out at the corners. Same 2px weight, same hue.
+
+   The top edge has two owners — the accent and .sp-card's lit edge — so
+   they are settled here in one declaration: the accent is listed first
+   and covers the 1px top highlight; the lit bottom edge still shows. */
 .sp-gen-card {
   --gen-accent: inset 0 2px 0 var(--gen-hue);
   display: flex;
   flex-direction: column;
   gap: var(--space-2xs);
   padding-bottom: var(--space-sm);
-  box-shadow: var(--gen-accent);
+  box-shadow: var(--gen-accent), var(--edge-lit);
 }
 /* The focus ring is a box-shadow too; compose, or the ring would drop the
    accent while the card is focused. Outranks .sp-template-card:focus-visible. */
 .sp-gen-card:focus-visible {
-  box-shadow: var(--focus-ring-tight), var(--gen-accent);
+  box-shadow: var(--focus-ring-tight), var(--gen-accent), var(--edge-lit);
 }
 /* The two-tier inset (see .sp-template-card__meta) without the meta
    wrapper: the plate keeps the 8px frame, and everything below it — the
