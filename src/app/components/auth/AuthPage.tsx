@@ -12,8 +12,9 @@ type View = "signin" | "signup" | "forgot" | "checkEmail" | "setPassword";
  * the email link).
  *
  * The frame draws sign-in; the other four views render through the same
- * shell — hero, panel, intro block, type — and only the headline and the
- * form contents change. Sign up is a distinct view reached from the footer
+ * shell — panel, intro block, type — and only the headline and the form
+ * contents change. Check-email drops the hero and centres: once the user
+ * has hit Create account the picture has done its job. Sign up is a distinct view reached from the footer
  * link, not a tab: the old signin/signup tablist is gone with the header it
  * sat under. Each view is one <form>, so Enter submits that view's action
  * and, because the submit button carries the view's disabled rule, Enter
@@ -192,7 +193,7 @@ export function AuthPage() {
   );
 
   return (
-    <PreAppShell hero={authHero}>
+    <PreAppShell layout={view === "checkEmail" ? "solo" : "split"} hero={authHero}>
       <div className="sp-gate__intro">
         <BrandMark width={72} />
         <h1 className="sp-hero-title">{headline}</h1>

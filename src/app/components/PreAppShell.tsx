@@ -8,14 +8,22 @@ import React from "react";
  * --bp-xl rather than shrinking to a sliver).
  *
  * The shell takes the form column's contents as children and nothing else.
- * It does not know which screen it is showing. Two layouts:
+ * It does not know which screen it is showing. Two layouts and two tones:
  *
- *  - "split" — the front door. Forces the dark token set on its own root:
- *    data-theme scopes the tokens locally, so ColorSchemeProvider and the
- *    stored preference are untouched, and the app flips to the user's own
- *    theme the moment onboarding finishes (expected, 2026-09-02).
- *  - "solo" — the same panel, centred, no hero, themed like the app. The
- *    in-app "Create company" path, which is a task, not a doorway.
+ *  - "split" — the front door: the panel beside the hero. Sign in, sign
+ *    up, forgot, set password.
+ *  - "solo" — the same panel alone, centred on the canvas, no hero. Once
+ *    the user has hit Create account the picture has done its job: check
+ *    email and first-run onboarding sit in the middle of the screen
+ *    (2026-09-02, at Chris's direction), as does the in-app "Create
+ *    company" task.
+ *
+ *  - tone "dark" (default) forces the dark token set on the shell's own
+ *    root: data-theme scopes the tokens locally, so ColorSchemeProvider and
+ *    the stored preference are untouched, and the app flips to the user's
+ *    own theme the moment onboarding finishes (expected, 2026-09-02).
+ *  - tone "app" themes with the app — the in-app "Create company" path,
+ *    which is a task, not a doorway.
  *
  * `hero` is the image cropped into the right panel, flush right with a
  * band of Voltage exposed on the left (a frame detail, not a bug). Absent,
@@ -29,14 +37,16 @@ export function PreAppShell({
   children,
   hero,
   layout = "split",
+  tone = "dark",
 }: {
   children: React.ReactNode;
   hero?: string;
   layout?: "split" | "solo";
+  tone?: "dark" | "app";
 }) {
   const split = layout === "split";
   return (
-    <div className="sp-gate" data-layout={layout} data-theme={split ? "dark" : undefined}>
+    <div className="sp-gate" data-layout={layout} data-theme={tone === "dark" ? "dark" : undefined}>
       <main className="sp-gate__panel">{children}</main>
       {split && (
         <div className="sp-gate__hero" aria-hidden>
