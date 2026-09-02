@@ -185,10 +185,11 @@ html {
   --radius-card: 20px;
   /* Media cards run a tighter pair than content panels — a small card
      carries a small radius, a large panel a large one. Both values are set
-     explicitly and chosen optically: at 8px on an 8px frame there is no
-     outer-minus-inset arithmetic left to derive the inner from. */
-  --radius-media: 8px; /* the media card itself */
-  --radius-media-inner: 6px; /* its thumbnail well */
+     explicitly and chosen optically: at 10px on an 8px frame the
+     outer-minus-inset arithmetic would give a 2px well, which is not the
+     pair that reads right. */
+  --radius-media: 10px; /* the media card itself */
+  --radius-media-inner: 8px; /* its thumbnail well */
   --radius-pill: 999px;
   --control-sm: 38px;
   --control-md: 46px;
@@ -1979,9 +1980,9 @@ input[type="radio"] {
   border-radius: var(--radius-media);
 }
 .sp-media-card__preview {
-  /* The card's 8px and the well's 6px are a matched pair, both set
+  /* The card's 10px and the well's 8px are a matched pair, both set
      explicitly (see --radius-media-inner). At this scale an inner radius
-     cannot be derived from the outer one: 8px minus the 8px inset is zero. */
+     is not derived from the outer one: 10px minus the 8px inset is 2px. */
   border-radius: var(--radius-media-inner);
   /* Square unless a caller sets the group's own ratio. Grouping the gallery
      by platform AND shape means every card in a rail shares one ratio, so
@@ -3007,7 +3008,7 @@ input[type="radio"] {
 
    The top rule is an inset shadow, not a thicker border-top: a 2px top on
    a 1px frame is mitred across the corner arc and shows a wedge, which the
-   8px media radius makes more visible, not less. An inset layer follows
+   10px media radius makes more visible, not less. An inset layer follows
    the radius and tapers out at the corners. Same 2px weight, same hue.
 
    The top edge has two owners — the accent and .sp-card's lit edge — so
