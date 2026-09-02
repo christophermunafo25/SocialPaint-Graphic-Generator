@@ -185,11 +185,11 @@ html {
   --radius-card: 20px;
   /* Media cards run a tighter pair than content panels — a small card
      carries a small radius, a large panel a large one. Both values are set
-     explicitly and chosen optically: at 10px on an 8px frame the
-     outer-minus-inset arithmetic would give a 2px well, which is not the
+     explicitly and chosen optically: at 12px on an 8px frame the
+     outer-minus-inset arithmetic would give a 4px well, which is not the
      pair that reads right. */
-  --radius-media: 10px; /* the media card itself */
-  --radius-media-inner: 8px; /* its thumbnail well */
+  --radius-media: 12px; /* the media card itself */
+  --radius-media-inner: 9px; /* its thumbnail well */
   --radius-pill: 999px;
   --control-sm: 38px;
   --control-md: 46px;
@@ -282,13 +282,16 @@ html {
   --bg-plate: #ffffff; /* imagery plate, never inverts */
   --border: rgba(241, 241, 241, 0.1); /* decorative separation only */
   --border-strong: rgba(241, 241, 241, 0.2);
-  /* Card edge (2026-09-02, at Chris's direction): white at 25%, a full
-     1px along the top and bottom, a quarter-pixel hairline down the sides
-     — the sides read as a quarter of the weight, so the top and bottom
-     carry the object. Consumed through --edge-lit; see .sp-card. */
-  --edge-top: rgba(255, 255, 255, 0.25);
-  --edge-bottom: rgba(255, 255, 255, 0.25);
-  --edge-side: rgba(255, 255, 255, 0.25);
+  /* Card edge (2026-09-02, at Chris's direction): white at 15% at rest,
+     25% on hover; a full 1px along the top and bottom, a quarter-pixel
+     hairline down the sides, so the top and bottom carry the object.
+     The colour is a bare channel triplet and an alpha, not a finished
+     rgba(): .sp-card assembles them, so a hover can raise --edge-alpha on
+     the card itself and the assembled edge follows. See .sp-card. */
+  --edge-rgb: 255 255 255;
+  --edge-alpha: 0.15;
+  --edge-alpha-hover: 0.25;
+  --edge-side-width: 0.25px;
 
   --text-primary: #f1f1f1;
   --text-secondary: #a0a0a0; /* 6.2:1 on surface, 5.5:1 on hover */
@@ -381,14 +384,14 @@ html {
   --bg-plate: #ffffff;
   --border: rgba(39, 39, 39, 0.08);
   --border-strong: rgba(39, 39, 39, 0.16);
-  /* Card edge, light theme. The dark spec is white at 25% on a near-black
-     card; white on a white card is invisible, so the same weights ride
-     the ink instead — 1px top and bottom, a quarter-pixel down the sides.
-     0.25 ink on white is #c9c9c9, the same ~55-level step from the fill
-     that the dark edge makes. Structure identical, colour mirrored. */
-  --edge-top: rgba(39, 39, 39, 0.25);
-  --edge-bottom: rgba(39, 39, 39, 0.25);
-  --edge-side: rgba(39, 39, 39, 0.25);
+  /* Card edge, light theme. White on a white card is invisible, so the
+     same alphas ride the ink — 15% at rest (#dfdfdf on white), 25% on
+     hover. No weight variation here, at Chris's direction: a full 1px on
+     all four sides, where dark thins the sides to a quarter-pixel. */
+  --edge-rgb: 39 39 39;
+  --edge-alpha: 0.15;
+  --edge-alpha-hover: 0.25;
+  --edge-side-width: 1px;
 
   --text-primary: #272727;
   /* #666 reached only 4.43:1 on --bg-hover, its worst seat; one step down
@@ -465,21 +468,6 @@ html {
     0 0 0 var(--focus-offset) var(--bg-surface),
     0 0 0 calc(var(--focus-offset) + var(--focus-width)) var(--ring);
   --focus-ring-tight: 0 0 0 var(--focus-width) var(--ring);
-
-  /* The card-edge treatment as one box-shadow value, so a surface that
-     sets box-shadow for another reason (a focus ring, the Generate
-     accent) composes it instead of replacing it: `box-shadow: <yours>,
-     var(--edge-lit)`. Inset hairlines rather than border colours because
-     they follow the radius (an offset inset shadow tapers around the
-     corner arc, where a two-width border would meet in a hard mitre) and
-     because a border cannot be a quarter of a pixel wide — Chrome snaps
-     any border-width to a whole device pixel, while a 0.25px inset
-     shadow draws as a quarter-coverage antialiased line. */
-  --edge-lit:
-    inset 0 1px 0 var(--edge-top), inset 0 -1px 0 var(--edge-bottom),
-    inset var(--edge-side-width) 0 0 var(--edge-side),
-    inset calc(-1 * var(--edge-side-width)) 0 0 var(--edge-side);
-  --edge-side-width: 0.25px;
 
   /* Selection and active states tint with the brand green — a wash is a
      fill, so it is legal in both themes. Density differs per theme: dark
@@ -837,13 +825,32 @@ optgroup {
 }
 
 /* THE surface recipe: lifted fill, the card edge, soft radius. The 1px
-   frame stays in the box for layout and for the states that colour it
-   (hover, pressed, focus-within), but at rest it is transparent — the
-   edge lives in --edge-lit, four inset hairlines (1px top and bottom, a
-   quarter-pixel down each side) that no border-color shorthand can
-   flatten. A state that sets border-color therefore ADDS a uniform ring
-   around a still-edged card; one that sets box-shadow must compose
-   var(--edge-lit) or the edges vanish for the duration of the state. */
+   frame stays in the box for layout and for the states that still colour
+   it (the composer's focus-within), but at rest it is transparent — the
+   edge lives in --edge-lit, four inset hairlines (1px top and bottom,
+   --edge-side-width down each side) that no border-color shorthand can
+   flatten. Inset hairlines rather than border colours because they follow
+   the radius (an offset inset shadow tapers around the corner arc, where
+   a two-width border would meet in a hard mitre) and because a border
+   cannot be a quarter of a pixel wide — Chrome snaps any border-width to
+   a device pixel, while a 0.25px inset shadow draws as a quarter-coverage
+   antialiased line.
+
+   --edge-lit is assembled HERE, on the surface, not in the token tier: a
+   var() inside a custom property resolves where that property is
+   declared, so a hover that sets --edge-alpha on the card can only reach
+   an edge assembled on the card. Hover states therefore set --edge-alpha
+   (15% → 25%) instead of border-color; a state that sets box-shadow for
+   another reason must compose var(--edge-lit) or the edges vanish for
+   the duration of the state. .sp-sidebar shares the assembly. */
+.sp-card,
+.sp-sidebar {
+  --edge-color: rgb(var(--edge-rgb) / var(--edge-alpha));
+  --edge-lit:
+    inset 0 1px 0 var(--edge-color), inset 0 -1px 0 var(--edge-color),
+    inset var(--edge-side-width) 0 0 var(--edge-color),
+    inset calc(-1 * var(--edge-side-width)) 0 0 var(--edge-color);
+}
 .sp-card {
   background: var(--bg-surface);
   border: 1px solid transparent;
@@ -859,11 +866,11 @@ optgroup {
   width: 100%;
   text-align: left;
   cursor: pointer;
-  transition: border-color var(--dur-state) var(--ease);
+  transition: box-shadow var(--dur-state) var(--ease);
 }
-/* Adds the ring; the lit edge underneath stays (it is not border-borne). */
+/* Hover brightens the edge itself (15% → 25%); no second ring. */
 .sp-card-link:hover {
-  border-color: var(--border-strong);
+  --edge-alpha: var(--edge-alpha-hover);
 }
 .sp-card-link__arrow {
   transition: color var(--dur-state) var(--ease);
@@ -1113,8 +1120,9 @@ optgroup {
 
 /* ── Sidebar — flat surface panel, rounded on its right corners only ──────
    Wears the same card edge as .sp-card (2026-09-02): transparent 1px frame
-   for layout, the hairlines in --edge-lit. --sb-border is no longer read
-   here; it stays for any rail chrome that still separates with a line. */
+   for layout, the hairlines in --edge-lit (assembled beside .sp-card).
+   --sb-border is no longer read here; it stays for any rail chrome that
+   still separates with a line. */
 .sp-sidebar {
   background: var(--sb-bg);
   border: 1px solid transparent;
@@ -1747,11 +1755,11 @@ input[type="radio"] {
   height: 100%;
   text-align: left;
   cursor: pointer;
-  transition: border-color var(--dur-state) var(--ease);
+  transition: box-shadow var(--dur-state) var(--ease);
 }
-/* Adds the ring; the lit edge underneath stays (it is not border-borne). */
+/* Hover brightens the edge itself (15% → 25%); no second ring. */
 .sp-template-card:hover {
-  border-color: var(--border-strong);
+  --edge-alpha: var(--edge-alpha-hover);
 }
 .sp-template-card:focus-visible {
   outline: none;
@@ -1845,7 +1853,7 @@ input[type="radio"] {
    spec asked a shadow to carry. */
 .sp-template-card {
   transition:
-    border-color var(--dur-state) var(--ease),
+    box-shadow var(--dur-state) var(--ease),
     transform var(--dur-state) var(--ease);
 }
 .sp-template-card:hover {
@@ -1988,9 +1996,9 @@ input[type="radio"] {
   border-radius: var(--radius-media);
 }
 .sp-media-card__preview {
-  /* The card's 10px and the well's 8px are a matched pair, both set
+  /* The card's 12px and the well's 9px are a matched pair, both set
      explicitly (see --radius-media-inner). At this scale an inner radius
-     is not derived from the outer one: 10px minus the 8px inset is 2px. */
+     is not derived from the outer one: 12px minus the 8px inset is 4px. */
   border-radius: var(--radius-media-inner);
   /* Square unless a caller sets the group's own ratio. Grouping the gallery
      by platform AND shape means every card in a rail shares one ratio, so
@@ -2072,11 +2080,11 @@ input[type="radio"] {
   height: 100%;
   text-align: left;
   cursor: pointer;
-  transition: border-color var(--dur-state) var(--ease);
+  transition: box-shadow var(--dur-state) var(--ease);
 }
-/* Hover and pressed add the ring; the lit edge stays under both. */
+/* Hover and pressed brighten the edge itself (15% → 25%); no second ring. */
 .sp-sizecard:hover {
-  border-color: var(--border-strong);
+  --edge-alpha: var(--edge-alpha-hover);
 }
 .sp-sizecard:focus-visible {
   outline: none;
@@ -2086,7 +2094,7 @@ input[type="radio"] {
    the pressed card and the header's dimension line agree, and that is
    enough. */
 .sp-sizecard[aria-pressed="true"] {
-  border-color: var(--border-strong);
+  --edge-alpha: var(--edge-alpha-hover);
 }
 
 /* A uniform 4:3 well, NOT the size's own ratio — a true-ratio story tile
@@ -3016,7 +3024,7 @@ input[type="radio"] {
 
    The top rule is an inset shadow, not a thicker border-top: a 2px top on
    a 1px frame is mitred across the corner arc and shows a wedge, which the
-   10px media radius makes more visible, not less. An inset layer follows
+   12px media radius makes more visible, not less. An inset layer follows
    the radius and tapers out at the corners. Same 2px weight, same hue.
 
    The top edge has two owners — the accent and .sp-card's lit edge — so
