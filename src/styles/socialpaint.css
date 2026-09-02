@@ -170,7 +170,6 @@ html {
   --type-data-lh: 1.4;
   --type-data-track: 0;
   --type-composer-size: 16px; /* the Generate brief — one step above body, per Figma 72:27 */
-  --type-chip-size: 18px; /* the platform chip's label — Figma 141:331; between body and card title */
   --type-composer-lh: 1.45;
 
   /* Spacing — 4px base, nothing off the scale. */
@@ -2603,10 +2602,11 @@ input[type="radio"] {
    selected, in BOTH themes — that dark backdrop is what lets the
    full-colour mark read. The chip wears the page's lit edge like every
    card; no state rides the border, so hover and selected move only the
-   fill, the text, and the tile. Sized to the frame: 259×80, radius 20,
-   tile 45, mark 24. Four across with the rail's gap is 1072px, one short
-   of the content column. `.sp-chip` above is the size gallery's compact
-   pill, a different control. */
+   fill, the text, and the tile. The frame is 259×80 with a 45px tile and
+   a 24px mark; this is that chip at four-fifths (2026-09-02, at Chris's
+   direction — "smaller"): 208×64, a 36px tile, a 20px mark, the label on
+   the body step. Same proportions, same 44px hit floor cleared. `.sp-chip`
+   above is the size gallery's compact pill, a different control. */
 .sp-platform-chipbar {
   gap: var(--space-xs);
   padding: 2px;
@@ -2615,13 +2615,13 @@ input[type="radio"] {
   position: relative;
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
+  gap: var(--space-xs);
   flex-shrink: 0;
-  min-width: 259px; /* the frame's width; a long label ("Web & Open Graph") widens its chip rather than ellipsising */
-  height: 80px;
-  padding: 0 var(--space-sm);
+  min-width: 208px; /* a long label ("Web & Open Graph") widens its chip rather than ellipsising */
+  height: 64px;
+  padding: 0 var(--space-xs);
   border: 0;
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-media);
   background: var(--chip-bg);
   color: var(--chip-fg);
   box-shadow: var(--edge-lit);
@@ -2649,8 +2649,8 @@ input[type="radio"] {
 .sp-platform-chip__tile {
   position: relative;
   flex-shrink: 0;
-  width: 45px;
-  height: 45px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--radius-media-inner);
   background: var(--chip-tile);
   transition:
@@ -2669,8 +2669,8 @@ input[type="radio"] {
   position: absolute;
   inset: 0;
   margin: auto;
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   transition: opacity var(--dur-state) var(--ease);
 }
 .sp-platform-chip__mark--color {
@@ -2693,7 +2693,7 @@ input[type="radio"] {
   min-width: 0;
 }
 .sp-platform-chip__label {
-  font-size: var(--type-chip-size);
+  font-size: var(--type-body-size);
   font-weight: var(--weight-ui);
   letter-spacing: 0;
   line-height: 1.25;
@@ -2715,8 +2715,8 @@ input[type="radio"] {
 .sp-platform-chip__chevron {
   margin-left: auto;
   flex-shrink: 0;
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
 
 /* Selected must not rely on colour alone: aria-checked carries it for
