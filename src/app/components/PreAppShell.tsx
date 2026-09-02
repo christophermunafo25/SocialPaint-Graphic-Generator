@@ -20,7 +20,10 @@ import React from "react";
  * `hero` is the image cropped into the right panel, flush right with a
  * band of Voltage exposed on the left (a frame detail, not a bug). Absent,
  * the panel is flat Voltage — no placeholder ever ships in its place. The
- * image is decorative and loads after the form: alt="", lazy, never
+ * shipped hero is Chris's own composition from the Figma file (2026-09-02),
+ * the frame's window at 2× (1848×1738) as WebP without alpha: the corner
+ * is the panel's job and the Voltage behind the cut-out is flattened in.
+ * The image is decorative and loads after the form: alt="", lazy, never
  * preloaded or raised in priority. */
 export function PreAppShell({
   children,

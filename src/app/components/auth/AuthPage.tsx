@@ -2,6 +2,7 @@ import React, { useEffect, useId, useState } from "react";
 import { supabase } from "@/lib/stores/supabase/client";
 import { BrandMark } from "../BrandMark";
 import { PreAppShell } from "../PreAppShell";
+import authHero from "@/assets/socialpaint/auth-hero.webp";
 
 type View = "signin" | "signup" | "forgot" | "checkEmail" | "setPassword";
 
@@ -191,7 +192,7 @@ export function AuthPage() {
   );
 
   return (
-    <PreAppShell>
+    <PreAppShell hero={authHero}>
       <div className="sp-gate__intro">
         <BrandMark width={72} />
         <h1 className="sp-hero-title">{headline}</h1>

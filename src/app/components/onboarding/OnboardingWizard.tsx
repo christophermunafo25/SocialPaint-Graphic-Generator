@@ -12,6 +12,7 @@ import { useFileDrop } from "@/lib/useFileDrop";
 import { ColorControl } from "../ColorControl";
 import { BrandMark } from "../BrandMark";
 import { PreAppShell } from "../PreAppShell";
+import authHero from "@/assets/socialpaint/auth-hero.webp";
 
 /** First-run onboarding: walks a user from an empty database to a themed,
  * ready-to-use company workspace. Also reachable any time via "Create
@@ -129,7 +130,7 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
   const exitHidden = firstRun && step === 0;
 
   return (
-    <PreAppShell layout={firstRun ? "split" : "solo"}>
+    <PreAppShell layout={firstRun ? "split" : "solo"} hero={authHero}>
       <div className="sp-gate__intro">
         {firstRun && <BrandMark width={72} />}
         <p className="sp-eyebrow">
