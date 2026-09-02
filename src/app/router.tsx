@@ -1,13 +1,15 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { PLATFORMS, type PlatformId } from "@/lib/templates/platforms";
 
 /** View-state routing, now mirrored to the URL so a view is shareable and
  * survives refresh and back/forward. Still no router dependency: one path
  * table, `history.pushState`, and a `popstate` listener.
  *
- * The Brand templates route carries its own filter state (`group`, `q`)
+ * The Brand templates route carries its own filter state (`platform`, `q`)
  * because the URL is the source of truth for that page — selecting a chip or
- * typing a query IS a navigation. `group` is a platform-and-shape id such as
- * `instagram-4-5`, which is the unit the gallery filters by. */
+ * typing a query IS a navigation. `platform` is a PlatformId such as
+ * `instagram`, the unit the chips filter by; an unknown value reads as no
+ * filter rather than as a dead end. */
 /** Brand Studio's categories. The studio is one autosaving page of cards
  * that open in place, so a category no longer names a separate screen — it
  * names which card is open when the page loads. The URLs are unchanged, so
@@ -40,7 +42,7 @@ const SETTINGS_SECTIONS: readonly SettingsSection[] = [
 
 export type Route =
   | { name: "onboarding" }
-  | { name: "portal"; group?: string; q?: string }
+  | { name: "portal"; platform?: PlatformId; q?: string }
   | { name: "template"; templateId: string }
   /** Generate: brief in, filled templates out. `templateId` is the "use this
    * one" hint from a template card — in the URL so the intent survives a
@@ -78,7 +80,7 @@ export function routeToUrl(route: Route): string {
       return "/onboarding";
     case "portal": {
       const params = new URLSearchParams();
-      if (route.group) params.set("group", route.group);
+      if (route.platform) params.set("platform", route.platform);
       if (route.q) params.set("q", route.q);
       const qs = params.toString();
       return qs ? `/templates?${qs}` : "/templates";
@@ -108,6 +110,9 @@ export function routeToUrl(route: Route): string {
   }
 }
 
+const parsePlatform = (raw: string | null): PlatformId | undefined =>
+  PLATFORMS.some((p) => p.id === raw) ? (raw as PlatformId) : undefined;
+
 /** URL → Route. Anything unrecognised lands on the gallery rather than a
  * dead end. */
 export function urlToRoute(pathname: string, search: string): Route {
@@ -121,7 +126,7 @@ export function urlToRoute(pathname: string, search: string): Route {
       if (tail) return { name: "template", templateId: decodeURIComponent(tail) };
       return {
         name: "portal",
-        group: params.get("group") ?? undefined,
+        platform: parsePlatform(params.get("platform")),
         q: params.get("q") ?? undefined,
       };
     case "generate":

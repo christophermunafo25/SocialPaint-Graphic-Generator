@@ -53,6 +53,36 @@ export const groupId = (platform: PlatformId, aspectRatio: string): string =>
 export const groupIdsOf = (t: CatalogTemplate): string[] =>
   t.platforms.map((p) => groupId(p, t.aspectRatio));
 
+/** The chip facet: ONE platform, every shape. A chip answers "what am I
+ *  posting to?", so it counts every template whose `platforms` include the
+ *  platform — a 1080×1350 serves Instagram, Facebook, AND LinkedIn and is
+ *  counted in all three. The counts therefore do not sum to the catalogue
+ *  total, and that is correct: there is no primary platform here. The
+ *  shelves stay platform-and-shape (see TemplateGroup) so a rail's frames
+ *  keep one ratio; only the filter climbs to the platform. */
+export interface PlatformFacet {
+  platform: Platform;
+  /** Templates serving this platform, at any shape. */
+  count: number;
+}
+
+/** Membership for the platform filter — inclusive, like the facet's count. */
+export const servesPlatform = (t: CatalogTemplate, platform: PlatformId): boolean =>
+  t.platforms.includes(platform);
+
+/** One facet per platform that holds at least one template, in PLATFORMS
+ *  order — never by count, so the row reads the same way every visit. */
+export function buildPlatformFacets(templates: CatalogTemplate[]): PlatformFacet[] {
+  const counts = new Map<PlatformId, number>();
+  for (const t of templates) {
+    for (const p of t.platforms) counts.set(p, (counts.get(p) ?? 0) + 1);
+  }
+  return PLATFORMS.flatMap((platform) => {
+    const count = counts.get(platform.id);
+    return count ? [{ platform, count }] : [];
+  });
+}
+
 /**
  * Build the catalogue's groups: platform order first (the fixed list), then
  * shape order within each platform. Empty combinations never appear.

@@ -1,32 +1,34 @@
 import React, { useRef } from "react";
 import { LayoutGrid } from "lucide-react";
-import type { TemplateGroup } from "@/lib/templates/groups";
+import type { PlatformFacet } from "@/lib/templates/groups";
+import type { PlatformId } from "@/lib/templates/platforms";
 import { useEdgeFade } from "./useEdgeFade";
 
 /**
- * Single-select filter over the catalogue's groups — a radio group rather
+ * Single-select filter over the catalogue's platforms — a radio group rather
  * than a tablist, since these filter one region in place instead of swapping
- * panels.
+ * panels. One chip per platform, every shape: the shelves below stay grouped
+ * down to the shape, the chip does not.
  *
  * Roving tabindex: one stop in the tab order, arrows move within the group
  * and select as they go, which is the standard radio-group contract.
  */
 export function GroupChips({
-  groups,
+  facets,
   total,
   selected,
   onSelect,
 }: {
-  groups: TemplateGroup[];
+  facets: PlatformFacet[];
   total: number;
   /** null is the "All" chip. */
-  selected: string | null;
-  onSelect(next: string | null): void;
+  selected: PlatformId | null;
+  onSelect(next: PlatformId | null): void;
 }) {
-  const { ref, atStart, atEnd } = useEdgeFade<HTMLDivElement>([groups.length]);
+  const { ref, atStart, atEnd } = useEdgeFade<HTMLDivElement>([facets.length]);
   const chipRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
-  const ids: Array<string | null> = [null, ...groups.map((g) => g.id)];
+  const ids: Array<PlatformId | null> = [null, ...facets.map((f) => f.platform.id)];
   const activeIndex = Math.max(0, ids.indexOf(selected));
 
   const focusAndSelect = (i: number) => {
@@ -51,7 +53,7 @@ export function GroupChips({
   };
 
   const chip = (
-    id: string | null,
+    id: PlatformId | null,
     index: number,
     label: string,
     count: number,
@@ -90,10 +92,12 @@ export function GroupChips({
         ref={ref}
         className="sp-railfade__track sp-chipbar"
         role="radiogroup"
-        aria-label="Filter by platform and shape"
+        aria-label="Filter by platform"
       >
         {chip(null, 0, "All", total, LayoutGrid)}
-        {groups.map((g, i) => chip(g.id, i + 1, g.label, g.templates.length, g.platform.Icon))}
+        {facets.map((f, i) =>
+          chip(f.platform.id, i + 1, f.platform.label, f.count, f.platform.Icon),
+        )}
       </div>
     </div>
   );
