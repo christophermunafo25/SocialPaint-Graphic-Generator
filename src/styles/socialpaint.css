@@ -196,6 +196,7 @@ html {
   /* Layout */
   --page-max: 1720px; /* THE content column cap — one knob, see .sp-page */
   --page-pad: var(--space-xl); /* column gutter (48px desktop); tiers step down below --bp-xl */
+  --chrome-top: 0px; /* height of fixed app chrome above the page: 0 beside the rail; 56px (the mobile header) below --bp-lg. Sticky page chrome offsets from this, never from top: 0. */
   --bp-sm: 480px;
   --bp-md: 768px;
   --bp-lg: 1024px;
@@ -1017,7 +1018,9 @@ optgroup {
     flex-direction: column;
     overflow-x: visible;
     position: sticky;
-    top: var(--space-lg);
+    /* 900-1023 still renders the mobile header, so the offset rides on
+       --chrome-top (0 beside the rail). */
+    top: calc(var(--chrome-top) + var(--space-lg));
   }
 }
 
@@ -2364,11 +2367,12 @@ input[type="radio"] {
   box-shadow: var(--focus-ring-tight);
 }
 
-/* Sticky region: search + chips pin below the top of the viewport. Flat
-   until pinned, then a hairline does the separating. */
+/* Sticky region: search + chips pin below the app chrome — the viewport top
+   beside the rail, the 56px mobile header below --bp-lg (--chrome-top).
+   Flat until pinned, then a hairline does the separating. */
 .sp-filterbar {
   position: sticky;
-  top: 0;
+  top: var(--chrome-top);
   z-index: var(--z-sticky);
   background: var(--bg-canvas);
   padding: var(--space-sm) 0;
@@ -2725,9 +2729,21 @@ input[type="radio"] {
 @media (max-width: 1023px) {
   :root {
     --page-pad: var(--space-md); /* 24px */
+    /* The mobile header (Sidebar.tsx): 56px bar + the notch inset it
+       carries as padding-top. */
+    --chrome-top: calc(56px + env(safe-area-inset-top, 0px));
   }
   .sp-page {
-    padding: var(--space-md) var(--page-pad) var(--space-2xl);
+    /* Bottom keeps the 64px rhythm plus the home-indicator inset. */
+    padding: var(--space-md) var(--page-pad)
+      calc(var(--space-2xl) + env(safe-area-inset-bottom, 0px));
+  }
+  /* 44px touch floor for the drop-down nav items (matches
+     .sp-shelf__viewall's min-height: 44px pattern); desktop keeps the 40px
+     pointer target. */
+  .sp-sidebar-item {
+    height: auto;
+    min-height: 44px;
   }
   .sp-shelf {
     margin-top: var(--space-xl);
