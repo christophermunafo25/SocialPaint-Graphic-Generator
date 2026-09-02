@@ -969,6 +969,15 @@ optgroup {
 .sp-gate[data-layout="split"] .sp-gate__panel {
   --input-bg: var(--chip-raised);
 }
+/* The frame bounds its lifted fields at 15% white; the strong hairline
+   (20%) is the nearer rung. Focus still recolours the edge to the ring. */
+.sp-gate[data-layout="split"] .sp-input {
+  border-color: var(--border-strong);
+}
+.sp-gate[data-layout="split"] .sp-input:focus,
+.sp-gate[data-layout="split"] .sp-input:focus-visible {
+  border-color: var(--ring);
+}
 .sp-gate__hero {
   position: relative;
   min-width: 0;
@@ -1114,9 +1123,13 @@ optgroup {
 }
 
 @media (max-width: 1023px) {
+  /* One column: the panel takes its content height and centres in the
+     viewport rather than stretching to it — a form-sized card, not a
+     viewport-sized one. */
   .sp-gate {
     grid-template-columns: minmax(0, 584px);
     justify-content: center;
+    align-content: center;
   }
   .sp-gate__hero {
     display: none;
