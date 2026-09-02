@@ -1290,6 +1290,94 @@ optgroup {
   color: var(--text-muted);
 }
 
+/* The palette grid (Figma 154:1654): four 197 × 175 tiles across the 833
+   column on a 16 gap (the frame's 15 column gap takes the scale). A tile
+   is the chip fill with the strong hairline on the media radius, 8px of
+   padding, the swatch on the inner media radius, and the label row —
+   name left, hex right in the mono face. Tiles shed columns by tier: four
+   to 768, three to 640, two below. */
+.sp-gate__tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-gate__tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  min-width: 0;
+  padding: var(--space-2xs);
+  background: var(--chip-raised, var(--bg-raised));
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-media);
+}
+.sp-gate__tile .sp-color-control,
+.sp-gate__tile .sp-color-control__row {
+  display: flex;
+  width: 100%;
+}
+.sp-gate__tile-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2xs);
+  min-height: 20px;
+  padding: 0 var(--space-3xs);
+}
+.sp-gate__tile-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--type-label-size);
+  font-weight: var(--weight-ui);
+  color: var(--text-primary);
+}
+.sp-gate__tile-hex {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: var(--type-caption-size);
+  color: var(--text-muted);
+}
+
+/* The colour swatch (ColorControl): the veil with the pencil is always in
+   the tree and fades in on --dur-state — on hover, on keyboard focus, and
+   while its editor is open — so the affordance appears on approach. */
+.sp-color-swatch {
+  position: relative;
+  flex: none;
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-control);
+  transition: border-color var(--dur-state) var(--ease);
+}
+.sp-color-swatch:hover,
+.sp-color-swatch:focus-visible,
+.sp-color-swatch[data-state="open"] {
+  border-color: var(--state-primary);
+}
+.sp-color-swatch__veil {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--white);
+  background: color-mix(in srgb, var(--text-on-accent) 35%, transparent);
+  opacity: 0;
+  transition: opacity var(--dur-state) var(--ease);
+}
+.sp-color-swatch:hover .sp-color-swatch__veil,
+.sp-color-swatch:focus-visible .sp-color-swatch__veil,
+.sp-color-swatch[data-state="open"] .sp-color-swatch__veil {
+  opacity: 1;
+}
+
 /* The auth headline: the login frame's 38 maps to the H3 step, the
    onboarding frames' 45 to H2 — the two containers differ by more than 2×
    in width and the proportion between them holds. */

@@ -374,6 +374,10 @@ function StepCompany({
   );
 }
 
+/** The palette as a four-up grid of tiles (Figma 154:1654): a swatch on
+ * the chip fill with the name and hex beneath. The swatch is ColorControl
+ * itself, styled to the tile — the hover veil, the pencil scaled to the
+ * box, and the editor are the same control every other screen uses. */
 function StepColors({
   colors,
   onChange,
@@ -384,9 +388,9 @@ function StepColors({
   const set = (i: number, patch: Partial<BrandColor>) =>
     onChange(colors.map((c, j) => (j === i ? { ...c, ...patch } : c)));
   return (
-    <div className="space-y-2">
+    <ul className="sp-gate__tiles" aria-label="Brand palette">
       {colors.map((c, i) => (
-        <div key={c.key} className="flex items-center gap-3">
+        <li key={c.key} className="sp-gate__tile">
           <ColorControl
             ariaLabel={`${c.name} color`}
             value={c.hex}
@@ -394,13 +398,22 @@ function StepColors({
             /* The palette is being defined here — there is nothing to
                quick-select from yet. */
             brandSwatches={false}
+            hexField={false}
+            pencilSize={38}
+            swatchStyle={{
+              width: "100%",
+              height: "auto",
+              aspectRatio: "181 / 127",
+              borderRadius: "var(--radius-media-inner)",
+            }}
           />
-          <span className="text-sm flex-1" style={{ color: "var(--foreground)" }}>
-            {c.name}
-          </span>
-        </div>
+          <div className="sp-gate__tile-label">
+            <span className="sp-gate__tile-name">{c.name}</span>
+            <span className="sp-gate__tile-hex">{c.hex.toUpperCase()}</span>
+          </div>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }
 
