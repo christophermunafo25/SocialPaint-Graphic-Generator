@@ -2,6 +2,7 @@ import React, { useRef } from "react";
 import { LayoutGrid } from "lucide-react";
 import type { PlatformFacet } from "@/lib/templates/groups";
 import type { PlatformId } from "@/lib/templates/platforms";
+import type { PlatformIcon } from "@/lib/templates/platformIcons";
 import { useEdgeFade } from "./useEdgeFade";
 
 /**
@@ -57,7 +58,7 @@ export function GroupChips({
     index: number,
     label: string,
     count: number,
-    Icon: typeof LayoutGrid,
+    Icon: PlatformIcon,
   ) => {
     const isSelected = selected === id;
     return (
