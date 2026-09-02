@@ -2704,16 +2704,27 @@ input[type="radio"] {
   }
 }
 
-/* --- Responsive ----------------------------------------------------------- */
+/* --- Responsive -----------------------------------------------------------
+   --page-pad steps down one tier at a time. Boundaries are the --bp-* tokens
+   (var() is not valid inside a media query, hence the literals):
+     >= 1280 (--bp-xl)        48px  (the :root default)
+     1024-1279 (--bp-lg..xl)  32px
+     768-1023 (--bp-md..lg)   24px
+     <= 767 (below --bp-md)   16px
+   Source order does the tiering — each narrower block overrides the last. */
+@media (max-width: 1279px) {
+  :root {
+    --page-pad: var(--space-lg); /* 32px */
+  }
+}
 /* Shell boundary: --bp-lg (1024px). The rail exists at >= 1024; the mobile
    top bar below. This block must break where the JS shell switch does
-   (Sidebar.tsx matchMedia), so it fires at 1023 — var() is not valid inside
-   a media query, hence the literal. */
+   (Sidebar.tsx matchMedia), so it fires at 1023. With no rail, the
+   nav-to-content relationship is vertical: 24px under the sticky 56px
+   header instead of the desktop 48px top. */
 @media (max-width: 1023px) {
-  /* 16px page gutter on mobile, per the DS layout spec. :root so the
-     bands' column padding follows the same token. */
   :root {
-    --page-pad: 16px;
+    --page-pad: var(--space-md); /* 24px */
   }
   .sp-page {
     padding: var(--space-md) var(--page-pad) var(--space-2xl);
@@ -2723,6 +2734,13 @@ input[type="radio"] {
   }
   .sp-filterbar {
     padding: var(--space-xs) 0;
+  }
+}
+@media (max-width: 767px) {
+  /* 16px page gutter on mobile, per the DS layout spec. :root so the
+     bands' column padding follows the same token. */
+  :root {
+    --page-pad: 16px;
   }
 }
 
