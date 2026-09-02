@@ -95,7 +95,6 @@ export function AdminTemplates() {
   /** Template pending delete confirmation. */
   const [deleting, setDeleting] = useState<TemplateSchema | null>(null);
   /** Template whose name is open for inline rename. */
-  const [renaming, setRenaming] = useState<string | null>(null);
 
   const confirmDelete = async () => {
     if (!deleting) return;
@@ -404,62 +403,18 @@ export function AdminTemplates() {
                   </div>
                 </button>
                 <div className="sp-template-card__meta sp-template-card__meta--stack">
-                  {/* Line 1: title + icon action row on the same line */}
-                  <div className="flex items-center" style={{ gap: "var(--space-2xs)" }}>
-                    <InlineEdit
-                      className="flex-1 min-w-0"
-                      value={t.name}
-                      ariaLabel={`Rename ${t.name}`}
-                      inputAriaLabel="Template name"
-                      placeholder="Untitled template"
-                      valueStyle={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}
-                      onSave={(name) => renameTemplate(t, name)}
-                      onEditingChange={(on) => setRenaming(on ? t.id : null)}
-                    />
-                    {/* The rename input needs the whole line — four 32px icons
-                      would squeeze it down to a couple of characters. */}
-                    {renaming !== t.id && (
-                      <>
-                        <button
-                          style={iconBtn}
-                          onClick={() => void toggleStatus(t)}
-                          title={t.status === "published" ? "Unpublish" : "Publish"}
-                        >
-                          {t.status === "published" ? (
-                            <EyeOff style={{ width: 16, height: 16, color: "var(--text-muted)" }} />
-                          ) : (
-                            <Eye style={{ width: 16, height: 16, color: "var(--state-primary)" }} />
-                          )}
-                        </button>
-                        <button
-                          style={iconBtn}
-                          onClick={() => navigate({ name: "builder", templateId: t.id })}
-                          title="Edit"
-                        >
-                          <Pencil style={{ width: 16, height: 16, color: "var(--text-muted)" }} />
-                        </button>
-                        <button
-                          style={iconBtn}
-                          onClick={() => void duplicateTemplate(t)}
-                          title="Duplicate"
-                        >
-                          <Copy style={{ width: 16, height: 16, color: "var(--text-muted)" }} />
-                        </button>
-                        <button
-                          style={iconBtn}
-                          onClick={() => setVersionFor(t)}
-                          title="Create a version for another size"
-                        >
-                          <Proportions
-                            style={{ width: 16, height: 16, color: "var(--text-muted)" }}
-                          />
-                        </button>
-                        <button style={iconBtn} onClick={() => setDeleting(t)} title="Delete">
-                          <Trash2 style={{ width: 16, height: 16, color: "var(--state-danger)" }} />
-                        </button>
-                      </>
-                    )}
-                  </div>
+                  {/* Line 1: the title, alone. Five 32px icons beside it left
+                      the rename field ~18px wide at four columns; the name
+                      and its input now own the whole line. */}
+                  <InlineEdit
+                    className="min-w-0"
+                    value={t.name}
+                    ariaLabel={`Rename ${t.name}`}
+                    inputAriaLabel="Template name"
+                    placeholder="Untitled template"
+                    valueStyle={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}
+                    onSave={(name) => renameTemplate(t, name)}
+                  />
                   {/* Line 2: status (+ provenance when a model built the fields) */}
                   <span
                     className="sp-eyebrow inline-block"
@@ -491,6 +446,50 @@ export function AdminTemplates() {
                       })()}
                     </p>
                   )}
+                  {/* Line 4: the actions, on a row of their own. Five 32px
+                      icons are 192px wide; at four columns the card offers 218,
+                      so they share a line with nothing — not the title (which
+                      they squeezed to ~18px) and not the status. */}
+                  <div
+                    className="flex items-center"
+                    style={{ gap: "var(--space-2xs)", marginTop: "var(--space-2xs)" }}
+                  >
+                    <button
+                      style={iconBtn}
+                      onClick={() => void toggleStatus(t)}
+                      title={t.status === "published" ? "Unpublish" : "Publish"}
+                    >
+                      {t.status === "published" ? (
+                        <EyeOff style={{ width: 16, height: 16, color: "var(--text-muted)" }} />
+                      ) : (
+                        <Eye style={{ width: 16, height: 16, color: "var(--state-primary)" }} />
+                      )}
+                    </button>
+                    <button
+                      style={iconBtn}
+                      onClick={() => navigate({ name: "builder", templateId: t.id })}
+                      title="Edit"
+                    >
+                      <Pencil style={{ width: 16, height: 16, color: "var(--text-muted)" }} />
+                    </button>
+                    <button
+                      style={iconBtn}
+                      onClick={() => void duplicateTemplate(t)}
+                      title="Duplicate"
+                    >
+                      <Copy style={{ width: 16, height: 16, color: "var(--text-muted)" }} />
+                    </button>
+                    <button
+                      style={iconBtn}
+                      onClick={() => setVersionFor(t)}
+                      title="Create a version for another size"
+                    >
+                      <Proportions style={{ width: 16, height: 16, color: "var(--text-muted)" }} />
+                    </button>
+                    <button style={iconBtn} onClick={() => setDeleting(t)} title="Delete">
+                      <Trash2 style={{ width: 16, height: 16, color: "var(--state-danger)" }} />
+                    </button>
+                  </div>
                 </div>
               </div>
             );
