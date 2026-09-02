@@ -1243,6 +1243,53 @@ optgroup {
   opacity: 0.4;
   cursor: default;
 }
+/* Step 1's single question (Figma 154:1576): a 586 field centred in the
+   card with the Voltage arrow inset at its right edge — 48 × 40, so a 4px
+   inset in the 48-tall field; radius 10 → the large-control rung. */
+.sp-gate__ask {
+  width: 100%;
+  max-width: 586px;
+  margin: 0 auto;
+}
+.sp-gate__ask-field {
+  position: relative;
+}
+.sp-gate__ask-field .sp-input {
+  padding-right: calc(48px + var(--space-xs));
+}
+.sp-gate__ask-go {
+  position: absolute;
+  top: var(--space-3xs);
+  right: var(--space-3xs);
+  width: 48px;
+  height: calc(var(--control-md) - 2 * var(--space-3xs));
+  border-radius: calc(var(--radius-control-lg) - var(--space-3xs));
+  background: var(--fill-primary);
+  color: var(--text-on-accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background var(--dur-state) var(--ease),
+    opacity var(--dur-state) var(--ease);
+}
+.sp-gate__ask-go:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--fill-primary) 86%, var(--white));
+}
+.sp-gate__ask-go:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.sp-gate__ask-id {
+  margin-top: var(--space-xs);
+  min-height: calc(var(--type-caption-size) * var(--type-caption-lh));
+  text-align: center;
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-lh);
+  color: var(--text-muted);
+}
+
 /* The auth headline: the login frame's 38 maps to the H3 step, the
    onboarding frames' 45 to H2 — the two containers differ by more than 2×
    in width and the proportion between them holds. */

@@ -206,6 +206,7 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
               <StepCompany
                 name={companyName}
                 slug={slug}
+                ready={canNext}
                 onChange={setCompanyName}
                 onSubmit={() => canNext && setStep(1)}
               />
@@ -319,39 +320,56 @@ function Stepper({
   );
 }
 
+/** One question, one field (Figma 154:1576): the name, with the Voltage
+ * arrow inset at the field's right edge as its only action — no footer on
+ * this step. Enter submits; the arrow is disabled until there is a name,
+ * and disabled Voltage reads as a dulled green over the panel. The
+ * workspace-id line is reserved so it appears without moving the field. */
 function StepCompany({
   name,
   slug,
+  ready,
   onChange,
   onSubmit,
 }: {
   name: string;
   slug: string;
+  ready: boolean;
   onChange(v: string): void;
   onSubmit(): void;
 }) {
   return (
     <form
-      className="space-y-3"
+      className="sp-gate__ask"
       onSubmit={(e) => {
         e.preventDefault();
         onSubmit();
       }}
     >
-      <input
-        autoFocus
-        type="text"
-        value={name}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="Acme Studios"
-        aria-label="Company name"
-        className="sp-input sp-input-lg"
-      />
-      {slug && (
-        <p className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>
-          Workspace id: <span className="font-mono">{slug}</span>
-        </p>
-      )}
+      <div className="sp-gate__ask-field">
+        <input
+          autoFocus
+          type="text"
+          value={name}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Acme Studios"
+          aria-label="Brand name"
+          autoComplete="organization"
+          className="sp-input sp-input-lg"
+        />
+        <button type="submit" className="sp-gate__ask-go" disabled={!ready} aria-label="Continue">
+          <ArrowRight className="w-5 h-5" aria-hidden />
+        </button>
+      </div>
+      <p className="sp-gate__ask-id" aria-live="polite">
+        {slug ? (
+          <>
+            Workspace id: <span className="font-mono">{slug}</span>
+          </>
+        ) : (
+          "\u00a0"
+        )}
+      </p>
     </form>
   );
 }
