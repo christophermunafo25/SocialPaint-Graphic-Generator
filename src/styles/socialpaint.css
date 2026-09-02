@@ -1670,6 +1670,68 @@ optgroup {
   background: var(--danger-wash);
 }
 
+/* Logo (Figma 158:267): the same dropzone at 296 tall on the media
+   radius, its contents absolutely placed so the empty state and the
+   preview swap in the same box. */
+.sp-gate__drop--logo {
+  position: relative;
+  height: 296px;
+  margin-top: 0;
+  border-radius: var(--radius-media);
+}
+.sp-gate__drop-inner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2xs);
+  padding: var(--space-md);
+  text-align: center;
+}
+.sp-gate__drop-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: var(--space-2xs);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
+  color: var(--state-primary-on-surface);
+  transition: background var(--dur-state) var(--ease);
+}
+.sp-gate__drop:hover .sp-gate__drop-badge {
+  background: color-mix(in srgb, var(--text-primary) 10%, transparent);
+}
+.sp-gate__drop-title {
+  font-size: var(--type-composer-size);
+  font-weight: var(--weight-ui);
+  color: var(--text-primary);
+}
+.sp-gate__drop-sub {
+  font-size: var(--type-label-size);
+  color: var(--text-muted);
+}
+.sp-gate__drop-preview {
+  max-height: 160px;
+  max-width: 60%;
+  object-fit: contain;
+  margin-bottom: var(--space-2xs);
+}
+.sp-gate__skip {
+  margin-top: var(--space-sm);
+  text-align: center;
+}
+.sp-gate__skip .sp-gate__link {
+  font-size: var(--type-body-size);
+}
+.sp-gate__skip .sp-gate__link:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 /* The auth headline: the login frame's 38 maps to the H3 step, the
    onboarding frames' 45 to H2 — the two containers differ by more than 2×
    in width and the proportion between them holds. */

@@ -1,6 +1,6 @@
 import React, { useEffect, useId, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowLeft, ArrowRight, Check, Plus, Trash2, Upload, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2, Plus, Trash2, Upload, X } from "lucide-react";
 import type { BrandColor, FontRef } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -74,6 +74,7 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
   const [step, setStepState] = useState(0);
   const [direction, setDirection] = useState<1 | -1>(1);
   const [saving, setSaving] = useState(false);
+  const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [companyName, setCompanyName] = useState("");
@@ -156,6 +157,11 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
       await setCompany(company.id);
       setRole("admin");
       await refreshBrand();
+      // The last thing they see before the product: let it land for one
+      // reveal beat before the route changes, rather than a busy label
+      // that vanishes mid-word. Zero under reduced motion, like the token.
+      setDone(true);
+      await new Promise((r) => setTimeout(r, m.reveal * 1000));
       navigate({ name: "adminTemplates" });
     } catch (e) {
       console.error("Onboarding failed", e);
@@ -227,12 +233,14 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
             {step === 3 && (
               <StepLogo
                 preview={logoPreview}
+                busy={saving || done}
                 onPick={(file) => {
                   setLogoFile(file);
                   const reader = new FileReader();
                   reader.onload = () => setLogoPreview(reader.result as string);
                   reader.readAsDataURL(file);
                 }}
+                onSkip={() => void finish()}
               />
             )}
           </motion.div>
@@ -269,11 +277,26 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
             <button
               type="button"
               onClick={() => void finish()}
-              disabled={saving}
+              disabled={saving || done}
               className="sp-gate__cta"
+              data-state={done ? "done" : saving ? "saving" : undefined}
+              aria-live="polite"
             >
-              {saving ? "Creating…" : "Create workspace"}
-              <Check className="w-4 h-4" aria-hidden />
+              {done ? "Workspace ready" : saving ? "Creating…" : "Create workspace"}
+              {saving && !done ? (
+                <Loader2 className="w-4 h-4 animate-spin" aria-hidden />
+              ) : (
+                <motion.span
+                  key={done ? "done" : "idle"}
+                  initial={done ? { scale: 0.5, opacity: 0 } : false}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: m.state, ease: m.ease }}
+                  className="inline-flex"
+                  aria-hidden
+                >
+                  <Check className="w-4 h-4" />
+                </motion.span>
+              )}
             </button>
           )}
         </nav>
@@ -654,40 +677,75 @@ function StepFonts(props: StepFontsProps) {
   );
 }
 
-function StepLogo({ preview, onPick }: { preview: string | null; onPick(f: File): void }) {
+/** Logo (Figma 158:267): one dropzone at the frame's 296, a circular badge
+ * with a Voltage upload glyph over two lines of copy. A picked logo takes
+ * the badge and copy's place in the same reserved box — the two states
+ * crossfade rather than reflow — with the zone still the way to replace
+ * it. "Skip for now" beneath says what the frame only implies: the step is
+ * optional; it runs the same finish() without a logo. */
+function StepLogo({
+  preview,
+  busy,
+  onPick,
+  onSkip,
+}: {
+  preview: string | null;
+  busy: boolean;
+  onPick(f: File): void;
+  onSkip(): void;
+}) {
+  const m = useMotionTokens();
   const drop = useFileDrop((files) => {
     if (files[0]) onPick(files[0]);
   });
   return (
-    <label
-      {...drop.bind}
-      data-active={drop.active}
-      className="sp-dropzone flex flex-col items-center justify-center gap-3 py-8 cursor-pointer"
-      style={{
-        border: "1.5px dashed var(--border-strong)",
-        borderRadius: "var(--radius-card-sm)",
-      }}
-    >
-      {preview ? (
-        <img src={preview} alt="Logo preview" className="max-h-20 max-w-[240px] object-contain" />
-      ) : (
-        <Upload
-          className="sp-dropzone__icon w-6 h-6"
-          style={{ color: "var(--muted-foreground)" }}
+    <div>
+      <label
+        {...drop.bind}
+        data-active={drop.active}
+        className="sp-dropzone sp-gate__drop sp-gate__drop--logo"
+      >
+        <AnimatePresence initial={false} mode="popLayout">
+          <motion.span
+            key={preview ? "preview" : "empty"}
+            className="sp-gate__drop-inner"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: m.state, ease: m.ease }}
+          >
+            {preview ? (
+              <>
+                <img src={preview} alt="Logo preview" className="sp-gate__drop-preview" />
+                <span className="sp-gate__drop-title">Replace logo</span>
+                <span className="sp-gate__drop-sub">Drag a new file here, or click to browse</span>
+              </>
+            ) : (
+              <>
+                <span className="sp-gate__drop-badge" aria-hidden>
+                  <Upload className="sp-dropzone__icon w-[22px] h-[22px]" />
+                </span>
+                <span className="sp-gate__drop-title">Upload logo (PNG or SVG)</span>
+                <span className="sp-gate__drop-sub">Drag a file here, or click to browse</span>
+              </>
+            )}
+          </motion.span>
+        </AnimatePresence>
+        <input
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) onPick(f);
+          }}
         />
-      )}
-      <span style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
-        {preview ? "Replace logo" : "Upload logo (PNG or SVG)"}
-      </span>
-      <input
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) onPick(f);
-        }}
-      />
-    </label>
+      </label>
+      <p className="sp-gate__skip" style={preview ? { visibility: "hidden" } : undefined}>
+        <button type="button" className="sp-gate__link" onClick={onSkip} disabled={busy}>
+          Skip for now
+        </button>
+      </p>
+    </div>
   );
 }
