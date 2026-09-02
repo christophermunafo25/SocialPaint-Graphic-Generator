@@ -2715,6 +2715,23 @@ input[type="radio"] {
   height: 16px;
 }
 
+/* Selected must not rely on colour alone: aria-checked carries it for
+   assistive tech, and under forced colours — which strip every fill and
+   the lit edge with it — the chip draws its own frame, selected as a
+   double rule. Contrast, both themes, all three states (label / count at
+   75% of the label colour): dark 15.6 / 9.2 at rest, 13.4 / 8.2 on hover,
+   13.2 / 6.1 selected; light 14.9 / 6.6 at rest and hover, 13.2 / 8.0
+   selected. The count on the dark selected chip is the floor, still past
+   AA's 4.5. */
+@media (forced-colors: active) {
+  .sp-platform-chip {
+    border: 1px solid ButtonBorder;
+  }
+  .sp-platform-chip[data-selected] {
+    border: 3px double ButtonText;
+  }
+}
+
 /* Shelves — one section per platform. */
 .sp-shelf {
   margin-top: var(--space-2xl);
