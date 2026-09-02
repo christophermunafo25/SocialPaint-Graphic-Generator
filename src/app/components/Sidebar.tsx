@@ -393,18 +393,18 @@ export function Sidebar() {
     <div
       className="flex-shrink-0"
       style={{
-        // Floating panel: inset 12px from the top, left, and bottom.
-        width: `calc(${collapsed ? "var(--sb-width-collapsed)" : "var(--sb-width)"} + 12px)`,
-        padding: "12px 0 12px 12px",
+        // Floating panel: inset 16px from the top, left, and bottom.
+        width: `calc(${collapsed ? "var(--sb-width-collapsed)" : "var(--sb-width)"} + 16px)`,
+        padding: "16px 0 16px 16px",
         transition: "width var(--dur-panel) var(--ease)",
       }}
     >
       <aside
         className="sp-sidebar flex flex-col sticky"
         style={{
-          top: 12,
+          top: 16,
           width: collapsed ? "var(--sb-width-collapsed)" : "var(--sb-width)",
-          height: "calc(100vh - 24px)",
+          height: "calc(100vh - 32px)",
           padding: collapsed ? "20px 12px" : "20px 16px",
           transition: "width var(--dur-panel) var(--ease)",
           zIndex: 30,

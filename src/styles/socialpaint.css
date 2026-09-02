@@ -195,7 +195,7 @@ html {
 
   /* Layout */
   --page-max: 1720px; /* THE content column cap — one knob, see .sp-page */
-  --page-pad: 32px; /* column gutter; 16px under 768 */
+  --page-pad: var(--space-xl); /* column gutter (48px desktop); tiers step down below --bp-xl */
   --bp-sm: 480px;
   --bp-md: 768px;
   --bp-lg: 1024px;
@@ -473,7 +473,7 @@ html {
   --viz-opens: var(--viz-series-2);
 
   /* Sidebar */
-  --sb-width: 260px;
+  --sb-width: 248px;
   --sb-width-collapsed: 76px;
   --sb-bg: var(--bg-surface);
   --sb-border: var(--border);
@@ -1900,7 +1900,7 @@ input[type="radio"] {
 .sp-page {
   max-width: var(--page-max);
   margin-inline: auto;
-  padding: 40px var(--page-pad) 64px;
+  padding: 48px var(--page-pad) 64px;
   box-sizing: border-box;
 }
 /* Content-panel card padding (Insights, Brand Studio, Settings, People). */
@@ -2815,7 +2815,7 @@ input[type="radio"] {
 /* The Generate stage — the hero + composer + chips column (Figma 72:27 /
    72:148: an 860px column). In the empty state the block is vertically
    centred in the region right of the sidebar; the min-height subtracts
-   .sp-page's 40px top + 64px bottom padding. Auto block margins do the
+   .sp-page's 48px top + 64px bottom padding. Auto block margins do the
    centring so a short viewport degrades to normal flow instead of
    clipping the hero. Once a run starts the --centered class comes off and
    the page returns to top-anchored flow. Desktop only: below lg the
@@ -2828,7 +2828,7 @@ input[type="radio"] {
   .sp-gen-stage--centered {
     display: flex;
     flex-direction: column;
-    min-height: calc(100vh - 104px);
+    min-height: calc(100vh - 112px);
   }
   .sp-gen-stage--centered > .sp-gen-stage__inner {
     margin-block: auto;
