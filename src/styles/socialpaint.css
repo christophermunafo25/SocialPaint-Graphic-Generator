@@ -2966,13 +2966,24 @@ input[type="radio"] {
    sp-media-card + sp-template-card: one control, square letterboxing
    frame, hover lift); this class adds the flex column and the identity —
    a top rule, an index marker, a wash behind the name row. Never the card
-   ground: a draft wearing Fire is draft number four, not an error. */
+   ground: a draft wearing Fire is draft number four, not an error.
+
+   The top rule is an inset shadow, not a thicker border-top: a 2px top on
+   a 1px frame is mitred across the corner arc and shows a wedge, which the
+   8px media radius makes more visible, not less. An inset layer follows
+   the radius and tapers out at the corners. Same 2px weight, same hue. */
 .sp-gen-card {
+  --gen-accent: inset 0 2px 0 var(--gen-hue);
   display: flex;
   flex-direction: column;
   gap: var(--space-2xs);
   padding-bottom: var(--space-sm);
-  border-top: 2px solid var(--gen-hue);
+  box-shadow: var(--gen-accent);
+}
+/* The focus ring is a box-shadow too; compose, or the ring would drop the
+   accent while the card is focused. Outranks .sp-template-card:focus-visible. */
+.sp-gen-card:focus-visible {
+  box-shadow: var(--focus-ring-tight), var(--gen-accent);
 }
 /* The two-tier inset (see .sp-template-card__meta) without the meta
    wrapper: the plate keeps the 8px frame, and everything below it — the
