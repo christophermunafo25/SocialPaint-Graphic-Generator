@@ -4,7 +4,8 @@ import React from "react";
  * all render through it (Figma 148:1421, "Login Page Dark"). A 584px form
  * panel on the left, a Voltage hero panel taking the remainder on the
  * right; the split is a grid, so the 1920 frame is the reference rather
- * than the only viewport (.sp-gate holds the tiers).
+ * than the only viewport (.sp-gate holds the tiers: the hero leaves at
+ * --bp-xl rather than shrinking to a sliver).
  *
  * The shell takes the form column's contents as children and nothing else.
  * It does not know which screen it is showing. Two layouts:

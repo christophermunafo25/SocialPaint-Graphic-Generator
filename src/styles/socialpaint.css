@@ -927,9 +927,9 @@ optgroup {
    a 1920 canvas, 105 above and below. Here the split is a grid — the form
    column holds 584 and the hero takes the remainder — with the page gutter
    as the margin, so 1440 and 1600 are first-class rather than a scaled
-   1920. Tiers: two panels down to --bp-lg; below it the hero goes away
-   entirely (never a sliver) and the column centres; below --container-sm
-   the panel padding steps down. The page scrolls when a column outgrows
+   1920. Tiers: two panels down to --bp-xl; below it the hero goes away
+   entirely (never a sliver — at 1024 it would be 296px) and the column
+   centres; below --container-sm the panel padding steps down. The page scrolls when a column outgrows
    the viewport; the panels never clip.
 
    The panel is a surface: --bg-surface, the lit edge, the card radius. The
@@ -1122,7 +1122,7 @@ optgroup {
   color: var(--text-on-action);
 }
 
-@media (max-width: 1023px) {
+@media (max-width: 1279px) {
   /* One column: the panel takes its content height and centres in the
      viewport rather than stretching to it — a form-sized card, not a
      viewport-sized one. */
