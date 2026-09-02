@@ -195,7 +195,8 @@ html {
 
   /* Layout */
   --page-max: 1720px; /* THE content column cap — one knob, see .sp-page */
-  --page-pad: 32px; /* column gutter; 16px under 768 */
+  --page-pad: var(--space-xl); /* column gutter (48px desktop); tiers step down below --bp-xl */
+  --chrome-top: 0px; /* height of fixed app chrome above the page: 0 beside the rail; 56px (the mobile header) below --bp-lg. Sticky page chrome offsets from this, never from top: 0. */
   --bp-sm: 480px;
   --bp-md: 768px;
   --bp-lg: 1024px;
@@ -473,7 +474,7 @@ html {
   --viz-opens: var(--viz-series-2);
 
   /* Sidebar */
-  --sb-width: 260px;
+  --sb-width: 248px;
   --sb-width-collapsed: 76px;
   --sb-bg: var(--bg-surface);
   --sb-border: var(--border);
@@ -1017,7 +1018,9 @@ optgroup {
     flex-direction: column;
     overflow-x: visible;
     position: sticky;
-    top: var(--space-lg);
+    /* 900-1023 still renders the mobile header, so the offset rides on
+       --chrome-top (0 beside the rail). */
+    top: calc(var(--chrome-top) + var(--space-lg));
   }
 }
 
@@ -1892,15 +1895,21 @@ input[type="radio"] {
   color: var(--sb-fg-active);
 }
 
-/* THE content column. Centred in the region right of the sidebar —
-   margin-inline: auto splits the surplus equally, so the gutter off the rail
-   equals the gutter off the window edge at every viewport and in both
-   sidebar states. Width and gutter are tokens (--page-max / --page-pad);
-   nothing else may cap or offset the column. */
+/* THE content column. Beside the rail (>= --bp-lg) it is centred in the
+   region to the rail's right; below --bp-lg the shell is the 56px top bar
+   and the nav-to-content relationship is vertical — 24px of top padding
+   under the header (see the responsive block) instead of this rule's 48px.
+   Width and gutter are tokens (--page-max / --page-pad — 48/32/24/16 by
+   tier); nothing else may cap or offset the column. margin-inline: auto
+   splits any surplus equally, so the rail gutter and the window gutter stay
+   equal in both sidebar states — and both sit at exactly --page-pad only
+   until the region outgrows --page-max (1720px). Past that (viewport >
+   1984px expanded, > 1812px collapsed) the auto margins grow both gutters
+   beyond --page-pad, together. */
 .sp-page {
   max-width: var(--page-max);
   margin-inline: auto;
-  padding: 40px var(--page-pad) 64px;
+  padding: 48px var(--page-pad) 64px;
   box-sizing: border-box;
 }
 /* Content-panel card padding (Insights, Brand Studio, Settings, People). */
@@ -2364,11 +2373,12 @@ input[type="radio"] {
   box-shadow: var(--focus-ring-tight);
 }
 
-/* Sticky region: search + chips pin below the top of the viewport. Flat
-   until pinned, then a hairline does the separating. */
+/* Sticky region: search + chips pin below the app chrome — the viewport top
+   beside the rail, the 56px mobile header below --bp-lg (--chrome-top).
+   Flat until pinned, then a hairline does the separating. */
 .sp-filterbar {
   position: sticky;
-  top: 0;
+  top: var(--chrome-top);
   z-index: var(--z-sticky);
   background: var(--bg-canvas);
   padding: var(--space-sm) 0;
@@ -2704,25 +2714,55 @@ input[type="radio"] {
   }
 }
 
-/* --- Responsive ----------------------------------------------------------- */
+/* --- Responsive -----------------------------------------------------------
+   --page-pad steps down one tier at a time. Boundaries are the --bp-* tokens
+   (var() is not valid inside a media query, hence the literals):
+     >= 1280 (--bp-xl)        48px  (the :root default)
+     1024-1279 (--bp-lg..xl)  32px
+     768-1023 (--bp-md..lg)   24px
+     <= 767 (below --bp-md)   16px
+   Source order does the tiering — each narrower block overrides the last. */
+@media (max-width: 1279px) {
+  :root {
+    --page-pad: var(--space-lg); /* 32px */
+  }
+}
 /* Shell boundary: --bp-lg (1024px). The rail exists at >= 1024; the mobile
    top bar below. This block must break where the JS shell switch does
-   (Sidebar.tsx matchMedia), so it fires at 1023 — var() is not valid inside
-   a media query, hence the literal. */
+   (Sidebar.tsx matchMedia), so it fires at 1023. With no rail, the
+   nav-to-content relationship is vertical: 24px under the sticky 56px
+   header instead of the desktop 48px top. */
 @media (max-width: 1023px) {
-  /* 16px page gutter on mobile, per the DS layout spec. :root so the
-     bands' column padding follows the same token. */
   :root {
-    --page-pad: 16px;
+    --page-pad: var(--space-md); /* 24px */
+    /* The mobile header (Sidebar.tsx): 56px bar + the notch inset it
+       carries as padding-top. */
+    --chrome-top: calc(56px + env(safe-area-inset-top, 0px));
   }
   .sp-page {
-    padding: var(--space-md) var(--page-pad) var(--space-2xl);
+    /* Bottom keeps the 64px rhythm plus the home-indicator inset. */
+    padding: var(--space-md) var(--page-pad)
+      calc(var(--space-2xl) + env(safe-area-inset-bottom, 0px));
+  }
+  /* 44px touch floor for the drop-down nav items (matches
+     .sp-shelf__viewall's min-height: 44px pattern); desktop keeps the 40px
+     pointer target. */
+  .sp-sidebar-item {
+    height: auto;
+    min-height: 44px;
   }
   .sp-shelf {
     margin-top: var(--space-xl);
   }
   .sp-filterbar {
     padding: var(--space-xs) 0;
+  }
+}
+@media (max-width: 767px) {
+  /* 16px page gutter on mobile, per the DS layout spec. :root so the
+     bands' column padding follows the same token. */
+  :root {
+    --page-pad: 16px;
   }
 }
 
@@ -2815,7 +2855,7 @@ input[type="radio"] {
 /* The Generate stage — the hero + composer + chips column (Figma 72:27 /
    72:148: an 860px column). In the empty state the block is vertically
    centred in the region right of the sidebar; the min-height subtracts
-   .sp-page's 40px top + 64px bottom padding. Auto block margins do the
+   .sp-page's 48px top + 64px bottom padding. Auto block margins do the
    centring so a short viewport degrades to normal flow instead of
    clipping the hero. Once a run starts the --centered class comes off and
    the page returns to top-anchored flow. Desktop only: below lg the
@@ -2828,7 +2868,7 @@ input[type="radio"] {
   .sp-gen-stage--centered {
     display: flex;
     flex-direction: column;
-    min-height: calc(100vh - 104px);
+    min-height: calc(100vh - 112px);
   }
   .sp-gen-stage--centered > .sp-gen-stage__inner {
     margin-block: auto;

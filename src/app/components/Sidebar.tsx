@@ -300,7 +300,9 @@ export function Sidebar() {
             className="fixed inset-0"
             style={{
               background: "color-mix(in srgb, var(--text-on-accent) 40%, transparent)",
-              zIndex: 39,
+              // One layer under the header so the open menu's scrim covers
+              // the page's sticky chrome (the filter bar at --z-sticky) too.
+              zIndex: "calc(var(--z-drawer) - 1)",
             }}
             onClick={() => setMenuOpen(false)}
             aria-hidden
@@ -311,7 +313,10 @@ export function Sidebar() {
           style={{
             background: "var(--sb-bg)",
             borderBottom: "1px solid var(--sb-border)",
-            zIndex: 40,
+            // App chrome outranks page chrome: above the filter bar's
+            // --z-sticky, below modals.
+            zIndex: "var(--z-drawer)",
+            paddingTop: "env(safe-area-inset-top)",
           }}
         >
           <div className="flex items-center justify-between px-4" style={{ height: 56 }}>
@@ -331,8 +336,9 @@ export function Sidebar() {
                 className="sp-nav-toggle relative flex items-center justify-center "
                 data-radius-control
                 style={{
-                  width: 36,
-                  height: 36,
+                  // 44px touch floor (the .sp-shelf__viewall pattern).
+                  width: 44,
+                  height: 44,
                   color: "var(--sb-fg-active)",
                   border: "1px solid var(--sb-border)",
                 }}
@@ -356,7 +362,14 @@ export function Sidebar() {
               <nav
                 aria-label="Primary"
                 className="px-3 pb-3 pt-1"
-                style={{ maxHeight: "calc(100vh - 72px)", overflowY: "auto" }}
+                style={{
+                  // dvh, not vh: mobile browser chrome shrinks the visual
+                  // viewport, and the last nav item must stay reachable. The
+                  // header now also carries the safe-area top inset, so that
+                  // comes out of the budget too.
+                  maxHeight: "calc(100dvh - 72px - env(safe-area-inset-top, 0px))",
+                  overflowY: "auto",
+                }}
               >
                 <div ref={mobileNavRef} className="relative flex flex-col gap-1.5">
                   <GooeyNavPill containerRef={mobileNavRef} watch={route.name} />
@@ -393,18 +406,18 @@ export function Sidebar() {
     <div
       className="flex-shrink-0"
       style={{
-        // Floating panel: inset 12px from the top, left, and bottom.
-        width: `calc(${collapsed ? "var(--sb-width-collapsed)" : "var(--sb-width)"} + 12px)`,
-        padding: "12px 0 12px 12px",
+        // Floating panel: inset 16px from the top, left, and bottom.
+        width: `calc(${collapsed ? "var(--sb-width-collapsed)" : "var(--sb-width)"} + 16px)`,
+        padding: "16px 0 16px 16px",
         transition: "width var(--dur-panel) var(--ease)",
       }}
     >
       <aside
         className="sp-sidebar flex flex-col sticky"
         style={{
-          top: 12,
+          top: 16,
           width: collapsed ? "var(--sb-width-collapsed)" : "var(--sb-width)",
-          height: "calc(100vh - 24px)",
+          height: "calc(100vh - 32px)",
           padding: collapsed ? "20px 12px" : "20px 16px",
           transition: "width var(--dur-panel) var(--ease)",
           zIndex: 30,

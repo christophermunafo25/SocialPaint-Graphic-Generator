@@ -1,12 +1,17 @@
 import React from "react";
 
 /** THE content column — every page renders inside this, and none defines its
- * own container. Horizontally centred in the region right of the sidebar:
- * the gutter off the rail equals the gutter off the window edge at every
- * viewport and in both sidebar states. The width cap and gutter are tokens
- * (--page-max / --page-pad on .sp-page) — one knob, no per-page overrides.
- * `narrow` caps the inner content (People 900) and centres it inside the
- * column. */
+ * own container. At >= 1024 (the rail shell) it is horizontally centred in
+ * the region right of the sidebar, a --page-pad gutter each side (48px at
+ * >= 1280, 32px at 1024-1279); below 1024 the shell is the mobile top bar
+ * and the nav-to-content relationship is vertical instead — 24px under the
+ * 56px header, with a 24px (16px under 768) side gutter. The width cap and
+ * gutters are tokens (--page-max / --page-pad on .sp-page) — one knob, no
+ * per-page overrides. The rail gutter and the window gutter stay equal in
+ * both sidebar states, and both equal --page-pad exactly until the region
+ * outgrows --page-max (1720px; viewport > 1984px expanded, > 1812px
+ * collapsed), where margin-inline: auto grows the two together. `narrow`
+ * caps the inner content (People 900) and centres it inside the column. */
 export function Page({ narrow, children }: { narrow?: 760 | 900; children: React.ReactNode }) {
   return (
     <div className="sp-page">
