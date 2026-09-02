@@ -183,6 +183,12 @@ html {
   --radius-control: 5px;
   --radius-control-lg: 12px; /* larger toolbar controls (Generate composer strip) */
   --radius-card: 20px;
+  /* Media cards run a tighter pair than content panels — a small card
+     carries a small radius, a large panel a large one. Both values are set
+     explicitly and chosen optically: at 8px on an 8px frame there is no
+     outer-minus-inset arithmetic left to derive the inner from. */
+  --radius-media: 8px; /* the media card itself */
+  --radius-media-inner: 6px; /* its thumbnail well */
   --radius-pill: 999px;
   --control-sm: 38px;
   --control-md: 46px;
@@ -1924,12 +1930,13 @@ input[type="radio"] {
 .sp-media-card {
   --media-pad: var(--space-xs);
   padding: var(--media-pad);
+  border-radius: var(--radius-media);
 }
 .sp-media-card__preview {
-  /* Concentric with the card it sits in — inner radius = outer minus the
-     inset — so the two curves stay parallel. Derived rather than picked,
-     which also keeps it off the banned 12px it used to sit at. */
-  border-radius: calc(var(--radius-card) - var(--media-pad));
+  /* The card's 8px and the well's 6px are a matched pair, both set
+     explicitly (see --radius-media-inner). At this scale an inner radius
+     cannot be derived from the outer one: 8px minus the 8px inset is zero. */
+  border-radius: var(--radius-media-inner);
   /* Square unless a caller sets the group's own ratio. Grouping the gallery
      by platform AND shape means every card in a rail shares one ratio, so
      the frame can simply BE that ratio and nothing letterboxes. */
@@ -2033,7 +2040,7 @@ input[type="radio"] {
    paint no background of their own, so this field is the one rule both
    themes share. */
 .sp-sizecard__plate {
-  border-radius: calc(var(--radius-card) - var(--media-pad));
+  border-radius: var(--radius-media-inner);
   aspect-ratio: 4 / 3;
   background: var(--cover-ground);
   overflow: hidden;
