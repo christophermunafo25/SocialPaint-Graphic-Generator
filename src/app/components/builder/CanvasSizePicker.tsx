@@ -174,7 +174,7 @@ export function CanvasSizePicker({
                       data-radius-control
                       style={{
                         border: `1px solid ${current ? "var(--border-strong)" : "transparent"}`,
-                        background: current ? "var(--bg-inset)" : "transparent",
+                        background: current ? "var(--bg-hover)" : "transparent",
                         opacity: mode === "blocked" ? 0.45 : 1,
                         cursor: mode === "blocked" ? "default" : "pointer",
                       }}
