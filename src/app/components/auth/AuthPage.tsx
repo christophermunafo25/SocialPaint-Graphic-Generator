@@ -26,6 +26,7 @@ export function AuthPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const emailId = useId();
   const passwordId = useId();
+  const passwordHelpId = useId();
 
   useEffect(() => {
     const { data: sub } = supabase().auth.onAuthStateChange((event) => {
@@ -160,9 +161,17 @@ export function AuthPage() {
         value={password}
         autoComplete={view === "signin" ? "current-password" : "new-password"}
         autoFocus={view === "setPassword"}
+        aria-describedby={view === "signup" ? passwordHelpId : undefined}
         onChange={(e) => setPassword(e.target.value)}
         className="sp-input sp-input-lg"
       />
+      {/* The rule sits under the field as help, present before the user
+          submits rather than after they fail. No strength meter. */}
+      {view === "signup" && (
+        <p id={passwordHelpId} className="sp-gate__help">
+          At least 8 characters.
+        </p>
+      )}
     </div>
   );
 
@@ -190,10 +199,20 @@ export function AuthPage() {
 
       {view === "checkEmail" ? (
         <div className="sp-gate__form">
+          {/* A dead end by design, and the screen a new user stares at for
+              a minute: the address on its own line, plain body colour, no
+              error styling anywhere near it. */}
           <p className="sp-gate__footer" style={{ textAlign: "left" }}>
-            Almost there — we sent a confirmation link to{" "}
-            <b style={{ color: "var(--text-primary)", fontWeight: 500 }}>{email}</b>. Open it, then
-            come back and sign in.
+            We sent a confirmation link to
+          </p>
+          <p
+            className="sp-gate__label"
+            style={{ lineHeight: 1.4, overflowWrap: "anywhere", fontWeight: 500 }}
+          >
+            {email}
+          </p>
+          <p className="sp-gate__footer" style={{ textAlign: "left" }}>
+            Open it, then come back and sign in.
           </p>
           <button
             type="button"
@@ -221,9 +240,6 @@ export function AuthPage() {
           >
             {submitLabel}
           </button>
-          {view === "signup" && (
-            <p className="sp-gate__help">Password must be at least 8 characters.</p>
-          )}
           {view === "signin" && (
             <button
               type="button"
