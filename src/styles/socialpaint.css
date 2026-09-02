@@ -116,6 +116,10 @@ html {
   --wednesdays: #ff94f9;
   --fire: #ff6d39;
   --aqua: #7bf2fe;
+  /* Brand Aqua as the board draws it (2026-09-02, at Chris's direction) —
+     the web platform mark's fill. The lifted --aqua above is the
+     working accent; this is the flat brand cut, like --voltage-logo. */
+  --aqua-logo: #00dbee;
   --sunshine: #ddff55;
   --text-on-brand: #272727; /* Ink is the only legible glyph on any of the five */
   --white: #ffffff;
@@ -166,6 +170,7 @@ html {
   --type-data-lh: 1.4;
   --type-data-track: 0;
   --type-composer-size: 16px; /* the Generate brief — one step above body, per Figma 72:27 */
+  --type-chip-size: 18px; /* the platform chip's label — Figma 141:331; between body and card title */
   --type-composer-lh: 1.45;
 
   /* Spacing — 4px base, nothing off the scale. */
@@ -282,16 +287,17 @@ html {
   --bg-plate: #ffffff; /* imagery plate, never inverts */
   --border: rgba(241, 241, 241, 0.1); /* decorative separation only */
   --border-strong: rgba(241, 241, 241, 0.2);
-  /* Card edge (2026-09-02, at Chris's direction): white at 15% at rest,
-     25% on hover; a full 1px along the top and bottom, a quarter-pixel
-     hairline down the sides, so the top and bottom carry the object.
-     The colour is a bare channel triplet and an alpha, not a finished
-     rgba(): .sp-card assembles them, so a hover can raise --edge-alpha on
-     the card itself and the assembled edge follows. See .sp-card. */
+  /* The lit edge (2026-09-02, at Chris's direction): light from above.
+     A 1px top hairline at 15% white at rest (25% on hover), a 1px bottom
+     hairline at 40% of that (6%, 10% on hover), nothing down the sides.
+     One language for every surface — cards, the sidebar rail, the
+     platform chips. The colour is a bare channel triplet and an alpha,
+     not a finished rgba(): .sp-card assembles them, so a hover can raise
+     --edge-alpha on the surface itself and both hairlines follow. */
   --edge-rgb: 255 255 255;
   --edge-alpha: 0.15;
   --edge-alpha-hover: 0.25;
-  --edge-side-width: 0.25px;
+  --edge-bottom-ratio: 0.4;
 
   --text-primary: #f1f1f1;
   --text-secondary: #a0a0a0; /* 6.2:1 on surface, 5.5:1 on hover */
@@ -365,6 +371,22 @@ html {
   --cover-chrome-2: #2f3133;
   --cover-chrome-3: #0b0b0c;
 
+  /* Brand-templates platform chip (Figma 141:329). Mapped onto the
+     ladder where the frame sits within a few units of a rung; #252627 is
+     the one value with no rung — five units off both --bg-surface-raised
+     and --bg-hover — so it gets its own. The tile lights to the canvas
+     floor on hover and stays lit once selected; the frame's #0b0b0c is
+     four units from --bg-canvas. */
+  --chip-raised: #252627;
+  --chip-bg: var(--bg-surface); /* frame #171819 */
+  --chip-bg-hover: var(--chip-raised);
+  --chip-bg-selected: var(--fill-action); /* frame #ffffff — the DS's white */
+  --chip-fg: var(--text-primary);
+  --chip-fg-selected: var(--text-on-action);
+  --chip-tile: var(--chip-raised);
+  --chip-tile-active: var(--bg-canvas);
+  --chip-tile-active-fg: var(--text-primary);
+
   --shadow-sm: none;
   --shadow-md: none;
 
@@ -384,14 +406,15 @@ html {
   --bg-plate: #ffffff;
   --border: rgba(39, 39, 39, 0.08);
   --border-strong: rgba(39, 39, 39, 0.16);
-  /* Card edge, light theme. White on a white card is invisible, so the
-     same alphas ride the ink — 15% at rest (#dfdfdf on white), 25% on
-     hover. No weight variation here, at Chris's direction: a full 1px on
-     all four sides, where dark thins the sides to a quarter-pixel. */
+  /* The lit edge, light theme. White on a white card is invisible, so the
+     same alphas ride the ink — 15% top (#dfdfdf on white), 6% bottom
+     (#f2f2f2, a hair off the canvas: the white fill carries the bottom
+     on this theme, the ink hairline carries the top), 25% / 10% on hover,
+     nothing down the sides. Same structure as dark, colour mirrored. */
   --edge-rgb: 39 39 39;
   --edge-alpha: 0.15;
   --edge-alpha-hover: 0.25;
-  --edge-side-width: 1px;
+  --edge-bottom-ratio: 0.4;
 
   --text-primary: #272727;
   /* #666 reached only 4.43:1 on --bg-hover, its worst seat; one step down
@@ -450,6 +473,20 @@ html {
   --cover-chrome-1: #2f3133;
   --cover-chrome-2: #ececec;
   --cover-chrome-3: #f9f9f8;
+
+  /* Platform chip, light (Figma 141:858). The chip stays white on hover;
+     the tile carries the state, and it lights to the same near-black in
+     both themes so the colour mark reads on it — there is no light-theme
+     rung that dark, hence the one literal. Selected inverts to the ink
+     fill, the frame's #252627 within two units of --fill-action. */
+  --chip-bg: var(--bg-surface);
+  --chip-bg-hover: var(--bg-surface);
+  --chip-bg-selected: var(--fill-action);
+  --chip-fg: var(--text-primary);
+  --chip-fg-selected: var(--text-on-action);
+  --chip-tile: var(--bg-canvas); /* frame #efefef */
+  --chip-tile-active: #0b0b0c;
+  --chip-tile-active-fg: var(--text-on-action);
 
   --shadow-sm: none;
   --shadow-md: none;
@@ -824,17 +861,15 @@ optgroup {
   }
 }
 
-/* THE surface recipe: lifted fill, the card edge, soft radius. The 1px
+/* THE surface recipe: lifted fill, the lit edge, soft radius. The 1px
    frame stays in the box for layout and for the states that still colour
    it (the composer's focus-within), but at rest it is transparent — the
-   edge lives in --edge-lit, four inset hairlines (1px top and bottom,
-   --edge-side-width down each side) that no border-color shorthand can
-   flatten. Inset hairlines rather than border colours because they follow
-   the radius (an offset inset shadow tapers around the corner arc, where
-   a two-width border would meet in a hard mitre) and because a border
-   cannot be a quarter of a pixel wide — Chrome snaps any border-width to
-   a device pixel, while a 0.25px inset shadow draws as a quarter-coverage
-   antialiased line.
+   edge lives in --edge-lit, two inset hairlines (1px top at --edge-alpha,
+   1px bottom at --edge-bottom-ratio of it, nothing down the sides) that
+   no border-color shorthand can express. Inset hairlines rather than
+   border colours because they follow the radius: an offset inset shadow
+   tapers around the corner arc, where a two-colour border would meet in
+   a hard mitre.
 
    --edge-lit is assembled HERE, on the surface, not in the token tier: a
    var() inside a custom property resolves where that property is
@@ -842,14 +877,14 @@ optgroup {
    an edge assembled on the card. Hover states therefore set --edge-alpha
    (15% → 25%) instead of border-color; a state that sets box-shadow for
    another reason must compose var(--edge-lit) or the edges vanish for
-   the duration of the state. .sp-sidebar shares the assembly. */
+   the duration of the state. .sp-sidebar and .sp-platform-chip share the
+   assembly. */
 .sp-card,
-.sp-sidebar {
+.sp-sidebar,
+.sp-platform-chip {
   --edge-color: rgb(var(--edge-rgb) / var(--edge-alpha));
-  --edge-lit:
-    inset 0 1px 0 var(--edge-color), inset 0 -1px 0 var(--edge-color),
-    inset var(--edge-side-width) 0 0 var(--edge-color),
-    inset calc(-1 * var(--edge-side-width)) 0 0 var(--edge-color);
+  --edge-color-bottom: rgb(var(--edge-rgb) / calc(var(--edge-alpha) * var(--edge-bottom-ratio)));
+  --edge-lit: inset 0 1px 0 var(--edge-color), inset 0 -1px 0 var(--edge-color-bottom);
 }
 .sp-card {
   background: var(--bg-surface);
@@ -2560,6 +2595,145 @@ input[type="radio"] {
 .sp-chip[data-selected] .sp-chip__count {
   color: var(--btn-primary-fg);
   opacity: 0.8;
+}
+
+/* Brand-templates platform chips (Figma oMzk60i8cTNIedZrwH125n 141:329
+   dark, 141:858 light). A tile-and-text card, not a pill: the mark sits
+   on a 45px tile that lights to near-black on hover and stays lit once
+   selected, in BOTH themes — that dark backdrop is what lets the
+   full-colour mark read. The chip wears the page's lit edge like every
+   card; no state rides the border, so hover and selected move only the
+   fill, the text, and the tile. Sized to the frame: 259×80, radius 20,
+   tile 45, mark 24. Four across with the rail's gap is 1072px, one short
+   of the content column. `.sp-chip` above is the size gallery's compact
+   pill, a different control. */
+.sp-platform-chipbar {
+  gap: var(--space-xs);
+  padding: 2px;
+}
+.sp-platform-chip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+  min-width: 259px; /* the frame's width; a long label ("Web & Open Graph") widens its chip rather than ellipsising */
+  height: 80px;
+  padding: 0 var(--space-sm);
+  border: 0;
+  border-radius: var(--radius-card);
+  background: var(--chip-bg);
+  color: var(--chip-fg);
+  box-shadow: var(--edge-lit);
+  font-family: var(--font-ui);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background var(--dur-state) var(--ease),
+    color var(--dur-state) var(--ease);
+}
+.sp-platform-chip:hover {
+  background: var(--chip-bg-hover);
+}
+.sp-platform-chip:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-tight), var(--edge-lit);
+}
+/* Selected wins: hovering a selected chip changes nothing. */
+.sp-platform-chip[data-selected],
+.sp-platform-chip[data-selected]:hover {
+  background: var(--chip-bg-selected);
+  color: var(--chip-fg-selected);
+}
+
+.sp-platform-chip__tile {
+  position: relative;
+  flex-shrink: 0;
+  width: 45px;
+  height: 45px;
+  border-radius: var(--radius-media-inner);
+  background: var(--chip-tile);
+  transition:
+    background var(--dur-state) var(--ease),
+    color var(--dur-state) var(--ease);
+}
+/* ONE rule for the inversion, both themes, hover and selected alike: the
+   tile lights and its foreground goes white, so a mono mark (currentColor)
+   still reads while the colour mark, where there is one, fades in over it. */
+.sp-platform-chip:hover .sp-platform-chip__tile,
+.sp-platform-chip[data-selected] .sp-platform-chip__tile {
+  background: var(--chip-tile-active);
+  color: var(--chip-tile-active-fg);
+}
+.sp-platform-chip__mark {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 24px;
+  height: 24px;
+  transition: opacity var(--dur-state) var(--ease);
+}
+.sp-platform-chip__mark--color {
+  opacity: 0;
+}
+.sp-platform-chip:hover .sp-platform-chip__mark--color,
+.sp-platform-chip[data-selected] .sp-platform-chip__mark--color {
+  opacity: 1;
+}
+.sp-platform-chip:hover .sp-platform-chip__tile[data-has-color] .sp-platform-chip__mark--mono,
+.sp-platform-chip[data-selected]
+  .sp-platform-chip__tile[data-has-color]
+  .sp-platform-chip__mark--mono {
+  opacity: 0;
+}
+
+.sp-platform-chip__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.sp-platform-chip__label {
+  font-size: var(--type-chip-size);
+  font-weight: var(--weight-ui);
+  letter-spacing: 0;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Regular, not the frame's Light: only Regular and Medium are bundled, on
+   purpose (see the @font-face note at the top). 75% of the label colour. */
+.sp-platform-chip__count {
+  font-size: var(--type-caption-size);
+  font-weight: 400;
+  letter-spacing: var(--type-caption-track);
+  line-height: var(--type-caption-lh);
+  color: color-mix(in srgb, currentColor 75%, transparent);
+}
+/* Decorative — the chip is a radio, not a way in. lucide, not the frame's
+   SF Symbol. */
+.sp-platform-chip__chevron {
+  margin-left: auto;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+
+/* Selected must not rely on colour alone: aria-checked carries it for
+   assistive tech, and under forced colours — which strip every fill and
+   the lit edge with it — the chip draws its own frame, selected as a
+   double rule. Contrast, both themes, all three states (label / count at
+   75% of the label colour): dark 15.6 / 9.2 at rest, 13.4 / 8.2 on hover,
+   13.2 / 6.1 selected; light 14.9 / 6.6 at rest and hover, 13.2 / 8.0
+   selected. The count on the dark selected chip is the floor, still past
+   AA's 4.5. */
+@media (forced-colors: active) {
+  .sp-platform-chip {
+    border: 1px solid ButtonBorder;
+  }
+  .sp-platform-chip[data-selected] {
+    border: 3px double ButtonText;
+  }
 }
 
 /* Shelves — one section per platform. */

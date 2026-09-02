@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { TemplateSchema } from "@/lib/types";
 import { toCatalogTemplate } from "./catalog";
-import { buildGroups, buildShelves, groupId, groupIdsOf } from "./groups";
+import {
+  buildGroups,
+  buildPlatformFacets,
+  buildShelves,
+  groupId,
+  groupIdsOf,
+  servesPlatform,
+} from "./groups";
 
 let seq = 0;
 const mk = (name: string, width: number, height: number): ReturnType<typeof toCatalogTemplate> => {
@@ -126,5 +133,47 @@ describe("buildGroups — one platform per group", () => {
       "Display ads Landscape (364:45)",
       "Display ads Landscape (6:5)",
     ]);
+  });
+});
+
+describe("buildPlatformFacets — one chip per platform, every shape", () => {
+  const pin = mk("Pin", 1000, 1500); // Pinterest only
+  const square = mk("Square post", 1080, 1080); // Instagram · Facebook
+  const portrait = mk("Portrait promo", 1080, 1350); // Instagram · Facebook · LinkedIn
+  const facets = buildPlatformFacets([pin, square, portrait]);
+  const count = (id: string) => facets.find((f) => f.platform.id === id)?.count;
+
+  it("counts a multi-platform template in every one of its platforms' chips", () => {
+    expect(count("instagram")).toBe(2);
+    expect(count("facebook")).toBe(2);
+    expect(count("linkedin")).toBe(1);
+    expect(count("pinterest")).toBe(1);
+    // Inclusive membership: the chip counts overshoot the catalogue total on
+    // purpose — there is no primary platform to make the arithmetic tidy.
+    expect(facets.reduce((n, f) => n + f.count, 0)).toBe(6);
+  });
+
+  it("orders chips by PLATFORMS — never by count or by input order", () => {
+    expect(facets.map((f) => f.platform.id)).toEqual([
+      "linkedin",
+      "instagram",
+      "facebook",
+      "pinterest",
+    ]);
+  });
+
+  it("gives a platform with no templates no chip", () => {
+    expect(facets.some((f) => f.platform.id === "x")).toBe(false);
+    expect(facets.some((f) => f.platform.id === "general")).toBe(false);
+    expect(buildPlatformFacets([])).toEqual([]);
+  });
+
+  it("servesPlatform agrees with the counts", () => {
+    for (const f of facets) {
+      const members = [pin, square, portrait].filter((t) => servesPlatform(t, f.platform.id));
+      expect(members).toHaveLength(f.count);
+    }
+    expect(servesPlatform(portrait, "linkedin")).toBe(true);
+    expect(servesPlatform(square, "linkedin")).toBe(false);
   });
 });

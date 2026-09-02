@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState } from "react";
 import { LayoutGrid, Link2, Link2Off } from "lucide-react";
+import type { PlatformIcon } from "@/lib/templates/platformIcons";
 import {
   aspectRatioOf,
   classifySize,
@@ -141,7 +142,7 @@ function PlatformChips({
     index: number,
     label: string,
     count: number,
-    Icon: typeof LayoutGrid,
+    Icon: PlatformIcon,
   ) => {
     const isSelected = selected === id;
     return (

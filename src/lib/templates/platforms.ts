@@ -1,18 +1,25 @@
+import { LayoutTemplate, Megaphone, Printer } from "lucide-react";
 import {
-  AtSign,
-  Facebook,
-  Globe,
-  Instagram,
-  LayoutTemplate,
-  Linkedin,
-  Mail,
-  Megaphone,
-  Music2,
-  Pin,
-  Printer,
-  X as XIcon,
-  Youtube,
-} from "lucide-react";
+  EmailColor,
+  EmailMark,
+  FacebookColor,
+  FacebookMono,
+  InstagramColor,
+  InstagramMono,
+  LinkedinColor,
+  LinkedinMono,
+  PinterestColor,
+  PinterestMono,
+  ThreadsMono,
+  TiktokColor,
+  TiktokMono,
+  WebColor,
+  WebMark,
+  XMono,
+  YoutubeColor,
+  YoutubeMono,
+  type PlatformIcon,
+} from "./platformIcons";
 
 /** Every platform the catalogue can group by. The order here IS the shelf
  *  order on the Brand templates page — deliberate, never by template count. */
@@ -35,7 +42,13 @@ export interface Platform {
   id: PlatformId;
   /** Real casing — proper nouns keep it, per the DS content rules. */
   label: string;
-  Icon: typeof Linkedin;
+  /** The monochrome mark: fills with currentColor, so it takes the label's
+   *  colour in either theme. The default rendition everywhere. */
+  Icon: PlatformIcon;
+  /** The full-colour mark, where the brand has one. Optional on purpose: a
+   *  platform without one (X and Threads are black marks; display, print,
+   *  and general are lucide outlines) degrades to the mono rendition. */
+  ColorIcon?: PlatformIcon;
 }
 
 /** Fixed display order. `general` sits last: it is not a social platform but
@@ -43,17 +56,17 @@ export interface Platform {
  *  (general-square-1440). Without it, every template built on the default
  *  canvas would be unclassifiable. */
 export const PLATFORMS: Platform[] = [
-  { id: "linkedin", label: "LinkedIn", Icon: Linkedin },
-  { id: "instagram", label: "Instagram", Icon: Instagram },
-  { id: "facebook", label: "Facebook", Icon: Facebook },
-  { id: "x", label: "X", Icon: XIcon },
-  { id: "tiktok", label: "TikTok", Icon: Music2 },
-  { id: "youtube", label: "YouTube", Icon: Youtube },
-  { id: "pinterest", label: "Pinterest", Icon: Pin },
-  { id: "threads", label: "Threads", Icon: AtSign },
-  { id: "email", label: "Email", Icon: Mail },
+  { id: "linkedin", label: "LinkedIn", Icon: LinkedinMono, ColorIcon: LinkedinColor },
+  { id: "instagram", label: "Instagram", Icon: InstagramMono, ColorIcon: InstagramColor },
+  { id: "facebook", label: "Facebook", Icon: FacebookMono, ColorIcon: FacebookColor },
+  { id: "x", label: "X", Icon: XMono },
+  { id: "tiktok", label: "TikTok", Icon: TiktokMono, ColorIcon: TiktokColor },
+  { id: "youtube", label: "YouTube", Icon: YoutubeMono, ColorIcon: YoutubeColor },
+  { id: "pinterest", label: "Pinterest", Icon: PinterestMono, ColorIcon: PinterestColor },
+  { id: "threads", label: "Threads", Icon: ThreadsMono },
+  { id: "email", label: "Email", Icon: EmailMark, ColorIcon: EmailColor },
   { id: "display", label: "Display ads", Icon: Megaphone },
-  { id: "web", label: "Web & Open Graph", Icon: Globe },
+  { id: "web", label: "Web & Open Graph", Icon: WebMark, ColorIcon: WebColor },
   { id: "print", label: "Print", Icon: Printer },
   { id: "general", label: "General", Icon: LayoutTemplate },
 ];

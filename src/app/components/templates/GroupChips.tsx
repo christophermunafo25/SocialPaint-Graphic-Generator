@@ -1,32 +1,42 @@
 import React, { useRef } from "react";
-import { LayoutGrid } from "lucide-react";
-import type { TemplateGroup } from "@/lib/templates/groups";
+import { ChevronRight, LayoutGrid } from "lucide-react";
+import type { PlatformFacet } from "@/lib/templates/groups";
+import type { PlatformIcon } from "@/lib/templates/platformIcons";
+import type { PlatformId } from "@/lib/templates/platforms";
 import { useEdgeFade } from "./useEdgeFade";
 
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
 /**
- * Single-select filter over the catalogue's groups — a radio group rather
+ * Single-select filter over the catalogue's platforms — a radio group rather
  * than a tablist, since these filter one region in place instead of swapping
- * panels.
+ * panels. One chip per platform, every shape: the shelves below stay grouped
+ * down to the shape, the chip does not.
  *
  * Roving tabindex: one stop in the tab order, arrows move within the group
  * and select as they go, which is the standard radio-group contract.
+ *
+ * Each chip carries the platform's mark twice — the mono rendition at rest,
+ * the colour one once the tile lights on hover or selection. Both sit in
+ * the same 24px box so the swap never shifts layout; a platform with no
+ * colour mark simply keeps its mono, which the lit tile turns white.
  */
 export function GroupChips({
-  groups,
+  facets,
   total,
   selected,
   onSelect,
 }: {
-  groups: TemplateGroup[];
+  facets: PlatformFacet[];
   total: number;
   /** null is the "All" chip. */
-  selected: string | null;
-  onSelect(next: string | null): void;
+  selected: PlatformId | null;
+  onSelect(next: PlatformId | null): void;
 }) {
-  const { ref, atStart, atEnd } = useEdgeFade<HTMLDivElement>([groups.length]);
+  const { ref, atStart, atEnd } = useEdgeFade<HTMLDivElement>([facets.length]);
   const chipRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
-  const ids: Array<string | null> = [null, ...groups.map((g) => g.id)];
+  const ids: Array<PlatformId | null> = [null, ...facets.map((f) => f.platform.id)];
   const activeIndex = Math.max(0, ids.indexOf(selected));
 
   const focusAndSelect = (i: number) => {
@@ -51,11 +61,12 @@ export function GroupChips({
   };
 
   const chip = (
-    id: string | null,
+    id: PlatformId | null,
     index: number,
     label: string,
     count: number,
-    Icon: typeof LayoutGrid,
+    Icon: PlatformIcon,
+    ColorIcon?: PlatformIcon,
   ) => {
     const isSelected = selected === id;
     return (
@@ -68,14 +79,27 @@ export function GroupChips({
         role="radio"
         aria-checked={isSelected}
         tabIndex={isSelected ? 0 : -1}
-        className="sp-chip"
+        className="sp-platform-chip"
         data-selected={isSelected || undefined}
         onClick={() => onSelect(id)}
         onKeyDown={onKeyDown}
       >
-        <Icon className="sp-chip__icon" strokeWidth={1.5} aria-hidden />
-        <span className="sp-chip__label">{label}</span>
-        <span className="sp-chip__count">{count}</span>
+        {/* The marks are decoration; the name is the label and the count. */}
+        <span
+          className="sp-platform-chip__tile"
+          data-has-color={ColorIcon ? true : undefined}
+          aria-hidden
+        >
+          <Icon className="sp-platform-chip__mark sp-platform-chip__mark--mono" strokeWidth={1.5} />
+          {ColorIcon && (
+            <ColorIcon className="sp-platform-chip__mark sp-platform-chip__mark--color" />
+          )}
+        </span>
+        <span className="sp-platform-chip__text">
+          <span className="sp-platform-chip__label">{label}</span>
+          <span className="sp-platform-chip__count">{plural(count, "template")}</span>
+        </span>
+        <ChevronRight className="sp-platform-chip__chevron" strokeWidth={1.5} aria-hidden />
       </button>
     );
   };
@@ -88,12 +112,21 @@ export function GroupChips({
     >
       <div
         ref={ref}
-        className="sp-railfade__track sp-chipbar"
+        className="sp-railfade__track sp-platform-chipbar"
         role="radiogroup"
-        aria-label="Filter by platform and shape"
+        aria-label="Filter by platform"
       >
         {chip(null, 0, "All", total, LayoutGrid)}
-        {groups.map((g, i) => chip(g.id, i + 1, g.label, g.templates.length, g.platform.Icon))}
+        {facets.map((f, i) =>
+          chip(
+            f.platform.id,
+            i + 1,
+            f.platform.label,
+            f.count,
+            f.platform.Icon,
+            f.platform.ColorIcon,
+          ),
+        )}
       </div>
     </div>
   );
