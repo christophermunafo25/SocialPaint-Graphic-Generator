@@ -149,6 +149,14 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
         primaryLogoAssetId,
       });
 
+      // Everything is saved. The last thing they see before the product:
+      // let "Workspace ready" land for one reveal beat here, because the
+      // refresh below surfaces the new company and the gate swaps this
+      // screen for the app the moment it does. Zero under reduced motion,
+      // like the token.
+      setDone(true);
+      await new Promise((r) => setTimeout(r, m.reveal * 1000));
+
       // Real auth already created the admin membership server-side: under
       // RLS, stores.companies.create only works via the security-definer
       // create_company_with_admin RPC (company + admin membership, atomic).
@@ -157,11 +165,6 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
       await setCompany(company.id);
       setRole("admin");
       await refreshBrand();
-      // The last thing they see before the product: let it land for one
-      // reveal beat before the route changes, rather than a busy label
-      // that vanishes mid-word. Zero under reduced motion, like the token.
-      setDone(true);
-      await new Promise((r) => setTimeout(r, m.reveal * 1000));
       navigate({ name: "adminTemplates" });
     } catch (e) {
       console.error("Onboarding failed", e);
