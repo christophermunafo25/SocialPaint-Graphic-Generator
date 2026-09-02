@@ -551,6 +551,11 @@ html {
   --btn-primary-bg: var(--fill-action);
   --btn-primary-fg: var(--text-on-action);
   --btn-primary-bg-hover: color-mix(in srgb, var(--text-on-action) 8%, var(--fill-action));
+  /* A text box is flat on the surface it sits on — same fill, a hairline
+     to bound it. A scope whose fields sit on a lifted panel (the pre-app
+     shell, Figma 148:1421) raises this one property; the box itself never
+     changes. */
+  --input-bg: var(--bg-surface);
 }
 
 /* Selection is neutral system-wide, like every other selection surface. */
@@ -671,6 +676,17 @@ optgroup {
   opacity: 0.4;
   cursor: default;
 }
+/* The large step — the pre-app submit (Figma 148:1421). 54 tall is
+   --control-lg exactly; the frame's 10px radius has no rung and 12 (the
+   large-control radius) stands in rather than a token for a 2px difference.
+   Type is the 16px large-control step, one under the frame's 18, which has
+   no rung on the scale either. */
+.sp-btn-lg {
+  min-height: var(--control-lg);
+  padding: 0 var(--space-md);
+  font-size: var(--type-composer-size);
+  border-radius: var(--radius-control-lg);
+}
 .sp-btn-primary {
   background: var(--btn-primary-bg);
   color: var(--btn-primary-fg);
@@ -704,7 +720,7 @@ optgroup {
   width: 100%;
   padding: 9px 12px;
   border-radius: var(--radius-control);
-  background: var(--bg-surface);
+  background: var(--input-bg);
   border: 1px solid var(--border);
   color: var(--text-primary);
   outline: none;
@@ -714,6 +730,18 @@ optgroup {
 }
 .sp-input::placeholder {
   color: var(--text-disabled);
+}
+/* The large step of the same box — the pre-app forms (Figma 148:1421).
+   The frame draws it 48 tall at 16px type on a 12px radius; 48 sits between
+   --control-md (46) and --control-lg (54) and takes the nearer rung rather
+   than a token of its own. Type is the 16px step the composer already
+   established (one above body); the radius is the large-control rung. */
+.sp-input-lg {
+  min-height: var(--control-md);
+  padding: 0 var(--space-sm);
+  font-size: var(--type-composer-size);
+  letter-spacing: -0.01em;
+  border-radius: var(--radius-control-lg);
 }
 /* A focused text box shows a 1px ring-coloured BORDER — the control's own
    1px edge changing colour, never a thicker halo or a second outline. Two
@@ -880,7 +908,8 @@ optgroup {
    assembly. */
 .sp-card,
 .sp-sidebar,
-.sp-platform-chip {
+.sp-platform-chip,
+.sp-gate__panel {
   --edge-color: rgb(var(--edge-rgb) / var(--edge-alpha));
   --edge-color-bottom: rgb(var(--edge-rgb) / calc(var(--edge-alpha) * var(--edge-bottom-ratio)));
   --edge-lit: inset 0 1px 0 var(--edge-color), inset 0 -1px 0 var(--edge-color-bottom);
@@ -890,6 +919,227 @@ optgroup {
   border: 1px solid transparent;
   border-radius: var(--radius-card);
   box-shadow: var(--edge-lit);
+}
+
+/* ── Pre-app shell ─────────────────────────────────────────────────────────
+   Sign in, account creation, and first-run onboarding (Figma 148:1421,
+   "Login Page Dark"). The frame: a 584 form panel and a 1060 hero panel on
+   a 1920 canvas, 105 above and below. Here the split is a grid — the form
+   column holds 584 and the hero takes the remainder — with the page gutter
+   as the margin, so 1440 and 1600 are first-class rather than a scaled
+   1920. Tiers: two panels down to --bp-xl; below it the hero goes away
+   entirely (never a sliver — at 1024 it would be 296px) and the column
+   centres; below --container-sm the panel padding steps down. The page scrolls when a column outgrows
+   the viewport; the panels never clip.
+
+   The panel is a surface: --bg-surface, the lit edge, the card radius. The
+   frame draws a 25 radius and a 1px-top, 1px-bottom, 0.25px-side stroke
+   at 15%; 20 is the card rung, and the edge is the 15/6/0 language every
+   surface now speaks. Its 50px padding and 58px block gap sit off the 4px
+   scale and take 48 / 64. The frame's fields lift to #252627 on the panel:
+   the same value the platform chips hold, so the split layout raises
+   --input-bg to that rung (dark-only, like the rung). The solo layout
+   themes with the app and its fields stay flat, as on every card. */
+.sp-gate {
+  min-height: 100dvh;
+  box-sizing: border-box;
+  padding: var(--page-pad);
+  background: var(--bg-canvas);
+  display: grid;
+  grid-template-columns: minmax(0, 584px) minmax(0, 1fr);
+  gap: var(--space-xl);
+  align-items: stretch;
+}
+.sp-gate[data-layout="solo"] {
+  grid-template-columns: minmax(0, 584px);
+  justify-content: center;
+}
+.sp-gate__panel {
+  min-width: 0;
+  background: var(--bg-surface);
+  border: 1px solid transparent;
+  border-radius: var(--radius-card);
+  box-shadow: var(--edge-lit);
+  padding: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-2xl);
+}
+.sp-gate[data-layout="split"] .sp-gate__panel {
+  --input-bg: var(--chip-raised);
+}
+/* The frame bounds its lifted fields at 15% white; the strong hairline
+   (20%) is the nearer rung. Focus still recolours the edge to the ring. */
+.sp-gate[data-layout="split"] .sp-input {
+  border-color: var(--border-strong);
+}
+.sp-gate[data-layout="split"] .sp-input:focus,
+.sp-gate[data-layout="split"] .sp-input:focus-visible {
+  border-color: var(--ring);
+}
+.sp-gate__hero {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--brand-surface);
+  border-radius: var(--radius-card);
+}
+/* 924 of the frame's 1060: the image sits flush to the panel's right edge
+   and leaves a band of Voltage exposed on the left. Deliberate. */
+.sp-gate__hero img {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: calc(100% * 924 / 1060);
+  object-fit: cover;
+  object-position: 50% 50%;
+  display: block;
+}
+
+/* The column's blocks. Intro (mark + headline) / form / footer — three
+   blocks on the panel's gap, and the seam between form and footer stays
+   where the frame's social block sat, so the block can return without a
+   reflow (Google sign-in, deferred 2026-09-02). */
+.sp-gate__intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-xs);
+}
+.sp-gate__intro .sp-hero-title {
+  color: var(--text-primary);
+}
+.sp-gate__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  width: 100%;
+}
+.sp-gate__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+.sp-gate__label {
+  font-family: var(--font-ui);
+  font-size: var(--type-composer-size);
+  line-height: 1;
+  color: var(--text-primary);
+}
+.sp-gate__help {
+  font-size: var(--type-label-size);
+  line-height: var(--type-label-lh);
+  color: var(--text-secondary);
+}
+/* An inline text action in the column — Forgot password, Sign up, Back to
+   sign in. A real button with the global focus ring, in the accent that
+   clears contrast on this surface (14:1 on the panel). */
+.sp-gate__link {
+  display: inline;
+  padding: 0;
+  font-family: var(--font-ui);
+  font-size: var(--type-composer-size);
+  line-height: 1.4;
+  color: var(--state-primary-on-surface);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+.sp-gate__link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.sp-gate__footer {
+  text-align: center;
+  font-size: var(--type-composer-size);
+  line-height: 1.4;
+  color: var(--text-on-surface-secondary);
+}
+.sp-gate__error {
+  padding: var(--space-2xs) var(--space-xs);
+  border-radius: var(--radius-control);
+  font-size: var(--type-label-size);
+  line-height: var(--type-label-lh);
+  background: var(--danger-wash);
+  color: var(--state-danger-on-surface);
+}
+.sp-gate__notice {
+  font-size: var(--type-label-size);
+  line-height: var(--type-label-lh);
+  color: var(--state-primary-on-surface);
+}
+
+/* Onboarding's labelled stepper — four named steps under the headline, so
+   a user knows step three asks for fonts before they get there. Done
+   steps fill with the neutral action fill and a check; the current step
+   rings in the accent; the rest wait in muted ink. */
+.sp-gate__steps {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2xs) var(--space-sm);
+  margin: var(--space-2xs) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-gate__step {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  font-family: var(--font-ui);
+  font-size: var(--type-label-size);
+  line-height: var(--type-label-lh);
+  letter-spacing: var(--type-label-track);
+  color: var(--text-muted);
+}
+.sp-gate__step-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-strong);
+  font-size: var(--type-caption-size);
+  font-weight: var(--weight-ui);
+  color: var(--text-muted);
+}
+.sp-gate__step[data-state="current"] {
+  color: var(--text-primary);
+}
+.sp-gate__step[data-state="current"] .sp-gate__step-dot {
+  border-color: var(--state-primary-on-surface);
+  color: var(--text-primary);
+}
+.sp-gate__step[data-state="done"] {
+  color: var(--text-secondary);
+}
+.sp-gate__step[data-state="done"] .sp-gate__step-dot {
+  background: var(--fill-action);
+  border-color: var(--fill-action);
+  color: var(--text-on-action);
+}
+
+@media (max-width: 1279px) {
+  /* One column: the panel takes its content height and centres in the
+     viewport rather than stretching to it — a form-sized card, not a
+     viewport-sized one. */
+  .sp-gate {
+    grid-template-columns: minmax(0, 584px);
+    justify-content: center;
+    align-content: center;
+  }
+  .sp-gate__hero {
+    display: none;
+  }
+}
+@media (max-width: 639px) {
+  .sp-gate__panel {
+    padding: var(--space-md);
+    gap: var(--space-xl);
+  }
 }
 
 /* Overview card that opens a detail — read plus a way in, never editable in

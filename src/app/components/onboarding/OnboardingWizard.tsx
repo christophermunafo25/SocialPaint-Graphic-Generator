@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, Check, Trash2, Upload } from "lucide-react";
+import { Check, Trash2, Upload } from "lucide-react";
 import type { BrandColor, FontRef } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -10,13 +10,29 @@ import { GOOGLE_FONTS, loadGoogleFonts } from "@/lib/render/fonts";
 import { FONT_ACCEPT, inspectFontFile } from "@/lib/brand/fontUpload";
 import { useFileDrop } from "@/lib/useFileDrop";
 import { ColorControl } from "../ColorControl";
+import { BrandMark } from "../BrandMark";
+import { PreAppShell } from "../PreAppShell";
+import authHero from "@/assets/socialpaint/auth-hero.webp";
 
 /** First-run onboarding: walks a user from an empty database to a themed,
  * ready-to-use company workspace. Also reachable any time via "Create
  * company" — every new client starts from this identical blank slate.
- * Everything set here is editable later in Brand Studio. */
+ * Everything set here is editable later in Brand Studio.
+ *
+ * Housed in the pre-app shell (Figma 148:1421) so sign-in and first-run
+ * setup are one door: the split layout with the hero for firstRun, the
+ * same panel centred and app-themed for the in-app "Create company" task.
+ * The headline names the current step and a labelled stepper says what is
+ * coming. The four steps and finish() are unchanged — this is a rehousing,
+ * not a rewrite of the setup logic. */
 
 const STEPS = ["Company", "Colors", "Fonts", "Logo"] as const;
+const STEP_HEADLINES = [
+  "Name your company",
+  "Pick your colors",
+  "Choose your fonts",
+  "Add your logo",
+] as const;
 
 interface PendingFont {
   file: File;
@@ -108,125 +124,101 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
     }
   };
 
+  // The only way out for a signed-in user: Cancel at step 0 on the in-app
+  // path navigates to the portal; Back otherwise. Hidden (and disabled)
+  // only when firstRun && step === 0, where there is nowhere to go.
+  const exitHidden = firstRun && step === 0;
+
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-4"
-      style={{ background: "var(--bg-canvas)" }}
-    >
-      <div
-        className="w-full max-w-2xl overflow-hidden"
-        style={{
-          background: "var(--bg-surface)",
-          border: "1px solid var(--border)",
-          borderRadius: "var(--radius-card)",
-        }}
-      >
-        {/* Header + progress */}
-        <div className="sp-mesh px-8 pt-8 pb-6">
-          <p className="sp-eyebrow mb-1" style={{ color: "var(--brand-surface-fg)" }}>
-            {firstRun ? "Welcome" : "New company"}
-          </p>
-          {/* Ink on the brand surface — anything on Volt/Aqua is Ink, no exceptions. */}
-          <h1 className="sp-hero-title" style={{ color: "var(--brand-surface-fg)" }}>
-            {firstRun ? "Set up your brand portal" : "Create a company"}
-          </h1>
-          <div className="flex gap-1.5 mt-5">
-            {STEPS.map((label, i) => (
-              <div key={label} className="flex-1">
-                <div
-                  className="h-1 rounded-full"
-                  style={{
-                    background:
-                      i <= step
-                        ? "var(--brand-surface-fg)"
-                        : "color-mix(in srgb, var(--brand-surface-fg) 30%, transparent)",
-                  }}
-                />
-                <p
-                  className="sp-eyebrow mt-1.5"
-                  style={{
-                    fontSize: 9,
-                    color: "color-mix(in srgb, var(--brand-surface-fg) 75%, transparent)",
-                  }}
-                >
-                  {label}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="px-8 py-7 space-y-5 min-h-[320px]">
-          {step === 0 && <StepCompany name={companyName} slug={slug} onChange={setCompanyName} />}
-          {step === 1 && <StepColors colors={colors} onChange={setColors} />}
-          {step === 2 && (
-            <StepFonts
-              headingGoogle={headingGoogle}
-              bodyGoogle={bodyGoogle}
-              setHeadingGoogle={setHeadingGoogle}
-              setBodyGoogle={setBodyGoogle}
-              pendingFonts={pendingFonts}
-              setPendingFonts={setPendingFonts}
-              onError={setError}
-            />
-          )}
-          {step === 3 && (
-            <StepLogo
-              preview={logoPreview}
-              onPick={(file) => {
-                setLogoFile(file);
-                const reader = new FileReader();
-                reader.onload = () => setLogoPreview(reader.result as string);
-                reader.readAsDataURL(file);
-              }}
-            />
-          )}
-          {error && (
-            <p
-              className="text-sm px-4 py-3"
-              data-radius-card
-              style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}
+    <PreAppShell layout={firstRun ? "split" : "solo"} hero={authHero}>
+      <div className="sp-gate__intro">
+        {firstRun && <BrandMark width={72} />}
+        <p className="sp-eyebrow">
+          {firstRun ? "Welcome · Set up your brand portal" : "New company · Create a company"}
+        </p>
+        <h1 className="sp-hero-title">{STEP_HEADLINES[step]}</h1>
+        <ol className="sp-gate__steps" aria-label="Setup steps">
+          {STEPS.map((label, i) => (
+            <li
+              key={label}
+              className="sp-gate__step"
+              data-state={i < step ? "done" : i === step ? "current" : "todo"}
+              aria-current={i === step ? "step" : undefined}
             >
-              {error}
-            </p>
-          )}
-        </div>
-
-        {/* Footer nav */}
-        <div className="px-8 pb-8 flex items-center justify-between">
-          <button
-            onClick={() => (step === 0 ? navigate({ name: "portal" }) : setStep(step - 1))}
-            disabled={firstRun && step === 0}
-            className="flex items-center gap-1.5 disabled:opacity-0"
-            style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            {step === 0 ? "Cancel" : "Back"}
-          </button>
-          {step < STEPS.length - 1 ? (
-            <button
-              onClick={() => setStep(step + 1)}
-              disabled={!canNext}
-              className="sp-btn sp-btn-primary"
-              style={{ padding: "10px 20px" }}
-            >
-              Continue
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          ) : (
-            <button
-              onClick={() => void finish()}
-              disabled={saving}
-              className="sp-btn sp-btn-primary"
-              style={{ padding: "10px 20px" }}
-            >
-              <Check className="w-4 h-4" />
-              {saving ? "Creating…" : "Create workspace"}
-            </button>
-          )}
-        </div>
+              <span className="sp-gate__step-dot" aria-hidden>
+                {i < step ? <Check className="w-3 h-3" /> : i + 1}
+              </span>
+              <span className="sp-gate__step-label">{label}</span>
+            </li>
+          ))}
+        </ol>
       </div>
-    </div>
+
+      <div className="sp-gate__form min-h-[280px]">
+        {step === 0 && <StepCompany name={companyName} slug={slug} onChange={setCompanyName} />}
+        {step === 1 && <StepColors colors={colors} onChange={setColors} />}
+        {step === 2 && (
+          <StepFonts
+            headingGoogle={headingGoogle}
+            bodyGoogle={bodyGoogle}
+            setHeadingGoogle={setHeadingGoogle}
+            setBodyGoogle={setBodyGoogle}
+            pendingFonts={pendingFonts}
+            setPendingFonts={setPendingFonts}
+            onError={setError}
+          />
+        )}
+        {step === 3 && (
+          <StepLogo
+            preview={logoPreview}
+            onPick={(file) => {
+              setLogoFile(file);
+              const reader = new FileReader();
+              reader.onload = () => setLogoPreview(reader.result as string);
+              reader.readAsDataURL(file);
+            }}
+          />
+        )}
+        {/* finish() can fail after creating the company; the message stays
+            in the column until the next attempt clears it. */}
+        {error && (
+          <p className="sp-gate__error" role="alert">
+            {error}
+          </p>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={() => (step === 0 ? navigate({ name: "portal" }) : setStep(step - 1))}
+          disabled={exitHidden}
+          className="sp-btn sp-btn-ghost sp-btn-lg"
+          style={exitHidden ? { visibility: "hidden" } : undefined}
+        >
+          {step === 0 ? "Cancel" : "Back"}
+        </button>
+        {step < STEPS.length - 1 ? (
+          <button
+            type="button"
+            onClick={() => setStep(step + 1)}
+            disabled={!canNext}
+            className="sp-btn sp-btn-primary sp-btn-lg"
+          >
+            Next
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => void finish()}
+            disabled={saving}
+            className="sp-btn sp-btn-primary sp-btn-lg"
+          >
+            {saving ? "Saving…" : "Finish"}
+          </button>
+        )}
+      </div>
+    </PreAppShell>
   );
 }
 
@@ -241,9 +233,6 @@ function StepCompany({
 }) {
   return (
     <div className="space-y-3">
-      <h2 className="sp-panel-title" style={{ fontSize: "var(--type-cardtitle-size)" }}>
-        Company name
-      </h2>
       <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
         The tenant everything belongs to — templates, brand kit, and usage stay private to it.
       </p>
@@ -253,7 +242,8 @@ function StepCompany({
         value={name}
         onChange={(e) => onChange(e.target.value)}
         placeholder="e.g. Acme Senior Living"
-        className="sp-input"
+        aria-label="Company name"
+        className="sp-input sp-input-lg"
       />
       {slug && (
         <p className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>
@@ -275,9 +265,6 @@ function StepColors({
     onChange(colors.map((c, j) => (j === i ? { ...c, ...patch } : c)));
   return (
     <div className="space-y-3">
-      <h2 className="sp-panel-title" style={{ fontSize: "var(--type-cardtitle-size)" }}>
-        Brand colors
-      </h2>
       <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
         Sensible defaults — override them with your palette. Template text colors are always picked
         from these, keeping every graphic on-brand.
@@ -321,7 +308,7 @@ function FontSelect({
           loadGoogleFonts([e.target.value]);
           onChange(e.target.value);
         }}
-        className="sp-input mt-1"
+        className="sp-input sp-input-lg mt-1"
       >
         {GOOGLE_FONTS.map((f) => (
           <option key={f} value={f}>
@@ -361,14 +348,13 @@ function StepFonts(props: StepFontsProps) {
   const drop = useFileDrop((files) => void addFonts(files));
   return (
     <div className="space-y-4">
-      <h2 className="sp-panel-title" style={{ fontSize: "var(--type-cardtitle-size)" }}>
-        Fonts
-      </h2>
       <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
         Pick from Google Fonts, or upload your own brand font files (.woff2, .woff, .ttf, .otf) and
         assign them.
       </p>
-      <div className="grid grid-cols-2 gap-3">
+      {/* Two pickers side by side in the 484 column; one under the other
+          below 640, where each would drop under 150px. */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <FontSelect
           label="Heading font"
           value={props.headingGoogle}
@@ -402,12 +388,19 @@ function StepFonts(props: StepFontsProps) {
           />
         </label>
         {props.pendingFonts.map((pf, i) => (
-          <div key={`${pf.file.name}-${i}`} className="sp-chip-in flex items-center gap-2 mt-2">
-            <span className="text-sm flex-1 truncate" style={{ color: "var(--foreground)" }}>
+          <div
+            key={`${pf.file.name}-${i}`}
+            className="sp-chip-in flex flex-wrap items-center gap-2 mt-2"
+          >
+            <span
+              className="text-sm flex-1 truncate"
+              style={{ color: "var(--foreground)", minWidth: 120 }}
+            >
               {pf.family}
             </span>
             <select
               value={pf.use}
+              aria-label={`Use for ${pf.family}`}
               onChange={(e) =>
                 props.setPendingFonts((prev) =>
                   prev.map((p, j) =>
@@ -423,6 +416,7 @@ function StepFonts(props: StepFontsProps) {
               <option value="body">Use as body</option>
             </select>
             <button
+              type="button"
               onClick={() => props.setPendingFonts((prev) => prev.filter((_, j) => j !== i))}
               aria-label="Remove font"
             >
@@ -441,9 +435,6 @@ function StepLogo({ preview, onPick }: { preview: string | null; onPick(f: File)
   });
   return (
     <div className="space-y-3">
-      <h2 className="sp-panel-title" style={{ fontSize: "var(--type-cardtitle-size)" }}>
-        Logo
-      </h2>
       <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
         Optional now — you can add more logos later in Brand Studio.
       </p>
