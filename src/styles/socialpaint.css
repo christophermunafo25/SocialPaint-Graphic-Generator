@@ -1076,16 +1076,20 @@ optgroup {
   color: var(--state-primary-on-surface);
 }
 
-/* Onboarding's labelled stepper — four named steps under the headline, so
-   a user knows step three asks for fonts before they get there. Done
-   steps fill with the neutral action fill and a check; the current step
-   rings in the accent; the rest wait in muted ink. */
+/* Onboarding's stepper (Figma 154:1576 → 158:267): four named steps under
+   the description, each a 28px circle carrying its number and a label.
+     done   — solid Voltage, Ink number, muted label
+     active — a 5% lift ringed in Voltage, primary number, medium label
+     todo   — a 2% lift ringed in the hairline, muted number and label
+   The circle's colours ride --dur-state so a step completing is felt
+   rather than repainted; the pulse on completion is a motion keyframe in
+   the component, on --dur-panel. */
 .sp-gate__steps {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: var(--space-2xs) var(--space-sm);
-  margin: var(--space-2xs) 0 0;
+  gap: var(--space-2xs) var(--space-md);
+  margin: 0;
   padding: 0;
   list-style: none;
 }
@@ -1098,33 +1102,672 @@ optgroup {
   line-height: var(--type-label-lh);
   letter-spacing: var(--type-label-track);
   color: var(--text-muted);
+  transition:
+    color var(--dur-state) var(--ease),
+    font-weight var(--dur-state) var(--ease);
 }
 .sp-gate__step-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--text-primary) 2%, transparent);
+  font-size: var(--type-label-size);
+  font-weight: var(--weight-ui);
+  color: var(--text-muted);
+  transition:
+    background var(--dur-state) var(--ease),
+    border-color var(--dur-state) var(--ease),
+    color var(--dur-state) var(--ease);
+}
+.sp-gate__step[data-state="current"] {
+  color: var(--text-primary);
+  font-weight: var(--weight-ui);
+}
+.sp-gate__step[data-state="current"] .sp-gate__step-dot {
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent);
+  border-color: var(--state-primary-on-surface);
+  color: var(--text-primary);
+}
+.sp-gate__step[data-state="done"] .sp-gate__step-dot {
+  background: var(--fill-primary);
+  border-color: var(--fill-primary);
+  color: var(--text-on-accent);
+}
+
+/* ── The onboarding card ────────────────────────────────────────────────────
+   Figma 154:1576 → 158:267: 1220 wide, 869 tall at 1080, an 833 content
+   column centred inside it. One rhythm on every step — intro, description,
+   stepper, body, footer — so only the body changes between steps and the
+   chrome around it holds still. The description line is reserved at two
+   lines even on the step that has none, so the stepper never moves. The
+   card holds the frame's height until a step outgrows it; below 1280 it
+   fills the width minus the page gutter and the column padding gives way
+   before the column does. */
+.sp-gate[data-width="wide"] {
+  grid-template-columns: minmax(0, 1220px);
+}
+.sp-gate[data-width="wide"] .sp-gate__panel {
+  justify-content: flex-start;
+  gap: 0;
+  min-height: min(869px, calc(100dvh - 2 * var(--page-pad)));
+  padding: var(--space-3xl) max(var(--space-md), calc((100% - 833px) / 2)) var(--space-xl);
+}
+.sp-gate[data-width="wide"] .sp-gate__intro {
+  gap: var(--space-xs);
+}
+.sp-gate__intro h1:focus {
+  outline: none;
+}
+.sp-gate__desc {
+  margin: var(--space-2xs) auto 0;
+  max-width: 547px;
+  min-height: calc(2 * var(--type-body-size) * var(--type-body-lh));
+  text-align: center;
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-lh);
+  letter-spacing: var(--type-body-track);
+  color: var(--text-on-surface-secondary);
+}
+.sp-gate[data-width="wide"] .sp-gate__steps {
+  margin-top: var(--space-xs);
+}
+.sp-gate__body {
+  position: relative;
+  flex: 1 0 auto;
+  margin-top: var(--space-xl);
+  min-width: 0;
+}
+.sp-gate__step-body {
+  width: 100%;
+}
+/* Reserved status line at the foot of every step: an error appears here
+   without moving anything above or below it. */
+.sp-gate__status {
+  min-height: calc(var(--type-label-size) * var(--type-label-lh) + 2 * var(--space-2xs));
+  margin-top: var(--space-sm);
+}
+.sp-gate__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+  min-height: 48px;
+  margin-top: var(--space-lg);
+}
+.sp-gate__back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  font-family: var(--font-ui);
+  font-size: var(--type-body-size);
+  color: var(--text-muted);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  transition: color var(--dur-state) var(--ease);
+}
+.sp-gate__back:hover:not(:disabled) {
+  color: var(--text-primary);
+}
+/* The Voltage primary the onboarding frames draw (radius 10 → the
+   large-control rung, 48 tall → --control-md). Ink on the brand fill, as
+   on every brand fill. Disabled drops to 40% like every .sp-btn, which on
+   Voltage over the panel reads as a dulled green — visibly not live. */
+.sp-gate__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2xs);
+  min-height: var(--control-md);
+  padding: 0 var(--space-md);
+  border-radius: var(--radius-control-lg);
+  background: var(--fill-primary);
+  color: var(--text-on-accent);
+  font-family: var(--font-ui);
+  font-size: var(--type-composer-size);
+  font-weight: var(--weight-ui);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background var(--dur-state) var(--ease),
+    opacity var(--dur-state) var(--ease);
+}
+.sp-gate__cta:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--fill-primary) 86%, var(--white));
+}
+.sp-gate__cta:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+/* Step 1's single question (Figma 154:1576): a 586 field centred in the
+   card with the Voltage arrow inset at its right edge — 48 × 40, so a 4px
+   inset in the 48-tall field; radius 10 → the large-control rung. */
+.sp-gate__ask {
+  width: 100%;
+  max-width: 586px;
+  margin: 0 auto;
+}
+.sp-gate__ask-field {
+  position: relative;
+}
+.sp-gate__ask-field .sp-input {
+  padding-right: calc(48px + var(--space-xs));
+}
+.sp-gate__ask-go {
+  position: absolute;
+  top: var(--space-3xs);
+  right: var(--space-3xs);
+  width: 48px;
+  height: calc(var(--control-md) - 2 * var(--space-3xs));
+  border-radius: calc(var(--radius-control-lg) - var(--space-3xs));
+  background: var(--fill-primary);
+  color: var(--text-on-accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background var(--dur-state) var(--ease),
+    opacity var(--dur-state) var(--ease);
+}
+.sp-gate__ask-go:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--fill-primary) 86%, var(--white));
+}
+.sp-gate__ask-go:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.sp-gate__ask-id {
+  margin-top: var(--space-xs);
+  min-height: calc(var(--type-caption-size) * var(--type-caption-lh));
+  text-align: center;
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-lh);
+  color: var(--text-muted);
+}
+
+/* The palette grid (Figma 154:1654): four 197 × 175 tiles across the 833
+   column on a 16 gap (the frame's 15 column gap takes the scale). A tile
+   is the chip fill with the strong hairline on the media radius, 8px of
+   padding, the swatch on the inner media radius, and the label row —
+   name left, hex right in the mono face. Tiles shed columns by tier: four
+   to 768, three to 640, two below. */
+.sp-gate__tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-gate__tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  min-width: 0;
+  padding: var(--space-2xs);
+  background: var(--chip-raised, var(--bg-raised));
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-media);
+}
+.sp-gate__tile .sp-color-control,
+.sp-gate__tile .sp-color-control__row {
+  display: flex;
+  width: 100%;
+}
+.sp-gate__tile-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2xs);
+  min-height: 20px;
+  padding: 0 var(--space-3xs);
+}
+.sp-gate__tile-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--type-label-size);
+  font-weight: var(--weight-ui);
+  color: var(--text-primary);
+}
+.sp-gate__tile-hex {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: var(--type-caption-size);
+  color: var(--text-muted);
+}
+
+/* Add colour: a dashed empty slot with a circular plus badge — visibly a
+   slot, not a swatch. Past the cap it disables and says why. */
+.sp-gate__tile--add {
+  padding: 0;
+  aspect-ratio: 197 / 175;
+  background: color-mix(in srgb, var(--text-primary) 2%, transparent);
+  border-style: dashed;
+  border-color: var(--border);
+}
+.sp-gate__tile-add {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2xs);
+  padding: var(--space-2xs);
+  border-radius: inherit;
+  font-size: var(--type-caption-size);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background var(--dur-state) var(--ease),
+    color var(--dur-state) var(--ease);
+}
+.sp-gate__tile-add:hover:not(:disabled),
+.sp-gate__tile-add:focus-visible {
+  background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  color: var(--text-primary);
+}
+.sp-gate__tile-add:disabled {
+  cursor: default;
+  color: var(--text-muted);
+}
+.sp-gate__tile-plus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--text-primary) 10%, transparent);
+  transition: background var(--dur-state) var(--ease);
+}
+.sp-gate__tile-add:hover:not(:disabled) .sp-gate__tile-plus {
+  background: color-mix(in srgb, var(--text-primary) 16%, transparent);
+}
+.sp-gate__tile-add-why {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+/* Remove, for user-added colours only: appears with the pencil on hover
+   and on keyboard focus within the tile. */
+.sp-gate__tile-remove {
+  position: absolute;
+  top: calc(var(--space-2xs) + var(--space-2xs));
+  right: calc(var(--space-2xs) + var(--space-2xs));
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 24px;
   height: 24px;
   border-radius: var(--radius-pill);
-  border: 1px solid var(--border-strong);
-  font-size: var(--type-caption-size);
+  background: color-mix(in srgb, var(--ink) 60%, transparent);
+  color: var(--white);
+  opacity: 0;
+  cursor: pointer;
+  transition:
+    opacity var(--dur-state) var(--ease),
+    background var(--dur-state) var(--ease);
+}
+.sp-gate__tile:hover .sp-gate__tile-remove,
+.sp-gate__tile:focus-within .sp-gate__tile-remove {
+  opacity: 1;
+}
+.sp-gate__tile-remove:hover {
+  background: color-mix(in srgb, var(--ink) 80%, transparent);
+}
+/* The name of a user-added colour edits in place: plain text at rest, an
+   underline on approach, the ring colour as the underline when focused. */
+.sp-gate__tile-name-input {
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  border-radius: 0;
+  font-family: var(--font-ui);
+  font-size: var(--type-label-size);
   font-weight: var(--weight-ui);
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color var(--dur-state) var(--ease);
+}
+.sp-gate__tile-name-input:hover {
+  border-bottom-color: var(--border-strong);
+}
+.sp-gate__tile-name-input:focus-visible {
+  outline: none;
+  border-bottom-color: var(--ring);
+}
+
+/* The colour swatch (ColorControl): the veil with the pencil is always in
+   the tree and fades in on --dur-state — on hover, on keyboard focus, and
+   while its editor is open — so the affordance appears on approach. */
+.sp-color-swatch {
+  position: relative;
+  flex: none;
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-control);
+  transition: border-color var(--dur-state) var(--ease);
+}
+.sp-color-swatch:hover,
+.sp-color-swatch:focus-visible,
+.sp-color-swatch[data-state="open"] {
+  border-color: var(--state-primary);
+}
+.sp-color-swatch__veil {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--white);
+  background: color-mix(in srgb, var(--text-on-accent) 35%, transparent);
+  opacity: 0;
+  transition: opacity var(--dur-state) var(--ease);
+}
+.sp-color-swatch:hover .sp-color-swatch__veil,
+.sp-color-swatch:focus-visible .sp-color-swatch__veil,
+.sp-color-swatch[data-state="open"] .sp-color-swatch__veil {
+  opacity: 1;
+}
+
+/* The colour editor (ColorControl): an in-app popover in the card's own
+   language — the chip fill, the media radius, the lit edge — holding the
+   saturation/value area, the hue slider, and the hex field. It anchors to
+   the swatch and flips above when there is no room below; under --bp-lg
+   it is a bottom sheet, since a popover pinned to a two-column tile on a
+   phone has nowhere to go. No drop shadow: elevation is surface colour on
+   this system, and the lit edge carries the separation. */
+.sp-color-pop {
+  --edge-color: rgb(var(--edge-rgb) / var(--edge-alpha));
+  --edge-color-bottom: rgb(var(--edge-rgb) / calc(var(--edge-alpha) * var(--edge-bottom-ratio)));
+  --edge-lit: inset 0 1px 0 var(--edge-color), inset 0 -1px 0 var(--edge-color-bottom);
+  box-sizing: border-box;
+  width: 240px;
+  padding: var(--space-xs);
+  background: var(--chip-raised, var(--bg-raised));
+  border: 1px solid transparent;
+  border-radius: var(--radius-media);
+  box-shadow: var(--edge-lit);
+  z-index: var(--z-popover);
+  outline: none;
+}
+.sp-color-pop .react-colorful {
+  width: 100%;
+  height: 168px;
+  gap: var(--space-2xs);
+}
+.sp-color-pop .react-colorful__saturation {
+  border-radius: var(--radius-media-inner);
+  border-bottom: none;
+}
+.sp-color-pop .react-colorful__last-control {
+  height: 12px;
+  border-radius: var(--radius-pill);
+}
+.sp-color-pop .react-colorful__pointer {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--white);
+}
+/* The picker's two areas take the arrow keys; give them the system's ring
+   when reached by keyboard so the focused channel is never a mystery. */
+.sp-color-pop .react-colorful__interactive:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+.sp-color-pop__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  margin-top: var(--space-xs);
+}
+.sp-color-pop__chip {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--border-strong);
+}
+@media (max-width: 1023px) {
+  [data-radix-popper-content-wrapper]:has(> .sp-color-pop) {
+    position: fixed !important;
+    inset: auto 0 0 0 !important;
+    transform: none !important;
+    min-width: 0 !important;
+  }
+  .sp-color-pop {
+    width: 100%;
+    border-radius: var(--radius-media) var(--radius-media) 0 0;
+    padding: var(--space-sm) var(--space-sm) calc(var(--space-sm) + env(safe-area-inset-bottom));
+  }
+  .sp-color-pop .react-colorful {
+    height: 200px;
+  }
+}
+
+/* Fonts (Figma 158:202): two pickers side by side on the 833 column with
+   a sample line beneath each, set in the chosen face and reserved at one
+   line so a swap moves nothing; the full-width dashed upload zone; then a
+   row per uploaded file on the chip fill. */
+.sp-gate__fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+.sp-gate__field-label {
+  font-family: var(--font-ui);
+  font-size: var(--type-label-size);
+  line-height: var(--type-label-lh);
+  color: var(--text-primary);
+}
+.sp-gate__sample {
+  min-height: calc(var(--type-label-size) * var(--type-label-lh) + var(--space-3xs));
+  font-size: var(--type-label-size);
+  line-height: var(--type-label-lh);
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* The dropzone: dashed on a 2% lift, brightening on approach and lighting
+   in the accent on drag-over (the .sp-dropzone rules). The file input is
+   visually hidden rather than display:none so Tab reaches it and the zone
+   shows the ring through focus-within. */
+.sp-gate__drop {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2xs);
+  min-height: 100px;
+  margin-top: var(--space-md);
+  padding: var(--space-sm);
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, var(--text-primary) 2%, transparent);
+  font-size: var(--type-body-size);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.sp-gate__drop:hover {
+  border-color: var(--border-control);
+  color: var(--text-primary);
+}
+.sp-gate__drop:focus-within {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.sp-gate__rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  margin: var(--space-xs) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-gate__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: 52px;
+  padding: 0 var(--space-xs) 0 var(--space-sm);
+  background: var(--chip-raised, var(--bg-raised));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control-lg);
+}
+.sp-gate__row-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--type-label-size);
+  color: var(--text-primary);
+}
+.sp-gate__row .sp-input {
+  flex: none;
+  width: auto;
+  min-height: 32px;
+  padding: 0 var(--space-2xs);
+  font-size: var(--type-label-size);
+}
+.sp-gate__row-remove {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-control);
+  color: var(--text-muted);
+  opacity: 0.5;
+  cursor: pointer;
+  transition:
+    opacity var(--dur-state) var(--ease),
+    color var(--dur-state) var(--ease),
+    background var(--dur-state) var(--ease);
+}
+.sp-gate__row:hover .sp-gate__row-remove,
+.sp-gate__row:focus-within .sp-gate__row-remove {
+  opacity: 1;
+}
+.sp-gate__row-remove:hover {
+  color: var(--state-danger-on-surface);
+  background: var(--danger-wash);
+}
+
+/* Logo (Figma 158:267): the same dropzone at 296 tall on the media
+   radius, its contents absolutely placed so the empty state and the
+   preview swap in the same box. */
+.sp-gate__drop--logo {
+  position: relative;
+  height: 296px;
+  margin-top: 0;
+  border-radius: var(--radius-media);
+}
+.sp-gate__drop-inner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2xs);
+  padding: var(--space-md);
+  text-align: center;
+}
+.sp-gate__drop-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: var(--space-2xs);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
+  color: var(--state-primary-on-surface);
+  transition: background var(--dur-state) var(--ease);
+}
+.sp-gate__drop:hover .sp-gate__drop-badge {
+  background: color-mix(in srgb, var(--text-primary) 10%, transparent);
+}
+.sp-gate__drop-title {
+  font-size: var(--type-composer-size);
+  font-weight: var(--weight-ui);
+  color: var(--text-primary);
+}
+.sp-gate__drop-sub {
+  font-size: var(--type-label-size);
   color: var(--text-muted);
 }
-.sp-gate__step[data-state="current"] {
-  color: var(--text-primary);
+.sp-gate__drop-preview {
+  max-height: 160px;
+  max-width: 60%;
+  object-fit: contain;
+  margin-bottom: var(--space-2xs);
 }
-.sp-gate__step[data-state="current"] .sp-gate__step-dot {
-  border-color: var(--state-primary-on-surface);
-  color: var(--text-primary);
+.sp-gate__skip {
+  margin-top: var(--space-sm);
+  text-align: center;
 }
-.sp-gate__step[data-state="done"] {
-  color: var(--text-secondary);
+.sp-gate__skip .sp-gate__link {
+  font-size: var(--type-body-size);
 }
-.sp-gate__step[data-state="done"] .sp-gate__step-dot {
-  background: var(--fill-action);
-  border-color: var(--fill-action);
-  color: var(--text-on-action);
+.sp-gate__skip .sp-gate__link:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* The auth headline: the login frame's 38 maps to the H3 step, the
+   onboarding frames' 45 to H2 — the two containers differ by more than 2×
+   in width and the proportion between them holds. */
+.sp-gate__title {
+  font-size: var(--type-h3-size);
+  line-height: var(--type-h3-lh);
+  letter-spacing: var(--type-h3-track);
+}
+
+/* The onboarding tiers below the frame's 1920. ≥ 1280 the card is as
+   drawn; 1024–1279 it fills the width minus the page gutter and the
+   four-column grid holds (833 fits in the 960 card at 1024); 768–1023 the
+   swatch grid drops to three and the font pickers stack; below 640 the
+   grid drops to two, the card padding steps down, and the logo dropzone
+   shortens. The colour editor is already a bottom sheet under 1024. */
+@media (max-width: 1023px) {
+  .sp-gate__tiles {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .sp-gate__fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 639px) {
+  .sp-gate__tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .sp-gate[data-width="wide"] .sp-gate__panel {
+    padding: var(--space-lg) var(--space-md) var(--space-md);
+  }
+  .sp-gate__drop--logo {
+    height: 200px;
+  }
+  .sp-gate__drop {
+    min-height: 80px;
+  }
 }
 
 @media (max-width: 1279px) {
