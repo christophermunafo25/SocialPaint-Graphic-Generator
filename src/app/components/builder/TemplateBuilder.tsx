@@ -2713,6 +2713,7 @@ export function TemplateBuilder({
           <span
             style={{
               fontSize: "var(--type-label-size)",
+              fontWeight: 500,
               color: "var(--text-primary)",
             }}
           >
@@ -2762,8 +2763,8 @@ export function TemplateBuilder({
               placeholder="Untitled template"
               valueStyle={{
                 fontFamily: "var(--font-ui)",
+                fontWeight: 500,
                 fontSize: "var(--type-label-size)",
-                letterSpacing: "-0.01em",
                 color: "var(--text-primary)",
               }}
               onSave={(name) => setDraft((d) => ({ ...d, name }), "text:name")}
@@ -3004,7 +3005,9 @@ export function TemplateBuilder({
                 }}
               >
                 <Plus className="w-6 h-6" style={{ color: "var(--state-primary)" }} />
-                <p style={{ fontSize: 14, color: "var(--text-primary)" }}>Start blank</p>
+                <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>
+                  Start blank
+                </p>
                 <p
                   style={{
                     fontSize: "var(--type-caption-size)",
@@ -3031,7 +3034,9 @@ export function TemplateBuilder({
                 }}
               >
                 <Figma className="w-6 h-6" style={{ color: "var(--state-primary)" }} />
-                <p style={{ fontSize: 14, color: "var(--text-primary)" }}>Import from Figma</p>
+                <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>
+                  Import from Figma
+                </p>
                 <p
                   style={{
                     fontSize: "var(--type-caption-size)",
@@ -3063,7 +3068,9 @@ export function TemplateBuilder({
                   }}
                 >
                   <Palette className="w-6 h-6" style={{ color: "var(--state-primary)" }} />
-                  <p style={{ fontSize: 14, color: "var(--text-primary)" }}>Import from Canva</p>
+                  <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>
+                    Import from Canva
+                  </p>
                   <p
                     style={{
                       fontSize: "var(--type-caption-size)",
@@ -3091,7 +3098,9 @@ export function TemplateBuilder({
                 }}
               >
                 <Sparkles className="w-6 h-6" style={{ color: "var(--state-primary)" }} />
-                <p style={{ fontSize: 14, color: "var(--text-primary)" }}>Auto-build with Claude</p>
+                <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>
+                  Auto-build with Claude
+                </p>
                 <p
                   style={{
                     fontSize: "var(--type-caption-size)",

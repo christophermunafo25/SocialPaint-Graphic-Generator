@@ -1124,6 +1124,7 @@ function ProposalCard({
             flex: 1,
             minWidth: 0,
             fontSize: "var(--type-label-size)",
+            fontWeight: 500,
             color: "var(--text-primary)",
           }}
         >
