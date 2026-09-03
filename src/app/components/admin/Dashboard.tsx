@@ -8,7 +8,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Download, Eye, Layers, Percent } from "lucide-react";
+import { Download, Eye, Layers, Percent, Table2 } from "lucide-react";
 import type { DailyActivityPoint, PublicLinkUsageRow, UsageSummary } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
@@ -147,9 +147,15 @@ export function Dashboard() {
   const publicOpens = summary.rows.reduce((n, r) => n + r.publicOpens, 0);
   const publicDownloads = summary.rows.reduce((n, r) => n + r.publicDownloads, 0);
   const totalShares = summary.rows.reduce((n, r) => n + r.shares, 0);
+  // Bulk exports sit BESIDE downloads, never inside them: a bulk run has no
+  // opens, so folding it in would break the export rate. The tile only
+  // appears once a workspace has run one.
+  const totalBulk = summary.rows.reduce((n, r) => n + r.bulkExports, 0);
   const viaLink = (n: number): string | undefined =>
     n === 0 ? undefined : `${n} via public link${n === 1 ? "" : "s"}`;
-  const activeTemplates = summary.rows.filter((r) => r.opens + r.downloads > 0).length;
+  const activeTemplates = summary.rows.filter(
+    (r) => r.opens + r.downloads + r.bulkExports > 0,
+  ).length;
   const trendOpens = (trend ?? []).reduce((n, p) => n + p.opens, 0);
   const trendDownloads = (trend ?? []).reduce((n, p) => n + p.downloads, 0);
   const trendPublicDownloads = (trend ?? []).reduce((n, p) => n + p.publicDownloads, 0);
@@ -185,7 +191,9 @@ export function Dashboard() {
       ) : (
         <div className="space-y-6">
           {/* KPI row — same 24px gap as every other grid on the page */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+          <div
+            className={`grid grid-cols-2 gap-6 ${totalBulk > 0 ? "lg:grid-cols-5" : "lg:grid-cols-4"}`}
+          >
             <Kpi
               label="Total exports"
               value={summary.totalDownloads}
@@ -193,6 +201,16 @@ export function Dashboard() {
               chip="var(--viz-series-1)"
               sub={viaLink(publicDownloads)}
             />
+            {totalBulk > 0 && (
+              <Kpi
+                label="Bulk exports"
+                value={totalBulk}
+                Icon={Table2}
+                chip="var(--bg-hover)"
+                chipFg="var(--text-primary)"
+                sub="Rendered by bulk fill, not counted in exports"
+              />
+            )}
             <Kpi
               label="Total opens"
               value={totalOpens}
@@ -427,7 +445,7 @@ export function Dashboard() {
             <div className="sp-card overflow-hidden overflow-x-auto lg:col-span-3">
               <table
                 className="w-full"
-                style={{ fontSize: "var(--type-label-size)", minWidth: 720 }}
+                style={{ fontSize: "var(--type-label-size)", minWidth: 800 }}
               >
                 <thead>
                   <tr className="text-left" style={{ borderBottom: "1px solid var(--border)" }}>
@@ -435,6 +453,7 @@ export function Dashboard() {
                       "Template",
                       "Opens",
                       "Downloads",
+                      "Bulk",
                       "Posted",
                       "Via link",
                       "Export rate",
@@ -474,6 +493,17 @@ export function Dashboard() {
                         }}
                       >
                         {r.downloads}
+                      </td>
+                      {/* Rendered by bulk fill. Beside downloads, never added
+                          to them; muted at zero like Posted. */}
+                      <td
+                        className="px-4 py-3"
+                        style={{
+                          ...numCell,
+                          color: r.bulkExports > 0 ? "var(--text-primary)" : "var(--text-muted)",
+                        }}
+                      >
+                        {r.bulkExports}
                       </td>
                       {/* Taken to LinkedIn. Muted at zero so the eye lands on
                           the templates that are actually being posted. */}

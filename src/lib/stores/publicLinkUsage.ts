@@ -54,6 +54,10 @@ export function joinLinkUsage(links: LinkRecord[], events: LinkEvent[]): PublicL
     if (event.action === "open") row.opens += 1;
     else if (event.action === "download") row.downloads += 1;
     else if (event.action === "share") row.shares += 1;
+    else if (event.action === "bulk_export") {
+      // Named so the chain stays exhaustive. A public link has no bulk
+      // path, so this never matches and a counter here would always be zero.
+    }
     if (!row.lastUsedAt || event.createdAt > row.lastUsedAt) row.lastUsedAt = event.createdAt;
   }
 

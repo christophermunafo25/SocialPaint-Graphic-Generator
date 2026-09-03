@@ -17,6 +17,17 @@ const ev = (linkId: string, action: LinkEvent["action"], createdAt: string): Lin
 });
 
 describe("joinLinkUsage", () => {
+  it("names bulk_export without counting it: a public link has no bulk path", () => {
+    const rows = joinLinkUsage(
+      [link({ id: "a" })],
+      [
+        ev("a", "bulk_export", "2026-08-02T10:00:00.000Z"),
+        ev("a", "download", "2026-08-02T11:00:00.000Z"),
+      ],
+    );
+    expect(rows[0]).toMatchObject({ opens: 0, downloads: 1, shares: 0 });
+  });
+
   it("counts opens and exports per link", () => {
     const rows = joinLinkUsage(
       [link({ id: "a", name: "Thank-you page" })],

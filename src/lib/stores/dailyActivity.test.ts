@@ -16,6 +16,22 @@ describe("bucketDailyActivity", () => {
     expect(points).toHaveLength(7);
     expect(points.every((p) => p.opens === 0 && p.downloads === 0)).toBe(true);
     expect(points.every((p) => p.publicOpens === 0 && p.publicDownloads === 0)).toBe(true);
+    expect(points.every((p) => p.bulkExports === 0)).toBe(true);
+  });
+
+  it("counts a bulk export on its own, never as a download", () => {
+    // A bulk run has no opens; folded into downloads it would wreck the
+    // export rate, so the tally names it and keeps it apart.
+    const points = bucketDailyActivity(
+      [
+        { action: "bulk_export", actor: "member", createdAt: daysAgo(0) },
+        { action: "bulk_export", actor: "member", createdAt: daysAgo(0) },
+        { action: "download", actor: "member", createdAt: daysAgo(0) },
+      ],
+      3,
+    );
+    const today = points[points.length - 1];
+    expect(today).toMatchObject({ downloads: 1, bulkExports: 2, publicDownloads: 0, opens: 0 });
   });
 
   it("counts public events in BOTH the total and the public subset", () => {

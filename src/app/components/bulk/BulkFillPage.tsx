@@ -3,6 +3,7 @@ import { ArrowLeft, FileSpreadsheet, Download } from "lucide-react";
 import type { FieldValues, TemplateSchema } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
+import { useAuth } from "@/lib/auth/AuthContext";
 import { useBrand } from "@/lib/brand/BrandContext";
 import { useFileDrop } from "@/lib/useFileDrop";
 import { createCanvasMeasurer } from "@/lib/render/autoFit";
@@ -121,6 +122,7 @@ function BulkFill({
   kit: ReturnType<typeof useBrand>["kit"];
 }) {
   const { navigate } = useRouter();
+  const { user } = useAuth();
   const fields = useMemo(() => fillableFields(template), [template]);
 
   const [step, setStep] = useState<Step>("upload");
@@ -241,7 +243,13 @@ function BulkFill({
       signal: controller.signal,
     });
     const zipName = `${slugify(template.name) || "graphics"}-bulk.zip`;
-    if (result.rendered > 0) downloadBlob(result.zip, zipName);
+    if (result.rendered > 0) {
+      downloadBlob(result.zip, zipName);
+      // One bulk_export event per graphic that actually rendered, in one
+      // write. A stopped run records what it produced. Never a download:
+      // see the note on UsageAction.
+      void stores.usage.recordBulk(template.companyId, template.id, result.rendered, user?.id);
+    }
     setOutcome({
       result,
       attempted: toRender.length,
@@ -251,7 +259,7 @@ function BulkFill({
     });
     abortRef.current = null;
     setStep("done");
-  }, [toRender, template, checks.length]);
+  }, [toRender, template, checks.length, user?.id]);
 
   // Leaving the page mid-run stops the loop at the next row boundary.
   useEffect(() => () => abortRef.current?.abort(), []);
