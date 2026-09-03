@@ -44,9 +44,14 @@ function MonitoringBridge() {
  * PKCE verifier never left the Edge Function) and cleans the URL. */
 function useCanvaOAuthReturn(companyId: string | undefined) {
   const [notice, setNotice] = React.useState<string | null>(null);
+  // Read once, at first render. The router canonicalizes the URL in a mount
+  // effect, which strips the code and state long before auth has produced a
+  // company id, so reading the URL inside the effect below found nothing.
+  const [params] = React.useState(() => new URLSearchParams(window.location.search));
+  const handled = React.useRef(false);
   React.useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("canva_oauth") !== "1" || !companyId) return;
+    if (params.get("canva_oauth") !== "1" || !companyId || handled.current) return;
+    handled.current = true; // the code is single-use; never exchange it twice
     const code = params.get("code");
     const state = params.get("state");
     window.history.replaceState({}, "", window.location.pathname);
@@ -58,7 +63,7 @@ function useCanvaOAuthReturn(companyId: string | undefined) {
       .canvaConnectCallback(companyId, code, state, `${window.location.origin}/?canva_oauth=1`)
       .then(() => setNotice("Canva connected. Open Auto-build to use it."))
       .catch((e) => setNotice(e instanceof Error ? e.message : "Canva connection failed."));
-  }, [companyId]);
+  }, [companyId, params]);
   return { notice, dismiss: () => setNotice(null) };
 }
 
