@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ArrowLeft, Link2 } from "lucide-react";
+import { ArrowLeft, Link2, Table2 } from "lucide-react";
 import type { FieldValues } from "@/lib/types";
 import { takeSeed } from "@/lib/generate/seedHandoff";
 import { stores } from "@/lib/stores";
@@ -63,6 +63,9 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
    * yet, and the dialog says so rather than the button vanishing without
    * explanation. */
   const canShare = role === "admin";
+  /** Bulk fill follows the same rule: admin-only, and only once there is a
+   * published template to fill. A draft has nothing to run forty times. */
+  const canBulkFill = role === "admin" && template.status === "published";
 
   return (
     <Page>
@@ -78,16 +81,28 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
           Brand Templates
         </button>
 
-        {canShare && (
-          <button
-            onClick={() => setSharing(true)}
-            className="sp-btn sp-btn-ghost"
-            title="Create a link anyone can fill in without an account"
-          >
-            <Link2 style={{ width: 14, height: 14 }} />
-            Public link
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {canBulkFill && (
+            <button
+              onClick={() => navigate({ name: "bulk", templateId: template.id })}
+              className="sp-btn sp-btn-ghost"
+              title="Fill this template from a spreadsheet, one graphic per row"
+            >
+              <Table2 style={{ width: 14, height: 14 }} />
+              Bulk fill
+            </button>
+          )}
+          {canShare && (
+            <button
+              onClick={() => setSharing(true)}
+              className="sp-btn sp-btn-ghost"
+              title="Create a link anyone can fill in without an account"
+            >
+              <Link2 style={{ width: 14, height: 14 }} />
+              Public link
+            </button>
+          )}
+        </div>
       </div>
 
       <TemplateFill

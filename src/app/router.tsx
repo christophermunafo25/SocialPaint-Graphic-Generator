@@ -44,6 +44,10 @@ export type Route =
   | { name: "onboarding" }
   | { name: "portal"; platform?: PlatformId; q?: string }
   | { name: "template"; templateId: string }
+  /** Bulk fill: one published template, one CSV, one graphic per row.
+   * Admin-only — App renders it through adminOnly, so a member who types
+   * the URL lands on the gallery. */
+  | { name: "bulk"; templateId: string }
   /** Generate: brief in, filled templates out. `templateId` is the "use this
    * one" hint from a template card — in the URL so the intent survives a
    * refresh; the seeded VALUES deliberately do not (see seedHandoff.ts). */
@@ -87,6 +91,8 @@ export function routeToUrl(route: Route): string {
     }
     case "template":
       return `/templates/${encodeURIComponent(route.templateId)}`;
+    case "bulk":
+      return `/templates/${encodeURIComponent(route.templateId)}/bulk`;
     case "generate":
       return route.templateId
         ? `/generate?template=${encodeURIComponent(route.templateId)}`
@@ -117,12 +123,13 @@ const parsePlatform = (raw: string | null): PlatformId | undefined =>
  * dead end. */
 export function urlToRoute(pathname: string, search: string): Route {
   const params = new URLSearchParams(search);
-  const [head, tail] = pathname.split("/").filter(Boolean);
+  const [head, tail, third] = pathname.split("/").filter(Boolean);
 
   switch (head) {
     case "onboarding":
       return { name: "onboarding" };
     case "templates":
+      if (tail && third === "bulk") return { name: "bulk", templateId: decodeURIComponent(tail) };
       if (tail) return { name: "template", templateId: decodeURIComponent(tail) };
       return {
         name: "portal",

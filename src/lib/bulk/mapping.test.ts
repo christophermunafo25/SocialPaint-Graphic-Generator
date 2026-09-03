@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { TemplateField } from "../types";
-import { autoMap, fillableFields, rowToValues } from "./mapping";
+import { autoMap, fillableFields, rowToValues, starterCsv } from "./mapping";
 
 let nextId = 0;
 const mkField = (over: Partial<TemplateField>): TemplateField => ({
@@ -108,5 +108,32 @@ describe("rowToValues", () => {
 
   it("lets the leftmost column win when two map to one field", () => {
     expect(rowToValues(["first", "second"], ["name", "name"])).toEqual({ name: "first" });
+  });
+});
+
+describe("starterCsv", () => {
+  it("writes every fillable label as a header and placeholders as the one row", () => {
+    const fields = [
+      mkField({ fieldKey: "name", label: "Speaker name", placeholder: "Ada Lovelace" }),
+      mkField({ fieldKey: "photo", label: "Photo", type: "image" }),
+      mkField({ fieldKey: "talk", label: "Talk, title", placeholder: 'On "engines"' }),
+      mkField({ fieldKey: "city", label: "City", type: "select", options: ["Chicago"] }),
+    ];
+    expect(starterCsv({ fields })).toBe(
+      'Speaker name,"Talk, title",City\r\nAda Lovelace,"On ""engines""",\r\n',
+    );
+  });
+
+  it("round-trips through parseCsv and autoMap with every column matched", async () => {
+    const { parseCsv } = await import("./csv");
+    // Placeholders give the one row content; a starter whose fields have
+    // none is a header over a blank row, and blank rows are dropped.
+    const fields = [
+      mkField({ fieldKey: "speaker_name", label: "Speaker name", placeholder: "Ada" }),
+      mkField({ fieldKey: "talk_title", label: "Talk title" }),
+    ];
+    const parsed = parseCsv(starterCsv({ fields }));
+    expect(parsed.rows).toEqual([["Ada", ""]]);
+    expect(autoMap(parsed.headers, fields)).toEqual(["speaker_name", "talk_title"]);
   });
 });

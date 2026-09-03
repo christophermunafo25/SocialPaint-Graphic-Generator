@@ -72,3 +72,19 @@ export function rowToValues(row: string[], map: ColumnMap): FieldValues {
   });
   return values;
 }
+
+/** One CSV cell for the starter file, quoted when the text needs it. */
+function starterCell(text: string): string {
+  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+/** The starter file: a header of every fillable field's label and one row
+ * of each field's placeholder (or nothing). A person who opens this in a
+ * spreadsheet and fills it down never has a column-naming question, and
+ * autoMap matches every column on the label tier. */
+export function starterCsv(schema: Pick<TemplateSchema, "fields">): string {
+  const fields = fillableFields(schema);
+  const header = fields.map((f) => starterCell(f.label)).join(",");
+  const row = fields.map((f) => starterCell(f.placeholder ?? "")).join(",");
+  return `${header}\r\n${row}\r\n`;
+}
