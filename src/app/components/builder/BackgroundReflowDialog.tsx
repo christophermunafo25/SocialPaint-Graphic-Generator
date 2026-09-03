@@ -107,7 +107,7 @@ export function BackgroundReflowDialog({
           </h2>
           <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
             A {target.width}×{target.height} canvas crops the image differently. Pick what happens
-            to it — nothing is decided for you.
+            to it. Nothing is decided for you.
           </p>
         </div>
 
@@ -115,19 +115,19 @@ export function BackgroundReflowDialog({
           <CropPreview
             url={backgroundUrl}
             size={source}
-            label={`Now — ${source.width}×${source.height}`}
+            label={`Now: ${source.width}×${source.height}`}
           />
           <CropPreview
             url={backgroundUrl}
             size={target}
-            label={`New crop — ${target.width}×${target.height}`}
+            label={`New crop: ${target.width}×${target.height}`}
           />
         </div>
 
         {hasFigmaProvenance && (
           <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}>
             This template came from Figma. For a pixel-exact background, resize the source frame
-            there and re-import it from the canvas footer — that re-renders the design instead of
+            there and re-import it from the canvas footer. That re-renders the design instead of
             stretching pixels.
           </p>
         )}
@@ -144,7 +144,7 @@ export function BackgroundReflowDialog({
             {sampling ? "Reading the image…" : "Swap to a solid color from the image's edges"}
           </button>
           <button className="sp-btn sp-btn-ghost w-full" onClick={onRemove}>
-            Remove it — I'll upload a replacement
+            Remove it (I'll upload a replacement)
           </button>
         </div>
       </div>

@@ -127,7 +127,7 @@ function ResumeNote({ resumable, resumed }: { resumable: boolean; resumed: boole
       />
       <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
         {resumed
-          ? "We brought back what you'd typed. It's saved on this device only — a photo needs adding again, and another browser or phone will start fresh."
+          ? "We brought back what you'd typed. It's saved on this device only: a photo needs adding again, and another browser or phone will start fresh."
           : "What you type is saved on this device, so you can close the tab and come back. A photo isn't saved, and another browser or phone will start fresh."}
       </p>
     </div>

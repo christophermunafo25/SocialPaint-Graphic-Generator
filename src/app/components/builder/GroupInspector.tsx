@@ -30,14 +30,14 @@ interface GroupInspectorProps {
  * left/right. */
 const ANCHOR_LABELS: Record<"vertical" | "horizontal", Record<GroupAxisPoint, string>> = {
   vertical: {
-    start: "Top — grows downward",
-    center: "Center — grows both ways",
-    end: "Bottom — grows upward",
+    start: "Top, grows downward",
+    center: "Center, grows both ways",
+    end: "Bottom, grows upward",
   },
   horizontal: {
-    start: "Left — grows rightward",
-    center: "Center — grows both ways",
-    end: "Right — grows leftward",
+    start: "Left, grows rightward",
+    center: "Center, grows both ways",
+    end: "Right, grows leftward",
   },
 };
 
@@ -148,13 +148,13 @@ export function GroupInspector({
         <PropertyRow label="Auto layout">
           <Switch
             checked={!free}
-            ariaLabel="Auto layout — place children in a stack with a fixed gap"
+            ariaLabel="Auto layout: place children in a stack with a fixed gap"
             onChange={(next) => onModeChange(next ? "stack" : "free")}
           />
         </PropertyRow>
         <p style={{ fontSize: 10.5, color: "var(--text-muted)" }}>
           {free
-            ? "Children keep the positions you gave them — the group just moves them together."
+            ? "Children keep the positions you gave them. The group just moves them together."
             : "Children are placed along one axis with a fixed gap; growing content pushes the rest."}
         </p>
         {!free && (
@@ -188,7 +188,7 @@ export function GroupInspector({
               <select
                 className="sp-input"
                 style={compactControlStyle}
-                aria-label="Anchor — the point that holds still as content grows"
+                aria-label="Anchor: the point that holds still as content grows"
                 value={group.anchor}
                 onChange={(e) => changeAnchor(e.target.value as GroupAxisPoint)}
               >
@@ -280,7 +280,7 @@ export function GroupInspector({
             <p style={{ fontSize: 10.5, color: "var(--text-muted)" }}>
               {group.shrinkToFit
                 ? "Text in this stack shrinks (never below its minimum size) so the stack stays inside the canvas."
-                : "Content that outgrows the canvas stays visible and is flagged here in the builder — members never see a warning."}
+                : "Content that outgrows the canvas stays visible and is flagged here in the builder. Members never see a warning."}
             </p>
           </>
         )}
@@ -291,7 +291,7 @@ export function GroupInspector({
         )}
         {free && !computedRect?.overflows && (
           <p style={{ fontSize: 10.5, color: "var(--text-muted)" }}>
-            A group that outgrows the canvas is flagged here in the builder — members never see a
+            A group that outgrows the canvas is flagged here in the builder. Members never see a
             warning.
           </p>
         )}

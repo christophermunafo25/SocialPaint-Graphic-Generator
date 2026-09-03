@@ -184,13 +184,13 @@ export function saveErrorMessage(e: unknown): string {
   const raw = e instanceof Error ? e.message : String(e);
   const lower = raw.toLowerCase();
   if (lower.includes("check constraint") || lower.includes("invalid input value for enum")) {
-    return `The database rejected part of this template — it may be running behind the app (a migration is probably pending). Nothing was saved. Details: ${raw}`;
+    return `The database rejected part of this template. It may be running behind the app (a migration is probably pending). Nothing was saved. Details: ${raw}`;
   }
   if (lower.includes("row-level security") || lower.includes("permission denied")) {
     return `You don't have permission to save this template. Details: ${raw}`;
   }
   if (lower.includes("failed to fetch") || lower.includes("networkerror")) {
-    return "Couldn't reach the server — check your connection. Your work is still here and will save when the connection returns.";
+    return "Couldn't reach the server. Check your connection; your work is still here and will save when the connection returns.";
   }
   return `Couldn't save this template. Details: ${raw}`;
 }
@@ -568,7 +568,7 @@ export function TemplateBuilder({
       });
     }
     setNotice(
-      `Version created at ${target.width}×${target.height} — automatic reflow applied. Review the layout, then publish.`,
+      `Version created at ${target.width}×${target.height} with automatic reflow applied. Review the layout, then publish.`,
     );
     window.clearTimeout(noticeTimer.current);
     noticeTimer.current = window.setTimeout(() => setNotice(null), 10000);
@@ -686,7 +686,7 @@ export function TemplateBuilder({
     for (const g of groups) {
       if (builderLayout.groupRects.get(g.id)?.overflows) {
         out.push(
-          `"${g.name}" extends beyond the canvas — its content can crop on export. Shorten the content, tighten the gap, or enable "Shrink to fit".`,
+          `"${g.name}" extends beyond the canvas, so its content can crop on export. Shorten the content, tighten the gap, or enable "Shrink to fit".`,
         );
       }
     }
@@ -733,7 +733,7 @@ export function TemplateBuilder({
       );
       setNotice(
         alreadyGrouped
-          ? "Those elements are already in a group — ungroup them first."
+          ? "Those elements are already in a group. Ungroup them first."
           : "Select at least two elements to group them.",
       );
       window.clearTimeout(noticeTimer.current);
@@ -748,7 +748,7 @@ export function TemplateBuilder({
     setFlashGroupId(g.id);
     window.clearTimeout(flashTimer.current);
     flashTimer.current = window.setTimeout(() => setFlashGroupId(null), 1600);
-    setNotice(`Grouped ${g.children.length} elements — “${g.name}”`);
+    setNotice(`Grouped ${g.children.length} elements as “${g.name}”`);
     window.clearTimeout(noticeTimer.current);
     noticeTimer.current = window.setTimeout(() => setNotice(null), 5000);
   }, [draft.fields, groups, selectedIds, selGroupIds, builderLayout, kit, measurer, setDraft]);
@@ -1003,7 +1003,7 @@ export function TemplateBuilder({
     const n = alignEntries.entries.length;
     if (n >= 2) return undefined;
     if (alignEntries.droppedStackChildren > 0) {
-      return "Elements inside an auto-layout stack are placed by the stack — move the stack, or turn auto layout off.";
+      return "Elements inside an auto-layout stack are placed by the stack. Move the stack, or turn auto layout off.";
     }
     return "Select at least two elements to align them to each other.";
   }, [alignEntries]);
@@ -1013,7 +1013,7 @@ export function TemplateBuilder({
   const canvasAlignDisabledReason = useMemo(() => {
     if (alignEntries.entries.length >= 1) return undefined;
     if (alignEntries.droppedStackChildren > 0) {
-      return "Elements inside an auto-layout stack are placed by the stack — move the stack, or turn auto layout off.";
+      return "Elements inside an auto-layout stack are placed by the stack. Move the stack, or turn auto layout off.";
     }
     return "Select an element to align it to the canvas.";
   }, [alignEntries]);
@@ -1021,7 +1021,7 @@ export function TemplateBuilder({
   const distributeDisabledReason = useMemo(() => {
     if (alignEntries.entries.length >= 3) return undefined;
     if (alignEntries.droppedStackChildren > 0 && alignEntries.entries.length < 3) {
-      return "Elements inside an auto-layout stack are spaced by the stack's gap, not by distributing them.";
+      return "Elements inside an auto-layout stack are spaced by the stack's gap. Change the gap to space them.";
     }
     return "Select at least three elements to space them evenly.";
   }, [alignEntries]);
@@ -1357,7 +1357,7 @@ export function TemplateBuilder({
         );
       } catch (e) {
         console.error("Image drop upload failed", e);
-        setError("Couldn't add that image — try again, or upload it from the inspector.");
+        setError("Couldn't add that image. Try again, or upload it from the inspector.");
       }
     }
     if (!created.length) return;
@@ -1391,9 +1391,9 @@ export function TemplateBuilder({
         brandAssets.filter((a) => a.kind === "font"),
       );
       setNotice(
-        `${fields.length} element${fields.length !== 1 ? "s" : ""} pasted from Figma — all fixed. Turn off Fixed on anything members should fill in.` +
+        `${fields.length} element${fields.length !== 1 ? "s" : ""} pasted from Figma, all fixed. Turn off Fixed on anything members should fill in.` +
           (missingFonts.length
-            ? ` Fonts not available here: ${missingFonts.join(", ")} — upload them in Brand Studio.`
+            ? ` Fonts not available here: ${missingFonts.join(", ")}. Upload them in Brand Studio.`
             : ""),
       );
       window.clearTimeout(noticeTimer.current);
@@ -1731,7 +1731,7 @@ export function TemplateBuilder({
         setDraft((d) => ({ ...d, backgroundUrl: url }));
       } catch (e) {
         console.error("Background upload failed", e);
-        setError("Background upload failed — check your storage configuration.");
+        setError("Background upload failed. Check your storage configuration.");
       } finally {
         setUploading(false);
       }
@@ -1954,7 +1954,7 @@ export function TemplateBuilder({
       brandAssets.filter((a) => a.kind === "font"),
     );
     const fontNote = missingFonts.length
-      ? ` Fonts not available here: ${missingFonts.join(", ")} — that text shows its Figma render until you upload them in Brand Studio.`
+      ? ` Fonts not available here: ${missingFonts.join(", ")}. That text shows its Figma render until you upload them in Brand Studio.`
       : "";
 
     // An import sizes the canvas from the frame, not from the picker — said
@@ -1978,10 +1978,10 @@ export function TemplateBuilder({
     const degraded = (details ?? []).filter((d) => d.severity === "degraded");
     if (!degraded.length) return null;
     if (degraded.length === 1) {
-      return `"${degraded[0].layer}" couldn't import exactly — ${degraded[0].issue}`;
+      return `"${degraded[0].layer}" couldn't import exactly: ${degraded[0].issue}`;
     }
     const names = [...new Set(degraded.map((d) => `"${d.layer}"`))];
-    return `${degraded.length} things couldn't import exactly — ${names.slice(0, 6).join(", ")}${
+    return `${degraded.length} things couldn't import exactly: ${names.slice(0, 6).join(", ")}${
       names.length > 6 ? ` and ${names.length - 6} more` : ""
     }. Fix them in Figma and re-import for an exact match.`;
   };
@@ -2000,8 +2000,8 @@ export function TemplateBuilder({
       fieldKeyFor: (f, existing) => suggestFieldKey(f.label, existing),
       summary: (imported) =>
         imported.length === 0
-          ? "Nothing was detected — the background imported. Draw fields on the canvas."
-          : `${imported.length} element${imported.length !== 1 ? "s" : ""} imported — all fixed, exactly as designed. Select the elements members should fill in and turn off Fixed.`,
+          ? "Nothing was detected, but the background imported. Draw fields on the canvas."
+          : `${imported.length} element${imported.length !== 1 ? "s" : ""} imported, all fixed and exactly as designed. Select the elements members should fill in and turn off Fixed.`,
     });
     // The import report: the dialog closes on success, so anything that
     // degraded must surface here or the admin never learns what to fix.
@@ -2139,7 +2139,7 @@ export function TemplateBuilder({
         } catch (e) {
           console.error("Background recomposition failed", e);
           setError(
-            "Couldn't lift the imported elements off the background — the flat Figma render is in use, so fields may overlap their original artwork. " +
+            "Couldn't lift the imported elements off the background. The flat Figma render is in use, so fields may overlap their original artwork. " +
               (e instanceof Error ? e.message : ""),
           );
         } finally {
@@ -2625,7 +2625,7 @@ export function TemplateBuilder({
                 draft.backgroundUrl
                   ? {
                       reason:
-                        "This template has a background image, so only sizes with the same aspect ratio can apply in place. A different shape becomes a new version — a draft copy, reflowed for review; this template stays untouched.",
+                        "This template has a background image, so only sizes with the same aspect ratio can apply in place. A different shape becomes a new version: a draft copy, reflowed for review. This template stays untouched.",
                     }
                   : undefined
               }
@@ -2689,7 +2689,7 @@ export function TemplateBuilder({
       <ConfirmDialog
         open={pendingStack !== null}
         title="Turn on auto layout?"
-        description={`The elements in "${pendingStack?.name ?? ""}" aren't arranged as a stack yet — auto layout will move them into one. Undo brings the current arrangement back.`}
+        description={`The elements in "${pendingStack?.name ?? ""}" aren't arranged as a stack yet, so auto layout will move them into one. Undo brings the current arrangement back.`}
         confirmLabel="Turn on auto layout"
         tone="primary"
         onCancel={() => setPendingStack(null)}
@@ -2780,7 +2780,7 @@ export function TemplateBuilder({
                   className="flex items-center gap-1.5 flex-shrink-0 whitespace-nowrap"
                   title={
                     saveFailed
-                      ? "Not saved — see the message below the bar"
+                      ? "Not saved. See the message below the bar"
                       : lastSavedAt && !dirty && !saving
                         ? savedAgo(lastSavedAt, nowTick)
                         : undefined
@@ -2978,7 +2978,7 @@ export function TemplateBuilder({
                 Start your template
               </h2>
               <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
-                Build from scratch, or import a designed frame — both end at the same place: locked
+                Build from scratch, or import a designed frame. Both end at the same place: locked
                 design, editable fields.
               </p>
             </div>
@@ -3012,7 +3012,7 @@ export function TemplateBuilder({
                     maxWidth: 240,
                   }}
                 >
-                  Build the design from scratch on an empty canvas — drag on text, images, and fixed
+                  Build the design from scratch on an empty canvas. Drag on text, images, and fixed
                   elements.
                 </p>
               </button>
@@ -3040,7 +3040,7 @@ export function TemplateBuilder({
                   }}
                 >
                   {stores.designImport.isConfigured()
-                    ? "Paste a frame link — every element lands on the canvas as an editable field. Mark anything that shouldn't be as fixed."
+                    ? "Paste a frame link. Every element lands on the canvas as an editable field. Mark anything that shouldn't be as fixed."
                     : "Requires the Supabase backend with the Figma connection configured (see docs/ARCHITECTURE.md)."}
                 </p>
               </button>
@@ -3071,7 +3071,7 @@ export function TemplateBuilder({
                       maxWidth: 240,
                     }}
                   >
-                    Paste a design link — Claude reads the exported design, proposes the fields, and
+                    Paste a design link. Claude reads the exported design, proposes the fields, and
                     writes the caption. You correct in the inspector.
                   </p>
                 </button>
@@ -3100,7 +3100,7 @@ export function TemplateBuilder({
                   }}
                 >
                   {stores.designImport.isConfigured()
-                    ? `Paste a Figma${canvaReady ? " or Canva" : ""} link or upload an image — Claude decides what's editable, names every field, and writes the caption. You correct in the inspector.`
+                    ? `Paste a Figma${canvaReady ? " or Canva" : ""} link or upload an image. Claude decides what's editable, names every field, and writes the caption. You correct in the inspector.`
                     : "Requires the Supabase backend with auto-build configured (see docs/ARCHITECTURE.md)."}
                 </p>
               </button>
@@ -3153,7 +3153,7 @@ export function TemplateBuilder({
                         marginTop: "var(--space-3xs)",
                       }}
                     >
-                      Your blank canvas opens at this size — you can resize it later from the
+                      Your blank canvas opens at this size. You can resize it later from the
                       toolbar.
                     </p>
                   </div>
@@ -3214,12 +3214,12 @@ export function TemplateBuilder({
                 {
                   key: "layers",
                   label: "Layers",
-                  title: "Layers — what paints on top of what",
+                  title: "Layers: what paints on top of what",
                 },
                 {
                   key: "form",
                   label: "Form",
-                  title: "Form — what your team fills in, in order",
+                  title: "Form: what your team fills in, in order",
                 },
               ]}
               active={railTab}
@@ -3289,7 +3289,7 @@ export function TemplateBuilder({
                         role="radio"
                         aria-checked={on}
                         aria-label={`${label} (${TOOL_LETTER[key]})`}
-                        title={`${label} — ${TOOL_LETTER[key]}${
+                        title={`${label}: ${TOOL_LETTER[key]}${
                           key === "move" ? "" : `, ⇧${TOOL_LETTER[key]} to keep it active`
                         }`}
                         onClick={() => {
@@ -3359,7 +3359,7 @@ export function TemplateBuilder({
                 fallback={(retry) => (
                   <ErrorState
                     title="The canvas ran into a problem."
-                    detail="Everything up to your last save is safe. Try again — if it keeps happening, undo your last change."
+                    detail="Everything up to your last save is safe. Try again. If it keeps happening, undo your last change."
                     onRetry={retry}
                   />
                 )}
@@ -3387,7 +3387,7 @@ export function TemplateBuilder({
                     emptyHint={
                       draft.fields.length === 0
                         ? stores.designImport.isConfigured()
-                          ? "Drag an element from the palette onto the canvas — or import a designed frame from Figma."
+                          ? "Drag an element from the palette onto the canvas, or import a designed frame from Figma."
                           : "Drag an element from the palette onto the canvas. You can also paste an image or a Figma layer straight in."
                         : undefined
                     }
@@ -3466,7 +3466,8 @@ export function TemplateBuilder({
                 >
                   <div className="flex items-center gap-3">
                     <p className="sp-eyebrow flex-1" style={{ color: "var(--text-primary)" }}>
-                      Reflow review — the automatic layout is a starting point, not a finished one
+                      Reflow review: the automatic layout is a starting point. Adjust it before you
+                      publish.
                     </p>
                     <button
                       onClick={() => setReflowWarnings(null)}
@@ -3530,8 +3531,8 @@ export function TemplateBuilder({
                   }}
                 >
                   {mode === "edit"
-                    ? "Drag elements from the palette onto the canvas. Drag to move, handles resize, top handle rotates. Right-click for copy/paste."
-                    : "Member preview — placeholder content, locked styling."}
+                    ? "Drag elements from the palette onto the canvas, then move them by dragging; handles resize and the top handle rotates. Right-click for copy/paste."
+                    : "Member preview: placeholder content, locked styling."}
                 </p>
                 {stores.designImport.isConfigured() && mode === "edit" && (
                   <>
@@ -3591,7 +3592,7 @@ export function TemplateBuilder({
                       setViewMenuAt({ x: r.left, y: r.top });
                     }}
                     title="View commands"
-                    aria-label={`Zoom ${Math.round(canvasScale * 100)} percent — view commands`}
+                    aria-label={`Zoom ${Math.round(canvasScale * 100)} percent, view commands`}
                     aria-haspopup="menu"
                     className="flex items-center gap-1 px-2 py-1 flex-shrink-0"
                     data-radius-control
@@ -3727,7 +3728,7 @@ export function TemplateBuilder({
                   <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
                     {draft.fields.length === 0
                       ? "Drag your first element from the palette onto the canvas. Style the template background below."
-                      : "Select a field to edit it — or style the template background here."}
+                      : "Select a field to edit it, or style the template background here."}
                   </p>
                   <div className="space-y-2">
                     <label className="sp-eyebrow block">Background color</label>
@@ -3847,7 +3848,7 @@ export function TemplateBuilder({
                   <p
                     style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}
                   >
-                    Members see this name in their template gallery. This is the last step — name it
+                    Members see this name in their template gallery. This is the last step: name it
                     and publish.
                   </p>
                   <input
@@ -3870,7 +3871,7 @@ export function TemplateBuilder({
                         color: "var(--state-primary)",
                       }}
                     >
-                      Name the template before publishing — members find it by this name in their
+                      Name the template before publishing. Members find it by this name in their
                       gallery.
                     </p>
                   )}

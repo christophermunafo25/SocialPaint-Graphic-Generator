@@ -24,7 +24,7 @@ export function DevBackendBanner() {
         fontSize: "var(--type-caption-size)",
       }}
     >
-      Dev backend — data is stored in this browser only and will be lost. Not for production use.
+      Dev backend: data is stored in this browser only and will be lost. Not for production use.
     </div>
   );
 }

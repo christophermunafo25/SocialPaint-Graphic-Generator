@@ -76,7 +76,7 @@ export function AuthPage() {
         redirectTo: window.location.origin,
       });
       if (err) throw err;
-      setNotice("Password reset link sent — check your email.");
+      setNotice("Password reset link sent. Check your email.");
     });
 
   const setNewPassword = () =>

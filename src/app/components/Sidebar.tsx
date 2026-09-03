@@ -321,7 +321,7 @@ export function Sidebar() {
           <div className="flex items-center justify-between px-4" style={{ height: 56 }}>
             <button
               onClick={() => go({ name: role === "admin" ? "adminTemplates" : "portal" })}
-              aria-label="SocialPaint — home"
+              aria-label="SocialPaint home"
             >
               <BrandLockup height={18} />
             </button>
@@ -431,7 +431,7 @@ export function Sidebar() {
             <button
               onClick={() => go({ name: role === "admin" ? "adminTemplates" : "portal" })}
               title="Home"
-              aria-label="SocialPaint — home"
+              aria-label="SocialPaint home"
             >
               <BrandLockup />
             </button>
@@ -451,7 +451,7 @@ export function Sidebar() {
         {collapsed && (
           <button
             onClick={() => go({ name: role === "admin" ? "adminTemplates" : "portal" })}
-            title="SocialPaint — home"
+            title="SocialPaint home"
             className="mx-auto mb-6"
             style={{ color: "var(--text-primary)" }}
           >

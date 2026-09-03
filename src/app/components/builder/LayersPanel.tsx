@@ -204,8 +204,8 @@ export function LayersPanel({
     return (
       <div className="px-3 py-4">
         <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
-          Nothing on the canvas yet. What you add here stacks front to back — the top row paints
-          over everything under it.
+          Nothing on the canvas yet. What you add here stacks front to back: the top row paints over
+          everything under it.
         </p>
       </div>
     );
@@ -214,8 +214,8 @@ export function LayersPanel({
   return (
     <div className="space-y-2">
       <p style={{ fontSize: 10.5, color: "var(--text-muted)", padding: "0 2px" }}>
-        Front to back. Drag a row to change what paints over what — this is the graphic's stacking,
-        not the order your team fills things in.
+        Front to back. Drag a row to change what paints over what. This is the graphic's stacking.
+        The fill order lives on the Form tab.
       </p>
       <div className="space-y-1">
         {rows.map((n) => {
@@ -331,7 +331,7 @@ export function LayersPanel({
               ) : (
                 <span
                   className="flex-1 truncate"
-                  title={f ? `${f.label} — double-click to rename` : n.group?.name}
+                  title={f ? `${f.label}: double-click to rename` : n.group?.name}
                   style={{ fontSize: 12.5, color: "var(--text-primary)" }}
                 >
                   {f ? f.label : n.group?.name}
@@ -340,7 +340,7 @@ export function LayersPanel({
               {f && (
                 <span
                   title={
-                    f.static ? "Fixed — members never see or edit this" : "Members fill this one in"
+                    f.static ? "Fixed. Members never see or edit this." : "Members fill this one in"
                   }
                   style={{
                     fontFamily: "var(--font-mono)",
@@ -359,7 +359,7 @@ export function LayersPanel({
                     title={
                       hidden
                         ? "Show on the canvas again"
-                        : "Hide while you work — it still exports and members still see it"
+                        : "Hide while you work. It still exports and members still see it."
                     }
                     onClick={(e) => {
                       e.stopPropagation();
@@ -404,8 +404,8 @@ export function LayersPanel({
         })}
       </div>
       <p style={{ fontSize: 10.5, color: "var(--text-muted)", padding: "0 2px" }}>
-        Hiding and locking only affect this editing session. They are never saved, never change the
-        exported graphic, and never change what your team sees.
+        Hiding and locking only affect this editing session. They are never saved and never change
+        the exported graphic or what your team sees.
       </p>
     </div>
   );

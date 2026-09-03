@@ -408,7 +408,7 @@ export function FieldInspector(props: FieldInspectorProps) {
                 ))}
               </select>
             </PropertyRow>
-            <p style={hintStyle}>Shapes are design-only — members never see them as fields.</p>
+            <p style={hintStyle}>Shapes are design-only. Members never see them as fields.</p>
           </>
         )}
 
@@ -480,8 +480,8 @@ export function FieldInspector(props: FieldInspectorProps) {
               />
             </PropertyRow>
             <p style={hintStyle}>
-              Fixed elements stay exactly as designed — members don't see or edit them. You can
-              still move and style them.
+              Fixed elements stay exactly as designed. Members don't see or edit them. You can still
+              move and style them.
             </p>
           </>
         )}
@@ -554,7 +554,7 @@ export function FieldInspector(props: FieldInspectorProps) {
           <PropertyRow label="Position">
             <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
               X {Math.round(computedRect?.x ?? field.x)} · Y{" "}
-              {Math.round(computedRect?.y ?? field.y)} — placed by "{containingGroup?.name}"
+              {Math.round(computedRect?.y ?? field.y)}, placed by "{containingGroup?.name}"
             </span>
           </PropertyRow>
         ) : (
@@ -655,7 +655,7 @@ export function FieldInspector(props: FieldInspectorProps) {
                     key: "shrink",
                     label: "Text shrinks",
                     title:
-                      "The box stays exactly as drawn; the text gets smaller until it fits — it never grows past its set size",
+                      "The box stays exactly as drawn; the text gets smaller until it fits, and never grows past its set size",
                   },
                   {
                     key: "fill",
@@ -728,8 +728,8 @@ export function FieldInspector(props: FieldInspectorProps) {
             aria-pressed={constrain}
             title={
               constrain
-                ? "Unlink — edit width and height independently"
-                : "Constrain proportions — width and height scale together"
+                ? "Unlink: edit width and height independently"
+                : "Constrain proportions: width and height scale together"
             }
             style={{ flexShrink: 0, display: "flex", alignItems: "center" }}
           >
@@ -822,8 +822,8 @@ export function FieldInspector(props: FieldInspectorProps) {
                 aria-pressed={radiusLinked}
                 title={
                   radiusLinked
-                    ? "Unlink corners — set each independently"
-                    : "Link corners — one value for all four"
+                    ? "Unlink corners: set each independently"
+                    : "Link corners: one value for all four"
                 }
                 style={{ flexShrink: 0, display: "flex", alignItems: "center" }}
               >
@@ -914,7 +914,7 @@ export function FieldInspector(props: FieldInspectorProps) {
                 value={field.typeStyleKey ?? ""}
                 onChange={(e) => onChange({ typeStyleKey: e.target.value || undefined })}
               >
-                <option value="">None — style freely</option>
+                <option value="">None (style freely)</option>
                 {(kit?.typeStyles ?? []).map((ts) => (
                   <option key={ts.key} value={ts.key}>
                     {ts.name}
@@ -983,7 +983,7 @@ export function FieldInspector(props: FieldInspectorProps) {
             </PropertyRow>
             {sizingMode === "fill" && computedFontSize !== undefined && (
               <p style={hintStyle}>
-                Fill box ignores this — the box sets the size, currently{" "}
+                Fill box ignores this. The box sets the size, currently{" "}
                 {Math.round(computedFontSize)}px.
               </p>
             )}
@@ -991,13 +991,13 @@ export function FieldInspector(props: FieldInspectorProps) {
               computedFontSize !== undefined &&
               computedFontSize < (resolved.fontSizePx ?? 45) - 0.5 && (
                 <p style={hintStyle}>
-                  This is the size at rest — the current content fits at{" "}
+                  This is the size at rest. The current content fits at{" "}
                   {Math.round(computedFontSize)}px.
                 </p>
               )}
             {fontCatalog && !fontCatalog.verified && (
               <p style={hintStyle}>
-                We don't have {displayFamily} on file, so these styles are a guess — upload the font
+                We don't have {displayFamily} on file, so these styles are a guess. Upload the font
                 in Brand Studio to pick from what it really has.
               </p>
             )}
@@ -1229,7 +1229,7 @@ export function FieldInspector(props: FieldInspectorProps) {
             </PropertyRow>
           ) : (
             <p style={hintStyle}>
-              No fill — {isShape ? "the shape falls back to ink" : "text falls back to ink"}. Add
+              No fill, so {isShape ? "the shape falls back to ink" : "text falls back to ink"}. Add
               one with the plus.
             </p>
           ))}

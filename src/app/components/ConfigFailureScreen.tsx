@@ -17,7 +17,7 @@ export function ConfigFailureScreen() {
           save anything you make.
         </p>
         <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>
-          This is a problem with the deployment — not with your account, browser, or device. Please
+          The deployment is missing its configuration. Your account and this device are fine. Please
           contact whoever runs this site.
         </p>
       </div>

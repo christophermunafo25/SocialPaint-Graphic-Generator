@@ -62,7 +62,7 @@ export function TypeStylesSection({ brand, bindings, open, onToggle }: SectionPr
           }}
         >
           Saved styles a builder can apply to a field. Every property a style defines is locked and
-          follows the style across all templates — the one live brand rule mechanism.
+          follows the style across all templates, the one live brand rule mechanism.
         </p>
         <TypeStylesEditor
           styles={styles}

@@ -63,8 +63,8 @@ export function ColorsSection({ brand, bindings, open, onToggle }: SectionProps)
             maxWidth: 480,
           }}
         >
-          The sanctioned palette builders pick from. Picking a color copies its value onto a field —
-          saved templates keep what they were built with.
+          The sanctioned palette builders pick from. Picking a color copies its value onto a field.
+          Saved templates keep what they were built with.
         </p>
 
         <div className="space-y-2.5" style={{ maxWidth: 520 }}>

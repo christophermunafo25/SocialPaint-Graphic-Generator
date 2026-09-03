@@ -66,7 +66,7 @@ function Tile({
       onClick={() => onAdd(item.id)}
       title={
         armed
-          ? `${item.label} — the active tool. Drag on the canvas to draw one, or click here to add at the center.`
+          ? `${item.label}, the active tool. Drag on the canvas to draw one, or click here to add at the center.`
           : "Drag onto the canvas, or click to add at the center"
       }
       className="sp-palette-tile flex flex-col items-center gap-1.5 py-3 px-2 transition-colors"
@@ -96,7 +96,7 @@ function LogoTile({ asset, onAdd }: { asset: BrandAsset; onAdd(id: string): void
         e.dataTransfer.effectAllowed = "copy";
       }}
       onClick={() => onAdd(paletteId)}
-      title={`${name} — drag onto the canvas, or click to add at the center`}
+      title={`${name}: drag onto the canvas, or click to add at the center`}
       className="flex flex-col items-center gap-1.5 py-2 px-2 transition-colors"
       style={{
         border: "1px solid var(--border-strong)",
@@ -150,7 +150,7 @@ export function ElementPalette({ onAdd, logos = [], activeTool = "move" }: Eleme
           ))}
         </div>
         <p style={{ fontSize: 10.5, color: "var(--text-muted)" }}>
-          Shapes are design-only — members never see them as fields.
+          Shapes are design-only. Members never see them as fields.
         </p>
       </div>
       {logos.length > 0 && (
@@ -162,7 +162,7 @@ export function ElementPalette({ onAdd, logos = [], activeTool = "move" }: Eleme
             ))}
           </div>
           <p style={{ fontSize: 10.5, color: "var(--text-muted)" }}>
-            Logos land fixed and always fit inside their box — no cropping.
+            Logos land fixed and always fit inside their box, with no cropping.
           </p>
         </div>
       )}

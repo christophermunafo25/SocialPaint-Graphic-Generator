@@ -68,7 +68,7 @@ export function RootCrashScreen() {
           SocialPaint ran into a problem it couldn't recover from.
         </p>
         <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>
-          Reloading brings you back to your last saved work — published templates and saved drafts
+          Reloading brings you back to your last saved work. Published templates and saved drafts
           aren't affected.
         </p>
         <button className="sp-btn sp-btn-primary" onClick={() => window.location.reload()}>

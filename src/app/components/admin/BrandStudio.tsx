@@ -63,7 +63,7 @@ export function BrandStudio({ category }: { category?: BrandCategory }) {
       <PageHeader
         eyebrow={company?.name}
         title="Brand Studio"
-        description="Everything your templates draw from, in one place. Changes save as you type — undo anything."
+        description="Everything your templates draw from, in one place. Changes save as you type. Undo anything."
       />
 
       {brand.error && (

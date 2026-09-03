@@ -282,7 +282,7 @@ export function CanvasSizePicker({
           </p>
           {!customErr && w * h > WARN_MEGAPIXELS && (
             <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}>
-              Over 4 megapixels — exporting a canvas this large can run a phone browser out of
+              Over 4 megapixels: exporting a canvas this large can run a phone browser out of
               memory.
             </p>
           )}

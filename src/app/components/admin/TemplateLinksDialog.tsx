@@ -96,7 +96,7 @@ export function TemplateLinksDialog({
       <ConfirmDialog
         open={revoking !== null}
         title={`Revoke "${revoking?.name || "this link"}"?`}
-        description="Anyone who opens it from here on gets a page saying the link no longer works. This takes effect immediately and cannot be undone — you'd create a new link instead."
+        description="Anyone who opens it from here on gets a page saying the link no longer works. This takes effect immediately and cannot be undone. You'd create a new link instead."
         confirmLabel="Revoke link"
         onCancel={() => setRevoking(null)}
         onConfirm={() => {
@@ -279,7 +279,7 @@ function FreshLink({ url, copied, onCopy }: { url: string; copied: boolean; onCo
       role="status"
       aria-live="polite"
     >
-      <p className="sp-eyebrow">Copy this now — it isn't shown again</p>
+      <p className="sp-eyebrow">Copy this now. It is not shown again</p>
       <input
         readOnly
         value={url}
@@ -369,7 +369,7 @@ function CreateLinkForm({
             marginTop: "var(--space-3xs)",
           }}
         >
-          For you, not for whoever opens it — it's how you tell your links apart later.
+          Only you see this. It is how you tell your links apart later.
         </p>
       </div>
 
@@ -412,7 +412,7 @@ function CreateLinkForm({
         </div>
       </div>
       <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
-        Both are optional. The limit counts opens, including someone refreshing the page — set it
+        Both are optional. The limit counts opens, including someone refreshing the page, so set it
         comfortably above the number of people you're sending it to.
       </p>
 
@@ -421,7 +421,7 @@ function CreateLinkForm({
           <p style={{ fontSize: 14, color: "var(--text-primary)" }}>Allow photo uploads</p>
           <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
             {allowUploads
-              ? "Photos are cropped in the visitor's own browser and go straight into their graphic — they never reach us."
+              ? "Photos are cropped in the visitor's own browser and go straight into their graphic. They never reach us."
               : "Photo fields are hidden. The graphic exports with an empty placeholder where a photo would go."}
           </p>
         </div>

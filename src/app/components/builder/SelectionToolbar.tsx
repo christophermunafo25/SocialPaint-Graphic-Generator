@@ -112,9 +112,9 @@ function FillButton({
         disabled={disabled}
         title={
           hasGradient
-            ? "This element has a gradient fill — edit it in the inspector's Fill section."
+            ? "This element has a gradient fill. Edit it in the inspector's Fill section."
             : locked
-              ? "The bound type style owns this colour — change it in Brand Studio."
+              ? "The bound type style owns this colour. Change it in Brand Studio."
               : "Fill colour"
         }
         aria-label="Fill colour"

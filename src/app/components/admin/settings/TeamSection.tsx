@@ -21,7 +21,7 @@ export function TeamSection() {
         </button>
       </SettingsCard>
       <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
-        Team policy — a default role for invites, joining by email domain — lands here once single
+        Team policy (a default role for invites, joining by email domain) lands here once single
         sign-on does.
       </p>
     </div>
