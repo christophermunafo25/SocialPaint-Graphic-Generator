@@ -5,12 +5,15 @@ import { stores } from "@/lib/stores";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useFileDrop } from "@/lib/useFileDrop";
 
+type Tab = "figma" | "canva" | "image";
+
 interface AutoBuildDialogProps {
   onClose(): void;
   onBuilt(result: AutoBuildResult): void;
+  /** Which source tab opens first. The start screen's Canva card lands on
+   * the Canva tab; every other opener leaves it at Figma. */
+  initialTab?: Tab;
 }
-
-type Tab = "figma" | "canva" | "image";
 
 /** The call runs 15–40 seconds; a bare spinner reads as broken. These mirror
  * the engine's real stages: extract → decide → write. */
@@ -28,9 +31,9 @@ const MANUAL_PATHS_NOTE =
  * guardrails, brand bindings, metadata, caption. The proposal lands on the
  * canvas as real fields; there is no confirmation screen (the admin corrects
  * in the inspector, in context). Modeled on FigmaImportDialog's shell. */
-export function AutoBuildDialog({ onClose, onBuilt }: AutoBuildDialogProps) {
+export function AutoBuildDialog({ onClose, onBuilt, initialTab }: AutoBuildDialogProps) {
   const { company } = useAuth();
-  const [tab, setTab] = useState<Tab>("figma");
+  const [tab, setTab] = useState<Tab>(initialTab ?? "figma");
   const [figmaConnected, setFigmaConnected] = useState<boolean | null>(null);
   const [canva, setCanva] = useState<{ enabled: boolean; connected: boolean } | null>(null);
   const [url, setUrl] = useState("");
