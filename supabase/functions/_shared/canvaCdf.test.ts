@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { parseCanvaCdf } from "./canvaCdf.ts";
+import { READ_DESIGN_IMAGE_RECT, READ_DESIGN_PRESENTATION_PAGE_1 } from "./canvaMcpFixtures.ts";
 
-/** The observed grammar, from a real Signature template (see the build spec).
- * The RECT here is deliberately in bleed (negative-adjacent, exceeds the
- * page box) and locked; the TEXT is rotated and unlocked. */
+/** The markdown grammar the MCP server returned before 2026-09-03, from a
+ * real Signature template. The server has since moved to the JSON shape in
+ * canvaMcpFixtures.ts; the last test below records that this parser does
+ * not read it. The RECT here is deliberately in bleed (negative-adjacent,
+ * exceeds the page box) and locked; the TEXT is rotated and unlocked. */
 const FIXTURE = `# Page 1 (FIXED) [PBFthtH8QVxBZNvT]
 Dimensions: 940×788
 Background: #ff9e18 replaceable=true
@@ -117,5 +120,17 @@ describe("canva CDF parsing", () => {
   it("maps fontWeight=bold to 700", () => {
     const bold = FIXTURE.replace("fontWeight=normal", "fontWeight=bold");
     expect(parseCanvaCdf(bold).elements[0].fontWeight).toBe(700);
+  });
+
+  // The drift record. The live MCP server returns design_content as a JSON
+  // object; fed to this parser (which only ever sees strings) it yields
+  // nothing. If this test starts failing, the server has changed again.
+  it("does not read the JSON payload the live server returns today", () => {
+    for (const payload of [READ_DESIGN_IMAGE_RECT, READ_DESIGN_PRESENTATION_PAGE_1]) {
+      const out = parseCanvaCdf(JSON.stringify(payload.design_content));
+      expect(out.elements).toHaveLength(0);
+      expect(out.canvasWidth).toBe(0);
+      expect(out.warnings.some((w) => w.includes("dimensions"))).toBe(true);
+    }
   });
 });

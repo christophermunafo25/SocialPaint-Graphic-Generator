@@ -1,6 +1,13 @@
-// Canva CDF parser. `design_content` from the MCP `read-design` call (with a
-// transaction open) is line-oriented markdown with `[locator_id]` annotations.
-// This module parses it into the extractor's common ExtractedElement shape.
+// PARKED 2026-09-03 with canvaMcp.ts. Nothing imports this module.
+//
+// Canva CDF parser for the line-oriented markdown that the MCP
+// `read-design` call (with a transaction open) returned BEFORE 2026-09-03.
+// The live server now returns `design_content` as a JSON object; the real
+// payloads are in canvaMcpFixtures.ts and the test file proves this parser
+// does not read them. The module stays as-is, with its tests, because the
+// element semantics it encodes (locked to sourceLocked, replaceable to
+// sourceReplaceable, image-filled rects as images, opaque font ids) carry
+// over to whatever parses the JSON shape if the MCP path resumes.
 //
 // Pure functions — no I/O, no Deno globals — so it runs under vitest and in
 // the Edge Function alike.

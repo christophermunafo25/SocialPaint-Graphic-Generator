@@ -21,6 +21,7 @@ import {
 import {
   optionalString,
   parseBody,
+  parseCanvaUrl,
   requireEnum,
   requireNumber,
   requireOwnStorageRef,
@@ -45,8 +46,14 @@ import {
 } from "../_shared/autobuildValidate.ts";
 import { AUTOBUILD_SYSTEM_PROMPT } from "./prompt.ts";
 import { canvaEnabled, getCanvaToken } from "../_shared/canva.ts";
-import { CanvaMcpClient, parseCanvaUrl } from "../_shared/canvaMcp.ts";
-import { parseCanvaCdf } from "../_shared/canvaCdf.ts";
+import {
+  CanvaExportError,
+  assertPngExportable,
+  exportPagePng,
+  getDesignInfo,
+  readPngDimensions,
+  type ExportDeps,
+} from "../_shared/canvaRestExport.ts";
 
 type DesignSource =
   | { kind: "figma"; url: string }
@@ -144,61 +151,90 @@ async function extractFigma(
   };
 }
 
-/** Canva path — MCP read-design (transactional, for the CDF with locator
- * ids) + export-design for the background. There is NO layered recompose on
- * this path: Canva has no equivalent of figma-layers, so the flat export
- * stays as the background and fields overlay their baked artwork (which is
- * why the response carries no sourceUrl). */
+const CANVA_LINK_HELP =
+  "Open the design in Canva and copy the link from the browser's address bar. It starts with canva.com/design/.";
+
+/** Canva path: a flat PNG of page 1 through the documented Connect REST
+ * export (canvaRestExport.ts). There is no element list, so the model
+ * proposes boxes from the picture exactly as on the image path, and there
+ * is NO layered recompose: the export stays as the background and fields
+ * overlay their baked artwork, which is why the response carries no
+ * sourceUrl. Canva's element geometry exists only on its MCP server, which
+ * is parked (see canvaMcp.ts). */
 async function extractCanva(
   db: ReturnType<typeof serviceClient>,
   companyId: string,
   url: string,
 ): Promise<ExtractionResult & { modelImageUrl: string }> {
   const parsed = parseCanvaUrl(url);
-  if (!parsed)
-    throw new HttpError(400, "Could not read that link — copy a design link from Canva.");
-  const token = await getCanvaToken(db, companyId);
-  if (!token) throw new HttpError(400, "Canva is not connected for this company.");
-
-  const mcp = new CanvaMcpClient(token);
-  try {
-    await mcp.initialize();
-    const { designContent } = await mcp.readDesign(parsed.designId);
-    if (!designContent) throw new HttpError(502, "Canva returned no design content.");
-    const cdf = parseCanvaCdf(designContent);
-    if (!cdf.canvasWidth || !cdf.canvasHeight) {
-      throw new HttpError(502, "Couldn't read the design's dimensions from Canva.");
-    }
-
-    const exportUrl = await mcp.exportDesign(parsed.designId);
-    const png = await (await fetch(exportUrl)).arrayBuffer();
-    const path = `${companyId}/autobuild-canva-${Date.now()}.png`;
-    const upload = await db.storage
-      .from("template-backgrounds")
-      .upload(path, png, { contentType: "image/png" });
-    if (upload.error) {
-      logError("template-autobuild", upload.error);
-      throw new HttpError(500, "Storage upload failed — try again.");
-    }
-    const backgroundUrl = `template-backgrounds/${path}`;
-
-    return {
-      backgroundUrl,
-      canvasWidth: cdf.canvasWidth,
-      canvasHeight: cdf.canvasHeight,
-      elements: cdf.elements,
-      // No sourceUrl: it is what enables the layered recompose, which this
-      // path cannot do.
-      warnings: [
-        ...cdf.warnings,
-        "Canva imports keep the original artwork visible behind editable text — give editable text a fill or a background shape behind it.",
-      ],
-      modelImageUrl: backgroundUrl,
-    };
-  } finally {
-    // Ends the MCP session, releasing the read transaction server-side.
-    await mcp.close();
+  if (!parsed) throw new HttpError(400, `That is not a Canva design link. ${CANVA_LINK_HELP}`);
+  if ("shortLink" in parsed) {
+    throw new HttpError(400, `Canva share links (canva.com/d/) cannot be read. ${CANVA_LINK_HELP}`);
   }
+  const token = await getCanvaToken(db, companyId);
+  if (!token) {
+    throw new HttpError(
+      400,
+      "Canva is not connected for this workspace. Connect it from Settings.",
+    );
+  }
+
+  const deps: ExportDeps = {
+    fetch: (input, init) => fetch(input, init),
+    sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
+    now: () => Date.now(),
+  };
+  let bytes: Uint8Array;
+  let info: Awaited<ReturnType<typeof getDesignInfo>>;
+  try {
+    info = await getDesignInfo(deps, token, parsed.designId);
+    await assertPngExportable(deps, token, parsed.designId);
+    const exported = await exportPagePng(deps, token, parsed.designId);
+    if (exported.ttlMs !== null && exported.ttlMs <= 0) {
+      throw new CanvaExportError("http", "Canva's export link had already expired. Try again.");
+    }
+    const res = await fetch(exported.url);
+    if (!res.ok) {
+      throw new CanvaExportError("http", `Could not download Canva's export (${res.status}).`);
+    }
+    bytes = new Uint8Array(await res.arrayBuffer());
+  } catch (e) {
+    if (e instanceof CanvaExportError) {
+      // Every refusal names Canva so an admin does not read it as the
+      // builder being broken; the code and status go to the log.
+      logError("template-autobuild", `canva export ${e.code} ${e.status ?? ""}: ${e.message}`);
+      throw new HttpError(e.status === 429 ? 429 : 502, e.message);
+    }
+    throw e;
+  }
+  const { width, height } = readPngDimensions(bytes);
+
+  const path = `${companyId}/autobuild-canva-${Date.now()}.png`;
+  const upload = await db.storage
+    .from("template-backgrounds")
+    .upload(path, bytes, { contentType: "image/png" });
+  if (upload.error) {
+    logError("template-autobuild", upload.error);
+    throw new HttpError(500, "Storage upload failed — try again.");
+  }
+  const backgroundUrl = `template-backgrounds/${path}`;
+
+  const warnings = [
+    "Canva shares a flat image of the design, so field boxes are proposed from the picture. Check their positions in the inspector.",
+    "Canva imports keep the original artwork visible behind editable text — give editable text a fill or a background shape behind it.",
+  ];
+  if (info.pageCount > 1) {
+    warnings.push(`This design has ${info.pageCount} pages — only page 1 imported.`);
+  }
+
+  return {
+    backgroundUrl,
+    canvasWidth: width,
+    canvasHeight: height,
+    elements: [],
+    warnings,
+    modelImageUrl: backgroundUrl,
+  };
 }
 
 /** Flat-image path: the background is already uploaded; there is no geometry. */
@@ -564,8 +600,14 @@ Deno.serve(async (req) => {
     // 3. The design, as the model sees it.
     const imageBase64 = await fetchPngBase64(db, extraction.modelImageUrl);
 
+    // Canva arrives as a flat export with no element list, so the model and
+    // the validator treat it as the image path. The response still reports
+    // "canva" for provenance. The validator's own canva branch belongs to
+    // the parked geometry path and is unreachable from here.
+    const proposalKind: AutobuildSourceKind = source.kind === "canva" ? "image" : source.kind;
+
     // 4. One forced tool call; one retry carrying the validation errors.
-    const userText = buildUserText(extraction, { typeStyles, colors, catalog }, hint, source.kind);
+    const userText = buildUserText(extraction, { typeStyles, colors, catalog }, hint, proposalKind);
     let attempt = await callClaude(apiKey, imageBase64, userText);
     let validated;
     try {
@@ -576,7 +618,7 @@ Deno.serve(async (req) => {
           typeStyleKeys: typeStyles.map((s) => s.key),
           colors: colors.map(({ key, hex }) => ({ key, hex })),
         },
-        source.kind,
+        proposalKind,
       );
     } catch (e) {
       if (!(e instanceof AutobuildValidationError)) throw e;

@@ -16,8 +16,13 @@ const LEASE_SECONDS = 30;
 /** Refresh this long before nominal expiry so a token never dies mid-call. */
 const EXPIRY_MARGIN_MS = 120_000;
 
-export const canvaEnabled = (): boolean =>
-  Deno.env.get("CANVA_AUTOBUILD_ENABLED") === "true" && Boolean(Deno.env.get("CANVA_CLIENT_ID"));
+/** CANVA_ENABLED=true plus a Connect API client id turns the feature on.
+ * CANVA_AUTOBUILD_ENABLED is the old name for the same switch; the fallback
+ * can be dropped once no environment sets it. */
+export const canvaEnabled = (): boolean => {
+  const flag = Deno.env.get("CANVA_ENABLED") ?? Deno.env.get("CANVA_AUTOBUILD_ENABLED");
+  return flag === "true" && Boolean(Deno.env.get("CANVA_CLIENT_ID"));
+};
 
 interface ConnectionRow {
   id: string;

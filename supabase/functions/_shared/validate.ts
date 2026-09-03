@@ -168,6 +168,26 @@ export function parseFigmaUrl(url: string): { fileKey: string; nodeId: string } 
   return { fileKey, nodeId };
 }
 
+/** Parse a Canva design URL into its design id, with the host pinned to
+ * canva.com. Only the `/design/<id>/…` form carries the id: that is the URL
+ * in the browser's address bar. `canva.com/d/<code>` share links are
+ * per-request codes that no Canva API resolves, so they answer
+ * `{ shortLink: true }` and the caller tells the admin where to look
+ * instead. */
+export function parseCanvaUrl(url: string): { designId: string } | { shortLink: true } | null {
+  let u: URL;
+  try {
+    u = new URL(url);
+  } catch {
+    return null;
+  }
+  if (u.protocol !== "https:" || !hostOnDomain(u.hostname, "canva.com")) return null;
+  const m = u.pathname.match(/^\/design\/([A-Za-z0-9_-]{1,50})(?:\/|$)/);
+  if (m) return { designId: m[1] };
+  if (/^\/d\/[A-Za-z0-9_-]+\/?$/.test(u.pathname)) return { shortLink: true };
+  return null;
+}
+
 /** Parse an https URL and pin its host to a domain before it goes anywhere
  * near an outbound request. */
 export function requireUrlOnDomain(v: unknown, field: string, domain: string): URL {
