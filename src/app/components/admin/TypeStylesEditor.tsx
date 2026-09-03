@@ -65,7 +65,6 @@ export function TypeStylesEditor({
               <span
                 style={{
                   fontSize: "var(--type-label-size)",
-                  fontWeight: 500,
                   color: "var(--text-primary)",
                 }}
               >

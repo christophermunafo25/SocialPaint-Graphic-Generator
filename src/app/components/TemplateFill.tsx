@@ -216,7 +216,6 @@ export function TemplateFill({
               className="block"
               style={{
                 fontSize: "var(--type-label-size)",
-                fontWeight: 500,
                 color: "var(--text-primary)",
               }}
             >
@@ -369,7 +368,6 @@ export function TemplateFill({
                       className="block"
                       style={{
                         fontSize: 14,
-                        fontWeight: 500,
                         color: "var(--text-primary)",
                         marginTop: 2,
                       }}

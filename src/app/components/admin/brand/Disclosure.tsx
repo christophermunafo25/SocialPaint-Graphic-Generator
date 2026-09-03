@@ -38,10 +38,7 @@ export function Disclosure({
       >
         <span className="sp-disclosure__heading">
           <span className="sp-eyebrow">{eyebrow}</span>
-          <span
-            className="sp-section-title"
-            style={{ fontFamily: "var(--font-ui)", fontWeight: 500 }}
-          >
+          <span className="sp-section-title" style={{ fontFamily: "var(--font-ui)" }}>
             {title}
           </span>
         </span>

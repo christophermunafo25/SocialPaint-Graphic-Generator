@@ -64,7 +64,7 @@ export function RootCrashScreen() {
       style={{ background: "var(--background)" }}
     >
       <div className="text-center space-y-3" style={{ maxWidth: 420 }}>
-        <p style={{ fontSize: 15, fontWeight: 500, color: "var(--text-primary)" }}>
+        <p style={{ fontSize: 15, color: "var(--text-primary)" }}>
           SocialPaint ran into a problem it couldn't recover from.
         </p>
         <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>

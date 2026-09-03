@@ -22,7 +22,6 @@ export function DevBackendBanner() {
         padding: "6px 16px",
         fontFamily: "var(--font-ui)",
         fontSize: "var(--type-caption-size)",
-        fontWeight: 600,
       }}
     >
       Dev backend — data is stored in this browser only and will be lost. Not for production use.

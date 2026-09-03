@@ -65,7 +65,7 @@ export function ControlRow({
   return (
     <div className="flex items-start justify-between" style={{ gap: "var(--space-sm)" }}>
       <div className="min-w-0">
-        <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>{title}</p>
+        <p style={{ fontSize: 14, color: "var(--text-primary)" }}>{title}</p>
         {description && (
           <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
             {description}

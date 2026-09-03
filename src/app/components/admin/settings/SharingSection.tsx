@@ -287,10 +287,7 @@ export function SharingSection() {
                   const s = linkState(link);
                   return (
                     <tr key={link.id} style={{ borderTop: "1px solid var(--border)" }}>
-                      <td
-                        className="px-4 py-3"
-                        style={{ color: "var(--text-primary)", fontWeight: 500 }}
-                      >
+                      <td className="px-4 py-3" style={{ color: "var(--text-primary)" }}>
                         {link.templateName}
                       </td>
                       <td className="px-4 py-3" style={{ color: "var(--text-secondary)" }}>
