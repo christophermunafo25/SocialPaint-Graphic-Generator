@@ -9,11 +9,9 @@
 \set ON_ERROR_STOP on
 \pset pager off
 
--- The verify seed carries tenants, not reference data — the preset the
--- opt-out rows point at has to exist.
-insert into canvas_presets (id, label, width, height, enabled)
-values ('square-1440', 'Square (1440×1440)', 1440, 1440, true)
-on conflict (id) do nothing;
+-- The opt-out rows point at catalogue ids that live in code since 0029
+-- (SIZE_CATALOG in src/lib/templates/platforms.ts); there is no preset
+-- table to seed.
 
 insert into auth.users (id, email) values
   ('aa100000-0000-4000-8000-00000000000a', 'settings-admin-a@example.com'),
