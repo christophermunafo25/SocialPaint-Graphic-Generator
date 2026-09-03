@@ -65,7 +65,8 @@ from the platform in migration 0009.)
   and `download` are recorded inside `SchemaRenderer` so one code path covers
   every template; `share` is the person taking that PNG to LinkedIn, recorded
   by the fill page; `bulk_export` is one graphic rendered by an admin's bulk
-  fill run, one event per row, written as a single batch after the run.
+  fill run, one event per row, written as a single batch after the run
+  (migration 0030, live on the linked project since 2026-09-03).
   Bulk rows are deliberately not downloads: a run has no opens, so folding
   them in would break the export rate. Every tally names each action
   explicitly (see the `UsageAction` comment in `src/lib/types.ts` for the
@@ -270,7 +271,8 @@ Two properties make it safe:
 
 Runs are capped at 200 rows (a memory budget: every PNG is held until the
 archive is written) and recorded as `bulk_export` usage events, one per
-rendered row in one write, never as downloads.
+rendered row in one write, never as downloads. The enum value arrived in
+migration 0030, which is live on the linked project (applied 2026-09-03).
 
 ## Brand rules engine & design-system import
 
