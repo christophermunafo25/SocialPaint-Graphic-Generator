@@ -7,6 +7,7 @@ import { PeopleAdmin } from "./components/admin/PeopleAdmin";
 import { BrandProvider, useBrand } from "@/lib/brand/BrandContext";
 import { ColorSchemeProvider } from "@/lib/colorScheme";
 import { RouterProvider, useRouter } from "./router";
+import { readCanvaReturn, takeCanvaConnectPending } from "@/lib/canvaReturn";
 import { AppShell } from "./components/AppShell";
 import { DevBackendBanner } from "./components/DevBackendBanner";
 import { ErrorState } from "./components/ErrorState";
@@ -47,23 +48,31 @@ function useCanvaOAuthReturn(companyId: string | undefined) {
   // Read once, at first render. The router canonicalizes the URL in a mount
   // effect, which strips the code and state long before auth has produced a
   // company id, so reading the URL inside the effect below found nothing.
-  const [params] = React.useState(() => new URLSearchParams(window.location.search));
+  // The raw query is parsed by readCanvaReturn because how Canva appends its
+  // parameters to a redirect URL that already carries a query is not ours to
+  // control (see src/lib/canvaReturn.ts).
+  const [ret] = React.useState(() =>
+    readCanvaReturn(window.location.search, takeCanvaConnectPending()),
+  );
   const handled = React.useRef(false);
   React.useEffect(() => {
-    if (params.get("canva_oauth") !== "1" || !companyId || handled.current) return;
+    if (!ret || !companyId || handled.current) return;
     handled.current = true; // the code is single-use; never exchange it twice
-    const code = params.get("code");
-    const state = params.get("state");
     window.history.replaceState({}, "", window.location.pathname);
-    if (!code || !state) {
+    if (!ret.code || !ret.state) {
       setNotice("Canva connection was cancelled.");
       return;
     }
     stores.designImport
-      .canvaConnectCallback(companyId, code, state, `${window.location.origin}/?canva_oauth=1`)
+      .canvaConnectCallback(
+        companyId,
+        ret.code,
+        ret.state,
+        `${window.location.origin}/?canva_oauth=1`,
+      )
       .then(() => setNotice("Canva connected. Open Auto-build to use it."))
       .catch((e) => setNotice(e instanceof Error ? e.message : "Canva connection failed."));
-  }, [companyId, params]);
+  }, [companyId, ret]);
   return { notice, dismiss: () => setNotice(null) };
 }
 
