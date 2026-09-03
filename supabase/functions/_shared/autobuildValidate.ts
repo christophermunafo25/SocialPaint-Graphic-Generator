@@ -28,6 +28,17 @@ export interface ProposedField {
   placeholder?: string;
   typeStyleKey?: string;
   colorKey?: string;
+  /** Flat Canva imports only: the solid colour behind this editable text in
+   * the picture. The validator paints a Fixed rect of it under the field so
+   * the baked text does not show through. */
+  plateHex?: string;
+}
+
+export interface ValidateOptions {
+  /** The background is a flat export with the original text baked in, and
+   * there is no recompose to lift it. Every editable text field that
+   * proposes a plateHex gets a Fixed rect of that colour beneath it. */
+  platesBehindText?: boolean;
 }
 
 export interface ProposedTemplate {
@@ -162,10 +173,12 @@ export function validateProposal(
   extraction: ExtractionResult,
   brand: BrandContext,
   sourceKind: AutobuildSourceKind,
+  validateOptions: ValidateOptions = {},
 ): ValidationOutput {
   const warnings: string[] = [];
   const errors: string[] = [];
   const isImagePath = sourceKind === "image";
+  let unplated = 0;
 
   const byId = new Map(extraction.elements.map((el) => [el.sourceId, el]));
   const typeStyles = new Set(brand.typeStyleKeys);
@@ -301,6 +314,37 @@ export function validateProposal(
       geometry = { x, y, width, height };
     }
 
+    // ---- plate ---------------------------------------------------------------
+    // On a flat export the source text is baked into the background under
+    // every editable field. A Fixed rect of the backdrop colour, pushed BEFORE
+    // the field so it paints beneath it, hides the baked twin. The model
+    // names the colour because it is looking at the picture; the geometry is
+    // the field's own.
+    if (validateOptions.platesBehindText && !isStatic && type !== "image") {
+      const raw = typeof p.plateHex === "string" ? p.plateHex.trim() : "";
+      if (/^#[0-9a-f]{6}$/i.test(raw)) {
+        fields.push({
+          id: crypto.randomUUID(),
+          label: `${label} plate`,
+          fieldKey: reslug(`${key}_plate`, takenKeys),
+          type: "shape",
+          shape: "rect",
+          x: geometry.x,
+          y: geometry.y,
+          width: geometry.width,
+          height: geometry.height,
+          rotation: geometry.rotation,
+          anchor: geometry.anchor,
+          static: true,
+          colorHex: raw.toUpperCase(),
+        });
+      } else if (raw) {
+        warnings.push(`"${label}": plate colour was not a hex value — no plate added.`);
+      } else {
+        unplated += 1;
+      }
+    }
+
     fields.push({
       id: crypto.randomUUID(),
       label,
@@ -372,6 +416,12 @@ export function validateProposal(
         `"${label}": not in the proposal — imported as Fixed so it stays on the canvas.`,
       );
     }
+  }
+
+  if (unplated > 0) {
+    warnings.push(
+      `${unplated} editable text field${unplated === 1 ? "" : "s"} came without a plate colour — the artwork behind ${unplated === 1 ? "it" : "them"} stays visible.`,
+    );
   }
 
   // ---- totals --------------------------------------------------------------

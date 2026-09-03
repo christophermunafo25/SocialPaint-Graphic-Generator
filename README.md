@@ -73,7 +73,7 @@ The manual builder always works without it. To enable Figma import, an admin con
 
 ### Canva integration (optional)
 
-Off by default. Canva import runs through Auto-build: an admin pastes a design link, Canva's documented Connect API exports page 1 as a flat PNG, and Claude proposes field boxes from the picture the way it does for an uploaded image. There is no layer data on this path, so expect to adjust the boxes, and editable text sits over the original artwork until it is given a fill or a shape behind it.
+Off by default. Canva import runs through Auto-build: an admin pastes a design link, Canva's documented Connect API exports page 1 as a flat PNG, and Claude proposes field boxes from the picture the way it does for an uploaded image. There is no layer data on this path, so expect to adjust the boxes. The original text stays baked into the picture, so each editable text field lands with a Fixed plate of the backdrop colour beneath it; where the backdrop is a photo or gradient, the admin adjusts or removes the plate.
 
 To enable it, create an integration in the [Canva developer portal](https://www.canva.com/developers/) with the scopes `design:content:read` and `design:meta:read`, add your app origin followed by `/?canva_oauth=1` as a redirect URL, then:
 

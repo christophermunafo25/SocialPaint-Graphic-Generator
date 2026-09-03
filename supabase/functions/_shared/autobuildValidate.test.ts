@@ -294,6 +294,83 @@ describe("coverage — nothing the extractor found goes missing", () => {
     expect(out.warnings.some((w) => w.includes("Pill"))).toBe(false);
   });
 
+  it("paints a plate under editable text on a flat export when asked", () => {
+    const box = { x: 100, y: 200, width: 800, height: 120 };
+    const out = validateProposal(
+      proposal([
+        field({ sourceId: undefined, box, plateHex: "#ff9e18" }),
+        field({
+          sourceId: undefined,
+          box,
+          label: "Tagline",
+          fieldKey: "tagline",
+          static: true,
+          plateHex: "#ff9e18",
+        }),
+        field({
+          sourceId: undefined,
+          box,
+          label: "Photo",
+          fieldKey: "photo",
+          type: "image",
+          plateHex: "#ff9e18",
+        }),
+      ]),
+      extraction([]),
+      brand,
+      "image",
+      { platesBehindText: true },
+    );
+    expect(out.fields.map((f) => f.fieldKey)).toEqual([
+      "headline_plate",
+      "headline",
+      "tagline",
+      "photo",
+    ]);
+    const plate = out.fields[0];
+    expect(plate).toMatchObject({
+      type: "shape",
+      shape: "rect",
+      static: true,
+      colorHex: "#FF9E18",
+      label: "Headline plate",
+      ...box,
+    });
+    expect(out.warnings.some((w) => w.includes("plate"))).toBe(false);
+  });
+
+  it("adds no plate when the option is off, even if the model proposed a colour", () => {
+    const box = { x: 100, y: 200, width: 800, height: 120 };
+    const out = validateProposal(
+      proposal([field({ sourceId: undefined, box, plateHex: "#ff9e18" })]),
+      extraction([]),
+      brand,
+      "image",
+    );
+    expect(out.fields.map((f) => f.type)).toEqual(["text"]);
+    expect(out.warnings.some((w) => w.includes("plate"))).toBe(false);
+  });
+
+  it("drops a non-hex plate colour with a warning and counts missing ones once", () => {
+    const box = { x: 100, y: 200, width: 800, height: 120 };
+    const out = validateProposal(
+      proposal([
+        field({ sourceId: undefined, box, plateHex: "orange" }),
+        field({ sourceId: undefined, box, label: "Date", fieldKey: "date" }),
+        field({ sourceId: undefined, box, label: "Venue", fieldKey: "venue" }),
+      ]),
+      extraction([]),
+      brand,
+      "image",
+      { platesBehindText: true },
+    );
+    expect(out.fields.filter((f) => f.type === "shape")).toHaveLength(0);
+    expect(out.warnings.some((w) => w.includes("not a hex value"))).toBe(true);
+    expect(
+      out.warnings.filter((w) => w.includes("2 editable text fields came without a plate")),
+    ).toHaveLength(1);
+  });
+
   it("still keeps Canva shapes baked in the artwork (no recompose there)", () => {
     const out = validateProposal(
       proposal([field({})]),

@@ -241,8 +241,9 @@ export function AutoBuildDialog({ onClose, onBuilt }: AutoBuildDialogProps) {
                         color: "var(--text-secondary)",
                       }}
                     >
-                      Canva templates import with the original artwork still visible behind editable
-                      text — give editable text a fill or a background shape behind it.
+                      The original text stays baked into the picture, so each editable text field
+                      gets a solid plate of the colour behind it. Where the backdrop is a photo or
+                      gradient, adjust or remove the plate in the inspector.
                     </p>
                     <input
                       type="url"
