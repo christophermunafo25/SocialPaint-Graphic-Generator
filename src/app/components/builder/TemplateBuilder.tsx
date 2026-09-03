@@ -12,6 +12,7 @@ import {
   Eye,
   Sparkles,
   Figma,
+  Palette,
   PanelLeftClose,
   PanelRightClose,
   Pencil,
@@ -378,6 +379,26 @@ export function TemplateBuilder({
   const [uploading, setUploading] = useState(false);
   const [figmaOpen, setFigmaOpen] = useState(false);
   const [autoBuildOpen, setAutoBuildOpen] = useState(false);
+  /** Which auto-build tab to open on. The Canva start card sets it. */
+  const [autoBuildTab, setAutoBuildTab] = useState<"figma" | "canva" | "image" | undefined>();
+  /** Canva is a start-screen path only once the workspace has connected it;
+   * before that the card would open a dialog that points back at Settings. */
+  const [canvaReady, setCanvaReady] = useState(false);
+  useEffect(() => {
+    if (!company || !stores.designImport.isConfigured()) return;
+    let cancelled = false;
+    stores.designImport
+      .canvaStatus(company.id)
+      .then((s) => {
+        if (!cancelled) setCanvaReady(s.enabled && s.connected);
+      })
+      .catch(() => {
+        if (!cancelled) setCanvaReady(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [company]);
   /** The blank path's size chooser. Imports never see it — a Figma or Canva
    * frame imposes its own size. */
   const [sizeDialogOpen, setSizeDialogOpen] = useState(false);
@@ -2536,7 +2557,14 @@ export function TemplateBuilder({
       )}
 
       {autoBuildOpen && (
-        <AutoBuildDialog onClose={() => setAutoBuildOpen(false)} onBuilt={applyAutoBuild} />
+        <AutoBuildDialog
+          initialTab={autoBuildTab}
+          onClose={() => {
+            setAutoBuildOpen(false);
+            setAutoBuildTab(undefined);
+          }}
+          onBuilt={applyAutoBuild}
+        />
       )}
 
       {figmaOpen && (
@@ -2956,7 +2984,13 @@ export function TemplateBuilder({
                 design, editable fields.
               </p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-stretch">
+            <div
+              className={
+                canvaReady
+                  ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch"
+                  : "grid grid-cols-1 sm:grid-cols-3 gap-4 items-stretch"
+              }
+            >
               {/* Path A — blank canvas. The size gallery gates this path: it
                   opens as a dialog and picking a size goes straight to the
                   canvas. Imports skip it — the frame imposes its own size. */}
@@ -3016,6 +3050,40 @@ export function TemplateBuilder({
                     : "Requires the Supabase backend with the Figma connection configured (see docs/ARCHITECTURE.md)."}
                 </p>
               </button>
+              {/* Path B2 — Canva link. Only once the workspace has connected
+                  Canva; it goes through auto-build, opened on the Canva tab,
+                  since Canva hands over a flat export rather than layers. */}
+              {canvaReady && (
+                <button
+                  onClick={() => {
+                    setAutoBuildTab("canva");
+                    setAutoBuildOpen(true);
+                  }}
+                  className="p-8 text-center transition-all flex flex-col items-center justify-center gap-3"
+                  style={{
+                    border: "1.5px dashed var(--border-strong)",
+                    borderRadius: "var(--radius-card)",
+                    background: "var(--bg-surface)",
+                    minHeight: 220,
+                    cursor: "pointer",
+                  }}
+                >
+                  <Palette className="w-6 h-6" style={{ color: "var(--state-primary)" }} />
+                  <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>
+                    Import from Canva
+                  </p>
+                  <p
+                    style={{
+                      fontSize: "var(--type-caption-size)",
+                      color: "var(--text-secondary)",
+                      maxWidth: 240,
+                    }}
+                  >
+                    Paste a design link — Claude reads the exported design, proposes the fields, and
+                    writes the caption. You correct in the inspector.
+                  </p>
+                </button>
+              )}
               {/* Path C — auto-build with Claude */}
               <button
                 onClick={() => stores.designImport.isConfigured() && setAutoBuildOpen(true)}
@@ -3042,7 +3110,7 @@ export function TemplateBuilder({
                   }}
                 >
                   {stores.designImport.isConfigured()
-                    ? "Paste a Figma link or upload an image — Claude decides what's editable, names every field, and writes the caption. You correct in the inspector."
+                    ? `Paste a Figma${canvaReady ? " or Canva" : ""} link or upload an image — Claude decides what's editable, names every field, and writes the caption. You correct in the inspector.`
                     : "Requires the Supabase backend with auto-build configured (see docs/ARCHITECTURE.md)."}
                 </p>
               </button>
