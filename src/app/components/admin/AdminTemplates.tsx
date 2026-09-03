@@ -242,7 +242,7 @@ export function AdminTemplates() {
                   marginTop: 2,
                 }}
               >
-                "{versionFor.name}" stays untouched — the version lands as a reflowed draft copy you
+                "{versionFor.name}" stays untouched. The version lands as a reflowed draft copy you
                 review in the builder.
               </p>
             </div>
@@ -256,7 +256,7 @@ export function AdminTemplates() {
       )}
       <PageHeader
         title="Template Builder"
-        description="Create, edit, and publish — published templates appear in your team's Brand Templates."
+        description="Published templates appear in your team's Brand Templates."
         action={
           <button
             className="sp-btn sp-btn-primary"

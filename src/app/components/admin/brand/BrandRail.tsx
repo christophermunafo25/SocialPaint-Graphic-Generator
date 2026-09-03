@@ -209,7 +209,7 @@ function Checklist({
             </span>
             <span className="flex-1">
               {k.label}
-              <span className="sr-only">{k.ready ? " — ready" : " — not set up yet"}</span>
+              <span className="sr-only">{k.ready ? ", ready" : ", not set up yet"}</span>
             </span>
             <span
               style={{
@@ -348,7 +348,7 @@ function BrandPreview({
               opacity: 0.82,
             }}
           >
-            Five incredible years — thank you for everything you do.
+            Five incredible years. Thank you for everything you do.
           </span>
           <span
             className="self-start"
@@ -376,7 +376,7 @@ function BrandPreview({
             <Bookmark style={{ width: 18, height: 18, marginLeft: "auto" }} />
           </div>
           <span style={{ fontSize: 12, color: "#272727", lineHeight: 1.45 }}>
-            <span style={{ fontWeight: 500 }}>{companyName}</span> Care that shows up — celebrating
+            <span style={{ fontWeight: 500 }}>{companyName}</span> Care that shows up: celebrating
             five years of Jordan.
           </span>
         </div>

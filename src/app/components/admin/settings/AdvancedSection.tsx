@@ -72,7 +72,7 @@ function ExportCard({ onError }: { onError(msg: string | null): void }) {
   return (
     <SettingsCard
       title="Export workspace data"
-      description="One JSON file: templates with their fields, the brand kit with type styles and guidelines, the member list with roles, and usage events. Backgrounds, fonts, and logos are referenced by their storage paths — the binary files are not in the export."
+      description="One JSON file: templates with their fields, the brand kit with type styles and guidelines, the member list with roles, and usage events. Backgrounds, fonts, and logos are referenced by their storage paths. The binary files are not in the export."
     >
       <button onClick={() => void exportData()} disabled={busy} className="sp-btn sp-btn-primary">
         <Download style={{ width: 14, height: 14 }} />
@@ -131,13 +131,13 @@ function TransferCard({ onError }: { onError(msg: string | null): void }) {
       />
       {isDevAuth ? (
         <DevBackendNotice>
-          Transferring ownership needs the Supabase backend with auth enabled — this dev backend has
+          Transferring ownership needs the Supabase backend with auth enabled. This dev backend has
           no real accounts.
         </DevBackendNotice>
       ) : others.length === 0 ? (
         <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>
-          There is nobody to transfer to — you are the only member. Invite someone on the People
-          page first.
+          There is nobody to transfer to because you are the only member. Invite someone on the
+          People page first.
         </p>
       ) : (
         <div className="flex" style={{ gap: "var(--space-2xs)" }}>

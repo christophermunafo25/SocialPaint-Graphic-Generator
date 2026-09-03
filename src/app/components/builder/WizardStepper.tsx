@@ -55,7 +55,7 @@ export function WizardStepBar({ current, complete, canGo, onGo }: WizardStepBarP
             onClick={() => reachable && onGo(s.key)}
             disabled={!reachable}
             aria-current={isCurrent ? "step" : undefined}
-            title={s.optional ? `${s.title} — optional` : s.title}
+            title={s.optional ? `${s.title} (optional)` : s.title}
             className="flex items-center gap-1.5 whitespace-nowrap"
             style={{
               fontSize: "var(--type-caption-size)",

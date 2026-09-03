@@ -58,7 +58,7 @@ const MESSAGES: Record<PublicLinkFailure, { title: string; detail: string; retry
   unavailable: {
     title: "This link isn't working anymore.",
     detail:
-      "Links get replaced, switched off, or set to stop after an event. Ask whoever sent it for a fresh one — it takes them seconds to make.",
+      "Links get switched off or expire after an event. Ask whoever sent it for a fresh one. It takes them seconds to make.",
     retryable: false,
   },
   "rate-limited": {
@@ -68,7 +68,7 @@ const MESSAGES: Record<PublicLinkFailure, { title: string; detail: string; retry
   },
   offline: {
     title: "We couldn't reach SocialPaint.",
-    detail: "Check your connection and try again — the link itself is probably fine.",
+    detail: "Check your connection and try again. The link itself is probably fine.",
     retryable: true,
   },
 };

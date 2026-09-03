@@ -219,7 +219,7 @@ export function ColorControl({
               <button
                 key={c.key}
                 type="button"
-                title={`${c.name} — click to use`}
+                title={`${c.name}: click to use`}
                 aria-label={`Use brand color ${c.name}`}
                 aria-pressed={selected}
                 disabled={swatchesDisabled}

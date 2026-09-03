@@ -194,7 +194,7 @@ export function FieldListPanel({
           className="py-4 text-center"
           style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}
         >
-          No fields yet — drag an element onto the canvas.
+          No fields yet. Drag an element onto the canvas.
         </p>
       ) : (
         <div className="space-y-1">
@@ -388,8 +388,8 @@ export function FieldListPanel({
         </div>
       )}
       <p style={{ fontSize: 10.5, color: "var(--text-muted)" }}>
-        Drag to reorder the form. Rows inside a stack reorder the stack instead. Layer order — what
-        sits on top on the graphic — is separate: use "To front / To back" in the inspector.
+        Drag to reorder the form. Rows inside a stack reorder the stack instead. Layer order (what
+        sits on top on the graphic) is separate: use "To front / To back" in the inspector.
       </p>
     </div>
   );

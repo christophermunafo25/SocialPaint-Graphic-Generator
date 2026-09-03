@@ -50,7 +50,7 @@ export function ImportSection({ brand, open, onToggle }: SectionProps) {
           }}
         >
           Ingest a design-tokens JSON, or pull color and text styles from a connected Figma file.
-          Imports merge and save immediately — your existing entries always win.
+          Imports merge and save immediately. Your existing entries always win.
         </p>
         <DesignSystemImportPanel
           onImportColors={mergeColors}

@@ -232,11 +232,11 @@ export function TemplateFill({
               {exportToast === "downloaded" && "It's in your downloads folder, ready to post."}
               {exportToast === "shared" && "Sent through your device's share sheet."}
               {exportToast === "error" &&
-                (exportErrorDetail ?? "Try again — if it keeps failing, re-upload the photo.")}
+                (exportErrorDetail ?? "Try again. If it keeps failing, re-upload the photo.")}
               {exportToast === "linkedin" &&
                 "Your caption is copied too, in case it didn't carry across. Attach the graphic from your downloads."}
               {exportToast === "popup-blocked" &&
-                "Your caption is copied — open LinkedIn and paste it into a new post."}
+                "Your caption is copied. Open LinkedIn and paste it into a new post."}
             </span>
           </span>
         </div>
@@ -516,7 +516,7 @@ export function TemplateFill({
                   style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}
                 >
                   {exported
-                    ? "Opens a new post with your caption. Attach the graphic from your downloads — LinkedIn can't take it from us."
+                    ? "Opens a new post with your caption. Attach the graphic from your downloads, since LinkedIn can't take it from us."
                     : "Download the graphic first. LinkedIn can't take the image from us, so you'll attach it to the post yourself."}
                 </p>
               </div>
@@ -572,7 +572,7 @@ export function TemplateFill({
                 fallback={(retry) => (
                   <ErrorState
                     title="We couldn't display this template."
-                    detail="Your other templates are fine — try again, and tell your admin about this one if it keeps happening."
+                    detail="Your other templates are fine. Try again, and tell your admin about this one if it keeps happening."
                     onRetry={retry}
                   />
                 )}

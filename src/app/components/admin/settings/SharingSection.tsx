@@ -88,8 +88,7 @@ export function SharingSection() {
     return (
       <div className="space-y-6">
         <DevBackendNotice>
-          Public links need the Supabase backend — this dev backend has no way to issue or check
-          one.
+          Public links need the Supabase backend. This dev backend has no way to issue or check one.
         </DevBackendNotice>
         <LinkDefaultsCard />
       </div>
@@ -101,7 +100,7 @@ export function SharingSection() {
       <ConfirmDialog
         open={revoking !== null}
         title={`Revoke “${revoking?.name || "this link"}”?`}
-        description="Anyone who opens it from here on gets a page saying the link no longer works. Immediate, and not undoable — you'd create a new link instead."
+        description="Anyone who opens it from here on gets a page saying the link no longer works. Immediate, and not undoable. You'd create a new link instead."
         confirmLabel="Revoke link"
         onCancel={() => setRevoking(null)}
         onConfirm={() => {
@@ -137,7 +136,7 @@ export function SharingSection() {
           <p>
             All {active.length} active link{active.length === 1 ? "" : "s"} across every template
             stop working immediately. Anyone holding one gets a page saying it no longer works. This
-            is the incident-response button — it cannot be undone, only re-shared link by link.
+            is the incident-response button. It cannot be undone, only re-shared link by link.
           </p>
         }
         expected={company?.name ?? ""}
@@ -184,7 +183,7 @@ export function SharingSection() {
           role="status"
           aria-live="polite"
         >
-          <p className="sp-eyebrow">Copy this now — it isn't shown again</p>
+          <p className="sp-eyebrow">Copy this now. It is not shown again</p>
           <input
             readOnly
             value={freshUrl}

@@ -41,7 +41,7 @@ export function IntegrationsSection() {
   if (!configured) {
     return (
       <DevBackendNotice>
-        Integrations need the Supabase backend — this dev backend has no Edge Functions to hold a
+        Integrations need the Supabase backend. This dev backend has no Edge Functions to hold a
         token.
       </DevBackendNotice>
     );
@@ -193,8 +193,8 @@ export function IntegrationsSection() {
       )}
 
       <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
-        Tokens are stored server-side and are never shown here — status and who connected, nothing
-        more.
+        Tokens are stored server-side and are never shown here. You see the status and who
+        connected, nothing more.
       </p>
     </div>
   );

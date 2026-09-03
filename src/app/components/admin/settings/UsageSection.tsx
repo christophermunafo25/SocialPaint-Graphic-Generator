@@ -79,7 +79,7 @@ export function UsageSection() {
 
       <SettingsCard title="Plan">
         <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-primary)" }}>
-          Free — no limits enforced
+          Free, no limits enforced
         </p>
       </SettingsCard>
     </div>

@@ -75,7 +75,7 @@ export function DesignSystemImportPanel(props: DesignSystemImportPanelProps) {
       if (result.colors.length) props.onImportColors(result.colors);
       if (result.typeStyles.length) props.onImportTypeStyles(result.typeStyles);
       setStatus(
-        `Imported ${result.colors.length} colors and ${result.typeStyles.length} type styles from Figma — saved to your brand.`,
+        `Imported ${result.colors.length} colors and ${result.typeStyles.length} type styles from Figma, saved to your brand.`,
       );
       setFigmaUrl("");
     } catch (e) {
@@ -123,7 +123,7 @@ export function DesignSystemImportPanel(props: DesignSystemImportPanelProps) {
               style={{ paddingLeft: 30 }}
               value={figmaUrl}
               onChange={(e) => setFigmaUrl(e.target.value)}
-              placeholder="Figma file link — pull its color + text styles"
+              placeholder="Figma file link: pulls its color + text styles"
             />
           </div>
           <button
@@ -148,7 +148,7 @@ export function DesignSystemImportPanel(props: DesignSystemImportPanelProps) {
           style={{ background: "var(--bg-raised)", border: "1px solid var(--border)" }}
         >
           <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}>
-            Found {suggestions.length} rule-like lines — keep the ones that are real brand rules:
+            Found {suggestions.length} rule-like lines. Keep the ones that are real brand rules:
           </p>
           <div className="max-h-48 overflow-auto space-y-1">
             {suggestions.map((sug, i) => (

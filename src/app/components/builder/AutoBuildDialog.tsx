@@ -24,7 +24,7 @@ const STAGES = [
 ];
 
 const MANUAL_PATHS_NOTE =
-  "The plain Figma import and the blank canvas are unaffected — you can always build this one manually.";
+  "The plain Figma import and the blank canvas are unaffected. You can always build this one manually.";
 
 /** Auto-build with Claude: paste a Figma or Canva link, or upload a flat
  * image, and Claude proposes the whole template — Fixed marks, labels,
@@ -174,7 +174,7 @@ export function AutoBuildDialog({ onClose, onBuilt, initialTab }: AutoBuildDialo
             />
             <p style={{ fontSize: 14, color: "var(--text-primary)" }}>{STAGES[stage]}</p>
             <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
-              This takes 15–40 seconds. Everything lands editable-or-fixed on the canvas — change
+              This takes 15–40 seconds. Everything lands editable-or-fixed on the canvas. Change
               anything in the inspector.
             </p>
           </div>
@@ -195,14 +195,14 @@ export function AutoBuildDialog({ onClose, onBuilt, initialTab }: AutoBuildDialo
               <div className="space-y-3">
                 {figmaConnected === false ? (
                   <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
-                    Figma isn't connected yet — connect it from the plain "Import from Figma" dialog
+                    Figma isn't connected yet. Connect it from the plain "Import from Figma" dialog
                     first, then come back. {MANUAL_PATHS_NOTE}
                   </p>
                 ) : (
                   <>
                     <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
                       Paste a frame link. Claude reads the design, decides what members should edit,
-                      names every field, and writes the caption — then you correct anything in the
+                      names every field, and writes the caption. You then correct anything in the
                       inspector.
                     </p>
                     <input
@@ -222,7 +222,7 @@ export function AutoBuildDialog({ onClose, onBuilt, initialTab }: AutoBuildDialo
               <div className="space-y-3">
                 {!canva.connected ? (
                   <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
-                    Canva isn't connected yet — connect it from Settings, Integrations, then come
+                    Canva isn't connected yet. Connect it from Settings, Integrations, then come
                     back. Each admin authorizes with their own Canva login; the tokens are stored
                     server-side and never reach this browser. {MANUAL_PATHS_NOTE}
                   </p>
@@ -231,7 +231,7 @@ export function AutoBuildDialog({ onClose, onBuilt, initialTab }: AutoBuildDialo
                     <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
                       Paste the design link from your browser's address bar. Canva shares a flat
                       image of the design, so Claude proposes field boxes from the picture, as with
-                      an uploaded image — expect to adjust them.
+                      an uploaded image. Expect to adjust them.
                     </p>
                     <p
                       className="px-3 py-2"
@@ -263,7 +263,7 @@ export function AutoBuildDialog({ onClose, onBuilt, initialTab }: AutoBuildDialo
               <div className="space-y-3">
                 <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
                   Upload a finished design as PNG or JPEG. With no layer data to read, Claude
-                  proposes conservative field boxes from the image alone — expect to adjust them.
+                  proposes conservative field boxes from the image alone. Expect to adjust them.
                 </p>
                 <label
                   {...drop.bind}

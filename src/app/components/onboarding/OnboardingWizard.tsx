@@ -53,9 +53,9 @@ const HEADLINES = {
 
 const DESCRIPTIONS: readonly (string | null)[] = [
   null,
-  "Sensible defaults — override them with your palette. Template text colors are always picked from these, keeping every graphic on-brand.",
+  "Sensible defaults. Override them with your palette. Template text colors are always picked from these, keeping every graphic on-brand.",
   "Pick from Google Fonts, or upload your own brand font files (.woff2, .woff, .ttf, .otf) and assign them.",
-  "Optional now — you can add more logos later in Brand Studio.",
+  "Optional now. You can add more logos later in Brand Studio.",
 ];
 
 interface PendingFont {
@@ -168,7 +168,7 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
       navigate({ name: "adminTemplates" });
     } catch (e) {
       console.error("Onboarding failed", e);
-      setError(e instanceof Error ? e.message : "Something went wrong — please try again.");
+      setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
     } finally {
       setSaving(false);
     }

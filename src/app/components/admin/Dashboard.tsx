@@ -166,7 +166,7 @@ export function Dashboard() {
     <Page>
       <PageHeader
         title="Insights"
-        description="Which templates actually get used — by your team, and through public links."
+        description="Which templates actually get used, by your team and through public links."
       />
 
       {summary.rows.length === 0 ? (
@@ -182,7 +182,7 @@ export function Dashboard() {
           <p
             style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)", marginTop: 6 }}
           >
-            Opens and downloads appear here as soon as people start using published templates — your
+            Opens and downloads appear here as soon as people start using published templates: your
             own team, and anyone filling one in through a public link.
           </p>
         </div>
@@ -244,7 +244,7 @@ export function Dashboard() {
           {/* 30-day trend */}
           <div className="sp-card sp-card--content">
             <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
-              <h2 className="sp-panel-title">Activity — last 30 days</h2>
+              <h2 className="sp-panel-title">Activity, last 30 days</h2>
               <div className="flex items-center gap-4">
                 <LegendChip color="var(--viz-series-1)" label="Downloads" total={trendDownloads} />
                 <LegendChip color="var(--viz-series-2)" label="Opens" total={trendOpens} />
@@ -573,7 +573,7 @@ export function Dashboard() {
                   }}
                 >
                   Every link you've created, busiest first. A link with no opens has been created
-                  but not yet used. "Posted" counts people who opened LinkedIn with their caption —
+                  but not yet used. "Posted" counts people who opened LinkedIn with their caption.
                   LinkedIn doesn't tell us whether they hit publish.
                 </p>
               </div>

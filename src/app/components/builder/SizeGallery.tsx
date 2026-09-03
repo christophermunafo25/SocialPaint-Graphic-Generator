@@ -206,7 +206,7 @@ function SizeCard({
       type="button"
       className="sp-card sp-media-card sp-sizecard"
       aria-pressed={current}
-      aria-label={`${size.assetType} — ${size.width} by ${size.height}`}
+      aria-label={`${size.assetType}, ${size.width} by ${size.height}`}
       onClick={() => onPick({ width: size.width, height: size.height })}
     >
       {cover ? (
@@ -354,7 +354,7 @@ function CustomSizePane({
       </p>
       {!customErr && w * h > WARN_MEGAPIXELS && (
         <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}>
-          Over 4 megapixels — exporting a canvas this large can run a phone browser out of memory.
+          Over 4 megapixels: exporting a canvas this large can run a phone browser out of memory.
         </p>
       )}
       <button

@@ -39,7 +39,7 @@ export function WorkspaceSection() {
       <CanvasSizesCard companyId={company.id} onError={setError} />
       <BrandEnforcementCard onError={setError} />
       <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
-        Changes save as you make them — there is no page-level save button.
+        Changes save as you make them. There is no page-level save button.
       </p>
     </div>
   );
@@ -165,7 +165,7 @@ function SlugField({ onError }: { onError(msg: string | null): void }) {
       <ConfirmDialog
         open={confirming}
         title={`Change the workspace id to “${normalized}”?`}
-        description="Any URL someone bookmarked with the old id stops resolving. Nothing inside the app breaks — this is about links people saved."
+        description="Any URL someone bookmarked with the old id stops resolving. Nothing inside the app breaks. This is about links people saved."
         confirmLabel="Change id"
         tone="primary"
         onCancel={() => setConfirming(false)}
@@ -364,7 +364,7 @@ function BrandEnforcementCard({ onError }: { onError(msg: string | null): void }
   return (
     <SettingsCard
       title="Brand enforcement"
-      description="Applied when templates render — the rules engine, not the editing UI, is what these switch."
+      description="Applied when templates render. These switch the rules engine and leave the editing UI alone."
     >
       <ControlRow
         title="Fields may override bound type styles"

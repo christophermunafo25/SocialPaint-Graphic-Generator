@@ -39,7 +39,7 @@ export function TemplateCard({
       type="button"
       className="sp-card sp-media-card sp-template-card"
       onClick={() => onOpen(template)}
-      aria-label={`${template.name} — ${template.platformLabel}, ${template.width} by ${template.height}`}
+      aria-label={`${template.name}, ${template.platformLabel}, ${template.width} by ${template.height}`}
     >
       <div
         className="sp-media-card__preview"

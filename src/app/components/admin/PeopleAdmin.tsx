@@ -81,7 +81,7 @@ export function PeopleAdmin() {
             color: "var(--text-secondary)",
           }}
         >
-          People management needs the Supabase backend with auth enabled — this dev backend has no
+          People management needs the Supabase backend with auth enabled. This dev backend has no
           real accounts.
         </p>
       )}

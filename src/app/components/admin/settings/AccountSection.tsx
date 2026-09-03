@@ -42,7 +42,9 @@ export function AccountSection() {
           style={{ gridTemplateColumns: "140px 1fr", fontSize: "var(--type-label-size)" }}
         >
           <span style={{ color: "var(--text-muted)" }}>Email</span>
-          <span style={{ color: "var(--text-primary)" }}>{user?.email ?? "— (dev backend)"}</span>
+          <span style={{ color: "var(--text-primary)" }}>
+            {user?.email ?? "None (dev backend)"}
+          </span>
           <span style={{ color: "var(--text-muted)" }}>Role</span>
           <span className="capitalize" style={{ color: "var(--text-primary)" }}>
             {role}
@@ -59,7 +61,7 @@ export function AccountSection() {
 
       <SettingsCard
         title="Appearance"
-        description="Applies to the SocialPaint chrome only — template graphics and exports are identical in both modes."
+        description="Applies to the SocialPaint chrome only. Template graphics and exports are identical in both modes."
       >
         <div className="grid grid-cols-3 gap-2">
           {SCHEMES.map(({ key, label, Icon, hint }) => (
@@ -91,13 +93,13 @@ export function AccountSection() {
 
       <SettingsCard
         title="Notifications"
-        description="Preferences only for now — email delivery isn't set up yet, so nothing sends either way. What you choose here is honored the day it is."
+        description="Preferences only for now. Email delivery isn't set up yet, so nothing sends either way. What you choose here is honored the day it is."
       >
         {accountAvailable ? (
           <NotificationRows userId={user!.id} onError={setError} />
         ) : (
           <DevBackendNotice>
-            Notification preferences need the Supabase backend with auth enabled — this dev backend
+            Notification preferences need the Supabase backend with auth enabled. This dev backend
             has no account to store them on.
           </DevBackendNotice>
         )}

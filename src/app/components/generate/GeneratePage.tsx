@@ -99,7 +99,7 @@ const STARTERS: Array<{ label: string; brief: string }> = [
   },
   {
     label: "Anniversary",
-    brief: "Maria in billing hits ten years with us on Friday — we want to celebrate her.",
+    brief: "Maria in billing hits ten years with us on Friday, and we want to celebrate her.",
   },
   {
     label: "Event",
@@ -115,7 +115,7 @@ const STARTERS: Array<{ label: string; brief: string }> = [
   },
   {
     label: "Spotlight",
-    brief: "A spotlight on Dana at the front desk — patients keep naming her in reviews.",
+    brief: "A spotlight on Dana at the front desk. Patients keep naming her in reviews.",
   },
 ];
 
@@ -322,14 +322,16 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
           });
           const fit = measureProposal(schema, proposal.values, kit, measure);
           if (!fit.ok) {
-            warnings.push(`Dropped the "${proposal.templateName}" design — its copy overflows.`);
+            warnings.push(
+              `Dropped the "${proposal.templateName}" design because its copy overflows.`,
+            );
             return null;
           }
           return { proposal, schema, values: proposal.values };
         }
         const schema = await stores.templates.get(proposal.templateId);
         if (!schema) {
-          warnings.push(`"${proposal.templateName}" is no longer available — skipped.`);
+          warnings.push(`"${proposal.templateName}" is no longer available and was skipped.`);
           return null;
         }
         const outcome = await repairProposal(
@@ -344,7 +346,7 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
         );
         if (!outcome.ok) {
           warnings.push(
-            `Dropped a "${proposal.templateName}" draft — its copy couldn't be made to fit the design.`,
+            `Dropped a "${proposal.templateName}" draft because its copy couldn't be made to fit the design.`,
           );
           return null;
         }
@@ -363,7 +365,7 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
 
       if (cards.length === 0) {
         setError(
-          "None of the drafts fit their templates. Try a shorter brief — or fill a template directly; the library is unaffected.",
+          "None of the drafts fit their templates. Try a shorter brief, or fill a template directly. The library is unaffected.",
         );
       } else {
         setResults({
@@ -376,7 +378,7 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
         });
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Generate failed — try again.");
+      setError(e instanceof Error ? e.message : "Generate failed. Try again.");
     } finally {
       setPhase("idle");
       setPartial(null);
@@ -491,7 +493,7 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
         const created = await stores.templates.create({ ...rest, status: "published" });
         setSavedId(created.id);
       } catch (e) {
-        setSaveError(e instanceof Error ? e.message : "Saving failed — try again.");
+        setSaveError(e instanceof Error ? e.message : "Saving failed. Try again.");
       } finally {
         setSaveState("idle");
       }
@@ -527,8 +529,8 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
                 <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
                   {saveError ??
                     (role === "admin"
-                      ? "A new design from your brand kit — save it to the library, or export and leave it behind."
-                      : "A new design from your brand kit — not saved to the library, so export before you leave.")}
+                      ? "A new design from your brand kit. Save it to the library, or export and leave it behind."
+                      : "A new design from your brand kit. It isn't saved to the library, so export before you leave.")}
                 </p>
                 {role === "admin" && (
                   <button
@@ -652,7 +654,7 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
                       <span
                         style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}
                       >
-                        Click or drag to upload — JPG, PNG, or WEBP up to 10MB
+                        Click or drag to upload: JPG, PNG, or WEBP up to 10MB
                       </span>
                     </div>
                     <button
@@ -728,7 +730,7 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
                       <p
                         style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}
                       >
-                        No published templates yet — drafts come fresh from your brand kit.
+                        No published templates yet, so drafts come fresh from your brand kit.
                       </p>
                     ) : (
                       <div
@@ -802,7 +804,7 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
                       menuMinWidth={220}
                       menuCaption={
                         anyDimmed
-                          ? "Dimmed platforms have no published templates yet — picking one is a preference, and the whole library is still considered."
+                          ? "Dimmed platforms have no published templates yet. Picking one is a preference, and the whole library is still considered."
                           : undefined
                       }
                     />
@@ -987,7 +989,7 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
                 color: "var(--text-muted)",
               }}
             >
-              These drafts were made before your photo change — generate again to use it.
+              These drafts were made before your photo change. Generate again to use it.
             </p>
           )}
           {results.warnings.length > 0 && (
@@ -1095,7 +1097,7 @@ function ProposalCard({
       className="sp-card sp-media-card sp-template-card sp-gen-hue sp-gen-card"
       data-hue={hue}
       onClick={() => onChoose(card)}
-      aria-label={`Edit and export "${schema.name}"${proposal.design ? " — a new design" : ""}`}
+      aria-label={`Edit and export "${schema.name}"${proposal.design ? ", a new design" : ""}`}
     >
       {/* The catalogue's square letterboxing frame: mixed proposal ratios
           sit even in the grid; contain, never crop. */}
