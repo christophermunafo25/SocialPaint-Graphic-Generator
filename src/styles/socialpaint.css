@@ -292,6 +292,19 @@ html {
    #323232 border-on-surface. */
 [data-theme="dark"] {
   --bg-canvas: #070708;
+  /* Build-picker tiles (Figma 221:321). Four icon tiles, each a flat
+     colour with the glyph knocked out in its deep tint; light mode swaps
+     the pair. The red, violet, and cyan sit outside the five-colour
+     palette — they are the frame's artwork, not state. */
+  --start-tile-blank: #ff4229;
+  --start-glyph-blank: #220905;
+  --start-tile-figma: #a66bff;
+  --start-glyph-figma: #1b0b35;
+  --start-tile-auto: var(--voltage-logo);
+  --start-glyph-auto: #082a16;
+  --start-tile-canva: #00ebff;
+  --start-glyph-canva: #071b25;
+  --start-input-bg: var(--chip-raised);
   --bg-surface: #18191a;
   --bg-raised: #18191a;
   --bg-hover: #2a2a2a;
@@ -408,6 +421,15 @@ html {
    The brand board's pairing: #F1F1F1 field with #FFFFFF cards; borders
    carry separation. */
 [data-theme="light"] {
+  --start-tile-blank: #220905;
+  --start-glyph-blank: #ff4229;
+  --start-tile-figma: #1b0b35;
+  --start-glyph-figma: #a66bff;
+  --start-tile-auto: #082a16;
+  --start-glyph-auto: var(--voltage-logo);
+  --start-tile-canva: #071b25;
+  --start-glyph-canva: #00ebff;
+  --start-input-bg: var(--bg-raised);
   --accent-wash: color-mix(in srgb, var(--voltage) 30%, transparent);
   --accent-wash-strong: color-mix(in srgb, var(--voltage) 48%, transparent);
   --bg-canvas: #f1f1f1;
@@ -4317,4 +4339,184 @@ input[type="radio"] {
 }
 .sp-toast[data-tone="success"] {
   border-top-color: var(--fill-attention);
+}
+
+/* ── Build picker ───────────────────────────────────────────────────────────
+   The builder's first screen (Figma 221:321 dark / 221:439 light): the H2
+   step centred over a row of 300×183 source cards, three across with the
+   fourth wrapping left. Each card is a flat surface with a 31px colour tile,
+   a heading-face title, and a two-line body. The frame's 23px gutter and
+   12px radius take the nearest rungs (--space-md, --radius-control-lg). */
+.sp-start {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 52px;
+  padding: var(--space-3xl) var(--space-md) var(--space-2xl);
+}
+.sp-start__title {
+  color: var(--text-primary);
+  text-align: center;
+  text-wrap: balance;
+}
+.sp-start__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 300px);
+  gap: var(--space-md);
+  justify-content: center;
+}
+@media (max-width: 1080px) {
+  .sp-start__grid {
+    grid-template-columns: repeat(2, 300px);
+  }
+}
+@media (max-width: 720px) {
+  .sp-start__grid {
+    grid-template-columns: minmax(0, 300px);
+  }
+}
+.sp-start-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  width: 300px;
+  height: 183px;
+  padding: 22px 18px 16px 22px;
+  text-align: left;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control-lg);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition:
+    border-color var(--dur-state) var(--ease),
+    background var(--dur-state) var(--ease);
+}
+.sp-start-card:hover:not(:disabled) {
+  border-color: var(--border-strong);
+}
+.sp-start-card:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.sp-start-card--blank,
+.sp-import-pop--blank {
+  --start-tile: var(--start-tile-blank);
+  --start-glyph: var(--start-glyph-blank);
+}
+.sp-start-card--figma,
+.sp-import-pop--figma {
+  --start-tile: var(--start-tile-figma);
+  --start-glyph: var(--start-glyph-figma);
+}
+.sp-start-card--auto,
+.sp-import-pop--auto {
+  --start-tile: var(--start-tile-auto);
+  --start-glyph: var(--start-glyph-auto);
+}
+.sp-start-card--canva,
+.sp-import-pop--canva {
+  --start-tile: var(--start-tile-canva);
+  --start-glyph: var(--start-glyph-canva);
+}
+.sp-start-tile {
+  display: grid;
+  place-items: center;
+  width: 31px;
+  height: 31px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: var(--start-tile);
+  color: var(--start-glyph);
+}
+.sp-start-card__title {
+  font-family: var(--font-head);
+  font-weight: var(--weight-head);
+  font-size: 16.5px;
+  line-height: 1.18;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+.sp-start-card__desc {
+  margin-top: 5px;
+  max-width: 250px;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  line-height: 1.3;
+  letter-spacing: 0;
+  color: var(--text-secondary);
+}
+
+/* The "selected" popups (Figma 228:203 / 228:245): the same card recipe,
+   560 wide, with a tile-and-title header row, a quiet close, and one
+   50px link field on the raised chip surface with the lit-edge stroke
+   (1px top and bottom, 0.25px sides). */
+.sp-import-pop {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  width: 100%;
+  max-width: 560px;
+  padding: 22px 18px 16px 22px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control-lg);
+}
+.sp-import-pop__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+.sp-import-pop__title {
+  flex: 1 1 0;
+  min-width: 0;
+  font-family: var(--font-head);
+  font-weight: var(--weight-head);
+  font-size: 20px;
+  line-height: 1.18;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+.sp-import-pop__close {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  border-radius: var(--radius-control);
+  transition: color var(--dur-state) var(--ease);
+}
+.sp-import-pop__close:hover {
+  color: var(--text-primary);
+}
+.sp-import-pop__input {
+  width: 100%;
+  height: 50px;
+  padding: 0 13px;
+  font-family: var(--font-body);
+  font-size: 16px;
+  letter-spacing: 0.01em;
+  color: var(--text-primary);
+  background: var(--start-input-bg);
+  border: 0;
+  border-left: 0.25px solid rgb(var(--edge-rgb) / var(--edge-alpha));
+  border-right: 0.25px solid rgb(var(--edge-rgb) / var(--edge-alpha));
+  border-radius: var(--radius-control-lg);
+  box-shadow:
+    inset 0 1px 0 rgb(var(--edge-rgb) / var(--edge-alpha)),
+    inset 0 -1px 0 rgb(var(--edge-rgb) / var(--edge-alpha));
+}
+.sp-import-pop__input::placeholder {
+  color: var(--text-muted);
+}
+.sp-import-pop__note {
+  font-size: var(--type-label-size);
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+.sp-import-pop__actions {
+  display: flex;
+  justify-content: flex-end;
 }

@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from "react";
-import { Figma, RefreshCw, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { RefreshCw } from "lucide-react";
 import type { DesignImportResult } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useRouter } from "../../router";
+import { ImportLinkPopup } from "./ImportLinkPopup";
 
 interface FigmaImportDialogProps {
   onClose(): void;
@@ -21,7 +22,6 @@ export function FigmaImportDialog({ onClose, onImported }: FigmaImportDialogProp
   const [url, setUrl] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [warnings, setWarnings] = useState<string[]>([]);
 
   useEffect(() => {
     if (!company) return;
@@ -32,12 +32,11 @@ export function FigmaImportDialog({ onClose, onImported }: FigmaImportDialogProp
   }, [company]);
 
   const runImport = async () => {
-    if (!company || !url.trim()) return;
+    if (!company || !url.trim() || busy) return;
     setBusy(true);
     setError(null);
     try {
       const result = await stores.designImport.importFromUrl(company.id, url.trim());
-      setWarnings(result.warnings);
       onImported(result);
     } catch (e) {
       setError(
@@ -50,104 +49,69 @@ export function FigmaImportDialog({ onClose, onImported }: FigmaImportDialogProp
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-lg p-6 space-y-4"
-        style={{ background: "var(--bg-surface)", borderRadius: "var(--radius-card)" }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between">
-          <h2
-            className="flex items-center gap-2"
-            style={{
-              fontFamily: "var(--font-head)",
-              fontWeight: "var(--weight-head)",
-              fontSize: 21,
-              letterSpacing: "var(--track-head)",
-              color: "var(--text-primary)",
-            }}
-          >
-            <Figma className="w-5 h-5" />
-            Import from Figma
-          </h2>
-          <button onClick={onClose} aria-label="Close">
-            <X className="w-5 h-5" style={{ color: "var(--muted-foreground)" }} />
-          </button>
-        </div>
-
-        {connected === null ? (
-          <p className="text-sm py-6 text-center" style={{ color: "var(--muted-foreground)" }}>
-            Checking connection…
+    <ImportLinkPopup kind="figma" title="Import from Figma" onClose={onClose}>
+      {connected === null ? (
+        <p className="sp-import-pop__note">Checking connection…</p>
+      ) : !connected ? (
+        // Credential entry lives in Settings → Integrations, not inside a
+        // popup about importing a frame — this keeps the short path only.
+        <>
+          <p className="sp-import-pop__note">
+            Figma isn't connected for this workspace. An admin connects it once, in Settings, and
+            imports work for everyone from then on.
           </p>
-        ) : !connected ? (
-          // Credential entry lives in Settings → Integrations, not inside a
-          // modal about importing a frame — this keeps the short path only.
-          <div className="space-y-3">
-            <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
-              Figma isn't connected for this workspace. An admin connects it once, in Settings, and
-              imports work for everyone from then on.
-            </p>
+          <div className="sp-import-pop__actions">
             <button
+              type="button"
               onClick={() => {
                 onClose();
                 navigate({ name: "settings", section: "integrations" });
               }}
-              className="sp-btn sp-btn-primary w-full"
+              className="sp-btn sp-btn-primary"
             >
               Open integration settings
             </button>
           </div>
-        ) : (
-          <div className="space-y-3">
-            <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
-              Paste a link to a Figma frame (right-click the frame → Copy link). Its rendered image
-              becomes the background, and text/image layers become suggested fields you can adjust.
-            </p>
-            <input
-              type="url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://www.figma.com/design/…?node-id=…"
-              className="sp-input"
-            />
-            <button
-              onClick={() => void runImport()}
-              disabled={busy || !url.trim()}
-              className="sp-btn sp-btn-primary w-full"
-            >
-              {busy && <RefreshCw className="w-4 h-4 animate-spin" />}
-              {busy ? "Importing…" : "Import frame"}
-            </button>
-          </div>
-        )}
+        </>
+      ) : (
+        <form
+          className="flex flex-col"
+          style={{ gap: "var(--space-xs)" }}
+          onSubmit={(e) => {
+            e.preventDefault();
+            void runImport();
+          }}
+        >
+          <input
+            type="url"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="Paste the design link from Figma frame"
+            aria-label="Figma frame link"
+            className="sp-import-pop__input"
+            autoFocus
+            disabled={busy}
+          />
+          {(url.trim() || busy) && (
+            <div className="sp-import-pop__actions">
+              <button type="submit" disabled={busy} className="sp-btn sp-btn-primary">
+                {busy && <RefreshCw className="w-4 h-4 animate-spin" />}
+                {busy ? "Importing…" : "Import frame"}
+              </button>
+            </div>
+          )}
+        </form>
+      )}
 
-        {error && (
-          <p
-            className="text-sm px-4 py-3"
-            data-radius-card
-            style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}
-          >
-            {error}
-          </p>
-        )}
-        {warnings.map((w) => (
-          <p
-            key={w}
-            className="px-3 py-2"
-            data-radius-control
-            style={{
-              fontSize: "var(--type-caption-size)",
-              background: "var(--bg-hover)",
-              color: "var(--text-secondary)",
-            }}
-          >
-            {w}
-          </p>
-        ))}
-      </div>
-    </div>
+      {error && (
+        <p
+          className="text-sm px-4 py-3"
+          data-radius-card
+          style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}
+        >
+          {error}
+        </p>
+      )}
+    </ImportLinkPopup>
   );
 }
