@@ -23,7 +23,8 @@ The core design principle is **subtraction**: the only thing an end user can cha
 - Caption templates with `{field_key}` merge tags
 - Reliable PNG export (fonts embedded, cross-origin images pre-converted, mobile share sheet support)
 - Public template links: an admin shares a link, and anyone who opens it fills the template in and downloads a PNG — no account, no sign-in. Links can be named, capped, given an expiry, revoked immediately, and regenerated
-- Insights dashboard: opens, downloads, 30-day trend, template leaderboard, with public-link traffic counted apart from the team's own
+- Bulk fill: an admin drops a CSV on a published template and gets a ZIP of one PNG per row plus a captions file, through the same export path as a single download, with rows that would overflow refused rather than shipped
+- Insights dashboard: opens, downloads, bulk exports, 30-day trend, template leaderboard, with public-link traffic counted apart from the team's own
 - Multi-tenant auth on Supabase (email/password, invites, admin and member roles, row-level security), with light and dark themes throughout
 
 ## Quick start
