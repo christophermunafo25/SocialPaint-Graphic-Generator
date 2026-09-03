@@ -14,13 +14,17 @@ import { createCanvasMeasurer, fitText } from "@/lib/render/autoFit";
 import { computeLayout, renderedText, type Rect } from "@/lib/render/layout";
 import { resolveFieldStyle } from "@/lib/brand/resolveStyle";
 import { loadGoogleFonts, schemaFontUsage } from "@/lib/render/fonts";
-import { exportSchemaPng, type ExportOutcome } from "@/lib/render/exportPng";
+import { exportSchemaPng, renderSchemaBlob, type ExportOutcome } from "@/lib/render/exportPng";
 import { stores } from "@/lib/stores";
 
 export interface SchemaRendererHandle {
   /** Renders the canvas to PNG and hands it to the user. Records a
    * `download` usage event on success (unless instrument={false}). */
   exportPng(): Promise<ExportOutcome>;
+  /** The PNG bytes and nothing else: no delivery, no usage event. Bulk
+   * export's per-row call — the same rasterization path exportPng takes,
+   * which is what makes a bulk PNG identical to a downloaded one. */
+  renderBlob(): Promise<Blob>;
 }
 
 interface SchemaRendererProps {
@@ -116,7 +120,12 @@ export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererPro
       return outcome;
     }, [schema, instrument, brandKit]);
 
-    useImperativeHandle(ref, () => ({ exportPng }), [exportPng]);
+    const renderBlob = useCallback(async () => {
+      if (!canvasRef.current) throw new Error("Canvas not mounted");
+      return renderSchemaBlob(schema, canvasRef.current, brandKit);
+    }, [schema, brandKit]);
+
+    useImperativeHandle(ref, () => ({ exportPng, renderBlob }), [exportPng, renderBlob]);
 
     return (
       <div
