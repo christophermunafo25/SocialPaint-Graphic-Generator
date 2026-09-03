@@ -12,11 +12,9 @@ import {
   Eye,
   Sparkles,
   Figma,
-  Palette,
   PanelLeftClose,
   PanelRightClose,
   Pencil,
-  Plus,
   RefreshCw,
   Redo2,
   Save,
@@ -130,6 +128,8 @@ import type { CanvasSize } from "@/lib/templates/platforms";
 import { rescaleTemplate, sameAspect, type RescaleWarning } from "@/lib/templates/rescale";
 import { reflowTemplate, versionName } from "@/lib/templates/reflow";
 import { CanvasSizePicker } from "./CanvasSizePicker";
+import { BuildPicker } from "./BuildPicker";
+import { CanvaImportDialog } from "./CanvaImportDialog";
 import { SizeGallery } from "./SizeGallery";
 import { BackgroundReflowDialog } from "./BackgroundReflowDialog";
 import { ShortcutsPanel } from "./ShortcutsPanel";
@@ -378,9 +378,8 @@ export function TemplateBuilder({
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [figmaOpen, setFigmaOpen] = useState(false);
+  const [canvaOpen, setCanvaOpen] = useState(false);
   const [autoBuildOpen, setAutoBuildOpen] = useState(false);
-  /** Which auto-build tab to open on. The Canva start card sets it. */
-  const [autoBuildTab, setAutoBuildTab] = useState<"figma" | "canva" | "image" | undefined>();
   /** Canva is a start-screen path only once the workspace has connected it;
    * before that the card would open a dialog that points back at Settings. */
   const [canvaReady, setCanvaReady] = useState(false);
@@ -2557,13 +2556,16 @@ export function TemplateBuilder({
       )}
 
       {autoBuildOpen && (
-        <AutoBuildDialog
-          initialTab={autoBuildTab}
-          onClose={() => {
-            setAutoBuildOpen(false);
-            setAutoBuildTab(undefined);
+        <AutoBuildDialog onClose={() => setAutoBuildOpen(false)} onBuilt={applyAutoBuild} />
+      )}
+
+      {canvaOpen && (
+        <CanvaImportDialog
+          onClose={() => setCanvaOpen(false)}
+          onBuilt={(result) => {
+            setCanvaOpen(false);
+            applyAutoBuild(result);
           }}
-          onBuilt={applyAutoBuild}
         />
       )}
 
@@ -2951,13 +2953,14 @@ export function TemplateBuilder({
               Templates
             </button>
           </div>
-          <div className="max-w-3xl mx-auto py-10 px-6 space-y-5">
+          <div className="mx-auto px-6" style={{ maxWidth: 1040 }}>
             {error && (
               <p
                 role="alert"
                 className="px-4 py-3 text-center"
                 data-radius-card
                 style={{
+                  marginTop: "var(--space-md)",
                   fontSize: "var(--type-caption-size)",
                   background: "var(--danger-wash)",
                   color: "var(--destructive)",
@@ -2966,154 +2969,17 @@ export function TemplateBuilder({
                 {error}
               </p>
             )}
-            <div className="text-center space-y-1 mb-2">
-              <h2
-                style={{
-                  fontFamily: "var(--font-head)",
-                  fontWeight: "var(--weight-head)",
-                  fontSize: 22,
-                  letterSpacing: "var(--track-head)",
-                  color: "var(--text-primary)",
-                }}
-              >
-                Start your template
-              </h2>
-              <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
-                Build from scratch, or import a designed frame. Both end at the same place: locked
-                design, editable fields.
-              </p>
-            </div>
-            <div
-              className={
-                canvaReady
-                  ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch"
-                  : "grid grid-cols-1 sm:grid-cols-3 gap-4 items-stretch"
-              }
-            >
-              {/* Path A — blank canvas. The size gallery gates this path: it
-                  opens as a dialog and picking a size goes straight to the
-                  canvas. Imports skip it — the frame imposes its own size. */}
-              <button
-                onClick={() => setSizeDialogOpen(true)}
-                className="p-8 text-center transition-all flex flex-col items-center justify-center gap-3"
-                style={{
-                  border: "1.5px dashed var(--border-strong)",
-                  borderRadius: "var(--radius-card)",
-                  background: "var(--bg-surface)",
-                  minHeight: 220,
-                  cursor: "pointer",
-                }}
-              >
-                <Plus className="w-6 h-6" style={{ color: "var(--state-primary)" }} />
-                <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>
-                  Start blank
-                </p>
-                <p
-                  style={{
-                    fontSize: "var(--type-caption-size)",
-                    color: "var(--text-secondary)",
-                    maxWidth: 240,
-                  }}
-                >
-                  Build the design from scratch on an empty canvas. Drag on text, images, and fixed
-                  elements.
-                </p>
-              </button>
-              {/* Path B — Figma link */}
-              <button
-                onClick={() => stores.designImport.isConfigured() && setFigmaOpen(true)}
-                disabled={!stores.designImport.isConfigured()}
-                className="p-8 text-center transition-all flex flex-col items-center justify-center gap-3"
-                style={{
-                  border: "1.5px dashed var(--border-strong)",
-                  borderRadius: "var(--radius-card)",
-                  background: "var(--bg-surface)",
-                  minHeight: 220,
-                  cursor: stores.designImport.isConfigured() ? "pointer" : "default",
-                  opacity: stores.designImport.isConfigured() ? 1 : 0.55,
-                }}
-              >
-                <Figma className="w-6 h-6" style={{ color: "var(--state-primary)" }} />
-                <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>
-                  Import from Figma
-                </p>
-                <p
-                  style={{
-                    fontSize: "var(--type-caption-size)",
-                    color: "var(--text-secondary)",
-                    maxWidth: 240,
-                  }}
-                >
-                  {stores.designImport.isConfigured()
-                    ? "Paste a frame link. Every element lands on the canvas as an editable field. Mark anything that shouldn't be as fixed."
-                    : "Requires the Supabase backend with the Figma connection configured (see docs/ARCHITECTURE.md)."}
-                </p>
-              </button>
-              {/* Path B2 — Canva link. Only once the workspace has connected
-                  Canva; it goes through auto-build, opened on the Canva tab,
-                  since Canva hands over a flat export rather than layers. */}
-              {canvaReady && (
-                <button
-                  onClick={() => {
-                    setAutoBuildTab("canva");
-                    setAutoBuildOpen(true);
-                  }}
-                  className="p-8 text-center transition-all flex flex-col items-center justify-center gap-3"
-                  style={{
-                    border: "1.5px dashed var(--border-strong)",
-                    borderRadius: "var(--radius-card)",
-                    background: "var(--bg-surface)",
-                    minHeight: 220,
-                    cursor: "pointer",
-                  }}
-                >
-                  <Palette className="w-6 h-6" style={{ color: "var(--state-primary)" }} />
-                  <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>
-                    Import from Canva
-                  </p>
-                  <p
-                    style={{
-                      fontSize: "var(--type-caption-size)",
-                      color: "var(--text-secondary)",
-                      maxWidth: 240,
-                    }}
-                  >
-                    Paste a design link. Claude reads the exported design, proposes the fields, and
-                    writes the caption. You correct in the inspector.
-                  </p>
-                </button>
-              )}
-              {/* Path C — auto-build with Claude */}
-              <button
-                onClick={() => stores.designImport.isConfigured() && setAutoBuildOpen(true)}
-                disabled={!stores.designImport.isConfigured()}
-                className="p-8 text-center transition-all flex flex-col items-center justify-center gap-3"
-                style={{
-                  border: "1.5px dashed var(--border-strong)",
-                  borderRadius: "var(--radius-card)",
-                  background: "var(--bg-surface)",
-                  minHeight: 220,
-                  cursor: stores.designImport.isConfigured() ? "pointer" : "default",
-                  opacity: stores.designImport.isConfigured() ? 1 : 0.55,
-                }}
-              >
-                <Sparkles className="w-6 h-6" style={{ color: "var(--state-primary)" }} />
-                <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>
-                  Auto-build with Claude
-                </p>
-                <p
-                  style={{
-                    fontSize: "var(--type-caption-size)",
-                    color: "var(--text-secondary)",
-                    maxWidth: 240,
-                  }}
-                >
-                  {stores.designImport.isConfigured()
-                    ? `Paste a Figma${canvaReady ? " or Canva" : ""} link or upload an image. Claude decides what's editable, names every field, and writes the caption. You correct in the inspector.`
-                    : "Requires the Supabase backend with auto-build configured (see docs/ARCHITECTURE.md)."}
-                </p>
-              </button>
-            </div>
+            {/* Path A opens the size gallery (imports skip it: the frame
+                imposes its own size); B and C open their link popups; the
+                auto-build dialog keeps its three source tabs. */}
+            <BuildPicker
+              importReady={stores.designImport.isConfigured()}
+              canvaReady={canvaReady}
+              onBlank={() => setSizeDialogOpen(true)}
+              onFigma={() => setFigmaOpen(true)}
+              onAuto={() => setAutoBuildOpen(true)}
+              onCanva={() => setCanvaOpen(true)}
+            />
           </div>
 
           {sizeDialogOpen && (
