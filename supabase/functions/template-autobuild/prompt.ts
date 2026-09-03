@@ -25,6 +25,7 @@ Cover every element in the list with exactly one field proposal. Anything you sk
 - required: true only for fields the graphic is meaningless without.
 - typeStyleKey: bind to a brand type style when the element's role clearly matches one (a headline to the heading style, body copy to body). Leave unbound when unsure.
 - colorKey: map the element's extracted hex onto the nearest brand palette entry when they are visually close (the palette entry's hex is copied onto the field); leave unset when nothing in the palette is close.
+- plateHex (only when the import asks for it, editable text fields only): the solid colour visible behind the text in the picture, as #RRGGBB. Omit when the backdrop is a photo or gradient.
 
 ## Template metadata
 

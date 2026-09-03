@@ -221,7 +221,7 @@ async function extractCanva(
 
   const warnings = [
     "Canva shares a flat image of the design, so field boxes are proposed from the picture. Check their positions in the inspector.",
-    "Canva imports keep the original artwork visible behind editable text — give editable text a fill or a background shape behind it.",
+    "The original text stays baked into the picture, so each editable text field gets a Fixed plate of the backdrop colour beneath it. Check the plates where the backdrop is a photo or gradient.",
   ];
   if (info.pageCount > 1) {
     warnings.push(`This design has ${info.pageCount} pages — only page 1 imported.`);
@@ -301,6 +301,11 @@ const PROPOSE_TEMPLATE_TOOL = {
             placeholder: { type: "string" },
             typeStyleKey: { type: "string" },
             colorKey: { type: "string" },
+            plateHex: {
+              type: "string",
+              description:
+                "Flat Canva imports, editable text fields only: the solid colour behind this text in the picture, as #RRGGBB. The system paints a Fixed rectangle of it under the field so the baked text does not show through. Omit when the backdrop is a photo or gradient.",
+            },
           },
         },
       },
@@ -365,6 +370,7 @@ function buildUserText(
   brand: BrandContextFull,
   hint: string | undefined,
   sourceKind: AutobuildSourceKind,
+  platesBehindText: boolean,
 ): string {
   const parts: string[] = [];
   parts.push(
@@ -374,6 +380,11 @@ function buildUserText(
     parts.push(
       "This is a flat image import — there is no element list. Propose fields with conservative bounding boxes (box, in canvas pixels). Prefer fewer confident fields to many uncertain ones.",
     );
+    if (platesBehindText) {
+      parts.push(
+        "This picture is a Canva export and its original text stays baked into the background. For every editable text field, also give plateHex: the solid colour visible behind that text in the picture, as #RRGGBB. The system paints a Fixed rectangle of it under the field so the baked text does not show through. If the backdrop there is a photo or a gradient rather than a solid colour, omit plateHex.",
+      );
+    }
   } else {
     parts.push(
       `Extracted elements (reference by sourceId; all geometry is authoritative):\n${JSON.stringify(extraction.elements)}`,
@@ -605,9 +616,18 @@ Deno.serve(async (req) => {
     // "canva" for provenance. The validator's own canva branch belongs to
     // the parked geometry path and is unreachable from here.
     const proposalKind: AutobuildSourceKind = source.kind === "canva" ? "image" : source.kind;
+    // The Canva export has its text baked in with no recompose to lift it,
+    // so editable text gets a plate of the backdrop colour beneath it.
+    const platesBehindText = source.kind === "canva";
 
     // 4. One forced tool call; one retry carrying the validation errors.
-    const userText = buildUserText(extraction, { typeStyles, colors, catalog }, hint, proposalKind);
+    const userText = buildUserText(
+      extraction,
+      { typeStyles, colors, catalog },
+      hint,
+      proposalKind,
+      platesBehindText,
+    );
     let attempt = await callClaude(apiKey, imageBase64, userText);
     let validated;
     try {
@@ -619,6 +639,7 @@ Deno.serve(async (req) => {
           colors: colors.map(({ key, hex }) => ({ key, hex })),
         },
         proposalKind,
+        { platesBehindText },
       );
     } catch (e) {
       if (!(e instanceof AutobuildValidationError)) throw e;

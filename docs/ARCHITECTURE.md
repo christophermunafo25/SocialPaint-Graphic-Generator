@@ -353,9 +353,14 @@ What comes back is a flat picture with no element list, so the proposal
 runs exactly as the image path does: Claude proposes conservative boxes,
 the validator clamps them, and the response reports `sourceKind: "canva"`
 for provenance. There is no layered recompose (no `sourceUrl`): the export
-stays as the background and an editable text field sits over its baked
-twin until the admin gives it a fill or a shape behind it, which the
-warnings say.
+stays as the background with the source text baked in. So the request also
+asks the model for a `plateHex` per editable text field, the solid colour
+it sees behind that text, and the validator pushes a Fixed rect of that
+colour with the field's own box immediately before the field, which the
+builder's import z-orders beneath it. The plate hides the baked twin on a
+solid backdrop; on a photo or gradient the model omits the colour, the
+warnings count the unplated fields, and the admin decides in the
+inspector.
 
 **Why flat.** Canva's element geometry (position, size, rotation, text
 runs, image fills, shape paths) is only exposed by its MCP server at
