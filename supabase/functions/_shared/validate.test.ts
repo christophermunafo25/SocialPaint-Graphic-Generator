@@ -13,10 +13,10 @@ import {
   requireString,
   requireStringArray,
   requireUuid,
+  parseCanvaUrl,
   parseFigmaFileKey,
   parseFigmaUrl,
 } from "./validate.ts";
-import { parseCanvaUrl } from "./canvaMcp.ts";
 
 const status = (fn: () => unknown): number | null => {
   try {
@@ -126,15 +126,40 @@ describe("parseFigmaUrl host pinning", () => {
 });
 
 describe("parseCanvaUrl host pinning", () => {
-  it("accepts real Canva design links", () => {
+  it("accepts the address-bar design link, with or without the share token", () => {
     expect(parseCanvaUrl("https://www.canva.com/design/DAF_abc-123/view")).toEqual({
       designId: "DAF_abc-123",
     });
+    expect(parseCanvaUrl("https://www.canva.com/design/DAHTcIe6lkk/AbC_dEf/edit?x=1")).toEqual({
+      designId: "DAHTcIe6lkk",
+    });
+    expect(parseCanvaUrl("https://canva.com/design/DAHTcIe6lkk")).toEqual({
+      designId: "DAHTcIe6lkk",
+    });
   });
-  it("rejects canva.com-shaped paths on other hosts", () => {
+  it("names a /d/ share link so the caller can say where the real link is", () => {
+    expect(parseCanvaUrl("https://www.canva.com/d/WsEWp9m1vDakHyM")).toEqual({
+      shortLink: true,
+    });
+    expect(parseCanvaUrl("https://www.canva.com/d/LosxJ9VN_9A-bOf/")).toEqual({
+      shortLink: true,
+    });
+  });
+  it("rejects canva.com-shaped paths on other hosts, for both path shapes", () => {
     expect(parseCanvaUrl("https://evil.com/canva.com/design/DAF123")).toBeNull();
     expect(parseCanvaUrl("https://canva.com.evil.com/design/DAF123")).toBeNull();
+    expect(parseCanvaUrl("https://evilcanva.com/design/DAF123")).toBeNull();
     expect(parseCanvaUrl("http://canva.com/design/DAF123")).toBeNull();
+    expect(parseCanvaUrl("https://evil.com/d/WsEWp9m1vDakHyM")).toBeNull();
+    expect(parseCanvaUrl("https://canva.com.evil.com/d/WsEWp9m1vDakHyM")).toBeNull();
+    expect(parseCanvaUrl("http://www.canva.com/d/WsEWp9m1vDakHyM")).toBeNull();
+  });
+  it("rejects other canva.com paths and malformed ids", () => {
+    expect(parseCanvaUrl("https://www.canva.com/design/")).toBeNull();
+    expect(parseCanvaUrl("https://www.canva.com/design/DAF 123/view")).toBeNull();
+    expect(parseCanvaUrl("https://www.canva.com/folder/abc")).toBeNull();
+    expect(parseCanvaUrl("https://www.canva.com/d/")).toBeNull();
+    expect(parseCanvaUrl("not a url")).toBeNull();
   });
 });
 

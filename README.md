@@ -55,7 +55,7 @@ Open the printed localhost URL and the first-run wizard walks you through creati
 
    ```bash
    supabase secrets set ALLOWED_ORIGINS="https://www.socialpaint.ai,https://socialpaint.ai,http://localhost:*"
-   supabase functions deploy figma-status figma-connect figma-import figma-layers figma-styles invite-member template-links
+   supabase functions deploy figma-status figma-connect figma-import figma-layers figma-styles invite-member template-links canva-auth integration-status template-autobuild
    ```
 
    The two public-link functions are the only ones that accept a caller with no JWT, which `supabase/config.toml` records per function — do not add a global `verify_jwt = false`. Deploying them reads that file, so no extra flag is needed:
@@ -70,6 +70,20 @@ Open the printed localhost URL and the first-run wizard walks you through creati
 ### Figma integration (optional)
 
 The manual builder always works without it. To enable Figma import, an admin connects a Figma personal access token from Settings; the token is stored server-side and used only by Edge Functions. The client never talks to the Figma API directly. OAuth is also implemented: set `FIGMA_CLIENT_ID`, `FIGMA_CLIENT_SECRET`, and `FIGMA_OAUTH_REDIRECT_URI` via `supabase secrets set` to enable it.
+
+### Canva integration (optional)
+
+Off by default. Canva import runs through Auto-build: an admin pastes a design link, Canva's documented Connect API exports page 1 as a flat PNG, and Claude proposes field boxes from the picture the way it does for an uploaded image. There is no layer data on this path, so expect to adjust the boxes, and editable text sits over the original artwork until it is given a fill or a shape behind it.
+
+To enable it, create an integration in the [Canva developer portal](https://www.canva.com/developers/) with the scopes `design:content:read` and `design:meta:read`, add your app origin followed by `/?canva_oauth=1` as a redirect URL, then:
+
+```bash
+supabase secrets set CANVA_ENABLED=true CANVA_CLIENT_ID=... CANVA_CLIENT_SECRET=...
+```
+
+With either secret missing the feature stays hidden rather than broken. An admin then connects Canva from Settings, Integrations, with their own Canva login; the tokens are stored server-side, refreshed by the Edge Functions, and never reach a browser. Every Canva call is logged under `template-autobuild` with Canva's own error code, so a refusal such as `license_required` or a throttle is visible in the function logs.
+
+Canva also runs an MCP server that exposes element geometry, which would place fields exactly. It is unversioned, its payload format has changed without notice, and its published terms restrict exporting design structure into another design tool, so that path is parked in `supabase/functions/_shared/canvaMcp.ts` and nothing imports it. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the reasoning.
 
 ## Architecture at a glance
 

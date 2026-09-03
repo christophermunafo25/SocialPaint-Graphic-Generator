@@ -104,20 +104,6 @@ export function AutoBuildDialog({ onClose, onBuilt }: AutoBuildDialogProps) {
     }
   };
 
-  const connectCanva = async () => {
-    if (!company) return;
-    setError(null);
-    try {
-      const { authorizeUrl } = await stores.designImport.canvaConnectStart(
-        company.id,
-        `${window.location.origin}/?canva_oauth=1`,
-      );
-      window.location.assign(authorizeUrl); // returns via the app's callback handler
-    } catch (e) {
-      setError(`${e instanceof Error ? e.message : "Canva connect failed."} ${MANUAL_PATHS_NOTE}`);
-    }
-  };
-
   const drop = useFileDrop((files) => {
     if (files[0]) void runImage(files[0]);
   });
@@ -234,24 +220,17 @@ export function AutoBuildDialog({ onClose, onBuilt }: AutoBuildDialogProps) {
             {tab === "canva" && canva?.enabled && (
               <div className="space-y-3">
                 {!canva.connected ? (
-                  <>
-                    <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
-                      Connect your Canva account to read designs. Each admin authorizes with their
-                      own Canva login; the tokens are stored server-side and never reach this
-                      browser again.
-                    </p>
-                    <button
-                      onClick={() => void connectCanva()}
-                      className="sp-btn sp-btn-primary w-full"
-                    >
-                      Connect Canva
-                    </button>
-                  </>
+                  <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
+                    Canva isn't connected yet — connect it from Settings, Integrations, then come
+                    back. Each admin authorizes with their own Canva login; the tokens are stored
+                    server-side and never reach this browser. {MANUAL_PATHS_NOTE}
+                  </p>
                 ) : (
                   <>
                     <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
-                      Paste a Canva design link. Elements Canva reports as locked arrive Fixed;
-                      unlocked text arrives editable.
+                      Paste the design link from your browser's address bar. Canva shares a flat
+                      image of the design, so Claude proposes field boxes from the picture, as with
+                      an uploaded image — expect to adjust them.
                     </p>
                     <p
                       className="px-3 py-2"

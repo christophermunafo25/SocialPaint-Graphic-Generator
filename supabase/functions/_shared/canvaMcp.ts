@@ -1,9 +1,28 @@
-// Minimal MCP client for Canva — JSON-RPC 2.0 over Streamable HTTP against
-// https://mcp.canva.com/mcp. Exactly two tools are used: `read-design` (with
-// a transaction open, which is what makes the full CDF with [locator_id]
-// annotations appear — a plain read returns readable text only) and
-// `export-design` (PNG for the background). Nothing else is implemented:
-// no editing, no generation, no autofill.
+// PARKED 2026-09-03. Nothing imports this module. Do not wire it in.
+//
+// Minimal MCP client for Canva: JSON-RPC 2.0 over Streamable HTTP against
+// https://mcp.canva.com/mcp, using `read-design` with a transaction open
+// (which is what makes the full element geometry appear) and
+// `export-design` for the background PNG. No editing, no generation, no
+// autofill.
+//
+// Why it is parked. The MCP server is the only Canva surface that exposes
+// element geometry, and it is unversioned: no API version, no deprecation
+// policy, no support path, and its payload format changed once already
+// under us. The `??` fallbacks in readDesign and exportDesign below are the
+// old shape; the live server returns `design_content` as an object
+// (`{ title, pages[] }`), the transaction id at
+// `transaction.transaction_id`, and export URLs at `job.urls`, so today this
+// client's export path throws on every call. The captured payloads are in
+// canvaMcpFixtures.ts. Canva's published MCP terms also restrict exporting
+// design structure into another design tool, and its redirect URI allowlist
+// is application-gated. The shipping Canva integration is the documented
+// Connect REST export in canvaRestExport.ts, which yields a flat PNG.
+//
+// If this resumes: register the client through a Client ID Metadata
+// Document rather than dynamic registration (Canva deprecates the latter),
+// replace every silent fallback with an assertion that names a format
+// change, and rewrite canvaCdf.ts for the JSON shape in the fixtures.
 
 const MCP_URL = "https://mcp.canva.com/mcp";
 
@@ -165,17 +184,5 @@ export class CanvaMcpClient {
   }
 }
 
-/** Parse a Canva design URL into its design id, with the host pinned to
- * canva.com — a canva.com-shaped path on some other host does not pass. */
-export function parseCanvaUrl(url: string): { designId: string } | null {
-  let u: URL;
-  try {
-    u = new URL(url);
-  } catch {
-    return null;
-  }
-  if (u.protocol !== "https:") return null;
-  if (u.hostname !== "canva.com" && !u.hostname.endsWith(".canva.com")) return null;
-  const m = u.pathname.match(/^\/design\/([A-Za-z0-9_-]+)(?:\/|$)/);
-  return m ? { designId: m[1] } : null;
-}
+// parseCanvaUrl lives in validate.ts: the link classifier is shared by the
+// REST path and is not part of what is parked here.

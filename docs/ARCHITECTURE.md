@@ -79,8 +79,12 @@ from the platform in migration 0009.)
   link. Folds into the audit log when that lands.
 - `rate_limit_counters` — fixed-window counters keyed by an opaque string.
   **No client access, ever** — service role only.
-- `integration_connections` — Figma tokens. **No client access, ever** —
-  Edge Functions only, via service role.
+- `integration_connections` — Figma and Canva tokens, one row per
+  `(company, provider)`. **No client access, ever** — Edge Functions only,
+  via service role.
+- `canva_oauth_states` — the server-side half of a Canva connect in
+  flight (state nonce, PKCE verifier). Single-use, ten-minute TTL. **No
+  client access, ever.**
 
 The database ships **empty of tenant data**. Onboarding creates everything.
 
@@ -315,12 +319,71 @@ ids from component instances are skipped; masks/effects don't map; if the
 tree can't be parsed you still get the rendered background and map fields
 manually.
 
+## Canva integration
+
+Auto-build only (there is no plain Canva import); off unless `CANVA_ENABLED`
+and a Connect API client id are set. Client code talks ONLY to our Edge
+Functions:
+
+- `canva-auth` — the OAuth lifecycle: `status`, `start` (PKCE, with the
+  state and verifier held server-side in `canva_oauth_states`, single-use,
+  ten-minute TTL), `callback` (code exchange), `disconnect`. Admin-only;
+  the redirect target must be one of our own origins. Tokens land in
+  `integration_connections` with `provider = 'canva'`, next to Figma's.
+  Canva access tokens are short-lived and refresh tokens rotate, so
+  `_shared/canva.ts` refreshes under a lease column
+  (`refresh_lease_until`) that lets exactly one invocation refresh while
+  the rest wait for its result.
+- `template-autobuild` with `source.kind = "canva"` — the link is parsed
+  with the host pinned to canva.com (`/design/<id>/…` only; `canva.com/d/`
+  share codes are per-request and no Canva API resolves them, so the admin
+  is told to copy the address-bar link instead), then
+  `_shared/canvaRestExport.ts` walks the documented Connect API: `GET
+  /v1/designs/{id}` for the page count, `GET …/export-formats` to confirm
+  page 1 exports as PNG, `POST /v1/exports`, and `GET /v1/exports/{id}`
+  polled with doubling backoff under a 90-second ceiling. The PNG is fetched
+  inside the signed URL's own `X-Amz-Expires` window, its dimensions are
+  read from the IHDR header, and it is re-hosted in `template-backgrounds`.
+  Export quality and compression stay at Canva's defaults. `license_required`
+  and `approval_required` get their own admin-facing sentences; everything
+  else names Canva and the status. All of it is under `design:content:read`
+  and `design:meta:read`.
+
+What comes back is a flat picture with no element list, so the proposal
+runs exactly as the image path does: Claude proposes conservative boxes,
+the validator clamps them, and the response reports `sourceKind: "canva"`
+for provenance. There is no layered recompose (no `sourceUrl`): the export
+stays as the background and an editable text field sits over its baked
+twin until the admin gives it a fill or a shape behind it, which the
+warnings say.
+
+**Why flat.** Canva's element geometry (position, size, rotation, text
+runs, image fills, shape paths) is only exposed by its MCP server at
+`mcp.canva.com`, not by the Connect REST API. That server publishes no
+version and no deprecation policy, and its `read-design` payload changed
+shape once already while we were building against it, from line-oriented
+markdown to a JSON object, without an error: the client accepted three
+names for one field, so a wrong shape became an empty string. Its published
+terms also prohibit exporting design structure into another design tool
+without written consent, and its redirect URI allowlist is granted by
+application. A buyer's vendor review asks which APIs an integration uses,
+and the answer has to be a documented, licensed one. So the MCP client and
+its markdown parser are parked in `_shared/canvaMcp.ts` and
+`_shared/canvaCdf.ts` (nothing imports them), the captured JSON payloads
+sit in `_shared/canvaMcpFixtures.ts` as evidence of the shape, and one test
+records that the old parser does not read them. If that path ever resumes,
+every silent fallback becomes an assertion that names a format change,
+logged under a distinct tag so a drift shows up in Sentry within hours,
+and the client registers through a Client ID Metadata Document rather than
+dynamic registration.
+
 ## Environment
 
 See `.env.example`. Client env (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`)
-is safe to expose — security comes from RLS. Figma secrets exist only as Edge
-Function secrets. No secrets in code, ever.
+is safe to expose — security comes from RLS. Figma and Canva secrets exist
+only as Edge Function secrets. No secrets in code, ever.
 
 Local dev: `npm run dev`. With Supabase: `supabase start` (or a hosted
 project), `supabase db push` (or run migrations), `supabase functions deploy
-figma-status figma-connect figma-import`, fill `.env`.
+figma-status figma-connect figma-import canva-auth integration-status
+template-autobuild`, fill `.env`.
