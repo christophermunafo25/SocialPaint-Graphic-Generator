@@ -190,7 +190,6 @@ export function AdminTemplates() {
           <span
             style={{
               fontSize: "var(--type-label-size)",
-              fontWeight: 500,
               color: "var(--text-primary)",
             }}
           >
@@ -293,7 +292,6 @@ export function AdminTemplates() {
                 className="px-3 flex items-center"
                 style={{
                   fontSize: "var(--type-caption-size)",
-                  fontWeight: 500,
                   ...(statusFilter === key
                     ? { background: "var(--btn-primary-bg)", color: "var(--btn-primary-fg)" }
                     : { background: "var(--bg-surface)", color: "var(--text-secondary)" }),
@@ -412,7 +410,7 @@ export function AdminTemplates() {
                     ariaLabel={`Rename ${t.name}`}
                     inputAriaLabel="Template name"
                     placeholder="Untitled template"
-                    valueStyle={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}
+                    valueStyle={{ fontSize: 14, color: "var(--text-primary)" }}
                     onSave={(name) => renameTemplate(t, name)}
                   />
                   {/* Line 2: status (+ provenance when a model built the fields) */}

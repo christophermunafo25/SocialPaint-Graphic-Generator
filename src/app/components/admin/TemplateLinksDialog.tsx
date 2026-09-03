@@ -418,9 +418,7 @@ function CreateLinkForm({
 
       <div className="flex items-start justify-between" style={{ gap: "var(--space-sm)" }}>
         <div className="min-w-0">
-          <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>
-            Allow photo uploads
-          </p>
+          <p style={{ fontSize: 14, color: "var(--text-primary)" }}>Allow photo uploads</p>
           <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
             {allowUploads
               ? "Photos are cropped in the visitor's own browser and go straight into their graphic — they never reach us."
@@ -467,10 +465,7 @@ function LinkRow({
     <div className="sp-card p-4 space-y-2">
       <div className="flex items-start justify-between" style={{ gap: "var(--space-2xs)" }}>
         <div className="min-w-0">
-          <p
-            className="truncate"
-            style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}
-          >
+          <p className="truncate" style={{ fontSize: 14, color: "var(--text-primary)" }}>
             {link.name || "Untitled link"}
           </p>
           <span

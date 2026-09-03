@@ -172,9 +172,7 @@ export function AutoBuildDialog({ onClose, onBuilt, initialTab }: AutoBuildDialo
               className="w-5 h-5 animate-spin mx-auto"
               style={{ color: "var(--state-primary)" }}
             />
-            <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>
-              {STAGES[stage]}
-            </p>
+            <p style={{ fontSize: 14, color: "var(--text-primary)" }}>{STAGES[stage]}</p>
             <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
               This takes 15–40 seconds. Everything lands editable-or-fixed on the canvas — change
               anything in the inspector.

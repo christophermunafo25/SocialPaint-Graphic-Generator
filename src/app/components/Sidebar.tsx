@@ -192,7 +192,6 @@ function AccountBlock({ onNavigate }: { onNavigate(route: Route): void }) {
             title={displayName}
             style={{
               fontSize: "var(--type-label-size)",
-              fontWeight: 500,
               color: "var(--sb-fg-active)",
             }}
           >

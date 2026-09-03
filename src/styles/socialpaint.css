@@ -32,9 +32,10 @@
      #FFFFFF or #F1F1F1, so brand colours are fill-only on light and
      never appear as text or as a border that carries information.
    - No gradients as surface, no drop shadows in either mode, no glass.
-   - Headings are Plus Jakarta Sans SemiBold at −3% tracking in sentence
-     case (2026-08-31); bold proper is banned everywhere in chrome. Small
-     labels (eyebrows, table headers) stay ALL CAPS mono at 0.04em tracking.
+   - Every word of chrome is Inter Tight Regular (2026-09-03, at Chris's
+     direction): headings, body, and UI share the single 400 cut, so
+     hierarchy comes from size and colour, never weight. Small labels
+     (eyebrows, table headers) stay ALL CAPS mono at 0.04em tracking.
 
    Themes are scoped to [data-theme="light" | "dark"], which
    ColorSchemeProvider sets on <html> alongside the .dark class that
@@ -46,21 +47,21 @@
 
 @import url("https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap");
 
-/* Two platform families, both registered under platform-private names so a
+/* One platform family, registered under a platform-private name so a
    tenant's font upload can never shadow the chrome (@font-face is
    document-global; see the Neuething incident, 2026-08-05).
 
-   Plus Jakarta Sans SemiBold is the HEADING face only (2026-08-31, at
-   Chris's direction — it replaces Gopadel) — every --font-head site pairs
-   with --weight-head 600, so it ships as the single cut (self-hosted from
-   the Google Fonts latin + latin-ext subsets, keeping the private-name
-   policy a CDN @import would break), and every heading step tracks at −3%.
-   Raveo Display remains the body/UI face at Regular and Medium. Bold
-   proper stays banned everywhere. */
+   Inter Tight Regular is the whole chrome (2026-09-03, at Chris's
+   direction — it replaces Plus Jakarta Sans SemiBold on headings and Raveo
+   Display on body/UI). It ships as the single 400 cut, self-hosted from the
+   Google Fonts latin + latin-ext subsets (a CDN @import would register the
+   public family name and break the private-name policy). Every heading
+   step and every UI weight token resolves to 400; bold proper stays banned
+   everywhere. */
 @font-face {
-  font-family: "Plus Jakarta Platform";
-  src: url("../assets/fonts/jakarta/PlusJakartaSans-SemiBold-latin.woff2") format("woff2");
-  font-weight: 600;
+  font-family: "Inter Tight Platform";
+  src: url("../assets/fonts/inter-tight/InterTight-Regular-latin.woff2") format("woff2");
+  font-weight: 400;
   font-style: normal;
   font-display: swap;
   unicode-range:
@@ -68,29 +69,15 @@
     U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
-  font-family: "Plus Jakarta Platform";
-  src: url("../assets/fonts/jakarta/PlusJakartaSans-SemiBold-latin-ext.woff2") format("woff2");
-  font-weight: 600;
+  font-family: "Inter Tight Platform";
+  src: url("../assets/fonts/inter-tight/InterTight-Regular-latin-ext.woff2") format("woff2");
+  font-weight: 400;
   font-style: normal;
   font-display: swap;
   unicode-range:
     U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
     U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
     U+A720-A7FF;
-}
-@font-face {
-  font-family: "Raveo Display Platform";
-  src: url("../assets/fonts/raveo/RaveoDisplay-Regular.otf") format("opentype");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Raveo Display Platform";
-  src: url("../assets/fonts/raveo/RaveoDisplay-Medium.otf") format("opentype");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
 }
 
 /* The document is the vertical scroll container (AppShell's main has no
@@ -126,15 +113,15 @@ html {
   --gray: #f1f1f1;
   --ink: #272727;
 
-  /* Typography — Plus Jakarta Sans SemiBold carries headings; Raveo
-     Display carries body and UI. */
-  --font-head: "Plus Jakarta Platform", "Plus Jakarta Sans", system-ui, sans-serif;
-  --weight-head: 600; /* every heading step — Plus Jakarta Sans SemiBold */
-  --track-head: -0.03em; /* −3% on every heading step — the heading face's spec */
-  --font-body: "Raveo Display Platform", "Raveo Display", system-ui, -apple-system, sans-serif;
-  --font-ui: "Raveo Display Platform", "Raveo Display", system-ui, -apple-system, sans-serif;
+  /* Typography — Inter Tight Regular carries headings, body, and UI alike.
+     The three family tokens stay distinct so a future split is one edit. */
+  --font-head: "Inter Tight Platform", "Inter Tight", system-ui, sans-serif;
+  --weight-head: 400; /* every heading step — Regular is the only cut */
+  --track-head: -0.01em; /* Inter Tight is drawn tight already; a light −1% is all the headline steps need */
+  --font-body: "Inter Tight Platform", "Inter Tight", system-ui, -apple-system, sans-serif;
+  --font-ui: "Inter Tight Platform", "Inter Tight", system-ui, -apple-system, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  --weight-ui: 500;
+  --weight-ui: 400;
 
   --type-display-size: 80px;
   --type-display-lh: 0.92;
@@ -643,14 +630,14 @@ optgroup {
 .sp-panel-title {
   font-family: var(--font-ui);
   font-size: 14px;
-  font-weight: 500;
+  font-weight: var(--weight-ui);
   letter-spacing: -0.01em;
   color: var(--text-primary);
 }
 
 .sp-btn {
   font-family: var(--font-ui);
-  font-weight: 500;
+  font-weight: var(--weight-ui);
   font-size: 13px;
   letter-spacing: -0.02em;
   min-height: 38px;
@@ -2073,7 +2060,7 @@ optgroup {
   border-radius: var(--radius-control);
   border: 1px solid transparent;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: var(--weight-ui);
   letter-spacing: -0.015em;
   color: var(--sb-fg);
   transition:

@@ -207,10 +207,7 @@ export function AuthPage() {
           <p className="sp-gate__footer" style={{ textAlign: "left" }}>
             We sent a confirmation link to
           </p>
-          <p
-            className="sp-gate__label"
-            style={{ lineHeight: 1.4, overflowWrap: "anywhere", fontWeight: 500 }}
-          >
+          <p className="sp-gate__label" style={{ lineHeight: 1.4, overflowWrap: "anywhere" }}>
             {email}
           </p>
           <p className="sp-gate__footer" style={{ textAlign: "left" }}>
