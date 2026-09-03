@@ -60,11 +60,15 @@ async function ensureImagesReady(node: HTMLElement): Promise<void> {
   }
 }
 
-export async function exportSchemaPng(
+/** Rasterize a mounted canvas node to PNG bytes. Throws ExportAssetError
+ * when an image in the canvas did not load. This is THE rasterization path:
+ * the single export and the bulk export both come through here, which is
+ * what makes a bulk PNG identical to the one a member downloads. */
+export async function renderSchemaBlob(
   schema: TemplateSchema,
   node: HTMLElement,
   brandKit?: BrandKit | null,
-): Promise<ExportOutcome> {
+): Promise<Blob> {
   await ensureImagesReady(node);
   await ensureSchemaFontsLoaded(schema, brandKit);
   const fontEmbedCss = await buildExportFontEmbedCss(schema, brandKit);
@@ -86,7 +90,18 @@ export async function exportSchemaPng(
 
   // One Blob serves both branches; browsers handle multi-megabyte base64
   // hrefs inconsistently, so the data URL is dropped as early as possible.
-  const blob = await (await fetch(dataUrl)).blob();
+  return (await fetch(dataUrl)).blob();
+}
+
+/** Rasterize and hand the PNG to the user: a share sheet on mobile, a
+ * download everywhere else. The rasterization itself is renderSchemaBlob;
+ * this adds only delivery. */
+export async function exportSchemaPng(
+  schema: TemplateSchema,
+  node: HTMLElement,
+  brandKit?: BrandKit | null,
+): Promise<ExportOutcome> {
+  const blob = await renderSchemaBlob(schema, node, brandKit);
 
   const fileName = `${schema.name.replace(/[^a-zA-Z0-9_-]+/g, "_") || "graphic"}.png`;
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
