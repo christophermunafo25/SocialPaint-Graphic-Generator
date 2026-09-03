@@ -7,6 +7,7 @@ import { ConfirmDialog } from "../../ConfirmDialog";
 import { ErrorState } from "../../ErrorState";
 import { FigmaConnectForm } from "./FigmaConnectForm";
 import { DevBackendNotice, SettingsCard } from "./settingsShared";
+import { markCanvaConnectStarted } from "@/lib/canvaReturn";
 
 const PROVIDER_LABELS: Record<IntegrationConnectionInfo["provider"], string> = {
   figma: "Figma",
@@ -66,6 +67,8 @@ export function IntegrationsSection() {
     void stores.designImport
       .canvaConnectStart(company.id, `${window.location.origin}/?canva_oauth=1`)
       .then(({ authorizeUrl }) => {
+        // Lets the return be recognised even if Canva drops our query.
+        markCanvaConnectStarted();
         window.location.assign(authorizeUrl);
       })
       .catch((e) => {
