@@ -313,7 +313,10 @@ function BulkFill({
               <tbody>
                 {csv.headers.map((header, i) => (
                   <tr key={i} style={{ borderTop: "1px solid var(--border)" }}>
-                    <td className="px-3 py-2" style={{ color: "var(--text-primary)" }}>
+                    <td
+                      className="px-3 py-2"
+                      style={{ color: "var(--text-primary)", fontWeight: 500 }}
+                    >
                       {header || <span style={mutedText}>(no heading)</span>}
                     </td>
                     <td
@@ -457,7 +460,10 @@ function BulkFill({
                         >
                           {c.index + 1}
                         </td>
-                        <td className="px-3 py-2" style={{ color: "var(--text-primary)" }}>
+                        <td
+                          className="px-3 py-2"
+                          style={{ color: "var(--text-primary)", fontWeight: 500 }}
+                        >
                           {truncate(
                             identifierField ? (c.values[identifierField.fieldKey] ?? "") : "",
                             40,
@@ -617,7 +623,7 @@ function UploadStep({
         <span className="sp-dropzone__icon flex">
           <FileSpreadsheet style={{ width: 22, height: 22 }} />
         </span>
-        <span style={{ color: "var(--text-primary)" }}>
+        <span style={{ color: "var(--text-primary)", fontWeight: 500 }}>
           Drop a CSV here, or click to choose one
         </span>
         <span style={mutedText}>One row per graphic. Comma, tab, or semicolon separated.</span>

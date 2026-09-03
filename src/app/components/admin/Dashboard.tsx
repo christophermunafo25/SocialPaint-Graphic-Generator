@@ -178,7 +178,9 @@ export function Dashboard() {
           >
             <BrandMark width={280} />
           </span>
-          <p style={{ fontSize: 14, color: "var(--text-primary)" }}>No usage yet</p>
+          <p style={{ fontSize: 14, color: "var(--text-primary)", fontWeight: 500 }}>
+            No usage yet
+          </p>
           <p
             style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)", marginTop: 6 }}
           >
@@ -376,6 +378,7 @@ export function Dashboard() {
                           className="truncate"
                           style={{
                             fontSize: "var(--type-label-size)",
+                            fontWeight: 500,
                             color: "var(--text-primary)",
                           }}
                         >
@@ -465,7 +468,10 @@ export function Dashboard() {
                 <tbody>
                   {summary.rows.map((r) => (
                     <tr key={r.templateId} style={{ borderTop: "1px solid var(--border)" }}>
-                      <td className="px-4 py-3" style={{ color: "var(--text-primary)" }}>
+                      <td
+                        className="px-4 py-3"
+                        style={{ color: "var(--text-primary)", fontWeight: 500 }}
+                      >
                         {r.templateName}
                       </td>
                       <td
@@ -607,6 +613,7 @@ export function Dashboard() {
                             className="block"
                             style={{
                               color: r.revokedAt ? "var(--text-muted)" : "var(--text-primary)",
+                              fontWeight: 500,
                             }}
                           >
                             {r.linkName || "Untitled link"}
