@@ -33,6 +33,7 @@ export function summarizeMonthlyUsage(
   const out: MonthlyUsage = {
     opens: 0,
     downloads: 0,
+    bulkExports: 0,
     publicOpens: 0,
     templatesUsed: 0,
     membersActive: 0,
@@ -47,6 +48,8 @@ export function summarizeMonthlyUsage(
       if (e.actor === "public") out.publicOpens += 1;
     } else if (e.action === "download") {
       out.downloads += 1;
+    } else if (e.action === "bulk_export") {
+      out.bulkExports += 1;
     }
   }
   out.templatesUsed = templates.size;

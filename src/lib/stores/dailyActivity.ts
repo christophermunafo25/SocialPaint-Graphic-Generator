@@ -35,7 +35,14 @@ export function bucketDailyActivity(
   const [y, m, d] = dayKeyInZone(new Date().toISOString(), timeZone).split("-").map(Number);
   for (let i = days - 1; i >= 0; i--) {
     const key = new Date(Date.UTC(y, m - 1, d - i)).toISOString().slice(0, 10);
-    byDay.set(key, { date: key, opens: 0, downloads: 0, publicOpens: 0, publicDownloads: 0 });
+    byDay.set(key, {
+      date: key,
+      opens: 0,
+      downloads: 0,
+      publicOpens: 0,
+      publicDownloads: 0,
+      bulkExports: 0,
+    });
   }
   for (const e of events) {
     const point = byDay.get(dayKeyInZone(e.createdAt, timeZone));
@@ -52,6 +59,8 @@ export function bucketDailyActivity(
     } else if (e.action === "download") {
       point.downloads += 1;
       if (viaLink) point.publicDownloads += 1;
+    } else if (e.action === "bulk_export") {
+      point.bulkExports += 1;
     }
   }
   return [...byDay.values()];

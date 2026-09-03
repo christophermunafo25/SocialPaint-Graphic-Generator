@@ -28,6 +28,9 @@ src/lib/stores/             Data layer — components import ONLY these interfac
 src/lib/auth/AuthContext.tsx  Auth boundary (dev switcher now, Supabase Auth later)
 src/lib/brand/BrandContext.tsx Active company's kit/assets/locations + theming
 src/lib/render/              Canvas math: data-URL pipeline, autofit, fonts, toPng export
+src/lib/bulk/                Bulk fill: CSV parser, column mapping, row checks, run loop
+                              (pure; the render step is injected)
+src/app/components/bulk/     Bulk fill page + the off-screen render stage
 src/app/components/SchemaRenderer.tsx  THE renderer — every template goes through it
 src/app/components/builder/  Admin Template Builder — a guided wizard:
                               source (PNG/Figma) → Name → Fields → Caption →
@@ -58,10 +61,17 @@ from the platform in migration 0009.)
   size dimension data since 0029; the old `canvas_presets` table is gone).
 - `templates` + `template_fields` — the heart of the system; see
   `docs/TEMPLATE_SCHEMA.md`
-- `usage_events` (`open` | `download`) — recorded inside `SchemaRenderer` so
-  one code path covers every template. `actor` (`member` | `public`) and
-  `link_id` separate public-link traffic from the team's own; a public fill
-  has no `user_id` and is never given a fabricated one.
+- `usage_events` (`open` | `download` | `share` | `bulk_export`) — `open`
+  and `download` are recorded inside `SchemaRenderer` so one code path covers
+  every template; `share` is the person taking that PNG to LinkedIn, recorded
+  by the fill page; `bulk_export` is one graphic rendered by an admin's bulk
+  fill run, one event per row, written as a single batch after the run.
+  Bulk rows are deliberately not downloads: a run has no opens, so folding
+  them in would break the export rate. Every tally names each action
+  explicitly (see the `UsageAction` comment in `src/lib/types.ts` for the
+  list of sites, and `0027_share_events.sql` for why). `actor` (`member` |
+  `public`) and `link_id` separate public-link traffic from the team's own;
+  a public fill has no `user_id` and is never given a fabricated one.
 - `template_links` — public share links (migration 0026). Tokens are stored
   **hashed**; the plaintext exists only in the response that mints it.
 - `template_link_events` — who created, renamed, revoked, or regenerated a
@@ -188,8 +198,9 @@ runtime `@font-face` with data URLs for uploads (export-safe — see
 
 ## PNG export
 
-`exportSchemaPng` (src/lib/render/exportPng.ts) ports the proven technique
-from the original generators: dimensions from the schema (never hardcoded),
+`renderSchemaBlob` (src/lib/render/exportPng.ts) is THE rasterization path —
+the single export (`exportSchemaPng`, which adds delivery) and bulk fill both
+call it. It ports the proven technique from the original generators: dimensions from the schema (never hardcoded),
 all raster assets pre-converted to data URLs (html-to-image drops
 cross-origin images silently), a double `toPng` with 150 ms pause (Safari
 decode warm-up), `navigator.share` on mobile with download fallback. Custom
@@ -220,6 +231,46 @@ Two co-equal ways to create a template, both ending in the same schema:
    inspector — which keeps the element live and movable but out of the member
    form. There is no pre-selection step: that decision is made in the editor,
    with the canvas in front of you.
+
+### Bulk fill
+
+One published template, one spreadsheet, one graphic per row. An admin opens
+**Bulk fill** from the template's fill page (`/templates/<id>/bulk`, rendered
+through `adminOnly`), drops a CSV, matches columns to fields, reviews every
+row, and downloads a ZIP of PNGs plus a `captions.csv` of the merged caption
+for each. It reads a `TemplateSchema` and writes nothing: no template, no
+draft, no field.
+
+It is a loop around machinery that already exists. `parseCsv`
+(`src/lib/bulk/csv.ts`) is a small owned RFC 4180 subset; `autoMap` matches
+headers to fields by key, then label, then the `suggestFieldKey`
+normalization, and never by position or edit distance; `checkRows` runs the
+template's own guardrails (required, max length, select options) and then
+`measureProposal` — the same measurement Generate uses — against real glyphs;
+`runBulk` names files `NNN-slug.png` and assembles the archive with `jszip`
+(dynamically imported, `STORE` compression, since a PNG is already
+compressed). Image fields are out of scope: a CSV cannot carry a cropped data
+URL, so image slots render as the template designed them.
+
+Two properties make it safe:
+
+1. **One rasterization path.** `BulkExportStage` keeps a single
+   `SchemaRenderer` mounted off-screen (`instrument={false}`, positioned far
+   outside the viewport with real dimensions rather than hidden, since a node
+   the browser does not lay out rasterizes blank), swaps only its `values`,
+   waits for the commit of that exact values object plus two animation
+   frames, and calls `renderSchemaBlob` — the same function the single
+   export's `exportSchemaPng` is built on. A bulk PNG is byte-identical to the
+   one a member downloads by hand.
+2. **Overflow is a refusal, not a warning.** A row whose text would not fit
+   at the shrink floor, or that fails a guardrail, is shown in the review
+   table with a plain-language reason and left out of the ZIP unless the
+   person explicitly includes problem rows. Output is on-brand by
+   construction, or it is not produced.
+
+Runs are capped at 200 rows (a memory budget: every PNG is held until the
+archive is written) and recorded as `bulk_export` usage events, one per
+rendered row in one write, never as downloads.
 
 ## Brand rules engine & design-system import
 

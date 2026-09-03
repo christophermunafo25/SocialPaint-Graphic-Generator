@@ -1,0 +1,22 @@
+-- A fourth kind of usage event: one graphic rendered by an admin's bulk
+-- fill run, one row per rendered CSV row.
+--
+-- These are deliberately NOT downloads. A single export is preceded by an
+-- open, and the export rate on Insights (downloads over opens) means
+-- something because of that pairing. A bulk run renders two hundred
+-- graphics off-screen with no opens at all; folded into 'download' it would
+-- push the rate past 100%, and put a template at the top of the leaderboard
+-- for one admin's afternoon. Counted on their own, both numbers stay true
+-- and an admin can see that a template is carrying its weight in bulk.
+--
+-- IMPORTANT for anyone reading the counting code: every place that tallies
+-- usage_events names each action explicitly (see 0027_share_events.sql for
+-- why). All six were given a 'bulk_export' branch in the same change that
+-- added this value, and the type's comment in src/lib/types.ts lists them.
+-- A fifth action must do the same.
+--
+-- `ALTER TYPE … ADD VALUE` is deliberately the ONLY statement here. Postgres
+-- will not let a new enum value be USED in the transaction that creates it,
+-- so anything referencing 'bulk_export' has to land in a later migration.
+
+alter type usage_action add value if not exists 'bulk_export';

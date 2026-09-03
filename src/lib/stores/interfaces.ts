@@ -140,6 +140,10 @@ export interface UsageStore {
     action: UsageAction,
     userId?: string,
   ): Promise<void>;
+  /** N graphics from one bulk run. One insert, not N — a 200-row run should
+   * not be 200 round trips. Fire-and-forget like `record`: instrumentation
+   * never breaks the flow. */
+  recordBulk(companyId: string, templateId: string, count: number, userId?: string): Promise<void>;
   getUsageSummary(companyId: string): Promise<UsageSummary>;
   /** Zero-filled day buckets for the Insights trend chart. `timeZone` is the
    * workspace's IANA zone — day boundaries follow it, so every admin reads

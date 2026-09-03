@@ -285,6 +285,25 @@ export class LocalUsageStore implements UsageStore {
     };
     mutate((db) => db.usageEvents.push(event));
   }
+  async recordBulk(
+    companyId: string,
+    templateId: string,
+    count: number,
+    userId?: string,
+  ): Promise<void> {
+    if (count <= 0) return;
+    const createdAt = new Date().toISOString();
+    const events: UsageEventRec[] = Array.from({ length: count }, () => ({
+      id: newId(),
+      companyId,
+      templateId,
+      action: "bulk_export",
+      userId: userId ?? null,
+      actor: "member",
+      createdAt,
+    }));
+    mutate((db) => db.usageEvents.push(...events));
+  }
   async getUsageSummary(companyId: string): Promise<UsageSummary> {
     const db = readDb();
     const templates = db.templates as TemplateSchema[];
@@ -296,6 +315,7 @@ export class LocalUsageStore implements UsageStore {
         opens: 0,
         downloads: 0,
         shares: 0,
+        bulkExports: 0,
         publicOpens: 0,
         publicDownloads: 0,
         lastUsedAt: null,
@@ -310,6 +330,8 @@ export class LocalUsageStore implements UsageStore {
         if (viaLink) row.publicDownloads += 1;
       } else if (e.action === "share") {
         row.shares += 1;
+      } else if (e.action === "bulk_export") {
+        row.bulkExports += 1;
       }
       if (!row.lastUsedAt || e.createdAt > row.lastUsedAt) row.lastUsedAt = e.createdAt;
       byTemplate.set(e.templateId, row);

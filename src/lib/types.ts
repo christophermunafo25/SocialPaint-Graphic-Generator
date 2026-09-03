@@ -396,6 +396,8 @@ export interface NotificationPrefs {
 export interface MonthlyUsage {
   opens: number;
   downloads: number;
+  /** Independent of `downloads`, same as UsageSummaryRow. */
+  bulkExports: number;
   publicOpens: number;
   /** Distinct templates with at least one event this month. */
   templatesUsed: number;
@@ -404,10 +406,16 @@ export interface MonthlyUsage {
 }
 
 /** "open" is a page view, "download" an exported PNG, "share" the person
- * taking that PNG to LinkedIn. Adding a fourth means revisiting every
+ * taking that PNG to LinkedIn, "bulk_export" one graphic rendered by an
+ * admin's bulk fill run (one event per rendered row). A bulk row is never
+ * a "download": a 200-row run has no opens, and folding it in would make
+ * the export rate meaningless. Adding a fifth means revisiting every
  * tally — they name each action explicitly rather than treating one as the
- * default, precisely so a new one cannot be silently miscounted. */
-export type UsageAction = "open" | "download" | "share";
+ * default, precisely so a new one cannot be silently miscounted. The six:
+ * supabase/usageStore.ts and local/localStores.ts (getUsageSummary),
+ * dailyActivity.ts, monthlyUsage.ts, publicLinkUsage.ts, and Dashboard.tsx
+ * where it reads the summary rows. */
+export type UsageAction = "open" | "download" | "share" | "bulk_export";
 
 /** Where a usage event came from. A public fill has no user to attribute it
  * to and is never given a fabricated one — this is how the two are told
@@ -423,6 +431,10 @@ export interface UsageSummaryRow {
    * is the interesting number: a template exported forty times and posted
    * twice has a caption problem, not a template problem. */
   shares: number;
+  /** Graphics rendered by bulk fill. Independent of `downloads`, not a
+   * subset: a bulk row is never an open or a download, so it is counted
+   * beside them rather than inside them. */
+  bulkExports: number;
   /** The subset of `downloads` that came through a public link. An admin who
    * sent a link out wants to know it is working, and a public fill is not a
    * member fill — so it is counted separately rather than folded in. */
@@ -472,6 +484,9 @@ export interface DailyActivityPoint {
   publicOpens: number;
   /** The subset of `downloads` that came through a public link. */
   publicDownloads: number;
+  /** Independent of `downloads`. Counted so a day's events add up; the
+   * trend chart does not draw it. */
+  bulkExports: number;
 }
 
 /** The values a member has entered for a template's fields, keyed by fieldKey.

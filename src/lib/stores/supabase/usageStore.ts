@@ -47,6 +47,31 @@ export class SupabaseUsageStore implements UsageStore {
     }
   }
 
+  async recordBulk(
+    companyId: string,
+    templateId: string,
+    count: number,
+    userId?: string,
+  ): Promise<void> {
+    if (count <= 0) return;
+    try {
+      const row = {
+        company_id: companyId,
+        template_id: templateId,
+        action: "bulk_export" as const,
+        user_id: userId ?? null,
+        // Bulk fill is admin-only and signed in; same note as `record`.
+        actor: "member" as const,
+      };
+      await supabase()
+        .from("usage_events")
+        .insert(Array.from({ length: count }, () => row));
+    } catch (e) {
+      // Instrumentation must never break the run that just finished.
+      console.warn("usage_events bulk insert failed", e);
+    }
+  }
+
   async getUsageSummary(companyId: string): Promise<UsageSummary> {
     const { data, error } = await supabase()
       .from("usage_events")
@@ -61,6 +86,7 @@ export class SupabaseUsageStore implements UsageStore {
         opens: 0,
         downloads: 0,
         shares: 0,
+        bulkExports: 0,
         publicOpens: 0,
         publicDownloads: 0,
         lastUsedAt: null,
@@ -74,6 +100,8 @@ export class SupabaseUsageStore implements UsageStore {
         if (e.actor === "public") row.publicDownloads += 1;
       } else if (e.action === "share") {
         row.shares += 1;
+      } else if (e.action === "bulk_export") {
+        row.bulkExports += 1;
       }
       if (!row.lastUsedAt || e.created_at > row.lastUsedAt) row.lastUsedAt = e.created_at;
       byTemplate.set(e.template_id, row);
