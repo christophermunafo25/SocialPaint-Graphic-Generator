@@ -7,6 +7,22 @@ import type {
 import type { DesignImportProvider, StyleImportResult } from "../interfaces";
 import { isSupabaseConfigured, supabase } from "./client";
 
+/** A function answers a refusal with `{ error }` and a 4xx or 5xx, which
+ * functions.invoke surfaces as a transport error whose body the caller
+ * cannot see. Read it back so the admin gets the real sentence (which Canva
+ * refusal, which validation failed) rather than a status code. Same pattern
+ * as generateProvider and publicLinkStore. */
+async function readErrorMessage(error: unknown): Promise<string | null> {
+  const response = (error as { context?: Response }).context;
+  if (!(response instanceof Response)) return null;
+  try {
+    const body = (await response.clone().json()) as { error?: string };
+    return typeof body.error === "string" ? body.error : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Figma importer. The client NEVER talks to Figma directly — every call goes
  * through Supabase Edge Functions (supabase/functions/figma-*), which hold the
@@ -72,7 +88,9 @@ export class FigmaImporter implements DesignImportProvider {
     const { data, error } = await supabase().functions.invoke("template-autobuild", {
       body: { companyId, source, hint },
     });
-    if (error) throw new Error(`Auto-build failed: ${error.message}`);
+    if (error) {
+      throw new Error((await readErrorMessage(error)) ?? `Auto-build failed: ${error.message}`);
+    }
     return data as AutoBuildResult;
   }
 
@@ -91,7 +109,9 @@ export class FigmaImporter implements DesignImportProvider {
     const { data, error } = await supabase().functions.invoke("canva-auth", {
       body: { companyId, action: "start", redirectUri },
     });
-    if (error) throw new Error(`Canva connect failed: ${error.message}`);
+    if (error) {
+      throw new Error((await readErrorMessage(error)) ?? `Canva connect failed: ${error.message}`);
+    }
     return data as { authorizeUrl: string };
   }
 
@@ -104,7 +124,9 @@ export class FigmaImporter implements DesignImportProvider {
     const { error } = await supabase().functions.invoke("canva-auth", {
       body: { companyId, action: "callback", code, state, redirectUri },
     });
-    if (error) throw new Error(`Canva connect failed: ${error.message}`);
+    if (error) {
+      throw new Error((await readErrorMessage(error)) ?? `Canva connect failed: ${error.message}`);
+    }
   }
 
   async connectionInfo(
