@@ -10,6 +10,7 @@
 // in-flight refresh and briefly waits for its result.
 
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
+import { HttpError, logError } from "./http.ts";
 
 const TOKEN_ENDPOINT = "https://api.canva.com/rest/v1/oauth/token";
 const LEASE_SECONDS = 30;
@@ -154,11 +155,34 @@ export async function exchangeCanvaCode(
   });
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
-    throw new Error(`Canva token exchange failed (${res.status}). ${detail.slice(0, 200)}`);
+    // The body names the failure and carries no secret; the admin gets the
+    // sentence for it, the log gets the raw detail.
+    logError("canva-auth", `token exchange failed (${res.status}): ${detail.slice(0, 300)}`);
+    throw new HttpError(502, describeTokenFailure(res.status, detail));
   }
   return (await res.json()) as {
     access_token: string;
     refresh_token?: string;
     expires_in?: number;
   };
+}
+
+/** Canva's token endpoint answers a refusal with `{ code, message }`. The
+ * two an admin can act on get their own sentence; the rest name the code so
+ * a support thread has something to search for. Pure, so vitest covers it. */
+export function describeTokenFailure(status: number, body: string): string {
+  let code = "";
+  try {
+    const parsed = JSON.parse(body) as { code?: unknown };
+    if (typeof parsed.code === "string") code = parsed.code;
+  } catch {
+    // Not JSON: fall through to the status-only sentence.
+  }
+  if (code === "invalid_client") {
+    return "Canva rejected the client secret. In the Canva developer portal, generate a new secret for this integration, set CANVA_CLIENT_SECRET to it, and connect again.";
+  }
+  if (code === "invalid_grant") {
+    return "Canva rejected the authorization code, which is single-use and short-lived. Start the connection again from Settings.";
+  }
+  return `Canva refused the token exchange (${status}${code ? `, ${code}` : ""}). Try again, and check the integration's settings in the Canva developer portal.`;
 }
