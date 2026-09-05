@@ -19,9 +19,9 @@ import React, { useId } from "react";
 export type PlatformIcon = React.ComponentType<React.SVGProps<SVGSVGElement>>;
 
 /** The two bespoke marks in their colour: the same path as the mono
- *  rendition with the accent for a fill. Both bind to the flat brand cuts:
- *  Email is Voltage (#9bff49), Web is brand Aqua (#00dbee — the design
- *  frame's #00ebff was off-board, settled 2026-09-02). */
+ *  rendition with the accent for a fill, painted through currentColor so
+ *  the token does the work. Both bind to the brand primitives (locked
+ *  2026-09, one cut per colour): Email is Slime, Web is Aqua. */
 const accent = (Mark: PlatformIcon, token: string): PlatformIcon => {
   const Accented: PlatformIcon = (props) => (
     <Mark {...props} style={{ color: token, ...props.style }} />
@@ -288,5 +288,5 @@ export const WebMark: PlatformIcon = (props) => (
   </svg>
 );
 
-export const EmailColor = accent(EmailMark, "var(--voltage-logo)");
-export const WebColor = accent(WebMark, "var(--aqua-logo)");
+export const EmailColor = accent(EmailMark, "var(--slime)");
+export const WebColor = accent(WebMark, "var(--aqua)");

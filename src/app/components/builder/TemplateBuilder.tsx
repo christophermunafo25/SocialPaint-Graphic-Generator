@@ -215,6 +215,13 @@ function useViewportAtLeast(px: number): boolean {
   return matches;
 }
 
+/** A gradient stop persists as #RRGGBB (TextGradient), so a platform
+ * primitive used as a default stop has to be read out of the live theme at
+ * the moment it is written — the same read celebrate.ts makes — rather than
+ * bound as a var() the schema could not carry. */
+const platformPrimitive = (token: string): string =>
+  getComputedStyle(document.documentElement).getPropertyValue(token).trim();
+
 /** Admin Template Builder. Pick the source (blank canvas, Figma import, or
  * auto-build), then the editor (element palette + canvas + field list +
  * inspector) is the home state, with three side panels opening over the
@@ -3619,8 +3626,8 @@ export function TemplateBuilder({
                     label="Gradient background"
                     gradient={draft.backgroundGradient}
                     defaultStops={[
-                      { position: 0, color: kit?.colors[0]?.hex ?? "#8FFF6C" },
-                      { position: 1, color: kit?.colors[1]?.hex ?? "#272727" },
+                      { position: 0, color: kit?.colors[0]?.hex ?? platformPrimitive("--slime") },
+                      { position: 1, color: kit?.colors[1]?.hex ?? platformPrimitive("--ink") },
                     ]}
                     onChange={(backgroundGradient) =>
                       setDraft((d) => ({ ...d, backgroundGradient }), "bg:gradient")
