@@ -28,11 +28,12 @@ interface Particle {
 const GRAVITY = 0.32;
 const DRAG = 0.986;
 
-/** The five brand primitives, resolved from the live theme so the paper is
- * always exactly the brand — never a baked copy that could drift. */
+/** The four brand primitives, in rotation order, resolved from the live
+ * theme so the paper is always exactly the brand — never a baked copy that
+ * could drift. */
 function brandColors(): string[] {
   const style = getComputedStyle(document.documentElement);
-  return ["--voltage", "--wednesdays", "--fire", "--aqua", "--sunshine"]
+  return ["--slime", "--aqua", "--purple-kara", "--fire"]
     .map((t) => style.getPropertyValue(t).trim())
     .filter(Boolean);
 }

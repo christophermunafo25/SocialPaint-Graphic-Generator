@@ -768,7 +768,7 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
                               // row's flex-wrap handles narrow windows instead.
                               whiteSpace: "nowrap",
                               // The selected segment is the strip's brand
-                              // moment: Voltage under Ink in both themes
+                              // moment: Slime under Ink in both themes
                               // (the --fill-primary / --text-on-accent
                               // pairing rule).
                               background: mode === m.id ? "var(--fill-primary)" : "transparent",
@@ -951,7 +951,7 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
                 key={`${card.schema.id}-${i}`}
                 card={card}
                 index={i}
-                hue={(i % 5) + 1}
+                hue={(i % 4) + 1}
                 image={image?.dataUrl ?? null}
                 onChoose={choose}
               />
@@ -960,7 +960,7 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
               length: partial ? Math.max(0, partial.total - partial.processed) : 3,
             }).map((_, j) => {
               const slot = (partial?.cards.length ?? 0) + j;
-              return <SkeletonCard key={`slot-${slot}`} hue={(slot % 5) + 1} />;
+              return <SkeletonCard key={`slot-${slot}`} hue={(slot % 4) + 1} />;
             })}
           </div>
         </div>
@@ -1010,7 +1010,7 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
                 key={`${card.schema.id}-${i}`}
                 card={card}
                 index={i}
-                hue={(i % 5) + 1}
+                hue={(i % 4) + 1}
                 image={results.image?.dataUrl ?? null}
                 onChoose={choose}
               />
