@@ -2,7 +2,7 @@ import React from "react";
 
 /** The pre-app shell — sign in, account creation, and first-run onboarding
  * all render through it (Figma 148:1421, "Login Page Dark"). A 584px form
- * panel on the left, a Voltage hero panel taking the remainder on the
+ * panel on the left, a Slime hero panel taking the remainder on the
  * right; the split is a grid, so the 1920 frame is the reference rather
  * than the only viewport (.sp-gate holds the tiers: the hero leaves at
  * --bp-xl rather than shrinking to a sliver).
@@ -26,11 +26,11 @@ import React from "react";
  *    which is a task, not a doorway.
  *
  * `hero` is the image cropped into the right panel, flush right with a
- * band of Voltage exposed on the left (a frame detail, not a bug). Absent,
- * the panel is flat Voltage — no placeholder ever ships in its place. The
+ * band of Slime exposed on the left (a frame detail, not a bug). Absent,
+ * the panel is flat Slime — no placeholder ever ships in its place. The
  * shipped hero is Chris's own composition from the Figma file (2026-09-02),
  * the frame's window at 2× (1848×1738) as WebP without alpha: the corner
- * is the panel's job and the Voltage behind the cut-out is flattened in.
+ * is the panel's job and the Slime behind the cut-out is flattened in.
  * The image is decorative and loads after the form: alt="", lazy, never
  * preloaded or raised in priority. */
 export function PreAppShell({
