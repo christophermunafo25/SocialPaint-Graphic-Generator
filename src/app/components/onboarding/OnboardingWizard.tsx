@@ -347,10 +347,10 @@ function Stepper({
   );
 }
 
-/** One question, one field (Figma 154:1576): the name, with the Voltage
+/** One question, one field (Figma 154:1576): the name, with the Slime
  * arrow inset at the field's right edge as its only action — no footer on
  * this step. Enter submits; the arrow is disabled until there is a name,
- * and disabled Voltage reads as a dulled green over the panel. The
+ * and disabled Slime reads as a dulled green over the panel. The
  * workspace-id line is reserved so it appears without moving the field. */
 function StepCompany({
   name,
@@ -681,7 +681,7 @@ function StepFonts(props: StepFontsProps) {
 }
 
 /** Logo (Figma 158:267): one dropzone at the frame's 296, a circular badge
- * with a Voltage upload glyph over two lines of copy. A picked logo takes
+ * with a Slime upload glyph over two lines of copy. A picked logo takes
  * the badge and copy's place in the same reserved box — the two states
  * crossfade rather than reflow — with the zone still the way to replace
  * it. "Skip for now" beneath says what the frame only implies: the step is
