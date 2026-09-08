@@ -40,7 +40,9 @@ export interface BulkRunInput {
   /** The rows to render, in order. The page decides which rows qualify
    * (problem-free by default); this loop renders what it is given. */
   checks: RowCheck[];
-  render(values: FieldValues): Promise<Blob>;
+  /** `variantId` is the look the row resolved to (absent on a single-variant
+   * template); the stage hands it to the renderer with the values. */
+  render(values: FieldValues, variantId?: string): Promise<Blob>;
   onProgress(done: number, total: number): void;
   signal: AbortSignal;
 }
@@ -117,7 +119,7 @@ export async function runBulk(input: BulkRunInput): Promise<BulkRunResult> {
     if (signal.aborted) break;
     const filename = rowFileName(schema, check.index, check.values, width);
     try {
-      const blob = await render(check.values);
+      const blob = await render(check.values, check.variantId);
       // Copy the bytes into the archive and let the Blob go: the run holds
       // the archive, not the archive plus every source image.
       zip.file(filename, await blob.arrayBuffer(), { binary: true, compression: "STORE" });

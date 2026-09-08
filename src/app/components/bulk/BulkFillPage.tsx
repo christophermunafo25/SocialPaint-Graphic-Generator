@@ -8,7 +8,14 @@ import { useBrand } from "@/lib/brand/BrandContext";
 import { useFileDrop } from "@/lib/useFileDrop";
 import { createCanvasMeasurer } from "@/lib/render/autoFit";
 import { parseCsv, type ParsedCsv } from "@/lib/bulk/csv";
-import { autoMap, fillableFields, starterCsv, type ColumnMap } from "@/lib/bulk/mapping";
+import {
+  VARIANT_COLUMN,
+  autoMap,
+  fillableFields,
+  starterCsv,
+  type ColumnMap,
+} from "@/lib/bulk/mapping";
+import { hasVariants } from "@/lib/templates/variants";
 import { checkRows, type RowCheck } from "@/lib/bulk/validate";
 import { MAX_BULK_ROWS, runBulk, slugify, type BulkRunResult } from "@/lib/bulk/run";
 import { overCapLine, readyLine, rowStatus } from "@/lib/bulk/copy";
@@ -124,6 +131,7 @@ function BulkFill({
   const { navigate } = useRouter();
   const { user } = useAuth();
   const fields = useMemo(() => fillableFields(template), [template]);
+  const multiLook = hasVariants(template);
 
   const [step, setStep] = useState<Step>("upload");
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -173,13 +181,13 @@ function BulkFill({
         const parsed = parseCsv(await file.text());
         setFileName(file.name);
         setCsv(parsed);
-        setMap(autoMap(parsed.headers, fields));
+        setMap(autoMap(parsed.headers, fields, { variants: multiLook }));
         setStep("mapping");
       } catch (e) {
         setUploadError(e instanceof Error ? e.message : "We couldn't read that file.");
       }
     },
-    [fields],
+    [fields, multiLook],
   );
 
   const downloadStarter = useCallback(() => {
@@ -227,6 +235,7 @@ function BulkFill({
   const firstMappedColumn = map.findIndex((m) => m !== null);
   const identifierField = fields.find((f) => f.fieldKey === map[firstMappedColumn]);
   const previewValues: FieldValues | undefined = checks[selectedRow]?.values;
+  const previewVariantId = checks[selectedRow]?.variantId;
 
   const run = useCallback(async () => {
     const stage = stageRef.current;
@@ -238,7 +247,7 @@ function BulkFill({
     const result = await runBulk({
       schema: template,
       checks: toRender,
-      render: (values) => stage.renderRow(values),
+      render: (values, variantId) => stage.renderRow(values, variantId),
       onProgress: (done, total) => setProgress({ done, total }),
       signal: controller.signal,
     });
@@ -340,6 +349,11 @@ function BulkFill({
                             value: f.fieldKey,
                             label: f.required ? `${f.label} (required)` : f.label,
                           })),
+                          // Only when there is a choice of look: the column
+                          // names a variation, not a field.
+                          ...(multiLook
+                            ? [{ value: VARIANT_COLUMN, label: "Look (which variation)" }]
+                            : []),
                         ]}
                         onSelect={(v) => setColumn(i, v)}
                       />
@@ -473,7 +487,7 @@ function BulkFill({
                           className="px-3 py-2"
                           style={{ color: c.ok ? "var(--text-secondary)" : "var(--text-primary)" }}
                         >
-                          {rowStatus(c.problems)}
+                          {rowStatus(c.problems, c.notes)}
                         </td>
                       </tr>
                     );
@@ -505,7 +519,12 @@ function BulkFill({
           </div>
 
           <div className="lg:col-span-5 lg:sticky lg:top-8">
-            <PreviewCard template={template} values={previewValues} row={selectedRow} />
+            <PreviewCard
+              template={template}
+              values={previewValues}
+              variantId={previewVariantId}
+              row={selectedRow}
+            />
           </div>
         </div>
       )}
@@ -671,10 +690,12 @@ function UploadStep({
 function PreviewCard({
   template,
   values,
+  variantId,
   row,
 }: {
   template: TemplateSchema;
   values: FieldValues | undefined;
+  variantId?: string;
   row: number;
 }) {
   return (
@@ -696,7 +717,7 @@ function PreviewCard({
           marginInline: "auto",
         }}
       >
-        <TemplateThumbnail template={template} values={values} />
+        <TemplateThumbnail template={template} values={values} variantId={variantId} />
       </div>
     </div>
   );

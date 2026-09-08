@@ -218,3 +218,21 @@ describe("runBulk", () => {
     expect(await entries(result.zip)).toEqual({ "captions.csv": "row,filename,caption\r\n" });
   });
 });
+
+describe("runBulk — the look", () => {
+  it("hands each row's variation to the renderer", async () => {
+    const seen: Array<string | undefined> = [];
+    const result = await runBulk({
+      schema: schema(),
+      checks: [{ ...check(0, { name: "Ada" }), variantId: "v-blue" }, check(1, { name: "Grace" })],
+      render: async (values, variantId) => {
+        seen.push(variantId);
+        return fakeRender(values);
+      },
+      onProgress: noProgress,
+      signal: never,
+    });
+    expect(result.rendered).toBe(2);
+    expect(seen).toEqual(["v-blue", undefined]);
+  });
+});

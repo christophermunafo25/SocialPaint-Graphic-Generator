@@ -31,7 +31,9 @@ import { SchemaRenderer, type SchemaRendererHandle } from "../SchemaRenderer";
 // and content-visibility are all wrong here.
 
 export interface BulkExportStageHandle {
-  renderRow(values: FieldValues): Promise<Blob>;
+  /** One row: its values, and the look it renders in (absent on a
+   * single-variant template). */
+  renderRow(values: FieldValues, variantId?: string): Promise<Blob>;
 }
 
 interface PendingRow {
@@ -48,6 +50,7 @@ export const BulkExportStage = forwardRef<
 >(function BulkExportStage({ schema, brandKit }, ref) {
   const rendererRef = useRef<SchemaRendererHandle>(null);
   const [values, setValues] = useState<FieldValues>({});
+  const [variantId, setVariantId] = useState<string | undefined>(undefined);
   const pendingRef = useRef<PendingRow | null>(null);
 
   // Runs after the commit for `values`. If it is the object a renderRow
@@ -78,7 +81,7 @@ export const BulkExportStage = forwardRef<
     [],
   );
 
-  const renderRow = useCallback(async (row: FieldValues): Promise<Blob> => {
+  const renderRow = useCallback(async (row: FieldValues, look?: string): Promise<Blob> => {
     if (pendingRef.current) {
       throw new Error("The stage renders one row at a time.");
     }
@@ -91,6 +94,9 @@ export const BulkExportStage = forwardRef<
     const next: FieldValues = { ...row };
     await new Promise<void>((resolve, reject) => {
       pendingRef.current = { values: next, resolve, reject };
+      // Both land in the same commit, so the settle effect (keyed on the
+      // values object) also covers the look change.
+      setVariantId(look);
       setValues(next);
     });
     const renderer = rendererRef.current;
@@ -118,6 +124,7 @@ export const BulkExportStage = forwardRef<
         values={values}
         brandKit={brandKit}
         instrument={false}
+        variantId={variantId}
       />
     </div>
   );

@@ -40,6 +40,8 @@ interface LinkView {
   id: string;
   name: string;
   allowUploads: boolean;
+  /** The one variation this link renders, or null: the visitor chooses. */
+  pinnedVariantId: string | null;
   expiresAt: string | null;
   useCap: number | null;
   useCount: number;
@@ -48,13 +50,27 @@ interface LinkView {
   lastUsedAt: string | null;
 }
 
+// One literal, not a concatenation: the client's select() typing parses
+// the column list from the literal type, and `string` falls to an error.
 const LINK_COLUMNS =
-  "id, name, allow_uploads, expires_at, use_cap, use_count, revoked_at, created_at, last_used_at";
+  "id, name, allow_uploads, pinned_variant_id, expires_at, use_cap, use_count, revoked_at, created_at, last_used_at";
+
+/** A variation id is minted client-side (crypto.randomUUID, or a timestamp
+ * slug where that is missing): an opaque token of bounded length and a
+ * narrow charset, never looked up here. Null unpins. */
+function optionalVariantId(v: unknown, field: string): string | null {
+  if (v === null || v === undefined || v === "") return null;
+  if (typeof v !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(v)) {
+    throw new HttpError(400, `${field} is not a valid variation id.`);
+  }
+  return v;
+}
 
 interface LinkRow {
   id: string;
   name: string;
   allow_uploads: boolean;
+  pinned_variant_id: string | null;
   expires_at: string | null;
   use_cap: number | null;
   use_count: number;
@@ -67,6 +83,7 @@ const toView = (r: LinkRow): LinkView => ({
   id: r.id,
   name: r.name,
   allowUploads: r.allow_uploads,
+  pinnedVariantId: r.pinned_variant_id ?? null,
   expiresAt: r.expires_at,
   useCap: r.use_cap,
   useCount: r.use_count,
@@ -145,6 +162,7 @@ Deno.serve(async (req) => {
           name: optionalString(body.name, "name", MAX_NAME_CHARS) ?? "",
           token_hash: await hashToken(token),
           allow_uploads: body.allowUploads === undefined ? true : body.allowUploads === true,
+          pinned_variant_id: optionalVariantId(body.pinnedVariantId, "pinnedVariantId"),
           expires_at: optionalFutureIso(body.expiresAt, "expiresAt", { maxYearsAhead: 5 }) ?? null,
           use_cap: optionalInt(body.useCap, "useCap", { min: 1, max: 1_000_000 }) ?? null,
           created_by: caller.userId,
@@ -224,10 +242,13 @@ Deno.serve(async (req) => {
       return json({ link: toView(data as LinkRow), token });
     }
 
-    // update: name, expiry, cap, upload switch. Never the token.
+    // update: name, expiry, cap, upload switch, pinned look. Never the token.
     const patch: Record<string, unknown> = {};
     if ("name" in body) patch.name = optionalString(body.name, "name", MAX_NAME_CHARS) ?? "";
     if ("allowUploads" in body) patch.allow_uploads = body.allowUploads === true;
+    if ("pinnedVariantId" in body) {
+      patch.pinned_variant_id = optionalVariantId(body.pinnedVariantId, "pinnedVariantId");
+    }
     if ("expiresAt" in body) {
       patch.expires_at =
         optionalFutureIso(body.expiresAt, "expiresAt", { maxYearsAhead: 5 }) ?? null;

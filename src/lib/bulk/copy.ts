@@ -21,9 +21,11 @@ export function problemSentence(p: RowProblem): string {
   }
 }
 
-/** A row's status cell: "Ready", or every problem in check order. */
-export function rowStatus(problems: RowProblem[]): string {
-  return problems.length === 0 ? "Ready" : problems.map(problemSentence).join(" ");
+/** A row's status cell: "Ready", or every problem in check order. A note
+ * (the row still exports) follows the status rather than replacing it. */
+export function rowStatus(problems: RowProblem[], notes: string[] = []): string {
+  const status = problems.length === 0 ? "Ready" : problems.map(problemSentence).join(" ");
+  return notes.length ? `${status} ${notes.join(" ")}` : status;
 }
 
 /** "38 of 40 rows are ready." */

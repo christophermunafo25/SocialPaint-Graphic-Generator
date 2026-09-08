@@ -170,3 +170,49 @@ describe("checkRows", () => {
     ]);
   });
 });
+
+describe("checkRows — the look column", () => {
+  const variants = [
+    { id: "v-green", name: "Green", isDefault: true, overrides: {} },
+    { id: "v-blue", name: "Dark / Blue", overrides: {} },
+  ];
+  const withLooks = { ...schema([name()]), variants };
+
+  it("resolves the named look case-insensitively", () => {
+    const out = checkRows(withLooks, null, [["Ada", "dark / blue"]], ["name", "$variant"], measure);
+    expect(out[0].variantId).toBe("v-blue");
+    expect(out[0].notes).toBeUndefined();
+    expect(out[0].ok).toBe(true);
+    expect(out[0].values).toEqual({ name: "Ada" });
+  });
+
+  it("falls back to the default with a note, never a problem", () => {
+    const out = checkRows(withLooks, null, [["Ada", "Purple"]], ["name", "$variant"], measure);
+    expect(out[0].variantId).toBe("v-green");
+    expect(out[0].ok).toBe(true);
+    expect(out[0].notes).toEqual([
+      'No look called "Purple" on this template, so this row uses Green.',
+    ]);
+  });
+
+  it("uses the default silently when the cell or the column is missing", () => {
+    expect(
+      checkRows(withLooks, null, [["Ada", ""]], ["name", "$variant"], measure)[0],
+    ).toMatchObject({ variantId: "v-green" });
+    const noColumn = checkRows(withLooks, null, [["Ada"]], ["name"], measure)[0];
+    expect(noColumn.variantId).toBe("v-green");
+    expect(noColumn.notes).toBeUndefined();
+  });
+
+  it("sets nothing on a single-variant template", () => {
+    const out = checkRows(
+      schema([name()]),
+      null,
+      [["Ada", "Green"]],
+      ["name", "$variant"],
+      measure,
+    );
+    expect(out[0].variantId).toBeUndefined();
+    expect(out[0].values).toEqual({ name: "Ada" });
+  });
+});

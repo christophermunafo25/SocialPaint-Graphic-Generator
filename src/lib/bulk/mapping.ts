@@ -11,6 +11,18 @@
 
 import type { FieldValues, TemplateField, TemplateSchema } from "../types";
 import { suggestFieldKey } from "../caption";
+import { defaultVariant, hasVariants } from "../templates/variants";
+
+/** The ColumnMap entry for a column that names the LOOK (variation) a row
+ * renders in, rather than filling a field. A `$` can never appear in a
+ * fieldKey ([a-z0-9_] only), so the sentinel cannot collide. Only offered
+ * when the template has more than one variation. */
+export const VARIANT_COLUMN = "$variant";
+
+/** Header spellings that mean "which look" — matched after the same
+ * normalization a field header gets, so "Look", "variation", "VARIANT " all
+ * land. */
+const VARIANT_HEADERS = new Set(["variant", "variation", "look", "colourway", "colorway"]);
 
 /** The fields a CSV row can fill: member-editable, non-image, non-shape. A
  * static field paints its staticValue whatever a member enters, an image
@@ -37,9 +49,20 @@ function normalize(text: string): string {
  * every column, strictest first, each field claimed at most once: an exact
  * key match anywhere beats a normalized match anywhere. Anything unmatched
  * maps to null. */
-export function autoMap(headers: string[], fields: TemplateField[]): ColumnMap {
+export function autoMap(
+  headers: string[],
+  fields: TemplateField[],
+  options: { variants?: boolean } = {},
+): ColumnMap {
   const map: ColumnMap = headers.map(() => null);
   const claimed = new Set<string>();
+
+  // The look column, first and at most once: a template with several
+  // looks reads a "variant"/"variation"/"look" header as the row's choice.
+  if (options.variants) {
+    const i = headers.findIndex((h) => VARIANT_HEADERS.has(normalize(h)));
+    if (i >= 0) map[i] = VARIANT_COLUMN;
+  }
 
   const pass = (matches: (header: string, field: TemplateField) => boolean) => {
     headers.forEach((header, i) => {
@@ -67,10 +90,20 @@ export function autoMap(headers: string[], fields: TemplateField[]): ColumnMap {
 export function rowToValues(row: string[], map: ColumnMap): FieldValues {
   const values: FieldValues = {};
   map.forEach((fieldKey, i) => {
-    if (fieldKey === null || fieldKey in values) return;
+    // The look column is not a field value: it never reaches the renderer's
+    // values, and a merge tag could never name it.
+    if (fieldKey === null || fieldKey === VARIANT_COLUMN || fieldKey in values) return;
     values[fieldKey] = row[i] ?? "";
   });
   return values;
+}
+
+/** The look a row asks for, as typed — the cell of the mapped look column,
+ * or empty when there is none. Matching against the template's variations
+ * happens in checkRows, which owns the row-level note. */
+export function rowVariantName(row: string[], map: ColumnMap): string {
+  const i = map.indexOf(VARIANT_COLUMN);
+  return i >= 0 ? (row[i] ?? "").trim() : "";
 }
 
 /** One CSV cell for the starter file, quoted when the text needs it. */
@@ -82,9 +115,15 @@ function starterCell(text: string): string {
  * of each field's placeholder (or nothing). A person who opens this in a
  * spreadsheet and fills it down never has a column-naming question, and
  * autoMap matches every column on the label tier. */
-export function starterCsv(schema: Pick<TemplateSchema, "fields">): string {
+export function starterCsv(schema: Pick<TemplateSchema, "fields" | "variants">): string {
   const fields = fillableFields(schema);
-  const header = fields.map((f) => starterCell(f.label)).join(",");
-  const row = fields.map((f) => starterCell(f.placeholder ?? "")).join(",");
+  const cells = fields.map((f) => [starterCell(f.label), starterCell(f.placeholder ?? "")]);
+  // A template with several looks gets a "Look" column, pre-filled with the
+  // default's name, so the person sees where the choice goes.
+  if (hasVariants(schema)) {
+    cells.push(["Look", starterCell(defaultVariant(schema)?.name ?? "")]);
+  }
+  const header = cells.map((c) => c[0]).join(",");
+  const row = cells.map((c) => c[1]).join(",");
   return `${header}\r\n${row}\r\n`;
 }
