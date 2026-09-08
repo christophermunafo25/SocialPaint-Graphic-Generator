@@ -60,7 +60,11 @@ from the platform in migration 0009.)
   `SIZE_CATALOG` ids (`src/lib/templates/platforms.ts`, the single source of
   size dimension data since 0029; the old `canvas_presets` table is gone).
 - `templates` + `template_fields` — the heart of the system; see
-  `docs/TEMPLATE_SCHEMA.md`
+  `docs/TEMPLATE_SCHEMA.md`. `templates.variants` (migration 0031) holds the
+  template's colourways as one jsonb blob keyed by `field_key`, like
+  `layout_groups`: appearance overrides over ONE shared field array, never
+  a second copy of the structure. `usage_events.variant_id` records which
+  look an open, download, or bulk row rendered in.
 - `usage_events` (`open` | `download` | `share` | `bulk_export`) — `open`
   and `download` are recorded inside `SchemaRenderer` so one code path covers
   every template; `share` is the person taking that PNG to LinkedIn, recorded
@@ -75,6 +79,8 @@ from the platform in migration 0009.)
   a public fill has no `user_id` and is never given a fabricated one.
 - `template_links` — public share links (migration 0026). Tokens are stored
   **hashed**; the plaintext exists only in the response that mints it.
+  `pinned_variant_id` (0031) pins a link to one look; null lets the visitor
+  choose.
 - `template_link_events` — who created, renamed, revoked, or regenerated a
   link. Folds into the audit log when that lands.
 - `rate_limit_counters` — fixed-window counters keyed by an opaque string.
@@ -174,6 +180,12 @@ route over the existing data path. **RLS is not relaxed anywhere for it.**
   multi-megabyte data URL that would blow the quota). The page says so.
 - **Rendering.** `TemplateFill` is THE fill surface, shared verbatim with the
   member page, so a fix in one is a fix in both.
+- **Variations.** An unpinned link serves every variation (whitelisted key
+  by key, image overrides signed) and the page shows the same "Choose a
+  look" step a member sees. A pinned link serves exactly the pinned
+  variation, so the picker never appears and the other colourways never
+  leave the tenant; a pin to a since-deleted look falls back to the
+  default rather than breaking the link. Downloads report the look.
 
 Run `./supabase/verify/run.sh` against any Postgres to re-check tenant
 isolation, the lifecycle, the cascades, and cap concurrency.
@@ -255,7 +267,10 @@ template's own guardrails (required, max length, select options) and then
 `runBulk` names files `NNN-slug.png` and assembles the archive with `jszip`
 (dynamically imported, `STORE` compression, since a PNG is already
 compressed). Image fields are out of scope: a CSV cannot carry a cropped data
-URL, so image slots render as the template designed them.
+URL, so image slots render as the template designed them. A template with
+several looks reads an optional `variant` / `variation` / `look` column,
+matched by name (case-insensitive); an unknown name is a row-level note and
+the row renders in the default look.
 
 Two properties make it safe:
 
