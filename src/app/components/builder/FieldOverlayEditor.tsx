@@ -97,6 +97,12 @@ interface FieldOverlayEditorProps {
   /** One line shown on an otherwise empty artboard, pointing at the ways in.
    * Omitted the moment there is anything on the canvas. */
   emptyHint?: string;
+  /** Paint-time appearance hook: what each element LOOKS like on this
+   * canvas, without touching what it IS. The builder hands in the selected
+   * variation's merge (applyVariant), so a colourway shows in the editable
+   * frame while every geometry write still lands on the shared base field.
+   * Absent: elements paint exactly as authored. */
+  appearanceOf?(field: TemplateField): TemplateField;
   /** The floating selection toolbar's CONTENT. The builder owns what the
    * buttons do; the editor owns where the thing sits, because only the
    * editor knows the selection's geometry, the zoom, and the pan. Rendered
@@ -348,6 +354,7 @@ function snapAxis(
 /** Memoized so only fields whose geometry is actually changing re-render
  * their content per frame (text measurement isn't free). */
 const FieldContent = React.memo(FieldBoxContent);
+const same = (f: TemplateField): TemplateField => f;
 
 /** The four corner rotate zones. They sit just OUTSIDE the box, so the
  * corner itself still belongs to the resize handle and the rotate target is
@@ -604,6 +611,7 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
     hiddenIds,
     emptyHint,
     selectionToolbar,
+    appearanceOf,
   } = props;
   const { kit } = useBrand();
   /** THE ARTBOARD — every pointer-to-canvas conversion measures against this
@@ -2406,7 +2414,9 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
                         )}
                       >
                         <FieldContent
-                          field={grouped ? { ...v, width: box.width, height: box.height } : v}
+                          field={(appearanceOf ?? same)(
+                            grouped ? { ...v, width: box.width, height: box.height } : v,
+                          )}
                           value={values?.[f.fieldKey]}
                           brandKit={kit}
                           // The layout pass runs on the DRAFT, which a live

@@ -56,6 +56,20 @@ import { SchemaRenderer, schemaBackgroundCss } from "../SchemaRenderer";
 import { GradientEditor } from "./GradientEditor";
 import { FieldOverlayEditor, type CanvasViewApi } from "./FieldOverlayEditor";
 import { FieldInspector } from "./FieldInspector";
+import { VariantFilmstrip } from "./VariantFilmstrip";
+import {
+  applyVariant,
+  cloneVariant,
+  ensureOneDefault,
+  getVariant,
+  hasVariants,
+  nextVariantName,
+  pruneVariants,
+  removeVariant,
+  resolveVariantBackground,
+  retagVariants,
+} from "@/lib/templates/variants";
+import { variantContrastWarnings } from "@/lib/templates/variantContrast";
 import { CaptionEditor } from "./CaptionEditor";
 import { FigmaImportDialog } from "./FigmaImportDialog";
 import { AutoBuildDialog } from "./AutoBuildDialog";
@@ -324,6 +338,11 @@ export function TemplateBuilder({
   const [step, setStep] = useState<WizardStep>("fields");
   const [visited, setVisited] = useState<Set<WizardStep>>(() => new Set(["fields"]));
   const [mode, setMode] = useState<"edit" | "preview">("edit");
+  /** The variation frame the admin is working in. View state, never in the
+   * schema and never in history: undo restores colours, not which frame is
+   * focused. A stale id (the frame was deleted, or undone away) resolves to
+   * the default through getVariant. */
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   /** The active canvas tool. Move marquee-selects; every other tool draws
    * its element. A plain letter arms a tool for ONE draw and then returns to
    * Move; SHIFT + the same letter locks it for repeated draws. One
@@ -681,6 +700,153 @@ export function TemplateBuilder({
   );
 
   const groups = useMemo(() => draft.layoutGroups ?? [], [draft.layoutGroups]);
+
+  // -------------------------------------------------------------------------
+  // Variations — one field array, N appearance layers. The selected frame
+  // is what the editable canvas paints; every frame in the filmstrip paints
+  // the same draft, so a structural edit is visible everywhere at once.
+  // -------------------------------------------------------------------------
+  const multiLook = hasVariants(draft);
+  const selectedVariant = useMemo(
+    () => getVariant(draft, selectedVariantId),
+    [draft, selectedVariantId],
+  );
+  const variantBackground = useMemo(
+    () => resolveVariantBackground(draft, selectedVariant),
+    [draft, selectedVariant],
+  );
+  /** Paint-time merge for the editable frame. Geometry writes never see it. */
+  const appearanceOf = useMemo(
+    () => (selectedVariant ? (f: TemplateField) => applyVariant(f, selectedVariant) : undefined),
+    [selectedVariant],
+  );
+  /** Elements hidden in the selected variation join the session-hidden
+   * set for painting and marquee purposes; the Layers panel keeps showing
+   * the session toggle alone, since that is the one it controls. */
+  const paintHiddenIds = useMemo(() => {
+    if (!selectedVariant) return hiddenIds;
+    const out = new Set(hiddenIds);
+    for (const f of draft.fields) {
+      if (selectedVariant.overrides?.[f.fieldKey]?.hidden) out.add(f.id);
+    }
+    return out;
+  }, [hiddenIds, selectedVariant, draft.fields]);
+  const contrastWarnings = useMemo(() => variantContrastWarnings(draft, kit), [draft, kit]);
+  const contrastCounts = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const w of contrastWarnings) m.set(w.variantId, (m.get(w.variantId) ?? 0) + 1);
+    return m;
+  }, [contrastWarnings]);
+
+  /** Add a variation: a copy of the selected look in a new frame. From a
+   * single-variant template this creates the set — "Variation 1" is the
+   * template's current look (an empty override layer over the base) and
+   * the new frame is what the admin recolours. */
+  const addVariation = useCallback(() => {
+    const id = newId();
+    setDraft((d) => {
+      const existing = d.variants ?? [];
+      if (existing.length === 0) {
+        const first = { ...cloneVariant(undefined, newId(), "Variation 1"), isDefault: true };
+        return { ...d, variants: [first, cloneVariant(first, id, "Variation 2")] };
+      }
+      const source = getVariant(d, selectedVariantId);
+      return {
+        ...d,
+        variants: [...existing, cloneVariant(source, id, nextVariantName(existing))],
+      };
+    });
+    setSelectedVariantId(id);
+  }, [setDraft, selectedVariantId]);
+
+  const renameVariation = useCallback(
+    (id: string, name: string) =>
+      setDraft((d) => ({
+        ...d,
+        variants: (d.variants ?? []).map((v) => (v.id === id ? { ...v, name } : v)),
+      })),
+    [setDraft],
+  );
+
+  /** Delete a variation. Deleting the last returns the template to
+   * single-variant: the column goes back to null. */
+  const deleteVariation = useCallback(
+    (id: string) => setDraft((d) => ({ ...d, variants: removeVariant(d.variants, id) })),
+    [setDraft],
+  );
+
+  const setDefaultVariation = useCallback(
+    (id: string) =>
+      setDraft((d) => ({
+        ...d,
+        variants: ensureOneDefault(
+          (d.variants ?? []).map((v) => ({ ...v, isDefault: v.id === id ? true : undefined })),
+        ),
+      })),
+    [setDraft],
+  );
+
+  /** Write one field's override entry in the SELECTED variation. A key set
+   * to undefined leaves the entry (reverting that property to the base);
+   * null drops the entry. Colour edits are keystroke/gesture streams like
+   * any other inspector write, so they coalesce the same way. */
+  const setVariantOverride = useCallback(
+    (fieldKey: string, patch: import("@/lib/types").VariantFieldOverride | null) => {
+      const target = selectedVariant?.id;
+      if (!target) return;
+      const gesture = inspectorGestureActive();
+      setDraft(
+        (d) => ({
+          ...d,
+          variants: (d.variants ?? []).map((v) => {
+            if (v.id !== target) return v;
+            const overrides = { ...v.overrides };
+            if (patch === null) {
+              delete overrides[fieldKey];
+            } else {
+              const entry = { ...overrides[fieldKey] } as Record<string, unknown>;
+              for (const [k, val] of Object.entries(patch)) {
+                if (val === undefined) delete entry[k];
+                else entry[k] = val;
+              }
+              if (Object.keys(entry).length) overrides[fieldKey] = entry;
+              else delete overrides[fieldKey];
+            }
+            return { ...v, overrides };
+          }),
+        }),
+        gesture ? `variant:${target}:${fieldKey}` : undefined,
+        gesture,
+      );
+    },
+    [setDraft, selectedVariant?.id],
+  );
+
+  /** The selected variation's canvas background. */
+  const setVariantBackground = useCallback(
+    (
+      patch: Partial<
+        Pick<
+          import("@/lib/types").TemplateVariant,
+          "backgroundColor" | "backgroundGradient" | "backgroundUrl"
+        >
+      >,
+      coalesce?: string,
+    ) => {
+      const target = selectedVariant?.id;
+      if (!target) return;
+      setDraft(
+        (d) => ({
+          ...d,
+          variants: (d.variants ?? []).map((v) => (v.id === target ? { ...v, ...patch } : v)),
+        }),
+        coalesce,
+      );
+    },
+    [setDraft, selectedVariant?.id],
+  );
+  /** Which background the Canvas inspector edits when there is a choice. */
+  const [bgScope, setBgScope] = useState<"all" | "this">("this");
   /** Authoring-time overflow visibility: the admin sees the worst case, not
    * the member. Overflow never clips or blocks — it warns. */
   const overflowGroupIds = useMemo(
@@ -696,8 +862,12 @@ export function TemplateBuilder({
         );
       }
     }
+    // Per-variation contrast, non-blocking: the check runs on the same
+    // merged field the renderer paints, so a warning here is a real failure
+    // on export, not a guess.
+    for (const w of contrastWarnings) out.push(w.message);
     return out;
-  }, [builderLayout, groups]);
+  }, [builderLayout, groups, contrastWarnings]);
   const selGroupIds = selectedGroupIds(selectedIds);
   const selectedGroup =
     selGroupIds.length === 1 && selectedFields.length === 0
@@ -993,7 +1163,7 @@ export function TemplateBuilder({
     const ids: string[] = [];
     const seen = new Set<string>();
     for (const f of draft.fields) {
-      if (lockedIds.has(f.id) || hiddenIds.has(f.id)) continue;
+      if (lockedIds.has(f.id) || paintHiddenIds.has(f.id)) continue;
       const outer = outermostGroupOf(f.fieldKey, groups);
       const key = outer ? groupChildRef(outer.id) : f.id;
       if (seen.has(key)) continue;
@@ -1001,7 +1171,7 @@ export function TemplateBuilder({
       ids.push(key);
     }
     setSelectedIds(ids);
-  }, [draft.fields, groups, lockedIds, hiddenIds]);
+  }, [draft.fields, groups, lockedIds, paintHiddenIds]);
 
   /** Why the controls are off, in the admin's terms. A greyed control that
    * explains nothing is worse than no control at all. */
@@ -1122,7 +1292,13 @@ export function TemplateBuilder({
           const layoutGroups = renamed
             ? renameKeyInGroups(d.layoutGroups, prev.fieldKey, patch.fieldKey!)
             : d.layoutGroups;
-          return { ...d, fields, captionTemplate, layoutGroups };
+          // Variation overrides are keyed by fieldKey too. A rename that
+          // updated the caption but not these would silently drop every
+          // colourway's styling for the field.
+          const variants = renamed
+            ? retagVariants(d.variants, prev.fieldKey, patch.fieldKey!)
+            : d.variants;
+          return { ...d, fields, captionTemplate, layoutGroups, variants };
         },
         stream || gesture ? `patch:${id}:${Object.keys(patch).sort().join(",")}` : undefined,
         gesture,
@@ -1499,12 +1675,18 @@ export function TemplateBuilder({
       ]);
       setDraft((d) => {
         const deletedKeys = d.fields.filter((f) => idSet.has(f.id)).map((f) => f.fieldKey);
+        const fields = d.fields.filter((f) => !idSet.has(f.id));
         return {
           ...d,
-          fields: d.fields.filter((f) => !idSet.has(f.id)),
+          fields,
           layoutGroups: stripFieldsFromGroups(
             d.layoutGroups?.filter((g) => !gids.includes(g.id)),
             deletedKeys,
+          ),
+          // No orphan override keys survive a delete.
+          variants: pruneVariants(
+            d.variants,
+            fields.map((f) => f.fieldKey),
           ),
         };
       });
@@ -3140,6 +3322,7 @@ export function TemplateBuilder({
                 <FieldListPanel
                   fields={draft.fields}
                   groups={groups}
+                  variants={draft.variants}
                   selectedIds={selectedIds}
                   onSelect={setSelectedIds}
                   onReorder={setFields}
@@ -3224,6 +3407,21 @@ export function TemplateBuilder({
                 </button>
               </div>
             )}
+            {/* Variations, as connected frames above the working canvas.
+                Every frame is this draft; the selected one is what the
+                canvas below edits. */}
+            <VariantFilmstrip
+              schema={previewSchema}
+              brandKit={kit}
+              values={worstCaseValues}
+              selectedId={selectedVariant?.id}
+              warningCounts={contrastCounts}
+              onSelect={setSelectedVariantId}
+              onAdd={addVariation}
+              onRename={renameVariation}
+              onRemove={deleteVariation}
+              onSetDefault={setDefaultVariation}
+            />
             <div
               className={`flex-1 min-h-0 flex justify-center ${
                 mode === "edit" ? "items-stretch" : "items-center"
@@ -3250,8 +3448,12 @@ export function TemplateBuilder({
                   <FieldOverlayEditor
                     canvasWidth={draft.canvasWidth}
                     canvasHeight={draft.canvasHeight}
-                    backgroundUrl={draft.backgroundUrl}
-                    backgroundCss={schemaBackgroundCss(draft)}
+                    backgroundUrl={variantBackground.url}
+                    backgroundCss={schemaBackgroundCss({
+                      backgroundColor: variantBackground.color,
+                      backgroundGradient: variantBackground.gradient,
+                    })}
+                    appearanceOf={appearanceOf}
                     fields={draft.fields}
                     groups={groups}
                     layout={builderLayout}
@@ -3265,7 +3467,7 @@ export function TemplateBuilder({
                     onReorderChildren={(id, children) => patchGroup(id, { children })}
                     tool={tool}
                     lockedIds={lockedIds}
-                    hiddenIds={hiddenIds}
+                    hiddenIds={paintHiddenIds}
                     emptyHint={
                       draft.fields.length === 0
                         ? stores.designImport.isConfigured()
@@ -3327,6 +3529,7 @@ export function TemplateBuilder({
                       values={worstCaseValues}
                       brandKit={kit}
                       instrument={false}
+                      variantId={selectedVariant?.id}
                     />
                   </div>
                 )}
@@ -3556,6 +3759,15 @@ export function TemplateBuilder({
                   onDelete={() => deleteFields([singleSelected.id])}
                   onBringToFront={() => reorderLayer([singleSelected.id], "front")}
                   onSendToBack={() => reorderLayer([singleSelected.id], "back")}
+                  variantMode={
+                    multiLook && selectedVariant
+                      ? {
+                          variant: selectedVariant,
+                          merged: applyVariant(singleSelected, selectedVariant),
+                          onOverride: (patch) => setVariantOverride(singleSelected.fieldKey, patch),
+                        }
+                      : undefined
+                  }
                 />
               ) : selectedFields.length > 1 ? (
                 <div className="space-y-3">
@@ -3612,27 +3824,118 @@ export function TemplateBuilder({
                       ? "Drag your first element from the palette onto the canvas. Style the template background below."
                       : "Select a field to edit it, or style the template background here."}
                   </p>
-                  <div className="space-y-2">
-                    <label className="sp-eyebrow block">Background color</label>
-                    <ColorControl
-                      ariaLabel="Template background color"
-                      value={draft.backgroundColor ?? "#ffffff"}
-                      onChange={(hex) =>
-                        setDraft((d) => ({ ...d, backgroundColor: hex }), "bg:color")
-                      }
-                    />
-                  </div>
-                  <GradientEditor
-                    label="Gradient background"
-                    gradient={draft.backgroundGradient}
-                    defaultStops={[
-                      { position: 0, color: kit?.colors[0]?.hex ?? platformPrimitive("--slime") },
-                      { position: 1, color: kit?.colors[1]?.hex ?? platformPrimitive("--ink") },
-                    ]}
-                    onChange={(backgroundGradient) =>
-                      setDraft((d) => ({ ...d, backgroundGradient }), "bg:gradient")
-                    }
-                  />
+                  {multiLook && selectedVariant && (
+                    <div className="space-y-1">
+                      <RailTabs
+                        tabs={[
+                          {
+                            key: "all",
+                            label: "All variations",
+                            title: "The base background every variation starts from",
+                          },
+                          {
+                            key: "this",
+                            label: "This variation",
+                            title: `The background of "${selectedVariant.name}" only`,
+                          },
+                        ]}
+                        active={bgScope}
+                        onSelect={(key) => setBgScope(key as "all" | "this")}
+                      />
+                      <p
+                        style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}
+                      >
+                        {bgScope === "this"
+                          ? `Colours "${selectedVariant.name}" only. A colour or gradient set here replaces the base pair for this look.`
+                          : "The base background. A variation with its own colour or gradient keeps it."}
+                      </p>
+                    </div>
+                  )}
+                  {multiLook && selectedVariant && bgScope === "this" ? (
+                    <>
+                      <div className="space-y-2">
+                        <label className="sp-eyebrow block">Background color</label>
+                        <ColorControl
+                          ariaLabel={`Background color of ${selectedVariant.name}`}
+                          value={variantBackground.color ?? "#ffffff"}
+                          onChange={(hex) =>
+                            setVariantBackground(
+                              { backgroundColor: hex, backgroundGradient: undefined },
+                              `vbg:color:${selectedVariant.id}`,
+                            )
+                          }
+                        />
+                      </div>
+                      <GradientEditor
+                        label="Gradient background"
+                        gradient={variantBackground.gradient}
+                        defaultStops={[
+                          {
+                            position: 0,
+                            color: kit?.colors[0]?.hex ?? platformPrimitive("--slime"),
+                          },
+                          { position: 1, color: kit?.colors[1]?.hex ?? platformPrimitive("--ink") },
+                        ]}
+                        onChange={(backgroundGradient) =>
+                          setVariantBackground(
+                            {
+                              backgroundGradient,
+                              // Clearing the gradient here means "this look
+                              // wants the base pair again" unless a colour
+                              // was set for it too.
+                              ...(backgroundGradient === undefined &&
+                              selectedVariant.backgroundColor === undefined
+                                ? { backgroundColor: undefined }
+                                : {}),
+                            },
+                            `vbg:gradient:${selectedVariant.id}`,
+                          )
+                        }
+                      />
+                      {(selectedVariant.backgroundColor !== undefined ||
+                        selectedVariant.backgroundGradient !== undefined) && (
+                        <button
+                          type="button"
+                          className="sp-btn sp-btn-ghost w-full"
+                          onClick={() =>
+                            setVariantBackground({
+                              backgroundColor: undefined,
+                              backgroundGradient: undefined,
+                            })
+                          }
+                        >
+                          Use the base background
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <div className="space-y-2">
+                        <label className="sp-eyebrow block">Background color</label>
+                        <ColorControl
+                          ariaLabel="Template background color"
+                          value={draft.backgroundColor ?? "#ffffff"}
+                          onChange={(hex) =>
+                            setDraft((d) => ({ ...d, backgroundColor: hex }), "bg:color")
+                          }
+                        />
+                      </div>
+                      <GradientEditor
+                        label="Gradient background"
+                        gradient={draft.backgroundGradient}
+                        defaultStops={[
+                          {
+                            position: 0,
+                            color: kit?.colors[0]?.hex ?? platformPrimitive("--slime"),
+                          },
+                          { position: 1, color: kit?.colors[1]?.hex ?? platformPrimitive("--ink") },
+                        ]}
+                        onChange={(backgroundGradient) =>
+                          setDraft((d) => ({ ...d, backgroundGradient }), "bg:gradient")
+                        }
+                      />
+                    </>
+                  )}
                   <div className="space-y-2">
                     <label className="sp-eyebrow block">Background image</label>
                     <label

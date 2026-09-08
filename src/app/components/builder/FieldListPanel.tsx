@@ -10,9 +10,10 @@ import {
   Shapes,
   Type as TypeIcon,
 } from "lucide-react";
-import type { FieldType, LayoutGroup, TemplateField } from "@/lib/types";
+import type { FieldType, LayoutGroup, TemplateField, TemplateVariant } from "@/lib/types";
 import { groupChildRef, parseGroupChildRef } from "@/lib/types";
 import { outermostGroupOf, parentGroupOf } from "@/lib/render/layout";
+import { unstyledVariantCount } from "@/lib/templates/variants";
 
 const ICONS: Record<FieldType, React.ComponentType<{ style?: React.CSSProperties }>> = {
   text: TypeIcon,
@@ -32,6 +33,10 @@ interface FieldListPanelProps {
   /** Reorder a group's STACK order (a third ordering — not the form order). */
   onReorderChildren(groupId: string, children: string[]): void;
   onContextMenu(e: React.MouseEvent, fieldId: string): void;
+  /** The template's variations, for the "not styled in N variations" chip.
+   * A field with no override in a variation inherits its base styling
+   * there — often exactly right, so the chip informs and never auto-fills. */
+  variants?: TemplateVariant[];
 }
 
 type Row =
@@ -63,6 +68,7 @@ export function FieldListPanel({
   onReorder,
   onReorderChildren,
   onContextMenu,
+  variants,
 }: FieldListPanelProps) {
   const dragSrc = useRef<DragSource | null>(null);
   const [overKey, setOverKey] = useState<string | null>(null);
@@ -371,6 +377,30 @@ export function FieldListPanel({
                 >
                   {f.label}
                 </span>
+                {(() => {
+                  const unstyled = unstyledVariantCount({ fields, variants }, f.fieldKey);
+                  if (!unstyled) return null;
+                  return (
+                    <span
+                      title={`This element has no styling of its own in ${unstyled} ${
+                        unstyled === 1 ? "variation" : "variations"
+                      }, so it inherits the base look there.`}
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 9,
+                        letterSpacing: "0.03em",
+                        color: "var(--text-secondary)",
+                        border: "1px solid var(--border-strong)",
+                        borderRadius: "var(--radius-pill)",
+                        padding: "1px 6px",
+                        whiteSpace: "nowrap",
+                        flexShrink: 0,
+                      }}
+                    >
+                      not styled in {unstyled}
+                    </span>
+                  );
+                })()}
                 <span
                   className="truncate"
                   style={{
