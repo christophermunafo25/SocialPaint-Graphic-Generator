@@ -46,6 +46,8 @@ interface UsageEventRec {
    * there rather than hardcoding zeroes, which would make the public half of
    * the dashboard unreachable in development. */
   actor?: UsageActor;
+  /** The variation rendered (null on a single-variant template). */
+  variantId?: string | null;
   /** Which public link produced the event, when one did. */
   linkId?: string | null;
   createdAt: string;
@@ -275,6 +277,7 @@ export class LocalUsageStore implements UsageStore {
     templateId: string,
     action: UsageAction,
     userId?: string,
+    variantId?: string | null,
   ): Promise<void> {
     const event: UsageEventRec = {
       id: newId(),
@@ -282,6 +285,7 @@ export class LocalUsageStore implements UsageStore {
       templateId,
       action,
       userId: userId ?? null,
+      variantId: variantId ?? null,
       actor: "member",
       createdAt: new Date().toISOString(),
     };

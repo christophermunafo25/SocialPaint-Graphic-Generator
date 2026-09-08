@@ -93,6 +93,13 @@ Deno.serve(async (req) => {
       console.warn("[public-link-event] ignored", { reason: "malformed", ipKey });
       return json(ACK);
     }
+    // Which look the visitor exported — a client-minted variation id, so
+    // an opaque slug of bounded length and a narrow charset. Anything else
+    // is dropped, never echoed, and the event still counts.
+    const variantId =
+      typeof body.variantId === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(body.variantId)
+        ? body.variantId
+        : null;
 
     const { data: resolved, error } = await db.rpc("public_link_lookup", {
       p_token_hash: await hashToken(token),
@@ -115,6 +122,7 @@ Deno.serve(async (req) => {
       actor: "public",
       link_id: link.link_id,
       user_id: null,
+      variant_id: variantId,
     });
     if (insertError) console.warn("[public-link-event] insert failed", insertError.message);
 

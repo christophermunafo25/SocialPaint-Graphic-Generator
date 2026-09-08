@@ -94,6 +94,8 @@ interface ResolvedLink {
   template_id: string;
   company_id: string;
   allow_uploads: boolean;
+  /** Null until 0031 ran and until an admin pins one. */
+  pinned_variant_id?: string | null;
 }
 
 /** Sign exactly the objects this template paints, batched per bucket.
@@ -190,7 +192,7 @@ Deno.serve(async (req) => {
         .from("templates")
         .select(
           "name, description, canvas_width, canvas_height, background_storage_path, " +
-            "background_color, background_gradient, layout_groups, caption_template",
+            "background_color, background_gradient, layout_groups, variants, caption_template",
         )
         .eq("id", link.template_id)
         .maybeSingle(),
@@ -222,7 +224,8 @@ Deno.serve(async (req) => {
     const brandKit = (kitResult.data as Row | null) ?? null;
     const fontAssets = (fontsResult.data as Row[] | null) ?? [];
 
-    const refs = payloadAssetRefs({ template, fields, brandKit, fontAssets });
+    const pinnedVariantId = link.pinned_variant_id ?? null;
+    const refs = payloadAssetRefs({ template, fields, brandKit, fontAssets, pinnedVariantId });
     const signed = await signRefs(db, refs);
 
     // An object we could not sign is a HARD failure, not a degraded render.
@@ -246,6 +249,7 @@ Deno.serve(async (req) => {
       signed,
       allowUploads: link.allow_uploads,
       assetTtlSeconds: PUBLIC_SIGNED_URL_TTL_S,
+      pinnedVariantId,
     });
 
     // Belt and braces on the allowlist: if anything that still parses as one
@@ -274,6 +278,12 @@ Deno.serve(async (req) => {
         actor: "public",
         link_id: link.link_id,
         user_id: null,
+        // A pinned link opens on one look; an unpinned one has not chosen
+        // yet, and the export event will say which it chose.
+        variant_id:
+          (payload.template.variants as Array<{ id?: string }> | null)?.length === 1
+            ? ((payload.template.variants as Array<{ id?: string }>)[0].id ?? null)
+            : null,
       });
       if (usageError) console.warn("[public-template] usage insert failed", usageError.message);
     } catch (e) {

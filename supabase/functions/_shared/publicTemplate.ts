@@ -44,6 +44,10 @@ export interface PublicPayload {
   fontAssets: Row[];
   /** Whether image fields accept an upload on this link. */
   allowUploads: boolean;
+  /** The variation this link is pinned to, or null. When pinned, the
+   * template above carries ONLY that variation — the visitor sees no
+   * picker, and the other colourways never leave the tenant. */
+  pinnedVariantId: string | null;
   /** How long the signed asset URLs in this payload last, so the page can
    * re-read the link before they lapse rather than after. */
   assetTtlSeconds: number;
@@ -78,6 +82,95 @@ export function signValue(
   return signed.get(refKey(ref)) ?? "";
 }
 
+/** The per-element keys a variation may carry (the whitelist in
+ * src/lib/templates/variants.ts). Anything else in the stored blob stays
+ * home — a variation is appearance only, and the public payload is the last
+ * place a stray geometry key should ever travel. */
+const VARIANT_OVERRIDE_KEYS = [
+  "colorHex",
+  "textGradient",
+  "typeStyleKey",
+  "opacity",
+  "staticValue",
+  "hidden",
+] as const;
+
+interface VariantLike {
+  id?: unknown;
+  name?: unknown;
+  isDefault?: unknown;
+  backgroundColor?: unknown;
+  backgroundGradient?: unknown;
+  backgroundUrl?: unknown;
+  overrides?: Record<string, Record<string, unknown>> | null;
+}
+
+/** The variations this link serves: every one when unpinned, exactly the
+ * pinned one (falling back to the default, then the first, when the pin
+ * names a since-deleted variation) when pinned. Empty when the template
+ * has none. Mirrors getVariant in src/lib/templates/variants.ts. */
+export function servedVariants(template: Row, pinnedVariantId: string | null): VariantLike[] {
+  const raw = template.variants;
+  if (!Array.isArray(raw)) return [];
+  const all = raw.filter((v): v is VariantLike => Boolean(v) && typeof v === "object");
+  if (all.length === 0) return [];
+  if (!pinnedVariantId) return all;
+  const pinned =
+    all.find((v) => v.id === pinnedVariantId) ?? all.find((v) => v.isDefault === true) ?? all[0];
+  return [pinned];
+}
+
+/** A variation's override map, restricted to whitelisted keys and to
+ * fields that exist. Image staticValue overrides are storage references
+ * and get signed like the field's own. */
+function publicVariant(variant: VariantLike, fields: Row[], signed: Map<string, string>): Row {
+  const imageKeys = new Set(
+    fields.filter((f) => f.type === "image").map((f) => f.field_key as string),
+  );
+  const liveKeys = new Set(fields.map((f) => f.field_key as string));
+  const overrides: Record<string, Record<string, unknown>> = {};
+  for (const [fieldKey, raw] of Object.entries(variant.overrides ?? {})) {
+    if (!liveKeys.has(fieldKey) || !raw || typeof raw !== "object") continue;
+    const out: Record<string, unknown> = {};
+    for (const key of VARIANT_OVERRIDE_KEYS) {
+      if (raw[key] === undefined) continue;
+      out[key] =
+        key === "staticValue" && imageKeys.has(fieldKey)
+          ? signValue("brand-assets", raw[key] as string, signed)
+          : raw[key];
+    }
+    overrides[fieldKey] = out;
+  }
+  return {
+    id: variant.id,
+    name: variant.name,
+    ...(variant.isDefault === true ? { isDefault: true } : {}),
+    ...(variant.backgroundColor !== undefined ? { backgroundColor: variant.backgroundColor } : {}),
+    ...(variant.backgroundGradient !== undefined
+      ? { backgroundGradient: variant.backgroundGradient }
+      : {}),
+    ...(typeof variant.backgroundUrl === "string"
+      ? {
+          backgroundUrl: signValue("template-backgrounds", variant.backgroundUrl, signed),
+        }
+      : {}),
+    overrides,
+  };
+}
+
+/** Type styles a variation binds that no base field does — they must reach
+ * the visitor's kit too, or the merged field resolves against nothing. */
+function variantStyleCarriers(variants: VariantLike[]): FieldLike[] {
+  const out: FieldLike[] = [];
+  for (const v of variants) {
+    for (const raw of Object.values(v.overrides ?? {})) {
+      const key = raw?.typeStyleKey;
+      if (typeof key === "string" && key) out.push({ type_style_key: key });
+    }
+  }
+  return out;
+}
+
 export interface BuildInput {
   /** The templates row, straight from the database. */
   template: Row;
@@ -91,6 +184,8 @@ export interface BuildInput {
   signed: Map<string, string>;
   allowUploads: boolean;
   assetTtlSeconds: number;
+  /** The link's pinned variation, or null. */
+  pinnedVariantId?: string | null;
 }
 
 /** Build the response. Pure: the caller does the database reads and the
@@ -99,7 +194,12 @@ export interface BuildInput {
 export function buildPublicPayload(input: BuildInput): PublicPayload {
   const { template, fields, brandKit, fontAssets, signed } = input;
 
-  const fieldLikes = fields as unknown as FieldLike[];
+  const pinnedVariantId = input.pinnedVariantId ?? null;
+  const variants = servedVariants(template, pinnedVariantId);
+  // Style references come from the base fields AND from what the served
+  // variations bind, so a "Headline on dark" style only a colourway uses
+  // still crosses — and only when that colourway is served.
+  const fieldLikes = [...(fields as unknown as FieldLike[]), ...variantStyleCarriers(variants)];
   const typeStyles = ((brandKit?.type_styles as TypeStyleLike[] | null) ?? []).filter(
     (s): s is TypeStyleLike => Boolean(s?.key),
   );
@@ -125,6 +225,9 @@ export function buildPublicPayload(input: BuildInput): PublicPayload {
       background_color: template.background_color ?? null,
       background_gradient: template.background_gradient ?? null,
       layout_groups: template.layout_groups ?? null,
+      // Appearance overrides keyed by field_key, whitelisted key by key and
+      // signed where they name an object. Pinned links carry ONE.
+      variants: variants.length ? variants.map((v) => publicVariant(v, fields, signed)) : null,
       caption_template: template.caption_template ?? "",
       // Constants, not data. The mapper wants these columns; the visitor
       // learns nothing from them.
@@ -160,6 +263,7 @@ export function buildPublicPayload(input: BuildInput): PublicPayload {
       .map((asset, index) => publicFontAsset(asset, index, signed)),
     allowUploads: input.allowUploads,
     assetTtlSeconds: input.assetTtlSeconds,
+    pinnedVariantId,
   };
 }
 
@@ -195,6 +299,7 @@ export function payloadAssetRefs(input: {
   fields: Row[];
   brandKit: Row | null;
   fontAssets: Row[];
+  pinnedVariantId?: string | null;
 }): StorageRef[] {
   const refs = new Map<string, StorageRef>();
   const add = (ref: StorageRef | null) => {
@@ -207,15 +312,34 @@ export function payloadAssetRefs(input: {
       input.template.background_storage_path as string | null,
     ),
   );
+  const imageKeys = new Set<string>();
   for (const field of input.fields) {
     if (field.type !== "image") continue;
+    imageKeys.add(field.field_key as string);
     add(refWithImpliedBucket("brand-assets", field.static_value as string | null));
+  }
+
+  // The served variations' own objects: a swapped background, a logo's
+  // colourway asset. Exactly the ones publicVariant will sign, so the
+  // "signed every ref" check stays exact.
+  const variants = servedVariants(input.template, input.pinnedVariantId ?? null);
+  for (const v of variants) {
+    if (typeof v.backgroundUrl === "string") {
+      add(refWithImpliedBucket("template-backgrounds", v.backgroundUrl));
+    }
+    for (const [fieldKey, raw] of Object.entries(v.overrides ?? {})) {
+      if (!imageKeys.has(fieldKey) || typeof raw?.staticValue !== "string") continue;
+      add(refWithImpliedBucket("brand-assets", raw.staticValue));
+    }
   }
 
   const typeStyles = ((input.brandKit?.type_styles as TypeStyleLike[] | null) ?? []).filter(
     (s): s is TypeStyleLike => Boolean(s?.key),
   );
-  const families = referencedFontFamilies(input.fields as unknown as FieldLike[], typeStyles);
+  const families = referencedFontFamilies(
+    [...(input.fields as unknown as FieldLike[]), ...variantStyleCarriers(variants)],
+    typeStyles,
+  );
   for (const asset of input.fontAssets) {
     if (!families.has(fontAssetFamily(asset as unknown as FontAssetLike))) continue;
     add(refWithImpliedBucket("brand-assets", asset.storage_path as string | null));

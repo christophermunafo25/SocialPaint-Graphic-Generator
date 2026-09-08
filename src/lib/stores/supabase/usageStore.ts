@@ -27,6 +27,7 @@ export class SupabaseUsageStore implements UsageStore {
     templateId: string,
     action: UsageAction,
     userId?: string,
+    variantId?: string | null,
   ): Promise<void> {
     try {
       await supabase()
@@ -36,6 +37,7 @@ export class SupabaseUsageStore implements UsageStore {
           template_id: templateId,
           action,
           user_id: userId ?? null,
+          variant_id: variantId ?? null,
           // The member path is the only thing that reaches this store. A
           // public fill is written server-side by the link's own endpoint,
           // and the insert policy refuses a client that claims otherwise.

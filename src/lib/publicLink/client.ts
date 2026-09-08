@@ -41,6 +41,10 @@ export interface PublicTemplate {
   allowUploads: boolean;
   /** Lifetime of the signed asset URLs in this response, in seconds. */
   assetTtlSeconds: number;
+  /** The variation this link is pinned to, or null. A pinned payload's
+   * template carries only that variation, so the fill surface shows no
+   * picker without needing to know why. */
+  pinnedVariantId: string | null;
 }
 
 interface PublicPayload {
@@ -49,6 +53,7 @@ interface PublicPayload {
   fontAssets: BrandAssetRow[];
   allowUploads: boolean;
   assetTtlSeconds: number;
+  pinnedVariantId?: string | null;
 }
 
 const endpoint = (name: string): string => `${supabaseUrl}/functions/v1/${name}`;
@@ -90,6 +95,7 @@ export async function fetchPublicTemplate(token: string): Promise<PublicTemplate
     fontAssets: (payload.fontAssets ?? []).map(toBrandAsset),
     allowUploads: payload.allowUploads !== false,
     assetTtlSeconds: payload.assetTtlSeconds ?? 300,
+    pinnedVariantId: payload.pinnedVariantId ?? null,
   };
 }
 
@@ -97,12 +103,22 @@ export async function fetchPublicTemplate(token: string): Promise<PublicTemplate
  *
  * Fire and forget in every sense: it counts an event, it identifies nobody,
  * and a failure here must never be something the visitor sees. */
-function recordPublicEvent(token: string, action: "download" | "share"): void {
-  void post("public-link-event", { token, action }).catch(() => undefined);
+function recordPublicEvent(
+  token: string,
+  action: "download" | "share",
+  variantId?: string | null,
+): void {
+  void post("public-link-event", {
+    token,
+    action,
+    ...(variantId ? { variantId } : {}),
+  }).catch(() => undefined);
 }
 
-/** The visitor exported a PNG. */
-export const recordPublicDownload = (token: string): void => recordPublicEvent(token, "download");
+/** The visitor exported a PNG, in the named look when the template has more
+ * than one. */
+export const recordPublicDownload = (token: string, variantId?: string | null): void =>
+  recordPublicEvent(token, "download", variantId);
 
 /** The visitor took that PNG to LinkedIn. Recorded on the CLICK, not on a
  * confirmed post — LinkedIn tells us nothing about what happens in their
