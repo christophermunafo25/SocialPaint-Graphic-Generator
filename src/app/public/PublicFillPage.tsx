@@ -78,14 +78,18 @@ function PublicFill({ token, data }: { token: string; data: PublicTemplate }) {
     saveDraft(token, template.fields, values);
   }, [resumable, token, template.fields, values]);
 
-  const onExported = useCallback(() => {
-    // The admin who sent this link wants to know it worked. Counts an event,
-    // identifies nobody.
-    recordPublicDownload(token);
-    // The graphic is made; a draft from here on would just be clutter the
-    // next time this person opens the link.
-    clearDraft(token);
-  }, [token]);
+  const onExported = useCallback(
+    (_outcome: unknown, variantId?: string) => {
+      // The admin who sent this link wants to know it worked. Counts an
+      // event, identifies nobody — and names the look, when there was a
+      // choice, so the dashboard can say which colourways get used.
+      recordPublicDownload(token, variantId);
+      // The graphic is made; a draft from here on would just be clutter the
+      // next time this person opens the link.
+      clearDraft(token);
+    },
+    [token],
+  );
 
   const onShared = useCallback(() => recordPublicShare(token), [token]);
 
