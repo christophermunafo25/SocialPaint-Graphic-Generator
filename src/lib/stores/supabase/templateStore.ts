@@ -49,6 +49,7 @@ export class SupabaseTemplateStore implements TemplateStore {
         background_color: input.backgroundColor ?? null,
         background_gradient: input.backgroundGradient ?? null,
         layout_groups: input.layoutGroups ?? null,
+        variants: input.variants ?? null,
         caption_template: input.captionTemplate,
         autobuild_meta: input.autobuildMeta ?? null,
       })
@@ -74,6 +75,8 @@ export class SupabaseTemplateStore implements TemplateStore {
     if ("backgroundColor" in patch) row.background_color = patch.backgroundColor ?? null;
     if ("backgroundGradient" in patch) row.background_gradient = patch.backgroundGradient ?? null;
     if ("layoutGroups" in patch) row.layout_groups = patch.layoutGroups ?? null;
+    // Empty and absent both mean single-variant: the column goes back to null.
+    if ("variants" in patch) row.variants = patch.variants?.length ? patch.variants : null;
     if (patch.captionTemplate !== undefined) row.caption_template = patch.captionTemplate;
     if ("autobuildMeta" in patch) row.autobuild_meta = patch.autobuildMeta ?? null;
     const { error } = await supabase().from("templates").update(row).eq("id", id);
@@ -121,7 +124,9 @@ export class SupabaseTemplateStore implements TemplateStore {
     const { id: _id, createdAt: _c, updatedAt: _u, ...rest } = source;
     // create() inserts fields via fieldToRow, which omits ids — the database
     // mints new field row ids. fieldKeys stay EXACTLY as-is so caption merge
-    // tags keep working; backgroundUrl is copied by reference.
+    // tags, layout groups, and variation overrides (all keyed by fieldKey)
+    // keep working; backgroundUrl is copied by reference. `rest` carries
+    // `variants` across as-is — a colourway set is part of the design.
     return this.create({ ...rest, name, status: "draft" });
   }
 

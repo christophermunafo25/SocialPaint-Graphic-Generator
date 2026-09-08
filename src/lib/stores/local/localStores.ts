@@ -200,8 +200,10 @@ export class LocalTemplateStore implements TemplateStore {
       ...rest,
       name,
       status: "draft",
-      // New field ids; fieldKeys stay EXACTLY as-is so caption merge tags
-      // keep working. backgroundUrl is copied by reference, not re-uploaded.
+      // New field ids; fieldKeys stay EXACTLY as-is so caption merge tags,
+      // layout groups, and variation overrides keep working. backgroundUrl
+      // is copied by reference, not re-uploaded. `rest` carries `variants`
+      // across untouched — variation ids are client-minted, never row ids.
       fields: source.fields.map((f) => ({ ...f, id: newId() })),
     });
   }
@@ -464,6 +466,7 @@ export class LocalPublicLinkStore implements PublicLinkStore {
       // The dev collection stores only the fields Insights needs; the rest
       // take the column defaults from 0026.
       allowUploads: true,
+      pinnedVariantId: null,
       expiresAt: null,
       useCap: null,
       useCount: 0,

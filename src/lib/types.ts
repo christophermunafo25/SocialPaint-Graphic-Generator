@@ -289,6 +289,62 @@ export const parseGroupChildRef = (ref: string): string | null =>
  * groups, so old templates keep their exact behavior. */
 export const isFreeGroup = (g: LayoutGroup): boolean => g.mode === "free";
 
+/** What one variation may change about one element. A CLOSED set of
+ * appearance properties: nothing here is geometry, type, a guardrail, or
+ * identity, and src/lib/templates/variants.ts asserts that at compile time.
+ * A stored blob carrying any other key (a hand-edited row, a future field)
+ * has that key ignored at merge time rather than applied. */
+export interface VariantFieldOverride {
+  /** Solid fill, replacing the field's own colorHex in this variation. */
+  colorHex?: string;
+  /** Fill gradient (wins over the solid, as on the field itself). */
+  textGradient?: TextGradient;
+  /** Bind to a different brand type style in this variation — "Headline on
+   * dark" over a dark colourway, say. Resolution is unchanged: the merged
+   * field goes through resolveFieldStyle like any other. */
+  typeStyleKey?: string;
+  /** Element opacity, 0–100. */
+  opacity?: number;
+  /** Fixed elements only: swap the fixed content — the logo's colourway
+   * asset, a wordmark that flips to white. Ignored on member fields, whose
+   * content is the member's. */
+  staticValue?: string;
+  /** The element is absent from this variation: not painted, not exported,
+   * and (for a member field) not asked for. */
+  hidden?: boolean;
+}
+
+/** One colourway of a template. Variations share ONE field array and one
+ * geometry; each is an appearance layer applied over the fields at render
+ * time. Because the field identity is shared, a filler's entered values
+ * survive switching between variations — they fill the form once and can
+ * export it in every look.
+ *
+ * Stored as one jsonb blob on the template (migration 0031), keyed by
+ * fieldKey for the same reason layout groups are: field rows are re-minted
+ * on every save, so fieldKey is the only save-stable reference. */
+export interface TemplateVariant {
+  /** Client-generated and persisted verbatim (never a field row id). */
+  id: string;
+  /** "Green", "Dark / Blue". Shown to fillers on the "Choose a look" step. */
+  name: string;
+  /** Exactly one variation is the default: what an old link, a bulk row
+   * with no `variant` column, or a pin to a deleted variation renders. */
+  isDefault?: boolean;
+  /** Canvas-level overrides. Setting either the colour or the gradient
+   * replaces the base's colour+gradient pair as a unit (a variation that
+   * sets only a colour is asking for a solid, not for the base gradient
+   * with a different fallback underneath it). */
+  backgroundColor?: string;
+  backgroundGradient?: TextGradient;
+  /** A different background image (storage reference, like the template's
+   * own backgroundUrl) for image-backed templates. */
+  backgroundUrl?: string;
+  /** Per-element overrides, keyed by the save-stable fieldKey. A field with
+   * no entry inherits its base styling in this variation. */
+  overrides: Record<string, VariantFieldOverride>;
+}
+
 export type TemplateStatus = "draft" | "published";
 
 export interface TemplateSchema {
@@ -312,6 +368,10 @@ export interface TemplateSchema {
   /** Auto-layout stacks over the flat fields (absent = none — the pre-groups
    * rendering path, byte for byte). */
   layoutGroups?: LayoutGroup[];
+  /** Colourways sharing these fields and this geometry (absent = single
+   * variant — the pre-feature path, byte for byte: no picker, no filmstrip,
+   * no merge). */
+  variants?: TemplateVariant[];
   captionTemplate: string; // "{name} celebrated {years} incredible years!"
   /** Present when Claude built this template's fields (auto-build). */
   autobuildMeta?: AutoBuildMeta;
@@ -333,6 +393,10 @@ export interface TemplateLink {
   name: string;
   /** Whether image fields are offered to whoever opens this link. */
   allowUploads: boolean;
+  /** The one variation this link renders, or null to let the visitor choose
+   * (when the template has more than one). A pin to a since-deleted
+   * variation falls back to the default rather than breaking the link. */
+  pinnedVariantId: string | null;
   expiresAt: string | null;
   /** Cap on opens, or null for no cap. */
   useCap: number | null;
@@ -354,6 +418,8 @@ export interface TemplateLinkWithToken {
 export interface TemplateLinkPatch {
   name?: string;
   allowUploads?: boolean;
+  /** A variation id to pin, or null to unpin. */
+  pinnedVariantId?: string | null;
   /** ISO-8601, or null to remove the expiry. */
   expiresAt?: string | null;
   /** A positive integer, or null to remove the cap. */

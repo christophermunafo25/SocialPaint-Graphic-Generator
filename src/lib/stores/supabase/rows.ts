@@ -249,6 +249,8 @@ export interface TemplateRow {
   background_color: string | null;
   background_gradient: import("../../types").TextGradient | null;
   layout_groups: import("../../types").LayoutGroup[] | null;
+  /** Colourways (migration 0031); null = single-variant. */
+  variants?: import("../../types").TemplateVariant[] | null;
   caption_template: string;
   autobuild_meta: import("../../types").AutoBuildMeta | null;
   created_at: string;
@@ -276,6 +278,7 @@ export const toTemplate = (r: TemplateRow): TemplateSchema => ({
     .sort((a, b) => a.sort_order - b.sort_order)
     .map(toTemplateField),
   layoutGroups: r.layout_groups ?? undefined,
+  variants: r.variants ?? undefined,
   captionTemplate: r.caption_template,
   autobuildMeta: r.autobuild_meta ?? undefined,
   createdAt: r.created_at,

@@ -11,6 +11,7 @@ const link = (
   templateId,
   name: `link-${id}`,
   allowUploads: true,
+  pinnedVariantId: null,
   expiresAt: null,
   useCap: null,
   useCount: 0,
