@@ -292,6 +292,13 @@ export function FieldInspector(props: FieldInspectorProps) {
    * can lock it, exactly like any other locked property. */
   const sizingMode: TextSizingMode = resolved.textSizing ?? "free";
   const sizingLocked = locked.has("textSizing");
+  /** Whether the Member input section has anything to show: Max chars for
+   * text under Shrink or Fill (under Free it lives in Layout), Options for
+   * a dropdown. Nothing for an image. */
+  const hasMemberInput =
+    !isStatic &&
+    (field.type === "select" ||
+      ((field.type === "text" || field.type === "multiline") && sizingMode !== "free"));
   const displayFamily = resolved.fontFamily;
   const currentStyle = toFontStyle(resolved.fontWeight, resolved.fontStyle, resolved.fontStretch);
   const fontAssets = useMemo(() => assets.filter((a) => a.kind === "font"), [assets]);
@@ -468,7 +475,9 @@ export function FieldInspector(props: FieldInspectorProps) {
 
   /** A fixed element's content: text, or an image uploaded from here. In
    * variation mode these read the variation's merge and write its override
-   * (a wordmark that flips to white, a logo's colourway asset). */
+   * (a wordmark that flips to white, a logo's colourway asset). The same
+   * slot carries `placeholderRow` when the element is not fixed: one row,
+   * whose label and write target follow the Fixed switch. */
   const staticContentRows = (
     <>
       {isStatic && isText && (
@@ -565,6 +574,30 @@ export function FieldInspector(props: FieldInspectorProps) {
         </PropertyRow>
       )}
     </>
+  );
+
+  /** The non-fixed counterpart of the Content row: what the member sees in
+   * the form before they type. For a dropdown the same value is the empty
+   * option's text, so the row says so. Placeholder is shared structure,
+   * never a per-variation override (it is not in VARIANT_OVERRIDE_KEYS), so
+   * it reads from `field` and writes through onChange, never look(). A
+   * non-fixed image has nothing to pre-fill, so it gets no row. */
+  const isSelect = field.type === "select";
+  const placeholderRow = !isStatic && isText && (
+    <PropertyRow label={isSelect ? "Empty option" : "Placeholder"}>
+      <input
+        className="sp-input"
+        style={compactControlStyle}
+        aria-label={isSelect ? "Dropdown empty option" : "Member form placeholder"}
+        value={field.placeholder ?? ""}
+        placeholder={
+          isSelect
+            ? "What the dropdown says before a choice"
+            : "What your team sees before they type"
+        }
+        onChange={(e) => onChange({ placeholder: e.target.value || undefined }, true)}
+      />
+    </PropertyRow>
   );
 
   return (
@@ -770,7 +803,11 @@ export function FieldInspector(props: FieldInspectorProps) {
             </>
           )}
 
+          {/* One slot: Content while fixed (fixed content moves to This
+              variation in variation mode), Placeholder otherwise. Placeholder
+              is shared, so it stays here on All variations. */}
           {!variantMode && staticContentRows}
+          {placeholderRow}
         </InspectorSection>
       )}
 
@@ -1063,7 +1100,17 @@ export function FieldInspector(props: FieldInspectorProps) {
                         ? "Unlink corners: set each independently"
                         : "Link corners: one value for all four"
                     }
-                    style={{ flexShrink: 0, display: "flex", alignItems: "center" }}
+                    // A real control box, sized to the row: without one the
+                    // toggle sat flush against the rail body's clipped edge
+                    // and its focus ring was cut off. sp-icon-btn already
+                    // centres, prevents shrinking, and paints the hover fill;
+                    // only the size and the crisp control radius are set here.
+                    className="sp-icon-btn"
+                    style={{
+                      width: "var(--row-h-compact)",
+                      height: "var(--row-h-compact)",
+                      borderRadius: "var(--radius-control)",
+                    }}
                   >
                     {radiusLinked ? (
                       <LinkIcon
@@ -1081,12 +1128,17 @@ export function FieldInspector(props: FieldInspectorProps) {
               )}
             </PropertyRow>
           )}
+          {/* Per-corner inputs. Full width: the row has no label, and the
+            96px gutter left four inputs about 30px each at the rail's
+            minimum, which is less than one digit once NumericField's own
+            padding and scrub label are paid for. The grid wraps by width:
+            two columns at 260px, four across at 520px. */}
           {hasRadius && !radiusLinked && (
-            <PropertyRow>
+            <PropertyRow full>
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(4, 1fr)",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(104px, 1fr))",
                   gap: "var(--space-3xs)",
                   flex: 1,
                   minWidth: 0,
@@ -1441,8 +1493,12 @@ export function FieldInspector(props: FieldInspectorProps) {
       )}
 
       {/* Member input — what the member sees in their form; gone on fixed
-          elements. Same write paths the old panel used. */}
-      {!isStatic && showAll && (
+          elements. Same write paths the old panel used. Requiredness is not a
+          control any more: a non-fixed element is required by construction
+          (see lib/templates/fieldRules). The section renders only when a
+          control survives for this field type, so a non-fixed image, which
+          has none, gets no empty header. */}
+      {hasMemberInput && showAll && (
         <InspectorSection id="member-input" title="Member input">
           {/* Under Free this control lives in Layout — it bounds how far the
               box can grow, which is that mode's failure question. */}
@@ -1486,22 +1542,6 @@ export function FieldInspector(props: FieldInspectorProps) {
               />
             </PropertyRow>
           )}
-          <PropertyRow label="Placeholder">
-            <input
-              className="sp-input"
-              style={compactControlStyle}
-              aria-label="Member form placeholder"
-              value={field.placeholder ?? ""}
-              onChange={(e) => onChange({ placeholder: e.target.value || undefined }, true)}
-            />
-          </PropertyRow>
-          <PropertyRow label="Required">
-            <Switch
-              checked={field.required ?? false}
-              ariaLabel="Required field"
-              onChange={(next) => onChange({ required: next || undefined })}
-            />
-          </PropertyRow>
         </InspectorSection>
       )}
 

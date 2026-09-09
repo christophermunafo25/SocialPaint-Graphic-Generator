@@ -3293,7 +3293,10 @@ export function TemplateBuilder({
               className="sp-builder__rail-body space-y-3"
               style={{ padding: "var(--space-2xs)" }}
             >
-              {mode === "edit" && (
+              {/* The palette adds elements to the graphic, so it lives with
+                  the Layers tab. Form is the member's view: what they fill
+                  in, in order, and nothing to add. */}
+              {mode === "edit" && railTab === "layers" && (
                 <ElementPalette
                   onAdd={(id) => addPaletteField(id)}
                   logos={logoAssets}

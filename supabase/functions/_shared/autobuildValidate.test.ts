@@ -407,7 +407,7 @@ describe("select and static rules", () => {
 
   it("a Fixed text field bakes the source text and drops member-input props", () => {
     const out = validateProposal(
-      proposal([field({ static: true, required: true, maxLength: 40, placeholder: "unused" })]),
+      proposal([field({ static: true, maxLength: 40, placeholder: "unused" })]),
       extraction([element("1:10", "text", { text: "SocialPaint" })]),
       brand,
       "figma",
@@ -415,7 +415,7 @@ describe("select and static rules", () => {
     const f = out.fields[0];
     expect(f.static).toBe(true);
     expect(f.staticValue).toBe("SocialPaint");
-    expect(f.required).toBeUndefined();
+    expect(f).not.toHaveProperty("required");
     expect(f.maxLength).toBeUndefined();
     expect(f.placeholder).toBeUndefined();
   });

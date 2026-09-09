@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, FileSpreadsheet, Download } from "lucide-react";
 import type { FieldValues, TemplateSchema } from "@/lib/types";
+import { isRequiredField } from "@/lib/templates/fieldRules";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -199,7 +200,7 @@ function BulkFill({
 
   // ── Mapping ───────────────────────────────────────────────────────────
   const requiredUnmapped = useMemo(
-    () => fields.filter((f) => f.required && !map.includes(f.fieldKey)),
+    () => fields.filter((f) => isRequiredField(f) && !map.includes(f.fieldKey)),
     [fields, map],
   );
   const mappedCount = map.filter((m) => m !== null).length;
@@ -355,7 +356,7 @@ function BulkFill({
                           { value: IGNORE, label: "Ignore" },
                           ...fields.map((f) => ({
                             value: f.fieldKey,
-                            label: f.required ? `${f.label} (required)` : f.label,
+                            label: isRequiredField(f) ? `${f.label} (required)` : f.label,
                           })),
                           // Only when there is a choice of look: the column
                           // names a variation, not a field.

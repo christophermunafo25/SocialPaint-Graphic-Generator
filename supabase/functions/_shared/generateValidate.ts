@@ -8,6 +8,8 @@
 // reach by construction, because the only thing that leaves this module is
 // (templateId, fieldKey → string).
 
+import { isRequiredField } from "./fieldRules.ts";
+
 /** One field of a candidate template, as validation sees it: the FULL field
  * list including fixed fields, so a write against a fixed field can be named
  * as such rather than reported as "unknown". The model is shown a narrower
@@ -314,8 +316,11 @@ export function validateGeneration(
 
     // A proposal that skips a required text field is a broken graphic, not a
     // choice — send it back rather than showing a hole where the headline goes.
+    // Requiredness is derived (see fieldRules.ts). Images are required of
+    // the MEMBER, not the model: the model never supplies artwork, so an
+    // image is skipped here and reported in imageFieldsNeeded instead.
     for (const field of template.fields) {
-      if (field.static || field.type === "image" || field.required !== true) continue;
+      if (field.type === "image" || !isRequiredField(field)) continue;
       if (!(field.fieldKey in values)) {
         errors.push(
           `${label}: required field "${field.fieldKey}" on "${template.name}" has no value.`,
@@ -349,7 +354,7 @@ export function validateGeneration(
       why: typeof p.why === "string" ? p.why.trim().slice(0, 200) : "",
       imageFieldsNeeded: template.fields
         .filter((f) => !f.static && f.type === "image")
-        .map((f) => ({ fieldKey: f.fieldKey, label: f.label, required: f.required === true })),
+        .map((f) => ({ fieldKey: f.fieldKey, label: f.label, required: isRequiredField(f) })),
       imageTargetFieldKey,
     });
   });
@@ -823,7 +828,7 @@ export function validateFreestyle(
       why: typeof p.why === "string" ? p.why.trim().slice(0, 200) : "",
       imageFieldsNeeded: fields
         .filter((x) => !x.static && x.type === "image")
-        .map((x) => ({ fieldKey: x.fieldKey, label: x.label, required: false })),
+        .map((x) => ({ fieldKey: x.fieldKey, label: x.label, required: isRequiredField(x) })),
     });
   });
 

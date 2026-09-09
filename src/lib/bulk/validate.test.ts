@@ -107,9 +107,21 @@ describe("checkRows", () => {
     ]);
   });
 
-  it("leaves an empty select value alone (required is the check for that)", () => {
+  it("reports an empty select as missing and never as a bad option", () => {
+    // A dropdown is a form field, so it is required by construction; the
+    // only problem an empty one raises is missing_required.
     const city = mkField({ fieldKey: "city", type: "select", options: ["Chicago"] });
     const out = checkRows(schema([city]), null, [[""]], ["city"], measure);
+    expect(out[0].problems).toEqual([
+      { kind: "missing_required", fieldKey: "city", label: "Field" },
+    ]);
+  });
+
+  it("does not require a fixed field, and never sees an image at all", () => {
+    // Bulk fill has no upload column; images are outside its field set.
+    const fixed = mkField({ fieldKey: "footer", static: true, staticValue: "Acme" });
+    const photo = mkField({ fieldKey: "photo", type: "image" });
+    const out = checkRows(schema([fixed, photo]), null, [["", ""]], ["footer", "photo"], measure);
     expect(out[0].ok).toBe(true);
   });
 

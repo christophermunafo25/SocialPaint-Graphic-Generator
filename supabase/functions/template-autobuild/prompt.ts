@@ -22,7 +22,6 @@ Cover every element in the list with exactly one field proposal. Anything you sk
 - fieldKey: a short lowercase slug, letters/digits/underscores, starting with a letter.
 - maxLength (editable text only): derive it — estimate how many characters fit at the extracted font size across the extracted box width (average glyph width is roughly 0.55x the font size), then subtract a 10-15% safety margin. Overflowing text is the most common failure of a generated template; when unsure, go smaller.
 - placeholder: a realistic example value, not a description.
-- required: true only for fields the graphic is meaningless without.
 - typeStyleKey: bind to a brand type style when the element's role clearly matches one (a headline to the heading style, body copy to body). Leave unbound when unsure.
 - colorKey: map the element's extracted hex onto the nearest brand palette entry when they are visually close (the palette entry's hex is copied onto the field); leave unset when nothing in the palette is close.
 - plateHex (only when the import asks for it, editable text fields only): the solid colour visible behind the text in the picture, as #RRGGBB. Omit when the backdrop is a photo or gradient.
