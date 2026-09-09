@@ -468,7 +468,9 @@ export function FieldInspector(props: FieldInspectorProps) {
 
   /** A fixed element's content: text, or an image uploaded from here. In
    * variation mode these read the variation's merge and write its override
-   * (a wordmark that flips to white, a logo's colourway asset). */
+   * (a wordmark that flips to white, a logo's colourway asset). The same
+   * slot carries `placeholderRow` when the element is not fixed: one row,
+   * whose label and write target follow the Fixed switch. */
   const staticContentRows = (
     <>
       {isStatic && isText && (
@@ -565,6 +567,24 @@ export function FieldInspector(props: FieldInspectorProps) {
         </PropertyRow>
       )}
     </>
+  );
+
+  /** The non-fixed counterpart of the Content row: what the member sees in
+   * the form before they type. Placeholder is shared structure, never a
+   * per-variation override (it is not in VARIANT_OVERRIDE_KEYS), so it
+   * reads from `field` and writes through onChange, never look(). A
+   * non-fixed image has nothing to pre-fill, so it gets no row. */
+  const placeholderRow = !isStatic && isText && (
+    <PropertyRow label="Placeholder">
+      <input
+        className="sp-input"
+        style={compactControlStyle}
+        aria-label="Member form placeholder"
+        value={field.placeholder ?? ""}
+        placeholder="What your team sees before they type"
+        onChange={(e) => onChange({ placeholder: e.target.value || undefined }, true)}
+      />
+    </PropertyRow>
   );
 
   return (
@@ -770,7 +790,11 @@ export function FieldInspector(props: FieldInspectorProps) {
             </>
           )}
 
+          {/* One slot: Content while fixed (fixed content moves to This
+              variation in variation mode), Placeholder otherwise. Placeholder
+              is shared, so it stays here on All variations. */}
           {!variantMode && staticContentRows}
+          {placeholderRow}
         </InspectorSection>
       )}
 
@@ -1486,15 +1510,6 @@ export function FieldInspector(props: FieldInspectorProps) {
               />
             </PropertyRow>
           )}
-          <PropertyRow label="Placeholder">
-            <input
-              className="sp-input"
-              style={compactControlStyle}
-              aria-label="Member form placeholder"
-              value={field.placeholder ?? ""}
-              onChange={(e) => onChange({ placeholder: e.target.value || undefined }, true)}
-            />
-          </PropertyRow>
           <PropertyRow label="Required">
             <Switch
               checked={field.required ?? false}
