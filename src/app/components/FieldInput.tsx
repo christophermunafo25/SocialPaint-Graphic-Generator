@@ -6,7 +6,7 @@ import { useBrandOptional } from "@/lib/brand/BrandContext";
 import { loadDataUrl } from "@/lib/render/useDataUrl";
 import { downscaleImage } from "@/lib/render/downscaleImage";
 import { ImageCropper } from "./ImageCropper";
-import { ImageSourceChooser, pickableAssets } from "./ImageSourceChooser";
+import { ImageSourceChooser, ImageSourceDialog, pickableAssets } from "./ImageSourceChooser";
 import {
   MAX_UPLOAD_BYTES,
   MAX_UPLOAD_EDGE_PX,
@@ -82,6 +82,9 @@ function ImageFieldInput({ field, value, onChange, inputId }: FieldInputProps) {
   const [original, setOriginal] = useState<string | null>(null);
   const [cropping, setCropping] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  /** The replace-image dialog: open once an image exists and the person
+   * asks to swap it. */
+  const [replacing, setReplacing] = useState(false);
   const { chip, runChip, clearChip } = useUploadChip();
   // Brand assets are on offer wherever a brand is loaded (the signed-in
   // member page); the public link page mounts no BrandProvider and keeps
@@ -144,7 +147,28 @@ function ImageFieldInput({ field, value, onChange, inputId }: FieldInputProps) {
     accept: UPLOAD_ACCEPT,
     maxFiles: 1,
     maxSize: MAX_UPLOAD_BYTES,
+    // With an image in place the well is a drop target only; the click
+    // goes to "Replace image", which asks where the new one comes from.
+    noClick: Boolean(value),
+    noKeyboard: Boolean(value),
   });
+
+  /** A file chosen through the dialog: the same cap and type list the
+   * dropzone enforces, then the same road. */
+  const pickDeviceFile = useCallback(
+    (file: File) => {
+      if (file.size > MAX_UPLOAD_BYTES) {
+        setUploadError(rejectionMessage("file-too-large"));
+        return;
+      }
+      if (!/^image\/(png|jpeg|webp)$/.test(file.type)) {
+        setUploadError(rejectionMessage("file-invalid-type"));
+        return;
+      }
+      onDrop([file]);
+    },
+    [onDrop],
+  );
 
   const aspect = field.aspectRatio ?? field.width / field.height;
   // What the cropper crops: the held original when the upload happened here,
@@ -165,14 +189,26 @@ function ImageFieldInput({ field, value, onChange, inputId }: FieldInputProps) {
           }}
         />
       )}
-      <ImageSourceChooser
+      <ImageSourceDialog
+        open={replacing}
+        onClose={() => setReplacing(false)}
         assets={brandAssets}
+        onPickAsset={pickBrandAsset}
+        onPickFile={pickDeviceFile}
+        accept="image/png,image/jpeg,image/webp"
+      />
+      <ImageSourceChooser
+        // The inline tabs belong to the FIRST upload. Once an image is in
+        // place the question moves into the dialog, behind "Replace image".
+        assets={value ? [] : brandAssets}
         onPickAsset={pickBrandAsset}
         device={
           <div
             {...getRootProps({
-              role: "button",
-              "aria-label": `${field.label}: upload a JPG, PNG, or WEBP image up to 10MB`,
+              role: value ? undefined : "button",
+              "aria-label": value
+                ? `${field.label}: drop a new image here, or use Replace image`
+                : `${field.label}: upload a JPG, PNG, or WEBP image up to 10MB`,
               "aria-required": field.required || undefined,
             })}
             data-active={isDragActive}
@@ -213,9 +249,20 @@ function ImageFieldInput({ field, value, onChange, inputId }: FieldInputProps) {
                 <Upload style={{ width: 15, height: 15, color: "var(--text-primary)" }} />
               </span>
             )}
-            <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}>
-              {value ? "Replace image" : "Click or drag to upload"}
-            </p>
+            {value ? (
+              <button
+                type="button"
+                className="sp-btn sp-btn-ghost"
+                onClick={() => setReplacing(true)}
+              >
+                <RefreshCw style={{ width: 13, height: 13 }} aria-hidden />
+                Replace image
+              </button>
+            ) : (
+              <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}>
+                Click or drag to upload
+              </p>
+            )}
           </div>
         }
       />

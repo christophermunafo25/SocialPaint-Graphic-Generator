@@ -65,7 +65,7 @@ import {
 } from "./InspectorControls";
 import { AlignControls } from "./AlignControls";
 import { FillPicker, fillSwatchCss, getFill } from "./FillPicker";
-import { ImageSourceChooser, pickableAssets } from "../ImageSourceChooser";
+import { ImageSourceChooser, ImageSourceDialog, pickableAssets } from "../ImageSourceChooser";
 import { parseHex, toHex } from "@/lib/color";
 
 interface FieldInspectorProps {
@@ -197,6 +197,9 @@ export function FieldInspector(props: FieldInspectorProps) {
   const mainSizeComputed = inStack && isText;
   const labelRef = useRef<HTMLInputElement>(null);
   const [uploadingStatic, setUploadingStatic] = useState(false);
+  /** The replace-image dialog for a fixed image that already has one. */
+  const [replacingStatic, setReplacingStatic] = useState(false);
+  useEffect(() => setReplacingStatic(false), [field.id]);
 
   const uploadStaticImage = async (file: File) => {
     if (!company) return;
@@ -488,53 +491,77 @@ export function FieldInspector(props: FieldInspectorProps) {
       {isStatic && field.type === "image" && (
         <PropertyRow label="Image" align="start">
           {/* A fixed image can come from the brand (a logo, an uploaded
-              image — set by reference, no re-upload) or from this device. */}
-          <ImageSourceChooser
+              image — set by reference, no re-upload) or from this device.
+              The first pick offers both inline; replacing asks in a dialog,
+              after the admin says they want to replace. */}
+          <ImageSourceDialog
+            open={replacingStatic}
+            onClose={() => setReplacingStatic(false)}
             assets={pickableAssets(assets)}
-            compact
             selectedUrl={merged.staticValue}
             onPickAsset={(asset) => look({ staticValue: asset.url })}
-            device={
-              <label
-                {...staticDrop.bind}
-                data-active={staticDrop.active}
-                className="sp-dropzone flex flex-1 items-center justify-center gap-2 cursor-pointer"
-                style={{
-                  border: "1.5px dashed var(--border-strong)",
-                  borderRadius: "var(--radius-control)",
-                  fontSize: "var(--type-caption-size)",
-                  color: "var(--text-secondary)",
-                  minHeight: "var(--row-h-compact)",
-                }}
-              >
-                {uploadingStatic ? (
-                  <RefreshCw
-                    className="w-3.5 h-3.5 animate-spin"
-                    style={{ color: "var(--state-primary)" }}
-                  />
-                ) : (
-                  <Upload
-                    className="sp-dropzone__icon w-3.5 h-3.5"
-                    style={{ color: "var(--state-primary)" }}
-                  />
-                )}
-                {uploadingStatic
-                  ? "Uploading…"
-                  : merged.staticValue
-                    ? "Replace image"
-                    : "Upload image"}
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/svg+xml,image/webp"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) void uploadStaticImage(f);
-                  }}
-                />
-              </label>
-            }
+            onPickFile={(file) => void uploadStaticImage(file)}
+            accept="image/png,image/jpeg,image/svg+xml,image/webp"
           />
+          {merged.staticValue ? (
+            <button
+              type="button"
+              className="sp-btn sp-btn-ghost"
+              style={{ minHeight: "var(--row-h-compact)" }}
+              disabled={uploadingStatic}
+              onClick={() => setReplacingStatic(true)}
+            >
+              {uploadingStatic ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="w-3.5 h-3.5" />
+              )}
+              {uploadingStatic ? "Uploading…" : "Replace image"}
+            </button>
+          ) : (
+            <ImageSourceChooser
+              assets={pickableAssets(assets)}
+              compact
+              selectedUrl={merged.staticValue}
+              onPickAsset={(asset) => look({ staticValue: asset.url })}
+              device={
+                <label
+                  {...staticDrop.bind}
+                  data-active={staticDrop.active}
+                  className="sp-dropzone flex flex-1 items-center justify-center gap-2 cursor-pointer"
+                  style={{
+                    border: "1.5px dashed var(--border-strong)",
+                    borderRadius: "var(--radius-control)",
+                    fontSize: "var(--type-caption-size)",
+                    color: "var(--text-secondary)",
+                    minHeight: "var(--row-h-compact)",
+                  }}
+                >
+                  {uploadingStatic ? (
+                    <RefreshCw
+                      className="w-3.5 h-3.5 animate-spin"
+                      style={{ color: "var(--state-primary)" }}
+                    />
+                  ) : (
+                    <Upload
+                      className="sp-dropzone__icon w-3.5 h-3.5"
+                      style={{ color: "var(--state-primary)" }}
+                    />
+                  )}
+                  {uploadingStatic ? "Uploading…" : "Upload image"}
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) void uploadStaticImage(f);
+                    }}
+                  />
+                </label>
+              }
+            />
+          )}
         </PropertyRow>
       )}
     </>
