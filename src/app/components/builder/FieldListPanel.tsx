@@ -14,6 +14,7 @@ import type { FieldType, LayoutGroup, TemplateField, TemplateVariant } from "@/l
 import { groupChildRef, parseGroupChildRef } from "@/lib/types";
 import { outermostGroupOf, parentGroupOf } from "@/lib/render/layout";
 import { unstyledVariantCount } from "@/lib/templates/variants";
+import { mergeVisibleOrder, mergeVisibleRefs } from "./formOrder";
 
 const ICONS: Record<FieldType, React.ComponentType<{ style?: React.CSSProperties }>> = {
   text: TypeIcon,
@@ -54,12 +55,19 @@ type DragSource =
   | { kind: "group"; groupId: string }
   | { kind: "child"; groupId: string; ref: string };
 
-/** The Fields step's list: every field in member-form order, with grouped
- * fields nested under their stack (in STACK order — their form-step numbers
- * still read from the flat order, which grouping never changes). Click to
- * select (canvas-synced), ⌘/Ctrl-click multi-selects, drag the grip to
- * reorder: an ungrouped row or a whole group reorders the FORM; a row inside
- * a group reorders the STACK. */
+/** What the member actually sees a control for. Fixed elements and shapes
+ * never reach the form. */
+const inForm = (f: TemplateField) => !f.static && f.type !== "shape";
+
+/** The Form tab's list: the member-facing fields in member-form order, with
+ * grouped fields nested under their stack (in STACK order — their form-step
+ * numbers still read from the flat order, which grouping never changes).
+ * Fixed elements and shapes are not listed; the Layers tab is where every
+ * element lives. Click to select (canvas-synced), ⌘/Ctrl-click
+ * multi-selects, drag the grip to reorder: an ungrouped row or a whole group
+ * reorders the FORM; a row inside a group reorders the STACK. Filtering is
+ * display only: every reorder still emits the complete array, with the
+ * hidden elements exactly where they were (see formOrder.ts). */
 export function FieldListPanel({
   fields,
   groups,
@@ -74,14 +82,43 @@ export function FieldListPanel({
   const [overKey, setOverKey] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
+  const visible = fields.filter(inForm);
+
   // Form-step numbers come from the FLAT fields order — nesting is display.
+  // Computed over the visible set, which holds nothing fixed, so the numbers
+  // run contiguously down the list.
   const stepNoById = new Map<string, number | null>();
   {
     let n = 0;
-    for (const f of fields) stepNoById.set(f.id, f.static ? null : ++n);
+    for (const f of visible) stepNoById.set(f.id, f.static ? null : ++n);
   }
 
-  const byKey = new Map(fields.map((f) => [f.fieldKey, f]));
+  const byKey = new Map(visible.map((f) => [f.fieldKey, f]));
+  const groupById = new Map(groups.map((g) => [g.id, g]));
+  /** A group renders only when something inside it reaches the form. */
+  const groupHasForm = (g: LayoutGroup, seen: Set<string>): boolean => {
+    if (seen.has(g.id)) return false;
+    seen.add(g.id);
+    return g.children.some((ref) => {
+      const nestedId = parseGroupChildRef(ref);
+      if (nestedId) {
+        const nested = groupById.get(nestedId);
+        return nested ? groupHasForm(nested, seen) : false;
+      }
+      return byKey.has(ref);
+    });
+  };
+  /** Whether a child ref shows on this tab: a visible field, or a nested
+   * group with at least one visible descendant. */
+  const refInForm = (ref: string): boolean => {
+    const nestedId = parseGroupChildRef(ref);
+    if (nestedId) {
+      const nested = groupById.get(nestedId);
+      return nested ? groupHasForm(nested, new Set()) : false;
+    }
+    return byKey.has(ref);
+  };
+
   const rows: Row[] = [];
   const seenGroups = new Set<string>();
   const pushGroup = (g: LayoutGroup, depth: number) => {
@@ -91,8 +128,10 @@ export function FieldListPanel({
     for (const ref of g.children) {
       const nestedId = parseGroupChildRef(ref);
       if (nestedId) {
-        const nested = groups.find((x) => x.id === nestedId);
-        if (nested && !seenGroups.has(nested.id)) pushGroup(nested, depth + 1);
+        const nested = groupById.get(nestedId);
+        if (nested && !seenGroups.has(nested.id) && groupHasForm(nested, new Set())) {
+          pushGroup(nested, depth + 1);
+        }
         continue;
       }
       const f = byKey.get(ref);
@@ -106,7 +145,9 @@ export function FieldListPanel({
         });
     }
   };
-  for (const f of fields) {
+  // Walking the visible fields means a group whose members are all fixed is
+  // never reached, so it disappears from Form and stays on Layers.
+  for (const f of visible) {
     const outer = outermostGroupOf(f.fieldKey, groups);
     if (!outer) {
       rows.push({ kind: "field", field: f, stepNo: stepNoById.get(f.id) ?? null, depth: 0 });
@@ -115,8 +156,10 @@ export function FieldListPanel({
     }
   }
 
-  /** Position of a field in the flat fields array. */
-  const flatIndex = (fieldId: string) => fields.findIndex((f) => f.id === fieldId);
+  /** Position of a field in the VISIBLE list. Every splice below runs
+   * against that list; mergeVisibleOrder puts the result back into the
+   * full array without moving anything that was not shown. */
+  const flatIndex = (fieldId: string) => visible.findIndex((f) => f.id === fieldId);
 
   /** Drop handler: what happens depends on what is dragged over what. */
   const drop = (target: Row) => {
@@ -136,11 +179,15 @@ export function FieldListPanel({
             ? groupChildRef(target.group.id)
             : null;
       if (!targetRef || targetRef === src.ref) return;
-      const rest = g.children.filter((r) => r !== src.ref);
+      // The stack can hold refs to fixed elements and shapes this tab does
+      // not list. Reorder the shown refs, then put them back into the slots
+      // they held, so a hidden child never moves and is never dropped.
+      const shown = g.children.filter(refInForm);
+      const rest = shown.filter((r) => r !== src.ref);
       const at = rest.indexOf(targetRef);
       if (at < 0) return;
       rest.splice(at, 0, src.ref);
-      onReorderChildren(g.id, rest);
+      onReorderChildren(g.id, mergeVisibleRefs(g.children, rest));
       return;
     }
 
@@ -149,17 +196,17 @@ export function FieldListPanel({
     const targetField =
       target.kind === "field"
         ? target.field
-        : fields.find((f) => target.group.children.includes(f.fieldKey));
+        : visible.find((f) => target.group.children.includes(f.fieldKey));
     if (!targetField) return;
     const targetIdx = flatIndex(targetField.id);
 
     if (src.kind === "field") {
       const from = flatIndex(src.fieldId);
       if (from < 0 || from === targetIdx) return;
-      const next = [...fields];
+      const next = [...visible];
       const [moved] = next.splice(from, 1);
       next.splice(targetIdx, 0, moved);
-      onReorder(next);
+      onReorder(mergeVisibleOrder(fields, next));
       return;
     }
 
@@ -177,12 +224,12 @@ export function FieldListPanel({
     };
     collect(g);
     if (memberKeys.has(targetField.fieldKey)) return;
-    const block = fields.filter((f) => memberKeys.has(f.fieldKey));
-    const rest = fields.filter((f) => !memberKeys.has(f.fieldKey));
+    const block = visible.filter((f) => memberKeys.has(f.fieldKey));
+    const rest = visible.filter((f) => !memberKeys.has(f.fieldKey));
     const at = rest.findIndex((f) => f.id === targetField.id);
     if (at < 0) return;
     rest.splice(at, 0, ...block);
-    onReorder(rest);
+    onReorder(mergeVisibleOrder(fields, rest));
   };
 
   const rowKey = (r: Row) => (r.kind === "group" ? `g:${r.group.id}` : r.field.id);
@@ -195,12 +242,14 @@ export function FieldListPanel({
           The order your team fills these in.
         </span>
       </div>
-      {fields.length === 0 ? (
+      {visible.length === 0 ? (
         <p
           className="py-4 text-center"
           style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}
         >
-          No fields yet. Drag an element onto the canvas.
+          {fields.length === 0
+            ? "No elements yet. Drag one onto the canvas."
+            : "Every element is fixed, so your team has nothing to fill in. Switch an element off Fixed to add it to the form."}
         </p>
       ) : (
         <div className="space-y-1">

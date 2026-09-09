@@ -3298,6 +3298,10 @@ export function TemplateBuilder({
                   onAdd={(id) => addPaletteField(id)}
                   logos={logoAssets}
                   activeTool={tool}
+                  // Layers is the full picture; Form offers only what a member
+                  // can fill in. One expression, so hiding the palette on
+                  // Form altogether is a one-line change.
+                  sections={railTab === "layers" ? ["fields", "shapes", "logos"] : ["fields"]}
                 />
               )}
               {railTab === "layers" ? (
