@@ -25,7 +25,9 @@ export function problemSentence(p: RowProblem): string {
  * (the row still exports) follows the status rather than replacing it. */
 export function rowStatus(problems: RowProblem[], notes: string[] = []): string {
   const status = problems.length === 0 ? "Ready" : problems.map(problemSentence).join(" ");
-  return notes.length ? `${status} ${notes.join(" ")}` : status;
+  if (!notes.length) return status;
+  // "Ready" has no full stop of its own; a note after it needs one.
+  return `${problems.length === 0 ? "Ready." : status} ${notes.join(" ")}`;
 }
 
 /** "38 of 40 rows are ready." */
