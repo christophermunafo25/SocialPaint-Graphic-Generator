@@ -296,7 +296,6 @@ const PROPOSE_TEMPLATE_TOOL = {
               type: "boolean",
               description: "true = Fixed: stays on the canvas, leaves the member form.",
             },
-            required: { type: "boolean" },
             maxLength: { type: "number" },
             placeholder: { type: "string" },
             typeStyleKey: { type: "string" },

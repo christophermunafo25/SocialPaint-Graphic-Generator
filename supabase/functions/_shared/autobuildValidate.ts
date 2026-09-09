@@ -23,7 +23,6 @@ export interface ProposedField {
   type: "text" | "multiline" | "image" | "select";
   options?: string[];
   static?: boolean;
-  required?: boolean;
   maxLength?: number;
   placeholder?: string;
   typeStyleKey?: string;
@@ -77,7 +76,6 @@ export interface ValidatedField {
   opacity?: number;
   static?: boolean;
   staticValue?: string;
-  required?: boolean;
   maxLength?: number;
   placeholder?: string;
   typeStyleKey?: string;
@@ -362,7 +360,8 @@ export function validateProposal(
           ? p.placeholder.trim().slice(0, 120)
           : element?.text?.slice(0, 80)
         : undefined,
-      required: !isStatic && p.required === true ? true : undefined,
+      // No required flag: requiredness is derived (see fieldRules.ts), so
+      // the draft carries nothing for the legacy column to store.
       maxLength: !isStatic && type !== "image" ? maxLength : undefined,
       typeStyleKey,
       ...(brandHex !== undefined ? { colorHex: brandHex } : {}),
