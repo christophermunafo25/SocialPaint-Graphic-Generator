@@ -43,14 +43,7 @@ interface ElementPaletteProps {
    * it always has — but it marks the tile the active tool will draw, so the
    * top bar and this rail never disagree about state. */
   activeTool?: BuilderTool;
-  /** Which blocks to render. The Layers tab shows the full palette; the
-   * Form tab shows only Fields, because shapes and logos never reach the
-   * member form. Defaults to everything so other callers are unchanged. */
-  sections?: ReadonlyArray<PaletteSection>;
 }
-
-export type PaletteSection = "fields" | "shapes" | "logos";
-const ALL_SECTIONS: ReadonlyArray<PaletteSection> = ["fields", "shapes", "logos"];
 
 function Tile({
   item,
@@ -133,44 +126,34 @@ function LogoTile({ asset, onAdd }: { asset: BrandAsset; onAdd(id: string): void
  * tile onto the canvas to drop it where it lands; clicking adds at the
  * center. A dropped logo lands as a fixed image sized to its artwork and
  * always fits inside its box ("contain") — it never crops. */
-export function ElementPalette({
-  onAdd,
-  logos = [],
-  activeTool = "move",
-  sections = ALL_SECTIONS,
-}: ElementPaletteProps) {
+export function ElementPalette({ onAdd, logos = [], activeTool = "move" }: ElementPaletteProps) {
   const fields = PALETTE_ITEMS.filter((i) => i.group === "fields");
   const shapes = PALETTE_ITEMS.filter((i) => i.group === "shapes");
   const armedId = activeTool === "move" ? null : TOOL_PALETTE_ID[activeTool];
-  const show = (key: PaletteSection) => sections.includes(key);
   return (
     <div className="sp-card p-3 space-y-3">
-      {show("fields") && (
-        <div className="space-y-2">
-          <h3 className="sp-eyebrow">Fields</h3>
-          {/* When the builder stacks to one column (below lg), the palette spans
+      <div className="space-y-2">
+        <h3 className="sp-eyebrow">Fields</h3>
+        {/* When the builder stacks to one column (below lg), the palette spans
             the full content width — four-across keeps the tiles hand-sized. */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-2">
-            {fields.map((item) => (
-              <Tile key={item.id} item={item} onAdd={onAdd} armed={item.id === armedId} />
-            ))}
-          </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-2">
+          {fields.map((item) => (
+            <Tile key={item.id} item={item} onAdd={onAdd} armed={item.id === armedId} />
+          ))}
         </div>
-      )}
-      {show("shapes") && (
-        <div className="space-y-2">
-          <h3 className="sp-eyebrow">Shapes</h3>
-          <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-3 gap-2">
-            {shapes.map((item) => (
-              <Tile key={item.id} item={item} onAdd={onAdd} armed={item.id === armedId} />
-            ))}
-          </div>
-          <p style={{ fontSize: 10.5, color: "var(--text-muted)" }}>
-            Shapes are design-only. Members never see them as fields.
-          </p>
+      </div>
+      <div className="space-y-2">
+        <h3 className="sp-eyebrow">Shapes</h3>
+        <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-3 gap-2">
+          {shapes.map((item) => (
+            <Tile key={item.id} item={item} onAdd={onAdd} armed={item.id === armedId} />
+          ))}
         </div>
-      )}
-      {show("logos") && logos.length > 0 && (
+        <p style={{ fontSize: 10.5, color: "var(--text-muted)" }}>
+          Shapes are design-only. Members never see them as fields.
+        </p>
+      </div>
+      {logos.length > 0 && (
         <div className="space-y-2">
           <h3 className="sp-eyebrow">Logos</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-2">
