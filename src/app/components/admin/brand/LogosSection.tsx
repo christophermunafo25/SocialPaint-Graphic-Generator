@@ -1,6 +1,7 @@
 import React from "react";
 import { Star, Trash2, Upload } from "lucide-react";
 import { stores } from "@/lib/stores";
+import { inUseMessage, templatesUsingSource } from "@/lib/brand/assetUsage";
 import { useFileDrop } from "@/lib/useFileDrop";
 import { SignedImg } from "../../SignedImg";
 import { Disclosure } from "./Disclosure";
@@ -38,6 +39,18 @@ export function LogosSection({ brand, open, onToggle }: SectionProps) {
 
   const removeLogo = async (id: string, name: string) => {
     try {
+      // A logo a template still paints must not go: the object would vanish
+      // from storage while the template kept pointing at it, and every
+      // public link to that template would refuse from then on. Say where
+      // it is used instead, and leave it.
+      const asset = logoAssets.find((a) => a.id === id);
+      if (asset && company) {
+        const uses = templatesUsingSource(await stores.templates.listAll(company.id), asset.url);
+        if (uses.length) {
+          setError(inUseMessage(name, uses));
+          return;
+        }
+      }
       await stores.brandAssets.remove(id);
       // Removing the primary hands the star to whatever is left, so the
       // preview and new work never point at a deleted asset.

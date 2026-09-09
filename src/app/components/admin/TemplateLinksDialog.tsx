@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Check, Copy, Link2, RefreshCw, X } from "lucide-react";
 import type { TemplateLink, TemplateSchema, TemplateVariant } from "@/lib/types";
 import { hasVariants } from "@/lib/templates/variants";
+import { templateAssetDependencies } from "@/lib/brand/assetUsage";
+import { resolveImageUrl } from "@/lib/stores/supabase/signedUrls";
 import { stores } from "@/lib/stores";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { publicLinkUrl } from "@/lib/publicLink/route";
@@ -38,6 +40,23 @@ export function TemplateLinksDialog({
   const [copied, setCopied] = useState(false);
   const [revoking, setRevoking] = useState<TemplateLink | null>(null);
   const [regenerating, setRegenerating] = useState<TemplateLink | null>(null);
+  /** Elements whose image no longer exists in storage. A link to this
+   * template refuses on every open — uniformly, by design — so the one
+   * place to say why is here, before the admin sends anything out. Null
+   * while checking. */
+  const [missingAssets, setMissingAssets] = useState<string[] | null>(null);
+  useEffect(() => {
+    if (!available) return;
+    let alive = true;
+    const deps = templateAssetDependencies(template);
+    void Promise.all(deps.map((d) => resolveImageUrl(d.source))).then((urls) => {
+      if (!alive) return;
+      setMissingAssets(deps.filter((_, i) => urls[i] === null).map((d) => d.label));
+    });
+    return () => {
+      alive = false;
+    };
+  }, [template, available]);
 
   const load = useMemo(
     () => async () => {
@@ -189,6 +208,26 @@ export function TemplateLinksDialog({
           <>
             {freshUrl && (
               <FreshLink url={freshUrl} copied={copied} onCopy={() => void copy(freshUrl)} />
+            )}
+
+            {missingAssets && missingAssets.length > 0 && (
+              <p
+                role="alert"
+                className="px-4 py-3"
+                data-radius-card
+                style={{
+                  fontSize: "var(--type-label-size)",
+                  background: "var(--danger-wash)",
+                  color: "var(--destructive)",
+                }}
+              >
+                Links to this template won't open right now.{" "}
+                {missingAssets.length === 1
+                  ? `“${missingAssets[0]}” points at an image that no longer exists.`
+                  : `${missingAssets.map((m) => `“${m}”`).join(", ")} point at images that no longer exist.`}{" "}
+                Replace {missingAssets.length === 1 ? "it" : "them"} in the builder; existing links
+                start working as soon as the template is saved.
+              </p>
             )}
 
             {error && (
