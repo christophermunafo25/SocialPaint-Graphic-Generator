@@ -46,7 +46,13 @@ const textField = (fieldKey: string, extra: Partial<CandidateField> = {}): Candi
 
 const proposed = (overrides: Partial<ProposedGeneration> = {}): ProposedGeneration => ({
   templateId: "t1",
-  values: [{ fieldKey: "headline", value: "We are hiring a senior nurse practitioner" }],
+  // Every non-fixed text and select field is required by construction, so a
+  // complete proposal fills all three; the fixed footer and the image are not.
+  values: [
+    { fieldKey: "headline", value: "We are hiring a senior nurse practitioner" },
+    { fieldKey: "details", value: "Full time, Evanston clinic" },
+    { fieldKey: "dept", value: "Nursing" },
+  ],
   caption: "Join our Evanston clinic team.",
   why: "The hiring template matches a job announcement.",
   ...overrides,
@@ -74,9 +80,16 @@ describe("a valid proposal passes through", () => {
     const p = out.proposals[0];
     expect(p.templateId).toBe("t1");
     expect(p.templateName).toBe("Template t1");
-    expect(p.values).toEqual({ headline: "We are hiring a senior nurse practitioner" });
+    expect(p.values).toEqual({
+      headline: "We are hiring a senior nurse practitioner",
+      details: "Full time, Evanston clinic",
+      dept: "Nursing",
+    });
     expect(p.caption).toBe("Join our Evanston clinic team.");
-    expect(p.imageFieldsNeeded).toEqual([{ fieldKey: "photo", label: "Headshot", required: true }]);
+    // An image is never required: the designed artwork is its fallback.
+    expect(p.imageFieldsNeeded).toEqual([
+      { fieldKey: "photo", label: "Headshot", required: false },
+    ]);
   });
 
   it("accepts a select value that is one of the options", () => {
@@ -85,6 +98,7 @@ describe("a valid proposal passes through", () => {
         proposed({
           values: [
             { fieldKey: "headline", value: "Now hiring" },
+            { fieldKey: "details", value: "Full time" },
             { fieldKey: "dept", value: "Nursing" },
           ],
         }),
@@ -239,6 +253,8 @@ describe("image fields", () => {
         proposed({
           values: [
             { fieldKey: "headline", value: "Now hiring" },
+            { fieldKey: "details", value: "Full time" },
+            { fieldKey: "dept", value: "Nursing" },
             { fieldKey: "photo", value: "data:image/png;base64,AAAA" },
           ],
         }),

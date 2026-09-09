@@ -12,6 +12,7 @@
 // LineMeasurer, exactly as in measureProposal and the layout pass.
 
 import type { BrandKit, FieldValues, TemplateSchema } from "../types";
+import { isRequiredField } from "../templates/fieldRules";
 import type { LineMeasurer } from "../render/autoFit";
 import { measureProposal } from "../generate/measureProposal";
 import { fillableFields, rowToValues, rowVariantName, type ColumnMap } from "./mapping";
@@ -81,7 +82,7 @@ export function checkRows(
     }
 
     for (const f of fields) {
-      if (f.required && valueOf(f.fieldKey).trim() === "") {
+      if (isRequiredField(f) && valueOf(f.fieldKey).trim() === "") {
         problems.push({ kind: "missing_required", fieldKey: f.fieldKey, label: f.label });
       }
     }

@@ -11,6 +11,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import type { BrandKit, FieldValues, TemplateSchema, TemplateVariant } from "@/lib/types";
+import { isRequiredField } from "@/lib/templates/fieldRules";
 import { mergeCaption } from "@/lib/caption";
 import { resolveFieldStyle } from "@/lib/brand/resolveStyle";
 import { applyVariantToSchema, getVariant, hasVariants } from "@/lib/templates/variants";
@@ -147,7 +148,7 @@ export function TemplateFill({
   );
 
   const missingRequired = useMemo(
-    () => formFields.filter((f) => f.required && !values[f.fieldKey]),
+    () => formFields.filter((f) => isRequiredField(f) && !values[f.fieldKey]),
     [formFields, values],
   );
 
@@ -464,7 +465,7 @@ export function TemplateFill({
                       }}
                     >
                       {field.label}
-                      {field.required && (
+                      {isRequiredField(field) && (
                         <>
                           <span aria-hidden style={{ color: "var(--state-primary)" }}>
                             {" "}

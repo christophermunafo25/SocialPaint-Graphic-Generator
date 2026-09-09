@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useState } from "react";
 import { useDropzone, type FileRejection } from "react-dropzone";
 import { Crop, RefreshCw, Upload } from "lucide-react";
 import type { BrandAsset, TemplateField } from "@/lib/types";
+import { isRequiredField } from "@/lib/templates/fieldRules";
 import { useBrandOptional } from "@/lib/brand/BrandContext";
 import { loadDataUrl } from "@/lib/render/useDataUrl";
 import { downscaleImage } from "@/lib/render/downscaleImage";
@@ -37,7 +38,7 @@ export function FieldInput({ field, value, onChange, inputId }: FieldInputProps)
           value={value}
           maxLength={field.maxLength}
           placeholder={field.placeholder ?? field.label}
-          aria-required={field.required || undefined}
+          aria-required={isRequiredField(field) || undefined}
           onChange={(e) => onChange(e.target.value)}
           className="sp-input"
         />
@@ -49,7 +50,7 @@ export function FieldInput({ field, value, onChange, inputId }: FieldInputProps)
           value={value}
           maxLength={field.maxLength}
           placeholder={field.placeholder ?? field.label}
-          aria-required={field.required || undefined}
+          aria-required={isRequiredField(field) || undefined}
           onChange={(e) => onChange(e.target.value)}
           rows={3}
           className="sp-input"
@@ -61,7 +62,7 @@ export function FieldInput({ field, value, onChange, inputId }: FieldInputProps)
         <select
           id={inputId}
           value={value}
-          aria-required={field.required || undefined}
+          aria-required={isRequiredField(field) || undefined}
           onChange={(e) => onChange(e.target.value)}
           className="sp-input"
         >
@@ -209,7 +210,7 @@ function ImageFieldInput({ field, value, onChange, inputId }: FieldInputProps) {
               "aria-label": value
                 ? `${field.label}: drop a new image here, or use Replace image`
                 : `${field.label}: upload a JPG, PNG, or WEBP image up to 10MB`,
-              "aria-required": field.required || undefined,
+              "aria-required": isRequiredField(field) || undefined,
             })}
             data-active={isDragActive}
             className="sp-dropzone text-center cursor-pointer flex flex-col items-center justify-center gap-2 group"

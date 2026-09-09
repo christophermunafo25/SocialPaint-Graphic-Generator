@@ -89,7 +89,10 @@ Guardrails:
   multi-line wraps at the edge, and both clip so nothing leaves the box.
   Takes precedence over `autoFit` for single-line sizing.
 - `aspectRatio` — enforced by the crop dialog for image fields.
-- `required` — blocks download until filled.
+- `required` — legacy column, no longer read or set by the builder. Whether a
+  field blocks download is derived: every non-fixed text, multiline, and
+  select field is required; images and shapes never are (see
+  `src/lib/templates/fieldRules.ts`).
 - `placeholder` — ghost text in the form and on the canvas preview.
 
 Identity:

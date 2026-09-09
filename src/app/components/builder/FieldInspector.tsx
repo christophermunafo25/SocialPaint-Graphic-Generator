@@ -292,6 +292,13 @@ export function FieldInspector(props: FieldInspectorProps) {
    * can lock it, exactly like any other locked property. */
   const sizingMode: TextSizingMode = resolved.textSizing ?? "free";
   const sizingLocked = locked.has("textSizing");
+  /** Whether the Member input section has anything to show: Max chars for
+   * text under Shrink or Fill (under Free it lives in Layout), Options for
+   * a dropdown. Nothing for an image. */
+  const hasMemberInput =
+    !isStatic &&
+    (field.type === "select" ||
+      ((field.type === "text" || field.type === "multiline") && sizingMode !== "free"));
   const displayFamily = resolved.fontFamily;
   const currentStyle = toFontStyle(resolved.fontWeight, resolved.fontStyle, resolved.fontStretch);
   const fontAssets = useMemo(() => assets.filter((a) => a.kind === "font"), [assets]);
@@ -1465,8 +1472,12 @@ export function FieldInspector(props: FieldInspectorProps) {
       )}
 
       {/* Member input — what the member sees in their form; gone on fixed
-          elements. Same write paths the old panel used. */}
-      {!isStatic && showAll && (
+          elements. Same write paths the old panel used. Requiredness is not a
+          control any more: a non-fixed element is required by construction
+          (see lib/templates/fieldRules). The section renders only when a
+          control survives for this field type, so a non-fixed image, which
+          has none, gets no empty header. */}
+      {hasMemberInput && showAll && (
         <InspectorSection id="member-input" title="Member input">
           {/* Under Free this control lives in Layout — it bounds how far the
               box can grow, which is that mode's failure question. */}
@@ -1510,13 +1521,6 @@ export function FieldInspector(props: FieldInspectorProps) {
               />
             </PropertyRow>
           )}
-          <PropertyRow label="Required">
-            <Switch
-              checked={field.required ?? false}
-              ariaLabel="Required field"
-              onChange={(next) => onChange({ required: next || undefined })}
-            />
-          </PropertyRow>
         </InspectorSection>
       )}
 
