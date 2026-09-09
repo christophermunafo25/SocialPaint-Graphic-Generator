@@ -970,19 +970,35 @@ optgroup {
   box-shadow: var(--edge-lit);
 }
 
-/* Light theme: one solid border. The two-hairline lit edge is a dark-
-   surface idea — a highlight along the top, a shadow beneath, the sides
-   left to the fill's own contrast. A white card on a near-white canvas has
-   no such contrast, so the same recipe reads as a line across the top and
-   nothing down the sides. On light the edge is a full 1px ring at the edge
-   colour instead. Still assembled on the surface, for the same reason as
-   above: hover raises --edge-alpha on the card and this ring follows it. */
+/* Light theme: one solid border, AT the edge. The two-hairline lit edge is
+   a dark-surface idea — a highlight along the top, a shadow beneath, the
+   sides left to the fill's own contrast. A white card on a near-white
+   canvas has no such contrast, so the same recipe reads as a line across
+   the top and nothing down the sides.
+
+   On light the 1px frame that dark keeps transparent is simply coloured.
+   Not an inset ring: an inset shadow starts inside the border, and the
+   white fill paints under a transparent border, so a ring would sit one
+   pixel in with a white halo outside it. The frame is already in the box
+   for layout; painting it moves nothing. Its colour is var(--edge-color),
+   assembled on the surface, so hover's --edge-alpha reaches it exactly as
+   it reaches dark's hairlines. --edge-lit becomes a no-op shadow rather
+   than none, so every state that composes it in a list stays valid. The
+   platform chip keeps the ring — it has no frame, so no halo. */
 [data-theme="light"] .sp-card,
 [data-theme="light"] .sp-sidebar,
-[data-theme="light"] .sp-platform-chip,
 [data-theme="light"] .sp-gate__panel,
 [data-theme="light"] .sp-color-pop {
+  --edge-lit: 0 0 0 0 transparent;
+  border-color: var(--edge-color);
+}
+[data-theme="light"] .sp-platform-chip {
   --edge-lit: inset 0 0 0 1px var(--edge-color);
+}
+[data-theme="light"] .sp-card-link {
+  transition:
+    border-color var(--dur-state) var(--ease),
+    box-shadow var(--dur-state) var(--ease);
 }
 
 /* ── Pre-app shell ─────────────────────────────────────────────────────────
