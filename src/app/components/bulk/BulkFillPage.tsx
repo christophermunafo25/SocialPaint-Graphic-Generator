@@ -255,9 +255,17 @@ function BulkFill({
     if (result.rendered > 0) {
       downloadBlob(result.zip, zipName);
       // One bulk_export event per graphic that actually rendered, in one
-      // write. A stopped run records what it produced. Never a download:
-      // see the note on UsageAction.
-      void stores.usage.recordBulk(template.companyId, template.id, result.rendered, user?.id);
+      // write per look. A stopped run records what it produced. Never a
+      // download: see the note on UsageAction.
+      const failed = new Set(result.failed.map((f) => f.index));
+      const byLook = new Map<string | undefined, number>();
+      for (const c of toRender.slice(0, result.rendered + result.failed.length)) {
+        if (failed.has(c.index)) continue;
+        byLook.set(c.variantId, (byLook.get(c.variantId) ?? 0) + 1);
+      }
+      for (const [variantId, count] of byLook) {
+        void stores.usage.recordBulk(template.companyId, template.id, count, user?.id, variantId);
+      }
     }
     setOutcome({
       result,
