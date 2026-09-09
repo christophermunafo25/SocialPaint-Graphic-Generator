@@ -29,7 +29,12 @@ import {
   requireEnum,
   requireUuid,
 } from "../_shared/validate.ts";
-import { hashToken, mintToken } from "../_shared/publicLink.ts";
+import {
+  hashToken,
+  mintToken,
+  templateDependencies,
+  type StorageRef,
+} from "../_shared/publicLink.ts";
 
 const MAX_LINKS_PER_TEMPLATE = 50;
 const MAX_NAME_CHARS = 80;
@@ -92,6 +97,32 @@ const toView = (r: LinkRow): LinkView => ({
   lastUsedAt: r.last_used_at,
 });
 
+/** Which of these objects are NOT in storage. A link to a template that
+ * points at a deleted image would refuse on every open — and refuse
+ * uniformly, so the admin would never learn why. This is the one place
+ * they can act, so the refusal happens here, in their words. */
+async function missingObjects(
+  db: ReturnType<typeof serviceClient>,
+  deps: Array<{ ref: StorageRef; label: string }>,
+): Promise<string[]> {
+  const byBucket = new Map<string, string[]>();
+  for (const d of deps) {
+    byBucket.set(d.ref.bucket, [...(byBucket.get(d.ref.bucket) ?? []), d.ref.path]);
+  }
+  const present = new Set<string>();
+  for (const [bucket, paths] of byBucket) {
+    const { data, error } = await db
+      .schema("storage")
+      .from("objects")
+      .select("name")
+      .eq("bucket_id", bucket)
+      .in("name", paths);
+    if (error) throw error;
+    for (const row of (data as Array<{ name: string }>) ?? []) present.add(`${bucket}/${row.name}`);
+  }
+  return deps.filter((d) => !present.has(`${d.ref.bucket}/${d.ref.path}`)).map((d) => d.label);
+}
+
 Deno.serve(async (req) => {
   const options = handleOptions(req);
   if (options) return options;
@@ -143,6 +174,36 @@ Deno.serve(async (req) => {
       // create it.
       if (row.status !== "published") {
         throw new HttpError(400, "Publish this template before sharing a public link.");
+      }
+
+      // Every object the template paints has to exist, or the link would
+      // refuse on its first open with no explanation the admin could see.
+      const [tpl, flds] = await Promise.all([
+        db
+          .from("templates")
+          .select("background_storage_path, variants")
+          .eq("id", templateId)
+          .single(),
+        db
+          .from("template_fields")
+          .select("field_key, label, type, is_static, static_value")
+          .eq("template_id", templateId),
+      ]);
+      if (tpl.error) throw tpl.error;
+      if (flds.error) throw flds.error;
+      const missing = await missingObjects(
+        db,
+        templateDependencies(
+          tpl.data as { background_storage_path: string | null; variants: unknown },
+          (flds.data ?? []) as Parameters<typeof templateDependencies>[1],
+        ),
+      );
+      if (missing.length) {
+        const list = missing.map((m) => `“${m}”`).join(", ");
+        throw new HttpError(
+          400,
+          `This template points at ${missing.length === 1 ? "an image that no longer exists" : "images that no longer exist"}: ${list}. Replace ${missing.length === 1 ? "it" : "them"} in the builder, then share.`,
+        );
       }
 
       const { count, error: countError } = await db

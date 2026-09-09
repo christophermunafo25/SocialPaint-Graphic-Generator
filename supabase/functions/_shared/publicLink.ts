@@ -190,6 +190,46 @@ export function schemaAssetRefs(
   return [...refs.values()];
 }
 
+/** The storage objects a template paints, each with the element the admin
+ * would recognise. Mirrors templateAssetDependencies in the client
+ * (src/lib/brand/assetUsage.ts): background, fixed image elements, and a
+ * variation's background and fixed-image swaps. The public read signs
+ * exactly these; link creation checks exactly these exist. */
+export function templateDependencies(
+  template: { background_storage_path: string | null; variants: unknown },
+  fields: Array<{
+    field_key: string;
+    label: string;
+    type: string;
+    is_static: boolean | null;
+    static_value: string | null;
+  }>,
+): Array<{ ref: StorageRef; label: string }> {
+  const out = new Map<string, { ref: StorageRef; label: string }>();
+  const add = (ref: StorageRef | null, label: string) => {
+    if (!ref) return;
+    const key = `${ref.bucket}/${ref.path}`;
+    if (!out.has(key)) out.set(key, { ref, label });
+  };
+  add(refWithImpliedBucket("template-backgrounds", template.background_storage_path), "background");
+  const fixedImages = fields.filter((f) => f.type === "image" && f.is_static);
+  for (const f of fixedImages) add(refWithImpliedBucket("brand-assets", f.static_value), f.label);
+  const variants = Array.isArray(template.variants) ? template.variants : [];
+  for (const raw of variants as Array<Record<string, unknown>>) {
+    const name = typeof raw?.name === "string" ? raw.name : "a variation";
+    if (typeof raw?.backgroundUrl === "string") {
+      add(refWithImpliedBucket("template-backgrounds", raw.backgroundUrl), `${name} background`);
+    }
+    const overrides = (raw?.overrides ?? {}) as Record<string, { staticValue?: unknown }>;
+    for (const [fieldKey, over] of Object.entries(overrides)) {
+      const field = fixedImages.find((f) => f.field_key === fieldKey);
+      if (!field || typeof over?.staticValue !== "string") continue;
+      add(refWithImpliedBucket("brand-assets", over.staticValue), `${name} · ${field.label}`);
+    }
+  }
+  return [...out.values()];
+}
+
 // ---------------------------------------------------------------------------
 // Caller identity for rate limiting
 // ---------------------------------------------------------------------------

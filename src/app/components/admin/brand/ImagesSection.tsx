@@ -1,6 +1,7 @@
 import React from "react";
 import { Trash2, Upload } from "lucide-react";
 import { stores } from "@/lib/stores";
+import { inUseMessage, templatesUsingSource } from "@/lib/brand/assetUsage";
 import { useFileDrop } from "@/lib/useFileDrop";
 import { downscaleImage } from "@/lib/render/downscaleImage";
 import { MAX_UPLOAD_EDGE_PX } from "../../imageUpload";
@@ -57,6 +58,16 @@ export function ImagesSection({ brand, open, onToggle }: SectionProps) {
 
   const removeImage = async (id: string, name: string) => {
     try {
+      // Same rule as logos: an image a template still paints stays, with
+      // the templates named, until it is replaced there.
+      const asset = imageAssets.find((a) => a.id === id);
+      if (asset && company) {
+        const uses = templatesUsingSource(await stores.templates.listAll(company.id), asset.url);
+        if (uses.length) {
+          setError(inUseMessage(name, uses));
+          return;
+        }
+      }
       await stores.brandAssets.remove(id);
       await refresh();
     } catch (e) {

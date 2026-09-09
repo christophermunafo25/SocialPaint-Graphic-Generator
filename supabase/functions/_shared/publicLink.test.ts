@@ -12,6 +12,7 @@ import {
   referencedFontFamilies,
   referencedTypeStyleKeys,
   schemaAssetRefs,
+  templateDependencies,
 } from "./publicLink.ts";
 
 describe("mintToken", () => {
@@ -179,5 +180,54 @@ describe("clientIp", () => {
   it("falls back through the edge headers, then to a constant", () => {
     expect(clientIp(new Headers({ "cf-connecting-ip": "203.0.113.9" }))).toBe("203.0.113.9");
     expect(clientIp(new Headers())).toBe("unknown");
+  });
+});
+
+describe("templateDependencies", () => {
+  const fields = [
+    {
+      field_key: "logo",
+      label: "Logo",
+      type: "image",
+      is_static: true,
+      static_value: "co/logo/a.svg",
+    },
+    {
+      field_key: "photo",
+      label: "Photo",
+      type: "image",
+      is_static: null,
+      static_value: "co/x.png",
+    },
+    { field_key: "headline", label: "Headline", type: "text", is_static: null, static_value: null },
+  ];
+
+  it("names the background, fixed images, and variation swaps, once each", () => {
+    const deps = templateDependencies(
+      {
+        background_storage_path: "co/bg.png",
+        variants: [
+          {
+            name: "Dark",
+            backgroundUrl: "template-backgrounds/co/dark.png",
+            overrides: {
+              logo: { staticValue: "brand-assets/co/logo/white.svg" },
+              photo: { staticValue: "brand-assets/co/never.png" },
+            },
+          },
+        ],
+      },
+      fields,
+    );
+    expect(deps.map((d) => [`${d.ref.bucket}/${d.ref.path}`, d.label])).toEqual([
+      ["template-backgrounds/co/bg.png", "background"],
+      ["brand-assets/co/logo/a.svg", "Logo"],
+      ["template-backgrounds/co/dark.png", "Dark background"],
+      ["brand-assets/co/logo/white.svg", "Dark · Logo"],
+    ]);
+  });
+
+  it("is empty for a template with nothing in storage", () => {
+    expect(templateDependencies({ background_storage_path: null, variants: null }, [])).toEqual([]);
   });
 });
