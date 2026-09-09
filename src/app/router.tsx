@@ -14,11 +14,12 @@ import { PLATFORMS, type PlatformId } from "@/lib/templates/platforms";
  * that open in place, so a category no longer names a separate screen — it
  * names which card is open when the page loads. The URLs are unchanged, so
  * every link that used to reach a detail route still lands on its section. */
-export type BrandCategory = "colors" | "typography" | "logos" | "type-styles" | "import";
+export type BrandCategory = "colors" | "typography" | "logos" | "images" | "type-styles" | "import";
 const BRAND_CATEGORIES: readonly BrandCategory[] = [
   "colors",
   "typography",
   "logos",
+  "images",
   "type-styles",
   "import",
 ];
