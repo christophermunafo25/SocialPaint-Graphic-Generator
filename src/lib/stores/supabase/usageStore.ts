@@ -54,6 +54,7 @@ export class SupabaseUsageStore implements UsageStore {
     templateId: string,
     count: number,
     userId?: string,
+    variantId?: string | null,
   ): Promise<void> {
     if (count <= 0) return;
     try {
@@ -62,6 +63,7 @@ export class SupabaseUsageStore implements UsageStore {
         template_id: templateId,
         action: "bulk_export" as const,
         user_id: userId ?? null,
+        variant_id: variantId ?? null,
         // Bulk fill is admin-only and signed in; same note as `record`.
         actor: "member" as const,
       };

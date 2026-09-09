@@ -296,6 +296,7 @@ export class LocalUsageStore implements UsageStore {
     templateId: string,
     count: number,
     userId?: string,
+    variantId?: string | null,
   ): Promise<void> {
     if (count <= 0) return;
     const createdAt = new Date().toISOString();
@@ -305,6 +306,7 @@ export class LocalUsageStore implements UsageStore {
       templateId,
       action: "bulk_export",
       userId: userId ?? null,
+      variantId: variantId ?? null,
       actor: "member",
       createdAt,
     }));

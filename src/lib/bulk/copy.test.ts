@@ -48,6 +48,14 @@ describe("problemSentence", () => {
 });
 
 describe("rowStatus", () => {
+  it("follows the status with a note, punctuated so the two read as sentences", () => {
+    const note = 'No look called "Purple" on this template, so this row uses Paper.';
+    expect(rowStatus([], [note])).toBe(`Ready. ${note}`);
+    expect(rowStatus([{ kind: "missing_required", fieldKey: "n", label: "Name" }], [note])).toBe(
+      `Name is empty and the template requires it. ${note}`,
+    );
+  });
+
   it("is Ready with no problems and joins problems in order", () => {
     expect(rowStatus([])).toBe("Ready");
     expect(
