@@ -774,24 +774,24 @@ function LookPicker({
             type="button"
             role="radio"
             aria-checked={selected}
+            aria-label={v.name}
+            title={v.name}
             onClick={() => onPick(v.id)}
-            className="text-left"
+            className="overflow-hidden"
+            // The preview IS the option: no frame radius, no caption. The
+            // name still reaches assistive tech and the tooltip. Selection
+            // reads as a bright outline; the rest sit slightly back.
             style={{
-              padding: 6,
-              borderRadius: "var(--radius-card)",
-              border: selected ? "2px solid var(--state-primary)" : "1px solid var(--border)",
-              background: selected ? "var(--bg-hover)" : "transparent",
-              transition: "border-color var(--dur-state) var(--ease)",
+              padding: 0,
+              borderRadius: 0,
+              outline: selected ? "2px solid var(--state-primary)" : "1px solid var(--border)",
+              outlineOffset: selected ? 1 : 0,
+              opacity: selected ? 1 : 0.85,
+              transition:
+                "outline-color var(--dur-state) var(--ease), opacity var(--dur-state) var(--ease)",
             }}
           >
-            <div
-              className="overflow-hidden"
-              style={{
-                borderRadius: "var(--radius-control)",
-                border: "1px solid var(--border)",
-                pointerEvents: "none",
-              }}
-            >
+            <div style={{ pointerEvents: "none" }}>
               <SchemaRenderer
                 schema={template}
                 values={noValues}
@@ -799,23 +799,6 @@ function LookPicker({
                 instrument={false}
                 variantId={v.id}
               />
-            </div>
-            <div className="flex items-center justify-between" style={{ marginTop: 6, gap: 6 }}>
-              <span
-                style={{
-                  fontSize: "var(--type-label-size)",
-                  fontWeight: 500,
-                  color: "var(--text-primary)",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {v.name}
-              </span>
-              {selected && (
-                <Check style={{ width: 14, height: 14, color: "var(--state-primary)" }} />
-              )}
             </div>
           </button>
         );
