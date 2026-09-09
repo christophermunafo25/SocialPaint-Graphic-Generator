@@ -64,7 +64,8 @@ from the platform in migration 0009.)
   template's colourways as one jsonb blob keyed by `field_key`, like
   `layout_groups`: appearance overrides over ONE shared field array, never
   a second copy of the structure. `usage_events.variant_id` records which
-  look an open, download, or bulk row rendered in.
+  look an open, download, or bulk row rendered in. Migration 0031 is live on
+  the linked project (applied 2026-09-09).
 - `usage_events` (`open` | `download` | `share` | `bulk_export`) — `open`
   and `download` are recorded inside `SchemaRenderer` so one code path covers
   every template; `share` is the person taking that PNG to LinkedIn, recorded
