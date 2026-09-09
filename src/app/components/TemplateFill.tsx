@@ -294,10 +294,10 @@ export function TemplateFill({
                         : filled
                           ? "var(--bg-hover)"
                           : "transparent",
-                      // --fill-primary is a BRAND fill (Voltage) — Ink is the
-                      // only legible glyph on it in either theme. The inverted
+                      // --fill-primary is a BRAND fill (Slime) — Ink is the
+                      // glyph on it in either theme (11.13:1). The inverted
                       // --text-on-action pairs with the neutral --fill-action
-                      // only, and reads ~1.3:1 on Voltage in light mode.
+                      // only, and reads ~1.2:1 on Slime in light mode.
                       color: current ? "var(--text-on-accent)" : "var(--text-secondary)",
                       transition:
                         "background var(--dur-state) var(--ease), color var(--dur-state) var(--ease)",

@@ -7,7 +7,7 @@ import React, { useEffect, useId, useRef } from "react";
  * the standard exit curve, the trailing drop 0.62s on an overshoot spring
  * with a 260ms settle, fused by the goo filter (blur 7 → alpha threshold).
  *
- * The pill is SOLID Voltage with ink content in both themes — a fill, so
+ * The pill is SOLID Slime with ink content in both themes — a fill, so
  * it is light-theme legal — because the goo filter's alpha threshold
  * crushes translucent fills; the old wash treatment could not travel.
  *
