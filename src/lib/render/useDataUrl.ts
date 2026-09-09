@@ -20,6 +20,29 @@ export interface DataUrlState {
 const resolvedNow = (url: string | undefined): string | null =>
   !url ? null : url.startsWith("data:") ? url : (cache.get(url) ?? null);
 
+/** The hook's fetch, callable from an event handler: sign, fetch, and embed
+ * one image as a data URL, through the same cache. Rejects on any failure
+ * (deliberately uncached, so a network blip does not poison the URL). A
+ * member picking a brand logo for a photo slot goes through here, so the
+ * cropper gets the same bytes the canvas would paint. */
+export async function loadDataUrl(url: string): Promise<string> {
+  const hit = resolvedNow(url);
+  if (hit) return hit;
+  const fetchable = await resolveImageUrl(url);
+  if (fetchable === null) throw new Error("could not sign the storage reference");
+  const response = await fetch(fetchable);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const blob = await response.blob();
+  const result = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+  cache.set(url, result);
+  return result;
+}
+
 /** Fetch a (possibly remote) image and return it as a data URL.
  *
  * Load-bearing for export: html-to-image silently drops cross-origin images,
@@ -49,18 +72,7 @@ export function useDataUrl(url: string | undefined): DataUrlState {
     let cancelled = false;
     void (async () => {
       try {
-        const fetchable = await resolveImageUrl(url);
-        if (fetchable === null) throw new Error("could not sign the storage reference");
-        const response = await fetch(fetchable);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const blob = await response.blob();
-        const result = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(blob);
-        });
-        cache.set(url, result);
+        const result = await loadDataUrl(url);
         if (!cancelled) setState({ dataUrl: result, loading: false, failed: false });
       } catch (e) {
         // Deliberately NOT cached: a network blip must not permanently

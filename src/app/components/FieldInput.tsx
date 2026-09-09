@@ -1,10 +1,15 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { useDropzone, type FileRejection } from "react-dropzone";
 import { Crop, RefreshCw, Upload } from "lucide-react";
-import type { TemplateField } from "@/lib/types";
+import type { BrandAsset, TemplateField } from "@/lib/types";
+import { useBrandOptional } from "@/lib/brand/BrandContext";
+import { loadDataUrl } from "@/lib/render/useDataUrl";
+import { downscaleImage } from "@/lib/render/downscaleImage";
 import { ImageCropper } from "./ImageCropper";
+import { ImageSourceChooser, pickableAssets } from "./ImageSourceChooser";
 import {
   MAX_UPLOAD_BYTES,
+  MAX_UPLOAD_EDGE_PX,
   UPLOAD_ACCEPT,
   UploadChipView,
   readAndDownscale,
@@ -78,6 +83,35 @@ function ImageFieldInput({ field, value, onChange, inputId }: FieldInputProps) {
   const [cropping, setCropping] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const { chip, runChip, clearChip } = useUploadChip();
+  // Brand assets are on offer wherever a brand is loaded (the signed-in
+  // member page); the public link page mounts no BrandProvider and keeps
+  // the device path alone.
+  const brand = useBrandOptional();
+  const brandAssets = useMemo(() => pickableAssets(brand?.assets ?? []), [brand?.assets]);
+
+  /** A brand logo or image takes the SAME road as a file from the device:
+   * fetched as a data URL (so it lives in page state and exports without a
+   * hole), downscaled to the standard long edge, then cropped to the
+   * field's aspect guardrail like any other photo. */
+  const pickBrandAsset = useCallback(
+    (asset: BrandAsset) => {
+      const processing = loadDataUrl(asset.url)
+        .then((dataUrl) => downscaleImage(dataUrl, MAX_UPLOAD_EDGE_PX))
+        .then((scaled) => {
+          setUploadError(null);
+          setOriginal(scaled);
+          setCropping(true);
+        })
+        .catch((e: unknown) => {
+          console.error("Brand image load failed", e);
+          setUploadError("We couldn't load that brand image. Try again, or upload a file.");
+          throw e instanceof Error ? e : new Error(String(e));
+        });
+      processing.catch(() => clearChip());
+      runChip(asset.name, processing);
+    },
+    [runChip, clearChip],
+  );
 
   const onDrop = useCallback(
     (accepted: File[]) => {
@@ -131,54 +165,60 @@ function ImageFieldInput({ field, value, onChange, inputId }: FieldInputProps) {
           }}
         />
       )}
-      <div
-        {...getRootProps({
-          role: "button",
-          "aria-label": `${field.label}: upload a JPG, PNG, or WEBP image up to 10MB`,
-          "aria-required": field.required || undefined,
-        })}
-        data-active={isDragActive}
-        className="sp-dropzone text-center cursor-pointer flex flex-col items-center justify-center gap-2 group"
-        style={{
-          border: `1.5px dashed ${isDragActive ? "var(--state-primary)" : "var(--border-strong)"}`,
-          borderRadius: "var(--radius-control)",
-          background: isDragActive ? "var(--accent-wash)" : "var(--bg-surface)",
-          padding: 14,
-        }}
-      >
-        <input {...getInputProps({ id: inputId })} />
-        {/* Non-visual counterpart of the drag-active highlight. */}
-        <span className="sr-only" role="status" aria-live="polite">
-          {isDragActive ? "Drop the image to upload" : ""}
-        </span>
-        {value ? (
+      <ImageSourceChooser
+        assets={brandAssets}
+        onPickAsset={pickBrandAsset}
+        device={
           <div
-            className="relative w-16 h-16 overflow-hidden"
-            style={{ borderRadius: "var(--radius-card)", border: "1px solid var(--border)" }}
-          >
-            <img src={value} alt="Preview" className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-              <RefreshCw className="w-4 h-4 text-white" />
-            </div>
-          </div>
-        ) : (
-          <span
-            className="sp-dropzone__icon flex items-center justify-center"
+            {...getRootProps({
+              role: "button",
+              "aria-label": `${field.label}: upload a JPG, PNG, or WEBP image up to 10MB`,
+              "aria-required": field.required || undefined,
+            })}
+            data-active={isDragActive}
+            className="sp-dropzone text-center cursor-pointer flex flex-col items-center justify-center gap-2 group"
             style={{
-              width: 36,
-              height: 36,
+              border: `1.5px dashed ${isDragActive ? "var(--state-primary)" : "var(--border-strong)"}`,
               borderRadius: "var(--radius-control)",
-              background: "var(--bg-raised)",
-              border: "1px solid var(--border)",
+              background: isDragActive ? "var(--accent-wash)" : "var(--bg-surface)",
+              padding: 14,
             }}
           >
-            <Upload style={{ width: 15, height: 15, color: "var(--text-primary)" }} />
-          </span>
-        )}
-        <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}>
-          {value ? "Replace image" : "Click or drag to upload"}
-        </p>
-      </div>
+            <input {...getInputProps({ id: inputId })} />
+            {/* Non-visual counterpart of the drag-active highlight. */}
+            <span className="sr-only" role="status" aria-live="polite">
+              {isDragActive ? "Drop the image to upload" : ""}
+            </span>
+            {value ? (
+              <div
+                className="relative w-16 h-16 overflow-hidden"
+                style={{ borderRadius: "var(--radius-card)", border: "1px solid var(--border)" }}
+              >
+                <img src={value} alt="Preview" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <RefreshCw className="w-4 h-4 text-white" />
+                </div>
+              </div>
+            ) : (
+              <span
+                className="sp-dropzone__icon flex items-center justify-center"
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: "var(--radius-control)",
+                  background: "var(--bg-raised)",
+                  border: "1px solid var(--border)",
+                }}
+              >
+                <Upload style={{ width: 15, height: 15, color: "var(--text-primary)" }} />
+              </span>
+            )}
+            <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}>
+              {value ? "Replace image" : "Click or drag to upload"}
+            </p>
+          </div>
+        }
+      />
       {value && !cropping && (
         <button
           type="button"

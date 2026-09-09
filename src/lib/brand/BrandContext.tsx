@@ -89,3 +89,11 @@ export function useBrand(): BrandState {
   if (!ctx) throw new Error("useBrand must be used inside BrandProvider");
   return ctx;
 }
+
+/** The brand when there is one to read. Null outside a BrandProvider — the
+ * public link page, which mounts none — so a component shared between the
+ * member and public paths can offer brand assets only where they exist
+ * rather than throwing where they do not. */
+export function useBrandOptional(): BrandState | null {
+  return useContext(BrandContext);
+}

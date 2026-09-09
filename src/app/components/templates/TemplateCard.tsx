@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { metaLine, type CatalogTemplate } from "@/lib/templates/catalog";
 import { platformById } from "@/lib/templates/platforms";
@@ -34,12 +34,45 @@ export function TemplateCard({
   const { Icon } = platformById(template.platform);
   const tags = template.useCases.slice(0, MAX_TAGS);
 
+  // A template with several looks shows them off while the pointer (or
+  // focus) rests on the card: the preview steps through every look, one a
+  // second, and settles back on the default when attention moves on. The
+  // swap is a repaint through the one renderer, not an animation, so it is
+  // the same under reduced motion.
+  const looks = useMemo(() => template.template.variants ?? [], [template.template.variants]);
+  const multiLook = looks.length > 1;
+  const [attended, setAttended] = useState(false);
+  const [lookIndex, setLookIndex] = useState<number | null>(null);
+  useEffect(() => {
+    if (!attended || !multiLook) {
+      setLookIndex(null);
+      return;
+    }
+    const start = Math.max(
+      0,
+      looks.findIndex((v) => v.isDefault),
+    );
+    setLookIndex((start + 1) % looks.length);
+    const id = window.setInterval(
+      () => setLookIndex((i) => ((i ?? start) + 1) % looks.length),
+      1000,
+    );
+    return () => window.clearInterval(id);
+  }, [attended, multiLook, looks]);
+  const shownLook = lookIndex === null ? undefined : looks[lookIndex];
+
   return (
     <button
       type="button"
       className="sp-card sp-media-card sp-template-card"
       onClick={() => onOpen(template)}
-      aria-label={`${template.name}, ${template.platformLabel}, ${template.width} by ${template.height}`}
+      onMouseEnter={() => setAttended(true)}
+      onMouseLeave={() => setAttended(false)}
+      onFocus={() => setAttended(true)}
+      onBlur={() => setAttended(false)}
+      aria-label={`${template.name}, ${template.platformLabel}, ${template.width} by ${template.height}${
+        multiLook ? `, ${looks.length} looks` : ""
+      }`}
     >
       <div
         className="sp-media-card__preview"
@@ -55,8 +88,47 @@ export function TemplateCard({
             ...(template.width / template.height >= 1 ? { width: "100%" } : { height: "100%" }),
           }}
         >
-          <TemplateThumbnail template={template.template} />
+          <TemplateThumbnail template={template.template} variantId={shownLook?.id} />
         </div>
+        {multiLook && (
+          /* Which look is showing, and how many there are — dots, the way a
+             carousel says it, plus the name while one is cycling. */
+          <span
+            aria-hidden
+            className="flex items-center"
+            style={{
+              position: "absolute",
+              left: 8,
+              bottom: 8,
+              gap: 4,
+              padding: "3px 6px",
+              borderRadius: "var(--radius-pill)",
+              background: "rgba(0,0,0,0.55)",
+              color: "#fff",
+              fontSize: 10,
+              lineHeight: 1,
+              pointerEvents: "none",
+            }}
+          >
+            {looks.map((v, i) => {
+              const on = shownLook
+                ? i === lookIndex
+                : Boolean(v.isDefault) || (i === 0 && !looks.some((x) => x.isDefault));
+              return (
+                <span
+                  key={v.id}
+                  style={{
+                    width: 5,
+                    height: 5,
+                    borderRadius: "50%",
+                    background: on ? "#fff" : "rgba(255,255,255,0.45)",
+                  }}
+                />
+              );
+            })}
+            {shownLook && <span style={{ marginLeft: 3 }}>{shownLook.name}</span>}
+          </span>
+        )}
       </div>
 
       <div className="sp-template-card__meta">
