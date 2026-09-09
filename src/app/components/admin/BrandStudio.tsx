@@ -6,6 +6,7 @@ import { Page, PageHeader } from "../layout/Page";
 import { BrandRail } from "./brand/BrandRail";
 import { ColorsSection } from "./brand/ColorsSection";
 import { ImportSection } from "./brand/ImportSection";
+import { ImagesSection } from "./brand/ImagesSection";
 import { LogosSection } from "./brand/LogosSection";
 import { TypeStylesSection } from "./brand/TypeStylesSection";
 import { TypographySection } from "./brand/TypographySection";
@@ -96,6 +97,9 @@ export function BrandStudio({ category }: { category?: BrandCategory }) {
           </div>
           <div id={anchorId("logos")}>
             <LogosSection brand={brand} open={!!open.logos} onToggle={() => toggle("logos")} />
+          </div>
+          <div id={anchorId("images")}>
+            <ImagesSection brand={brand} open={!!open.images} onToggle={() => toggle("images")} />
           </div>
           <div id={anchorId("type-styles")}>
             <TypeStylesSection
