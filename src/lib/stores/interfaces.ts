@@ -133,12 +133,16 @@ export interface PeopleStore {
 }
 
 export interface UsageStore {
-  /** Fire-and-forget from SchemaRenderer; failures must never break the UI. */
+  /** Fire-and-forget from SchemaRenderer; failures must never break the UI.
+   * `variantId` names the look that was rendered (migration 0031) so
+   * Insights can say which colourways get used; absent on a single-variant
+   * template. */
   record(
     companyId: string,
     templateId: string,
     action: UsageAction,
     userId?: string,
+    variantId?: string | null,
   ): Promise<void>;
   /** N graphics from one bulk run. One insert, not N — a 200-row run should
    * not be 200 round trips. Fire-and-forget like `record`: instrumentation

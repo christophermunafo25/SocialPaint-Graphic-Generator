@@ -74,8 +74,8 @@ export class SupabasePublicLinkStore implements PublicLinkStore {
     const { data, error } = await supabase()
       .from("template_links")
       .select(
-        "id, name, allow_uploads, expires_at, use_cap, use_count, revoked_at, created_at, " +
-          "last_used_at, template_id, templates!inner(name, company_id)",
+        "id, name, allow_uploads, pinned_variant_id, expires_at, use_cap, use_count, " +
+          "revoked_at, created_at, last_used_at, template_id, templates!inner(name, company_id)",
       )
       .eq("templates.company_id", companyId)
       .order("created_at", { ascending: false });
@@ -85,6 +85,7 @@ export class SupabasePublicLinkStore implements PublicLinkStore {
         id: string;
         name: string;
         allow_uploads: boolean;
+        pinned_variant_id: string | null;
         expires_at: string | null;
         use_cap: number | null;
         use_count: number;
@@ -98,6 +99,7 @@ export class SupabasePublicLinkStore implements PublicLinkStore {
       id: r.id,
       name: r.name,
       allowUploads: r.allow_uploads,
+      pinnedVariantId: r.pinned_variant_id ?? null,
       expiresAt: r.expires_at,
       useCap: r.use_cap,
       useCount: r.use_count,

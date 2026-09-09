@@ -137,3 +137,35 @@ describe("starterCsv", () => {
     expect(autoMap(parsed.headers, fields)).toEqual(["speaker_name", "talk_title"]);
   });
 });
+
+describe("the look column", () => {
+  const fields = [mkField({ fieldKey: "name", label: "Name" })];
+  const variants = [
+    { id: "v1", name: "Green", isDefault: true, overrides: {} },
+    { id: "v2", name: "Dark / Blue", overrides: {} },
+  ];
+
+  it("maps a variant/variation/look header only when asked to", async () => {
+    const { VARIANT_COLUMN } = await import("./mapping");
+    expect(autoMap(["Name", "Look"], fields, { variants: true })).toEqual(["name", VARIANT_COLUMN]);
+    expect(autoMap(["variation", "name"], fields, { variants: true })).toEqual([
+      VARIANT_COLUMN,
+      "name",
+    ]);
+    // A single-variant template has no look to choose: the column is ignored.
+    expect(autoMap(["Name", "Look"], fields)).toEqual(["name", null]);
+  });
+
+  it("never lets the look column into the values", async () => {
+    const { VARIANT_COLUMN, rowVariantName } = await import("./mapping");
+    const map = ["name", VARIANT_COLUMN];
+    expect(rowToValues(["Ada", "Green"], map)).toEqual({ name: "Ada" });
+    expect(rowVariantName(["Ada", " Green "], map)).toBe("Green");
+    expect(rowVariantName(["Ada"], ["name"])).toBe("");
+  });
+
+  it("adds a Look column to the starter, pre-filled with the default", () => {
+    expect(starterCsv({ fields, variants })).toBe("Name,Look\r\n,Green\r\n");
+    expect(starterCsv({ fields, variants: [variants[0]] })).toBe("Name\r\n\r\n");
+  });
+});

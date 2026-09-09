@@ -46,6 +46,8 @@ interface UsageEventRec {
    * there rather than hardcoding zeroes, which would make the public half of
    * the dashboard unreachable in development. */
   actor?: UsageActor;
+  /** The variation rendered (null on a single-variant template). */
+  variantId?: string | null;
   /** Which public link produced the event, when one did. */
   linkId?: string | null;
   createdAt: string;
@@ -200,8 +202,10 @@ export class LocalTemplateStore implements TemplateStore {
       ...rest,
       name,
       status: "draft",
-      // New field ids; fieldKeys stay EXACTLY as-is so caption merge tags
-      // keep working. backgroundUrl is copied by reference, not re-uploaded.
+      // New field ids; fieldKeys stay EXACTLY as-is so caption merge tags,
+      // layout groups, and variation overrides keep working. backgroundUrl
+      // is copied by reference, not re-uploaded. `rest` carries `variants`
+      // across untouched — variation ids are client-minted, never row ids.
       fields: source.fields.map((f) => ({ ...f, id: newId() })),
     });
   }
@@ -273,6 +277,7 @@ export class LocalUsageStore implements UsageStore {
     templateId: string,
     action: UsageAction,
     userId?: string,
+    variantId?: string | null,
   ): Promise<void> {
     const event: UsageEventRec = {
       id: newId(),
@@ -280,6 +285,7 @@ export class LocalUsageStore implements UsageStore {
       templateId,
       action,
       userId: userId ?? null,
+      variantId: variantId ?? null,
       actor: "member",
       createdAt: new Date().toISOString(),
     };
@@ -464,6 +470,7 @@ export class LocalPublicLinkStore implements PublicLinkStore {
       // The dev collection stores only the fields Insights needs; the rest
       // take the column defaults from 0026.
       allowUploads: true,
+      pinnedVariantId: null,
       expiresAt: null,
       useCap: null,
       useCount: 0,

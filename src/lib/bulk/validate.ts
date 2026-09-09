@@ -14,7 +14,8 @@
 import type { BrandKit, FieldValues, TemplateSchema } from "../types";
 import type { LineMeasurer } from "../render/autoFit";
 import { measureProposal } from "../generate/measureProposal";
-import { fillableFields, rowToValues, type ColumnMap } from "./mapping";
+import { fillableFields, rowToValues, rowVariantName, type ColumnMap } from "./mapping";
+import { defaultVariant, hasVariants, variantByName } from "../templates/variants";
 
 export type RowProblem =
   | { kind: "missing_required"; fieldKey: string; label: string }
@@ -29,11 +30,17 @@ export interface RowCheck {
   problems: RowProblem[];
   /** No problems at all. Only these rows export by default. */
   ok: boolean;
+  /** The variation this row renders in. Set only when the template has
+   * more than one look: the named one, else the default. */
+  variantId?: string;
+  /** Row-level notes that are NOT problems — the row still exports. Today:
+   * a look name that matched nothing, so the default was used. */
+  notes?: string[];
 }
 
 type CheckableSchema = Pick<
   TemplateSchema,
-  "fields" | "layoutGroups" | "canvasWidth" | "canvasHeight"
+  "fields" | "layoutGroups" | "canvasWidth" | "canvasHeight" | "variants"
 >;
 
 /** Check every row, in this order per row: required fields that are empty,
@@ -50,10 +57,28 @@ export function checkRows(
   measure: LineMeasurer,
 ): RowCheck[] {
   const fields = fillableFields(schema);
+  const multiLook = hasVariants(schema);
+  const fallback = defaultVariant(schema);
   return rows.map((row, index) => {
     const values = rowToValues(row, map);
     const problems: RowProblem[] = [];
+    const notes: string[] = [];
     const valueOf = (key: string) => values[key] ?? "";
+
+    // Which look. Matched by name, case-insensitively; an unknown name is a
+    // note, not a refusal — the row renders in the default look and the
+    // review table says so.
+    let variantId: string | undefined;
+    if (multiLook) {
+      const wanted = rowVariantName(row, map);
+      const match = wanted ? variantByName(schema, wanted) : undefined;
+      variantId = (match ?? fallback)?.id;
+      if (wanted && !match && fallback) {
+        notes.push(
+          `No look called "${wanted}" on this template, so this row uses ${fallback.name}.`,
+        );
+      }
+    }
 
     for (const f of fields) {
       if (f.required && valueOf(f.fieldKey).trim() === "") {
@@ -106,6 +131,13 @@ export function checkRows(
       });
     }
 
-    return { index, values, problems, ok: problems.length === 0 };
+    return {
+      index,
+      values,
+      problems,
+      ok: problems.length === 0,
+      ...(variantId ? { variantId } : {}),
+      ...(notes.length ? { notes } : {}),
+    };
   });
 }

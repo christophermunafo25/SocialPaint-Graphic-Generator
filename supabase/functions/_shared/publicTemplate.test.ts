@@ -279,3 +279,112 @@ describe("findUnsignedRefs", () => {
     expect(findUnsignedRefs(build())).toEqual([]);
   });
 });
+
+describe("variations", () => {
+  const VARIANTS = [
+    {
+      id: "v-light",
+      name: "Light",
+      isDefault: true,
+      backgroundColor: "#F9F9F8",
+      overrides: {
+        name: { colorHex: "#101010", x: 999, width: 1 },
+        logo: { staticValue: "brand-assets/co/logo-dark.png" },
+        ghost: { colorHex: "#000" },
+      },
+    },
+    {
+      id: "v-dark",
+      name: "Dark",
+      backgroundUrl: "template-backgrounds/co/bg-dark.png",
+      overrides: {
+        name: { colorHex: "#FFFFFF", typeStyleKey: "never-bound" },
+        logo: { staticValue: "brand-assets/co/logo-light.png" },
+      },
+    },
+  ];
+  const withVariants: Row = { ...TEMPLATE, variants: VARIANTS };
+  const signedAll = new Map([
+    ...SIGNED,
+    ["brand-assets/co/logo-dark.png", "https://x/sign/logo-dark?token=D"],
+    ["brand-assets/co/logo-light.png", "https://x/sign/logo-light?token=E"],
+    ["template-backgrounds/co/bg-dark.png", "https://x/sign/bg-dark?token=F"],
+  ]);
+
+  it("a template without variations sends null, like every other absent blob", () => {
+    expect(build().template.variants).toBeNull();
+    expect(build().pinnedVariantId).toBeNull();
+  });
+
+  it("names every served variation's objects so the signing check stays exact", () => {
+    const refs = payloadAssetRefs({
+      template: withVariants,
+      fields: FIELDS,
+      brandKit: BRAND_KIT,
+      fontAssets: FONT_ASSETS,
+    }).map((r) => `${r.bucket}/${r.path}`);
+    expect(refs).toContain("brand-assets/co/logo-dark.png");
+    expect(refs).toContain("brand-assets/co/logo-light.png");
+    expect(refs).toContain("template-backgrounds/co/bg-dark.png");
+  });
+
+  it("unpinned: every variation crosses, whitelisted and signed", () => {
+    const payload = build({ template: withVariants, signed: signedAll });
+    const variants = payload.template.variants as Row[];
+    expect(variants.map((v) => v.id)).toEqual(["v-light", "v-dark"]);
+    const light = variants[0].overrides as Record<string, Record<string, unknown>>;
+    // A geometry key that somehow landed in the blob does not travel.
+    expect(light.name).toEqual({ colorHex: "#101010" });
+    // An override for a field that no longer exists does not travel.
+    expect(light.ghost).toBeUndefined();
+    // Image content overrides are signed like the field's own.
+    expect(light.logo.staticValue).toContain("logo-dark?token=D");
+    expect((variants[1] as Row).backgroundUrl).toContain("bg-dark?token=F");
+    expect(findUnsignedRefs(payload)).toEqual([]);
+  });
+
+  it("pinned: exactly one variation crosses, and the others stay home", () => {
+    const payload = build({
+      template: withVariants,
+      signed: signedAll,
+      pinnedVariantId: "v-dark",
+    });
+    const variants = payload.template.variants as Row[];
+    expect(variants.map((v) => v.id)).toEqual(["v-dark"]);
+    expect(payload.pinnedVariantId).toBe("v-dark");
+    expect(JSON.stringify(payload)).not.toContain("logo-dark");
+    // And only the pinned variation's objects are asked for.
+    const refs = payloadAssetRefs({
+      template: withVariants,
+      fields: FIELDS,
+      brandKit: BRAND_KIT,
+      fontAssets: FONT_ASSETS,
+      pinnedVariantId: "v-dark",
+    }).map((r) => r.path);
+    expect(refs).not.toContain("co/logo-dark.png");
+    expect(refs).toContain("co/logo-light.png");
+  });
+
+  it("a pin to a deleted variation falls back to the default", () => {
+    const payload = build({
+      template: withVariants,
+      signed: signedAll,
+      pinnedVariantId: "v-gone",
+    });
+    expect((payload.template.variants as Row[]).map((v) => v.id)).toEqual(["v-light"]);
+  });
+
+  it("a type style only a served variation binds reaches the kit", () => {
+    const unpinned = build({ template: withVariants, signed: signedAll });
+    expect((unpinned.brandKit.type_styles as Row[]).map((s) => s.key)).toContain("never-bound");
+    // …and stays home when that variation is not served.
+    const pinnedLight = build({
+      template: withVariants,
+      signed: signedAll,
+      pinnedVariantId: "v-light",
+    });
+    expect((pinnedLight.brandKit.type_styles as Row[]).map((s) => s.key)).not.toContain(
+      "never-bound",
+    );
+  });
+});

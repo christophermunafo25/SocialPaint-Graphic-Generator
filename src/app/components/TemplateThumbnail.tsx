@@ -16,11 +16,14 @@ import photoPlaceholder from "@/assets/socialpaint/photo-placeholder.jpg";
 export function TemplateThumbnail({
   template,
   values: seededValues,
+  variantId,
 }: {
   template: TemplateSchema;
   /** Overrides on top of the placeholders — the Generate results pass their
    * proposal's values so a card previews the actual filled graphic. */
   values?: FieldValues;
+  /** Which look to paint; absent = the default. */
+  variantId?: string;
 }) {
   const { kit } = useBrand();
   const values = useMemo<FieldValues>(() => {
@@ -49,7 +52,13 @@ export function TemplateThumbnail({
           </div>
         )}
       >
-        <SchemaRenderer schema={template} values={values} brandKit={kit} instrument={false} />
+        <SchemaRenderer
+          schema={template}
+          values={values}
+          brandKit={kit}
+          instrument={false}
+          variantId={variantId}
+        />
       </ErrorBoundary>
     </div>
   );

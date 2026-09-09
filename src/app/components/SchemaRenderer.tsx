@@ -15,6 +15,7 @@ import { computeLayout, renderedText, type Rect } from "@/lib/render/layout";
 import { resolveFieldStyle } from "@/lib/brand/resolveStyle";
 import { loadGoogleFonts, schemaFontUsage } from "@/lib/render/fonts";
 import { exportSchemaPng, renderSchemaBlob, type ExportOutcome } from "@/lib/render/exportPng";
+import { applyVariantToSchema, getVariant } from "@/lib/templates/variants";
 import { stores } from "@/lib/stores";
 
 export interface SchemaRendererHandle {
@@ -38,6 +39,14 @@ interface SchemaRendererProps {
   /** Layout warnings for the hosting page (e.g. text that can't fit at its
    * minimum size). Called whenever the layout pass re-runs. */
   onWarnings?(warnings: string[]): void;
+  /** Which of the template's variations (colourways) to paint. Resolved
+   * ONCE here: the fields and background are merged before anything
+   * downstream sees them, so resolveFieldStyle, autoFit, the layout pass
+   * and the export all run on an already-merged schema and stay unaware of
+   * variations. Absent, unknown, or on a template with no variations, the
+   * default look renders — a single-variant template is byte for byte the
+   * pre-feature path. */
+  variantId?: string | null;
 }
 
 /** Renders ANY TemplateSchema onto a live-scaled canvas sized from
@@ -46,12 +55,18 @@ interface SchemaRendererProps {
  * changes is field content — positions and styling are locked in the schema. */
 export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererProps>(
   function SchemaRenderer(
-    { schema, values, brandKit, instrument = true, overlay, onWarnings },
+    { schema: source, values, brandKit, instrument = true, overlay, onWarnings, variantId },
     ref,
   ) {
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLDivElement>(null);
     const [scale, setScale] = useState(1);
+    // THE variation insertion point. Same object as `source` when there is
+    // nothing to merge, so every memo below keys exactly as it always did.
+    const schema = useMemo(() => applyVariantToSchema(source, variantId), [source, variantId]);
+    /** The look actually painted, for the usage events — a stale id records
+     * the default it fell back to, never the id that was asked for. */
+    const renderedVariantId = getVariant(source, variantId)?.id;
     const background = useDataUrl(schema.backgroundUrl || undefined);
     const backgroundDataUrl = background.dataUrl;
 
@@ -107,18 +122,26 @@ export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererPro
 
     // One instrumentation point covers every template (Feature 3).
     useEffect(() => {
-      if (instrument) void stores.usage.record(schema.companyId, schema.id, "open");
-    }, [instrument, schema.companyId, schema.id]);
+      if (instrument) {
+        void stores.usage.record(schema.companyId, schema.id, "open", undefined, renderedVariantId);
+      }
+    }, [instrument, schema.companyId, schema.id, renderedVariantId]);
 
     const exportPng = useCallback(async () => {
       if (!canvasRef.current) throw new Error("Canvas not mounted");
       const outcome = await exportSchemaPng(schema, canvasRef.current, brandKit);
       // A dismissed share sheet produced no graphic — don't count it.
       if (instrument && outcome !== "canceled") {
-        void stores.usage.record(schema.companyId, schema.id, "download");
+        void stores.usage.record(
+          schema.companyId,
+          schema.id,
+          "download",
+          undefined,
+          renderedVariantId,
+        );
       }
       return outcome;
-    }, [schema, instrument, brandKit]);
+    }, [schema, instrument, brandKit, renderedVariantId]);
 
     const renderBlob = useCallback(async () => {
       if (!canvasRef.current) throw new Error("Canvas not mounted");

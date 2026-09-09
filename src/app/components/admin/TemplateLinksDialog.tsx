@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Check, Copy, Link2, RefreshCw, X } from "lucide-react";
-import type { TemplateLink, TemplateSchema } from "@/lib/types";
+import type { TemplateLink, TemplateSchema, TemplateVariant } from "@/lib/types";
+import { hasVariants } from "@/lib/templates/variants";
 import { stores } from "@/lib/stores";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { publicLinkUrl } from "@/lib/publicLink/route";
@@ -201,6 +202,7 @@ export function TemplateLinksDialog({
 
             <CreateLinkForm
               busy={busy}
+              variants={hasVariants(template) ? template.variants : undefined}
               defaults={
                 company?.linkDefaults ?? { allowUploads: true, expiryDays: null, useCap: null }
               }
@@ -241,6 +243,16 @@ export function TemplateLinksDialog({
                     <LinkRow
                       link={link}
                       busy={busy}
+                      variants={hasVariants(template) ? template.variants : undefined}
+                      onPin={(next) => {
+                        if (!company) return;
+                        void run(async () => {
+                          await stores.publicLinks.update(company.id, link.id, {
+                            pinnedVariantId: next,
+                          });
+                          await load();
+                        });
+                      }}
                       onRevoke={() => setRevoking(link)}
                       onRegenerate={() => setRegenerating(link)}
                       onToggleUploads={(next) => {
@@ -303,17 +315,21 @@ function FreshLink({ url, copied, onCopy }: { url: string; copied: boolean; onCo
 function CreateLinkForm({
   busy,
   defaults,
+  variants,
   onCreate,
 }: {
   busy: boolean;
   /** Workspace-level starting values (Settings → Sharing). Defaults, not
    * caps — everything below stays editable per link. */
   defaults: import("@/lib/types").CompanyLinkDefaults;
+  /** The template's looks, when there is more than one to pin. */
+  variants?: TemplateVariant[];
   onCreate(input: {
     name?: string;
     expiresAt?: string | null;
     useCap?: number | null;
     allowUploads?: boolean;
+    pinnedVariantId?: string | null;
   }): void;
 }) {
   const [name, setName] = useState("");
@@ -325,6 +341,7 @@ function CreateLinkForm({
   });
   const [cap, setCap] = useState(defaults.useCap === null ? "" : String(defaults.useCap));
   const [allowUploads, setAllowUploads] = useState(defaults.allowUploads);
+  const [pinned, setPinned] = useState("");
 
   const submit = () => {
     const capValue = cap.trim() ? Number(cap.trim()) : null;
@@ -335,6 +352,7 @@ function CreateLinkForm({
       expiresAt: expires ? new Date(`${expires}T23:59:59`).toISOString() : null,
       useCap: capValue && Number.isFinite(capValue) && capValue > 0 ? capValue : null,
       allowUploads,
+      ...(variants ? { pinnedVariantId: pinned || null } : {}),
     });
     setName("");
     setExpires("");
@@ -416,6 +434,15 @@ function CreateLinkForm({
         comfortably above the number of people you're sending it to.
       </p>
 
+      {variants && (
+        <LookPin
+          variants={variants}
+          value={pinned}
+          onChange={setPinned}
+          ariaLabel="Which look this link opens"
+        />
+      )}
+
       <div className="flex items-start justify-between" style={{ gap: "var(--space-sm)" }}>
         <div className="min-w-0">
           <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>
@@ -452,12 +479,16 @@ function CreateLinkForm({
 function LinkRow({
   link,
   busy,
+  variants,
+  onPin,
   onRevoke,
   onRegenerate,
   onToggleUploads,
 }: {
   link: TemplateLink;
   busy: boolean;
+  variants?: TemplateVariant[];
+  onPin(next: string | null): void;
   onRevoke(): void;
   onRegenerate(): void;
   onToggleUploads(next: boolean): void;
@@ -510,6 +541,17 @@ function LinkRow({
         <Stat label="Last used" value={link.lastUsedAt ? shortDate(link.lastUsedAt) : "Never"} />
       </dl>
 
+      {variants && (
+        <LookPin
+          variants={variants}
+          value={link.pinnedVariantId ?? ""}
+          onChange={(next) => onPin(next || null)}
+          disabled={busy || Boolean(link.revokedAt)}
+          ariaLabel={`Which look ${link.name || "this link"} opens`}
+          compact
+        />
+      )}
+
       <div className="flex items-center justify-between" style={{ gap: "var(--space-2xs)" }}>
         <span style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
           Photo uploads
@@ -521,6 +563,71 @@ function LinkRow({
           ariaLabel={`Allow photo uploads through ${link.name || "this link"}`}
         />
       </div>
+    </div>
+  );
+}
+
+/** Pin a link to one look, or let the visitor choose. Pinned, the visitor
+ * sees no picker and the other looks never leave the tenant; unpinned, the
+ * "Choose a look" step appears exactly as it does for a member. */
+function LookPin({
+  variants,
+  value,
+  onChange,
+  disabled,
+  ariaLabel,
+  compact,
+}: {
+  variants: TemplateVariant[];
+  /** A variation id, or "" for "visitor chooses". */
+  value: string;
+  onChange(next: string): void;
+  disabled?: boolean;
+  ariaLabel: string;
+  compact?: boolean;
+}) {
+  const select = (
+    <select
+      className="sp-input"
+      aria-label={ariaLabel}
+      value={value}
+      disabled={disabled}
+      onChange={(e) => onChange(e.target.value)}
+      style={compact ? { height: 30, padding: "0 8px", fontSize: "var(--type-label-size)" } : {}}
+    >
+      <option value="">Visitor chooses</option>
+      {variants.map((v) => (
+        <option key={v.id} value={v.id}>
+          {v.name}
+          {v.isDefault ? " (default)" : ""}
+        </option>
+      ))}
+    </select>
+  );
+  if (compact) {
+    return (
+      <div className="flex items-center justify-between" style={{ gap: "var(--space-2xs)" }}>
+        <span style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
+          Look
+        </span>
+        <div style={{ width: 180 }}>{select}</div>
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-1">
+      <label
+        className="block"
+        style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}
+      >
+        Look
+      </label>
+      {select}
+      <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
+        {value
+          ? "This link opens straight into that look. The other looks stay private to your team."
+          : "The visitor picks a look before filling in, the same as your team does."}
+      </p>
     </div>
   );
 }

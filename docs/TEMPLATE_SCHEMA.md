@@ -13,6 +13,7 @@ exists anywhere. Source of truth: `src/lib/types.ts` (`TemplateSchema`,
 | `backgroundUrl` | Storage URL of the uploaded/imported PNG. Converted to a data URL before render/export. |
 | `fields` | Ordered `TemplateField[]`. **Array order is the member FORM order** (the sequence fields appear in the end-user's form — reordered by dragging in the builder's field list). Canvas paint order is the separate per-field `zIndex`. |
 | `captionTemplate` | Merge string with `{field_key}` placeholders, e.g. `"{name} celebrated {years} incredible years!"`. Members see the merged result, can edit it, and copy it. Image fields have no caption value. |
+| `variants` | Optional `TemplateVariant[]` — the template's colourways, sharing these fields and this geometry. See **Variations** below. Absent or a single entry means single-variant: no picker, no filmstrip, the pre-feature path byte for byte. |
 | `status` | `draft` \| `published`. Only published templates appear in the member portal. |
 
 ## TemplateField
@@ -100,6 +101,42 @@ Identity:
   (`retagCaption` in `src/lib/caption.ts`). Copy/paste/duplicate always mints
   a fresh unique key. Field rows are replaced wholesale on each builder save,
   and `fieldKey` is what keeps captions valid across edits.
+
+## Variations
+
+A variation is an **appearance override layer**, never a copy of the
+template. One field array, N override maps (`templates.variants`, one jsonb
+blob, migration 0031). Because the field identity is shared, a filler's
+entered values survive switching looks: they fill the form once and can
+export it in every colourway.
+
+`TemplateVariant`: `id` (client-minted, persisted verbatim), `name`,
+`isDefault` (exactly one — what an old link, a bulk row with no look column,
+or a pin to a deleted variation renders), canvas overrides
+(`backgroundColor` / `backgroundGradient`, replaced as a pair when either is
+set; `backgroundUrl`), and `overrides: Record<fieldKey, VariantFieldOverride>`.
+
+`VariantFieldOverride` is a **closed** set and the whitelist is the product:
+`colorHex`, `textGradient`, `typeStyleKey`, `opacity`, `staticValue` (fixed
+elements only), `hidden`. Everything else on a field — position, size,
+rotation, z, font, size, tracking, alignment, guardrails, type, identity,
+layout groups — is shared and cannot diverge. `src/lib/templates/variants.ts`
+proves that at compile time and ignores any other key found in stored JSON.
+If two looks need different geometry, that is a different template.
+
+Overrides are keyed by `fieldKey` for the same reason layout groups are:
+field rows are re-minted on every save. Renaming a field re-keys every
+variation's overrides (`retagVariants`) beside the caption tags; deleting one
+prunes them (`pruneVariants`); adding one creates no override anywhere — the
+builder's Form list says "not styled in N" rather than guessing.
+
+Rendering has exactly one insertion point: `SchemaRenderer` takes an optional
+`variantId`, merges the schema once (`applyVariantToSchema`), and everything
+downstream — `resolveFieldStyle`, `autoFit`, the layout pass, `exportPng` —
+runs on the merged schema unaware. The builder paints the selected frame
+through the same merge; the filmstrip above the canvas is every variation
+rendering the same draft, which is why moving an element moves it in every
+frame at once.
 
 ## Rendering contract
 
