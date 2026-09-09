@@ -18,8 +18,8 @@ describe("isRequiredField", () => {
     expect(isRequiredField({ type: "shape" })).toBe(false);
   });
 
-  it("does not require a non-fixed image, which falls back to the designed artwork", () => {
-    expect(isRequiredField({ type: "image" })).toBe(false);
+  it("requires a non-fixed image", () => {
+    expect(isRequiredField({ type: "image" })).toBe(true);
   });
 
   it("does not require a fixed image", () => {

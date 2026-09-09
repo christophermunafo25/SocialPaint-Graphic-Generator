@@ -86,10 +86,8 @@ describe("a valid proposal passes through", () => {
       dept: "Nursing",
     });
     expect(p.caption).toBe("Join our Evanston clinic team.");
-    // An image is never required: the designed artwork is its fallback.
-    expect(p.imageFieldsNeeded).toEqual([
-      { fieldKey: "photo", label: "Headshot", required: false },
-    ]);
+    // A non-fixed image is required of the member, never of the model.
+    expect(p.imageFieldsNeeded).toEqual([{ fieldKey: "photo", label: "Headshot", required: true }]);
   });
 
   it("accepts a select value that is one of the options", () => {
@@ -594,7 +592,7 @@ describe("freestyle designs", () => {
     const photo = out.designs[0].fields.find((f) => f.type === "image");
     expect(photo?.static).toBeUndefined();
     expect(out.designs[0].imageFieldsNeeded).toEqual([
-      { fieldKey: "photo", label: "Photo", required: false },
+      { fieldKey: "photo", label: "Photo", required: true },
     ]);
   });
 

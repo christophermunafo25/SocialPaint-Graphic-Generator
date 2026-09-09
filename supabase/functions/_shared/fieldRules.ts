@@ -2,13 +2,15 @@
  *
  * There is no Required toggle any more: an element is either fixed (the
  * admin owns it, the member never sees it) or it is a form field, and a
- * form field with nothing in it is a hole in the graphic. Two carve-outs
- * survive because they are not fields at all, or already have a fallback:
+ * form field with nothing in it is a hole in the graphic. One carve-out
+ * survives because it is not a field at all:
  *
  *  - Shapes are design-only. They never reach the member form.
- *  - Images keep the artwork the admin drew. The renderer falls back to it
- *    when the member uploads nothing, so an empty image is not a hole.
- *    This mirrors the carve-out generateValidate.ts already applies.
+ *
+ * A non-fixed image is required like any other field: the member uploads
+ * one before the graphic renders. (The generate edge function still skips
+ * images in its own required check, because the model never supplies
+ * artwork; it reports them to the member as imageFieldsNeeded instead.)
  *
  * Mirror of src/lib/templates/fieldRules.ts for the Deno runtime, which
  * cannot import from src. The logic must stay byte-identical; change both
@@ -16,6 +18,5 @@
 export function isRequiredField(f: { static?: boolean; type: string }): boolean {
   if (f.static) return false;
   if (f.type === "shape") return false;
-  if (f.type === "image") return false;
   return true;
 }

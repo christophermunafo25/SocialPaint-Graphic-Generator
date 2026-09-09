@@ -316,10 +316,11 @@ export function validateGeneration(
 
     // A proposal that skips a required text field is a broken graphic, not a
     // choice — send it back rather than showing a hole where the headline goes.
-    // Requiredness is derived (see fieldRules.ts): every non-fixed text and
-    // select field; images keep their designed artwork as the fallback.
+    // Requiredness is derived (see fieldRules.ts). Images are required of
+    // the MEMBER, not the model: the model never supplies artwork, so an
+    // image is skipped here and reported in imageFieldsNeeded instead.
     for (const field of template.fields) {
-      if (!isRequiredField(field)) continue;
+      if (field.type === "image" || !isRequiredField(field)) continue;
       if (!(field.fieldKey in values)) {
         errors.push(
           `${label}: required field "${field.fieldKey}" on "${template.name}" has no value.`,
@@ -827,7 +828,7 @@ export function validateFreestyle(
       why: typeof p.why === "string" ? p.why.trim().slice(0, 200) : "",
       imageFieldsNeeded: fields
         .filter((x) => !x.static && x.type === "image")
-        .map((x) => ({ fieldKey: x.fieldKey, label: x.label, required: false })),
+        .map((x) => ({ fieldKey: x.fieldKey, label: x.label, required: isRequiredField(x) })),
     });
   });
 

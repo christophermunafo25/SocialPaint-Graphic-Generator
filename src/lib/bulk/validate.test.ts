@@ -117,7 +117,8 @@ describe("checkRows", () => {
     ]);
   });
 
-  it("does not require a fixed field or an image", () => {
+  it("does not require a fixed field, and never sees an image at all", () => {
+    // Bulk fill has no upload column; images are outside its field set.
     const fixed = mkField({ fieldKey: "footer", static: true, staticValue: "Acme" });
     const photo = mkField({ fieldKey: "photo", type: "image" });
     const out = checkRows(schema([fixed, photo]), null, [["", ""]], ["footer", "photo"], measure);
