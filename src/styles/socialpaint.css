@@ -2977,6 +2977,8 @@ input[type="radio"] {
      explicitly (see --radius-media-inner). At this scale an inner radius
      is not derived from the outer one: 12px minus the 8px inset is 4px. */
   border-radius: var(--radius-media-inner);
+  /* Anchors the looks indicator a multi-look card paints in its corner. */
+  position: relative;
   /* Square unless a caller sets the group's own ratio. Grouping the gallery
      by platform AND shape means every card in a rail shares one ratio, so
      the frame can simply BE that ratio and nothing letterboxes. */
