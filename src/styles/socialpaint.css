@@ -456,8 +456,9 @@ html {
   /* The lit edge, light theme. White on a white card is invisible, so the
      same alphas ride the ink — 15% top (#dfdfdf on white), 6% bottom
      (#f2f2f2, a hair off the canvas: the white fill carries the bottom
-     on this theme, the ink hairline carries the top), 25% / 10% on hover,
-     nothing down the sides. Same structure as dark, colour mirrored. */
+     on this theme, the ink hairline carries the top), 25% / 10% on hover.
+     The assembly beside .sp-card turns these into ONE solid ring on this
+     theme — see the note there; the top/bottom split is dark's. */
   --edge-rgb: 39 39 39;
   --edge-alpha: 0.15;
   --edge-alpha-hover: 0.25;
@@ -967,6 +968,21 @@ optgroup {
   border: 1px solid transparent;
   border-radius: var(--radius-card);
   box-shadow: var(--edge-lit);
+}
+
+/* Light theme: one solid border. The two-hairline lit edge is a dark-
+   surface idea — a highlight along the top, a shadow beneath, the sides
+   left to the fill's own contrast. A white card on a near-white canvas has
+   no such contrast, so the same recipe reads as a line across the top and
+   nothing down the sides. On light the edge is a full 1px ring at the edge
+   colour instead. Still assembled on the surface, for the same reason as
+   above: hover raises --edge-alpha on the card and this ring follows it. */
+[data-theme="light"] .sp-card,
+[data-theme="light"] .sp-sidebar,
+[data-theme="light"] .sp-platform-chip,
+[data-theme="light"] .sp-gate__panel,
+[data-theme="light"] .sp-color-pop {
+  --edge-lit: inset 0 0 0 1px var(--edge-color);
 }
 
 /* ── Pre-app shell ─────────────────────────────────────────────────────────
