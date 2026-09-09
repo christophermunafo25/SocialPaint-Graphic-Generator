@@ -66,7 +66,9 @@ export function FieldInput({ field, value, onChange, inputId }: FieldInputProps)
           onChange={(e) => onChange(e.target.value)}
           className="sp-input"
         >
-          <option value="">Select…</option>
+          {/* The admin's placeholder is the empty option's text; the
+              inspector labels it "Empty option" for a dropdown. */}
+          <option value="">{field.placeholder || "Select…"}</option>
           {(field.options ?? []).map((o) => (
             <option key={o} value={o}>
               {o}

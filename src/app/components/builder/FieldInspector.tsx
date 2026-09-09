@@ -577,18 +577,24 @@ export function FieldInspector(props: FieldInspectorProps) {
   );
 
   /** The non-fixed counterpart of the Content row: what the member sees in
-   * the form before they type. Placeholder is shared structure, never a
-   * per-variation override (it is not in VARIANT_OVERRIDE_KEYS), so it
-   * reads from `field` and writes through onChange, never look(). A
+   * the form before they type. For a dropdown the same value is the empty
+   * option's text, so the row says so. Placeholder is shared structure,
+   * never a per-variation override (it is not in VARIANT_OVERRIDE_KEYS), so
+   * it reads from `field` and writes through onChange, never look(). A
    * non-fixed image has nothing to pre-fill, so it gets no row. */
+  const isSelect = field.type === "select";
   const placeholderRow = !isStatic && isText && (
-    <PropertyRow label="Placeholder">
+    <PropertyRow label={isSelect ? "Empty option" : "Placeholder"}>
       <input
         className="sp-input"
         style={compactControlStyle}
-        aria-label="Member form placeholder"
+        aria-label={isSelect ? "Dropdown empty option" : "Member form placeholder"}
         value={field.placeholder ?? ""}
-        placeholder="What your team sees before they type"
+        placeholder={
+          isSelect
+            ? "What the dropdown says before a choice"
+            : "What your team sees before they type"
+        }
         onChange={(e) => onChange({ placeholder: e.target.value || undefined }, true)}
       />
     </PropertyRow>
