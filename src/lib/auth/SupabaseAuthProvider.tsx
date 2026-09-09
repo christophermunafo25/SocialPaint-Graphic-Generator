@@ -47,10 +47,16 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     if (company) localStorage.setItem(LS_COMPANY, company.id);
   }, [company]);
 
-  const loadMemberships = useCallback(async () => {
+  /** The signed-in user's OWN memberships. Filtered by user id on purpose:
+   * the read policy also lets an admin see every membership in their
+   * company (the People page needs that), so an unfiltered read returns a
+   * company once per member — the switcher listed it twice, and the role
+   * shown was whichever member's row came last. */
+  const loadMemberships = useCallback(async (forUserId: string) => {
     const { data, error } = await supabase()
       .from("memberships")
       .select(`company_id, role, companies(${COMPANY_COLUMNS})`)
+      .eq("user_id", forUserId)
       .order("created_at", { ascending: true });
     if (error) throw error;
     const rows = (data as unknown as MembershipRow[]).filter((r) => r.companies);
@@ -96,7 +102,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     if (prevUserId !== userId) setMembershipsReady(false);
     let cancelled = false;
     setError(null);
-    loadMemberships()
+    loadMemberships(userId)
       .catch((e) => {
         console.error("Membership load failed", e);
         if (!cancelled) setError(e instanceof Error ? e : new Error(String(e)));
@@ -134,7 +140,9 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       backend: stores.backend,
       setCompany,
       setRole: () => undefined, // membership decides
-      refresh: loadMemberships,
+      // Nothing to re-read without a user; onboarding calls this right after
+      // creating a company, always signed in.
+      refresh: () => (userId ? loadMemberships(userId) : Promise.resolve()),
       signOut,
     }),
     [
@@ -144,6 +152,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       company,
       roleByCompany,
       session,
+      userId,
       companies,
       setCompany,
       loadMemberships,
