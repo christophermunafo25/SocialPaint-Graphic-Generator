@@ -1094,7 +1094,17 @@ export function FieldInspector(props: FieldInspectorProps) {
                         ? "Unlink corners: set each independently"
                         : "Link corners: one value for all four"
                     }
-                    style={{ flexShrink: 0, display: "flex", alignItems: "center" }}
+                    // A real control box, sized to the row: without one the
+                    // toggle sat flush against the rail body's clipped edge
+                    // and its focus ring was cut off. sp-icon-btn already
+                    // centres, prevents shrinking, and paints the hover fill;
+                    // only the size and the crisp control radius are set here.
+                    className="sp-icon-btn"
+                    style={{
+                      width: "var(--row-h-compact)",
+                      height: "var(--row-h-compact)",
+                      borderRadius: "var(--radius-control)",
+                    }}
                   >
                     {radiusLinked ? (
                       <LinkIcon
@@ -1112,12 +1122,17 @@ export function FieldInspector(props: FieldInspectorProps) {
               )}
             </PropertyRow>
           )}
+          {/* Per-corner inputs. Full width: the row has no label, and the
+            96px gutter left four inputs about 30px each at the rail's
+            minimum, which is less than one digit once NumericField's own
+            padding and scrub label are paid for. The grid wraps by width:
+            two columns at 260px, four across at 520px. */}
           {hasRadius && !radiusLinked && (
-            <PropertyRow>
+            <PropertyRow full>
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(4, 1fr)",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(104px, 1fr))",
                   gap: "var(--space-3xs)",
                   flex: 1,
                   minWidth: 0,
