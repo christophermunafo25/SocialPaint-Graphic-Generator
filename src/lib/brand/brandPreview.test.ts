@@ -77,6 +77,56 @@ describe("resolvePreviewColors", () => {
     const resolved = resolvePreviewColors([color("accent", accent)]);
     expect(resolved.onAccent).toBe(readableOn(accent));
   });
+
+  it("never lets the fallback re-select a pale color the primary gate rejected", () => {
+    const resolved = resolvePreviewColors([
+      color("primary", "#F2D16B"),
+      color("secondary", "#E7EAEF"),
+      color("accent", "#FFF3C4"),
+      color("text", "#FFFFFF"),
+      color("background", "#F6F7F9"),
+    ]);
+    // Nothing in the palette clears 3:1 against the surface, so the default
+    // primary steps in — the backdrop band must never dissolve.
+    expect(resolved.dark).toBe(hexOf("primary"));
+  });
+
+  it("keeps dark distinct when primary duplicates the background hex", () => {
+    const resolved = resolvePreviewColors([
+      color("primary", "#F6F7F9"),
+      color("background", "#F6F7F9"),
+    ]);
+    expect(resolved.dark).not.toBe(resolved.light);
+    expect(resolved.dark).toBe(hexOf("primary"));
+  });
+
+  it("strips the alpha byte so a transparent text color cannot become ink", () => {
+    const resolved = resolvePreviewColors([
+      color("text", "#1A1F2600"),
+      color("background", "#F6F7F9"),
+    ]);
+    expect(resolved.ink).toBe("#1A1F26");
+  });
+
+  it("expands 3-digit shorthand hexes instead of dropping them", () => {
+    const resolved = resolvePreviewColors([color("primary", "#234"), color("background", "#FFF")]);
+    expect(resolved.light).toBe("#FFFFFF");
+    expect(resolved.dark).toBe("#223344");
+  });
+
+  it("keeps the outline in ink only while the ink is legible on dark", () => {
+    // Default palette: ink #1A1F26 on dark #2F3B4C is ~1.5:1 — the ring must
+    // switch to the contrast pick.
+    const onDefault = resolvePreviewColors(DEFAULT_PALETTE);
+    expect(onDefault.outline).toBe(readableOn(onDefault.dark));
+    expect(onDefault.outline).not.toBe(onDefault.ink);
+    // A mid-tone dark keeps the ink ring.
+    const midTone = resolvePreviewColors([
+      color("primary", "#777777"),
+      color("background", "#FFFFFF"),
+    ]);
+    expect(midTone.outline).toBe(midTone.ink);
+  });
 });
 
 describe("buildBrandPreviewSchema", () => {
@@ -111,6 +161,21 @@ describe("buildBrandPreviewSchema", () => {
     expect(subcopy.fontSizePx).toBe(30);
     expect(subcopy.minFontSizePx).toBe(22);
     expect(subcopy.textSizing).toBe("shrink");
+  });
+
+  it("bounds a long company name with an ellipsis", () => {
+    const schema = buildBrandPreviewSchema(
+      baseInput({ companyName: "Northwestern Memorial HealthCare Foundation" }),
+    );
+    const name = fieldByKey(schema.fields, "company_name")!;
+    expect(name.staticValue!.length).toBeLessThanOrEqual(24);
+    expect(name.staticValue!.endsWith("…")).toBe(true);
+  });
+
+  it("omits the identity element entirely for a blank company name with no logo", () => {
+    const schema = buildBrandPreviewSchema(baseInput({ companyName: "  " }));
+    expect(fieldByKey(schema.fields, "company_name")).toBeUndefined();
+    expect(schema.fields.find((f) => f.label === "Logo")).toBeUndefined();
   });
 
   it("keeps every field box inside the artboard", () => {

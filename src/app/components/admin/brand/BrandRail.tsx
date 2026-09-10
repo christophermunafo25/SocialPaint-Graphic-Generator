@@ -1,11 +1,17 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Undo2 } from "lucide-react";
-import type { BrandColor } from "@/lib/types";
-import { buildBrandPreviewSchema } from "@/lib/brand/brandPreview";
+import type { BrandColor, FieldValues } from "@/lib/types";
+import { BRAND_PREVIEW_ARTBOARD, buildBrandPreviewSchema } from "@/lib/brand/brandPreview";
+import { useDataUrl } from "@/lib/render/useDataUrl";
 import type { BrandCategory } from "../../../router";
+import { ErrorBoundary } from "../../ErrorBoundary";
 import { SchemaRenderer } from "../../SchemaRenderer";
 import type { BrandDraft } from "./kitPlumbing";
 import brandPreviewPhoto from "@/assets/socialpaint/brand-preview-photo.webp";
+
+/** Stable identity: the preview has no member values, and a fresh `{}` per
+ * render would bust SchemaRenderer's layout memo on every autosave tick. */
+const NO_VALUES: FieldValues = {};
 
 interface BrandRailProps {
   brand: BrandDraft;
@@ -220,17 +226,28 @@ interface BrandPreviewProps {
 
 /** SchemaRenderer measures glyphs once, on the first document.fonts.ready —
  * but in Brand Studio a face is usually PICKED after mount. Each completed
- * font load bumps this counter; used as the renderer's key, it remounts the
- * renderer so shrink fits re-measure with the newly landed face. */
-function useFontsGeneration(): number {
+ * load of one of the PREVIEW'S OWN faces bumps this counter; used as the
+ * renderer's key, it remounts the renderer so shrink fits re-measure with
+ * the newly landed face. `loadingdone` is document-global (the font pickers
+ * load faces the preview never renders), so unrelated loads must not remount
+ * a canvas mid-image-fetch. */
+function useFontsGeneration(headingFamily: string, bodyFamily: string): number {
   const [generation, setGeneration] = useState(0);
   useEffect(() => {
     const fonts = document.fonts;
     if (!fonts?.addEventListener) return;
-    const bump = () => setGeneration((g) => g + 1);
-    fonts.addEventListener("loadingdone", bump);
-    return () => fonts.removeEventListener("loadingdone", bump);
-  }, []);
+    const relevant = new Set([headingFamily, bodyFamily]);
+    const onLoaded = (event: Event) => {
+      // Some engines quote FontFace.family — strip before matching. An event
+      // with no face list can't be attributed, so it counts as relevant.
+      const faces = (event as FontFaceSetLoadEvent).fontfaces;
+      if (!faces?.length || faces.some((f) => relevant.has(f.family.replace(/^["']|["']$/g, "")))) {
+        setGeneration((g) => g + 1);
+      }
+    };
+    fonts.addEventListener("loadingdone", onLoaded);
+    return () => fonts.removeEventListener("loadingdone", onLoaded);
+  }, [headingFamily, bodyFamily]);
   return generation;
 }
 
@@ -247,24 +264,34 @@ function BrandPreview({
   logoUrl,
   companyName,
 }: BrandPreviewProps) {
-  const fontsGeneration = useFontsGeneration();
+  const fontsGeneration = useFontsGeneration(headingFamily, bodyFamily);
+  // A dead logo reference must not leave a hole where the identity block
+  // belongs: the renderer paints nothing for an image whose fetch failed.
+  // Resolving it here (through the same cache the renderer reads) lets the
+  // schema fall back to the company name instead.
+  const logo = useDataUrl(logoUrl);
+  const effectiveLogoUrl = logo.failed ? undefined : logoUrl;
   const schema = useMemo(
     () =>
       buildBrandPreviewSchema({
         colors,
         headingFamily,
         bodyFamily,
-        logoUrl,
+        logoUrl: effectiveLogoUrl,
         companyName,
         photoUrl: brandPreviewPhoto,
       }),
-    [colors, headingFamily, bodyFamily, logoUrl, companyName],
+    [colors, headingFamily, bodyFamily, effectiveLogoUrl, companyName],
   );
 
   return (
     <div
       role="img"
-      aria-label={`Preview of a post in ${companyName}'s brand`}
+      aria-label={
+        companyName.trim()
+          ? `Preview of a post in ${companyName}'s brand`
+          : "Preview of a post in your brand"
+      }
       style={{
         width: "100%",
         border: "1px solid var(--border)",
@@ -273,13 +300,33 @@ function BrandPreview({
         background: "var(--bg-plate)",
       }}
     >
-      <SchemaRenderer
-        schema={schema}
-        values={{}}
-        brandKit={null}
-        instrument={false}
-        key={fontsGeneration}
-      />
+      <ErrorBoundary
+        level="canvas"
+        context={{ templateId: schema.id }}
+        resetKeys={[schema]}
+        fallback={() => (
+          <div
+            className="flex items-center justify-center"
+            style={{
+              width: "100%",
+              aspectRatio: `${BRAND_PREVIEW_ARTBOARD.width} / ${BRAND_PREVIEW_ARTBOARD.height}`,
+              background: "var(--bg-hover)",
+            }}
+          >
+            <span style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
+              Preview unavailable
+            </span>
+          </div>
+        )}
+      >
+        <SchemaRenderer
+          schema={schema}
+          values={NO_VALUES}
+          brandKit={null}
+          instrument={false}
+          key={fontsGeneration}
+        />
+      </ErrorBoundary>
     </div>
   );
 }
