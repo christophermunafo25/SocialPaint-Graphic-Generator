@@ -1,12 +1,17 @@
-import React, { useState } from "react";
-import { Bookmark, Heart, MessageCircle, MoreHorizontal, Send, Undo2 } from "lucide-react";
-import type { BrandColor } from "@/lib/types";
-import { readableOn } from "@/lib/color";
+import React, { useEffect, useMemo, useState } from "react";
+import { Undo2 } from "lucide-react";
+import type { BrandColor, FieldValues } from "@/lib/types";
+import { BRAND_PREVIEW_ARTBOARD, buildBrandPreviewSchema } from "@/lib/brand/brandPreview";
+import { useDataUrl } from "@/lib/render/useDataUrl";
 import type { BrandCategory } from "../../../router";
-import { SignedImg } from "../../SignedImg";
+import { ErrorBoundary } from "../../ErrorBoundary";
+import { SchemaRenderer } from "../../SchemaRenderer";
 import type { BrandDraft } from "./kitPlumbing";
+import brandPreviewPhoto from "@/assets/socialpaint/brand-preview-photo.webp";
 
-type PreviewFormat = "post" | "story";
+/** Stable identity: the preview has no member values, and a fresh `{}` per
+ * render would bust SchemaRenderer's layout memo on every autosave tick. */
+const NO_VALUES: FieldValues = {};
 
 interface BrandRailProps {
   brand: BrandDraft;
@@ -20,7 +25,6 @@ interface BrandRailProps {
  * thing only the whole kit can show, and the checklist is the only place
  * "what's still missing" is answerable. */
 export function BrandRail({ brand, companyName, onOpenSection }: BrandRailProps) {
-  const [format, setFormat] = useState<PreviewFormat>("post");
   const { draft, assets, savedAt, saving, canUndo, undo } = brand;
 
   const logoAssets = assets.filter((a) => a.kind === "logo");
@@ -30,22 +34,7 @@ export function BrandRail({ brand, companyName, onOpenSection }: BrandRailProps)
   return (
     <div className="sp-brand-rail">
       <section className="sp-card sp-card--content space-y-3.5">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="sp-panel-title">Live preview</h2>
-          <div className="sp-seg" data-stretch role="group" aria-label="Preview format">
-            {(["post", "story"] as const).map((f) => (
-              <button
-                key={f}
-                type="button"
-                data-active={format === f}
-                onClick={() => setFormat(f)}
-                style={{ textTransform: "capitalize" }}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
-        </div>
+        <h2 className="sp-panel-title">Live preview</h2>
 
         <BrandPreview
           colors={draft.colors}
@@ -53,7 +42,6 @@ export function BrandRail({ brand, companyName, onOpenSection }: BrandRailProps)
           bodyFamily={draft.bodyFont?.family ?? "Inter"}
           logoUrl={primaryLogo?.url}
           companyName={companyName}
-          format={format}
         />
 
         <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
@@ -234,153 +222,111 @@ interface BrandPreviewProps {
   bodyFamily: string;
   logoUrl?: string;
   companyName: string;
-  format: PreviewFormat;
 }
 
-/** The brand assembled: header, headline, body, and accent chip, inside the
- * chrome of the thing it eventually becomes. Tenant colors are arbitrary — a
- * pale primary or accent needs ink, not white — so every glyph sitting on a
- * tenant color picks the legible option. */
+/** SchemaRenderer measures glyphs once, on the first document.fonts.ready —
+ * but in Brand Studio a face is usually PICKED after mount. Each completed
+ * load of one of the PREVIEW'S OWN faces bumps this counter; used as the
+ * renderer's key, it remounts the renderer so shrink fits re-measure with
+ * the newly landed face. `loadingdone` is document-global (the font pickers
+ * load faces the preview never renders), so unrelated loads must not remount
+ * a canvas mid-image-fetch. */
+function useFontsGeneration(headingFamily: string, bodyFamily: string): number {
+  const [generation, setGeneration] = useState(0);
+  useEffect(() => {
+    const fonts = document.fonts;
+    if (!fonts?.addEventListener) return;
+    const relevant = new Set([headingFamily, bodyFamily]);
+    const onLoaded = (event: Event) => {
+      // Some engines quote FontFace.family — strip before matching. An event
+      // with no face list can't be attributed, so it counts as relevant.
+      const faces = (event as FontFaceSetLoadEvent).fontfaces;
+      if (!faces?.length || faces.some((f) => relevant.has(f.family.replace(/^["']|["']$/g, "")))) {
+        setGeneration((g) => g + 1);
+      }
+    };
+    fonts.addEventListener("loadingdone", onLoaded);
+    return () => fonts.removeEventListener("loadingdone", onLoaded);
+  }, [headingFamily, bodyFamily]);
+  return generation;
+}
+
+/** The brand assembled onto a real graphic: the Product Promo artboard,
+ * repainted from the draft on every keystroke. It renders through
+ * SchemaRenderer — the same path, font loading, and measured text fitting as
+ * every saved template — with instrumentation off and no kit, so the
+ * contrast-chosen ink and label colors can never be snapped to the palette
+ * by the kit's off-palette enforcement. */
 function BrandPreview({
   colors,
   headingFamily,
   bodyFamily,
   logoUrl,
   companyName,
-  format,
 }: BrandPreviewProps) {
-  const hex = (key: string, fallback: string) => colors.find((c) => c.key === key)?.hex ?? fallback;
-  const primary = hex("primary", "#2F3B4C");
-  const accent = hex("accent", "#C9A227");
-  const background = hex("background", "#F6F7F9");
-  const text = hex("text", "#1A1F26");
-  const onPrimary = readableOn(primary);
-  const isPost = format === "post";
+  const fontsGeneration = useFontsGeneration(headingFamily, bodyFamily);
+  // A dead logo reference must not leave a hole where the identity block
+  // belongs: the renderer paints nothing for an image whose fetch failed.
+  // Resolving it here (through the same cache the renderer reads) lets the
+  // schema fall back to the company name instead.
+  const logo = useDataUrl(logoUrl);
+  const effectiveLogoUrl = logo.failed ? undefined : logoUrl;
+  const schema = useMemo(
+    () =>
+      buildBrandPreviewSchema({
+        colors,
+        headingFamily,
+        bodyFamily,
+        logoUrl: effectiveLogoUrl,
+        companyName,
+        photoUrl: brandPreviewPhoto,
+      }),
+    [colors, headingFamily, bodyFamily, effectiveLogoUrl, companyName],
+  );
 
   return (
     <div
+      role="img"
+      aria-label={
+        companyName.trim()
+          ? `Preview of a post in ${companyName}'s brand`
+          : "Preview of a post in your brand"
+      }
       style={{
+        width: "100%",
         border: "1px solid var(--border)",
         borderRadius: "var(--radius-control)",
         overflow: "hidden",
         background: "var(--bg-plate)",
-        width: isPost ? "100%" : "72%",
-        marginInline: "auto",
       }}
     >
-      {isPost && (
-        <div className="flex items-center gap-2.5" style={{ padding: "10px 12px" }}>
-          <span
-            className="flex items-center justify-center flex-shrink-0"
+      <ErrorBoundary
+        level="canvas"
+        context={{ templateId: schema.id }}
+        resetKeys={[schema]}
+        fallback={() => (
+          <div
+            className="flex items-center justify-center"
             style={{
-              width: 28,
-              height: 28,
-              borderRadius: "var(--radius-pill)",
-              background: primary,
+              width: "100%",
+              aspectRatio: `${BRAND_PREVIEW_ARTBOARD.width} / ${BRAND_PREVIEW_ARTBOARD.height}`,
+              background: "var(--bg-hover)",
             }}
           >
-            {logoUrl && (
-              <SignedImg
-                src={logoUrl}
-                alt=""
-                style={{ maxHeight: 12, maxWidth: 18, objectFit: "contain" }}
-              />
-            )}
-          </span>
-          <span className="truncate" style={{ fontSize: 12, fontWeight: 500, color: "#272727" }}>
-            {companyName}
-          </span>
-          <MoreHorizontal
-            aria-hidden
-            style={{ width: 16, height: 16, color: "#8A8A8A", marginLeft: "auto", flexShrink: 0 }}
-          />
-        </div>
-      )}
-
-      <div
-        className="relative flex flex-col"
-        style={{ background, aspectRatio: isPost ? "auto" : "9 / 16" }}
-      >
-        <div
-          className="flex items-center gap-2"
-          style={{ padding: "12px 14px", background: primary }}
-        >
-          {logoUrl && (
-            <SignedImg
-              src={logoUrl}
-              alt=""
-              style={{ height: 12, width: "auto", objectFit: "contain" }}
-            />
-          )}
-          <span
-            className="truncate"
-            style={{
-              fontFamily: `"${headingFamily}", sans-serif`,
-              fontWeight: 600,
-              fontSize: 11,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-              color: onPrimary,
-            }}
-          >
-            {companyName}
-          </span>
-        </div>
-        <div className="flex flex-col" style={{ gap: 10, padding: "14px 14px 20px" }}>
-          <span
-            style={{
-              fontFamily: `"${headingFamily}", sans-serif`,
-              fontWeight: 600,
-              fontSize: 20,
-              lineHeight: 1.15,
-              color: text,
-              textWrap: "pretty",
-            }}
-          >
-            Congratulations, Jordan!
-          </span>
-          <span
-            style={{
-              fontFamily: `"${bodyFamily}", sans-serif`,
-              fontSize: 12,
-              lineHeight: 1.5,
-              color: text,
-              opacity: 0.82,
-            }}
-          >
-            Five incredible years. Thank you for everything you do.
-          </span>
-          <span
-            className="self-start"
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 9,
-              letterSpacing: "0.06em",
-              padding: "4px 9px",
-              borderRadius: "var(--radius-control)",
-              background: accent,
-              color: readableOn(accent),
-            }}
-          >
-            5 YEARS
-          </span>
-        </div>
-      </div>
-
-      {isPost && (
-        <div className="flex flex-col" style={{ gap: 7, padding: "10px 12px 14px" }}>
-          <div className="flex items-center gap-3.5" style={{ color: "#272727" }} aria-hidden>
-            <Heart style={{ width: 18, height: 18 }} />
-            <MessageCircle style={{ width: 18, height: 18 }} />
-            <Send style={{ width: 18, height: 18 }} />
-            <Bookmark style={{ width: 18, height: 18, marginLeft: "auto" }} />
+            <span style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
+              Preview unavailable
+            </span>
           </div>
-          <span style={{ fontSize: 12, color: "#272727", lineHeight: 1.45 }}>
-            <span style={{ fontWeight: 500 }}>{companyName}</span> Care that shows up: celebrating
-            five years of Jordan.
-          </span>
-        </div>
-      )}
+        )}
+      >
+        <SchemaRenderer
+          schema={schema}
+          values={NO_VALUES}
+          brandKit={null}
+          instrument={false}
+          key={fontsGeneration}
+        />
+      </ErrorBoundary>
     </div>
   );
 }
