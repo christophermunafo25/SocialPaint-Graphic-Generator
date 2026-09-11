@@ -4,7 +4,15 @@
 // this module imports no assets and can run under the node test environment.
 
 import type { BrandColor, TemplateField, TemplateSchema } from "@/lib/types";
-import { contrastRatio, luminance, parseHex, readableOn, toHex, type RGBA } from "@/lib/color";
+import {
+  contrastRatio,
+  luminance,
+  parseHex,
+  readableOn,
+  rgbToHsv,
+  toHex,
+  type RGBA,
+} from "@/lib/color";
 import { AA_LARGE, AA_SMALL } from "@/lib/templates/variantContrast";
 import { DEFAULT_PALETTE } from "@/lib/theme";
 
@@ -51,6 +59,10 @@ const CTA_LABEL_SIZE = 30;
  * floor. Shrink overflows rather than clips, so the string is bounded. */
 const COMPANY_NAME_MAX_CHARS = 24;
 
+/** Below this HSV saturation a color reads as a neutral, not an accent — a
+ * gray never becomes the derived CTA fill. */
+const MIN_ACCENT_SATURATION = 0.2;
+
 // D7 sample copy — the Figma subcopy is placeholder Latin and does not ship.
 const HEADLINE_COPY = "This is a headline for this graphic";
 const SUBCOPY_COPY = "This is supporting copy for this graphic, set in your body face.";
@@ -65,7 +77,10 @@ export interface PreviewColors {
   dark: string;
   /** Artboard surface (D2). */
   light: string;
-  /** CTA pill fill (D3). */
+  /** CTA pill fill (D3): the palette's `accent`, else the tenant's most
+   * vivid color that reads against the dark band, else the light surface
+   * (an inverse pill). The default gold only ever stands in for a palette
+   * with no usable colors at all. */
   accent: string;
   /** Headline and subcopy. */
   ink: string;
@@ -153,8 +168,32 @@ export function resolvePreviewColors(colors: BrandColor[]): PreviewColors {
     }
   }
 
-  // D3: accent, with the default standing in when the palette has none.
-  const accent = entries.find((e) => e.color.key === "accent")?.hex ?? defaultHex("accent");
+  const darkRgb = parseHex(dark)!;
+
+  // D3: accent. An explicit `accent` key is the tenant's choice and is used
+  // as-is. Without one (an imported token palette keeps its own names), the
+  // CTA still fills from THEIR colors: the most saturated entry that clears
+  // 3:1 against the dark band it sits on, else the light surface as an
+  // inverse pill (legible by construction — dark cleared 3:1 against it).
+  // The default gold appears only when the palette has no usable colors.
+  const accentEntry = entries.find((e) => e.color.key === "accent");
+  let accent: string;
+  if (accentEntry) {
+    accent = accentEntry.hex;
+  } else if (entries.length === 0) {
+    accent = defaultHex("accent");
+  } else {
+    const vivid = entries
+      .filter(
+        (e) =>
+          rgbToHsv(e.rgb).s >= MIN_ACCENT_SATURATION && contrastRatio(e.rgb, darkRgb) >= AA_LARGE,
+      )
+      .reduce<PaletteEntry | undefined>(
+        (best, e) => (best === undefined || rgbToHsv(e.rgb).s > rgbToHsv(best.rgb).s ? e : best),
+        undefined,
+      );
+    accent = vivid?.hex ?? light;
+  }
 
   // Ink: the palette's text color when it is genuinely legible on the
   // surface (WCAG AA body threshold), else the chosen legible fallback.
@@ -163,8 +202,7 @@ export function resolvePreviewColors(colors: BrandColor[]): PreviewColors {
 
   // The outline's ring paints over `dark`, so the ink carries over only
   // while it stays legible there.
-  const outline =
-    contrastRatio(parseHex(ink)!, parseHex(dark)!) >= AA_LARGE ? ink : readableOn(dark);
+  const outline = contrastRatio(parseHex(ink)!, darkRgb) >= AA_LARGE ? ink : readableOn(dark);
 
   return { dark, light, accent, ink, onAccent: readableOn(accent), outline };
 }
