@@ -78,6 +78,37 @@ describe("resolvePreviewColors", () => {
     expect(resolved.onAccent).toBe(readableOn(accent));
   });
 
+  it("derives the CTA fill from the palette when no accent key exists", () => {
+    // Imported token palettes keep their own names — the most vivid color
+    // that reads against the dark band becomes the pill.
+    const resolved = resolvePreviewColors([
+      color("brand_red", "#E24A4A"),
+      color("paper", "#F4F4F4"),
+      color("charcoal", "#333333"),
+    ]);
+    expect(resolved.accent).toBe("#E24A4A");
+    expect(resolved.onAccent).toBe(readableOn("#E24A4A"));
+  });
+
+  it("falls back to an inverse light pill for a neutral palette with no accent key", () => {
+    const resolved = resolvePreviewColors([
+      color("paper", "#F4F4F4"),
+      color("charcoal", "#333333"),
+    ]);
+    expect(resolved.accent).toBe(resolved.light);
+  });
+
+  it("never derives a CTA fill that dissolves into the dark band", () => {
+    // The only vivid color is too close to the band — the pill must not
+    // vanish into it, so the light surface steps in.
+    const resolved = resolvePreviewColors([
+      color("wine", "#7A1E1E"),
+      color("paper", "#F4F4F4"),
+      color("charcoal", "#333333"),
+    ]);
+    expect(resolved.accent).toBe(resolved.light);
+  });
+
   it("never lets the fallback re-select a pale color the primary gate rejected", () => {
     const resolved = resolvePreviewColors([
       color("primary", "#F2D16B"),
