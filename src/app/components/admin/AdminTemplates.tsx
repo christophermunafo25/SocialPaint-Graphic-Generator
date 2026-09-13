@@ -270,7 +270,10 @@ export function AdminTemplates() {
       />
 
       {templatesState.status === "ready" && templates.length > 0 && (
-        <div className="flex flex-wrap items-center mb-6" style={{ gap: "var(--space-xs)" }}>
+        <div
+          className="sp-admin-filterrow flex flex-wrap items-center mb-6"
+          style={{ gap: "var(--space-xs)" }}
+        >
           <TemplateSearchField value={query} onChange={setQuery} />
           <div
             className="flex overflow-hidden"

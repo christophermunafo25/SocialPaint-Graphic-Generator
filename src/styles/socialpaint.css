@@ -3398,45 +3398,101 @@ input[type="radio"] {
    tokens above; the DS bans shadows in both themes, so the pinned filter bar
    separates with a hairline rather than lifting. */
 
-/* Search field — the icon and clear button sit inside the input's box.
-   Capped: a query is a few words, and an input stretched across the whole
-   content column reads as a form, not a filter. One cap here, no per-page
-   wrapper widths. */
+/* Search control — collapsed, an icon-only square in line with the filters;
+   open, the same box grown rightward into the field. The CONTAINER is the
+   visual control (fill, border, focus ring — the .sp-input recipe moved up a
+   level) and the input inside is transparent, so the glyph holds its physical
+   position while only the box's width animates. The open cap stays 440px: a
+   query is a few words, and an input stretched across the whole content
+   column reads as a form, not a filter. Contexts size it through the two
+   local variables; both width endpoints are px so the transition stays
+   interpolable. */
 .sp-searchfield {
-  position: relative;
-  width: 100%;
-  max-width: 440px;
+  --sp-searchfield-h: var(--control-md);
+  --sp-searchfield-w: 440px;
+  display: flex;
+  align-items: center;
+  height: var(--sp-searchfield-h);
+  width: var(--sp-searchfield-h);
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--input-bg);
+  overflow: hidden;
+  transition:
+    width var(--dur-panel) var(--ease),
+    border-color var(--dur-state) var(--ease);
+}
+.sp-searchfield[data-open] {
+  width: var(--sp-searchfield-w);
+}
+.sp-searchfield:not([data-open]):hover {
+  border-color: var(--border-strong);
+}
+/* Focus rides the container's own 1px edge, mirroring .sp-input:focus —
+   never a thicker halo. Covers the input and the trigger alike. */
+.sp-searchfield:focus-within {
+  border-color: var(--ring);
+}
+/* The glyph's square. Sized to the box's inner height so the collapsed
+   state is exactly this button and the glyph is centred at every height;
+   first flex item, so it never moves as the box grows. */
+.sp-searchfield__trigger {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--sp-searchfield-h) - 2 * var(--border-width));
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.sp-searchfield__trigger:focus-visible {
+  outline: none; /* the container's :focus-within border is the indicator */
 }
 .sp-searchfield__icon {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
   width: 16px;
   height: 16px;
-  color: var(--text-muted);
-  pointer-events: none;
-  z-index: 1;
 }
 .sp-searchfield__input {
-  height: var(--control-md);
-  padding: 0 52px 0 40px;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  outline: none;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
   font-size: var(--type-body-size);
+  letter-spacing: var(--type-body-track);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-state) var(--ease);
+}
+/* Text fades in after the box has most of its width; closing fades at once. */
+.sp-searchfield[data-open] .sp-searchfield__input {
+  opacity: 1;
+  pointer-events: auto;
+  transition-delay: var(--dur-state);
+}
+.sp-searchfield__input::placeholder {
+  color: var(--text-disabled);
 }
 /* The type=search UA affordances duplicate our own clear button. */
 .sp-searchfield__input::-webkit-search-cancel-button {
   display: none;
 }
 .sp-searchfield__clear {
-  position: absolute;
-  right: 2px;
-  top: 50%;
-  transform: translateY(-50%);
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 44px;
-  height: 44px;
+  height: 100%;
   border: none;
   border-radius: var(--radius-pill);
   background: transparent;
@@ -3453,6 +3509,11 @@ input[type="radio"] {
 .sp-searchfield__clear:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring-tight);
+}
+/* Admin templates toolbar: the collapsed square drops to the small control
+   step so it sits level with the 40px segmented status filter beside it. */
+.sp-admin-filterrow .sp-searchfield {
+  --sp-searchfield-h: var(--control-sm);
 }
 
 /* Sticky region: search + chips pin below the app chrome — the viewport top
@@ -3472,6 +3533,26 @@ input[type="radio"] {
 }
 .sp-filterbar[data-pinned] {
   border-bottom-color: var(--border);
+}
+/* At --bp-md and up the bar is one row: the search control rests as a square
+   on the chips' own height and radius, and opening it pushes the rail right.
+   Below, the bar stays two rows and the open field takes the first — the px
+   cap under max-width: 100%, so the width transition never chases a
+   percentage. (768 is --bp-md; var() is not valid inside a media query.) */
+@media (min-width: 768px) {
+  .sp-filterbar {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-xs);
+  }
+  .sp-filterbar .sp-searchfield {
+    --sp-searchfield-h: var(--chip-h);
+    flex-shrink: 0;
+    border-radius: var(--radius-media);
+  }
+  .sp-filterbar .sp-railfade {
+    flex: 1;
+  }
 }
 
 /* Horizontal rail with edge fades. Shared by the chip bar and the shelves:
@@ -3584,6 +3665,11 @@ input[type="radio"] {
    direction — "smaller"): 208×64, a 36px tile, a 20px mark, the label on
    the body step. Same proportions, same 44px hit floor cleared. `.sp-chip`
    above is the size gallery's compact pill, a different control. */
+:root {
+  /* One knob for the chip's 64px box — the filter bar's collapsed search
+     square borrows it, so the two never drift apart. */
+  --chip-h: 64px;
+}
 .sp-platform-chipbar {
   gap: var(--space-xs);
   padding: 2px;
@@ -3595,7 +3681,7 @@ input[type="radio"] {
   gap: var(--space-xs);
   flex-shrink: 0;
   min-width: 208px; /* a long label ("Web & Open Graph") widens its chip rather than ellipsising */
-  height: 64px;
+  height: var(--chip-h);
   padding: 0 var(--space-xs);
   border: 0;
   border-radius: var(--radius-media);
