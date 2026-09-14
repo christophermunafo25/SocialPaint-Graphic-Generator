@@ -443,13 +443,17 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
           <BrandMark width={46} />
         </div>
       )}
+      {/* Expanded, this is the H2 display step and wears the display face;
+          collapsed it drops to the cardtitle step, which stays on Plus
+          Jakarta like every card title (2026-09 heading split). */}
       <h1
         style={{
-          fontFamily: "var(--font-head)",
+          fontFamily: heroCollapsed ? "var(--font-head)" : "var(--font-display)",
           fontWeight: "var(--weight-head)",
           fontSize: heroCollapsed ? "var(--type-cardtitle-size)" : "var(--type-h2-size)",
           lineHeight: heroCollapsed ? "var(--type-cardtitle-lh)" : "var(--type-h2-lh)",
           letterSpacing: "var(--track-head)",
+          fontVariationSettings: heroCollapsed ? undefined : '"wdth" 78, "opsz" 40',
           color: "var(--text-primary)",
         }}
       >
