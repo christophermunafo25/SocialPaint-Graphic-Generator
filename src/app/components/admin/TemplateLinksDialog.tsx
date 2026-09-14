@@ -164,7 +164,7 @@ export function TemplateLinksDialog({
               style={{
                 fontFamily: "var(--font-head)",
                 fontWeight: "var(--weight-head)",
-                fontSize: 21,
+                fontSize: "var(--type-cardtitle-size)",
                 letterSpacing: "var(--track-head)",
                 color: "var(--text-primary)",
               }}
