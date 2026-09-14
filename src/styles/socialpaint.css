@@ -297,13 +297,14 @@ html {
 }
 
 /* ── Semantic: dark ─────────────────────────────────────────────────────────
-   The primary mode. #070708 is the floor and #18191A is THE lifted
-   surface — every card, panel, and the sidebar share it (2026-08-14, at
-   Chris's direction); elevation is surface colour, never shadow. One
-   ladder: #070708 canvas → #18191A surface/raised → #2a2a2a hover →
-   #323232 border-on-surface. */
+   The primary mode. #0B0B0C is the floor (lifted from #070708, 2026-09 Brand
+   Templates frames) and #18191A is THE lifted surface for chrome and anything
+   that floats or takes input; CONTENT cards sit back toward the ground on
+   --bg-card (2026-09, at CJ's direction) — elevation is surface colour, never
+   shadow. One ladder: #0B0B0C canvas → #131314 card → #18191A surface/raised
+   → #2a2a2a hover → #323232 border-on-surface. */
 [data-theme="dark"] {
-  --bg-canvas: #070708;
+  --bg-canvas: #0b0b0c;
   /* Build-picker tiles (Figma 221:321). Four icon tiles, each a flat
      colour with the glyph knocked out in its deep tint; light mode swaps
      the pair. The blank tile is Fire exactly, so it binds to the
@@ -320,6 +321,12 @@ html {
   --start-glyph-canva: #071b25;
   --start-input-bg: var(--chip-raised);
   --bg-surface: #18191a;
+  /* THE content-card fill (2026-09). Between --ink-900 and --ink-800 with no
+     rung on the primitive ladder — a semantic bound to a literal for now;
+     flagged for a primitive rung rather than inventing one here. Cards sit
+     back toward the ground at this value; anything that floats or takes
+     input stays lifted on --bg-surface. */
+  --bg-card: #131314;
   --bg-raised: #18191a;
   --bg-hover: #2a2a2a;
   --bg-plate: #ffffff; /* imagery plate, never inverts */
@@ -413,10 +420,10 @@ html {
      ladder where the frame sits within a few units of a rung; #252627 is
      the one value with no rung — five units off both --bg-surface-raised
      and --bg-hover — so it gets its own. The tile lights to the canvas
-     floor on hover and stays lit once selected; the frame's #0b0b0c is
-     four units from --bg-canvas. */
+     floor on hover and stays lit once selected; the frame's #0b0b0c IS
+     --bg-canvas since the 2026-09 ground move. */
   --chip-raised: #252627;
-  --chip-bg: var(--bg-surface); /* frame #171819 */
+  --chip-bg: var(--bg-card); /* the chip is content, not chrome (Part E, 2026-09) */
   --chip-bg-hover: var(--chip-raised);
   --chip-bg-selected: var(--fill-action); /* frame #ffffff — the DS's white */
   --chip-fg: var(--text-primary);
@@ -448,6 +455,9 @@ html {
   --accent-wash-strong: color-mix(in srgb, var(--slime) 48%, transparent);
   --bg-canvas: #f1f1f1;
   --bg-surface: #ffffff;
+  /* Light is unaffected by the dark card split: every card renders exactly
+     as it did on --bg-surface. */
+  --bg-card: var(--bg-surface);
   --bg-raised: #e8e8e8;
   --bg-hover: #e2e2e2;
   --bg-plate: #ffffff;
@@ -527,8 +537,8 @@ html {
      both themes so the colour mark reads on it — there is no light-theme
      rung that dark, hence the one literal. Selected inverts to the ink
      fill, the frame's #252627 within two units of --fill-action. */
-  --chip-bg: var(--bg-surface);
-  --chip-bg-hover: var(--bg-surface);
+  --chip-bg: var(--bg-card);
+  --chip-bg-hover: var(--bg-card);
   --chip-bg-selected: var(--fill-action);
   --chip-fg: var(--text-primary);
   --chip-fg-selected: var(--text-on-action);
@@ -3666,9 +3676,17 @@ input[type="radio"] {
    the body step. Same proportions, same 44px hit floor cleared. `.sp-chip`
    above is the size gallery's compact pill, a different control. */
 :root {
-  /* One knob for the chip's 64px box — the filter bar's collapsed search
-     square borrows it, so the two never drift apart. */
-  --chip-h: 64px;
+  /* Chip geometry (2026-09 frames, adjusted to the 4px scale — see the C1
+     mapping in the redesign brief). One knob per dimension; the filter
+     bar's collapsed search square borrows --chip-h, so the two never
+     drift apart. The frames draw 50 tall with 0 9 0 7 padding and a 7px
+     inner gap; 48 / 0 12 0 8 / 8 are the on-scale renderings, keeping the
+     tighter-left, looser-right ratio. */
+  --chip-h: 48px;
+  --chip-w: 152px;
+  --chip-pad-inline-start: 8px;
+  --chip-pad-inline-end: 12px;
+  --chip-gap: 8px;
 }
 .sp-platform-chipbar {
   gap: var(--space-xs);
