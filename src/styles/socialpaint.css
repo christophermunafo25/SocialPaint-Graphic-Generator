@@ -968,6 +968,7 @@ optgroup {
 .sp-card,
 .sp-sidebar,
 .sp-platform-chip,
+.sp-filterbar .sp-searchfield,
 .sp-gate__panel {
   --edge-color: rgb(var(--edge-rgb) / var(--edge-alpha));
   --edge-color-bottom: rgb(var(--edge-rgb) / calc(var(--edge-alpha) * var(--edge-bottom-ratio)));
@@ -1002,7 +1003,8 @@ optgroup {
   --edge-lit: 0 0 0 0 transparent;
   border-color: var(--edge-color);
 }
-[data-theme="light"] .sp-platform-chip {
+[data-theme="light"] .sp-platform-chip,
+[data-theme="light"] .sp-filterbar .sp-searchfield {
   --edge-lit: inset 0 0 0 1px var(--edge-color);
 }
 [data-theme="light"] .sp-card-link {
@@ -3526,6 +3528,38 @@ input[type="radio"] {
   --sp-searchfield-h: var(--control-sm);
 }
 
+/* In the catalogue's filter bar the control wears the UNSELECTED chip's
+   garb — fill, lit edge, glyph on the label colour — so it reads as a chip
+   that has not been opened (2026-09 frames). The .sp-input border goes
+   (the chips' --edge-lit is the stroke, assembled beside .sp-card) and the
+   trigger square grows back to the full --chip-h the border used to eat.
+   Focus composes the ring over the edge, as on the chips themselves. */
+.sp-filterbar .sp-searchfield {
+  --sp-searchfield-h: var(--chip-h);
+  flex-shrink: 0;
+  border: 0;
+  border-radius: var(--radius-media);
+  background: var(--chip-bg);
+  box-shadow: var(--edge-lit);
+  transition:
+    width var(--dur-panel) var(--ease),
+    background var(--dur-state) var(--ease);
+}
+.sp-filterbar .sp-searchfield:not([data-open]):hover {
+  background: var(--chip-bg-hover);
+}
+.sp-filterbar .sp-searchfield:focus-within {
+  box-shadow: var(--focus-ring-tight), var(--edge-lit);
+}
+.sp-filterbar .sp-searchfield__trigger {
+  width: var(--chip-h);
+  color: var(--chip-fg);
+}
+.sp-filterbar .sp-searchfield__icon {
+  width: 20px;
+  height: 20px;
+}
+
 /* Sticky region: search + chips pin below the app chrome — the viewport top
    beside the rail, the 56px mobile header below --bp-lg (--chrome-top).
    Flat until pinned, then a hairline does the separating. */
@@ -3671,10 +3705,16 @@ input[type="radio"] {
    full-colour mark read. The chip wears the page's lit edge like every
    card; no state rides the border, so hover and selected move only the
    fill, the text, and the tile. The frame is 259×80 with a 45px tile and
-   a 24px mark; this is that chip at four-fifths (2026-09-02, at Chris's
-   direction — "smaller"): 208×64, a 36px tile, a 20px mark, the label on
-   the body step. Same proportions, same 44px hit floor cleared. `.sp-chip`
-   above is the size gallery's compact pill, a different control. */
+   a 24px mark; 2026-09-02 (at Chris's direction — "smaller") took it to
+   208×64. The 2026-09 Brand Templates frames (1:28 / 1:184) tighten it
+   again to 152×50 with the count line REMOVED; this build renders 152×48
+   — 48 is the on-scale height that clears the 44px hit floor and leaves
+   the 52px rail 2px of breathing room each side (the one deliberate
+   drift from the frames; see the gate report's 48-vs-50 side-by-side).
+   Tile 36, mark 20, chevron 14, label on the body step, all unchanged.
+   Width is FIXED at 152 in both breakpoints — chips never hug their
+   labels; a long label ellipsises. `.sp-chip` above is the size
+   gallery's compact pill, a different control. */
 :root {
   /* Chip geometry (2026-09 frames, adjusted to the 4px scale — see the C1
      mapping in the redesign brief). One knob per dimension; the filter
@@ -3696,11 +3736,12 @@ input[type="radio"] {
   position: relative;
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: var(--chip-gap);
   flex-shrink: 0;
-  min-width: 208px; /* a long label ("Web & Open Graph") widens its chip rather than ellipsising */
+  width: var(--chip-w);
+  box-sizing: border-box;
   height: var(--chip-h);
-  padding: 0 var(--space-xs);
+  padding: 0 var(--chip-pad-inline-end) 0 var(--chip-pad-inline-start);
   border: 0;
   border-radius: var(--radius-media);
   background: var(--chip-bg);
@@ -3782,15 +3823,11 @@ input[type="radio"] {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* Regular, not the frame's Light: only Regular and Medium are bundled, on
-   purpose (see the @font-face note at the top). 75% of the label colour. */
-.sp-platform-chip__count {
-  font-size: var(--type-caption-size);
-  font-weight: 400;
-  letter-spacing: var(--type-caption-track);
-  line-height: var(--type-caption-lh);
-  color: color-mix(in srgb, currentColor 75%, transparent);
-}
+/* The count line is GONE (2026-09 frames, confirmed by CJ): the chip is
+   the label and the tile alone. The cost is named and accepted — the
+   count was the only signal of how much sits behind a chip before you
+   tap it. Do not reinstate it, and do not append the number to the
+   label. */
 /* Decorative — the chip is a radio, not a way in. lucide, not the frame's
    SF Symbol. */
 .sp-platform-chip__chevron {
@@ -3803,11 +3840,9 @@ input[type="radio"] {
 /* Selected must not rely on colour alone: aria-checked carries it for
    assistive tech, and under forced colours — which strip every fill and
    the lit edge with it — the chip draws its own frame, selected as a
-   double rule. Contrast, both themes, all three states (label / count at
-   75% of the label colour): dark 15.6 / 9.2 at rest, 13.4 / 8.2 on hover,
-   13.2 / 6.1 selected; light 14.9 / 6.6 at rest and hover, 13.2 / 8.0
-   selected. The count on the dark selected chip is the floor, still past
-   AA's 4.5. */
+   double rule. Label contrast, both themes, all three states (2026-09,
+   on the --bg-card chip): dark 16.4 at rest, 13.4 on hover, 13.2
+   selected; light 14.9 at rest and hover, 13.2 selected — all past AA. */
 @media (forced-colors: active) {
   .sp-platform-chip {
     border: 1px solid ButtonBorder;

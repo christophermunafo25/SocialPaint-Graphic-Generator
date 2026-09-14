@@ -185,7 +185,6 @@ export function Portal() {
         {catalog.length > 0 && (
           <GroupChips
             facets={chipFacets}
-            total={searched.length}
             selected={platform?.id ?? null}
             onSelect={(next) => setState({ platform: next })}
           />

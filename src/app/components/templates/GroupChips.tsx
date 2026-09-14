@@ -5,8 +5,6 @@ import type { PlatformIcon } from "@/lib/templates/platformIcons";
 import type { PlatformId } from "@/lib/templates/platforms";
 import { useEdgeFade } from "./useEdgeFade";
 
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
-
 /**
  * Single-select filter over the catalogue's platforms — a radio group rather
  * than a tablist, since these filter one region in place instead of swapping
@@ -23,12 +21,10 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
  */
 export function GroupChips({
   facets,
-  total,
   selected,
   onSelect,
 }: {
   facets: PlatformFacet[];
-  total: number;
   /** null is the "All" chip. */
   selected: PlatformId | null;
   onSelect(next: PlatformId | null): void;
@@ -64,7 +60,6 @@ export function GroupChips({
     id: PlatformId | null,
     index: number,
     label: string,
-    count: number,
     Icon: PlatformIcon,
     ColorIcon?: PlatformIcon,
   ) => {
@@ -84,7 +79,8 @@ export function GroupChips({
         onClick={() => onSelect(id)}
         onKeyDown={onKeyDown}
       >
-        {/* The marks are decoration; the name is the label and the count. */}
+        {/* The marks are decoration; the name is the label. The template
+            count is gone (2026-09 frames) — the label stands alone. */}
         <span
           className="sp-platform-chip__tile"
           data-has-color={ColorIcon ? true : undefined}
@@ -97,7 +93,6 @@ export function GroupChips({
         </span>
         <span className="sp-platform-chip__text">
           <span className="sp-platform-chip__label">{label}</span>
-          <span className="sp-platform-chip__count">{plural(count, "template")}</span>
         </span>
         <ChevronRight className="sp-platform-chip__chevron" strokeWidth={1.5} aria-hidden />
       </button>
@@ -116,16 +111,9 @@ export function GroupChips({
         role="radiogroup"
         aria-label="Filter by platform"
       >
-        {chip(null, 0, "All", total, LayoutGrid)}
+        {chip(null, 0, "All", LayoutGrid)}
         {facets.map((f, i) =>
-          chip(
-            f.platform.id,
-            i + 1,
-            f.platform.label,
-            f.count,
-            f.platform.Icon,
-            f.platform.ColorIcon,
-          ),
+          chip(f.platform.id, i + 1, f.platform.label, f.platform.Icon, f.platform.ColorIcon),
         )}
       </div>
     </div>
