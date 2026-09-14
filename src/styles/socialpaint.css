@@ -3568,9 +3568,9 @@ input[type="radio"] {
   top: var(--chrome-top);
   z-index: var(--z-sticky);
   background: var(--bg-canvas);
-  padding: var(--space-sm) 0;
+  padding: 0;
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: var(--space-xs);
   border-bottom: 1px solid transparent;
   transition: border-color var(--dur-state) var(--ease);
@@ -3578,25 +3578,18 @@ input[type="radio"] {
 .sp-filterbar[data-pinned] {
   border-bottom-color: var(--border);
 }
-/* At --bp-md and up the bar is one row: the search control rests as a square
-   on the chips' own height and radius, and opening it pushes the rail right.
-   Below, the bar stays two rows and the open field takes the first — the px
-   cap under max-width: 100%, so the width transition never chases a
-   percentage. (768 is --bp-md; var() is not valid inside a media query.) */
-@media (min-width: 768px) {
-  .sp-filterbar {
-    flex-direction: row;
-    align-items: center;
-    gap: var(--space-xs);
-  }
-  .sp-filterbar .sp-searchfield {
-    --sp-searchfield-h: var(--chip-h);
-    flex-shrink: 0;
-    border-radius: var(--radius-media);
-  }
-  .sp-filterbar .sp-railfade {
-    flex: 1;
-  }
+/* ONE row at every width (2026-09 frames): the search control rests as a
+   square on the chips' own height and radius, and opening it pushes the
+   rail right. The open cap is a px value under max-width: 100%, so the
+   width transition never chases a percentage. The rail runs 52 tall with
+   the 48px chips centred — 2px of breathing room each side, exactly the
+   focus ring's width, so a ring never clips vertically in the scroller. */
+.sp-filterbar .sp-railfade {
+  flex: 1;
+}
+.sp-filterbar .sp-railfade__track {
+  height: 52px;
+  align-items: center;
 }
 
 /* Horizontal rail with edge fades. Shared by the chip bar and the shelves:
@@ -3730,7 +3723,10 @@ input[type="radio"] {
 }
 .sp-platform-chipbar {
   gap: var(--space-xs);
-  padding: 2px;
+  /* The old 2px guard padding is gone (2026-09): the 52px rail carries the
+     vertical ring room itself, and the horizontal ring accepts the
+     scroller's edge clip at the rail's ends, as the frames draw it. */
+  padding: 0;
 }
 .sp-platform-chip {
   position: relative;
@@ -4112,15 +4108,35 @@ input[type="radio"] {
   .sp-shelf {
     margin-top: var(--space-xl);
   }
-  .sp-filterbar {
-    padding: var(--space-xs) 0;
-  }
 }
 @media (max-width: 767px) {
   /* 16px page gutter on mobile, per the DS layout spec. :root so the
      bands' column padding follows the same token. */
   :root {
     --page-pad: 16px;
+  }
+
+  /* Brand Templates mobile gutter model (2026-09 frames, C5): the page
+     drops its horizontal padding so the RAILS bleed to the screen edge,
+     and the 16px gutter moves onto the children so TEXT stays inset. A
+     pattern change, not a rounding difference — only the templates route
+     opts in, via .sp-page--bleed; every other .sp-page keeps --page-pad. */
+  .sp-page--bleed {
+    padding: var(--space-md) 0 calc(30px + env(safe-area-inset-bottom, 0px));
+  }
+  .sp-page--bleed .sp-pagehead,
+  .sp-page--bleed .sp-resultline,
+  .sp-page--bleed .sp-resultgroup {
+    padding-inline: var(--space-sm);
+  }
+  .sp-page--bleed .sp-emptystate {
+    margin-inline: var(--space-sm);
+  }
+  .sp-page--bleed .sp-filterbar {
+    padding: 0 0 0 var(--space-sm);
+  }
+  .sp-page--bleed .sp-shelf__header {
+    padding: 0 var(--space-sm);
   }
 }
 

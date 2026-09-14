@@ -12,9 +12,20 @@ import React from "react";
  * outgrows --page-max (1720px; viewport > 1984px expanded, > 1812px
  * collapsed), where margin-inline: auto grows the two together. `narrow`
  * caps the inner content (People 900) and centres it inside the column. */
-export function Page({ narrow, children }: { narrow?: 760 | 900; children: React.ReactNode }) {
+export function Page({
+  narrow,
+  bleed,
+  children,
+}: {
+  narrow?: 760 | 900;
+  /** Mobile gutter model (2026-09): below 768 the page drops its horizontal
+   *  padding so rails bleed to the screen edge, and the 16px gutter moves
+   *  onto the children (see .sp-page--bleed). Brand Templates only. */
+  bleed?: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="sp-page">
+    <div className={bleed ? "sp-page sp-page--bleed" : "sp-page"}>
       <div style={narrow ? { maxWidth: narrow, marginInline: "auto" } : undefined}>{children}</div>
     </div>
   );
@@ -36,7 +47,7 @@ export function PageHeader({
 }) {
   return (
     <header
-      className="flex items-start justify-between gap-4"
+      className="sp-pagehead flex items-start justify-between gap-4"
       style={{ marginBottom: "var(--space-lg)" }}
     >
       <div className="min-w-0">
