@@ -1011,7 +1011,12 @@ optgroup {
   --edge-lit: inset 0 1px 0 var(--edge-color), inset 0 -1px 0 var(--edge-color-bottom);
 }
 .sp-card {
-  background: var(--bg-surface);
+  /* Content sits back toward the ground on --bg-card (#131314 dark; light
+     resolves it to --bg-surface, unchanged). Chrome — the rail, inputs,
+     menus, modals, drawers, builder bars — stays lifted on --bg-surface.
+     That ordering is the 2026-09 dark frames': the rail reads LIGHTER
+     than the cards beside it. */
+  background: var(--bg-card);
   border: 1px solid transparent;
   border-radius: var(--radius-card);
   box-shadow: var(--edge-lit);
@@ -1089,7 +1094,7 @@ optgroup {
 }
 .sp-gate__panel {
   min-width: 0;
-  background: var(--bg-surface);
+  background: var(--bg-card);
   border: 1px solid transparent;
   border-radius: var(--radius-card);
   box-shadow: var(--edge-lit);
@@ -2415,7 +2420,9 @@ html[data-sp-fullscreen] .sp-appshell > main {
   align-items: center;
   gap: var(--space-2xs);
   padding: var(--space-2xs) 0;
-  background: var(--bg-surface);
+  /* The one piece of builder furniture that reads as a CARD (a collapsed
+     placeholder), not chrome — it moves with the card tier. */
+  background: var(--bg-card);
 }
 /* The step panels (Caption, Tags & details, Name) ride over the inspector
    rather than replacing it — the canvas never moves when one opens. */
@@ -4038,7 +4045,7 @@ input[type="radio"] {
 .sp-emptystate {
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
-  background: var(--bg-surface);
+  background: var(--bg-card);
   padding: var(--space-2xl) var(--space-lg);
   text-align: center;
 }
@@ -4643,7 +4650,9 @@ input[type="radio"] {
   height: 183px;
   padding: 22px 18px 16px 22px;
   text-align: left;
-  background: var(--bg-surface);
+  /* Classified in the 2026-09 card split: a content card (the Generate
+     start picker), not chrome — it moves with the card tier. */
+  background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-control-lg);
   color: var(--text-primary);
