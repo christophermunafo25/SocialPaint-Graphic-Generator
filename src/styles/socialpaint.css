@@ -333,14 +333,19 @@ html {
   --border: rgba(241, 241, 241, 0.1); /* decorative separation only */
   --border-strong: rgba(241, 241, 241, 0.2);
   /* The lit edge (2026-09-02, at Chris's direction): light from above.
-     A 1px top hairline at 15% white at rest (25% on hover), a 1px bottom
-     hairline at 40% of that (6%, 10% on hover), nothing down the sides.
+     A 1px top hairline at 25% white at rest (lifted from 15% for the
+     2026-09 frames, whose fractional per-side strokes are this recipe),
+     a 1px bottom hairline at 40% of that (10%), nothing down the sides.
      One language for every surface — cards, the sidebar rail, the
      platform chips. The colour is a bare channel triplet and an alpha,
      not a finished rgba(): .sp-card assembles them, so a hover can raise
-     --edge-alpha on the surface itself and both hairlines follow. */
+     --edge-alpha on the surface itself and both hairlines follow.
+     FLAGGED: with rest at 25% the hover step is now a no-op in dark —
+     hover still lifts the card, but the edge no longer brightens. If the
+     brighten should survive, --edge-alpha-hover wants a new rung (0.35?);
+     not invented here. */
   --edge-rgb: 255 255 255;
-  --edge-alpha: 0.15;
+  --edge-alpha: 0.25;
   --edge-alpha-hover: 0.25;
   --edge-bottom-ratio: 0.4;
 
@@ -2907,19 +2912,36 @@ input[type="radio"] {
   }
 }
 .sp-shelf__track {
-  gap: var(--space-sm);
+  /* One knob for the card gap, read back by the item-width formula below
+     so the two can never drift: 16 on mobile, 12 from --bp-md up (the
+     frames draw 10; 12 is the on-scale rendering). */
+  --shelf-gap: var(--space-sm);
+  gap: var(--shelf-gap);
   scroll-snap-type: x mandatory;
   scroll-behavior: smooth;
-  /* The padding keeps a card's focus ring — and the top of a card mid
-     hover-lift (translateY(-4px) + 2px ring = 6px) — from being clipped by
-     the scroller, whose overflow-x: auto clips vertically too. The negative
+  /* The top padding keeps the top of a card mid hover-lift
+     (translateY(-4px) + 2px ring = 6px) from being clipped by the
+     scroller, whose overflow-x: auto clips vertically too; the negative
      top margin cancels the extra headroom so resting cards sit exactly
-     where they always did. scroll-padding moves the snapport in to match:
-     without it, mandatory snap parks the first card at scrollLeft 2 rather
-     than 0, and the rail never reports itself as being at the start. */
-  padding: 6px 2px 2px;
+     where they always did. Mobile (the bleed model): 16 on the left so
+     the first card sits on the text gutter, 2 on the right so the rail
+     reads as running off the screen edge. scroll-padding moves the
+     snapport in to match the left inset: without it, mandatory snap
+     parks the first card short of its inset and the rail never reports
+     itself at the start. */
+  padding: 6px 2px 2px var(--space-sm);
   margin-top: -4px;
-  scroll-padding-inline: 2px;
+  scroll-padding-inline-start: var(--space-sm);
+}
+/* From --bp-md up the column's own gutter does the inset work: the track
+   runs flush (0 each side — a focus ring's 2px horizontal reach clips at
+   the scroller's ends, as the frames draw it). */
+@media (min-width: 768px) {
+  .sp-shelf__track {
+    --shelf-gap: var(--space-xs);
+    padding: 6px 0 2px;
+    scroll-padding-inline-start: 0;
+  }
 }
 .sp-shelf__track:focus-visible {
   outline: none;
@@ -2928,9 +2950,11 @@ input[type="radio"] {
 .sp-shelf__item {
   /* Exactly --shelf-visible cards fill the track before it scrolls. The
      percentage resolves against the track's own content box, so the count
-     holds at any column width without measuring anything in JS. */
+     holds at any column width without measuring anything in JS. Width is
+     DERIVED, never authored — it reads the track's own gap knob, so a
+     padding or gap change can never silently clip the last card again. */
   --shelf-item-w: calc(
-    (100% - (var(--shelf-visible) - 1) * var(--space-sm)) / var(--shelf-visible)
+    (100% - (var(--shelf-visible) - 1) * var(--shelf-gap)) / var(--shelf-visible)
   );
   flex: 0 0 var(--shelf-item-w);
   width: var(--shelf-item-w);
@@ -3861,6 +3885,10 @@ input[type="radio"] {
   justify-content: space-between;
   gap: var(--space-sm);
   margin-bottom: var(--space-sm);
+  /* 2px, matching nothing else on the scale: the frames seat the header
+     text 2px in from the column edge (0 16 on mobile — see the bleed
+     block). */
+  padding: 0 2px;
 }
 .sp-shelf__title {
   font-family: var(--font-head);
