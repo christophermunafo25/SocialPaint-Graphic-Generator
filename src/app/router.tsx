@@ -10,10 +10,11 @@ import { PLATFORMS, type PlatformId } from "@/lib/templates/platforms";
  * typing a query IS a navigation. `platform` is a PlatformId such as
  * `instagram`, the unit the chips filter by; an unknown value reads as no
  * filter rather than as a dead end. */
-/** Brand Studio's categories. The studio is one autosaving page of cards
- * that open in place, so a category no longer names a separate screen — it
- * names which card is open when the page loads. The URLs are unchanged, so
- * every link that used to reach a detail route still lands on its section. */
+/** Brand Studio's categories. The studio is two steps (2026-09-15 frames):
+ * /brand-studio is the overview grid and /brand-studio/<category> is that
+ * category's detail page, edited in place and autosaving. The URLs are
+ * unchanged from the accordion era, so old links still land right. The
+ * `typography` key stays the Fonts page's route key (D4). */
 export type BrandCategory = "colors" | "typography" | "logos" | "images" | "type-styles" | "import";
 const BRAND_CATEGORIES: readonly BrandCategory[] = [
   "colors",
@@ -59,7 +60,10 @@ export type Route =
    * an unsaved change for review, then strips the param so a refresh after
    * saving cannot reflow the already-reflowed copy a second time. */
   | { name: "builder"; templateId: string | null; reflow?: string }
-  | { name: "brandStudio"; category?: BrandCategory }
+  /** Two-step Brand Studio: no category is the overview, a category is
+   * that detail page. `surface` is the Logos page's filter — in the URL
+   * so the view is shareable, ignored on every other category. */
+  | { name: "brandStudio"; category?: BrandCategory; surface?: "dark" | "light" }
   | { name: "dashboard" }
   | { name: "people" }
   | { name: "settings"; section?: SettingsSection };
@@ -106,8 +110,13 @@ export function routeToUrl(route: Route): string {
         : "/template-builder/new";
       return route.reflow ? `${base}?reflow=${encodeURIComponent(route.reflow)}` : base;
     }
-    case "brandStudio":
-      return route.category ? `/brand-studio/${route.category}` : "/brand-studio";
+    case "brandStudio": {
+      if (!route.category) return "/brand-studio";
+      const base = `/brand-studio/${route.category}`;
+      return route.category === "logos" && route.surface
+        ? `${base}?surface=${route.surface}`
+        : base;
+    }
     case "dashboard":
       return "/insights";
     case "people":
@@ -148,7 +157,15 @@ export function urlToRoute(pathname: string, search: string): Route {
       };
     case "brand-studio":
       if (tail && (BRAND_CATEGORIES as readonly string[]).includes(tail)) {
-        return { name: "brandStudio", category: tail as BrandCategory };
+        const category = tail as BrandCategory;
+        const rawSurface = params.get("surface");
+        // The filter belongs to Logos alone; an unknown value reads as no
+        // filter rather than as a dead end.
+        const surface =
+          category === "logos" && (rawSurface === "dark" || rawSurface === "light")
+            ? rawSurface
+            : undefined;
+        return { name: "brandStudio", category, surface };
       }
       return { name: "brandStudio" };
     case "insights":

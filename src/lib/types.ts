@@ -38,6 +38,10 @@ export interface BrandColor {
   key: string; // stable palette key (referenced by BrandTypeStyle.colorKey)
   name: string;
   hex: string;
+  /** Palette role (D11, two-step Brand Studio). Each role belongs to at
+   * most ONE color at a time — assigning it moves it (see assignColorRole).
+   * Absent = no role. */
+  role?: "primary" | "secondary" | "accent";
 }
 
 export interface FontRef {
@@ -85,6 +89,12 @@ export interface BrandKit {
   headingFont?: FontRef;
   bodyFont?: FontRef;
   primaryLogoAssetId?: string;
+  /** Per-surface primaries (D12): each surface has its own primary logo.
+   * Absent reads as primaryLogoAssetId — which stays written (to the dark
+   * primary, falling back to light) so BrandContext.primaryLogoUrl and
+   * onboarding keep working unchanged. */
+  primaryLogoDarkAssetId?: string;
+  primaryLogoLightAssetId?: string;
   /** Enforcement (Settings → Workspace), read by resolveFieldStyle. When
    * true, a field's own values win over its bound type style — the style
    * fills gaps only. Absent = false: bound properties stay locked. */
@@ -117,13 +127,26 @@ export interface FontAssetMetadata {
   }>;
 }
 
+export interface LogoAssetMetadata {
+  /** Surfaces the logo shows on (D12). Absent reads as both — see
+   * logoSurfaces in kitOps. */
+  surfaces?: Array<"dark" | "light">;
+}
+
+export interface ImageAssetMetadata {
+  /** Natural pixel size, recorded on upload for the meta line. Older
+   * assets lack them and are read from the loaded image instead. */
+  width?: number;
+  height?: number;
+}
+
 export interface BrandAsset {
   id: string;
   companyId: string;
   kind: AssetKind;
   name: string;
   url: string; // resolved public URL (storage_path is an implementation detail)
-  metadata: FontAssetMetadata;
+  metadata: FontAssetMetadata & LogoAssetMetadata & ImageAssetMetadata;
   createdAt: string;
 }
 

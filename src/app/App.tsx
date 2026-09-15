@@ -194,7 +194,8 @@ function Screen() {
               reflowParam={route.reflow ?? null}
             />,
           )}
-        {route.name === "brandStudio" && adminOnly(<BrandStudio category={route.category} />)}
+        {route.name === "brandStudio" &&
+          adminOnly(<BrandStudio category={route.category} surface={route.surface} />)}
         {route.name === "dashboard" && adminOnly(<Dashboard />)}
         {route.name === "people" && adminOnly(<PeopleAdmin />)}
         {/* NOT adminOnly: members reach Account (theme, sign out). The page

@@ -141,6 +141,28 @@ export function parseColor(input: string, format: ColorFormat): Pick<RGBA, "r" |
   return { r: (rn + m) * 255, g: (gn + m) * 255, b: (bn + m) * 255 };
 }
 
+/** Forgiving colour entry for Brand Studio's value field: #RGB, #RRGGBB,
+ * RRGGBB, or rgb(r, g, b) with any spacing, normalised to "#RRGGBB".
+ * Anything else — out-of-range channels included — is null; the caller
+ * shows its error and keeps the previous value. */
+export function parseColorInput(input: string): string | null {
+  const t = input.trim();
+  const short = /^#?([0-9a-fA-F]{3})$/.exec(t);
+  if (short) {
+    const [r, g, b] = short[1];
+    return `#${r}${r}${g}${g}${b}${b}`.toUpperCase();
+  }
+  const six = /^#?([0-9a-fA-F]{6})$/.exec(t);
+  if (six) return `#${six[1].toUpperCase()}`;
+  const rgb = /^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/i.exec(t);
+  if (rgb) {
+    const [r, g, b] = [rgb[1], rgb[2], rgb[3]].map(Number);
+    if (r > 255 || g > 255 || b > 255) return null;
+    return toHex({ r, g, b, a: 1 });
+  }
+  return null;
+}
+
 /** Relative luminance (WCAG 2.x) of an opaque colour. */
 export function luminance({ r, g, b }: Pick<RGBA, "r" | "g" | "b">): number {
   const f = (c: number) => {

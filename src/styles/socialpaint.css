@@ -10,7 +10,7 @@
    Purple Kara #9F60FF, Fire #FF4229 — over the neutrals
    Ink #272727, White #FFFFFF, and Canvas #F1F1F1. Two neutrals sit
    outside the brand palette by design: #070708, the dark-mode canvas, and
-   #18191A, the dark-mode lifted surface that sits on it. Never treat either
+   #161617, the dark-mode lifted surface that sits on it. Never treat either
    as a brand colour or expose them on a brand-facing surface.
 
    THE GOVERNING RULE: brand colours carry no meaning. They are identity,
@@ -220,6 +220,9 @@ html {
   --type-data-track: 0;
   --type-composer-size: 16px; /* the Generate brief — one step above body, per Figma 72:27 */
   --type-composer-lh: 1.45;
+  /* Mono tag glyphs (Brand Studio two-step frames): the one size below the
+     10px eyebrow, and only ever inside .sp-tag--solid and its variants. */
+  --type-tag-size: 8px;
 
   /* Spacing — 4px base, nothing off the scale. */
   --space-3xs: 4px;
@@ -323,11 +326,12 @@ html {
 
 /* ── Semantic: dark ─────────────────────────────────────────────────────────
    The primary mode. #0B0B0C is the floor (lifted from #070708, 2026-09 Brand
-   Templates frames) and #18191A is THE lifted surface for chrome and anything
-   that floats or takes input; CONTENT cards sit back toward the ground on
-   --bg-card (2026-09, at CJ's direction) — elevation is surface colour, never
-   shadow. One ladder: #0B0B0C canvas → #161617 card → #18191A surface/raised
-   → #2a2a2a hover → #323232 border-on-surface. */
+   Templates frames) and #161617 is THE lifted surface — chrome, anything
+   that floats or takes input, and content cards all share it since the
+   two-step Brand Studio frames (2026-09-15, at CJ's direction; chrome sat
+   one rung higher at #18191A before that). Elevation is surface colour plus
+   the lit edge, never shadow. One ladder: #0B0B0C canvas → #161617
+   card/surface/raised → #2a2a2a hover → #323232 border-on-surface. */
 [data-theme="dark"] {
   --bg-canvas: #0b0b0c;
   /* Build-picker tiles (Figma 221:321). Four icon tiles, each a flat
@@ -345,18 +349,24 @@ html {
   --start-tile-canva: #00ebff;
   --start-glyph-canva: #071b25;
   --start-input-bg: var(--chip-raised);
-  --bg-surface: #18191a;
-  /* THE content-card fill (2026-09; lifted from the frames' #131314 on
+  --bg-surface: #161617;
+  /* THE lifted fill (2026-09; lifted from the frames' #131314 on
      2026-09-15, at CJ's direction — "slightly lighter"). No rung on the
      primitive ladder — a semantic bound to a literal for now; flagged for
-     a primitive rung rather than inventing one here. Cards sit back
-     toward the ground at this value, still clearly under the #18191A
-     chrome, so the rail keeps reading lighter than the cards beside it.
-     All text tokens stay past AA on it (primary 16.0, muted 5.7). */
+     a primitive rung rather than inventing one here. The two-step Brand
+     Studio frames flattened chrome onto this same value (2026-09-15):
+     the rail, inputs, and menus no longer read lighter than the cards
+     beside them — surface, raised, and card are one rung, and separation
+     is the lit edge's job. All text tokens stay past AA on it
+     (primary 16.0, muted 5.7). */
   --bg-card: #161617;
-  --bg-raised: #18191a;
+  --bg-raised: #161617;
   --bg-hover: #2a2a2a;
   --bg-plate: #ffffff; /* imagery plate, never inverts */
+  /* Tag fill and glyph (two-step frames' 25% white wash). On-media and
+     off variants live in the component tier. */
+  --tag-bg: rgba(241, 241, 241, 0.25);
+  --tag-fg: #ffffff;
   --border: rgba(241, 241, 241, 0.1); /* decorative separation only */
   --border-strong: rgba(241, 241, 241, 0.2);
   /* The lit edge (2026-09-02, at Chris's direction): light from above.
@@ -371,6 +381,11 @@ html {
   --edge-rgb: 255 255 255;
   --edge-alpha: 0.2;
   --edge-alpha-hover: 0.25;
+  /* Content cards' rest alpha (D7, two-step frames): .sp-card consumes
+     this via --edge-alpha; the sidebar rail and other chrome keep the
+     bare --edge-alpha above. Same value today — the rung exists so the
+     card edge can move without dragging the chrome with it. */
+  --edge-alpha-card: 0.2;
   --edge-bottom-ratio: 0.4;
 
   --text-primary: #f1f1f1;
@@ -490,6 +505,10 @@ html {
   --bg-raised: #e8e8e8;
   --bg-hover: #e2e2e2;
   --bg-plate: #ffffff;
+  /* Tag fill and glyph. PROPOSED (N6) — the two-step frames are dark only;
+     an ink wash mirrors dark's white wash until CJ confirms. */
+  --tag-bg: rgba(39, 39, 39, 0.12);
+  --tag-fg: #272727;
   --border: rgba(39, 39, 39, 0.08);
   --border-strong: rgba(39, 39, 39, 0.16);
   /* The lit edge, light theme. White on a white card is invisible, so the
@@ -501,6 +520,12 @@ html {
   --edge-rgb: 39 39 39;
   --edge-alpha: 0.15;
   --edge-alpha-hover: 0.25;
+  /* Light cards keep the shared edge exactly — the card rung is a dark
+     idea (see the dark block). A literal, not var(--edge-alpha): .sp-card
+     assigns --edge-alpha FROM this token, and a var() back at it on the
+     same element would be a cycle that invalidates both. Keep in step
+     with --edge-alpha above. */
+  --edge-alpha-card: 0.15;
   --edge-bottom-ratio: 0.4;
 
   --text-primary: #272727;
@@ -630,6 +655,32 @@ html {
   --sb-fg: var(--text-secondary);
   --sb-fg-active: var(--text-primary);
   --sb-active-bg: var(--accent-wash);
+
+  /* Tags (Brand Studio two-step frames). Solid is the one tag look;
+     on-media is the SAME tag when it sits on imagery or an arbitrary
+     tenant colour — a fixed deep scrim, because the designed 25%-white
+     wash fails against bright swatches (1.3:1 on Slime); its token exists
+     so CJ can revert to the wash in one line. The off pair outlines an
+     unselected option inside editors only. Theme-facing --tag-bg/--tag-fg
+     live in the theme blocks. */
+  --tag-bg-on-media: rgba(11, 11, 12, 0.72);
+  --tag-fg-on-media: #ffffff;
+  --tag-border-off: var(--border-strong);
+
+  /* Thumbnail edit affordance (D8): the hover/focus overlay a thumbnail
+     dims under, and the centred chip that carries the pencil. One scrim
+     in both themes — it sits on imagery, which never inverts. */
+  --media-overlay: rgba(11, 11, 12, 0.56);
+  --edit-chip-bg: var(--bg-surface);
+  --edit-chip-border: var(--border-strong);
+  --edit-chip-size: 40px;
+  --edit-chip-size-sm: 32px;
+
+  /* Logo plates (D12): fixed grounds a logo is proofed against — dark
+     artwork on the light plate, light artwork on the dark — never
+     inverting with the theme, like --bg-plate. */
+  --plate-dark: #0b0b0c;
+  --plate-light: #f9f9f8;
 }
 
 /* One pair replaces the old per-theme values: the primary button is the neutral
@@ -1010,11 +1061,14 @@ optgroup {
   --edge-lit: inset 0 1px 0 var(--edge-color), inset 0 -1px 0 var(--edge-color-bottom);
 }
 .sp-card {
-  /* Content sits back toward the ground on --bg-card (#161617 dark; light
-     resolves it to --bg-surface, unchanged). Chrome — the rail, inputs,
-     menus, modals, drawers, builder bars — stays lifted on --bg-surface.
-     That ordering is the 2026-09 dark frames': the rail reads LIGHTER
-     than the cards beside it. */
+  /* Cards fill with --bg-card (#161617 dark; light resolves it to
+     --bg-surface, unchanged). Since the two-step Brand Studio frames
+     (2026-09-15) chrome — the rail, inputs, menus, modals, drawers,
+     builder bars — sits on the SAME rung; the lit edge alone separates a
+     card from the ground and from the chrome beside it. Content cards
+     read their edge through --edge-alpha-card, a per-theme rung the rail
+     does not take. */
+  --edge-alpha: var(--edge-alpha-card);
   background: var(--bg-card);
   border: 1px solid transparent;
   border-radius: var(--radius-card);
@@ -1948,149 +2002,514 @@ optgroup {
   color: var(--text-primary);
 }
 
-/* Disclosure card — a category that opens in place instead of navigating.
-   The whole header is the toggle: eyebrow, title, an at-a-glance summary of
-   what the section is currently set to, and a chevron. The body opens with
-   the 0fr→1fr grid trick so the panel measures its own content and no one
-   has to hard-code a height. Soft card (20px) outside, crisp controls (5px)
-   inside — the two radii never meet in the middle. */
-.sp-card--disclosure {
-  overflow: hidden;
-}
-.sp-disclosure__toggle {
-  display: flex;
-  width: 100%;
-  box-sizing: border-box;
-  align-items: center;
+/* Brand Studio, two-step (2026-09-15 frames): an overview of lifted
+   category cards, one detail page per category. The accordion, the sticky
+   preview rail, and the checklist are gone with it.
+
+   The overview grid: three even columns; two under --bp-lg (1024), one
+   under --bp-sm (480) — media queries can't read the breakpoint tokens,
+   so the values are restated here. */
+.sp-brand-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
-  text-align: left;
+}
+@media (max-width: 1023.98px) {
+  .sp-brand-overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 479.98px) {
+  .sp-brand-overview-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* A category card: cover on top, name and count below. A REAL link — the
+   edit affordance is the overlay on the cover (D8): no focus ring, the
+   overlay itself answers keyboard focus. */
+.sp-overview-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  /* Figma draws 14 at the bottom; rounded to 16 (--space-sm). */
+  padding: var(--space-2xs) var(--space-2xs) var(--space-sm);
   cursor: pointer;
-  transition: background var(--dur-state) var(--ease);
 }
-.sp-disclosure__toggle:hover {
-  background: var(--bg-hover);
-}
-.sp-disclosure__toggle:focus-visible {
+.sp-overview-card:focus-visible {
   outline: none;
-  box-shadow: var(--focus-ring-tight);
 }
-.sp-disclosure__heading {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-.sp-disclosure__glance {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-  font-size: var(--type-label-size);
-  color: var(--text-secondary);
-  white-space: nowrap;
-}
-.sp-disclosure__chevron {
-  flex-shrink: 0;
-  color: var(--text-muted);
-  transition: transform var(--dur-panel) var(--ease);
-}
-.sp-card--disclosure[data-open="true"] .sp-disclosure__chevron {
-  transform: rotate(180deg);
-}
-.sp-disclosure__panel {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows var(--dur-panel) var(--ease);
-}
-.sp-card--disclosure[data-open="true"] .sp-disclosure__panel {
-  grid-template-rows: 1fr;
-}
-/* The body stays mounted so both directions can animate (and so an upload
-   survives being collapsed). `visibility` is what actually takes a shut
-   panel out of tab order and off the AT tree — held until the collapse
-   finishes on the way closed, dropped instantly on the way open. */
-.sp-disclosure__clip {
+.sp-overview-card__cover {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  border-radius: var(--radius-media);
+  border: 1px solid var(--border);
   overflow: hidden;
-  min-height: 0;
-  visibility: hidden;
-  transition: visibility 0s linear var(--dur-panel);
 }
-.sp-card--disclosure[data-open="true"] .sp-disclosure__clip {
-  visibility: visible;
-  transition-delay: 0s;
+.sp-overview-card__cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
-.sp-disclosure__body {
-  border-top: 1px solid var(--border);
-  padding: var(--space-md);
-}
-@media (prefers-reduced-motion: reduce) {
-  .sp-disclosure__panel,
-  .sp-disclosure__chevron,
-  .sp-disclosure__clip {
-    transition: none;
-  }
-}
-
-/* Brand Studio — categories left, the assembled preview and the readiness
-   rail right. The rail drops under the stack before it would get too narrow
-   to show a post at a believable size. */
-.sp-brand-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-lg);
-  align-items: start;
-}
-.sp-brand-rail {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-  /* Stacked under the categories, the rail keeps a rail's width — a post
-     preview blown out to the full column stops reading as a post. */
-  max-width: 420px;
-}
-@media (min-width: 1100px) {
-  .sp-brand-layout {
-    grid-template-columns: minmax(0, 1fr) 360px;
-  }
-  .sp-brand-rail {
-    max-width: none;
-    position: sticky;
-    top: var(--space-lg);
-  }
-}
-
-/* One readiness row: state dot, label, count — and the whole row is the way
-   to the section that changes it. */
-.sp-checklist-row {
+.sp-overview-card__label-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  margin: 0 -10px;
-  border-radius: var(--radius-control);
-  font-size: var(--type-label-size);
-  color: var(--text-secondary);
-  text-align: left;
-  cursor: pointer;
-  transition:
-    background var(--dur-state) var(--ease),
-    color var(--dur-state) var(--ease);
+  justify-content: space-between;
+  gap: var(--space-2xs);
+  padding: 0 var(--space-3xs);
 }
-.sp-checklist-row:hover {
-  background: var(--bg-hover);
+.sp-overview-card__name {
+  font-family: var(--font-ui);
+  font-weight: var(--weight-ui);
+  font-size: var(--type-label-size);
   color: var(--text-primary);
 }
-.sp-checklist-row:focus-visible {
+
+/* The setup strip: readiness over five 4px bars, and the page's one
+   primary action. */
+.sp-setup-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  margin-bottom: var(--space-md);
+}
+.sp-setup-strip__bars {
+  display: flex;
+  gap: 4px;
+  margin-top: var(--space-2xs);
+}
+.sp-setup-strip__bar {
+  width: 32px;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-hover);
+}
+.sp-setup-strip__bar[data-ready="true"] {
+  background: var(--text-primary);
+}
+
+/* ── Colors detail ──────────────────────────────────────────────────────────
+   Six even columns of color cards; 4 under --bp-xl, 3 under --bp-lg, 2
+   under --bp-sm. align-items: start so a card that opens for editing can
+   grow without stretching its row. */
+.sp-colors-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--space-xs);
+  align-items: start;
+}
+@media (max-width: 1279.98px) {
+  .sp-colors-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+@media (max-width: 1023.98px) {
+  .sp-colors-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 479.98px) {
+  .sp-colors-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* A color card at rest: the swatch block and a name/value row. A button —
+   the edit affordance is the block's overlay (D8), no focus ring. The
+   swatch hex arrives as the --swatch custom property, set inline; the
+   rule keeps hex out of the markup's style attributes otherwise. */
+.sp-color-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: var(--space-2xs);
+  /* Figma draws 10 for padding and gap; rounded to 8 (--space-2xs), with
+     12 (--space-xs) under the label row. */
+  padding: var(--space-2xs) var(--space-2xs) var(--space-xs);
+  border-radius: var(--radius-media);
+  text-align: left;
+  cursor: pointer;
+}
+.sp-color-card:focus-visible {
+  outline: none;
+}
+.sp-color-card__block {
+  position: relative;
+  height: 88px;
+  border-radius: var(--radius-media-inner);
+  border: 1px solid var(--border);
+  background: var(--swatch);
+}
+.sp-color-card__role {
+  position: absolute;
+  /* Figma insets the tag 6; rounded to 8 (--space-2xs). */
+  top: var(--space-2xs);
+  left: var(--space-2xs);
+}
+.sp-color-card__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2xs);
+  padding: 0 var(--space-3xs);
+}
+.sp-color-card__name {
+  font-family: var(--font-ui);
+  font-weight: var(--weight-ui);
+  font-size: var(--type-label-size);
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The same card, editing in place: chrome surface, fields under the
+   block. One card at a time (useInPlaceEdit). */
+.sp-color-editing {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  padding: var(--space-2xs) var(--space-2xs) var(--space-xs);
+  border-radius: var(--radius-media);
+  background: var(--bg-surface);
+}
+.sp-input--mini {
+  height: 28px;
+  padding: 2px var(--space-2xs);
+  font-size: var(--type-label-size);
+}
+.sp-contrast-line {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* ── Logos detail ───────────────────────────────────────────────────────────
+   Surface filter, then four columns of logo cards; 3 under --bp-lg, 2
+   under --bp-md. */
+.sp-logo-toolbar {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--border-strong);
+  border-radius: calc(var(--radius-control) + 2px);
+  margin-bottom: var(--space-sm);
+}
+.sp-logo-toolbar__seg {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 var(--space-xs);
+  border-radius: var(--radius-control);
+  font-family: var(--font-ui);
+  font-weight: var(--weight-ui);
+  font-size: var(--type-label-size);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.sp-logo-toolbar__seg[aria-checked="true"] {
+  background: var(--fill-action);
+  color: var(--text-on-action);
+}
+.sp-logo-toolbar__seg:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring-tight);
+}
+.sp-logos-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-sm);
+  align-items: start;
+}
+@media (max-width: 1023.98px) {
+  .sp-logos-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 767.98px) {
+  .sp-logos-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* A logo card: the proof plate (fixed grounds, never inverting — one half
+   per surface the logo shows on), name, tags. */
+.sp-logo-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: var(--space-2xs);
+  padding: var(--space-2xs) var(--space-2xs) var(--space-xs);
+  border-radius: var(--radius-media);
+  text-align: left;
+  cursor: pointer;
+}
+.sp-logo-card:focus-visible {
+  outline: none;
+}
+.sp-logo-card__plate {
+  position: relative;
+  display: flex;
+  height: 132px;
+  border-radius: var(--radius-media-inner);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.sp-logo-card__half {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+.sp-logo-card__half[data-plate="dark"] {
+  background: var(--plate-dark);
+}
+.sp-logo-card__half[data-plate="light"] {
+  background: var(--plate-light);
+}
+.sp-logo-card__half img {
+  max-width: 70%;
+  max-height: 60%;
+  object-fit: contain;
+}
+.sp-logo-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3xs);
+  padding: 0 var(--space-3xs);
+}
+
+/* The same card, editing in place. */
+.sp-logo-editing {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  padding: var(--space-2xs) var(--space-2xs) var(--space-xs);
+  border-radius: var(--radius-media);
+  background: var(--bg-surface);
+}
+
+/* ── Fonts and type styles details ──────────────────────────────────────────
+   One full-width card holding a list of rows; the row menu's trigger shows
+   on the row's hover/focus (.sp-menu-row). */
+.sp-list-card {
+  /* Figma draws 20; rounded to 24 (--space-md). */
+  padding: var(--space-md);
+  border-radius: var(--radius-card);
+}
+.sp-font-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+  padding-block: var(--space-sm);
+}
+.sp-font-row + .sp-font-row,
+.sp-font-row + .sp-style-row,
+.sp-style-row + .sp-style-row,
+.sp-style-row + .sp-font-row {
+  border-top: 1px solid var(--border);
+}
+.sp-font-row__aa {
+  width: 48px;
+  flex-shrink: 0;
+  font-size: 36px;
+  line-height: 1;
+  color: var(--text-primary);
+}
+.sp-font-row__id {
+  width: 220px;
+  min-width: 0;
+  flex-shrink: 0;
+}
+.sp-font-row__specimen {
+  flex: 1;
+  min-width: 160px;
+  font-size: 18px;
+  color: var(--text-secondary);
+}
+.sp-font-row__tags {
+  display: flex;
+  gap: var(--space-3xs);
+  flex-shrink: 0;
+}
+
+/* ── Images detail ──────────────────────────────────────────────────────────
+   Empty: one full-width drop zone. With files: the logos grid geometry,
+   but the card keeps a row menu (D9) instead of an overlay. */
+.sp-images-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2xs);
+  height: 320px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-card);
+  text-align: center;
+  padding: var(--space-md);
+}
+.sp-images-empty[data-active="true"] {
+  border-color: var(--text-secondary);
+}
+.sp-image-card__plate {
+  position: relative;
+  height: 132px;
+  border-radius: var(--radius-media-inner);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  background: var(--bg-hover);
+}
+.sp-image-card__plate img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ── Import detail ──────────────────────────────────────────────────────────
+   Two source cards side by side from --bp-lg, stacked below; status panels
+   on the lifted surface. */
+.sp-import-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-md);
+}
+@media (min-width: 1024px) {
+  .sp-import-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.sp-import-leg {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+}
+.sp-import-status {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  padding: var(--space-md);
+  margin-top: var(--space-md);
+  background: var(--bg-surface);
+}
+
+/* A type style row: specimen, face line, the three editable values. */
+.sp-style-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-md);
+  /* Figma draws 18; rounded to 24 (--space-md), as directed. */
+  padding-block: var(--space-md);
+}
+.sp-style-row__spec {
+  width: 240px;
+  flex-shrink: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+.sp-style-row__face {
+  flex: 1;
+  min-width: 120px;
+  font-size: var(--type-label-size);
+  color: var(--text-secondary);
+}
+.sp-style-row__values {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3xs);
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--type-label-size);
+  color: var(--text-secondary);
+}
+.sp-style-row__value {
+  min-height: 24px;
+  padding: 2px var(--space-3xs);
+  font-family: var(--font-mono);
+  font-size: var(--type-label-size);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.sp-style-row__value[data-auto] {
+  color: var(--text-muted);
+}
+@media (hover: hover) {
+  .sp-style-row:hover .sp-style-row__value {
+    text-decoration: underline;
+  }
+}
+.sp-style-row__value:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-tight);
+  border-radius: var(--radius-control);
+}
+.sp-style-value-input {
+  width: 64px;
+  height: 26px;
+  padding: 0 var(--space-3xs);
+  font-family: var(--font-mono);
+  font-size: var(--type-label-size);
+}
+
+/* The inline face picker ("Change face…"): a searchable combobox that
+   expands under the row. */
+.sp-face-picker {
+  width: 100%;
+  padding: var(--space-2xs) 0 var(--space-sm);
+}
+.sp-face-picker__list {
+  max-height: 240px;
+  overflow-y: auto;
+  margin-top: var(--space-2xs);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+}
+.sp-face-picker__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  width: 100%;
+  min-height: 32px;
+  padding: 0 var(--space-xs);
+  text-align: left;
+  font-family: var(--font-ui);
+  font-weight: var(--weight-ui);
+  font-size: var(--type-label-size);
+  color: var(--text-primary);
+}
+.sp-face-picker__option[data-active="true"] {
+  background: var(--bg-hover);
+}
+
+/* The roles summary under the grid: "PRIMARY Slime" pairs, roles nobody
+   holds omitted. */
+.sp-roles-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs) var(--space-md);
+  margin-top: var(--space-md);
+}
+.sp-roles-summary__item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2xs);
 }
 
 /* Settings & Admin: persistent section rail + content pane. Below 900px the
-   rail collapses to a horizontal scroller above the content — same
-   one-column-first shape as .sp-brand-layout, with the rail leading because
-   it is navigation, not a preview. */
+   rail collapses to a horizontal scroller above the content, with the rail
+   leading because it is navigation, not a preview. */
 .sp-settings-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -2915,6 +3334,206 @@ input[type="radio"] {
   line-height: 1.5;
   color: var(--text-secondary);
   white-space: nowrap;
+}
+
+/* ── Tags, two-step Brand Studio (D13) ──────────────────────────────────────
+   ONE tag look everywhere in the studio: a 14px mono pill. .sp-tag above is
+   the template-card tag and keeps its consumers; these are the studio's.
+   --solid is the tag at rest; --on-media swaps to the fixed deep scrim for
+   a tag sitting on imagery or an arbitrary tenant colour (see the token
+   note); --off outlines an unselected option inside editors only. */
+.sp-tag--solid {
+  display: inline-flex;
+  align-items: center;
+  height: 14px;
+  padding: 2px 6px;
+  border-radius: var(--radius-pill);
+  background: var(--tag-bg);
+  color: var(--tag-fg);
+  font-family: var(--font-mono);
+  font-size: var(--type-tag-size);
+  line-height: 1.25;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.sp-tag--on-media {
+  background: var(--tag-bg-on-media);
+  color: var(--tag-fg-on-media);
+}
+.sp-tag--off {
+  background: transparent;
+  border: 1px solid var(--tag-border-off);
+  color: var(--text-muted);
+}
+
+/* A tag acting as a radio or checkbox inside an editor (TagChoice). The
+   pill is 14px; the ::after pseudo grows the hit area to 24px without
+   moving anything. Checked state swaps --off for --solid on the child. */
+.sp-tag-choice {
+  position: relative;
+  display: inline-flex;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.sp-tag-choice::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+}
+.sp-tag-choice:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+.sp-tag-choice:focus-visible {
+  outline: none;
+  border-radius: var(--radius-pill);
+  box-shadow: var(--focus-ring-tight);
+}
+
+/* ── Thumbnail edit affordance (D8) ─────────────────────────────────────────
+   A dark scrim with a centred pencil chip over any thumbnail — overview
+   covers, colour blocks, logo plates. The PARENT carries .sp-has-overlay
+   (and position: relative); the overlay appears on the parent's hover only
+   where hover exists, and always on its keyboard focus. No transition, by
+   design — the affordance snaps (D8/invariant 7). aria-hidden: the parent
+   button's accessible name says "Edit …". */
+.sp-edit-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--media-overlay);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+@media (hover: hover) {
+  .sp-has-overlay:hover .sp-edit-overlay {
+    display: flex;
+  }
+}
+.sp-has-overlay:focus-visible .sp-edit-overlay {
+  display: flex;
+}
+.sp-edit-overlay__chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--edit-chip-size);
+  height: var(--edit-chip-size);
+  border-radius: var(--radius-pill);
+  background: var(--edit-chip-bg);
+  border: 1px solid var(--edit-chip-border);
+  color: var(--text-primary);
+}
+.sp-edit-overlay__chip--sm {
+  width: var(--edit-chip-size-sm);
+  height: var(--edit-chip-size-sm);
+}
+
+/* ── Row menu (D9) ──────────────────────────────────────────────────────────
+   The 32px "More actions" trigger on rows without a thumbnail, and its
+   floating menu. The trigger shows on the ROW's hover (hover-capable
+   devices) and focus-within, and is always visible where hover doesn't
+   exist; the row carries .sp-menu-row. */
+@media (hover: hover) {
+  .sp-menu-row .sp-row-menu-trigger {
+    visibility: hidden;
+  }
+  .sp-menu-row:hover .sp-row-menu-trigger,
+  .sp-menu-row:focus-within .sp-row-menu-trigger,
+  .sp-menu-row .sp-row-menu-trigger[data-open="true"] {
+    visibility: visible;
+  }
+}
+.sp-row-menu {
+  position: fixed;
+  z-index: 60;
+  min-width: 180px;
+  padding: var(--space-3xs) 0;
+  overflow-y: auto;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-media);
+}
+.sp-row-menu__group-label {
+  display: block;
+  padding: var(--space-3xs) var(--space-xs) 2px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.sp-row-menu__divider {
+  height: 1px;
+  margin: var(--space-3xs) 0;
+  background: var(--border);
+}
+.sp-row-menu__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  width: 100%;
+  height: 32px;
+  padding: 0 var(--space-xs);
+  text-align: left;
+  font-family: var(--font-ui);
+  font-weight: var(--weight-ui);
+  font-size: var(--type-label-size);
+  color: var(--text-primary);
+}
+.sp-row-menu__item:focus-visible {
+  outline: none;
+}
+.sp-row-menu__item[data-active="true"]:not(:disabled) {
+  background: var(--bg-hover);
+}
+.sp-row-menu__item[data-destructive] {
+  color: var(--state-danger);
+}
+.sp-row-menu__item:disabled {
+  color: var(--text-disabled);
+}
+
+/* ── Add slot (D10) ─────────────────────────────────────────────────────────
+   The dashed "+ Add" tile that ends every collection. */
+.sp-add-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3xs);
+  width: 100%;
+  padding: var(--space-sm);
+  background: none;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-media);
+  cursor: pointer;
+}
+.sp-add-slot[data-active="true"] {
+  border-color: var(--text-secondary);
+}
+.sp-add-slot:focus-visible,
+.sp-add-slot:focus-within {
+  outline: none;
+  box-shadow: var(--focus-ring-tight);
+}
+.sp-add-slot__label {
+  font-family: var(--font-ui);
+  font-weight: var(--weight-ui);
+  font-size: var(--type-label-size);
+  color: var(--text-secondary);
+}
+.sp-add-slot__detail {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
 
 /* Hover lift. The DS bans shadows, so the border carries the elevation the
@@ -4624,6 +5243,19 @@ input[type="radio"] {
 }
 .sp-btn-ghost:hover:not(:disabled) {
   background: color-mix(in srgb, var(--text-primary) 8%, transparent);
+  color: var(--text-primary);
+}
+
+/* Tertiary — the borderless text button (Button/Tertiary, Figma 41:2).
+   Below ghost: no edge, secondary ink, for the quiet third action on a
+   surface (Dismiss, Remove, Undo import). */
+.sp-btn-tertiary {
+  background: none;
+  border-color: transparent;
+  color: var(--text-secondary);
+}
+.sp-btn-tertiary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
   color: var(--text-primary);
 }
 

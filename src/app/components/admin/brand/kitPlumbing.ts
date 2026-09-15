@@ -24,6 +24,11 @@ export function kitShape(kit: BrandKit | null): KitShape {
     headingFont: kit?.headingFont ?? { source: "google", family: "Montserrat" },
     bodyFont: kit?.bodyFont ?? { source: "google", family: "Inter" },
     primaryLogoAssetId: kit?.primaryLogoAssetId,
+    // Per-surface primaries (D12) ride every save so autosave never drops
+    // them; a kit saved before they existed reads both from the one
+    // primary it had.
+    primaryLogoDarkAssetId: kit?.primaryLogoDarkAssetId ?? kit?.primaryLogoAssetId,
+    primaryLogoLightAssetId: kit?.primaryLogoLightAssetId ?? kit?.primaryLogoAssetId,
     // Enforcement lives in Settings, not the studio — but the studio's saves
     // write the whole kit, so dropping these here would silently reset them.
     allowStyleOverride: kit?.allowStyleOverride ?? false,

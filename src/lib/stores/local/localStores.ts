@@ -264,6 +264,26 @@ export class LocalBrandAssetStore implements BrandAssetStore {
     mutate((db) => db.brandAssets.push(asset));
     return asset;
   }
+  async update(
+    id: string,
+    patch: { name?: string; metadata?: BrandAsset["metadata"] },
+  ): Promise<BrandAsset> {
+    return mutate((db) => {
+      const assets = db.brandAssets as BrandAsset[];
+      const i = assets.findIndex((a) => a.id === id);
+      if (i < 0) throw new Error("Asset not found.");
+      const next: BrandAsset = {
+        ...assets[i],
+        ...(patch.name !== undefined ? { name: patch.name } : {}),
+        // Merge like the Supabase store — see the interface note.
+        ...(patch.metadata !== undefined
+          ? { metadata: { ...assets[i].metadata, ...patch.metadata } }
+          : {}),
+      };
+      assets[i] = next;
+      return next;
+    });
+  }
   async remove(id: string): Promise<void> {
     mutate((db) => {
       db.brandAssets = (db.brandAssets as BrandAsset[]).filter((a) => a.id !== id);

@@ -24,7 +24,13 @@ export class SupabaseBrandKitStore implements BrandKitStore {
       guidelines: kit.guidelines,
       heading_font: kit.headingFont ?? null,
       body_font: kit.bodyFont ?? null,
-      primary_logo_asset_id: kit.primaryLogoAssetId ?? null,
+      // The legacy column stays written — the dark primary, falling back
+      // to light, then to whatever the caller still sets directly
+      // (onboarding) — so primaryLogoUrl and the public path read on.
+      primary_logo_asset_id:
+        kit.primaryLogoDarkAssetId ?? kit.primaryLogoLightAssetId ?? kit.primaryLogoAssetId ?? null,
+      primary_logo_dark_asset_id: kit.primaryLogoDarkAssetId ?? null,
+      primary_logo_light_asset_id: kit.primaryLogoLightAssetId ?? null,
       allow_style_override: kit.allowStyleOverride ?? false,
       allow_off_palette: kit.allowOffPalette ?? true,
       is_active: true,
@@ -60,6 +66,36 @@ export class SupabaseBrandAssetStore implements BrandAssetStore {
     const { data, error } = await supabase()
       .from("brand_assets")
       .insert({ company_id: companyId, kind, name: file.name, storage_path: path, metadata })
+      .select()
+      .single();
+    if (error) throw error;
+    return toBrandAsset(data as BrandAssetRow);
+  }
+
+  async update(
+    id: string,
+    patch: { name?: string; metadata?: BrandAsset["metadata"] },
+  ): Promise<BrandAsset> {
+    // Merge, don't replace: metadata carries font, logo, AND image keys —
+    // a surfaces write must leave a recorded family or size alone.
+    const row: Record<string, unknown> = {};
+    if (patch.name !== undefined) row.name = patch.name;
+    if (patch.metadata !== undefined) {
+      const { data: current, error: readError } = await supabase()
+        .from("brand_assets")
+        .select("metadata")
+        .eq("id", id)
+        .single();
+      if (readError) throw readError;
+      row.metadata = {
+        ...(current as { metadata: BrandAsset["metadata"] }).metadata,
+        ...patch.metadata,
+      };
+    }
+    const { data, error } = await supabase()
+      .from("brand_assets")
+      .update(row)
+      .eq("id", id)
       .select()
       .single();
     if (error) throw error;
