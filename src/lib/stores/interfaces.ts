@@ -113,6 +113,13 @@ export interface BrandAssetStore {
     file: File,
     metadata?: BrandAsset["metadata"],
   ): Promise<BrandAsset>;
+  /** Rename and metadata edits (logo surfaces, image dimensions). The
+   * metadata patch MERGES into what is stored — a surfaces write must not
+   * drop a font's family or an image's recorded size. */
+  update(
+    id: string,
+    patch: { name?: string; metadata?: BrandAsset["metadata"] },
+  ): Promise<BrandAsset>;
   remove(id: string): Promise<void>;
 }
 

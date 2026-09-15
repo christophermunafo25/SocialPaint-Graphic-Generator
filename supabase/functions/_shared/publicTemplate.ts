@@ -257,6 +257,8 @@ export function buildPublicPayload(input: BuildInput): PublicPayload {
       heading_font: null,
       body_font: null,
       primary_logo_asset_id: null,
+      primary_logo_dark_asset_id: null,
+      primary_logo_light_asset_id: null,
     },
     fontAssets: fontAssets
       .filter((asset) => families.has(fontAssetFamily(asset as unknown as FontAssetLike)))

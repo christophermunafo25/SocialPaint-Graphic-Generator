@@ -53,6 +53,8 @@ export interface BrandKitRow {
   heading_font: FontRef | null;
   body_font: FontRef | null;
   primary_logo_asset_id: string | null;
+  primary_logo_dark_asset_id: string | null;
+  primary_logo_light_asset_id: string | null;
   allow_style_override: boolean | null;
   allow_off_palette: boolean | null;
 }
@@ -66,6 +68,8 @@ export const toBrandKit = (r: BrandKitRow): BrandKit => ({
   headingFont: r.heading_font ?? undefined,
   bodyFont: r.body_font ?? undefined,
   primaryLogoAssetId: r.primary_logo_asset_id ?? undefined,
+  primaryLogoDarkAssetId: r.primary_logo_dark_asset_id ?? undefined,
+  primaryLogoLightAssetId: r.primary_logo_light_asset_id ?? undefined,
   allowStyleOverride: r.allow_style_override ?? false,
   allowOffPalette: r.allow_off_palette ?? true,
 });
