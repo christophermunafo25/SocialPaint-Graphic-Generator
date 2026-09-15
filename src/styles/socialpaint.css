@@ -3635,7 +3635,11 @@ input[type="radio"] {
   top: var(--chrome-top);
   z-index: var(--z-sticky);
   background: var(--bg-canvas);
-  padding: 0;
+  /* 12px of block air, CONSTANT rather than pinned-only (2026-09-15, at
+     CJ's direction — the chips read crammed against the viewport edge
+     once the bar pins): a sticky bar that changes height mid-scroll
+     moves the document under the reader's thumb. */
+  padding: var(--space-xs) 0;
   display: flex;
   align-items: center;
   gap: var(--space-xs);
@@ -4204,7 +4208,7 @@ input[type="radio"] {
     margin-inline: var(--space-sm);
   }
   .sp-page--bleed .sp-filterbar {
-    padding: 0 0 0 var(--space-sm);
+    padding: var(--space-xs) 0 var(--space-xs) var(--space-sm);
   }
   .sp-page--bleed .sp-shelf__header {
     padding: 0 var(--space-sm);
