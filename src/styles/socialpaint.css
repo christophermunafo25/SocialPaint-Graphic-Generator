@@ -862,6 +862,8 @@ optgroup {
   font-family: var(--font-ui);
   font-size: 13px;
   letter-spacing: var(--type-body-track);
+  /* 16px on touch widths — see the mobile block at the end of the file:
+     iOS Safari zooms the page on focusing any field under 16px. */
   width: 100%;
   padding: 9px 12px;
   border-radius: var(--radius-control);
@@ -4901,6 +4903,19 @@ input[type="radio"] {
   }
   .sp-page--bleed .sp-shelf__header {
     padding: 0 var(--space-sm);
+  }
+
+  /* iOS Safari zooms the whole page when a focused field's font-size sits
+     under 16px (2026-09-15, at CJ's direction — stop the zoom). Every
+     text-entry control takes the composer step at touch widths: 16px, an
+     existing rung, one over the desktop fields' 13/15. Fields styled
+     inline are caught by the viewport meta's maximum-scale=1 instead
+     (see index.html). */
+  .sp-input,
+  .sp-searchfield__input,
+  select,
+  textarea {
+    font-size: var(--type-composer-size);
   }
 }
 

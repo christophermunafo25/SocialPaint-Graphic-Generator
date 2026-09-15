@@ -2,7 +2,12 @@
 <html lang="en" data-theme="dark" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- maximum-scale=1 suppresses iOS Safari's auto-zoom on focusing a
+         field it considers too small, and since iOS 10 the cap is IGNORED
+         for user pinch gestures, so accessibility zoom still works. The
+         root fix — 16px fields on mobile — lives in socialpaint.css; this
+         catches the stragglers styled inline. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
 
     <!-- The icon tile: the mark knocked out of a Slime ground. Its own
          artwork rather than mark.svg, because a tile holds its own at 16px
