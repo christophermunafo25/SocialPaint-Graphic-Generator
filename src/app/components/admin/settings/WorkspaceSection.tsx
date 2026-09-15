@@ -7,6 +7,7 @@ import { useBrand } from "@/lib/brand/BrandContext";
 import { browserTimeZone, isValidSlug, listTimeZones, toSlug } from "@/lib/companySettings";
 import { ConfirmDialog } from "../../ConfirmDialog";
 import { ErrorState } from "../../ErrorState";
+import { SkeletonLines } from "../../Skeleton";
 import { Switch } from "../../Switch";
 import { kitShape } from "../brand/kitPlumbing";
 import { ControlRow, SettingsCard } from "./settingsShared";
@@ -303,7 +304,7 @@ function CanvasSizesCard({
       description="Sizes offered when someone creates a template. Turn off the ones this workspace never uses; custom sizes stay available in the builder."
     >
       {state.status === "loading" ? (
-        <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>Loading…</p>
+        <SkeletonLines lines={4} label="Loading canvas sizes" />
       ) : state.status === "error" ? (
         <ErrorState
           title="We couldn't load the canvas sizes."

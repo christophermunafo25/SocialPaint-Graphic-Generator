@@ -5,6 +5,7 @@ import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { ConfirmDialog } from "../../ConfirmDialog";
 import { ErrorState } from "../../ErrorState";
+import { SkeletonLines } from "../../Skeleton";
 import { FigmaConnectForm } from "./FigmaConnectForm";
 import { DevBackendNotice, SettingsCard } from "./settingsShared";
 import { markCanvaConnectStarted } from "@/lib/canvaReturn";
@@ -100,7 +101,7 @@ export function IntegrationsSection() {
       )}
 
       {state.status === "loading" ? (
-        <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>Loading…</p>
+        <SkeletonLines lines={3} label="Loading integrations" />
       ) : state.status === "error" ? (
         <ErrorState
           title="We couldn't load your integrations."

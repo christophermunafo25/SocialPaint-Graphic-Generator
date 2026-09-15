@@ -6,6 +6,7 @@ import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useColorScheme, type ColorScheme } from "@/lib/colorScheme";
 import { InlineEdit } from "../../InlineEdit";
+import { SkeletonLines } from "../../Skeleton";
 import { Switch } from "../../Switch";
 import { ControlRow, DevBackendNotice, SettingsCard } from "./settingsShared";
 
@@ -177,9 +178,7 @@ function NotificationRows({
     [userId, version],
   );
   if (state.status === "loading") {
-    return (
-      <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>Loading…</p>
-    );
+    return <SkeletonLines lines={3} label="Loading preferences" />;
   }
   if (state.status === "error") {
     return (

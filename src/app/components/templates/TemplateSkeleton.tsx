@@ -3,7 +3,7 @@ import React from "react";
 /** Skeleton geometry matches a real card — square frame, title line, meta
  *  line — so the layout doesn't jump when the data lands. A shelf of these
  *  rather than a spinner: the shape of what's coming is itself information. */
-function SkeletonCard() {
+export function SkeletonCard() {
   return (
     <div className="sp-card sp-media-card sp-skeleton-card" aria-hidden>
       <div className="sp-media-card__preview sp-skeleton__block" />

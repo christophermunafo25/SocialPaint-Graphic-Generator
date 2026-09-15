@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { useBrand } from "@/lib/brand/BrandContext";
 import { useRouter } from "../router";
 import { ErrorState } from "./ErrorState";
+import { Bone, SkeletonLines } from "./Skeleton";
 import { TemplateFill } from "./TemplateFill";
 import { TemplateLinksDialog } from "./admin/TemplateLinksDialog";
 import { Page } from "./layout/Page";
@@ -27,13 +28,25 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
   const [sharing, setSharing] = useState(false);
 
   if (templateState.status === "loading") {
+    // The fill layout's shape — toolbar line, preview plate, form lines —
+    // so the page doesn't jump when the template lands.
     return (
-      <p
-        className="text-center py-24"
-        style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}
-      >
-        Loading template…
-      </p>
+      <Page>
+        <div aria-busy="true" aria-label="Loading template">
+          <div className="flex items-center justify-between gap-3 mb-5">
+            <Bone w={132} h={13} />
+            <Bone w={104} h={34} r="var(--radius-control)" />
+          </div>
+          <div className="grid gap-6 lg:grid-cols-2 items-start">
+            <div className="sp-card sp-media-card">
+              <div className="sp-media-card__preview sp-skeleton__block" />
+            </div>
+            <div className="sp-card p-4">
+              <SkeletonLines lines={4} />
+            </div>
+          </div>
+        </div>
+      </Page>
     );
   }
   if (templateState.status === "error") {

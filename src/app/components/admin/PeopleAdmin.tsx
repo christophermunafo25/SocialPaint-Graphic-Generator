@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { Page, PageHeader } from "../layout/Page";
 import { ConfirmDialog } from "../ConfirmDialog";
 import { ErrorState } from "../ErrorState";
+import { SkeletonRows } from "../Skeleton";
 
 /** Team management: invite by email, change roles, remove. Invites are sent
  * by the invite-member Edge Function (admin-verified server-side). */
@@ -140,12 +141,7 @@ export function PeopleAdmin() {
 
       <div className="sp-card overflow-hidden mt-4">
         {membersState.status === "loading" ? (
-          <p
-            className="px-6 py-8 text-center"
-            style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}
-          >
-            Loading…
-          </p>
+          <SkeletonRows rows={3} label="Loading your team" />
         ) : membersState.status === "error" ? (
           <ErrorState
             title="We couldn't load your team."

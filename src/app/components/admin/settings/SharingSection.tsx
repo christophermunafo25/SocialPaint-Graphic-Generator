@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { publicLinkUrl } from "@/lib/publicLink/route";
 import { ConfirmDialog } from "../../ConfirmDialog";
 import { ErrorState } from "../../ErrorState";
+import { SkeletonRows } from "../../Skeleton";
 import { Switch } from "../../Switch";
 import { TemplateLinksDialog } from "../TemplateLinksDialog";
 import { ControlRow, DevBackendNotice, SettingsCard, TypedConfirmDialog } from "./settingsShared";
@@ -235,12 +236,7 @@ export function SharingSection() {
           </label>
         </div>
         {state.status === "loading" ? (
-          <p
-            className="px-6 py-8 text-center"
-            style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}
-          >
-            Loading…
-          </p>
+          <SkeletonRows rows={3} inset="var(--space-xs) var(--space-md)" label="Loading links" />
         ) : state.status === "error" ? (
           <ErrorState
             title="We couldn't load your links."

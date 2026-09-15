@@ -15,6 +15,7 @@ import { versionName } from "@/lib/templates/reflow";
 import type { CanvasSize } from "@/lib/templates/platforms";
 import { CanvasSizePicker } from "../builder/CanvasSizePicker";
 import { ErrorState } from "../ErrorState";
+import { SkeletonCard } from "../templates/TemplateSkeleton";
 import { TemplateThumbnail } from "../TemplateThumbnail";
 
 type StatusFilter = "all" | "published" | "draft";
@@ -326,12 +327,11 @@ export function AdminTemplates() {
       )}
 
       {templatesState.status === "loading" ? (
-        <p
-          className="text-center py-20"
-          style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}
-        >
-          Loading…
-        </p>
+        <div className="sp-grid-media" aria-busy="true" aria-label="Loading templates">
+          {Array.from({ length: 8 }, (_, i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
       ) : templatesState.status === "error" ? (
         <ErrorState
           title="We couldn't load your templates."

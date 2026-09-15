@@ -23,6 +23,7 @@ import { overCapLine, readyLine, rowStatus } from "@/lib/bulk/copy";
 import { useRouter } from "../../router";
 import { ErrorState } from "../ErrorState";
 import { Page, PageHeader } from "../layout/Page";
+import { Bone, SkeletonLines } from "../Skeleton";
 import { Select } from "../ui/Select";
 import { Switch } from "../Switch";
 import { TemplateThumbnail } from "../TemplateThumbnail";
@@ -79,9 +80,14 @@ export function BulkFillPage({ templateId }: { templateId: string }) {
 
   if (templateState.status === "loading") {
     return (
-      <p className="text-center py-24" style={mutedText}>
-        Loading template…
-      </p>
+      <Page>
+        <div aria-busy="true" aria-label="Loading template">
+          <Bone w={148} h={13} style={{ marginBottom: 20 }} />
+          <div className="sp-card p-5">
+            <SkeletonLines lines={4} />
+          </div>
+        </div>
+      </Page>
     );
   }
   if (templateState.status === "error") {
