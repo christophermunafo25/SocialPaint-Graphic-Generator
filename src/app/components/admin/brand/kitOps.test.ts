@@ -3,8 +3,10 @@ import type { BrandAsset, BrandColor } from "@/lib/types";
 import type { KitShape } from "./kitPlumbing";
 import {
   assignColorRole,
+  dedupeColorKeys,
   logoSurfaces,
   mergeImportedColors,
+  newCustomColor,
   primaryHandoffOnRemove,
   setLogoSurfaces,
   setPrimaryLogo,
@@ -156,5 +158,55 @@ describe("primaryHandoffOnRemove", () => {
   it("returns an empty patch when the removed logo was no primary", () => {
     const k = kit({ primaryLogoDarkAssetId: "a", primaryLogoLightAssetId: "a" });
     expect(primaryHandoffOnRemove(k, "x", [logo("a")])).toEqual({});
+  });
+});
+
+describe("newCustomColor", () => {
+  const custom = (n: number): BrandColor => ({
+    key: `custom_${n}`,
+    name: `Custom ${n}`,
+    hex: "#888888",
+  });
+
+  it("counts up from the existing customs", () => {
+    expect(newCustomColor([custom(1), custom(2)]).key).toBe("custom_3");
+  });
+
+  it("never mints a key the palette already holds after a removal", () => {
+    // [custom_1, custom_2] minus custom_1: the count says 2 next, but
+    // custom_2 is taken — the old generator duplicated it here.
+    const fresh = newCustomColor([custom(2)]);
+    expect(fresh.key).toBe("custom_3");
+  });
+
+  it("skips past a run of taken keys", () => {
+    const fresh = newCustomColor([custom(2), custom(3)]);
+    expect(fresh.key).toBe("custom_4");
+  });
+});
+
+describe("dedupeColorKeys", () => {
+  it("returns the same array when keys are unique", () => {
+    expect(dedupeColorKeys(colors)).toBe(colors);
+  });
+
+  it("renames later duplicates, keeping the first untouched", () => {
+    const dupes: BrandColor[] = [
+      { key: "custom_2", name: "Fire", hex: "#FF3627" },
+      { key: "custom_2", name: "Orchid", hex: "#30133D" },
+    ];
+    const healed = dedupeColorKeys(dupes);
+    expect(healed[0]).toBe(dupes[0]);
+    expect(healed[1].key).toBe("custom_2_2");
+    expect(healed[1].name).toBe("Orchid");
+  });
+
+  it("steps around a suffix that already exists", () => {
+    const healed = dedupeColorKeys([
+      { key: "a", name: "1", hex: "#111111" },
+      { key: "a_2", name: "2", hex: "#222222" },
+      { key: "a", name: "3", hex: "#333333" },
+    ]);
+    expect(healed.map((c) => c.key)).toEqual(["a", "a_2", "a_3"]);
   });
 });

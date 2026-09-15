@@ -52,10 +52,41 @@ export function mergeImportedColors(existing: BrandColor[], incoming: BrandColor
 }
 
 /** A fresh palette entry, named and keyed exactly as the accordion-era
- * studio named them so existing custom_{n} keys keep counting up. */
+ * studio named them so existing custom_{n} keys keep counting up — but
+ * never onto a key the palette already holds: counting customs reused a
+ * removed color's number (remove custom_1 from [custom_1, custom_2], add,
+ * and the count minted custom_2 AGAIN), and a duplicate key breaks every
+ * keyed lookup at once — both cards open for editing, a patch recolors
+ * both, React reconciles them as one (2026-09-15). */
 export function newCustomColor(colors: BrandColor[]): BrandColor {
-  const n = colors.filter((c) => c.key.startsWith("custom")).length + 1;
+  const taken = new Set(colors.map((c) => c.key));
+  let n = colors.filter((c) => c.key.startsWith("custom")).length + 1;
+  while (taken.has(`custom_${n}`)) n += 1;
   return { key: `custom_${n}`, name: `Custom ${n}`, hex: "#888888" };
+}
+
+/** Heal a palette that already carries duplicate keys (minted by the
+ * pre-2026-09-15 newCustomColor above): later duplicates get a fresh
+ * suffixed key. Nothing can deterministically reference a LATER duplicate
+ * — every lookup by key finds the first — so the rename orphans no type
+ * style binding; the healed keys persist with the next save. Returns the
+ * same array when nothing needed healing, so adoption stays cheap. */
+export function dedupeColorKeys(colors: BrandColor[]): BrandColor[] {
+  const seen = new Set<string>();
+  let changed = false;
+  const out = colors.map((c) => {
+    if (!seen.has(c.key)) {
+      seen.add(c.key);
+      return c;
+    }
+    let n = 2;
+    while (seen.has(`${c.key}_${n}`)) n += 1;
+    const key = `${c.key}_${n}`;
+    seen.add(key);
+    changed = true;
+    return { ...c, key };
+  });
+  return changed ? out : colors;
 }
 
 /** The surfaces a logo shows on. Absent or empty metadata reads as both —

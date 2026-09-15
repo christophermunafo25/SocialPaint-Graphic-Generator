@@ -9,14 +9,17 @@ import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useBrand } from "@/lib/brand/BrandContext";
 import { DEFAULT_PALETTE, DEFAULT_TYPE_STYLES } from "@/lib/theme";
+import { dedupeColorKeys } from "./kitOps";
 
 export type KitShape = Omit<BrandKit, "id" | "companyId">;
 
 /** The kit as the studio treats it — saved values, with the defaults that
- * stand in for anything a tenant hasn't set. */
+ * stand in for anything a tenant hasn't set. Colors heal duplicate keys on
+ * adoption (see dedupeColorKeys) — a kit saved while newCustomColor could
+ * reuse a removed number would otherwise open two cards for one edit. */
 export function kitShape(kit: BrandKit | null): KitShape {
   return {
-    colors: kit?.colors ?? DEFAULT_PALETTE,
+    colors: dedupeColorKeys(kit?.colors ?? DEFAULT_PALETTE),
     typeStyles: kit?.typeStyles?.length ? kit.typeStyles : DEFAULT_TYPE_STYLES,
     // Guidelines have no surface anymore but the data is preserved — every
     // save carries them through untouched.
