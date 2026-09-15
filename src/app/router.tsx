@@ -1,5 +1,11 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { PLATFORMS, type PlatformId } from "@/lib/templates/platforms";
+import {
+  INSIGHTS_METRICS,
+  INSIGHTS_RANGES,
+  type InsightsMetric,
+  type InsightsRange,
+} from "@/lib/insights/buildInsights";
 
 /** View-state routing, now mirrored to the URL so a view is shareable and
  * survives refresh and back/forward. Still no router dependency: one path
@@ -64,7 +70,10 @@ export type Route =
    * that detail page. `surface` is the Logos page's filter — in the URL
    * so the view is shareable, ignored on every other category. */
   | { name: "brandStudio"; category?: BrandCategory; surface?: "dark" | "light" }
-  | { name: "dashboard" }
+  /** Insights. One date range drives every card (D2) and the trend chart's
+   * selected tab rides along (D4) — both in the URL so the view is
+   * shareable; the defaults (30d, exports) stay out of it. */
+  | { name: "dashboard"; range?: InsightsRange; metric?: InsightsMetric }
   | { name: "people" }
   | { name: "settings"; section?: SettingsSection };
 
@@ -117,8 +126,13 @@ export function routeToUrl(route: Route): string {
         ? `${base}?surface=${route.surface}`
         : base;
     }
-    case "dashboard":
-      return "/insights";
+    case "dashboard": {
+      const params = new URLSearchParams();
+      if (route.range) params.set("range", route.range);
+      if (route.metric) params.set("metric", route.metric);
+      const qs = params.toString();
+      return qs ? `/insights?${qs}` : "/insights";
+    }
     case "people":
       return "/people";
     case "settings":
@@ -168,8 +182,21 @@ export function urlToRoute(pathname: string, search: string): Route {
         return { name: "brandStudio", category, surface };
       }
       return { name: "brandStudio" };
-    case "insights":
-      return { name: "dashboard" };
+    case "insights": {
+      // The brandStudio `surface` pattern: an unknown value reads as the
+      // default rather than as a dead end, and defaults stay off the URL.
+      const rawRange = params.get("range");
+      const rawMetric = params.get("metric");
+      return {
+        name: "dashboard",
+        range: (INSIGHTS_RANGES as readonly string[]).includes(rawRange ?? "")
+          ? (rawRange as InsightsRange)
+          : undefined,
+        metric: (INSIGHTS_METRICS as readonly string[]).includes(rawMetric ?? "")
+          ? (rawMetric as InsightsMetric)
+          : undefined,
+      };
+    }
     case "people":
       return { name: "people" };
     case "settings":

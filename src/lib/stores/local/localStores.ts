@@ -386,6 +386,20 @@ export class LocalUsageStore implements UsageStore {
       timeZone,
     );
   }
+  async getInsightEvents(companyId: string, sinceIso: string) {
+    return (readDb().usageEvents as UsageEventRec[])
+      .filter((e) => e.companyId === companyId && e.createdAt >= sinceIso)
+      .map((e) => ({
+        templateId: e.templateId,
+        action: e.action,
+        // See UsageEventRec.actor: absent means member (pre-column rows).
+        actor: e.actor ?? ("member" as UsageActor),
+        userId: e.userId,
+        linkId: e.linkId ?? null,
+        variantId: e.variantId ?? null,
+        createdAt: e.createdAt,
+      }));
+  }
   async listEvents(companyId: string) {
     return (readDb().usageEvents as UsageEventRec[])
       .filter((e) => e.companyId === companyId)

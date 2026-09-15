@@ -1,5 +1,6 @@
 import type {
   DailyActivityPoint,
+  InsightEvent,
   MonthlyUsage,
   PublicLinkUsageRow,
   UsageAction,
@@ -169,6 +170,34 @@ export class SupabaseUsageStore implements UsageStore {
       })),
       timeZone,
     );
+  }
+
+  async getInsightEvents(companyId: string, sinceIso: string): Promise<InsightEvent[]> {
+    const { data, error } = await supabase()
+      .from("usage_events")
+      .select("template_id, action, actor, user_id, link_id, variant_id, created_at")
+      .eq("company_id", companyId)
+      .gte("created_at", sinceIso);
+    if (error) throw error;
+    return (
+      data as Array<{
+        template_id: string;
+        action: UsageAction;
+        actor: UsageActor;
+        user_id: string | null;
+        link_id: string | null;
+        variant_id: string | null;
+        created_at: string;
+      }>
+    ).map((e) => ({
+      templateId: e.template_id,
+      action: e.action,
+      actor: e.actor,
+      userId: e.user_id,
+      linkId: e.link_id,
+      variantId: e.variant_id,
+      createdAt: e.created_at,
+    }));
   }
 
   async listEvents(companyId: string) {
