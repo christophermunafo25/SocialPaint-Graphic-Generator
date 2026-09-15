@@ -3670,6 +3670,38 @@ input[type="radio"] {
 .sp-filterbar[data-pinned]::before {
   opacity: 1;
 }
+
+/* The mobile app header wears the same frosted fade (2026-09-15, at CJ's
+   direction). Constant rather than scroll-gated: at rest the fade sits on
+   bare canvas and is invisible, so there is nothing to switch. The ramp is
+   in px — solid until 32px from the skirt's end (4px inside the bar plus
+   the 28px run-out) — because this bar's height moves with the safe-area
+   inset. The drop-down nav lives INSIDE this header and needs a real
+   ground, so the open state hands back the solid chrome surface and its
+   hairline and drops the fade. */
+.sp-mobilebar {
+  background: transparent;
+  border-bottom: 1px solid transparent;
+}
+.sp-mobilebar::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 -28px;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(to bottom, var(--bg-canvas) calc(100% - 32px), transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 32px), transparent);
+  mask-image: linear-gradient(to bottom, black calc(100% - 32px), transparent);
+}
+.sp-mobilebar[data-menu-open] {
+  background: var(--sb-bg);
+  border-bottom-color: var(--sb-border);
+}
+.sp-mobilebar[data-menu-open]::before {
+  content: none;
+}
 /* ONE row at every width (2026-09 frames): the search control rests as a
    square on the chips' own height and radius, and opening it pushes the
    rail right. The open cap is a px value under max-width: 100%, so the
