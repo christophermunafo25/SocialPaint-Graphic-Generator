@@ -1,194 +1,233 @@
-import React from "react";
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import { Download, Eye, Layers, Percent, Table2 } from "lucide-react";
-import type { DailyActivityPoint, PublicLinkUsageRow, UsageSummary } from "@/lib/types";
+import React, { useEffect, useMemo, useState } from "react";
+import type { InsightEvent, PublicLinkUsageRow, TemplateSchema } from "@/lib/types";
+import type { Member } from "@/lib/stores/interfaces";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
+import {
+  buildInsights,
+  insightWindowStartIso,
+  INSIGHTS_RANGES,
+  RANGE_LABEL,
+  type InsightsMetric,
+  type InsightsRange,
+} from "@/lib/insights/buildInsights";
+import { routeToUrl, useRouter } from "../../router";
 import { Page, PageHeader } from "../layout/Page";
 import { ErrorState } from "../ErrorState";
-import { Bone, SkeletonKpi, SkeletonLines } from "../Skeleton";
-import { Kpi } from "./Kpi";
+import { Bone, SkeletonLines } from "../Skeleton";
+import { useLinkClick } from "./brand/useLinkClick";
 import { BrandMark } from "../Sidebar";
+import { changeCopy, InsightKpi } from "./insights/InsightKpi";
+import { TrendCard } from "./insights/TrendCard";
+import { TopTemplatesCard } from "./insights/TopTemplatesCard";
+import { WeekdayCard } from "./insights/WeekdayCard";
+import { SizeCard } from "./insights/SizeCard";
+import { FindingsCard, type PageFinding } from "./insights/FindingsCard";
+import { downloadInsightsCsv } from "./insights/exportCsv";
 
-const TREND_DAYS = 30;
-
-const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
-
-const fmtDay = (iso: string) =>
-  new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-
-const relativeDay = (iso: string | null): string => {
-  if (!iso) return "—";
-  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
-  if (days <= 0) return "today";
-  if (days === 1) return "yesterday";
-  if (days < 30) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString();
-};
-
-/** Numbers in a table are data: mono, caption size, secondary unless the
- * figure is the one being compared. */
-const numCell = {
-  fontFamily: "var(--font-mono)",
-  fontSize: "var(--type-caption-size)",
-  color: "var(--text-secondary)",
-} as const;
-
-const exportRate = (downloads: number, opens: number): string =>
-  opens === 0 ? "—" : `${Math.round((downloads / opens) * 100)}%`;
-
-/** Legend chip: colored swatch + label + mono total (identity never
- * color-alone). `dashed` draws a short dashed rule instead of a dot, so the
- * public-link overlay is decodable as the dashed line it actually is rather
- * than mistaken for a third filled band. */
-function LegendChip({
-  color,
-  label,
-  total,
-  dashed,
-}: {
-  color: string;
-  label: string;
-  total: number;
-  dashed?: boolean;
-}) {
-  return (
-    <span
-      className="flex items-center gap-1.5"
-      style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}
-    >
-      {dashed ? (
-        <span
-          aria-hidden
-          style={{ width: 12, height: 0, borderTop: `2px dashed ${color}`, display: "block" }}
-        />
-      ) : (
-        <span
-          aria-hidden
-          style={{ width: 8, height: 8, borderRadius: "var(--radius-pill)", background: color }}
-        />
-      )}
-      {label}
-      <span style={{ ...mono, fontSize: 11, color: "var(--text-muted)" }}>{total}</span>
-    </span>
-  );
-}
-
-/** Admin usage dashboard: KPI tiles, a 30-day activity trend, a most-used
- * leaderboard, and the full table. Events are recorded inside SchemaRenderer;
- * this page only reads. */
-export function Dashboard() {
+/** The one-screen Insights page (2026-09-15, Figma "UX-UI Designs" 106:2):
+ * KPI row, trend beside Top templates, weekday beside sizes, findings.
+ * One date range drives every card (D2); every comparison is against the
+ * previous window of the same length (D3). Events are recorded inside
+ * SchemaRenderer; this page only reads. */
+export function Dashboard({ range, metric }: { range?: InsightsRange; metric?: InsightsMetric }) {
   const { company } = useAuth();
-  const summaryState = useAsync<UsageSummary | null>(
-    () => (company ? stores.usage.getUsageSummary(company.id) : Promise.resolve(null)),
+  const { navigate } = useRouter();
+  const linkTo = useLinkClick();
+  const activeRange = range ?? "30d";
+  const activeMetric = metric ?? "exports";
+
+  // Three independent loads (one failed card never blanks the page). The
+  // events fetch covers the previous window too, so the comparisons and the
+  // dashed line come from the same read.
+  const eventsState = useAsync<InsightEvent[] | null>(
+    () =>
+      company
+        ? stores.usage.getInsightEvents(
+            company.id,
+            insightWindowStartIso(activeRange, company.timezone),
+          )
+        : Promise.resolve(null),
+    [company, activeRange],
+  );
+  const templatesState = useAsync<TemplateSchema[]>(
+    () => (company ? stores.templates.listAll(company.id) : Promise.resolve([])),
     [company],
   );
+  const peopleState = useAsync<Member[]>(
+    () => (company ? stores.people.list(company.id) : Promise.resolve([])),
+    [company],
+  );
+  // Feeds only the unopened-public-link finding; a failure just leaves
+  // that finding out, the way the old page dropped its links card.
   const linkUsageState = useAsync<PublicLinkUsageRow[]>(
     () => (company ? stores.usage.getPublicLinkUsage(company.id) : Promise.resolve([])),
     [company],
   );
-  // A failure here must not take the page down with it: the rest of Insights
-  // is independent, and the card simply does not render.
-  const linkRows = linkUsageState.status === "ready" ? linkUsageState.data : [];
 
-  // Day buckets follow the WORKSPACE timezone (Settings → Workspace), not
-  // the viewer's browser — two admins in different places read one chart.
-  const trendState = useAsync<DailyActivityPoint[]>(
+  // A range change keeps the CURRENT numbers visible (dimmed, under the
+  // 2px bar) until the new window lands — the page never blanks after its
+  // first load. The events are kept WITH the range that fetched them so
+  // the stale render stays internally consistent.
+  const [loaded, setLoaded] = useState<{ events: InsightEvent[]; range: InsightsRange } | null>(
+    null,
+  );
+  useEffect(() => {
+    if (eventsState.status === "ready" && eventsState.data) {
+      setLoaded({ events: eventsState.data, range: activeRange });
+    }
+  }, [eventsState, activeRange]);
+  const refreshing = eventsState.status === "loading" && loaded !== null;
+
+  // Aggregation degrades per input: a failed templates or people load
+  // zeroes only what needs it, and the cards that need the missing input
+  // show their own inline retry row instead of these partial numbers.
+  const templates = useMemo(
+    () => (templatesState.status === "ready" ? templatesState.data : []),
+    [templatesState],
+  );
+  const members = useMemo(
+    () => (peopleState.status === "ready" ? peopleState.data : []),
+    [peopleState],
+  );
+  const insights = useMemo(
     () =>
-      company
-        ? stores.usage.getDailyActivity(company.id, TREND_DAYS, company.timezone)
-        : Promise.resolve([]),
-    [company],
+      loaded && company
+        ? buildInsights({
+            events: loaded.events,
+            templates,
+            members,
+            range: loaded.range,
+            timeZone: company.timezone,
+          })
+        : null,
+    [loaded, templates, members, company],
+  );
+  // Findings, in the aggregator's priority order (rules 1–4), keeping the
+  // first four that apply; the unopened-link rule joins only when a slot
+  // is free (Phase 8 rule 5).
+  const findings = useMemo<PageFinding[]>(() => {
+    const list: PageFinding[] = insights ? [...insights.findings] : [];
+    if (list.length < 4 && linkUsageState.status === "ready") {
+      const unopened = linkUsageState.data.filter((l) => l.opens === 0 && !l.revokedAt).length;
+      if (unopened > 0) list.push({ kind: "unopenedLinks", count: unopened });
+    }
+    return list.slice(0, 4);
+  }, [insights, linkUsageState]);
+
+  // Both header controls, --space-xs apart: the range radiogroup (a
+  // navigation — changing it REPLACES the history entry, so Back leaves
+  // Insights rather than replaying ranges) and Export CSV.
+  const headerAction = (
+    <div className="flex items-center flex-wrap" style={{ gap: "var(--space-xs)" }}>
+      <div className="sp-segmented" role="radiogroup" aria-label="Date range">
+        {INSIGHTS_RANGES.map((r) => (
+          <button
+            key={r}
+            type="button"
+            role="radio"
+            aria-checked={activeRange === r}
+            className="sp-segmented__option"
+            onClick={() =>
+              navigate(
+                // The default stays out of the URL, like brandStudio's
+                // surface param.
+                { name: "dashboard", range: r === "30d" ? undefined : r, metric },
+                { replace: true },
+              )
+            }
+          >
+            {RANGE_LABEL[r]}
+          </button>
+        ))}
+      </div>
+      <button
+        className="sp-btn sp-btn-ghost"
+        disabled={!insights}
+        onClick={() => {
+          if (insights && loaded && company) {
+            downloadInsightsCsv(insights.templateRows, loaded.range, company.timezone);
+          }
+        }}
+      >
+        Export CSV
+      </button>
+    </div>
   );
 
-  if (summaryState.status === "loading") {
-    // The ready layout's shape — real header, KPI row, breakdown + chart —
-    // so nothing jumps when the summary lands.
+  if (eventsState.status === "error") {
+    return (
+      <ErrorState
+        title="We couldn't load your usage data."
+        detail="Check your connection and try again."
+        onRetry={eventsState.retry}
+      />
+    );
+  }
+
+  if (!loaded) {
+    // First load: each card's skeleton has the geometry of the card that
+    // is coming, so nothing jumps when the data lands.
     return (
       <Page>
-        <PageHeader
-          title="Insights"
-          description="Which templates actually get used, by your team and through public links."
-        />
-        <div className="space-y-6" aria-busy="true" aria-label="Loading usage">
-          <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
-            <SkeletonKpi />
-            <SkeletonKpi />
-            <SkeletonKpi />
-            <SkeletonKpi />
+        <PageHeader title="Insights & Analytics" />
+        <div className="flex flex-col" style={{ gap: "var(--space-xs)" }}>
+          <div className="sp-insights-kpis">
+            {[0, 1, 2, 3].map((i) => (
+              <SkeletonInsightKpi key={i} />
+            ))}
           </div>
-          <div className="grid lg:grid-cols-5 gap-6 items-stretch">
-            <div className="sp-card sp-card--content lg:col-span-2">
-              <SkeletonLines lines={5} />
+          <div className="sp-insights-row">
+            <div
+              className="sp-card sp-card--content"
+              aria-busy="true"
+              aria-label="Loading activity trend"
+            >
+              <Bone w="40%" h={16} />
+              <Bone w="100%" h={180} r="var(--radius-media-inner)" style={{ marginTop: 16 }} />
             </div>
-            <div className="sp-card sp-card--content lg:col-span-3">
-              <Bone w="100%" h={220} r="var(--radius-media-inner)" />
+            <div
+              className="sp-card sp-card--content"
+              aria-busy="true"
+              aria-label="Loading top templates"
+            >
+              <SkeletonLines lines={5} label="Loading top templates" />
             </div>
+          </div>
+          <div className="sp-insights-row sp-insights-row--halves">
+            <div
+              className="sp-card sp-card--content"
+              aria-busy="true"
+              aria-label="Loading weekday activity"
+            >
+              <Bone w="50%" h={16} />
+              <Bone w="100%" h={148} r="var(--radius-media-inner)" style={{ marginTop: 16 }} />
+            </div>
+            <div
+              className="sp-card sp-card--content"
+              aria-busy="true"
+              aria-label="Loading exports by size"
+            >
+              <Bone w="50%" h={16} />
+              <Bone w={148} h={148} r="var(--radius-pill)" style={{ marginTop: 16 }} />
+            </div>
+          </div>
+          <div className="sp-card sp-card--content" aria-busy="true" aria-label="Loading findings">
+            <SkeletonLines lines={2} label="Loading findings" />
           </div>
         </div>
       </Page>
     );
   }
-  if (summaryState.status === "error") {
+
+  // The fetched span covers both windows — empty means the workspace has
+  // nothing to show for this range at all, and zero-filled KPI cards would
+  // read as activity that measured zero rather than none recorded.
+  if (loaded.events.length === 0 && !refreshing) {
     return (
-      <ErrorState
-        title="We couldn't load your usage data."
-        detail="Check your connection and try again."
-        onRetry={summaryState.retry}
-      />
-    );
-  }
-  const summary = summaryState.data;
-  if (!summary) {
-    return (
-      <p
-        className="text-center py-24"
-        style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}
-      >
-        Loading usage…
-      </p>
-    );
-  }
-  const trend = trendState.status === "ready" ? trendState.data : null;
-
-  const totalOpens = summary.rows.reduce((n, r) => n + r.opens, 0);
-  // Public traffic is a SUBSET of the totals above, never added to them: one
-  // fill through a link is one open and one export, the same as a member's.
-  const publicOpens = summary.rows.reduce((n, r) => n + r.publicOpens, 0);
-  const publicDownloads = summary.rows.reduce((n, r) => n + r.publicDownloads, 0);
-  const totalShares = summary.rows.reduce((n, r) => n + r.shares, 0);
-  // Bulk exports sit BESIDE downloads, never inside them: a bulk run has no
-  // opens, so folding it in would break the export rate. The tile only
-  // appears once a workspace has run one.
-  const totalBulk = summary.rows.reduce((n, r) => n + r.bulkExports, 0);
-  const viaLink = (n: number): string | undefined =>
-    n === 0 ? undefined : `${n} via public link${n === 1 ? "" : "s"}`;
-  const activeTemplates = summary.rows.filter(
-    (r) => r.opens + r.downloads + r.bulkExports > 0,
-  ).length;
-  const trendOpens = (trend ?? []).reduce((n, p) => n + p.opens, 0);
-  const trendDownloads = (trend ?? []).reduce((n, p) => n + p.downloads, 0);
-  const trendPublicDownloads = (trend ?? []).reduce((n, p) => n + p.publicDownloads, 0);
-  const top = summary.rows.slice(0, 8);
-  const maxCount = Math.max(1, ...top.map((r) => Math.max(r.downloads, r.opens)));
-
-  return (
-    <Page>
-      <PageHeader
-        title="Insights"
-        description="Which templates actually get used, by your team and through public links."
-      />
-
-      {summary.rows.length === 0 ? (
+      <Page>
+        <PageHeader title="Insights & Analytics" />
         <div className="sp-card relative overflow-hidden text-center py-20 px-6">
           <span
             aria-hidden
@@ -201,490 +240,159 @@ export function Dashboard() {
             No usage yet
           </p>
           <p
-            style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)", marginTop: 6 }}
+            style={{
+              fontSize: "var(--type-label-size)",
+              color: "var(--text-muted)",
+              marginTop: 6,
+            }}
           >
             Opens and downloads appear here as soon as people start using published templates: your
             own team, and anyone filling one in through a public link.
           </p>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {/* KPI row — same 24px gap as every other grid on the page */}
-          <div
-            className={`grid grid-cols-2 gap-6 ${totalBulk > 0 ? "lg:grid-cols-5" : "lg:grid-cols-4"}`}
+          <a
+            className="sp-btn sp-btn-primary"
+            style={{ marginTop: "var(--space-sm)" }}
+            href={routeToUrl({ name: "portal" })}
+            onClick={linkTo({ name: "portal" })}
           >
-            <Kpi
-              label="Total exports"
-              value={summary.totalDownloads}
-              Icon={Download}
-              chip="var(--viz-series-1)"
-              sub={viaLink(publicDownloads)}
-            />
-            {totalBulk > 0 && (
-              <Kpi
-                label="Bulk exports"
-                value={totalBulk}
-                Icon={Table2}
-                chip="var(--bg-hover)"
-                chipFg="var(--text-primary)"
-                sub="Rendered by bulk fill, not counted in exports"
+            Open Brand Templates
+          </a>
+        </div>
+      </Page>
+    );
+  }
+
+  const rangeLabel = RANGE_LABEL[loaded.range];
+
+  return (
+    <Page>
+      <PageHeader title="Insights & Analytics" action={headerAction} />
+      <div className="relative">
+        {/* Overlaid, not in-flow: the bar appearing must not shift the
+            rows it is updating. */}
+        <div
+          className="sp-refresh-bar absolute"
+          style={{
+            insetInline: 0,
+            top: -8,
+            visibility: refreshing ? "visible" : "hidden",
+          }}
+          role="progressbar"
+          aria-label="Loading the new date range"
+          aria-hidden={!refreshing}
+        />
+        <div
+          className="flex flex-col"
+          style={{ gap: "var(--space-xs)", ...(refreshing ? { opacity: 0.56 } : {}) }}
+          aria-busy={refreshing || undefined}
+        >
+          {insights && (
+            <div className="sp-insights-kpis">
+              <InsightKpi
+                label="Exports"
+                value={insights.kpis.exports.current}
+                accent="var(--viz-series-1)"
+                change={insights.kpis.exports.change}
+                series={insights.series.exports}
+                rangeLabel={rangeLabel}
               />
-            )}
-            <Kpi
-              label="Total opens"
-              value={totalOpens}
-              Icon={Eye}
-              chip="var(--viz-series-2)"
-              sub={viaLink(publicOpens)}
-            />
-            <Kpi
-              label="Export rate"
-              value={exportRate(summary.totalDownloads, totalOpens)}
-              Icon={Percent}
-              chip="var(--bg-hover)"
-              chipFg="var(--text-primary)"
-              sub={
-                totalShares === 0
-                  ? undefined
-                  : `${totalShares} sent to LinkedIn${
-                      summary.totalDownloads > 0
-                        ? ` · ${Math.round((totalShares / summary.totalDownloads) * 100)}% of exports`
-                        : ""
-                    }`
-              }
-            />
-            <Kpi
-              label="Templates in use"
-              value={activeTemplates}
-              Icon={Layers}
-              chip="var(--bg-hover)"
-              chipFg="var(--text-primary)"
-            />
-          </div>
-
-          {/* 30-day trend */}
-          <div className="sp-card sp-card--content">
-            <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
-              <h2 className="sp-panel-title">Activity, last 30 days</h2>
-              <div className="flex items-center gap-4">
-                <LegendChip color="var(--viz-series-1)" label="Downloads" total={trendDownloads} />
-                <LegendChip color="var(--viz-series-2)" label="Opens" total={trendOpens} />
-                {trendPublicDownloads > 0 && (
-                  <LegendChip
-                    color="var(--viz-series-3)"
-                    label="of which via link"
-                    total={trendPublicDownloads}
-                    dashed
-                  />
-                )}
-              </div>
-            </div>
-            {trendState.status === "error" ? (
-              <div
-                className="flex flex-col items-center justify-center gap-3"
-                style={{ height: 220 }}
-              >
-                <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>
-                  We couldn't load the activity trend.
-                </p>
-                <button className="sp-btn sp-btn-ghost" onClick={trendState.retry}>
-                  Try again
-                </button>
-              </div>
-            ) : (
-              <div style={{ width: "100%", height: 220 }}>
-                <ResponsiveContainer>
-                  <AreaChart data={trend ?? []} margin={{ top: 6, right: 6, left: -18, bottom: 0 }}>
-                    <CartesianGrid
-                      vertical={false}
-                      stroke="var(--viz-grid)"
-                      strokeDasharray="3 3"
-                    />
-                    <XAxis
-                      dataKey="date"
-                      tickFormatter={fmtDay}
-                      tick={{
-                        fontSize: 10,
-                        fontFamily: "var(--font-mono)",
-                        fill: "var(--text-muted)",
-                      }}
-                      tickLine={false}
-                      axisLine={false}
-                      minTickGap={28}
-                    />
-                    <YAxis
-                      allowDecimals={false}
-                      tick={{
-                        fontSize: 10,
-                        fontFamily: "var(--font-mono)",
-                        fill: "var(--text-muted)",
-                      }}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <Tooltip
-                      cursor={{ stroke: "var(--border-strong)", strokeDasharray: "3 3" }}
-                      labelFormatter={(v) => fmtDay(String(v))}
-                      contentStyle={{
-                        fontFamily: "var(--font-mono)",
-                        fontSize: "var(--type-caption-size)",
-                        background: "var(--bg-surface)",
-                        border: "1px solid var(--border)",
-                        borderRadius: "var(--radius-card)",
-                        color: "var(--text-primary)",
-                      }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="downloads"
-                      name="Downloads"
-                      stroke="var(--viz-series-1)"
-                      strokeWidth={2}
-                      fill="var(--viz-series-1)"
-                      fillOpacity={0.14}
-                      dot={false}
-                      activeDot={{ r: 4, strokeWidth: 0 }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="opens"
-                      name="Opens"
-                      stroke="var(--viz-series-2)"
-                      strokeWidth={2}
-                      fill="var(--viz-series-2)"
-                      fillOpacity={0.14}
-                      dot={false}
-                      activeDot={{ r: 4, strokeWidth: 0 }}
-                    />
-                    {/* Exports made through a public link. Deliberately
-                        UNFILLED and dashed: this is a slice of the Downloads
-                        area above it, not a third quantity stacked on top,
-                        and a filled band would invite reading the chart as a
-                        sum. Hidden entirely until a link has produced
-                        something, so the common case keeps two series. */}
-                    {trendPublicDownloads > 0 && (
-                      <Area
-                        type="monotone"
-                        dataKey="publicDownloads"
-                        name="of which via link"
-                        stroke="var(--viz-series-3)"
-                        strokeWidth={2}
-                        strokeDasharray="4 3"
-                        fill="none"
-                        dot={false}
-                        activeDot={{ r: 4, strokeWidth: 0 }}
-                      />
-                    )}
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </div>
-
-          <div className="grid lg:grid-cols-5 gap-6 items-stretch">
-            {/* Most-used leaderboard */}
-            <div className="sp-card sp-card--content lg:col-span-2">
-              <h2 className="sp-panel-title mb-4">Most used</h2>
-              <div className="space-y-4">
-                {top.map((r, i) => (
-                  <div key={r.templateId}>
-                    <div className="flex items-baseline justify-between gap-3 mb-1.5">
-                      <span className="flex items-baseline gap-2 min-w-0">
-                        <span style={{ ...mono, fontSize: 10, color: "var(--text-muted)" }}>
-                          {String(i + 1).padStart(2, "0")}
-                        </span>
-                        <span
-                          className="truncate"
-                          style={{
-                            fontSize: "var(--type-label-size)",
-                            fontWeight: 500,
-                            color: "var(--text-primary)",
-                          }}
-                        >
-                          {r.templateName}
-                        </span>
-                      </span>
-                      <span
-                        className="flex-shrink-0"
-                        style={{ ...mono, fontSize: 11, color: "var(--text-muted)" }}
-                      >
-                        {r.downloads} · {r.opens}
-                      </span>
-                    </div>
-                    {/* thin rounded data bars, 2px apart — downloads then opens */}
-                    <div
-                      aria-hidden
-                      style={{
-                        height: 6,
-                        borderRadius: "var(--radius-pill)",
-                        background: "var(--viz-series-1)",
-                        width: `${Math.max(2, (r.downloads / maxCount) * 100)}%`,
-                      }}
-                    />
-                    <div
-                      aria-hidden
-                      style={{
-                        height: 6,
-                        borderRadius: "var(--radius-pill)",
-                        background: "var(--viz-series-2)",
-                        width: `${Math.max(2, (r.opens / maxCount) * 100)}%`,
-                        marginTop: 2,
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-              {summary.rows.length > top.length && (
-                <p className="mt-4" style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                  +{summary.rows.length - top.length} more in the table
-                </p>
-              )}
-              <div
-                className="flex items-center gap-4 mt-5 pt-4"
-                style={{ borderTop: "1px solid var(--border)" }}
-              >
-                <LegendChip
-                  color="var(--viz-series-1)"
-                  label="Downloads"
-                  total={summary.totalDownloads}
-                />
-                <LegendChip color="var(--viz-series-2)" label="Opens" total={totalOpens} />
-                {publicDownloads > 0 && (
-                  <LegendChip
-                    color="var(--viz-series-3)"
-                    label="of which via link"
-                    total={publicDownloads}
-                    dashed
-                  />
-                )}
-              </div>
-            </div>
-
-            {/* Full table */}
-            <div className="sp-card overflow-hidden overflow-x-auto lg:col-span-3">
-              <table
-                className="w-full"
-                style={{ fontSize: "var(--type-label-size)", minWidth: 800 }}
-              >
-                <thead>
-                  <tr className="text-left" style={{ borderBottom: "1px solid var(--border)" }}>
-                    {[
-                      "Template",
-                      "Opens",
-                      "Downloads",
-                      "Bulk",
-                      "Posted",
-                      "Via link",
-                      "Export rate",
-                      "Last used",
-                    ].map((h) => (
-                      <th key={h} className="sp-eyebrow px-4 py-3" style={{ fontWeight: 400 }}>
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {summary.rows.map((r) => (
-                    <tr key={r.templateId} style={{ borderTop: "1px solid var(--border)" }}>
-                      <td
-                        className="px-4 py-3"
-                        style={{ color: "var(--text-primary)", fontWeight: 500 }}
-                      >
-                        {r.templateName}
-                      </td>
-                      <td
-                        className="px-4 py-3"
-                        style={{
-                          ...mono,
-                          fontSize: "var(--type-caption-size)",
-                          color: "var(--text-secondary)",
-                        }}
-                      >
-                        {r.opens}
-                      </td>
-                      <td
-                        className="px-4 py-3"
-                        style={{
-                          ...mono,
-                          fontSize: "var(--type-caption-size)",
-                          color: "var(--text-primary)",
-                        }}
-                      >
-                        {r.downloads}
-                      </td>
-                      {/* Rendered by bulk fill. Beside downloads, never added
-                          to them; muted at zero like Posted. */}
-                      <td
-                        className="px-4 py-3"
-                        style={{
-                          ...numCell,
-                          color: r.bulkExports > 0 ? "var(--text-primary)" : "var(--text-muted)",
-                        }}
-                      >
-                        {r.bulkExports}
-                      </td>
-                      {/* Taken to LinkedIn. Muted at zero so the eye lands on
-                          the templates that are actually being posted. */}
-                      <td
-                        className="px-4 py-3"
-                        style={{
-                          ...numCell,
-                          color: r.shares > 0 ? "var(--text-primary)" : "var(--text-muted)",
-                        }}
-                      >
-                        {r.shares}
-                      </td>
-                      {/* Exports through a public link. A dash rather than a
-                          zero: nobody has shared this template publicly, which
-                          is different from having shared it and got nothing. */}
-                      <td
-                        className="px-4 py-3"
-                        title={
-                          r.publicOpens + r.publicDownloads > 0
-                            ? `${r.publicDownloads} export${r.publicDownloads === 1 ? "" : "s"} from ${r.publicOpens} open${r.publicOpens === 1 ? "" : "s"} through public links`
-                            : undefined
-                        }
-                        style={{
-                          ...mono,
-                          fontSize: "var(--type-caption-size)",
-                          color:
-                            r.publicDownloads > 0 ? "var(--text-primary)" : "var(--text-muted)",
-                        }}
-                      >
-                        {r.publicOpens + r.publicDownloads === 0 ? "—" : r.publicDownloads}
-                      </td>
-                      <td
-                        className="px-4 py-3"
-                        style={{
-                          ...mono,
-                          fontSize: "var(--type-caption-size)",
-                          color: "var(--text-secondary)",
-                        }}
-                      >
-                        {exportRate(r.downloads, r.opens)}
-                      </td>
-                      <td
-                        className="px-4 py-3"
-                        style={{
-                          ...mono,
-                          fontSize: "var(--type-caption-size)",
-                          color: "var(--text-muted)",
-                        }}
-                      >
-                        {relativeDay(r.lastUsedAt)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Per-link breakdown — only once a link exists. An admin running
-              one link per template already has this answer from the table
-              above; this card earns its place when there are several links
-              to the same template and the question becomes which one is
-              pulling. */}
-          {linkRows.length > 0 && (
-            <div className="sp-card overflow-hidden">
-              <div className="px-4 pt-4 pb-3">
-                <h2 className="sp-panel-title">Public links</h2>
-                <p
-                  style={{
-                    fontSize: "var(--type-caption-size)",
-                    color: "var(--text-muted)",
-                    marginTop: 2,
-                  }}
-                >
-                  Every link you've created, busiest first. A link with no opens has been created
-                  but not yet used. "Posted" counts people who opened LinkedIn with their caption.
-                  LinkedIn doesn't tell us whether they hit publish.
-                </p>
-              </div>
-              <div className="overflow-x-auto">
-                <table
-                  className="w-full"
-                  style={{ fontSize: "var(--type-label-size)", minWidth: 720 }}
-                >
-                  <thead>
-                    <tr className="text-left" style={{ borderBottom: "1px solid var(--border)" }}>
-                      {[
-                        "Link",
-                        "Template",
-                        "Opens",
-                        "Exports",
-                        "Posted",
-                        "Export rate",
-                        "Last used",
-                      ].map((h) => (
-                        <th key={h} className="sp-eyebrow px-4 py-3" style={{ fontWeight: 400 }}>
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {linkRows.map((r) => (
-                      <tr key={r.linkId} style={{ borderTop: "1px solid var(--border)" }}>
-                        <td className="px-4 py-3">
-                          <span
-                            className="block"
-                            style={{
-                              color: r.revokedAt ? "var(--text-muted)" : "var(--text-primary)",
-                              fontWeight: 500,
-                            }}
-                          >
-                            {r.linkName || "Untitled link"}
-                          </span>
-                          {/* Revoked links keep their history and say why it
-                              stopped, rather than vanishing and taking the
-                              numbers with them. */}
-                          {r.revokedAt && (
-                            <span className="sp-eyebrow" style={{ color: "var(--text-muted)" }}>
-                              Revoked {relativeDay(r.revokedAt)}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3" style={{ color: "var(--text-secondary)" }}>
-                          {r.templateName}
-                        </td>
-                        <td className="px-4 py-3" style={{ ...numCell }}>
-                          {r.opens}
-                        </td>
-                        <td
-                          className="px-4 py-3"
-                          style={{ ...numCell, color: "var(--text-primary)" }}
-                        >
-                          {r.downloads}
-                        </td>
-                        <td
-                          className="px-4 py-3"
-                          style={{
-                            ...numCell,
-                            color: r.shares > 0 ? "var(--text-primary)" : "var(--text-muted)",
-                          }}
-                        >
-                          {r.shares}
-                        </td>
-                        <td className="px-4 py-3" style={{ ...numCell }}>
-                          {exportRate(r.downloads, r.opens)}
-                        </td>
-                        <td
-                          className="px-4 py-3"
-                          style={{ ...numCell, color: "var(--text-muted)" }}
-                        >
-                          {r.lastUsedAt ? relativeDay(r.lastUsedAt) : "Never"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <InsightKpi
+                label="Opens"
+                value={insights.kpis.opens.current}
+                accent="var(--viz-series-2)"
+                change={insights.kpis.opens.change}
+                series={insights.series.opens}
+                rangeLabel={rangeLabel}
+              />
+              <InsightKpi
+                label="Posted to LinkedIn"
+                value={insights.kpis.posted.current}
+                accent="var(--viz-series-5)"
+                change={insights.kpis.posted.change}
+                series={insights.series.posted}
+                rangeLabel={rangeLabel}
+              />
+              <InsightKpi
+                label="Active members"
+                value={insights.kpis.activeMembers.current}
+                accent="var(--viz-series-4)"
+                change={insights.kpis.activeMembers.change}
+                series={insights.series.members}
+                rangeLabel={rangeLabel}
+              />
             </div>
           )}
+          {insights && (
+            <div className="sp-insights-row">
+              <TrendCard
+                metric={activeMetric}
+                onMetricChange={(m) =>
+                  navigate(
+                    { name: "dashboard", range, metric: m === "exports" ? undefined : m },
+                    { replace: true },
+                  )
+                }
+                series={insights.series[activeMetric]}
+                range={loaded.range}
+                rangeLabel={rangeLabel}
+                summary={`${activeMetric === "posted" ? "Posts to LinkedIn" : activeMetric === "opens" ? "Opens" : "Exports"} over the last ${rangeLabel}: ${insights.kpis[activeMetric].current.toLocaleString()}, ${changeCopy(insights.kpis[activeMetric].change).toLowerCase()}`}
+              />
+              <TopTemplatesCard
+                templates={insights.topTemplates}
+                error={
+                  templatesState.status === "error" ? { retry: templatesState.retry } : undefined
+                }
+              />
+            </div>
+          )}
+          {insights && (
+            <div className="sp-insights-row sp-insights-row--halves">
+              <WeekdayCard weekday={insights.weekday} />
+              <SizeCard
+                sizes={insights.sizes}
+                error={
+                  templatesState.status === "error" ? { retry: templatesState.retry } : undefined
+                }
+              />
+            </div>
+          )}
+          {insights && (
+            <FindingsCard
+              findings={findings}
+              rangeLabel={rangeLabel}
+              range={range}
+              error={
+                templatesState.status === "error"
+                  ? { retry: templatesState.retry }
+                  : peopleState.status === "error"
+                    ? { retry: peopleState.retry }
+                    : undefined
+              }
+            />
+          )}
         </div>
-      )}
+      </div>
     </Page>
+  );
+}
+
+/** The InsightKpi card's shape: label line, headline value, sparkline. */
+function SkeletonInsightKpi() {
+  return (
+    <div
+      className="sp-card sp-card--content"
+      aria-busy="true"
+      aria-label="Loading key number"
+      style={{ paddingBlock: "var(--space-md)" }}
+    >
+      <Bone w={96} h={10} />
+      <div className="flex items-end justify-between gap-3" style={{ marginTop: 14 }}>
+        <Bone w={72} h={30} />
+        <div className="flex flex-col items-end" style={{ gap: 6 }}>
+          <Bone w={72} h={22} />
+          <Bone w={48} h={9} />
+        </div>
+      </div>
+    </div>
   );
 }

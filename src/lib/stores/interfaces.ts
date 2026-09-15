@@ -14,6 +14,7 @@ import type {
   GenerateRepairInput,
   GenerateRepairResult,
   GenerateResult,
+  InsightEvent,
   IntegrationConnectionInfo,
   MonthlyUsage,
   NewTemplateInput,
@@ -174,6 +175,12 @@ export interface UsageStore {
   /** Current-calendar-month totals for Settings → Usage & plan. The month
    * boundary follows `timeZone` too. */
   getMonthlyUsage(companyId: string, timeZone?: string): Promise<MonthlyUsage>;
+  /** Raw events since `sinceIso` for the Insights page — every column the
+   * aggregation needs (buildInsights does all the counting client-side,
+   * like every other Insights number). The filter only has to be generous;
+   * exact window boundaries follow the workspace timezone inside the
+   * aggregator. */
+  getInsightEvents(companyId: string, sinceIso: string): Promise<InsightEvent[]>;
   /** Per-link traffic, for an admin running several links to one template.
    * Links with no traffic are included — an untouched link is a finding. */
   getPublicLinkUsage(companyId: string): Promise<PublicLinkUsageRow[]>;

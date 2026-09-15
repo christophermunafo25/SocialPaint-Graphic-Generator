@@ -23,7 +23,7 @@ export interface TemplateGroup {
   templates: CatalogTemplate[];
 }
 
-const ORIENTATION_LABEL: Record<Orientation, string> = {
+export const ORIENTATION_LABEL: Record<Orientation, string> = {
   landscape: "Landscape",
   square: "Square",
   portrait: "Portrait",

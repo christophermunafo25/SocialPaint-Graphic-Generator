@@ -196,7 +196,8 @@ function Screen() {
           )}
         {route.name === "brandStudio" &&
           adminOnly(<BrandStudio category={route.category} surface={route.surface} />)}
-        {route.name === "dashboard" && adminOnly(<Dashboard />)}
+        {route.name === "dashboard" &&
+          adminOnly(<Dashboard range={route.range} metric={route.metric} />)}
         {route.name === "people" && adminOnly(<PeopleAdmin />)}
         {/* NOT adminOnly: members reach Account (theme, sign out). The page
             itself gates the admin sections and lands a member on Account. */}

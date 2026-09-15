@@ -511,6 +511,22 @@ export type UsageAction = "open" | "download" | "share" | "bulk_export";
  * apart instead. */
 export type UsageActor = "member" | "public";
 
+/** One raw usage event as the Insights page reads it (getInsightEvents) —
+ * every column the aggregation needs, nothing joined. All the counting
+ * lives in the pure buildInsights, shared by both backends. */
+export interface InsightEvent {
+  templateId: string;
+  action: UsageAction;
+  actor: UsageActor;
+  /** Null on public events — see UsageActor. */
+  userId: string | null;
+  /** Which public link produced the event, when one did. */
+  linkId: string | null;
+  /** The variation rendered (null on a single-variant template). */
+  variantId: string | null;
+  createdAt: string;
+}
+
 export interface UsageSummaryRow {
   templateId: string;
   templateName: string;

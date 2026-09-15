@@ -6,9 +6,12 @@
    2026-09 to the four-colour set (Figma oMzk60i8cTNIedZrwH125n, "Brand
    colors" 284:481).
 
-   Palette: four brand colours — Slime #17FF7E, Aqua #3BDEFF,
-   Purple Kara #9F60FF, Fire #FF4229 — over the neutrals
-   Ink #272727, White #FFFFFF, and Canvas #F1F1F1. Two neutrals sit
+   Palette: five brand colours — Slime #17FF7E, Lapis #14E4FF,
+   Christina #FF3FE5, Purple Kara #9F60FF, Fire #FF3627 — over the
+   neutrals Ink #272727, White #FFFFFF, and Canvas #F1F1F1. Accent values
+   refreshed 2026-09-15 to match Figma "UX-UI Designs" 106:2 exactly
+   (Lapis replaces Aqua's value, Fire moves from #FF4229; --aqua stays as
+   the legacy name for Lapis). Two neutrals sit
    outside the brand palette by design: #070708, the dark-mode canvas, and
    #161617, the dark-mode lifted surface that sits on it. Never treat either
    as a brand colour or expose them on a brand-facing surface.
@@ -28,20 +31,24 @@
    - One UI weight. Never bold for emphasis — shift colour or use the
      display face.
    - Two glyph colours on a brand fill, chosen by glyph size, never by
-     hue (measured 2026-09, WCAG 2.1). Ink #272727 (--text-on-brand)
-     carries display-size glyphs — buttons, the hero, the switch knob:
-     Slime 11.13:1, Aqua 9.30:1, Purple Kara 3.98:1, Fire 4.31:1, so it
-     clears AA normal on Slime and Aqua and the large-text floor on all
-     four. The deep cut #0B0B0C (--text-on-brand-deep) carries small mono
-     glyphs — the 10–11px index and badge in the Generate rotation:
-     Slime 14.65:1, Aqua 12.25:1, Purple Kara 5.24:1, Fire 5.68:1, AA
-     normal on all four. White reads worse than either on every hue
-     (Slime 1.34:1, Aqua 1.61:1, Purple Kara 3.76:1, Fire 3.46:1) and is
-     a defect. Brand colours are fill-only on
+     hue (measured 2026-09-15, WCAG 2.1):
+       colour                Ink    Deep   White  #161617 #F1F1F1 #FFFFFF
+       Slime #17FF7E        11.13  14.65   1.34   13.47    1.19    1.34
+       Lapis #14E4FF         9.65  12.71   1.55   11.69    1.37    1.55
+       Christina #FF3FE5     5.05   6.65   2.96    6.11    2.62    2.96
+       Purple Kara #9F60FF   3.98   5.24   3.76    4.81    3.33    3.76
+       Fire #FF3627          4.13   5.44   3.62    5.00    3.20    3.62
+     Ink #272727 (--text-on-brand) carries display-size glyphs — buttons,
+     the hero, the switch knob: it clears AA normal on Slime, Lapis, and
+     Christina and the large-text floor on all five. The deep cut #0B0B0C
+     (--text-on-brand-deep) carries small mono glyphs — the 10–11px index
+     and badge in the Generate rotation — and clears AA normal on all
+     five. White reads worse than either on every hue and is a defect.
+     Brand colours are fill-only on
      light and never appear as text or as a border that carries
-     information: none clears 3:1 against #FFFFFF, and on #F1F1F1 only
-     Purple Kara (3.33:1) and Fire (3.07:1) edge past the large-text
-     floor — too little to lift the rule, which stays in force.
+     information: on #F1F1F1 only Purple Kara (3.33:1) and Fire (3.20:1)
+     edge past the large-text floor — too little to lift the rule, which
+     stays in force.
    - No gradients as surface, no drop shadows in either mode, no glass.
    - Headings are Plus Jakarta Sans SemiBold at −3% tracking in sentence
      case; body and UI are Inter Tight (Regular for text, Medium for
@@ -142,7 +149,8 @@ html {
 }
 
 /* ── Primitives ─────────────────────────────────────────────────────────────
-   The four brand colours, locked 2026-09 (Figma "Brand colors" 284:481).
+   The brand colours — locked 2026-09 (Figma "Brand colors" 284:481),
+   accent values refreshed 2026-09-15 to match Figma "UX-UI Designs" 106:2.
    Identity only: none of these encodes state, and none may be used to
    signal success, error, warning, or attention. These are the only tokens
    without a category prefix — that is how you tell a primitive at a
@@ -152,9 +160,11 @@ html {
    "-logo" cuts any more. */
 :root {
   --slime: #17ff7e;
-  --aqua: #3bdeff;
+  --lapis: #14e4ff;
+  --christina: #ff3fe5;
+  --aqua: var(--lapis); /* --aqua is the legacy name for Lapis — new code uses --lapis */
   --purple-kara: #9f60ff;
-  --fire: #ff4229;
+  --fire: #ff3627;
   --text-on-brand: #272727; /* Ink carries display-size glyphs on any of the four */
   /* The deep cut for SMALL mono glyphs on a brand fill (2026-09-05, at
      Chris's direction). Ink lands under 4.5:1 on Purple Kara and Fire;
@@ -476,6 +486,16 @@ html {
   --chip-tile-active: var(--bg-canvas);
   --chip-tile-active-fg: var(--text-primary);
 
+  /* Neutral chart ink (Insights, 2026-09-15) — data marks that carry no
+     series identity: secondary bars, donut slices, bar tracks. Chart ink,
+     not surfaces; the alpha steps ride the theme's text base. */
+  --viz-neutral-strong: #f1f1f1;
+  --viz-neutral: rgba(241, 241, 241, 0.28);
+  --viz-neutral-2: rgba(241, 241, 241, 0.64);
+  --viz-neutral-3: rgba(241, 241, 241, 0.4);
+  --viz-neutral-4: rgba(241, 241, 241, 0.22);
+  --viz-track: rgba(241, 241, 241, 0.06);
+
   --shadow-sm: none;
   --shadow-md: none;
 
@@ -600,6 +620,14 @@ html {
   --chip-tile-active: #0b0b0c;
   --chip-tile-active-fg: var(--text-on-action);
 
+  /* Neutral chart ink — the dark block's steps on the light theme's ink. */
+  --viz-neutral-strong: #272727;
+  --viz-neutral: rgba(39, 39, 39, 0.28);
+  --viz-neutral-2: rgba(39, 39, 39, 0.64);
+  --viz-neutral-3: rgba(39, 39, 39, 0.4);
+  --viz-neutral-4: rgba(39, 39, 39, 0.22);
+  --viz-track: rgba(39, 39, 39, 0.06);
+
   --shadow-sm: none;
   --shadow-md: none;
 
@@ -639,9 +667,10 @@ html {
      Decoupled from the state tokens, which are neutral and would render
      every series identically. */
   --viz-series-1: var(--slime);
-  --viz-series-2: var(--aqua);
+  --viz-series-2: var(--lapis);
   --viz-series-3: var(--purple-kara);
   --viz-series-4: var(--fire);
+  --viz-series-5: var(--christina);
   --viz-grid: var(--border);
   /* Aliases for existing consumers; migrate to the series tokens. */
   --viz-downloads: var(--viz-series-1);
@@ -2191,17 +2220,18 @@ optgroup {
   color: var(--text-secondary);
 }
 
-/* ── Logos detail ───────────────────────────────────────────────────────────
-   Surface filter, then four columns of logo cards; 3 under --bp-lg, 2
-   under --bp-md. */
-.sp-logo-toolbar {
+/* ── Segmented control ──────────────────────────────────────────────────────
+   THE segmented radiogroup (2026-09-15) — extracted from the Logos surface
+   filter so Insights' date range and any future segment row share one
+   control. Identical rules to the toolbar it came from, minus that
+   toolbar's own bottom margin, which stays on .sp-logo-toolbar below. */
+.sp-segmented {
   display: inline-flex;
   padding: 2px;
   border: 1px solid var(--border-strong);
   border-radius: calc(var(--radius-control) + 2px);
-  margin-bottom: var(--space-sm);
 }
-.sp-logo-toolbar__seg {
+.sp-segmented__option {
   display: inline-flex;
   align-items: center;
   height: 32px;
@@ -2213,13 +2243,100 @@ optgroup {
   color: var(--text-secondary);
   cursor: pointer;
 }
-.sp-logo-toolbar__seg[aria-checked="true"] {
+.sp-segmented__option[aria-checked="true"] {
   background: var(--fill-action);
   color: var(--text-on-action);
 }
-.sp-logo-toolbar__seg:focus-visible {
+.sp-segmented__option:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring-tight);
+}
+
+/* ── Logos detail ───────────────────────────────────────────────────────────
+   Surface filter (an .sp-segmented), then four columns of logo cards; 3
+   under --bp-lg, 2 under --bp-md. */
+.sp-logo-toolbar {
+  margin-bottom: var(--space-sm);
+}
+
+/* ── Insights (one-screen rebuild, 2026-09-15) ──────────────────────────────
+   Four fixed rows on one desktop screen: KPI row, trend beside Top
+   templates (304px), weekday beside sizes, findings. Rows stack under the
+   lg breakpoint; the KPI row steps 4 → 2 → 1. */
+.sp-insights-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+.sp-insights-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 304px;
+  gap: var(--space-sm);
+  align-items: stretch;
+}
+.sp-insights-row--halves {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (max-width: 1023.98px) {
+  .sp-insights-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .sp-insights-row,
+  .sp-insights-row--halves {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 639.98px) {
+  .sp-insights-kpis {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* Findings: up to four equal columns split by 1px hairlines — dividers,
+   not stripes, so no colour ever spans a finding. 2×2 under lg (the
+   hairline stays between the columns), one column under sm. */
+.sp-insights-findings {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: var(--space-xs);
+}
+.sp-insights-findings > li {
+  padding-inline: var(--space-md);
+  border-left: 1px solid var(--border);
+}
+.sp-insights-findings > li:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+.sp-insights-findings > li:last-child {
+  padding-right: 0;
+}
+@media (max-width: 1023.98px) {
+  .sp-insights-findings {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: var(--space-md);
+  }
+  .sp-insights-findings > li {
+    border-left: 0;
+    padding-left: 0;
+  }
+  .sp-insights-findings > li:nth-child(even) {
+    border-left: 1px solid var(--border);
+    padding-left: var(--space-md);
+  }
+}
+@media (max-width: 639.98px) {
+  .sp-insights-findings {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sp-insights-findings > li:nth-child(even) {
+    border-left: 0;
+    padding-left: 0;
+  }
+  /* A page-header action row (Insights' range control is the first) wraps
+     under the title on a phone instead of squeezing it off the screen. */
+  .sp-pagehead {
+    flex-wrap: wrap;
+  }
 }
 .sp-logos-grid {
   display: grid;
@@ -4819,6 +4936,36 @@ input[type="radio"] {
   pointer-events: none;
 }
 
+/* Insights range change: the stale numbers stay visible (dimmed by the
+   page) under a 2px indeterminate bar until the new window lands — the
+   skeleton treatment is for the FIRST load only. Neutral by rule: a
+   loading bar is state, and state never rides a brand colour. */
+.sp-refresh-bar {
+  position: relative;
+  height: 2px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--viz-track);
+}
+.sp-refresh-bar::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: -40%;
+  width: 40%;
+  border-radius: var(--radius-pill);
+  background: var(--fill-action);
+  animation: sp-refresh-slide 1.2s var(--ease) infinite;
+}
+@keyframes sp-refresh-slide {
+  from {
+    left: -40%;
+  }
+  to {
+    left: 100%;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   /* State still changes; it just doesn't travel or pulse. */
   .sp-reveal[data-reveal] .sp-reveal__item,
@@ -4831,6 +4978,12 @@ input[type="radio"] {
   }
   .sp-skeleton__block {
     animation: none;
+  }
+  .sp-refresh-bar::after {
+    animation: none;
+    left: 0;
+    width: 100%;
+    opacity: 0.4;
   }
 }
 

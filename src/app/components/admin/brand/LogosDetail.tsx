@@ -81,14 +81,18 @@ export function LogosDetail({ brand, surface }: { brand: BrandDraft; surface?: L
 
   return (
     <>
-      <div className="sp-logo-toolbar" role="radiogroup" aria-label="Filter logos by surface">
+      <div
+        className="sp-segmented sp-logo-toolbar"
+        role="radiogroup"
+        aria-label="Filter logos by surface"
+      >
         {segments.map((seg) => (
           <button
             key={seg.label}
             type="button"
             role="radio"
             aria-checked={surface === seg.value}
-            className="sp-logo-toolbar__seg"
+            className="sp-segmented__option"
             onClick={() => setFilter(seg.value)}
           >
             {seg.label} {seg.count}
