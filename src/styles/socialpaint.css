@@ -360,19 +360,16 @@ html {
   --border: rgba(241, 241, 241, 0.1); /* decorative separation only */
   --border-strong: rgba(241, 241, 241, 0.2);
   /* The lit edge (2026-09-02, at Chris's direction): light from above.
-     A 1px top hairline at 25% white at rest (lifted from 15% for the
-     2026-09 frames, whose fractional per-side strokes are this recipe),
-     a 1px bottom hairline at 40% of that (10%), nothing down the sides.
-     One language for every surface — cards, the sidebar rail, the
-     platform chips. The colour is a bare channel triplet and an alpha,
-     not a finished rgba(): .sp-card assembles them, so a hover can raise
-     --edge-alpha on the surface itself and both hairlines follow.
-     FLAGGED: with rest at 25% the hover step is now a no-op in dark —
-     hover still lifts the card, but the edge no longer brightens. If the
-     brighten should survive, --edge-alpha-hover wants a new rung (0.35?);
-     not invented here. */
+     A 1px top hairline at 20% white at rest (the 2026-09 frames drew 25%;
+     softened 2026-09-15, at CJ's direction), a 1px bottom hairline at 40%
+     of that (8%), nothing down the sides. One language for every
+     surface — cards, the sidebar rail, the platform chips. The colour is
+     a bare channel triplet and an alpha, not a finished rgba(): .sp-card
+     assembles them, so a hover can raise --edge-alpha on the surface
+     itself and both hairlines follow — and at 20/25 the hover brighten
+     is a real step again, closing the flag the 25/25 pairing opened. */
   --edge-rgb: 255 255 255;
-  --edge-alpha: 0.25;
+  --edge-alpha: 0.2;
   --edge-alpha-hover: 0.25;
   --edge-bottom-ratio: 0.4;
 
