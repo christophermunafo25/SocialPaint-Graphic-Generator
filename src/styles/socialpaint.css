@@ -3212,8 +3212,14 @@ input[type="radio"] {
   width: 100%;
 }
 .sp-sizecard__plate svg {
-  width: 100%;
-  height: 100%;
+  /* The template previews' 2px overscan (2026-09-15, at CJ's direction):
+     the cover bleeds 1px past every plate edge and the plate clips it, so
+     the cover's antialiased boundary can never read as a hairline seam.
+     Under the default xMidYMid-meet scaling both axes still exceed the
+     plate, so the bleed holds on all four sides. */
+  width: calc(100% + 2px);
+  height: calc(100% + 2px);
+  flex-shrink: 0;
 }
 
 /* --- Brand swatch ---------------------------------------------------------
