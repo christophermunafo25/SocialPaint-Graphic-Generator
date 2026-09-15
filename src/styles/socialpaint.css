@@ -3634,7 +3634,6 @@ input[type="radio"] {
   position: sticky;
   top: var(--chrome-top);
   z-index: var(--z-sticky);
-  background: var(--bg-canvas);
   /* 12px of block air, CONSTANT rather than pinned-only (2026-09-15, at
      CJ's direction — the chips read crammed against the viewport edge
      once the bar pins): a sticky bar that changes height mid-scroll
@@ -3643,11 +3642,33 @@ input[type="radio"] {
   display: flex;
   align-items: center;
   gap: var(--space-xs);
-  border-bottom: 1px solid transparent;
-  transition: border-color var(--dur-state) var(--ease);
 }
-.sp-filterbar[data-pinned] {
-  border-bottom-color: var(--border);
+/* The pinned ground is a frosted fade, not a solid slab (2026-09-15, at
+   CJ's direction): canvas at full strength behind the chips, dissolving
+   to nothing 28px past the bar's bottom edge, with the backdrop blur
+   masked along the same ramp so scrolled content melts under the bar
+   instead of hitting an edge. It lives on a pseudo so the fade can run
+   PAST the bar without adding height, and it fades in only when pinned
+   — at rest nothing scrolls under the bar, and the old hairline is
+   retired: the gradient does the separating now. The solid portion of
+   the ramp (62%) covers the chip rail, so the rail-fade masks — solid
+   canvas gradients — never sit on a translucent ground. */
+.sp-filterbar::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 -28px;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(to bottom, var(--bg-canvas) 62%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  -webkit-mask-image: linear-gradient(to bottom, black 62%, transparent);
+  mask-image: linear-gradient(to bottom, black 62%, transparent);
+  opacity: 0;
+  transition: opacity var(--dur-state) var(--ease);
+}
+.sp-filterbar[data-pinned]::before {
+  opacity: 1;
 }
 /* ONE row at every width (2026-09 frames): the search control rests as a
    square on the chips' own height and radius, and opening it pushes the
