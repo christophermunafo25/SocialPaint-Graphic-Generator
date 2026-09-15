@@ -78,14 +78,20 @@ export function TemplateCard({
         className="sp-media-card__preview"
         style={frame ? ({ "--frame-ratio": frame } as React.CSSProperties) : undefined}
       >
-        {/* Contain, never crop. Inside a group the frame already matches the
-            artwork, so this is normally an exact fit; it only does visible
-            work for the odd template whose pixels round to the group's named
-            ratio without matching it exactly. */}
+        {/* Contain, never crop — except for a 2px overscan the well clips
+            (2026-09-15, at CJ's direction): sub-pixel contain rounding and
+            the renderer's antialiased edge both read as a hairline seam
+            around the artwork, so the plate bleeds 1px past each edge
+            instead of stopping exactly on it. Inside a group the frame
+            already matches the artwork; a letterboxed odd-ratio template
+            keeps its ground on the unpinned axis as before. */}
         <div
           style={{
             aspectRatio: `${template.width} / ${template.height}`,
-            ...(template.width / template.height >= 1 ? { width: "100%" } : { height: "100%" }),
+            flexShrink: 0,
+            ...(template.width / template.height >= 1
+              ? { width: "calc(100% + 2px)" }
+              : { height: "calc(100% + 2px)" }),
           }}
         >
           <TemplateThumbnail template={template.template} variantId={shownLook?.id} />
