@@ -3096,7 +3096,13 @@ input[type="radio"] {
      by platform AND shape means every card in a rail shares one ratio, so
      the frame can simply BE that ratio and nothing letterboxes. */
   aspect-ratio: var(--frame-ratio, 1 / 1);
-  background: var(--bg-hover);
+  /* The card's own fill, NOT --bg-hover (2026-09-15, at CJ's direction):
+     the contained artwork rounds sub-pixel short of the well, and a
+     lighter ground showed through the hairline gap as an inner border
+     around every preview. On the card's fill the sliver is invisible;
+     letterboxed odd-ratio artwork now sits on card rather than a lifted
+     well, which is the cleaner read. */
+  background: var(--bg-card);
   overflow: hidden;
   display: flex;
   align-items: center;
