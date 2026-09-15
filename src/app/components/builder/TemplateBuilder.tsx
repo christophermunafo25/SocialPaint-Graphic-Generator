@@ -2640,14 +2640,24 @@ export function TemplateBuilder({
     );
   }
   if (templateId && templateState.status === "loading") {
+    // An artboard-shaped pulse where the canvas is about to be, so the
+    // builder doesn't flash a bare void while the template loads.
     return (
       <div
         className="flex items-center justify-center"
         style={{ height: "100dvh", background: "var(--bg-canvas)" }}
+        aria-busy="true"
+        aria-label="Loading this template"
       >
-        <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>
-          Loading this template…
-        </p>
+        <span
+          aria-hidden
+          className="sp-skeleton__block"
+          style={{
+            width: "min(420px, 70vw)",
+            aspectRatio: "1 / 1",
+            borderRadius: "var(--radius-media-inner)",
+          }}
+        />
       </div>
     );
   }

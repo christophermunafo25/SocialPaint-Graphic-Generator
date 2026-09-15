@@ -6,6 +6,7 @@ import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { ErrorState } from "../../ErrorState";
 import { Kpi } from "../Kpi";
+import { SkeletonKpi } from "../../Skeleton";
 import { SettingsCard } from "./settingsShared";
 
 /** Read-only current-month usage, plus the Plan card. The Plan card is a
@@ -29,7 +30,16 @@ export function UsageSection() {
   return (
     <div className="space-y-6">
       {state.status === "loading" ? (
-        <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>Loading…</p>
+        <div
+          className="grid grid-cols-2 lg:grid-cols-4 gap-6"
+          aria-busy="true"
+          aria-label="Loading usage"
+        >
+          <SkeletonKpi />
+          <SkeletonKpi />
+          <SkeletonKpi />
+          <SkeletonKpi />
+        </div>
       ) : state.status === "error" ? (
         <ErrorState
           title="We couldn't load this month's usage."

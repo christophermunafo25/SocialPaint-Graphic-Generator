@@ -15,6 +15,7 @@ import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { Page, PageHeader } from "../layout/Page";
 import { ErrorState } from "../ErrorState";
+import { Bone, SkeletonKpi, SkeletonLines } from "../Skeleton";
 import { Kpi } from "./Kpi";
 import { BrandMark } from "../Sidebar";
 
@@ -110,13 +111,31 @@ export function Dashboard() {
   );
 
   if (summaryState.status === "loading") {
+    // The ready layout's shape — real header, KPI row, breakdown + chart —
+    // so nothing jumps when the summary lands.
     return (
-      <p
-        className="text-center py-24"
-        style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}
-      >
-        Loading usage…
-      </p>
+      <Page>
+        <PageHeader
+          title="Insights"
+          description="Which templates actually get used, by your team and through public links."
+        />
+        <div className="space-y-6" aria-busy="true" aria-label="Loading usage">
+          <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
+            <SkeletonKpi />
+            <SkeletonKpi />
+            <SkeletonKpi />
+            <SkeletonKpi />
+          </div>
+          <div className="grid lg:grid-cols-5 gap-6 items-stretch">
+            <div className="sp-card sp-card--content lg:col-span-2">
+              <SkeletonLines lines={5} />
+            </div>
+            <div className="sp-card sp-card--content lg:col-span-3">
+              <Bone w="100%" h={220} r="var(--radius-media-inner)" />
+            </div>
+          </div>
+        </div>
+      </Page>
     );
   }
   if (summaryState.status === "error") {
