@@ -168,18 +168,14 @@ export function TrendCard({
       </div>
       <div
         className="flex-1"
-        // 180 rather than the frame's ~208: the platform's page chrome
-        // (48/64 page padding, 45px title) is taller than the frame's, and
-        // the chart is the one soft height on the page — everything else
-        // is specified exactly. Flagged in the gate report.
-        style={{ minHeight: 180, marginTop: "var(--space-xs)", outlineOffset: 2 }}
+        style={{ minHeight: 208, marginTop: "var(--space-xs)", outlineOffset: 2 }}
         tabIndex={0}
         role="img"
         aria-label={summary}
         onKeyDown={onChartKeyDown}
         onBlur={() => setActiveIdx(null)}
       >
-        <ResponsiveContainer width="100%" height={180}>
+        <ResponsiveContainer width="100%" height={208}>
           <ComposedChart data={series} margin={{ top: 6, right: 6, left: -18, bottom: 0 }}>
             <CartesianGrid vertical={false} stroke="var(--viz-grid)" />
             <XAxis

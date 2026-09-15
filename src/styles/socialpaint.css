@@ -2291,47 +2291,7 @@ optgroup {
     grid-template-columns: minmax(0, 1fr);
   }
 }
-/* Findings: up to four equal columns split by 1px hairlines — dividers,
-   not stripes, so no colour ever spans a finding. 2×2 under lg (the
-   hairline stays between the columns), one column under sm. */
-.sp-insights-findings {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin-top: var(--space-xs);
-}
-.sp-insights-findings > li {
-  padding-inline: var(--space-md);
-  border-left: 1px solid var(--border);
-}
-.sp-insights-findings > li:first-child {
-  border-left: 0;
-  padding-left: 0;
-}
-.sp-insights-findings > li:last-child {
-  padding-right: 0;
-}
-@media (max-width: 1023.98px) {
-  .sp-insights-findings {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    row-gap: var(--space-md);
-  }
-  .sp-insights-findings > li {
-    border-left: 0;
-    padding-left: 0;
-  }
-  .sp-insights-findings > li:nth-child(even) {
-    border-left: 1px solid var(--border);
-    padding-left: var(--space-md);
-  }
-}
 @media (max-width: 639.98px) {
-  .sp-insights-findings {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .sp-insights-findings > li:nth-child(even) {
-    border-left: 0;
-    padding-left: 0;
-  }
   /* A page-header action row (Insights' range control is the first) wraps
      under the title on a phone instead of squeezing it off the screen. */
   .sp-pagehead {

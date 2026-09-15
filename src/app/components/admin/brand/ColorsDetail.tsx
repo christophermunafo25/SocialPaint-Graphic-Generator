@@ -151,12 +151,16 @@ function ColorEditingCard({ color, colors, edit, setColors, noteFor }: EditingPr
   const [valueText, setValueText] = useState(color.hex);
   const [valueError, setValueError] = useState<string | null>(null);
 
-  // The outside-click listener must see the LATEST palette when it
-  // finishes the edit, not the render it was registered on.
+  // The outside-click listener must see the LATEST palette and value text
+  // when it finishes the edit, not the render it was registered on.
   const colorsRef = useRef(colors);
   colorsRef.current = colors;
   const setColorsRef = useRef(setColors);
   setColorsRef.current = setColors;
+  const valueTextRef = useRef(valueText);
+  valueTextRef.current = valueText;
+  const noteForRef = useRef(noteFor);
+  noteForRef.current = noteFor;
 
   // Focus the name with its text selected on open.
   useEffect(() => {
@@ -194,14 +198,27 @@ function ColorEditingCard({ color, colors, edit, setColors, noteFor }: EditingPr
   const finish = React.useCallback(() => {
     const latest = colorsRef.current;
     const current = latest.find((c) => c.key === color.key);
-    // Empty name on exit restores the one editing opened with.
-    if (current && !current.name.trim()) {
+    // A pending value-field edit commits as the card closes: the
+    // outside-click listener fires on POINTERDOWN, which precedes the
+    // field's blur, so without this a typed hex silently vanished with
+    // the editor (2026-09-15). Invalid text is discarded — the refusal
+    // has nowhere to show once the card is gone — and an unchanged value
+    // is a no-op. Empty name on exit restores the one editing opened
+    // with; both land in ONE write so neither can clobber the other.
+    const parsed = parseColorInput(valueTextRef.current);
+    const hex = current && parsed && parsed !== current.hex ? parsed : null;
+    const name = current && !current.name.trim() ? openedName.current : null;
+    if (hex || name) {
       setColorsRef.current(
-        latest.map((c) => (c.key === color.key ? { ...c, name: openedName.current } : c)),
+        latest.map((c) =>
+          c.key === color.key ? { ...c, ...(hex ? { hex } : {}), ...(name ? { name } : {}) } : c,
+        ),
+        hex ? noteForRef.current(color.key, `${current?.name ?? color.name} recolored`) : undefined,
+        hex ? `hex:${color.key}` : undefined,
       );
     }
     edit.done();
-  }, [color.key, edit]);
+  }, [color.key, color.name, edit]);
 
   // Clicking outside finishes, the way a rename does elsewhere.
   useEffect(() => {

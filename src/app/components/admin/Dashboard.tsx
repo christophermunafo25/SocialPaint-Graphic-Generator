@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import type { InsightEvent, PublicLinkUsageRow, TemplateSchema } from "@/lib/types";
+import type { InsightEvent, TemplateSchema } from "@/lib/types";
 import type { Member } from "@/lib/stores/interfaces";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
@@ -23,7 +23,6 @@ import { TrendCard } from "./insights/TrendCard";
 import { TopTemplatesCard } from "./insights/TopTemplatesCard";
 import { WeekdayCard } from "./insights/WeekdayCard";
 import { SizeCard } from "./insights/SizeCard";
-import { FindingsCard, type PageFinding } from "./insights/FindingsCard";
 import { downloadInsightsCsv } from "./insights/exportCsv";
 
 /** The one-screen Insights page (2026-09-15, Figma "UX-UI Designs" 106:2):
@@ -57,12 +56,6 @@ export function Dashboard({ range, metric }: { range?: InsightsRange; metric?: I
   );
   const peopleState = useAsync<Member[]>(
     () => (company ? stores.people.list(company.id) : Promise.resolve([])),
-    [company],
-  );
-  // Feeds only the unopened-public-link finding; a failure just leaves
-  // that finding out, the way the old page dropped its links card.
-  const linkUsageState = useAsync<PublicLinkUsageRow[]>(
-    () => (company ? stores.usage.getPublicLinkUsage(company.id) : Promise.resolve([])),
     [company],
   );
 
@@ -104,18 +97,6 @@ export function Dashboard({ range, metric }: { range?: InsightsRange; metric?: I
         : null,
     [loaded, templates, members, company],
   );
-  // Findings, in the aggregator's priority order (rules 1–4), keeping the
-  // first four that apply; the unopened-link rule joins only when a slot
-  // is free (Phase 8 rule 5).
-  const findings = useMemo<PageFinding[]>(() => {
-    const list: PageFinding[] = insights ? [...insights.findings] : [];
-    if (list.length < 4 && linkUsageState.status === "ready") {
-      const unopened = linkUsageState.data.filter((l) => l.opens === 0 && !l.revokedAt).length;
-      if (unopened > 0) list.push({ kind: "unopenedLinks", count: unopened });
-    }
-    return list.slice(0, 4);
-  }, [insights, linkUsageState]);
-
   // Both header controls, --space-xs apart: the range radiogroup (a
   // navigation — changing it REPLACES the history entry, so Back leaves
   // Insights rather than replaying ranges) and Export CSV.
@@ -185,7 +166,7 @@ export function Dashboard({ range, metric }: { range?: InsightsRange; metric?: I
               aria-label="Loading activity trend"
             >
               <Bone w="40%" h={16} />
-              <Bone w="100%" h={180} r="var(--radius-media-inner)" style={{ marginTop: 16 }} />
+              <Bone w="100%" h={208} r="var(--radius-media-inner)" style={{ marginTop: 16 }} />
             </div>
             <div
               className="sp-card sp-card--content"
@@ -212,9 +193,6 @@ export function Dashboard({ range, metric }: { range?: InsightsRange; metric?: I
               <Bone w="50%" h={16} />
               <Bone w={148} h={148} r="var(--radius-pill)" style={{ marginTop: 16 }} />
             </div>
-          </div>
-          <div className="sp-card sp-card--content" aria-busy="true" aria-label="Loading findings">
-            <SkeletonLines lines={2} label="Loading findings" />
           </div>
         </div>
       </Page>
@@ -355,20 +333,6 @@ export function Dashboard({ range, metric }: { range?: InsightsRange; metric?: I
                 }
               />
             </div>
-          )}
-          {insights && (
-            <FindingsCard
-              findings={findings}
-              rangeLabel={rangeLabel}
-              range={range}
-              error={
-                templatesState.status === "error"
-                  ? { retry: templatesState.retry }
-                  : peopleState.status === "error"
-                    ? { retry: peopleState.retry }
-                    : undefined
-              }
-            />
           )}
         </div>
       </div>
