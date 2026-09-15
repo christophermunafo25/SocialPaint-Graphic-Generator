@@ -133,6 +133,16 @@ export interface Insights {
   sizes: SizeSlice[];
   findings: InsightFinding[];
   templateRows: InsightTemplateRow[];
+  /** Views and exports per public link in the CURRENT window. Only links
+   * that produced an event appear — the page joins against the link list
+   * (names, tokens) so quiet links still render with zeros. */
+  linkCounts: LinkCount[];
+}
+
+export interface LinkCount {
+  linkId: string;
+  views: number;
+  exports: number;
 }
 
 const DAY_COUNT: Record<Exclude<InsightsRange, "12m">, number> = {
@@ -328,6 +338,7 @@ export function buildInsights(input: {
   /** Ids of templates with ANY event in the current window — the
    * unused-published-templates finding's complement. */
   const usedTemplates = new Set<string>();
+  const countByLink = new Map<string, LinkCount>();
 
   for (const e of events) {
     const dayKey = dayKeyInZone(e.createdAt, timeZone);
@@ -377,6 +388,13 @@ export function buildInsights(input: {
       row.bulk += 1;
     }
     if (!row.lastUsedAt || e.createdAt > row.lastUsedAt) row.lastUsedAt = e.createdAt;
+
+    if (e.linkId && (e.action === "open" || e.action === "download")) {
+      let count = countByLink.get(e.linkId);
+      if (!count) countByLink.set(e.linkId, (count = { linkId: e.linkId, views: 0, exports: 0 }));
+      if (e.action === "open") count.views += 1;
+      else count.exports += 1;
+    }
   }
 
   const kpis = {
@@ -486,5 +504,14 @@ export function buildInsights(input: {
   ).length;
   if (unused > 0) findings.push({ kind: "unusedTemplates", count: unused });
 
-  return { kpis, series, topTemplates, weekday, sizes, findings, templateRows };
+  return {
+    kpis,
+    series,
+    topTemplates,
+    weekday,
+    sizes,
+    findings,
+    templateRows,
+    linkCounts: [...countByLink.values()],
+  };
 }

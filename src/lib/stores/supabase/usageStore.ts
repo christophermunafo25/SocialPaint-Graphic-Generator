@@ -233,7 +233,9 @@ export class SupabaseUsageStore implements UsageStore {
     const [linksResult, eventsResult] = await Promise.all([
       supabase()
         .from("template_links")
-        .select("id, name, revoked_at, created_at, template_id, templates!inner(name, company_id)")
+        .select(
+          "id, name, token, revoked_at, created_at, template_id, templates!inner(name, company_id)",
+        )
         .eq("templates.company_id", companyId),
       supabase()
         .from("usage_events")
@@ -249,6 +251,7 @@ export class SupabaseUsageStore implements UsageStore {
       linksResult.data as unknown as Array<{
         id: string;
         name: string;
+        token: string | null;
         revoked_at: string | null;
         created_at: string;
         template_id: string;
@@ -257,6 +260,7 @@ export class SupabaseUsageStore implements UsageStore {
     ).map((l) => ({
       id: l.id,
       name: l.name,
+      token: l.token,
       templateId: l.template_id,
       templateName: l.templates?.name ?? "(deleted template)",
       revokedAt: l.revoked_at,

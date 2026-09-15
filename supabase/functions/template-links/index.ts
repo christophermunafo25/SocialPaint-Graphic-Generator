@@ -222,6 +222,9 @@ Deno.serve(async (req) => {
           template_id: templateId,
           name: optionalString(body.name, "name", MAX_NAME_CHARS) ?? "",
           token_hash: await hashToken(token),
+          // Stored retrievably since 0033 (at CJ's direction) so Insights
+          // can offer copy-to-clipboard later. The gate never reads it.
+          token,
           allow_uploads: body.allowUploads === undefined ? true : body.allowUploads === true,
           pinned_variant_id: optionalVariantId(body.pinnedVariantId, "pinnedVariantId"),
           expires_at: optionalFutureIso(body.expiresAt, "expiresAt", { maxYearsAhead: 5 }) ?? null,
@@ -288,6 +291,8 @@ Deno.serve(async (req) => {
         .from("template_links")
         .update({
           token_hash: await hashToken(token),
+          // See the create path: retrievable since 0033.
+          token,
           use_count: 0,
           revoked_at: null,
           last_used_at: null,

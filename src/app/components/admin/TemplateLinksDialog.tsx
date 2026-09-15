@@ -330,7 +330,7 @@ function FreshLink({ url, copied, onCopy }: { url: string; copied: boolean; onCo
       role="status"
       aria-live="polite"
     >
-      <p className="sp-eyebrow">Copy this now. It is not shown again</p>
+      <p className="sp-eyebrow">Your link is ready. Copy it here or later from Insights</p>
       <input
         readOnly
         value={url}

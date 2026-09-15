@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import type { InsightEvent, TemplateSchema } from "@/lib/types";
+import type { InsightEvent, PublicLinkUsageRow, TemplateSchema } from "@/lib/types";
 import type { Member } from "@/lib/stores/interfaces";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
@@ -23,6 +23,7 @@ import { TrendCard } from "./insights/TrendCard";
 import { TopTemplatesCard } from "./insights/TopTemplatesCard";
 import { WeekdayCard } from "./insights/WeekdayCard";
 import { SizeCard } from "./insights/SizeCard";
+import { PublicLinksCard } from "./insights/PublicLinksCard";
 import { downloadInsightsCsv } from "./insights/exportCsv";
 
 /** The one-screen Insights page (2026-09-15, Figma "UX-UI Designs" 106:2):
@@ -56,6 +57,13 @@ export function Dashboard({ range, metric }: { range?: InsightsRange; metric?: I
   );
   const peopleState = useAsync<Member[]>(
     () => (company ? stores.people.list(company.id) : Promise.resolve([])),
+    [company],
+  );
+  // Names and tokens for the Public links card (counts come from the
+  // events, so they follow the selected range). A failure just drops the
+  // card, the way the old page dropped its links table.
+  const linkUsageState = useAsync<PublicLinkUsageRow[]>(
+    () => (company ? stores.usage.getPublicLinkUsage(company.id) : Promise.resolve([])),
     [company],
   );
 
@@ -334,6 +342,14 @@ export function Dashboard({ range, metric }: { range?: InsightsRange; metric?: I
               />
             </div>
           )}
+          {insights &&
+            linkUsageState.status === "ready" &&
+            linkUsageState.data.some((l) => !l.revokedAt) && (
+              <PublicLinksCard
+                links={linkUsageState.data.filter((l) => !l.revokedAt)}
+                counts={insights.linkCounts}
+              />
+            )}
         </div>
       </div>
     </Page>

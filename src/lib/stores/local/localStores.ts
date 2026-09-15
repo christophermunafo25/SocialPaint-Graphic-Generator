@@ -59,6 +59,9 @@ interface TemplateLinkRec {
   templateId: string;
   revokedAt?: string | null;
   createdAt: string;
+  /** Plaintext token (0033) — only ever present on seeded dev data, since
+   * this backend cannot mint a link. */
+  token?: string | null;
 }
 
 /** Companies saved before the settings columns existed lack them — fill the
@@ -422,6 +425,7 @@ export class LocalUsageStore implements UsageStore {
       .map((l) => ({
         id: l.id,
         name: l.name,
+        token: l.token ?? null,
         templateId: l.templateId,
         templateName: templates.find((t) => t.id === l.templateId)?.name ?? "(deleted template)",
         revokedAt: l.revokedAt ?? null,

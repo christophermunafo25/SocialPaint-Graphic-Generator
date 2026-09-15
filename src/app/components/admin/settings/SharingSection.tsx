@@ -184,7 +184,7 @@ export function SharingSection() {
           role="status"
           aria-live="polite"
         >
-          <p className="sp-eyebrow">Copy this now. It is not shown again</p>
+          <p className="sp-eyebrow">Your link is ready. Copy it here or later from Insights</p>
           <input
             readOnly
             value={freshUrl}

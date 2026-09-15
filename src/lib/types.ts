@@ -406,9 +406,11 @@ export type NewTemplateInput = Omit<TemplateSchema, "id" | "createdAt" | "update
 
 /** A public share link for a published template.
  *
- * The token itself is NOT here and cannot be: it is stored hashed, and the
- * plaintext exists only in the response to the request that minted it. An
- * admin who loses a link regenerates it — there is nothing to look up. */
+ * The token itself is NOT here: the gate verifies against its hash, and
+ * this admin view never carries it. Since migration 0033 the plaintext IS
+ * stored (admin-readable) so Insights can offer copy-to-clipboard — it
+ * travels on PublicLinkUsageRow, not here. Links minted before 0033 have
+ * no stored plaintext; regenerate remains their recovery path. */
 export interface TemplateLink {
   id: string;
   /** Admin's own label ("Speaker confirmation email"). Never shown to a
@@ -576,6 +578,10 @@ export interface PublicLinkUsageRow {
   /** Set when the link has been revoked — the counts are history, and this
    * is why they stopped growing. */
   revokedAt: string | null;
+  /** The plaintext token, for copy-to-clipboard (migration 0033). Null on
+   * links minted before it was stored — those stay copyable only by
+   * regenerating. Admin-read under RLS, like the rest of the row. */
+  token: string | null;
 }
 
 /** One day of activity for the Insights trend chart (date = YYYY-MM-DD). */

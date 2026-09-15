@@ -317,6 +317,42 @@ describe("buildInsights top templates and findings", () => {
   });
 });
 
+describe("buildInsights link counts", () => {
+  it("counts views and exports per link in the current window only", () => {
+    const insights = build([
+      event({
+        createdAt: "2026-09-14T10:00:00Z",
+        action: "open",
+        actor: "public",
+        userId: null,
+        linkId: "l1",
+      }),
+      event({
+        createdAt: "2026-09-14T11:00:00Z",
+        action: "open",
+        actor: "public",
+        userId: null,
+        linkId: "l1",
+      }),
+      event({ createdAt: "2026-09-14T12:00:00Z", actor: "public", userId: null, linkId: "l1" }),
+      event({
+        createdAt: "2026-09-14T12:00:00Z",
+        action: "open",
+        actor: "public",
+        userId: null,
+        linkId: "l2",
+      }),
+      // Previous window: never in the current counts.
+      event({ createdAt: "2026-08-10T10:00:00Z", actor: "public", userId: null, linkId: "l1" }),
+      // No link: not attributed anywhere.
+      event({ createdAt: "2026-09-14T13:00:00Z" }),
+    ]);
+    expect(insights.linkCounts).toContainEqual({ linkId: "l1", views: 2, exports: 1 });
+    expect(insights.linkCounts).toContainEqual({ linkId: "l2", views: 1, exports: 0 });
+    expect(insights.linkCounts).toHaveLength(2);
+  });
+});
+
 describe("insightWindowStartIso", () => {
   it("starts a day before the previous window, generously", () => {
     // 30d previous window starts Jul 18; the fetch starts Jul 17 UTC.

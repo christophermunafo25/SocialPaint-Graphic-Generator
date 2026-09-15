@@ -22,6 +22,9 @@ export interface LinkRecord {
   templateName: string;
   revokedAt: string | null;
   createdAt: string;
+  /** Plaintext token (migration 0033); optional so pre-0033 callers and
+   * fixtures need no change — absent reads as not stored. */
+  token?: string | null;
 }
 
 export function joinLinkUsage(links: LinkRecord[], events: LinkEvent[]): PublicLinkUsageRow[] {
@@ -38,6 +41,7 @@ export function joinLinkUsage(links: LinkRecord[], events: LinkEvent[]): PublicL
         shares: 0,
         lastUsedAt: null,
         revokedAt: l.revokedAt,
+        token: l.token ?? null,
       },
     ]),
   );
