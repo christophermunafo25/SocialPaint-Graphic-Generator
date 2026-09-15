@@ -211,16 +211,14 @@ function ColorEditingCard({ color, colors, edit, setColors, noteFor }: EditingPr
     if (hex || name) {
       setColorsRef.current(
         latest.map((c) =>
-          c.key === color.key
-            ? { ...c, ...(hex ? { hex } : {}), ...(name ? { name } : {}) }
-            : c,
+          c.key === color.key ? { ...c, ...(hex ? { hex } : {}), ...(name ? { name } : {}) } : c,
         ),
         hex ? noteForRef.current(color.key, `${current?.name ?? color.name} recolored`) : undefined,
         hex ? `hex:${color.key}` : undefined,
       );
     }
     edit.done();
-  }, [color.key, edit]);
+  }, [color.key, color.name, edit]);
 
   // Clicking outside finishes, the way a rename does elsewhere.
   useEffect(() => {
