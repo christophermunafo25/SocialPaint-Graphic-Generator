@@ -3634,6 +3634,12 @@ input[type="radio"] {
   position: sticky;
   top: var(--chrome-top);
   z-index: var(--z-sticky);
+  /* The bar belongs to the page HEADING, not to the templates below
+     (2026-09-15, at CJ's direction): it pulls up against the header's
+     32px margin so the gap above the chips reads clearly tighter than
+     the run down to the first shelf, instead of floating evenly between
+     the two. */
+  margin-top: calc(-1 * var(--space-md));
   /* 12px of block air, CONSTANT rather than pinned-only (2026-09-15, at
      CJ's direction — the chips read crammed against the viewport edge
      once the bar pins): a sticky bar that changes height mid-scroll
