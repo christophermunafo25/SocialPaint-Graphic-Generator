@@ -309,10 +309,9 @@ export function Sidebar() {
           />
         )}
         <header
-          className="sticky top-0 w-full"
+          className="sp-mobilebar sticky top-0 w-full"
+          data-menu-open={menuOpen || undefined}
           style={{
-            background: "var(--sb-bg)",
-            borderBottom: "1px solid var(--sb-border)",
             // App chrome outranks page chrome: above the filter bar's
             // --z-sticky, below modals.
             zIndex: "var(--z-drawer)",
