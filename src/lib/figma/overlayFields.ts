@@ -86,8 +86,30 @@ function unitField(u: FigmaLayerUnit, label: string): TemplateField | null {
       opacity: u.opacity !== undefined && u.opacity < 1 ? Math.round(u.opacity * 100) : undefined,
     };
   }
-  // Stroke units have no field representation (TemplateField has no outline
-  // property) — an above-field border stays out rather than approximating.
+  if (u.kind === "stroke" && u.color && u.strokeWeight) {
+    // The unit rect is the stroked PATH (the canvas paints the stroke
+    // centered on it); the field stores an INNER stroke, so the box is the
+    // path grown by half the weight per side, and rounded corners grow with
+    // it (outer radius = path radius + half the weight). No fill: a
+    // stroke-only shape renders transparent inside the outline.
+    const { hex, alpha } = parseRgba(u.color);
+    const w = Math.max(1, Math.round(u.strokeWeight));
+    const grow = Math.round(w / 2);
+    const r = u.cornerRadius;
+    return {
+      ...base,
+      x: u.x - grow,
+      y: u.y - grow,
+      width: u.width + grow * 2,
+      height: u.height + grow * 2,
+      cornerRadius: r
+        ? { tl: r.tl + grow, tr: r.tr + grow, br: r.br + grow, bl: r.bl + grow }
+        : undefined,
+      strokeColor: hex,
+      strokeWidthPx: w,
+      opacity: alpha < 1 ? Math.round(alpha * 100) : undefined,
+    };
+  }
   return null;
 }
 

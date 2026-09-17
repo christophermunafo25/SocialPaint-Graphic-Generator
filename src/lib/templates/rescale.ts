@@ -28,6 +28,9 @@ export function scaleFieldType(f: TemplateField, u: number): Partial<TemplateFie
     ...(f.fontSizePx != null && { fontSizePx: roundFont(f.fontSizePx * u) }),
     ...(f.minFontSizePx != null && { minFontSizePx: roundFont(f.minFontSizePx * u) }),
     ...(f.letterSpacingPx != null && { letterSpacingPx: roundTracking(f.letterSpacingPx * u) }),
+    // A stroke is a px length like a radius; the font floor keeps an extreme
+    // downscale from rounding a hairline to zero (invisible outline).
+    ...(f.strokeWidthPx != null && { strokeWidthPx: roundFont(f.strokeWidthPx * u) }),
     ...(f.cornerRadius && {
       cornerRadius: {
         tl: roundPx(f.cornerRadius.tl * u),

@@ -367,17 +367,64 @@ describe("shape field extraction", () => {
     });
   });
 
-  it("leaves stroked or effected shapes in the plate (exact render beats a lossy lift)", () => {
-    const stroked: FigmaNode = {
-      id: "3:4",
-      name: "Outlined",
-      type: "RECTANGLE",
-      absoluteBoundingBox: { x: 0, y: 0, width: 10, height: 10 },
-      fills: [{ type: "SOLID", color: { r: 0, g: 0, b: 0 } }],
-      strokes: [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }],
-      strokeWeight: 2,
-    };
-    expect(run(stroked).out).toHaveLength(0);
+  const stroked: FigmaNode = {
+    id: "3:4",
+    name: "Outlined",
+    type: "RECTANGLE",
+    absoluteBoundingBox: { x: 150, y: 250, width: 200, height: 100 },
+    fills: [{ type: "SOLID", color: { r: 0, g: 0, b: 0 } }],
+    strokes: [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }],
+    strokeWeight: 4,
+    strokeAlign: "INSIDE",
+  };
+
+  it("lifts a single solid inside stroke with the shape, box untouched", () => {
+    const { out, warnings } = run(stroked);
+    expect(out[0]).toMatchObject({
+      type: "shape",
+      shape: "rect",
+      x: 50,
+      y: 50,
+      width: 200,
+      height: 100,
+      colorHex: "#000000",
+      strokeColor: "#FFFFFF",
+      strokeWidthPx: 4,
+    });
+    expect(warnings).toHaveLength(0);
+  });
+
+  it("grows the box by half the weight for a CENTER stroke, with an info note", () => {
+    const { out, warnings } = run({ ...stroked, strokeAlign: "CENTER" });
+    expect(out[0]).toMatchObject({
+      x: 48,
+      y: 48,
+      width: 204,
+      height: 104,
+      strokeColor: "#FFFFFF",
+      strokeWidthPx: 4,
+    });
+    expect(
+      warnings.some((w) => w.severity === "info" && w.issue.includes("center-aligned stroke")),
+    ).toBe(true);
+  });
+
+  it("grows the box by the full weight for an OUTSIDE stroke", () => {
+    const { out } = run({ ...stroked, strokeAlign: "OUTSIDE" });
+    expect(out[0]).toMatchObject({ x: 46, y: 46, width: 208, height: 108, strokeWidthPx: 4 });
+  });
+
+  it("still leaves effected or multi-stroked shapes in the plate", () => {
+    expect(run({ ...stroked, effects: [{ type: "DROP_SHADOW" }] }).out).toHaveLength(0);
+    expect(
+      run({
+        ...stroked,
+        strokes: [
+          { type: "SOLID", color: { r: 1, g: 1, b: 1 } },
+          { type: "SOLID", color: { r: 1, g: 0, b: 0 } },
+        ],
+      }).out,
+    ).toHaveLength(0);
     expect(run({ ...stroked, strokes: [], effects: [{ type: "DROP_SHADOW" }] }).out).toHaveLength(
       0,
     );

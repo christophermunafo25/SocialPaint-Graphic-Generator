@@ -114,6 +114,8 @@ export interface TemplateFieldRow {
   corner_radius: import("../../types").CornerRadius | null;
   opacity: number | null;
   shape: import("../../types").ShapeKind | null;
+  stroke_color: string | null;
+  stroke_width_px: number | null;
   is_static: boolean | null;
   static_value: string | null;
   font_family: string | null;
@@ -168,6 +170,8 @@ export const toTemplateField = (r: TemplateFieldRow): TemplateField => ({
   cornerRadius: opt(r.corner_radius),
   opacity: opt(r.opacity) === undefined ? undefined : Number(r.opacity),
   shape: opt(r.shape),
+  strokeColor: opt(r.stroke_color),
+  strokeWidthPx: opt(r.stroke_width_px) === undefined ? undefined : Number(r.stroke_width_px),
   static: opt(r.is_static),
   staticValue: opt(r.static_value),
   fontFamily: opt(r.font_family),
@@ -215,6 +219,8 @@ export const fieldToRow = (
   corner_radius: f.cornerRadius ?? null,
   opacity: f.opacity ?? null,
   shape: f.shape ?? null,
+  stroke_color: f.strokeColor ?? null,
+  stroke_width_px: f.strokeWidthPx ?? null,
   is_static: f.static ?? null,
   static_value: f.staticValue ?? null,
   font_family: f.fontFamily ?? null,

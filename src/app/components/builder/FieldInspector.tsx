@@ -1192,6 +1192,88 @@ export function FieldInspector(props: FieldInspectorProps) {
               )}
             </>
           )}
+          {/* Shape stroke — an inner outline, so width never grows the box.
+            Same row grammar as the Fill section: swatch, hex, then the
+            content-sized numeric, then remove. Base panel only (no variation
+            override channel for strokes). */}
+          {isShape && !variantMode && (
+            <PropertyRow label="Stroke" stack={Boolean(field.strokeColor)}>
+              {field.strokeColor ? (
+                <>
+                  <span
+                    aria-hidden
+                    style={{
+                      width: 24,
+                      height: 24,
+                      flexShrink: 0,
+                      borderRadius: "var(--radius-control)",
+                      border: "1px solid var(--border-strong)",
+                      background: fillSwatchCss(field.strokeColor),
+                    }}
+                  />
+                  <input
+                    type="text"
+                    spellCheck={false}
+                    aria-label="Stroke hex value"
+                    className="sp-input"
+                    style={{
+                      ...compactControlStyle,
+                      fontFamily: "var(--font-mono)",
+                      fontSize: "var(--type-caption-size)",
+                      minWidth: 0,
+                      flex: 1,
+                    }}
+                    key={`${field.id}:stroke:${field.strokeColor}`}
+                    defaultValue={field.strokeColor}
+                    onKeyDown={(e) => {
+                      e.stopPropagation();
+                      if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                      if (e.key === "Escape") {
+                        (e.target as HTMLInputElement).value = field.strokeColor!;
+                        (e.target as HTMLInputElement).blur();
+                      }
+                    }}
+                    onBlur={(e) => {
+                      const m = /^#?([0-9a-fA-F]{6})$/.exec(e.target.value.trim());
+                      if (m) onChange({ strokeColor: `#${m[1].toUpperCase()}` });
+                      else e.target.value = field.strokeColor!;
+                    }}
+                  />
+                  <div style={{ width: 68, flexShrink: 0 }}>
+                    <NumericField
+                      suffix="px"
+                      ariaLabel="Stroke width"
+                      precision={0}
+                      min={1}
+                      value={field.strokeWidthPx ?? 1}
+                      onCommit={(v) =>
+                        onChange({ strokeWidthPx: Math.max(1, v ?? field.strokeWidthPx ?? 1) })
+                      }
+                    />
+                  </div>
+                  <button
+                    title="Remove stroke"
+                    aria-label="Remove stroke"
+                    onClick={() =>
+                      onChange({ strokeColor: undefined, strokeWidthPx: undefined })
+                    }
+                    style={{ color: "var(--text-muted)", display: "flex", flexShrink: 0 }}
+                  >
+                    <Minus style={{ width: 13, height: 13 }} strokeWidth={1.5} />
+                  </button>
+                </>
+              ) : (
+                <button
+                  title="Add stroke"
+                  aria-label="Add stroke"
+                  onClick={() => onChange({ strokeColor: DEFAULT_FILL_HEX, strokeWidthPx: 2 })}
+                  style={{ color: "var(--text-secondary)", display: "flex" }}
+                >
+                  <Plus style={{ width: 13, height: 13 }} strokeWidth={1.5} />
+                </button>
+              )}
+            </PropertyRow>
+          )}
         </InspectorSection>
       )}
 

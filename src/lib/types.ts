@@ -206,6 +206,10 @@ export interface TemplateField {
    * textGradient (same fill pipeline as text); rects also honor
    * cornerRadius. Shapes are always static — never member-editable. */
   shape?: ShapeKind;
+  /** Shape fields only: outline drawn inside the box (inner stroke, so the
+   * painted size never exceeds width × height). */
+  strokeColor?: string; // #RRGGBB
+  strokeWidthPx?: number; // >= 1 when strokeColor is set
   /** Figma node this field was imported from (transient import provenance —
    * used to lift the element off the recomposed background). */
   sourceNodeId?: string;

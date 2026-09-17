@@ -382,10 +382,18 @@ const STAR_POINTS = "50,0 61,35 98,35 68,57 79,91 50,70 21,91 32,57 2,35 39,35";
 
 /** Decorative shape: fill = gradient → hex. Rects render
  * as plain divs (corner radius applies); ellipse/triangle/star render as
- * inline SVG so gradients survive the PNG export. */
+ * inline SVG so gradients survive the PNG export. Strokes are INNER strokes
+ * (the painted size never exceeds the box): rects use a border-box border;
+ * SVG shapes double the stroke width and clip to their own geometry, which
+ * leaves exactly strokeWidthPx inside the edge. The viewBox is the field's
+ * real size, so the stroke stays uniform at any aspect ratio. */
 function ShapeFieldBox({ field }: { field: TemplateField }) {
   const kind = field.shape ?? "rect";
-  const solid = field.colorHex ?? DEFAULT_FILL_HEX;
+  const stroke = field.strokeColor;
+  const strokeW = stroke ? Math.max(1, field.strokeWidthPx ?? 1) : 0;
+  // Palette shapes always carry a colorHex; only a stroke-only import leaves
+  // it unset, and there the outline IS the artwork — no default grey fill.
+  const solid = field.colorHex ?? (stroke ? "transparent" : DEFAULT_FILL_HEX);
   const g = field.textGradient?.stops.length ? field.textGradient : undefined;
 
   if (kind === "rect") {
@@ -395,22 +403,45 @@ function ShapeFieldBox({ field }: { field: TemplateField }) {
           ...contentBaseStyle(field),
           background: g ? gradientCss(g) : solid,
           borderRadius: cornerRadiusCss(field),
+          ...(stroke ? { boxSizing: "border-box", border: `${strokeW}px solid ${stroke}` } : {}),
         }}
       />
     );
   }
 
   const gradId = `sp-shape-grad-${field.id}`;
+  const clipId = `sp-shape-clip-${field.id}`;
   const paint = g ? `url(#${gradId})` : solid;
+  const w = field.width;
+  const h = field.height;
+  const shapeEl = (extra?: React.SVGProps<SVGElement>) => {
+    if (kind === "ellipse") {
+      return (
+        <ellipse
+          cx={w / 2}
+          cy={h / 2}
+          rx={w / 2}
+          ry={h / 2}
+          {...(extra as React.SVGProps<SVGEllipseElement>)}
+        />
+      );
+    }
+    const points =
+      kind === "triangle"
+        ? `${w / 2},0 ${w},${h} 0,${h}`
+        : STAR_POINTS.split(" ")
+            .map((p) => {
+              const [x, y] = p.split(",").map(Number);
+              return `${(x / 100) * w},${(y / 100) * h}`;
+            })
+            .join(" ");
+    return <polygon points={points} {...(extra as React.SVGProps<SVGPolygonElement>)} />;
+  };
   return (
     <div style={contentBaseStyle(field)}>
-      <svg
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
-        style={{ width: "100%", height: "100%", display: "block" }}
-      >
-        {g && (
-          <defs>
+      <svg viewBox={`0 0 ${w} ${h}`} style={{ width: "100%", height: "100%", display: "block" }}>
+        <defs>
+          {g && (
             <linearGradient
               id={gradId}
               gradientTransform={`rotate(${(((g.angle - 90) % 360) + 360) % 360}, 0.5, 0.5)`}
@@ -419,11 +450,17 @@ function ShapeFieldBox({ field }: { field: TemplateField }) {
                 <stop key={i} offset={`${Math.round(s.position * 100)}%`} stopColor={s.color} />
               ))}
             </linearGradient>
-          </defs>
-        )}
-        {kind === "ellipse" && <ellipse cx="50" cy="50" rx="50" ry="50" fill={paint} />}
-        {kind === "triangle" && <polygon points="50,0 100,100 0,100" fill={paint} />}
-        {kind === "star" && <polygon points={STAR_POINTS} fill={paint} />}
+          )}
+          {stroke && <clipPath id={clipId}>{shapeEl()}</clipPath>}
+        </defs>
+        {shapeEl({ fill: paint })}
+        {stroke &&
+          shapeEl({
+            fill: "none",
+            stroke,
+            strokeWidth: strokeW * 2,
+            clipPath: `url(#${clipId})`,
+          })}
       </svg>
     </div>
   );

@@ -142,6 +142,9 @@ export interface SuggestedField {
   cornerRadius?: { tl: number; tr: number; br: number; bl: number };
   /** Shape fields: which primitive to draw. */
   shape?: "rect" | "ellipse" | "triangle" | "star";
+  /** Shape fields: inner stroke, matching TemplateField.strokeColor/-WidthPx. */
+  strokeColor?: string;
+  strokeWidthPx?: number;
   /** Every imported element lands FIXED — the design stays exactly as
    * drawn, and the admin opts elements IN to being member fields. Text
    * carries its source copy as the fixed content; image staticValue is
@@ -634,17 +637,57 @@ export function walk(
     } else {
       const fills = visibleFills(node);
       const fill = fills[0];
-      if (fills.length === 1 && !strokes.length && !effects.length && !isRasterLeaf(node)) {
+      // Exactly one visible SOLID stroke lifts WITH the shape as an inner
+      // stroke. Figma INSIDE alignment maps directly; CENTER/OUTSIDE grow
+      // the box so the painted extent is preserved while the stored stroke
+      // stays inside.
+      const solidStroke =
+        strokes.length === 1 && strokes[0].type === "SOLID" && strokes[0].color
+          ? strokes[0]
+          : undefined;
+      if (
+        fills.length === 1 &&
+        (!strokes.length || solidStroke) &&
+        !effects.length &&
+        !isRasterLeaf(node)
+      ) {
+        let placed = place;
+        let strokeProps: { strokeColor?: string; strokeWidthPx?: number } = {};
+        if (solidStroke) {
+          const weight = Math.max(1, Math.round(node.strokeWeight ?? 1));
+          const align = node.strokeAlign ?? "INSIDE";
+          const grow =
+            align === "OUTSIDE" ? weight : align === "CENTER" ? Math.round(weight / 2) : 0;
+          if (grow > 0) {
+            placed = {
+              ...place,
+              // Center-anchored (rotated) boxes grow about their center.
+              x: place.anchor === "center" ? place.x : place.x - grow,
+              y: place.anchor === "center" ? place.y : place.y - grow,
+              width: place.width + grow * 2,
+              height: place.height + grow * 2,
+            };
+            warn(
+              `${align.toLowerCase()}-aligned stroke imported as an inside stroke on a box grown ${grow}px per side.`,
+              "info",
+            );
+          }
+          if ((solidStroke.color!.a ?? 1) < 1 || (solidStroke.opacity ?? 1) < 1) {
+            warn("a translucent stroke imported fully opaque.", "info");
+          }
+          strokeProps = { strokeColor: toHex(solidStroke.color!), strokeWidthPx: weight };
+        }
         if (fill.type === "SOLID" && fill.color) {
           out.push({
             ...base,
             fieldKey: slug(node.name, taken),
             type: "shape",
             shape,
-            ...place,
+            ...placed,
             colorHex: toHex(fill.color),
             cornerRadius: cornerRadiusOf(node),
             opacity: foldedOpacity(node, fill),
+            ...strokeProps,
           });
           return;
         }
@@ -654,10 +697,11 @@ export function walk(
             fieldKey: slug(node.name, taken),
             type: "shape",
             shape,
-            ...place,
-            textGradient: linearGradientOf(fill, place.width, place.height),
+            ...placed,
+            textGradient: linearGradientOf(fill, placed.width, placed.height),
             cornerRadius: cornerRadiusOf(node),
             opacity: foldedOpacity(node, fill),
+            ...strokeProps,
           });
           return;
         }

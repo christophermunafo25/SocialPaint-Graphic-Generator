@@ -52,6 +52,11 @@ type StructuralKey =
   | "static"
   | "cornerRadius"
   | "shape"
+  // Shape strokes are appearance, but variation overrides for them are a
+  // separate decision (flagged, not built) — until then they are shared
+  // across looks like every other unclassified-as-overridable property.
+  | "strokeColor"
+  | "strokeWidthPx"
   | "sourceNodeId"
   | "fontFamily"
   | "fontWeight"

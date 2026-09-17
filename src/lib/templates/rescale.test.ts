@@ -213,6 +213,8 @@ describe("rescaleTemplate — completeness", () => {
     cornerRadius: { tl: 8, tr: 8, br: 8, bl: 8 },
     opacity: 80,
     shape: "rect",
+    strokeColor: "#445566",
+    strokeWidthPx: 4,
     sourceNodeId: "1:2",
     typeStyleKey: "heading",
     fontFamily: "Inter",
@@ -247,6 +249,7 @@ describe("rescaleTemplate — completeness", () => {
     "minFontSizePx",
     "letterSpacingPx",
     "cornerRadius",
+    "strokeWidthPx",
   ];
 
   it("scales every geometric property and nothing else", () => {
