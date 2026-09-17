@@ -5,6 +5,7 @@ import {
   Circle,
   Image as ImageIcon,
   Minus,
+  Pill as PillIcon,
   Square,
   Star,
   Triangle,
@@ -31,6 +32,7 @@ const ICONS: Record<string, React.ComponentType<{ style?: React.CSSProperties }>
   triangle: Triangle,
   star: Star,
   line: Minus,
+  pill: PillIcon,
 };
 
 interface ElementPaletteProps {

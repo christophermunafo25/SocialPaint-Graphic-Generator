@@ -215,6 +215,9 @@ describe("rescaleTemplate — completeness", () => {
     shape: "rect",
     strokeColor: "#445566",
     strokeWidthPx: 4,
+    plateColor: "#082E17",
+    platePaddingX: 24,
+    platePaddingY: 12,
     sourceNodeId: "1:2",
     typeStyleKey: "heading",
     fontFamily: "Inter",
@@ -250,6 +253,8 @@ describe("rescaleTemplate — completeness", () => {
     "letterSpacingPx",
     "cornerRadius",
     "strokeWidthPx",
+    "platePaddingX",
+    "platePaddingY",
   ];
 
   it("scales every geometric property and nothing else", () => {

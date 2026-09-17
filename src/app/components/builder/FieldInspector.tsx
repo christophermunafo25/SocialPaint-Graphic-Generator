@@ -53,7 +53,12 @@ import {
   resolveFieldStyle,
   ruleSentences,
 } from "@/lib/brand/resolveStyle";
-import { DEFAULT_FILL_HEX, gradientCss } from "../SchemaRenderer";
+import {
+  DEFAULT_FILL_HEX,
+  PLATE_PADDING_X_DEFAULT,
+  PLATE_PADDING_Y_DEFAULT,
+  gradientCss,
+} from "../SchemaRenderer";
 import { Select, type SelectOption } from "../ui/Select";
 import { Switch } from "../Switch";
 import {
@@ -372,7 +377,13 @@ export function FieldInspector(props: FieldInspectorProps) {
 
   // --- Appearance ----------------------------------------------------------
 
-  const hasRadius = field.type === "image" || (isShape && (field.shape ?? "rect") === "rect");
+  /** Text fields that can carry a plate (a pill) — select is a member-input
+   * control and never renders a plate. */
+  const isTextish = field.type === "text" || field.type === "multiline";
+  const hasRadius =
+    field.type === "image" ||
+    (isShape && (field.shape ?? "rect") === "rect") ||
+    (isTextish && Boolean(field.plateColor));
   const r = field.cornerRadius;
   const radiusUniform = !r || (r.tl === r.tr && r.tr === r.br && r.br === r.bl);
   const [radiusLinked, setRadiusLinked] = useState(radiusUniform);
@@ -1254,9 +1265,7 @@ export function FieldInspector(props: FieldInspectorProps) {
                   <button
                     title="Remove stroke"
                     aria-label="Remove stroke"
-                    onClick={() =>
-                      onChange({ strokeColor: undefined, strokeWidthPx: undefined })
-                    }
+                    onClick={() => onChange({ strokeColor: undefined, strokeWidthPx: undefined })}
                     style={{ color: "var(--text-muted)", display: "flex", flexShrink: 0 }}
                   >
                     <Minus style={{ width: 13, height: 13 }} strokeWidth={1.5} />
@@ -1273,6 +1282,122 @@ export function FieldInspector(props: FieldInspectorProps) {
                 </button>
               )}
             </PropertyRow>
+          )}
+          {/* Text plate (pill) — same row grammar as the stroke above. The
+            corner radius controls higher in this section apply to the plate
+            once one is set (hasRadius widens); unset radius renders the
+            fully-rounded pill default. */}
+          {isTextish && !variantMode && (
+            <>
+              <PropertyRow label="Plate" stack={Boolean(field.plateColor)}>
+                {field.plateColor ? (
+                  <>
+                    <span
+                      aria-hidden
+                      style={{
+                        width: 24,
+                        height: 24,
+                        flexShrink: 0,
+                        borderRadius: "var(--radius-control)",
+                        border: "1px solid var(--border-strong)",
+                        background: fillSwatchCss(field.plateColor),
+                      }}
+                    />
+                    <input
+                      type="text"
+                      spellCheck={false}
+                      aria-label="Plate hex value"
+                      className="sp-input"
+                      style={{
+                        ...compactControlStyle,
+                        fontFamily: "var(--font-mono)",
+                        fontSize: "var(--type-caption-size)",
+                        minWidth: 0,
+                        flex: 1,
+                      }}
+                      key={`${field.id}:plate:${field.plateColor}`}
+                      defaultValue={field.plateColor}
+                      onKeyDown={(e) => {
+                        e.stopPropagation();
+                        if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                        if (e.key === "Escape") {
+                          (e.target as HTMLInputElement).value = field.plateColor!;
+                          (e.target as HTMLInputElement).blur();
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const m = /^#?([0-9a-fA-F]{6})$/.exec(e.target.value.trim());
+                        if (m) onChange({ plateColor: `#${m[1].toUpperCase()}` });
+                        else e.target.value = field.plateColor!;
+                      }}
+                    />
+                    <button
+                      title="Remove plate"
+                      aria-label="Remove plate"
+                      onClick={() =>
+                        onChange({
+                          plateColor: undefined,
+                          platePaddingX: undefined,
+                          platePaddingY: undefined,
+                        })
+                      }
+                      style={{ color: "var(--text-muted)", display: "flex", flexShrink: 0 }}
+                    >
+                      <Minus style={{ width: 13, height: 13 }} strokeWidth={1.5} />
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    title="Add plate"
+                    aria-label="Add plate"
+                    onClick={() =>
+                      onChange({
+                        plateColor: kit?.colors[0]?.hex ?? DEFAULT_FILL_HEX,
+                        platePaddingX: PLATE_PADDING_X_DEFAULT,
+                        platePaddingY: PLATE_PADDING_Y_DEFAULT,
+                      })
+                    }
+                    style={{ color: "var(--text-secondary)", display: "flex" }}
+                  >
+                    <Plus style={{ width: 13, height: 13 }} strokeWidth={1.5} />
+                  </button>
+                )}
+              </PropertyRow>
+              {field.plateColor && (
+                <PropertyRow label="Padding">
+                  <NumericField
+                    label="X"
+                    ariaLabel="Plate horizontal padding"
+                    precision={0}
+                    min={0}
+                    value={field.platePaddingX ?? PLATE_PADDING_X_DEFAULT}
+                    onCommit={(v) =>
+                      onChange({
+                        platePaddingX: Math.max(
+                          0,
+                          v ?? field.platePaddingX ?? PLATE_PADDING_X_DEFAULT,
+                        ),
+                      })
+                    }
+                  />
+                  <NumericField
+                    label="Y"
+                    ariaLabel="Plate vertical padding"
+                    precision={0}
+                    min={0}
+                    value={field.platePaddingY ?? PLATE_PADDING_Y_DEFAULT}
+                    onCommit={(v) =>
+                      onChange({
+                        platePaddingY: Math.max(
+                          0,
+                          v ?? field.platePaddingY ?? PLATE_PADDING_Y_DEFAULT,
+                        ),
+                      })
+                    }
+                  />
+                </PropertyRow>
+              )}
+            </>
           )}
         </InspectorSection>
       )}

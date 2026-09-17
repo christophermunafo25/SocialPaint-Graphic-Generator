@@ -210,6 +210,13 @@ export interface TemplateField {
    * painted size never exceeds width × height). */
   strokeColor?: string; // #RRGGBB
   strokeWidthPx?: number; // >= 1 when strokeColor is set
+  /** Text fields only: a plate painted behind the text, sized to the text's
+   * rendered box plus padding, sharing the field's cornerRadius. Full radius
+   * makes a pill. The plate is part of the field: one element to select,
+   * move, and expose to members. */
+  plateColor?: string; // #RRGGBB
+  platePaddingX?: number; // px, canvas space
+  platePaddingY?: number; // px
   /** Figma node this field was imported from (transient import provenance —
    * used to lift the element off the recomposed background). */
   sourceNodeId?: string;

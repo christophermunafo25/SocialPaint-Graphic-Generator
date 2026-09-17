@@ -318,6 +318,21 @@ export function cornerRadiusCss(field: TemplateField, scale = 1): string | undef
   return `${r.tl * scale}px ${r.tr * scale}px ${r.br * scale}px ${r.bl * scale}px`;
 }
 
+/** Text-plate corner radius. Unset renders the pill default — an
+ * over-large radius the browser clamps to half the plate's height, so the
+ * plate stays a true pill as the text grows. Any AUTHORED value wins,
+ * all-zero included (a square plate) — which is why this does not reuse
+ * cornerRadiusCss's all-zero → undefined collapse. */
+export function plateRadiusCss(field: TemplateField, scale = 1): string {
+  const r = field.cornerRadius;
+  if (!r) return "9999px";
+  return `${r.tl * scale}px ${r.tr * scale}px ${r.br * scale}px ${r.bl * scale}px`;
+}
+
+/** Default plate paddings (px, canvas space) when the field sets none. */
+export const PLATE_PADDING_X_DEFAULT = 24;
+export const PLATE_PADDING_Y_DEFAULT = 12;
+
 interface FieldBoxProps {
   field: TemplateField;
   value: string | undefined;
@@ -498,6 +513,56 @@ function TextFieldBox({ field, value, brandKit, fontSize: layoutFontSize }: Fiel
       : field.verticalAlign === "bottom"
         ? "flex-end"
         : "center";
+  // The plate wraps the rendered text and pads outward — text metrics and
+  // autoFit inputs are untouched, so an unplated field renders byte-identical
+  // to before plates existed. Single-line plates shrink-wrap the text (the
+  // outer flex still places them per align); multiline plates span the box.
+  const plateStyle: React.CSSProperties | null = field.plateColor
+    ? {
+        background: field.plateColor,
+        borderRadius: plateRadiusCss(field),
+        padding: `${field.platePaddingY ?? PLATE_PADDING_Y_DEFAULT}px ${
+          field.platePaddingX ?? PLATE_PADDING_X_DEFAULT
+        }px`,
+        width: field.type === "multiline" ? "100%" : "fit-content",
+        boxSizing: "border-box",
+      }
+    : null;
+  const content = (
+    <p
+      style={{
+        fontFamily: style.fontFamily ? `"${style.fontFamily}", sans-serif` : "sans-serif",
+        fontWeight: style.fontWeight,
+        // Absent stays absent — a legacy field sets neither, so the browser
+        // picks exactly the face it picked before these existed.
+        fontStyle: style.fontStyle,
+        fontStretch: style.fontStretch,
+        fontSize,
+        color: resolveColor(style.colorKey, style.colorHex, brandKit),
+        opacity: atFullStrength ? 1 : 0.55, // placeholder shows the real styling, dimmed
+        ...(style.textGradient?.stops.length
+          ? {
+              backgroundImage: `linear-gradient(${style.textGradient.angle}deg, ${style.textGradient.stops
+                .map((s) => `${s.color} ${Math.round(s.position * 100)}%`)
+                .join(", ")})`,
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              color: "transparent",
+            }
+          : {}),
+        textAlign: field.align ?? "left",
+        textTransform: style.uppercase ? "uppercase" : undefined,
+        letterSpacing: style.letterSpacingPx ? `${style.letterSpacingPx}px` : undefined,
+        lineHeight: style.lineHeight ?? 1.1,
+        whiteSpace: field.type === "multiline" ? "pre-wrap" : "nowrap",
+        wordBreak: field.type === "multiline" ? "break-word" : undefined,
+        width: field.type === "multiline" ? "100%" : undefined,
+        margin: 0,
+      }}
+    >
+      {text}
+    </p>
+  );
   return (
     <div
       style={{
@@ -507,39 +572,7 @@ function TextFieldBox({ field, value, brandKit, fontSize: layoutFontSize }: Fiel
         justifyContent: justify,
       }}
     >
-      <p
-        style={{
-          fontFamily: style.fontFamily ? `"${style.fontFamily}", sans-serif` : "sans-serif",
-          fontWeight: style.fontWeight,
-          // Absent stays absent — a legacy field sets neither, so the browser
-          // picks exactly the face it picked before these existed.
-          fontStyle: style.fontStyle,
-          fontStretch: style.fontStretch,
-          fontSize,
-          color: resolveColor(style.colorKey, style.colorHex, brandKit),
-          opacity: atFullStrength ? 1 : 0.55, // placeholder shows the real styling, dimmed
-          ...(style.textGradient?.stops.length
-            ? {
-                backgroundImage: `linear-gradient(${style.textGradient.angle}deg, ${style.textGradient.stops
-                  .map((s) => `${s.color} ${Math.round(s.position * 100)}%`)
-                  .join(", ")})`,
-                WebkitBackgroundClip: "text",
-                backgroundClip: "text",
-                color: "transparent",
-              }
-            : {}),
-          textAlign: field.align ?? "left",
-          textTransform: style.uppercase ? "uppercase" : undefined,
-          letterSpacing: style.letterSpacingPx ? `${style.letterSpacingPx}px` : undefined,
-          lineHeight: style.lineHeight ?? 1.1,
-          whiteSpace: field.type === "multiline" ? "pre-wrap" : "nowrap",
-          wordBreak: field.type === "multiline" ? "break-word" : undefined,
-          width: field.type === "multiline" ? "100%" : undefined,
-          margin: 0,
-        }}
-      >
-        {text}
-      </p>
+      {plateStyle ? <div style={plateStyle}>{content}</div> : content}
     </div>
   );
 }

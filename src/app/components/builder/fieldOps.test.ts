@@ -12,6 +12,7 @@ import {
   clearStyleClipboard,
   clipboardHasStyle,
   copyStyle,
+  fieldFromPalette,
   isSvgSource,
   logoFieldFromAsset,
   svgIntrinsicSize,
@@ -418,5 +419,46 @@ describe("paint order", () => {
     expect(ids(setLayerOrder(fs, ["a"], "front"))).toEqual(["b", "c", "a"]);
     expect(ids(setLayerOrder(fs, ["c"], "back"))).toEqual(["c", "a", "b"]);
     expect(ids(setLayerOrder(fs, ["a", "b"], "front"))).toEqual(["c", "a", "b"]);
+  });
+});
+
+describe("pill palette tile", () => {
+  const kit = {
+    id: "k1",
+    companyId: "c1",
+    colors: [
+      { key: "primary", name: "Forest", hex: "#082E17" },
+      { key: "text", name: "Ink", hex: "#111111" },
+    ],
+    typeStyles: [],
+    guidelines: [],
+    allowStyleOverride: false,
+    allowOffPalette: true,
+  };
+
+  it("creates one fixed plated text element, born a true pill", () => {
+    const item = PALETTE_ITEMS.find((p) => p.id === "pill")!;
+    const f = fieldFromPalette(item, { x: 540, y: 540 }, [], kit, { width: 1080, height: 1080 });
+    expect(f).toMatchObject({
+      type: "text",
+      static: true,
+      staticValue: "Label",
+      plateColor: "#082E17", // the first brand color
+      platePaddingX: 24,
+      platePaddingY: 12,
+      colorHex: "#FFFFFF",
+      align: "center",
+    });
+    // Unset radius IS the pill: the plate renders fully rounded by default
+    // and stays a pill as the text grows.
+    expect(f.cornerRadius).toBeUndefined();
+    // One element — no shape, no group involved.
+    expect(f.shape).toBeUndefined();
+  });
+
+  it("falls back to ink when the company has no brand colors yet", () => {
+    const item = PALETTE_ITEMS.find((p) => p.id === "pill")!;
+    const f = fieldFromPalette(item, { x: 540, y: 540 }, [], null, { width: 1080, height: 1080 });
+    expect(f.plateColor).toBe("#111111");
   });
 });
