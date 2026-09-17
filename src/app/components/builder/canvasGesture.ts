@@ -2,17 +2,21 @@
 // element moves, resize handles, the rotate handle, and draw-to-create all
 // run through startDrag. The contract, in full:
 //
-//  - The pointer is captured on start and released on end, cancel included,
-//    so a fast drag that leaves the element — or the window — keeps working
-//    and a release outside the window still ends the gesture.
+//  - Move/up/cancel listeners live on window (filtered by pointerId), so a
+//    fast drag that leaves the element — or the window — keeps working and a
+//    release outside the window still ends the gesture. Pointer capture is
+//    taken too, as an enhancement (it keeps hover/enter events routed to the
+//    grabbed element), but the gesture never depends on it.
 //  - Movement is throttled to requestAnimationFrame: at most one onMove per
 //    frame, always with the latest pointer position.
 //  - A small screen-px threshold separates clicks from drags; a release
 //    below it reports onTap, never a zero-distance drag commit.
-//  - The gesture dies cleanly on pointercancel, lost capture, window blur,
-//    Escape, a newer gesture starting, or component unmount — onCancel fires
-//    and nothing commits. Escape is swallowed (capture phase) so the
-//    builder's Escape-deselects-everything shortcut can't fire mid-drag.
+//  - The gesture dies cleanly on pointercancel, Escape, a newer gesture
+//    starting, or component unmount — onCancel fires and nothing commits.
+//    Escape is swallowed (capture phase) so the builder's
+//    Escape-deselects-everything shortcut can't fire mid-drag. Window blur
+//    (an OS notification, app switch) COMMITS a started drag instead of
+//    discarding it — the user keeps what they dragged.
 //  - One gesture exists at a time, globally; callers commit once in onEnd,
 //    which is what makes a whole drag a single undo entry.
 
@@ -77,8 +81,9 @@ export function startDrag(
   try {
     captureEl.setPointerCapture(e.pointerId);
   } catch {
-    // Synthetic/secondary pointers may not be capturable; window-level mouse
-    // tracking still covers the common cases.
+    // Synthetic/secondary pointers may not be capturable. Harmless: the
+    // listeners below live on window, so event delivery never depends on
+    // capture succeeding.
   }
 
   // Set from the press, not from the threshold: the cursor must not change
@@ -140,11 +145,14 @@ export function startDrag(
     if (ev.pointerId !== e.pointerId) return;
     finish("cancel");
   };
-  // Fires when the capture element leaves the DOM (the dragged field was
-  // deleted under us) or the capture is stolen — and also, guarded by
-  // `ended`, after our own release in teardown.
-  const onLostCapture = () => finish("cancel");
-  const onBlur = () => finish("cancel");
+  // No lostpointercapture listener: capture is an enhancement, not the event
+  // channel — losing it (element re-rendered, capture stolen) must not kill a
+  // drag the window listeners still feed. A capture element deleted mid-drag
+  // is covered by the overlay's unmount cancelActiveGesture().
+  // Blur COMMITS what the user has (Figma-style): an OS notification or app
+  // switch mid-drag must not silently discard the move. finish("up") with no
+  // event commits a started drag and does nothing (no tap) otherwise.
+  const onBlur = () => finish("up");
   const onKeyDown = (ev: KeyboardEvent) => {
     if (ev.key !== "Escape" || !started) return;
     // Capture phase: cancel the drag AND keep Escape from reaching the
@@ -154,10 +162,9 @@ export function startDrag(
     finish("cancel");
   };
 
-  captureEl.addEventListener("pointermove", onPointerMove);
-  captureEl.addEventListener("pointerup", onPointerUp);
-  captureEl.addEventListener("pointercancel", onPointerCancel);
-  captureEl.addEventListener("lostpointercapture", onLostCapture);
+  window.addEventListener("pointermove", onPointerMove);
+  window.addEventListener("pointerup", onPointerUp);
+  window.addEventListener("pointercancel", onPointerCancel);
   window.addEventListener("blur", onBlur);
   window.addEventListener("keydown", onKeyDown, true);
 
@@ -166,10 +173,9 @@ export function startDrag(
       document.body.style.removeProperty("cursor");
       document.body.removeAttribute("data-sp-gesture");
     }
-    captureEl.removeEventListener("pointermove", onPointerMove);
-    captureEl.removeEventListener("pointerup", onPointerUp);
-    captureEl.removeEventListener("pointercancel", onPointerCancel);
-    captureEl.removeEventListener("lostpointercapture", onLostCapture);
+    window.removeEventListener("pointermove", onPointerMove);
+    window.removeEventListener("pointerup", onPointerUp);
+    window.removeEventListener("pointercancel", onPointerCancel);
     window.removeEventListener("blur", onBlur);
     window.removeEventListener("keydown", onKeyDown, true);
     try {
