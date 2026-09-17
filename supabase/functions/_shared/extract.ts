@@ -163,6 +163,12 @@ export interface SuggestedField {
    * /v1/files/{key}/images), never a node render — a node render would bake
    * the lifted children into the pixels twice. Stripped before the response. */
   fillImageRef?: string;
+  /** Import-internal: render THIS node alone as the field's alpha mask (a
+   * custom-shape mask group). The caller re-hosts the render into maskUrl
+   * and strips this. */
+  maskNodeId?: string;
+  /** Image fields: alpha-mask source, matching TemplateField.maskUrl. */
+  maskUrl?: string;
 }
 
 /** A node's rounded corners in the field shape, or undefined when square. */
@@ -849,13 +855,16 @@ export function walk(
 
   // The classic photo-in-a-shape pattern: a GROUP/FRAME whose first visible
   // child is the mask and the rest carry the photo(s), no text anywhere.
-  // When the mask is a plain/rounded RECTANGLE whose OUTLINE does the
-  // clipping, ONE image field reproduces it exactly — geometry and radius
-  // from the mask, artwork from the group's own render (masks applied, so
-  // the crop is exact; liftDescends is false via isRasterLeaf, so decompose
-  // skips the whole subtree and nothing paints twice). An alpha-image mask
-  // or a custom path can't be faked with a radius: it keeps today's bake,
-  // and the degraded warning below names it.
+  // ONE image field reproduces it — geometry from the mask, artwork from
+  // the group's own render (masks applied, so the crop is exact;
+  // liftDescends is false via isRasterLeaf, so decompose skips the whole
+  // subtree and nothing paints twice). A plain/rounded RECTANGLE clipping
+  // by its outline needs only cornerRadius; every other shape (an
+  // alpha-image mask, an ellipse, a custom path) rides as a real alpha mask:
+  // maskNodeId asks the caller to render the mask child alone, and the
+  // field clips whatever image it holds — member replacements included — to
+  // that render's alpha. LUMINANCE masks (white-shows semantics the alpha
+  // channel can't carry) keep the bake, with the warning below.
   if (place && (node.type === "GROUP" || node.type === "FRAME")) {
     const kids = (node.children ?? []).filter((c) => c.visible !== false);
     const mask = kids[0];
@@ -871,7 +880,8 @@ export function walk(
       // OUTLINE default.
       const maskType =
         mask.maskType ?? (visibleFills(mask).some((f) => f.type === "IMAGE") ? "ALPHA" : "VECTOR");
-      if (mask.type === "RECTANGLE" && maskType !== "ALPHA" && maskType !== "LUMINANCE") {
+      if (maskType !== "LUMINANCE") {
+        const outlineRect = mask.type === "RECTANGLE" && maskType !== "ALPHA";
         const maskPlace = placementOf(mask, frame);
         if (maskPlace) {
           out.push({
@@ -882,7 +892,7 @@ export function walk(
             sourceNodeId: node.id,
             ...maskPlace,
             objectFit: "cover",
-            cornerRadius: cornerRadiusOf(mask),
+            ...(outlineRect ? { cornerRadius: cornerRadiusOf(mask) } : { maskNodeId: mask.id }),
             opacity: opacityOf(node),
             static: true,
           });

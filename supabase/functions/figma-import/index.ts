@@ -166,6 +166,35 @@ Deno.serve(async (req) => {
       }
     }
 
+    // 3b. Custom-shape masks: render each mask node ALONE and re-host it;
+    //     the field clips whatever image it holds — member replacements
+    //     included — to that render's alpha channel.
+    const maskFields = suggestedFields.filter((f) => f.maskNodeId);
+    if (maskFields.length) {
+      const maskRenders = await renderNodes(
+        parsed.fileKey,
+        maskFields.map((f) => f.maskNodeId!),
+        token,
+      );
+      let maskIndex = 0;
+      for (const f of maskFields) {
+        const renderUrl = maskRenders[f.maskNodeId!];
+        const hosted = renderUrl
+          ? await rehost(db, renderUrl, `${companyId}/masks/${stamp}-${maskIndex++}.png`)
+          : null;
+        if (hosted) f.maskUrl = hosted;
+        else {
+          details.push({
+            layer: f.label,
+            nodeId: f.sourceNodeId,
+            issue: "the mask couldn't be rendered — the image imports unmasked (rectangular).",
+            severity: "degraded",
+          });
+        }
+        delete f.maskNodeId;
+      }
+    }
+
     if (mode === "elements") {
       // 4a. Everything the walk didn't claim becomes paintable units in
       //     exact paint order — there is no background to bake them into.

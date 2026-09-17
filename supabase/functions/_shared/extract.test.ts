@@ -498,9 +498,10 @@ describe("mask-group image lifting", () => {
     expect(out[0].cornerRadius).toBeUndefined();
   });
 
-  it("bakes an alpha-image mask, with the degraded warning", () => {
+  it("lifts an alpha-image mask group with a real mask, not a faked radius", () => {
     // The Feature Highlight template's real mask: a RECTANGLE whose IMAGE
-    // fill's alpha channel does the masking — no radius can fake that shape.
+    // fill's alpha channel does the masking — no radius can fake that shape,
+    // so the field asks for the mask node's own render as its alpha mask.
     const { out, warnings } = run({
       ...maskGroup,
       children: [
@@ -512,18 +513,22 @@ describe("mask-group image lifting", () => {
         maskGroup.children![1],
       ],
     });
-    expect(out).toHaveLength(0);
-    expect(
-      warnings.some(
-        (w) =>
-          w.layer === "Photo mask" &&
-          w.severity === "degraded" &&
-          w.issue.includes("masked image is baked"),
-      ),
-    ).toBe(true);
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({
+      type: "image",
+      sourceNodeId: "9:1", // artwork: the GROUP's masked render
+      maskNodeId: "9:2", // mask: the mask child rendered ALONE
+      x: 254,
+      y: 482,
+      width: 826,
+      height: 787,
+      static: true,
+    });
+    expect(out[0].cornerRadius).toBeUndefined();
+    expect(warnings).toHaveLength(0);
   });
 
-  it("treats an image-filled mask with NO maskType as alpha (bake, not lift)", () => {
+  it("treats an image-filled mask with NO maskType as alpha (mask lift, no radius)", () => {
     const { out } = run({
       ...maskGroup,
       children: [
@@ -535,7 +540,26 @@ describe("mask-group image lifting", () => {
         maskGroup.children![1],
       ],
     });
+    expect(out).toHaveLength(1);
+    expect(out[0].maskNodeId).toBe("9:2");
+    expect(out[0].cornerRadius).toBeUndefined();
+  });
+
+  it("bakes a LUMINANCE mask, with the degraded warning", () => {
+    // White-shows semantics the alpha channel can't carry.
+    const { out, warnings } = run({
+      ...maskGroup,
+      children: [{ ...maskGroup.children![0], maskType: "LUMINANCE" }, maskGroup.children![1]],
+    });
     expect(out).toHaveLength(0);
+    expect(
+      warnings.some(
+        (w) =>
+          w.layer === "Photo mask" &&
+          w.severity === "degraded" &&
+          w.issue.includes("masked image is baked"),
+      ),
+    ).toBe(true);
   });
 
   it("does not lift a mask group holding text (both warnings fire)", () => {
@@ -558,13 +582,15 @@ describe("mask-group image lifting", () => {
     expect(warnings.some((w) => w.issue.includes("masked image is baked"))).toBe(true);
   });
 
-  it("does not lift an ellipse-masked group (bakes, with the warning)", () => {
+  it("lifts an ellipse-masked group with a real mask", () => {
     const { out, warnings } = run({
       ...maskGroup,
       children: [{ ...maskGroup.children![0], type: "ELLIPSE" }, maskGroup.children![1]],
     });
-    expect(out).toHaveLength(0);
-    expect(warnings.some((w) => w.issue.includes("masked image is baked"))).toBe(true);
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ type: "image", maskNodeId: "9:2" });
+    expect(out[0].cornerRadius).toBeUndefined();
+    expect(warnings).toHaveLength(0);
   });
 });
 

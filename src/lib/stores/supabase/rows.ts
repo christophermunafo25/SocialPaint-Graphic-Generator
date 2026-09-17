@@ -119,6 +119,7 @@ export interface TemplateFieldRow {
   plate_color: string | null;
   plate_padding_x: number | null;
   plate_padding_y: number | null;
+  mask_url: string | null;
   is_static: boolean | null;
   static_value: string | null;
   font_family: string | null;
@@ -178,6 +179,7 @@ export const toTemplateField = (r: TemplateFieldRow): TemplateField => ({
   plateColor: opt(r.plate_color),
   platePaddingX: opt(r.plate_padding_x) === undefined ? undefined : Number(r.plate_padding_x),
   platePaddingY: opt(r.plate_padding_y) === undefined ? undefined : Number(r.plate_padding_y),
+  maskUrl: opt(r.mask_url),
   static: opt(r.is_static),
   staticValue: opt(r.static_value),
   fontFamily: opt(r.font_family),
@@ -230,6 +232,7 @@ export const fieldToRow = (
   plate_color: f.plateColor ?? null,
   plate_padding_x: f.platePaddingX ?? null,
   plate_padding_y: f.platePaddingY ?? null,
+  mask_url: f.maskUrl ?? null,
   is_static: f.static ?? null,
   static_value: f.staticValue ?? null,
   font_family: f.fontFamily ?? null,

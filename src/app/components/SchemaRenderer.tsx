@@ -585,13 +585,28 @@ function ImageFieldBox({ field, value }: { field: TemplateField; value: string |
   // graphic, with a success message. Admin artwork arrives as a URL; member
   // uploads are already data URLs and pass straight through.
   const image = useDataUrl(value || undefined);
+  // The alpha mask rides the same data-URL pipeline as the image itself —
+  // html-to-image can no more fetch a remote mask than a remote photo. While
+  // the field paints an image, a loading/failed mask gates the export too:
+  // exporting the photo unmasked would be the wrong shape, silently.
+  const mask = useDataUrl(field.maskUrl || undefined);
   const status = !value
     ? undefined
-    : image.failed
+    : image.failed || (field.maskUrl ? mask.failed : false)
       ? "failed"
-      : image.loading
+      : image.loading || (field.maskUrl ? mask.loading : false)
         ? "loading"
         : undefined;
+  const maskStyle: React.CSSProperties = mask.dataUrl
+    ? {
+        WebkitMaskImage: `url(${mask.dataUrl})`,
+        maskImage: `url(${mask.dataUrl})`,
+        WebkitMaskSize: "100% 100%",
+        maskSize: "100% 100%",
+        WebkitMaskRepeat: "no-repeat",
+        maskRepeat: "no-repeat",
+      }
+    : {};
   return (
     <div
       data-image-status={status}
@@ -605,6 +620,7 @@ function ImageFieldBox({ field, value }: { field: TemplateField; value: string |
         justifyContent: "center",
         background: value ? undefined : "rgba(0,0,0,0.06)",
         border: value ? undefined : "1.5px dashed rgba(0,0,0,0.25)",
+        ...maskStyle,
       }}
     >
       {image.dataUrl ? (

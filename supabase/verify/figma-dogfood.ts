@@ -104,6 +104,8 @@ const lines: string[] = [
       f.textGradient ? "gradient" : "",
       f.fontFamily ? `${f.fontFamily} ${f.fontSizePx ?? ""}px` : "",
       f.plateColor ? `plate=${f.plateColor}@${f.platePaddingX}/${f.platePaddingY}` : "",
+      f.maskNodeId ? `mask=node:${f.maskNodeId}` : "",
+      f.maskUrl ? `mask=${f.maskUrl}` : "",
       f.fillImageRef ? `fillRef=${f.fillImageRef}` : "",
     ]
       .filter(Boolean)
