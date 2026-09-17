@@ -318,6 +318,21 @@ export function cornerRadiusCss(field: TemplateField, scale = 1): string | undef
   return `${r.tl * scale}px ${r.tr * scale}px ${r.br * scale}px ${r.bl * scale}px`;
 }
 
+/** Text-plate corner radius. Unset renders the pill default — an
+ * over-large radius the browser clamps to half the plate's height, so the
+ * plate stays a true pill as the text grows. Any AUTHORED value wins,
+ * all-zero included (a square plate) — which is why this does not reuse
+ * cornerRadiusCss's all-zero → undefined collapse. */
+export function plateRadiusCss(field: TemplateField, scale = 1): string {
+  const r = field.cornerRadius;
+  if (!r) return "9999px";
+  return `${r.tl * scale}px ${r.tr * scale}px ${r.br * scale}px ${r.bl * scale}px`;
+}
+
+/** Default plate paddings (px, canvas space) when the field sets none. */
+export const PLATE_PADDING_X_DEFAULT = 24;
+export const PLATE_PADDING_Y_DEFAULT = 12;
+
 interface FieldBoxProps {
   field: TemplateField;
   value: string | undefined;
@@ -382,10 +397,18 @@ const STAR_POINTS = "50,0 61,35 98,35 68,57 79,91 50,70 21,91 32,57 2,35 39,35";
 
 /** Decorative shape: fill = gradient → hex. Rects render
  * as plain divs (corner radius applies); ellipse/triangle/star render as
- * inline SVG so gradients survive the PNG export. */
+ * inline SVG so gradients survive the PNG export. Strokes are INNER strokes
+ * (the painted size never exceeds the box): rects use a border-box border;
+ * SVG shapes double the stroke width and clip to their own geometry, which
+ * leaves exactly strokeWidthPx inside the edge. The viewBox is the field's
+ * real size, so the stroke stays uniform at any aspect ratio. */
 function ShapeFieldBox({ field }: { field: TemplateField }) {
   const kind = field.shape ?? "rect";
-  const solid = field.colorHex ?? DEFAULT_FILL_HEX;
+  const stroke = field.strokeColor;
+  const strokeW = stroke ? Math.max(1, field.strokeWidthPx ?? 1) : 0;
+  // Palette shapes always carry a colorHex; only a stroke-only import leaves
+  // it unset, and there the outline IS the artwork — no default grey fill.
+  const solid = field.colorHex ?? (stroke ? "transparent" : DEFAULT_FILL_HEX);
   const g = field.textGradient?.stops.length ? field.textGradient : undefined;
 
   if (kind === "rect") {
@@ -395,22 +418,45 @@ function ShapeFieldBox({ field }: { field: TemplateField }) {
           ...contentBaseStyle(field),
           background: g ? gradientCss(g) : solid,
           borderRadius: cornerRadiusCss(field),
+          ...(stroke ? { boxSizing: "border-box", border: `${strokeW}px solid ${stroke}` } : {}),
         }}
       />
     );
   }
 
   const gradId = `sp-shape-grad-${field.id}`;
+  const clipId = `sp-shape-clip-${field.id}`;
   const paint = g ? `url(#${gradId})` : solid;
+  const w = field.width;
+  const h = field.height;
+  const shapeEl = (extra?: React.SVGProps<SVGElement>) => {
+    if (kind === "ellipse") {
+      return (
+        <ellipse
+          cx={w / 2}
+          cy={h / 2}
+          rx={w / 2}
+          ry={h / 2}
+          {...(extra as React.SVGProps<SVGEllipseElement>)}
+        />
+      );
+    }
+    const points =
+      kind === "triangle"
+        ? `${w / 2},0 ${w},${h} 0,${h}`
+        : STAR_POINTS.split(" ")
+            .map((p) => {
+              const [x, y] = p.split(",").map(Number);
+              return `${(x / 100) * w},${(y / 100) * h}`;
+            })
+            .join(" ");
+    return <polygon points={points} {...(extra as React.SVGProps<SVGPolygonElement>)} />;
+  };
   return (
     <div style={contentBaseStyle(field)}>
-      <svg
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
-        style={{ width: "100%", height: "100%", display: "block" }}
-      >
-        {g && (
-          <defs>
+      <svg viewBox={`0 0 ${w} ${h}`} style={{ width: "100%", height: "100%", display: "block" }}>
+        <defs>
+          {g && (
             <linearGradient
               id={gradId}
               gradientTransform={`rotate(${(((g.angle - 90) % 360) + 360) % 360}, 0.5, 0.5)`}
@@ -419,11 +465,17 @@ function ShapeFieldBox({ field }: { field: TemplateField }) {
                 <stop key={i} offset={`${Math.round(s.position * 100)}%`} stopColor={s.color} />
               ))}
             </linearGradient>
-          </defs>
-        )}
-        {kind === "ellipse" && <ellipse cx="50" cy="50" rx="50" ry="50" fill={paint} />}
-        {kind === "triangle" && <polygon points="50,0 100,100 0,100" fill={paint} />}
-        {kind === "star" && <polygon points={STAR_POINTS} fill={paint} />}
+          )}
+          {stroke && <clipPath id={clipId}>{shapeEl()}</clipPath>}
+        </defs>
+        {shapeEl({ fill: paint })}
+        {stroke &&
+          shapeEl({
+            fill: "none",
+            stroke,
+            strokeWidth: strokeW * 2,
+            clipPath: `url(#${clipId})`,
+          })}
       </svg>
     </div>
   );
@@ -461,6 +513,56 @@ function TextFieldBox({ field, value, brandKit, fontSize: layoutFontSize }: Fiel
       : field.verticalAlign === "bottom"
         ? "flex-end"
         : "center";
+  // The plate wraps the rendered text and pads outward — text metrics and
+  // autoFit inputs are untouched, so an unplated field renders byte-identical
+  // to before plates existed. Single-line plates shrink-wrap the text (the
+  // outer flex still places them per align); multiline plates span the box.
+  const plateStyle: React.CSSProperties | null = field.plateColor
+    ? {
+        background: field.plateColor,
+        borderRadius: plateRadiusCss(field),
+        padding: `${field.platePaddingY ?? PLATE_PADDING_Y_DEFAULT}px ${
+          field.platePaddingX ?? PLATE_PADDING_X_DEFAULT
+        }px`,
+        width: field.type === "multiline" ? "100%" : "fit-content",
+        boxSizing: "border-box",
+      }
+    : null;
+  const content = (
+    <p
+      style={{
+        fontFamily: style.fontFamily ? `"${style.fontFamily}", sans-serif` : "sans-serif",
+        fontWeight: style.fontWeight,
+        // Absent stays absent — a legacy field sets neither, so the browser
+        // picks exactly the face it picked before these existed.
+        fontStyle: style.fontStyle,
+        fontStretch: style.fontStretch,
+        fontSize,
+        color: resolveColor(style.colorKey, style.colorHex, brandKit),
+        opacity: atFullStrength ? 1 : 0.55, // placeholder shows the real styling, dimmed
+        ...(style.textGradient?.stops.length
+          ? {
+              backgroundImage: `linear-gradient(${style.textGradient.angle}deg, ${style.textGradient.stops
+                .map((s) => `${s.color} ${Math.round(s.position * 100)}%`)
+                .join(", ")})`,
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              color: "transparent",
+            }
+          : {}),
+        textAlign: field.align ?? "left",
+        textTransform: style.uppercase ? "uppercase" : undefined,
+        letterSpacing: style.letterSpacingPx ? `${style.letterSpacingPx}px` : undefined,
+        lineHeight: style.lineHeight ?? 1.1,
+        whiteSpace: field.type === "multiline" ? "pre-wrap" : "nowrap",
+        wordBreak: field.type === "multiline" ? "break-word" : undefined,
+        width: field.type === "multiline" ? "100%" : undefined,
+        margin: 0,
+      }}
+    >
+      {text}
+    </p>
+  );
   return (
     <div
       style={{
@@ -470,39 +572,7 @@ function TextFieldBox({ field, value, brandKit, fontSize: layoutFontSize }: Fiel
         justifyContent: justify,
       }}
     >
-      <p
-        style={{
-          fontFamily: style.fontFamily ? `"${style.fontFamily}", sans-serif` : "sans-serif",
-          fontWeight: style.fontWeight,
-          // Absent stays absent — a legacy field sets neither, so the browser
-          // picks exactly the face it picked before these existed.
-          fontStyle: style.fontStyle,
-          fontStretch: style.fontStretch,
-          fontSize,
-          color: resolveColor(style.colorKey, style.colorHex, brandKit),
-          opacity: atFullStrength ? 1 : 0.55, // placeholder shows the real styling, dimmed
-          ...(style.textGradient?.stops.length
-            ? {
-                backgroundImage: `linear-gradient(${style.textGradient.angle}deg, ${style.textGradient.stops
-                  .map((s) => `${s.color} ${Math.round(s.position * 100)}%`)
-                  .join(", ")})`,
-                WebkitBackgroundClip: "text",
-                backgroundClip: "text",
-                color: "transparent",
-              }
-            : {}),
-          textAlign: field.align ?? "left",
-          textTransform: style.uppercase ? "uppercase" : undefined,
-          letterSpacing: style.letterSpacingPx ? `${style.letterSpacingPx}px` : undefined,
-          lineHeight: style.lineHeight ?? 1.1,
-          whiteSpace: field.type === "multiline" ? "pre-wrap" : "nowrap",
-          wordBreak: field.type === "multiline" ? "break-word" : undefined,
-          width: field.type === "multiline" ? "100%" : undefined,
-          margin: 0,
-        }}
-      >
-        {text}
-      </p>
+      {plateStyle ? <div style={plateStyle}>{content}</div> : content}
     </div>
   );
 }

@@ -53,7 +53,12 @@ import {
   resolveFieldStyle,
   ruleSentences,
 } from "@/lib/brand/resolveStyle";
-import { DEFAULT_FILL_HEX, gradientCss } from "../SchemaRenderer";
+import {
+  DEFAULT_FILL_HEX,
+  PLATE_PADDING_X_DEFAULT,
+  PLATE_PADDING_Y_DEFAULT,
+  gradientCss,
+} from "../SchemaRenderer";
 import { Select, type SelectOption } from "../ui/Select";
 import { Switch } from "../Switch";
 import {
@@ -372,7 +377,13 @@ export function FieldInspector(props: FieldInspectorProps) {
 
   // --- Appearance ----------------------------------------------------------
 
-  const hasRadius = field.type === "image" || (isShape && (field.shape ?? "rect") === "rect");
+  /** Text fields that can carry a plate (a pill) — select is a member-input
+   * control and never renders a plate. */
+  const isTextish = field.type === "text" || field.type === "multiline";
+  const hasRadius =
+    field.type === "image" ||
+    (isShape && (field.shape ?? "rect") === "rect") ||
+    (isTextish && Boolean(field.plateColor));
   const r = field.cornerRadius;
   const radiusUniform = !r || (r.tl === r.tr && r.tr === r.br && r.br === r.bl);
   const [radiusLinked, setRadiusLinked] = useState(radiusUniform);
@@ -1131,14 +1142,14 @@ export function FieldInspector(props: FieldInspectorProps) {
           {/* Per-corner inputs. Full width: the row has no label, and the
             96px gutter left four inputs about 30px each at the rail's
             minimum, which is less than one digit once NumericField's own
-            padding and scrub label are paid for. The grid wraps by width:
-            two columns at 260px, four across at 520px. */}
+            padding and scrub label are paid for. A fixed 2×2 grid so each
+            input sits in the corner it edits (top row TL TR, bottom BL BR). */}
           {hasRadius && !radiusLinked && (
             <PropertyRow full>
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(104px, 1fr))",
+                  gridTemplateColumns: "repeat(2, 1fr)",
                   gap: "var(--space-3xs)",
                   flex: 1,
                   minWidth: 0,
@@ -1187,6 +1198,202 @@ export function FieldInspector(props: FieldInspectorProps) {
                     placeholder={`box: ${(field.width / field.height).toFixed(2)}`}
                     value={field.aspectRatio}
                     onCommit={(v) => onChange({ aspectRatio: v })}
+                  />
+                </PropertyRow>
+              )}
+            </>
+          )}
+          {/* Shape stroke — an inner outline, so width never grows the box.
+            Same row grammar as the Fill section: swatch, hex, then the
+            content-sized numeric, then remove. Base panel only (no variation
+            override channel for strokes). */}
+          {isShape && !variantMode && (
+            <PropertyRow label="Stroke" stack={Boolean(field.strokeColor)}>
+              {field.strokeColor ? (
+                <>
+                  <span
+                    aria-hidden
+                    style={{
+                      width: 24,
+                      height: 24,
+                      flexShrink: 0,
+                      borderRadius: "var(--radius-control)",
+                      border: "1px solid var(--border-strong)",
+                      background: fillSwatchCss(field.strokeColor),
+                    }}
+                  />
+                  <input
+                    type="text"
+                    spellCheck={false}
+                    aria-label="Stroke hex value"
+                    className="sp-input"
+                    style={{
+                      ...compactControlStyle,
+                      fontFamily: "var(--font-mono)",
+                      fontSize: "var(--type-caption-size)",
+                      minWidth: 0,
+                      flex: 1,
+                    }}
+                    key={`${field.id}:stroke:${field.strokeColor}`}
+                    defaultValue={field.strokeColor}
+                    onKeyDown={(e) => {
+                      e.stopPropagation();
+                      if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                      if (e.key === "Escape") {
+                        (e.target as HTMLInputElement).value = field.strokeColor!;
+                        (e.target as HTMLInputElement).blur();
+                      }
+                    }}
+                    onBlur={(e) => {
+                      const m = /^#?([0-9a-fA-F]{6})$/.exec(e.target.value.trim());
+                      if (m) onChange({ strokeColor: `#${m[1].toUpperCase()}` });
+                      else e.target.value = field.strokeColor!;
+                    }}
+                  />
+                  <div style={{ width: 68, flexShrink: 0 }}>
+                    <NumericField
+                      suffix="px"
+                      ariaLabel="Stroke width"
+                      precision={0}
+                      min={1}
+                      value={field.strokeWidthPx ?? 1}
+                      onCommit={(v) =>
+                        onChange({ strokeWidthPx: Math.max(1, v ?? field.strokeWidthPx ?? 1) })
+                      }
+                    />
+                  </div>
+                  <button
+                    title="Remove stroke"
+                    aria-label="Remove stroke"
+                    onClick={() => onChange({ strokeColor: undefined, strokeWidthPx: undefined })}
+                    style={{ color: "var(--text-muted)", display: "flex", flexShrink: 0 }}
+                  >
+                    <Minus style={{ width: 13, height: 13 }} strokeWidth={1.5} />
+                  </button>
+                </>
+              ) : (
+                <button
+                  title="Add stroke"
+                  aria-label="Add stroke"
+                  onClick={() => onChange({ strokeColor: DEFAULT_FILL_HEX, strokeWidthPx: 2 })}
+                  style={{ color: "var(--text-secondary)", display: "flex" }}
+                >
+                  <Plus style={{ width: 13, height: 13 }} strokeWidth={1.5} />
+                </button>
+              )}
+            </PropertyRow>
+          )}
+          {/* Text plate (pill) — same row grammar as the stroke above. The
+            corner radius controls higher in this section apply to the plate
+            once one is set (hasRadius widens); unset radius renders the
+            fully-rounded pill default. */}
+          {isTextish && !variantMode && (
+            <>
+              <PropertyRow label="Plate" stack={Boolean(field.plateColor)}>
+                {field.plateColor ? (
+                  <>
+                    <span
+                      aria-hidden
+                      style={{
+                        width: 24,
+                        height: 24,
+                        flexShrink: 0,
+                        borderRadius: "var(--radius-control)",
+                        border: "1px solid var(--border-strong)",
+                        background: fillSwatchCss(field.plateColor),
+                      }}
+                    />
+                    <input
+                      type="text"
+                      spellCheck={false}
+                      aria-label="Plate hex value"
+                      className="sp-input"
+                      style={{
+                        ...compactControlStyle,
+                        fontFamily: "var(--font-mono)",
+                        fontSize: "var(--type-caption-size)",
+                        minWidth: 0,
+                        flex: 1,
+                      }}
+                      key={`${field.id}:plate:${field.plateColor}`}
+                      defaultValue={field.plateColor}
+                      onKeyDown={(e) => {
+                        e.stopPropagation();
+                        if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                        if (e.key === "Escape") {
+                          (e.target as HTMLInputElement).value = field.plateColor!;
+                          (e.target as HTMLInputElement).blur();
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const m = /^#?([0-9a-fA-F]{6})$/.exec(e.target.value.trim());
+                        if (m) onChange({ plateColor: `#${m[1].toUpperCase()}` });
+                        else e.target.value = field.plateColor!;
+                      }}
+                    />
+                    <button
+                      title="Remove plate"
+                      aria-label="Remove plate"
+                      onClick={() =>
+                        onChange({
+                          plateColor: undefined,
+                          platePaddingX: undefined,
+                          platePaddingY: undefined,
+                        })
+                      }
+                      style={{ color: "var(--text-muted)", display: "flex", flexShrink: 0 }}
+                    >
+                      <Minus style={{ width: 13, height: 13 }} strokeWidth={1.5} />
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    title="Add plate"
+                    aria-label="Add plate"
+                    onClick={() =>
+                      onChange({
+                        plateColor: kit?.colors[0]?.hex ?? DEFAULT_FILL_HEX,
+                        platePaddingX: PLATE_PADDING_X_DEFAULT,
+                        platePaddingY: PLATE_PADDING_Y_DEFAULT,
+                      })
+                    }
+                    style={{ color: "var(--text-secondary)", display: "flex" }}
+                  >
+                    <Plus style={{ width: 13, height: 13 }} strokeWidth={1.5} />
+                  </button>
+                )}
+              </PropertyRow>
+              {field.plateColor && (
+                <PropertyRow label="Padding">
+                  <NumericField
+                    label="X"
+                    ariaLabel="Plate horizontal padding"
+                    precision={0}
+                    min={0}
+                    value={field.platePaddingX ?? PLATE_PADDING_X_DEFAULT}
+                    onCommit={(v) =>
+                      onChange({
+                        platePaddingX: Math.max(
+                          0,
+                          v ?? field.platePaddingX ?? PLATE_PADDING_X_DEFAULT,
+                        ),
+                      })
+                    }
+                  />
+                  <NumericField
+                    label="Y"
+                    ariaLabel="Plate vertical padding"
+                    precision={0}
+                    min={0}
+                    value={field.platePaddingY ?? PLATE_PADDING_Y_DEFAULT}
+                    onCommit={(v) =>
+                      onChange({
+                        platePaddingY: Math.max(
+                          0,
+                          v ?? field.platePaddingY ?? PLATE_PADDING_Y_DEFAULT,
+                        ),
+                      })
+                    }
                   />
                 </PropertyRow>
               )}
@@ -1704,9 +1911,11 @@ function FontStyleSelect({
   );
 }
 
+// Ordered for the 2×2 spatial grid: top row TL TR, bottom row BL BR —
+// each input sits in the corner it edits.
 const CORNERS: Array<{ key: keyof CornerRadius; label: string }> = [
   { key: "tl", label: "TL" },
   { key: "tr", label: "TR" },
-  { key: "br", label: "BR" },
   { key: "bl", label: "BL" },
+  { key: "br", label: "BR" },
 ];

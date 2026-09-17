@@ -1113,6 +1113,12 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
     ids: string[],
     primaryId: string,
     reduceOnTap: boolean,
+    // Double-click semantics ride the gesture's tap: pressing an already-sole-
+    // selected element starts a move like any press, and only a release UNDER
+    // the drag threshold runs the double-click action. Crossing the threshold
+    // is a drag — grab, drop, immediately grab again to adjust must move the
+    // element, not open the editor.
+    tapAction?: () => void,
   ) => {
     // Stack children have COMPUTED positions — a free move can't apply.
     // They drop out of the drag set (their stack travels as a group instead).
@@ -1248,6 +1254,10 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
       },
       onCancel: () => setFrame(null),
       onTap: () => {
+        if (tapAction) {
+          tapAction();
+          return;
+        }
         // A plain click on one element of a multi-selection narrows the
         // selection to it — the drag path already handled everything else.
         if (reduceOnTap) onSelectRef.current([primaryId]);
@@ -2225,23 +2235,29 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
                     // mid-press lets the press's own default action pull focus
                     // straight back out of it, which closes it again on the
                     // very next frame. preventDefault stops the press taking
-                    // focus at all; the one-shot listener does the work once
-                    // the click has finished.
+                    // focus at all. The press still starts a move — a quick
+                    // second grab of the same element must drag it — and the
+                    // double-click action fires only from the gesture's tap
+                    // (release under the drag threshold).
                     e.preventDefault();
-                    window.addEventListener(
-                      "pointerup",
-                      () => {
-                        if (f.static && (f.type === "text" || f.type === "multiline")) {
-                          // Fixed text: its content lives on the canvas — edit it there.
-                          setEditingId(f.id);
-                        } else {
-                          // Member-editable elements have no builder-side content;
-                          // the double-clickable text is their NAME, in the inspector.
-                          onRequestLabelFocus(f.id);
-                        }
-                      },
-                      { once: true },
-                    );
+                    const doubleClickAction = () => {
+                      if (f.static && (f.type === "text" || f.type === "multiline")) {
+                        // Fixed text: its content lives on the canvas — edit it there.
+                        setEditingId(f.id);
+                      } else {
+                        // Member-editable elements have no builder-side content;
+                        // the double-clickable text is their NAME, in the inspector.
+                        onRequestLabelFocus(f.id);
+                      }
+                    };
+                    if (inStack(f)) {
+                      // Stack children have no free move to start — beginMove
+                      // drops them from its drag set — so the action keeps the
+                      // plain on-release path.
+                      window.addEventListener("pointerup", doubleClickAction, { once: true });
+                    } else {
+                      beginMove(e, [f.id], f.id, false, doubleClickAction);
+                    }
                     return;
                   }
                   // Alt-click digs through the stack: each click selects the

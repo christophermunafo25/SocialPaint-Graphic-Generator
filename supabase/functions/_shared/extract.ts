@@ -43,6 +43,8 @@ export interface FigmaNode {
    * reconstructible from properties; absence means raster-only. */
   fillGeometry?: Array<{ path?: string; windingRule?: string }>;
   isMask?: boolean;
+  /** How a mask node clips: "VECTOR" (outline), "ALPHA", or "LUMINANCE". */
+  maskType?: string;
   clipsContent?: boolean;
   pointCount?: number;
   arcData?: { startingAngle: number; endingAngle: number; innerRadius: number };
@@ -142,6 +144,14 @@ export interface SuggestedField {
   cornerRadius?: { tl: number; tr: number; br: number; bl: number };
   /** Shape fields: which primitive to draw. */
   shape?: "rect" | "ellipse" | "triangle" | "star";
+  /** Shape fields: inner stroke, matching TemplateField.strokeColor/-WidthPx. */
+  strokeColor?: string;
+  strokeWidthPx?: number;
+  /** Text fields: plate behind the text (a fused pill), matching
+   * TemplateField.plateColor / platePaddingX / platePaddingY. */
+  plateColor?: string;
+  platePaddingX?: number;
+  platePaddingY?: number;
   /** Every imported element lands FIXED — the design stays exactly as
    * drawn, and the admin opts elements IN to being member fields. Text
    * carries its source copy as the fixed content; image staticValue is
@@ -231,6 +241,9 @@ export interface PredicateNode {
   hasFillGeometry?: boolean;
   strokes?: Array<{ type: string; visible?: boolean }>;
   fills?: FigmaPaint[];
+  cornerRadius?: number;
+  rectangleCornerRadii?: number[];
+  absoluteBoundingBox?: { x: number; y: number; width: number; height: number };
   children?: PredicateNode[];
 }
 
@@ -289,6 +302,31 @@ export function shapeContainerFill(node: PredicateNode): FigmaPaint | undefined 
   return undefined;
 }
 
+/** A pill: a container whose backdrop is one SOLID fill, whose radius is
+ * uniform, and whose ONLY visible child is a single boxed TEXT node. The
+ * walk fuses it into ONE plated text field — and liftDescends answers false
+ * for it, because the text lives inside that field, not on the background.
+ * The two MUST agree, or the text paints twice. Anything richer (two
+ * children, icon + text, a gradient backdrop, per-corner radii) keeps the
+ * shape-plus-text split. */
+export function pillContainer(node: PredicateNode): boolean {
+  const fill = shapeContainerFill(node);
+  if (!(fill?.type === "SOLID" && fill.color)) return false;
+  const r = cornerRadiusOf(node);
+  if (r && !(r.tl === r.tr && r.tr === r.br && r.br === r.bl)) return false;
+  const kids = (node.children ?? []).filter((c) => c.visible !== false);
+  return kids.length === 1 && kids[0].type === "TEXT" && Boolean(kids[0].absoluteBoundingBox);
+}
+
+/** Any visible image fill anywhere under this node — a photo about to
+ * rasterize is the one thing an admin most needs to hear about, because a
+ * baked photo can never become member-replaceable. */
+export function subtreeHasImageFill(node: PredicateNode): boolean {
+  if (node.visible === false) return false;
+  if ((node.fills ?? []).some((f) => f.type === "IMAGE" && f.visible !== false)) return true;
+  return (node.children ?? []).some(subtreeHasImageFill);
+}
+
 /** Whether a LIFTED container's children were walked into their own fields
  * (its own artwork being the bare image fill or a shape field) — versus the
  * whole subtree baking into one render. The field walk and the background
@@ -307,6 +345,9 @@ export function liftDescends(node: PredicateNode): boolean {
   ) {
     return true;
   }
+  // A fused pill: the container AND its text are one field — decompose must
+  // not emit the child, or the text paints twice.
+  if (pillContainer(node)) return false;
   // Container whose backdrop lifted as a shape field.
   return Boolean(shapeContainerFill(node));
 }
@@ -490,8 +531,18 @@ export function walk(
   if (place && node.type === "TEXT") {
     const style = node.style ?? {};
     const box = node.absoluteBoundingBox!;
-    const isMultiline =
-      (node.characters ?? "").includes("\n") || box.height > (style.fontSize ?? 16) * 2.2;
+    const fontSize = style.fontSize ?? 16;
+    const lineHeightPx =
+      style.lineHeightPx ??
+      (style.lineHeightPercentFontSize
+        ? (style.lineHeightPercentFontSize / 100) * fontSize
+        : fontSize * 1.2);
+    // Rotated nodes: box is the axis-aligned bounding box and lies about height.
+    // Use the true unrotated size from transformOf (already computed in placementOf's
+    // path) when rotation is present.
+    const contentHeight = place.rotation !== undefined && node.size ? node.size.y : box.height;
+    const lineCount = Math.max(1, Math.round(contentHeight / lineHeightPx));
+    const isMultiline = (node.characters ?? "").includes("\n") || lineCount >= 2;
     const fill = visibleFills(node)[0];
     let colorHex: string | undefined;
     let textGradient: SuggestedField["textGradient"];
@@ -624,17 +675,57 @@ export function walk(
     } else {
       const fills = visibleFills(node);
       const fill = fills[0];
-      if (fills.length === 1 && !strokes.length && !effects.length && !isRasterLeaf(node)) {
+      // Exactly one visible SOLID stroke lifts WITH the shape as an inner
+      // stroke. Figma INSIDE alignment maps directly; CENTER/OUTSIDE grow
+      // the box so the painted extent is preserved while the stored stroke
+      // stays inside.
+      const solidStroke =
+        strokes.length === 1 && strokes[0].type === "SOLID" && strokes[0].color
+          ? strokes[0]
+          : undefined;
+      if (
+        fills.length === 1 &&
+        (!strokes.length || solidStroke) &&
+        !effects.length &&
+        !isRasterLeaf(node)
+      ) {
+        let placed = place;
+        let strokeProps: { strokeColor?: string; strokeWidthPx?: number } = {};
+        if (solidStroke) {
+          const weight = Math.max(1, Math.round(node.strokeWeight ?? 1));
+          const align = node.strokeAlign ?? "INSIDE";
+          const grow =
+            align === "OUTSIDE" ? weight : align === "CENTER" ? Math.round(weight / 2) : 0;
+          if (grow > 0) {
+            placed = {
+              ...place,
+              // Center-anchored (rotated) boxes grow about their center.
+              x: place.anchor === "center" ? place.x : place.x - grow,
+              y: place.anchor === "center" ? place.y : place.y - grow,
+              width: place.width + grow * 2,
+              height: place.height + grow * 2,
+            };
+            warn(
+              `${align.toLowerCase()}-aligned stroke imported as an inside stroke on a box grown ${grow}px per side.`,
+              "info",
+            );
+          }
+          if ((solidStroke.color!.a ?? 1) < 1 || (solidStroke.opacity ?? 1) < 1) {
+            warn("a translucent stroke imported fully opaque.", "info");
+          }
+          strokeProps = { strokeColor: toHex(solidStroke.color!), strokeWidthPx: weight };
+        }
         if (fill.type === "SOLID" && fill.color) {
           out.push({
             ...base,
             fieldKey: slug(node.name, taken),
             type: "shape",
             shape,
-            ...place,
+            ...placed,
             colorHex: toHex(fill.color),
             cornerRadius: cornerRadiusOf(node),
             opacity: foldedOpacity(node, fill),
+            ...strokeProps,
           });
           return;
         }
@@ -644,10 +735,11 @@ export function walk(
             fieldKey: slug(node.name, taken),
             type: "shape",
             shape,
-            ...place,
-            textGradient: linearGradientOf(fill, place.width, place.height),
+            ...placed,
+            textGradient: linearGradientOf(fill, placed.width, placed.height),
             cornerRadius: cornerRadiusOf(node),
             opacity: foldedOpacity(node, fill),
+            ...strokeProps,
           });
           return;
         }
@@ -680,6 +772,52 @@ export function walk(
   // card, a color block. The backdrop lifts as a SHAPE field (recolorable,
   // movable) and the children keep lifting as their own fields on top.
   const containerFill = !imageFill && place ? shapeContainerFill(node) : undefined;
+  // A pill — solid rounded container holding exactly one text — is ONE
+  // object to a designer, so it fuses into ONE plated text field: the text
+  // branch's own output wearing the container's box, fill (as the plate),
+  // radius, and insets (as the paddings). liftDescends answers false for
+  // this pattern, so the background never paints the text a second time.
+  if (place && containerFill && pillContainer(node)) {
+    const child = (node.children ?? []).filter((c) => c.visible !== false)[0];
+    const inner: SuggestedField[] = [];
+    walk(child, frame, inner, warnings, taken, seenIds);
+    const t = inner[0];
+    if (t && (t.type === "text" || t.type === "multiline")) {
+      const box = node.absoluteBoundingBox!;
+      const childBox = child.absoluteBoundingBox!;
+      if (
+        (containerFill.color!.a ?? 1) < 1 ||
+        (containerFill.opacity ?? 1) < 1 ||
+        (node.opacity ?? 1) < 1
+      ) {
+        warn("a translucent pill background imported fully opaque.", "info");
+      }
+      out.push({
+        ...t,
+        label: node.name,
+        sourceNodeId: node.id,
+        x: place.x,
+        y: place.y,
+        width: place.width,
+        height: place.height,
+        rotation: place.rotation,
+        anchor: place.anchor,
+        // The plate shrink-wraps the text and the box places the plate: the
+        // container's own centering is what these reproduce.
+        align: "center",
+        verticalAlign: undefined,
+        plateColor: toHex(containerFill.color!),
+        platePaddingX: Math.max(0, Math.round(childBox.x - box.x)),
+        platePaddingY: Math.max(0, Math.round(childBox.y - box.y)),
+        // An UNSET radius on a plated field renders the pill default, so a
+        // square container must store explicit zeros to stay square.
+        cornerRadius: cornerRadiusOf(node) ?? { tl: 0, tr: 0, br: 0, bl: 0 },
+      });
+      return;
+    }
+    // pillContainer guarantees the text branch produced a field; nothing to
+    // do here but fall through defensively (the child is already consumed).
+  }
   if (place && containerFill) {
     const common = {
       id: crypto.randomUUID(),
@@ -709,16 +847,75 @@ export function walk(
     return;
   }
 
+  // The classic photo-in-a-shape pattern: a GROUP/FRAME whose first visible
+  // child is the mask and the rest carry the photo(s), no text anywhere.
+  // When the mask is a plain/rounded RECTANGLE whose OUTLINE does the
+  // clipping, ONE image field reproduces it exactly — geometry and radius
+  // from the mask, artwork from the group's own render (masks applied, so
+  // the crop is exact; liftDescends is false via isRasterLeaf, so decompose
+  // skips the whole subtree and nothing paints twice). An alpha-image mask
+  // or a custom path can't be faked with a radius: it keeps today's bake,
+  // and the degraded warning below names it.
+  if (place && (node.type === "GROUP" || node.type === "FRAME")) {
+    const kids = (node.children ?? []).filter((c) => c.visible !== false);
+    const mask = kids[0];
+    const rest = kids.slice(1);
+    if (
+      mask?.isMask &&
+      rest.length > 0 &&
+      !subtreeHasText(node) &&
+      rest.every((c) => visibleFills(c).some((f) => f.type === "IMAGE"))
+    ) {
+      // Absent maskType, an image-filled mask is treated as ALPHA (the fill's
+      // alpha is what such a layer masks with) and anything else as the
+      // OUTLINE default.
+      const maskType =
+        mask.maskType ?? (visibleFills(mask).some((f) => f.type === "IMAGE") ? "ALPHA" : "VECTOR");
+      if (mask.type === "RECTANGLE" && maskType !== "ALPHA" && maskType !== "LUMINANCE") {
+        const maskPlace = placementOf(mask, frame);
+        if (maskPlace) {
+          out.push({
+            id: crypto.randomUUID(),
+            label: node.name,
+            fieldKey: slug(node.name, taken),
+            type: "image",
+            sourceNodeId: node.id,
+            ...maskPlace,
+            objectFit: "cover",
+            cornerRadius: cornerRadiusOf(mask),
+            opacity: opacityOf(node),
+            static: true,
+          });
+          return;
+        }
+      }
+    }
+  }
+
   // A raster leaf's artwork can't be reconstructed from properties — its
   // whole subtree ships as one render in the plate, so nothing inside it
   // may lift (a lifted child would paint twice). Text swallowed this way
   // silently disappearing from the field list reads as a broken import, so
-  // say where it went.
+  // say where it went — and a swallowed PHOTO is worse: baked, it can never
+  // become member-replaceable, so that bake is never silent.
   if (isRasterLeaf(node)) {
     if (subtreeHasText(node)) {
       warn("text inside this flattened group ships as artwork — it can't become a field.", "info");
     }
+    if (subtreeHasImageFill(node)) {
+      warn(
+        (node.children ?? []).some((c) => c.isMask)
+          ? "this masked image is baked into the background; members can't replace it."
+          : "an image inside this flattened layer is baked into the background; members can't replace it.",
+      );
+    }
     return;
+  }
+  // An image fill the walk could not lift (an exotic node type — the
+  // rect/frame/ellipse branch above catches the liftable ones) bakes into
+  // the plate. Never silently: a baked photo can't become a member field.
+  if (imageFill) {
+    warn("an image fill on this layer is baked into the background; members can't replace it.");
   }
   for (const child of node.children ?? []) walk(child, frame, out, warnings, taken, seenIds);
 }

@@ -490,3 +490,26 @@ describe("horizontal stack verification", () => {
     expect(r.groupRects.get("row")).toMatchObject({ x: 0, y: 0, width: 380, height: 500 });
   });
 });
+
+describe("text plates and layout", () => {
+  // The plate's contract with sizing: it pads the RENDERED text outward and
+  // is invisible to measurement — autoFit inputs, fitted sizes, and every
+  // layout rect are identical with and without a plate. (The plate can
+  // therefore paint up to platePadding beyond the measured text box; the
+  // Pill palette tile sizes its box to leave room.)
+  it("measures a plated field identically to an unplated one", () => {
+    const plain = mkField({ fieldKey: "t", textSizing: "shrink" });
+    const plated = mkField({
+      ...plain,
+      id: plain.id,
+      plateColor: "#082E17",
+      platePaddingX: 24,
+      platePaddingY: 12,
+    });
+    const value = { t: "A label that has to shrink to fit the box" };
+    const a = layout([plain], undefined, value);
+    const b = layout([plated], undefined, value);
+    expect(b.fieldRects.get(plated.id)).toEqual(a.fieldRects.get(plain.id));
+    expect(b.fontSizes.get(plated.id)).toEqual(a.fontSizes.get(plain.id));
+  });
+});

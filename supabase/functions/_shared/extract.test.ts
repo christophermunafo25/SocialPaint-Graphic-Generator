@@ -251,6 +251,62 @@ describe("text field extraction", () => {
       warnings.some((w) => w.layer === "Headline" && w.issue.includes("mixed text styling")),
     ).toBe(true);
   });
+
+  describe("multiline classification (line count from real line height)", () => {
+    it("classifies a two-line wrapped headline (no \\n, tight leading) as multiline", () => {
+      const { out } = run({
+        ...headline,
+        characters: "Grow your brand with SocialPaint",
+        absoluteBoundingBox: { x: 206, y: 417, width: 868, height: 132 },
+        style: { fontFamily: "GC VANK", fontSize: 64, lineHeightPx: 66 },
+      });
+      expect(out[0].type).toBe("multiline");
+    });
+
+    it("classifies a single line as text", () => {
+      const { out } = run({
+        ...headline,
+        characters: "One line",
+        absoluteBoundingBox: { x: 206, y: 417, width: 868, height: 66 },
+        style: { fontFamily: "GC VANK", fontSize: 64, lineHeightPx: 66 },
+      });
+      expect(out[0].type).toBe("text");
+    });
+
+    it("classifies a roomy single line (150% leading, no px value) as text", () => {
+      const { out } = run({
+        ...headline,
+        characters: "One roomy line",
+        absoluteBoundingBox: { x: 206, y: 417, width: 868, height: 60 },
+        style: { fontFamily: "GC VANK", fontSize: 40, lineHeightPercentFontSize: 150 },
+      });
+      expect(out[0].type).toBe("text");
+    });
+
+    it("keeps an explicit \\n multiline even in a short box", () => {
+      const { out } = run({
+        ...headline,
+        characters: "Two\nlines",
+        absoluteBoundingBox: { x: 206, y: 417, width: 868, height: 40 },
+        style: { fontFamily: "GC VANK", fontSize: 40, lineHeightPx: 44 },
+      });
+      expect(out[0].type).toBe("multiline");
+    });
+
+    it("uses the true unrotated height for rotated text (inflated AABB stays text)", () => {
+      // Rotated 8°: the AABB height (140) is well past 2× the font size, but
+      // the true size (400×60) holds one line at lineHeightPx 66.
+      const { out } = run({
+        ...headline,
+        characters: "Tilted single line",
+        absoluteBoundingBox: { x: 250, y: 400, width: 404.5, height: 140 },
+        relativeTransform: DEG8,
+        size: { x: 400, y: 60 },
+        style: { fontFamily: "GC VANK", fontSize: 64, lineHeightPx: 66 },
+      });
+      expect(out[0].type).toBe("text");
+    });
+  });
 });
 
 describe("shape field extraction", () => {
@@ -311,17 +367,64 @@ describe("shape field extraction", () => {
     });
   });
 
-  it("leaves stroked or effected shapes in the plate (exact render beats a lossy lift)", () => {
-    const stroked: FigmaNode = {
-      id: "3:4",
-      name: "Outlined",
-      type: "RECTANGLE",
-      absoluteBoundingBox: { x: 0, y: 0, width: 10, height: 10 },
-      fills: [{ type: "SOLID", color: { r: 0, g: 0, b: 0 } }],
-      strokes: [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }],
-      strokeWeight: 2,
-    };
-    expect(run(stroked).out).toHaveLength(0);
+  const stroked: FigmaNode = {
+    id: "3:4",
+    name: "Outlined",
+    type: "RECTANGLE",
+    absoluteBoundingBox: { x: 150, y: 250, width: 200, height: 100 },
+    fills: [{ type: "SOLID", color: { r: 0, g: 0, b: 0 } }],
+    strokes: [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }],
+    strokeWeight: 4,
+    strokeAlign: "INSIDE",
+  };
+
+  it("lifts a single solid inside stroke with the shape, box untouched", () => {
+    const { out, warnings } = run(stroked);
+    expect(out[0]).toMatchObject({
+      type: "shape",
+      shape: "rect",
+      x: 50,
+      y: 50,
+      width: 200,
+      height: 100,
+      colorHex: "#000000",
+      strokeColor: "#FFFFFF",
+      strokeWidthPx: 4,
+    });
+    expect(warnings).toHaveLength(0);
+  });
+
+  it("grows the box by half the weight for a CENTER stroke, with an info note", () => {
+    const { out, warnings } = run({ ...stroked, strokeAlign: "CENTER" });
+    expect(out[0]).toMatchObject({
+      x: 48,
+      y: 48,
+      width: 204,
+      height: 104,
+      strokeColor: "#FFFFFF",
+      strokeWidthPx: 4,
+    });
+    expect(
+      warnings.some((w) => w.severity === "info" && w.issue.includes("center-aligned stroke")),
+    ).toBe(true);
+  });
+
+  it("grows the box by the full weight for an OUTSIDE stroke", () => {
+    const { out } = run({ ...stroked, strokeAlign: "OUTSIDE" });
+    expect(out[0]).toMatchObject({ x: 46, y: 46, width: 208, height: 108, strokeWidthPx: 4 });
+  });
+
+  it("still leaves effected or multi-stroked shapes in the plate", () => {
+    expect(run({ ...stroked, effects: [{ type: "DROP_SHADOW" }] }).out).toHaveLength(0);
+    expect(
+      run({
+        ...stroked,
+        strokes: [
+          { type: "SOLID", color: { r: 1, g: 1, b: 1 } },
+          { type: "SOLID", color: { r: 1, g: 0, b: 0 } },
+        ],
+      }).out,
+    ).toHaveLength(0);
     expect(run({ ...stroked, strokes: [], effects: [{ type: "DROP_SHADOW" }] }).out).toHaveLength(
       0,
     );
@@ -338,6 +441,130 @@ describe("shape field extraction", () => {
       fills: [{ type: "SOLID", color: { r: 0, g: 0, b: 0 } }],
     });
     expect(out[0]).toMatchObject({ rotation: 8, anchor: "center", width: 110, height: 55 });
+  });
+});
+
+describe("mask-group image lifting", () => {
+  const maskGroup: FigmaNode = {
+    id: "9:1",
+    name: "Photo mask",
+    type: "GROUP",
+    absoluteBoundingBox: { x: 354, y: 682, width: 826, height: 787 },
+    children: [
+      {
+        id: "9:2",
+        name: "Mask shape",
+        type: "RECTANGLE",
+        isMask: true,
+        maskType: "VECTOR",
+        cornerRadius: 40,
+        absoluteBoundingBox: { x: 354, y: 682, width: 826, height: 787 },
+      },
+      {
+        id: "9:3",
+        name: "photo",
+        type: "RECTANGLE",
+        absoluteBoundingBox: { x: 200, y: 500, width: 1200, height: 1100 },
+        fills: [{ type: "IMAGE", imageRef: "photo-ref" }],
+      },
+    ],
+  };
+
+  it("lifts a rounded-rect outline mask group as ONE image field at the mask's box", () => {
+    const { out, warnings } = run(maskGroup);
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({
+      type: "image",
+      label: "Photo mask",
+      sourceNodeId: "9:1", // the GROUP — its render carries the mask-applied crop
+      x: 254,
+      y: 482,
+      width: 826,
+      height: 787,
+      cornerRadius: { tl: 40, tr: 40, br: 40, bl: 40 },
+      objectFit: "cover",
+      static: true,
+    });
+    expect(warnings).toHaveLength(0);
+  });
+
+  it("lifts a plain (square) rect mask too, with no radius", () => {
+    const { out } = run({
+      ...maskGroup,
+      children: [{ ...maskGroup.children![0], cornerRadius: undefined }, maskGroup.children![1]],
+    });
+    expect(out).toHaveLength(1);
+    expect(out[0].type).toBe("image");
+    expect(out[0].cornerRadius).toBeUndefined();
+  });
+
+  it("bakes an alpha-image mask, with the degraded warning", () => {
+    // The Feature Highlight template's real mask: a RECTANGLE whose IMAGE
+    // fill's alpha channel does the masking — no radius can fake that shape.
+    const { out, warnings } = run({
+      ...maskGroup,
+      children: [
+        {
+          ...maskGroup.children![0],
+          maskType: "ALPHA",
+          fills: [{ type: "IMAGE", imageRef: "mask-shape-png" }],
+        },
+        maskGroup.children![1],
+      ],
+    });
+    expect(out).toHaveLength(0);
+    expect(
+      warnings.some(
+        (w) =>
+          w.layer === "Photo mask" &&
+          w.severity === "degraded" &&
+          w.issue.includes("masked image is baked"),
+      ),
+    ).toBe(true);
+  });
+
+  it("treats an image-filled mask with NO maskType as alpha (bake, not lift)", () => {
+    const { out } = run({
+      ...maskGroup,
+      children: [
+        {
+          ...maskGroup.children![0],
+          maskType: undefined,
+          fills: [{ type: "IMAGE", imageRef: "mask-shape-png" }],
+        },
+        maskGroup.children![1],
+      ],
+    });
+    expect(out).toHaveLength(0);
+  });
+
+  it("does not lift a mask group holding text (both warnings fire)", () => {
+    const { out, warnings, strings } = run({
+      ...maskGroup,
+      children: [
+        ...maskGroup.children!,
+        {
+          id: "9:4",
+          name: "Caption",
+          type: "TEXT",
+          characters: "hello",
+          absoluteBoundingBox: { x: 400, y: 700, width: 100, height: 30 },
+          style: { fontSize: 24 },
+        },
+      ],
+    });
+    expect(out).toHaveLength(0);
+    expect(strings.some((s) => s.includes("can't become a field"))).toBe(true);
+    expect(warnings.some((w) => w.issue.includes("masked image is baked"))).toBe(true);
+  });
+
+  it("does not lift an ellipse-masked group (bakes, with the warning)", () => {
+    const { out, warnings } = run({
+      ...maskGroup,
+      children: [{ ...maskGroup.children![0], type: "ELLIPSE" }, maskGroup.children![1]],
+    });
+    expect(out).toHaveLength(0);
+    expect(warnings.some((w) => w.issue.includes("masked image is baked"))).toBe(true);
   });
 });
 
@@ -393,38 +620,85 @@ describe("raster leaves", () => {
 });
 
 describe("container and vector object extraction", () => {
-  it("lifts a solid pill frame as a rounded shape field plus its text", () => {
+  const pillFrame: FigmaNode = {
     // The SocialPaint job-post pill: a FRAME with one solid fill and a full
-    // corner radius holding a skill name. Both must be objects — the pill
-    // body a recolorable shape, the text its own field on top.
+    // corner radius holding exactly one skill name.
+    id: "7:1",
+    name: "Pill",
+    type: "FRAME",
+    cornerRadius: 999,
+    absoluteBoundingBox: { x: 229, y: 1158, width: 293, height: 74 },
+    fills: [{ type: "SOLID", color: { r: 0.03, g: 0.18, b: 0.09 } }],
+    children: [
+      {
+        id: "7:2",
+        name: "Typescript",
+        type: "TEXT",
+        characters: "Typescript",
+        absoluteBoundingBox: { x: 286, y: 1180, width: 178, height: 30 },
+        style: { fontSize: 24 },
+        fills: [{ type: "SOLID", color: { r: 0.61, g: 1, b: 0.29 } }],
+      },
+    ],
+  };
+
+  it("fuses a solid pill frame into ONE plated text field", () => {
+    const { out } = run(pillFrame);
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({
+      type: "text",
+      label: "Pill",
+      sourceNodeId: "7:1",
+      // The CONTAINER's box, frame-relative.
+      x: 129,
+      y: 958,
+      width: 293,
+      height: 74,
+      // Plate from the container's fill; paddings from the child's inset.
+      plateColor: "#082E17",
+      platePaddingX: 57,
+      platePaddingY: 22,
+      cornerRadius: { tl: 999, tr: 999, br: 999, bl: 999 },
+      align: "center",
+      colorHex: "#9CFF4A",
+      staticValue: "Typescript",
+      static: true,
+    });
+  });
+
+  it("keeps the split for a card with heading plus body", () => {
     const { out } = run({
-      id: "7:1",
-      name: "Pill",
-      type: "FRAME",
-      cornerRadius: 999,
-      absoluteBoundingBox: { x: 229, y: 1158, width: 293, height: 74 },
-      fills: [{ type: "SOLID", color: { r: 0.03, g: 0.18, b: 0.09 } }],
+      ...pillFrame,
+      id: "7:5",
+      name: "Card",
       children: [
+        { ...pillFrame.children![0], id: "7:6", name: "Heading" },
         {
-          id: "7:2",
-          name: "Typescript",
+          id: "7:7",
+          name: "Body",
           type: "TEXT",
-          characters: "Typescript",
-          absoluteBoundingBox: { x: 286, y: 1180, width: 178, height: 30 },
-          fills: [{ type: "SOLID", color: { r: 0.61, g: 1, b: 0.29 } }],
+          characters: "Body copy",
+          absoluteBoundingBox: { x: 286, y: 1214, width: 178, height: 30 },
+          style: { fontSize: 24 },
         },
       ],
     });
-    expect(out).toHaveLength(2);
-    expect(out[0]).toMatchObject({
-      type: "shape",
-      shape: "rect",
-      sourceNodeId: "7:1",
-      cornerRadius: { tl: 999, tr: 999, br: 999, bl: 999 },
-      colorHex: "#082E17",
-      static: true,
+    expect(out).toHaveLength(3);
+    expect(out[0]).toMatchObject({ type: "shape", shape: "rect", colorHex: "#082E17" });
+    expect(out[0].plateColor).toBeUndefined();
+    expect(out[1].type).toBe("text");
+    expect(out[2].type).toBe("text");
+  });
+
+  it("keeps the split for a single-text container with per-corner radii", () => {
+    const { out } = run({
+      ...pillFrame,
+      id: "7:8",
+      cornerRadius: undefined,
+      rectangleCornerRadii: [24, 0, 24, 0],
     });
-    expect(out[1]).toMatchObject({ type: "text", staticValue: "Typescript" });
+    expect(out).toHaveLength(2);
+    expect(out[0]).toMatchObject({ type: "shape", shape: "rect" });
   });
 
   it("keeps a stroked container's backdrop in the plate but still lifts its text", () => {
@@ -443,6 +717,7 @@ describe("container and vector object extraction", () => {
           type: "TEXT",
           characters: "MySQL",
           absoluteBoundingBox: { x: 120, y: 215, width: 89, height: 30 },
+          style: { fontSize: 24 },
         },
       ],
     });

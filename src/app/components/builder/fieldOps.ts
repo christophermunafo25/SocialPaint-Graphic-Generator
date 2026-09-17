@@ -79,6 +79,17 @@ export const PALETTE_ITEMS: PaletteItem[] = [
     height: 8,
     group: "shapes",
   },
+  // A pill is ONE plated text field, not a shape + a text grouped — see
+  // TemplateField.plateColor. It lives under Shapes because that is where
+  // an admin looks for it.
+  {
+    id: "pill",
+    type: "text",
+    label: "Pill",
+    width: 220,
+    height: 64,
+    group: "shapes",
+  },
 ];
 
 /** The active canvas tool. Every draw tool is backed by an element the
@@ -245,6 +256,20 @@ export function fieldFromPalette(
           shape: item.shape ?? ("rect" as const),
           colorHex: "#d9d9d9", // design-tool default grey; recolor in Fill
           static: true, // shapes are design-only — never in the member form
+        }
+      : {}),
+    // The Pill tile: a fixed plated text element. cornerRadius stays UNSET so
+    // it is born a true pill (the plate's radius default) and stays one as
+    // the text grows; white ink reads on any brand plate color.
+    ...(item.id === "pill"
+      ? {
+          static: true,
+          staticValue: "Label",
+          plateColor: kit?.colors[0]?.hex ?? "#111111",
+          platePaddingX: 24,
+          platePaddingY: 12,
+          colorHex: "#FFFFFF",
+          align: "center" as const,
         }
       : {}),
     ...(item.type === "select" ? { options: [] } : {}),

@@ -179,13 +179,18 @@ Deno.serve(async (req) => {
       const units: Unit[] = [];
       for (const u of decomposed.units) {
         if (u.kind === "stroke") {
-          details.push({
-            layer: u.name ?? "layer",
-            nodeId: "",
-            issue: "this border can't be reproduced as an element — it was left out.",
-            severity: "degraded",
-          });
-          continue;
+          // A uniform solid stroke unit now lands as a stroked shape field
+          // client-side (overlayFields' unitField); anything else still
+          // drops, with the warning.
+          if (!(u.color && u.strokeWeight)) {
+            details.push({
+              layer: u.name ?? "layer",
+              nodeId: "",
+              issue: "this border can't be reproduced as an element — it was left out.",
+              severity: "degraded",
+            });
+            continue;
+          }
         }
         if (u.clip && u.kind !== "node") {
           details.push({
