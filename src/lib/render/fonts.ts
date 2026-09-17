@@ -369,10 +369,13 @@ export async function buildExportFontEmbedCss(
   return css || undefined;
 }
 
-/** Font families the given fields reference that this workspace cannot
- * render faithfully: not a Google font and not among the uploaded font
- * assets. Import paths surface these so a designed template doesn't
- * silently fall back to a system face. */
+/** Font families the given fields reference that are not KNOWN renderable:
+ * not on the curated Google list and not among the uploaded font assets.
+ * These are candidates, not verdicts — the curated list is what Brand
+ * Studio offers, a small slice of what Google actually serves, so a
+ * candidate must be probed (verifyMissingFamilies) before anything treats
+ * it as missing. Deciding from this list alone is what used to bake
+ * headlines set in real-but-uncurated Google fonts into the background. */
 export function unavailableFamilies(
   fields: TemplateField[],
   fontAssets: Array<{ metadata: FontAssetMetadata }>,
@@ -388,4 +391,52 @@ export function unavailableFamilies(
     if (family && !google.has(family) && !uploaded.has(family)) missing.add(family);
   }
   return [...missing];
+}
+
+/** How long one probed family may keep the import waiting. Real Google
+ * families usually land in well under a second; the cap only bites for
+ * families Google doesn't know (or a dead network), where "missing" is the
+ * right answer anyway. */
+const FONT_PROBE_TIMEOUT_MS = 5000;
+
+/** Does this family actually load from Google? loadGoogleFonts requests any
+ * family from css2, not just the curated list, so the truth is a probe: ask
+ * for it, then wait for the face to become checkable. document.fonts.load
+ * alone can't be trusted here — it resolves empty while the injected
+ * stylesheet is still in flight — hence the bounded poll around it. */
+async function googleFamilyLoads(family: string): Promise<boolean> {
+  loadGoogleFonts([family]);
+  const shorthand = `16px "${family}"`;
+  const deadline = Date.now() + FONT_PROBE_TIMEOUT_MS;
+  for (;;) {
+    try {
+      await document.fonts.load(shorthand);
+    } catch {
+      // Unparseable/failed load — the poll below decides.
+    }
+    if (document.fonts.check(shorthand)) return true;
+    if (Date.now() > deadline) return false;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+}
+
+/** Font families the given fields reference that this workspace GENUINELY
+ * cannot render: not uploaded, and not loadable from Google (probed, in
+ * parallel — curated and uploaded families answer instantly). This is the
+ * verdict the import paths act on: text in one of these families stays
+ * baked in the background plate, so it must never name a family the
+ * renderer could in fact load. */
+export async function verifyMissingFamilies(
+  fields: TemplateField[],
+  fontAssets: Array<{ metadata: FontAssetMetadata }>,
+): Promise<string[]> {
+  const candidates = unavailableFamilies(fields, fontAssets);
+  if (!candidates.length) return [];
+  const missing: string[] = [];
+  await Promise.all(
+    candidates.map(async (family) => {
+      if (!(await googleFamilyLoads(family))) missing.push(family);
+    }),
+  );
+  return missing;
 }
