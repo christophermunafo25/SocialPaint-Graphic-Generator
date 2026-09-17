@@ -117,7 +117,7 @@ import {
 import { composeFigmaBackground } from "@/lib/figma/composeLayers";
 import { assembleElementFields, mergeOverlayFields } from "@/lib/figma/overlayFields";
 import { isFigmaNodeUrl } from "@/lib/figma/figmaUrl";
-import { unavailableFamilies } from "@/lib/render/fonts";
+import { verifyMissingFamilies } from "@/lib/render/fonts";
 import { lockedProperties } from "@/lib/brand/resolveStyle";
 import { celebrate } from "@/lib/celebrate";
 import { createCanvasMeasurer } from "@/lib/render/autoFit";
@@ -1568,7 +1568,7 @@ export function TemplateBuilder({
       });
       setFields([...draft.fields, ...fields]);
       setSelectedIds(fields.map((f) => f.id));
-      const missingFonts = unavailableFamilies(
+      const missingFonts = await verifyMissingFamilies(
         fields,
         brandAssets.filter((a) => a.kind === "font"),
       );
@@ -2132,30 +2132,40 @@ export function TemplateBuilder({
     // Fields is Step 1; Name comes last in the wizard.
     goTo("fields");
 
-    // A designed template that silently falls back to system faces reads as
-    // a broken import — name the missing families and the fix. Text in a
-    // missing family also stays BAKED in the background plate (see
-    // recomposeBackground): pixel-exact Figma glyphs beat a reflow into a
-    // fallback face, and the field on top becomes right once the font lands.
-    const missingFonts = unavailableFamilies(
-      imported,
-      brandAssets.filter((a) => a.kind === "font"),
-    );
-    const fontNote = missingFonts.length
-      ? ` Fonts not available here: ${missingFonts.join(", ")}. That text shows its Figma render until you upload them in Brand Studio.`
-      : "";
-
     // An import sizes the canvas from the frame, not from the picker — said
     // out loud rather than silently replacing the admin's choice.
     const sizeNote =
       opts.canvasWidth !== draft.canvasWidth || opts.canvasHeight !== draft.canvasHeight
         ? ` Canvas set to the frame's own size, ${opts.canvasWidth}×${opts.canvasHeight}.`
         : "";
-    setNotice(opts.summary(imported) + sizeNote + fontNote);
+    setNotice(opts.summary(imported) + sizeNote);
     window.clearTimeout(noticeTimer.current);
     noticeTimer.current = window.setTimeout(() => setNotice(null), 8000);
 
-    recomposeBackground(opts.sourceUrl, imported, opts.tree, missingFonts);
+    // A designed template that silently falls back to system faces reads as
+    // a broken import — name the missing families and the fix. Text in a
+    // missing family also stays BAKED in the background plate (see
+    // recomposeBackground): pixel-exact Figma glyphs beat a reflow into a
+    // fallback face, and the field on top becomes right once the font lands.
+    // "Missing" is PROBED (any real Google family loads and counts as
+    // available), so the recompose waits for the verdict — deciding from the
+    // curated list alone used to glue headlines to the background.
+    void (async () => {
+      const missingFonts = await verifyMissingFamilies(
+        imported,
+        brandAssets.filter((a) => a.kind === "font"),
+      );
+      if (missingFonts.length) {
+        setNotice(
+          opts.summary(imported) +
+            sizeNote +
+            ` Fonts not available here: ${missingFonts.join(", ")}. That text shows its Figma render until you upload them in Brand Studio.`,
+        );
+        window.clearTimeout(noticeTimer.current);
+        noticeTimer.current = window.setTimeout(() => setNotice(null), 8000);
+      }
+      recomposeBackground(opts.sourceUrl, imported, opts.tree, missingFonts);
+    })();
     return imported;
   };
 
