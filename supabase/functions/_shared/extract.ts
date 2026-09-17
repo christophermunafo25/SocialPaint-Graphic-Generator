@@ -490,8 +490,18 @@ export function walk(
   if (place && node.type === "TEXT") {
     const style = node.style ?? {};
     const box = node.absoluteBoundingBox!;
-    const isMultiline =
-      (node.characters ?? "").includes("\n") || box.height > (style.fontSize ?? 16) * 2.2;
+    const fontSize = style.fontSize ?? 16;
+    const lineHeightPx =
+      style.lineHeightPx ??
+      (style.lineHeightPercentFontSize
+        ? (style.lineHeightPercentFontSize / 100) * fontSize
+        : fontSize * 1.2);
+    // Rotated nodes: box is the axis-aligned bounding box and lies about height.
+    // Use the true unrotated size from transformOf (already computed in placementOf's
+    // path) when rotation is present.
+    const contentHeight = place.rotation !== undefined && node.size ? node.size.y : box.height;
+    const lineCount = Math.max(1, Math.round(contentHeight / lineHeightPx));
+    const isMultiline = (node.characters ?? "").includes("\n") || lineCount >= 2;
     const fill = visibleFills(node)[0];
     let colorHex: string | undefined;
     let textGradient: SuggestedField["textGradient"];

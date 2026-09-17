@@ -251,6 +251,62 @@ describe("text field extraction", () => {
       warnings.some((w) => w.layer === "Headline" && w.issue.includes("mixed text styling")),
     ).toBe(true);
   });
+
+  describe("multiline classification (line count from real line height)", () => {
+    it("classifies a two-line wrapped headline (no \\n, tight leading) as multiline", () => {
+      const { out } = run({
+        ...headline,
+        characters: "Grow your brand with SocialPaint",
+        absoluteBoundingBox: { x: 206, y: 417, width: 868, height: 132 },
+        style: { fontFamily: "GC VANK", fontSize: 64, lineHeightPx: 66 },
+      });
+      expect(out[0].type).toBe("multiline");
+    });
+
+    it("classifies a single line as text", () => {
+      const { out } = run({
+        ...headline,
+        characters: "One line",
+        absoluteBoundingBox: { x: 206, y: 417, width: 868, height: 66 },
+        style: { fontFamily: "GC VANK", fontSize: 64, lineHeightPx: 66 },
+      });
+      expect(out[0].type).toBe("text");
+    });
+
+    it("classifies a roomy single line (150% leading, no px value) as text", () => {
+      const { out } = run({
+        ...headline,
+        characters: "One roomy line",
+        absoluteBoundingBox: { x: 206, y: 417, width: 868, height: 60 },
+        style: { fontFamily: "GC VANK", fontSize: 40, lineHeightPercentFontSize: 150 },
+      });
+      expect(out[0].type).toBe("text");
+    });
+
+    it("keeps an explicit \\n multiline even in a short box", () => {
+      const { out } = run({
+        ...headline,
+        characters: "Two\nlines",
+        absoluteBoundingBox: { x: 206, y: 417, width: 868, height: 40 },
+        style: { fontFamily: "GC VANK", fontSize: 40, lineHeightPx: 44 },
+      });
+      expect(out[0].type).toBe("multiline");
+    });
+
+    it("uses the true unrotated height for rotated text (inflated AABB stays text)", () => {
+      // Rotated 8°: the AABB height (140) is well past 2× the font size, but
+      // the true size (400×60) holds one line at lineHeightPx 66.
+      const { out } = run({
+        ...headline,
+        characters: "Tilted single line",
+        absoluteBoundingBox: { x: 250, y: 400, width: 404.5, height: 140 },
+        relativeTransform: DEG8,
+        size: { x: 400, y: 60 },
+        style: { fontFamily: "GC VANK", fontSize: 64, lineHeightPx: 66 },
+      });
+      expect(out[0].type).toBe("text");
+    });
+  });
 });
 
 describe("shape field extraction", () => {
@@ -411,6 +467,7 @@ describe("container and vector object extraction", () => {
           type: "TEXT",
           characters: "Typescript",
           absoluteBoundingBox: { x: 286, y: 1180, width: 178, height: 30 },
+          style: { fontSize: 24 },
           fills: [{ type: "SOLID", color: { r: 0.61, g: 1, b: 0.29 } }],
         },
       ],
@@ -443,6 +500,7 @@ describe("container and vector object extraction", () => {
           type: "TEXT",
           characters: "MySQL",
           absoluteBoundingBox: { x: 120, y: 215, width: 89, height: 30 },
+          style: { fontSize: 24 },
         },
       ],
     });
