@@ -134,6 +134,57 @@ function freeTextRect(
   return { x: box.x, y, width: box.width, height: contentH };
 }
 
+/** Default plate paddings (px, canvas space) when the field sets none. */
+export const PLATE_PADDING_X_DEFAULT = 24;
+export const PLATE_PADDING_Y_DEFAULT = 12;
+
+/** Total plate padding per axis (both sides), zero without a plate. */
+function platePad(f: TemplateField): { x: number; y: number } {
+  if (!f.plateColor) return { x: 0, y: 0 };
+  return {
+    x: 2 * (f.platePaddingX ?? PLATE_PADDING_X_DEFAULT),
+    y: 2 * (f.platePaddingY ?? PLATE_PADDING_Y_DEFAULT),
+  };
+}
+
+/** A plated field HUGS: its box is exactly the rendered text plus the plate
+ * paddings, so the pill can never overflow it and growing the padding grows
+ * the box. Single-line text hugs both axes; multiline keeps its authored
+ * width (the plate spans it, text wraps inside the side paddings) and hugs
+ * its height. The authored rect supplies the growth anchors — align for x
+ * (left edge, center, or right edge holds still), verticalAlign for y —
+ * mirroring freeTextRect. Font size is the authored one: a box derived from
+ * the content leaves shrink nothing to fit into. */
+function platedRect(
+  field: TemplateField,
+  style: ResolvedFieldStyle,
+  text: string,
+  fontSizePx: number,
+  measure: LineMeasurer,
+): Rect {
+  const box = authoredRect(field);
+  const pad = platePad(field);
+  const width =
+    field.type === "multiline"
+      ? box.width
+      : measuredTextWidth(style, text, fontSizePx, measure) + pad.x;
+  const wrapWidth = Math.max(1, (field.type === "multiline" ? box.width : width) - pad.x);
+  const height = measuredTextHeight(field, style, text, fontSizePx, wrapWidth, measure) + pad.y;
+  const x =
+    field.align === "center"
+      ? box.x + (box.width - width) / 2
+      : field.align === "right"
+        ? box.x + box.width - width
+        : box.x;
+  const y =
+    field.verticalAlign === "top"
+      ? box.y
+      : field.verticalAlign === "bottom"
+        ? box.y + box.height - height
+        : box.y + (box.height - height) / 2;
+  return { x, y, width, height };
+}
+
 /** Authored rect normalized to top-left space. */
 export function authoredRect(f: TemplateField): Rect {
   return {
@@ -329,27 +380,41 @@ function sizedChildren(
     // A multiline field under Shrink is a FIXED box — its font adapts to its
     // authored extents, so it contributes constants to the stack. Everything
     // else hugs as before: Free text hugs its wrapped height, single-line
-    // text hugs its measured width/line box.
+    // text hugs its measured width/line box. Plated fields hug plate and
+    // all — the paddings ride the measured extents (and a plated multiline
+    // is never a fixed box; a plate means hug).
+    const pad = platePad(f);
     const fixedBox =
-      f.type === "multiline" && (style.textSizing === "shrink" || style.textSizing === "fill");
+      f.type === "multiline" &&
+      !f.plateColor &&
+      (style.textSizing === "shrink" || style.textSizing === "fill");
+    const wrapWidth = Math.max(1, f.width - pad.x);
     if (vertical) {
       out.push({
         kind: "field",
         field: f,
-        main: fixedBox ? f.height : measuredTextHeight(f, style, text, size, f.width, ctx.measure),
-        cross: f.width,
+        main: fixedBox
+          ? f.height
+          : measuredTextHeight(f, style, text, size, wrapWidth, ctx.measure) + pad.y,
+        cross:
+          f.plateColor && f.type !== "multiline"
+            ? measuredTextWidth(style, text, size, ctx.measure) + pad.x
+            : f.width,
       });
     } else {
       out.push({
         kind: "field",
         field: f,
-        main: f.type === "multiline" ? f.width : measuredTextWidth(style, text, size, ctx.measure),
+        main:
+          f.type === "multiline"
+            ? f.width
+            : measuredTextWidth(style, text, size, ctx.measure) + pad.x,
         cross:
           f.type === "multiline"
             ? fixedBox
               ? f.height
-              : measuredTextHeight(f, style, text, size, f.width, ctx.measure)
-            : size * lineHeightOf(style),
+              : measuredTextHeight(f, style, text, size, wrapWidth, ctx.measure) + pad.y
+            : size * lineHeightOf(style) + pad.y,
       });
     }
   }
@@ -612,6 +677,16 @@ export function computeLayout(
     }
     const style = styleOf(ctx, f);
     const text = renderedText(f, values[f.fieldKey]);
+    // A plate makes the field hug on both axes at the authored font size —
+    // textSizing has nothing to fit into when the box derives from the
+    // content, so it is ignored (free semantics).
+    if (f.plateColor) {
+      const free = { ...style, textSizing: "free" as const };
+      const fit = fitFieldText(f, free, text, measure);
+      result.fontSizes.set(f.id, fit.fontSizePx);
+      result.fieldRects.set(f.id, platedRect(f, style, text, fit.fontSizePx, measure));
+      continue;
+    }
     const fit = fitFieldText(f, style, text, measure);
     result.fontSizes.set(f.id, fit.fontSizePx);
     result.fieldRects.set(

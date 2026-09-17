@@ -11,7 +11,13 @@ import type { BrandKit, FieldValues, TemplateField, TemplateSchema } from "@/lib
 import { ErrorBoundary, FieldCrashFallback } from "./ErrorBoundary";
 import { useDataUrl } from "@/lib/render/useDataUrl";
 import { createCanvasMeasurer, fitText } from "@/lib/render/autoFit";
-import { computeLayout, renderedText, type Rect } from "@/lib/render/layout";
+import {
+  PLATE_PADDING_X_DEFAULT,
+  PLATE_PADDING_Y_DEFAULT,
+  computeLayout,
+  renderedText,
+  type Rect,
+} from "@/lib/render/layout";
 import { resolveFieldStyle } from "@/lib/brand/resolveStyle";
 import { loadGoogleFonts, schemaFontUsage } from "@/lib/render/fonts";
 import { exportSchemaPng, renderSchemaBlob, type ExportOutcome } from "@/lib/render/exportPng";
@@ -329,9 +335,9 @@ export function plateRadiusCss(field: TemplateField, scale = 1): string {
   return `${r.tl * scale}px ${r.tr * scale}px ${r.br * scale}px ${r.bl * scale}px`;
 }
 
-/** Default plate paddings (px, canvas space) when the field sets none. */
-export const PLATE_PADDING_X_DEFAULT = 24;
-export const PLATE_PADDING_Y_DEFAULT = 12;
+// The plate padding defaults live with the layout pass (the box HUGS text
+// plus padding, so layout owns them); re-exported here for the inspector.
+export { PLATE_PADDING_X_DEFAULT, PLATE_PADDING_Y_DEFAULT };
 
 interface FieldBoxProps {
   field: TemplateField;
@@ -499,6 +505,9 @@ function TextFieldBox({ field, value, brandKit, fontSize: layoutFontSize }: Fiel
     fitText(
       {
         ...style,
+        // A plate means hug: the box derives from the content, so there is
+        // nothing for shrink/fill to fit into — same rule as the layout pass.
+        ...(field.plateColor ? { textSizing: "free" as const } : {}),
         multiline: field.type === "multiline",
         width: field.width,
         height: field.height,
@@ -513,10 +522,10 @@ function TextFieldBox({ field, value, brandKit, fontSize: layoutFontSize }: Fiel
       : field.verticalAlign === "bottom"
         ? "flex-end"
         : "center";
-  // The plate wraps the rendered text and pads outward — text metrics and
-  // autoFit inputs are untouched, so an unplated field renders byte-identical
-  // to before plates existed. Single-line plates shrink-wrap the text (the
-  // outer flex still places them per align); multiline plates span the box.
+  // A plated field's box HUGS the plate (the layout pass sizes it to text +
+  // paddings), so the plate fills the box exactly — it can never overflow,
+  // and growing the padding grows the box. The text sits inside the plate's
+  // padding, placed by the same align/verticalAlign flex the bare box uses.
   const plateStyle: React.CSSProperties | null = field.plateColor
     ? {
         background: field.plateColor,
@@ -524,8 +533,12 @@ function TextFieldBox({ field, value, brandKit, fontSize: layoutFontSize }: Fiel
         padding: `${field.platePaddingY ?? PLATE_PADDING_Y_DEFAULT}px ${
           field.platePaddingX ?? PLATE_PADDING_X_DEFAULT
         }px`,
-        width: field.type === "multiline" ? "100%" : "fit-content",
+        width: "100%",
+        height: "100%",
         boxSizing: "border-box",
+        display: "flex",
+        alignItems,
+        justifyContent: justify,
       }
     : null;
   const content = (

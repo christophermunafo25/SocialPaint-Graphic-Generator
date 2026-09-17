@@ -260,7 +260,9 @@ export function FieldInspector(props: FieldInspectorProps) {
     onChange({ y: Math.round(centered ? top + field.height / 2 : top) });
   };
 
-  const canSetSizing = field.type === "text" || field.type === "multiline";
+  // A plated field hugs its content — the box derives from text + padding,
+  // so there is nothing for a sizing mode to fit into; the control hides.
+  const canSetSizing = (field.type === "text" || field.type === "multiline") && !field.plateColor;
   const setSizingMode = (mode: TextSizingMode) => {
     onChange({ textSizing: mode === "free" ? undefined : mode });
   };
@@ -370,6 +372,8 @@ export function FieldInspector(props: FieldInspectorProps) {
   const fillLocked = locked.has("colorKey");
   const [pickerOpen, setPickerOpen] = useState(false);
   const fillSwatchRef = useRef<HTMLButtonElement>(null);
+  const [platePickerOpen, setPlatePickerOpen] = useState(false);
+  const plateSwatchRef = useRef<HTMLButtonElement>(null);
   useEffect(() => setPickerOpen(false), [field.id]);
 
   /** Alpha byte of a solid fill's hex (100 when opaque). */
@@ -985,9 +989,11 @@ export function FieldInspector(props: FieldInspectorProps) {
             </>
           )}
           <PropertyRow label="Dimensions">
-            {mainSizeComputed && !groupVertical ? (
+            {(mainSizeComputed && !groupVertical) ||
+            (isTextish && Boolean(field.plateColor) && field.type !== "multiline") ? (
               <span style={{ fontSize: 11, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-                W {Math.round(computedRect?.width ?? field.width)} · computed
+                W {Math.round(computedRect?.width ?? field.width)} ·{" "}
+                {field.plateColor ? "hugs content" : "computed"}
               </span>
             ) : (
               <NumericField
@@ -999,7 +1005,9 @@ export function FieldInspector(props: FieldInspectorProps) {
                 onCommit={commitW}
               />
             )}
-            {(mainSizeComputed && groupVertical) || (isText && sizingMode === "free") ? (
+            {(mainSizeComputed && groupVertical) ||
+            (isText && sizingMode === "free") ||
+            (isTextish && Boolean(field.plateColor)) ? (
               <span style={{ fontSize: 11, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
                 H {Math.round(computedRect?.height ?? field.height)} · hugs content
               </span>
@@ -1038,7 +1046,7 @@ export function FieldInspector(props: FieldInspectorProps) {
           </PropertyRow>
           {/* The control that decides whether the chosen mode can fail: the
             size floor under Shrink and Fill, the entry bound under Free. */}
-          {isText && field.type !== "select" && sizingMode !== "free" && (
+          {isText && field.type !== "select" && sizingMode !== "free" && !field.plateColor && (
             <PropertyRow label="Min text">
               <NumericField
                 suffix="px"
@@ -1317,8 +1325,12 @@ export function FieldInspector(props: FieldInspectorProps) {
               <PropertyRow label="Plate" stack={Boolean(field.plateColor)}>
                 {field.plateColor ? (
                   <>
-                    <span
-                      aria-hidden
+                    <button
+                      ref={plateSwatchRef}
+                      title="Edit plate color"
+                      aria-label="Edit plate color"
+                      aria-expanded={platePickerOpen}
+                      onClick={() => setPlatePickerOpen((o) => !o)}
                       style={{
                         width: 24,
                         height: 24,
@@ -1326,6 +1338,7 @@ export function FieldInspector(props: FieldInspectorProps) {
                         borderRadius: "var(--radius-control)",
                         border: "1px solid var(--border-strong)",
                         background: fillSwatchCss(field.plateColor),
+                        cursor: "pointer",
                       }}
                     />
                     <input
@@ -1351,7 +1364,9 @@ export function FieldInspector(props: FieldInspectorProps) {
                         }
                       }}
                       onBlur={(e) => {
-                        const m = /^#?([0-9a-fA-F]{6})$/.exec(e.target.value.trim());
+                        const m = /^#?([0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?)$/.exec(
+                          e.target.value.trim(),
+                        );
                         if (m) onChange({ plateColor: `#${m[1].toUpperCase()}` });
                         else e.target.value = field.plateColor!;
                       }}
@@ -1465,13 +1480,14 @@ export function FieldInspector(props: FieldInspectorProps) {
                   onCommit={(v) => onChange({ fontSizePx: v ?? field.fontSizePx })}
                 />
               </PropertyRow>
-              {sizingMode === "fill" && computedFontSize !== undefined && (
+              {sizingMode === "fill" && !field.plateColor && computedFontSize !== undefined && (
                 <p style={hintStyle}>
                   Fill box ignores this. The box sets the size, currently{" "}
                   {Math.round(computedFontSize)}px.
                 </p>
               )}
               {sizingMode === "shrink" &&
+                !field.plateColor &&
                 computedFontSize !== undefined &&
                 computedFontSize < (resolved.fontSizePx ?? 45) - 0.5 && (
                   <p style={hintStyle}>
@@ -1786,6 +1802,24 @@ export function FieldInspector(props: FieldInspectorProps) {
           locked={fillLocked}
           onChange={look}
           onClose={() => setPickerOpen(false)}
+        />
+      )}
+
+      {/* The plate's own picker: the full fill surface (brand colors, color
+        map, recents) pointed at plateColor through a proxy field — plates
+        hold one solid color, so the gradient mode is hidden. */}
+      {platePickerOpen && isTextish && field.plateColor && (
+        <FillPicker
+          anchorRef={plateSwatchRef}
+          field={{ ...field, colorHex: field.plateColor, textGradient: undefined }}
+          kit={kit}
+          companyId={company?.id}
+          locked={false}
+          solidOnly
+          onChange={(patch) => {
+            if (patch.colorHex) onChange({ plateColor: patch.colorHex });
+          }}
+          onClose={() => setPlatePickerOpen(false)}
         />
       )}
     </div>

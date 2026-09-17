@@ -492,24 +492,58 @@ describe("horizontal stack verification", () => {
 });
 
 describe("text plates and layout", () => {
-  // The plate's contract with sizing: it pads the RENDERED text outward and
-  // is invisible to measurement — autoFit inputs, fitted sizes, and every
-  // layout rect are identical with and without a plate. (The plate can
-  // therefore paint up to platePadding beyond the measured text box; the
-  // Pill palette tile sizes its box to leave room.)
-  it("measures a plated field identically to an unplated one", () => {
-    const plain = mkField({ fieldKey: "t", textSizing: "shrink" });
-    const plated = mkField({
-      ...plain,
-      id: plain.id,
+  // The plate's contract with sizing: a plated field HUGS — its box is
+  // exactly the rendered text plus the plate paddings, so the pill can never
+  // overflow it and growing the padding grows the box. The authored rect
+  // supplies the growth anchors (align / verticalAlign), and the font renders
+  // at its authored size (textSizing is ignored: a box derived from the
+  // content leaves shrink nothing to fit into).
+  const pill = (over: Partial<TemplateField>) =>
+    mkField({
+      fieldKey: "t",
       plateColor: "#082E17",
       platePaddingX: 24,
       platePaddingY: 12,
+      ...over,
     });
-    const value = { t: "A label that has to shrink to fit the box" };
-    const a = layout([plain], undefined, value);
-    const b = layout([plated], undefined, value);
-    expect(b.fieldRects.get(plated.id)).toEqual(a.fieldRects.get(plain.id));
-    expect(b.fontSizes.get(plated.id)).toEqual(a.fontSizes.get(plain.id));
+
+  it("hugs a single-line pill to text + padding on both axes", () => {
+    // "Label" = 5 chars × 20px = 100 wide, one 40px line (lineHeight 1).
+    const f = pill({});
+    const r = layout([f], undefined, { t: "Label" });
+    expect(r.fieldRects.get(f.id)).toEqual({
+      x: 0, // align left: the authored left edge holds still
+      y: 18, // middle: grown both ways from the authored 100-tall center
+      width: 148, // 100 + 2×24
+      height: 64, // 40 + 2×12
+    });
+    expect(r.fontSizes.get(f.id)).toBe(40);
+  });
+
+  it("grows the box exactly as the paddings grow", () => {
+    const f = pill({ platePaddingX: 40, platePaddingY: 20 });
+    const r = layout([f], undefined, { t: "Label" });
+    expect(r.fieldRects.get(f.id)).toMatchObject({ width: 180, height: 80 });
+  });
+
+  it("anchors the hug per align and verticalAlign", () => {
+    const f = pill({ align: "right", verticalAlign: "bottom" });
+    const r = layout([f], undefined, { t: "Label" });
+    // Right edge (400) and bottom edge (100) hold still.
+    expect(r.fieldRects.get(f.id)).toMatchObject({ x: 252, y: 36 });
+  });
+
+  it("ignores shrink on a plated field — the authored size renders", () => {
+    const f = pill({ textSizing: "shrink" });
+    const r = layout([f], undefined, { t: "A very long label that would shrink" });
+    expect(r.fontSizes.get(f.id)).toBe(40);
+  });
+
+  it("keeps a multiline plate at its authored width, hugging height", () => {
+    // Wrap width 400 − 48 = 352: "aaaaaaaa aaaaaaaa" (340px) fits one line,
+    // the third word wraps — two 40px lines plus vertical padding.
+    const f = pill({ type: "multiline" });
+    const r = layout([f], undefined, { t: "aaaaaaaa aaaaaaaa aaaaaaaa" });
+    expect(r.fieldRects.get(f.id)).toMatchObject({ width: 400, height: 104 });
   });
 });
