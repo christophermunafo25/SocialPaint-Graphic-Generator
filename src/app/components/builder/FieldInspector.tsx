@@ -1131,14 +1131,14 @@ export function FieldInspector(props: FieldInspectorProps) {
           {/* Per-corner inputs. Full width: the row has no label, and the
             96px gutter left four inputs about 30px each at the rail's
             minimum, which is less than one digit once NumericField's own
-            padding and scrub label are paid for. The grid wraps by width:
-            two columns at 260px, four across at 520px. */}
+            padding and scrub label are paid for. A fixed 2×2 grid so each
+            input sits in the corner it edits (top row TL TR, bottom BL BR). */}
           {hasRadius && !radiusLinked && (
             <PropertyRow full>
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(104px, 1fr))",
+                  gridTemplateColumns: "repeat(2, 1fr)",
                   gap: "var(--space-3xs)",
                   flex: 1,
                   minWidth: 0,
@@ -1704,9 +1704,11 @@ function FontStyleSelect({
   );
 }
 
+// Ordered for the 2×2 spatial grid: top row TL TR, bottom row BL BR —
+// each input sits in the corner it edits.
 const CORNERS: Array<{ key: keyof CornerRadius; label: string }> = [
   { key: "tl", label: "TL" },
   { key: "tr", label: "TR" },
-  { key: "br", label: "BR" },
   { key: "bl", label: "BL" },
+  { key: "br", label: "BR" },
 ];
