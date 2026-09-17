@@ -374,6 +374,8 @@ export function FieldInspector(props: FieldInspectorProps) {
   const fillSwatchRef = useRef<HTMLButtonElement>(null);
   const [platePickerOpen, setPlatePickerOpen] = useState(false);
   const plateSwatchRef = useRef<HTMLButtonElement>(null);
+  const [strokePickerOpen, setStrokePickerOpen] = useState(false);
+  const strokeSwatchRef = useRef<HTMLButtonElement>(null);
   useEffect(() => setPickerOpen(false), [field.id]);
 
   /** Alpha byte of a solid fill's hex (100 when opaque). */
@@ -1244,8 +1246,12 @@ export function FieldInspector(props: FieldInspectorProps) {
             <PropertyRow label="Stroke" stack={Boolean(field.strokeColor)}>
               {field.strokeColor ? (
                 <>
-                  <span
-                    aria-hidden
+                  <button
+                    ref={strokeSwatchRef}
+                    title="Edit stroke color"
+                    aria-label="Edit stroke color"
+                    aria-expanded={strokePickerOpen}
+                    onClick={() => setStrokePickerOpen((o) => !o)}
                     style={{
                       width: 24,
                       height: 24,
@@ -1253,6 +1259,7 @@ export function FieldInspector(props: FieldInspectorProps) {
                       borderRadius: "var(--radius-control)",
                       border: "1px solid var(--border-strong)",
                       background: fillSwatchCss(field.strokeColor),
+                      cursor: "pointer",
                     }}
                   />
                   <input
@@ -1278,7 +1285,9 @@ export function FieldInspector(props: FieldInspectorProps) {
                       }
                     }}
                     onBlur={(e) => {
-                      const m = /^#?([0-9a-fA-F]{6})$/.exec(e.target.value.trim());
+                      const m = /^#?([0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?)$/.exec(
+                        e.target.value.trim(),
+                      );
                       if (m) onChange({ strokeColor: `#${m[1].toUpperCase()}` });
                       else e.target.value = field.strokeColor!;
                     }}
@@ -1802,6 +1811,24 @@ export function FieldInspector(props: FieldInspectorProps) {
           locked={fillLocked}
           onChange={look}
           onClose={() => setPickerOpen(false)}
+        />
+      )}
+
+      {/* The stroke's own picker: same full fill surface, pointed at
+        strokeColor — a stroke holds one solid color, so the gradient mode
+        is hidden. */}
+      {strokePickerOpen && isShape && field.strokeColor && (
+        <FillPicker
+          anchorRef={strokeSwatchRef}
+          field={{ ...field, colorHex: field.strokeColor, textGradient: undefined }}
+          kit={kit}
+          companyId={company?.id}
+          locked={false}
+          solidOnly
+          onChange={(patch) => {
+            if (patch.colorHex) onChange({ strokeColor: patch.colorHex });
+          }}
+          onClose={() => setStrokePickerOpen(false)}
         />
       )}
 
