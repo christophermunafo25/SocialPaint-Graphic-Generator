@@ -444,6 +444,136 @@ describe("shape field extraction", () => {
   });
 });
 
+describe("mask-group image lifting", () => {
+  const maskGroup: FigmaNode = {
+    id: "9:1",
+    name: "Photo mask",
+    type: "GROUP",
+    absoluteBoundingBox: { x: 354, y: 682, width: 826, height: 787 },
+    children: [
+      {
+        id: "9:2",
+        name: "Mask shape",
+        type: "RECTANGLE",
+        isMask: true,
+        maskType: "VECTOR",
+        cornerRadius: 40,
+        absoluteBoundingBox: { x: 354, y: 682, width: 826, height: 787 },
+      },
+      {
+        id: "9:3",
+        name: "photo",
+        type: "RECTANGLE",
+        absoluteBoundingBox: { x: 200, y: 500, width: 1200, height: 1100 },
+        fills: [{ type: "IMAGE", imageRef: "photo-ref" }],
+      },
+    ],
+  };
+
+  it("lifts a rounded-rect outline mask group as ONE image field at the mask's box", () => {
+    const { out, warnings } = run(maskGroup);
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({
+      type: "image",
+      label: "Photo mask",
+      sourceNodeId: "9:1", // the GROUP — its render carries the mask-applied crop
+      x: 254,
+      y: 482,
+      width: 826,
+      height: 787,
+      cornerRadius: { tl: 40, tr: 40, br: 40, bl: 40 },
+      objectFit: "cover",
+      static: true,
+    });
+    expect(warnings).toHaveLength(0);
+  });
+
+  it("lifts a plain (square) rect mask too, with no radius", () => {
+    const { out } = run({
+      ...maskGroup,
+      children: [
+        { ...maskGroup.children![0], cornerRadius: undefined },
+        maskGroup.children![1],
+      ],
+    });
+    expect(out).toHaveLength(1);
+    expect(out[0].type).toBe("image");
+    expect(out[0].cornerRadius).toBeUndefined();
+  });
+
+  it("bakes an alpha-image mask, with the degraded warning", () => {
+    // The Feature Highlight template's real mask: a RECTANGLE whose IMAGE
+    // fill's alpha channel does the masking — no radius can fake that shape.
+    const { out, warnings } = run({
+      ...maskGroup,
+      children: [
+        {
+          ...maskGroup.children![0],
+          maskType: "ALPHA",
+          fills: [{ type: "IMAGE", imageRef: "mask-shape-png" }],
+        },
+        maskGroup.children![1],
+      ],
+    });
+    expect(out).toHaveLength(0);
+    expect(
+      warnings.some(
+        (w) =>
+          w.layer === "Photo mask" &&
+          w.severity === "degraded" &&
+          w.issue.includes("masked image is baked"),
+      ),
+    ).toBe(true);
+  });
+
+  it("treats an image-filled mask with NO maskType as alpha (bake, not lift)", () => {
+    const { out } = run({
+      ...maskGroup,
+      children: [
+        {
+          ...maskGroup.children![0],
+          maskType: undefined,
+          fills: [{ type: "IMAGE", imageRef: "mask-shape-png" }],
+        },
+        maskGroup.children![1],
+      ],
+    });
+    expect(out).toHaveLength(0);
+  });
+
+  it("does not lift a mask group holding text (both warnings fire)", () => {
+    const { out, warnings, strings } = run({
+      ...maskGroup,
+      children: [
+        ...maskGroup.children!,
+        {
+          id: "9:4",
+          name: "Caption",
+          type: "TEXT",
+          characters: "hello",
+          absoluteBoundingBox: { x: 400, y: 700, width: 100, height: 30 },
+          style: { fontSize: 24 },
+        },
+      ],
+    });
+    expect(out).toHaveLength(0);
+    expect(strings.some((s) => s.includes("can't become a field"))).toBe(true);
+    expect(warnings.some((w) => w.issue.includes("masked image is baked"))).toBe(true);
+  });
+
+  it("does not lift an ellipse-masked group (bakes, with the warning)", () => {
+    const { out, warnings } = run({
+      ...maskGroup,
+      children: [
+        { ...maskGroup.children![0], type: "ELLIPSE" },
+        maskGroup.children![1],
+      ],
+    });
+    expect(out).toHaveLength(0);
+    expect(warnings.some((w) => w.issue.includes("masked image is baked"))).toBe(true);
+  });
+});
+
 describe("raster leaves", () => {
   it("warns when a flattened group swallows text", () => {
     const { out, warnings } = run({
@@ -496,39 +626,85 @@ describe("raster leaves", () => {
 });
 
 describe("container and vector object extraction", () => {
-  it("lifts a solid pill frame as a rounded shape field plus its text", () => {
+  const pillFrame: FigmaNode = {
     // The SocialPaint job-post pill: a FRAME with one solid fill and a full
-    // corner radius holding a skill name. Both must be objects — the pill
-    // body a recolorable shape, the text its own field on top.
+    // corner radius holding exactly one skill name.
+    id: "7:1",
+    name: "Pill",
+    type: "FRAME",
+    cornerRadius: 999,
+    absoluteBoundingBox: { x: 229, y: 1158, width: 293, height: 74 },
+    fills: [{ type: "SOLID", color: { r: 0.03, g: 0.18, b: 0.09 } }],
+    children: [
+      {
+        id: "7:2",
+        name: "Typescript",
+        type: "TEXT",
+        characters: "Typescript",
+        absoluteBoundingBox: { x: 286, y: 1180, width: 178, height: 30 },
+        style: { fontSize: 24 },
+        fills: [{ type: "SOLID", color: { r: 0.61, g: 1, b: 0.29 } }],
+      },
+    ],
+  };
+
+  it("fuses a solid pill frame into ONE plated text field", () => {
+    const { out } = run(pillFrame);
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({
+      type: "text",
+      label: "Pill",
+      sourceNodeId: "7:1",
+      // The CONTAINER's box, frame-relative.
+      x: 129,
+      y: 958,
+      width: 293,
+      height: 74,
+      // Plate from the container's fill; paddings from the child's inset.
+      plateColor: "#082E17",
+      platePaddingX: 57,
+      platePaddingY: 22,
+      cornerRadius: { tl: 999, tr: 999, br: 999, bl: 999 },
+      align: "center",
+      colorHex: "#9CFF4A",
+      staticValue: "Typescript",
+      static: true,
+    });
+  });
+
+  it("keeps the split for a card with heading plus body", () => {
     const { out } = run({
-      id: "7:1",
-      name: "Pill",
-      type: "FRAME",
-      cornerRadius: 999,
-      absoluteBoundingBox: { x: 229, y: 1158, width: 293, height: 74 },
-      fills: [{ type: "SOLID", color: { r: 0.03, g: 0.18, b: 0.09 } }],
+      ...pillFrame,
+      id: "7:5",
+      name: "Card",
       children: [
+        { ...pillFrame.children![0], id: "7:6", name: "Heading" },
         {
-          id: "7:2",
-          name: "Typescript",
+          id: "7:7",
+          name: "Body",
           type: "TEXT",
-          characters: "Typescript",
-          absoluteBoundingBox: { x: 286, y: 1180, width: 178, height: 30 },
+          characters: "Body copy",
+          absoluteBoundingBox: { x: 286, y: 1214, width: 178, height: 30 },
           style: { fontSize: 24 },
-          fills: [{ type: "SOLID", color: { r: 0.61, g: 1, b: 0.29 } }],
         },
       ],
     });
-    expect(out).toHaveLength(2);
-    expect(out[0]).toMatchObject({
-      type: "shape",
-      shape: "rect",
-      sourceNodeId: "7:1",
-      cornerRadius: { tl: 999, tr: 999, br: 999, bl: 999 },
-      colorHex: "#082E17",
-      static: true,
+    expect(out).toHaveLength(3);
+    expect(out[0]).toMatchObject({ type: "shape", shape: "rect", colorHex: "#082E17" });
+    expect(out[0].plateColor).toBeUndefined();
+    expect(out[1].type).toBe("text");
+    expect(out[2].type).toBe("text");
+  });
+
+  it("keeps the split for a single-text container with per-corner radii", () => {
+    const { out } = run({
+      ...pillFrame,
+      id: "7:8",
+      cornerRadius: undefined,
+      rectangleCornerRadii: [24, 0, 24, 0],
     });
-    expect(out[1]).toMatchObject({ type: "text", staticValue: "Typescript" });
+    expect(out).toHaveLength(2);
+    expect(out[0]).toMatchObject({ type: "shape", shape: "rect" });
   });
 
   it("keeps a stroked container's backdrop in the plate but still lifts its text", () => {

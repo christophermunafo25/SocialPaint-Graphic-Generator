@@ -101,6 +101,7 @@ const lines: string[] = [
       f.colorHex ?? "",
       f.textGradient ? "gradient" : "",
       f.fontFamily ? `${f.fontFamily} ${f.fontSizePx ?? ""}px` : "",
+      f.plateColor ? `plate=${f.plateColor}@${f.platePaddingX}/${f.platePaddingY}` : "",
       f.fillImageRef ? `fillRef=${f.fillImageRef}` : "",
     ]
       .filter(Boolean)
