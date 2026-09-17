@@ -218,6 +218,7 @@ describe("rescaleTemplate — completeness", () => {
     plateColor: "#082E17",
     platePaddingX: 24,
     platePaddingY: 12,
+    maskUrl: "template-backgrounds/c1/masks/1.png", // stretches with the box — nothing to scale
     sourceNodeId: "1:2",
     typeStyleKey: "heading",
     fontFamily: "Inter",

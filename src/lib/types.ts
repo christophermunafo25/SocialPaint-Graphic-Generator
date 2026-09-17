@@ -217,6 +217,12 @@ export interface TemplateField {
   plateColor?: string; // #RRGGBB
   platePaddingX?: number; // px, canvas space
   platePaddingY?: number; // px
+  /** Image fields only: an alpha mask stretched over the box — the field's
+   * image (member replacements included) clips to the mask image's alpha
+   * channel. Holds an image source like staticValue (a storage reference or
+   * URL). Set by the Figma importer for custom-shape mask groups;
+   * cornerRadius still applies on top. */
+  maskUrl?: string;
   /** Figma node this field was imported from (transient import provenance —
    * used to lift the element off the recomposed background). */
   sourceNodeId?: string;

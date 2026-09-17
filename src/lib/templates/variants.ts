@@ -60,6 +60,8 @@ type StructuralKey =
   | "plateColor"
   | "platePaddingX"
   | "platePaddingY"
+  // The mask is the field's SHAPE — as structural as its box.
+  | "maskUrl"
   | "sourceNodeId"
   | "fontFamily"
   | "fontWeight"

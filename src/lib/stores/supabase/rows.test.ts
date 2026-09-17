@@ -56,6 +56,17 @@ describe("template field row mapping", () => {
     expect(bare.platePaddingY).toBeUndefined();
   });
 
+  it("round-trips the image mask source", () => {
+    const masked: TemplateField = {
+      ...shape,
+      type: "image",
+      shape: undefined,
+      maskUrl: "template-backgrounds/c1/masks/1.png",
+    };
+    expect(roundTrip(masked).maskUrl).toBe("template-backgrounds/c1/masks/1.png");
+    expect(roundTrip(shape).maskUrl).toBeUndefined();
+  });
+
   it("coerces numeric columns Postgres returns as strings", () => {
     const row = { id: "f1", ...fieldToRow("t1", shape, 0) } as TemplateFieldRow;
     // Postgres `numeric` arrives as a string through the JS client.

@@ -1201,6 +1201,31 @@ export function FieldInspector(props: FieldInspectorProps) {
                   />
                 </PropertyRow>
               )}
+              {/* An imported custom-shape mask. Masks can't be authored
+                in-app (yet — they arrive from the Figma importer), so the
+                row only says one is applied and offers removal. */}
+              {field.maskUrl && (
+                <PropertyRow label="Mask">
+                  <span
+                    style={{
+                      fontSize: "var(--type-caption-size)",
+                      color: "var(--text-secondary)",
+                      flex: 1,
+                      minWidth: 0,
+                    }}
+                  >
+                    Custom shape from import
+                  </span>
+                  <button
+                    title="Remove mask (the image becomes rectangular)"
+                    aria-label="Remove mask"
+                    onClick={() => onChange({ maskUrl: undefined })}
+                    style={{ color: "var(--text-muted)", display: "flex", flexShrink: 0 }}
+                  >
+                    <Minus style={{ width: 13, height: 13 }} strokeWidth={1.5} />
+                  </button>
+                </PropertyRow>
+              )}
             </>
           )}
           {/* Shape stroke — an inner outline, so width never grows the box.
