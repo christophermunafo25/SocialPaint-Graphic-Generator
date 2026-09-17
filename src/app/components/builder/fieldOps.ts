@@ -270,6 +270,9 @@ export function fieldFromPalette(
           platePaddingY: 12,
           colorHex: "#FFFFFF",
           align: "center" as const,
+          // Plated fields hug (box = text + padding) — sizing modes have
+          // nothing to fit into, so the pill is born plain "free".
+          textSizing: undefined,
         }
       : {}),
     ...(item.type === "select" ? { options: [] } : {}),

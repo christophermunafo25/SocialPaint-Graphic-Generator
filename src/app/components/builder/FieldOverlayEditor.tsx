@@ -2186,12 +2186,19 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
             // resize both axes) too. Children of a horizontal stack hug their
             // width instead. Shrink fields keep every handle: their box is the
             // constraint the admin draws.
+            // A plated field hugs plate and all — height always, and width
+            // too when single-line (a pill's box IS its text plus padding, so
+            // there is nothing to drag; padding is the size control).
+            const plated = isText && Boolean(f.plateColor);
             const hugsHeight =
-              isText &&
-              (resolveFieldStyle(f, kit).textSizing !== "shrink" || (stackChild && groupVertical));
+              plated ||
+              (isText &&
+                (resolveFieldStyle(f, kit).textSizing !== "shrink" ||
+                  (stackChild && groupVertical)));
             const allowDir = (dx: number, dy: number): boolean => {
               if (!isText) return true;
               if (dy !== 0 && hugsHeight) return false;
+              if (dx !== 0 && plated && f.type !== "multiline") return false;
               if (dx !== 0 && stackChild && !groupVertical) return false;
               return true;
             };

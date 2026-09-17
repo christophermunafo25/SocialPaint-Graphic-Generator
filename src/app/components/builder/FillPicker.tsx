@@ -185,6 +185,10 @@ interface FillPickerProps {
   companyId: string | undefined;
   /** Brand rules lock the fill — everything renders read-only. */
   locked: boolean;
+  /** Hide the gradient mode — for targets that can only hold one solid
+   * color (a text plate, a stroke). The caller hands a proxy field whose
+   * colorHex is that color and maps {colorHex} back on change. */
+  solidOnly?: boolean;
   onChange(patch: Partial<TemplateField>): void;
   onClose(): void;
 }
@@ -195,6 +199,7 @@ export function FillPicker({
   kit,
   companyId,
   locked,
+  solidOnly,
   onChange,
   onClose,
 }: FillPickerProps) {
@@ -380,21 +385,24 @@ export function FillPicker({
         </p>
       ) : (
         <>
-          {/* Fill type — only what the pipeline renders: solid, linear gradient */}
-          <div className="sp-seg" data-stretch role="group" aria-label="Fill type">
-            {(["solid", "gradient"] as const).map((t) => (
-              <button
-                key={t}
-                disabled={locked}
-                aria-pressed={mode === t}
-                data-active={mode === t || undefined}
-                onClick={() => switchMode(t)}
-                style={{ textTransform: "capitalize" }}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
+          {/* Fill type — only what the pipeline renders: solid, linear
+            gradient. Solid-only targets (a plate, a stroke) hide the switch. */}
+          {!solidOnly && (
+            <div className="sp-seg" data-stretch role="group" aria-label="Fill type">
+              {(["solid", "gradient"] as const).map((t) => (
+                <button
+                  key={t}
+                  disabled={locked}
+                  aria-pressed={mode === t}
+                  data-active={mode === t || undefined}
+                  onClick={() => switchMode(t)}
+                  style={{ textTransform: "capitalize" }}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          )}
 
           {mode === "gradient" && gradient && (
             <>
