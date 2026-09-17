@@ -93,7 +93,9 @@ const lines: string[] = [
   `| - | ----- | ------------ | ---- | ----- | --- | ------ | ------ | ----- |`,
   ...fields.map((f, i) => {
     const box = `${f.x},${f.y} ${f.width}×${f.height}${f.rotation ? ` r${f.rotation}` : ""}`;
-    const radius = f.cornerRadius ? `${f.cornerRadius.tl}/${f.cornerRadius.tr}/${f.cornerRadius.br}/${f.cornerRadius.bl}` : "—";
+    const radius = f.cornerRadius
+      ? `${f.cornerRadius.tl}/${f.cornerRadius.tr}/${f.cornerRadius.br}/${f.cornerRadius.bl}`
+      : "—";
     const stroke = f.strokeColor ? `${f.strokeColor}@${f.strokeWidthPx}px` : "—";
     const notes = [
       f.static ? "static" : "member",

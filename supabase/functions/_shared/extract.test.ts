@@ -491,10 +491,7 @@ describe("mask-group image lifting", () => {
   it("lifts a plain (square) rect mask too, with no radius", () => {
     const { out } = run({
       ...maskGroup,
-      children: [
-        { ...maskGroup.children![0], cornerRadius: undefined },
-        maskGroup.children![1],
-      ],
+      children: [{ ...maskGroup.children![0], cornerRadius: undefined }, maskGroup.children![1]],
     });
     expect(out).toHaveLength(1);
     expect(out[0].type).toBe("image");
@@ -564,10 +561,7 @@ describe("mask-group image lifting", () => {
   it("does not lift an ellipse-masked group (bakes, with the warning)", () => {
     const { out, warnings } = run({
       ...maskGroup,
-      children: [
-        { ...maskGroup.children![0], type: "ELLIPSE" },
-        maskGroup.children![1],
-      ],
+      children: [{ ...maskGroup.children![0], type: "ELLIPSE" }, maskGroup.children![1]],
     });
     expect(out).toHaveLength(0);
     expect(warnings.some((w) => w.issue.includes("masked image is baked"))).toBe(true);

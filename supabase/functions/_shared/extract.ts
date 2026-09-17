@@ -870,8 +870,7 @@ export function walk(
       // alpha is what such a layer masks with) and anything else as the
       // OUTLINE default.
       const maskType =
-        mask.maskType ??
-        (visibleFills(mask).some((f) => f.type === "IMAGE") ? "ALPHA" : "VECTOR");
+        mask.maskType ?? (visibleFills(mask).some((f) => f.type === "IMAGE") ? "ALPHA" : "VECTOR");
       if (mask.type === "RECTANGLE" && maskType !== "ALPHA" && maskType !== "LUMINANCE") {
         const maskPlace = placementOf(mask, frame);
         if (maskPlace) {
