@@ -126,10 +126,24 @@
    display steps and page titles only. Card, shelf, and section titles stay
    on Plus Jakarta (--font-head keeps its name, value, and consumers), so
    the split reads as a change of voice, not of weight — both faces run 600
-   at −3%. One self-hosted variable cut spanning the full design space;
-   every consumer pins "wdth" 78 and sets "opsz" to its own step size.
-   OFL.txt ships beside the file. Never the static cut, never a Google
-   Fonts link (the @font-face policy note above applies here too). */
+   at −3%.
+
+   The shipped cut is CJ's pinned Headline SemiBold static instance
+   (2026-09-18: opsz 56, wdth 79, wght 586 baked in) — the exact instance
+   the design frames draw, so what renders can no longer drift from it.
+   Declared 600 so every --weight-head consumer matches this face without
+   synthetic bolding; consumers' font-variation-settings are inert against
+   it (no axes) and stay for the variable fallback below, which still
+   spans the full design space for anything off the 600 headline step.
+   OFL.txt ships beside the files. Never a Google Fonts link (the
+   @font-face policy note above applies here too). */
+@font-face {
+  font-family: "Bricolage Headline Platform";
+  src: url("../assets/fonts/bricolage/BricolageGrotesqueHeadline-SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
 @font-face {
   font-family: "Bricolage Platform";
   src: url("../assets/fonts/bricolage/BricolageGrotesque-variable.woff2") format("woff2");
@@ -181,9 +195,12 @@ html {
   --font-head: "Plus Jakarta Platform", "Plus Jakarta Sans", system-ui, sans-serif;
   /* The display face (2026-09): --type-display-* through --type-h4-* set in
      Bricolage Grotesque; --type-cardtitle-* and below stay on --font-head.
-     Consumers pair this with font-variation-settings "wdth" 78 and an
-     "opsz" equal to the step's px size. */
-  --font-display: "Bricolage Platform", "Bricolage Grotesque", system-ui, sans-serif;
+     The Headline cut leads (CJ's pinned static instance, 2026-09-18); the
+     variable cut backs it, where consumers' font-variation-settings
+     ("wdth" 78, "opsz" per step) still apply. */
+  --font-display:
+    "Bricolage Headline Platform", "Bricolage Platform", "Bricolage Grotesque", system-ui,
+    sans-serif;
   --weight-head: 600; /* every heading step, both faces */
   --track-head: -0.03em; /* −3% on every heading step — the heading faces' spec */
   --font-body: "Inter Tight Platform", "Inter Tight", system-ui, -apple-system, sans-serif;
