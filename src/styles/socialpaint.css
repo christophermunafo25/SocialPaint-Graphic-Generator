@@ -2391,7 +2391,7 @@ optgroup {
   margin: var(--space-3xs) 0;
   border-radius: var(--radius-pill);
   background: rgba(39, 39, 39, 0.25);
-  color: var(--white);
+  color: var(--ink);
 }
 .sp-gate[data-theme="light"] .sp-gate__rows {
   max-width: 730px;
