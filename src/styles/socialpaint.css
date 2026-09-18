@@ -2079,14 +2079,14 @@ optgroup {
 
 /* The intro headline: Bricolage SemiBold 45 at 110%, -3% track, ink — the
    45px step both surfaces share now (the 38/45 split above is the dark
-   frames'). Full width: the light frames set the face at its normal
-   width, not the condensed 78 the dark hero rode. */
+   frames'). The face keeps the hero's 78 width — the frames draw the same
+   condensed cut — with the optical size on this step's own 45. */
 .sp-gate[data-theme="light"] .sp-hero-title {
   font-size: 45px;
   line-height: 1.1;
   letter-spacing: -0.03em;
   font-variation-settings:
-    "wdth" 100,
+    "wdth" 78,
     "opsz" 45;
   color: var(--text-primary);
 }

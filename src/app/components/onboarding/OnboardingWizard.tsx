@@ -290,8 +290,8 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
           {step === 0 ? (
             <span aria-hidden />
           ) : (
+            /* The light frames draw Back as bare text — no leading arrow. */
             <button type="button" className="sp-gate__back" onClick={() => setStep(step - 1)}>
-              <ArrowLeft className="w-4 h-4" aria-hidden />
               Back
             </button>
           )}
