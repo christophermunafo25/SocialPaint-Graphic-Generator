@@ -126,10 +126,24 @@
    display steps and page titles only. Card, shelf, and section titles stay
    on Plus Jakarta (--font-head keeps its name, value, and consumers), so
    the split reads as a change of voice, not of weight — both faces run 600
-   at −3%. One self-hosted variable cut spanning the full design space;
-   every consumer pins "wdth" 78 and sets "opsz" to its own step size.
-   OFL.txt ships beside the file. Never the static cut, never a Google
-   Fonts link (the @font-face policy note above applies here too). */
+   at −3%.
+
+   The shipped cut is CJ's pinned Headline SemiBold static instance
+   (2026-09-18: opsz 56, wdth 79, wght 586 baked in) — the exact instance
+   the design frames draw, so what renders can no longer drift from it.
+   Declared 600 so every --weight-head consumer matches this face without
+   synthetic bolding; consumers' font-variation-settings are inert against
+   it (no axes) and stay for the variable fallback below, which still
+   spans the full design space for anything off the 600 headline step.
+   OFL.txt ships beside the files. Never a Google Fonts link (the
+   @font-face policy note above applies here too). */
+@font-face {
+  font-family: "Bricolage Headline Platform";
+  src: url("../assets/fonts/bricolage/BricolageGrotesqueHeadline-SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
 @font-face {
   font-family: "Bricolage Platform";
   src: url("../assets/fonts/bricolage/BricolageGrotesque-variable.woff2") format("woff2");
@@ -181,9 +195,12 @@ html {
   --font-head: "Plus Jakarta Platform", "Plus Jakarta Sans", system-ui, sans-serif;
   /* The display face (2026-09): --type-display-* through --type-h4-* set in
      Bricolage Grotesque; --type-cardtitle-* and below stay on --font-head.
-     Consumers pair this with font-variation-settings "wdth" 78 and an
-     "opsz" equal to the step's px size. */
-  --font-display: "Bricolage Platform", "Bricolage Grotesque", system-ui, sans-serif;
+     The Headline cut leads (CJ's pinned static instance, 2026-09-18); the
+     variable cut backs it, where consumers' font-variation-settings
+     ("wdth" 78, "opsz" per step) still apply. */
+  --font-display:
+    "Bricolage Headline Platform", "Bricolage Platform", "Bricolage Grotesque", system-ui,
+    sans-serif;
   --weight-head: 600; /* every heading step, both faces */
   --track-head: -0.03em; /* −3% on every heading step — the heading faces' spec */
   --font-body: "Inter Tight Platform", "Inter Tight", system-ui, -apple-system, sans-serif;
@@ -2009,6 +2026,403 @@ optgroup {
   .sp-gate__panel {
     padding: var(--space-md);
     gap: var(--space-xl);
+  }
+}
+
+/* ── The light gate ("Auth · Gate Light", 2026-09-18) ──────────────────────
+   Frames 123:3 → 123:8 (the five auth views plus mobile) and 136:2 → 136:8
+   (the four first-run onboarding steps). Everything here is scoped to
+   .sp-gate[data-theme="light"] — the shell root PreAppShell stamps for
+   tone "light" — so the in-app "Create company" run (tone "app") and any
+   surface still on the split/dark styling above render untouched.
+
+   One card language for both surfaces: the #f1f1f1 canvas with the orbit
+   artwork bleeding behind it, a white card at radius 35 with a 15% ink
+   border, 75/55 padding and a 32 block gap, hugging its content. The gate
+   card runs to 842, the onboarding card to 1220. */
+.sp-gate[data-theme="light"] {
+  position: relative;
+  /* The backdrop bleeds past the viewport; clip (not hidden) so it never
+     grows a horizontal scrollbar. */
+  overflow: clip;
+}
+.sp-gate[data-theme="light"][data-layout="solo"] {
+  grid-template-columns: minmax(0, 842px);
+}
+.sp-gate[data-theme="light"][data-width="wide"] {
+  grid-template-columns: minmax(0, 1220px);
+}
+/* The orbit artwork (Figma 129:636): decorative, centred with bleed behind
+   the card, never below 768. */
+.sp-gate__backdrop {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  min-width: 1656px;
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+}
+.sp-gate[data-theme="light"] .sp-gate__panel {
+  position: relative; /* paints over the backdrop */
+  border-radius: 35px;
+  padding: 75px 55px;
+  gap: 32px;
+  justify-content: flex-start;
+}
+/* The wide card hugs its content like the gate card — the dark card's
+   869 floor and 833 centring column are the old frames' geometry. The 32
+   rhythm rides the panel gap, so the margin ladder below zeroes out. */
+.sp-gate[data-theme="light"][data-width="wide"] .sp-gate__panel {
+  min-height: 0;
+  padding: 75px 55px;
+}
+.sp-gate[data-theme="light"] .sp-gate__desc {
+  margin-top: 0;
+  font-size: 16px;
+  color: var(--text-on-surface-secondary);
+}
+.sp-gate[data-theme="light"][data-width="wide"] .sp-gate__steps {
+  margin-top: 0;
+}
+.sp-gate[data-theme="light"] .sp-gate__body {
+  margin-top: 0;
+}
+.sp-gate[data-theme="light"] .sp-gate__nav {
+  margin-top: 0;
+}
+
+/* The intro headline: Bricolage SemiBold 45 at 110%, -3% track, ink — the
+   45px step both surfaces share now (the 38/45 split above is the dark
+   frames'). The face keeps the hero's 78 width — the frames draw the same
+   condensed cut — with the optical size on this step's own 45. */
+.sp-gate[data-theme="light"] .sp-hero-title {
+  font-size: 45px;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  font-variation-settings:
+    "wdth" 78,
+    "opsz" 45;
+  color: var(--text-primary);
+}
+
+/* Fields: 46-tall boxes on #f9f9f8 with the 16% ink hairline, radius 12
+   (the .sp-input-lg geometry already lands 46/12/16px — the fill and the
+   edge are the light frames' own). Labels are Inter Tight Medium 16 ink. */
+.sp-gate[data-theme="light"] .sp-input {
+  background: #f9f9f8;
+  border-color: var(--border-strong);
+}
+.sp-gate[data-theme="light"] .sp-input:focus,
+.sp-gate[data-theme="light"] .sp-input:focus-visible {
+  border-color: var(--ring);
+}
+.sp-gate[data-theme="light"] .sp-gate__label,
+.sp-gate[data-theme="light"] .sp-gate__field-label {
+  font-size: 16px;
+  font-weight: var(--weight-ui);
+  color: var(--text-primary);
+}
+.sp-gate[data-theme="light"] .sp-gate__help {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* The pill — every primary action on both surfaces. The two colours are
+   the gate frames' own values, deliberately off the platform button tokens
+   (--btn-primary-*): the gate is the one place the dark-green/Slime pair
+   ships. */
+.sp-gate[data-theme="light"] {
+  --gate-btn-bg: #082a23;
+  --gate-btn-fg: #17ff7e;
+}
+.sp-gate[data-theme="light"] .sp-btn-primary {
+  min-height: var(--control-lg);
+  border-radius: var(--radius-pill);
+  background: var(--gate-btn-bg);
+  color: var(--gate-btn-fg);
+  font-family: var(--font-head);
+  font-weight: var(--weight-head);
+  font-size: 18px;
+  letter-spacing: -0.03em;
+}
+.sp-gate[data-theme="light"] .sp-btn-primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--gate-btn-bg) 86%, var(--white));
+}
+/* Gate submits: a fixed-min-width pill centred in the column, not the old
+   full-width bar. */
+.sp-gate[data-theme="light"] .sp-gate__form .sp-btn-primary {
+  align-self: center;
+  width: auto;
+  min-width: 250px;
+}
+/* The pill sits on #082A23, where the input recipe's recoloured border
+   would vanish: an explicit ring in the light --ring (#272727), offset off
+   the fill so it reads on the white card around it. */
+.sp-gate[data-theme="light"] .sp-btn-primary:focus-visible,
+.sp-gate[data-theme="light"] .sp-gate__cta:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+
+/* Quiet actions and links: Inter Tight 16 — #4a4a4a Medium for Cancel /
+   Back / Skip, ink Medium for the emphasized footer links (Sign up, Sign
+   in), Regular #4a4a4a for the copy around them (the .sp-gate__footer and
+   __desc tokens already resolve there on light). */
+.sp-gate[data-theme="light"] .sp-gate__link {
+  font-size: 16px;
+  font-weight: var(--weight-ui);
+}
+.sp-gate[data-theme="light"] .sp-gate__footer {
+  font-size: 16px;
+}
+/* Check email: the body copy centred on a 12 rhythm, the address on its
+   own line in Inter Tight Medium 18 ink. */
+.sp-gate[data-theme="light"] .sp-gate__form--check {
+  gap: 12px;
+  text-align: center;
+}
+.sp-gate[data-theme="light"] .sp-gate__address {
+  font-family: var(--font-ui);
+  font-size: 18px;
+  font-weight: var(--weight-ui);
+  line-height: 1.4;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+.sp-gate[data-theme="light"] .sp-gate__form--check .sp-btn-primary {
+  margin-top: 12px;
+}
+
+/* The stepper (136:2 → 136:8): four items on a 36 gap, 32 circles, Inter
+   Tight Medium 15 labels. Current is the ink circle with a white number;
+   done is Slime with an ink number; todo is #ececec with #4a4a4a. The
+   done-pulse keyframe in the component rides these fills unchanged. */
+.sp-gate[data-theme="light"] .sp-gate__steps {
+  gap: var(--space-2xs) 36px;
+}
+.sp-gate[data-theme="light"] .sp-gate__step {
+  font-size: 15px;
+  font-weight: var(--weight-ui);
+  color: var(--text-on-surface-secondary);
+}
+.sp-gate[data-theme="light"] .sp-gate__step-dot {
+  width: 32px;
+  height: 32px;
+  font-size: 15px;
+  border-color: transparent;
+  background: #ececec;
+  color: var(--text-on-surface-secondary);
+}
+.sp-gate[data-theme="light"] .sp-gate__step[data-state="current"] {
+  color: var(--text-primary);
+}
+.sp-gate[data-theme="light"] .sp-gate__step[data-state="current"] .sp-gate__step-dot {
+  background: var(--text-primary);
+  border-color: var(--text-primary);
+  color: var(--white);
+}
+.sp-gate[data-theme="light"] .sp-gate__step[data-state="done"] {
+  color: var(--text-primary);
+}
+.sp-gate[data-theme="light"] .sp-gate__step[data-state="done"] .sp-gate__step-dot {
+  background: var(--slime);
+  border-color: var(--slime);
+  color: var(--text-primary);
+}
+
+/* Step bodies. Company: a 520 column, the slug helper at 13 on 55% ink. */
+.sp-gate[data-theme="light"] .sp-gate__ask {
+  max-width: 520px;
+}
+.sp-gate[data-theme="light"] .sp-gate__ask-id {
+  text-align: left;
+  font-size: 13px;
+  color: rgba(39, 39, 39, 0.55);
+}
+
+/* Brand colors: swatch tiles in a row — a 150 × 92 swatch, the name and
+   hex stacked beneath, the card chrome gone. The 12% ink hairline on the
+   swatch is what keeps a light value off the white card. */
+.sp-gate[data-theme="light"] .sp-gate__tiles {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-sm);
+}
+.sp-gate[data-theme="light"] .sp-gate__tile {
+  width: 150px;
+  flex: none;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 12px;
+}
+.sp-gate[data-theme="light"] .sp-gate__tile .sp-color-swatch {
+  border-color: rgba(39, 39, 39, 0.12);
+}
+.sp-gate[data-theme="light"] .sp-gate__tile-label {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 0;
+}
+.sp-gate[data-theme="light"] .sp-gate__tile-name,
+.sp-gate[data-theme="light"] .sp-gate__tile-name-input {
+  font-size: 14px;
+  font-weight: var(--weight-ui);
+  color: var(--text-primary);
+}
+.sp-gate[data-theme="light"] .sp-gate__tile-hex {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--text-on-surface-secondary);
+}
+.sp-gate[data-theme="light"] .sp-gate__tile-remove {
+  top: var(--space-3xs);
+  right: var(--space-3xs);
+}
+/* The add tile: the swatch's 150 × 92 box, dashed at 25% ink, "+ Add"
+   centred on one line. */
+.sp-gate[data-theme="light"] .sp-gate__tile--add {
+  width: 150px;
+  height: 92px;
+  aspect-ratio: auto;
+  background: transparent;
+  border: 1px dashed rgba(39, 39, 39, 0.25);
+  border-radius: 12px;
+}
+.sp-gate[data-theme="light"] .sp-gate__tile-add {
+  flex-direction: row;
+  gap: var(--space-3xs);
+  font-size: 14px;
+  color: var(--text-on-surface-secondary);
+}
+.sp-gate[data-theme="light"] .sp-gate__tile-plus {
+  width: auto;
+  height: auto;
+  background: transparent;
+}
+.sp-gate[data-theme="light"] .sp-gate__tile-add:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--text-primary) 3%, transparent);
+  color: var(--text-primary);
+}
+.sp-gate[data-theme="light"] .sp-gate__tile-add:hover:not(:disabled) .sp-gate__tile-plus {
+  background: transparent;
+}
+
+/* Fonts: the 730 column — two 352 × 46 selects on a 24 gap, then the
+   full-width dashed zone at 96. The dashed recipe is shared with the logo
+   zone: #f9f9f8 under a 1px 25% ink dash on radius 12. */
+.sp-gate[data-theme="light"] .sp-gate__fields {
+  max-width: 730px;
+  margin: 0 auto;
+  grid-template-columns: repeat(2, minmax(0, 352px));
+  gap: var(--space-md);
+  justify-content: center;
+}
+.sp-gate[data-theme="light"] .sp-gate__drop {
+  max-width: 730px;
+  margin-left: auto;
+  margin-right: auto;
+  min-height: 96px;
+  flex-direction: column;
+  gap: var(--space-3xs);
+  background: #f9f9f8;
+  border: 1px dashed rgba(39, 39, 39, 0.25);
+  border-radius: 12px;
+}
+.sp-gate[data-theme="light"] .sp-gate__drop-title {
+  font-size: 16px;
+  font-weight: var(--weight-ui);
+  color: var(--text-primary);
+}
+.sp-gate[data-theme="light"] .sp-gate__drop-sub {
+  font-size: 13px;
+  color: var(--text-on-surface-secondary);
+}
+.sp-gate[data-theme="light"] .sp-gate__rows {
+  max-width: 730px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.sp-gate[data-theme="light"] .sp-gate__row {
+  background: #f9f9f8;
+  border-color: var(--border-strong);
+}
+
+/* Logo: one 520 × 200 zone in the same dashed recipe. */
+.sp-gate[data-theme="light"] .sp-gate__drop--logo {
+  width: 520px;
+  max-width: 100%;
+  height: 200px;
+  margin-left: auto;
+  margin-right: auto;
+  border-radius: 12px;
+}
+
+/* The nav row: Cancel/Back on the left, the Skip + pill group right. The
+   pill hugs (28 left, 24 right, 10 gap) with the 20px trailing arrow set
+   in the component. */
+.sp-gate[data-theme="light"] .sp-gate__back {
+  font-size: 16px;
+  font-weight: var(--weight-ui);
+  color: var(--text-on-surface-secondary);
+}
+.sp-gate__nav-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+.sp-gate[data-theme="light"] .sp-gate__skip-now {
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: var(--weight-ui);
+  color: var(--text-on-surface-secondary);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  transition: color var(--dur-state) var(--ease);
+}
+.sp-gate[data-theme="light"] .sp-gate__skip-now:hover:not(:disabled) {
+  color: var(--text-primary);
+}
+.sp-gate[data-theme="light"] .sp-gate__cta {
+  min-height: var(--control-lg);
+  padding: 0 24px 0 28px;
+  gap: 10px;
+  border-radius: var(--radius-pill);
+  background: var(--gate-btn-bg);
+  color: var(--gate-btn-fg);
+  font-family: var(--font-head);
+  font-weight: var(--weight-head);
+  font-size: 18px;
+  letter-spacing: -0.03em;
+}
+.sp-gate[data-theme="light"] .sp-gate__cta:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--gate-btn-bg) 86%, var(--white));
+}
+/* Finish without a company name: visibly the disabled pill, but it keeps
+   the click so attempting it can surface the missing-name error. */
+.sp-gate[data-theme="light"] .sp-gate__cta[aria-disabled="true"] {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Mobile ≤ 768 (frame 123:8): the card at min(342, full width minus the
+   gutters), 50/24 padding, and no orbit artwork. */
+@media (max-width: 768px) {
+  .sp-gate__backdrop {
+    display: none;
+  }
+  .sp-gate[data-theme="light"][data-layout="solo"],
+  .sp-gate[data-theme="light"][data-width="wide"] {
+    grid-template-columns: minmax(0, 342px);
+  }
+  .sp-gate[data-theme="light"] .sp-gate__panel,
+  .sp-gate[data-theme="light"][data-width="wide"] .sp-gate__panel {
+    padding: 50px 24px;
   }
 }
 

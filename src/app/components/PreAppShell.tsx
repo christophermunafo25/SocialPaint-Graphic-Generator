@@ -24,6 +24,11 @@ import React from "react";
  *    own theme the moment onboarding finishes (expected, 2026-09-02).
  *  - tone "app" themes with the app — the in-app "Create company" path,
  *    which is a task, not a doorway.
+ *  - tone "light" forces the light token set the same way — the redesigned
+ *    gate and first-run onboarding ("Auth · Gate Light", 2026-09-18).
+ *
+ * `backdrop` is the full-bleed orbit artwork behind the light card,
+ * decorative like the hero: alt="", lazy, hidden below 768 in CSS.
  *
  * `hero` is the image cropped into the right panel, flush right with a
  * band of Slime exposed on the left (a frame detail, not a bug). Absent,
@@ -36,14 +41,16 @@ import React from "react";
 export function PreAppShell({
   children,
   hero,
+  backdrop,
   layout = "split",
   tone = "dark",
   width = "form",
 }: {
   children: React.ReactNode;
   hero?: string;
+  backdrop?: string;
   layout?: "split" | "solo";
-  tone?: "dark" | "app";
+  tone?: "dark" | "app" | "light";
   /** "form" is the 584 column of the auth frames; "wide" is the 1220 card
    * of the onboarding frames (154:1576 → 158:267), whose 833 content column
    * holds the four-up swatch grid. */
@@ -55,8 +62,18 @@ export function PreAppShell({
       className="sp-gate"
       data-layout={layout}
       data-width={width}
-      data-theme={tone === "dark" ? "dark" : undefined}
+      data-theme={tone === "app" ? undefined : tone}
     >
+      {backdrop && (
+        <img
+          className="sp-gate__backdrop"
+          src={backdrop}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          aria-hidden
+        />
+      )}
       <main className="sp-gate__panel">{children}</main>
       {split && (
         <div className="sp-gate__hero" aria-hidden>

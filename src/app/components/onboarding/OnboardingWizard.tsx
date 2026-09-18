@@ -14,18 +14,25 @@ import { useMotionTokens } from "@/lib/motionTokens";
 import { ColorControl } from "../ColorControl";
 import { BrandMark } from "../BrandMark";
 import { PreAppShell } from "../PreAppShell";
+import gateOrbit from "@/assets/socialpaint/gate-orbit.webp";
 
 /** First-run onboarding: walks a user from an empty database to a themed,
  * ready-to-use company workspace. Also reachable any time via "Create
  * company" — every new client starts from this identical blank slate.
  * Everything set here is editable later in Brand Studio.
  *
- * Four frames (Figma 154:1576, 154:1654, 158:202, 158:267) in the pre-app
- * shell's wide card: one rhythm — intro, description, stepper, body,
- * footer — where only the body changes between steps. The body crossfades
- * with a short translate in the direction of travel on --dur-panel; the
- * chrome around it persists and does not re-animate. Focus lands on the
- * headline after each move so it is never lost.
+ * First-run renders in the light gate card over the orbit artwork
+ * ("Auth · Gate Light" frames 136:2 → 136:8, 2026-09-18): one rhythm —
+ * intro, description, stepper, body, nav — where only the body changes
+ * between steps, and the nav carries Skip for now beside the Next/Finish
+ * pill. Skip advances without validating the current step; the company
+ * name stays required, so Finish without one only surfaces the error line.
+ * The in-app "Create company" run (firstRun false, tone "app") keeps its
+ * pre-redesign rendering exactly — the old frames (154:1576 → 158:267)
+ * still describe it. The body crossfades with a short translate in the
+ * direction of travel on --dur-panel; the chrome around it persists and
+ * does not re-animate. Focus lands on the headline after each move so it
+ * is never lost.
  *
  * The four steps and finish() are unchanged — this is a rehousing, not a
  * rewrite of the setup logic. */
@@ -52,7 +59,7 @@ const HEADLINES = {
 } as const;
 
 const DESCRIPTIONS: readonly (string | null)[] = [
-  null,
+  "Everything you set here is editable later in Brand Studio.",
   "Sensible defaults. Override them with your palette. Template text colors are always picked from these, keeping every graphic on-brand.",
   "Pick from Google Fonts, or upload your own brand font files (.woff2, .woff, .ttf, .otf) and assign them.",
   "Optional now. You can add more logos later in Brand Studio.",
@@ -175,13 +182,26 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
   };
 
   // The only way out for a signed-in user: Cancel at step 0 on the in-app
-  // path navigates to the portal; Back otherwise. Hidden (and disabled)
-  // only when firstRun && step === 0, where there is nowhere to go — and
-  // on that step the footer itself is gone, since a single question should
-  // look like one.
-  const exitHidden = firstRun && step === 0;
+  // path navigates to the portal; Back otherwise. On first-run step 0
+  // there is nowhere to cancel to, so the left slot stays empty there.
   const headline = (firstRun ? HEADLINES.firstRun : HEADLINES.inApp)[step];
   const description = DESCRIPTIONS[step];
+
+  // Skip for now (first-run nav, flagged default 2026-09-18): advances
+  // without validating the current step. The company name stays the one
+  // hard requirement, enforced at Finish rather than re-checked per step.
+  const companyOk = companyName.trim().length > 1;
+  const attemptFinish = () => {
+    if (!companyOk) {
+      setError("A company name is required — use Back to return to the Company step and add one.");
+      return;
+    }
+    void finish();
+  };
+  const skip = () => {
+    if (step < STEPS.length - 1) setStep(step + 1);
+    else attemptFinish();
+  };
 
   const variants = {
     enter: (d: 1 | -1) => ({ opacity: 0, y: 12 * d }),
@@ -190,9 +210,14 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
   };
 
   return (
-    <PreAppShell layout="solo" width="wide" tone={firstRun ? "dark" : "app"}>
+    <PreAppShell
+      layout="solo"
+      width="wide"
+      tone={firstRun ? "light" : "app"}
+      backdrop={firstRun ? gateOrbit : undefined}
+    >
       <div className="sp-gate__intro">
-        {firstRun && <BrandMark width={55} />}
+        {firstRun && <BrandMark width={64} />}
         <h1 ref={headingRef} tabIndex={-1} className="sp-hero-title">
           {headline}
         </h1>
@@ -214,6 +239,7 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
           >
             {step === 0 && (
               <StepCompany
+                light={firstRun}
                 name={companyName}
                 slug={slug}
                 ready={canNext}
@@ -221,9 +247,10 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
                 onSubmit={() => canNext && setStep(1)}
               />
             )}
-            {step === 1 && <StepColors colors={colors} onChange={setColors} />}
+            {step === 1 && <StepColors light={firstRun} colors={colors} onChange={setColors} />}
             {step === 2 && (
               <StepFonts
+                light={firstRun}
                 headingGoogle={headingGoogle}
                 bodyGoogle={bodyGoogle}
                 setHeadingGoogle={setHeadingGoogle}
@@ -235,6 +262,7 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
             )}
             {step === 3 && (
               <StepLogo
+                light={firstRun}
                 preview={logoPreview}
                 busy={saving || done}
                 onPick={(file) => {
@@ -255,7 +283,72 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
         </div>
       </div>
 
-      {!exitHidden && (
+      {firstRun ? (
+        <nav className="sp-gate__nav" aria-label="Setup navigation">
+          {/* First-run step 0 has nowhere to cancel to; the empty span
+              keeps the space-between geometry so the right group holds. */}
+          {step === 0 ? (
+            <span aria-hidden />
+          ) : (
+            /* The light frames draw Back as bare text — no leading arrow. */
+            <button type="button" className="sp-gate__back" onClick={() => setStep(step - 1)}>
+              Back
+            </button>
+          )}
+          <div className="sp-gate__nav-group">
+            <button
+              type="button"
+              className="sp-gate__skip-now"
+              onClick={skip}
+              disabled={saving || done}
+            >
+              Skip for now
+            </button>
+            {step < STEPS.length - 1 ? (
+              <button
+                type="button"
+                onClick={() => setStep(step + 1)}
+                disabled={!canNext}
+                className="sp-gate__cta"
+              >
+                Next
+                <ArrowRight className="w-5 h-5" aria-hidden />
+              </button>
+            ) : (
+              /* Missing name: the pill reads disabled (aria-disabled +
+                 the dulled style) but keeps its click, so attempting
+                 Finish surfaces the error line instead of going dead. */
+              <button
+                type="button"
+                onClick={attemptFinish}
+                disabled={saving || done}
+                aria-disabled={!companyOk || saving || done}
+                className="sp-gate__cta"
+                data-state={done ? "done" : saving ? "saving" : undefined}
+                aria-live="polite"
+              >
+                {done ? "Workspace ready" : saving ? "Creating…" : "Finish"}
+                {saving && !done ? (
+                  <Loader2 className="w-4 h-4 animate-spin" aria-hidden />
+                ) : done ? (
+                  <motion.span
+                    key="done"
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: m.state, ease: m.ease }}
+                    className="inline-flex"
+                    aria-hidden
+                  >
+                    <Check className="w-4 h-4" />
+                  </motion.span>
+                ) : (
+                  <ArrowRight className="w-5 h-5" aria-hidden />
+                )}
+              </button>
+            )}
+          </div>
+        </nav>
+      ) : (
         <nav className="sp-gate__nav" aria-label="Setup navigation">
           <button
             type="button"
@@ -353,18 +446,66 @@ function Stepper({
  * and disabled Slime reads as a dulled green over the panel. The
  * workspace-id line is reserved so it appears without moving the field. */
 function StepCompany({
+  light,
   name,
   slug,
   ready,
   onChange,
   onSubmit,
 }: {
+  /** First-run renders the light frame (136:2): a labelled column with
+   * the slug helper beneath — the nav's Next pill is the action, Enter
+   * still submits through the form. In-app keeps the inset Slime arrow. */
+  light: boolean;
   name: string;
   slug: string;
   ready: boolean;
   onChange(v: string): void;
   onSubmit(): void;
 }) {
+  const inputId = useId();
+  if (light) {
+    return (
+      <form
+        className="sp-gate__ask"
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSubmit();
+        }}
+      >
+        <div className="sp-gate__field">
+          <label htmlFor={inputId} className="sp-gate__label">
+            Company name
+          </label>
+          <input
+            id={inputId}
+            autoFocus
+            type="text"
+            value={name}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="Acme Studios"
+            autoComplete="organization"
+            className="sp-input sp-input-lg"
+          />
+          <p className="sp-gate__ask-id" aria-live="polite">
+            {slug ? (
+              <>
+                Workspace id: <span className="font-mono">{slug}</span>
+              </>
+            ) : (
+              " "
+            )}
+          </p>
+        </div>
+        {/* The visible action is the nav's Next pill; this default button
+            exists so Enter submits the form (implicit submission needs a
+            submit control). Out of the tab order — Tab goes to the nav. */}
+        <button type="submit" className="sr-only" tabIndex={-1} aria-hidden disabled={!ready}>
+          Next
+        </button>
+      </form>
+    );
+  }
   return (
     <form
       className="sp-gate__ask"
@@ -420,9 +561,14 @@ const PALETTE_CAP = 12;
  * tile says so rather than going quiet. Tiles enter, leave, and reflow on
  * the motion tokens. */
 function StepColors({
+  light,
   colors,
   onChange,
 }: {
+  /** First-run renders the light frame (136:4): 150 × 92 swatches in a
+   * row with the name and hex stacked beneath, and the dashed "+ Add"
+   * tile. Editing is the same ColorControl either way. */
+  light: boolean;
   colors: BrandColor[];
   onChange(c: BrandColor[]): void;
 }) {
@@ -467,12 +613,16 @@ function StepColors({
                 hexField={false}
                 pencilSize={38}
                 defaultOpen={c.key === openKey}
-                swatchStyle={{
-                  width: "100%",
-                  height: "auto",
-                  aspectRatio: "181 / 127",
-                  borderRadius: "var(--radius-media-inner)",
-                }}
+                swatchStyle={
+                  light
+                    ? { width: "100%", height: 92, borderRadius: 12 }
+                    : {
+                        width: "100%",
+                        height: "auto",
+                        aspectRatio: "181 / 127",
+                        borderRadius: "var(--radius-media-inner)",
+                      }
+                }
               />
               {!locked && (
                 <button
@@ -518,7 +668,7 @@ function StepColors({
           <span className="sp-gate__tile-plus" aria-hidden>
             <Plus className="w-3 h-3" />
           </span>
-          <span>{full ? "Palette is full" : "Add color"}</span>
+          <span>{full ? "Palette is full" : light ? "Add" : "Add color"}</span>
           {full && <span className="sp-gate__tile-add-why">{PALETTE_CAP} colors at most</span>}
         </button>
       </motion.li>
@@ -572,6 +722,9 @@ function FontSelect({
 }
 
 interface StepFontsProps {
+  /** First-run renders the light frame (136:6): the 730 column with the
+   * dashed drag-or-browse zone and its extensions line. */
+  light: boolean;
   headingGoogle: string;
   bodyGoogle: string;
   setHeadingGoogle(v: string): void;
@@ -619,8 +772,17 @@ function StepFonts(props: StepFontsProps) {
         <FontSelect label="Body font" value={props.bodyGoogle} onChange={props.setBodyGoogle} />
       </div>
       <label {...drop.bind} data-active={drop.active} className="sp-dropzone sp-gate__drop">
-        <Upload className="sp-dropzone__icon w-4 h-4" aria-hidden />
-        Upload custom font
+        {props.light ? (
+          <>
+            <span className="sp-gate__drop-title">Drag font files here, or browse</span>
+            <span className="sp-gate__drop-sub">.woff2, .woff, .ttf, .otf</span>
+          </>
+        ) : (
+          <>
+            <Upload className="sp-dropzone__icon w-4 h-4" aria-hidden />
+            Upload custom font
+          </>
+        )}
         <input
           type="file"
           accept={FONT_ACCEPT}
@@ -687,11 +849,16 @@ function StepFonts(props: StepFontsProps) {
  * it. "Skip for now" beneath says what the frame only implies: the step is
  * optional; it runs the same finish() without a logo. */
 function StepLogo({
+  light,
   preview,
   busy,
   onPick,
   onSkip,
 }: {
+  /** First-run renders the light frame (136:8): the 520 × 200 dashed zone
+   * with the drag-or-browse copy and no badge; Skip for now lives in the
+   * nav there, so the in-zone link stays in-app only. */
+  light: boolean;
   preview: string | null;
   busy: boolean;
   onPick(f: File): void;
@@ -723,6 +890,11 @@ function StepLogo({
                 <span className="sp-gate__drop-title">Replace logo</span>
                 <span className="sp-gate__drop-sub">Drag a new file here, or click to browse</span>
               </>
+            ) : light ? (
+              <>
+                <span className="sp-gate__drop-title">Drag your logo here, or browse</span>
+                <span className="sp-gate__drop-sub">PNG or SVG with transparency works best</span>
+              </>
             ) : (
               <>
                 <span className="sp-gate__drop-badge" aria-hidden>
@@ -744,11 +916,13 @@ function StepLogo({
           }}
         />
       </label>
-      <p className="sp-gate__skip" style={preview ? { visibility: "hidden" } : undefined}>
-        <button type="button" className="sp-gate__link" onClick={onSkip} disabled={busy}>
-          Skip for now
-        </button>
-      </p>
+      {!light && (
+        <p className="sp-gate__skip" style={preview ? { visibility: "hidden" } : undefined}>
+          <button type="button" className="sp-gate__link" onClick={onSkip} disabled={busy}>
+            Skip for now
+          </button>
+        </p>
+      )}
     </div>
   );
 }

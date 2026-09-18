@@ -2,23 +2,23 @@ import React, { useEffect, useId, useState } from "react";
 import { supabase } from "@/lib/stores/supabase/client";
 import { BrandMark } from "../BrandMark";
 import { PreAppShell } from "../PreAppShell";
-import authHero from "@/assets/socialpaint/auth-hero.webp";
+import gateOrbit from "@/assets/socialpaint/gate-orbit.webp";
 
 type View = "signin" | "signup" | "forgot" | "checkEmail" | "setPassword";
 
-/** Sign in / sign up / password reset (Figma 148:1421, "Login Page Dark").
- * Rendered whenever the Supabase backend is active and there is no session.
- * Also handles the recovery redirect (Supabase fires PASSWORD_RECOVERY after
- * the email link).
+/** Sign in / sign up / password reset ("Auth · Gate Light", frames 123:3 →
+ * 123:8, 2026-09-18). Rendered whenever the Supabase backend is active and
+ * there is no session. Also handles the recovery redirect (Supabase fires
+ * PASSWORD_RECOVERY after the email link).
  *
- * The frame draws sign-in; the other four views render through the same
- * shell — panel, intro block, type — and only the headline and the form
- * contents change. Check-email drops the hero and centres: once the user
- * has hit Create account the picture has done its job. Sign up is a distinct view reached from the footer
- * link, not a tab: the old signin/signup tablist is gone with the header it
- * sat under. Each view is one <form>, so Enter submits that view's action
- * and, because the submit button carries the view's disabled rule, Enter
- * obeys the rule too. */
+ * Every view is the same solo light card over the orbit artwork — the
+ * split/dark hero door is retired here but intact in the shell for anything
+ * still on it. Only the headline and the form contents change between
+ * views. Sign up is a distinct view reached from the footer link, not a
+ * tab: the old signin/signup tablist is gone with the header it sat under.
+ * Each view is one <form>, so Enter submits that view's action and, because
+ * the submit button carries the view's disabled rule, Enter obeys the rule
+ * too. */
 export function AuthPage() {
   const [view, setView] = useState<View>("signin");
   const [email, setEmail] = useState("");
@@ -122,18 +122,18 @@ export function AuthPage() {
     view === "signup"
       ? busy
         ? "Creating…"
-        : "Create account"
+        : "Create Account"
       : view === "forgot"
         ? busy
           ? "Sending…"
-          : "Send reset link"
+          : "Send Reset Link"
         : view === "setPassword"
           ? busy
             ? "Saving…"
-            : "Save password"
+            : "Save Password"
           : busy
             ? "Signing in…"
-            : "Sign in";
+            : "Sign In";
 
   const emailField = (
     <div className="sp-gate__field">
@@ -193,35 +193,26 @@ export function AuthPage() {
   );
 
   return (
-    <PreAppShell layout={view === "checkEmail" ? "solo" : "split"} hero={authHero}>
+    <PreAppShell layout="solo" tone="light" backdrop={gateOrbit}>
       <div className="sp-gate__intro">
-        <BrandMark width={72} />
+        <BrandMark width={64} />
         <h1 className="sp-hero-title sp-gate__title">{headline}</h1>
       </div>
 
       {view === "checkEmail" ? (
-        <div className="sp-gate__form">
+        <div className="sp-gate__form sp-gate__form--check">
           {/* A dead end by design, and the screen a new user stares at for
               a minute: the address on its own line, plain body colour, no
               error styling anywhere near it. */}
-          <p className="sp-gate__footer" style={{ textAlign: "left" }}>
-            We sent a confirmation link to
-          </p>
-          <p
-            className="sp-gate__label"
-            style={{ lineHeight: 1.4, overflowWrap: "anywhere", fontWeight: 500 }}
-          >
-            {email}
-          </p>
-          <p className="sp-gate__footer" style={{ textAlign: "left" }}>
-            Open it, then come back and sign in.
-          </p>
+          <p className="sp-gate__footer">We sent a confirmation link to</p>
+          <p className="sp-gate__address">{email}</p>
+          <p className="sp-gate__footer">Open it, then come back and sign in.</p>
           <button
             type="button"
-            className="sp-btn sp-btn-ghost sp-btn-lg w-full"
+            className="sp-btn sp-btn-primary sp-btn-lg"
             onClick={() => go("signin")}
           >
-            Back to sign in
+            Back to Sign In
           </button>
         </div>
       ) : (
@@ -235,11 +226,7 @@ export function AuthPage() {
           {view !== "setPassword" && emailField}
           {view !== "forgot" && passwordField}
           {feedback}
-          <button
-            type="submit"
-            className="sp-btn sp-btn-primary sp-btn-lg w-full"
-            disabled={!canSubmit}
-          >
+          <button type="submit" className="sp-btn sp-btn-primary sp-btn-lg" disabled={!canSubmit}>
             {submitLabel}
           </button>
           {view === "signin" && (
