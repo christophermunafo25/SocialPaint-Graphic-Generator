@@ -73,7 +73,7 @@ interface PendingFont {
 }
 
 export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
-  const { setCompany, setRole, refresh } = useAuth();
+  const { setCompany, setRole, refresh, signOut } = useAuth();
   const { refresh: refreshBrand } = useBrand();
   const { navigate } = useRouter();
   const m = useMotionTokens();
@@ -286,10 +286,25 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
       {firstRun ? (
         <>
           <nav className="sp-gate__nav" aria-label="Setup navigation">
-            {/* First-run step 0 has nowhere to cancel to; the empty span
-              keeps the space-between geometry so the right group holds. */}
+            {/* First-run step 0 has no wizard step to cancel to, but under
+              real auth the user has an account and needs a way back to the
+              gate — without this a fresh signup with no company is trapped
+              here (2026-09-18). signOut exists only on the Supabase
+              backend; the dev backend keeps the empty span, which also
+              holds the space-between geometry for the right group. */}
             {step === 0 ? (
-              <span aria-hidden />
+              signOut ? (
+                <button
+                  type="button"
+                  className="sp-gate__back"
+                  onClick={() => void signOut()}
+                  disabled={saving || done}
+                >
+                  Sign out
+                </button>
+              ) : (
+                <span aria-hidden />
+              )
             ) : (
               /* The light frames draw Back as bare text — no leading arrow. */
               <button type="button" className="sp-gate__back" onClick={() => setStep(step - 1)}>
