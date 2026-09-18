@@ -2072,12 +2072,17 @@ optgroup {
   gap: 32px;
   justify-content: flex-start;
 }
-/* The wide card hugs its content like the gate card — the dark card's
-   869 floor and 833 centring column are the old frames' geometry. The 32
-   rhythm rides the panel gap, so the margin ladder below zeroes out. */
+/* The wide card: 75 top but 35 bottom — the nav row sits closer to the
+   card edge than the intro does — and one shared min-height across the
+   four steps (673, the tallest step at the reference frame; steps mount
+   one at a time, so no CSS can measure the tallest sibling). The body's
+   flex: 1 absorbs the leftover, pinning the nav to the same bottom
+   position on every step. The dark card's 869 floor and 833 centring
+   column are the old frames' geometry. The 32 rhythm rides the panel
+   gap, so the margin ladder below zeroes out. */
 .sp-gate[data-theme="light"][data-width="wide"] .sp-gate__panel {
-  min-height: 0;
-  padding: 75px 55px;
+  min-height: min(673px, calc(100dvh - 2 * var(--page-pad)));
+  padding: 75px 55px 35px;
 }
 .sp-gate[data-theme="light"] .sp-gate__desc {
   margin-top: 0;
@@ -2232,6 +2237,23 @@ optgroup {
   border-color: var(--slime);
   color: var(--text-primary);
 }
+/* The compact stepper's frame (150:2 → 150:5): the wrap holds the dot row
+   and the current step's name captioned beneath it. Desktop shows the
+   inline labels and drops the caption; ≤ 768 flips both. */
+.sp-gate__steps-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+}
+.sp-gate__steps-caption {
+  display: none;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: var(--weight-ui);
+  color: var(--text-primary);
+  text-align: center;
+}
 
 /* Step bodies. Company: a 520 column, the slug helper at 13 on 55% ink. */
 .sp-gate[data-theme="light"] .sp-gate__ask {
@@ -2262,6 +2284,9 @@ optgroup {
 }
 .sp-gate[data-theme="light"] .sp-gate__tile .sp-color-swatch {
   border-color: rgba(39, 39, 39, 0.12);
+  /* The swatch height lives here, not in the inline swatchStyle, so the
+     mobile grid can step it down (92 desktop, 64 ≤ 768). */
+  height: 92px;
 }
 .sp-gate[data-theme="light"] .sp-gate__tile-label {
   flex-direction: column;
@@ -2343,6 +2368,31 @@ optgroup {
   font-size: 13px;
   color: var(--text-on-surface-secondary);
 }
+/* The zones carry desktop drag phrasing and mobile upload phrasing as two
+   spans toggled by breakpoint — one markup, per the responsive spec. */
+@media (max-width: 768px) {
+  .sp-gate .sp-gate__only-desktop {
+    display: none;
+  }
+}
+@media (min-width: 769px) {
+  .sp-gate .sp-gate__only-mobile {
+    display: none;
+  }
+}
+/* Mobile logo zone (150:5): a 32 circular chip on a 25% ink fill carrying
+   the plus mark — the tap affordance, part of the zone's single target. */
+.sp-gate__drop-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin: var(--space-3xs) 0;
+  border-radius: var(--radius-pill);
+  background: rgba(39, 39, 39, 0.25);
+  color: var(--ink);
+}
 .sp-gate[data-theme="light"] .sp-gate__rows {
   max-width: 730px;
   margin-left: auto;
@@ -2388,6 +2438,26 @@ optgroup {
 .sp-gate[data-theme="light"] .sp-gate__skip-now:hover:not(:disabled) {
   color: var(--text-primary);
 }
+/* ≤ 768, Skip for now leaves the card entirely (150:2 → 150:5): rendered
+   after the nav in the DOM — so tab order stays sensible — and placed on
+   the canvas 24 below the card edge. Hidden on desktop, where the in-nav
+   Skip serves; the panel's mobile margin-bottom reserves its room. */
+.sp-gate__skip-below {
+  display: none;
+  position: absolute;
+  top: calc(100% + var(--space-md));
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: var(--weight-ui);
+  color: var(--text-on-surface-secondary);
+  cursor: pointer;
+}
+.sp-gate__skip-below:hover:not(:disabled) {
+  color: var(--text-primary);
+}
 .sp-gate[data-theme="light"] .sp-gate__cta {
   min-height: var(--control-lg);
   padding: 0 24px 0 28px;
@@ -2410,19 +2480,170 @@ optgroup {
   cursor: default;
 }
 
-/* Mobile ≤ 768 (frame 123:8): the card at min(342, full width minus the
-   gutters), 50/24 padding, and no orbit artwork. */
+/* Mobile ≤ 768. The gate (123:8): a 342 card, 50/24 padding. Onboarding
+   (150:2 → 150:5): a 358 card, 40/24/25 padding on a 24 gap, one shared
+   min-height (672 at the reference frame, same tallest-step rule as
+   desktop) with the flexing body pinning the nav, the compact stepper,
+   the two-column swatch grid, upload-phrased zones, the 40 circle nav
+   button, and Skip for now moved below the card. No orbit artwork on any
+   mobile frame. */
 @media (max-width: 768px) {
   .sp-gate__backdrop {
     display: none;
   }
-  .sp-gate[data-theme="light"][data-layout="solo"],
-  .sp-gate[data-theme="light"][data-width="wide"] {
+  .sp-gate[data-theme="light"][data-layout="solo"] {
     grid-template-columns: minmax(0, 342px);
   }
-  .sp-gate[data-theme="light"] .sp-gate__panel,
-  .sp-gate[data-theme="light"][data-width="wide"] .sp-gate__panel {
+  .sp-gate[data-theme="light"] .sp-gate__panel {
     padding: 50px 24px;
+  }
+  .sp-gate[data-theme="light"][data-width="wide"] {
+    grid-template-columns: minmax(0, 358px);
+  }
+  .sp-gate[data-theme="light"][data-width="wide"] .sp-gate__panel {
+    min-height: min(672px, calc(100dvh - 2 * var(--page-pad) - 48px));
+    padding: 40px 24px 25px;
+    gap: var(--space-md);
+    /* Room on the canvas for the below-card Skip. */
+    margin-bottom: 48px;
+  }
+
+  /* Intro: mark 32, headline 30 wrapping in a 310 column, description 14.
+     BrandMark sizes itself inline (width prop), so the mark's step-down is
+     the one place an !important is earned. */
+  .sp-gate[data-theme="light"] .sp-gate__intro > img {
+    width: 32px !important;
+  }
+  .sp-gate[data-theme="light"] .sp-hero-title {
+    font-size: 30px;
+    max-width: 310px;
+    margin-inline: auto;
+    font-variation-settings:
+      "wdth" 78,
+      "opsz" 30;
+  }
+  .sp-gate[data-theme="light"] .sp-gate__desc {
+    font-size: 14px;
+  }
+  .sp-gate[data-theme="light"] .sp-gate__label,
+  .sp-gate[data-theme="light"] .sp-gate__field-label {
+    font-size: 15px;
+  }
+
+  /* Decision 4 (2026-09-18): mobile gate submits are full-width pills in
+     the green/Slime treatment — the sign-in frame's radius-12 bar predates
+     the pill change. */
+  .sp-gate[data-theme="light"] .sp-gate__form .sp-btn-primary {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* The compact stepper: 28 dots on a 12 gap, labels dropped, the current
+     step's name captioned under the row. */
+  .sp-gate[data-theme="light"] .sp-gate__steps {
+    gap: var(--space-3xs) 12px;
+  }
+  .sp-gate[data-theme="light"] .sp-gate__step-dot {
+    width: 28px;
+    height: 28px;
+    font-size: 13px;
+  }
+  /* Labels leave the dots visually but stay in the accessibility tree —
+     the caption under the row is aria-hidden, a decorative duplicate. */
+  .sp-gate[data-theme="light"] .sp-gate__step-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  .sp-gate[data-theme="light"] .sp-gate__steps-caption {
+    display: block;
+  }
+
+  /* Company: the column goes full width, the slug helper to 12. */
+  .sp-gate[data-theme="light"] .sp-gate__ask {
+    max-width: none;
+  }
+  .sp-gate[data-theme="light"] .sp-gate__ask-id {
+    font-size: 12px;
+  }
+
+  /* Brand colors: a two-column grid (149 tiles at the 358 card), 64-tall
+     swatches, name and hex on one line beneath. */
+  .sp-gate[data-theme="light"] .sp-gate__tiles {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .sp-gate[data-theme="light"] .sp-gate__tile {
+    width: auto;
+  }
+  .sp-gate[data-theme="light"] .sp-gate__tile .sp-color-swatch {
+    height: 64px;
+  }
+  .sp-gate[data-theme="light"] .sp-gate__tile-label {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-2xs);
+  }
+  .sp-gate[data-theme="light"] .sp-gate__tile--add {
+    width: auto;
+    height: 64px;
+  }
+
+  /* Fonts: the selects stack full width; the zone drops to 84. */
+  .sp-gate[data-theme="light"] .sp-gate__fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sp-gate[data-theme="light"] .sp-gate__drop {
+    min-height: 84px;
+  }
+  .sp-gate[data-theme="light"] .sp-gate__drop-title {
+    font-size: 14px;
+  }
+  .sp-gate[data-theme="light"] .sp-gate__drop-sub {
+    font-size: 12px;
+  }
+
+  /* Logo: the zone at 150 with the plus chip between title and subline. */
+  .sp-gate[data-theme="light"] .sp-gate__drop--logo {
+    width: 100%;
+    height: 150px;
+  }
+
+  /* Nav: the left action at 13; the pill collapses to a 40 circle with an
+     18 Slime arrow and no visible label (aria-labels carry the names).
+     40 is the frames' size — under the common 44 touch floor; noted in
+     the report. Skip for now leaves the nav for the canvas below. */
+  .sp-gate[data-theme="light"] .sp-gate__back {
+    font-size: 13px;
+  }
+  .sp-gate[data-theme="light"] .sp-gate__skip-now {
+    display: none;
+  }
+  .sp-gate[data-theme="light"] .sp-gate__skip-below {
+    display: block;
+  }
+  .sp-gate[data-theme="light"] .sp-gate__cta {
+    width: 40px;
+    min-height: 40px;
+    height: 40px;
+    padding: 0;
+    gap: 0;
+    justify-content: center;
+  }
+  .sp-gate[data-theme="light"] .sp-gate__cta-label {
+    display: none;
+  }
+  .sp-gate[data-theme="light"] .sp-gate__cta svg {
+    width: 18px;
+    height: 18px;
   }
 }
 
