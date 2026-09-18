@@ -223,7 +223,7 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
         </h1>
       </div>
       <p className="sp-gate__desc">{description ?? ""}</p>
-      <Stepper step={step} pulse={m.panel} ease={m.ease} />
+      <Stepper step={step} light={firstRun} pulse={m.panel} ease={m.ease} />
 
       <div className="sp-gate__body">
         <AnimatePresence mode="popLayout" custom={direction} initial={false}>
@@ -284,70 +284,90 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
       </div>
 
       {firstRun ? (
-        <nav className="sp-gate__nav" aria-label="Setup navigation">
-          {/* First-run step 0 has nowhere to cancel to; the empty span
+        <>
+          <nav className="sp-gate__nav" aria-label="Setup navigation">
+            {/* First-run step 0 has nowhere to cancel to; the empty span
               keeps the space-between geometry so the right group holds. */}
-          {step === 0 ? (
-            <span aria-hidden />
-          ) : (
-            /* The light frames draw Back as bare text — no leading arrow. */
-            <button type="button" className="sp-gate__back" onClick={() => setStep(step - 1)}>
-              Back
-            </button>
-          )}
-          <div className="sp-gate__nav-group">
-            <button
-              type="button"
-              className="sp-gate__skip-now"
-              onClick={skip}
-              disabled={saving || done}
-            >
-              Skip for now
-            </button>
-            {step < STEPS.length - 1 ? (
-              <button
-                type="button"
-                onClick={() => setStep(step + 1)}
-                disabled={!canNext}
-                className="sp-gate__cta"
-              >
-                Next
-                <ArrowRight className="w-5 h-5" aria-hidden />
-              </button>
+            {step === 0 ? (
+              <span aria-hidden />
             ) : (
-              /* Missing name: the pill reads disabled (aria-disabled +
-                 the dulled style) but keeps its click, so attempting
-                 Finish surfaces the error line instead of going dead. */
-              <button
-                type="button"
-                onClick={attemptFinish}
-                disabled={saving || done}
-                aria-disabled={!companyOk || saving || done}
-                className="sp-gate__cta"
-                data-state={done ? "done" : saving ? "saving" : undefined}
-                aria-live="polite"
-              >
-                {done ? "Workspace ready" : saving ? "Creating…" : "Finish"}
-                {saving && !done ? (
-                  <Loader2 className="w-4 h-4 animate-spin" aria-hidden />
-                ) : done ? (
-                  <motion.span
-                    key="done"
-                    initial={{ scale: 0.5, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ duration: m.state, ease: m.ease }}
-                    className="inline-flex"
-                    aria-hidden
-                  >
-                    <Check className="w-4 h-4" />
-                  </motion.span>
-                ) : (
-                  <ArrowRight className="w-5 h-5" aria-hidden />
-                )}
+              /* The light frames draw Back as bare text — no leading arrow. */
+              <button type="button" className="sp-gate__back" onClick={() => setStep(step - 1)}>
+                Back
               </button>
             )}
-          </div>
-        </nav>
+            <div className="sp-gate__nav-group">
+              <button
+                type="button"
+                className="sp-gate__skip-now"
+                onClick={skip}
+                disabled={saving || done}
+              >
+                Skip for now
+              </button>
+              {step < STEPS.length - 1 ? (
+                /* ≤ 768 the pill collapses to the 40 circle: the label span
+                 hides and the aria-label carries the name. */
+                <button
+                  type="button"
+                  onClick={() => setStep(step + 1)}
+                  disabled={!canNext}
+                  className="sp-gate__cta"
+                  aria-label="Next"
+                >
+                  <span className="sp-gate__cta-label">Next</span>
+                  <ArrowRight className="w-5 h-5" aria-hidden />
+                </button>
+              ) : (
+                /* Missing name: the pill reads disabled (aria-disabled +
+                 the dulled style) but keeps its click, so attempting
+                 Finish surfaces the error line instead of going dead.
+                 The aria-label is flagged decision 3's "Create workspace"
+                 — the mobile circle's name, constant across breakpoints. */
+                <button
+                  type="button"
+                  onClick={attemptFinish}
+                  disabled={saving || done}
+                  aria-disabled={!companyOk || saving || done}
+                  className="sp-gate__cta"
+                  data-state={done ? "done" : saving ? "saving" : undefined}
+                  aria-live="polite"
+                  aria-label={done ? "Workspace ready" : saving ? "Creating" : "Create workspace"}
+                >
+                  <span className="sp-gate__cta-label">
+                    {done ? "Workspace ready" : saving ? "Creating…" : "Finish"}
+                  </span>
+                  {saving && !done ? (
+                    <Loader2 className="w-4 h-4 animate-spin" aria-hidden />
+                  ) : done ? (
+                    <motion.span
+                      key="done"
+                      initial={{ scale: 0.5, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: m.state, ease: m.ease }}
+                      className="inline-flex"
+                      aria-hidden
+                    >
+                      <Check className="w-4 h-4" />
+                    </motion.span>
+                  ) : (
+                    <ArrowRight className="w-5 h-5" aria-hidden />
+                  )}
+                </button>
+              )}
+            </div>
+          </nav>
+          {/* ≤ 768 only (CSS): Skip leaves the card for the canvas below.
+              After the nav in the DOM, so tab order matches the visuals. */}
+          <button
+            type="button"
+            className="sp-gate__skip-below"
+            onClick={skip}
+            disabled={saving || done}
+          >
+            Skip for now
+          </button>
+        </>
       ) : (
         <nav className="sp-gate__nav" aria-label="Setup navigation">
           <button
@@ -403,17 +423,22 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
 
 /** Four named steps. The circle colours transition in CSS on --dur-state;
  * a step completing also pulses once on --dur-panel, the one moment of
- * progress feedback in the flow. */
+ * progress feedback in the flow. On the light surface ≤ 768 the labels
+ * give way to a caption naming the current step under the dot row
+ * (150:2 → 150:5); the wrap and caption render only for light, so the
+ * in-app run's markup is exactly what it was. */
 function Stepper({
   step,
+  light,
   pulse,
   ease,
 }: {
   step: number;
+  light: boolean;
   pulse: number;
   ease: [number, number, number, number];
 }) {
-  return (
+  const list = (
     <ol className="sp-gate__steps" aria-label="Setup steps">
       {STEPS.map((label, i) => {
         const state = i < step ? "done" : i === step ? "current" : "todo";
@@ -437,6 +462,15 @@ function Stepper({
         );
       })}
     </ol>
+  );
+  if (!light) return list;
+  return (
+    <div className="sp-gate__steps-wrap">
+      {list}
+      <span className="sp-gate__steps-caption" aria-hidden>
+        {STEPS[step]}
+      </span>
+    </div>
   );
 }
 
@@ -615,7 +649,9 @@ function StepColors({
                 defaultOpen={c.key === openKey}
                 swatchStyle={
                   light
-                    ? { width: "100%", height: 92, borderRadius: 12 }
+                    ? /* Height stays undefined so the gate CSS can step the
+                         swatch from 92 to the mobile grid's 64. */
+                      { width: "100%", height: undefined, borderRadius: 12 }
                     : {
                         width: "100%",
                         height: "auto",
@@ -773,8 +809,15 @@ function StepFonts(props: StepFontsProps) {
       </div>
       <label {...drop.bind} data-active={drop.active} className="sp-dropzone sp-gate__drop">
         {props.light ? (
+          /* Desktop phrases the zone as a drag; mobile has no drag, so it
+             phrases as an upload — two spans toggled by breakpoint. */
           <>
-            <span className="sp-gate__drop-title">Drag font files here, or browse</span>
+            <span className="sp-gate__drop-title sp-gate__only-desktop">
+              Drag font files here, or browse
+            </span>
+            <span className="sp-gate__drop-title sp-gate__only-mobile">
+              Upload fonts here, or browse
+            </span>
             <span className="sp-gate__drop-sub">.woff2, .woff, .ttf, .otf</span>
           </>
         ) : (
@@ -891,8 +934,18 @@ function StepLogo({
                 <span className="sp-gate__drop-sub">Drag a new file here, or click to browse</span>
               </>
             ) : light ? (
+              /* Mobile rephrases to upload and adds the plus chip as the
+                 tap affordance — part of the zone's single target. */
               <>
-                <span className="sp-gate__drop-title">Drag your logo here, or browse</span>
+                <span className="sp-gate__drop-title sp-gate__only-desktop">
+                  Drag your logo here, or browse
+                </span>
+                <span className="sp-gate__drop-title sp-gate__only-mobile">
+                  Upload your logo here, or browse
+                </span>
+                <span className="sp-gate__drop-chip sp-gate__only-mobile" aria-hidden>
+                  <Plus className="w-4 h-4" />
+                </span>
                 <span className="sp-gate__drop-sub">PNG or SVG with transparency works best</span>
               </>
             ) : (
