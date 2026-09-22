@@ -17,6 +17,11 @@ export interface Company {
   /** Initial state for TemplateLinksDialog's create form. Defaults, not
    * caps — each link still sets its own values. */
   linkDefaults: CompanyLinkDefaults;
+  /** The company's website as a bare domain plus optional path ("acme.com"),
+   * normalized by companyWebsite.ts before every write. Set by onboarding
+   * (typed or pulled from the site) and Settings → Workspace; read by
+   * starter template seeding for the footer URL fields. */
+  website?: string;
 }
 
 export interface CompanyLinkDefaults {
@@ -32,6 +37,8 @@ export interface CompanyPatch {
   slug?: string;
   timezone?: string;
   linkDefaults?: CompanyLinkDefaults;
+  /** Already-normalized website (companyWebsite.ts); empty string clears. */
+  website?: string;
 }
 
 export interface BrandColor {
@@ -345,6 +352,12 @@ export interface VariantFieldOverride {
   typeStyleKey?: string;
   /** Element opacity, 0–100. */
   opacity?: number;
+  /** Text plate fill, replacing the field's plateColor in this variation
+   * (the plate's geometry — paddings, radius — stays shared). */
+  plateColor?: string;
+  /** Shape stroke color, replacing the field's strokeColor in this
+   * variation (the stroke width stays shared). */
+  strokeColor?: string;
   /** Fixed elements only: swap the fixed content — the logo's colourway
    * asset, a wordmark that flips to white. Ignored on member fields, whose
    * content is the member's. */
@@ -641,6 +654,15 @@ export interface AutoBuildMeta {
   elementCount: number;
   editableCount: number;
   rationale?: Array<{ fieldKey: string; why: string }>;
+  /** Starter-template provenance (seeded, not model-built). Present exactly
+   * when source === "starter": starterKey identifies the blueprint (the
+   * seeder's idempotency key), starterVersion the blueprint set it came
+   * from, seededAt when it was materialized. model/sourceKind above are
+   * filled with "starter" so older readers keep working. */
+  source?: "starter";
+  starterKey?: string;
+  starterVersion?: number;
+  seededAt?: string;
 }
 
 /** The template-autobuild Edge Function's response — a finished proposal the

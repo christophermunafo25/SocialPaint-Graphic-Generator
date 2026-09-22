@@ -29,6 +29,8 @@ export const VARIANT_OVERRIDE_KEYS = [
   "textGradient",
   "typeStyleKey",
   "opacity",
+  "plateColor",
+  "strokeColor",
   "staticValue",
   "hidden",
 ] as const satisfies ReadonlyArray<keyof VariantFieldOverride>;
@@ -52,12 +54,10 @@ type StructuralKey =
   | "static"
   | "cornerRadius"
   | "shape"
-  // Shape strokes and text plates are appearance, but variation overrides
-  // for them are a separate decision (flagged, not built) — until then they
-  // are shared across looks like every other structural property.
-  | "strokeColor"
+  // Plate and stroke COLOR are variation appearance (approved 2026-09-18 for
+  // the starter templates' Dark colourways); the geometry halves — stroke
+  // width and plate paddings — stay structural and shared.
   | "strokeWidthPx"
-  | "plateColor"
   | "platePaddingX"
   | "platePaddingY"
   // The mask is the field's SHAPE — as structural as its box.
@@ -184,6 +184,14 @@ export function applyVariant(field: TemplateField, variant?: TemplateVariant): T
   }
   if (over.opacity !== undefined) {
     next.opacity = over.opacity;
+    changed = true;
+  }
+  if (over.plateColor !== undefined) {
+    next.plateColor = over.plateColor;
+    changed = true;
+  }
+  if (over.strokeColor !== undefined) {
+    next.strokeColor = over.strokeColor;
     changed = true;
   }
   if (over.staticValue !== undefined && field.static) {

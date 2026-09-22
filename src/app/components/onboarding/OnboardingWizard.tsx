@@ -11,6 +11,18 @@ import { GOOGLE_FONTS, loadGoogleFonts } from "@/lib/render/fonts";
 import { FONT_ACCEPT, inspectFontFile } from "@/lib/brand/fontUpload";
 import { useFileDrop } from "@/lib/useFileDrop";
 import { useMotionTokens } from "@/lib/motionTokens";
+import { seedStarterTemplates } from "@/lib/templates/starters/seed";
+import { setSeedNotice } from "@/lib/templates/starters/seedNotice";
+import {
+  isBrandFromWebsiteAvailable,
+  logoToFile,
+  pullBrandFromWebsite,
+  type BrandFromWebsiteResult,
+} from "@/lib/brand/brandFromWebsite";
+import { mergeExtractedColors } from "@/lib/brand/brandPrefill";
+import { normalizeWebsite } from "@/lib/companyWebsite";
+import { verifyMissingFamilies } from "@/lib/render/fonts";
+import type { TemplateField } from "@/lib/types";
 import { ColorControl } from "../ColorControl";
 import { BrandMark } from "../BrandMark";
 import { PreAppShell } from "../PreAppShell";
@@ -92,6 +104,63 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
+  // Brand from website: an OPTIONAL screen in front of step one. On success
+  // it prefills the same state the four steps edit — nothing reaches the
+  // brand kit without passing through them. The dev backend has no Edge
+  // Functions, so the screen is skipped entirely there.
+  const [showUrlIntro, setShowUrlIntro] = useState(isBrandFromWebsiteAvailable());
+  /** Normalized website for companies.website and the starter footer URLs. */
+  const [website, setWebsite] = useState<string | undefined>(undefined);
+  /** Extraction caveats, shown as a muted line while the steps are walked. */
+  const [prefillNotice, setPrefillNotice] = useState<string | null>(null);
+  /** Per-font availability notes, shown inline on the Fonts step. */
+  const [fontNotes, setFontNotes] = useState<string[]>([]);
+  /** An extracted Google family outside the curated list still gets offered
+   * (probed first) — as an extra option on the pickers. */
+  const [extraFonts, setExtraFonts] = useState<string[]>([]);
+
+  const applyPrefill = async (result: BrandFromWebsiteResult) => {
+    if (result.companyName) setCompanyName(result.companyName);
+    if (result.colors.length) setColors(mergeExtractedColors(DEFAULT_PALETTE, result.colors));
+    setWebsite(normalizeWebsite(result.website) ?? undefined);
+
+    const notes: string[] = [];
+    const extras: string[] = [];
+    const applyFont = async (family: string | null, use: "heading" | "body") => {
+      if (!family) return;
+      if ((GOOGLE_FONTS as readonly string[]).includes(family)) {
+        (use === "heading" ? setHeadingGoogle : setBodyGoogle)(family);
+        return;
+      }
+      // Not curated: probe Google before offering it, per the import paths.
+      const missing = await verifyMissingFamilies(
+        [{ fontFamily: family } as unknown as TemplateField],
+        [],
+      );
+      if (missing.length === 0) {
+        extras.push(family);
+        (use === "heading" ? setHeadingGoogle : setBodyGoogle)(family);
+      } else {
+        notes.push(`"${family}" is not available here, so the default stays. Pick a close one.`);
+      }
+    };
+    await applyFont(result.headingFont, "heading");
+    await applyFont(result.bodyFont, "body");
+
+    if (result.logo) {
+      try {
+        const file = logoToFile(result.logo);
+        setLogoFile(file);
+        setLogoPreview(`data:${result.logo.contentType};base64,${result.logo.base64}`);
+      } catch {
+        notes.push("The site's logo could not be used. Upload one on the logo step.");
+      }
+    }
+    setExtraFonts(extras);
+    setFontNotes(notes);
+    if (result.warnings.length) setPrefillNotice(result.warnings.join(" "));
+  };
+
   const slug = useMemo(
     () =>
       companyName
@@ -123,6 +192,17 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
     try {
       const company = await stores.companies.create({ name: companyName.trim(), slug });
 
+      // The website (from the URL prefill) is a plain companies update —
+      // create_company_with_admin already made this user an admin, so RLS
+      // allows it. Best effort: a failed write must not fail onboarding.
+      if (website) {
+        try {
+          await stores.companies.update(company.id, { website });
+        } catch (e) {
+          console.error("Website save failed", e);
+        }
+      }
+
       // Uploaded custom fonts become brand assets; chosen ones drive the kit.
       let headingFont: FontRef = { source: "google", family: headingGoogle };
       let bodyFont: FontRef = { source: "google", family: bodyGoogle };
@@ -142,12 +222,14 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
       );
 
       let primaryLogoAssetId: string | undefined;
+      let logoAssetRef: string | undefined;
       if (logoFile) {
         const asset = await stores.brandAssets.upload(company.id, "logo", logoFile);
         primaryLogoAssetId = asset.id;
+        logoAssetRef = asset.url;
       }
 
-      await stores.brandKits.upsert(company.id, {
+      const kit = await stores.brandKits.upsert(company.id, {
         colors,
         typeStyles: DEFAULT_TYPE_STYLES,
         guidelines: [],
@@ -155,6 +237,30 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
         bodyFont,
         primaryLogoAssetId,
       });
+
+      // Starter templates: six brand-matched designs, seeded through the
+      // ordinary insert path (the RPC above made this user an admin, so RLS
+      // passes). A seeding failure must never fail onboarding — the seeder
+      // collects per-template failures, and anything that went wrong
+      // surfaces as a toast on the template list plus a console log.
+      try {
+        const seeded = await seedStarterTemplates(stores, {
+          company: { id: company.id, name: company.name, website },
+          kit,
+          logoAssetRef,
+        });
+        if (seeded.failed.length) {
+          console.error("Starter seeding failed for:", seeded.failed);
+          setSeedNotice(
+            "Some starter templates could not be created. Use Restore starter templates to try again.",
+          );
+        }
+      } catch (seedError) {
+        console.error("Starter seeding failed", seedError);
+        setSeedNotice(
+          "Your starter templates could not be created. Use Restore starter templates to try again.",
+        );
+      }
 
       // Everything is saved. The last thing they see before the product:
       // let "Workspace ready" land for one reveal beat here, because the
@@ -184,8 +290,12 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
   // The only way out for a signed-in user: Cancel at step 0 on the in-app
   // path navigates to the portal; Back otherwise. On first-run step 0
   // there is nowhere to cancel to, so the left slot stays empty there.
-  const headline = (firstRun ? HEADLINES.firstRun : HEADLINES.inApp)[step];
-  const description = DESCRIPTIONS[step];
+  const headline = showUrlIntro
+    ? "Start from your website"
+    : (firstRun ? HEADLINES.firstRun : HEADLINES.inApp)[step];
+  const description = showUrlIntro
+    ? "Paste your site's address and we pull the name, colors, fonts, and logo. Everything stays editable in the next steps."
+    : DESCRIPTIONS[step];
 
   // Skip for now (first-run nav, flagged default 2026-09-18): advances
   // without validating the current step. The company name stays the one
@@ -223,141 +333,223 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
         </h1>
       </div>
       <p className="sp-gate__desc">{description ?? ""}</p>
-      <Stepper step={step} light={firstRun} pulse={m.panel} ease={m.ease} />
-
-      <div className="sp-gate__body">
-        <AnimatePresence mode="popLayout" custom={direction} initial={false}>
-          <motion.div
-            key={step}
-            className="sp-gate__step-body"
-            custom={direction}
-            variants={variants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{ duration: m.panel, ease: m.ease }}
-          >
-            {step === 0 && (
-              <StepCompany
-                light={firstRun}
-                name={companyName}
-                slug={slug}
-                ready={canNext}
-                onChange={setCompanyName}
-                onSubmit={() => canNext && setStep(1)}
-              />
-            )}
-            {step === 1 && <StepColors light={firstRun} colors={colors} onChange={setColors} />}
-            {step === 2 && (
-              <StepFonts
-                light={firstRun}
-                headingGoogle={headingGoogle}
-                bodyGoogle={bodyGoogle}
-                setHeadingGoogle={setHeadingGoogle}
-                setBodyGoogle={setBodyGoogle}
-                pendingFonts={pendingFonts}
-                setPendingFonts={setPendingFonts}
-                onError={setError}
-              />
-            )}
-            {step === 3 && (
-              <StepLogo
-                light={firstRun}
-                preview={logoPreview}
-                busy={saving || done}
-                onPick={(file) => {
-                  setLogoFile(file);
-                  const reader = new FileReader();
-                  reader.onload = () => setLogoPreview(reader.result as string);
-                  reader.readAsDataURL(file);
-                }}
-                onSkip={() => void finish()}
-              />
-            )}
-          </motion.div>
-        </AnimatePresence>
-        {/* finish() can fail after creating the company; the message stays
-            in this reserved line until the next attempt clears it. */}
-        <div className="sp-gate__status" role="alert" aria-live="assertive">
-          {error && <p className="sp-gate__error">{error}</p>}
-        </div>
-      </div>
-
-      {firstRun ? (
+      {showUrlIntro ? (
+        <StepWebsite
+          light={firstRun}
+          onDone={async (result) => {
+            await applyPrefill(result);
+            setShowUrlIntro(false);
+          }}
+          onSkip={() => setShowUrlIntro(false)}
+        />
+      ) : (
         <>
-          <nav className="sp-gate__nav" aria-label="Setup navigation">
-            {/* First-run step 0 has no wizard step to cancel to, but under
+          {prefillNotice && (
+            <p className="sp-gate__desc" style={{ opacity: 0.75 }}>
+              {prefillNotice}
+            </p>
+          )}
+          <Stepper step={step} light={firstRun} pulse={m.panel} ease={m.ease} />
+
+          <div className="sp-gate__body">
+            <AnimatePresence mode="popLayout" custom={direction} initial={false}>
+              <motion.div
+                key={step}
+                className="sp-gate__step-body"
+                custom={direction}
+                variants={variants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: m.panel, ease: m.ease }}
+              >
+                {step === 0 && (
+                  <StepCompany
+                    light={firstRun}
+                    name={companyName}
+                    slug={slug}
+                    ready={canNext}
+                    onChange={setCompanyName}
+                    onSubmit={() => canNext && setStep(1)}
+                  />
+                )}
+                {step === 1 && <StepColors light={firstRun} colors={colors} onChange={setColors} />}
+                {step === 2 && (
+                  <StepFonts
+                    light={firstRun}
+                    headingGoogle={headingGoogle}
+                    bodyGoogle={bodyGoogle}
+                    setHeadingGoogle={setHeadingGoogle}
+                    setBodyGoogle={setBodyGoogle}
+                    pendingFonts={pendingFonts}
+                    setPendingFonts={setPendingFonts}
+                    onError={setError}
+                    notes={fontNotes}
+                    extraFonts={extraFonts}
+                  />
+                )}
+                {step === 3 && (
+                  <StepLogo
+                    light={firstRun}
+                    preview={logoPreview}
+                    busy={saving || done}
+                    onPick={(file) => {
+                      setLogoFile(file);
+                      const reader = new FileReader();
+                      reader.onload = () => setLogoPreview(reader.result as string);
+                      reader.readAsDataURL(file);
+                    }}
+                    onSkip={() => void finish()}
+                  />
+                )}
+              </motion.div>
+            </AnimatePresence>
+            {/* finish() can fail after creating the company; the message stays
+            in this reserved line until the next attempt clears it. */}
+            <div className="sp-gate__status" role="alert" aria-live="assertive">
+              {error && <p className="sp-gate__error">{error}</p>}
+            </div>
+          </div>
+
+          {firstRun ? (
+            <>
+              <nav className="sp-gate__nav" aria-label="Setup navigation">
+                {/* First-run step 0 has no wizard step to cancel to, but under
               real auth the user has an account and needs a way back to the
               gate — without this a fresh signup with no company is trapped
               here (2026-09-18). signOut exists only on the Supabase
               backend; the dev backend keeps the empty span, which also
               holds the space-between geometry for the right group. */}
-            {step === 0 ? (
-              signOut ? (
-                <button
-                  type="button"
-                  className="sp-gate__back"
-                  onClick={() => void signOut()}
-                  disabled={saving || done}
-                >
-                  Sign out
-                </button>
-              ) : (
-                <span aria-hidden />
-              )
-            ) : (
-              /* The light frames draw Back as bare text — no leading arrow. */
-              <button type="button" className="sp-gate__back" onClick={() => setStep(step - 1)}>
-                Back
-              </button>
-            )}
-            <div className="sp-gate__nav-group">
+                {step === 0 ? (
+                  signOut ? (
+                    <button
+                      type="button"
+                      className="sp-gate__back"
+                      onClick={() => void signOut()}
+                      disabled={saving || done}
+                    >
+                      Sign out
+                    </button>
+                  ) : (
+                    <span aria-hidden />
+                  )
+                ) : (
+                  /* The light frames draw Back as bare text — no leading arrow. */
+                  <button type="button" className="sp-gate__back" onClick={() => setStep(step - 1)}>
+                    Back
+                  </button>
+                )}
+                <div className="sp-gate__nav-group">
+                  <button
+                    type="button"
+                    className="sp-gate__skip-now"
+                    onClick={skip}
+                    disabled={saving || done}
+                  >
+                    Skip for now
+                  </button>
+                  {step < STEPS.length - 1 ? (
+                    /* ≤ 768 the pill collapses to the 40 circle: the label span
+                 hides and the aria-label carries the name. */
+                    <button
+                      type="button"
+                      onClick={() => setStep(step + 1)}
+                      disabled={!canNext}
+                      className="sp-gate__cta"
+                      aria-label="Next"
+                    >
+                      <span className="sp-gate__cta-label">Next</span>
+                      <ArrowRight className="w-5 h-5" aria-hidden />
+                    </button>
+                  ) : (
+                    /* Missing name: the pill reads disabled (aria-disabled +
+                 the dulled style) but keeps its click, so attempting
+                 Finish surfaces the error line instead of going dead.
+                 The aria-label is flagged decision 3's "Create workspace"
+                 — the mobile circle's name, constant across breakpoints. */
+                    <button
+                      type="button"
+                      onClick={attemptFinish}
+                      disabled={saving || done}
+                      aria-disabled={!companyOk || saving || done}
+                      className="sp-gate__cta"
+                      data-state={done ? "done" : saving ? "saving" : undefined}
+                      aria-live="polite"
+                      aria-label={
+                        done ? "Workspace ready" : saving ? "Creating" : "Create workspace"
+                      }
+                    >
+                      <span className="sp-gate__cta-label">
+                        {done ? "Workspace ready" : saving ? "Creating…" : "Finish"}
+                      </span>
+                      {saving && !done ? (
+                        <Loader2 className="w-4 h-4 animate-spin" aria-hidden />
+                      ) : done ? (
+                        <motion.span
+                          key="done"
+                          initial={{ scale: 0.5, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ duration: m.state, ease: m.ease }}
+                          className="inline-flex"
+                          aria-hidden
+                        >
+                          <Check className="w-4 h-4" />
+                        </motion.span>
+                      ) : (
+                        <ArrowRight className="w-5 h-5" aria-hidden />
+                      )}
+                    </button>
+                  )}
+                </div>
+              </nav>
+              {/* ≤ 768 only (CSS): Skip leaves the card for the canvas below.
+              After the nav in the DOM, so tab order matches the visuals. */}
               <button
                 type="button"
-                className="sp-gate__skip-now"
+                className="sp-gate__skip-below"
                 onClick={skip}
                 disabled={saving || done}
               >
                 Skip for now
               </button>
-              {step < STEPS.length - 1 ? (
-                /* ≤ 768 the pill collapses to the 40 circle: the label span
-                 hides and the aria-label carries the name. */
+            </>
+          ) : (
+            <nav className="sp-gate__nav" aria-label="Setup navigation">
+              <button
+                type="button"
+                className="sp-gate__back"
+                onClick={() => (step === 0 ? navigate({ name: "portal" }) : setStep(step - 1))}
+              >
+                <ArrowLeft className="w-3.5 h-3.5" aria-hidden />
+                {step === 0 ? "Cancel" : "Back"}
+              </button>
+              {step > 0 && step < STEPS.length - 1 && (
                 <button
                   type="button"
                   onClick={() => setStep(step + 1)}
                   disabled={!canNext}
                   className="sp-gate__cta"
-                  aria-label="Next"
                 >
-                  <span className="sp-gate__cta-label">Next</span>
-                  <ArrowRight className="w-5 h-5" aria-hidden />
+                  Continue
+                  <ArrowRight className="w-4 h-4" aria-hidden />
                 </button>
-              ) : (
-                /* Missing name: the pill reads disabled (aria-disabled +
-                 the dulled style) but keeps its click, so attempting
-                 Finish surfaces the error line instead of going dead.
-                 The aria-label is flagged decision 3's "Create workspace"
-                 — the mobile circle's name, constant across breakpoints. */
+              )}
+              {step === STEPS.length - 1 && (
                 <button
                   type="button"
-                  onClick={attemptFinish}
+                  onClick={() => void finish()}
                   disabled={saving || done}
-                  aria-disabled={!companyOk || saving || done}
                   className="sp-gate__cta"
                   data-state={done ? "done" : saving ? "saving" : undefined}
                   aria-live="polite"
-                  aria-label={done ? "Workspace ready" : saving ? "Creating" : "Create workspace"}
                 >
-                  <span className="sp-gate__cta-label">
-                    {done ? "Workspace ready" : saving ? "Creating…" : "Finish"}
-                  </span>
+                  {done ? "Workspace ready" : saving ? "Creating…" : "Create workspace"}
                   {saving && !done ? (
                     <Loader2 className="w-4 h-4 animate-spin" aria-hidden />
-                  ) : done ? (
+                  ) : (
                     <motion.span
-                      key="done"
-                      initial={{ scale: 0.5, opacity: 0 }}
+                      key={done ? "done" : "idle"}
+                      initial={done ? { scale: 0.5, opacity: 0 } : false}
                       animate={{ scale: 1, opacity: 1 }}
                       transition={{ duration: m.state, ease: m.ease }}
                       className="inline-flex"
@@ -365,72 +557,12 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
                     >
                       <Check className="w-4 h-4" />
                     </motion.span>
-                  ) : (
-                    <ArrowRight className="w-5 h-5" aria-hidden />
                   )}
                 </button>
               )}
-            </div>
-          </nav>
-          {/* ≤ 768 only (CSS): Skip leaves the card for the canvas below.
-              After the nav in the DOM, so tab order matches the visuals. */}
-          <button
-            type="button"
-            className="sp-gate__skip-below"
-            onClick={skip}
-            disabled={saving || done}
-          >
-            Skip for now
-          </button>
+            </nav>
+          )}
         </>
-      ) : (
-        <nav className="sp-gate__nav" aria-label="Setup navigation">
-          <button
-            type="button"
-            className="sp-gate__back"
-            onClick={() => (step === 0 ? navigate({ name: "portal" }) : setStep(step - 1))}
-          >
-            <ArrowLeft className="w-3.5 h-3.5" aria-hidden />
-            {step === 0 ? "Cancel" : "Back"}
-          </button>
-          {step > 0 && step < STEPS.length - 1 && (
-            <button
-              type="button"
-              onClick={() => setStep(step + 1)}
-              disabled={!canNext}
-              className="sp-gate__cta"
-            >
-              Continue
-              <ArrowRight className="w-4 h-4" aria-hidden />
-            </button>
-          )}
-          {step === STEPS.length - 1 && (
-            <button
-              type="button"
-              onClick={() => void finish()}
-              disabled={saving || done}
-              className="sp-gate__cta"
-              data-state={done ? "done" : saving ? "saving" : undefined}
-              aria-live="polite"
-            >
-              {done ? "Workspace ready" : saving ? "Creating…" : "Create workspace"}
-              {saving && !done ? (
-                <Loader2 className="w-4 h-4 animate-spin" aria-hidden />
-              ) : (
-                <motion.span
-                  key={done ? "done" : "idle"}
-                  initial={done ? { scale: 0.5, opacity: 0 } : false}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ duration: m.state, ease: m.ease }}
-                  className="inline-flex"
-                  aria-hidden
-                >
-                  <Check className="w-4 h-4" />
-                </motion.span>
-              )}
-            </button>
-          )}
-        </nav>
       )}
     </PreAppShell>
   );
@@ -485,6 +617,113 @@ function Stepper({
       <span className="sp-gate__steps-caption" aria-hidden>
         {STEPS[step]}
       </span>
+    </div>
+  );
+}
+
+/** The extraction request's lifecycle, as a discriminated union per the
+ * house async-state pattern — no boolean soup, no spinner-only states. */
+type PullState = { status: "idle" } | { status: "loading" } | { status: "error"; message: string };
+
+/** The optional brand-from-website screen shown in front of step one. One
+ * URL input; "Pull my brand" calls the edge function and hands the result
+ * to the wizard's prefill, "Enter details manually" falls through to the
+ * untouched four steps. Failure is inline and never blocks — manual entry
+ * is always one click away. */
+function StepWebsite({
+  light,
+  onDone,
+  onSkip,
+}: {
+  light: boolean;
+  onDone(result: BrandFromWebsiteResult): Promise<void>;
+  onSkip(): void;
+}) {
+  const inputId = useId();
+  const [url, setUrl] = useState("");
+  const [state, setState] = useState<PullState>({ status: "idle" });
+  const busy = state.status === "loading";
+
+  const pull = async () => {
+    const trimmed = url.trim();
+    if (!trimmed) {
+      setState({ status: "error", message: "Enter your website's address, like acme.com." });
+      return;
+    }
+    setState({ status: "loading" });
+    try {
+      const result = await pullBrandFromWebsite(trimmed);
+      await onDone(result);
+    } catch (e) {
+      setState({
+        status: "error",
+        message:
+          e instanceof Error ? e.message : "Your site could not be read. Enter details manually.",
+      });
+    }
+  };
+
+  return (
+    <div className="sp-gate__body">
+      <form
+        className="sp-gate__ask"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void pull();
+        }}
+      >
+        <div className="sp-gate__field">
+          <label htmlFor={inputId} className="sp-gate__label">
+            Website
+          </label>
+          <input
+            id={inputId}
+            autoFocus
+            type="text"
+            value={url}
+            onChange={(e) => {
+              setUrl(e.target.value);
+              if (state.status === "error") setState({ status: "idle" });
+            }}
+            placeholder="acme.com"
+            autoComplete="url"
+            spellCheck={false}
+            disabled={busy}
+            className="sp-input sp-input-lg"
+          />
+          <p className="sp-gate__ask-id" aria-live="polite">
+            {busy ? "Reading your site. This takes a few seconds." : " "}
+          </p>
+        </div>
+        <div className="sp-gate__status" role="alert" aria-live="assertive">
+          {state.status === "error" && <p className="sp-gate__error">{state.message}</p>}
+        </div>
+      </form>
+      <nav className="sp-gate__nav" aria-label="Website prefill">
+        <button
+          type="button"
+          className={light ? "sp-gate__back" : "sp-gate__link"}
+          onClick={onSkip}
+          disabled={busy}
+        >
+          Enter details manually
+        </button>
+        <button
+          type="button"
+          className="sp-gate__cta"
+          onClick={() => void pull()}
+          disabled={busy}
+          data-state={busy ? "saving" : undefined}
+          aria-live="polite"
+        >
+          <span className="sp-gate__cta-label">{busy ? "Reading…" : "Pull my brand"}</span>
+          {busy ? (
+            <Loader2 className="w-4 h-4 animate-spin" aria-hidden />
+          ) : (
+            <ArrowRight className="w-5 h-5" aria-hidden />
+          )}
+        </button>
+      </nav>
     </div>
   );
 }
@@ -735,15 +974,21 @@ function FontSelect({
   label,
   value,
   onChange,
+  extraFonts = [],
 }: {
   label: string;
   value: string;
   onChange(v: string): void;
+  /** Website-extracted Google families outside the curated list (already
+   * probed as loadable) — offered above the curated set so the prefill can
+   * actually be selected. */
+  extraFonts?: string[];
 }) {
   const id = useId();
   useEffect(() => {
     loadGoogleFonts([value]);
   }, [value]);
+  const extras = extraFonts.filter((f) => !(GOOGLE_FONTS as readonly string[]).includes(f));
   return (
     <div className="sp-gate__field">
       <label htmlFor={id} className="sp-gate__field-label">
@@ -755,6 +1000,11 @@ function FontSelect({
         onChange={(e) => onChange(e.target.value)}
         className="sp-input sp-input-lg"
       >
+        {extras.map((f) => (
+          <option key={f} value={f}>
+            {f}
+          </option>
+        ))}
         {GOOGLE_FONTS.map((f) => (
           <option key={f} value={f}>
             {f}
@@ -783,6 +1033,10 @@ interface StepFontsProps {
   pendingFonts: PendingFont[];
   setPendingFonts: React.Dispatch<React.SetStateAction<PendingFont[]>>;
   onError(e: string | null): void;
+  /** Availability notes from the website prefill ("X is not available"). */
+  notes?: string[];
+  /** See FontSelect.extraFonts. */
+  extraFonts?: string[];
 }
 
 /** Fonts (Figma 158:202): two pickers with live samples, the full-width
@@ -819,9 +1073,20 @@ function StepFonts(props: StepFontsProps) {
           label="Heading font"
           value={props.headingGoogle}
           onChange={props.setHeadingGoogle}
+          extraFonts={props.extraFonts}
         />
-        <FontSelect label="Body font" value={props.bodyGoogle} onChange={props.setBodyGoogle} />
+        <FontSelect
+          label="Body font"
+          value={props.bodyGoogle}
+          onChange={props.setBodyGoogle}
+          extraFonts={props.extraFonts}
+        />
       </div>
+      {props.notes?.map((note) => (
+        <p key={note} className="sp-gate__desc" style={{ opacity: 0.75 }}>
+          {note}
+        </p>
+      ))}
       <label {...drop.bind} data-active={drop.active} className="sp-dropzone sp-gate__drop">
         {props.light ? (
           /* Desktop phrases the zone as a drag; mobile has no drag, so it
