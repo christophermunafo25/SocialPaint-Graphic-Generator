@@ -196,10 +196,11 @@ html {
   --type-h3-size: 32px;
   --type-h3-lh: 1.1;
   --type-h3-track: var(--track-head);
-  /* The page title on every route, still sitting BETWEEN H1 (40) and H2
-     (32) on the ramp — 36 is the Bricolage era's 45 through the same ×0.8
-     (see the display-step note above). */
-  --type-h4-size: 36px;
+  /* The page title on every route. The Jakarta rescale landed it at 36
+     (the Bricolage era's 45 through ×0.8); stepped down to 32 the same
+     day, at CJ's direction — "a little smaller" — which merges it with
+     the H2 step rather than sitting between H1 and H2. */
+  --type-h4-size: 32px;
   --type-h4-lh: 1.2;
   --type-h4-track: var(--track-head); /* page titles */
   --type-cardtitle-size: 20px;
