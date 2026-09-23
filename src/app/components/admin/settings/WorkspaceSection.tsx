@@ -5,6 +5,7 @@ import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useBrand } from "@/lib/brand/BrandContext";
 import { browserTimeZone, isValidSlug, listTimeZones, toSlug } from "@/lib/companySettings";
+import { normalizeWebsite } from "@/lib/companyWebsite";
 import { ConfirmDialog } from "../../ConfirmDialog";
 import { ErrorState } from "../../ErrorState";
 import { SkeletonLines } from "../../Skeleton";
@@ -35,6 +36,7 @@ export function WorkspaceSection() {
       <SettingsCard title="Workspace">
         <NameField onError={setError} />
         <SlugField onError={setError} />
+        <WebsiteField onError={setError} />
         <TimezoneField onError={setError} />
       </SettingsCard>
       <CanvasSizesCard companyId={company.id} onError={setError} />
@@ -95,6 +97,85 @@ function NameField({ onError }: { onError(msg: string | null): void }) {
         disabled={saving}
         className="sp-input"
       />
+    </div>
+  );
+}
+
+/** Company website: saved as a bare domain plus optional path
+ * (companyWebsite.ts owns the rule). Saves on blur like the name; an entry
+ * that does not parse as a domain rolls back with an inline explanation
+ * rather than storing junk. Clearing the field clears the column. */
+function WebsiteField({ onError }: { onError(msg: string | null): void }) {
+  const { company, refresh } = useAuth();
+  const [value, setValue] = useState(company?.website ?? "");
+  const [saving, setSaving] = useState(false);
+  const [invalid, setInvalid] = useState(false);
+  useEffect(() => setValue(company?.website ?? ""), [company?.website]);
+
+  const save = async () => {
+    if (!company) return;
+    const raw = value.trim();
+    const previous = company.website ?? "";
+    const normalized = raw ? normalizeWebsite(raw) : "";
+    if (normalized === null) {
+      setInvalid(true);
+      setValue(previous);
+      return;
+    }
+    setInvalid(false);
+    if (normalized === previous) {
+      setValue(previous);
+      return;
+    }
+    setSaving(true);
+    onError(null);
+    try {
+      await stores.companies.update(company.id, { website: normalized });
+      await refresh();
+    } catch (e) {
+      setValue(previous);
+      onError(e instanceof Error ? e.message : "Could not save the website.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div>
+      <label
+        htmlFor="ws-website"
+        className="sp-eyebrow block"
+        style={{ marginBottom: "var(--space-3xs)" }}
+      >
+        Website
+      </label>
+      <input
+        id="ws-website"
+        value={value}
+        onChange={(e) => {
+          setValue(e.target.value);
+          setInvalid(false);
+        }}
+        onBlur={() => void save()}
+        onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+        placeholder="acme.com"
+        maxLength={200}
+        disabled={saving}
+        spellCheck={false}
+        autoComplete="url"
+        className="sp-input"
+      />
+      <p
+        style={{
+          fontSize: "var(--type-caption-size)",
+          color: invalid ? "var(--state-danger)" : "var(--text-muted)",
+          marginTop: "var(--space-3xs)",
+        }}
+      >
+        {invalid
+          ? "That does not look like a domain. Try something like acme.com."
+          : "Stored without the protocol. Starter templates use it for their footer links."}
+      </p>
     </div>
   );
 }

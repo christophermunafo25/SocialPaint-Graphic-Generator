@@ -1,0 +1,13 @@
+-- The company's website, stored as a bare domain plus optional path
+-- ("acme.com", "acme.com/studio") — normalization (trim, lowercase host,
+-- strip protocol) happens client-side in src/lib/companyWebsite.ts before
+-- anything is written.
+--
+-- Written by: onboarding (the brand-from-website prefill and finish()),
+-- and Settings → Workspace.
+-- Read by: starter template seeding (the footer URL fields), and future
+-- features that want the tenant's site.
+--
+-- Nullable on purpose, no backfill: a company without a website simply has
+-- none, and seeded templates omit their URL fields.
+alter table companies add column if not exists website text;

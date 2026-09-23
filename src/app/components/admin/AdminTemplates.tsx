@@ -1,9 +1,22 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { CheckCircle2, Copy, Eye, EyeOff, Pencil, Plus, Proportions, Trash2 } from "lucide-react";
+import {
+  CheckCircle2,
+  Copy,
+  Eye,
+  EyeOff,
+  Pencil,
+  Plus,
+  Proportions,
+  RotateCcw,
+  Trash2,
+} from "lucide-react";
 import type { TemplateSchema, UsageSummary } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { useBrand } from "@/lib/brand/BrandContext";
+import { seedStarterTemplates } from "@/lib/templates/starters/seed";
+import { consumeSeedNotice } from "@/lib/templates/starters/seedNotice";
 import { useRouter } from "../../router";
 import { Page, PageHeader } from "../layout/Page";
 import { ConfirmDialog } from "../ConfirmDialog";
@@ -107,6 +120,56 @@ export function AdminTemplates() {
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(toastTimer.current), []);
+
+  // Onboarding's seeding runs right before it navigates here; if any starter
+  // failed to create, the notice it left behind surfaces as a toast.
+  useEffect(() => {
+    const notice = consumeSeedNotice();
+    if (notice) {
+      setToast(notice);
+      toastTimer.current = window.setTimeout(() => setToast(null), 8000);
+    }
+  }, []);
+
+  /** Restore starter templates: the same seeder onboarding ran. It skips
+   * starterKeys that still exist, so it only recreates deleted ones and a
+   * second click is a no-op. Re-coloring after a palette change is delete
+   * then restore — the re-seed bakes the current palette. */
+  const { kit, assets } = useBrand();
+  const [confirmingRestore, setConfirmingRestore] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const restoreStarters = async () => {
+    setConfirmingRestore(false);
+    if (!company || !kit) return;
+    setRestoring(true);
+    const showToast = (message: string) => {
+      setToast(message);
+      toastTimer.current = window.setTimeout(() => setToast(null), 6000);
+    };
+    try {
+      const logoAsset =
+        assets.find((a) => a.id === kit.primaryLogoAssetId) ??
+        assets.find((a) => a.kind === "logo");
+      const result = await seedStarterTemplates(stores, {
+        company: { id: company.id, name: company.name, website: company.website },
+        kit,
+        logoAssetRef: logoAsset?.url,
+      });
+      if (result.failed.length) {
+        console.error("Starter restore failed for:", result.failed);
+        showToast("Some starter templates could not be restored. Try again.");
+      } else if (result.created.length) {
+        showToast(
+          `${result.created.length} starter template${result.created.length === 1 ? "" : "s"} restored.`,
+        );
+      } else {
+        showToast("All starter templates are already in place.");
+      }
+      if (result.created.length) reload();
+    } finally {
+      setRestoring(false);
+    }
+  };
 
   /** Rename from the card. Throws on failure so the inline editor rolls the
    *  name back instead of showing a change that never landed. */
@@ -256,17 +319,37 @@ export function AdminTemplates() {
           </div>
         </div>
       )}
+      <ConfirmDialog
+        open={confirmingRestore}
+        title="Restore starter templates?"
+        description="Recreates any of the six starter templates that have been deleted, colored from the current brand kit. Templates that still exist are left untouched, so running this twice changes nothing. To recolor a starter after a palette change, delete it first, then restore."
+        confirmLabel="Restore"
+        tone="primary"
+        onCancel={() => setConfirmingRestore(false)}
+        onConfirm={() => void restoreStarters()}
+      />
       <PageHeader
         title="Template Builder"
         description="Published templates appear in your team's Brand Templates."
         action={
-          <button
-            className="sp-btn sp-btn-primary"
-            onClick={() => navigate({ name: "builder", templateId: null })}
-          >
-            <Plus style={{ width: 13, height: 13 }} />
-            New template
-          </button>
+          <div className="flex items-center" style={{ gap: "var(--space-2xs)" }}>
+            <button
+              className="sp-btn"
+              onClick={() => setConfirmingRestore(true)}
+              disabled={restoring || !kit}
+              title="Recreate deleted starter templates"
+            >
+              <RotateCcw style={{ width: 13, height: 13 }} />
+              {restoring ? "Restoring…" : "Restore starters"}
+            </button>
+            <button
+              className="sp-btn sp-btn-primary"
+              onClick={() => navigate({ name: "builder", templateId: null })}
+            >
+              <Plus style={{ width: 13, height: 13 }} />
+              New template
+            </button>
+          </div>
         }
       />
 
@@ -425,7 +508,10 @@ export function AdminTemplates() {
                   >
                     {t.status}
                   </span>
-                  {t.autobuildMeta && (
+                  {/* Starter templates carry autobuildMeta for provenance
+                      and idempotency but are seeded designs, not model
+                      output — labeling them AI-built would be wrong. */}
+                  {t.autobuildMeta && t.autobuildMeta.source !== "starter" && (
                     <span
                       className="sp-eyebrow inline-block ml-2"
                       title={`Built by ${t.autobuildMeta.model} from ${t.autobuildMeta.sourceKind}`}

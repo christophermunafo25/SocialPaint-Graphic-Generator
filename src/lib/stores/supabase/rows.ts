@@ -22,6 +22,7 @@ export interface CompanyRow {
   link_default_allow_uploads: boolean;
   link_default_expiry_days: number | null;
   link_default_use_cap: number | null;
+  website: string | null;
 }
 
 /** Columns every Company read must select — the auth provider's membership
@@ -29,7 +30,7 @@ export interface CompanyRow {
  * its settings. */
 export const COMPANY_COLUMNS =
   "id, name, slug, created_at, timezone, link_default_allow_uploads, " +
-  "link_default_expiry_days, link_default_use_cap";
+  "link_default_expiry_days, link_default_use_cap, website";
 
 export const toCompany = (r: CompanyRow): Company => ({
   id: r.id,
@@ -42,6 +43,7 @@ export const toCompany = (r: CompanyRow): Company => ({
     expiryDays: r.link_default_expiry_days ?? null,
     useCap: r.link_default_use_cap ?? null,
   },
+  website: r.website ?? undefined,
 });
 
 export interface BrandKitRow {

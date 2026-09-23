@@ -48,6 +48,8 @@ export class SupabaseCompanyStore implements CompanyStore {
       row.link_default_expiry_days = patch.linkDefaults.expiryDays;
       row.link_default_use_cap = patch.linkDefaults.useCap;
     }
+    // Empty string clears the column back to null.
+    if (patch.website !== undefined) row.website = patch.website || null;
     const { data, error } = await supabase()
       .from("companies")
       .update(row)

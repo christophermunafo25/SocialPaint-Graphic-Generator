@@ -28,8 +28,8 @@
 
    Non-negotiables carried from the DS:
    - Soft cards (20px) against crisp controls (5px). Never meet at 12px.
-   - One UI weight. Never bold for emphasis — shift colour or use the
-     display face.
+   - One UI weight. Never bold for emphasis — shift colour or step up to
+     the heading face.
    - Two glyph colours on a brand fill, chosen by glyph size, never by
      hue (measured 2026-09-15, WCAG 2.1):
        colour                Ink    Deep   White  #161617 #F1F1F1 #FFFFFF
@@ -122,37 +122,6 @@
     U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
     U+A720-A7FF;
 }
-/* Bricolage Grotesque (2026-09, at CJ's direction) — the DISPLAY face:
-   display steps and page titles only. Card, shelf, and section titles stay
-   on Plus Jakarta (--font-head keeps its name, value, and consumers), so
-   the split reads as a change of voice, not of weight — both faces run 600
-   at −3%.
-
-   The shipped cut is CJ's pinned Headline SemiBold static instance
-   (2026-09-18: opsz 56, wdth 79, wght 586 baked in) — the exact instance
-   the design frames draw, so what renders can no longer drift from it.
-   Declared 600 so every --weight-head consumer matches this face without
-   synthetic bolding; consumers' font-variation-settings are inert against
-   it (no axes) and stay for the variable fallback below, which still
-   spans the full design space for anything off the 600 headline step.
-   OFL.txt ships beside the files. Never a Google Fonts link (the
-   @font-face policy note above applies here too). */
-@font-face {
-  font-family: "Bricolage Headline Platform";
-  src: url("../assets/fonts/bricolage/BricolageGrotesqueHeadline-SemiBold.woff2") format("woff2");
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Bricolage Platform";
-  src: url("../assets/fonts/bricolage/BricolageGrotesque-variable.woff2") format("woff2");
-  font-weight: 200 800;
-  font-stretch: 75% 100%;
-  font-style: normal;
-  font-display: swap;
-}
-
 /* The document is the vertical scroll container (AppShell's main has no
    overflow of its own). Reserving the scrollbar gutter keeps the centred
    content column in exactly the same place on pages that scroll and pages
@@ -192,39 +161,45 @@ html {
 
   /* Typography — Plus Jakarta Sans SemiBold carries headings; Inter Tight
      Regular carries body and UI. */
+  /* ONE heading face again (2026-09-23, at CJ's direction): Plus Jakarta
+     carries every step from display to cardtitle. Bricolage Grotesque —
+     the 2026-09 display-face experiment — is gone, faces, files, and the
+     --font-display token with it; the display steps below were rescaled
+     for Jakarta's width (see the ramp note). */
   --font-head: "Plus Jakarta Platform", "Plus Jakarta Sans", system-ui, sans-serif;
-  /* The display face (2026-09): --type-display-* through --type-h4-* set in
-     Bricolage Grotesque; --type-cardtitle-* and below stay on --font-head.
-     The Headline cut leads (CJ's pinned static instance, 2026-09-18); the
-     variable cut backs it, where consumers' font-variation-settings
-     ("wdth" 78, "opsz" per step) still apply. */
-  --font-display:
-    "Bricolage Headline Platform", "Bricolage Platform", "Bricolage Grotesque", system-ui,
-    sans-serif;
-  --weight-head: 600; /* every heading step, both faces */
+  --weight-head: 600; /* every heading step */
   --track-head: -0.03em; /* −3% on every heading step — the heading faces' spec */
   --font-body: "Inter Tight Platform", "Inter Tight", system-ui, -apple-system, sans-serif;
   --font-ui: "Inter Tight Platform", "Inter Tight", system-ui, -apple-system, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
   --weight-ui: 500; /* controls and titles — Inter Tight Medium */
 
-  --type-display-size: 80px;
+  /* Display steps, rescaled for Jakarta (2026-09-23): the retired
+     Bricolage Headline cut ran condensed (wdth 79), and Jakarta sets the
+     same words ~1.35× wider at equal px (measured in-app on the real
+     titles). Height-for-height was far too loud, width-for-width too
+     small, so every step the display voice owned took ×0.8 — the middle
+     that keeps the drawn footprint. Old ramp 80/48/45/40/32; now
+     64/40/36/32/32 (h3 holds at 32 — the KPI number shares it in Jakarta
+     and never wore the condensed face; its one display consumer, the
+     gate title, steps down locally instead). display and h1/h2/h4 have
+     no consumers outside that voice, so only it moves. */
+  --type-display-size: 64px;
   --type-display-lh: 0.92;
   --type-display-track: var(--track-head);
-  --type-h1-size: 48px;
+  --type-h1-size: 40px;
   --type-h1-lh: 0.95;
   --type-h1-track: var(--track-head);
-  --type-h2-size: 40px;
+  --type-h2-size: 32px;
   --type-h2-lh: 1;
   --type-h2-track: var(--track-head);
   --type-h3-size: 32px;
   --type-h3-lh: 1.1;
   --type-h3-track: var(--track-head);
-  /* 45px (from 30, 2026-09): the page title on every route, sitting BETWEEN
-     H1 (48) and H2 (40) on the ramp — 80 / 48 / 45 / 40 / 32 / 20. Flagged
-     rather than resolved: whether the four steps above it should move with
-     it is a ramp decision, not made here. */
-  --type-h4-size: 45px;
+  /* The page title on every route, still sitting BETWEEN H1 (40) and H2
+     (32) on the ramp — 36 is the Bricolage era's 45 through the same ×0.8
+     (see the display-step note above). */
+  --type-h4-size: 36px;
   --type-h4-lh: 1.2;
   --type-h4-track: var(--track-head); /* page titles */
   --type-cardtitle-size: 20px;
@@ -791,34 +766,26 @@ optgroup {
   font-weight: 400;
 }
 
-/* Headings are the display face in ALL CAPS at every step — a deliberate
-   departure from the published DS's sentence case (see the @font-face note
-   above). Content set in the display face is a HEADING; anything that is
-   really a data label — a template's name on a card, a field name — stays
-   in the UI face so the caps treatment never lands on user content. */
+/* Content set at a display step is a HEADING; anything that is really a
+   data label — a template's name on a card, a field name — stays in the
+   UI face so the heading voice never lands on user content. */
 .sp-page-title {
-  font-family: var(--font-display);
+  font-family: var(--font-head);
   font-size: var(--type-h4-size);
   line-height: var(--type-h4-lh);
   font-weight: var(--weight-head);
   letter-spacing: var(--type-h4-track);
-  font-variation-settings:
-    "wdth" 78,
-    "opsz" 45;
   color: var(--text-primary);
 }
 
 /* Brand moments — the onboarding and sign-in front doors, the only places
    in the app that reach the H2 step. */
 .sp-hero-title {
-  font-family: var(--font-display);
+  font-family: var(--font-head);
   font-size: var(--type-h2-size);
   line-height: var(--type-h2-lh);
   font-weight: var(--weight-head);
   letter-spacing: var(--type-h2-track);
-  font-variation-settings:
-    "wdth" 78,
-    "opsz" 40;
 }
 
 /* Section and dialog headings. */
@@ -1970,14 +1937,13 @@ optgroup {
    onboarding frames' 45 to H2 — the two containers differ by more than 2×
    in width and the proportion between them holds. */
 .sp-gate__title {
-  font-size: var(--type-h3-size);
+  /* A local 28, not var(--type-h3-size): h3 stays 32 for the KPI number,
+     which is Jakarta all along — this title wore the condensed cut, so it
+     takes the same ×0.8 as the rest of the display voice (32 → 25.6,
+     rounded up to keep it above the cardtitle step). */
+  font-size: 28px;
   line-height: var(--type-h3-lh);
   letter-spacing: var(--type-h3-track);
-  /* Rides .sp-hero-title's display face; the optical size follows this
-     variant's own 32px step. */
-  font-variation-settings:
-    "wdth" 78,
-    "opsz" 32;
 }
 
 /* The onboarding tiers below the frame's 1920. ≥ 1280 the card is as
@@ -2099,17 +2065,13 @@ optgroup {
   margin-top: 0;
 }
 
-/* The intro headline: Bricolage SemiBold 45 at 110%, -3% track, ink — the
-   45px step both surfaces share now (the 38/45 split above is the dark
-   frames'). The face keeps the hero's 78 width — the frames draw the same
-   condensed cut — with the optical size on this step's own 45. */
+/* The intro headline at 110%, -3% track, ink — the step both surfaces
+   share now (the 38/45 split above is the dark frames'). 36 is the
+   frames' Bricolage 45 through the Jakarta ×0.8 (see the ramp note). */
 .sp-gate[data-theme="light"] .sp-hero-title {
-  font-size: 45px;
+  font-size: 36px;
   line-height: 1.1;
   letter-spacing: -0.03em;
-  font-variation-settings:
-    "wdth" 78,
-    "opsz" 45;
   color: var(--text-primary);
 }
 
@@ -2515,12 +2477,11 @@ optgroup {
     width: 32px !important;
   }
   .sp-gate[data-theme="light"] .sp-hero-title {
-    font-size: 30px;
+    /* The frames' 30 through the Jakarta ×0.8 — the 310 column is what
+       this step is really sized against. */
+    font-size: 24px;
     max-width: 310px;
     margin-inline: auto;
-    font-variation-settings:
-      "wdth" 78,
-      "opsz" 30;
   }
   .sp-gate[data-theme="light"] .sp-gate__desc {
     font-size: 14px;
