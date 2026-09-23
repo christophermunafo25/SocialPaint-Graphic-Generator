@@ -393,6 +393,9 @@ html {
 
   --text-primary: #f1f1f1;
   --text-secondary: #a0a0a0; /* 6.2:1 on surface, 5.5:1 on hover */
+  /* The native <select> chevron, drawn in --text-secondary. A background
+     image can't read a custom property, so the ink is baked per theme. */
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a0a0a0' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   /* Muted must still clear AA: 0.56 reads 4.6:1 on --bg-hover (its worst
      seat), 5.6:1 on surface. Quieter-than-secondary comes from size and
      casing, not from dipping under the contrast floor (a11y audit,
@@ -545,6 +548,8 @@ html {
   /* #666 reached only 4.43:1 on --bg-hover, its worst seat; one step down
      clears AA on every rung (4.6:1 hover, 5.3:1 canvas, 6:1 on cards). */
   --text-secondary: #636363;
+  /* See the dark block: the select chevron in this theme's --text-secondary. */
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23636363' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   /* 0.7 reads 4.6:1 on --bg-hover, 5.9:1 on white cards — see the dark
      block's muted note. */
   --text-muted: rgba(39, 39, 39, 0.7);
@@ -903,6 +908,33 @@ optgroup {
   font-size: var(--type-composer-size);
   letter-spacing: var(--type-label-track);
   border-radius: var(--radius-control-lg);
+}
+/* Native selects: the browser's own arrow sat jammed against the right
+   edge, ignored the control's padding, and differed per browser. One
+   chevron instead, inset like the text. The compound selector outranks
+   .sp-input's `background` shorthand, which would otherwise wipe the image.
+   padding-right is !important because several call sites set an inline
+   `padding` shorthand for their own density; without it the value text
+   runs under the chevron. The chevron zone stays compact (26px) so the
+   58px format select in the fill picker still fits its three letters. */
+select.sp-input {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: var(--select-chevron);
+  background-repeat: no-repeat;
+  background-position: right var(--space-2xs) center;
+  background-size: 12px 12px;
+  padding-right: 26px !important;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+select.sp-input.sp-input-lg {
+  background-position: right var(--space-sm) center;
+  padding-right: 40px !important;
+}
+select.sp-input:disabled {
+  cursor: default;
+  opacity: 0.5;
 }
 /* A focused text box shows a 1px ring-coloured BORDER — the control's own
    1px edge changing colour, never a thicker halo or a second outline. Two
@@ -3951,6 +3983,10 @@ input[type="radio"] {
   min-width: 0;
 }
 .sp-template-card__title {
+  /* Block, not the span's default inline: ellipsis only truncates a block
+     box, so an inline title never clipped and a long name ran under the
+     arrow and into the next card. */
+  display: block;
   font-family: var(--font-ui);
   font-size: var(--type-label-size);
   line-height: var(--type-label-lh);
@@ -5170,7 +5206,10 @@ input[type="radio"] {
   align-items: center;
   gap: var(--chip-gap);
   flex-shrink: 0;
-  width: var(--chip-w);
+  /* The frames' 152 is a floor, not a cap: at a fixed 152 "Web & Open
+     Graph" read "Web & Op…". Every other label fits inside the floor, so
+     only a chip whose label needs more grows, and only by that much. */
+  min-width: var(--chip-w);
   box-sizing: border-box;
   height: var(--chip-h);
   padding: 0 var(--chip-pad-inline-end) 0 var(--chip-pad-inline-start);
