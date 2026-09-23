@@ -357,7 +357,17 @@ export function Sidebar() {
               transition: "grid-template-rows var(--dur-panel) var(--ease)",
             }}
           >
-            <div style={{ overflow: "hidden" }}>
+            {/* Collapsed to 0fr the nav is clipped, not gone: without
+                visibility its buttons stay in the tab order and the AT
+                tree. Held visible until the collapse finishes, dropped
+                at once on the way open. */}
+            <div
+              style={{
+                overflow: "hidden",
+                visibility: menuOpen ? "visible" : "hidden",
+                transition: menuOpen ? "visibility 0s" : "visibility 0s linear var(--dur-panel)",
+              }}
+            >
               <nav
                 aria-label="Primary"
                 className="px-3 pb-3 pt-1"
