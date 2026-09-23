@@ -280,7 +280,7 @@ function ResultGroup({
         {group.label}
         <span className="sp-eyebrow">{plural(group.templates.length, "template")}</span>
       </h2>
-      <div className="sp-grid-media">
+      <div className="sp-grid-media sp-grid-media--portal">
         {group.templates.map((t, i) => (
           <div key={t.id} className="sp-reveal__item" style={revealIndex(i)}>
             <TemplateCard template={t} frame={group.frame} showTags onOpen={onOpen} />
