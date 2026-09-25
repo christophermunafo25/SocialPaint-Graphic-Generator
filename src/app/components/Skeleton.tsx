@@ -8,23 +8,37 @@ import React from "react";
  * composite announces itself ONCE via aria-busy + a label, never per bone. */
 
 /** One pulsing bone. Width/height in px or any CSS length; radius defaults
- * to the control radius from .sp-skeleton__line. */
+ * to the control radius from .sp-skeleton__line. `tone` paints the bone in
+ * a given colour instead of the raised rung, for a bone that sits on a
+ * well rather than on a card (the Generate draft skeleton's shapes use
+ * `var(--gen-sunken)`); it pulses by fading toward the ground beneath it
+ * rather than toward --bg-hover. Pass a token, never a literal. */
 export function Bone({
   w,
   h = 13,
   r,
+  tone,
   style,
 }: {
   w?: number | string;
   h?: number | string;
   r?: number | string;
+  tone?: string;
   style?: React.CSSProperties;
 }) {
   return (
     <span
       aria-hidden
-      className="sp-skeleton__line sp-skeleton__block"
-      style={{ width: w, height: h, ...(r !== undefined ? { borderRadius: r } : {}), ...style }}
+      className={`sp-skeleton__line sp-skeleton__block${tone ? " sp-skeleton__block--tone" : ""}`}
+      style={
+        {
+          width: w,
+          height: h,
+          ...(r !== undefined ? { borderRadius: r } : {}),
+          ...(tone ? { "--bone-tone": tone } : {}),
+          ...style,
+        } as React.CSSProperties
+      }
     />
   );
 }

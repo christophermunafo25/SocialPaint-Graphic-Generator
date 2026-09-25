@@ -169,8 +169,9 @@ export const menuGroupLabelStyle: React.CSSProperties = {
   padding: "6px 10px 3px",
 };
 
-/** The trigger — looks exactly like the .sp-input select it replaces, so
- * nothing around it shifts. */
+/** The trigger. By default it looks exactly like the .sp-input select it
+ * replaces, so nothing around it shifts; a caller with its own look (the
+ * Generate chat's tile trigger) passes `className` and `chevron`. */
 export const TriggerButton = React.forwardRef<
   HTMLButtonElement,
   {
@@ -186,6 +187,11 @@ export const TriggerButton = React.forwardRef<
     controls?: string;
     /** Extra trigger styling (compact rows squeeze it onto their height). */
     triggerStyle?: React.CSSProperties;
+    /** Replaces the .sp-input look with the caller's own class (the Generate
+     * chat's tile trigger). Omitted, the trigger is the .sp-input box. */
+    className?: string;
+    /** Replaces the trailing chevron; the lock still wins when lockedHint. */
+    chevron?: React.ReactNode;
     onOpen(): void;
     onKeyDown?(e: React.KeyboardEvent): void;
   }
@@ -201,6 +207,8 @@ export const TriggerButton = React.forwardRef<
     expanded,
     controls,
     triggerStyle,
+    className,
+    chevron,
     onOpen,
     onKeyDown,
   },
@@ -218,7 +226,7 @@ export const TriggerButton = React.forwardRef<
       disabled={disabled}
       onClick={onOpen}
       onKeyDown={onKeyDown}
-      className="sp-input flex items-center justify-between gap-2 text-left"
+      className={className ?? "sp-input flex items-center justify-between gap-2 text-left"}
       style={{
         opacity: disabled ? 0.5 : 1,
         cursor: disabled ? "default" : "pointer",
@@ -237,7 +245,11 @@ export const TriggerButton = React.forwardRef<
       {lockedHint ? (
         <Lock style={{ width: 11, height: 11, flexShrink: 0, color: "var(--state-primary)" }} />
       ) : (
-        <ChevronDown style={{ width: 12, height: 12, flexShrink: 0, color: "var(--text-muted)" }} />
+        (chevron ?? (
+          <ChevronDown
+            style={{ width: 12, height: 12, flexShrink: 0, color: "var(--text-muted)" }}
+          />
+        ))
       )}
     </button>
   );
@@ -296,6 +308,10 @@ interface SelectProps<T extends string> {
   triggerPreviewStyle?: React.CSSProperties;
   /** Extra trigger styling (compact rows squeeze it onto their height). */
   triggerStyle?: React.CSSProperties;
+  /** Replaces the trigger's .sp-input look with the caller's own class. */
+  triggerClassName?: string;
+  /** Replaces the trigger's trailing chevron. */
+  triggerChevron?: React.ReactNode;
   /** Adds the search field; typing filters options by label. */
   searchable?: boolean;
   searchPlaceholder?: string;
@@ -330,6 +346,8 @@ export function Select<T extends string>({
   triggerIcon,
   triggerPreviewStyle,
   triggerStyle,
+  triggerClassName,
+  triggerChevron,
   searchable,
   searchPlaceholder,
   searchEmptyText,
@@ -464,6 +482,8 @@ export function Select<T extends string>({
         lockedHint={lockedHint}
         expanded={open}
         triggerStyle={triggerStyle}
+        className={triggerClassName}
+        chevron={triggerChevron}
         controls={`${id}-menu`}
         onOpen={() => setOpen((o) => !o)}
         onKeyDown={(e) => {

@@ -303,7 +303,7 @@ The Figma examples are Instagram 4:5 (Regular card 227 wide, preview 211 × 264)
 
 Preview content: `TemplateThumbnail` with the draft's values and, when this turn had a photo, the photo in its target slot (reuse `imageTargetFor` from the current page), letterboxed with `contain` inside the well.
 
-Title: the template name (for freestyle drafts, the design name). Meta: `${canvasWidth} × ${canvasHeight} · ${aspectRatioOf(canvasWidth, canvasHeight)}` using the multiplication sign, for example "1080 × 1350 · 4:5".
+Title: the template name (for freestyle drafts, the design name). Meta on Regular cards: `${canvasWidth} × ${canvasHeight} · ${aspectRatioOf(canvasWidth, canvasHeight)}` using the multiplication sign, for example "1080 × 1350 · 4:5". Meta on Compact cards: the draft's platform label as the Figma draws it (frame 06 and the component sheet), for example "Instagram" or "LinkedIn": `platformById(classifySize(w, h).platforms[0]).label`, falling back to the Regular size meta when the size maps to no platform. **(Decision by CJ, 2026-09-25: the Figma compact meta wins over the single size format this section first gave.)**
 
 Interaction:
 - The preview is a button with class `sp-has-overlay` and `EditOverlay` inside it (40px chip on Regular, `small` 32px chip on Compact). It shows on hover (hover-capable devices only) and on keyboard focus, exactly like Brand Studio. Accessible name `Edit "<name>"`. Activating it opens the Editor panel on this draft (§9.5).
@@ -769,6 +769,7 @@ Accept when: `npm run verify` is green, the bundle has no dead Generate code, an
 14. Chip labels are 13px (the component default). Some frames carry 10px labels as per-instance tweaks; they are not built.
 15. The editor's selected segment differs by theme as drawn (white with a shadow and Medium labels in light, #3d4042 with Slime Regular labels in dark).
 16. Below 1180px the editor becomes an overlay sheet; the frames only show 1440.
+17. Compact draft cards show the platform name as their meta, as the Figma draws it; Regular cards keep the size meta (CJ, 2026-09-25).
 
 ## 16. Out of scope
 

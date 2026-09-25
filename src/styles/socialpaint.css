@@ -151,6 +151,9 @@ html {
   --ink-700: #2f3133;
   --paper-050: #f9f9f8;
   --paper-100: #ececec;
+  /* Selected segment on a sunken track, dark; Figma Generate · Chat
+     (2026-09-25). Its only reader is --gen-seg-on-bg / --gen-editor-seg-on-bg. */
+  --ink-600: #3d4042;
 
   /* Typography — Raveo Display carries headings, body, and UI (2026-09-25).
      History: ONE heading face (2026-09-23, at CJ's direction) was Plus
@@ -244,6 +247,7 @@ html {
 
   /* Shape — hold the gap between soft containers and crisp controls. */
   --radius-control: 5px;
+  --radius-control-md: 9px; /* 36px chat controls: chips, tiles, small buttons (Generate chat) */
   --radius-control-lg: 12px; /* larger toolbar controls (Generate composer strip) */
   --radius-card: 20px;
   /* Media cards run a tighter pair than content panels — a small card
@@ -258,6 +262,29 @@ html {
      kept as drawn rather than the 12 the nested-radius rule would give. */
   --radius-media-plate: 15px;
   --radius-pill: 999px;
+
+  /* ── Generate chat (Figma "Generate · Chat", 2026-09-25) ──
+     Control heights on the chat page come from its frames, not from the
+     --control-* ramp: small controls 36, editor inputs 40, default buttons
+     and Send 44. The themed half of this group is in each theme block. */
+  --gen-h-sm: 36px;
+  --gen-h-md: 40px;
+  --gen-h-lg: 44px;
+  /* Send is Deep Moss under Slime when ready and inverts to stop, in both
+     themes: identity fills, never status. */
+  --gen-send-ready-bg: var(--deep-moss);
+  --gen-send-ready-fg: var(--slime);
+  --gen-send-stop-bg: var(--slime);
+  --gen-send-stop-fg: var(--deep-moss);
+  /* The draft card's edit chip, as sp-result-card State=Hover draws it in
+     both themes (318:916 light, 329:915 dark): the lifted ink fill
+     (#161617 in the file, --ink-800 per the header's drift note), a light
+     hairline, a white pencil. It sits on the scrim over artwork, which
+     never inverts, so it does not follow the theme the way Brand Studio's
+     chip (--edit-chip-bg: --bg-surface) does. */
+  --gen-edit-chip-bg: var(--ink-800);
+  --gen-edit-chip-border: color-mix(in srgb, var(--gray) 20%, transparent);
+  --gen-edit-chip-fg: var(--white);
   --control-sm: 38px;
   --control-md: 46px;
   --control-lg: 54px;
@@ -564,6 +591,32 @@ html {
   --shadow-sm: none;
   --shadow-md: none;
 
+  /* ── Generate chat (Figma "Generate · Chat", 2026-09-25) ──
+     Dark values; light values in the light block, theme-invariant ones in
+     :root. Every Generate chat component reads only this group plus the
+     existing semantic tokens. */
+  --gen-btn-primary-bg: var(--slime);
+  --gen-btn-primary-fg: var(--ink-900);
+  --gen-btn-secondary-bg: var(--white);
+  --gen-btn-secondary-fg: var(--ink-900);
+  --gen-btn-tertiary-bg: var(--ink-700);
+  --gen-btn-tertiary-fg: var(--text-primary);
+  --gen-tile: var(--chip-raised);
+  --gen-sunken: var(--ink-700);
+  --gen-inverse: var(--white);
+  --gen-on-inverse: var(--ink-900);
+  --gen-well: var(--bg-hover);
+  --gen-stage: var(--bg-canvas);
+  --gen-stage-graphic: var(--bg-hover);
+  --gen-chip-bg: var(--bg-canvas);
+  --gen-seg-on-bg: var(--ink-600);
+  --gen-seg-on-fg: var(--slime);
+  --gen-seg-on-shadow: 0 0 0 0 transparent;
+  --gen-editor-seg-on-bg: var(--ink-600);
+  --gen-editor-seg-on-fg: var(--slime);
+  --gen-menu-item-hover: var(--bg-hover);
+  --gen-fade: var(--bg-canvas);
+
   color-scheme: dark;
 }
 
@@ -747,6 +800,30 @@ html {
 
   --shadow-sm: none;
   --shadow-md: none;
+
+  /* ── Generate chat (Figma "Generate · Chat", 2026-09-25) ──
+     Light values; see the dark block. */
+  --gen-btn-primary-bg: var(--slime);
+  --gen-btn-primary-fg: var(--deep-moss);
+  --gen-btn-secondary-bg: var(--deep-moss);
+  --gen-btn-secondary-fg: var(--slime);
+  --gen-btn-tertiary-bg: var(--paper-100);
+  --gen-btn-tertiary-fg: var(--ink-900);
+  --gen-tile: var(--gray);
+  --gen-sunken: var(--paper-100);
+  --gen-inverse: var(--ink-900);
+  --gen-on-inverse: var(--white);
+  --gen-well: var(--bg-hover);
+  --gen-stage: var(--bg-hover);
+  --gen-stage-graphic: var(--white);
+  --gen-chip-bg: var(--bg-surface);
+  --gen-seg-on-bg: var(--deep-moss);
+  --gen-seg-on-fg: var(--slime);
+  --gen-seg-on-shadow: var(--shadow-card);
+  --gen-editor-seg-on-bg: var(--bg-surface);
+  --gen-editor-seg-on-fg: var(--text-primary);
+  --gen-menu-item-hover: var(--paper-050);
+  --gen-fade: var(--bg-canvas);
 
   color-scheme: light;
 }
@@ -1315,6 +1392,7 @@ select.sp-input:disabled {
 .sp-start-card,
 .sp-sidebar,
 .sp-platform-chip,
+.sp-chat-chip,
 .sp-filterbar .sp-searchfield {
   --edge-w-top: 0.75;
   --edge-w-side: 0.25;
@@ -1350,6 +1428,7 @@ select.sp-input:disabled {
   --edge-alpha: var(--edge-alpha-rail);
 }
 .sp-platform-chip,
+.sp-chat-chip,
 .sp-filterbar .sp-searchfield {
   --edge-alpha: var(--edge-alpha-chip);
   --surface-shadow-now: var(--shadow-rest);
@@ -1366,6 +1445,7 @@ select.sp-input:disabled {
 [data-theme="light"] .sp-start-card,
 [data-theme="light"] .sp-sidebar,
 [data-theme="light"] .sp-platform-chip,
+[data-theme="light"] .sp-chat-chip,
 [data-theme="light"] .sp-filterbar .sp-searchfield {
   --edge-lit: 0 0 0 0 transparent;
   border-color: transparent;
@@ -4312,11 +4392,17 @@ input[type="radio"] {
   transition: box-shadow var(--dur-state) var(--ease);
 }
 /* Hover deepens the card shadow and nothing else — no edge change, no
-   lift (2026-09-25; before, the edge brightened and the card rose 4px). */
-.sp-template-card:hover {
+   lift (2026-09-25; before, the edge brightened and the card rose 4px).
+   The Generate chat's recent and history cards take the same two rules;
+   a loading history card is not a control, so it takes no hover. */
+.sp-template-card:hover,
+.sp-chat-recent-card:hover,
+.sp-chat-history-card[data-state="default"]:hover {
   --card-shadow-now: var(--shadow-card-hover);
 }
-.sp-template-card:focus-visible {
+.sp-template-card:focus-visible,
+.sp-chat-recent-card:focus-visible,
+.sp-chat-history-card:focus-visible {
   outline: none;
   box-shadow:
     var(--focus-ring-tight), var(--edge-lit), var(--card-highlight), var(--card-shadow-now);
@@ -5988,6 +6074,26 @@ input[type="radio"] {
   background-color: var(--bg-raised);
   animation: sp-skeleton-pulse 1.4s var(--ease) infinite;
 }
+/* A toned bone (Bone's `tone` prop; the Generate chat's skeleton shapes)
+   paints the colour it is given and pulses by fading a fifth of the way
+   toward the ground beneath it, instead of stepping from --bg-raised to
+   --bg-hover: a sunken shape on a deep well would otherwise flash lighter
+   than its own ground. Shallow on purpose: the sunken shapes sit only a
+   rung off the stage, so a deeper trough would drain them. The reduced-
+   motion opt-out below holds the full tone, as drawn. */
+.sp-skeleton__block--tone {
+  background-color: var(--bone-tone);
+  animation-name: sp-skeleton-pulse-tone;
+}
+@keyframes sp-skeleton-pulse-tone {
+  0%,
+  100% {
+    background-color: var(--bone-tone);
+  }
+  50% {
+    background-color: color-mix(in srgb, var(--bone-tone) 80%, transparent);
+  }
+}
 .sp-skeleton__line {
   display: block;
   height: 13px;
@@ -6133,7 +6239,8 @@ input[type="radio"] {
      text-entry control takes the composer step at touch widths: 16px, an
      existing rung, one over the desktop fields' 13/15. Fields styled
      inline are caught by the viewport meta's maximum-scale=1 instead
-     (see index.html). */
+     (see index.html). The Generate chat's .sp-chat-input restates the
+     step in its own section, which loads after this block. */
   .sp-input,
   .sp-searchfield__input,
   select,
@@ -6470,6 +6577,1249 @@ input[type="radio"] {
   font-size: 10px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+/* ── Generate chat components (Figma "Generate · Chat", 2026-09-25) ── */
+/* The chat Generate page's primitives (docs/design/generate-chat/PROMPT.md
+   §7), in this order: ChatButton, SendButton, the IconButton presets and
+   CardAction; SuggestionChip and ChipRow; VariationsStepper and the
+   PlatformSelect trigger; FieldInput variant="chat" and EditorField;
+   AttachmentThumb, UserMessage and AssistantHeader; DraftCard and
+   DraftCardSkeleton; CaptionCard; RecentCard and HistoryCard; ScrollFade.
+   Every class is sp-chat-* and every colour a token from the Generate chat
+   group (:root and both theme blocks). The shared recipes are joined, not
+   restated: the suggestion chip sits in the chip rung of THE surface
+   recipe, the cards carry .sp-card, the recent and history cards' hover and
+   focus join the template card's rules, and the toned skeleton bone lives
+   in the Skeletons block. The .sp-gen-* rules above retire with the old
+   page (PROMPT.md §14, Phase 6). */
+
+/* ── Generate chat: buttons (Figma "Generate · Chat": sp-button 283:31,
+   sp-icon-btn / Send 283:13, / Attach 328:831, / Download 328:827,
+   / Close 328:835, sp-card-action 308:366) ────────────────────────────────
+   Every control here is a solid fill: no border, no outline and no drop
+   shadow at rest, so a button never reads as a suggestion chip (white with
+   a shadow in light, outlined in dark). Each control assigns its fill and
+   ink to --chat-btn-bg / --chat-btn-fg, and the shared states mix from that
+   pair: hover folds 12% of the ink into the fill, active 20%. A control
+   whose fill is transparent (Close) names its own hover instead. The mixes
+   are declared on the element itself, so they see the pair the preset
+   rules set there. Inert is either the disabled attribute or, on Send,
+   aria-disabled (it must keep focus when a run ends), so the states skip
+   both. Focus is the app's --focus-ring: nothing else paints a box-shadow
+   on these, so there is no list to compose. The outline stays, transparent,
+   so forced colours (which drop box-shadow) still draw a ring. */
+.sp-chat-btn,
+.sp-chat-send,
+.sp-chat-icon-btn {
+  --chat-btn-bg-hover: color-mix(in srgb, var(--chat-btn-bg) 88%, var(--chat-btn-fg));
+  --chat-btn-bg-active: color-mix(in srgb, var(--chat-btn-bg) 80%, var(--chat-btn-fg));
+  border: none;
+  background: var(--chat-btn-bg);
+  color: var(--chat-btn-fg);
+  cursor: pointer;
+  transition:
+    background var(--dur-state) var(--ease),
+    color var(--dur-state) var(--ease),
+    opacity var(--dur-state) var(--ease);
+}
+.sp-chat-btn:hover:not(:disabled):not([aria-disabled="true"]),
+.sp-chat-send:hover:not(:disabled):not([aria-disabled="true"]),
+.sp-chat-icon-btn:hover:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--chat-btn-bg-hover);
+}
+.sp-chat-btn:active:not(:disabled):not([aria-disabled="true"]),
+.sp-chat-send:active:not(:disabled):not([aria-disabled="true"]),
+.sp-chat-icon-btn:active:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--chat-btn-bg-active);
+}
+.sp-chat-btn:focus-visible,
+.sp-chat-send:focus-visible,
+.sp-chat-icon-btn:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: var(--focus-ring);
+}
+.sp-chat-btn:disabled,
+.sp-chat-icon-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ChatButton. Default 44 tall at the 12 radius, small 36 at 9. Labels are
+   Display Regular as drawn (Figma), not the Medium the design system gives
+   controls; one line always, like .sp-btn. */
+.sp-chat-btn {
+  --chat-btn-bg: var(--gen-btn-primary-bg);
+  --chat-btn-fg: var(--gen-btn-primary-fg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2xs);
+  height: var(--gen-h-lg);
+  padding: 0 18px;
+  border-radius: var(--radius-control-lg);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.25;
+  font-weight: 400;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+.sp-chat-btn[data-kind="secondary"] {
+  --chat-btn-bg: var(--gen-btn-secondary-bg);
+  --chat-btn-fg: var(--gen-btn-secondary-fg);
+}
+.sp-chat-btn[data-kind="tertiary"] {
+  --chat-btn-bg: var(--gen-btn-tertiary-bg);
+  --chat-btn-fg: var(--gen-btn-tertiary-fg);
+}
+.sp-chat-btn[data-size="small"] {
+  gap: 6px;
+  height: var(--gen-h-sm);
+  padding: 0 14px;
+  border-radius: var(--radius-control-md);
+  font-size: 13px;
+}
+.sp-chat-btn__icon {
+  display: flex;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+.sp-chat-btn__icon > svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* SendButton: a 44px circle. Disabled keeps full opacity and draws the
+   sunken fill with a muted arrow (the frame's look), so it takes no dimming.
+   Ready is Deep Moss under a Slime arrow; Stop inverts, Slime under a Deep
+   Moss square. */
+.sp-chat-send {
+  --chat-btn-bg: var(--gen-sunken);
+  --chat-btn-fg: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--gen-h-lg);
+  height: var(--gen-h-lg);
+  padding: 0;
+  border-radius: var(--radius-pill);
+}
+.sp-chat-send[data-state="ready"] {
+  --chat-btn-bg: var(--gen-send-ready-bg);
+  --chat-btn-fg: var(--gen-send-ready-fg);
+}
+.sp-chat-send[data-state="stop"] {
+  --chat-btn-bg: var(--gen-send-stop-bg);
+  --chat-btn-fg: var(--gen-send-stop-fg);
+}
+/* Disabled is aria-disabled (SendButton keeps focus through a run's end);
+   the stop glyph is an SVG square in the button's ink, drawn in the TSX. */
+.sp-chat-send[aria-disabled="true"] {
+  cursor: default;
+}
+
+/* Round icon buttons: the IconButton presets and CardAction share one
+   circle. Card actions and draft-card downloads sit on the sunken fill in
+   the primary ink; Attach sits on the tile and on --bg-hover while its menu
+   is open (the attach frames); Close is transparent until hovered. */
+.sp-chat-icon-btn {
+  --chat-btn-size: 32px;
+  --chat-btn-bg: var(--gen-sunken);
+  --chat-btn-fg: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--chat-btn-size);
+  height: var(--chat-btn-size);
+  padding: 0;
+  border-radius: var(--radius-pill);
+}
+.sp-chat-icon-btn[data-preset="attach"] {
+  --chat-btn-size: var(--gen-h-sm);
+  --chat-btn-bg: var(--gen-tile);
+}
+.sp-chat-icon-btn[data-preset="attach"][aria-expanded="true"] {
+  --chat-btn-bg: var(--bg-hover);
+}
+.sp-chat-icon-btn[data-preset="close"] {
+  --chat-btn-bg: transparent;
+  --chat-btn-fg: var(--text-secondary);
+  --chat-btn-bg-hover: var(--bg-hover);
+  --chat-btn-bg-active: var(--bg-hover);
+}
+.sp-chat-icon-btn[data-preset="download"] {
+  --chat-btn-size: 34px;
+}
+.sp-chat-icon-btn[data-size="compact"] {
+  --chat-btn-size: 28px;
+}
+/* Export in flight: the glyph dims to 40% (the frame draws no spinner). */
+.sp-chat-icon-btn[data-busy] {
+  cursor: progress;
+}
+.sp-chat-icon-btn[data-busy] .sp-chat-icon-btn__glyph {
+  opacity: 0.4;
+}
+
+/* Forced colours strip every fill and the box-shadow ring, which would
+   leave these fill-only shapes with no edge: each draws a system border
+   (as .sp-platform-chip does), and the aria-disabled Send greys out the
+   way a natively disabled button does. The focus ring is the transparent
+   outline above, which forced colours paint. */
+@media (forced-colors: active) {
+  .sp-chat-btn,
+  .sp-chat-send,
+  .sp-chat-icon-btn {
+    border: 1px solid ButtonBorder;
+  }
+  .sp-chat-send[aria-disabled="true"] {
+    border-color: GrayText;
+    color: GrayText;
+  }
+}
+
+/* ── Generate chat: suggestion chips (Figma "Generate · Chat", sp-chip
+   322:749) ─────────────────────────────────────────────────────────────────
+   The Start from and Try next chips. 36 tall at the 9 radius, a 13px
+   Regular label at −1%, one line. The surface is the chip rung of THE
+   surface recipe (.sp-chat-chip sits in its edge, chip-rung and light
+   no-edge lists beside .sp-platform-chip), not a button fill: light is a
+   white chip on --shadow-rest with no edge; dark is the canvas floor
+   (--gen-chip-bg) inside the chip edge at --edge-alpha-chip with no shadow
+   (--shadow-rest is a no-op there). Hover lifts the same way the platform
+   chip does, by swapping a property, never the list: the shadow deepens
+   in light, the edge brightens in dark. The fill stays put. */
+.sp-chat-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  height: var(--gen-h-sm);
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--radius-control-md);
+  background: var(--gen-chip-bg);
+  color: var(--chip-fg);
+  box-shadow: var(--edge-lit), var(--surface-shadow-now);
+  font-family: var(--font-ui);
+  font-size: var(--type-label-size);
+  font-weight: 400;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background var(--dur-state) var(--ease),
+    color var(--dur-state) var(--ease),
+    box-shadow var(--dur-state) var(--ease);
+}
+/* A template name can outrun the row; the chip never grows past it. */
+.sp-chat-chip__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sp-chat-chip:hover:not(:disabled) {
+  --edge-alpha: var(--edge-alpha-chip-hover);
+  --surface-shadow-now: var(--shadow-rest-hover);
+}
+.sp-chat-chip:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: var(--focus-ring-tight), var(--edge-lit), var(--surface-shadow-now);
+}
+.sp-chat-chip:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+/* Pinned (a Start from chip): the app's neutral selection, the inverted
+   fill a selected platform chip takes. Selected wins over hover, and the
+   inverted chip draws no edge and no shadow in either theme. */
+.sp-chat-chip[data-selected],
+.sp-chat-chip[data-selected]:hover {
+  --edge-lit: 0 0 0 0 transparent;
+  --surface-shadow-now: 0 0 0 0 transparent;
+  background: var(--chip-bg-selected);
+  color: var(--chip-fg-selected);
+}
+/* Forced colours strip the fill and the edge, so the chip draws its own
+   frame, and pinned (aria-pressed carries it for assistive tech) takes a
+   double rule, as the platform chip does. A disabled chip's frame greys
+   out like the aria-disabled Send, in both themes: the light no-edge
+   list's transparent border would otherwise revert to the browser's
+   disabled-button colour in light only. */
+@media (forced-colors: active) {
+  .sp-chat-chip {
+    border: 1px solid ButtonBorder;
+  }
+  .sp-chat-chip[data-selected] {
+    border: 3px double ButtonText;
+  }
+  .sp-chat-chip:disabled {
+    border-color: GrayText;
+  }
+}
+
+/* The chip row: a muted 13px label, then the chips, 8 apart; the row wraps
+   under the label's line when the chips run out of room. The row label is
+   drawn untracked (only the chip labels carry −1%), so its 0 is explicit
+   rather than inherited. */
+.sp-chat-chiprow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+.sp-chat-chiprow[data-align="center"] {
+  justify-content: center;
+}
+.sp-chat-chiprow__label {
+  font-family: var(--font-ui);
+  font-size: var(--type-label-size);
+  font-weight: 400;
+  line-height: 1.25;
+  letter-spacing: 0;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* ── Generate chat: the tiles (Figma "Generate · Chat", sp-stepper 302:324,
+   sp-select 328:840) ────────────────────────────────────────────────────────
+   The composer's toolbar tiles sit on --gen-tile at 36 tall and the 9
+   radius, beside the Attach circle on the same fill. No edge and no shadow:
+   they are controls inside a card, not surfaces. */
+
+/* VariationsStepper: 0 4 0 12 padding, 6 gap. The label is Medium (the one
+   Medium label in the toolbar, as drawn); the value is 14 Medium, centred
+   in a fixed 20 × 28 window that clips the roll. The digits stay
+   proportional, as drawn: Raveo's tabular 1 is a footed glyph, and the
+   fixed window already keeps the tile from shifting between counts. */
+.sp-chat-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  height: var(--gen-h-sm);
+  padding: 0 4px 0 12px;
+  border-radius: var(--radius-control-md);
+  background: var(--gen-tile);
+  color: var(--chip-fg);
+  font-family: var(--font-ui);
+}
+.sp-chat-stepper[data-disabled] {
+  opacity: 0.5;
+}
+.sp-chat-stepper__label {
+  font-size: var(--type-label-size);
+  font-weight: var(--weight-ui);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+.sp-chat-stepper__controls {
+  display: flex;
+  align-items: center;
+}
+.sp-chat-stepper__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition:
+    background var(--dur-state) var(--ease),
+    transform var(--dur-state) var(--ease);
+}
+.sp-chat-stepper__btn:hover:not(:disabled):not([aria-disabled="true"]) {
+  background: color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+.sp-chat-stepper__btn:active:not(:disabled):not([aria-disabled="true"]) {
+  transform: scale(0.88);
+}
+/* The tight ring: the offset ring's surface-coloured gap would read as a
+   band on the tile. The transparent outline is for forced colours, which
+   drop the box-shadow and paint the outline instead. */
+.sp-chat-stepper__btn:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: var(--focus-ring-tight);
+}
+/* The end of the range. aria-disabled rather than disabled, so the button
+   keeps focus when a step lands on the bound. */
+.sp-chat-stepper__btn[aria-disabled="true"] {
+  opacity: 0.32;
+  cursor: not-allowed;
+}
+.sp-chat-stepper__btn:disabled {
+  cursor: default;
+}
+.sp-chat-stepper__value {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 28px;
+  overflow: hidden;
+}
+.sp-chat-stepper__num {
+  display: block;
+  font-size: 14px;
+  font-weight: var(--weight-ui);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+/* PlatformSelect's trigger, on ui/Select's TriggerButton through
+   triggerClassName: 0 10 0 12 padding, 6 gap, a 13px Regular label at −1%
+   and a 16px chevron box in the secondary ink. It hugs its label. Hover and
+   the open menu follow the Attach circle beside it on the same fill: open
+   sits on --bg-hover, and hover folds 12% of the ink into whichever fill is
+   showing. Disabled dimming comes from TriggerButton itself (0.5). */
+.sp-chat-select {
+  --chat-select-bg: var(--gen-tile);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  height: var(--gen-h-sm);
+  padding: 0 10px 0 12px;
+  border: 0;
+  border-radius: var(--radius-control-md);
+  background: var(--chat-select-bg);
+  color: var(--chip-fg);
+  font-family: var(--font-ui);
+  font-size: var(--type-label-size);
+  font-weight: 400;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  text-align: left;
+  transition:
+    background var(--dur-state) var(--ease),
+    box-shadow var(--dur-state) var(--ease);
+}
+.sp-chat-select[aria-expanded="true"] {
+  --chat-select-bg: var(--bg-hover);
+}
+.sp-chat-select:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--chat-select-bg) 88%, var(--text-primary));
+}
+.sp-chat-select:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: var(--focus-ring);
+}
+.sp-chat-select__chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: var(--text-secondary);
+}
+
+/* Forced colours strip both tile fills, so the stepper and the platform
+   trigger draw a frame, like the chips and the Attach circle beside them. */
+@media (forced-colors: active) {
+  .sp-chat-stepper,
+  .sp-chat-select {
+    border: 1px solid ButtonBorder;
+  }
+}
+
+/* ── Generate chat: editor fields (Figma "Generate · Chat", sp-input
+   288:230, State Filled / Empty focused; the Field rows of frame 06) ─────
+   FieldInput variant="chat" swaps .sp-input for .sp-chat-input on its
+   text, multiline and select controls; image fields keep their dropzone.
+   A 40 tall tile at the 12 radius on --gen-tile, the 1px --border edge,
+   14/125% Regular. Focus colours the control's own 1px edge in
+   --gen-inverse and draws nothing else: the frame's 0.5px stroke, taken
+   to 1px so it renders on every display (PROMPT §7.8), and no glow, the
+   same construction as .sp-input:focus. Both focus rules also beat the
+   global :focus-visible outline. */
+.sp-chat-input {
+  display: block;
+  width: 100%;
+  height: var(--gen-h-md);
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control-lg);
+  background-color: var(--gen-tile);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.25;
+  letter-spacing: 0;
+  outline: none;
+  transition: border-color var(--dur-state) var(--ease);
+}
+.sp-chat-input::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+.sp-chat-input:focus,
+.sp-chat-input:focus-visible {
+  border-color: var(--gen-inverse);
+  box-shadow: none;
+  outline: none;
+}
+.sp-chat-input:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+/* Touch widths take the composer step (16px) so iOS Safari does not zoom
+   on focus, as every text-entry control does in the mobile block's iOS-zoom
+   rule. That rule cannot reach this class: .sp-chat-input outranks its bare
+   select and textarea selectors and loads after it, so the 14 above would
+   win there. The step is restated here instead. */
+@media (max-width: 767px) {
+  .sp-chat-input {
+    font-size: var(--type-composer-size);
+  }
+}
+/* Multiline: the same tile, starting at the single-line height and
+   growing with its text (field-sizing, where the browser has it; the
+   textarea's rows govern elsewhere) up to six lines, then scrolling.
+   The vertical padding puts the first line where a text field's value
+   sits, (40 − 2 border − one line) ÷ 2, taken from the line box in em so
+   it holds at 14px here and at the 16px phone size. The cap is the
+   single-line height plus five more lines. Where the tile sizes itself
+   it draws no resize grip (the Figma tile has none, and a drag would pin
+   an inline height that stops the growing); where it can't, the grip
+   stays so a member can still open a long field up. */
+textarea.sp-chat-input {
+  height: auto;
+  min-height: var(--gen-h-md);
+  max-height: calc(var(--gen-h-md) + 1.25em * 5);
+  padding: calc((var(--gen-h-md) - 2px - 1.25em) / 2) 12px;
+  resize: vertical;
+  field-sizing: content;
+}
+@supports (field-sizing: content) {
+  textarea.sp-chat-input {
+    resize: none;
+  }
+}
+/* Select: the same tile with the app's one chevron (--select-chevron,
+   baked per theme in --text-secondary), inset like the text. The fill is
+   background-color, never the shorthand, so the chevron survives. While
+   the empty option is chosen the value reads as a placeholder, in the
+   muted ink; the options themselves stay primary. */
+select.sp-chat-input {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 36px;
+  background-image: var(--select-chevron);
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px 12px;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+select.sp-chat-input:has(option[value=""]:checked) {
+  color: var(--text-muted);
+}
+select.sp-chat-input option {
+  color: var(--text-primary);
+}
+
+/* EditorField: the label row over the control, 6 apart. Label 12/125%
+   Medium in the secondary ink; "Optional" 12/125% Regular in the muted
+   ink on the right. One line, as drawn: a long label truncates rather
+   than pushing the tag off the row. The label restates the row's type
+   because the base layer (theme.css) sizes every <label> itself. */
+.sp-chat-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.sp-chat-field__labelrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  line-height: 1.25;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+.sp-chat-field__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  line-height: 1.25;
+  font-weight: var(--weight-ui);
+  color: var(--text-secondary);
+}
+.sp-chat-field__optional {
+  flex-shrink: 0;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+/* ── Generate chat: attachment (Figma sp-attachment 328:845) ─────────────
+   64 square at the 9 radius on the well, the photo cropped to cover. The
+   remove button is a 15px --gen-inverse circle 4px in from the top-right
+   corner with a --gen-on-inverse cross. The box carries no overflow clip
+   (the image rounds itself) so the button's ::before can widen its hit
+   area to 25px without changing what is drawn. Hover and active fold the
+   ink into the fill, like the chat buttons. */
+.sp-chat-attachment {
+  position: relative;
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-control-md);
+  background: var(--gen-well);
+}
+.sp-chat-attachment__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+.sp-chat-attachment__remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--gen-inverse);
+  color: var(--gen-on-inverse);
+  cursor: pointer;
+  transition:
+    background var(--dur-state) var(--ease),
+    opacity var(--dur-state) var(--ease);
+}
+.sp-chat-attachment__remove::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: inherit;
+}
+.sp-chat-attachment__remove:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--gen-inverse) 88%, var(--gen-on-inverse));
+}
+.sp-chat-attachment__remove:active:not(:disabled) {
+  background: color-mix(in srgb, var(--gen-inverse) 80%, var(--gen-on-inverse));
+}
+.sp-chat-attachment__remove:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.sp-chat-attachment__remove:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ── Generate chat: user message (Figma sp-chat-photo / User 328:847,
+   sp-chat-bubble / User 328:850) ─────────────────────────────────────────
+   A right-aligned column, 6 apart: the photo (160 × 107 at the 15 media
+   radius on the well, cropped to cover), then the bubble (up to 472 wide,
+   12 radius, 12/16 padding on --gen-sunken, body 15/150% Regular, the
+   member's line breaks kept and long links broken anywhere). The note
+   under a reopened turn is caption-size muted text, right-aligned with
+   the bubble. */
+.sp-chat-user {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  min-width: 0;
+}
+.sp-chat-user__photo {
+  display: block;
+  flex-shrink: 0;
+  width: 160px;
+  height: 107px;
+  object-fit: cover;
+  border-radius: var(--radius-media-plate);
+  background: var(--gen-well);
+}
+.sp-chat-user__bubble {
+  max-width: 472px;
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: var(--radius-control-lg);
+  background: var(--gen-sunken);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: var(--type-body-size);
+  font-weight: 400;
+  line-height: var(--type-body-lh);
+  letter-spacing: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.sp-chat-user__note {
+  max-width: 472px;
+  margin: 0;
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-lh);
+  text-align: right;
+}
+
+/* ── Generate chat: assistant header (Figma sp-chat-assistant-header
+   328:854) ─────────────────────────────────────────────────────────────
+   The 20px Slime mark (BrandMark, the same file in both themes), then
+   "SocialPaint" 14/125% Medium in the primary ink, 10 apart. */
+.sp-chat-assistant-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sp-chat-assistant-header > img {
+  flex-shrink: 0;
+}
+.sp-chat-assistant-header__name {
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: var(--weight-ui);
+  line-height: 1.25;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+/* ── Generate chat: draft card (Figma "Generate · Chat", sp-result-card
+   284:91 and sp-result-card-skeleton 284:118) ───────────────────────────
+   A card on the surface recipe (.sp-card) with the preview well on top
+   and a title row below. The well's size arrives as two custom properties
+   from DraftCard (--draft-preview-w / -h: the height is fixed by size, the
+   width follows the draft's ratio), and the card derives its own width
+   from them, so a long title can never widen it.
+
+   The frame draws the well 8px from the card's outer edge. The recipe
+   keeps a 1px transparent frame in the box, so the padding is 8 less that
+   frame: card = well + 16, as drawn (227 for 4:5, 521 for 1.91:1).
+
+   The edit chip takes the Generate look (--gen-edit-chip-*, dark in both
+   themes as sp-result-card State=Hover draws it), scoped to the card so
+   Brand Studio's chip keeps its own. */
+.sp-chat-draft {
+  --draft-pad: calc(var(--space-2xs) - var(--border-width));
+  --draft-title-size: 15px;
+  --draft-meta-size: 12px;
+  --draft-text-gap: var(--space-3xs);
+  --edit-chip-bg: var(--gen-edit-chip-bg);
+  --edit-chip-border: var(--gen-edit-chip-border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: calc(var(--draft-preview-w) + 2 * (var(--draft-pad) + var(--border-width)));
+  padding: var(--draft-pad);
+}
+.sp-chat-draft[data-size="compact"] {
+  --draft-title-size: 14px;
+  --draft-meta-size: 11px;
+  --draft-text-gap: 2px;
+}
+
+/* The draft the editor is open on: a 1px outline in the inverse ink on the
+   card's outer edge, as frame 06 draws it (287:278). It colours the
+   recipe's 1px frame, which stays in the box for exactly this ("the states
+   that still colour it"), rather than adding the inset ring PROMPT §7.14
+   names: an inset shadow starts inside the border and the card fill
+   paints under the transparent frame, so the ring would sit 1px in with a
+   rim of card colour outside it (the recipe's frozen-surfaces note makes
+   the same call). The box-shadow list is untouched, so no layer drops.
+   The class-class-attribute selector outranks the light recipe's
+   `[data-theme="light"] .sp-card { border-color: transparent }`. */
+.sp-card.sp-chat-draft[data-selected] {
+  border-color: var(--gen-inverse);
+}
+
+/* The chip's pencil takes currentColor and the shared rule pins it to
+   --text-primary, so the Generate chip names its ink too. */
+.sp-chat-draft .sp-edit-overlay__chip {
+  color: var(--gen-edit-chip-fg);
+}
+
+/* The well: 15 radius on the well fill. As a button it is the edit
+   control and carries .sp-has-overlay, so the Brand Studio scrim and
+   pencil chip show on hover (hover devices) and keyboard focus; focus
+   also draws the app's ring. The artwork keeps its own ratio (contain)
+   but overscans the well by 2px on the axis the well limits, so the well
+   clips 1px per side: an exact fit leaves a sub-pixel sliver of --gen-well
+   along one edge (see the comment on .sp-chat-draft__art in DraftCard). */
+.sp-chat-draft__preview {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--draft-preview-w);
+  height: var(--draft-preview-h);
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-media-plate);
+  background: var(--gen-well);
+  overflow: hidden;
+}
+button.sp-chat-draft__preview {
+  cursor: pointer;
+}
+.sp-chat-draft__preview:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.sp-chat-draft__art {
+  display: block;
+  flex-shrink: 0;
+}
+/* The template is gone: today's sentence in the well instead of art. */
+.sp-chat-draft__gone {
+  margin: 0;
+  padding: var(--space-sm);
+  font-size: var(--type-caption-size);
+  line-height: 1.25;
+  color: var(--text-muted);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+/* Title row: 16 8 8 8 with an 8 gap on regular cards, 12 6 4 6 with a 6
+   gap on compact ones. The text column hugs its two lines (4 apart, 2 on
+   compact) and truncates; the download circle keeps its size. */
+.sp-chat-draft__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding: var(--space-sm) var(--space-2xs) var(--space-2xs);
+}
+.sp-chat-draft[data-size="compact"] .sp-chat-draft__meta {
+  gap: 6px;
+  padding: var(--space-xs) 6px var(--space-3xs);
+}
+.sp-chat-draft__text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  gap: var(--draft-text-gap);
+}
+.sp-chat-draft__title,
+.sp-chat-draft__sub {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Title: Display Medium, 15/125% at −1% (14 on compact). */
+.sp-chat-draft__title {
+  font-family: var(--font-ui);
+  font-weight: var(--weight-ui);
+  font-size: var(--draft-title-size);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+/* Meta: Geist Mono, 12/140% at +4% (11 on compact), muted. */
+.sp-chat-draft__sub {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: var(--draft-meta-size);
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+/* Skeleton: the same card on the deep stage (--gen-stage: the well rung
+   in light, the canvas in dark). Its shapes are absolutely placed toned
+   Bones in the sunken tone (the Skeletons block), positioned in percent of
+   the well. The title row holds the real row's line boxes (title, gap,
+   meta) so the swap to the finished card keeps the card's height; the
+   bars sit centred in it, 9 apart, with 12 to the circle. A compact
+   skeleton (drawn only as Regular; see DraftCardSkeleton) takes the
+   compact row's padding, gap and line boxes from the rules above, the
+   higher-specificity compact gap included. */
+.sp-chat-draft--skeleton {
+  pointer-events: none;
+}
+.sp-chat-draft--skeleton .sp-chat-draft__preview {
+  background: var(--gen-stage);
+}
+.sp-chat-draft--skeleton .sp-chat-draft__meta {
+  gap: var(--space-xs);
+}
+.sp-chat-draft--skeleton .sp-chat-draft__text {
+  justify-content: center;
+  gap: 9px;
+  min-height: calc(
+    var(--draft-title-size) * 1.25 + var(--draft-text-gap) + var(--draft-meta-size) * 1.4
+  );
+}
+
+/* ── Generate chat: caption card (Figma "Generate · Chat", sp-caption-card
+   309:437, State Ready / Loading) ────────────────────────────────────────
+   Full chat-column width, 12 between the header and the caption. The card
+   takes the surface recipe by carrying .sp-card. The frame draws the
+   content 16 16 20 20 from the card's outer edge; the recipe keeps a 1px
+   transparent frame in the box, so the padding is that less the frame (as
+   on the recent, history and draft cards). The header holds 36px in both
+   states (the switch's height), so a turn whose single draft hides the
+   switch, and the loading card, keep the ready card's height. */
+.sp-chat-caption {
+  --caption-inset-end: calc(var(--space-sm) - var(--border-width));
+  --caption-inset-start: calc(20px - var(--border-width));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--caption-inset-end) var(--caption-inset-end) var(--caption-inset-start)
+    var(--caption-inset-start);
+}
+.sp-chat-caption__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+  min-height: var(--gen-h-sm);
+}
+.sp-chat-caption__lead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+.sp-chat-caption__title {
+  margin: 0;
+  flex-shrink: 0;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.25;
+  font-weight: var(--weight-ui);
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+/* The platform switch: segments on a sunken track (9 radius, 4 inset, 4
+   apart). The selected segment is Deep Moss under Slime with the card
+   shadow in light, --ink-600 under Slime with no shadow in dark, all through
+   --gen-seg-on-*; the rest are bare labels in the secondary ink. Long
+   labels (template names, when two drafts share a platform) truncate
+   rather than push the Copy action off the row. */
+.sp-chat-caption__switch {
+  display: flex;
+  gap: var(--space-3xs);
+  min-width: 0;
+  padding: var(--space-3xs);
+  border-radius: var(--radius-control-md);
+  background: var(--gen-sunken);
+}
+.sp-chat-caption__seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  height: 28px;
+  padding: 0 10px;
+  border: none;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  line-height: 1.25;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition:
+    background var(--dur-state) var(--ease),
+    color var(--dur-state) var(--ease),
+    box-shadow var(--dur-state) var(--ease);
+}
+.sp-chat-caption__seg-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (hover: hover) {
+  .sp-chat-caption__seg:not([data-selected]):hover {
+    color: var(--text-primary);
+  }
+}
+.sp-chat-caption__seg[data-selected] {
+  background: var(--gen-seg-on-bg);
+  color: var(--gen-seg-on-fg);
+  box-shadow: var(--gen-seg-on-shadow);
+  cursor: default;
+}
+/* The tight ring: the track's 4px inset and gap leave room for 2px and no
+   more. The selected segment keeps its shadow under the ring. */
+.sp-chat-caption__seg:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-tight);
+}
+.sp-chat-caption__seg[data-selected]:focus-visible {
+  box-shadow: var(--focus-ring-tight), var(--gen-seg-on-shadow);
+}
+
+.sp-chat-caption__text {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-lh);
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Loading: the ready card's geometry in sunken toned Bones (sized in
+   CaptionCard; they pulse through the toned-bone rule in the Skeletons
+   block). The header keeps its 36px (the switch block's height). The two
+   caption lines sit 10 apart, centred in exactly two lines of caption
+   text: the frame's 6px of padding around them makes 46, its rounding of
+   two 22.5px lines, so a card whose caption lands in two lines replaces
+   this one without moving. */
+.sp-chat-caption__lines {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  height: calc(2 * var(--type-body-size) * var(--type-body-lh));
+}
+
+/* ── Generate chat: recent and history cards (Figma "Generate · Chat",
+   sp-recent-card 329:1044, sp-history-card 347:859) ─────────────────────
+   One button per chat, on the surface recipe (.sp-card: fill, lit edge,
+   shadow, 20 radius). The frame is 8 from the card's outer edge as drawn:
+   the recipe's 1px transparent frame counts toward it, so the padding is
+   the remainder. Hover deepens the card shadow and nothing else, and focus
+   composes the tight ring into the full list: both join the template
+   card's rules (.sp-template-card:hover / :focus-visible). The loading
+   history card is not a control, so it takes neither. */
+.sp-chat-recent-card,
+.sp-chat-history-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  padding: calc(var(--space-2xs) - var(--border-width));
+  text-align: left;
+  cursor: pointer;
+  transition: box-shadow var(--dur-state) var(--ease);
+}
+.sp-chat-history-card[data-state="loading"] {
+  cursor: default;
+}
+
+/* Recent: a 104 tall well on --gen-well at the plate radius, the draft
+   letterboxed with contain. The well is a size container, so the art is
+   min(well width, well height × ratio) wide with no measuring in JS. It
+   overscans the pinned axis by 1px each side, clipped by the well: the
+   renderer's contain rounds a hair short, and the well would show through
+   the gap as a seam (the template card's fix, 2026-09-15). */
+.sp-chat-recent-card__well {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 104px;
+  border-radius: var(--radius-media-plate);
+  background: var(--gen-well);
+  overflow: hidden;
+  container-type: size;
+}
+.sp-chat-recent-card__art {
+  flex-shrink: 0;
+  aspect-ratio: var(--fit-ratio);
+  width: min(100cqw + 2px, (100cqh + 2px) * var(--fit-ratio));
+}
+
+/* History: a square card. The stage takes what the meta leaves, padded 16
+   on --gen-stage (dark is the deep well), and centres a box at the draft's
+   own ratio, as large as fits inside the padding (container units resolve
+   against the stage's content box). The box shows --gen-stage-graphic at
+   the control radius until the thumbnail paints over it. Loading holds a
+   toned Bone in the draft skeleton's shape instead, and the box goes
+   clear, so the pulse fades toward the stage beneath it (the toned-bone
+   rule), never toward the placeholder white. */
+.sp-chat-history-card {
+  aspect-ratio: 1;
+}
+.sp-chat-history-card__stage {
+  flex: 1 0 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-sm);
+  border-radius: var(--radius-media-plate);
+  background: var(--gen-stage);
+  container-type: size;
+}
+.sp-chat-history-card__graphic {
+  position: relative;
+  flex-shrink: 0;
+  aspect-ratio: var(--fit-ratio);
+  width: min(100cqw, 100cqh * var(--fit-ratio));
+  border-radius: var(--radius-control);
+  background: var(--gen-stage-graphic);
+  overflow: hidden;
+}
+.sp-chat-history-card[data-state="loading"] .sp-chat-history-card__graphic {
+  background: none;
+}
+.sp-chat-history-card__art {
+  position: absolute;
+  inset: -1px;
+}
+
+/* Title and meta, both cards: padded 10 6 4 6, 2 apart, one line each,
+   14 Medium over 12 Regular in the secondary ink. Recent sets both at
+   125% with the title at -1% (sp-recent-card 303:314). History draws the
+   face's normal leading, a 17 and a 15 line box, and no title tracking
+   (sp-history-card 347:814), so its meta is 48 tall where Recent's is
+   48.5. The line boxes are named properties because the loading bones
+   reuse them. */
+.sp-chat-card-meta {
+  --chat-meta-title-lh: calc(14px * 1.25);
+  --chat-meta-line-lh: calc(var(--type-caption-size) * 1.25);
+  --chat-meta-title-track: -0.01em;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px 6px var(--space-3xs);
+  font-family: var(--font-ui);
+}
+.sp-chat-history-card .sp-chat-card-meta {
+  --chat-meta-title-lh: 17px;
+  --chat-meta-line-lh: 15px;
+  --chat-meta-title-track: 0;
+}
+.sp-chat-card-meta__title,
+.sp-chat-card-meta__line {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-chat-card-meta__title {
+  font-size: 14px;
+  font-weight: var(--weight-ui);
+  line-height: var(--chat-meta-title-lh);
+  letter-spacing: var(--chat-meta-title-track);
+  color: var(--text-primary);
+}
+.sp-chat-card-meta__line {
+  font-size: var(--type-caption-size);
+  font-weight: 400;
+  line-height: var(--chat-meta-line-lh);
+  letter-spacing: 0;
+  color: var(--text-secondary);
+}
+/* Bones (a loading card): each line keeps its line box and holds a pulsing
+   toned Bone (128 x 10, 84 x 8) sitting 3 above the box's foot, near the
+   text baseline. In History's 17 and 15 boxes that lands the bars 14 from
+   the meta top and 9 apart, exactly as drawn (347:826, padding 14 6 7 6,
+   gap 9), and the meta stays as tall as the loaded one by construction, so
+   the stage above it does not move when the chat lands. */
+.sp-chat-card-meta[data-bones] .sp-chat-card-meta__title,
+.sp-chat-card-meta[data-bones] .sp-chat-card-meta__line {
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: 3px;
+}
+.sp-chat-card-meta[data-bones] .sp-chat-card-meta__title {
+  height: var(--chat-meta-title-lh);
+}
+.sp-chat-card-meta[data-bones] .sp-chat-card-meta__line {
+  height: var(--chat-meta-line-lh);
+}
+
+/* ── Generate chat: scroll fade (Figma "Generate · Chat", sp-scroll-fade
+   341:813, Position Top / Bottom) ────────────────────────────────────────
+   56 tall across the scroller, pinned to its top or bottom edge, never
+   hit-testable. Two layers so neither alpha multiplies the other: the
+   blur (::before) masked from 8px at the pinned edge to none, and over it
+   the page ground (::after) at 100 / 85 / 40 / 0% from the pinned edge
+   (0 / 30 / 65 / 100% of the height), as drawn. The layers fade rather
+   than the element: an ancestor below full opacity would cut the blur
+   off from the content behind it (a backdrop root), so the element itself
+   never goes translucent. z-index 1 lifts it over positioned content
+   whichever side of the scroller it sits in the DOM. It stops short of a
+   classic scrollbar (--scroll-fade-gutter, measured by useScrollFades) so
+   the thumb and arrows at either end stay visible; an overlay scrollbar
+   measures 0. */
+.sp-chat-scroll-fade {
+  --fade-dir: to bottom;
+  position: absolute;
+  inset-inline: 0 var(--scroll-fade-gutter, 0px);
+  top: 0;
+  z-index: 1;
+  height: 56px;
+  pointer-events: none;
+}
+.sp-chat-scroll-fade[data-position="bottom"] {
+  --fade-dir: to top;
+  top: auto;
+  bottom: 0;
+}
+.sp-chat-scroll-fade::before,
+.sp-chat-scroll-fade::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity var(--dur-state) var(--ease);
+}
+.sp-chat-scroll-fade::before {
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  -webkit-mask-image: linear-gradient(var(--fade-dir), black, transparent);
+  mask-image: linear-gradient(var(--fade-dir), black, transparent);
+}
+.sp-chat-scroll-fade::after {
+  background: linear-gradient(
+    var(--fade-dir),
+    var(--gen-fade),
+    color-mix(in srgb, var(--gen-fade) 85%, transparent) 30%,
+    color-mix(in srgb, var(--gen-fade) 40%, transparent) 65%,
+    transparent
+  );
+}
+.sp-chat-scroll-fade[data-visible]::before,
+.sp-chat-scroll-fade[data-visible]::after {
+  opacity: 1;
 }
 
 /* ── Component colour overrides (design-system distribution, section 8) ─────
