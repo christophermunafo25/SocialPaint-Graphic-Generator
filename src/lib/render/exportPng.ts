@@ -41,7 +41,7 @@ async function ensureImagesReady(node: HTMLElement): Promise<void> {
   while (node.querySelector('[data-image-status="loading"]')) {
     if (Date.now() > deadline) {
       throw new ExportAssetError(
-        "Timed out waiting for images to load — check the connection and try again.",
+        "Timed out waiting for images to load. Check the connection and try again.",
       );
     }
     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -55,7 +55,7 @@ async function ensureImagesReady(node: HTMLElement): Promise<void> {
   ];
   if (failed.length) {
     throw new ExportAssetError(
-      `Couldn't load ${failed.join(", ")} — the graphic would export with it missing.`,
+      `Couldn't load ${failed.join(", ")}. The graphic would export with it missing.`,
     );
   }
 }

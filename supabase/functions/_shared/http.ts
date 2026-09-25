@@ -86,4 +86,4 @@ export function logError(fn: string, e: unknown): void {
 }
 
 /** The generic client-facing 500 body — never a raw exception string. */
-export const GENERIC_ERROR = "Something went wrong on our side — try again.";
+export const GENERIC_ERROR = "Something went wrong on our side. Try again.";

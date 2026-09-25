@@ -715,6 +715,34 @@ export interface GenerateInput {
   /** The supplied photo's width over height, so the model can prefer a
    * template whose image slot suits it. */
   imageAspect?: number;
+  /** Sent from an existing chat: the brief that started it and the drafts on
+   * screen, so the new `brief` can revise them instead of starting over.
+   * Absent on a chat's first send. The client sends it only for library
+   * follow-ups; a freestyle follow-up folds the earlier brief into `brief`
+   * instead (PROMPT §9.3). */
+  followUp?: GenerateFollowUp;
+}
+
+/** The chat context a follow-up carries to the model. Text fields only: it
+ * never carries the photo and never an image field's value, so the photo
+ * still never leaves the browser. The server rejects the whole request with
+ * a 400 when anything is outside its limits: previousBrief 1 to 1,500
+ * characters; at most 3 drafts; templateId 1 to 64 characters; templateName
+ * 0 to 120; at most 60 values per draft; fieldKey 0 to 60; value 0 to 4,000.
+ * The database holds template names to no length, so a client building this
+ * from stored templates clamps templateName to 120. It never narrows the
+ * candidate list, and a draft whose templateId is not a published template
+ * is dropped from the prompt silently. */
+export interface GenerateFollowUp {
+  /** The chat's first brief, so facts the new message doesn't replace carry
+   * over. */
+  previousBrief: string;
+  /** The latest finished turn's drafts, with the member's current edits. */
+  drafts: Array<{
+    templateId: string;
+    templateName: string;
+    values: Array<{ fieldKey: string; value: string }>;
+  }>;
 }
 
 /** A freestyle proposal's design: a complete, ephemeral template the client
@@ -769,6 +797,9 @@ export interface GenerateMeta {
   /** How many published templates the model chose among. */
   candidateCount: number;
   briefLength: number;
+  /** "freestyle" when the proposals are new designs; absent for library
+   * fills. */
+  mode?: "freestyle";
 }
 
 /** The template-generate Edge Function's response. Nothing is persisted
@@ -778,6 +809,19 @@ export interface GenerateResult {
   proposals: GeneratedProposal[];
   warnings: string[];
   meta: GenerateMeta;
+  /** One or two sentences to the member about what was made, shown as the
+   * assistant's reply in the chat. Optional model output, validated
+   * server-side (whitespace collapsed, em dashes replaced, at most 280
+   * characters) and absent when the model gave nothing usable. An older
+   * deployment never returns it, so the client falls back to its own
+   * sentence (PROMPT §9.2). */
+  reply?: string;
+  /** A short name for the chat, in sentence case. Optional model output,
+   * validated server-side (2 to 60 characters, no closing punctuation) and
+   * absent when the model gave nothing usable or an older deployment
+   * answered; the client then titles the chat from the brief's first words
+   * (PROMPT §9.9). */
+  title?: string;
 }
 
 /** One field the client-side measurement pass found overflowing: the value

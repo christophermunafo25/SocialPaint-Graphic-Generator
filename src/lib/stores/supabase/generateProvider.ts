@@ -21,7 +21,7 @@ export class SupabaseGenerateProvider implements GenerateProvider {
     });
     if (error) {
       const detail = await readErrorMessage(error);
-      throw new Error(detail ?? "Generate failed — try again.");
+      throw new Error(detail ?? "Generate failed. Try again.");
     }
     return data as GenerateResult;
   }
@@ -32,7 +32,7 @@ export class SupabaseGenerateProvider implements GenerateProvider {
     });
     if (error) {
       const detail = await readErrorMessage(error);
-      throw new Error(detail ?? "The repair round failed — try again.");
+      throw new Error(detail ?? "The repair round failed. Try again.");
     }
     return data as GenerateRepairResult;
   }
