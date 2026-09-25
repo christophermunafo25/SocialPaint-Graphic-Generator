@@ -157,7 +157,7 @@ html {
      Jakarta, carrying every step from display to cardtitle after the
      Bricolage Grotesque display experiment was retired; body and UI were
      Inter Tight. The display steps below were rescaled for Jakarta's width
-     (see the ramp note) and have not been retuned for Raveo. */
+     and retuned for Raveo the same day as the switch (see the ramp note). */
   --font-head: "Raveo Platform", "Raveo Display", system-ui, -apple-system, sans-serif;
   --weight-head: 500; /* every heading step — Display Medium */
   --track-head: -0.02em; /* −2% on every heading step — the Figma page title's spec */
@@ -166,7 +166,18 @@ html {
   --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
   --weight-ui: 500; /* controls and titles — Display Medium */
 
-  /* Display steps, rescaled for Jakarta (2026-09-23): the retired
+  /* Display steps, retuned for Raveo Display Medium (2026-09-25). Raveo
+     sets the real headlines ~5% narrower than Jakarta SemiBold at equal px
+     (median 1.049 across the hero, gate, and page titles; 7–10% on KPI
+     digits) and a little shorter (cap height 0.728 vs 0.745 em, x-height
+     0.516 vs 0.541). The Jakarta steps were tuned in-app for footprint, so
+     every step the display voice owns takes ×1.04 — between the width
+     match (~1.05) and the cap-height match (~1.02) — rounded to whole px:
+     64/40/32/32 → 67/42/33/33, and the gate's local 36/28/24 → 37/29/25.
+     The page title (30) and the shelf titles (20) are the Navigation
+     frames' own Raveo values and do not move.
+
+     History — rescaled for Jakarta (2026-09-23): the retired
      Bricolage Headline cut ran condensed (wdth 79), and Jakarta sets the
      same words ~1.35× wider at equal px (measured in-app on the real
      titles). Height-for-height was far too loud, width-for-width too
@@ -176,16 +187,16 @@ html {
      and never wore the condensed face; its one display consumer, the
      gate title, steps down locally instead). display and h1/h2/h4 have
      no consumers outside that voice, so only it moves. */
-  --type-display-size: 64px;
+  --type-display-size: 67px;
   --type-display-lh: 0.92;
   --type-display-track: var(--track-head);
-  --type-h1-size: 40px;
+  --type-h1-size: 42px;
   --type-h1-lh: 0.95;
   --type-h1-track: var(--track-head);
-  --type-h2-size: 32px;
+  --type-h2-size: 33px;
   --type-h2-lh: 1;
   --type-h2-track: var(--track-head);
-  --type-h3-size: 32px;
+  --type-h3-size: 33px;
   --type-h3-lh: 1.1;
   --type-h3-track: var(--track-head);
   /* The page title on every route. The Jakarta rescale landed it at 36
@@ -2157,11 +2168,12 @@ select.sp-input:disabled {
    onboarding frames' 45 to H2 — the two containers differ by more than 2×
    in width and the proportion between them holds. */
 .sp-gate__title {
-  /* A local 28, not var(--type-h3-size): h3 stays 32 for the KPI number,
-     which is Jakarta all along — this title wore the condensed cut, so it
-     takes the same ×0.8 as the rest of the display voice (32 → 25.6,
-     rounded up to keep it above the cardtitle step). */
-  font-size: 28px;
+  /* A local step, not var(--type-h3-size): h3 is sized for the KPI
+     number, and this title wore the condensed cut, so it took the same
+     ×0.8 as the rest of the display voice (32 → 25.6, rounded up to 28 to
+     keep it above the cardtitle step). ×1.04 for Raveo (2026-09-25, see
+     the ramp note): 29. */
+  font-size: 29px;
   line-height: var(--type-h3-lh);
   letter-spacing: var(--type-h3-track);
 }
@@ -2285,13 +2297,15 @@ select.sp-input:disabled {
   margin-top: 0;
 }
 
-/* The intro headline at 110%, -3% track, ink — the step both surfaces
-   share now (the 38/45 split above is the dark frames'). 36 is the
-   frames' Bricolage 45 through the Jakarta ×0.8 (see the ramp note). */
+/* The intro headline at 110%, the heading track, ink — the step both
+   surfaces share now (the 38/45 split above is the dark frames'). The
+   frames' Bricolage 45 through the Jakarta ×0.8 was 36 at −3%; through
+   the Raveo ×1.04 (2026-09-25, see the ramp note) it is 37 at the
+   heading face's −2%. */
 .sp-gate[data-theme="light"] .sp-hero-title {
-  font-size: 36px;
+  font-size: 37px;
   line-height: 1.1;
-  letter-spacing: -0.03em;
+  letter-spacing: var(--track-head);
   color: var(--text-primary);
 }
 
@@ -2697,9 +2711,9 @@ select.sp-input:disabled {
     width: 32px !important;
   }
   .sp-gate[data-theme="light"] .sp-hero-title {
-    /* The frames' 30 through the Jakarta ×0.8 — the 310 column is what
-       this step is really sized against. */
-    font-size: 24px;
+    /* The frames' 30 through the Jakarta ×0.8 (24), then the Raveo ×1.04
+       — the 310 column is what this step is really sized against. */
+    font-size: 25px;
     max-width: 310px;
     margin-inline: auto;
   }

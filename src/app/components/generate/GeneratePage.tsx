@@ -445,7 +445,8 @@ export function GeneratePage({ templateIdHint }: { templateIdHint?: string }) {
       )}
       {/* Expanded, this is the H1 display step (lifted from H2, 2026-09,
           at CJ's direction — "bigger"; the step itself rescaled for
-          Jakarta, 2026-09-23); collapsed it drops to the cardtitle step
+          Jakarta, 2026-09-23, and retuned for Raveo, 2026-09-25);
+          collapsed it drops to the cardtitle step
           like every card title. One face since the Bricolage retirement. */}
       <h1
         style={{
