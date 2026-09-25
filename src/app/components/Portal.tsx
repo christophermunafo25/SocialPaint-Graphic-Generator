@@ -150,7 +150,10 @@ export function Portal() {
   if (templatesState.status === "error") {
     return (
       <Page bleed>
-        <PageHeader title="Brand Templates" />
+        <PageHeader
+          title="Brand Templates"
+          description="Pick a template and fill in your details. Everything else is already on brand, so the graphic you download is ready to post."
+        />
         <ErrorState
           title="We couldn't load your templates."
           detail="Check your connection and try again."
@@ -162,10 +165,13 @@ export function Portal() {
 
   return (
     <Page bleed>
-      {/* Description, the Generate action, and the workspace eyebrow are
-          gone from this header (2026-09 frames + CJ, 2026-09-15) — the
-          props stay on PageHeader for the other pages that use them. */}
-      <PageHeader title="Brand Templates" />
+      {/* The Generate action and the workspace eyebrow left this header
+          (2026-09 frames + CJ, 2026-09-15); the description came back with
+          the Figma "Navigation" page (2026-09-25). */}
+      <PageHeader
+        title="Brand Templates"
+        description="Pick a template and fill in your details. Everything else is already on brand, so the graphic you download is ready to post."
+      />
 
       <div ref={sentinel} aria-hidden style={{ height: 1 }} />
       <div className="sp-filterbar" data-pinned={pinned || undefined}>

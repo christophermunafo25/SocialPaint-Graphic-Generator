@@ -57,17 +57,7 @@ export function PageHeader({
           </p>
         )}
         <h1 className="sp-page-title">{title}</h1>
-        {description && (
-          <p
-            style={{
-              fontSize: "var(--type-label-size)",
-              color: "var(--text-muted)",
-              marginTop: "var(--space-2xs)",
-            }}
-          >
-            {description}
-          </p>
-        )}
+        {description && <p className="sp-pagehead__desc">{description}</p>}
       </div>
       {action && <div className="flex-shrink-0">{action}</div>}
     </header>

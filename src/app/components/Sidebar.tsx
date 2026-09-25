@@ -95,12 +95,12 @@ function QuickThemeToggle() {
       onClick={() => setScheme(next)}
       title={`Switch to ${next} mode`}
       aria-label={`Switch to ${next} mode`}
-      className="sp-icon-btn"
+      className="sp-icon-btn sp-icon-btn--theme"
     >
       {resolved === "dark" ? (
-        <Moon style={{ width: 15, height: 15 }} />
+        <Moon style={{ width: 15, height: 15 }} strokeWidth={1.5} />
       ) : (
-        <Sun style={{ width: 15, height: 15 }} />
+        <Sun style={{ width: 15, height: 15 }} strokeWidth={1.5} />
       )}
     </button>
   );
@@ -171,15 +171,11 @@ function AccountBlock({ onNavigate }: { onNavigate(route: Route): void }) {
       )}
       <div className="flex items-center gap-3">
         <span
-          className="flex items-center justify-center flex-shrink-0"
+          className="sp-avatar flex items-center justify-center flex-shrink-0"
           title={`${displayName}${company ? ` · ${company.name}` : ""} · ${role}${backend === "local" ? " · dev backend" : ""}`}
           style={{
             width: 38,
             height: 38,
-            borderRadius: "var(--radius-pill)",
-            background: "var(--bg-raised)", // neutral, per the DS Avatar recipe — Green means success/commit
-            border: "1px solid var(--border)",
-            color: "var(--text-primary)",
             fontSize: "var(--type-caption-size)",
             fontWeight: "var(--weight-ui)",
           }}
@@ -192,6 +188,7 @@ function AccountBlock({ onNavigate }: { onNavigate(route: Route): void }) {
             title={displayName}
             style={{
               fontSize: "var(--type-label-size)",
+              lineHeight: 1.25,
               fontWeight: 500,
               color: "var(--sb-fg-active)",
             }}
@@ -201,7 +198,7 @@ function AccountBlock({ onNavigate }: { onNavigate(route: Route): void }) {
           <span
             className="block truncate"
             title={user?.email ?? `${company?.name ?? "Workspace"} · ${role}`}
-            style={{ fontSize: 11, color: "var(--sb-fg)" }}
+            style={{ fontSize: 11, lineHeight: 1.3, color: "var(--sb-fg)" }}
           >
             {user?.email ?? `${company?.name ?? "Workspace"} · ${role}`}
           </span>
@@ -211,11 +208,11 @@ function AccountBlock({ onNavigate }: { onNavigate(route: Route): void }) {
             onClick={() => void signOut()}
             title="Sign out"
             aria-label="Sign out"
-            className="flex items-center justify-center flex-shrink-0"
-            data-radius-control
-            style={{ width: 28, height: 28, color: "var(--sb-fg)" }}
+            className="sp-icon-btn"
+            // The collapse button's neutral hover on a 28px control square.
+            style={{ width: 28, height: 28, borderRadius: "var(--radius-control)" }}
           >
-            <LogOut style={{ width: 14, height: 14 }} />
+            <LogOut style={{ width: 14, height: 14 }} strokeWidth={1.5} />
           </button>
         )}
       </div>
@@ -392,7 +389,7 @@ export function Sidebar() {
                         data-active={active}
                         aria-current={active ? "page" : undefined}
                       >
-                        <Icon style={{ width: 17, height: 17, flexShrink: 0 }} />
+                        <Icon style={{ width: 17, height: 17, flexShrink: 0 }} strokeWidth={1.5} />
                         {label}
                       </button>
                     );
@@ -415,19 +412,19 @@ export function Sidebar() {
     <div
       className="flex-shrink-0"
       style={{
-        // Floating panel: inset 16px from the top, left, and bottom.
-        width: `calc(${collapsed ? "var(--sb-width-collapsed)" : "var(--sb-width)"} + 16px)`,
-        padding: "16px 0 16px 16px",
+        // Floating panel: inset --sb-inset from the top, left, and bottom.
+        width: `calc(${collapsed ? "var(--sb-width-collapsed)" : "var(--sb-width)"} + var(--sb-inset))`,
+        padding: "var(--sb-inset) 0 var(--sb-inset) var(--sb-inset)",
         transition: "width var(--dur-panel) var(--ease)",
       }}
     >
       <aside
         className="sp-sidebar flex flex-col sticky"
         style={{
-          top: 16,
+          top: "var(--sb-inset)",
           width: collapsed ? "var(--sb-width-collapsed)" : "var(--sb-width)",
-          height: "calc(100vh - 32px)",
-          padding: collapsed ? "20px 12px" : "20px 16px",
+          height: "calc(100vh - 2 * var(--sb-inset))",
+          padding: collapsed ? "20px 12px" : "20px",
           transition: "width var(--dur-panel) var(--ease)",
           zIndex: 30,
         }}
@@ -443,7 +440,7 @@ export function Sidebar() {
               title="Home"
               aria-label="SocialPaint home"
             >
-              <BrandLockup />
+              <BrandLockup height={24} />
             </button>
           )}
           <div className="flex items-center gap-2">
@@ -454,7 +451,7 @@ export function Sidebar() {
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
               className="sp-icon-btn"
             >
-              <PanelLeft style={{ width: 15, height: 15 }} />
+              <PanelLeft style={{ width: 15, height: 15 }} strokeWidth={1.5} />
             </button>
           </div>
         </div>
@@ -490,7 +487,7 @@ export function Sidebar() {
                 aria-current={active ? "page" : undefined}
                 style={collapsed ? { justifyContent: "center", padding: 0 } : undefined}
               >
-                <Icon style={{ width: 18, height: 18, flexShrink: 0 }} />
+                <Icon style={{ width: 18, height: 18, flexShrink: 0 }} strokeWidth={1.5} />
                 {!collapsed && label}
                 {!collapsed && count !== null && (
                   <span
@@ -516,14 +513,10 @@ export function Sidebar() {
         ) : (
           <div className="flex justify-center">
             <span
-              className="flex items-center justify-center"
+              className="sp-avatar flex items-center justify-center"
               style={{
                 width: 34,
                 height: 34,
-                borderRadius: "var(--radius-pill)",
-                background: "var(--bg-raised)",
-                border: "1px solid var(--border)",
-                color: "var(--text-primary)",
                 fontSize: 11,
                 fontWeight: "var(--weight-ui)",
               }}

@@ -11,7 +11,7 @@ export function ConfigFailureScreen() {
       style={{ background: "var(--bg-canvas)", fontFamily: "var(--font-ui)" }}
     >
       <div className="text-center space-y-3" style={{ maxWidth: 440 }}>
-        <p style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)" }}>
+        <p style={{ fontSize: 16, fontWeight: "var(--weight-ui)", color: "var(--text-primary)" }}>
           This app isn't set up yet
         </p>
         <p style={{ fontSize: 14, color: "var(--text-secondary)" }}>

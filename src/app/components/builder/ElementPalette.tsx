@@ -133,7 +133,7 @@ export function ElementPalette({ onAdd, logos = [], activeTool = "move" }: Eleme
   const shapes = PALETTE_ITEMS.filter((i) => i.group === "shapes");
   const armedId = activeTool === "move" ? null : TOOL_PALETTE_ID[activeTool];
   return (
-    <div className="sp-card p-3 space-y-3">
+    <div className="sp-card sp-card--chrome p-3 space-y-3">
       <div className="space-y-2">
         <h3 className="sp-eyebrow">Fields</h3>
         {/* When the builder stacks to one column (below lg), the palette spans

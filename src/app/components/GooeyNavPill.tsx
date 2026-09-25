@@ -7,9 +7,12 @@ import React, { useEffect, useId, useRef } from "react";
  * the standard exit curve, the trailing drop 0.62s on an overshoot spring
  * with a 260ms settle, fused by the goo filter (blur 7 → alpha threshold).
  *
- * The pill is SOLID Slime with ink content in both themes — a fill, so
- * it is light-theme legal — because the goo filter's alpha threshold
- * crushes translucent fills; the old wash treatment could not travel.
+ * The pill is an inverted solid (2026-09-25, the Figma "Navigation" page):
+ * an ink pill with a white label in light, a white pill with an ink label
+ * in dark (--nav-active-*). Solid because the goo filter's alpha threshold
+ * crushes translucent fills; the old wash treatment could not travel. The
+ * row's label holds its colour change until the pill arrives (see
+ * .sp-sidebar-item in socialpaint.css).
  *
  * Renders inside a positioned container holding `[data-active="true"]`
  * nav buttons; the buttons must sit above it (z-index 1). */
@@ -102,8 +105,9 @@ export function GooeyNavPill({
       >
         <defs>
           {/* Tighter than the gem's blur 7 / 22 -10: less blur and a harder
-              alpha threshold keep the pill's 5px control-radius corners
-              crisp at rest while the liquid merge still forms in transit. */}
+              alpha threshold keep the pill's 9px corners
+              (--radius-media-inner) crisp at rest while the liquid merge
+              still forms in transit. */}
           <filter id={filterId}>
             <feGaussianBlur in="SourceGraphic" stdDeviation="3.5" result="blur" />
             <feColorMatrix
