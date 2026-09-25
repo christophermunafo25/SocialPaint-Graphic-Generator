@@ -94,13 +94,10 @@ function CategoryRail({
             tabIndex={isSelected ? 0 : -1}
             onClick={() => onSelect(entry.id)}
             onKeyDown={onKeyDown}
-            className="w-full px-3 text-left"
-            data-radius-control
+            className="sp-railitem w-full px-3 text-left"
             style={{
               minHeight: 44, // hit target
               fontSize: "var(--type-label-size)",
-              background: isSelected ? "var(--bg-hover)" : "transparent",
-              color: isSelected ? "var(--text-primary)" : "var(--text-secondary)",
             }}
           >
             {entry.label}

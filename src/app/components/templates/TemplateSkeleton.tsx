@@ -12,7 +12,7 @@ export function SkeletonCard() {
           <span className="sp-skeleton__line sp-skeleton__block" style={{ width: "70%" }} />
           <span
             className="sp-skeleton__line sp-skeleton__block"
-            style={{ width: "45%", marginTop: 6, height: 10 }}
+            style={{ width: "45%", height: 10 }}
           />
         </span>
       </div>
@@ -24,17 +24,10 @@ export function SkeletonCard() {
 export function TemplateShelfSkeleton({ cards = 4 }: { cards?: number }) {
   return (
     <section className="sp-shelf" aria-busy="true" aria-label="Loading templates">
+      {/* The title line only: the count eyebrow it used to stand in for is
+          gone from the real shelf (2026-09-25). */}
       <div className="sp-shelf__header">
-        <div>
-          <span
-            className="sp-skeleton__line sp-skeleton__block"
-            style={{ width: 160, height: 18 }}
-          />
-          <span
-            className="sp-skeleton__line sp-skeleton__block"
-            style={{ width: 90, height: 10, marginTop: "var(--space-2xs)" }}
-          />
-        </div>
+        <span className="sp-skeleton__line sp-skeleton__block" style={{ width: 160, height: 18 }} />
       </div>
       <div className="sp-shelf__rail">
         <div className="sp-railfade__track sp-shelf__track">

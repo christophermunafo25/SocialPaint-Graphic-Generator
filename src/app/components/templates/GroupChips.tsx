@@ -17,7 +17,9 @@ import { useEdgeFade } from "./useEdgeFade";
  * Each chip carries the platform's mark twice — the mono rendition at rest,
  * the colour one once the tile lights on hover or selection. Both sit in
  * the same 24px box so the swap never shifts layout; a platform with no
- * colour mark simply keeps its mono, which the lit tile turns white.
+ * colour mark simply keeps its mono, which the lit tile recolours. An
+ * accent mark (Email, Website) is flagged so the light selected tile can
+ * fall back to the mono (see .sp-platform-chip__tile[data-mark]).
  */
 export function GroupChips({
   facets,
@@ -62,6 +64,7 @@ export function GroupChips({
     label: string,
     Icon: PlatformIcon,
     ColorIcon?: PlatformIcon,
+    accentMark?: boolean,
   ) => {
     const isSelected = selected === id;
     return (
@@ -84,6 +87,7 @@ export function GroupChips({
         <span
           className="sp-platform-chip__tile"
           data-has-color={ColorIcon ? true : undefined}
+          data-mark={accentMark ? "accent" : undefined}
           aria-hidden
         >
           <Icon className="sp-platform-chip__mark sp-platform-chip__mark--mono" strokeWidth={1.5} />
@@ -113,7 +117,14 @@ export function GroupChips({
       >
         {chip(null, 0, "All", LayoutGrid)}
         {facets.map((f, i) =>
-          chip(f.platform.id, i + 1, f.platform.label, f.platform.Icon, f.platform.ColorIcon),
+          chip(
+            f.platform.id,
+            i + 1,
+            f.platform.label,
+            f.platform.Icon,
+            f.platform.ColorIcon,
+            f.platform.accentMark,
+          ),
         )}
       </div>
     </div>

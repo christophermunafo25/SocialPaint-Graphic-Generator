@@ -201,11 +201,7 @@ export function RailTabs<T extends string>({
   onSelect(key: T): void;
 }) {
   return (
-    <div
-      role="tablist"
-      className="flex flex-shrink-0"
-      style={{ borderBottom: "1px solid var(--border)" }}
-    >
+    <div role="tablist" className="sp-tabstrip" data-stretch>
       {tabs.map((t) => {
         const on = t.key === active;
         return (
@@ -215,14 +211,8 @@ export function RailTabs<T extends string>({
             aria-selected={on}
             title={t.title}
             onClick={() => onSelect(t.key)}
-            className="flex-1 py-2"
-            style={{
-              fontSize: "var(--type-caption-size)",
-              fontWeight: on ? 500 : 400,
-              color: on ? "var(--text-primary)" : "var(--text-secondary)",
-              background: on ? "var(--bg-hover)" : "transparent",
-              borderBottom: on ? "2px solid var(--text-primary)" : "2px solid transparent",
-            }}
+            className="sp-tabstrip__tab py-1.5"
+            style={{ fontSize: "var(--type-caption-size)", fontWeight: on ? 500 : 400 }}
           >
             {t.label}
           </button>

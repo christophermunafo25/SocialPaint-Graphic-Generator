@@ -49,6 +49,11 @@ export interface Platform {
    *  platform without one (X and Threads are black marks; display, print,
    *  and general are lucide outlines) degrades to the mono rendition. */
   ColorIcon?: PlatformIcon;
+  /** The colour mark is an ACCENT rendition (Slime, Lapis) rather than the
+   *  brand's own colour: Email and Website have no brand colour. Accents
+   *  fail contrast on a light tile, so the filter chip shows the mono mark
+   *  there instead. */
+  accentMark?: boolean;
 }
 
 /** Fixed display order. `general` sits last: it is not a social platform but
@@ -64,9 +69,15 @@ export const PLATFORMS: Platform[] = [
   { id: "youtube", label: "YouTube", Icon: YoutubeMono, ColorIcon: YoutubeColor },
   { id: "pinterest", label: "Pinterest", Icon: PinterestMono, ColorIcon: PinterestColor },
   { id: "threads", label: "Threads", Icon: ThreadsMono },
-  { id: "email", label: "Email", Icon: EmailMark, ColorIcon: EmailColor },
+  { id: "email", label: "Email", Icon: EmailMark, ColorIcon: EmailColor, accentMark: true },
   { id: "display", label: "Display ads", Icon: Megaphone },
-  { id: "web", label: "Web & Open Graph", Icon: WebMark, ColorIcon: WebColor },
+  {
+    id: "web",
+    label: "Web & Open Graph",
+    Icon: WebMark,
+    ColorIcon: WebColor,
+    accentMark: true,
+  },
   { id: "print", label: "Print", Icon: Printer },
   { id: "general", label: "General", Icon: LayoutTemplate },
 ];

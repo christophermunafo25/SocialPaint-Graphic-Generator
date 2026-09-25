@@ -6,8 +6,6 @@ import { TemplateCard } from "./TemplateCard";
 import { useEdgeFade } from "./useEdgeFade";
 import { revealIndex, useReveal } from "./useReveal";
 
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
-
 /**
  * One platform's row: a horizontally snapping track of cards.
  *
@@ -30,13 +28,12 @@ export function PlatformShelf({
 
   return (
     <section ref={revealRef} className="sp-shelf sp-reveal" aria-labelledby={`shelf-${group.id}`}>
+      {/* No count eyebrow under the title (2026-09-25, the Figma
+          "Navigation" page draws none). */}
       <div className="sp-shelf__header">
-        <div>
-          <h2 className="sp-shelf__title" id={`shelf-${group.id}`}>
-            {group.label}
-          </h2>
-          <p className="sp-eyebrow">{plural(templates.length, "template")}</p>
-        </div>
+        <h2 className="sp-shelf__title" id={`shelf-${group.id}`}>
+          {group.label}
+        </h2>
         <button type="button" className="sp-shelf__viewall" onClick={onViewAll}>
           View all
           <ArrowRight style={{ width: 14, height: 14 }} strokeWidth={1.5} />

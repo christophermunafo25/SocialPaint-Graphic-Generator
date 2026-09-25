@@ -70,22 +70,12 @@ export function AccountSection() {
               key={key}
               onClick={() => setScheme(key)}
               title={hint}
-              className="flex flex-col items-center gap-1.5 py-3"
+              aria-pressed={scheme === key}
+              className="sp-choice-tile flex flex-col items-center gap-1.5 py-3"
               data-radius-card
-              style={{
-                border: `1px solid ${scheme === key ? "transparent" : "var(--border-strong)"}`,
-                background: scheme === key ? "var(--sb-active-bg)" : "var(--bg-surface)",
-                color: scheme === key ? "var(--sb-fg-active)" : "var(--text-primary)",
-                fontSize: 12.5,
-              }}
+              style={{ fontSize: 12.5 }}
             >
-              <Icon
-                style={{
-                  width: 16,
-                  height: 16,
-                  color: scheme === key ? "var(--sb-fg-active)" : "var(--text-secondary)",
-                }}
-              />
+              <Icon style={{ width: 16, height: 16 }} />
               {label}
             </button>
           ))}

@@ -235,7 +235,7 @@ export function FieldListPanel({
   const rowKey = (r: Row) => (r.kind === "group" ? `g:${r.group.id}` : r.field.id);
 
   return (
-    <div className="sp-card p-3 space-y-2">
+    <div className="sp-card sp-card--chrome p-3 space-y-2">
       <div className="flex items-baseline justify-between">
         <h3 className="sp-eyebrow">Form order</h3>
         <span style={{ fontSize: 10, color: "var(--text-muted)" }}>

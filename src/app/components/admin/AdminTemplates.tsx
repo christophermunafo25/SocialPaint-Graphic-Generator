@@ -360,11 +360,10 @@ export function AdminTemplates() {
         >
           <TemplateSearchField value={query} onChange={setQuery} />
           <div
-            className="flex overflow-hidden"
-            data-radius-control
+            className="sp-tabstrip"
             role="group"
             aria-label="Filter by status"
-            style={{ border: "1px solid var(--border-strong)", height: 40 }}
+            style={{ height: 40 }}
           >
             {(
               [
@@ -377,14 +376,8 @@ export function AdminTemplates() {
                 key={key}
                 onClick={() => setStatusFilter(key)}
                 aria-pressed={statusFilter === key}
-                className="px-3 flex items-center"
-                style={{
-                  fontSize: "var(--type-caption-size)",
-                  fontWeight: 500,
-                  ...(statusFilter === key
-                    ? { background: "var(--btn-primary-bg)", color: "var(--btn-primary-fg)" }
-                    : { background: "var(--bg-surface)", color: "var(--text-secondary)" }),
-                }}
+                className="sp-tabstrip__tab px-3"
+                style={{ fontSize: "var(--type-caption-size)", fontWeight: 500 }}
               >
                 {label}
               </button>

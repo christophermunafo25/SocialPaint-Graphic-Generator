@@ -207,7 +207,7 @@ function Frame({
               background: "var(--state-warning, #b45309)",
               color: "#fff",
               fontSize: 9,
-              fontWeight: 600,
+              fontWeight: "var(--weight-ui)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
