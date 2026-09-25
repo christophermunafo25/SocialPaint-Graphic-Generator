@@ -118,20 +118,8 @@ export function AutoBuildDialog({ onClose, onBuilt, initialTab }: AutoBuildDialo
       disabled={disabled}
       title={title}
       aria-pressed={tab === key}
-      className="flex-1 py-1.5"
-      data-radius-control
-      style={{
-        fontSize: "var(--type-label-size)",
-        background: tab === key ? "var(--accent-wash)" : "transparent",
-        color: disabled
-          ? "var(--text-disabled)"
-          : tab === key
-            ? "var(--text-primary)"
-            : "var(--text-secondary)",
-        border: "1px solid",
-        borderColor: tab === key ? "var(--border-strong)" : "transparent",
-        cursor: disabled ? "default" : "pointer",
-      }}
+      className="sp-tabstrip__tab py-1.5"
+      style={{ fontSize: "var(--type-label-size)" }}
     >
       {label}
     </button>
@@ -182,7 +170,7 @@ export function AutoBuildDialog({ onClose, onBuilt, initialTab }: AutoBuildDialo
           </div>
         ) : (
           <>
-            <div className="flex items-center gap-1.5" role="tablist" aria-label="Design source">
+            <div className="sp-tabstrip" data-stretch role="tablist" aria-label="Design source">
               {tabButton("figma", "Figma link")}
               {tabButton(
                 "canva",

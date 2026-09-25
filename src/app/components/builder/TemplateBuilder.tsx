@@ -3055,11 +3055,7 @@ export function TemplateBuilder({
 
             {sourceChosen && (
               <>
-                <div
-                  className="flex overflow-hidden flex-shrink-0"
-                  data-radius-control
-                  style={{ border: "1px solid var(--border-strong)" }}
-                >
+                <div className="sp-tabstrip">
                   {(["edit", "preview"] as const).map((m) => (
                     <button
                       key={m}
@@ -3067,13 +3063,7 @@ export function TemplateBuilder({
                       title={m === "edit" ? "Edit" : "Preview"}
                       aria-label={m === "edit" ? "Edit" : "Preview"}
                       aria-pressed={mode === m}
-                      className="flex items-center px-2.5 py-1.5"
-                      style={{
-                        borderLeft: m === "preview" ? "1px solid var(--border)" : undefined,
-                        ...(mode === m
-                          ? { background: "var(--fill-action)", color: "var(--text-on-action)" }
-                          : { background: "var(--bg-surface)", color: "var(--text-secondary)" }),
-                      }}
+                      className="sp-tabstrip__tab px-2.5 py-1.5"
                     >
                       {m === "edit" ? (
                         <Pencil className="w-3.5 h-3.5" />

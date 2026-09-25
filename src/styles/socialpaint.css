@@ -805,7 +805,6 @@ html {
   --sb-border: var(--border);
   --sb-fg: var(--text-secondary);
   --sb-fg-active: var(--text-primary);
-  --sb-active-bg: var(--accent-wash);
 
   /* Tags (Brand Studio two-step frames). Solid is the one tag look;
      on-media is the SAME tag when it sits on imagery or an arbitrary
@@ -1098,8 +1097,10 @@ select.sp-input:disabled {
 }
 
 /* Segmented icon group — alignment triplets, flip pair, resizing modes.
-   One shared hairline container, crisp control radius; the active segment
-   fills with the inverting neutral action fill (the "filled = on" rule). */
+   One shared hairline container, crisp control radius. Hover and the
+   active segment speak the sidebar nav's language (2026-09-25): the
+   neutral --nav-hover-* wash, and the inverted --nav-active-* fill (the
+   "filled = on" rule; the neutral action fill before). */
 .sp-seg {
   display: inline-flex;
   border: 1px solid var(--border-strong);
@@ -1121,12 +1122,12 @@ select.sp-input:disabled {
   border-left: 1px solid var(--border);
 }
 .sp-seg button:hover:not(:disabled):not([data-active="true"]) {
-  background: var(--bg-hover);
-  color: var(--text-primary);
+  background: var(--nav-hover-bg);
+  color: var(--nav-hover-fg);
 }
 .sp-seg button[data-active="true"] {
-  background: var(--fill-action);
-  color: var(--text-on-action);
+  background: var(--nav-active-bg);
+  color: var(--nav-active-fg);
 }
 .sp-seg button:disabled {
   color: var(--text-disabled);
@@ -1138,6 +1139,66 @@ select.sp-input:disabled {
   position: relative;
   z-index: 1;
 }
+/* ── Tab strip ─────────────────────────────────────────────────────────────
+   THE text segment row (2026-09-25): one hairline container, crisp control
+   radius, a divider between segments — the .sp-seg construction for words.
+   It replaces the inline strips that each painted their own states (the
+   template status filter, image source, canvas size, edit / preview, rail
+   tabs, fill tabs, auto-build source, the dev role toggle). Selection is
+   the sidebar nav's inverted --nav-active-* fill, hover its neutral wash.
+   Sizing stays with the caller (padding and type step vary by seat);
+   colour never does. data-stretch shares the row between the segments. */
+.sp-tabstrip {
+  display: inline-flex;
+  flex-shrink: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-control);
+  background: var(--bg-surface);
+  overflow: hidden;
+}
+.sp-tabstrip[data-stretch] {
+  display: flex;
+}
+.sp-tabstrip[data-stretch] > .sp-tabstrip__tab {
+  flex: 1;
+}
+.sp-tabstrip__tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-ui);
+  white-space: nowrap;
+  color: var(--text-secondary);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background var(--dur-state) var(--ease),
+    color var(--dur-state) var(--ease);
+}
+.sp-tabstrip__tab + .sp-tabstrip__tab {
+  border-left: 1px solid var(--border);
+}
+.sp-tabstrip__tab:hover:not(:disabled):not([aria-selected="true"]):not([aria-pressed="true"]) {
+  background: var(--nav-hover-bg);
+  color: var(--nav-hover-fg);
+}
+.sp-tabstrip__tab[aria-selected="true"],
+.sp-tabstrip__tab[aria-pressed="true"] {
+  background: var(--nav-active-bg);
+  color: var(--nav-active-fg);
+  font-weight: var(--weight-ui);
+}
+.sp-tabstrip__tab:disabled {
+  color: var(--text-disabled);
+  cursor: default;
+}
+.sp-tabstrip__tab:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-tight);
+  position: relative;
+  z-index: 1;
+}
+
 /* Text segments (resizing modes): the group fills the row, segments share
    the width, labels at caption size. */
 .sp-seg[data-stretch] {
@@ -3054,7 +3115,10 @@ select.sp-input:disabled {
    THE segmented radiogroup (2026-09-15) — extracted from the Logos surface
    filter so Insights' date range and any future segment row share one
    control. Identical rules to the toolbar it came from, minus that
-   toolbar's own bottom margin, which stays on .sp-logo-toolbar below. */
+   toolbar's own bottom margin, which stays on .sp-logo-toolbar below.
+   The checked option is the sidebar nav's inverted --nav-active-* fill
+   and hover its neutral wash (2026-09-25; the action fill before, and no
+   hover). */
 .sp-segmented {
   display: inline-flex;
   padding: 2px;
@@ -3072,10 +3136,17 @@ select.sp-input:disabled {
   font-size: var(--type-label-size);
   color: var(--text-secondary);
   cursor: pointer;
+  transition:
+    background var(--dur-state) var(--ease),
+    color var(--dur-state) var(--ease);
+}
+.sp-segmented__option:hover:not([aria-checked="true"]) {
+  background: var(--nav-hover-bg);
+  color: var(--nav-hover-fg);
 }
 .sp-segmented__option[aria-checked="true"] {
-  background: var(--fill-action);
-  color: var(--text-on-action);
+  background: var(--nav-active-bg);
+  color: var(--nav-active-fg);
 }
 .sp-segmented__option:focus-visible {
   outline: none;
@@ -3452,14 +3523,62 @@ select.sp-input:disabled {
 /* The section rail speaks the sidebar nav's language (2026-09-25): a
    neutral hover wash and the inverted active pill at the same 9px radius.
    The Slime wash it used for active is retired. It has no travelling pill,
-   so the active colour needs no delay. */
-.sp-settings-rail button:hover {
+   so the active colour needs no delay. .sp-railitem is the same recipe
+   for any other vertical list of this kind (the size gallery's category
+   rail); geometry stays with the caller. */
+.sp-railitem {
+  border-radius: var(--radius-media-inner);
+  color: var(--text-secondary);
+  transition:
+    background var(--dur-state) var(--ease),
+    color var(--dur-state) var(--ease);
+}
+.sp-settings-rail button:hover,
+.sp-railitem:hover {
   background: var(--nav-hover-bg);
   color: var(--nav-hover-fg);
 }
-.sp-settings-rail button[data-active="true"] {
+.sp-settings-rail button[data-active="true"],
+.sp-railitem[aria-checked="true"],
+.sp-railitem[aria-selected="true"] {
   background: var(--nav-active-bg);
   color: var(--nav-active-fg);
+}
+.sp-railitem:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-tight);
+}
+
+/* Choice tiles (Settings > Appearance): a card-radius tile per option.
+   Selected takes the inverted --nav-active-* fill and drops its hairline;
+   hover the neutral wash (2026-09-25; a Slime wash before). */
+.sp-choice-tile {
+  border: 1px solid var(--border-strong);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  transition:
+    background var(--dur-state) var(--ease),
+    color var(--dur-state) var(--ease),
+    border-color var(--dur-state) var(--ease);
+}
+.sp-choice-tile svg {
+  color: var(--text-secondary);
+}
+.sp-choice-tile:hover:not([aria-pressed="true"]) {
+  background: var(--nav-hover-bg);
+  color: var(--nav-hover-fg);
+}
+.sp-choice-tile[aria-pressed="true"] {
+  border-color: transparent;
+  background: var(--nav-active-bg);
+  color: var(--nav-active-fg);
+}
+.sp-choice-tile[aria-pressed="true"] svg {
+  color: inherit;
+}
+.sp-choice-tile:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-tight);
 }
 .sp-settings-rail button:focus-visible {
   outline: none;
@@ -5395,8 +5514,10 @@ input[type="radio"] {
   display: none;
 }
 
-/* Platform chips. Crisp control radius; the selected chip wears the DS
-   primary construction so its label stays readable in both themes. */
+/* Platform chips (the size gallery's compact pills). Crisp control
+   radius. Hover is the sidebar nav's neutral wash and the selected chip
+   its inverted --nav-active-* fill, border and all (2026-09-25; the
+   primary button construction before). */
 .sp-chipbar {
   gap: var(--space-2xs);
   padding: 2px;
@@ -5423,17 +5544,19 @@ input[type="radio"] {
     background var(--dur-state) var(--ease),
     color var(--dur-state) var(--ease);
 }
-.sp-chip:hover {
+.sp-chip:hover:not([data-selected]) {
   border-color: var(--border-strong);
+  background: var(--nav-hover-bg);
+  color: var(--nav-hover-fg);
 }
 .sp-chip:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring-tight);
 }
 .sp-chip[data-selected] {
-  background: var(--btn-primary-bg);
-  border-color: var(--btn-primary-bg);
-  color: var(--btn-primary-fg);
+  background: var(--nav-active-bg);
+  border-color: var(--nav-active-bg);
+  color: var(--nav-active-fg);
 }
 .sp-chip__icon {
   width: 16px;
@@ -5447,7 +5570,7 @@ input[type="radio"] {
   color: var(--text-muted);
 }
 .sp-chip[data-selected] .sp-chip__count {
-  color: var(--btn-primary-fg);
+  color: var(--nav-active-fg);
   opacity: 0.8;
 }
 
@@ -6404,12 +6527,9 @@ input[type="radio"] {
   background: color-mix(in srgb, var(--state-danger-on-surface) 8%, transparent);
 }
 
-/* Selection is neutral everywhere it appears. */
-.sp-chip[data-selected] {
-  border-color: var(--border-control);
-}
-
-/* The one selection exception: a swatch shows a colour, so a neutral marker can
+/* Selection is neutral everywhere it appears — the nav's inverted fill on
+   every segment, chip, rail item, and choice tile (2026-09-25). The one
+   selection exception: a swatch shows a colour, so a neutral marker can
    vanish against a black or white swatch. The editor blue is the marker colour and reads
    against every hue in the picker. */
 .sp-swatch[data-selected="true"] {

@@ -116,26 +116,15 @@ export function CanvasSizePicker({
 
   return (
     <div className="space-y-2" style={{ minWidth: 280 }}>
-      <div
-        role="tablist"
-        className="flex overflow-hidden"
-        data-radius-control
-        style={{ border: "1px solid var(--border-strong)" }}
-      >
+      <div role="tablist" className="sp-tabstrip" data-stretch>
         {(["presets", "custom"] as const).map((t) => (
           <button
             key={t}
             role="tab"
             aria-selected={tab === t}
             onClick={() => setTab(t)}
-            className="flex-1 px-3 py-1.5"
-            style={{
-              fontSize: "var(--type-label-size)",
-              borderLeft: t === "custom" ? "1px solid var(--border)" : undefined,
-              ...(tab === t
-                ? { background: "var(--fill-action)", color: "var(--text-on-action)" }
-                : { background: "var(--bg-surface)", color: "var(--text-secondary)" }),
-            }}
+            className="sp-tabstrip__tab px-3 py-1.5"
+            style={{ fontSize: "var(--type-label-size)" }}
           >
             {t === "presets" ? "Platform sizes" : "Custom"}
           </button>

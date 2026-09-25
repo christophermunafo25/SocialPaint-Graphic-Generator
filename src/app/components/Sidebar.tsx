@@ -147,7 +147,8 @@ function AccountBlock({ onNavigate }: { onNavigate(route: Route): void }) {
       )}
       {isDevAuth && (
         <div
-          className="flex items-center gap-1 mb-3"
+          className="sp-tabstrip mb-3"
+          data-stretch
           role="group"
           aria-label="Dev role (localStorage backend)"
         >
@@ -155,14 +156,9 @@ function AccountBlock({ onNavigate }: { onNavigate(route: Route): void }) {
             <button
               key={r}
               onClick={() => setRole(r)}
-              className="flex-1 py-1 capitalize"
-              data-radius-control
-              style={{
-                fontSize: 11,
-                border: "1px solid var(--sb-border)",
-                background: role === r ? "var(--sb-active-bg)" : "transparent",
-                color: role === r ? "var(--sb-fg-active)" : "var(--sb-fg)",
-              }}
+              aria-pressed={role === r}
+              className="sp-tabstrip__tab py-1 capitalize"
+              style={{ fontSize: 11 }}
             >
               {r}
             </button>

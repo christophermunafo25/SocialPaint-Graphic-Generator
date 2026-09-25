@@ -53,14 +53,8 @@ export function ImageSourceChooser({
 
   return (
     <div className="space-y-2" style={{ minWidth: 0 }}>
-      <div
-        role="tablist"
-        aria-label="Where the image comes from"
-        className="flex overflow-hidden"
-        data-radius-control
-        style={{ border: "1px solid var(--border-strong)", width: "fit-content" }}
-      >
-        {tabs.map((t, i) => {
+      <div role="tablist" aria-label="Where the image comes from" className="sp-tabstrip">
+        {tabs.map((t) => {
           const on = source === t.key;
           return (
             <button
@@ -69,13 +63,11 @@ export function ImageSourceChooser({
               role="tab"
               aria-selected={on}
               onClick={() => setSource(t.key)}
+              className="sp-tabstrip__tab"
               style={{
                 padding: compact ? "3px 8px" : "5px 12px",
                 fontSize: "var(--type-caption-size)",
                 fontWeight: on ? 500 : 400,
-                borderLeft: i > 0 ? "1px solid var(--border)" : undefined,
-                background: on ? "var(--fill-action)" : "var(--bg-surface)",
-                color: on ? "var(--text-on-action)" : "var(--text-secondary)",
               }}
             >
               {t.label}

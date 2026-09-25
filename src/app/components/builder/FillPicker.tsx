@@ -360,19 +360,15 @@ export function FillPicker({
       }}
     >
       {/* Tabs */}
-      <div className="flex items-center" style={{ gap: "var(--space-sm)" }}>
+      <div className="sp-tabstrip" data-stretch role="tablist">
         {(["custom", "libraries"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             aria-selected={tab === t}
             role="tab"
-            style={{
-              ...inspectorLabelStyle,
-              color: tab === t ? "var(--text-primary)" : "var(--text-secondary)",
-              paddingBottom: 2,
-              borderBottom: tab === t ? "1px solid var(--text-primary)" : "1px solid transparent",
-            }}
+            className="sp-tabstrip__tab"
+            style={{ ...inspectorLabelStyle, color: undefined, padding: "4px 8px" }}
           >
             {t === "custom" ? "Custom" : "Libraries"}
           </button>
