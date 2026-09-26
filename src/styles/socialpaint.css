@@ -618,6 +618,11 @@ html {
   --gen-seg-on-shadow: 0 0 0 0 transparent;
   --gen-editor-seg-on-bg: var(--ink-600);
   --gen-editor-seg-on-fg: var(--slime);
+  /* The size switch's labels are Display Regular on the dark track and
+     Medium on the light one, as drawn (PROMPT §15 item 15). A token
+     rather than a theme selector, so a nested theme scope resolves it
+     from its nearest theme like every other token. */
+  --gen-editor-seg-weight: 400;
   --gen-menu-item-hover: var(--bg-hover);
   --gen-fade: var(--bg-canvas);
 
@@ -826,6 +831,7 @@ html {
   --gen-seg-on-shadow: var(--shadow-card);
   --gen-editor-seg-on-bg: var(--bg-surface);
   --gen-editor-seg-on-fg: var(--text-primary);
+  --gen-editor-seg-weight: var(--weight-ui);
   --gen-menu-item-hover: var(--paper-050);
   --gen-fade: var(--bg-canvas);
 
@@ -6590,8 +6596,9 @@ input[type="radio"] {
    PlatformSelect trigger; FieldInput variant="chat" and EditorField;
    Composer and AttachMenu; AttachmentThumb, UserMessage and
    AssistantHeader; DraftCard and DraftCardSkeleton; CaptionCard;
-   RecentCard and HistoryCard; ScrollFade. The page layout (GeneratePage
-   and GenerateHistoryPage, §8) follows as its own subsection.
+   SegmentSwitch and EditorPanel; RecentCard and HistoryCard; ScrollFade.
+   The page layout (GeneratePage and GenerateHistoryPage, §8) follows as
+   its own subsection.
    Every class is sp-chat-* and every colour a token from the Generate chat
    group (:root and both theme blocks). The shared recipes are joined, not
    restated: the suggestion chip sits in the chip rung of THE surface
@@ -6611,11 +6618,14 @@ input[type="radio"] {
    pair: hover folds 12% of the ink into the fill, active 20%. A control
    whose fill is transparent (Close) names its own hover instead. The mixes
    are declared on the element itself, so they see the pair the preset
-   rules set there. Inert is either the disabled attribute or, on Send,
-   aria-disabled (it must keep focus when a run ends), so the states skip
-   both. Focus is the app's --focus-ring: nothing else paints a box-shadow
-   on these, so there is no list to compose. The outline stays, transparent,
-   so forced colours (which drop box-shadow) still draw a ring. */
+   rules set there. Inert is either the disabled attribute or
+   aria-disabled, which keeps the control focusable (Send when a run
+   ends; the editor's Download PNG and Save to library while they work),
+   so the states skip both. A ChatButton draws the two alike; Send draws
+   its own inert look (below). Focus is the app's --focus-ring: nothing
+   else paints a box-shadow on these, so there is no list to compose. The
+   outline stays, transparent, so forced colours (which drop box-shadow)
+   still draw a ring. */
 .sp-chat-btn,
 .sp-chat-send,
 .sp-chat-icon-btn {
@@ -6648,9 +6658,16 @@ input[type="radio"] {
   box-shadow: var(--focus-ring);
 }
 .sp-chat-btn:disabled,
+.sp-chat-btn[aria-disabled="true"],
 .sp-chat-icon-btn:disabled {
   opacity: 0.4;
   cursor: default;
+}
+/* A ChatButton at work (aria-busy: the editor's Download PNG while it
+   exports, Save to library while it saves) keeps its place and focus and
+   shows the progress cursor. */
+.sp-chat-btn[aria-busy="true"] {
+  cursor: progress;
 }
 
 /* ChatButton. Default 44 tall at the 12 radius, small 36 at 9. Labels are
@@ -7716,7 +7733,8 @@ button.sp-chat-draft__preview {
    transparent frame in the box, so the padding is that less the frame (as
    on the recent, history and draft cards). The header holds 36px in both
    states (the switch's height), so a turn whose single draft hides the
-   switch, and the loading card, keep the ready card's height. */
+   switch, and the loading card, keep the ready card's height. The
+   platform switch is SegmentSwitch's caption look (the next block). */
 .sp-chat-caption {
   --caption-inset-end: calc(var(--space-sm) - var(--border-width));
   --caption-inset-start: calc(20px - var(--border-width));
@@ -7753,68 +7771,6 @@ button.sp-chat-draft__preview {
   white-space: nowrap;
 }
 
-/* The platform switch: segments on a sunken track (9 radius, 4 inset, 4
-   apart). The selected segment is Deep Moss under Slime with the card
-   shadow in light, --ink-600 under Slime with no shadow in dark, all through
-   --gen-seg-on-*; the rest are bare labels in the secondary ink. Long
-   labels (template names, when two drafts share a platform) truncate
-   rather than push the Copy action off the row. */
-.sp-chat-caption__switch {
-  display: flex;
-  gap: var(--space-3xs);
-  min-width: 0;
-  padding: var(--space-3xs);
-  border-radius: var(--radius-control-md);
-  background: var(--gen-sunken);
-}
-.sp-chat-caption__seg {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 0;
-  height: 28px;
-  padding: 0 10px;
-  border: none;
-  border-radius: var(--radius-control);
-  background: transparent;
-  color: var(--text-secondary);
-  font-family: var(--font-ui);
-  font-size: 10px;
-  line-height: 1.25;
-  font-weight: 400;
-  letter-spacing: -0.01em;
-  cursor: pointer;
-  transition:
-    background var(--dur-state) var(--ease),
-    color var(--dur-state) var(--ease),
-    box-shadow var(--dur-state) var(--ease);
-}
-.sp-chat-caption__seg-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-@media (hover: hover) {
-  .sp-chat-caption__seg:not([data-selected]):hover {
-    color: var(--text-primary);
-  }
-}
-.sp-chat-caption__seg[data-selected] {
-  background: var(--gen-seg-on-bg);
-  color: var(--gen-seg-on-fg);
-  box-shadow: var(--gen-seg-on-shadow);
-  cursor: default;
-}
-/* The tight ring: the track's 4px inset and gap leave room for 2px and no
-   more. The selected segment keeps its shadow under the ring. */
-.sp-chat-caption__seg:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring-tight);
-}
-.sp-chat-caption__seg[data-selected]:focus-visible {
-  box-shadow: var(--focus-ring-tight), var(--gen-seg-on-shadow);
-}
-
 .sp-chat-caption__text {
   margin: 0;
   font-family: var(--font-body);
@@ -7840,6 +7796,457 @@ button.sp-chat-draft__preview {
   justify-content: center;
   gap: 10px;
   height: calc(2 * var(--type-body-size) * var(--type-body-lh));
+}
+
+/* ── Generate chat: segment switch (SegmentSwitch: the caption card's
+   platform switch, sp-caption-card 309:437, and the editor's size switch,
+   frame 06 "Edit", 287:176 / 289:1565; PROMPT §7.16 and §8.5) ──────────────
+   One radiogroup in two looks. Both are segments on a sunken track, inset
+   4 and 4 apart: bare labels in the secondary ink until one is selected,
+   and a label too long for its share truncates rather than push its
+   neighbours off the row. The looks differ in size and in the selected
+   segment, below. */
+.sp-chat-caption__switch,
+.sp-chat-editor__switch {
+  display: flex;
+  gap: var(--space-3xs);
+  padding: var(--space-3xs);
+  background: var(--gen-sunken);
+}
+.sp-chat-caption__seg,
+.sp-chat-editor__seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition:
+    background var(--dur-state) var(--ease),
+    color var(--dur-state) var(--ease),
+    box-shadow var(--dur-state) var(--ease);
+}
+.sp-chat-caption__seg-label,
+.sp-chat-editor__seg-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (hover: hover) {
+  .sp-chat-caption__seg:not([data-selected]):hover,
+  .sp-chat-editor__seg:not([data-selected]):hover {
+    color: var(--text-primary);
+  }
+}
+.sp-chat-caption__seg[data-selected],
+.sp-chat-editor__seg[data-selected] {
+  cursor: default;
+}
+
+/* The caption look: the track at the 9 radius, segments 28 tall hugging
+   their 10px labels. The selected segment is Deep Moss under Slime with
+   the card shadow in light, --ink-600 under Slime with no shadow in dark,
+   all through --gen-seg-on-*. Long labels (template names, when two drafts
+   share a platform) truncate rather than push the Copy action off the
+   row. */
+.sp-chat-caption__switch {
+  min-width: 0;
+  border-radius: var(--radius-control-md);
+}
+.sp-chat-caption__seg {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: var(--radius-control);
+  font-size: 10px;
+  font-weight: 400;
+}
+.sp-chat-caption__seg[data-selected] {
+  background: var(--gen-seg-on-bg);
+  color: var(--gen-seg-on-fg);
+  box-shadow: var(--gen-seg-on-shadow);
+}
+/* The tight ring: the track's 4px inset and gap leave room for 2px and no
+   more. The selected segment keeps its shadow under the ring. */
+.sp-chat-caption__seg:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-tight);
+}
+.sp-chat-caption__seg[data-selected]:focus-visible {
+  box-shadow: var(--focus-ring-tight), var(--gen-seg-on-shadow);
+}
+
+/* The editor look (frame 06, "Size switch"): a 40 tall track at the 12
+   radius whose segments share its width equally, each 32 tall at the 9
+   radius with a 13/125% −1% label, Medium in light and Regular in dark
+   (--gen-editor-seg-weight). The segments inset their labels 4, not more,
+   so a three-size switch (108 a segment at 1440) still reads "Facebook ·
+   1.91:1" whole; a longer label truncates and the segment's title holds
+   the rest. The selected segment is white under the
+   primary ink with the rest shadow in light, --ink-600 under Slime with no
+   shadow in dark, all through --gen-editor-seg-on-* and --shadow-rest
+   (transparent in dark). The dark frame rounds its selected segment at 7;
+   the page's radius scale has no 7 (PROMPT §5.2), so it takes the 9 like
+   light. */
+.sp-chat-editor__switch {
+  flex: none;
+  height: var(--gen-h-md);
+  box-sizing: border-box;
+  border-radius: var(--radius-control-lg);
+}
+.sp-chat-editor__seg {
+  flex: 1 1 0;
+  height: 32px;
+  padding: 0 var(--space-3xs);
+  border-radius: var(--radius-control-md);
+  font-size: var(--type-label-size);
+  font-weight: var(--gen-editor-seg-weight);
+}
+.sp-chat-editor__seg[data-selected] {
+  background: var(--gen-editor-seg-on-bg);
+  color: var(--gen-editor-seg-on-fg);
+  box-shadow: var(--shadow-rest);
+}
+/* The same tight ring, over the rest shadow. The outline stays,
+   transparent, so forced colours (which drop box-shadow) still draw a
+   ring, and the switch draws a system edge and a Highlight segment. */
+.sp-chat-editor__seg:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+  box-shadow: var(--focus-ring-tight);
+}
+.sp-chat-editor__seg[data-selected]:focus-visible {
+  box-shadow: var(--focus-ring-tight), var(--shadow-rest);
+}
+@media (forced-colors: active) {
+  .sp-chat-editor__switch {
+    border: 1px solid ButtonBorder;
+  }
+  .sp-chat-editor__seg[data-selected] {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
+}
+
+/* ── Generate chat: editor panel (Figma "Generate · Chat", frame 06 "Edit",
+   287:176 light / 289:1565 dark, "Editor panel"; PROMPT §8.5) ────────────
+   A card on the surface recipe (.sp-card: fill, lit edge in dark, card
+   shadow), 380 wide, a column 16 apart. The frame insets the content 20
+   from the card's outer edge; the recipe keeps a 1px transparent frame in
+   the box, so the padding is 20 less that frame (as on the caption and
+   draft cards). Inline, the page lays it beside the chat and stretches it
+   to the row's height; the fields list is what scrolls. The panel itself
+   only scrolls when even the fixed parts (header, switch, the stage at its
+   180 floor, the footer) do not fit, a viewport far shorter than any the
+   frame covers.
+
+   No text styles are set on the panel itself: the preview's canvas
+   inherits from it, and the fill page's does not inherit any either, so
+   the canvas lays out (and exports) the same here.
+
+   The panel takes focus (tabindex -1, never a tab stop) so a click on its
+   body keeps focus inside it; it draws no ring of its own, since only its
+   controls are ever tabbed to. Inline, EditorPanel's wrapper is
+   .sp-chat-editor-host, which takes no box (display: contents), so the
+   panel is the Edit row's flex item; as a sheet the same wrapper is
+   .sp-chat-editor-sheet (below). */
+.sp-chat-editor {
+  --editor-inset: calc(20px - var(--border-width));
+  --editor-ring-room: calc(var(--focus-offset) + var(--focus-width));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  flex: none;
+  width: 380px;
+  min-height: 0;
+  box-sizing: border-box;
+  padding: var(--editor-inset);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.sp-chat-editor:focus,
+.sp-chat-editor:focus-visible {
+  outline: none;
+}
+.sp-chat-editor-host {
+  display: contents;
+}
+
+/* 1. "Edit details" (18/125% Medium −1%, the primary ink) and Close (the
+   32px sp-icon-btn / Close preset), on one 32 tall row. 2, the size
+   switch, is SegmentSwitch's editor look (the block above). */
+.sp-chat-editor__header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+  min-height: 32px;
+}
+.sp-chat-editor__title {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-ui);
+  font-size: 18px;
+  line-height: 1.25;
+  font-weight: var(--weight-ui);
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+/* 3. The preview: the 290 tall stage, and the first layout warning 8 under
+   it (12/125% in the muted ink, as the fill page shows it; the panel's gap
+   is 16, so the warning takes 8 of it back).
+
+   The stage is a --gen-well plate at the plate radius, as PROMPT §8.5 has
+   it (the draft cards' preview well), so a white graphic keeps a visible
+   edge on the white panel in light and every aspect letterboxes on the
+   well. The graphic sits contained 10 inside it: the frame's 216 × 270
+   placeholder for 4:5 in the 340 × 290 stage. The stage is a size
+   container, so the graphic is min(stage width, stage height × ratio)
+   wide with no measuring in JS (the recent card's technique); the art
+   overscans the box by 1px each side, clipped by it, so the renderer's
+   contain rounding never shows a seam. Each size the switch has shown
+   keeps its graphic here, hidden while another is picked.
+
+   The stage holds its 290 (PROMPT §8.5): the fields list is what scrolls
+   when the panel runs short, so the preview never rescales as a field
+   grows under the member's typing. Only on a short window (under 1000
+   tall, a 1440 × 900 laptop with a template of eight fields) does the
+   stage give a little height too, so the list never becomes a sliver: it
+   shrinks at a third of the rate its 290 would (flex-shrink weighs by
+   size), down to 180, and the graphic scales with it. */
+.sp-chat-editor__stage {
+  display: flex;
+  flex: 0 0 290px;
+  align-items: center;
+  justify-content: center;
+  height: 290px;
+  min-height: 180px;
+  box-sizing: border-box;
+  padding: 10px;
+  border-radius: var(--radius-media-plate);
+  background: var(--gen-well);
+  container-type: size;
+}
+@media (max-height: 1000px) {
+  .sp-chat-editor__stage {
+    flex-shrink: 0.35;
+  }
+}
+.sp-chat-editor__graphic {
+  position: relative;
+  flex-shrink: 0;
+  aspect-ratio: var(--fit-ratio);
+  width: min(100cqw, 100cqh * var(--fit-ratio));
+  border-radius: var(--radius-media-plate);
+  overflow: hidden;
+}
+.sp-chat-editor__art {
+  position: absolute;
+  inset: -1px;
+}
+.sp-chat-editor__warning,
+.sp-chat-editor__hint,
+.sp-chat-editor__note {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: var(--type-caption-size);
+  line-height: 1.25;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--text-muted);
+}
+.sp-chat-editor__warning {
+  flex: none;
+  margin-top: calc(var(--space-2xs) - var(--space-sm));
+}
+/* The stage when there is nothing to paint: the renderer crashed (a
+   template it cannot display, with Try again), or every draft's template
+   is gone. */
+.sp-chat-editor__fallback,
+.sp-chat-editor__gone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  margin: 0;
+  padding: 0 var(--space-sm);
+  text-align: center;
+  font-family: var(--font-ui);
+  font-size: var(--type-label-size);
+  line-height: 1.25;
+  color: var(--text-secondary);
+}
+.sp-chat-editor__fallback > p {
+  margin: 0;
+}
+
+/* 4. The fields (EditorField + FieldInput variant "chat"), 12 apart. The
+   list is the panel's scrolling region: it shrinks before anything else
+   and scrolls when it runs taller than the room left. It keeps the focus
+   ring's reach (offset plus width) as padding, taken back with a negative
+   margin, so a ring on an upload well is never clipped at its edges.
+
+   An edge with more of the list past it fades out over 32px (the §7.19
+   scroll fade's direction, built as a mask so it needs no fill to match
+   the panel's surface), so a field cut by the edge reads as continuing
+   rather than as a label with no control: the bottom while more lies
+   below, the top once the list has scrolled (EditorPanel sets
+   data-fade-bottom and data-fade-top from useScrollFades). Focus scrolls a
+   field clear of the fades (scroll-padding, and the panel's own reveal). */
+.sp-chat-editor__fields {
+  --editor-fields-fade: 32px;
+  --editor-fade-top: 0px;
+  --editor-fade-bottom: 0px;
+  display: flex;
+  flex-direction: column;
+  flex: 0 1 auto;
+  gap: var(--space-xs);
+  min-height: 0;
+  margin: calc(-1 * var(--editor-ring-room));
+  padding: var(--editor-ring-room);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-padding-block: var(--editor-fields-fade);
+}
+.sp-chat-editor__fields[data-fade-top] {
+  --editor-fade-top: var(--editor-fields-fade);
+}
+.sp-chat-editor__fields[data-fade-bottom] {
+  --editor-fade-bottom: var(--editor-fields-fade);
+}
+.sp-chat-editor__fields[data-fade-top],
+.sp-chat-editor__fields[data-fade-bottom] {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    black var(--editor-fade-top),
+    black calc(100% - var(--editor-fade-bottom)),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    black var(--editor-fade-top),
+    black calc(100% - var(--editor-fade-bottom)),
+    transparent
+  );
+}
+
+/* 5. The spacer takes what the fields leave; the footer sits at the foot:
+   the hint (12/125% in the muted ink, centred), Save to library when it is
+   offered, and Download PNG, 10 apart, the buttons full width. While
+   Download PNG exports and Save to library saves, each keeps focus and its
+   place but refuses clicks: aria-disabled and aria-busy, drawn by the
+   shared ChatButton rules. While a required field of the draft on the
+   stage is empty, Download PNG is aria-disabled the same way and the
+   fill page's "Fill required: …" line sits under it, in the note's style. */
+.sp-chat-editor__spacer {
+  flex: 1 0 0;
+}
+.sp-chat-editor__footer {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+}
+.sp-chat-editor__hint,
+.sp-chat-editor__note {
+  text-align: center;
+}
+.sp-chat-editor__action {
+  width: 100%;
+}
+
+/* The export failure toast's content (ExportErrorToast, which the page
+   shows too while the panel is closed; the .sp-toast itself is the app's,
+   TemplateFill's error toast, danger-toned). */
+.sp-chat-editor__toast-icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+  color: var(--state-danger);
+}
+.sp-chat-editor__toast-text {
+  min-width: 0;
+}
+.sp-chat-editor__toast-title {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: var(--type-label-size);
+  line-height: 1.25;
+  font-weight: var(--weight-ui);
+  color: var(--text-primary);
+}
+.sp-chat-editor__toast-detail {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: var(--type-caption-size);
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+/* The sheet (below 1180px, PROMPT §8.5 and §15 item 16): the same panel
+   over the chat on the right, the viewport's full height less the 16
+   gutter, on a --media-overlay scrim that closes it on click. The panel
+   slides in 24 from the right as the scrim fades in, over --dur-panel
+   (zeroed under reduced motion). No fill mode, so no transform outlives
+   the entry: a fixed descendant (the cropper, the toast) is placed
+   against the viewport again once it lands. z-index 50, the app's modal
+   layer (its dialogs are z-50), so a dialog opened from inside the sheet
+   (the brand image picker, portaled after it) stacks above it. As a card
+   inside a dialog it takes the recipe's nested treatment: no drop shadow
+   (nothing to cast it on over a scrim), a visible edge. Below --bp-lg
+   the app's top bar (--z-drawer, above this layer) holds the first
+   --chrome-top of the window, so the sheet and its scrim start under it
+   rather than slide beneath it (GeneratePage makes the bar inert while
+   the sheet is up, as it does the chat under the scrim). The panel
+   switching to or from the sheet as the window crosses 1180px slides in
+   again, and is otherwise the same panel. */
+.sp-chat-editor-sheet {
+  position: fixed;
+  inset: var(--chrome-top) 0 0;
+  z-index: 50;
+  display: flex;
+  justify-content: flex-end;
+  box-sizing: border-box;
+  padding: max(var(--space-sm), env(safe-area-inset-top, 0px))
+    max(var(--space-sm), env(safe-area-inset-right, 0px))
+    max(var(--space-sm), env(safe-area-inset-bottom, 0px)) var(--space-sm);
+}
+.sp-chat-editor-sheet__scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--media-overlay);
+  animation: sp-chat-editor-scrim-in var(--dur-panel) var(--ease);
+}
+.sp-chat-editor[data-presentation="sheet"] {
+  position: relative;
+  width: min(380px, 100%);
+  height: 100%;
+  animation: sp-chat-editor-in var(--dur-panel) var(--ease);
+}
+@keyframes sp-chat-editor-in {
+  from {
+    opacity: 0;
+    transform: translateX(var(--space-md));
+  }
+}
+@keyframes sp-chat-editor-scrim-in {
+  from {
+    opacity: 0;
+  }
 }
 
 /* ── Generate chat: recent and history cards (Figma "Generate · Chat",
@@ -8050,7 +8457,8 @@ button.sp-chat-draft__preview {
 /* GeneratePage and GenerateHistoryPage (docs/design/generate-chat/
    PROMPT.md §8), in this order: the page column in each state, the Start
    state, the legal links, the page header and breadcrumb, the thread with
-   its assistant turns and progress row, the composer dock, and History.
+   its assistant turns and progress row, the composer dock, the Edit
+   state's split, and History.
    This is layout only: the surfaces it holds (the composer, the cards, the
    chips, the dev backend's empty state) carry their own recipes above, so
    nothing here joins a shared recipe's selector list. */
@@ -8439,6 +8847,65 @@ button.sp-chat-draft__preview {
   line-height: 1.25;
   color: var(--text-muted);
   text-align: center;
+}
+
+/* ── Generate chat: the Edit state (frame 06 "Edit", 287:176 light /
+   289:1565 dark, "Split"; PROMPT §8.5) ────────────────────────────────────
+   GeneratePage lays the thread states out as the page header over one
+   row, .sp-chat-split, whether or not the editor is open, so the thread's
+   scroller and the composer never remount under the member. The row holds
+   the chat column (the thread and the dock) and, while the editor is open,
+   the panel (EditorPanel, whose rules sit with the components above). It
+   comes after the thread's and the dock's rules because it overrides
+   their widths.
+
+   Closed, the row is invisible to the layout: the chat column is the
+   page's width and height, exactly as the thread states were laid out
+   before (the thread still runs into the page gutters). As a sheet (below
+   1180px) the panel lays over the chat, fixed to the viewport on its
+   scrim, so the row and the chat column keep that layout too. */
+.sp-chat-split {
+  display: flex;
+  flex: 1 1 0;
+  min-height: 0;
+}
+.sp-chat-split__chat {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Inline (1180px and wider): the frame's Split. 24 under the header, the
+   chat column (flex 1) and the 380 panel 24 apart, both running to the
+   page's foot (the panel stretches to the row). The chat column keeps its
+   thread and dock, but narrowed: the thread is exactly the column (it no
+   longer runs into the gutters; the panel is on its right), its padding
+   becomes 0 32 32 32, and the thread's column and the dock's composer fill
+   the width instead of stopping at 760. The top scroll fade spans the
+   column, as drawn.
+
+   The sides are the frame's 32 less 3: the frame's page gutter is 45 and
+   the app's is 48 (--page-pad; the thread states already map the frame's
+   45 to the page's 48, §8.1), so the chat column comes out 7 narrower than
+   the frame's 611. Giving the 3 back on each side puts the thread column
+   where the frame draws it (77 from the page's edge) at nearly the frame's
+   width (546 of 547 at 1440), which is what keeps the frame's two compact
+   cards on one row (163 + 12 + 366 = 541); at 32 they wrap by a pixel. */
+.sp-chat-split[data-editor="inline"] {
+  gap: var(--space-md);
+  padding-top: var(--space-md);
+}
+.sp-chat-split[data-editor="inline"] .sp-chat-thread-frame {
+  margin-inline: 0;
+}
+.sp-chat-split[data-editor="inline"] .sp-chat-thread {
+  padding: 0 29px var(--space-lg);
+}
+.sp-chat-split[data-editor="inline"] .sp-chat-thread__column,
+.sp-chat-split[data-editor="inline"] .sp-chat-dock__composer {
+  max-width: none;
 }
 
 /* ── Generate chat: History (frame 07; PROMPT §8.6) ──────────────────────

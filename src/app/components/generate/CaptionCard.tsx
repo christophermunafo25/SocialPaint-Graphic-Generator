@@ -1,6 +1,7 @@
 import React, { useEffect, useId, useRef, useState } from "react";
 import { Bone } from "../Skeleton";
 import { CardAction } from "./CardAction";
+import { SegmentSwitch, type SegmentOption } from "./SegmentSwitch";
 
 /** How long the Copy action shows its check after a write lands. */
 const COPIED_MS = 1500;
@@ -8,7 +9,7 @@ const COPIED_MS = 1500;
 const SUNKEN = "var(--gen-sunken)";
 const PILL = "var(--radius-pill)";
 
-type CaptionTab = { id: string; label: string };
+type CaptionTab = SegmentOption;
 
 /** Ready needs the turn's captions; Loading needs nothing, and ignores the
  * ready props when a caller passes them anyway (one call site can flip
@@ -38,10 +39,11 @@ type CaptionCardProps =
  * turn has two or more drafts, a Copy action, and the selected draft's
  * caption as written (line breaks kept).
  *
- * The switch is a radio group rather than a tablist, like GroupChips: it
- * swaps the one caption in place instead of showing a panel per tab. Roving
- * tabindex, so it is one stop in the tab order; the arrows move and select
- * as they go. It is labelled by the card's "Caption" title.
+ * The switch is SegmentSwitch's caption look: a radio group rather than a
+ * tablist, like GroupChips, since it swaps the one caption in place instead
+ * of showing a panel per tab. Roving tabindex, so it is one stop in the tab
+ * order; the arrows move and select as they go. It is labelled by the
+ * card's "Caption" title.
  *
  * Copy owns its own feedback: it writes the visible caption, swaps the
  * glyph to a check for 1.5s and says "Caption copied" in a visually hidden
@@ -61,7 +63,6 @@ export function CaptionCard(props: CaptionCardProps) {
   // Null while loading, so a check left over from before a regenerate drops.
   const visible = props.state === "ready" ? props.caption : null;
   const titleId = useId();
-  const segRefs = useRef<Array<HTMLButtonElement | null>>([]);
   // The caption that was last copied, while its check is showing.
   const [copiedText, setCopiedText] = useState<string | null>(null);
   const timer = useRef<number | null>(null);
@@ -122,37 +123,12 @@ export function CaptionCard(props: CaptionCardProps) {
   };
 
   const showSwitch = tabs.length >= 2;
-  const activeIndex = Math.max(
-    0,
-    tabs.findIndex((t) => t.id === selectedId),
-  );
 
   // Picking another draft ends the copy feedback in the same batch as the
   // selection, even when that draft's caption reads the same.
   const select = (id: string) => {
     if (id !== selectedId) setCopiedText(null);
     onSelect(id);
-  };
-
-  const focusAndSelect = (i: number) => {
-    select(tabs[i].id);
-    segRefs.current[i]?.focus();
-  };
-
-  const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-      e.preventDefault();
-      focusAndSelect((activeIndex + 1) % tabs.length);
-    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-      e.preventDefault();
-      focusAndSelect((activeIndex - 1 + tabs.length) % tabs.length);
-    } else if (e.key === "Home") {
-      e.preventDefault();
-      focusAndSelect(0);
-    } else if (e.key === "End") {
-      e.preventDefault();
-      focusAndSelect(tabs.length - 1);
-    }
   };
 
   return (
@@ -163,31 +139,13 @@ export function CaptionCard(props: CaptionCardProps) {
             Caption
           </p>
           {showSwitch && (
-            <div className="sp-chat-caption__switch" role="radiogroup" aria-labelledby={titleId}>
-              {tabs.map((tab, i) => {
-                const isSelected = tab.id === selectedId;
-                return (
-                  <button
-                    key={tab.id}
-                    ref={(el) => {
-                      segRefs.current[i] = el;
-                    }}
-                    type="button"
-                    role="radio"
-                    aria-checked={isSelected}
-                    // Falls back to the first segment when nothing matches,
-                    // so the group always keeps its one tab stop.
-                    tabIndex={i === activeIndex ? 0 : -1}
-                    className="sp-chat-caption__seg"
-                    data-selected={isSelected || undefined}
-                    onClick={() => select(tab.id)}
-                    onKeyDown={onKeyDown}
-                  >
-                    <span className="sp-chat-caption__seg-label">{tab.label}</span>
-                  </button>
-                );
-              })}
-            </div>
+            <SegmentSwitch
+              variant="caption"
+              options={tabs}
+              selectedId={selectedId}
+              onSelect={select}
+              aria-labelledby={titleId}
+            />
           )}
         </div>
         <CardAction

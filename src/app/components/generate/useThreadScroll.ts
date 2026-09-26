@@ -36,6 +36,16 @@ const HOLD_PX = 2;
  * fit (DraftCard's `maxWidth`): 760 beside the rail, less on a narrow
  * window.
  *
+ * `preserve(el)` is for a change the member made to the layout rather
+ * than to the content (the editor opening or closing, which narrows the
+ * column and swaps every card's size): the element keeps its place on
+ * screen through the reflow, whatever following would have done, so the
+ * member is left looking at what they were looking at. Call it before the
+ * change commits; it holds for the layout passes that change sets off (the
+ * column's new width re-sizes the cards a second time) and lapses two
+ * frames after the last one. Following then goes by where that leaves the
+ * view.
+ *
  * `active` is whether the thread is on screen; the refs attach to the
  * scroller and to the column inside it, whose last child is the latest
  * turn. A thread that appears starts where following would put it.
@@ -46,6 +56,10 @@ export function useThreadScroll(active: boolean) {
   const following = useRef(true);
   // A follow() waiting for the layout of the content it was called for.
   const pending = useRef(false);
+  // A preserve() holding an element in place: where it stood on screen
+  // (its top in the window, since the scroller itself can move when the
+  // layout changes), and the frame that lets it lapse.
+  const anchor = useRef<{ el: Element; top: number; lapse: number } | null>(null);
   const [columnWidth, setColumnWidth] = useState<number | undefined>(undefined);
 
   useLayoutEffect(() => {
@@ -78,23 +92,49 @@ export function useThreadScroll(active: boolean) {
       const below = !toHead && scroller.scrollTop > at + HOLD_PX;
       scroller.scrollTop = below ? scroller.scrollHeight : at;
     };
+    /** Whether the view is at the latest: near the bottom, or holding at
+     * the latest turn's head. */
+    const atLatest = () => {
+      const fromBottom = scroller.scrollHeight - scroller.clientHeight - scroller.scrollTop;
+      return fromBottom <= FOLLOW_PX || Math.abs(scroller.scrollTop - target()) <= HOLD_PX;
+    };
     // Scroll events come from the member and from settle alike; either way
-    // the position says whether they are still at the latest: near the
-    // bottom, or holding at the latest turn's head. A follow() waiting on
-    // its layout stands whatever the position says in the meantime.
+    // the position says whether they are still at the latest. A follow()
+    // waiting on its layout stands whatever the position says in the
+    // meantime.
     const onScroll = () => {
       if (pending.current) return;
-      const fromBottom = scroller.scrollHeight - scroller.clientHeight - scroller.scrollTop;
-      following.current =
-        fromBottom <= FOLLOW_PX || Math.abs(scroller.scrollTop - target()) <= HOLD_PX;
+      following.current = atLatest();
+    };
+    /** Puts a preserve()d element back where it stood, and lets the anchor
+     * lapse two frames after this layout unless another one needs it. */
+    const hold = (held: { el: Element; top: number; lapse: number }) => {
+      if (held.el.isConnected) {
+        scroller.scrollTop += held.el.getBoundingClientRect().top - held.top;
+      }
+      following.current = atLatest();
+      cancelAnimationFrame(held.lapse);
+      held.lapse = requestAnimationFrame(() => {
+        held.lapse = requestAnimationFrame(() => {
+          if (anchor.current === held) anchor.current = null;
+        });
+      });
     };
     // The column grows as drafts land and captions fill in, and the
     // scroller shrinks when the dock grows or the window does: either way,
     // hold the latest if the member was there. The first layout after a
     // follow() lands the member's own content, so it settles on the new
     // turn's head.
+    // A preserve() outranks both: the member changed the layout, not the
+    // content, and stays where they were.
     const ro = new ResizeObserver(() => {
       setColumnWidth(column.clientWidth);
+      const held = anchor.current;
+      if (held) {
+        pending.current = false;
+        hold(held);
+        return;
+      }
       const followed = pending.current;
       pending.current = false;
       if (followed) following.current = true;
@@ -109,6 +149,8 @@ export function useThreadScroll(active: boolean) {
     return () => {
       ro.disconnect();
       scroller.removeEventListener("scroll", onScroll);
+      if (anchor.current) cancelAnimationFrame(anchor.current.lapse);
+      anchor.current = null;
     };
   }, [active]);
 
@@ -117,5 +159,20 @@ export function useThreadScroll(active: boolean) {
     pending.current = true;
   }, []);
 
-  return { scrollRef, columnRef, columnWidth, follow };
+  const preserve = useCallback((el: Element | null | undefined) => {
+    const scroller = scrollRef.current;
+    if (!scroller || !el || !scroller.contains(el)) return;
+    if (anchor.current) cancelAnimationFrame(anchor.current.lapse);
+    // No layout may follow (nothing changed size), so the anchor lapses on
+    // its own as well.
+    const held = { el, top: el.getBoundingClientRect().top, lapse: 0 };
+    held.lapse = requestAnimationFrame(() => {
+      held.lapse = requestAnimationFrame(() => {
+        if (anchor.current === held) anchor.current = null;
+      });
+    });
+    anchor.current = held;
+  }, []);
+
+  return { scrollRef, columnRef, columnWidth, follow, preserve };
 }

@@ -34,6 +34,7 @@ import {
   type ChatTurn,
 } from "./chat";
 import { primaryPlatformOf } from "./draftView";
+import { labelKey } from "./linkedFields";
 
 export type TryNextAction =
   | { kind: "fillField"; label: string; draftId: string; fieldKey: string }
@@ -140,10 +141,6 @@ export function indefiniteArticle(phrase: string): "a" | "an" {
  * have their own upload, and selects, which a generate always fills). */
 const isMemberText = (f: TemplateField) =>
   !f.static && (f.type === "text" || f.type === "multiline");
-
-/** A label as the editor links fields by it (PROMPT.md §9.5): lowercase,
- * letters and digits only. Empty for a label with neither. */
-const labelKey = (label: string) => label.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
 
 const isEmpty = (draft: ChatDraft, fieldKey: string) => !(draft.values[fieldKey] ?? "").trim();
 

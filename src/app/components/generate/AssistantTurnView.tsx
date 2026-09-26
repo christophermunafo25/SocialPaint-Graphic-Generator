@@ -1,4 +1,4 @@
-import React, { memo, useId, useMemo } from "react";
+import React, { memo, useCallback, useId, useMemo } from "react";
 import type { AssistantTurn, ChatDraft, ChatPhoto } from "@/lib/generate/chat";
 import { isRunningTurn } from "@/lib/generate/chatReducer";
 import { captionFor, captionTabs, draftName, previewValues } from "@/lib/generate/draftView";
@@ -7,7 +7,7 @@ import type { TryNextAction } from "@/lib/generate/tryNext";
 import { AssistantHeader } from "./AssistantHeader";
 import { CaptionCard } from "./CaptionCard";
 import { ChatButton } from "./ChatButton";
-import { DraftCard } from "./DraftCard";
+import { DraftCard, type DraftCardSize } from "./DraftCard";
 import { DraftCardSkeleton } from "./DraftCardSkeleton";
 import { ChipRow, SuggestionChip } from "./SuggestionChip";
 
@@ -74,31 +74,48 @@ function RunProgress({
 
 /** One draft in the thread: its values with the turn's photo laid into
  * its target slot (never written back into the draft), held stable so a
- * re-render that changes nothing about the draft does not repaint it. */
+ * re-render that changes nothing about the draft does not repaint it. Its
+ * preview button is handed to the page by draft id, so the editor can give
+ * focus back to it on close. */
 function ThreadDraft({
   draft,
   photo,
+  size,
+  selected,
+  downloading,
   maxWidth,
   description,
+  registerPreview,
   onEdit,
   onDownload,
 }: {
   draft: ChatDraft;
   photo: ChatPhoto | null;
+  size: DraftCardSize;
+  selected: boolean;
+  downloading: boolean;
   maxWidth: number | undefined;
   description: string | undefined;
+  registerPreview(draftId: string, el: HTMLButtonElement | null): void;
   onEdit(): void;
   onDownload(): void;
 }) {
   const values = useMemo(() => previewValues(draft, photo), [draft, photo]);
+  const previewRef = useCallback(
+    (el: HTMLButtonElement | null) => registerPreview(draft.id, el),
+    [registerPreview, draft.id],
+  );
   return (
     <DraftCard
       name={draftName(draft)}
       canvas={draft.canvas}
       schema={draft.schema}
       values={values}
-      size="regular"
+      size={size}
+      selected={selected}
+      downloading={downloading}
       maxWidth={maxWidth}
+      previewRef={previewRef}
       onEdit={onEdit}
       onDownload={onDownload}
       description={description}
@@ -117,7 +134,9 @@ function ThreadDraft({
  *     server's reply;
  *  3. the drafts, 12 apart and wrapping: skeletons while the run is in
  *     flight, each replaced in place by its card as it lands (no
- *     transition), and removed when its proposal is dropped;
+ *     transition), and removed when its proposal is dropped. While the
+ *     editor is open every card and skeleton is Compact (§8.5), and the
+ *     draft it edits is outlined (§7.14);
  *  4. the warnings a run left, one per line, once it has finished;
  *  5. the caption card, Loading while the run is in flight;
  *  6. on a failed turn, Try again (it re-sends the same message);
@@ -126,7 +145,8 @@ function ThreadDraft({
  *     (it knows the whole thread, and which platforms it has asked for).
  *
  * The page owns what outlives a render (which caption tab each turn
- * shows, whether Try next and Try again are open to the member) and hands
+ * shows, whether Try next and Try again are open to the member, which draft
+ * the editor is on and which one a card download is exporting) and hands
  * in stable callbacks, and props that only change for a turn that shows
  * them, so the turn is memoized: typing in the composer, or a run starting
  * and ending, never repaints the drafts of the turns above. The model's
@@ -138,9 +158,13 @@ export const AssistantTurnView = memo(function AssistantTurnView({
   photo,
   tryNext,
   canRetry,
+  cardSize,
+  selectedDraftId,
+  busyDraftId,
   maxWidth,
   captionDraftId,
   onCaptionSelect,
+  registerPreview,
   onEditDraft,
   onDownloadDraft,
   onTryNext,
@@ -159,12 +183,22 @@ export const AssistantTurnView = memo(function AssistantTurnView({
    * error turn shows the button, so the page passes false to every other
    * turn. */
   canRetry: boolean;
+  /** Compact while the editor is open, in every turn (§8.5). */
+  cardSize: DraftCardSize;
+  /** The draft the editor is on, when it is one of this turn's: its card
+   * is outlined. Null for every other turn. */
+  selectedDraftId: string | null;
+  /** The draft a card download is exporting, when it is one of this
+   * turn's: its Download is busy. Null for every other turn. */
+  busyDraftId: string | null;
   /** The chat column's width, which a wide draft's card must fit. */
   maxWidth: number | undefined;
   /** The draft whose caption the member picked; the first draft when unset
    * or gone. */
   captionDraftId: string | undefined;
   onCaptionSelect(turnId: string, draftId: string): void;
+  /** Each draft's preview button, by draft id (null when it goes). */
+  registerPreview(draftId: string, el: HTMLButtonElement | null): void;
   onEditDraft(turnId: string, draftId: string): void;
   onDownloadDraft(turnId: string, draftId: string): void;
   onTryNext(action: TryNextAction): void;
@@ -199,8 +233,12 @@ export const AssistantTurnView = memo(function AssistantTurnView({
               key={draft.id}
               draft={draft}
               photo={photo}
+              size={cardSize}
+              selected={draft.id === selectedDraftId}
+              downloading={draft.id === busyDraftId}
               maxWidth={maxWidth}
               description={description}
+              registerPreview={registerPreview}
               onEdit={() => onEditDraft(turn.id, draft.id)}
               onDownload={() => onDownloadDraft(turn.id, draft.id)}
             />
@@ -209,6 +247,7 @@ export const AssistantTurnView = memo(function AssistantTurnView({
             <DraftCardSkeleton
               key={`slot-${turn.drafts.length + i}`}
               aspect={aspect}
+              size={cardSize}
               maxWidth={maxWidth}
             />
           ))}

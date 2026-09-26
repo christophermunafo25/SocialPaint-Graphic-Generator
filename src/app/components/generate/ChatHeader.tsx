@@ -1,4 +1,4 @@
-import React from "react";
+import React, { forwardRef } from "react";
 import { routeToUrl } from "../../router";
 import { ChatButton } from "./ChatButton";
 import { HistoryIcon, NewChatIcon } from "./icons";
@@ -62,23 +62,22 @@ export function ChatBreadcrumb({
   );
 }
 
-/** The thread states' page header (Figma "Generate · Chat", frames 04 and
- * 05, "PageHeader"; PROMPT §8.4): the breadcrumb with the chat's title on
+/** The thread states' page header (Figma "Generate · Chat", frames 04 to
+ * 06, "PageHeader"; PROMPT §8.4): the breadcrumb with the chat's title on
  * the left, and on the right History (tertiary) then New chat (secondary),
- * both small, 8 apart. One line, 36 tall. */
-export function ChatHeader({
-  title,
-  titleId,
-  onNewChat,
-  onHistory,
-}: {
-  title: string;
-  titleId: string;
-  onNewChat(): void;
-  onHistory(): void;
-}) {
+ * both small, 8 apart. One line, 36 tall. The ref is the page's, which
+ * makes the header inert while the editor's sheet is up. */
+export const ChatHeader = forwardRef<
+  HTMLElement,
+  {
+    title: string;
+    titleId: string;
+    onNewChat(): void;
+    onHistory(): void;
+  }
+>(function ChatHeader({ title, titleId, onNewChat, onHistory }, ref) {
   return (
-    <header className="sp-chat-header">
+    <header ref={ref} className="sp-chat-header">
       <ChatBreadcrumb current={title} currentId={titleId} heading onRoot={onNewChat} />
       <div className="sp-chat-header__actions">
         <ChatButton kind="tertiary" size="small" icon={<HistoryIcon />} onClick={onHistory}>
@@ -90,4 +89,4 @@ export function ChatHeader({
       </div>
     </header>
   );
-}
+});

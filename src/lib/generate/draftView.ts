@@ -114,8 +114,9 @@ export function platformLabelFor(canvas: { width: number; height: number }): str
   return primary === "general" ? null : platformById(primary).label;
 }
 
-/** How many times each label occurs. */
-function tally(labels: string[]): Map<string, number> {
+/** How many times each label occurs (the caption switch's labels here, the
+ * editor's size names in linkedFields.ts). */
+export function tally(labels: string[]): Map<string, number> {
   const counts = new Map<string, number>();
   for (const label of labels) counts.set(label, (counts.get(label) ?? 0) + 1);
   return counts;
