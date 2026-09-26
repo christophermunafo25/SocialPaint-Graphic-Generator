@@ -56,10 +56,17 @@ export type Route =
    * Admin-only — App renders it through adminOnly, so a member who types
    * the URL lands on the gallery. */
   | { name: "bulk"; templateId: string }
-  /** Generate: brief in, filled templates out. `templateId` is the "use this
-   * one" hint from a template card — in the URL so the intent survives a
-   * refresh; the seeded VALUES deliberately do not (see seedHandoff.ts). */
-  | { name: "generate"; templateId?: string }
+  /** Generate, the chat (docs/design/generate-chat/PROMPT.md §11.1).
+   * `/generate` is a new chat; `templateId` is the "use this one" hint from
+   * a template card, which pins that template's Start from chip, in the URL
+   * so the intent survives a refresh; `threadId` is a saved chat at
+   * `/generate/c/<id>`. App keys the page on `threadId`, so opening another
+   * chat starts from fresh state. */
+  | { name: "generate"; templateId?: string; threadId?: string }
+  /** Every saved chat, newest first. The filter bar's state rides in the
+   * URL like the Brand templates route's: selecting a chip or typing a
+   * query IS a navigation, and an unknown platform reads as no filter. */
+  | { name: "generateHistory"; platform?: PlatformId; q?: string }
   | { name: "adminTemplates" }
   /** `reflow` ("1080x1920") is the create-a-version handoff: the builder
    * loads the (freshly duplicated) template and reflows it to this size as
@@ -108,9 +115,17 @@ export function routeToUrl(route: Route): string {
     case "bulk":
       return `/templates/${encodeURIComponent(route.templateId)}/bulk`;
     case "generate":
+      if (route.threadId) return `/generate/c/${encodeURIComponent(route.threadId)}`;
       return route.templateId
         ? `/generate?template=${encodeURIComponent(route.templateId)}`
         : "/generate";
+    case "generateHistory": {
+      const params = new URLSearchParams();
+      if (route.platform) params.set("platform", route.platform);
+      if (route.q) params.set("q", route.q);
+      const qs = params.toString();
+      return qs ? `/generate/history?${qs}` : "/generate/history";
+    }
     case "adminTemplates":
       return "/template-builder";
     case "builder": {
@@ -161,6 +176,15 @@ export function urlToRoute(pathname: string, search: string): Route {
         q: params.get("q") ?? undefined,
       };
     case "generate":
+      if (tail === "history") {
+        return {
+          name: "generateHistory",
+          platform: parsePlatform(params.get("platform")),
+          q: params.get("q") ?? undefined,
+        };
+      }
+      // A chat's own address. A bare /generate/c (no id) is a new chat.
+      if (tail === "c" && third) return { name: "generate", threadId: decodeURIComponent(third) };
       return { name: "generate", templateId: params.get("template") ?? undefined };
     case "template-builder":
       if (!tail) return { name: "adminTemplates" };

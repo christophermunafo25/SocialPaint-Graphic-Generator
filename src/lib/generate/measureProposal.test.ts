@@ -129,6 +129,23 @@ describe("free mode", () => {
     );
   });
 
+  it("lets a line box a fraction of a pixel taller than its box fit", () => {
+    // The starter subheads: one 26px line at 1.36 is 35.36 in a 35px box.
+    // Growth under half a pixel is rounding; a second line still overflows.
+    const field = mkField({
+      fieldKey: "subhead",
+      type: "multiline",
+      height: 35,
+      fontSizePx: 26,
+      lineHeight: 1.36,
+    });
+    const fit = (subhead: string) =>
+      measureProposal(schema([field]), { subhead }, null, measure).fields[0];
+    expect(fit("Short").fit).toBe("fits");
+    expect(fit(words(9))).toMatchObject({ fit: "overflows" });
+    expect(fit(words(9)).characterBudget).toBeGreaterThan(0);
+  });
+
   it("flags a single line wider than its box", () => {
     const field = mkField({ fieldKey: "name" });
     expect(

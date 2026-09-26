@@ -49,7 +49,7 @@ const NAV: NavItem[] = [
     route: { name: "generate" },
     Icon: Sparkles,
     adminOnly: false,
-    matches: ["generate"],
+    matches: ["generate", "generateHistory"],
   },
   {
     label: "Template Builder",

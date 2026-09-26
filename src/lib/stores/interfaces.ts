@@ -262,11 +262,29 @@ export interface GenerateProvider {
    * Functions and no model key, so it says false and the surface explains
    * rather than offering a button that cannot work. */
   isConfigured(): boolean;
-  generate(companyId: string, input: GenerateInput): Promise<GenerateResult>;
+  /** `opts.signal` aborts the request when the member presses Stop. An
+   * aborted call can still finish on the server and count toward the rate
+   * limit; the caller ignores whatever it resolves to either way. */
+  generate(
+    companyId: string,
+    input: GenerateInput,
+    opts?: GenerateCallOptions,
+  ): Promise<GenerateResult>;
   /** One repair round for one proposal: the measurement pass names the
    * overflowing fields and their measured character budgets; the server
    * rewrites only those values. */
-  repair(companyId: string, input: GenerateRepairInput): Promise<GenerateRepairResult>;
+  repair(
+    companyId: string,
+    input: GenerateRepairInput,
+    opts?: GenerateCallOptions,
+  ): Promise<GenerateRepairResult>;
+}
+
+/** Per-call options for the GenerateProvider. */
+export interface GenerateCallOptions {
+  /** Aborts the request (the chat's Stop). Implementations that cannot
+   * abort ignore it. */
+  signal?: AbortSignal;
 }
 
 export interface StyleImportResult {

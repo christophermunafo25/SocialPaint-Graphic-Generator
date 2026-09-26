@@ -51,6 +51,15 @@ type MeasurableSchema = Pick<
   "fields" | "layoutGroups" | "canvasWidth" | "canvasHeight"
 >;
 
+/** How far a free multiline box may grow past its authored height before
+ * that counts as overflow. A line box is the font size times the line
+ * height, rarely a whole pixel, while boxes are drawn to whole pixels: a
+ * one-line 26px subhead at 1.36 is 35.36 tall in a 35px box. That growth
+ * is rounding no one can see, and without the allowance every value in
+ * such a box measured as overflowing, whatever its length, so no repair
+ * could ever fit it. Half a pixel admits rounding and never a line. */
+const SUBPIXEL_PX = 0.5;
+
 /** Overflow-only classification of one field with one candidate text,
  * ignoring groups (those are checked against the full layout). */
 function overflowsAlone(
@@ -70,7 +79,9 @@ function overflowsAlone(
   if (field.type !== "multiline") {
     return measuredTextWidth(style, text, size, measure) > field.width;
   }
-  return measuredTextHeight(true, style, text, size, field.width, measure) > field.height;
+  return (
+    measuredTextHeight(true, style, text, size, field.width, measure) > field.height + SUBPIXEL_PX
+  );
 }
 
 /** Groups that (directly or nested) contain the field. */

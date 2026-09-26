@@ -536,7 +536,8 @@ export class LocalPublicLinkStore implements PublicLinkStore {
 
 /** Generate needs Edge Functions and a model key, neither of which the dev
  * backend has — so it says so, and the surface shows an honest disabled
- * state instead of a button that cannot work (the designImport precedent). */
+ * state instead of a button that cannot work (the designImport precedent).
+ * It takes no call options: there is no request to abort. */
 export class LocalGenerateProvider implements GenerateProvider {
   isConfigured(): boolean {
     return false;

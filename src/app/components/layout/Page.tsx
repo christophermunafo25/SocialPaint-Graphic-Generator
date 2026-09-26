@@ -11,10 +11,16 @@ import React from "react";
  * both sidebar states, and both equal --page-pad exactly until the region
  * outgrows --page-max (1720px; viewport > 1984px expanded, > 1812px
  * collapsed), where margin-inline: auto grows the two together. `narrow`
- * caps the inner content (People 900) and centres it inside the column. */
+ * caps the inner content (People 900) and centres it inside the column.
+ * `layout` is for a page that lays its children out itself (the Generate
+ * chat, a flex column in each of its states): its class and data-state go
+ * on the column, and the children sit directly in it rather than in the
+ * inner wrapper, so the column's own layout reaches them. The gutters,
+ * cap and top padding are unchanged. */
 export function Page({
   narrow,
   bleed,
+  layout,
   children,
 }: {
   narrow?: 760 | 900;
@@ -22,10 +28,22 @@ export function Page({
    *  padding so rails bleed to the screen edge, and the 16px gutter moves
    *  onto the children (see .sp-page--bleed). Brand Templates only. */
   bleed?: boolean;
+  /** The column's own layout class and state (never with `narrow`). */
+  layout?: { className: string; state?: string };
   children: React.ReactNode;
 }) {
+  const className = ["sp-page", bleed && "sp-page--bleed", layout?.className]
+    .filter(Boolean)
+    .join(" ");
+  if (layout) {
+    return (
+      <div className={className} data-state={layout.state}>
+        {children}
+      </div>
+    );
+  }
   return (
-    <div className={bleed ? "sp-page sp-page--bleed" : "sp-page"}>
+    <div className={className}>
       <div style={narrow ? { maxWidth: narrow, marginInline: "auto" } : undefined}>{children}</div>
     </div>
   );

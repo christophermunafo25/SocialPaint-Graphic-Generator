@@ -270,6 +270,10 @@ html {
   --gen-h-sm: 36px;
   --gen-h-md: 40px;
   --gen-h-lg: 44px;
+  /* The scroll fade's depth (sp-scroll-fade 341:813). The thread reads it
+     too, to keep a focused control and the head of the latest turn clear of
+     the fade rather than under it. */
+  --gen-fade-h: 56px;
   /* Send is Deep Moss under Slime when ready and inverts to stop, in both
      themes: identity fills, never status. */
   --gen-send-ready-bg: var(--deep-moss);
@@ -6584,15 +6588,18 @@ input[type="radio"] {
    §7), in this order: ChatButton, SendButton, the IconButton presets and
    CardAction; SuggestionChip and ChipRow; VariationsStepper and the
    PlatformSelect trigger; FieldInput variant="chat" and EditorField;
-   AttachmentThumb, UserMessage and AssistantHeader; DraftCard and
-   DraftCardSkeleton; CaptionCard; RecentCard and HistoryCard; ScrollFade.
+   Composer and AttachMenu; AttachmentThumb, UserMessage and
+   AssistantHeader; DraftCard and DraftCardSkeleton; CaptionCard;
+   RecentCard and HistoryCard; ScrollFade. The page layout (GeneratePage
+   and GenerateHistoryPage, §8) follows as its own subsection.
    Every class is sp-chat-* and every colour a token from the Generate chat
    group (:root and both theme blocks). The shared recipes are joined, not
    restated: the suggestion chip sits in the chip rung of THE surface
-   recipe, the cards carry .sp-card, the recent and history cards' hover and
-   focus join the template card's rules, and the toned skeleton bone lives
-   in the Skeletons block. The .sp-gen-* rules above retire with the old
-   page (PROMPT.md §14, Phase 6). */
+   recipe, the cards, the composer and the attach menu carry .sp-card, the
+   recent and history cards' hover and focus join the template card's
+   rules, and the toned skeleton bone lives in the Skeletons block. The
+   .sp-gen-* rules above retire with the old page (PROMPT.md §14,
+   Phase 6). */
 
 /* ── Generate chat: buttons (Figma "Generate · Chat": sp-button 283:31,
    sp-icon-btn / Send 283:13, / Attach 328:831, / Download 328:827,
@@ -7180,6 +7187,223 @@ select.sp-chat-input option {
   flex-shrink: 0;
   font-weight: 400;
   color: var(--text-muted);
+}
+
+/* ── Generate chat: composer (Figma "Generate · Chat", sp-chat-composer
+   283:76, Size Large / Compact, State Ready / Working / Attached) ────────
+   One form on the surface recipe (.sp-card), a column: the photo row when
+   there is one, the textarea, then the toolbar (Attach, and on Large the
+   platform select and the stepper, 8 apart; Send at the far end). The
+   frame insets the content 18 12 14 20 (Large) and 16 12 12 20 (Compact)
+   from the card's outer edge, 8 between rows (12 with a photo); the recipe
+   keeps a 1px transparent frame in the box, so the padding is each inset
+   less that frame (as on the draft and caption cards). It fills the width
+   it is given: the page sets the 760 column, or the chat column in Edit.
+
+   The textarea's floor is 64 on an empty Large composer (148 tall in all,
+   as drawn) and one line otherwise (Compact is 104 tall; Large with a
+   photo hugs its text). Composer.tsx sets the height as the text grows,
+   up to six lines, and turns on scrolling past that.
+
+   Focus anywhere inside, and a file dragged over it, give the whole card
+   the old composer's halo: the frame in --accent-border and a 3px wash
+   ring composed onto the recipe's full list (the recipe note: compose the
+   list, never replace it). It is .sp-gen-composer's rule ported, not
+   joined, since that one retires with the rest of .sp-gen-* in Phase 6.
+   The class-class selectors outrank the light recipe's
+   `[data-theme="light"] .sp-card { border-color: transparent }`, whatever
+   order the rules load in. */
+.sp-chat-composer {
+  --composer-inset-top: calc(18px - var(--border-width));
+  --composer-inset-end: calc(12px - var(--border-width));
+  --composer-inset-bottom: calc(14px - var(--border-width));
+  --composer-inset-start: calc(20px - var(--border-width));
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: var(--composer-inset-top) var(--composer-inset-end) var(--composer-inset-bottom)
+    var(--composer-inset-start);
+  transition:
+    border-color var(--dur-state) var(--ease),
+    box-shadow var(--dur-state) var(--ease);
+}
+.sp-chat-composer[data-size="compact"] {
+  --composer-inset-top: calc(16px - var(--border-width));
+  --composer-inset-bottom: calc(12px - var(--border-width));
+}
+.sp-chat-composer[data-attached] {
+  gap: var(--space-xs);
+}
+.sp-card.sp-chat-composer:focus-within,
+.sp-card.sp-chat-composer[data-drag-active] {
+  border-color: var(--accent-border);
+  box-shadow:
+    0 0 0 3px var(--accent-wash),
+    var(--edge-lit),
+    var(--card-highlight),
+    var(--card-shadow-now);
+}
+
+/* The photo row: the 64px attachment, and beside it the shared upload
+   chip while a photo is being read. The chip's own top margin is for its
+   place under a dropzone; here the row's centring places it. */
+.sp-chat-composer__attachments {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+.sp-chat-composer__chip {
+  flex: 0 1 240px;
+  min-width: 0;
+}
+.sp-chat-composer__chip .sp-upload-chip {
+  margin-top: 0;
+}
+
+/* The text: borderless and transparent, 16/150% Regular in the primary
+   ink over a muted placeholder (the frame's leading is 1.5, where
+   --type-composer-lh still carries the old composer's 1.45). The card's
+   halo is its focus indicator, so the global :focus-visible outline stays
+   off. A disabled composer dims the text the way the tiles dim. */
+.sp-chat-composer__input {
+  display: block;
+  width: 100%;
+  min-height: 24px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: var(--type-composer-size);
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0;
+  resize: none;
+  overflow-y: hidden;
+  outline: none;
+}
+.sp-chat-composer__input::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+.sp-chat-composer__input:focus-visible {
+  outline: none;
+}
+.sp-chat-composer__input:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.sp-chat-composer[data-size="large"]:not([data-attached]) .sp-chat-composer__input {
+  min-height: 64px;
+}
+
+/* A refused photo, in the danger ink under the text (the old composer's
+   line). */
+.sp-chat-composer__error {
+  margin: 0;
+  font-size: var(--type-caption-size);
+  line-height: 1.25;
+  color: var(--state-danger-on-surface);
+}
+
+/* The toolbar: 44 tall (Send's height), the tools centred on it. On a
+   narrow column the tools wrap rather than push Send out of the card. */
+.sp-chat-composer__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2xs);
+  min-height: var(--gen-h-lg);
+}
+.sp-chat-composer__tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+
+/* ── Generate chat: attach menu (Figma "Generate · Chat", sp-attach-menu
+   329:1056; frame 02) ─────────────────────────────────────────────────────
+   A 236 wide popover on the surface recipe (.sp-card) at the 12 radius,
+   lifted to the hover elevation (--shadow-card-hover: 10% light, 30%
+   dark), as drawn. It is portaled to <body> and fixed-positioned by
+   AttachMenu.tsx, so it is never a card nested in the composer card,
+   which would drop its shadow. The frame's 6 inset is less the recipe's
+   1px frame. Rows are 36 tall at the 9 radius, 2 apart, a 16px glyph box
+   10 before a 14/125% Regular label in the primary ink. The active row
+   takes --gen-menu-item-hover, and the active row is the focused one: the
+   keyboard moves focus, and so does the pointer as it moves over a row
+   (AttachMenu.tsx). Keying off focus rather than :hover means a menu that
+   opens under a resting pointer still shows one active row, not two.
+   Keyboard focus also draws the app's tight ring. */
+.sp-card.sp-chat-attach-menu {
+  --card-shadow-now: var(--shadow-card-hover);
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 236px;
+  max-width: calc(100vw - 16px);
+  box-sizing: border-box;
+  padding: calc(6px - var(--border-width));
+  border-radius: var(--radius-control-lg);
+  outline: none;
+}
+.sp-chat-attach-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: var(--gen-h-sm);
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius-control-md);
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.25;
+  letter-spacing: 0;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--dur-state) var(--ease);
+}
+.sp-chat-attach-menu__item:focus {
+  background: var(--gen-menu-item-hover);
+  outline: none;
+}
+.sp-chat-attach-menu__item:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: var(--focus-ring-tight);
+}
+.sp-chat-attach-menu__glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+
+/* Forced colours drop the row fill and the ring: the active row takes the
+   system highlight instead, so the keyboard's place stays visible. */
+@media (forced-colors: active) {
+  .sp-chat-attach-menu__item:focus {
+    background: Highlight;
+    color: HighlightText;
+  }
 }
 
 /* ── Generate chat: attachment (Figma sp-attachment 328:845) ─────────────
@@ -7786,7 +8010,7 @@ button.sp-chat-draft__preview {
   inset-inline: 0 var(--scroll-fade-gutter, 0px);
   top: 0;
   z-index: 1;
-  height: 56px;
+  height: var(--gen-fade-h);
   pointer-events: none;
 }
 .sp-chat-scroll-fade[data-position="bottom"] {
@@ -7820,6 +8044,437 @@ button.sp-chat-draft__preview {
 .sp-chat-scroll-fade[data-visible]::before,
 .sp-chat-scroll-fade[data-visible]::after {
   opacity: 1;
+}
+
+/* ── Generate chat page layout (Figma "Generate · Chat", 2026-09-25) ── */
+/* GeneratePage and GenerateHistoryPage (docs/design/generate-chat/
+   PROMPT.md §8), in this order: the page column in each state, the Start
+   state, the legal links, the page header and breadcrumb, the thread with
+   its assistant turns and progress row, the composer dock, and History.
+   This is layout only: the surfaces it holds (the composer, the cards, the
+   chips, the dev backend's empty state) carry their own recipes above, so
+   nothing here joins a shared recipe's selector list. */
+
+/* ── Generate chat: the page (Figma "Generate · Chat", frames 01 to 05 and
+   07; PROMPT §8.1) ─────────────────────────────────────────────────────────
+   Every state is the .sp-page column (its gutters, cap and 48 top) laid
+   out as a flex column.
+
+   Start is the normal document page, at least one viewport tall: the
+   Start region takes the room above the legal links and centres the 760
+   column in it, with the frame's 48 of padding under the column. The
+   frame insets the page 45 top and bottom; the top maps to the page's 48,
+   and the bottom matches it.
+
+   The thread states and History take the viewport (useFullViewport), so
+   the page is exactly the main region's height: the header and the dock
+   keep their size and the one scrolling region between them takes the
+   rest. The thread states end 24 above the window's foot, as drawn;
+   History, like Start, 48. Each bottom adds the home-indicator inset. */
+.sp-chat-page {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+.sp-chat-page[data-state="start"] {
+  min-height: calc(100dvh - var(--chrome-top));
+  padding-bottom: calc(var(--space-xl) + env(safe-area-inset-bottom, 0px));
+}
+/* Below --bp-lg the mobile header is its 56 (--chrome-top) plus a 1px
+   hairline under it (.sp-mobilebar's border), so main starts one hairline
+   lower than --chrome-top says. Without it the Start state runs 1px past
+   the window and the whole column nudges on every wheel. */
+@media (max-width: 1023px) {
+  .sp-chat-page[data-state="start"] {
+    min-height: calc(100dvh - var(--chrome-top) - var(--border-width));
+  }
+}
+.sp-chat-page[data-state="thread"],
+.sp-chat-page[data-state="history"] {
+  height: 100%;
+  min-height: 0;
+}
+.sp-chat-page[data-state="thread"] {
+  padding-bottom: calc(var(--space-md) + env(safe-area-inset-bottom, 0px));
+}
+.sp-chat-page[data-state="history"] {
+  padding-bottom: calc(var(--space-xl) + env(safe-area-inset-bottom, 0px));
+}
+
+/* ── Generate chat: Start state (frames 01 to 03; PROMPT §8.2) ────────────
+   Greeting (26/125% Medium at -1.5% in the heading ink over 15/140% in the
+   secondary ink, 8 apart), 28, the Large composer, then either the
+   library-empty line 12 under it or the Start from row 16 under it. */
+.sp-chat-start {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: var(--space-xl);
+}
+.sp-chat-start__column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 760px;
+}
+.sp-chat-start__greeting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2xs);
+  text-align: center;
+}
+.sp-chat-start__title {
+  margin: 0;
+  font-family: var(--font-head);
+  font-size: 26px;
+  line-height: 1.25;
+  font-weight: var(--weight-head);
+  letter-spacing: -0.015em;
+  color: var(--text-heading);
+}
+.sp-chat-start__sub {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--type-body-size);
+  line-height: 1.4;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+/* 28 between the greeting and the composer, as drawn (between the 24 and
+   32 steps). The dev backend's empty state takes the composer's place. */
+.sp-chat-start__composer,
+.sp-chat-start__unavailable {
+  width: 100%;
+  margin-top: 28px;
+}
+.sp-chat-start__note {
+  margin: var(--space-xs) 0 0;
+  font-size: var(--type-caption-size);
+  line-height: 1.25;
+  color: var(--text-muted);
+  text-align: center;
+}
+.sp-chat-start__starters {
+  width: 100%;
+  margin-top: var(--space-sm);
+}
+
+/* The legal links (PROMPT §11.3): 12/125% in the muted ink, underlined.
+   On the Start state and History they are the page's foot, centred and 16
+   apart; in the dock they close the footnote row (below). */
+.sp-chat-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+}
+.sp-chat-legal {
+  font-family: var(--font-ui);
+  font-size: var(--type-caption-size);
+  line-height: 1.25;
+  font-weight: 400;
+  color: var(--text-muted);
+  text-decoration: underline;
+  text-underline-position: from-font;
+  white-space: nowrap;
+  border-radius: 2px;
+  transition: color var(--dur-state) var(--ease);
+}
+.sp-chat-legal:hover {
+  color: var(--text-secondary);
+}
+.sp-chat-legal:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* ── Generate chat: page header (frames 04 and 05, "PageHeader"; PROMPT
+   §8.4) ──────────────────────────────────────────────────────────────────
+   One line, 36 tall: the breadcrumb, and the History and New chat buttons
+   8 apart at the end. The header is an inline-size container so the
+   chat's title can truncate at 40% of its width. */
+.sp-chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+  min-height: var(--gen-h-sm);
+  container-type: inline-size;
+}
+.sp-chat-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  flex-shrink: 0;
+}
+
+/* The breadcrumb (also History's): 14/125%, 8 apart. "Generate" is a link
+   in the secondary ink, Medium and underlined as drawn; the slash is
+   Regular in the muted ink; the current crumb is Medium in the primary ink
+   (the chat's title is the page's h1, so the heading defaults are reset). */
+.sp-chat-crumbs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  min-width: 0;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+.sp-chat-crumbs__root {
+  flex-shrink: 0;
+  font-weight: var(--weight-ui);
+  color: var(--text-secondary);
+  text-decoration: underline;
+  text-underline-position: from-font;
+  border-radius: 2px;
+  transition: color var(--dur-state) var(--ease);
+}
+.sp-chat-crumbs__root:hover {
+  color: var(--text-primary);
+}
+.sp-chat-crumbs__root:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.sp-chat-crumbs__sep {
+  flex-shrink: 0;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+.sp-chat-crumbs__current {
+  min-width: 0;
+  max-width: 40cqw;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: inherit;
+  line-height: inherit;
+  font-weight: var(--weight-ui);
+  letter-spacing: 0;
+  color: var(--text-primary);
+}
+
+/* ── Generate chat: the thread (frames 04 and 05, "Thread") ──────────────
+   The only scrolling region. The frame holds the top scroll fade beside
+   the scroller (ScrollFade's placement note) and runs into the page
+   gutters, so the scrollbar sits at the window's edge and the wheel works
+   over the whole region; the scroller hands the gutters back as padding,
+   with the frame's 16 on top and 32 under the last turn. The 760 column
+   inside is anchored to the bottom (margin-top: auto rather than
+   justify-content, which would strand overflow above the scroll origin),
+   so a short thread sits on the dock, and its messages stand 24 apart.
+
+   A classic (always-on) scrollbar takes its width from one side only,
+   which would shift the column off the dock composer's centre line, so
+   the scroller reserves the same gutter on both edges (an overlay
+   scrollbar reserves nothing). A control that focus scrolls into view
+   stops under the top fade, with its whole focus ring, rather than
+   veiled by it; useThreadScroll holds the latest turn's head at the same
+   line.
+
+   useThreadScroll owns the scroll position, so the browser's scroll
+   anchoring is off: it would nudge the position a pixel off the head's
+   line as drafts land (read as the member scrolling on, which pins the
+   view to the bottom), and after a Stop shrinks the thread it would put
+   back the position from before the shrink, over a send's own scroll. */
+.sp-chat-thread-frame {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  margin-inline: calc(-1 * var(--page-pad));
+}
+.sp-chat-thread {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-sizing: border-box;
+  padding: var(--space-sm) var(--page-pad) var(--space-lg);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable both-edges;
+  scroll-padding-top: calc(var(--gen-fade-h) + var(--focus-offset) + var(--focus-width));
+  overflow-anchor: none;
+}
+.sp-chat-thread__column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  width: 100%;
+  max-width: 760px;
+  margin: auto auto 0;
+}
+
+/* An assistant turn (frames 04 and 05, "Message · SocialPaint"): 16
+   between the byline, the status block, the drafts, the warnings, the
+   caption card, Try again and the Try next row. */
+.sp-chat-turn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+/* The status sentence (15/150% in the primary ink) and, while the run is
+   in flight, the progress row 8 under it. */
+.sp-chat-turn__status {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+.sp-chat-turn__sentence {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-lh);
+  font-weight: 400;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+/* The drafts, 12 apart, wrapping onto a second row when they do not fit.
+   Skeletons hold the same geometry, so a swap never moves the row. */
+.sp-chat-turn__drafts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-xs);
+}
+/* The warnings a finished run left, 12px in the muted ink, one per line. */
+.sp-chat-turn__warnings {
+  display: flex;
+  flex-direction: column;
+}
+.sp-chat-turn__warning {
+  margin: 0;
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-lh);
+  color: var(--text-muted);
+}
+.sp-chat-turn__retry {
+  display: flex;
+}
+
+/* The progress row (frame 04, "Progress"), 12 apart: a 120 × 4 track on
+   the sunken fill at a 2 radius, its inverse fill at step ÷ 3 easing over
+   --dur-panel (zeroed under reduced motion); then the step in Geist Mono
+   12/140% at +4%, muted. */
+.sp-chat-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+.sp-chat-progress__track {
+  position: relative;
+  flex-shrink: 0;
+  width: 120px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--gen-sunken);
+  overflow: hidden;
+}
+.sp-chat-progress__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 2px;
+  background: var(--gen-inverse);
+  transition: width var(--dur-panel) var(--ease);
+}
+.sp-chat-progress__label {
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: var(--type-caption-size);
+  line-height: 1.4;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Generate chat: the composer dock (frames 04 and 05, "Composer dock")
+   ──────────────────────────────────────────────────────────────────────
+   16 over the Compact composer (the chat column's width), then the
+   footnote row 10 under it. A full chat's note sits 8 over the composer. */
+.sp-chat-dock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  padding-top: var(--space-sm);
+}
+.sp-chat-dock__composer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  width: 100%;
+  max-width: 760px;
+}
+.sp-chat-dock__note {
+  margin: 0;
+  font-size: var(--type-caption-size);
+  line-height: 1.25;
+  color: var(--text-muted);
+  text-align: center;
+}
+/* "Every graphic follows your Brand Studio rules." then the legal links,
+   12 apart, 12/125% muted; it wraps centred on a narrow window. */
+.sp-chat-footnote {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  column-gap: var(--space-xs);
+  row-gap: var(--space-3xs);
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: var(--type-caption-size);
+  line-height: 1.25;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* ── Generate chat: History (frame 07; PROMPT §8.6) ──────────────────────
+   The header: the breadcrumb, 8, the title row (the page title, New chat
+   at its end), 8, the description (14/120% in the secondary ink). Then the
+   body, the only scrolling region, 24 under the header. Like the thread
+   it runs into the page gutters and hands them back as padding, so the
+   cards' shadows are never clipped by its edge, and it reserves a classic
+   scrollbar's gutter on both edges so the grid stays centred under the
+   header. */
+.sp-chat-history-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  flex-shrink: 0;
+}
+.sp-chat-history-head__title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+.sp-chat-history-head__desc {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.2;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+.sp-chat-history-body {
+  flex: 1 1 0;
+  min-height: 0;
+  margin-inline: calc(-1 * var(--page-pad));
+  padding: var(--space-md) var(--page-pad);
+  overflow-y: auto;
+  scrollbar-gutter: stable both-edges;
 }
 
 /* ── Component colour overrides (design-system distribution, section 8) ─────

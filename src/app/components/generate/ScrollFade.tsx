@@ -83,7 +83,10 @@ export function useScrollFades(
       // offsetWidth counts the borders and the scrollbar, clientWidth neither.
       const cs = getComputedStyle(el);
       const borders = parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth);
-      gutter = Math.max(0, el.offsetWidth - el.clientWidth - borders);
+      const taken = Math.max(0, el.offsetWidth - el.clientWidth - borders);
+      // `scrollbar-gutter: stable both-edges` reserves the scrollbar's width
+      // on the other edge too; only one of the two holds the scrollbar.
+      gutter = cs.scrollbarGutter.includes("both-edges") ? taken / 2 : taken;
     };
     const measure = () => {
       const top = el.scrollTop > 0;
