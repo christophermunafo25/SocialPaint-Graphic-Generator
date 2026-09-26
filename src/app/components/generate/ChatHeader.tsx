@@ -19,14 +19,15 @@ const isPlainClick = (e: React.MouseEvent) =>
  * navigation, so the chat can stop its run and start over in place (a new
  * chat and the current one can share a URL). `heading` makes the current
  * crumb the page's h1: a chat has no other title on screen, while History
- * carries its own. */
+ * carries its own. With no `current` (a saved chat still loading, or one
+ * that could not be opened) the trail is "Generate" alone. */
 export function ChatBreadcrumb({
   current,
   currentId,
   heading = false,
   onRoot,
 }: {
-  current: string;
+  current?: string;
   /** Lets the thread name itself by the chat's title. */
   currentId?: string;
   heading?: boolean;
@@ -46,18 +47,22 @@ export function ChatBreadcrumb({
       >
         Generate
       </a>
-      <span className="sp-chat-crumbs__sep" aria-hidden>
-        /
-      </span>
-      {/* The title attribute shows a title the header has cut short. */}
-      <Current
-        id={currentId}
-        className="sp-chat-crumbs__current"
-        aria-current="page"
-        title={current}
-      >
-        {current}
-      </Current>
+      {current !== undefined && (
+        <>
+          <span className="sp-chat-crumbs__sep" aria-hidden>
+            /
+          </span>
+          {/* The title attribute shows a title the header has cut short. */}
+          <Current
+            id={currentId}
+            className="sp-chat-crumbs__current"
+            aria-current="page"
+            title={current}
+          >
+            {current}
+          </Current>
+        </>
+      )}
     </nav>
   );
 }
@@ -66,19 +71,21 @@ export function ChatBreadcrumb({
  * 06, "PageHeader"; PROMPT §8.4): the breadcrumb with the chat's title on
  * the left, and on the right History (tertiary) then New chat (secondary),
  * both small, 8 apart. One line, 36 tall. The ref is the page's, which
- * makes the header inert while the editor's sheet is up. */
+ * makes the header inert while the editor's sheet is up. `title` null is a
+ * saved chat that is still loading or could not be opened: the breadcrumb
+ * is "Generate" alone, and the actions work as ever. */
 export const ChatHeader = forwardRef<
   HTMLElement,
   {
-    title: string;
-    titleId: string;
+    title: string | null;
+    titleId?: string;
     onNewChat(): void;
     onHistory(): void;
   }
 >(function ChatHeader({ title, titleId, onNewChat, onHistory }, ref) {
   return (
     <header ref={ref} className="sp-chat-header">
-      <ChatBreadcrumb current={title} currentId={titleId} heading onRoot={onNewChat} />
+      <ChatBreadcrumb current={title ?? undefined} currentId={titleId} heading onRoot={onNewChat} />
       <div className="sp-chat-header__actions">
         <ChatButton kind="tertiary" size="small" icon={<HistoryIcon />} onClick={onHistory}>
           History

@@ -851,6 +851,94 @@ export interface GenerateRepairResult {
   meta: { model: string; generatedAt: string };
 }
 
+// ---------------------------------------------------------------------------
+// Saved Generate chats (migration 0038, PROMPT §9.8 and §12). The stored
+// shapes are the client's chat model (src/lib/generate/chat.ts) minus
+// everything a saved chat never keeps: the photo, any data: value, running
+// turns, and UI state. threadStorage.ts converts in both directions; the
+// store refuses a write that still carries a data: value anywhere.
+// ---------------------------------------------------------------------------
+
+/** A member's message, as saved. `hadPhoto` is all that remains of a photo:
+ * its aspect, so a reopened chat can say one was attached. */
+export interface StoredUserTurn {
+  id: string;
+  role: "user";
+  text: string;
+  createdAt: string;
+  hadPhoto?: { aspect: number };
+  platformHint?: PlatformId;
+  variations: number;
+  templateIdHint?: string;
+  intent: "brief" | "followUp" | "platform" | "freestyle";
+}
+
+/** One draft, as saved. A library draft refetches its template on reopen;
+ * a freestyle draft rebuilds from `proposal.design`. */
+export interface StoredDraft {
+  id: string;
+  /** Includes `design` for a freestyle draft. */
+  proposal: GeneratedProposal;
+  /** Kept apart from any schema, so a card whose template has since gone
+   * still has its shape. */
+  canvas: { width: number; height: number };
+  /** The member's current values. A data: value (a photo or an uploaded
+   * image) is deleted, not blanked: the key is absent. */
+  values: FieldValues;
+}
+
+/** A finished assistant turn, as saved. Only finished turns are stored. */
+export interface StoredAssistantTurn {
+  id: string;
+  role: "assistant";
+  createdAt: string;
+  replyTo: string;
+  phase: "done" | "stopped" | "error";
+  status: string;
+  reply?: string;
+  warnings: string[];
+  error?: string;
+  meta?: { model: string; candidateCount: number; mode: "library" | "freestyle" };
+  drafts: StoredDraft[];
+}
+
+export type StoredTurn = StoredUserTurn | StoredAssistantTurn;
+
+/** What Recent and History draw for a chat: the first draft of its first
+ * finished turn. `templateId` for a library draft, `design` for a freestyle
+ * one. */
+export interface GenerateThreadPreview {
+  templateId?: string;
+  design?: GeneratedDesign;
+  values: FieldValues;
+  canvas: { width: number; height: number };
+}
+
+/** A chat as Recent and History list it: no turns. */
+export interface GenerateThreadSummary {
+  id: string;
+  title: string;
+  /** Distinct primary platforms across every draft, in PLATFORMS order. */
+  platforms: PlatformId[];
+  /** Null when the chat has no finished draft to show. */
+  preview: GenerateThreadPreview | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** A whole saved chat, for reopening it. */
+export interface GenerateThreadRecord extends GenerateThreadSummary {
+  turns: StoredTurn[];
+}
+
+/** What the chat page writes on create and on every later save. */
+export interface GenerateThreadInput {
+  title: string;
+  platforms: PlatformId[];
+  preview: GenerateThreadPreview | null;
+  turns: StoredTurn[];
+}
+
 /** One per-layer import issue — lets the builder point at the layer that
  * degraded instead of dumping a joined paragraph. */
 export interface ImportIssue {

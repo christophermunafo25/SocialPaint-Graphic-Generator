@@ -1,7 +1,7 @@
 // Data-layer contracts. Components import ONLY these interfaces (via the
 // factory in ./index.ts) — nothing outside src/lib touches a backend client.
 
-import type { CanvasSize } from "../templates/platforms";
+import type { CanvasSize, PlatformId } from "../templates/platforms";
 import type {
   BrandAsset,
   BrandKit,
@@ -14,6 +14,9 @@ import type {
   GenerateRepairInput,
   GenerateRepairResult,
   GenerateResult,
+  GenerateThreadInput,
+  GenerateThreadRecord,
+  GenerateThreadSummary,
   InsightEvent,
   IntegrationConnectionInfo,
   MonthlyUsage,
@@ -287,6 +290,41 @@ export interface GenerateCallOptions {
   signal?: AbortSignal;
 }
 
+/** Saved Generate chats (migration 0038): Recent on the start state, the
+ * History page, and reopening a chat at /generate/c/<id>.
+ *
+ * Strictly the signed-in member's own chats in the given company. Under
+ * Supabase that is RLS (every policy is user_id = auth.uid()), so not even a
+ * company admin reads another member's chats; the local dev backend scopes
+ * to its one fixed dev user the same way.
+ *
+ * Every write refuses input that carries a data: value anywhere
+ * (assertNoDataUrls): the member's photo never reaches a stored row. */
+export interface GenerateThreadStore {
+  /** Newest first by updated_at, ties broken by id, both descending.
+   * `before` is the `nextBefore` of the previous page: an opaque cursor
+   * naming that page's last chat, so paging never skips or repeats a chat
+   * that shares its timestamp with another. `platform` keeps chats whose
+   * platforms include it; `q` is a case-insensitive substring of the title.
+   * `nextBefore` is null on the last page. Summaries carry no turns. */
+  list(
+    companyId: string,
+    opts: { limit: number; before?: string; platform?: PlatformId; q?: string },
+  ): Promise<{ items: GenerateThreadSummary[]; nextBefore: string | null }>;
+  /** The distinct platforms across the member's chats, in PLATFORMS order:
+   * History's filter chips. */
+  platformsInUse(companyId: string): Promise<PlatformId[]>;
+  /** Null when there is no such chat, it belongs to someone else, or the id
+   * is not one this backend could have issued. */
+  get(companyId: string, id: string): Promise<GenerateThreadRecord | null>;
+  /** The author is the signed-in member (the column defaults to auth.uid()). */
+  create(companyId: string, input: GenerateThreadInput): Promise<GenerateThreadRecord>;
+  /** Replaces the chat wholesale and stamps updated_at. Throws when the chat
+   * no longer exists, so a caller never mistakes a lost write for a save. */
+  update(companyId: string, id: string, input: GenerateThreadInput): Promise<void>;
+  remove(companyId: string, id: string): Promise<void>;
+}
+
 export interface StyleImportResult {
   colors: import("../types").BrandColor[];
   typeStyles: import("../types").BrandTypeStyle[];
@@ -321,6 +359,7 @@ export interface Stores {
   publicLinks: PublicLinkStore;
   designImport: DesignImportProvider;
   generate: GenerateProvider;
+  generateThreads: GenerateThreadStore;
   /** "supabase" or "local" — surfaced in the dev switcher so it's obvious
    * which backend is active. */
   backend: "supabase" | "local";

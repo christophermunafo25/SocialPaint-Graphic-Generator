@@ -25,11 +25,15 @@ export function GroupChips({
   facets,
   selected,
   onSelect,
+  allLabel = "All",
 }: {
   facets: PlatformFacet[];
   /** null is the "All" chip. */
   selected: PlatformId | null;
   onSelect(next: PlatformId | null): void;
+  /** The first chip's label. The catalogue's "All" by default; Generate's
+   *  History names what it holds ("All chats", PROMPT §8.6). */
+  allLabel?: string;
 }) {
   const { ref, atStart, atEnd } = useEdgeFade<HTMLDivElement>([facets.length]);
   const chipRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -115,7 +119,7 @@ export function GroupChips({
         role="radiogroup"
         aria-label="Filter by platform"
       >
-        {chip(null, 0, "All", LayoutGrid)}
+        {chip(null, 0, allLabel, LayoutGrid)}
         {facets.map((f, i) =>
           chip(
             f.platform.id,

@@ -13,10 +13,13 @@ import {
   type AssistantTurn,
   type ChatDraft,
   type ChatPhoto,
+  type ChatThread,
 } from "@/lib/generate/chat";
 import { DEFAULT_VARIATIONS } from "@/lib/generate/chatReducer";
 import { missingFields } from "@/lib/generate/draftDownload";
 import { previewValues, turnPhoto } from "@/lib/generate/draftView";
+import { threadWritesSettled } from "@/lib/generate/threadSaver";
+import { fromStoredThread } from "@/lib/generate/threadStorage";
 import { deriveTryNext, platformsAskedFor, type TryNextAction } from "@/lib/generate/tryNext";
 import { classifySize, type PlatformId } from "@/lib/templates/platforms";
 import { stores } from "@/lib/stores";
@@ -28,21 +31,22 @@ import { useFullViewport } from "../layout/ChromeContext";
 import { Page } from "../layout/Page";
 import { AssistantTurnView } from "./AssistantTurnView";
 import { ChatHeader } from "./ChatHeader";
+import { ChatLoading, ChatUnavailable, THREAD_PLACEHOLDER } from "./ChatLoadStates";
 import { Composer } from "./Composer";
 import { EditorPanel, ExportErrorToast, type EditorSaveToLibrary } from "./EditorPanel";
 import { LegalLinks } from "./LegalLinks";
+import { RecentChats } from "./RecentChats";
 import { ScrollFade, useScrollFades } from "./ScrollFade";
 import { ChipRow, SuggestionChip } from "./SuggestionChip";
 import { UserMessage } from "./UserMessage";
 import { requestComposerFocus, takeComposerFocus } from "./composerFocus";
 import { useChatController } from "./useChatController";
 import { useDraftDownload } from "./useDraftDownload";
+import { useThreadPersistence } from "./useThreadPersistence";
 import { useThreadScroll } from "./useThreadScroll";
 
 /** The Start state's composer placeholder (PROMPT §7.9). */
 const START_PLACEHOLDER = "Describe the post. Add any dates, names, or links it needs.";
-/** The thread's composer placeholder. */
-const THREAD_PLACEHOLDER = "Ask for changes or describe a new post";
 /** The placeholder while a Start from chip is pinned (proposed copy). */
 const pinnedPlaceholder = (templateName: string) =>
   `Describe your ${templateName} post. Add any dates, names, or links it needs.`;
@@ -60,6 +64,16 @@ const EDITOR_INLINE_MIN = 1180;
 
 /** How long a card download's failure toast stays up (TemplateFill's). */
 const EXPORT_TOAST_MS = 6000;
+
+/** The longest the Start column waits, hidden, for the rows under the
+ * composer before it shows anyway. */
+const START_REVEAL_MS = 400;
+
+/** Under the first message of a reopened chat that had a photo (PROMPT
+ * §9.8, proposed copy): photos are never saved. */
+const PHOTO_NOT_SAVED = "Photos aren't saved with chats. Attach it again to use it in a new draft.";
+/** Under the composer until a save succeeds (PROMPT §9.8, proposed copy). */
+const NOT_SAVED_YET = "This chat isn't saved yet.";
 
 /** Whether the viewport is at least `px` wide, following resizes. */
 function useMinWidth(px: number): boolean {
@@ -148,19 +162,30 @@ type SaveState =
  * The dev backend has no Edge Functions and no model key, so the Start
  * state keeps today's honest empty state under the greeting there.
  *
- * `threadId` names a saved chat (/generate/c/<id>). Chats are not saved
- * yet (§9.8), so every chat page opens as a new chat; App keys the page on
- * it (and on the workspace), so a different chat always mounts fresh.
- * Every new chat shares one key, so a navigation to /generate from inside
- * a chat (the sidebar's Generate) reaches this page as a fresh route
- * object instead, and starts a new chat in place.
+ * Chats save themselves (§9.8, useThreadPersistence): the first time a
+ * turn finishes, again as each later one does, and 800ms after the last
+ * edit, never while a run is in flight. The first save gives the chat its
+ * address: the page replaces /generate with /generate/c/<id> in place, and
+ * App keeps it mounted through that (generatePageKey), so the photo and
+ * everything else on screen stay. A save that fails leaves the chat as it
+ * is and says "This chat isn't saved yet." under the composer until one
+ * succeeds. The Start state lists the member's four most recent chats
+ * (RecentChats) under the Start from row; a card opens its chat, and View
+ * all opens History. The Start column shows once both rows have settled
+ * (400ms at most), so neither lifts the centred composer as it lands.
+ *
+ * A reopened chat (SavedChat, below) arrives as `initial`, its drafts'
+ * templates fetched again and nothing of its photos but the note under the
+ * first message that had one.
  */
-export function GeneratePage({
+function GenerateChat({
   templateIdHint,
+  initial,
 }: {
   /** "Use this one" from a template card: pins its Start from chip. */
   templateIdHint?: string;
-  threadId?: string;
+  /** A saved chat to continue; null for a new chat. */
+  initial: ChatThread | null;
 }) {
   const { company, role } = useAuth();
   const { kit } = useBrand();
@@ -177,15 +202,62 @@ export function GeneratePage({
   // the Start state says why.
   const libraryEmpty = published !== null && published.length === 0;
 
-  const { thread, running, full, send, runTryNext, stop, retry, editValues, reset } =
+  // ── Saving (§9.8) ──────────────────────────────────────────────────────
+  // The saver sees every transition of the thread (the controller's
+  // onChange). The first save of a new chat names it and moves the page to
+  // the chat's address in place: the route is marked savedInPlace, which
+  // keeps App's key for this page (generatePageKey), so nothing remounts.
+  const onFirstSave = useRef<(id: string) => void>(() => {});
+  const { observe, unsaved } = useThreadPersistence({
+    companyId: company?.id ?? null,
+    initialId: initial?.id ?? null,
+    onCreated: (id) => onFirstSave.current(id),
+  });
+
+  const { thread, running, full, send, runTryNext, stop, retry, editValues, reset, assignId } =
     useChatController({
       companyId: company?.id ?? null,
       kit,
       libraryEmpty,
       published,
+      initial,
+      onChange: observe,
     });
+  onFirstSave.current = (id) => {
+    assignId(id);
+    navigate({ name: "generate", threadId: id, savedInPlace: true }, { replace: true });
+  };
   const inThread = thread.turns.length > 0;
   useFullViewport(inThread);
+
+  // ── The Start column's first paint ─────────────────────────────────────
+  // The column is centred in the page, so a row that lands under the
+  // composer after it has painted lifts it: Recent (56 + 212) would move the
+  // composer 134px up under the member's pointer and caret, and the Start
+  // from row 26px. So the column waits, hidden, until both rows are settled
+  // (the published templates are in, and Recent has its list, its failure
+  // or a cached list with chats), or START_REVEAL_MS at the most, then
+  // shows once, already in place. It stays shown until the page empties a
+  // chat in place (clearChat), whose Start state waits the same way:
+  // Recent may have gained the chat just left.
+  const [recentSettled, setRecentSettled] = useState(false);
+  const onRecentSettled = useCallback(() => setRecentSettled(true), []);
+  const [startShown, setStartShown] = useState(false);
+  const startReady =
+    startShown ||
+    inThread ||
+    !configured ||
+    !company ||
+    (publishedState.status !== "loading" && recentSettled);
+  useEffect(() => {
+    if (startShown) return;
+    if (startReady) {
+      setStartShown(true);
+      return;
+    }
+    const timer = window.setTimeout(() => setStartShown(true), START_REVEAL_MS);
+    return () => window.clearTimeout(timer);
+  }, [startShown, startReady]);
 
   // ── The composer ────────────────────────────────────────────────────────
   const [text, setText] = useState("");
@@ -197,22 +269,20 @@ export function GeneratePage({
   // "New chat", a chat opened from History, and a first send (whose Large
   // composer gives way to the dock's) each land focus in the composer
   // (§9.10). Checked after every render: the request can come from before
-  // this page mounted.
+  // this page mounted. A Start column still hidden cannot take focus, so
+  // the request waits for it to show.
   useEffect(() => {
-    if (takeComposerFocus()) composerRef.current?.focus();
+    if (startReady && takeComposerFocus()) composerRef.current?.focus();
   });
 
   // ── Start from (§9.7) ──────────────────────────────────────────────────
   const [pinnedId, setPinnedId] = useState<string | null>(null);
   // The route's hint pins its chip once, when the library confirms it is
   // still published (a stale hint degrades to a library-wide generate).
-  // Once the member unpins it or sends, it stays unpinned.
+  // Once the member unpins it or sends, it stays unpinned. The effect that
+  // pins it follows the one that empties the chat on a new route (below),
+  // so a new chat on a hint's address, reached by back, pins it again.
   const appliedHint = useRef<string | null>(null);
-  useEffect(() => {
-    if (!templateIdHint || !published || appliedHint.current === templateIdHint) return;
-    appliedHint.current = templateIdHint;
-    if (published.some((t) => t.id === templateIdHint)) setPinnedId(templateIdHint);
-  }, [templateIdHint, published]);
 
   // The most recently updated published templates, the hinted one first.
   const starters = useMemo(() => {
@@ -252,6 +322,13 @@ export function GeneratePage({
   const [editor, setEditor] = useState<EditorState | null>(null);
   const paletteSize = kit?.colors.length ?? 0;
   const lastTurn = thread.turns[thread.turns.length - 1];
+  // The first message of a reopened chat that was sent with a photo: the
+  // photo was not saved, and the note under it says so (§9.8). A message
+  // sent on this page still holds its photo and needs no note.
+  const photoNoteId = useMemo(
+    () => thread.turns.find((t) => isUserTurn(t) && t.hadPhoto && !t.photo)?.id,
+    [thread.turns],
+  );
 
   // Try next (§9.4) for the thread's last turn, once it is done, while
   // nothing runs and the chat can take another message. A platform the
@@ -292,14 +369,22 @@ export function GeneratePage({
   };
 
   /** Empties the chat in place: stops a run in flight, clears the thread
-   * and the composer, and asks for focus in the composer. */
+   * and the composer, and asks for focus in the composer. The Start state
+   * it leads to waits, hidden, for its rows like a fresh page's: Recent
+   * settles before the first paint from a cached list with chats, and
+   * otherwise when the refreshed list lands. */
   const clearChat = useCallback(() => {
+    if (threadRef.current.turns.length > 0) {
+      setStartShown(false);
+      setRecentSettled(false);
+    }
     reset();
     setText("");
     setPhoto(null);
     setPlatform(null);
     setVariations(DEFAULT_VARIATIONS);
     setPinnedId(null);
+    appliedHint.current = null;
     setCaptionPicks({});
     setEditor(null);
     requestComposerFocus();
@@ -313,10 +398,11 @@ export function GeneratePage({
   }, [clearChat, navigate]);
 
   // The sidebar's Generate from inside a chat at /generate: the router
-  // hands over a fresh route object for the same address, and App keeps
-  // this page mounted (every new chat has the one key), so the page starts
-  // the new chat itself, as the breadcrumb does. New chat's own navigation
-  // lands here too, on a thread it has already emptied.
+  // hands over a fresh route object for the same address (routeState), and
+  // App keeps this page mounted (every new chat has the one key), so the
+  // page starts the new chat itself, as the breadcrumb does. New chat's own
+  // navigation lands here too, on a thread it has already emptied, and so
+  // does back from a chat saved in place to an earlier new chat's address.
   const seenRoute = useRef(route);
   useEffect(() => {
     if (route === seenRoute.current) return;
@@ -324,10 +410,29 @@ export function GeneratePage({
     if (route.name === "generate" && !route.threadId && inThread) clearChat();
   }, [route, inThread, clearChat]);
 
+  // The Start from hint (above), after the effect that empties the chat: an
+  // emptied chat forgets the hint it applied, so the route it empties on
+  // pins its own hint, as a fresh load of its address does.
+  useEffect(() => {
+    if (!templateIdHint || !published || appliedHint.current === templateIdHint) return;
+    appliedHint.current = templateIdHint;
+    if (published.some((t) => t.id === templateIdHint)) setPinnedId(templateIdHint);
+  }, [templateIdHint, published]);
+
   const openHistory = useCallback(() => {
     setEditor(null);
     navigate({ name: "generateHistory" });
   }, [navigate]);
+
+  /** A Recent card: the chat opens at its own address, a page of its own,
+   * with focus in its composer once it has loaded (§9.10). */
+  const openChat = useCallback(
+    (threadId: string) => {
+      requestComposerFocus();
+      navigate({ name: "generate", threadId });
+    },
+    [navigate],
+  );
 
   const onCaptionSelect = useCallback(
     (turnId: string, draftId: string) => setCaptionPicks((p) => ({ ...p, [turnId]: draftId })),
@@ -655,7 +760,7 @@ export function GeneratePage({
         {exportExtras}
         <Page layout={{ className: "sp-chat-page", state: "start" }}>
           <div className="sp-chat-start">
-            <div className="sp-chat-start__column">
+            <div className="sp-chat-start__column" data-pending={startReady ? undefined : true}>
               <div className="sp-chat-start__greeting">
                 <h1 className="sp-chat-start__title">What are we painting today?</h1>
                 <p className="sp-chat-start__sub">
@@ -703,6 +808,14 @@ export function GeneratePage({
                         ))}
                       </ChipRow>
                     </div>
+                  )}
+                  {company && (
+                    <RecentChats
+                      companyId={company.id}
+                      onOpen={openChat}
+                      onViewAll={openHistory}
+                      onSettled={onRecentSettled}
+                    />
                   )}
                 </>
               ) : (
@@ -755,7 +868,12 @@ export function GeneratePage({
                 <div ref={columnRef} className="sp-chat-thread__column">
                   {thread.turns.map((turn) =>
                     isUserTurn(turn) ? (
-                      <UserMessage key={turn.id} text={turn.text} photo={turn.photo?.dataUrl} />
+                      <UserMessage
+                        key={turn.id}
+                        text={turn.text}
+                        photo={turn.photo?.dataUrl}
+                        note={turn.id === photoNoteId ? PHOTO_NOT_SAVED : undefined}
+                      />
                     ) : (
                       <AssistantTurnView
                         key={turn.id}
@@ -807,6 +925,7 @@ export function GeneratePage({
                   textareaRef={composerRef}
                   disabled={full}
                 />
+                {unsaved && <p className="sp-chat-dock__note">{NOT_SAVED_YET}</p>}
               </div>
               <p className="sp-chat-footnote">
                 <span>Every graphic follows your Brand Studio rules.</span>
@@ -833,4 +952,80 @@ export function GeneratePage({
       </Page>
     </>
   );
+}
+
+/**
+ * Generate, at /generate (a new chat) and /generate/c/<id> (a saved one):
+ * the route's page. App keys it per chat (generatePageKey), so a different
+ * chat is a different mount and the chat it opened on is read once, at
+ * mount. The one address change it sees in place is its own, after it
+ * saves a new chat for the first time (§9.8); that chat is already on
+ * screen, and reading `threadId` again would load it over itself.
+ */
+export function GeneratePage({
+  templateIdHint,
+  threadId,
+}: {
+  /** "Use this one" from a template card: pins its Start from chip. */
+  templateIdHint?: string;
+  /** A saved chat to open (/generate/c/<id>). */
+  threadId?: string;
+}) {
+  const [openedId] = useState(threadId ?? null);
+  return openedId ? (
+    <SavedChat threadId={openedId} />
+  ) : (
+    <GenerateChat templateIdHint={templateIdHint} initial={null} />
+  );
+}
+
+/**
+ * A saved chat, opened (§9.8): the stored record, then the templates its
+ * library drafts fill (a template that has gone, or is no longer
+ * published, leaves its draft saying so), freestyle drafts rebuilt from
+ * their designs, and no photos. The thread's layout stands in while it
+ * loads (ChatLoading). A record that is not there, or not the member's in
+ * this workspace, reads as not found; a load that fails says so with Try
+ * again (ChatUnavailable). Once loaded, the chat carries on as any other,
+ * saving to the same record.
+ */
+function SavedChat({ threadId }: { threadId: string }) {
+  const { company } = useAuth();
+  const { navigate } = useRouter();
+  const companyId = company?.id ?? null;
+  const load = useAsync(async (): Promise<ChatThread | null> => {
+    if (!companyId) return null;
+    // A write of this chat may still be in flight (it was left a moment
+    // ago, with an edit to write): read the row it leaves, never the one
+    // before it, which the chat's next save would write back over the edit.
+    await threadWritesSettled();
+    const record = await stores.generateThreads.get(companyId, threadId);
+    if (!record) return null;
+    return fromStoredThread(record, {
+      companyId,
+      getTemplate: (id) => stores.templates.get(id),
+    });
+  }, [companyId, threadId]);
+
+  const newChat = useCallback(() => {
+    requestComposerFocus();
+    navigate({ name: "generate" });
+  }, [navigate]);
+  const history = useCallback(() => navigate({ name: "generateHistory" }), [navigate]);
+
+  if (load.status === "loading") return <ChatLoading onNewChat={newChat} onHistory={history} />;
+  if (load.status === "error") {
+    return (
+      <ChatUnavailable
+        reason="error"
+        onRetry={load.retry}
+        onNewChat={newChat}
+        onHistory={history}
+      />
+    );
+  }
+  if (!load.data) {
+    return <ChatUnavailable reason="missing" onNewChat={newChat} onHistory={history} />;
+  }
+  return <GenerateChat initial={load.data} />;
 }

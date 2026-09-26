@@ -77,6 +77,8 @@ export interface ChatController {
   ): void;
   /** New chat: stops a run in flight, then empties the thread. */
   reset(): void;
+  /** The chat was saved for the first time, as `id` (PROMPT §9.8). */
+  assignId(id: string): void;
   /** The platform and variation count of the thread's last composer send
    * (a brief or a typed follow-up, never a Try next chip), which
    * compact-composer follow-ups reuse. Null before the first message. */
@@ -88,9 +90,16 @@ export interface ChatControllerOptions {
   kit: BrandKit | null;
   /** No published templates: every run is freestyle (PROMPT §8.2). */
   libraryEmpty: boolean;
-  /** A saved chat to resume (Phase 5). A turn it holds mid-run settles as
-   * stopped, since nothing is running behind it any more. */
-  initial?: ChatThread;
+  /** A saved chat to resume (PROMPT §9.8). Read once, at mount. A turn it
+   * holds mid-run settles as stopped, since nothing is running behind it
+   * any more. */
+  initial?: ChatThread | null;
+  /** Every transition of the thread, as it happens: `next` after the
+   * action, `prev` before it. Called synchronously with each change,
+   * including the stop that New chat and leaving the page make, so a
+   * listener (the page's saving) sees what the member never gets to see
+   * rendered. */
+  onChange?(next: ChatThread, prev: ChatThread): void;
   /** The company's published templates, when the page has them. Only their
    * canvas sizes are read, so step 2 can say how many sizes it is rendering
    * before each template is fetched. Without it a library proposal's size
@@ -158,15 +167,18 @@ export function useChatController(opts: ChatControllerOptions): ChatController {
   const runRef = useRef<{ id: string; abort: AbortController } | null>(null);
 
   const apply = useCallback((action: ChatAction) => {
-    const next = chatReducer(threadRef.current, action);
-    if (next === threadRef.current) return;
+    const prev = threadRef.current;
+    const next = chatReducer(prev, action);
+    if (next === prev) return;
     threadRef.current = next;
     setThread(next);
+    optsRef.current.onChange?.(next, prev);
   }, []);
 
   // Leaving the page (another chat, another route) stops the run in flight.
-  // The turn is settled too, for a remount that keeps this state (a hot
-  // reload in development).
+  // The turn is settled too, so the page's saving (onChange) keeps the
+  // stopped turn as New chat's stop does, and for a remount that keeps this
+  // state (a hot reload in development).
   useEffect(
     () => () => {
       const run = runRef.current;
@@ -343,6 +355,8 @@ export function useChatController(opts: ChatControllerOptions): ChatController {
     apply({ type: "reset", at: now() });
   }, [apply, stop]);
 
+  const assignId = useCallback((id: string) => apply({ type: "idAssigned", id }), [apply]);
+
   const lastSend = useMemo(() => {
     const last = lastComposerTurn(thread.turns);
     if (!last) return null;
@@ -362,6 +376,7 @@ export function useChatController(opts: ChatControllerOptions): ChatController {
     retry,
     editValues,
     reset,
+    assignId,
     lastSend,
   };
 }

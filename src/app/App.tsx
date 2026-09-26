@@ -6,7 +6,7 @@ import { AuthPage } from "./components/auth/AuthPage";
 import { PeopleAdmin } from "./components/admin/PeopleAdmin";
 import { BrandProvider, useBrand } from "@/lib/brand/BrandContext";
 import { ColorSchemeProvider } from "@/lib/colorScheme";
-import { RouterProvider, useRouter } from "./router";
+import { RouterProvider, generatePageKey, useRouter } from "./router";
 import { readCanvaReturn, takeCanvaConnectPending } from "@/lib/canvaReturn";
 import { AppShell } from "./components/AppShell";
 import { DevBackendBanner } from "./components/DevBackendBanner";
@@ -189,13 +189,18 @@ function Screen() {
         {route.name === "generate" && (
           // Keyed per chat (PROMPT §11.1): opening another chat, or leaving
           // one for a new chat, starts from fresh state. Every new chat
-          // shares the one key, so the template hint alone never remounts.
+          // shares the one key, so the template hint alone never remounts,
+          // and neither does the page's own replace of /generate with
+          // /generate/c/<id> once it has saved the chat (§9.8): the route
+          // it navigates to is marked savedInPlace and keeps the new-chat
+          // key, so the photo, the open editor and the caption picks stay
+          // on screen. generatePageKey (router.tsx) says why in full.
           // Keyed per workspace too: a chat belongs to the company it was
           // started in, so switching workspace ends it (the unmount stops a
           // run in flight) and nothing written for one company is sent,
           // shown or saved under another.
           <GeneratePage
-            key={`${company.id}:${route.threadId ?? "new"}`}
+            key={`${company.id}:${generatePageKey(route)}`}
             templateIdHint={route.templateId}
             threadId={route.threadId}
           />

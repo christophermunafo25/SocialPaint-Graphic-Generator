@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { routeToUrl, urlToRoute, type Route } from "./router";
+import { generatePageKey, routeState, routeToUrl, urlToRoute, type Route } from "./router";
 
 const parse = (url: string): Route => {
   const u = new URL(url, "http://localhost");
@@ -63,6 +63,26 @@ describe("Generate routes (PROMPT §11.1)", () => {
     );
   });
 
+  it("keys a saved chat's page by its id and every new chat's page as one", () => {
+    expect(generatePageKey({ name: "generate" })).toBe("new");
+    expect(generatePageKey({ name: "generate", templateId: "tpl" })).toBe("new");
+    expect(generatePageKey({ name: "generate", threadId: "abc" })).toBe("chat:abc");
+    // A chat id can never pose as the new-chat key.
+    expect(generatePageKey({ name: "generate", threadId: "new" })).toBe("chat:new");
+  });
+
+  it("keeps the new chat's key through its own replace after the first save", () => {
+    const saved: Route = { name: "generate", threadId: "abc", savedInPlace: true };
+    expect(generatePageKey(saved)).toBe("new");
+    // The marker never reaches the address, so a reload or back and
+    // forward reads the chat's own key.
+    const url = routeToUrl(saved);
+    expect(url).toBe("/generate/c/abc");
+    const reloaded = parse(url);
+    expect(reloaded).toEqual({ name: "generate", threadId: "abc" });
+    expect(reloaded.name === "generate" && generatePageKey(reloaded)).toBe("chat:abc");
+  });
+
   it("round-trips every Generate route", () => {
     const routes: Route[] = [
       { name: "generate" },
@@ -75,5 +95,17 @@ describe("Generate routes (PROMPT §11.1)", () => {
       const url = routeToUrl(route);
       expect(routeToUrl(parse(url))).toBe(url);
     }
+  });
+});
+
+describe("routeState", () => {
+  it("makes a repeat navigation with the same route object a new state", () => {
+    // The sidebar's items hand over one constant route on every click.
+    const sidebarGenerate: Route = { name: "generate" };
+    const first = routeState(sidebarGenerate);
+    const second = routeState(sidebarGenerate);
+    expect(first).not.toBe(sidebarGenerate);
+    expect(second).not.toBe(first);
+    expect(second).toEqual(sidebarGenerate);
   });
 });

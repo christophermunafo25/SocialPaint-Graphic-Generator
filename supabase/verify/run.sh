@@ -75,6 +75,15 @@ fi
 sed -E 's/^psql:[^:]+:[0-9]+: NOTICE:  //' /tmp/verify-canva.out \
   | grep -vE '^(DO|CREATE FUNCTION|SET|RESET|INSERT|UPDATE|DELETE).*$'
 
+echo "==> Generate chat checks"
+if ! psql -X -v ON_ERROR_STOP=1 -d "$DB" -f 50_generate_threads.sql > /tmp/verify-generate.out 2>&1; then
+  sed -E 's/^psql:[^:]+:[0-9]+: (NOTICE|ERROR):  /\1: /' /tmp/verify-generate.out
+  echo "FAILED: a Generate chat check did not pass"
+  exit 1
+fi
+sed -E 's/^psql:[^:]+:[0-9]+: NOTICE:  //' /tmp/verify-generate.out \
+  | grep -vE '^(DO|CREATE FUNCTION|SET|RESET|INSERT|UPDATE|DELETE|BEGIN|ROLLBACK).*$'
+
 echo "==> Concurrency: two visitors, one remaining use"
 psql -q -d "$DB" -c "
   update template_links set use_count = 0, use_cap = 1, revoked_at = null

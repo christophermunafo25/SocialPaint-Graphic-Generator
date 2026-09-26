@@ -8202,10 +8202,10 @@ button.sp-chat-draft__preview {
    gutter, on a --media-overlay scrim that closes it on click. The panel
    slides in 24 from the right as the scrim fades in, over --dur-panel
    (zeroed under reduced motion). No fill mode, so no transform outlives
-   the entry: a fixed descendant (the cropper, the toast) is placed
-   against the viewport again once it lands. z-index 50, the app's modal
-   layer (its dialogs are z-50), so a dialog opened from inside the sheet
-   (the brand image picker, portaled after it) stacks above it. As a card
+   the entry: a fixed descendant (the toast) is placed against the
+   viewport again once it lands. z-index 50, the app's modal layer (its
+   dialogs are z-50), so a dialog opened from inside the sheet (the brand
+   image picker, the cropper, portaled after it) stacks above it. As a card
    inside a dialog it takes the recipe's nested treatment: no drop shadow
    (nothing to cast it on over a scrim), a visible edge. Below --bp-lg
    the app's top bar (--z-drawer, above this layer) holds the first
@@ -8456,9 +8456,10 @@ button.sp-chat-draft__preview {
 /* ── Generate chat page layout (Figma "Generate · Chat", 2026-09-25) ── */
 /* GeneratePage and GenerateHistoryPage (docs/design/generate-chat/
    PROMPT.md §8), in this order: the page column in each state, the Start
-   state, the legal links, the page header and breadcrumb, the thread with
-   its assistant turns and progress row, the composer dock, the Edit
-   state's split, and History.
+   state and its Recent row, the legal links, the page header and
+   breadcrumb, the thread with its assistant turns and progress row, the
+   composer dock, the Edit state's split, a saved chat while it opens or
+   when it cannot (ChatLoading, ChatUnavailable), and History.
    This is layout only: the surfaces it holds (the composer, the cards, the
    chips, the dev backend's empty state) carry their own recipes above, so
    nothing here joins a shared recipe's selector list. */
@@ -8512,7 +8513,8 @@ button.sp-chat-draft__preview {
 /* ── Generate chat: Start state (frames 01 to 03; PROMPT §8.2) ────────────
    Greeting (26/125% Medium at -1.5% in the heading ink over 15/140% in the
    secondary ink, 8 apart), 28, the Large composer, then either the
-   library-empty line 12 under it or the Start from row 16 under it. */
+   library-empty line 12 under it or the Start from row 16 under it, then
+   Recent (below) 56 under the last of them. */
 .sp-chat-start {
   flex: 1 0 auto;
   display: flex;
@@ -8527,6 +8529,13 @@ button.sp-chat-draft__preview {
   align-items: center;
   width: 100%;
   max-width: 760px;
+}
+/* Laid out but unseen until the rows under the composer (Start from,
+   Recent) have settled, at most 400ms (GeneratePage): the column is
+   centred, so it shows once, in its final place, instead of lifting the
+   composer as each row lands. */
+.sp-chat-start__column[data-pending] {
+  visibility: hidden;
 }
 .sp-chat-start__greeting {
   display: flex;
@@ -8569,6 +8578,75 @@ button.sp-chat-draft__preview {
 .sp-chat-start__starters {
   width: 100%;
   margin-top: var(--space-sm);
+}
+
+/* ── Generate chat: Recent on the Start state (frame 01 "Start", 285:61
+   light / 289:243 dark, "Recent" 285:457; PROMPT §8.2 item 4) ────────────
+   56 under whatever sits above it (the Start from row, the library-empty
+   line, or the composer). A 32 tall header row, "Recent" 4 in from the
+   column's edge (15/125% Medium at -1% in the primary ink) and View all at
+   its end, then 12, then the cards: four across the 760 column, 12 apart
+   (181 each, as drawn), in a grid so they narrow with the window; two
+   across on a phone. View all is the shelves' text action at the frame's
+   32 height: 13/110% Medium at +1% in the primary ink, 0 8 padding, an
+   underline on hover and the tight ring on keyboard focus. */
+.sp-chat-recent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  width: 100%;
+  margin-top: 56px;
+}
+.sp-chat-recent__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-height: 32px;
+  padding-left: var(--space-3xs);
+}
+.sp-chat-recent__title {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 1.25;
+  font-weight: var(--weight-ui);
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+.sp-chat-recent__viewall {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 var(--space-2xs);
+  border: none;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: var(--type-label-size);
+  line-height: 1.1;
+  font-weight: var(--weight-ui);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.sp-chat-recent__viewall:hover {
+  text-decoration: underline;
+}
+.sp-chat-recent__viewall:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-tight);
+}
+.sp-chat-recent__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-xs);
+}
+@media (max-width: 767px) {
+  .sp-chat-recent__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 /* The legal links (PROMPT §11.3): 12/125% in the muted ink, underlined.
@@ -8908,14 +8986,37 @@ button.sp-chat-draft__preview {
   max-width: none;
 }
 
+/* ── Generate chat: a saved chat opening, or not (PROMPT §9.8) ────────────
+   Loading keeps the thread states' layout (ChatLoading) with a sketch of
+   one exchange; its status line is a 12 tall bar in the 22px line box the
+   status sentence takes (15/150%), so the sketch sits where the text will.
+   A chat that cannot be opened centres History's error or empty state in
+   the space between the header and the legal links. */
+.sp-chat-loading__status {
+  display: flex;
+  align-items: center;
+  height: calc(var(--type-body-size) * 1.5);
+}
+.sp-chat-unavailable {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md) 0 var(--space-xl);
+  overflow-y: auto;
+}
+.sp-chat-unavailable > .sp-emptystate {
+  width: 100%;
+  max-width: 560px;
+}
+
 /* ── Generate chat: History (frame 07; PROMPT §8.6) ──────────────────────
-   The header: the breadcrumb, 8, the title row (the page title, New chat
-   at its end), 8, the description (14/120% in the secondary ink). Then the
-   body, the only scrolling region, 24 under the header. Like the thread
-   it runs into the page gutters and hands them back as padding, so the
-   cards' shadows are never clipped by its edge, and it reserves a classic
-   scrollbar's gutter on both edges so the grid stays centred under the
-   header. */
+   Top to bottom: the header (the breadcrumb, 8, the title row with New
+   chat at its end, 8, the description at 14/120% in the secondary ink),
+   24, the filter bar, 16, the grid's scroller (the only scrolling region,
+   with the top and bottom scroll fades over it), then the legal links. */
 .sp-chat-history-head {
   display: flex;
   flex-direction: column;
@@ -8935,13 +9036,62 @@ button.sp-chat-draft__preview {
   font-weight: 400;
   color: var(--text-secondary);
 }
-.sp-chat-history-body {
+
+/* The Brand Templates filter bar, as drawn here: 56 tall, the 48px chips
+   centred on its 52px rail, 24 under the description. On Brand Templates
+   the bar pulls up against the page header's margin and keeps 12 of block
+   air for pinning; this page's document never scrolls (the grid does), so
+   the bar never pins and takes only the 2px the rail needs around it. */
+.sp-chat-page[data-state="history"] .sp-filterbar {
+  flex-shrink: 0;
+  margin-top: var(--space-md);
+  padding-block: 2px;
+}
+
+/* The grid's scroller runs the full width of the page region: it steps
+   out of the page gutters and hands them back as its own inline padding,
+   so the cards' shadows are never cut at its sides. 24 of padding above
+   the grid and none below (the list's foot, .sp-chat-history-end, keeps
+   the last row's shadow clear at the end). A classic scrollbar's gutter is
+   reserved at its end, inside the page's right gutter: the end padding
+   gives back the scrollbar's width (--history-scrollbar, which
+   GenerateHistoryPage sets from useScrollFades; 0 for an overlay
+   scrollbar), so the grid keeps the header's and the filter bar's edges
+   on every platform. A card that takes keyboard focus scrolls clear of
+   both fades, ring and all, as the thread's messages clear its top fade.
+   The frame around it is the non-scrolling box the scroll fades lie in
+   (ScrollFade), 16 under the filter bar and flush on the legal links,
+   which the bottom fade softens the grid into. */
+.sp-chat-history-frame {
+  position: relative;
   flex: 1 1 0;
   min-height: 0;
-  margin-inline: calc(-1 * var(--page-pad));
-  padding: var(--space-md) var(--page-pad);
+  margin: var(--space-sm) calc(-1 * var(--page-pad)) 0;
+}
+.sp-chat-history-scroll {
+  height: 100%;
+  box-sizing: border-box;
+  padding: var(--space-md) max(0px, var(--page-pad) - var(--history-scrollbar, 0px)) 0
+    var(--page-pad);
   overflow-y: auto;
-  scrollbar-gutter: stable both-edges;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scroll-padding-block: calc(var(--gen-fade-h) + var(--focus-offset) + var(--focus-width));
+}
+
+/* Square cards, as many 220px-or-wider columns as fit, 12 apart: four of
+   244.75 at 1440, as drawn. */
+.sp-chat-history-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-xs);
+}
+
+/* The foot of the list: the paging sentinel the IntersectionObserver
+   watches, and 24 of room under the last row so its shadow is not cut by
+   the scroller's edge and the cards do not end flush on the legal links. */
+.sp-chat-history-end {
+  height: var(--space-md);
 }
 
 /* ── Component colour overrides (design-system distribution, section 8) ─────

@@ -276,8 +276,8 @@ export function EditorPanel({
     if (e.key === "Escape") {
       if (e.defaultPrevented) return;
       const target = e.target as Element;
-      // Portaled content (the brand image dialog) bubbles here through the
-      // React tree, and a dialog inside the panel (the cropper) owns its own
+      // Portaled content (the brand image dialog, the cropper) bubbles here
+      // through the React tree, and a dialog inside the panel owns its own
       // Escape: neither closes the panel.
       if (!panelRef.current?.contains(target)) return;
       const dialog = target.closest('[role="dialog"]');

@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useDropzone, type FileRejection } from "react-dropzone";
 import { Crop, RefreshCw, Upload } from "lucide-react";
 import type { BrandAsset, TemplateField } from "@/lib/types";
@@ -197,17 +198,24 @@ function ImageFieldInput({ field, value, onChange, inputId }: FieldInputProps) {
 
   return (
     <>
-      {cropping && cropSource && (
-        <ImageCropper
-          imageSrc={cropSource}
-          aspect={aspect}
-          onCancel={() => setCropping(false)}
-          onCropComplete={(cropped) => {
-            onChange(cropped);
-            setCropping(false);
-          }}
-        />
-      )}
+      {/* The cropper covers the viewport from <body>: inline, an ancestor's
+          mask, overflow or transform (the Generate editor's scrolling
+          field list fades its edges with a mask) would clip it, buttons
+          and all. */}
+      {cropping &&
+        cropSource &&
+        createPortal(
+          <ImageCropper
+            imageSrc={cropSource}
+            aspect={aspect}
+            onCancel={() => setCropping(false)}
+            onCropComplete={(cropped) => {
+              onChange(cropped);
+              setCropping(false);
+            }}
+          />,
+          document.body,
+        )}
       <ImageSourceDialog
         open={replacing}
         onClose={() => setReplacing(false)}
