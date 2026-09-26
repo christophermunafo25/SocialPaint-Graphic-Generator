@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { useFullViewport } from "../layout/ChromeContext";
 import { Page } from "../layout/Page";
 import { ErrorState } from "../ErrorState";
@@ -9,7 +9,8 @@ import { ChatButton } from "./ChatButton";
 import { ChatHeader } from "./ChatHeader";
 import { Composer } from "./Composer";
 import { DraftCardSkeleton } from "./DraftCardSkeleton";
-import { LegalLinks } from "./LegalLinks";
+import { ChatFootnote, LegalLinks } from "./LegalLinks";
+import { useScrollFades } from "./ScrollFade";
 import { NewChatIcon } from "./icons";
 import { takeComposerFocus } from "./composerFocus";
 
@@ -38,13 +39,23 @@ interface ChatPageActions {
  */
 export function ChatLoading({ onNewChat, onHistory }: ChatPageActions) {
   useFullViewport(true);
+  // The thread's scrollbar gutter, handed back as the real thread does, so
+  // the sketch's column does not jump sideways when the chat replaces it.
+  const threadRef = useRef<HTMLDivElement>(null);
+  const { gutter } = useScrollFades(threadRef);
   return (
     <Page layout={{ className: "sp-chat-page", state: "thread" }}>
       <ChatHeader title={null} onNewChat={onNewChat} onHistory={onHistory} />
       <div className="sp-chat-split">
         <div className="sp-chat-split__chat">
           <div className="sp-chat-thread-frame">
-            <div className="sp-chat-thread" aria-busy="true" aria-label="Loading chat">
+            <div
+              ref={threadRef}
+              className="sp-chat-thread"
+              style={{ "--thread-scrollbar": `${gutter}px` } as React.CSSProperties}
+              aria-busy="true"
+              aria-label="Loading chat"
+            >
               <div className="sp-chat-thread__column" aria-hidden>
                 <div className="sp-chat-user">
                   <Bone tone={SUNKEN} w="min(320px, 70%)" h={46} r="var(--radius-control-lg)" />
@@ -77,10 +88,7 @@ export function ChatLoading({ onNewChat, onHistory }: ChatPageActions) {
                 disabled
               />
             </div>
-            <p className="sp-chat-footnote">
-              <span>Every graphic follows your Brand Studio rules.</span>
-              <LegalLinks />
-            </p>
+            <ChatFootnote />
           </div>
         </div>
       </div>

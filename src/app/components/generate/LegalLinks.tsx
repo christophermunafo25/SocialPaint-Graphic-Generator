@@ -19,3 +19,15 @@ export function LegalLinks() {
     </>
   );
 }
+
+/** The thread dock's footnote row (PROMPT §8.4): the Brand Studio line,
+ * then the legal links, 12 apart in the muted ink. Shared by the chat and
+ * the saved chat's loading state, whose dock stands in for it. */
+export function ChatFootnote() {
+  return (
+    <p className="sp-chat-footnote">
+      <span>Every graphic follows your Brand Studio rules.</span>
+      <LegalLinks />
+    </p>
+  );
+}

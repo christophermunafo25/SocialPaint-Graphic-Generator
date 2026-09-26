@@ -32,7 +32,7 @@ import type {
   UsageStore,
 } from "../interfaces";
 import { browserTimeZone } from "../../companySettings";
-import { assertNoDataUrls } from "../../generate/threadStorage";
+import { assertNoDataUrls } from "../../generate/dataUrls";
 import { bucketDailyActivity } from "../dailyActivity";
 import {
   comesAfter,

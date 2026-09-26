@@ -43,7 +43,12 @@ export function GroupChips({
 
   const focusAndSelect = (i: number) => {
     onSelect(ids[i]);
-    chipRefs.current[i]?.focus();
+    const chip = chipRefs.current[i];
+    chip?.focus();
+    // focus() leaves a chip that is already partly visible where it is, cut
+    // off at the rail's edge with its ring; the track's scroll-padding keeps
+    // the ring clear once the chip is brought fully in.
+    chip?.scrollIntoView({ inline: "nearest", block: "nearest" });
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {

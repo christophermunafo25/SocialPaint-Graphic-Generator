@@ -55,28 +55,36 @@ describe("relativeDate", () => {
 });
 
 describe("chatMeta", () => {
-  it("joins the platform labels, then the date", () => {
-    expect(chatMeta(["instagram", "linkedin"], at(2026, 9, 26), NOW)).toBe(
-      "Instagram, LinkedIn · Today",
-    );
-    expect(chatMeta(["facebook"], at(2026, 9, 19), NOW)).toBe("Facebook · Sep 19");
+  it("joins the platform labels, and gives the date alongside", () => {
+    expect(chatMeta(["instagram", "linkedin"], at(2026, 9, 26), NOW)).toEqual({
+      platforms: "Instagram, LinkedIn",
+      date: "Today",
+    });
+    expect(chatMeta(["facebook"], at(2026, 9, 19), NOW)).toEqual({
+      platforms: "Facebook",
+      date: "Sep 19",
+    });
   });
 
   it("keeps the order it is given", () => {
-    expect(chatMeta(["linkedin", "instagram"], at(2026, 9, 25), NOW)).toBe(
-      "LinkedIn, Instagram · Yesterday",
-    );
+    expect(chatMeta(["linkedin", "instagram"], at(2026, 9, 25), NOW)).toEqual({
+      platforms: "LinkedIn, Instagram",
+      date: "Yesterday",
+    });
   });
 
-  it("is the date alone for a chat with no platforms", () => {
-    expect(chatMeta([], at(2025, 5, 2), NOW)).toBe("May 2, 2025");
+  it("has no platforms for a chat with none", () => {
+    expect(chatMeta([], at(2025, 5, 2), NOW)).toEqual({ platforms: "", date: "May 2, 2025" });
   });
 
   it("skips an id this build does not know", () => {
-    expect(chatMeta(["myspace" as PlatformId, "x"], at(2026, 9, 26), NOW)).toBe("X · Today");
+    expect(chatMeta(["myspace" as PlatformId, "x"], at(2026, 9, 26), NOW)).toEqual({
+      platforms: "X",
+      date: "Today",
+    });
   });
 
-  it("is the platforms alone when the date does not parse", () => {
-    expect(chatMeta(["instagram"], "", NOW)).toBe("Instagram");
+  it("has no date when the timestamp does not parse", () => {
+    expect(chatMeta(["instagram"], "", NOW)).toEqual({ platforms: "Instagram", date: "" });
   });
 });

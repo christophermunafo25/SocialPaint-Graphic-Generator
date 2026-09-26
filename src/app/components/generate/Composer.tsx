@@ -61,7 +61,10 @@ export interface ComposerProps {
   textareaRef?: React.Ref<HTMLTextAreaElement>;
   /** Nothing more can be sent (the chat is full, PROMPT §9.8): the
    * textarea, Send, Attach and the toolbar tiles are inert. Stop stays
-   * live while a run is in flight. */
+   * live while a run is in flight. Only compact composers are disabled
+   * today (the full chat's dock and the saved-chat loading sketch); the
+   * large composer's platform select and Variations stepper honour it as
+   * well, on purpose, so the prop means the same thing at either size. */
   disabled?: boolean;
 }
 

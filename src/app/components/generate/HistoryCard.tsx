@@ -1,5 +1,6 @@
 import React, { useId } from "react";
 import type { FieldValues, TemplateSchema } from "@/lib/types";
+import type { ChatMeta } from "@/lib/generate/relativeDate";
 import { Bone } from "../Skeleton";
 import { TemplateThumbnail } from "../TemplateThumbnail";
 import { ChatCardMeta } from "./RecentCard";
@@ -19,7 +20,7 @@ type HistoryCardProps =
   | {
       state?: "default";
       title: string;
-      meta: string;
+      meta: ChatMeta;
       preview: { schema: TemplateSchema; values: FieldValues } | null;
       /** Width over height of the draft, for the placeholder box while
        * `preview` is null. Ignored once `preview` is set. */

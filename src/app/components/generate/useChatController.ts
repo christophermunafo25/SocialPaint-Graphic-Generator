@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { BrandKit, TemplateSchema } from "@/lib/types";
 import type { PlatformId } from "@/lib/templates/platforms";
 import { stores } from "@/lib/stores";
@@ -79,10 +79,6 @@ export interface ChatController {
   reset(): void;
   /** The chat was saved for the first time, as `id` (PROMPT §9.8). */
   assignId(id: string): void;
-  /** The platform and variation count of the thread's last composer send
-   * (a brief or a typed follow-up, never a Try next chip), which
-   * compact-composer follow-ups reuse. Null before the first message. */
-  lastSend: { platformHint?: PlatformId; variations: number } | null;
 }
 
 export interface ChatControllerOptions {
@@ -357,15 +353,6 @@ export function useChatController(opts: ChatControllerOptions): ChatController {
 
   const assignId = useCallback((id: string) => apply({ type: "idAssigned", id }), [apply]);
 
-  const lastSend = useMemo(() => {
-    const last = lastComposerTurn(thread.turns);
-    if (!last) return null;
-    return {
-      ...(last.platformHint ? { platformHint: last.platformHint } : {}),
-      variations: last.variations,
-    };
-  }, [thread]);
-
   return {
     thread,
     running: runningTurn(thread) !== null,
@@ -377,6 +364,5 @@ export function useChatController(opts: ChatControllerOptions): ChatController {
     editValues,
     reset,
     assignId,
-    lastSend,
   };
 }

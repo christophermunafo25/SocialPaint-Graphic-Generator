@@ -42,6 +42,26 @@ export function ScrollFade({
 type Fades = { top: boolean; bottom: boolean; gutter: number };
 const NONE: Fades = { top: false, bottom: false, gutter: 0 };
 
+/** The width `el`'s scrollbar takes from its box: 0 for an overlay
+ * scrollbar. */
+function scrollbarGutter(el: HTMLElement): number {
+  // offsetWidth counts the borders and the scrollbar, clientWidth neither.
+  const cs = getComputedStyle(el);
+  const borders = parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth);
+  const taken = Math.max(0, el.offsetWidth - el.clientWidth - borders);
+  // `scrollbar-gutter: stable both-edges` reserves the scrollbar's width
+  // on the other edge too; only one of the two holds the scrollbar.
+  return cs.scrollbarGutter.includes("both-edges") ? taken / 2 : taken;
+}
+
+/** `el`'s edges as they stand, beside a `gutter` already measured. */
+function readFades(el: HTMLElement, gutter: number): Fades {
+  const top = el.scrollTop > 0;
+  // 1px of slack: fractional zoom leaves scrollTop a hair short of max.
+  const bottom = el.scrollHeight - el.clientHeight - el.scrollTop > 1;
+  return { top, bottom, gutter };
+}
+
 /** Which edges of a vertical scroller have content hidden past them: `top`
  * once it is scrolled at all, `bottom` while more lies below; and `gutter`,
  * the width its scrollbar takes from the box (0 for overlay scrollbars),
@@ -55,7 +75,12 @@ const NONE: Fades = { top: false, bottom: false, gutter: 0 };
  * owner, so it may be called before the scroller exists: a page that goes
  * from the Start state (no thread) to the thread subscribes the render the
  * thread mounts, with no deps to remember. `deps` re-measures on changes
- * that neither resize a child nor re-render the owner. */
+ * that neither resize a child nor re-render the owner.
+ *
+ * A new scroller is read once before the browser paints it, so a page
+ * that hands `gutter` back as padding (the thread's --thread-scrollbar,
+ * History's --history-scrollbar) never paints a frame without it; the
+ * listeners keep the reading current from there. */
 export function useScrollFades(
   ref: React.RefObject<HTMLElement | null>,
   deps: unknown[] = [],
@@ -66,40 +91,33 @@ export function useScrollFades(
   // No deps on purpose: a ref changing never re-renders, so check it after
   // every commit (one comparison) and re-render only when it moved. The
   // guard settles on the next pass, so the update chain the rule warns of
-  // cannot form.
+  // cannot form. The first reading of a new scroller is taken here too:
+  // an update set in a layout effect renders before the paint, while the
+  // subscription below runs after it, and its first reading (a default-
+  // priority update) lands a frame or two later still, long enough for a
+  // classic scrollbar's width to show as a jump sideways.
   // eslint-disable-next-line react-hooks/exhaustive-deps -- see above
   useLayoutEffect(() => {
-    if (ref.current !== el) setEl(ref.current);
+    const next = ref.current;
+    if (next === el) return;
+    setEl(next);
+    setFades(next ? readFades(next, scrollbarGutter(next)) : NONE);
   });
 
   useEffect(() => {
-    if (!el) {
-      setFades(NONE);
-      return;
-    }
+    if (!el) return;
     // Only a resize can move the gutter, so scrolling skips the style read.
-    let gutter = 0;
-    const measureGutter = () => {
-      // offsetWidth counts the borders and the scrollbar, clientWidth neither.
-      const cs = getComputedStyle(el);
-      const borders = parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth);
-      const taken = Math.max(0, el.offsetWidth - el.clientWidth - borders);
-      // `scrollbar-gutter: stable both-edges` reserves the scrollbar's width
-      // on the other edge too; only one of the two holds the scrollbar.
-      gutter = cs.scrollbarGutter.includes("both-edges") ? taken / 2 : taken;
-    };
+    let gutter = scrollbarGutter(el);
     const measure = () => {
-      const top = el.scrollTop > 0;
-      // 1px of slack: fractional zoom leaves scrollTop a hair short of max.
-      const bottom = el.scrollHeight - el.clientHeight - el.scrollTop > 1;
+      const next = readFades(el, gutter);
       setFades((prev) =>
-        prev.top === top && prev.bottom === bottom && prev.gutter === gutter
+        prev.top === next.top && prev.bottom === next.bottom && prev.gutter === next.gutter
           ? prev
-          : { top, bottom, gutter },
+          : next,
       );
     };
     const ro = new ResizeObserver(() => {
-      measureGutter();
+      gutter = scrollbarGutter(el);
       measure();
     });
     const observe = () => {
@@ -114,7 +132,6 @@ export function useScrollFades(
     observe();
     mo.observe(el, { childList: true });
     el.addEventListener("scroll", measure, { passive: true });
-    measureGutter();
     measure();
     return () => {
       el.removeEventListener("scroll", measure);

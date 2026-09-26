@@ -6,6 +6,7 @@ import {
   historyReducer,
   initialHistory,
   isEmptyHistory,
+  loadingCount,
   loadingShapes,
   pendingRequest,
   showingChats,
@@ -166,6 +167,26 @@ describe("historyReducer", () => {
   it("ignores retry unless a page failed", () => {
     const s = land(initialHistory("all"), chats(0, 12), "c1");
     expect(historyReducer(s, { type: "retry" })).toBe(s);
+  });
+});
+
+describe("loadingCount", () => {
+  it("is one whole row after a full row", () => {
+    expect(loadingCount(12, 4)).toBe(4);
+    expect(loadingCount(12, 3)).toBe(3);
+    expect(loadingCount(24, 2)).toBe(2);
+    expect(loadingCount(0, 3)).toBe(3);
+  });
+
+  it("finishes a partial last row", () => {
+    expect(loadingCount(7, 4)).toBe(1);
+    expect(loadingCount(12, 5)).toBe(3);
+    expect(loadingCount(13, 2)).toBe(1);
+  });
+
+  it("is four before the grid has been measured", () => {
+    expect(loadingCount(12, 0)).toBe(4);
+    expect(loadingCount(0, Number.NaN)).toBe(4);
   });
 });
 

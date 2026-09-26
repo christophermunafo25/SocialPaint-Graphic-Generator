@@ -21,7 +21,8 @@ src/lib/types.ts            Domain types (TemplateSchema, BrandKit, …)
 src/lib/stores/             Data layer — components import ONLY these interfaces
   interfaces.ts               CompanyStore, TemplateStore, BrandKitStore,
                               BrandAssetStore, LocationStore, UsageStore,
-                              DesignImportProvider
+                              DesignImportProvider, GenerateProvider,
+                              GenerateThreadStore
   supabase/                   Supabase implementations (+ FigmaImporter → Edge Functions)
   local/                      localStorage dev implementations
   index.ts                    Factory: picks backend from env
@@ -31,6 +32,10 @@ src/lib/render/              Canvas math: data-URL pipeline, autofit, fonts, toP
 src/lib/bulk/                Bulk fill: CSV parser, column mapping, row checks, run loop
                               (pure; the render step is injected)
 src/app/components/bulk/     Bulk fill page + the off-screen render stage
+src/lib/generate/            Generate chat: thread model and reducer, the run,
+                              measure and repair, linked fields, saving (pure;
+                              stores and measurer injected)
+src/app/components/generate/ Generate chat page, History page, editor panel
 src/app/components/SchemaRenderer.tsx  THE renderer — every template goes through it
 src/app/components/builder/  Admin Template Builder — a guided wizard:
                               source (PNG/Figma) → Name → Fields → Caption →
@@ -41,7 +46,8 @@ src/app/components/builder/  Admin Template Builder — a guided wizard:
                               (z-order via To front/back; image corner radius)
 src/app/components/onboarding/ First-run wizard
 supabase/migrations/         Schema + RLS (dev-active, real-ready)
-supabase/functions/          figma-status / figma-connect / figma-import (Deno)
+supabase/functions/          figma-status / figma-connect / figma-import /
+                              template-generate (Deno)
 ```
 
 ## Data model
@@ -92,6 +98,11 @@ from the platform in migration 0009.)
 - `canva_oauth_states` — the server-side half of a Canva connect in
   flight (state nonce, PKCE verifier). Single-use, ten-minute TTL. **No
   client access, ever.**
+- `generate_threads` (migration 0038): saved Generate chats, one row per
+  chat (title, `platforms` text[], `preview` and `turns` jsonb). **Private
+  to its author**: every policy is `user_id = auth.uid()`, so not even a
+  company admin reads another member's chats. Never holds a photo or any
+  `data:` value. See Generate below.
 
 The database ships **empty of tenant data**. Onboarding creates everything.
 
@@ -117,9 +128,10 @@ pass-through policies and activated production RLS:
   Storage writes are tenant-scoped by the `{company_id}/` path prefix;
   `integration_connections` has no client policies at all.
 - **Edge Functions**: every authenticated function calls
-  `requireRole(req, companyId, …)` — callers must be a member (status) or
-  admin (connect/import/styles/invite/links) of the company they name. The
-  two public-link functions are the exceptions and are described below.
+  `requireRole(req, companyId, …)` — callers must be a member (status,
+  generate) or admin (connect/import/styles/invite/links) of the company
+  they name. The two public-link functions are the exceptions and are
+  described below.
 
 Dashboard checklist (Authentication → URL Configuration): set the Site URL to
 the production domain and add `http://localhost:5199` + the Vercel URL to
@@ -294,6 +306,228 @@ archive is written) and recorded as `bulk_export` usage events, one per
 rendered row in one write, never as downloads. The enum value arrived in
 migration 0030, which is live on the linked project (applied 2026-09-03).
 
+## Generate
+
+A member describes a post in their own words and gets finished drafts back,
+filled into the company's published templates, then edits and downloads
+them without leaving the page. Generate is a chat at `/generate`: a Start
+state (greeting, composer, Start from chips, Recent), a thread of messages
+and assistant turns, an editor panel beside the thread, and a History page
+at `/generate/history`. A saved chat reopens at `/generate/c/<id>`. The
+design and behavior spec is `docs/design/generate-chat/PROMPT.md`.
+
+- **Pure modules**, unit-tested, in `src/lib/generate/`: the chat
+  model (`chat.ts`) and its reducer (`chatReducer.ts`), one run
+  (`chatRun.ts`), the measurement and repair passes (`measureProposal.ts`,
+  `repairProposal.ts`), freestyle assembly (`designToSchema.ts`), Try next
+  (`tryNext.ts`), the editor's linked fields (`linkedFields.ts`), card
+  export rules (`draftDownload.ts`), and saving (`threadStorage.ts`,
+  `threadSaver.ts`, `historyPaging.ts`, and the `data:` guard in
+  `dataUrls.ts`, a leaf with no chat imports because both thread stores
+  run it and the store layer reaches the public link page's bundle).
+- **Components** in `src/app/components/generate/`: `GeneratePage` (Start
+  and thread), `GenerateHistoryPage`, `EditorPanel`, the hooks that hold the
+  side effects (`useChatController`, `useThreadPersistence`,
+  `useDraftDownload`), and the `sp-chat-*` pieces.
+- **Server**: `supabase/functions/template-generate/` (the function and its
+  system prompt) and `_shared/generateValidate.ts` (every parser and
+  validator, pure, so vitest runs the same code the function does).
+
+### The run
+
+`template-generate` requires the caller to be a member of the company it
+names, reads that company's published library (and, for freestyle, its
+brand kit), and writes nothing but the shared rate-limit counters
+(`consume_rate_limit`: 10 calls per member and 40 per company in 10
+minutes, failing closed, since every call costs money; a repair round draws
+on the same buckets). The model key is the `ANTHROPIC_API_KEY` secret;
+without it the function answers 503 and says so.
+
+- **Library** (the default). The candidates are the company's published
+  templates with their field lists (the 40 most recently updated, with a
+  warning past that). `templateIdHint` (a pinned Start from chip) narrows
+  them to one; `platformHint` narrows them to templates sized for that
+  platform, or falls back to the whole library with a warning. One forced
+  tool call (`propose_posts`): the model picks a `templateId` from the
+  candidates and writes string values into fields an admin exposed, and
+  nothing else, so the output is on brand by construction.
+  `validateGeneration` checks every value; a failure retries once with the
+  errors attached, then answers 502.
+- **Freestyle** (`mode: "freestyle"`). The model proposes new layouts
+  (`propose_designs`) for the platform's canvas, held to brand palette keys
+  and brand type styles, with up to 12 published templates digested as
+  style reference. A kit with no colors is refused with a 400. Each
+  proposal carries its `design` and a synthetic `freestyle-N` templateId.
+  The chat runs freestyle when the library is empty, for "Try another
+  layout", and to revise freestyle drafts.
+
+**Measure and repair in the browser.** Deno has no font stack, so the
+function can only count characters. `measureProposal` lays every value out
+against real glyphs through the same autofit and layout code that paints.
+A library proposal that overflows gets one repair round (`repairProposal`:
+the overflowing fields go back with character budgets derived from that
+measurement, the server rewrites only those, and the result is measured
+again); one that still overflows is dropped with a warning. A freestyle
+proposal becomes a complete `TemplateSchema` (`designToSchema`) and is
+measured; the server shrink-sizes its text, so there is no repair round and
+an overflow drops it. A member never sees text off the edge.
+
+**One run at a time.** `chatReducer` owns every transition of the thread;
+components never mutate a turn. `runChat` sequences a run with every side
+effect injected (the stores, the measurer, ids, the clock), and
+`useChatController` holds which run is current and refuses a send while one
+is in flight. A run is an assistant turn, and the turn's id is the run id:
+step 1 while the model is asked (skeleton cards), step 2 as each proposal
+resolves and its draft replaces its skeleton in place, step 3 while a
+repair round is in flight and in any case before the last proposal
+resolves, then done. The bar moves by step, never by time. A failed request
+ends the turn as an error with the server's sentence (the rate-limit one
+included), and so does a run whose every proposal was dropped; both offer
+Try again.
+
+**Stop.** `GenerateProvider.generate` and `repair` take `{ signal }`; the
+Supabase provider forwards it to `functions.invoke`, and the local provider
+has nothing to abort. Stop settles the turn as stopped at once, keeping the
+drafts that already landed, then aborts. Two guards keep a late answer out
+of the thread: the run checks after every await that it is still the
+current one (Stop, New chat and leaving the page all clear it), and the
+reducer ignores any action whose run id names a turn that is gone or
+finished. An aborted request can still finish on the server and count
+toward the limit.
+
+### Follow-ups, reply and title
+
+The request and the response kept their shape; the chat added three
+optional fields. Each is validated server-side, and a client and a
+deployment that disagree about them still work together.
+
+- **`followUp`** (request). A message sent inside a chat carries the
+  chat's first brief and the latest finished turn's library drafts
+  (template id, name, and current text values; never an image value or a
+  data URL). `parseFollowUp` holds it to its limits (brief 1 to 1,500
+  characters, at most 3 drafts and 60 values each, name 120, key 60, value
+  4,000) and answers 400 otherwise. It never narrows the candidates:
+  `followUpSection` adds it to the model's text after the brief, matched
+  against the published list before any hint narrows it (so "Make a
+  Facebook version" keeps the drafts), and a draft whose template is not on
+  that list is dropped silently. A freestyle follow-up sends no `followUp`;
+  the client folds the brief so far into `brief` instead.
+- **`reply` and `title`** (response). Optional properties of both propose
+  tools. `validateReplyAndTitle` strips invisible characters, collapses
+  whitespace, rewrites every em dash, and holds the reply to 280 characters
+  (cut at a sentence or word boundary) and the title to 2 to 60 characters
+  with no closing punctuation. An unusable one is dropped silently, never costing a
+  retry, and the JSON body leaves it out.
+
+The client tolerates their absence. With no `reply` (or when a draft was
+dropped, since the model wrote its reply before the browser measured) the
+turn shows its own sentence; with no `title` the chat is named from the
+first brief's first six words. An older deployment ignores `followUp`, so a
+follow-up reads there as a fresh brief. No string the function can show a
+member (errors, warnings) carries an em dash.
+
+### The photo never leaves the browser
+
+A photo attached in the composer (uploaded, pasted, dropped, or a Brand
+Studio image fetched through `loadDataUrl`) is downscaled to a data URL and
+snapshotted on its message, in memory. Only `hasImage` and `imageAspect`
+reach the function; the model may name the slot the photo belongs in
+(`imageTargetFieldKey`, validated to be a member image slot). The photo is
+laid over a draft's values whenever a card, the editor or an export paints
+it, and is never written into the draft. It is not uploaded to Storage, not
+sent to the model, and not saved with the chat: a saved message keeps
+`hadPhoto`, the aspect alone, and a reopened chat says the photo was not
+kept.
+
+### Editing and export
+
+Choosing a draft opens the editor panel beside the chat (an overlay sheet
+below 1180px wide); nothing navigates. `linkedFields.ts` builds one form for
+all of a turn's drafts: member text, multiline and select fields link by
+`fieldKey`, else by normalized label (selects only with identical options),
+at most one field per draft, and an edit writes to every draft in the
+group. Image slots are never linked: each one the photo does not fill is
+listed after the text fields, labelled with its size when there are
+several.
+
+Both ways out go through the one rasterization path. The panel's preview is
+a live `SchemaRenderer`, and Download PNG is that renderer's `exportPng()`
+(`exportSchemaPng`, built on `renderSchemaBlob`), the fill page's own path.
+A card's Download skips the editor: `useDraftDownload` mounts one
+`SchemaRenderer` per request off-screen (the `BulkExportStage` technique),
+waits for the commit of those values plus two frames, calls `exportPng()`,
+and runs one export at a time. Like the fill page, neither exports while a
+required field is empty; a card's Download opens the editor on the gap
+instead. So a PNG from the chat is the fill page's PNG for the same
+template and values.
+
+Usage stays inside `SchemaRenderer`. A published library draft renders with
+`instrument` on (`instrumentsUsage`): opening it in the panel records the
+fill page's `open` and Download PNG its `download`, and a card download
+records both, so Insights counts Generate traffic as it counted the fill
+page. The panel keeps each size it has shown mounted until it closes, so
+switching back to a size records no second `open`. A freestyle draft has no template row to credit:
+it renders with `instrument={false}` and records nothing, as thumbnails do.
+An admin can save a freestyle draft to the library as a published template.
+
+### Saved chats
+
+`generate_threads` (migration 0038) holds one row per chat, reached through
+`GenerateThreadStore` (`stores.generateThreads`): a Supabase store and a
+localStorage one scoped to a fixed dev user, which page, search and order
+through the same helpers (`src/lib/stores/generateThreads.ts`).
+
+- **Private to its author.** Every policy is `user_id = auth.uid()` and
+  `company_id in current_company_ids()`, like `user_notification_prefs`, so
+  not even a company admin reads another member's chats. `user_id` defaults
+  to `auth.uid()` and the client never sends it.
+  `supabase/verify/50_generate_threads.sql` checks this against the real
+  policies (`run.sh` runs it).
+- **What is stored** (`toStoredThread`): complete exchanges only, each a
+  message with its finished answer (done, stopped or error), at most 40
+  turns; per draft its proposal (a freestyle `design` included), canvas and
+  current values; the title (the server's, else the brief-derived one);
+  `platforms`, the drafts' distinct primary platforms, for History's
+  filter; and `preview`, the first draft of the first done turn, for the
+  cards. **Never stored:** the photo, any `data:` value at any depth
+  (`toStoredThread` strips them, and both stores refuse a write that still
+  holds one: `assertNoDataUrls`), a run in flight, schemas, UI state.
+  Reopening refetches each library template (one gone or unpublished
+  leaves a card that says so and cannot be edited or exported) and
+  rebuilds freestyle drafts from their designs.
+- **Save points** (`threadSaver.ts`). The first finished turn creates the
+  chat; each later finished turn updates it, and so does an edit, 800ms
+  after the last. Nothing is written mid-run, one write per chat is in
+  flight at a time, and a pending edit is written when the tab hides or the
+  page goes. A failed write never interrupts the chat: the thread stays in
+  memory, the dock says "This chat isn't saved yet.", and the next save
+  point tries again. Pages that read chats wait for writes in flight first
+  (`threadWritesSettled`).
+- **The page key.** App keys the chat page by workspace and
+  `generatePageKey`: `chat:<id>` for a saved chat, `new` for every new one.
+  After its first save the page replaces `/generate` with `/generate/c/<id>`
+  on a route marked `savedInPlace` (never in the URL), which keeps the key
+  `new`, so the page does not remount and the photo, the open editor and the
+  composer's text stay. A reload, back and forward read the URL alone and
+  mount the saved chat fresh.
+- **Paging.** Recent reads 4 chats; History reads 12 at a time as the member
+  scrolls, filtered by platform (array contains) and a title search
+  (`ilike`, with `%` and `_` escaped), both in the URL. Keyset on
+  `(updated_at desc, id desc)`, never offset: `nextBefore` is an opaque
+  cursor naming a page's last chat by both keys, checked on the way back in
+  before it becomes a filter, so chats saved in the same instant never
+  repeat or skip. There is no `updated_at` trigger; the store stamps it on
+  every write. The store can `remove` a chat; History does not offer that
+  yet.
+
+### Deploying
+
+1. Apply migration 0038 (`supabase db push`). Until it is applied the chat
+   still runs, but nothing saves and the dock says so.
+2. Redeploy the function (`supabase functions deploy template-generate`)
+   for `followUp`, `reply`, `title` and the reworded messages. The client
+   also runs against the older deployment, with the fallbacks above.
+
 ## Brand rules engine & design-system import
 
 Brand Studio defines unlimited **type styles** ("Heading", "Body", …). Every
@@ -407,4 +641,4 @@ only as Edge Function secrets. No secrets in code, ever.
 Local dev: `npm run dev`. With Supabase: `supabase start` (or a hosted
 project), `supabase db push` (or run migrations), `supabase functions deploy
 figma-status figma-connect figma-import canva-auth integration-status
-template-autobuild`, fill `.env`.
+template-autobuild template-generate`, fill `.env`.

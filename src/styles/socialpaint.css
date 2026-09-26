@@ -44,9 +44,9 @@
      Ink #272727 (--text-on-brand) carries display-size glyphs — buttons,
      the hero, the switch knob: it clears AA normal on Slime, Lapis, and
      Christina and the large-text floor on all five. The deep cut #0B0B0C
-     (--text-on-brand-deep) carries small mono glyphs — the 10–11px index
-     and badge in the Generate rotation — and clears AA normal on all
-     five. White reads worse than either on every hue and is a defect.
+     (--text-on-brand-deep) carries small mono glyphs, 10–11px, and
+     clears AA normal on all five. White reads worse than either on every
+     hue and is a defect.
      Brand colours are fill-only on
      light and never appear as text or as a border that carries
      information: on #F9F9F8 only Purple Kara (3.57:1) and Fire (3.43:1)
@@ -189,7 +189,13 @@ html {
      64/40/36/32/32 (h3 holds at 32 — the KPI number shares it in Jakarta
      and never wore the condensed face; its one display consumer, the
      gate title, steps down locally instead). display and h1/h2/h4 have
-     no consumers outside that voice, so only it moves. */
+     no consumers outside that voice, so only it moves.
+
+     Unread steps stay. Display and H1 have no reader today (H1's last one,
+     the old Generate hero, retired with the Generate chat, 2026-09-26);
+     they are steps of the ramp, not component tokens, so the scale stays
+     whole for the next display title. A component token with no reader is
+     deleted instead (the old composer's --type-composer-lh went that way). */
   --type-display-size: 67px;
   --type-display-lh: 0.92;
   --type-display-track: var(--track-head);
@@ -229,7 +235,6 @@ html {
   --type-data-lh: 1.4;
   --type-data-track: 0;
   --type-composer-size: 16px; /* the Generate brief — one step above body, per Figma 72:27 */
-  --type-composer-lh: 1.45;
   /* Mono tag glyphs (Brand Studio two-step frames): the one size below the
      10px eyebrow, and only ever inside .sp-tag--solid and its variants. */
   --type-tag-size: 8px;
@@ -248,7 +253,7 @@ html {
   /* Shape — hold the gap between soft containers and crisp controls. */
   --radius-control: 5px;
   --radius-control-md: 9px; /* 36px chat controls: chips, tiles, small buttons (Generate chat) */
-  --radius-control-lg: 12px; /* larger toolbar controls (Generate composer strip) */
+  --radius-control-lg: 12px; /* larger controls (-lg buttons and inputs, the Generate chat's buttons and fields) */
   --radius-card: 20px;
   /* Media cards run a tighter pair than content panels — a small card
      carries a small radius, a large panel a large one. Both values are set
@@ -1391,7 +1396,7 @@ select.sp-input:disabled {
    the state-dependent layer held in a custom property (--card-shadow-now,
    --surface-shadow-now); hover swaps the property, never the list, so no
    state can drop a layer. A rule that sets box-shadow for another reason
-   (focus, the Generate accent) must compose the full list.
+   (focus, the Generate composer's halo) must compose the full list.
 
    --edge-lit is assembled HERE, on the surface, not in the token tier: a
    var() inside a custom property resolves where that property is
@@ -4928,8 +4933,8 @@ input[type="radio"] {
   }
 }
 /* Brand Templates' filtered view matches its shelves: three across laptop
-   widths, four only from 1800 (see .sp-shelf__rail). Template Builder and
-   Generate keep the denser admin grid above. */
+   widths, four only from 1800 (see .sp-shelf__rail). Template Builder
+   keeps the denser admin grid above. */
 @media (min-width: 1440px) {
   .sp-grid-media--portal {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -5557,14 +5562,24 @@ input[type="radio"] {
    scroller. A horizontal scroller clips vertically too, so the chips' rest
    shadow (2026-09-25; 6px offset, 25px blur) gets a further --space-md of
    padding below, cancelled by a negative margin: the chips do not move and
-   the sticky bar keeps its height. */
+   the sticky bar keeps its height. The inline ends get the same guard:
+   the track insets the chips by the ring's width and the rail steps out
+   by as much, so the chips do not move, and the first and last chips
+   show their whole ring at the rail's ends (the selected chip, where a
+   roving tabindex puts focus, is often the first). The rail rather than
+   the track takes the negative margin so its edge fades still cover the
+   scroller's whole box, and scroll-padding leaves the ring that room when
+   a chip is scrolled only as far as its edge (a "nearest" scroll). */
 .sp-filterbar .sp-railfade {
   flex: 1;
+  margin-inline: calc(-1 * var(--focus-width));
 }
 .sp-filterbar .sp-railfade__track {
   align-items: center;
   padding-block: 2px calc(2px + var(--space-md));
+  padding-inline: var(--focus-width);
   margin-bottom: calc(-1 * var(--space-md));
+  scroll-padding-inline: var(--focus-width);
 }
 
 /* Horizontal rail with edge fades. Shared by the chip bar and the shelves:
@@ -5703,10 +5718,9 @@ input[type="radio"] {
 }
 .sp-platform-chipbar {
   gap: var(--space-2xs);
-  /* The old 2px guard padding is gone (2026-09): the rail track's
-     block padding carries the vertical ring and shadow room itself, and
-     the horizontal ring accepts the scroller's edge clip at the rail's
-     ends, as the frames draw it. The inline padding stays 0. */
+  /* The old 2px guard padding is gone (2026-09): the filter bar's rail
+     track carries the ring and shadow room itself (.sp-filterbar
+     .sp-railfade__track), in both axes. */
   padding-inline: 0;
 }
 .sp-platform-chip {
@@ -5754,6 +5768,19 @@ input[type="radio"] {
   --surface-shadow-now: 0 0 0 0 transparent;
   background: var(--chip-bg-selected);
   color: var(--chip-fg-selected);
+}
+/* Focus on the selected chip. The tight ring alone vanishes in light: the
+   --ring ink against the inverted --chip-bg-selected fill is about 1.3:1,
+   so the chip only looked 2px larger (and a roving tabindex puts focus on
+   exactly this chip). A 2px band of the surface inside the fill separates
+   the ring from the chip in both themes. The ring stays tight: the rail
+   track's 2px block padding is all the room a ring has, and the offset
+   --focus-ring would clip. A pinned Start from chip (.sp-chat-chip) does
+   the same. */
+.sp-platform-chip[data-selected]:focus-visible {
+  box-shadow:
+    var(--focus-ring-tight),
+    inset 0 0 0 var(--focus-width) var(--bg-surface);
 }
 
 .sp-platform-chip__tile {
@@ -6240,6 +6267,12 @@ input[type="radio"] {
   .sp-page--bleed .sp-filterbar {
     padding: var(--space-xs) 0 var(--space-xs) var(--space-sm);
   }
+  /* The rail's end is the screen's edge here, so it does not step past it
+     for the ring's room (the track's end padding is the room): stepping
+     out would put the last chip's ring off screen at the rail's end. */
+  .sp-page--bleed .sp-filterbar .sp-railfade {
+    margin-inline-end: 0;
+  }
   .sp-page--bleed .sp-shelf__header {
     padding: 0 var(--space-sm);
   }
@@ -6294,301 +6327,6 @@ input[type="radio"] {
   border-radius: var(--radius-control);
 }
 
-/* --- Generate: composer and results ----------------------------------------
-   The one member surface where the four brand colours rotate through the
-   chrome. Same legitimacy as the chart series and the hover rotation: the
-   hue says WHICH draft — categorical identity, never state or severity —
-   and it arrives thin (a top rule, an index marker, a wash) on neutral
-   ground, never as a surface. The index and badge are small mono glyphs
-   on a full-strength hue, so they take the deep cut
-   (--text-on-brand-deep, 5.24:1 on Purple Kara at worst), not Ink. */
-.sp-gen-hue {
-  --gen-hue: var(--slime);
-  --gen-wash: color-mix(in srgb, var(--gen-hue) 16%, transparent);
-  --gen-wash-strong: color-mix(in srgb, var(--gen-hue) 28%, transparent);
-}
-.sp-gen-hue:nth-of-type(4n + 2) {
-  --gen-hue: var(--aqua);
-}
-.sp-gen-hue:nth-of-type(4n + 3) {
-  --gen-hue: var(--purple-kara);
-}
-.sp-gen-hue:nth-of-type(4n + 4) {
-  --gen-hue: var(--fire);
-}
-/* Light needs more pigment against white — the hover-wash precedent. */
-[data-theme="light"] .sp-gen-hue {
-  --gen-wash: color-mix(in srgb, var(--gen-hue) 24%, transparent);
-  --gen-wash-strong: color-mix(in srgb, var(--gen-hue) 38%, transparent);
-}
-/* Explicit slots, for the one grid nth-of-type cannot govern: while
-   drafts resolve one by one, real cards (buttons) and skeletons (divs)
-   share the row, and nth-of-type counts each element type separately —
-   the same hue would repeat. The slot index comes from the component;
-   the hue stays bound here. These outrank the nth defaults by source
-   order. */
-.sp-gen-hue[data-hue="1"] {
-  --gen-hue: var(--slime);
-}
-.sp-gen-hue[data-hue="2"] {
-  --gen-hue: var(--aqua);
-}
-.sp-gen-hue[data-hue="3"] {
-  --gen-hue: var(--purple-kara);
-}
-.sp-gen-hue[data-hue="4"] {
-  --gen-hue: var(--fire);
-}
-
-/* The Generate stage — the hero + composer + chips column (Figma 72:27 /
-   72:148: an 860px column). In the empty state the block is vertically
-   centred in the region right of the sidebar; the min-height subtracts
-   .sp-page's 48px top + 64px bottom padding. Auto block margins do the
-   centring so a short viewport degrades to normal flow instead of
-   clipping the hero. Once a run starts the --centered class comes off and
-   the page returns to top-anchored flow. Desktop only: below lg the
-   sidebar stacks above the content and there is no region to centre in. */
-.sp-gen-stage {
-  max-width: 860px;
-  margin-inline: auto;
-}
-@media (min-width: 1024px) {
-  .sp-gen-stage--centered {
-    display: flex;
-    flex-direction: column;
-    min-height: calc(100vh - 112px);
-  }
-  .sp-gen-stage--centered > .sp-gen-stage__inner {
-    margin-block: auto;
-  }
-}
-
-/* The composer — the page's one field, so the whole card is the control
-   and focus is a soft accent halo rather than a 1px input ring. The halo
-   is the focus-ring mechanism (box-shadow), not an elevation shadow. */
-.sp-gen-composer {
-  transition:
-    border-color var(--dur-state) var(--ease),
-    box-shadow var(--dur-state) var(--ease);
-}
-.sp-gen-composer:focus-within {
-  border-color: var(--accent-border);
-  box-shadow:
-    0 0 0 3px var(--accent-wash),
-    var(--edge-lit),
-    var(--card-highlight),
-    var(--card-shadow-now);
-}
-
-/* The submit — a neutral 42px circle, per the approved frames (72:27 /
-   72:148). The gradient came off on purpose: the selected mode segment now
-   carries Slime, and two brand fills in the same strip would leave
-   neither reading as the emphasis. --bg-hover is the frames' neutral in
-   both themes. Disabled steps down to the raised surface. */
-.sp-gen-submit {
-  background: var(--bg-hover);
-  color: var(--text-primary);
-}
-.sp-gen-submit:disabled {
-  background: var(--bg-surface-raised);
-  color: var(--text-disabled);
-  opacity: 1;
-}
-
-/* Starter pills: NEUTRAL, at Chris's direction (2026-08-28) — the identity
-   rotation lives on the drafts, and the pills read as quiet suggestions
-   rather than six coloured things. Once drafts exist they drop to the
-   smaller quiet form (still reachable — a second idea shouldn't need the
-   field cleared by hand). */
-.sp-gen-pill {
-  display: inline-flex;
-  align-items: center;
-  /* 42px height and 14px label from the frames; the fill sits one step
-     BELOW the composer card — chips on the canvas, card on the surface. */
-  min-height: 42px;
-  padding: 0 var(--space-md);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-pill);
-  background: var(--bg-canvas);
-  color: var(--text-primary);
-  font-family: var(--font-ui);
-  font-size: 14px;
-  font-weight: var(--weight-ui);
-  letter-spacing: var(--type-label-track);
-  cursor: pointer;
-  white-space: nowrap;
-  transition:
-    background var(--dur-state) var(--ease),
-    color var(--dur-state) var(--ease),
-    border-color var(--dur-state) var(--ease);
-}
-.sp-gen-pill:hover {
-  background: var(--bg-hover);
-  border-color: var(--border-strong);
-}
-.sp-gen-pill--quiet {
-  min-height: var(--row-h-compact);
-  padding: 0 var(--space-xs);
-  font-size: var(--type-caption-size);
-  background: transparent;
-  color: var(--text-secondary);
-}
-.sp-gen-pill--quiet:hover {
-  background: var(--bg-hover);
-  color: var(--text-primary);
-}
-
-/* One generated draft. Composition rides the catalogue card (sp-card +
-   sp-media-card + sp-template-card: one control, square letterboxing
-   frame, hover lift); this class adds the flex column and the identity —
-   a top rule, an index marker, a wash behind the name row. Never the card
-   ground: a draft wearing Fire is draft number four, not an error.
-
-   The top rule is an inset shadow, not a thicker border-top: a 2px top on
-   a 1px frame is mitred across the corner arc and shows a wedge, which the
-   12px media radius makes more visible, not less. An inset layer follows
-   the radius and tapers out at the corners. Same 2px weight, same hue.
-
-   The top edge has two owners — the accent and .sp-card's lit edge — so
-   they are settled here in one declaration: the accent is listed first
-   and covers the 1px top highlight; the lit bottom edge still shows. */
-.sp-gen-card {
-  --gen-accent: inset 0 2px 0 var(--gen-hue);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2xs);
-  padding-bottom: var(--space-sm);
-  box-shadow: var(--gen-accent), var(--edge-lit), var(--card-highlight), var(--card-shadow-now);
-}
-/* The focus ring is a box-shadow too; compose, or the ring would drop the
-   accent while the card is focused. Outranks .sp-template-card:focus-visible. */
-.sp-gen-card:focus-visible {
-  box-shadow:
-    var(--focus-ring-tight), var(--gen-accent), var(--edge-lit), var(--card-highlight),
-    var(--card-shadow-now);
-}
-/* The two-tier inset (see .sp-template-card__meta) without the meta
-   wrapper: the plate keeps the 8px frame, and everything below it — the
-   name row, the notes, the button — steps a further 8px in, with 16px of
-   air between the plate and the name row. */
-.sp-gen-card > .sp-media-card__preview {
-  margin-bottom: var(--space-2xs);
-}
-.sp-gen-card > :not(.sp-media-card__preview) {
-  margin-inline: var(--space-2xs);
-}
-.sp-gen-card__namerow {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2xs);
-  min-width: 0;
-  padding: var(--space-3xs) var(--space-2xs);
-  border-radius: var(--radius-control);
-  background: var(--gen-wash);
-}
-.sp-gen-card__index {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-  border-radius: var(--radius-pill);
-  background: var(--gen-hue);
-  color: var(--text-on-brand-deep);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  line-height: 1;
-}
-/* The two-phase wait, read as progress: step dots and labels stay
-   NEUTRAL — progress never rides a brand colour. The current step fills
-   with the inverting action neutral (the "filled = on" rule); a finished
-   step keeps its ring and takes a quiet check. */
-.sp-gen-steps {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3xs);
-  margin-bottom: var(--space-sm);
-}
-.sp-gen-step {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2xs);
-  font-size: var(--type-label-size);
-  color: var(--text-muted);
-  transition: color var(--dur-state) var(--ease);
-}
-.sp-gen-step[data-state="current"] {
-  color: var(--text-primary);
-}
-.sp-gen-step__dot {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--border-strong);
-  background: transparent;
-  color: var(--text-secondary);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  line-height: 1;
-  transition:
-    background var(--dur-state) var(--ease),
-    color var(--dur-state) var(--ease),
-    border-color var(--dur-state) var(--ease);
-}
-.sp-gen-step[data-state="current"] .sp-gen-step__dot {
-  background: var(--fill-action);
-  border-color: var(--fill-action);
-  color: var(--text-on-action);
-}
-.sp-gen-step[data-state="done"] .sp-gen-step__dot {
-  color: var(--text-secondary);
-}
-
-/* Skeleton pulse — slow, breathing toward the slot's own identity wash,
-   so the colour arrives before the content and the swap to the real card
-   is continuous. A pulse, never a shimmer: the DS bans gradients as a
-   surface treatment. Built on the motion ladder (--dur-reveal, --ease). */
-@keyframes sp-gen-skeleton-pulse {
-  0%,
-  100% {
-    background-color: var(--bg-raised);
-  }
-  50% {
-    background-color: var(--gen-wash);
-  }
-}
-.sp-gen-skeleton .sp-skeleton__block {
-  animation: sp-gen-skeleton-pulse calc(var(--dur-reveal) * 6) var(--ease) infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  /* The compound selector outranks the generic skeleton opt-out, so this
-     needs saying explicitly: hold still on the resting surface. */
-  .sp-gen-skeleton .sp-skeleton__block {
-    animation: none;
-  }
-}
-
-/* Freestyle's "New design" badge — a real distinction the member should
-   see at a glance, so it wears the identity instead of grey-on-grey. */
-.sp-gen-badge {
-  display: inline-flex;
-  align-items: center;
-  flex-shrink: 0;
-  padding: 2px var(--space-2xs);
-  border-radius: var(--radius-pill);
-  background: var(--gen-hue);
-  color: var(--text-on-brand-deep);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
 /* ── Generate chat components (Figma "Generate · Chat", 2026-09-25) ── */
 /* The chat Generate page's primitives (docs/design/generate-chat/PROMPT.md
    §7), in this order: ChatButton, SendButton, the IconButton presets and
@@ -6604,9 +6342,7 @@ input[type="radio"] {
    restated: the suggestion chip sits in the chip rung of THE surface
    recipe, the cards, the composer and the attach menu carry .sp-card, the
    recent and history cards' hover and focus join the template card's
-   rules, and the toned skeleton bone lives in the Skeletons block. The
-   .sp-gen-* rules above retire with the old page (PROMPT.md §14,
-   Phase 6). */
+   rules, and the toned skeleton bone lives in the Skeletons block. */
 
 /* ── Generate chat: buttons (Figma "Generate · Chat": sp-button 283:31,
    sp-icon-btn / Send 283:13, / Attach 328:831, / Download 328:827,
@@ -6850,7 +6586,7 @@ input[type="radio"] {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.sp-chat-chip:hover:not(:disabled) {
+.sp-chat-chip:hover {
   --edge-alpha: var(--edge-alpha-chip-hover);
   --surface-shadow-now: var(--shadow-rest-hover);
 }
@@ -6858,10 +6594,6 @@ input[type="radio"] {
   outline: 2px solid transparent;
   outline-offset: 2px;
   box-shadow: var(--focus-ring-tight), var(--edge-lit), var(--surface-shadow-now);
-}
-.sp-chat-chip:disabled {
-  opacity: 0.4;
-  cursor: default;
 }
 /* Pinned (a Start from chip): the app's neutral selection, the inverted
    fill a selected platform chip takes. Selected wins over hover, and the
@@ -6873,21 +6605,23 @@ input[type="radio"] {
   background: var(--chip-bg-selected);
   color: var(--chip-fg-selected);
 }
+/* Focus on a pinned chip: the tight ring alone matches the inverted fill
+   in light, so a band of the surface inside the fill separates the two, as
+   on a selected platform chip. */
+.sp-chat-chip[data-selected]:focus-visible {
+  box-shadow:
+    var(--focus-ring-tight),
+    inset 0 0 0 var(--focus-width) var(--bg-surface);
+}
 /* Forced colours strip the fill and the edge, so the chip draws its own
    frame, and pinned (aria-pressed carries it for assistive tech) takes a
-   double rule, as the platform chip does. A disabled chip's frame greys
-   out like the aria-disabled Send, in both themes: the light no-edge
-   list's transparent border would otherwise revert to the browser's
-   disabled-button colour in light only. */
+   double rule, as the platform chip does. */
 @media (forced-colors: active) {
   .sp-chat-chip {
     border: 1px solid ButtonBorder;
   }
   .sp-chat-chip[data-selected] {
     border: 3px double ButtonText;
-  }
-  .sp-chat-chip:disabled {
-    border-color: GrayText;
   }
 }
 
@@ -7108,10 +6842,6 @@ input[type="radio"] {
   box-shadow: none;
   outline: none;
 }
-.sp-chat-input:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
 /* Touch widths take the composer step (16px) so iOS Safari does not zoom
    on focus, as every text-entry control does in the mobile block's iOS-zoom
    rule. That rule cannot reach this class: .sp-chat-input outranks its bare
@@ -7223,11 +6953,9 @@ select.sp-chat-input option {
    up to six lines, and turns on scrolling past that.
 
    Focus anywhere inside, and a file dragged over it, give the whole card
-   the old composer's halo: the frame in --accent-border and a 3px wash
-   ring composed onto the recipe's full list (the recipe note: compose the
-   list, never replace it). It is .sp-gen-composer's rule ported, not
-   joined, since that one retires with the rest of .sp-gen-* in Phase 6.
-   The class-class selectors outrank the light recipe's
+   a halo: the frame in --accent-border and a 3px wash ring composed onto
+   the recipe's full list (the recipe note: compose the list, never
+   replace it). The class-class selectors outrank the light recipe's
    `[data-theme="light"] .sp-card { border-color: transparent }`, whatever
    order the rules load in. */
 .sp-chat-composer {
@@ -7283,8 +7011,7 @@ select.sp-chat-input option {
 }
 
 /* The text: borderless and transparent, 16/150% Regular in the primary
-   ink over a muted placeholder (the frame's leading is 1.5, where
-   --type-composer-lh still carries the old composer's 1.45). The card's
+   ink over a muted placeholder (the frame's leading is 1.5). The card's
    halo is its focus indicator, so the global :focus-visible outline stays
    off. A disabled composer dims the text the way the tiles dim. */
 .sp-chat-composer__input {
@@ -7460,9 +7187,7 @@ select.sp-chat-input option {
   background: var(--gen-inverse);
   color: var(--gen-on-inverse);
   cursor: pointer;
-  transition:
-    background var(--dur-state) var(--ease),
-    opacity var(--dur-state) var(--ease);
+  transition: background var(--dur-state) var(--ease);
 }
 .sp-chat-attachment__remove::before {
   content: "";
@@ -7470,19 +7195,15 @@ select.sp-chat-input option {
   inset: -5px;
   border-radius: inherit;
 }
-.sp-chat-attachment__remove:hover:not(:disabled) {
+.sp-chat-attachment__remove:hover {
   background: color-mix(in srgb, var(--gen-inverse) 88%, var(--gen-on-inverse));
 }
-.sp-chat-attachment__remove:active:not(:disabled) {
+.sp-chat-attachment__remove:active {
   background: color-mix(in srgb, var(--gen-inverse) 80%, var(--gen-on-inverse));
 }
 .sp-chat-attachment__remove:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
-}
-.sp-chat-attachment__remove:disabled {
-  opacity: 0.4;
-  cursor: default;
 }
 
 /* ── Generate chat: user message (Figma sp-chat-photo / User 328:847,
@@ -7871,13 +7592,19 @@ button.sp-chat-draft__preview {
   box-shadow: var(--gen-seg-on-shadow);
 }
 /* The tight ring: the track's 4px inset and gap leave room for 2px and no
-   more. The selected segment keeps its shadow under the ring. */
+   more. The selected segment keeps its shadow under the ring, and a band
+   of the surface inside its fill: in light the --ring ink against the
+   Deep Moss fill is about 1.2:1, so the ring alone only made the segment
+   look 2px larger (as on a selected chip). */
 .sp-chat-caption__seg:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring-tight);
 }
 .sp-chat-caption__seg[data-selected]:focus-visible {
-  box-shadow: var(--focus-ring-tight), var(--gen-seg-on-shadow);
+  box-shadow:
+    var(--focus-ring-tight),
+    inset 0 0 0 var(--focus-width) var(--bg-surface),
+    var(--gen-seg-on-shadow);
 }
 
 /* The editor look (frame 06, "Size switch"): a 40 tall track at the 12
@@ -8023,7 +7750,9 @@ button.sp-chat-draft__preview {
    tall, a 1440 × 900 laptop with a template of eight fields) does the
    stage give a little height too, so the list never becomes a sliver: it
    shrinks at a third of the rate its 290 would (flex-shrink weighs by
-   size), down to 180, and the graphic scales with it. */
+   size), down to 180, and the graphic scales with it. Under 760 tall (a
+   1366 × 768 laptop's browser) it may go down to 120, since the list's
+   own floor (below) is what keeps a field usable there. */
 .sp-chat-editor__stage {
   display: flex;
   flex: 0 0 290px;
@@ -8040,6 +7769,11 @@ button.sp-chat-draft__preview {
 @media (max-height: 1000px) {
   .sp-chat-editor__stage {
     flex-shrink: 0.35;
+  }
+}
+@media (max-height: 760px) {
+  .sp-chat-editor__stage {
+    min-height: 120px;
   }
 }
 .sp-chat-editor__graphic {
@@ -8102,21 +7836,34 @@ button.sp-chat-draft__preview {
    rather than as a label with no control: the bottom while more lies
    below, the top once the list has scrolled (EditorPanel sets
    data-fade-bottom and data-fade-top from useScrollFades). Focus scrolls a
-   field clear of the fades (scroll-padding, and the panel's own reveal). */
+   field clear of the fades (scroll-padding, and the panel's own reveal).
+
+   The list never shrinks below one text field (its label row, 6, the 40
+   control) with its ring's reach, clear of both fades, however short the
+   window. When the list is too short to hold its tallest field (an upload
+   well, most often) between the fades, EditorPanel sets data-short and
+   draws no fades at all: a focused field and its ring are never veiled,
+   and the list's edges cut what lies past them. */
 .sp-chat-editor__fields {
   --editor-fields-fade: 32px;
+  --editor-field-h: calc(12px * 1.25 + 6px + var(--gen-h-md));
   --editor-fade-top: 0px;
   --editor-fade-bottom: 0px;
   display: flex;
   flex-direction: column;
   flex: 0 1 auto;
   gap: var(--space-xs);
-  min-height: 0;
+  min-height: calc(
+    2 * var(--editor-fields-fade) + 2 * var(--editor-ring-room) + var(--editor-field-h)
+  );
   margin: calc(-1 * var(--editor-ring-room));
   padding: var(--editor-ring-room);
   overflow-y: auto;
   overscroll-behavior: contain;
   scroll-padding-block: var(--editor-fields-fade);
+}
+.sp-chat-editor__fields[data-short] {
+  scroll-padding-block: var(--editor-ring-room);
 }
 .sp-chat-editor__fields[data-fade-top] {
   --editor-fade-top: var(--editor-fields-fade);
@@ -8371,12 +8118,27 @@ button.sp-chat-draft__preview {
   letter-spacing: var(--chat-meta-title-track);
   color: var(--text-primary);
 }
+/* The meta line is two pieces, "<platforms>" and "· <date>", in a row.
+   Only the platforms give way (an ellipsis), so a chat for two platforms
+   keeps its date on a narrow card: "Instagram, Fa… · Today". */
 .sp-chat-card-meta__line {
+  display: flex;
   font-size: var(--type-caption-size);
   font-weight: 400;
   line-height: var(--chat-meta-line-lh);
   letter-spacing: 0;
   color: var(--text-secondary);
+}
+.sp-chat-card-meta__platforms {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-chat-card-meta__date {
+  flex: none;
+  white-space: nowrap;
 }
 /* Bones (a loading card): each line keeps its line box and holds a pulsing
    toned Bone (128 x 10, 84 x 8) sitting 3 above the box's foot, near the
@@ -8668,7 +8430,7 @@ button.sp-chat-draft__preview {
   text-decoration: underline;
   text-underline-position: from-font;
   white-space: nowrap;
-  border-radius: 2px;
+  border-radius: var(--radius-control);
   transition: color var(--dur-state) var(--ease);
 }
 .sp-chat-legal:hover {
@@ -8699,6 +8461,25 @@ button.sp-chat-draft__preview {
   gap: var(--space-2xs);
   flex-shrink: 0;
 }
+/* A phone-width header (a 375 window leaves the header 343): with their
+   labels, History and New chat take 202 and leave the chat's title (the
+   page's h1) about 46, "Creat…". There the two become 36px icon buttons,
+   the labels kept as their accessible names, which gives the title the
+   room its 40% cap allows. */
+@container (max-width: 480px) {
+  .sp-chat-header__actions .sp-chat-btn {
+    width: var(--gen-h-sm);
+    padding: 0;
+  }
+  .sp-chat-header__actions .sp-chat-btn__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+}
 
 /* The breadcrumb (also History's): 14/125%, 8 apart. "Generate" is a link
    in the secondary ink, Medium and underlined as drawn; the slash is
@@ -8720,7 +8501,7 @@ button.sp-chat-draft__preview {
   color: var(--text-secondary);
   text-decoration: underline;
   text-underline-position: from-font;
-  border-radius: 2px;
+  border-radius: var(--radius-control);
   transition: color var(--dur-state) var(--ease);
 }
 .sp-chat-crumbs__root:hover {
@@ -8761,10 +8542,16 @@ button.sp-chat-draft__preview {
    A classic (always-on) scrollbar takes its width from one side only,
    which would shift the column off the dock composer's centre line, so
    the scroller reserves the same gutter on both edges (an overlay
-   scrollbar reserves nothing). A control that focus scrolls into view
-   stops under the top fade, with its whole focus ring, rather than
-   veiled by it; useThreadScroll holds the latest turn's head at the same
-   line.
+   scrollbar reserves nothing). The page hands the width of one gutter in
+   as --thread-scrollbar (useScrollFades' `gutter`, 0 for an overlay
+   scrollbar), and the side padding gives it back, so the column keeps
+   the box it has without one: flush with the header and the dock
+   composer where it fills the width, and 546 wide beside the editor at
+   1440 (below), as History's grid does.
+
+   A control that focus scrolls into view stops under the top fade, with
+   its whole focus ring, rather than veiled by it; useThreadScroll holds
+   the latest turn's head at the same line.
 
    useThreadScroll owns the scroll position, so the browser's scroll
    anchoring is off: it would nudge the position a pixel off the head's
@@ -8782,7 +8569,7 @@ button.sp-chat-draft__preview {
   flex-direction: column;
   height: 100%;
   box-sizing: border-box;
-  padding: var(--space-sm) var(--page-pad) var(--space-lg);
+  padding: var(--space-sm) max(0px, var(--page-pad) - var(--thread-scrollbar, 0px)) var(--space-lg);
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable both-edges;
@@ -8979,7 +8766,7 @@ button.sp-chat-draft__preview {
   margin-inline: 0;
 }
 .sp-chat-split[data-editor="inline"] .sp-chat-thread {
-  padding: 0 29px var(--space-lg);
+  padding: 0 max(0px, 29px - var(--thread-scrollbar, 0px)) var(--space-lg);
 }
 .sp-chat-split[data-editor="inline"] .sp-chat-thread__column,
 .sp-chat-split[data-editor="inline"] .sp-chat-dock__composer {
@@ -9029,6 +8816,12 @@ button.sp-chat-draft__preview {
   justify-content: space-between;
   gap: var(--space-sm);
 }
+/* The title takes focus when a chat's History or View all brings the
+   member here (the button pressed is gone). It is a landing point, not a
+   control, so it draws no ring, as the onboarding headline does. */
+.sp-chat-history-head__title .sp-page-title:focus {
+  outline: none;
+}
 .sp-chat-history-head__desc {
   margin: 0;
   font-size: 14px;
@@ -9046,6 +8839,17 @@ button.sp-chat-draft__preview {
   flex-shrink: 0;
   margin-top: var(--space-md);
   padding-block: 2px;
+}
+/* The rail's edge fades reach down over the track's shadow room (the
+   track clips --space-md below the rail so the chips' rest shadow shows),
+   so a half-hidden chip's shadow fades out with it instead of ending in a
+   hard line under the rail. Nothing scrolls under this bar, so below the
+   rail the fades only ever lie on the canvas. (Brand Templates shares the
+   artifact, but its bar pins over scrolling content, where the longer
+   fades would lie on the cards; it is left as it was.) */
+.sp-chat-page[data-state="history"] .sp-filterbar .sp-railfade::before,
+.sp-chat-page[data-state="history"] .sp-filterbar .sp-railfade::after {
+  bottom: calc(-1 * var(--space-md));
 }
 
 /* The grid's scroller runs the full width of the page region: it steps

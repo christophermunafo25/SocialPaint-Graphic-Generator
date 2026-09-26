@@ -256,10 +256,20 @@ export interface DesignImportProvider {
   disconnect(companyId: string, provider: "figma" | "canva"): Promise<void>;
 }
 
-/** Generate: a member's brief in, filled-template proposals out, through the
- * template-generate Edge Function. The function reads the published library
- * and writes nothing — the client renders the proposals and seeds the
- * existing fill page with the chosen one. */
+/** Generate: a member's brief in, proposals out, through the
+ * template-generate Edge Function. A library proposal fills a published
+ * template (values only); a freestyle proposal carries a new design built
+ * from the brand kit. The function reads the company's library (and, for
+ * freestyle, its kit) and writes nothing but its rate-limit counters. The
+ * chat (useChatController, runChat) measures each proposal in the browser,
+ * sends a library one that overflows through `repair` once, and shows what
+ * fits as drafts it edits and exports in place.
+ *
+ * A follow-up in a chat sends `followUp`, and a result may carry `reply`
+ * and `title`: all optional and validated server-side, and the chat falls
+ * back when a deployment returns neither. The member's photo never crosses
+ * this interface: `hasImage` and `imageAspect` are all a request says of
+ * it. */
 export interface GenerateProvider {
   /** Backend reachable at all. The localStorage dev backend has no Edge
    * Functions and no model key, so it says false and the surface explains
@@ -290,8 +300,11 @@ export interface GenerateCallOptions {
   signal?: AbortSignal;
 }
 
-/** Saved Generate chats (migration 0038): Recent on the start state, the
- * History page, and reopening a chat at /generate/c/<id>.
+/** Saved Generate chats (generate_threads, migration 0038): Recent on the
+ * start state, the History page, and reopening a chat at /generate/c/<id>.
+ * The chat page writes through ThreadSaver (src/lib/generate/threadSaver.ts)
+ * in the shape toStoredThread makes: finished exchanges only, each draft's
+ * proposal, canvas and values, the title, platforms and preview.
  *
  * Strictly the signed-in member's own chats in the given company. Under
  * Supabase that is RLS (every policy is user_id = auth.uid()), so not even a
@@ -299,7 +312,9 @@ export interface GenerateCallOptions {
  * to its one fixed dev user the same way.
  *
  * Every write refuses input that carries a data: value anywhere
- * (assertNoDataUrls): the member's photo never reaches a stored row. */
+ * (assertNoDataUrls): the member's photo never reaches a stored row. There
+ * is no updated_at trigger: the store stamps updated_at on create and on
+ * every update, and list pages on it. */
 export interface GenerateThreadStore {
   /** Newest first by updated_at, ties broken by id, both descending.
    * `before` is the `nextBefore` of the previous page: an opaque cursor
@@ -322,6 +337,9 @@ export interface GenerateThreadStore {
   /** Replaces the chat wholesale and stamps updated_at. Throws when the chat
    * no longer exists, so a caller never mistakes a lost write for a save. */
   update(companyId: string, id: string, input: GenerateThreadInput): Promise<void>;
+  /** Deletes the member's own chat; one that is gone or not theirs is left
+   * alone, without an error. Nothing in the app calls it yet: deleting
+   * chats from History is a later change. */
   remove(companyId: string, id: string): Promise<void>;
 }
 

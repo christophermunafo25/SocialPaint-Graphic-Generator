@@ -5,28 +5,16 @@ import { X } from "lucide-react";
  * 328:845): a 64px square on the well fill, the image cropped to cover it,
  * with a 15px inverse-filled remove button pinned 4px in from the top-right
  * corner. The button's hit area reaches past its drawn circle (see the CSS)
- * so the tiny control stays tappable. `disabled` locks the remove button,
- * for the moment a send is taking the photo. */
-export function AttachmentThumb({
-  src,
-  onRemove,
-  alt = "Attached photo",
-  disabled = false,
-}: {
-  src: string;
-  onRemove(): void;
-  alt?: string;
-  disabled?: boolean;
-}) {
+ * so the tiny control stays tappable. */
+export function AttachmentThumb({ src, onRemove }: { src: string; onRemove(): void }) {
   return (
     <div className="sp-chat-attachment">
-      <img src={src} alt={alt} className="sp-chat-attachment__img" />
+      <img src={src} alt="Attached photo" className="sp-chat-attachment__img" />
       <button
         type="button"
         className="sp-chat-attachment__remove"
         aria-label="Remove photo"
         onClick={onRemove}
-        disabled={disabled}
       >
         {/* The frame draws a 4px cross at stroke 1 in a 10px box. Lucide's
             x spans half its box, and an odd box centres on whole pixels

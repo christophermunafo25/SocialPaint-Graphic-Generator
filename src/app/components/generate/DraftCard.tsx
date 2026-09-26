@@ -1,6 +1,7 @@
 import React, { useId } from "react";
 import type { FieldValues, TemplateSchema } from "@/lib/types";
-import { aspectRatioOf, classifySize, platformById } from "@/lib/templates/platforms";
+import { aspectRatioOf } from "@/lib/templates/platforms";
+import { platformLabelFor } from "@/lib/generate/draftView";
 import { EditOverlay } from "../admin/brand/primitives/EditOverlay";
 import { TemplateThumbnail } from "../TemplateThumbnail";
 import { DownloadButton } from "./IconButton";
@@ -51,18 +52,13 @@ function sizeMeta(width: number, height: number): string {
   return `${width} × ${height} · ${aspectRatioOf(width, height)}`;
 }
 
-/** The primary platform's label ("Instagram"), or the size meta when the
- * canvas maps to no platform (classifySize files those under "general"). */
-function platformMeta(width: number, height: number): string {
-  const primary = classifySize(width, height).platforms[0];
-  return primary === "general" ? sizeMeta(width, height) : platformById(primary).label;
-}
-
 /** The meta line under the title (PROMPT §7.14): the size on a Regular
  * card, the platform on a Compact one, as the Figma draws it (CJ's call,
- * §15 item 17). */
+ * §15 item 17), falling back to the size when the canvas maps to no
+ * platform. */
 function draftMeta(size: DraftCardSize, width: number, height: number): string {
-  return size === "compact" ? platformMeta(width, height) : sizeMeta(width, height);
+  const platform = size === "compact" ? platformLabelFor({ width, height }) : null;
+  return platform ?? sizeMeta(width, height);
 }
 
 /**

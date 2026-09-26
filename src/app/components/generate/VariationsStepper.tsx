@@ -1,6 +1,7 @@
 import React, { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { Minus, Plus } from "lucide-react";
+import { MAX_VARIATIONS, MIN_VARIATIONS, clampVariations } from "@/lib/generate/chatReducer";
 
 /** The roll (PROMPT §7.7): the old number leaves in the direction of the
  * step, the new one arrives from the other side and settles with a small
@@ -24,8 +25,8 @@ const cancelRoll = (el: HTMLElement) => {
 /** How many drafts a send asks for (Figma "Generate · Chat", sp-stepper
  * 302:324, States Min / Mid / Max): a 36px tile holding the "Variations"
  * label, a Decrease button, the value and an Increase button. The range is
- * the server's `count` range, 1 to 3 by default; the Figma's Max sample of 4
- * is only a sample.
+ * the server's `count` range, MIN_VARIATIONS to MAX_VARIATIONS (1 to 3); the
+ * Figma's Max sample of 4 is only a sample.
  *
  * The value rolls in the direction you stepped (Web Animations API on the
  * number, so no state machine in CSS), and swaps with no motion under
@@ -37,14 +38,10 @@ const cancelRoll = (el: HTMLElement) => {
 export function VariationsStepper({
   value,
   onChange,
-  min = 1,
-  max = 3,
   disabled = false,
 }: {
   value: number;
   onChange(next: number): void;
-  min?: number;
-  max?: number;
   disabled?: boolean;
 }) {
   const labelId = useId();
@@ -118,11 +115,11 @@ export function VariationsStepper({
     );
   }, [shown]);
 
-  const atMin = value <= min;
-  const atMax = value >= max;
+  const atMin = value <= MIN_VARIATIONS;
+  const atMax = value >= MAX_VARIATIONS;
   const step = (delta: 1 | -1) => {
     if (disabled || (delta < 0 ? atMin : atMax)) return;
-    onChange(Math.min(max, Math.max(min, value + delta)));
+    onChange(clampVariations(value + delta));
   };
 
   return (

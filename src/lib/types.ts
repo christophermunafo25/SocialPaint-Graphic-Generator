@@ -767,9 +767,9 @@ export interface GeneratedProposal {
   templateId: string;
   /** Echoed so a result card can be labeled without a second lookup. */
   templateName: string;
-  /** Seeds TemplateUsePage's values state. Every entry was validated
-   * server-side against the template's own fields; image fields are never
-   * present. */
+  /** The values the chat's draft starts from (ChatDraft.values). Every
+   * entry was validated server-side against the template's own fields;
+   * image fields are never present. */
   values: FieldValues;
   /** One or two sentences the member would post alongside the graphic. */
   caption: string;
@@ -803,8 +803,7 @@ export interface GenerateMeta {
 }
 
 /** The template-generate Edge Function's response. Nothing is persisted
- * server-side — the client renders these and seeds the fill page with the
- * chosen one. */
+ * server-side — the client measures and renders these as chat drafts. */
 export interface GenerateResult {
   proposals: GeneratedProposal[];
   warnings: string[];

@@ -13,7 +13,9 @@ type ChatButtonProps = {
  * never be mistaken for a suggestion chip. Primary is Slime, secondary Deep
  * Moss (light) or white (dark), tertiary the sunken neutral; every colour
  * comes from the --gen-btn-* tokens, so the theme lives in CSS. Default is
- * 44 tall, small 36. Scoped to Generate: the rest of the app keeps .sp-btn. */
+ * 44 tall, small 36. Scoped to Generate: the rest of the app keeps .sp-btn.
+ * The label is its own element so a narrow layout can hide it visually
+ * and keep it as the button's name (the thread header on a phone). */
 export const ChatButton = forwardRef<HTMLButtonElement, ChatButtonProps>(function ChatButton(
   { kind, size = "default", icon, type = "button", className, children, ...rest },
   ref,
@@ -32,7 +34,7 @@ export const ChatButton = forwardRef<HTMLButtonElement, ChatButtonProps>(functio
           {icon}
         </span>
       )}
-      {children}
+      <span className="sp-chat-btn__label">{children}</span>
     </button>
   );
 });

@@ -1,7 +1,7 @@
 // The setup strip's "navigate and start the add flow" handoff. A module
 // variable rather than a URL param on purpose — the intent should not
-// survive a refresh or a share (the seedHandoff precedent), only the one
-// in-app navigation that carries it.
+// survive a refresh or a share, only the one in-app navigation that
+// carries it, and taking it clears it.
 
 import type { BrandCategory } from "../../../router";
 

@@ -7,7 +7,7 @@ import type {
 } from "../../types";
 import type { PlatformId } from "../../templates/platforms";
 import type { GenerateThreadStore } from "../interfaces";
-import { assertNoDataUrls } from "../../generate/threadStorage";
+import { assertNoDataUrls } from "../../generate/dataUrls";
 import {
   decodeThreadCursor,
   isUuid,

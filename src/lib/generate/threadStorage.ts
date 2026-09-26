@@ -29,7 +29,8 @@ import type {
   StoredUserTurn,
   TemplateSchema,
 } from "../types";
-import { PLATFORMS, type PlatformId } from "../templates/platforms";
+import type { PlatformId } from "../templates/platforms";
+import { clampThreadTitle, platformsInOrder } from "../stores/generateThreads";
 import {
   isAssistantTurn,
   isUserTurn,
@@ -43,60 +44,15 @@ import { MAX_TURNS, clampVariations, firstBrief } from "./chatReducer";
 import { designToSchema } from "./designToSchema";
 import { fallbackTitle, primaryPlatformOf } from "./draftView";
 import { NEW_CHAT_TITLE } from "./runCopy";
-
-/** The generate_threads title check (migration 0038). The chat's own titles
- * stay well inside it (the server's and the fallback are at most 60). */
-const TITLE_MAX = 120;
+import { isDataUrl } from "./dataUrls";
 
 // ---------------------------------------------------------------------------
 // Data URLs
 // ---------------------------------------------------------------------------
 
-/** A string that starts with "data:", in any case, after any leading
- * spaces or control characters, once every tab and line break in it is
- * removed: what a browser's URL parser reads as a data URL. Every photo
- * and uploaded image in the chat is held as one ("data:image/jpeg;base64,
- * …"), and the parser forgives more than that form: whitespace after the
- * colon ("data: image/png;base64,…"), a line break anywhere ("da\nta:…")
- * and a media type it cannot parse ("data:Q3;base64,…") all still load as
- * an image. So the rule has no exceptions (PROMPT §9.8: strip every value
- * that starts with "data:"), and a member's line that happens to begin
- * with "data:" is dropped with the rest. */
-const DATA_URL = /^[\s\p{Cc}]*data:/iu;
-/** What the URL parser removes from anywhere in a URL before reading it. */
-const TAB_OR_NEWLINE = /[\t\n\r]/g;
-
-export function isDataUrl(value: string): boolean {
-  return DATA_URL.test(value.replace(TAB_OR_NEWLINE, ""));
-}
-
-/** Throws when any string in `input`, at any depth, is a data URL (an
- * object key included). The store's last check before every write: the
- * member's photo never reaches a stored row (PROMPT §2). The message names
- * where the data URL sits, never the data itself. */
-export function assertNoDataUrls(input: GenerateThreadInput): void {
-  const at = dataUrlPath(input, "thread");
-  if (at !== null) throw new Error(`Refusing to save a chat that holds a data URL at ${at}.`);
-}
-
-function dataUrlPath(value: unknown, path: string): string | null {
-  if (typeof value === "string") return isDataUrl(value) ? path : null;
-  if (Array.isArray(value)) {
-    for (const [i, item] of value.entries()) {
-      const found = dataUrlPath(item, `${path}[${i}]`);
-      if (found !== null) return found;
-    }
-    return null;
-  }
-  if (value !== null && typeof value === "object") {
-    for (const [key, item] of Object.entries(value)) {
-      if (isDataUrl(key)) return `${path} (a key)`;
-      const found = dataUrlPath(item, `${path}.${key}`);
-      if (found !== null) return found;
-    }
-  }
-  return null;
-}
+// The guard itself lives in dataUrls.ts, a leaf the stores import without
+// pulling in the chat modules this file imports.
+export { isDataUrl, assertNoDataUrls } from "./dataUrls";
 
 /** A fresh copy of `value` with every data URL gone, at any depth: an
  * object property that holds one (or is keyed by one) is deleted, not
@@ -231,8 +187,10 @@ function storedTitle(thread: ChatThread): string {
   const own = thread.title.trim();
   const brief = firstBrief(thread.turns);
   const title = own && own !== NEW_CHAT_TITLE ? own : brief ? fallbackTitle(brief) : "";
-  // Counted in code points, as Postgres counts characters.
-  return prose(Array.from(title).slice(0, TITLE_MAX).join(""));
+  // Within the generate_threads title check (migration 0038), counted as
+  // Postgres counts characters. The chat's own titles stay well inside it
+  // (the server's and the fallback are at most 60).
+  return prose(clampThreadTitle(title));
 }
 
 /** The distinct primary platforms of every stored draft (a draft whose
@@ -244,7 +202,7 @@ function platformsOf(turns: readonly StoredTurn[]): PlatformId[] {
     if (turn.role !== "assistant") continue;
     for (const draft of turn.drafts) present.add(primaryPlatformOf(draft.canvas));
   }
-  return PLATFORMS.map((p) => p.id).filter((id) => present.has(id));
+  return platformsInOrder(present);
 }
 
 /** What Recent and History draw: the first draft of the first done turn,

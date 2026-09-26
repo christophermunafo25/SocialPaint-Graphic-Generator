@@ -19,8 +19,9 @@ import type { GenerateThreadSummary } from "../types";
 /** Chats per page (PROMPT §8.6). */
 export const HISTORY_PAGE_SIZE = 12;
 
-/** How many loading cards stand in for a page on its way (PROMPT §8.6). */
-export const HISTORY_LOADING_CARDS = 4;
+/** How many loading cards stand in for a page on its way (PROMPT §8.6)
+ * when the grid's columns are not known yet: the frame's four columns. */
+const HISTORY_LOADING_CARDS = 4;
 
 export interface HistoryPaging {
   /** The filter these chats answer (the page's key for its platform, its
@@ -111,6 +112,17 @@ export function canLoadMore(s: HistoryPaging): boolean {
  * shows as "No chats yet" or as the filter's empty state. */
 export function isEmptyHistory(s: HistoryPaging): boolean {
   return s.phase === "idle" && s.cursor === null && s.items.length === 0;
+}
+
+/** How many loading cards follow `loaded` chats in a grid of `columns`:
+ * enough to finish the last row, or one whole row when it is full, so the
+ * loading row never leaves a lone card on a line of its own. The frame's
+ * "four" (PROMPT §8.6) is this at its four columns, where a page of twelve
+ * always ends a row. Before the grid has been measured, four. */
+export function loadingCount(loaded: number, columns: number): number {
+  if (!Number.isFinite(columns) || columns < 1) return HISTORY_LOADING_CARDS;
+  const cols = Math.floor(columns);
+  return cols - (loaded % cols);
 }
 
 /** The shapes of the loading cards that follow `loaded` chats: 4:5 and

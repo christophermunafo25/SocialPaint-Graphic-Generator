@@ -1,5 +1,6 @@
 import React, { useId } from "react";
 import type { FieldValues, TemplateSchema } from "@/lib/types";
+import type { ChatMeta } from "@/lib/generate/relativeDate";
 import { Bone } from "../Skeleton";
 import { TemplateThumbnail } from "../TemplateThumbnail";
 
@@ -9,9 +10,10 @@ const RADIUS = "var(--radius-control)";
 /** The title and meta lines under a chat's preview, shared by the Recent and
  * History cards (Figma sp-recent-card / sp-history-card, "meta"): 14 Medium
  * over 12 Regular in the secondary ink, both truncating (each card sets its
- * own leading and tracking in CSS). `bones` swaps each line for a pulsing
- * sunken Bone inside the same line box, so a loading card keeps the loaded
- * card's height to the pixel. */
+ * own leading and tracking in CSS). The meta line is "<platforms> · <date>"
+ * and only the platforms truncate, so the date always shows. `bones` swaps
+ * each line for a pulsing sunken Bone inside the same line box, so a
+ * loading card keeps the loaded card's height to the pixel. */
 export function ChatCardMeta({
   title,
   meta,
@@ -19,8 +21,9 @@ export function ChatCardMeta({
   bones = false,
 }: {
   title?: string;
-  meta?: string;
-  /** Lets the card point aria-describedby at the meta line. */
+  meta?: ChatMeta;
+  /** Lets the card point aria-describedby at the meta line, which reads as
+   * the whole "<platforms> · <date>". */
   metaId?: string;
   bones?: boolean;
 }) {
@@ -40,7 +43,13 @@ export function ChatCardMeta({
     <span className="sp-chat-card-meta">
       <span className="sp-chat-card-meta__title">{title}</span>
       <span className="sp-chat-card-meta__line" id={metaId}>
-        {meta}
+        {meta?.platforms && <span className="sp-chat-card-meta__platforms">{meta.platforms}</span>}
+        {meta?.date && (
+          <span className="sp-chat-card-meta__date">
+            {/* A no-break space: a flex item drops a leading ordinary one. */}
+            {meta.platforms ? `\u00a0· ${meta.date}` : meta.date}
+          </span>
+        )}
       </span>
     </span>
   );
@@ -60,7 +69,7 @@ export function RecentCard({
   onOpen,
 }: {
   title: string;
-  meta: string;
+  meta: ChatMeta;
   preview: { schema: TemplateSchema; values: FieldValues } | null;
   onOpen(): void;
 }) {

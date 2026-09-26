@@ -33,13 +33,18 @@ import { AssistantTurnView } from "./AssistantTurnView";
 import { ChatHeader } from "./ChatHeader";
 import { ChatLoading, ChatUnavailable, THREAD_PLACEHOLDER } from "./ChatLoadStates";
 import { Composer } from "./Composer";
-import { EditorPanel, ExportErrorToast, type EditorSaveToLibrary } from "./EditorPanel";
-import { LegalLinks } from "./LegalLinks";
+import {
+  EXPORT_TOAST_MS,
+  EditorPanel,
+  ExportErrorToast,
+  type EditorSaveToLibrary,
+} from "./EditorPanel";
+import { ChatFootnote, LegalLinks } from "./LegalLinks";
 import { RecentChats } from "./RecentChats";
 import { ScrollFade, useScrollFades } from "./ScrollFade";
 import { ChipRow, SuggestionChip } from "./SuggestionChip";
 import { UserMessage } from "./UserMessage";
-import { requestComposerFocus, takeComposerFocus } from "./composerFocus";
+import { requestComposerFocus, requestHistoryFocus, takeComposerFocus } from "./composerFocus";
 import { useChatController } from "./useChatController";
 import { useDraftDownload } from "./useDraftDownload";
 import { useThreadPersistence } from "./useThreadPersistence";
@@ -61,9 +66,6 @@ const NO_ACTIONS: readonly TryNextAction[] = [];
 /** Below this viewport width the editor lays over the chat as a sheet
  * instead of narrowing it (PROMPT §8.5, §15 item 16). */
 const EDITOR_INLINE_MIN = 1180;
-
-/** How long a card download's failure toast stays up (TemplateFill's). */
-const EXPORT_TOAST_MS = 6000;
 
 /** The longest the Start column waits, hidden, for the rows under the
  * composer before it shows anyway. */
@@ -419,8 +421,11 @@ function GenerateChat({
     if (published.some((t) => t.id === templateIdHint)) setPinnedId(templateIdHint);
   }, [templateIdHint, published]);
 
+  /** History (§11.2). The button that was pressed unmounts with this page,
+   * so the History page takes focus on its title (§9.10). */
   const openHistory = useCallback(() => {
     setEditor(null);
+    requestHistoryFocus();
     navigate({ name: "generateHistory" });
   }, [navigate]);
 
@@ -860,6 +865,9 @@ function GenerateChat({
               <div
                 ref={scrollRef}
                 className="sp-chat-thread"
+                // A classic scrollbar's gutter, given back from the side
+                // padding so the column keeps its box (the CSS says how).
+                style={{ "--thread-scrollbar": `${fades.gutter}px` } as React.CSSProperties}
                 role="log"
                 aria-live="polite"
                 aria-relevant="additions"
@@ -927,10 +935,7 @@ function GenerateChat({
                 />
                 {unsaved && <p className="sp-chat-dock__note">{NOT_SAVED_YET}</p>}
               </div>
-              <p className="sp-chat-footnote">
-                <span>Every graphic follows your Brand Studio rules.</span>
-                <LegalLinks />
-              </p>
+              <ChatFootnote />
             </div>
           </div>
           {editor && editorTurn && selectedDraft && editorPresentation && (
@@ -1011,7 +1016,10 @@ function SavedChat({ threadId }: { threadId: string }) {
     requestComposerFocus();
     navigate({ name: "generate" });
   }, [navigate]);
-  const history = useCallback(() => navigate({ name: "generateHistory" }), [navigate]);
+  const history = useCallback(() => {
+    requestHistoryFocus();
+    navigate({ name: "generateHistory" });
+  }, [navigate]);
 
   if (load.status === "loading") return <ChatLoading onNewChat={newChat} onHistory={history} />;
   if (load.status === "error") {

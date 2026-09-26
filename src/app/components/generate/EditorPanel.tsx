@@ -42,8 +42,9 @@ export interface EditorSaveToLibrary {
   onOpenBuilder(): void;
 }
 
-/** How long the export failure toast stays up (TemplateFill's error toast). */
-const TOAST_MS = 6000;
+/** How long the export failure toast stays up (TemplateFill's error toast),
+ * the panel's and the page's alike. */
+export const EXPORT_TOAST_MS = 6000;
 
 /** The footer hint (PROMPT §8.5): what an edit reaches, by how many sizes
  * the turn has. Nothing for one. */
@@ -80,18 +81,68 @@ function focusTarget(control: HTMLElement): HTMLElement | null {
   );
 }
 
-/** Scrolls `el`'s field into the fields list's view, clear of the list's
- * edge fades, and nothing else: the page and the panel stay where they are
- * (focus is moved with preventScroll). */
-function reveal(scroller: HTMLElement | null, el: HTMLElement) {
-  if (!scroller) return;
+/** Scrolls `el`'s field into the fields list's view, `inset` in from its
+ * edges (clear of the edge fades, or of the list's edge when it is too
+ * short to draw them), and nothing else: the page and the panel stay where
+ * they are (focus is moved with preventScroll). */
+function reveal(scroller: HTMLElement, el: HTMLElement, inset: number) {
   const box = scroller.getBoundingClientRect();
   const rect = (el.closest(".sp-chat-field") ?? el).getBoundingClientRect();
-  const top = box.top + FIELDS_FADE;
-  const bottom = box.bottom - FIELDS_FADE;
+  const top = box.top + inset;
+  const bottom = box.bottom - inset;
   if (rect.top < top) scroller.scrollTop -= top - rect.top;
   else if (rect.bottom > bottom)
     scroller.scrollTop += Math.min(rect.bottom - bottom, rect.top - top);
+}
+
+/** The fields list's ring room: its own padding, the focus ring's reach. */
+const ringRoom = (list: HTMLElement) => parseFloat(getComputedStyle(list).paddingTop) || 0;
+
+/** Whether the fields list is tall enough for its edge fades: both fades,
+ * and its tallest field (an upload well, most often) with its ring's reach
+ * between them. A shorter list, on a short window, draws no fades, so no
+ * focused field is ever veiled by one. */
+function hasFadeRoom(list: HTMLElement): boolean {
+  let tallest = 0;
+  for (const child of Array.from(list.children)) {
+    tallest = Math.max(tallest, (child as HTMLElement).offsetHeight);
+  }
+  // 1px of slack for fractional layout.
+  return list.clientHeight + 1 >= 2 * FIELDS_FADE + tallest + 2 * ringRoom(list);
+}
+
+/** reveal() inside the fields list, clear of its fades, or of its edges
+ * when it is too short to draw them. */
+function revealInList(list: HTMLElement | null, el: HTMLElement) {
+  if (list) reveal(list, el, hasFadeRoom(list) ? FIELDS_FADE : ringRoom(list));
+}
+
+/** hasFadeRoom, kept current as the list or any field changes size, or
+ * fields come and go. */
+function useFadeRoom(list: HTMLElement | null): boolean {
+  const [room, setRoom] = useState(true);
+  useEffect(() => {
+    if (!list) return;
+    const check = () => setRoom(hasFadeRoom(list));
+    const ro = new ResizeObserver(check);
+    const observe = () => {
+      ro.disconnect();
+      ro.observe(list);
+      for (const child of Array.from(list.children)) ro.observe(child);
+    };
+    const mo = new MutationObserver(() => {
+      observe();
+      check();
+    });
+    observe();
+    mo.observe(list, { childList: true });
+    check();
+    return () => {
+      ro.disconnect();
+      mo.disconnect();
+    };
+  }, [list]);
+  return room;
 }
 
 /** The focusable elements inside `root`, in tab order, for the sheet's
@@ -243,6 +294,13 @@ export function EditorPanel({
   const fieldsRef = useRef<HTMLDivElement | null>(null);
   const closeRef = useRef<HTMLButtonElement | null>(null);
   const fades = useScrollFades(fieldsRef);
+  // The list mounts with its first field, so it is held as state too.
+  const [fieldsEl, setFieldsEl] = useState<HTMLDivElement | null>(null);
+  const setFields = useCallback((el: HTMLDivElement | null) => {
+    fieldsRef.current = el;
+    setFieldsEl(el);
+  }, []);
+  const fadeRoom = useFadeRoom(fieldsEl);
 
   const focusEntry = useCallback(
     (entry: LinkedEntry | undefined): boolean => {
@@ -251,7 +309,7 @@ export function EditorPanel({
       const target = control && focusTarget(control);
       if (!target) return false;
       target.focus({ preventScroll: true });
-      reveal(fieldsRef.current, target);
+      revealInList(fieldsRef.current, target);
       return true;
     },
     [prefix],
@@ -336,7 +394,7 @@ export function EditorPanel({
   const showError = useCallback((detail: string) => {
     window.clearTimeout(toastTimer.current);
     setToast({ detail, at: Date.now() });
-    toastTimer.current = window.setTimeout(() => setToast(null), TOAST_MS);
+    toastTimer.current = window.setTimeout(() => setToast(null), EXPORT_TOAST_MS);
   }, []);
 
   // The page's own export failure, once per message.
@@ -414,10 +472,20 @@ export function EditorPanel({
 
       {entries.length > 0 && (
         <div
-          ref={fieldsRef}
+          ref={setFields}
           className="sp-chat-editor__fields"
-          data-fade-top={fades.top || undefined}
-          data-fade-bottom={fades.bottom || undefined}
+          data-short={!fadeRoom || undefined}
+          data-fade-top={(fadeRoom && fades.top) || undefined}
+          data-fade-bottom={(fadeRoom && fades.bottom) || undefined}
+          // Every focus in the list shows its whole field: the browser
+          // leaves a control that is partly in view where it is, which on
+          // a short list can cut its lower edge (and its focus border).
+          // Focus inside a portaled dialog bubbles here too; it is not the
+          // list's to scroll.
+          onFocus={(e) => {
+            const list = fieldsRef.current;
+            if (list?.contains(e.target)) revealInList(list, e.target);
+          }}
         >
           {entries.map((entry) => {
             const id = controlId(prefix, entry);

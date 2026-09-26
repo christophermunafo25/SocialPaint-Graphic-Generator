@@ -13,6 +13,7 @@ import {
   historyReducer,
   initialHistory,
   isEmptyHistory,
+  loadingCount,
   loadingShapes,
   pendingRequest,
   showingChats,
@@ -37,12 +38,35 @@ import { HistoryCard } from "./HistoryCard";
 import { LegalLinks } from "./LegalLinks";
 import { ScrollFade, useScrollFades } from "./ScrollFade";
 import { NewChatIcon } from "./icons";
-import { requestComposerFocus } from "./composerFocus";
+import { requestComposerFocus, takeHistoryFocus } from "./composerFocus";
 import { useThreadPreviews } from "./useThreadPreviews";
 
 /** The sentinel asks for the next page this far before it scrolls into
  * view (PROMPT §8.6), so the loading row is rarely seen at a reading pace. */
 const PREFETCH_MARGIN = "0px 0px 400px 0px";
+
+/** The number of columns the auto-fill grid lays out right now (0 until it
+ * is measured), kept current as the window resizes, so the loading cards
+ * can finish its last row (loadingCount). A callback ref: the grid mounts
+ * and unmounts as the body switches between the list and its states. */
+function useGridColumns(): [(el: HTMLDivElement | null) => void, number] {
+  const [columns, setColumns] = useState(0);
+  const observer = useRef<ResizeObserver | null>(null);
+  const ref = useCallback((el: HTMLDivElement | null) => {
+    observer.current?.disconnect();
+    observer.current = null;
+    if (!el) return;
+    const measure = () => {
+      const tracks = getComputedStyle(el).gridTemplateColumns.trim();
+      setColumns(tracks && tracks !== "none" ? tracks.split(/\s+/).length : 0);
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    observer.current = new ResizeObserver(measure);
+    observer.current.observe(el);
+  }, []);
+  return [ref, columns];
+}
 
 const LOAD_FAILED = "We couldn't load your chats.";
 const NO_CHATS = "No chats yet";
@@ -65,8 +89,9 @@ const noMatch = (query: string) => (query ? `No chats match “${query}”.` : "
  *
  * The grid is square HistoryCards, newest first, twelve at a time: a
  * sentinel under the grid, watched inside the scroller with 400px to
- * spare, asks for the next page, four loading cards hold its place while
- * it comes, and a short page ends the list (historyPaging.ts holds the
+ * spare, asks for the next page, loading cards hold its place while it
+ * comes (a row's worth: four at the frame's four columns, and never a lone
+ * card on a row of its own), and a short page ends the list (historyPaging.ts holds the
  * rules). Each load is announced ("Showing 24 chats"). The scroller runs
  * into the page gutters and hands them back as its own padding, so the
  * cards' shadows are never cut at its sides; the top and bottom scroll
@@ -77,7 +102,8 @@ const noMatch = (query: string) => (query ? `No chats match “${query}”.` : "
  * load is ErrorState with a retry (a later page's failure keeps the chats
  * above it). Opening a chat goes to /generate/c/<id> with focus in its
  * composer, and New chat (here, in the empty state, and the breadcrumb's
- * "Generate") opens a fresh one the same way (§9.10).
+ * "Generate") opens a fresh one the same way (§9.10). Arriving from a
+ * chat's History or View all puts focus on the title.
  */
 export function GenerateHistoryPage() {
   const { company } = useAuth();
@@ -235,6 +261,15 @@ export function GenerateHistoryPage() {
   }, [more]);
 
   const previewFor = useThreadPreviews(companyId, list.items);
+  const [gridRef, columns] = useGridColumns();
+
+  // Arriving from a chat's History or View all, whose button unmounted with
+  // the chat page: focus lands on the title, so the next Tab reaches New
+  // chat, the search and the chips in order (§9.10).
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (takeHistoryFocus()) titleRef.current?.focus({ preventScroll: true });
+  }, []);
 
   // ── Actions ─────────────────────────────────────────────────────────────
   const newChat = useCallback(() => {
@@ -311,7 +346,7 @@ export function GenerateHistoryPage() {
     const loading = list.phase === "loading";
     body = (
       <>
-        <div className="sp-chat-history-grid" aria-busy={loading || undefined}>
+        <div ref={gridRef} className="sp-chat-history-grid" aria-busy={loading || undefined}>
           {list.items.map((chat) => {
             const { preview, aspect } = previewFor(chat);
             return (
@@ -326,9 +361,11 @@ export function GenerateHistoryPage() {
             );
           })}
           {loading &&
-            loadingShapes(list.items.length).map((shape, i) => (
-              <HistoryCard key={`loading-${i}`} state="loading" loadingShape={shape} />
-            ))}
+            loadingShapes(list.items.length, loadingCount(list.items.length, columns)).map(
+              (shape, i) => (
+                <HistoryCard key={`loading-${i}`} state="loading" loadingShape={shape} />
+              ),
+            )}
         </div>
         {failed && (
           <ErrorState
@@ -346,7 +383,9 @@ export function GenerateHistoryPage() {
       <header className="sp-chat-history-head">
         <ChatBreadcrumb current="History" onRoot={newChat} />
         <div className="sp-chat-history-head__title">
-          <h1 className="sp-page-title">History</h1>
+          <h1 ref={titleRef} tabIndex={-1} className="sp-page-title">
+            History
+          </h1>
           <ChatButton kind="secondary" size="small" icon={<NewChatIcon />} onClick={newChat}>
             New chat
           </ChatButton>

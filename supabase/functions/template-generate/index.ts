@@ -2,7 +2,7 @@
 // EXTRACTS (the published library as a candidate list), ASKS (one forced tool
 // call), VALIDATES (never trusting model output), and RESPONDS. It writes
 // nothing to the database beyond the shared rate-limit counters — the client
-// renders the proposals and seeds the existing fill page with the chosen one.
+// renders the proposals as chat drafts.
 //
 // The chat rides the same request. A follow-up adds an optional followUp (the
 // chat's first brief and the drafts on screen) that library mode shows the

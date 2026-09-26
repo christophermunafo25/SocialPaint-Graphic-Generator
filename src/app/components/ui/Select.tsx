@@ -179,8 +179,6 @@ export const TriggerButton = React.forwardRef<
     placeholder?: string;
     disabled?: boolean;
     lockedHint?: boolean;
-    /** Leading icon (the chosen option's mark), sized by the caller. */
-    icon?: React.ReactNode;
     previewStyle?: React.CSSProperties;
     ariaLabel: string;
     expanded: boolean;
@@ -201,7 +199,6 @@ export const TriggerButton = React.forwardRef<
     placeholder,
     disabled,
     lockedHint,
-    icon,
     previewStyle,
     ariaLabel,
     expanded,
@@ -234,7 +231,6 @@ export const TriggerButton = React.forwardRef<
       }}
     >
       <span className="flex items-center gap-2 min-w-0">
-        {icon}
         <span
           className="truncate"
           style={value ? previewStyle : { color: "var(--text-disabled)" }}
@@ -303,8 +299,6 @@ interface SelectProps<T extends string> {
   /** Text shown on the trigger; defaults to the selected option's label.
    * Empty string falls through to the placeholder. */
   triggerLabel?: string;
-  /** Leading icon on the trigger (the chosen option's mark). */
-  triggerIcon?: React.ReactNode;
   triggerPreviewStyle?: React.CSSProperties;
   /** Extra trigger styling (compact rows squeeze it onto their height). */
   triggerStyle?: React.CSSProperties;
@@ -343,7 +337,6 @@ export function Select<T extends string>({
   disabled,
   lockedHint,
   triggerLabel,
-  triggerIcon,
   triggerPreviewStyle,
   triggerStyle,
   triggerClassName,
@@ -476,7 +469,6 @@ export function Select<T extends string>({
         ariaLabel={ariaLabel}
         value={shownLabel}
         placeholder={placeholder}
-        icon={triggerIcon}
         previewStyle={triggerPreviewStyle}
         disabled={disabled}
         lockedHint={lockedHint}
