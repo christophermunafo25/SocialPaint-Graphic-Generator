@@ -770,6 +770,7 @@ Accept when: `npm run verify` is green, the bundle has no dead Generate code, an
 15. The editor's selected segment differs by theme as drawn (white with a shadow and Medium labels in light, #3d4042 with Slime Regular labels in dark).
 16. Below 1180px the editor becomes an overlay sheet; the frames only show 1440.
 17. Compact draft cards show the platform name as their meta, as the Figma draws it; Regular cards keep the size meta (CJ, 2026-09-25).
+18. Every member field is required, as the codebase derives it (`isRequiredField`); the legacy `required` column is not read, because the builder saves `false` for every field since the Required toggle was removed. So the editor's "Optional" tag (§7.8) never shows, Try next rule 1 (§9.4) offers a member text field that is empty rather than optional and empty, and Download PNG waits until every field is filled (CJ, 2026-09-28).
 
 ## 16. Out of scope
 
