@@ -549,12 +549,14 @@ html {
      past --text-primary. */
   --text-heading: var(--paper-050);
 
-  /* Sidebar nav rows: hover is a neutral wash; active is an inverted pill
-     (white, ink label) — see .sp-goo. */
+  /* Sidebar nav rows: hover is a neutral wash; active is a soft neutral
+     pill with a white label (Figma 442:3563, 2026-09-28; an inverted white
+     pill with an ink label before) — see .sp-goo. Every selection control
+     that reads these tokens follows. */
   --nav-hover-bg: var(--bg-hover);
   --nav-hover-fg: var(--text-primary);
-  --nav-active-bg: var(--white);
-  --nav-active-fg: var(--ink-700);
+  --nav-active-bg: var(--bg-hover);
+  --nav-active-fg: var(--white);
 
   /* Icon buttons (collapse, row menus, builder chrome): neutral hover. */
   --icon-btn-bg: transparent;
@@ -562,11 +564,12 @@ html {
   --icon-btn-bg-hover: var(--bg-hover);
   --icon-btn-fg-hover: var(--text-primary);
 
-  /* The theme toggle: a filled circle with a Slime moon. */
+  /* The theme toggle: a filled circle with a white moon (Figma 442:3563,
+     2026-09-28; a Slime moon before). */
   --theme-btn-bg: var(--bg-hover);
-  --theme-btn-fg: var(--slime);
+  --theme-btn-fg: var(--white);
   --theme-btn-bg-hover: rgb(255 255 255 / 0.25);
-  --theme-btn-fg-hover: var(--slime);
+  --theme-btn-fg-hover: var(--white);
 
   /* Template card go button: filled at rest, inverts to white with an ink
      arrow while the card is hovered or focused. */
@@ -774,8 +777,10 @@ html {
 
   --nav-hover-bg: var(--paper-050);
   --nav-hover-fg: var(--text-primary);
-  --nav-active-bg: var(--ink-800);
-  --nav-active-fg: var(--white);
+  /* Soft pill (Figma 442:3477, 2026-09-28): the sunken paper with an ink
+     label (an ink pill with a white label before). */
+  --nav-active-bg: var(--paper-100);
+  --nav-active-fg: var(--ink-900);
 
   --icon-btn-bg: transparent;
   --icon-btn-fg: var(--text-secondary);
@@ -1191,7 +1196,7 @@ select.sp-input:disabled {
 /* Segmented icon group — alignment triplets, flip pair, resizing modes.
    One shared hairline container, crisp control radius. Hover and the
    active segment speak the sidebar nav's language (2026-09-25): the
-   neutral --nav-hover-* wash, and the inverted --nav-active-* fill (the
+   neutral --nav-hover-* wash, and the --nav-active-* pill (the
    "filled = on" rule; the neutral action fill before). */
 .sp-seg {
   display: inline-flex;
@@ -1237,7 +1242,7 @@ select.sp-input:disabled {
    It replaces the inline strips that each painted their own states (the
    template status filter, image source, canvas size, edit / preview, rail
    tabs, fill tabs, auto-build source, the dev role toggle). Selection is
-   the sidebar nav's inverted --nav-active-* fill, hover its neutral wash.
+   the sidebar nav's --nav-active-* pill, hover its neutral wash.
    Sizing stays with the caller (padding and type step vary by seat);
    colour never does. data-stretch shares the row between the segments. */
 .sp-tabstrip {
@@ -3211,7 +3216,7 @@ select.sp-input:disabled {
    filter so Insights' date range and any future segment row share one
    control. Identical rules to the toolbar it came from, minus that
    toolbar's own bottom margin, which stays on .sp-logo-toolbar below.
-   The checked option is the sidebar nav's inverted --nav-active-* fill
+   The checked option is the sidebar nav's --nav-active-* pill
    and hover its neutral wash (2026-09-25; the action fill before, and no
    hover). */
 .sp-segmented {
@@ -3616,7 +3621,7 @@ select.sp-input:disabled {
     color var(--dur-state) var(--ease);
 }
 /* The section rail speaks the sidebar nav's language (2026-09-25): a
-   neutral hover wash and the inverted active pill at the same 9px radius.
+   neutral hover wash and the active pill at the same 9px radius.
    The Slime wash it used for active is retired. It has no travelling pill,
    so the active colour needs no delay. .sp-railitem is the same recipe
    for any other vertical list of this kind (the size gallery's category
@@ -3645,7 +3650,7 @@ select.sp-input:disabled {
 }
 
 /* Choice tiles (Settings > Appearance): a card-radius tile per option.
-   Selected takes the inverted --nav-active-* fill and drops its hairline;
+   Selected takes the --nav-active-* pill and drops its hairline;
    hover the neutral wash (2026-09-25; a Slime wash before). */
 .sp-choice-tile {
   border: 1px solid var(--border-strong);
@@ -3774,20 +3779,13 @@ select.sp-input:disabled {
 }
 /* Active: the travelling pill underneath is the background, so the row
    stays transparent — also while hovered, which is why this rule comes
-   after :hover. The pill is inverted (2026-09-25), so the label must not
-   turn to the on-pill colour before the pill arrives: the row GAINING
-   active holds its colour change back while the blob travels (0.55s on an
-   ease-out curve, most of the distance in the first half). The row losing
-   active has no delay and reverts at once. */
+   after :hover. The pill is a soft neutral (2026-09-28), so the label
+   reads on the rail as well as on the pill and changes colour at once.
+   (While the pill was inverted, 2026-09-25 to 09-28, the label held its
+   colour change for 240ms so it never showed white on the white rail.) */
 .sp-sidebar-item[data-active="true"] {
   background: transparent;
   color: var(--nav-active-fg);
-  transition:
-    background var(--dur-state) var(--ease),
-    color var(--dur-state) var(--ease) var(--nav-active-delay);
-}
-.sp-sidebar-item {
-  --nav-active-delay: 240ms;
 }
 
 /* The account avatar (rail and drawer, and the collapsed rail's 34px one).
@@ -3798,19 +3796,6 @@ select.sp-input:disabled {
   background: var(--bg-hover);
   border: 1px solid var(--border);
   color: var(--text-primary);
-}
-@media (prefers-reduced-motion: reduce) {
-  .sp-sidebar-item {
-    --nav-active-delay: 0ms;
-  }
-}
-/* A theme swap recolours the pill at once, so the rows must follow in the
-   same frame: without this the active label would sit white on the white
-   pill (or ink on ink) for the length of the travel delay. ColorScheme sets
-   the attribute for two frames around the swap. */
-[data-theme-switching] .sp-sidebar-item,
-[data-theme-switching] .sp-settings-rail button {
-  transition: none;
 }
 
 /* --- Canvas editor chrome (Template builder) ------------------------------
@@ -4121,12 +4106,11 @@ html[data-sp-fullscreen] .sp-appshell > main {
 }
 
 /* Gooey nav pill — the BYQ gem's liquid indicator, vertical, bound to the
-   ACTIVE row only. INVERTED since 2026-09-25 (the Figma "Navigation"
-   page): an ink pill with a white label in light, a white pill with an
-   ink label in dark, at the row hover's 9px radius. Hover stays a neutral
-   wash, so active no longer matches hover in colour — that 2026-08-14
-   rule (at Chris's direction) is retired. The label's colour change is
-   delayed until the pill arrives (see .sp-sidebar-item). Solid because
+   ACTIVE row only. A soft neutral pill since 2026-09-28 (Figma 442:3477 /
+   442:3563): the sunken paper with an ink label in light, the hover grey
+   with a white label in dark, at the row hover's 9px radius. In dark it
+   matches the hover wash; in light it sits one step deeper. (Inverted
+   from 2026-09-25, an ink pill in light and a white one in dark.) Solid because
    the goo filter's alpha threshold crushes translucent washes. Gem motion
    verbatim: 0.55s travel, 0.62s overshoot drop, fused mid-flight. Reduced
    motion snaps. */
@@ -5627,7 +5611,7 @@ input[type="radio"] {
 
 /* Platform chips (the size gallery's compact pills). Crisp control
    radius. Hover is the sidebar nav's neutral wash and the selected chip
-   its inverted --nav-active-* fill, border and all (2026-09-25; the
+   its --nav-active-* pill, border and all (2026-09-25; the
    primary button construction before). */
 .sp-chipbar {
   gap: var(--space-2xs);
@@ -8953,7 +8937,7 @@ button.sp-chat-draft__preview {
   background: color-mix(in srgb, var(--state-danger-on-surface) 8%, transparent);
 }
 
-/* Selection is neutral everywhere it appears — the nav's inverted fill on
+/* Selection is neutral everywhere it appears — the nav's active pill on
    every segment, chip, rail item, and choice tile (2026-09-25). The one
    selection exception: a swatch shows a colour, so a neutral marker can
    vanish against a black or white swatch. The editor blue is the marker colour and reads
