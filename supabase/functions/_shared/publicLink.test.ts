@@ -7,6 +7,7 @@ import {
   hashToken,
   mintToken,
   parseStorageRef,
+  refInCompany,
   refWithImpliedBucket,
   referencedColorKeys,
   referencedFontFamilies,
@@ -111,6 +112,38 @@ const TYPE_STYLES = [
   { key: "subhead", font: { source: "google", family: "Inter" }, colorKey: "accent" },
   { key: "unused", font: { source: "google", family: "Oswald" }, colorKey: "secret" },
 ];
+
+describe("refInCompany", () => {
+  const CO = "c0000000-0000-4000-8000-000000000001";
+  const OTHER = "7c9e6679-7425-40de-944b-e07fc1f90ae7";
+
+  it("accepts an object in the company's own folder of either bucket", () => {
+    expect(refInCompany({ bucket: "brand-assets", path: `${CO}/logo/1-logo.png` }, CO)).toBe(true);
+    expect(refInCompany({ bucket: "template-backgrounds", path: `${CO}/1-bg.png` }, CO)).toBe(true);
+  });
+
+  it("refuses another company's object, and a climb out of the folder", () => {
+    expect(refInCompany({ bucket: "brand-assets", path: `${OTHER}/logo/1-logo.png` }, CO)).toBe(
+      false,
+    );
+    expect(refInCompany({ bucket: "brand-assets", path: `${CO}/../${OTHER}/1.png` }, CO)).toBe(
+      false,
+    );
+  });
+
+  it("checks a reference however it was written", () => {
+    for (const [value, expected] of [
+      [`brand-assets/${CO}/logo.png`, true],
+      [`${CO}/logo.png`, true],
+      [`https://x.supabase.co/storage/v1/object/public/brand-assets/${CO}/logo.png`, true],
+      [`brand-assets/${OTHER}/logo.png`, false],
+      [`${OTHER}/logo.png`, false],
+      [`https://x.supabase.co/storage/v1/object/public/brand-assets/${OTHER}/logo.png`, false],
+    ] as const) {
+      expect(refInCompany(refWithImpliedBucket("brand-assets", value)!, CO)).toBe(expected);
+    }
+  });
+});
 
 describe("what a schema references", () => {
   const fields = [

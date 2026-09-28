@@ -179,7 +179,15 @@ route over the existing data path. **RLS is not relaxed anywhere for it.**
   exactly the objects the template paints. They land in the same fields that
   hold storage references for a member, so `SchemaRenderer`, `useDataUrl`,
   `registerCustomFont`, and `exportSchemaPng` run unmodified — which is what
-  makes the exported PNG identical on both paths.
+  makes the exported PNG identical on both paths. Only objects under
+  `{bucket}/{companyId}/` of the link's own company are signed. Every
+  reference (background, fixed image, mask, variation background and image
+  swap, font file) is a value the company's admin wrote, and the service
+  role signs whatever it is handed, so `payloadAssetRefs` holds each one to
+  `isCompanyStorageRef` and a template naming any other object refuses the
+  whole link with the same 404. Link creation (`template-links`) counts such
+  an object as missing and never looks it up. `supabase/verify/storage_ref_audit.sql`
+  is a read-only query that lists any such reference already in the database.
 - **Uploads.** Nothing is uploaded. Member photo uploads already never reach
   storage: `FieldInput` crops to a data URL in the browser and it goes
   straight into the PNG. So a public fill is not an unauthenticated write,

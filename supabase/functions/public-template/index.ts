@@ -19,6 +19,9 @@
 //      this the endpoint is an oracle for probing which tokens exist.
 //   5. The response is assembled by an allowlist in _shared/publicTemplate.ts
 //      and then swept for anything that still looks like a storage reference.
+//   6. Only objects under "{bucket}/{companyId}/" of the link's own company
+//      are signed. The references come from rows the company's admin wrote,
+//      so a template naming any other object refuses outright (rule 4).
 //
 // This function must keep doing exactly one thing. Every future request to
 // have it return "just one more field" is a request to widen the only hole
@@ -39,6 +42,7 @@ import {
   PUBLIC_SIGNED_URL_TTL_S,
   clientIp,
   hashToken,
+  refInCompany,
   refKey,
   type StorageRef,
 } from "../_shared/publicLink.ts";
@@ -102,14 +106,20 @@ interface ResolvedLink {
  *
  * Signatures are per object: a URL minted for one link's background grants
  * access to that object and nothing else — not a sibling, not another
- * tenant's, not a bucket listing. */
+ * tenant's, not a bucket listing. And only objects in the link's own
+ * company folder are ever signed: payloadAssetRefs already sorted the rest
+ * out, and this repeats the check at the one call that uses the service
+ * role, so a future caller cannot skip it. A skipped reference goes
+ * unsigned, which the caller's count check refuses. */
 async function signRefs(
   db: ReturnType<typeof serviceClient>,
   refs: StorageRef[],
+  companyId: string,
 ): Promise<Map<string, string>> {
   const signed = new Map<string, string>();
   const byBucket = new Map<string, string[]>();
   for (const ref of refs) {
+    if (!refInCompany(ref, companyId)) continue;
     byBucket.set(ref.bucket, [...(byBucket.get(ref.bucket) ?? []), ref.path]);
   }
   await Promise.all(
@@ -225,8 +235,27 @@ Deno.serve(async (req) => {
     const fontAssets = (fontsResult.data as Row[] | null) ?? [];
 
     const pinnedVariantId = link.pinned_variant_id ?? null;
-    const refs = payloadAssetRefs({ template, fields, brandKit, fontAssets, pinnedVariantId });
-    const signed = await signRefs(db, refs);
+    const { own: refs, foreign } = payloadAssetRefs({
+      template,
+      fields,
+      brandKit,
+      fontAssets,
+      pinnedVariantId,
+      companyId: link.company_id,
+    });
+
+    // A reference outside the company's own folder refuses the whole link,
+    // with the same 404 as every other refusal. Signing it would hand an
+    // anonymous visitor another company's file; dropping it and rendering
+    // the rest would be the quiet wrongness the next check refuses too. The
+    // app never writes such a value, so a template that holds one was
+    // tampered with, and its admin learns nothing here about why.
+    if (foreign.length > 0) {
+      console.error("[public-template] reference outside the company's folder", foreign.length);
+      return refuse(json, "foreign-ref", ipKey);
+    }
+
+    const signed = await signRefs(db, refs, link.company_id);
 
     // An object we could not sign is a HARD failure, not a degraded render.
     // A missing background would export as a graphic with no background and

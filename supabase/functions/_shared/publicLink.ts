@@ -5,6 +5,8 @@
 // exercises the parts that decide what an anonymous visitor receives. Nothing
 // at module level may touch Deno.
 
+import { isCompanyStorageRef } from "./validate.ts";
+
 /** 32 bytes = 256 bits from the platform CSPRNG. Guessing is not a strategy:
  * an attacker running a billion attempts a second against every link we will
  * ever issue does not meaningfully dent the space. Rendered base64url, which
@@ -97,6 +99,19 @@ export function refWithImpliedBucket(
 }
 
 export const refKey = (ref: StorageRef): string => `${ref.bucket}/${ref.path}`;
+
+/** Whether a reference names an object inside this company's own folder
+ * ("{bucket}/{companyId}/…"), by the server's one tenant check.
+ *
+ * Every reference this module resolves comes from a row a company's admin
+ * wrote (a background, a fixed image, a variation, a font, a mask), and the
+ * service role signs or looks up whatever it is handed. Storage RLS keeps an
+ * admin's own session inside their folder, but nothing keeps a row's VALUE
+ * there: an admin can save another company's path into their template. So
+ * any server path that reaches storage with the service role on a tenant's
+ * reference must ask this first. */
+export const refInCompany = (ref: StorageRef, companyId: string): boolean =>
+  isCompanyStorageRef(refKey(ref), ref.bucket, companyId);
 
 // ---------------------------------------------------------------------------
 // What a schema actually references
