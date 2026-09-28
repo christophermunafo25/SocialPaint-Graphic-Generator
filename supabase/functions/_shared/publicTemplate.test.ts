@@ -7,12 +7,19 @@ import {
   signValue,
   type Row,
 } from "./publicTemplate.ts";
+import { refKey, type StorageRef } from "./publicLink.ts";
+
+/** The template's company. Storage paths start with the company id (0006,
+ * 0025), so every object the fixture paints sits in this folder. */
+const CO = "c0000000-0000-4000-8000-000000000001";
+/** Another tenant, whose objects a template must never get signed. */
+const OTHER = "7c9e6679-7425-40de-944b-e07fc1f90ae7";
 
 /** A templates row as Postgres hands it over, including every column that
  * must NOT reach a public visitor. */
 const TEMPLATE: Row = {
   id: "8f1c0f5e-1111-4444-8888-aaaaaaaaaaaa",
-  company_id: "c0000000-0000-4000-8000-000000000001",
+  company_id: CO,
   name: "Speaker announcement",
   description: "Square graphic for the confirmation email",
   category: "events",
@@ -20,7 +27,7 @@ const TEMPLATE: Row = {
   status: "published",
   canvas_width: 1440,
   canvas_height: 1440,
-  background_storage_path: "template-backgrounds/co/bg.png",
+  background_storage_path: `template-backgrounds/${CO}/bg.png`,
   background_color: null,
   background_gradient: null,
   layout_groups: null,
@@ -56,7 +63,7 @@ const FIELDS: Row[] = [
     type_style_key: null,
     font_family: null,
     is_static: true,
-    static_value: "brand-assets/co/logo.png",
+    static_value: `brand-assets/${CO}/logo.png`,
     required: false,
   },
   {
@@ -90,28 +97,28 @@ const BRAND_KIT: Row = {
 const FONT_ASSETS: Row[] = [
   {
     name: "Cooper-Bold.woff2",
-    storage_path: "brand-assets/co/fonts/cooper.woff2",
+    storage_path: `brand-assets/${CO}/fonts/cooper.woff2`,
     metadata: { family: "Cooper Display", weight: 700, format: "woff2" },
   },
   {
     name: "Unrelated-Regular.woff2",
-    storage_path: "brand-assets/co/fonts/unrelated.woff2",
+    storage_path: `brand-assets/${CO}/fonts/unrelated.woff2`,
     metadata: { family: "Unrelated Sans" },
   },
 ];
 
 const SIGNED = new Map([
   [
-    "template-backgrounds/co/bg.png",
-    "https://x.supabase.co/storage/v1/object/sign/template-backgrounds/co/bg.png?token=A",
+    `template-backgrounds/${CO}/bg.png`,
+    `https://x.supabase.co/storage/v1/object/sign/template-backgrounds/${CO}/bg.png?token=A`,
   ],
   [
-    "brand-assets/co/logo.png",
-    "https://x.supabase.co/storage/v1/object/sign/brand-assets/co/logo.png?token=B",
+    `brand-assets/${CO}/logo.png`,
+    `https://x.supabase.co/storage/v1/object/sign/brand-assets/${CO}/logo.png?token=B`,
   ],
   [
-    "brand-assets/co/fonts/cooper.woff2",
-    "https://x.supabase.co/storage/v1/object/sign/brand-assets/co/fonts/cooper.woff2?token=C",
+    `brand-assets/${CO}/fonts/cooper.woff2`,
+    `https://x.supabase.co/storage/v1/object/sign/brand-assets/${CO}/fonts/cooper.woff2?token=C`,
   ],
 ]);
 
@@ -129,25 +136,28 @@ const build = (over: Partial<Parameters<typeof buildPublicPayload>[0]> = {}) =>
 
 describe("payloadAssetRefs", () => {
   it("names the background, static images, and only the fonts in use", () => {
-    const refs = payloadAssetRefs({
+    const { own: refs, foreign } = payloadAssetRefs({
       template: TEMPLATE,
       fields: FIELDS,
       brandKit: BRAND_KIT,
       fontAssets: FONT_ASSETS,
+      companyId: CO,
     });
+    expect(foreign).toEqual([]);
     expect(refs.map((r) => `${r.bucket}/${r.path}`).sort()).toEqual([
-      "brand-assets/co/fonts/cooper.woff2",
-      "brand-assets/co/logo.png",
-      "template-backgrounds/co/bg.png",
+      `brand-assets/${CO}/fonts/cooper.woff2`,
+      `brand-assets/${CO}/logo.png`,
+      `template-backgrounds/${CO}/bg.png`,
     ]);
   });
 
   it("does not name a font whose family no field renders with", () => {
-    const refs = payloadAssetRefs({
+    const { own: refs } = payloadAssetRefs({
       template: TEMPLATE,
       fields: FIELDS,
       brandKit: BRAND_KIT,
       fontAssets: FONT_ASSETS,
+      companyId: CO,
     });
     expect(refs.some((r) => r.path.includes("unrelated"))).toBe(false);
   });
@@ -157,9 +167,14 @@ describe("buildPublicPayload — what does NOT cross the boundary", () => {
   const payload = build();
   const asText = JSON.stringify(payload);
 
-  it("withholds the company id", () => {
+  it("withholds the company id everywhere but inside the signed URLs", () => {
     expect(payload.template.company_id).toBe("");
-    expect(asText).not.toContain("c0000000-0000-4000-8000-000000000001");
+    expect(payload.brandKit.company_id).toBe("");
+    // A signed URL names its object, and every object path starts with the
+    // company folder, so the id rides inside each one. That grants nothing
+    // (a signature covers exactly one object). Nowhere else.
+    const unsigned = asText.replace(/https:\/\/[^"]*\/object\/sign\/[^"]*/g, "");
+    expect(unsigned).not.toContain(CO);
   });
 
   it("withholds the internal template id and every field row id", () => {
@@ -247,7 +262,7 @@ describe("signValue", () => {
     // Empty makes the renderer mark the image unresolved and the export gate
     // refuse. A visitor shipping a PNG with a hole where the logo should be
     // is the worst outcome this feature can produce.
-    expect(signValue("brand-assets", "brand-assets/co/missing.png", new Map())).toBe("");
+    expect(signValue("brand-assets", `brand-assets/${CO}/missing.png`, new Map())).toBe("");
   });
 
   it("passes an external URL through untouched", () => {
@@ -270,9 +285,12 @@ describe("findUnsignedRefs", () => {
     // payload through a column the builder does not sign must be caught.
     const leaky = {
       ...payload,
-      template: { ...payload.template, background_storage_path: "template-backgrounds/co/bg.png" },
+      template: {
+        ...payload.template,
+        background_storage_path: `template-backgrounds/${CO}/bg.png`,
+      },
     };
-    expect(findUnsignedRefs(leaky)).toEqual(["template-backgrounds/co/bg.png"]);
+    expect(findUnsignedRefs(leaky)).toEqual([`template-backgrounds/${CO}/bg.png`]);
   });
 
   it("passes a fully signed payload", () => {
@@ -289,26 +307,26 @@ describe("variations", () => {
       backgroundColor: "#F9F9F8",
       overrides: {
         name: { colorHex: "#101010", x: 999, width: 1 },
-        logo: { staticValue: "brand-assets/co/logo-dark.png" },
+        logo: { staticValue: `brand-assets/${CO}/logo-dark.png` },
         ghost: { colorHex: "#000" },
       },
     },
     {
       id: "v-dark",
       name: "Dark",
-      backgroundUrl: "template-backgrounds/co/bg-dark.png",
+      backgroundUrl: `template-backgrounds/${CO}/bg-dark.png`,
       overrides: {
         name: { colorHex: "#FFFFFF", typeStyleKey: "never-bound" },
-        logo: { staticValue: "brand-assets/co/logo-light.png" },
+        logo: { staticValue: `brand-assets/${CO}/logo-light.png` },
       },
     },
   ];
   const withVariants: Row = { ...TEMPLATE, variants: VARIANTS };
   const signedAll = new Map([
     ...SIGNED,
-    ["brand-assets/co/logo-dark.png", "https://x/sign/logo-dark?token=D"],
-    ["brand-assets/co/logo-light.png", "https://x/sign/logo-light?token=E"],
-    ["template-backgrounds/co/bg-dark.png", "https://x/sign/bg-dark?token=F"],
+    [`brand-assets/${CO}/logo-dark.png`, "https://x/sign/logo-dark?token=D"],
+    [`brand-assets/${CO}/logo-light.png`, "https://x/sign/logo-light?token=E"],
+    [`template-backgrounds/${CO}/bg-dark.png`, "https://x/sign/bg-dark?token=F"],
   ]);
 
   it("a template without variations sends null, like every other absent blob", () => {
@@ -322,10 +340,11 @@ describe("variations", () => {
       fields: FIELDS,
       brandKit: BRAND_KIT,
       fontAssets: FONT_ASSETS,
-    }).map((r) => `${r.bucket}/${r.path}`);
-    expect(refs).toContain("brand-assets/co/logo-dark.png");
-    expect(refs).toContain("brand-assets/co/logo-light.png");
-    expect(refs).toContain("template-backgrounds/co/bg-dark.png");
+      companyId: CO,
+    }).own.map((r) => `${r.bucket}/${r.path}`);
+    expect(refs).toContain(`brand-assets/${CO}/logo-dark.png`);
+    expect(refs).toContain(`brand-assets/${CO}/logo-light.png`);
+    expect(refs).toContain(`template-backgrounds/${CO}/bg-dark.png`);
   });
 
   it("unpinned: every variation crosses, whitelisted and signed", () => {
@@ -360,9 +379,10 @@ describe("variations", () => {
       brandKit: BRAND_KIT,
       fontAssets: FONT_ASSETS,
       pinnedVariantId: "v-dark",
-    }).map((r) => r.path);
-    expect(refs).not.toContain("co/logo-dark.png");
-    expect(refs).toContain("co/logo-light.png");
+      companyId: CO,
+    }).own.map((r) => r.path);
+    expect(refs).not.toContain(`${CO}/logo-dark.png`);
+    expect(refs).toContain(`${CO}/logo-light.png`);
   });
 
   it("a pin to a deleted variation falls back to the default", () => {
@@ -386,5 +406,227 @@ describe("variations", () => {
     expect((pinnedLight.brandKit.type_styles as Row[]).map((s) => s.key)).not.toContain(
       "never-bound",
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The tenant check. Every reference below is a value a company's admin wrote,
+// and the service role signs whatever it is handed, so a template holding
+// another company's path would read that company's file through a public
+// link. Only "{bucket}/{companyId}/…" of the link's own company is signed;
+// anything else lands in `foreign`, and the endpoint refuses the link.
+// ---------------------------------------------------------------------------
+
+const refsOf = (over: Partial<Parameters<typeof payloadAssetRefs>[0]> = {}) =>
+  payloadAssetRefs({
+    template: TEMPLATE,
+    fields: FIELDS,
+    brandKit: BRAND_KIT,
+    fontAssets: FONT_ASSETS,
+    companyId: CO,
+    ...over,
+  });
+
+const keys = (refs: StorageRef[]): string[] => refs.map(refKey).sort();
+
+/** FIELDS with one row patched, the way an admin's save would leave it. */
+const withField = (fieldKey: string, patch: Row): Row[] =>
+  FIELDS.map((f) => (f.field_key === fieldKey ? { ...f, ...patch } : f));
+
+/** The fixture's own three objects, which must keep signing whatever else a
+ * test adds. */
+const OWN_KEYS = [
+  `brand-assets/${CO}/fonts/cooper.woff2`,
+  `brand-assets/${CO}/logo.png`,
+  `template-backgrounds/${CO}/bg.png`,
+];
+
+describe("payloadAssetRefs — only the company's own objects are signed", () => {
+  it("a foreign background is never signed", () => {
+    const theirs = `template-backgrounds/${OTHER}/1727500000000-bg.png`;
+    const { own, foreign } = refsOf({
+      template: { ...TEMPLATE, background_storage_path: theirs },
+    });
+    expect(keys(foreign)).toEqual([theirs]);
+    expect(keys(own)).toEqual(OWN_KEYS.filter((k) => !k.includes("/bg.png")));
+  });
+
+  it("a foreign static image is never signed, from either bucket", () => {
+    for (const theirs of [
+      `brand-assets/${OTHER}/logo/1727500000000-logo.png`,
+      `template-backgrounds/${OTHER}/elements/1727500000000-r0.png`,
+    ]) {
+      const { own, foreign } = refsOf({ fields: withField("logo", { static_value: theirs }) });
+      expect(keys(foreign)).toEqual([theirs]);
+      expect(keys(own)).toEqual(OWN_KEYS.filter((k) => !k.includes("/logo.png")));
+    }
+  });
+
+  it("a foreign variation override is never signed: its background or its image swap", () => {
+    const template: Row = {
+      ...TEMPLATE,
+      variants: [
+        {
+          id: "v-borrowed",
+          name: "Borrowed",
+          backgroundUrl: `template-backgrounds/${OTHER}/1727500000000-bg.png`,
+          overrides: { logo: { staticValue: `brand-assets/${OTHER}/logo/1727500000000-logo.png` } },
+        },
+      ],
+    };
+    const { own, foreign } = refsOf({ template });
+    expect(keys(foreign)).toEqual([
+      `brand-assets/${OTHER}/logo/1727500000000-logo.png`,
+      `template-backgrounds/${OTHER}/1727500000000-bg.png`,
+    ]);
+    expect(keys(own)).toEqual(OWN_KEYS);
+  });
+
+  it("a foreign font file is never signed", () => {
+    // A brand_assets row is the company's own, but its storage_path is a
+    // value the admin wrote like any other.
+    const fontAssets = [
+      { ...FONT_ASSETS[0], storage_path: `${OTHER}/font/1727500000000-cooper.woff2` },
+      FONT_ASSETS[1],
+    ];
+    const { own, foreign } = refsOf({ fontAssets });
+    expect(keys(foreign)).toEqual([`brand-assets/${OTHER}/font/1727500000000-cooper.woff2`]);
+    expect(keys(own)).toEqual(OWN_KEYS.filter((k) => !k.includes("cooper")));
+  });
+
+  it("a foreign mask is never signed", () => {
+    const theirs = `template-backgrounds/${OTHER}/masks/1727500000000-0.png`;
+    const { own, foreign } = refsOf({ fields: withField("headshot", { mask_url: theirs }) });
+    expect(keys(foreign)).toEqual([theirs]);
+    expect(keys(own)).toEqual(OWN_KEYS);
+  });
+
+  it("holds a bare legacy path and a legacy public URL to the same check", () => {
+    const bare = refsOf({
+      fields: withField("logo", { static_value: `${OTHER}/logo/1-logo.png` }),
+    });
+    expect(keys(bare.foreign)).toEqual([`brand-assets/${OTHER}/logo/1-logo.png`]);
+    const legacy = refsOf({
+      fields: withField("logo", {
+        static_value: `https://abcd1234.supabase.co/storage/v1/object/public/brand-assets/${OTHER}/logo.png`,
+      }),
+    });
+    expect(keys(legacy.foreign)).toEqual([`brand-assets/${OTHER}/logo.png`]);
+  });
+
+  it("a path that starts in the company's folder and climbs out is foreign", () => {
+    for (const theirs of [
+      `brand-assets/${CO}/../${OTHER}/logo.png`,
+      `brand-assets/${CO}/%2e%2e/${OTHER}/logo.png`,
+      `brand-assets/${CO}/logo/../../${OTHER}/logo.png`,
+      `${CO}/../${OTHER}/logo.png`,
+    ]) {
+      const { own, foreign } = refsOf({ fields: withField("logo", { static_value: theirs }) });
+      expect(foreign).toHaveLength(1);
+      expect(keys(own).some((k) => k.includes(OTHER))).toBe(false);
+    }
+  });
+
+  it("a folder that only starts with the company id is foreign", () => {
+    const { foreign } = refsOf({
+      fields: withField("logo", { static_value: `brand-assets/${CO}-x/logo.png` }),
+    });
+    expect(keys(foreign)).toEqual([`brand-assets/${CO}-x/logo.png`]);
+  });
+
+  it("the company's own objects still sign, in every form the app has written", () => {
+    const template: Row = {
+      ...TEMPLATE,
+      // A bare path from a row written before references named their bucket.
+      background_storage_path: `${CO}/1727500000000-bg.png`,
+      variants: [
+        {
+          id: "v-dark",
+          name: "Dark",
+          backgroundUrl: `template-backgrounds/${CO}/1727500000000-bg-dark.png`,
+          // The legacy public URL form, from before the private-storage cutover.
+          overrides: {
+            logo: {
+              staticValue: `https://abcd1234.supabase.co/storage/v1/object/public/brand-assets/${CO}/logo/1727500000000-logo-light.png`,
+            },
+          },
+        },
+      ],
+    };
+    const fields = withField("headshot", {
+      mask_url: `template-backgrounds/${CO}/masks/1727500000000-0.png`,
+    });
+    const { own, foreign } = refsOf({ template, fields });
+    expect(foreign).toEqual([]);
+    expect(keys(own)).toEqual([
+      `brand-assets/${CO}/fonts/cooper.woff2`,
+      `brand-assets/${CO}/logo.png`,
+      `brand-assets/${CO}/logo/1727500000000-logo-light.png`,
+      `template-backgrounds/${CO}/1727500000000-bg-dark.png`,
+      `template-backgrounds/${CO}/1727500000000-bg.png`,
+      `template-backgrounds/${CO}/masks/1727500000000-0.png`,
+    ]);
+  });
+
+  it("a variation the link does not serve is not named at all, foreign or not", () => {
+    const template: Row = {
+      ...TEMPLATE,
+      variants: [
+        { id: "v-mine", name: "Mine", isDefault: true },
+        {
+          id: "v-borrowed",
+          name: "Borrowed",
+          backgroundUrl: `template-backgrounds/${OTHER}/1727500000000-bg.png`,
+        },
+      ],
+    };
+    const { own, foreign } = refsOf({ template, pinnedVariantId: "v-mine" });
+    expect(foreign).toEqual([]);
+    expect(keys(own)).toEqual(OWN_KEYS);
+    // Served, it refuses.
+    expect(refsOf({ template }).foreign).toHaveLength(1);
+  });
+
+  it("fails closed when the company id is missing or not a uuid", () => {
+    for (const companyId of ["", "co", `${CO}/`]) {
+      const { own, foreign } = refsOf({ companyId });
+      expect(own).toEqual([]);
+      expect(keys(foreign)).toEqual(OWN_KEYS);
+    }
+  });
+
+  it("a payload built anyway would carry no trace of the foreign object", () => {
+    // The endpoint refuses before it builds. Should a future change build
+    // regardless, the unsigned foreign value blanks rather than travelling.
+    const theirs = `brand-assets/${OTHER}/logo/1727500000000-logo.png`;
+    const fields = withField("logo", { static_value: theirs });
+    const { own } = refsOf({ fields });
+    const signed = new Map([...SIGNED].filter(([k]) => own.some((r) => refKey(r) === k)));
+    const payload = build({ fields, signed });
+    expect((payload.template.template_fields as Row[])[1].static_value).toBe("");
+    expect(JSON.stringify(payload)).not.toContain(OTHER);
+  });
+});
+
+describe("masks", () => {
+  const MASK = `template-backgrounds/${CO}/masks/1727500000000-0.png`;
+
+  it("an image field's mask is signed like its image, so a masked template can be shared", () => {
+    const fields = withField("headshot", { mask_url: MASK });
+    expect(keys(refsOf({ fields }).own)).toContain(MASK);
+    const payload = build({
+      fields,
+      signed: new Map([...SIGNED, [MASK, "https://x/sign/mask?token=M"]]),
+    });
+    expect((payload.template.template_fields as Row[])[2].mask_url).toBe(
+      "https://x/sign/mask?token=M",
+    );
+    expect(findUnsignedRefs(payload)).toEqual([]);
+  });
+
+  it("an unmasked image field names no mask and keeps its null", () => {
+    const fields = withField("headshot", { mask_url: null });
+    expect(keys(refsOf({ fields }).own)).toEqual(OWN_KEYS);
+    expect((build({ fields }).template.template_fields as Row[])[2].mask_url).toBeNull();
   });
 });

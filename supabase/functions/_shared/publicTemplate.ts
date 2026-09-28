@@ -28,6 +28,7 @@ import {
   referencedColorKeys,
   referencedFontFamilies,
   referencedTypeStyleKeys,
+  refInCompany,
   type FieldLike,
   type FontAssetLike,
   type StorageRef,
@@ -278,6 +279,9 @@ function publicField(field: Row, index: number, signed: Map<string, string>): Ro
   out.id = surrogateFieldId(index);
   if (field.type === "image") {
     out.static_value = signValue("brand-assets", field.static_value as string | null, signed);
+    if (field.mask_url !== undefined) {
+      out.mask_url = signValue("template-backgrounds", field.mask_url as string | null, signed);
+    }
   }
   return out;
 }
@@ -294,15 +298,32 @@ function publicFontAsset(asset: Row, index: number, signed: Map<string, string>)
   };
 }
 
+export interface PayloadAssetRefs {
+  /** The objects to sign, every one inside the company's own folder. */
+  own: StorageRef[];
+  /** References the template names outside the company's own folder. Never
+   * signed; the caller refuses the link when there are any. */
+  foreign: StorageRef[];
+}
+
 /** Every object this response needs signed: the template's own assets plus
- * the files behind the uploaded font families it renders with. */
+ * the files behind the uploaded font families it renders with.
+ *
+ * Each one is a value a company's admin wrote, and the service role will
+ * sign whatever it is given. So each is held to the tenant check here, the
+ * one place every reference passes through before signing: a reference
+ * outside "{bucket}/{companyId}/" lands in `foreign` and never in `own`.
+ * Otherwise an admin could put another company's path in a field and read
+ * that company's file through their own public link. */
 export function payloadAssetRefs(input: {
   template: Row;
   fields: Row[];
   brandKit: Row | null;
   fontAssets: Row[];
   pinnedVariantId?: string | null;
-}): StorageRef[] {
+  /** The company the link resolved to: the template's own. */
+  companyId: string;
+}): PayloadAssetRefs {
   const refs = new Map<string, StorageRef>();
   const add = (ref: StorageRef | null) => {
     if (ref) refs.set(refKey(ref), ref);
@@ -319,6 +340,8 @@ export function payloadAssetRefs(input: {
     if (field.type !== "image") continue;
     imageKeys.add(field.field_key as string);
     add(refWithImpliedBucket("brand-assets", field.static_value as string | null));
+    // Masks are rehosted into template-backgrounds (figma-import).
+    add(refWithImpliedBucket("template-backgrounds", field.mask_url as string | null));
   }
 
   // The served variations' own objects: a swapped background, a logo's
@@ -347,7 +370,12 @@ export function payloadAssetRefs(input: {
     add(refWithImpliedBucket("brand-assets", asset.storage_path as string | null));
   }
 
-  return [...refs.values()];
+  const own: StorageRef[] = [];
+  const foreign: StorageRef[] = [];
+  for (const ref of refs.values()) {
+    (refInCompany(ref, input.companyId) ? own : foreign).push(ref);
+  }
+  return { own, foreign };
 }
 
 /** Defence in depth for the review this function is supposed to get: no

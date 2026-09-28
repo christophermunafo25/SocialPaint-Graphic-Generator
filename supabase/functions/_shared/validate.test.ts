@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { HttpError } from "./http.ts";
 import {
   hostOnDomain,
+  isCompanyStorageRef,
   optionalFutureIso,
   optionalInt,
   isOwnStorageUrl,
@@ -213,6 +214,117 @@ describe("isOwnStorageUrl", () => {
     expect(
       isOwnStorageUrl("http://169.254.169.254/latest/meta-data", SB, "template-backgrounds"),
     ).toBe(false);
+  });
+});
+
+// Two tenants. Storage paths start with the company id (0006, 0025), so a
+// reference names its owner in its first segment.
+const CO = "d290f1ee-6c54-4b01-90e6-d701748f0851";
+const OTHER = "7c9e6679-7425-40de-944b-e07fc1f90ae7";
+const BG = "template-backgrounds";
+
+describe("isCompanyStorageRef", () => {
+  it("accepts every reference shape the app writes under the company's folder", () => {
+    // templateStore.uploadBackground: {companyId}/{Date.now()}-{sanitized name},
+    // the path autobuild's image source arrives with.
+    const uploaded = `1727500000000-${"My poster (final)!.png".replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+    expect(isCompanyStorageRef(`${BG}/${CO}/${uploaded}`, BG, CO)).toBe(true);
+    // The sanitizer keeps ".", so dots inside a name survive it: an admin's
+    // own "Poster..v2.png" must reach autobuild.
+    const dotted = `1727500000000-${"Poster..v2.png".replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+    expect(dotted).toBe("1727500000000-Poster..v2.png");
+    expect(isCompanyStorageRef(`${BG}/${CO}/${dotted}`, BG, CO)).toBe(true);
+    expect(isCompanyStorageRef(`${BG}/${CO}/1727500000000-..hidden.png`, BG, CO)).toBe(true);
+    // brandStore.upload: {companyId}/{kind}/{Date.now()}-{sanitized name}
+    expect(
+      isCompanyStorageRef(`brand-assets/${CO}/logo/1727500000000-logo.svg`, "brand-assets", CO),
+    ).toBe(true);
+    // template-autobuild's own uploads and figma.ts rehost
+    expect(isCompanyStorageRef(`${BG}/${CO}/autobuild-canva-1727500000000.png`, BG, CO)).toBe(true);
+    expect(
+      isCompanyStorageRef(
+        `${BG}/${CO}/autobuild-static-0b7c1d2e-3f40-4a5b-8c6d-7e8f9a0b1c2d.png`,
+        BG,
+        CO,
+      ),
+    ).toBe(true);
+    expect(isCompanyStorageRef(`${BG}/${CO}/elements/1727500000000-r3.png`, BG, CO)).toBe(true);
+  });
+
+  it("rejects a reference under another company's folder", () => {
+    expect(isCompanyStorageRef(`${BG}/${OTHER}/bg.png`, BG, CO)).toBe(false);
+    expect(isCompanyStorageRef(`${BG}/${OTHER}/elements/1-r0.png`, BG, CO)).toBe(false);
+  });
+
+  it("matches the company id in either case, since a uuid is one company either way", () => {
+    expect(isCompanyStorageRef(`${BG}/${CO}/bg.png`, BG, CO.toUpperCase())).toBe(true);
+    expect(isCompanyStorageRef(`${BG}/${CO.toUpperCase()}/bg.png`, BG, CO)).toBe(true);
+  });
+
+  it("rejects a folder that only starts with the company id", () => {
+    expect(isCompanyStorageRef(`${BG}/${CO}x/bg.png`, BG, CO)).toBe(false);
+    expect(isCompanyStorageRef(`${BG}/${CO}-extra/bg.png`, BG, CO)).toBe(false);
+    expect(isCompanyStorageRef(`${BG}/x${CO}/bg.png`, BG, CO)).toBe(false);
+  });
+
+  it("rejects the company folder itself, or no folder at all", () => {
+    for (const ref of [`${BG}/${CO}`, `${BG}/${CO}/`, `${BG}/`, BG, `${BG}/bg.png`]) {
+      expect(isCompanyStorageRef(ref, BG, CO)).toBe(false);
+    }
+  });
+
+  it("rejects the other bucket, even inside the company's folder", () => {
+    expect(isCompanyStorageRef(`brand-assets/${CO}/logo.png`, BG, CO)).toBe(false);
+    expect(isCompanyStorageRef(`${BG}x/${CO}/bg.png`, BG, CO)).toBe(false);
+  });
+
+  it("rejects every traversal that would climb out of the folder once put in a URL", () => {
+    // storage-js puts the path into the request URL unencoded, and the URL
+    // parser resolves ".." segments, percent-encoded ones included: each of
+    // these passes a plain prefix test and names OTHER's object.
+    for (const path of [
+      `${CO}/../${OTHER}/bg.png`,
+      `${CO}/%2e%2e/${OTHER}/bg.png`,
+      `${CO}/.%2E/${OTHER}/bg.png`,
+      `${CO}/%2E./${OTHER}/bg.png`,
+      `${CO}\\..\\${OTHER}/bg.png`,
+      `${CO}/\t../${OTHER}/bg.png`,
+      `${CO}/./bg.png`,
+      `${CO}/logo/../../${OTHER}/bg.png`,
+      `${CO}/..`,
+      `${CO}/.`,
+    ]) {
+      expect(isCompanyStorageRef(`${BG}/${path}`, BG, CO)).toBe(false);
+    }
+  });
+
+  it("rejects any segment made of dots alone, which no upload path holds", () => {
+    for (const path of [`${CO}/.../bg.png`, `${CO}/logo/....`, `${CO}/..../bg.png`]) {
+      expect(isCompanyStorageRef(`${BG}/${path}`, BG, CO)).toBe(false);
+    }
+  });
+
+  it("rejects characters the app never writes into a path", () => {
+    for (const name of [
+      "bg.png?download",
+      "bg.png#x",
+      "b g.png",
+      "bg%20.png",
+      "a//bg.png",
+      "bg.png/",
+      "bg\u0000.png",
+      "bg\n.png",
+      "é.png",
+    ]) {
+      expect(isCompanyStorageRef(`${BG}/${CO}/${name}`, BG, CO)).toBe(false);
+    }
+  });
+
+  it("fails closed when the company id is not a uuid", () => {
+    // An empty id would otherwise turn the prefix into "{bucket}//".
+    for (const id of ["", "c1", `${CO}/`, "*"]) {
+      expect(isCompanyStorageRef(`${BG}/${id}/bg.png`, BG, id)).toBe(false);
+    }
   });
 });
 

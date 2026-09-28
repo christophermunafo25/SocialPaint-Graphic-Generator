@@ -242,6 +242,44 @@ export function isOwnStorageUrl(raw: string, supabaseUrl: string, bucket: string
   );
 }
 
+// One object-path segment as the app writes them: every upload path is built
+// from a company id, a folder word, a timestamp or uuid and a file name
+// sanitized to [a-zA-Z0-9._-] (templateStore.uploadBackground,
+// brandStore.upload, figma.ts rehost, template-autobuild). Anything else in a
+// reference did not come from us.
+const OBJECT_SEGMENT_RE = /^[A-Za-z0-9._-]+$/;
+// "." and ".." are what a URL parser resolves; a longer run of dots is not a
+// dot segment to it, but no upload path ever holds one, so it is refused too.
+const DOTS_ONLY_RE = /^\.+$/;
+
+/** Pure core of the tenant check: does `ref` ("{bucket}/{path}") name an
+ * object in this company's folder of the named bucket?
+ *
+ * The folder is the path's first segment, and it must be the company id. The
+ * comparison ignores case: a uuid in either case names the same company, and
+ * the functions build paths from the request's id as sent (the app's own ids
+ * are lowercase, as the storage policies' text comparison expects). At least
+ * one more segment must follow, the object itself.
+ *
+ * A prefix test alone is not enough. storage-js puts the path into the
+ * request URL unencoded, and the URL parser resolves dot segments, including
+ * percent-encoded ones: "{companyId}/%2e%2e/{otherCompany}/x.png" passes a
+ * prefix test and downloads another company's file. So every segment must be
+ * made of the characters the app itself writes, which leaves no "%",
+ * backslash, "?", "#" or whitespace, and so no encoded dot either. What is
+ * left of traversal is a whole dot segment, and no segment may be made of
+ * dots alone. Dots inside a name are the app's own: the upload sanitizers
+ * keep ".", so "Poster..v2.png" is a file an admin uploaded, not a climb. */
+export function isCompanyStorageRef(ref: string, bucket: string, companyId: string): boolean {
+  if (!UUID_RE.test(companyId) || !ref.startsWith(`${bucket}/`)) return false;
+  const [folder, ...object] = ref.slice(bucket.length + 1).split("/");
+  return (
+    folder.toLowerCase() === companyId.toLowerCase() &&
+    object.length > 0 &&
+    object.every((s) => !DOTS_ONLY_RE.test(s) && OBJECT_SEGMENT_RE.test(s))
+  );
+}
+
 /** An asset the server will read must be a storage REFERENCE
  * ("{bucket}/{path}") into the named private bucket — never an arbitrary
  * URL, which would be an SSRF primitive the moment the server fetches it.

@@ -84,6 +84,33 @@ fi
 sed -E 's/^psql:[^:]+:[0-9]+: NOTICE:  //' /tmp/verify-generate.out \
   | grep -vE '^(DO|CREATE FUNCTION|SET|RESET|INSERT|UPDATE|DELETE|BEGIN|ROLLBACK).*$'
 
+echo "==> Storage references stay in their company's folder"
+# The read-only audit that can also run against production, run here over
+# seeded rows: it must flag exactly the references A's rows plant in B's
+# folder, and none of the legitimate ones.
+psql -q -v ON_ERROR_STOP=1 -d "$DB" -f 60_storage_refs.sql >/dev/null
+A=ca600000-0000-4000-8000-00000000000a
+B=cb600000-0000-4000-8000-00000000000b
+actual=$(psql -X -tA -v ON_ERROR_STOP=1 -d "$DB" -f storage_ref_audit.sql \
+  | cut -d'|' -f3- | LC_ALL=C sort)
+expected=$(LC_ALL=C sort <<EOF
+background|template-backgrounds/$B/1727500000000-bg.png
+image logo|brand-assets/$A/logo/../../$B/logo/1727500000000-logo.png
+image photo|brand-assets/$B/image/1727500000000-photo.png
+mask photo|template-backgrounds/$B/masks/1727500000000-0.png
+variation background|template-backgrounds/$B/1727500000000-bg-dark.png
+variation image logo|brand-assets/$B/logo/1727500000000-logo.png
+font Borrowed.woff2|$B/font/1727500000000-Borrowed.woff2
+EOF
+)
+if [ "$actual" = "$expected" ]; then
+  echo "pass  the audit flags every planted foreign reference and nothing legitimate"
+else
+  echo "FAIL: the storage reference audit disagrees with the seeded rows"
+  diff <(echo "$expected") <(echo "$actual") || true
+  exit 1
+fi
+
 echo "==> Concurrency: two visitors, one remaining use"
 psql -q -d "$DB" -c "
   update template_links set use_count = 0, use_cap = 1, revoked_at = null

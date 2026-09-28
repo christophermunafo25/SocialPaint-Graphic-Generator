@@ -32,6 +32,7 @@ import {
 import {
   hashToken,
   mintToken,
+  refInCompany,
   templateDependencies,
   type StorageRef,
 } from "../_shared/publicLink.ts";
@@ -100,13 +101,20 @@ const toView = (r: LinkRow): LinkView => ({
 /** Which of these objects are NOT in storage. A link to a template that
  * points at a deleted image would refuse on every open — and refuse
  * uniformly, so the admin would never learn why. This is the one place
- * they can act, so the refusal happens here, in their words. */
+ * they can act, so the refusal happens here, in their words.
+ *
+ * An object outside the company's own folder counts as missing, and is never
+ * looked up: the public read refuses to sign it, and asking storage about it
+ * with the service role would tell this admin whether another company's
+ * file exists. */
 async function missingObjects(
   db: ReturnType<typeof serviceClient>,
   deps: Array<{ ref: StorageRef; label: string }>,
+  companyId: string,
 ): Promise<string[]> {
   const byBucket = new Map<string, string[]>();
   for (const d of deps) {
+    if (!refInCompany(d.ref, companyId)) continue;
     byBucket.set(d.ref.bucket, [...(byBucket.get(d.ref.bucket) ?? []), d.ref.path]);
   }
   const present = new Set<string>();
@@ -197,6 +205,7 @@ Deno.serve(async (req) => {
           tpl.data as { background_storage_path: string | null; variants: unknown },
           (flds.data ?? []) as Parameters<typeof templateDependencies>[1],
         ),
+        row.company_id,
       );
       if (missing.length) {
         const list = missing.map((m) => `“${m}”`).join(", ");
