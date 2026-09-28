@@ -31,10 +31,10 @@ import {
 } from "../_shared/validate.ts";
 import {
   hashToken,
+  missingDependencies,
   mintToken,
-  refInCompany,
   templateDependencies,
-  type StorageRef,
+  type PublicBucket,
 } from "../_shared/publicLink.ts";
 
 const MAX_LINKS_PER_TEMPLATE = 50;
@@ -98,37 +98,27 @@ const toView = (r: LinkRow): LinkView => ({
   lastUsedAt: r.last_used_at,
 });
 
-/** Which of these objects are NOT in storage. A link to a template that
- * points at a deleted image would refuse on every open — and refuse
- * uniformly, so the admin would never learn why. This is the one place
- * they can act, so the refusal happens here, in their words.
+/** How long the throwaway URLs from the existence check live. They never
+ * leave this function; the TTL only bounds them if one ever did. */
+const EXISTENCE_CHECK_TTL_S = 60;
+
+/** The signer missingDependencies asks: sign one bucket's paths with the
+ * service role, the call public-template makes, and answer with the paths
+ * that signed.
  *
- * An object outside the company's own folder counts as missing, and is never
- * looked up: the public read refuses to sign it, and asking storage about it
- * with the service role would tell this admin whether another company's
- * file exists. */
-async function missingObjects(
-  db: ReturnType<typeof serviceClient>,
-  deps: Array<{ ref: StorageRef; label: string }>,
-  companyId: string,
-): Promise<string[]> {
-  const byBucket = new Map<string, string[]>();
-  for (const d of deps) {
-    if (!refInCompany(d.ref, companyId)) continue;
-    byBucket.set(d.ref.bucket, [...(byBucket.get(d.ref.bucket) ?? []), d.ref.path]);
-  }
-  const present = new Set<string>();
-  for (const [bucket, paths] of byBucket) {
-    const { data, error } = await db
-      .schema("storage")
-      .from("objects")
-      .select("name")
-      .eq("bucket_id", bucket)
-      .in("name", paths);
+ * Signing, not a storage.objects query: the project exposes only public and
+ * graphql_public to the API, so `.schema("storage")` fails with PGRST106,
+ * and every link for a template with an image returned a 500. */
+function signablePaths(db: ReturnType<typeof serviceClient>) {
+  return async (bucket: PublicBucket, paths: string[]): Promise<string[]> => {
+    const { data, error } = await db.storage
+      .from(bucket)
+      .createSignedUrls(paths, EXISTENCE_CHECK_TTL_S);
     if (error) throw error;
-    for (const row of (data as Array<{ name: string }>) ?? []) present.add(`${bucket}/${row.name}`);
-  }
-  return deps.filter((d) => !present.has(`${d.ref.bucket}/${d.ref.path}`)).map((d) => d.label);
+    return (data ?? [])
+      .filter((entry) => entry.signedUrl && !entry.error && entry.path)
+      .map((entry) => entry.path as string);
+  };
 }
 
 Deno.serve(async (req) => {
@@ -199,13 +189,13 @@ Deno.serve(async (req) => {
       ]);
       if (tpl.error) throw tpl.error;
       if (flds.error) throw flds.error;
-      const missing = await missingObjects(
-        db,
+      const missing = await missingDependencies(
         templateDependencies(
           tpl.data as { background_storage_path: string | null; variants: unknown },
           (flds.data ?? []) as Parameters<typeof templateDependencies>[1],
         ),
         row.company_id,
+        signablePaths(db),
       );
       if (missing.length) {
         const list = missing.map((m) => `“${m}”`).join(", ");
