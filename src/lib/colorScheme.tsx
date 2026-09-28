@@ -41,13 +41,6 @@ export function ColorSchemeProvider({ children }: { children: React.ReactNode })
     const apply = () => {
       const dark = scheme === "dark" || (scheme === "system" && systemPrefersDark());
       const root = document.documentElement;
-      // Marks the swap for two frames so the nav rows change colour with the
-      // pill instead of on their delayed active transition (see
-      // [data-theme-switching] in socialpaint.css).
-      root.setAttribute("data-theme-switching", "");
-      requestAnimationFrame(() =>
-        requestAnimationFrame(() => root.removeAttribute("data-theme-switching")),
-      );
       // data-theme is what the design system scopes its tokens to; the .dark
       // class stays because Tailwind's dark: variant and theme.css key off it.
       root.setAttribute("data-theme", dark ? "dark" : "light");

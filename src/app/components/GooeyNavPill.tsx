@@ -7,12 +7,11 @@ import React, { useEffect, useId, useRef } from "react";
  * the standard exit curve, the trailing drop 0.62s on an overshoot spring
  * with a 260ms settle, fused by the goo filter (blur 7 → alpha threshold).
  *
- * The pill is an inverted solid (2026-09-25, the Figma "Navigation" page):
- * an ink pill with a white label in light, a white pill with an ink label
- * in dark (--nav-active-*). Solid because the goo filter's alpha threshold
- * crushes translucent fills; the old wash treatment could not travel. The
- * row's label holds its colour change until the pill arrives (see
- * .sp-sidebar-item in socialpaint.css).
+ * The pill is a soft neutral solid (--nav-active-*, 2026-09-28, Figma
+ * 442:3477 / 442:3563): the sunken paper with an ink label in light, the
+ * hover grey with a white label in dark. Solid because the goo filter's
+ * alpha threshold crushes translucent fills; the old wash treatment could
+ * not travel.
  *
  * Renders inside a positioned container holding `[data-active="true"]`
  * nav buttons; the buttons must sit above it (z-index 1). */
