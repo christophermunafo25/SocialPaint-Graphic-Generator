@@ -4,7 +4,7 @@
 // composer footnote and History. Open them in a new tab with
 // rel="noopener noreferrer".
 //
-// Placeholders until CJ confirms the real addresses (PROMPT.md §15 item 11).
+// Confirmed by CJ on 2026-09-28 (PROMPT.md §15 item 11).
 
 export const TERMS_URL = "https://www.socialpaint.ai/terms";
 export const PRIVACY_URL = "https://www.socialpaint.ai/privacy";

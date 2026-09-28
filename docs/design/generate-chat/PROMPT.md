@@ -763,7 +763,7 @@ Accept when: `npm run verify` is green, the bundle has no dead Generate code, an
 8. Chats persist in a new `generate_threads` table, private to their author, without photos.
 9. Unfilled member image slots appear in the editor after the text fields.
 10. Freestyle drafts show Save to library in the editor for admins.
-11. Terms and Privacy URLs are placeholders until CJ confirms them.
+11. Terms and Privacy URLs are placeholders until CJ confirms them. (Confirmed by CJ, 2026-09-28: `https://www.socialpaint.ai/terms` and `https://www.socialpaint.ai/privacy`.)
 12. The new button kinds are scoped to Generate. Rolling them out app-wide (buttons as solid color, no shadow, distinct from chips) is a separate change.
 13. Button and chip labels are Display Regular as drawn, which departs from the design-system note that controls use Medium.
 14. Chip labels are 13px (the component default). Some frames carry 10px labels as per-instance tweaks; they are not built.
