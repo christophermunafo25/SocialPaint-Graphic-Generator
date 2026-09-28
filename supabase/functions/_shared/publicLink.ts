@@ -245,6 +245,36 @@ export function templateDependencies(
   return [...out.values()];
 }
 
+/** The labels of the dependencies a link to this template could not serve.
+ * A link to a template that points at a deleted image would refuse on every
+ * open, and refuse uniformly, so the admin would never learn why. Link
+ * creation is the one place they can act, so it asks here.
+ *
+ * `signable` asks storage the way the public read will: it signs the paths
+ * of one bucket and answers with the ones that signed. So "present" means
+ * exactly "public-template can sign it", not merely that a row exists.
+ *
+ * A dependency outside the company's own folder counts as missing and is
+ * never asked about: the public read refuses to sign it, and asking storage
+ * with the service role would tell this admin whether another company's
+ * file exists. */
+export async function missingDependencies(
+  deps: Array<{ ref: StorageRef; label: string }>,
+  companyId: string,
+  signable: (bucket: PublicBucket, paths: string[]) => Promise<string[]>,
+): Promise<string[]> {
+  const byBucket = new Map<PublicBucket, string[]>();
+  for (const d of deps) {
+    if (!refInCompany(d.ref, companyId)) continue;
+    byBucket.set(d.ref.bucket, [...(byBucket.get(d.ref.bucket) ?? []), d.ref.path]);
+  }
+  const present = new Set<string>();
+  for (const [bucket, paths] of byBucket) {
+    for (const path of await signable(bucket, paths)) present.add(refKey({ bucket, path }));
+  }
+  return deps.filter((d) => !present.has(refKey(d.ref))).map((d) => d.label);
+}
+
 // ---------------------------------------------------------------------------
 // Caller identity for rate limiting
 // ---------------------------------------------------------------------------

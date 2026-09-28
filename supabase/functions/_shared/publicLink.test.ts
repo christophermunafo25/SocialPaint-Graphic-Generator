@@ -5,6 +5,7 @@ import {
   clientIp,
   fontAssetFamily,
   hashToken,
+  missingDependencies,
   mintToken,
   parseStorageRef,
   refInCompany,
@@ -262,5 +263,89 @@ describe("templateDependencies", () => {
 
   it("is empty for a template with nothing in storage", () => {
     expect(templateDependencies({ background_storage_path: null, variants: null }, [])).toEqual([]);
+  });
+});
+
+describe("missingDependencies", () => {
+  const CO = "c0000000-0000-4000-8000-000000000001";
+  const OTHER = "7c9e6679-7425-40de-944b-e07fc1f90ae7";
+
+  /** A signer over a fixed set of stored objects, recording every call. */
+  const storage = (stored: string[]) => {
+    const calls: Array<{ bucket: string; paths: string[] }> = [];
+    const signable = async (bucket: string, paths: string[]) => {
+      calls.push({ bucket, paths });
+      return paths.filter((p) => stored.includes(`${bucket}/${p}`));
+    };
+    return { calls, signable };
+  };
+
+  const dep = (bucket: "brand-assets" | "template-backgrounds", path: string, label: string) => ({
+    ref: { bucket, path },
+    label,
+  });
+
+  it("names nothing when every object signs, asking once per bucket", async () => {
+    const { calls, signable } = storage([
+      `template-backgrounds/${CO}/1-bg.png`,
+      `brand-assets/${CO}/logo/1-logo.png`,
+      `brand-assets/${CO}/logo/1-logo-dark.png`,
+    ]);
+    const missing = await missingDependencies(
+      [
+        dep("template-backgrounds", `${CO}/1-bg.png`, "background"),
+        dep("brand-assets", `${CO}/logo/1-logo.png`, "Logo"),
+        dep("brand-assets", `${CO}/logo/1-logo-dark.png`, "Dark · Logo"),
+      ],
+      CO,
+      signable,
+    );
+    expect(missing).toEqual([]);
+    expect(calls).toEqual([
+      { bucket: "template-backgrounds", paths: [`${CO}/1-bg.png`] },
+      { bucket: "brand-assets", paths: [`${CO}/logo/1-logo.png`, `${CO}/logo/1-logo-dark.png`] },
+    ]);
+  });
+
+  it("names each object that did not sign, by the label the admin knows", async () => {
+    const { signable } = storage([`template-backgrounds/${CO}/1-bg.png`]);
+    const missing = await missingDependencies(
+      [
+        dep("template-backgrounds", `${CO}/1-bg.png`, "background"),
+        dep("brand-assets", `${CO}/logo/1-logo.png`, "Logo"),
+      ],
+      CO,
+      signable,
+    );
+    expect(missing).toEqual(["Logo"]);
+  });
+
+  it("counts another company's object as missing without ever asking about it", async () => {
+    // Stored, so a lookup would say it exists: the answer must not depend on
+    // it, and the signer must never see the path.
+    const theirs = `${OTHER}/logo/1-logo.png`;
+    const { calls, signable } = storage([`brand-assets/${theirs}`]);
+    const missing = await missingDependencies(
+      [dep("brand-assets", theirs, "Logo"), dep("brand-assets", `${CO}/../${theirs}`, "Badge")],
+      CO,
+      signable,
+    );
+    expect(missing).toEqual(["Logo", "Badge"]);
+    expect(calls).toEqual([]);
+  });
+
+  it("asks nothing for a template with no stored objects", async () => {
+    const { calls, signable } = storage([]);
+    expect(await missingDependencies([], CO, signable)).toEqual([]);
+    expect(calls).toEqual([]);
+  });
+
+  it("lets a failed signing call fail the request rather than blame the images", async () => {
+    const failing = async () => {
+      throw new Error("storage unavailable");
+    };
+    await expect(
+      missingDependencies([dep("brand-assets", `${CO}/logo/1-logo.png`, "Logo")], CO, failing),
+    ).rejects.toThrow("storage unavailable");
   });
 });
