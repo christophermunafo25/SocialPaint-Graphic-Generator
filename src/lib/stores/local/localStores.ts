@@ -1,4 +1,4 @@
-import { SIZE_CATALOG, type CanvasSize } from "../../templates/platforms";
+import { SIZE_CATALOG, type CanvasSize, type PlatformId } from "../../templates/platforms";
 import type {
   BrandAsset,
   BrandKit,
@@ -6,6 +6,9 @@ import type {
   CompanyPatch,
   CompanyTemplateLink,
   DesignImportResult,
+  GenerateThreadInput,
+  GenerateThreadRecord,
+  GenerateThreadSummary,
   MonthlyUsage,
   NewTemplateInput,
   PublicLinkUsageRow,
@@ -23,12 +26,24 @@ import type {
   CompanyStore,
   DesignImportProvider,
   GenerateProvider,
+  GenerateThreadStore,
   PublicLinkStore,
   TemplateStore,
   UsageStore,
 } from "../interfaces";
 import { browserTimeZone } from "../../companySettings";
+import { assertNoDataUrls } from "../../generate/dataUrls";
 import { bucketDailyActivity } from "../dailyActivity";
+import {
+  comesAfter,
+  compareThreadKeys,
+  decodeThreadCursor,
+  normalizeThreadInput,
+  pageLimit,
+  pageOf,
+  platformsInOrder,
+  titleMatches,
+} from "../generateThreads";
 import { joinCompanyLinks } from "../linkInventory";
 import { monthStartIso, summarizeMonthlyUsage } from "../monthlyUsage";
 import { joinLinkUsage } from "../publicLinkUsage";
@@ -125,6 +140,9 @@ export class LocalCompanyStore implements CompanyStore {
       );
       db.companyCanvasPresets = (db.companyCanvasPresets as CompanyPresetRec[]).filter(
         (p) => p.companyId !== id,
+      );
+      db.generateThreads = (db.generateThreads as GenerateThreadRec[]).filter(
+        (t) => t.companyId !== id,
       );
     });
   }
@@ -439,6 +457,95 @@ export class LocalUsageStore implements UsageStore {
   }
 }
 
+/** The one identity the dev backend has. It has no accounts (DevAuthProvider
+ * signs nobody in), so every chat saved here belongs to this id; the store
+ * still scopes by it, so it reads the way generate_threads does under RLS. */
+export const LOCAL_DEV_USER_ID = "local-dev-user";
+
+interface GenerateThreadRec extends GenerateThreadRecord {
+  companyId: string;
+  userId: string;
+}
+
+const toThreadSummary = (r: GenerateThreadRec): GenerateThreadSummary => ({
+  id: r.id,
+  title: r.title,
+  platforms: platformsInOrder(r.platforms),
+  preview: r.preview ?? null,
+  createdAt: r.createdAt,
+  updatedAt: r.updatedAt,
+});
+
+/** Saved Generate chats, with the Supabase store's semantics: the dev
+ * user's own chats in one company, newest first on (updatedAt, id), the
+ * same cursor, the same title match and platform order, and the same
+ * refusal of any data: value. localStorage is small, so a write that runs
+ * out of room throws like any failed save and the chat stays in memory. */
+export class LocalGenerateThreadStore implements GenerateThreadStore {
+  private own(companyId: string): GenerateThreadRec[] {
+    return (readDb().generateThreads as GenerateThreadRec[]).filter(
+      (t) => t.companyId === companyId && t.userId === LOCAL_DEV_USER_ID,
+    );
+  }
+  async list(
+    companyId: string,
+    opts: { limit: number; before?: string; platform?: PlatformId; q?: string },
+  ): Promise<{ items: GenerateThreadSummary[]; nextBefore: string | null }> {
+    const limit = pageLimit(opts.limit);
+    const cursor = opts.before ? decodeThreadCursor(opts.before) : null;
+    const rows = this.own(companyId)
+      .filter((t) => !opts.platform || t.platforms.includes(opts.platform))
+      .filter((t) => titleMatches(t.title, opts.q))
+      .sort(compareThreadKeys)
+      .filter((t) => !cursor || comesAfter(t, cursor))
+      .slice(0, limit + 1);
+    return pageOf(rows.map(toThreadSummary), limit);
+  }
+  async platformsInUse(companyId: string): Promise<PlatformId[]> {
+    return platformsInOrder(this.own(companyId).flatMap((t) => t.platforms));
+  }
+  async get(companyId: string, id: string): Promise<GenerateThreadRecord | null> {
+    const found = this.own(companyId).find((t) => t.id === id);
+    return found ? { ...toThreadSummary(found), turns: found.turns ?? [] } : null;
+  }
+  async create(companyId: string, input: GenerateThreadInput): Promise<GenerateThreadRecord> {
+    assertNoDataUrls(input);
+    const now = new Date().toISOString();
+    const rec: GenerateThreadRec = {
+      ...normalizeThreadInput(input),
+      id: newId(),
+      companyId,
+      userId: LOCAL_DEV_USER_ID,
+      createdAt: now,
+      updatedAt: now,
+    };
+    mutate((db) => db.generateThreads.push(rec));
+    // A copy, as a row read back would be: the caller's turns are not
+    // aliased by what the store returns.
+    const saved = JSON.parse(JSON.stringify(rec)) as GenerateThreadRec;
+    return { ...toThreadSummary(saved), turns: saved.turns };
+  }
+  async update(companyId: string, id: string, input: GenerateThreadInput): Promise<void> {
+    assertNoDataUrls(input);
+    mutate((db) => {
+      const rows = db.generateThreads as GenerateThreadRec[];
+      const i = rows.findIndex(
+        (t) => t.id === id && t.companyId === companyId && t.userId === LOCAL_DEV_USER_ID,
+      );
+      // As the Supabase store: a chat that is gone is not silently saved.
+      if (i < 0) throw new Error(`Chat ${id} not found`);
+      rows[i] = { ...rows[i], ...normalizeThreadInput(input), updatedAt: new Date().toISOString() };
+    });
+  }
+  async remove(companyId: string, id: string): Promise<void> {
+    mutate((db) => {
+      db.generateThreads = (db.generateThreads as GenerateThreadRec[]).filter(
+        (t) => !(t.id === id && t.companyId === companyId && t.userId === LOCAL_DEV_USER_ID),
+      );
+    });
+  }
+}
+
 /** Dev mode has no real users, so there is no profile to edit and no row to
  * hold notification preferences — the Account section checks isAvailable()
  * and says so instead of offering controls that cannot persist. */
@@ -536,7 +643,8 @@ export class LocalPublicLinkStore implements PublicLinkStore {
 
 /** Generate needs Edge Functions and a model key, neither of which the dev
  * backend has — so it says so, and the surface shows an honest disabled
- * state instead of a button that cannot work (the designImport precedent). */
+ * state instead of a button that cannot work (the designImport precedent).
+ * It takes no call options: there is no request to abort. */
 export class LocalGenerateProvider implements GenerateProvider {
   isConfigured(): boolean {
     return false;

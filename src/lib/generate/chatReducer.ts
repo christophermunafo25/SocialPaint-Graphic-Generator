@@ -1,0 +1,613 @@
+// The Generate chat's state machine (PROMPT §9.1 to §9.3): one pure reducer
+// that owns every transition of a thread, plus the pure decisions a run is
+// built from (which mode, which request body, which follow-up context).
+// useChatController sequences the side effects and dispatches here;
+// components read the thread and never mutate a turn.
+//
+// A run IS an assistant turn: its id is the run id every run action
+// carries. An action whose turn is gone (a reset, or a retry that replaced
+// it) or no longer running (done, stopped, error) is ignored and the state
+// comes back unchanged, so a late result can never mutate a finished turn.
+// "Try again" on the thread's last turn replaces that turn in place with a
+// fresh one under a new id, which retires the old id the same way.
+
+import type { FieldValues, GenerateFollowUp, GenerateInput } from "../types";
+import type { PlatformId } from "../templates/platforms";
+import {
+  isAssistantTurn,
+  isUserTurn,
+  type AssistantTurn,
+  type ChatDraft,
+  type ChatPhoto,
+  type ChatThread,
+  type ChatTurn,
+  type UserTurn,
+} from "./chat";
+import { fallbackTitle } from "./draftView";
+import {
+  DONE_FALLBACK,
+  GENERATE_FAILED,
+  NEW_CHAT_TITLE,
+  NOTHING_FIT,
+  STEP_CHECKING,
+  STOPPED_STATUS,
+  askingCopy,
+  measuringCopy,
+  type ProposalShape,
+  type RunMode,
+} from "./runCopy";
+
+/** A stored chat holds at most this many turns (PROMPT §9.8). A send adds
+ * two, so a thread at the cap takes no more. */
+export const MAX_TURNS = 40;
+/** The server's brief cap, which the composer's maxLength mirrors. */
+export const MAX_BRIEF = 1500;
+/** The Variations stepper's range and default (PROMPT §7.7, §15 item 4):
+ * the server clamps `count` to 1 to 3. */
+export const MIN_VARIATIONS = 1;
+export const MAX_VARIATIONS = 3;
+export const DEFAULT_VARIATIONS = 2;
+
+export type ChatAction =
+  /** A message sent: appends the UserTurn and its AssistantTurn (step 1,
+   * asking). Ignored while a run is in flight, when the thread is full, or
+   * when the text is blank. */
+  | {
+      type: "sent";
+      runId: string;
+      userTurnId: string;
+      text: string;
+      photo?: ChatPhoto | null;
+      platformHint?: PlatformId;
+      variations: number;
+      templateIdHint?: string;
+      intent: UserTurn["intent"];
+      mode: RunMode;
+      at: string;
+    }
+  /** The model answered: step 2, measuring, one pending slot per proposal. */
+  | {
+      type: "proposalsArrived";
+      runId: string;
+      proposals: ProposalShape[];
+      meta: NonNullable<AssistantTurn["meta"]>;
+      warnings: string[];
+    }
+  /** Step 3: a repair round is in flight, or the last proposal is being
+   * resolved. The step never moves back. */
+  | { type: "checking"; runId: string }
+  /** A draft landed: it takes the next slot, in proposal order. */
+  | { type: "draftResolved"; runId: string; draft: ChatDraft }
+  /** A proposal was dropped: its slot retires and its warning is kept. */
+  | { type: "draftDropped"; runId: string; warning: string }
+  /** Every proposal is resolved. `reply` is the server's, when it sent one. */
+  | { type: "done"; runId: string; reply?: string; at: string }
+  /** The member pressed Stop. */
+  | { type: "stopped"; runId: string; at: string }
+  /** The request failed; `message` is the server's sentence. */
+  | { type: "failed"; runId: string; message: string; at: string }
+  /** A name for the chat. Applies only while the title is still the
+   * placeholder or the brief-derived fallback, so the first real title
+   * sticks. With a runId it is also ignored once that run has finished. */
+  | { type: "titleSet"; title: string; runId?: string; at: string }
+  /** The member edited drafts (the editor panel, Phase 4). Only member
+   * fields of a draft whose template is still available take a value. */
+  | {
+      type: "valuesEdited";
+      turnId: string;
+      edits: Array<{ draftId: string; fieldKey: string; value: string }>;
+      at: string;
+    }
+  /** "Try again" on the thread's last turn: replaces it in place with a
+   * fresh step 1 turn whose id is `runId`. Ignored for any other turn or
+   * while it runs (the controller re-sends an older turn with "sent"). */
+  | { type: "retry"; turnId: string; runId: string; mode: RunMode; at: string }
+  /** The chat was saved for the first time (Phase 5). */
+  | { type: "idAssigned"; id: string }
+  /** New chat. */
+  | { type: "reset"; at?: string };
+
+export function emptyThread(now: string = new Date().toISOString()): ChatThread {
+  return { id: null, title: NEW_CHAT_TITLE, turns: [], createdAt: now, updatedAt: now };
+}
+
+export function chatReducer(state: ChatThread, action: ChatAction): ChatThread {
+  switch (action.type) {
+    case "sent": {
+      const text = action.text.trim();
+      if (!text || runningTurn(state) || isThreadFull(state)) return state;
+      const user: UserTurn = {
+        id: action.userTurnId,
+        role: "user",
+        text,
+        createdAt: action.at,
+        variations: clampVariations(action.variations),
+        intent: action.intent,
+      };
+      if (action.photo) {
+        // The snapshot this turn's drafts are previewed with, and the one
+        // fact about it that may be persisted.
+        user.photo = action.photo;
+        user.hadPhoto = { aspect: action.photo.aspect };
+      }
+      // What the message sends, which is what a follow-up reuses: a pinned
+      // template is filled exactly and goes without the platform hint
+      // (buildGenerateInput), so a pinned message records no hint either.
+      if (action.templateIdHint) user.templateIdHint = action.templateIdHint;
+      else if (action.platformHint) user.platformHint = action.platformHint;
+      const assistant = askingTurn(action.runId, user, action.mode, action.at);
+      return { ...state, turns: [...state.turns, user, assistant], updatedAt: action.at };
+    }
+
+    case "proposalsArrived":
+      return updateRun(state, action.runId, (turn) => {
+        if (turn.phase !== "asking") return turn;
+        const copy = measuringCopy(action.meta.mode, action.proposals);
+        return {
+          ...turn,
+          phase: "measuring",
+          step: 2,
+          stepLabel: copy.stepLabel,
+          status: copy.status,
+          pendingSlots: action.proposals.length,
+          slotCanvases: action.proposals.map((p) => p.canvas),
+          meta: action.meta,
+          warnings: [...action.warnings],
+        };
+      });
+
+    case "checking":
+      return updateRun(state, action.runId, (turn) =>
+        turn.phase !== "measuring" || turn.step === 3
+          ? turn
+          : { ...turn, step: 3, stepLabel: STEP_CHECKING },
+      );
+
+    case "draftResolved":
+      return updateRun(state, action.runId, (turn) =>
+        turn.phase !== "measuring"
+          ? turn
+          : {
+              ...turn,
+              drafts: [...turn.drafts, action.draft],
+              pendingSlots: Math.max(0, turn.pendingSlots - 1),
+            },
+      );
+
+    case "draftDropped":
+      return updateRun(state, action.runId, (turn) =>
+        turn.phase !== "measuring"
+          ? turn
+          : {
+              ...turn,
+              pendingSlots: Math.max(0, turn.pendingSlots - 1),
+              warnings: [...turn.warnings, action.warning],
+            },
+      );
+
+    case "done":
+      return finish(state, action.runId, action.at, (turn) => {
+        // Every proposal dropped (or none came back): today's copy, and the
+        // turn offers Try again.
+        if (turn.drafts.length === 0) return errored(turn, NOTHING_FIT);
+        // The model writes its reply about the proposals it made, before
+        // the browser measures them. When some were dropped the reply can
+        // name drafts that are not there ("in both sizes" over one card),
+        // so the turn keeps the neutral sentence and the warnings say what
+        // went missing.
+        const dropped = turn.drafts.length < (turn.slotCanvases?.length ?? 0);
+        const reply = (!dropped && action.reply?.trim()) || undefined;
+        return {
+          ...turn,
+          phase: "done",
+          step: 3,
+          status: reply ?? DONE_FALLBACK,
+          pendingSlots: 0,
+          ...(reply ? { reply } : {}),
+        };
+      });
+
+    case "stopped":
+      return finish(state, action.runId, action.at, (turn) => ({
+        ...turn,
+        phase: "stopped",
+        status: STOPPED_STATUS,
+        pendingSlots: 0,
+      }));
+
+    case "failed":
+      return finish(state, action.runId, action.at, (turn) =>
+        errored(turn, action.message.trim() || GENERATE_FAILED),
+      );
+
+    case "titleSet": {
+      const title = action.title.trim();
+      if (!title || title === state.title) return state;
+      if (action.runId !== undefined && !findRunning(state, action.runId)) return state;
+      if (!titleIsReplaceable(state)) return state;
+      return { ...state, title, updatedAt: action.at };
+    }
+
+    case "valuesEdited": {
+      let changed = false;
+      const turns = state.turns.map((turn) => {
+        if (!isAssistantTurn(turn) || turn.id !== action.turnId) return turn;
+        const drafts = turn.drafts.map((draft) => {
+          const edits = action.edits.filter((e) => e.draftId === draft.id);
+          const values = applyEdits(draft, edits);
+          if (values === draft.values) return draft;
+          changed = true;
+          return { ...draft, values };
+        });
+        return changed ? { ...turn, drafts } : turn;
+      });
+      return changed ? { ...state, turns, updatedAt: action.at } : state;
+    }
+
+    case "retry": {
+      const last = state.turns[state.turns.length - 1];
+      if (!last || !isAssistantTurn(last) || last.id !== action.turnId || isRunningTurn(last)) {
+        return state;
+      }
+      const user = state.turns.find((t): t is UserTurn => isUserTurn(t) && t.id === last.replyTo);
+      if (!user) return state;
+      return {
+        ...state,
+        turns: [
+          ...state.turns.slice(0, -1),
+          askingTurn(action.runId, user, action.mode, action.at),
+        ],
+        updatedAt: action.at,
+      };
+    }
+
+    case "idAssigned":
+      return state.id === action.id ? state : { ...state, id: action.id };
+
+    case "reset":
+      return emptyThread(action.at);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Transition helpers
+// ---------------------------------------------------------------------------
+
+function askingTurn(id: string, user: UserTurn, mode: RunMode, at: string): AssistantTurn {
+  const copy = askingCopy(mode);
+  return {
+    id,
+    role: "assistant",
+    createdAt: at,
+    replyTo: user.id,
+    phase: "asking",
+    step: 1,
+    stepLabel: copy.stepLabel,
+    status: copy.status,
+    // The skeletons shown while the model call is in flight. Pending slots
+    // take over once the proposals are known.
+    expected: clampVariations(user.variations),
+    drafts: [],
+    pendingSlots: 0,
+    warnings: [],
+  };
+}
+
+/** An error turn: the sentence is both its status (what the status block
+ * shows) and its error (what marks it failed), and nothing is pending. */
+function errored(turn: AssistantTurn, message: string): AssistantTurn {
+  return { ...turn, phase: "error", status: message, error: message, pendingSlots: 0 };
+}
+
+function findRunning(state: ChatThread, runId: string): AssistantTurn | null {
+  const turn = state.turns.find((t) => isAssistantTurn(t) && t.id === runId);
+  return turn && isAssistantTurn(turn) && isRunningTurn(turn) ? turn : null;
+}
+
+/** Applies `fn` to the running turn `runId`. A missing or finished turn, or
+ * an `fn` that changes nothing, returns the state itself. */
+function updateRun(
+  state: ChatThread,
+  runId: string,
+  fn: (turn: AssistantTurn) => AssistantTurn,
+): ChatThread {
+  const running = findRunning(state, runId);
+  if (!running) return state;
+  const next = fn(running);
+  if (next === running) return state;
+  return { ...state, turns: state.turns.map((t) => (t === running ? next : t)) };
+}
+
+/** A terminal transition: the turn finishes, the thread is stamped, and a
+ * chat still called "New chat" takes its brief-derived title (PROMPT §9.9),
+ * so even a stopped or failed first turn saves under a real name. */
+function finish(
+  state: ChatThread,
+  runId: string,
+  at: string,
+  fn: (turn: AssistantTurn) => AssistantTurn,
+): ChatThread {
+  const next = updateRun(state, runId, fn);
+  if (next === state) return state;
+  const brief = firstBrief(next.turns);
+  const title = isPlaceholderTitle(next.title) && brief ? fallbackTitle(brief) : next.title;
+  return { ...next, title, updatedAt: at };
+}
+
+function isPlaceholderTitle(title: string): boolean {
+  return !title.trim() || title === NEW_CHAT_TITLE;
+}
+
+/** The server's title replaces only a title nobody chose: the placeholder,
+ * or the fallback made from the first brief's opening words. */
+function titleIsReplaceable(state: ChatThread): boolean {
+  if (isPlaceholderTitle(state.title)) return true;
+  const brief = firstBrief(state.turns);
+  return brief !== null && state.title === fallbackTitle(brief);
+}
+
+/** The member's edits to one draft. A draft whose template is gone cannot be
+ * edited, and only the template's member fields take a value: a static
+ * element's content is the admin's (the subtraction principle). */
+function applyEdits(
+  draft: ChatDraft,
+  edits: ReadonlyArray<{ fieldKey: string; value: string }>,
+): FieldValues {
+  if (!draft.schema || edits.length === 0) return draft.values;
+  const memberKeys = new Set(
+    draft.schema.fields.filter((f) => !f.static && f.type !== "shape").map((f) => f.fieldKey),
+  );
+  let values = draft.values;
+  for (const { fieldKey, value } of edits) {
+    if (!memberKeys.has(fieldKey) || values[fieldKey] === value) continue;
+    values = { ...values, [fieldKey]: value };
+  }
+  return values;
+}
+
+// ---------------------------------------------------------------------------
+// Reading a thread
+// ---------------------------------------------------------------------------
+
+export function isRunningTurn(turn: AssistantTurn): boolean {
+  return turn.phase === "asking" || turn.phase === "measuring";
+}
+
+/** The turn whose run is in flight. There is at most one, and it is last. */
+export function runningTurn(thread: ChatThread): AssistantTurn | null {
+  for (const t of thread.turns) if (isAssistantTurn(t) && isRunningTurn(t)) return t;
+  return null;
+}
+
+/** At the stored-turn cap: the composer goes inert (PROMPT §9.8). */
+export function isThreadFull(thread: ChatThread): boolean {
+  return thread.turns.length + 2 > MAX_TURNS;
+}
+
+/** The chat's first brief: the text of its first message. */
+export function firstBrief(turns: readonly ChatTurn[]): string | null {
+  const first = turns.find(isUserTurn);
+  return first ? first.text : null;
+}
+
+export function lastUserTurn(turns: readonly ChatTurn[]): UserTurn | null {
+  for (let i = turns.length - 1; i >= 0; i--) {
+    const t = turns[i];
+    if (isUserTurn(t)) return t;
+  }
+  return null;
+}
+
+/** The latest message the member sent from a composer (a brief or a typed
+ * follow-up), passing over Try next chips. A chip's count of one and its
+ * platform are for that chip's run alone, so this, not the last message,
+ * is the send a compact-composer follow-up reuses. */
+export function lastComposerTurn(turns: readonly ChatTurn[]): UserTurn | null {
+  for (let i = turns.length - 1; i >= 0; i--) {
+    const t = turns[i];
+    if (isUserTurn(t) && (t.intent === "brief" || t.intent === "followUp")) return t;
+  }
+  return null;
+}
+
+/** The latest turn that finished with drafts: what a follow-up revises. */
+export function latestDoneTurn(turns: readonly ChatTurn[]): AssistantTurn | null {
+  for (let i = turns.length - 1; i >= 0; i--) {
+    const t = turns[i];
+    if (isAssistantTurn(t) && t.phase === "done") return t;
+  }
+  return null;
+}
+
+/** Whether a finished turn's drafts were freestyle designs or library
+ * fills. */
+export function turnMode(turn: AssistantTurn): RunMode {
+  if (turn.meta) return turn.meta.mode;
+  return turn.drafts.some((d) => d.proposal.design) ? "freestyle" : "library";
+}
+
+/** A run crashed out of (a reload mid-run, a thread saved while a turn was
+ * in flight) has nothing behind it any more. Settle such a turn as stopped
+ * so a restored thread never shows a run that cannot finish, and never
+ * blocks the next send. */
+export function settleOrphanedRuns(thread: ChatThread): ChatThread {
+  if (!runningTurn(thread)) return thread;
+  return {
+    ...thread,
+    turns: thread.turns.map((t) =>
+      isAssistantTurn(t) && isRunningTurn(t)
+        ? { ...t, phase: "stopped", status: STOPPED_STATUS, pendingSlots: 0 }
+        : t,
+    ),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Building a run
+// ---------------------------------------------------------------------------
+
+export function clampVariations(n: number | undefined): number {
+  if (n === undefined || !Number.isFinite(n)) return DEFAULT_VARIATIONS;
+  return Math.min(MAX_VARIATIONS, Math.max(MIN_VARIATIONS, Math.round(n)));
+}
+
+/** A send's platform and variation count. The compact composer has neither
+ * control, so a follow-up reuses the thread's last composer send (`last`,
+ * from lastComposerTurn): `undefined` means "not given, reuse", while
+ * `null` is an explicit "Any platform". */
+export function fillSendGaps(
+  input: { platformHint?: PlatformId | null; variations?: number },
+  last: UserTurn | null,
+): { platformHint?: PlatformId; variations: number } {
+  const platformHint =
+    input.platformHint === undefined ? last?.platformHint : (input.platformHint ?? undefined);
+  return {
+    ...(platformHint ? { platformHint } : {}),
+    variations: clampVariations(input.variations ?? last?.variations),
+  };
+}
+
+/** Which kind of run a send makes (PROMPT §4, §9.3, §9.4):
+ *  - freestyle when the library is empty (nothing to fill), and for "Try
+ *    another layout";
+ *  - library when a Start from chip pins a template, and for a chat's first
+ *    message;
+ *  - otherwise a follow-up follows the latest finished turn: freestyle
+ *    drafts are revised as freestyle, library drafts as library. */
+export function pickMode(
+  prior: readonly ChatTurn[],
+  send: { intent: UserTurn["intent"]; templateIdHint?: string },
+  libraryEmpty: boolean,
+): RunMode {
+  if (libraryEmpty || send.intent === "freestyle") return "freestyle";
+  if (send.templateIdHint || send.intent === "brief") return "library";
+  const done = latestDoneTurn(prior);
+  return done && turnMode(done) === "freestyle" ? "freestyle" : "library";
+}
+
+/** Everything the member has asked of the chat so far, as one brief: the
+ * first brief, then each typed follow-up a finished turn answered, a blank
+ * line between each. A freestyle design carries no follow-up context the
+ * way library drafts do (their revised values), so this is how "make it
+ * warmer" is still in the brief two revisions later. Try next chips are
+ * left out: "Make a Facebook version" is an instruction for its own run,
+ * not a fact about the post. Null before the first message. */
+export function briefSoFar(prior: readonly ChatTurn[]): string | null {
+  const first = prior.find(isUserTurn);
+  if (!first) return null;
+  const parts = [first.text];
+  for (const turn of prior) {
+    if (!isAssistantTurn(turn) || turn.phase !== "done") continue;
+    const asked = prior.find((t) => t.id === turn.replyTo);
+    if (asked && asked !== first && isUserTurn(asked) && asked.intent === "followUp") {
+      parts.push(asked.text);
+    }
+  }
+  return parts.join("\n\n");
+}
+
+/** A freestyle follow-up's brief: the brief so far (briefSoFar), a blank
+ * line, then the new message. The server caps a brief at 1,500 characters,
+ * so the earlier text gives way (from its end, keeping the first brief's
+ * facts longest) before the new message does. */
+export function composeBrief(previous: string, next: string): string {
+  const room = MAX_BRIEF - next.length - 2;
+  if (room <= 0) return next.slice(0, MAX_BRIEF);
+  const head = previous.slice(0, room).trimEnd();
+  return head ? `${head}\n\n${next}` : next;
+}
+
+/** The server's follow-up limits (template-generate, parseFollowUp). */
+const FOLLOW_UP_MAX_DRAFTS = 3;
+const FOLLOW_UP_MAX_VALUES = 60;
+const FOLLOW_UP_MAX_NAME = 120;
+const FOLLOW_UP_MAX_KEY = 60;
+const FOLLOW_UP_MAX_VALUE = 4000;
+
+/** The follow-up context of a library message (PROMPT §9.3): the chat's
+ * first brief and the latest finished turn's library drafts, with the
+ * member's current values. Text fields only: never an image field, and
+ * never a value that is a data URL, so the photo still never leaves the
+ * browser. Undefined for a chat's first message. */
+export function followUpFrom(prior: readonly ChatTurn[]): GenerateFollowUp | undefined {
+  const previousBrief = firstBrief(prior);
+  if (!previousBrief) return undefined;
+  const done = latestDoneTurn(prior);
+  const drafts = (done?.drafts ?? [])
+    // A freestyle design has no template row for the model to revise.
+    .filter((d) => !d.proposal.design)
+    .slice(0, FOLLOW_UP_MAX_DRAFTS)
+    .map((d) => ({
+      templateId: d.proposal.templateId,
+      templateName: d.proposal.templateName.slice(0, FOLLOW_UP_MAX_NAME),
+      values: textValues(d),
+    }));
+  return { previousBrief: previousBrief.slice(0, MAX_BRIEF), drafts };
+}
+
+/** A draft's member text values in form order (select values are text
+ * too). Without a schema (a template that has since gone) there is no form
+ * order or field type to go by, so every non-data-URL value rides as is. */
+function textValues(draft: ChatDraft): Array<{ fieldKey: string; value: string }> {
+  const keys = draft.schema
+    ? draft.schema.fields
+        .filter(
+          (f) => !f.static && (f.type === "text" || f.type === "multiline" || f.type === "select"),
+        )
+        .map((f) => f.fieldKey)
+    : Object.keys(draft.values);
+  const out: Array<{ fieldKey: string; value: string }> = [];
+  for (const fieldKey of keys) {
+    const value = draft.values[fieldKey];
+    if (typeof value !== "string" || value.startsWith("data:")) continue;
+    if (!fieldKey || fieldKey.length > FOLLOW_UP_MAX_KEY) continue;
+    out.push({ fieldKey, value: value.slice(0, FOLLOW_UP_MAX_VALUE) });
+    if (out.length === FOLLOW_UP_MAX_VALUES) break;
+  }
+  return out;
+}
+
+/** The generate request for a message, built as the page this chat replaces
+ * built it (brief, hints, count, mode, and only the photo's flag and
+ * aspect), plus the follow-up context (PROMPT §9.2, §9.3):
+ *  - a chat's first message sends its text as the brief;
+ *  - a library follow-up sends the new text as the brief with `followUp`;
+ *  - a freestyle follow-up folds the brief so far (briefSoFar) into
+ *    `brief` instead, with no `followUp` (the server revises library
+ *    drafts only).
+ * `prior` is the thread before this message. */
+export function buildGenerateInput(
+  prior: readonly ChatTurn[],
+  user: UserTurn,
+  mode: RunMode,
+): GenerateInput {
+  const previous = briefSoFar(prior);
+  const followUp = user.intent !== "brief" && previous !== null;
+  const input: GenerateInput = {
+    brief: followUp && mode === "freestyle" ? composeBrief(previous, user.text) : user.text,
+    count: clampVariations(user.variations),
+    mode,
+  };
+  // A pinned template is filled exactly; a platform hint would only narrow
+  // a choice the pin already made.
+  if (user.templateIdHint) input.templateIdHint = user.templateIdHint;
+  else if (user.platformHint) input.platformHint = user.platformHint;
+  // Only the flag and the shape cross the wire, never the photo.
+  if (user.photo) {
+    input.hasImage = true;
+    input.imageAspect = Math.min(10, Math.max(0.1, user.photo.aspect));
+  }
+  if (followUp && mode === "library") input.followUp = followUpFrom(prior);
+  return input;
+}
+
+/** The brief a repair round carries so the rewrite keeps the facts and the
+ * voice: the message itself for a chat's first message, the brief so far
+ * plus the message for a follow-up (whose text alone, "Make the date
+ * Friday", has no facts to keep). */
+export function repairBriefFor(prior: readonly ChatTurn[], user: UserTurn): string {
+  const previous = briefSoFar(prior);
+  return user.intent !== "brief" && previous !== null
+    ? composeBrief(previous, user.text)
+    : user.text;
+}

@@ -4,7 +4,7 @@ import { downscaleImage } from "@/lib/render/downscaleImage";
 
 // ---------------------------------------------------------------------------
 // The member photo upload pipeline, shared by every surface that takes one
-// (the fill page's image fields, the Generate composer's photo well). One
+// (the fill page's image fields, the Generate composer's attached photo). One
 // accept map, one size cap, one downscale, one rejection voice, one chip
 // animation — extracted from FieldInput so the surfaces cannot drift.
 // ---------------------------------------------------------------------------

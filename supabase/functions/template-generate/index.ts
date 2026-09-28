@@ -2,7 +2,13 @@
 // EXTRACTS (the published library as a candidate list), ASKS (one forced tool
 // call), VALIDATES (never trusting model output), and RESPONDS. It writes
 // nothing to the database beyond the shared rate-limit counters — the client
-// renders the proposals and seeds the existing fill page with the chosen one.
+// renders the proposals as chat drafts.
+//
+// The chat rides the same request. A follow-up adds an optional followUp (the
+// chat's first brief and the drafts on screen) that library mode shows the
+// model after the brief, so a new message revises the drafts instead of
+// starting over; the model may also return a short reply and a chat title,
+// validated like the rest and sent back only when usable.
 //
 // The model's only degrees of freedom are a templateId from the candidate
 // set and string values for fields an admin deliberately exposed. Layout,
@@ -36,7 +42,9 @@ import {
   buildRepairRequests,
   candidateFromRows,
   canvasForPlatform,
+  followUpSection,
   modelCandidates,
+  parseFollowUp,
   validateFreestyle,
   validateGeneration,
   validateRepair,
@@ -73,6 +81,23 @@ const LIMITS = {
 // ---------------------------------------------------------------------------
 // Anthropic call
 // ---------------------------------------------------------------------------
+
+/** The chat's prose, offered next to proposals in both propose tools and
+ * never required: a call without them is still a valid call, and
+ * validateReplyAndTitle drops an unusable one without costing a retry. The
+ * descriptions restate the system prompt's "Reply and title" section. */
+const REPLY_AND_TITLE_PROPERTIES = {
+  reply: {
+    type: "string",
+    description:
+      "One or two sentences to the member about what you made: which sizes, and any assumption they should check. Plain voice, no exclamation marks, never an em dash.",
+  },
+  title: {
+    type: "string",
+    description:
+      "Two to five words naming the post, in sentence case, with no closing punctuation.",
+  },
+};
 
 const PROPOSE_POSTS_TOOL = {
   name: "propose_posts",
@@ -126,6 +151,7 @@ const PROPOSE_POSTS_TOOL = {
           },
         },
       },
+      ...REPLY_AND_TITLE_PROPERTIES,
     },
   },
 };
@@ -137,9 +163,13 @@ function buildUserText(
   platformHint: string | undefined,
   hinted: boolean,
   image: { aspect: number | undefined } | undefined,
+  followUpText: string | undefined,
 ): string {
   const parts: string[] = [];
   parts.push(`Brief: ${brief}`);
+  // A chat follow-up reads as context for the brief, so it sits right after
+  // it (followUpSection, built by the caller against the published list).
+  if (followUpText) parts.push(followUpText);
   if (platformHint) parts.push(`The member is posting on: ${platformHint}.`);
   if (image) {
     parts.push(
@@ -233,7 +263,7 @@ async function callClaude<T>(
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
     logError("template-generate", `model request failed (${res.status}): ${detail.slice(0, 500)}`);
-    throw new HttpError(502, `The model request failed (${res.status}) — try again.`);
+    throw new HttpError(502, `The model request failed (${res.status}). Try again.`);
   }
   const body = (await res.json()) as {
     content: Array<{ type: string; id?: string; name?: string; input?: unknown }>;
@@ -277,7 +307,7 @@ async function consume(
 function tooMany(req: Request): Response {
   return new Response(
     JSON.stringify({
-      error: `You've hit the generate limit (${LIMITS.perUser.limit} in ${LIMITS.perUser.windowSeconds / 60} minutes) — try again in a few minutes. The library and the manual fill path are unaffected.`,
+      error: `You've hit the generate limit (${LIMITS.perUser.limit} in ${LIMITS.perUser.windowSeconds / 60} minutes). Try again in a few minutes. The library and the manual fill path are unaffected.`,
     }),
     {
       status: 429,
@@ -364,6 +394,7 @@ const PROPOSE_DESIGNS_TOOL = {
           },
         },
       },
+      ...REPLY_AND_TITLE_PROPERTIES,
     },
   },
 };
@@ -456,7 +487,7 @@ async function handleFreestyle(
   if (!kit.colors?.length) {
     throw new HttpError(
       400,
-      "Freestyle needs a brand palette to stay on brand — add colors in Brand Studio first.",
+      "Freestyle needs a brand palette to stay on brand. Add colors in Brand Studio first.",
     );
   }
 
@@ -545,7 +576,7 @@ async function handleFreestyle(
       return json(
         {
           error:
-            "Freestyle couldn't produce a usable design from this brief. The library and the manual fill path are unaffected — try again, or generate from your templates instead.",
+            "Freestyle couldn't produce a usable design from this brief. The library and the manual fill path are unaffected. Try again, or generate from your templates instead.",
         },
         502,
       );
@@ -569,6 +600,11 @@ async function handleFreestyle(
         fields: d.fields,
       },
     })),
+    // The chat's reply and title: undefined unless the model gave usable
+    // ones, and JSON drops undefined keys, so without them the body is
+    // exactly what it always was.
+    reply: validated.reply,
+    title: validated.title,
     warnings: [...warnings, ...validated.warnings],
     meta: {
       model: ANTHROPIC_MODEL,
@@ -687,7 +723,7 @@ async function handleRepair(
       validated = validateRepair(attempt.output, requests);
     } catch {
       return json(
-        { error: "The rewrite couldn't fit the measured budgets — drop that proposal." },
+        { error: "The rewrite couldn't fit the measured budgets. Drop that proposal." },
         502,
       );
     }
@@ -760,6 +796,14 @@ Deno.serve(async (req) => {
         : requireNumber(body.imageAspect, "imageAspect", { min: 0.1, max: 10 });
     const image = body.hasImage === true ? { aspect: imageAspect } : undefined;
 
+    // A chat follow-up: the first brief and the drafts on screen. Parsed in
+    // both modes so a malformed one is a 400 wherever it arrives, but only
+    // library mode uses it. The client never sends it with freestyle (it
+    // folds the earlier brief into `brief` there instead, PROMPT §9.3), so
+    // one that arrives anyway is validated and then ignored. It never
+    // narrows the candidate list; it only adds a section to the user text.
+    const followUp = parseFollowUp(body.followUp);
+
     if (mode === "freestyle") {
       return await handleFreestyle(json, db, apiKey, companyId, {
         brief,
@@ -786,12 +830,12 @@ Deno.serve(async (req) => {
     }
     let rows = (templateRows ?? []) as TemplateRowLike[];
     if (rows.length === 0) {
-      throw new HttpError(400, "No published templates to generate from — publish one first.");
+      throw new HttpError(400, "No published templates to generate from. Publish one first.");
     }
     if (rows.length > CANDIDATE_CAP) {
       rows = rows.slice(0, CANDIDATE_CAP);
       warnings.push(
-        `The library has more than ${CANDIDATE_CAP} published templates — considering the ${CANDIDATE_CAP} most recently updated.`,
+        `The library has more than ${CANDIDATE_CAP} published templates. Considering the ${CANDIDATE_CAP} most recently updated.`,
       );
     }
 
@@ -815,7 +859,8 @@ Deno.serve(async (req) => {
       list.push(row);
       fieldsByTemplate.set(row.template_id, list);
     }
-    let candidates = rows.map((r) => candidateFromRows(r, fieldsByTemplate.get(r.id) ?? []));
+    const published = rows.map((r) => candidateFromRows(r, fieldsByTemplate.get(r.id) ?? []));
+    let candidates = published;
 
     // 2. Hints narrow the set. A named template is an instruction; a platform
     //    is a preference that falls back rather than emptying the list.
@@ -824,7 +869,7 @@ Deno.serve(async (req) => {
       if (candidates.length === 0) {
         throw new HttpError(
           400,
-          "That template is not in the published library any more — pick another or generate without it.",
+          "That template is not in the published library any more. Pick another or generate without it.",
         );
       }
     } else if (platformHint) {
@@ -832,11 +877,18 @@ Deno.serve(async (req) => {
       if (matching.length > 0) {
         candidates = matching;
       } else {
-        warnings.push(
-          "No published templates match that platform — considering the whole library.",
-        );
+        warnings.push("No published templates match that platform. Considering the whole library.");
       }
     }
+
+    // A follow-up's drafts are matched against the published list from step
+    // 1, not the narrowed one. "Make a Facebook version" (PROMPT §9.4)
+    // always hints a platform the drafts' templates don't serve, so matching
+    // after step 2 would drop every draft and the member's edits with it.
+    // Only this company's published templates can appear, and the model still
+    // chooses from `candidates` and is validated against them; a draft's own
+    // template reused off that list costs the one retry, like any bad id.
+    const followUpText = followUp ? followUpSection(followUp, published) : undefined;
 
     // 3. One forced tool call; one retry carrying the validation errors.
     //    No vision input: the templates are known structured data and the
@@ -849,6 +901,7 @@ Deno.serve(async (req) => {
       platformHint,
       Boolean(templateIdHint),
       image,
+      followUpText,
     );
     let attempt = await callClaude<GenerateModelOutput>(apiKey, userText, PROPOSE_POSTS_TOOL);
     let validated;
@@ -867,7 +920,7 @@ Deno.serve(async (req) => {
         return json(
           {
             error:
-              "Generate couldn't produce a usable post from this brief. The library and the manual fill path are unaffected — try rewording the brief, or fill a template directly.",
+              "Generate couldn't produce a usable post from this brief. The library and the manual fill path are unaffected. Try rewording the brief, or fill a template directly.",
           },
           502,
         );
@@ -876,6 +929,11 @@ Deno.serve(async (req) => {
 
     return json({
       proposals: validated.proposals,
+      // The chat's reply and title: undefined unless the model gave usable
+      // ones, and JSON drops undefined keys, so without them the body is
+      // exactly what it always was. A client that predates them ignores them.
+      reply: validated.reply,
+      title: validated.title,
       warnings: [...warnings, ...validated.warnings],
       // Provenance is the product's stated position: every generated thing
       // can answer which model made it, from which library, and when.

@@ -56,10 +56,23 @@ export type Route =
    * Admin-only — App renders it through adminOnly, so a member who types
    * the URL lands on the gallery. */
   | { name: "bulk"; templateId: string }
-  /** Generate: brief in, filled templates out. `templateId` is the "use this
-   * one" hint from a template card — in the URL so the intent survives a
-   * refresh; the seeded VALUES deliberately do not (see seedHandoff.ts). */
-  | { name: "generate"; templateId?: string }
+  /** Generate, the chat (docs/design/generate-chat/PROMPT.md §11.1).
+   * `/generate` is a new chat; `templateId` is the "use this one" hint from
+   * a template card, which pins that template's Start from chip, in the URL
+   * so the intent survives a refresh; `threadId` is a saved chat at
+   * `/generate/c/<id>`. App keys the page by generatePageKey, so opening
+   * another chat starts from fresh state.
+   *
+   * `savedInPlace` marks the chat page's own address change after it saves
+   * a new chat for the first time (§9.8): the page that holds the chat is
+   * still showing it, so it must not remount (generatePageKey). Never in
+   * the URL: a reload, back and forward, and every other way to the chat
+   * read the address alone, and so mount the saved chat afresh. */
+  | { name: "generate"; templateId?: string; threadId?: string; savedInPlace?: boolean }
+  /** Every saved chat, newest first. The filter bar's state rides in the
+   * URL like the Brand templates route's: selecting a chip or typing a
+   * query IS a navigation, and an unknown platform reads as no filter. */
+  | { name: "generateHistory"; platform?: PlatformId; q?: string }
   | { name: "adminTemplates" }
   /** `reflow` ("1080x1920") is the create-a-version handoff: the builder
    * loads the (freshly duplicated) template and reflows it to this size as
@@ -108,9 +121,17 @@ export function routeToUrl(route: Route): string {
     case "bulk":
       return `/templates/${encodeURIComponent(route.templateId)}/bulk`;
     case "generate":
+      if (route.threadId) return `/generate/c/${encodeURIComponent(route.threadId)}`;
       return route.templateId
         ? `/generate?template=${encodeURIComponent(route.templateId)}`
         : "/generate";
+    case "generateHistory": {
+      const params = new URLSearchParams();
+      if (route.platform) params.set("platform", route.platform);
+      if (route.q) params.set("q", route.q);
+      const qs = params.toString();
+      return qs ? `/generate/history?${qs}` : "/generate/history";
+    }
     case "adminTemplates":
       return "/template-builder";
     case "builder": {
@@ -140,6 +161,29 @@ export function routeToUrl(route: Route): string {
   }
 }
 
+/** What App keys the Generate chat page on (PROMPT §11.1: switching chats
+ * resets state). A saved chat's page is its own, keyed by its id, so
+ * opening one from History or Recent, back and forward between chats, and
+ * a reload each mount it fresh from the store. A new chat's page shares
+ * the one key "new", including once it has saved itself and replaced the
+ * address with /generate/c/<id> (`savedInPlace`): the chat is still on
+ * screen, with what a remount would lose (the photo, which is never
+ * stored, the open editor, the caption picks, the composer's text), so it
+ * keeps the key it was mounted with. */
+export function generatePageKey(route: Extract<Route, { name: "generate" }>): string {
+  return route.threadId && !route.savedInPlace ? `chat:${route.threadId}` : "new";
+}
+
+/** The route state a navigation sets: always a fresh object, so going to
+ * the address already on screen is still a change the page sees. The
+ * sidebar hands over the same route object on every click, which React
+ * would otherwise drop as no change at all, and a page can act on a repeat
+ * visit (the sidebar's Generate from inside a chat at /generate starts a
+ * new chat, as the page's route identity says). */
+export function routeState(next: Route): Route {
+  return { ...next };
+}
+
 const parsePlatform = (raw: string | null): PlatformId | undefined =>
   PLATFORMS.some((p) => p.id === raw) ? (raw as PlatformId) : undefined;
 
@@ -161,6 +205,15 @@ export function urlToRoute(pathname: string, search: string): Route {
         q: params.get("q") ?? undefined,
       };
     case "generate":
+      if (tail === "history") {
+        return {
+          name: "generateHistory",
+          platform: parsePlatform(params.get("platform")),
+          q: params.get("q") ?? undefined,
+        };
+      }
+      // A chat's own address. A bare /generate/c (no id) is a new chat.
+      if (tail === "c" && third) return { name: "generate", threadId: decodeURIComponent(third) };
       return { name: "generate", templateId: params.get("template") ?? undefined };
     case "template-builder":
       if (!tail) return { name: "adminTemplates" };
@@ -219,7 +272,7 @@ export function RouterProvider({ children }: { children: React.ReactNode }) {
     if (url !== window.location.pathname + window.location.search) {
       window.history[options?.replace ? "replaceState" : "pushState"](null, "", url);
     }
-    setRoute(next);
+    setRoute(routeState(next));
   }, []);
 
   // Back/forward move the app without writing to history again.

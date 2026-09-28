@@ -715,6 +715,34 @@ export interface GenerateInput {
   /** The supplied photo's width over height, so the model can prefer a
    * template whose image slot suits it. */
   imageAspect?: number;
+  /** Sent from an existing chat: the brief that started it and the drafts on
+   * screen, so the new `brief` can revise them instead of starting over.
+   * Absent on a chat's first send. The client sends it only for library
+   * follow-ups; a freestyle follow-up folds the earlier brief into `brief`
+   * instead (PROMPT §9.3). */
+  followUp?: GenerateFollowUp;
+}
+
+/** The chat context a follow-up carries to the model. Text fields only: it
+ * never carries the photo and never an image field's value, so the photo
+ * still never leaves the browser. The server rejects the whole request with
+ * a 400 when anything is outside its limits: previousBrief 1 to 1,500
+ * characters; at most 3 drafts; templateId 1 to 64 characters; templateName
+ * 0 to 120; at most 60 values per draft; fieldKey 0 to 60; value 0 to 4,000.
+ * The database holds template names to no length, so a client building this
+ * from stored templates clamps templateName to 120. It never narrows the
+ * candidate list, and a draft whose templateId is not a published template
+ * is dropped from the prompt silently. */
+export interface GenerateFollowUp {
+  /** The chat's first brief, so facts the new message doesn't replace carry
+   * over. */
+  previousBrief: string;
+  /** The latest finished turn's drafts, with the member's current edits. */
+  drafts: Array<{
+    templateId: string;
+    templateName: string;
+    values: Array<{ fieldKey: string; value: string }>;
+  }>;
 }
 
 /** A freestyle proposal's design: a complete, ephemeral template the client
@@ -739,9 +767,9 @@ export interface GeneratedProposal {
   templateId: string;
   /** Echoed so a result card can be labeled without a second lookup. */
   templateName: string;
-  /** Seeds TemplateUsePage's values state. Every entry was validated
-   * server-side against the template's own fields; image fields are never
-   * present. */
+  /** The values the chat's draft starts from (ChatDraft.values). Every
+   * entry was validated server-side against the template's own fields;
+   * image fields are never present. */
   values: FieldValues;
   /** One or two sentences the member would post alongside the graphic. */
   caption: string;
@@ -769,15 +797,30 @@ export interface GenerateMeta {
   /** How many published templates the model chose among. */
   candidateCount: number;
   briefLength: number;
+  /** "freestyle" when the proposals are new designs; absent for library
+   * fills. */
+  mode?: "freestyle";
 }
 
 /** The template-generate Edge Function's response. Nothing is persisted
- * server-side — the client renders these and seeds the fill page with the
- * chosen one. */
+ * server-side — the client measures and renders these as chat drafts. */
 export interface GenerateResult {
   proposals: GeneratedProposal[];
   warnings: string[];
   meta: GenerateMeta;
+  /** One or two sentences to the member about what was made, shown as the
+   * assistant's reply in the chat. Optional model output, validated
+   * server-side (whitespace collapsed, em dashes replaced, at most 280
+   * characters) and absent when the model gave nothing usable. An older
+   * deployment never returns it, so the client falls back to its own
+   * sentence (PROMPT §9.2). */
+  reply?: string;
+  /** A short name for the chat, in sentence case. Optional model output,
+   * validated server-side (2 to 60 characters, no closing punctuation) and
+   * absent when the model gave nothing usable or an older deployment
+   * answered; the client then titles the chat from the brief's first words
+   * (PROMPT §9.9). */
+  title?: string;
 }
 
 /** One field the client-side measurement pass found overflowing: the value
@@ -805,6 +848,94 @@ export interface GenerateRepairResult {
   values: FieldValues;
   warnings: string[];
   meta: { model: string; generatedAt: string };
+}
+
+// ---------------------------------------------------------------------------
+// Saved Generate chats (migration 0038, PROMPT §9.8 and §12). The stored
+// shapes are the client's chat model (src/lib/generate/chat.ts) minus
+// everything a saved chat never keeps: the photo, any data: value, running
+// turns, and UI state. threadStorage.ts converts in both directions; the
+// store refuses a write that still carries a data: value anywhere.
+// ---------------------------------------------------------------------------
+
+/** A member's message, as saved. `hadPhoto` is all that remains of a photo:
+ * its aspect, so a reopened chat can say one was attached. */
+export interface StoredUserTurn {
+  id: string;
+  role: "user";
+  text: string;
+  createdAt: string;
+  hadPhoto?: { aspect: number };
+  platformHint?: PlatformId;
+  variations: number;
+  templateIdHint?: string;
+  intent: "brief" | "followUp" | "platform" | "freestyle";
+}
+
+/** One draft, as saved. A library draft refetches its template on reopen;
+ * a freestyle draft rebuilds from `proposal.design`. */
+export interface StoredDraft {
+  id: string;
+  /** Includes `design` for a freestyle draft. */
+  proposal: GeneratedProposal;
+  /** Kept apart from any schema, so a card whose template has since gone
+   * still has its shape. */
+  canvas: { width: number; height: number };
+  /** The member's current values. A data: value (a photo or an uploaded
+   * image) is deleted, not blanked: the key is absent. */
+  values: FieldValues;
+}
+
+/** A finished assistant turn, as saved. Only finished turns are stored. */
+export interface StoredAssistantTurn {
+  id: string;
+  role: "assistant";
+  createdAt: string;
+  replyTo: string;
+  phase: "done" | "stopped" | "error";
+  status: string;
+  reply?: string;
+  warnings: string[];
+  error?: string;
+  meta?: { model: string; candidateCount: number; mode: "library" | "freestyle" };
+  drafts: StoredDraft[];
+}
+
+export type StoredTurn = StoredUserTurn | StoredAssistantTurn;
+
+/** What Recent and History draw for a chat: the first draft of its first
+ * finished turn. `templateId` for a library draft, `design` for a freestyle
+ * one. */
+export interface GenerateThreadPreview {
+  templateId?: string;
+  design?: GeneratedDesign;
+  values: FieldValues;
+  canvas: { width: number; height: number };
+}
+
+/** A chat as Recent and History list it: no turns. */
+export interface GenerateThreadSummary {
+  id: string;
+  title: string;
+  /** Distinct primary platforms across every draft, in PLATFORMS order. */
+  platforms: PlatformId[];
+  /** Null when the chat has no finished draft to show. */
+  preview: GenerateThreadPreview | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** A whole saved chat, for reopening it. */
+export interface GenerateThreadRecord extends GenerateThreadSummary {
+  turns: StoredTurn[];
+}
+
+/** What the chat page writes on create and on every later save. */
+export interface GenerateThreadInput {
+  title: string;
+  platforms: PlatformId[];
+  preview: GenerateThreadPreview | null;
+  turns: StoredTurn[];
 }
 
 /** One per-layer import issue — lets the builder point at the layer that

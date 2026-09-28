@@ -9,7 +9,8 @@ import logoOnDark from "@/assets/socialpaint/logo-on-dark.svg";
  * same path the lockups carry). One file for both themes: the mark reads
  * in Slime on light and dark alike, so it does not flip with the colour
  * scheme. Used where the full lockup doesn't fit (collapsed nav, dashboard
- * watermark, Generate hero, sign-in, onboarding, public footer). */
+ * watermark, the Generate chat's assistant byline, sign-in, onboarding,
+ * public footer). */
 export function BrandMark({ width = 28 }: { width?: number }) {
   return <img src={mark} alt="" aria-hidden style={{ width, height: "auto", display: "block" }} />;
 }

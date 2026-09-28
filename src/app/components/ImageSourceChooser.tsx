@@ -179,6 +179,11 @@ interface ImageSourceDialogProps {
   accept: string;
   selectedUrl?: string;
   title?: string;
+  /** Where each open starts: the two-option question (the default), or
+   * straight on the brand grid, for a caller whose own control already
+   * asked (the Generate composer's "Choose from Brand Studio"). Back still
+   * reaches the question. With no assets it is always the question. */
+  initialView?: "choice" | "brand";
 }
 
 /** The replace-image question, asked AFTER the person says they want to
@@ -197,11 +202,23 @@ export function ImageSourceDialog({
   accept,
   selectedUrl,
   title = "Replace image",
+  initialView = "choice",
 }: ImageSourceDialogProps) {
-  const [showingBrand, setShowingBrand] = useState(false);
+  const opensOnBrand = initialView === "brand" && assets.length > 0;
+  const [showingBrand, setShowingBrand] = useState(opensOnBrand);
+  // Every open starts on the initial view, whatever the last one ended on.
+  // Adjusted during render on the open edge (not in an effect), so the
+  // first painted frame is already the right view.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setShowingBrand(opensOnBrand);
+  }
   const fileRef = useRef<HTMLInputElement>(null);
+  // Reset to the initial view rather than the question, so a dialog that
+  // opened on the grid keeps the grid on screen while it fades out.
   const close = () => {
-    setShowingBrand(false);
+    setShowingBrand(opensOnBrand);
     onClose();
   };
   const optionStyle: React.CSSProperties = {
@@ -226,6 +243,20 @@ export function ImageSourceDialog({
       <AlertDialogContent
         onOverlayClick={close}
         onEscapeKeyDown={close}
+        // An AlertDialog opens on its AlertDialogCancel, and this dialog's
+        // Cancel is a plain button (it closes through `close`, not through
+        // Radix), so by default nothing inside takes focus: focus stays on
+        // the control behind the overlay and the focus trap never arms.
+        // Open on the choice instead: the picked asset (or the first) on the
+        // grid, the first option card on the question.
+        onOpenAutoFocus={(e) => {
+          e.preventDefault();
+          const content = e.currentTarget as HTMLElement;
+          const target =
+            content.querySelector<HTMLElement>('[role="option"][aria-selected="true"]') ??
+            content.querySelector<HTMLElement>('[role="option"], button');
+          target?.focus({ preventScroll: true });
+        }}
         style={{
           background: "var(--bg-surface)",
           border: "1px solid var(--border)",

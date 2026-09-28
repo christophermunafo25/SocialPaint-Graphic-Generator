@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useDropzone, type FileRejection } from "react-dropzone";
 import { Crop, RefreshCw, Upload } from "lucide-react";
 import type { BrandAsset, TemplateField } from "@/lib/types";
@@ -24,11 +25,25 @@ interface FieldInputProps {
   onChange(value: string): void;
   /** DOM id for the control so the page can associate a real <label>. */
   inputId?: string;
+  /** "chat" dresses the text, multiline and select controls in the Generate
+   * editor's look (Figma "Generate · Chat", sp-input 288:230): the
+   * sp-chat-input class instead of sp-input. Image fields keep their own
+   * control either way. Defaults to "default". */
+  variant?: "default" | "chat";
 }
 
 /** Member input for one template field. Enforces the field's guardrails
  * (maxLength, aspect-ratio crop, fixed options) — content only, never style. */
-export function FieldInput({ field, value, onChange, inputId }: FieldInputProps) {
+export function FieldInput({
+  field,
+  value,
+  onChange,
+  inputId,
+  variant = "default",
+}: FieldInputProps) {
+  // Only the control's class changes with the variant; the guardrails,
+  // markup and behaviour are the same for both.
+  const controlClass = variant === "chat" ? "sp-chat-input" : "sp-input";
   switch (field.type) {
     case "text":
       return (
@@ -40,7 +55,7 @@ export function FieldInput({ field, value, onChange, inputId }: FieldInputProps)
           placeholder={field.placeholder ?? field.label}
           aria-required={isRequiredField(field) || undefined}
           onChange={(e) => onChange(e.target.value)}
-          className="sp-input"
+          className={controlClass}
         />
       );
     case "multiline":
@@ -53,8 +68,10 @@ export function FieldInput({ field, value, onChange, inputId }: FieldInputProps)
           aria-required={isRequiredField(field) || undefined}
           onChange={(e) => onChange(e.target.value)}
           rows={3}
-          className="sp-input"
-          style={{ resize: "vertical" }}
+          className={controlClass}
+          // The chat tile sizes itself to its text; its stylesheet decides
+          // whether a resize grip shows, so the inline rule stays default-only.
+          style={variant === "chat" ? undefined : { resize: "vertical" }}
         />
       );
     case "select":
@@ -64,7 +81,7 @@ export function FieldInput({ field, value, onChange, inputId }: FieldInputProps)
           value={value}
           aria-required={isRequiredField(field) || undefined}
           onChange={(e) => onChange(e.target.value)}
-          className="sp-input"
+          className={controlClass}
         >
           {/* The admin's placeholder is the empty option's text; the
               inspector labels it "Empty option" for a dropdown. */}
@@ -181,17 +198,24 @@ function ImageFieldInput({ field, value, onChange, inputId }: FieldInputProps) {
 
   return (
     <>
-      {cropping && cropSource && (
-        <ImageCropper
-          imageSrc={cropSource}
-          aspect={aspect}
-          onCancel={() => setCropping(false)}
-          onCropComplete={(cropped) => {
-            onChange(cropped);
-            setCropping(false);
-          }}
-        />
-      )}
+      {/* The cropper covers the viewport from <body>: inline, an ancestor's
+          mask, overflow or transform (the Generate editor's scrolling
+          field list fades its edges with a mask) would clip it, buttons
+          and all. */}
+      {cropping &&
+        cropSource &&
+        createPortal(
+          <ImageCropper
+            imageSrc={cropSource}
+            aspect={aspect}
+            onCancel={() => setCropping(false)}
+            onCropComplete={(cropped) => {
+              onChange(cropped);
+              setCropping(false);
+            }}
+          />,
+          document.body,
+        )}
       <ImageSourceDialog
         open={replacing}
         onClose={() => setReplacing(false)}

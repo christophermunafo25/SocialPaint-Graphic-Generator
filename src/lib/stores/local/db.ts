@@ -16,6 +16,10 @@ interface Db {
   templateLinks: unknown[];
   /** Per-company canvas-size opt-outs (mirrors company_canvas_presets). */
   companyCanvasPresets: unknown[];
+  /** Saved Generate chats (mirrors generate_threads), scoped by company and
+   * by the one dev user. A database written before this key existed gets
+   * it from the `empty()` spread in readDb. */
+  generateThreads: unknown[];
 }
 
 const KEY = "brand-portal-dev-db";
@@ -28,6 +32,7 @@ const empty = (): Db => ({
   usageEvents: [],
   templateLinks: [],
   companyCanvasPresets: [],
+  generateThreads: [],
 });
 
 export function readDb(): Db {

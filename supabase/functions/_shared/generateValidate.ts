@@ -7,8 +7,16 @@
 // nothing else. Geometry, type, color, and every locked property are out of
 // reach by construction, because the only thing that leaves this module is
 // (templateId, fieldKey → string).
+//
+// A chat adds two things on each side of the model call: the follow-up
+// context a request may carry in (parsed like the rest of the body, a 400
+// naming the bad field), and the optional reply and title the model may send
+// back (cleaned, bounded, or dropped). Every warning written here reaches the
+// member, so none carries an em dash.
 
 import { isRequiredField } from "./fieldRules.ts";
+import { HttpError } from "./http.ts";
+import { requireString } from "./validate.ts";
 
 /** One field of a candidate template, as validation sees it: the FULL field
  * list including fixed fields, so a write against a fixed field can be named
@@ -190,6 +198,11 @@ export interface ProposedGeneration {
 
 export interface GenerateModelOutput {
   proposals: ProposedGeneration[];
+  /** Optional prose for the chat (see validateReply and validateTitle).
+   * Typed unknown because nothing about model output is trusted until
+   * validated. */
+  reply?: unknown;
+  title?: unknown;
 }
 
 /** An image field the member still has to fill before the graphic is
@@ -216,6 +229,9 @@ export interface ValidatedGeneration {
 export interface GenerateValidationOutput {
   proposals: ValidatedGeneration[];
   warnings: string[];
+  /** Present only when the model gave a usable one. */
+  reply?: string;
+  title?: string;
 }
 
 /** Hard failure — the proposals cannot be shown. The engine retries once
@@ -245,7 +261,7 @@ export function validateGeneration(
   const raw = Array.isArray(output?.proposals) ? output.proposals : [];
   let list = raw;
   if (list.length > count) {
-    warnings.push(`The model returned ${list.length} proposals — keeping the first ${count}.`);
+    warnings.push(`The model returned ${list.length} proposals. Keeping the first ${count}.`);
     list = list.slice(0, count);
   }
 
@@ -283,12 +299,12 @@ export function validateGeneration(
       // is stripped, and the member's remaining work is reported instead.
       if (field.type === "image") {
         warnings.push(
-          `${label}: dropped the value for image field "${entry.fieldKey}" — images come from the member.`,
+          `${label}: dropped the value for image field "${entry.fieldKey}". Images come from the member.`,
         );
         continue;
       }
       if (entry.fieldKey in values) {
-        warnings.push(`${label}: duplicate value for "${entry.fieldKey}" — keeping the first.`);
+        warnings.push(`${label}: duplicate value for "${entry.fieldKey}". Keeping the first.`);
         continue;
       }
       const value = entry.value.trim();
@@ -341,7 +357,7 @@ export function validateGeneration(
         imageTargetFieldKey = target.fieldKey;
       } else {
         warnings.push(
-          `${label}: imageTargetFieldKey "${String(p.imageTargetFieldKey)}" is not a member image slot on "${template.name}" — ignored.`,
+          `${label}: imageTargetFieldKey "${String(p.imageTargetFieldKey)}" is not a member image slot on "${template.name}", so it was ignored.`,
         );
       }
     }
@@ -375,7 +391,14 @@ export function validateGeneration(
     warnings.push("Some proposals use the same template even though the library has alternatives.");
   }
 
-  return { proposals, warnings };
+  // The literals above carry no em dash, but some warnings quote text this
+  // module did not write (a model's imageTargetFieldKey, an admin's template
+  // name), so the dash is rewritten on the way out.
+  return {
+    proposals,
+    warnings: warnings.map(replaceEmDashes),
+    ...validateReplyAndTitle(output),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -498,6 +521,9 @@ export interface ProposedDesign {
 
 export interface FreestyleModelOutput {
   proposals: ProposedDesign[];
+  /** Optional prose for the chat, as on GenerateModelOutput. */
+  reply?: unknown;
+  title?: unknown;
 }
 
 /** Structural subset of the app's TemplateField, same policy as autobuild's
@@ -581,7 +607,7 @@ export function validateFreestyle(
   output: FreestyleModelOutput,
   ctx: FreestyleContext,
   count: number,
-): { designs: ValidatedDesign[]; warnings: string[] } {
+): { designs: ValidatedDesign[]; warnings: string[]; reply?: string; title?: string } {
   const errors: string[] = [];
   const warnings: string[] = [];
   const hexByKey = new Map(ctx.palette.map((c) => [c.key, c.hex]));
@@ -590,7 +616,7 @@ export function validateFreestyle(
   const raw = Array.isArray(output?.proposals) ? output.proposals : [];
   let list = raw;
   if (list.length > count) {
-    warnings.push(`The model returned ${list.length} designs — keeping the first ${count}.`);
+    warnings.push(`The model returned ${list.length} designs. Keeping the first ${count}.`);
     list = list.slice(0, count);
   }
 
@@ -605,7 +631,7 @@ export function validateFreestyle(
     let proposals = Array.isArray(p?.fields) ? p.fields : [];
     if (proposals.length > FREESTYLE_FIELD_CAP) {
       warnings.push(
-        `${label}: ${proposals.length} elements — keeping the first ${FREESTYLE_FIELD_CAP}.`,
+        `${label}: ${proposals.length} elements. Keeping the first ${FREESTYLE_FIELD_CAP}.`,
       );
       proposals = proposals.slice(0, FREESTYLE_FIELD_CAP);
     }
@@ -617,7 +643,7 @@ export function validateFreestyle(
         continue;
       }
       if (!["text", "multiline", "image", "shape"].includes(f.type)) {
-        warnings.push(`${label}: dropped "${name}" — unknown type "${String(f.type)}".`);
+        warnings.push(`${label}: dropped "${name}", unknown type "${String(f.type)}".`);
         continue;
       }
       // Geometry is clamped hard, autobuild's flat-image policy: the model
@@ -628,7 +654,7 @@ export function validateFreestyle(
         !b ||
         ![b.x, b.y, b.width, b.height].every((v) => typeof v === "number" && Number.isFinite(v))
       ) {
-        warnings.push(`${label}: dropped "${name}" — no usable box.`);
+        warnings.push(`${label}: dropped "${name}", no usable box.`);
         continue;
       }
       const W = ctx.canvasWidth;
@@ -638,11 +664,11 @@ export function validateFreestyle(
       const width = Math.min(Math.round(b.width), W - x);
       const height = Math.min(Math.round(b.height), H - y);
       if (width < 8 || height < 8) {
-        warnings.push(`${label}: dropped "${name}" — box under 8px after clamping.`);
+        warnings.push(`${label}: dropped "${name}", box under 8px after clamping.`);
         continue;
       }
       if (f.type !== "shape" && width * height > 0.9 * W * H) {
-        warnings.push(`${label}: dropped "${name}" — box covers over 90% of the canvas.`);
+        warnings.push(`${label}: dropped "${name}", box covers over 90% of the canvas.`);
         continue;
       }
 
@@ -654,7 +680,7 @@ export function validateFreestyle(
       let typeStyleKey = f.typeStyleKey;
       if (typeStyleKey !== undefined && !typeStyles.has(typeStyleKey)) {
         warnings.push(
-          `${label}: "${name}" names type style "${typeStyleKey}" — not in the brand kit, unbound.`,
+          `${label}: "${name}" names type style "${typeStyleKey}", which is not in the brand kit, so it was left unbound.`,
         );
         typeStyleKey = undefined;
       }
@@ -666,7 +692,7 @@ export function validateFreestyle(
         colorHex = hexByKey.get(f.colorKey);
         if (colorHex === undefined) {
           warnings.push(
-            `${label}: "${name}" names palette key "${f.colorKey}" — not in the brand kit.`,
+            `${label}: "${name}" names palette key "${f.colorKey}", which is not in the brand kit.`,
           );
         }
       }
@@ -677,11 +703,11 @@ export function validateFreestyle(
       if (f.type === "shape") {
         const kind = f.shape === "ellipse" ? "ellipse" : f.shape === "rect" ? "rect" : undefined;
         if (!kind) {
-          warnings.push(`${label}: dropped shape "${name}" — kind must be rect or ellipse.`);
+          warnings.push(`${label}: dropped shape "${name}". The kind must be rect or ellipse.`);
           continue;
         }
         if (!colorHex) {
-          warnings.push(`${label}: dropped shape "${name}" — shapes need a brand palette color.`);
+          warnings.push(`${label}: dropped shape "${name}". Shapes need a brand palette color.`);
           continue;
         }
         fields.push({
@@ -706,7 +732,7 @@ export function validateFreestyle(
         // hole forever, so images are always member slots.
         if (f.static === true) {
           warnings.push(
-            `${label}: image "${name}" made member-editable — the model cannot supply artwork.`,
+            `${label}: image "${name}" made member-editable. The model cannot supply artwork.`,
           );
         }
         fields.push({
@@ -729,7 +755,7 @@ export function validateFreestyle(
       // can never escape the box the model drew.
       if (f.static === true) {
         if (!value) {
-          warnings.push(`${label}: dropped fixed text "${name}" — no content.`);
+          warnings.push(`${label}: dropped fixed text "${name}", no content.`);
           continue;
         }
         fields.push({
@@ -772,7 +798,7 @@ export function validateFreestyle(
         textSizing: "shrink",
       });
       if (value) values[key] = value;
-      else warnings.push(`${label}: editable "${name}" has no value — left for the member.`);
+      else warnings.push(`${label}: editable "${name}" has no value, left for the member.`);
     }
 
     const editableText = fields.filter(
@@ -790,7 +816,7 @@ export function validateFreestyle(
       backgroundColor = hexByKey.get(p.backgroundColorKey);
       if (backgroundColor === undefined) {
         warnings.push(
-          `${label}: background key "${p.backgroundColorKey}" is not in the brand kit — white canvas.`,
+          `${label}: background key "${p.backgroundColorKey}" is not in the brand kit, so the canvas is white.`,
         );
       }
     }
@@ -803,7 +829,7 @@ export function validateFreestyle(
     const captionTemplate = (typeof p.caption === "string" ? p.caption.trim().slice(0, 600) : "")
       .replace(/\{([a-z][a-z0-9_]*)\}/g, (tag, key: string) => {
         if (editableKeys.has(key)) return tag;
-        warnings.push(`${label}: caption tag {${key}} doesn't match any field — removed.`);
+        warnings.push(`${label}: caption tag {${key}} doesn't match any field, so it was removed.`);
         return "";
       })
       .replace(/[ \t]{2,}/g, " ")
@@ -837,8 +863,16 @@ export function validateFreestyle(
     throw new GenerateValidationError(errors);
   }
   // Partial success stands: some designs made it, the failures are noted.
-  warnings.push(...errors);
-  return { designs, warnings };
+  // Those errors are written for the model's retry turn and keep their em
+  // dash there; this copy goes to the member, so the dash becomes a sentence
+  // break. Element warnings quote the model's own labels and keys, which may
+  // carry a dash of their own, so every warning is rewritten on the way out.
+  warnings.push(...errors.map(emDashesToSentences));
+  return {
+    designs,
+    warnings: warnings.map(replaceEmDashes),
+    ...validateReplyAndTitle(output),
+  };
 }
 
 const clampFont = (v: number | undefined): number | undefined =>
@@ -872,7 +906,7 @@ export function validateRepair(
       continue;
     }
     if (entry.fieldKey in values) {
-      warnings.push(`Duplicate value for "${entry.fieldKey}" — keeping the first.`);
+      warnings.push(`Duplicate value for "${entry.fieldKey}". Keeping the first.`);
       continue;
     }
     const value = entry.value.trim();
@@ -897,4 +931,300 @@ export function validateRepair(
 
   if (errors.length > 0) throw new GenerateValidationError(errors);
   return { values, warnings };
+}
+
+// ---------------------------------------------------------------------------
+// Follow-ups: a chat's earlier brief and drafts, carried into the next call
+// ---------------------------------------------------------------------------
+// A message sent inside a chat revises the drafts on screen instead of
+// starting over (PROMPT §9.3, §10 item 1). The request carries the chat's
+// first brief and the latest drafts with the member's edits. That is request
+// input, not model output, so it is parsed the way validate.ts parses the
+// rest of the body: a 400 that names the bad field and never echoes its
+// value. It never narrows the candidate list; it only adds a section to the
+// model's user text, after the brief.
+
+/** Values per follow-up draft. The spec sets no number. A real template
+ * exposes a handful of member fields, so 60 never binds on honest input; it
+ * only bounds the request and the prompt it feeds. */
+const FOLLOW_UP_VALUES_CAP = 60;
+
+/** The follow-up context of a generate request. Mirrors GenerateFollowUp in
+ * src/lib/types.ts, which the Deno bundle cannot import. */
+export interface GenerateFollowUpInput {
+  /** The chat's first brief, 1 to 1,500 characters. */
+  previousBrief: string;
+  /** The latest finished turn's drafts, 0 to 3. */
+  drafts: Array<{
+    /** Matched against the published candidates when the prompt is built,
+     * so any id of 1 to 64 characters parses here; one that is not a
+     * candidate is dropped from the prompt, not refused. */
+    templateId: string;
+    /** At most 120 characters, and may be empty: the name only labels the
+     * draft for the model, and nothing in the database requires one. */
+    templateName: string;
+    /** The member's current values, at most 60 per draft. fieldKey is at
+     * most 60 characters and value at most 4,000; either may be empty (a
+     * cleared field is still a fact about the draft). */
+    values: Array<{ fieldKey: string; value: string }>;
+  }>;
+}
+
+function requireObject(v: unknown, field: string): Record<string, unknown> {
+  if (typeof v !== "object" || v === null || Array.isArray(v)) {
+    throw new HttpError(400, `${field} must be an object.`);
+  }
+  return v as Record<string, unknown>;
+}
+
+/** A string with a ceiling and no floor, which is how PROMPT §10 item 1
+ * gives templateName, fieldKey and value ("at most N"; only previousBrief is
+ * "1 to 1500"). requireString would refuse an empty one. Same 400 as the
+ * validate.ts helpers: it names the field and never echoes the value. */
+function requireStringUpTo(v: unknown, field: string, maxLen: number): string {
+  if (typeof v !== "string" || v.length > maxLen) {
+    throw new HttpError(400, `${field} must be a string (at most ${maxLen} characters).`);
+  }
+  return v;
+}
+
+/** Parse the optional followUp request field: undefined when it is absent or
+ * null, otherwise the shape in GenerateFollowUpInput or an HttpError(400)
+ * naming the field (a wrong type, a nested array where a string belongs,
+ * more than 3 drafts or 60 values, a string over its limit, an empty brief
+ * or templateId). Unknown keys are not refused but never carried: the result
+ * is rebuilt from the known ones, as parseRepair does. */
+export function parseFollowUp(raw: unknown): GenerateFollowUpInput | undefined {
+  if (raw === undefined || raw === null) return undefined;
+  const f = requireObject(raw, "followUp");
+  const previousBrief = requireString(f.previousBrief, "followUp.previousBrief", 1500);
+  if (!Array.isArray(f.drafts) || f.drafts.length > 3) {
+    throw new HttpError(400, "followUp.drafts must be an array of at most 3 entries.");
+  }
+  const drafts = f.drafts.map((rawDraft: unknown, i) => {
+    const at = `followUp.drafts[${i}]`;
+    const d = requireObject(rawDraft, at);
+    const templateId = requireString(d.templateId, `${at}.templateId`, 64);
+    const templateName = requireStringUpTo(d.templateName, `${at}.templateName`, 120);
+    if (!Array.isArray(d.values) || d.values.length > FOLLOW_UP_VALUES_CAP) {
+      throw new HttpError(
+        400,
+        `${at}.values must be an array of at most ${FOLLOW_UP_VALUES_CAP} entries.`,
+      );
+    }
+    const values = d.values.map((rawEntry: unknown, j) => {
+      const e = requireObject(rawEntry, `${at}.values[${j}]`);
+      return {
+        fieldKey: requireStringUpTo(e.fieldKey, `${at}.values[${j}].fieldKey`, 60),
+        value: requireStringUpTo(e.value, `${at}.values[${j}].value`, 4000),
+      };
+    });
+    return { templateId, templateName, values };
+  });
+  return { previousBrief, drafts };
+}
+
+/** The follow-up section of the model's user text, which goes after the
+ * brief. `candidates` is the request's published candidates BEFORE any hint
+ * narrows them: a platform follow-up ("Make a Facebook version", PROMPT
+ * §9.4) always hints a platform the drafts' templates don't serve, and
+ * matching against the narrowed list would drop every draft and the
+ * member's edits with it. A draft whose templateId is not among them is
+ * dropped silently, and a kept draft's values narrow to the fields the model
+ * may write on that template (not fixed, not image, the first value per
+ * key), so the section never shows the model a key it would be refused for
+ * writing. The earlier brief and the drafts ride as compact JSON, which
+ * keeps member text visibly apart from the instructions around it. */
+export function followUpSection(
+  followUp: GenerateFollowUpInput,
+  candidates: CandidateTemplate[],
+): string {
+  const byId = new Map(candidates.map((c) => [c.id, c]));
+  const drafts: Array<{ templateId: string; name: string; values: Record<string, string> }> = [];
+  for (const draft of followUp.drafts) {
+    const candidate = byId.get(draft.templateId);
+    if (!candidate) continue;
+    const writable = new Set(
+      candidate.fields.filter((f) => !f.static && f.type !== "image").map((f) => f.fieldKey),
+    );
+    const values = new Map<string, string>();
+    for (const { fieldKey, value } of draft.values) {
+      if (writable.has(fieldKey) && !values.has(fieldKey)) values.set(fieldKey, value);
+    }
+    drafts.push({
+      templateId: candidate.id,
+      name: draft.templateName,
+      values: Object.fromEntries(values),
+    });
+  }
+  return [
+    "This is a follow-up in a chat.",
+    `The member's earlier brief: ${JSON.stringify(followUp.previousBrief)}`,
+    `Their current drafts (templateId, name, values): ${JSON.stringify(drafts)}`,
+    "Their new message is the Brief above.",
+    "If the message asks for changes, keep the same templates and revise only what it asks for.",
+    "If it describes a different post, treat it as a new brief.",
+    "Reuse facts from the earlier brief unless the new message replaces them.",
+  ].join(" ");
+}
+
+// ---------------------------------------------------------------------------
+// Reply and title: optional model prose for the chat
+// ---------------------------------------------------------------------------
+// The chat shows the model's reply as the assistant's message and its title
+// as the chat's name (PROMPT §9.2, §9.9). Both are advisory, and quieter than
+// imageTargetFieldKey: an unusable one is dropped with no error and no
+// warning, so it can never cost a retry or add noise under the drafts, and
+// the client has its own fallback for each. Member-facing copy never carries
+// an em dash, so the rewrite happens here instead of being trusted to the
+// prompt.
+
+const REPLY_MAX = 280;
+const TITLE_MIN = 2;
+const TITLE_MAX = 60;
+
+/** Model prose past this is never shown (a reply keeps at most 280
+ * characters, a title 60), so cleaning never reads further. It bounds the
+ * work on a runaway string: the end trims below are regexes, and a long run
+ * of punctuation that does not end the text makes them quadratic. */
+const PROSE_INPUT_CAP = 2000;
+
+/** Characters that render as nothing: controls other than whitespace, the
+ * soft hyphen, zero-width spaces and word joiners, and the direction marks,
+ * embeddings, overrides and isolates that can reorder what the member sees.
+ * ZWJ and ZWNJ (U+200D, U+200C) stay, since emoji and some scripts need
+ * them. */
+const INVISIBLE_CHARS =
+  /[\u0000-\u0008\u000e-\u001f\u007f-\u009f\u00ad\u180e\u200b\u200e\u200f\u202a-\u202e\u2060-\u2064\u2066-\u2069\ufff9-\ufffb]/g;
+
+/** Where a comma in place of a dash would read badly: after an opening
+ * bracket, and before punctuation or a closing bracket. After sentence
+ * punctuation the dash becomes a single space instead. */
+const OPENING_BRACKETS = "([{";
+const CLOSING_MARKS = ".,;:!?)]}";
+const SENTENCE_MARKS = ".,;:!?";
+
+/** Rewrite each em dash (U+2014), with the spaces around it, as ", ". A run
+ * of dashes counts as one. Where that comma would land at an end of the
+ * text, after an opening bracket, or against punctuation already there, the
+ * dash just goes: "— Hi" reads "Hi", "Done. — Next" reads "Done. Next",
+ * "word —." reads "word.". Only the dash's own surroundings change, so the
+ * model's other punctuation ("e.g., this") is left alone. It splits on the
+ * dash instead of matching the spaces around it with a regex, so it stays
+ * linear on any input, including a warning that quotes a long model string. */
+function replaceEmDashes(text: string): string {
+  if (!text.includes("\u2014")) return text;
+  const pieces = text.split("\u2014");
+  let out = pieces[0].trimEnd();
+  for (let i = 1; i < pieces.length; i++) {
+    // Whitespace touching a dash belongs to the dash. A piece left blank
+    // sits inside a run of dashes, or after the last one.
+    let piece = pieces[i].trimStart();
+    if (i < pieces.length - 1) piece = piece.trimEnd();
+    if (!piece) continue;
+    const last = out.charAt(out.length - 1);
+    if (!out || OPENING_BRACKETS.includes(last) || CLOSING_MARKS.includes(piece.charAt(0))) {
+      out += piece;
+    } else {
+      out += (SENTENCE_MARKS.includes(last) ? " " : ", ") + piece;
+    }
+  }
+  return out;
+}
+
+/** A model-facing error rewritten for the member: each em dash becomes a
+ * sentence break, so "... (0 elements, 0 editable text) — propose a fuller
+ * design." reads "... (0 elements, 0 editable text). Propose a fuller
+ * design." The model's copy keeps its dash for the retry turn. */
+function emDashesToSentences(text: string): string {
+  const pieces = text
+    .split("\u2014")
+    .map((piece) => piece.trim())
+    .filter(Boolean);
+  let out = pieces[0] ?? "";
+  for (const piece of pieces.slice(1)) {
+    const next = piece.charAt(0).toUpperCase() + piece.slice(1);
+    out += (".!?".includes(out.charAt(out.length - 1)) ? " " : ". ") + next;
+  }
+  return out;
+}
+
+/** Normalize one piece of model prose: invisible characters are removed,
+ * whitespace runs collapse to a single space, anything past
+ * PROSE_INPUT_CAP is let go, em dashes are rewritten (replaceEmDashes), and
+ * both ends lose any space, comma, semicolon or colon left hanging.
+ * undefined for a non-string or when nothing visible is left. */
+function cleanProse(raw: unknown): string | undefined {
+  if (typeof raw !== "string") return undefined;
+  const collapsed = raw.replace(INVISIBLE_CHARS, "").replace(/\s+/g, " ");
+  const text = replaceEmDashes(collapsed.slice(0, PROSE_INPUT_CAP).trim()).replace(
+    /^[\s,;:]+|[\s,;:]+$/g,
+    "",
+  );
+  return text || undefined;
+}
+
+/** Validate the model's chat reply: cleaned (cleanProse), then held to 280
+ * characters. A longer reply is cut at its last sentence end at or before
+ * the limit (. ! or ?, with any closing quote or bracket, followed by a
+ * space), else at its last word boundary before the limit, with no partial
+ * word and no dangling comma; a reply with no word boundary in reach is
+ * dropped. Nothing is appended to a cut, so the member only ever reads the
+ * model's own words. undefined whenever nothing usable is left. */
+export function validateReply(raw: unknown): string | undefined {
+  const text = cleanProse(raw);
+  if (text === undefined || text.length <= REPLY_MAX) return text;
+  // One character past the limit, so an ending exactly at the limit is seen
+  // with the space that follows it.
+  const reach = text.slice(0, REPLY_MAX + 1);
+  let sentenceEnd = 0;
+  for (const m of reach.matchAll(/[.!?]+["'\u201d\u2019)\]]*(?= )/g)) {
+    if (m.index > 0) sentenceEnd = m.index + m[0].length;
+  }
+  if (sentenceEnd > 0) return text.slice(0, sentenceEnd);
+  const space = reach.lastIndexOf(" ");
+  const cut = space > 0 ? text.slice(0, space).replace(/[\s,;:([{\u2013-]+$/, "") : "";
+  return cut || undefined;
+}
+
+const QUOTE_PAIRS: Record<string, string | undefined> = {
+  '"': '"',
+  "'": "'",
+  "\u201c": "\u201d",
+  "\u2018": "\u2019",
+};
+
+/** Validate the model's chat title: cleaned (cleanProse), unwrapped from one
+ * pair of quotes (the prompt's example is quoted and a model may echo that),
+ * and stripped of closing punctuation (. , ; : ! ? … and dashes), repeating
+ * both until neither changes it. Quotes come off only when they wrap the
+ * whole title as one pair, so '"Open day" and "Gala"' keeps all four. It
+ * must then be 2 to 60 characters or it is dropped. A title over 60 is
+ * dropped rather than cut: the model was asked for two to five words, a
+ * clipped phrase reads broken, and the client names the chat from the brief
+ * when the server sends no title (PROMPT §9.9). */
+export function validateTitle(raw: unknown): string | undefined {
+  let text = cleanProse(raw);
+  if (text === undefined) return undefined;
+  for (let previous = ""; text !== previous;) {
+    previous = text;
+    const open = text.charAt(0);
+    const close = QUOTE_PAIRS[open];
+    if (close && text.length > 1 && text.endsWith(close)) {
+      const inner = text.slice(1, -1);
+      if (!inner.includes(open) && !inner.includes(close)) text = inner.trim();
+    }
+    text = text.replace(/[\s.,;:!?\u2026\u2013-]+$/, "");
+  }
+  return text.length >= TITLE_MIN && text.length <= TITLE_MAX ? text : undefined;
+}
+
+/** The reply and title of one model output, each validated. A field the
+ * model left out, or gave nothing usable in, comes back undefined, so a
+ * response built from this carries it only when it is usable (JSON drops
+ * undefined). validateGeneration and validateFreestyle both return these. */
+export function validateReplyAndTitle(
+  output: { reply?: unknown; title?: unknown } | null | undefined,
+): { reply?: string; title?: string } {
+  return { reply: validateReply(output?.reply), title: validateTitle(output?.title) };
 }

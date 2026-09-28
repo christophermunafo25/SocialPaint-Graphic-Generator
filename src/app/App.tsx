@@ -6,7 +6,7 @@ import { AuthPage } from "./components/auth/AuthPage";
 import { PeopleAdmin } from "./components/admin/PeopleAdmin";
 import { BrandProvider, useBrand } from "@/lib/brand/BrandContext";
 import { ColorSchemeProvider } from "@/lib/colorScheme";
-import { RouterProvider, useRouter } from "./router";
+import { RouterProvider, generatePageKey, useRouter } from "./router";
 import { readCanvaReturn, takeCanvaConnectPending } from "@/lib/canvaReturn";
 import { AppShell } from "./components/AppShell";
 import { DevBackendBanner } from "./components/DevBackendBanner";
@@ -15,6 +15,7 @@ import { Portal } from "./components/Portal";
 import { TemplateUsePage } from "./components/TemplateUsePage";
 import { BulkFillPage } from "./components/bulk/BulkFillPage";
 import { GeneratePage } from "./components/generate/GeneratePage";
+import { GenerateHistoryPage } from "./components/generate/GenerateHistoryPage";
 import { OnboardingWizard } from "./components/onboarding/OnboardingWizard";
 import { AdminTemplates } from "./components/admin/AdminTemplates";
 import { TemplateBuilder } from "./components/builder/TemplateBuilder";
@@ -169,7 +170,11 @@ function Screen() {
       <ErrorBoundary
         level="route"
         context={{ route: route.name }}
-        resetKeys={[route.name, "templateId" in route ? route.templateId : null]}
+        resetKeys={[
+          route.name,
+          "templateId" in route ? route.templateId : null,
+          "threadId" in route ? route.threadId : null,
+        ]}
         fallback={(retry) => (
           <ErrorState
             title="This screen ran into a problem."
@@ -181,7 +186,26 @@ function Screen() {
         {route.name === "portal" && <Portal />}
         {route.name === "template" && <TemplateUsePage templateId={route.templateId} />}
         {route.name === "bulk" && adminOnly(<BulkFillPage templateId={route.templateId} />)}
-        {route.name === "generate" && <GeneratePage templateIdHint={route.templateId} />}
+        {route.name === "generate" && (
+          // Keyed per chat (PROMPT §11.1): opening another chat, or leaving
+          // one for a new chat, starts from fresh state. Every new chat
+          // shares the one key, so the template hint alone never remounts,
+          // and neither does the page's own replace of /generate with
+          // /generate/c/<id> once it has saved the chat (§9.8): the route
+          // it navigates to is marked savedInPlace and keeps the new-chat
+          // key, so the photo, the open editor and the caption picks stay
+          // on screen. generatePageKey (router.tsx) says why in full.
+          // Keyed per workspace too: a chat belongs to the company it was
+          // started in, so switching workspace ends it (the unmount stops a
+          // run in flight) and nothing written for one company is sent,
+          // shown or saved under another.
+          <GeneratePage
+            key={`${company.id}:${generatePageKey(route)}`}
+            templateIdHint={route.templateId}
+            threadId={route.threadId}
+          />
+        )}
+        {route.name === "generateHistory" && <GenerateHistoryPage />}
         {route.name === "adminTemplates" && adminOnly(<AdminTemplates />)}
         {route.name === "builder" &&
           adminOnly(

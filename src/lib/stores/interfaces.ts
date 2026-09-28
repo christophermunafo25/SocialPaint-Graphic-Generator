@@ -1,7 +1,7 @@
 // Data-layer contracts. Components import ONLY these interfaces (via the
 // factory in ./index.ts) — nothing outside src/lib touches a backend client.
 
-import type { CanvasSize } from "../templates/platforms";
+import type { CanvasSize, PlatformId } from "../templates/platforms";
 import type {
   BrandAsset,
   BrandKit,
@@ -14,6 +14,9 @@ import type {
   GenerateRepairInput,
   GenerateRepairResult,
   GenerateResult,
+  GenerateThreadInput,
+  GenerateThreadRecord,
+  GenerateThreadSummary,
   InsightEvent,
   IntegrationConnectionInfo,
   MonthlyUsage,
@@ -253,20 +256,91 @@ export interface DesignImportProvider {
   disconnect(companyId: string, provider: "figma" | "canva"): Promise<void>;
 }
 
-/** Generate: a member's brief in, filled-template proposals out, through the
- * template-generate Edge Function. The function reads the published library
- * and writes nothing — the client renders the proposals and seeds the
- * existing fill page with the chosen one. */
+/** Generate: a member's brief in, proposals out, through the
+ * template-generate Edge Function. A library proposal fills a published
+ * template (values only); a freestyle proposal carries a new design built
+ * from the brand kit. The function reads the company's library (and, for
+ * freestyle, its kit) and writes nothing but its rate-limit counters. The
+ * chat (useChatController, runChat) measures each proposal in the browser,
+ * sends a library one that overflows through `repair` once, and shows what
+ * fits as drafts it edits and exports in place.
+ *
+ * A follow-up in a chat sends `followUp`, and a result may carry `reply`
+ * and `title`: all optional and validated server-side, and the chat falls
+ * back when a deployment returns neither. The member's photo never crosses
+ * this interface: `hasImage` and `imageAspect` are all a request says of
+ * it. */
 export interface GenerateProvider {
   /** Backend reachable at all. The localStorage dev backend has no Edge
    * Functions and no model key, so it says false and the surface explains
    * rather than offering a button that cannot work. */
   isConfigured(): boolean;
-  generate(companyId: string, input: GenerateInput): Promise<GenerateResult>;
+  /** `opts.signal` aborts the request when the member presses Stop. An
+   * aborted call can still finish on the server and count toward the rate
+   * limit; the caller ignores whatever it resolves to either way. */
+  generate(
+    companyId: string,
+    input: GenerateInput,
+    opts?: GenerateCallOptions,
+  ): Promise<GenerateResult>;
   /** One repair round for one proposal: the measurement pass names the
    * overflowing fields and their measured character budgets; the server
    * rewrites only those values. */
-  repair(companyId: string, input: GenerateRepairInput): Promise<GenerateRepairResult>;
+  repair(
+    companyId: string,
+    input: GenerateRepairInput,
+    opts?: GenerateCallOptions,
+  ): Promise<GenerateRepairResult>;
+}
+
+/** Per-call options for the GenerateProvider. */
+export interface GenerateCallOptions {
+  /** Aborts the request (the chat's Stop). Implementations that cannot
+   * abort ignore it. */
+  signal?: AbortSignal;
+}
+
+/** Saved Generate chats (generate_threads, migration 0038): Recent on the
+ * start state, the History page, and reopening a chat at /generate/c/<id>.
+ * The chat page writes through ThreadSaver (src/lib/generate/threadSaver.ts)
+ * in the shape toStoredThread makes: finished exchanges only, each draft's
+ * proposal, canvas and values, the title, platforms and preview.
+ *
+ * Strictly the signed-in member's own chats in the given company. Under
+ * Supabase that is RLS (every policy is user_id = auth.uid()), so not even a
+ * company admin reads another member's chats; the local dev backend scopes
+ * to its one fixed dev user the same way.
+ *
+ * Every write refuses input that carries a data: value anywhere
+ * (assertNoDataUrls): the member's photo never reaches a stored row. There
+ * is no updated_at trigger: the store stamps updated_at on create and on
+ * every update, and list pages on it. */
+export interface GenerateThreadStore {
+  /** Newest first by updated_at, ties broken by id, both descending.
+   * `before` is the `nextBefore` of the previous page: an opaque cursor
+   * naming that page's last chat, so paging never skips or repeats a chat
+   * that shares its timestamp with another. `platform` keeps chats whose
+   * platforms include it; `q` is a case-insensitive substring of the title.
+   * `nextBefore` is null on the last page. Summaries carry no turns. */
+  list(
+    companyId: string,
+    opts: { limit: number; before?: string; platform?: PlatformId; q?: string },
+  ): Promise<{ items: GenerateThreadSummary[]; nextBefore: string | null }>;
+  /** The distinct platforms across the member's chats, in PLATFORMS order:
+   * History's filter chips. */
+  platformsInUse(companyId: string): Promise<PlatformId[]>;
+  /** Null when there is no such chat, it belongs to someone else, or the id
+   * is not one this backend could have issued. */
+  get(companyId: string, id: string): Promise<GenerateThreadRecord | null>;
+  /** The author is the signed-in member (the column defaults to auth.uid()). */
+  create(companyId: string, input: GenerateThreadInput): Promise<GenerateThreadRecord>;
+  /** Replaces the chat wholesale and stamps updated_at. Throws when the chat
+   * no longer exists, so a caller never mistakes a lost write for a save. */
+  update(companyId: string, id: string, input: GenerateThreadInput): Promise<void>;
+  /** Deletes the member's own chat; one that is gone or not theirs is left
+   * alone, without an error. Nothing in the app calls it yet: deleting
+   * chats from History is a later change. */
+  remove(companyId: string, id: string): Promise<void>;
 }
 
 export interface StyleImportResult {
@@ -303,6 +377,7 @@ export interface Stores {
   publicLinks: PublicLinkStore;
   designImport: DesignImportProvider;
   generate: GenerateProvider;
+  generateThreads: GenerateThreadStore;
   /** "supabase" or "local" — surfaced in the dev switcher so it's obvious
    * which backend is active. */
   backend: "supabase" | "local";

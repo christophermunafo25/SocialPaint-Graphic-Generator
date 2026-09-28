@@ -4,7 +4,7 @@ import type {
   GenerateRepairResult,
   GenerateResult,
 } from "../../types";
-import type { GenerateProvider } from "../interfaces";
+import type { GenerateCallOptions, GenerateProvider } from "../interfaces";
 import { isSupabaseConfigured, supabase } from "./client";
 
 /** Generate goes through the template-generate Edge Function — the model key
@@ -15,24 +15,38 @@ export class SupabaseGenerateProvider implements GenerateProvider {
     return isSupabaseConfigured;
   }
 
-  async generate(companyId: string, input: GenerateInput): Promise<GenerateResult> {
+  // The chat's Stop aborts the fetch through functions.invoke's `signal`. An
+  // aborted call surfaces as a fetch error with no body, so it throws the
+  // fallback sentence below; the chat has already settled the turn as
+  // stopped and ignores it.
+  async generate(
+    companyId: string,
+    input: GenerateInput,
+    opts?: GenerateCallOptions,
+  ): Promise<GenerateResult> {
     const { data, error } = await supabase().functions.invoke("template-generate", {
       body: { companyId, ...input },
+      signal: opts?.signal,
     });
     if (error) {
       const detail = await readErrorMessage(error);
-      throw new Error(detail ?? "Generate failed — try again.");
+      throw new Error(detail ?? "Generate failed. Try again.");
     }
     return data as GenerateResult;
   }
 
-  async repair(companyId: string, input: GenerateRepairInput): Promise<GenerateRepairResult> {
+  async repair(
+    companyId: string,
+    input: GenerateRepairInput,
+    opts?: GenerateCallOptions,
+  ): Promise<GenerateRepairResult> {
     const { data, error } = await supabase().functions.invoke("template-generate", {
       body: { companyId, repair: input },
+      signal: opts?.signal,
     });
     if (error) {
       const detail = await readErrorMessage(error);
-      throw new Error(detail ?? "The repair round failed — try again.");
+      throw new Error(detail ?? "The repair round failed. Try again.");
     }
     return data as GenerateRepairResult;
   }
