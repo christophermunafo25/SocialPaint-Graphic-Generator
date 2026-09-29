@@ -55,8 +55,10 @@ Open the printed localhost URL and the first-run wizard walks you through creati
 
    ```bash
    supabase secrets set ALLOWED_ORIGINS="https://www.socialpaint.ai,https://socialpaint.ai,http://localhost:*"
-   supabase functions deploy figma-status figma-connect figma-import figma-layers figma-styles invite-member template-links canva-auth integration-status template-autobuild
+   supabase functions deploy figma-status figma-connect figma-import figma-layers figma-styles invite-member template-links canva-auth integration-status template-autobuild template-generate brand-from-website
    ```
+
+   The three model-backed functions (`template-generate`, `template-autobuild`, `brand-from-website`) need `supabase secrets set ANTHROPIC_API_KEY=...` (and optionally `ANTHROPIC_MODEL`). They read `template_fields.is_optional` and write `ai_usage_events`, so apply migration `0039` before deploying them, and deploy them before the app.
 
    The two public-link functions are the only ones that accept a caller with no JWT, which `supabase/config.toml` records per function — do not add a global `verify_jwt = false`. Deploying them reads that file, so no extra flag is needed:
 

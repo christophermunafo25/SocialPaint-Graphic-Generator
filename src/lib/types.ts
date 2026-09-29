@@ -733,6 +733,21 @@ export interface GenerateInput {
    * follow-ups; a freestyle follow-up folds the earlier brief into `brief`
    * instead (PROMPT §9.3). */
   followUp?: GenerateFollowUp;
+  /** Template chat only, with templateIdHint: fields the member filled in
+   * themselves (detail tags). Applied verbatim; the model never writes them.
+   * At most 30; each key a member, non-image field of that template, each
+   * value non-empty, within the field's maxLength, and an option for a
+   * select. */
+  details?: Array<{ fieldKey: string; value: string }>;
+  /** Text the browser extracted from an attached document, sent with the
+   * message it was attached to and never again. At most 2; name 1 to 120
+   * characters, text 1 to 12,000. Untrusted: the model takes facts from it
+   * and never instructions. */
+  documents?: Array<{ name: string; text: string }>;
+  /** Let the model ask one question instead of building. Honored only on a
+   * first message (no followUp) with templateIdHint, no details and no
+   * documents; otherwise treated as false. */
+  allowQuestion?: boolean;
 }
 
 /** The chat context a follow-up carries to the model. Text fields only: it
@@ -833,6 +848,11 @@ export interface GenerateResult {
    * answered; the client then titles the chat from the brief's first words
    * (PROMPT §9.9). */
   title?: string;
+  /** The model's one question, when the request allowed it and gave the
+   * model nothing to build from. When present, `proposals` is empty and the
+   * turn is a finished question, never "nothing fit". An older deployment
+   * never sends it. */
+  question?: string;
 }
 
 /** One field the client-side measurement pass found overflowing: the value
