@@ -16,9 +16,10 @@ import {
   type ChatPhoto,
   type ChatThread,
 } from "@/lib/generate/chat";
-import { DEFAULT_VARIATIONS, latestDoneTurn } from "@/lib/generate/chatReducer";
+import { DEFAULT_VARIATIONS, latestDoneTurn, sameEdits } from "@/lib/generate/chatReducer";
 import { missingFields } from "@/lib/generate/draftDownload";
-import { previewValues, tooLongFields, turnPhoto } from "@/lib/generate/draftView";
+import { captionFor, previewValues, tooLongFields, turnPhoto } from "@/lib/generate/draftView";
+import { defaultVariant } from "@/lib/templates/variants";
 import { detailFieldsFor, detailKindOf, type DetailTagValue } from "@/lib/generate/details";
 import { createCanvasMeasurer } from "@/lib/render/autoFit";
 import type { MemberHintState } from "@/lib/stores/interfaces";
@@ -35,6 +36,7 @@ import { useRouter } from "../../router";
 import { useFullViewport } from "../layout/ChromeContext";
 import { Page } from "../layout/Page";
 import { AssistantTurnView, type TemplateTurnProps } from "./AssistantTurnView";
+import { ChatButton } from "./ChatButton";
 import { ChatHeader } from "./ChatHeader";
 import { ChatLoading, ChatUnavailable, THREAD_PLACEHOLDER } from "./ChatLoadStates";
 import { Composer } from "./Composer";
@@ -116,6 +118,9 @@ interface EditorState {
   draftId: string;
   openId: number;
   focus: { draftId: string; fieldKey: string; nonce: number } | null;
+  /** The turn's drafts as they were when the panel opened: what "Edited"
+   * compares against, and what Discard puts back (template-chat §12.7). */
+  snapshot: ChatDraft[];
 }
 
 /** Save to library's progress for one freestyle draft (PROMPT §8.5). */
@@ -248,6 +253,8 @@ export function GenerateChat({
     retry,
     editValues,
     changeLook,
+    editCaption,
+    restoreDrafts,
     reset,
     assignId,
   } = useChatController({
@@ -261,9 +268,17 @@ export function GenerateChat({
   });
   onFirstSave.current = (id) => {
     assignId(id);
+    // An Edit details already open keeps its address (edit, field).
+    const editing = route.name === "templateChat" ? { edit: route.edit, field: route.field } : {};
     navigate(
       template
-        ? { name: "templateChat", templateId: template.id, threadId: id, savedInPlace: true }
+        ? {
+            name: "templateChat",
+            templateId: template.id,
+            threadId: id,
+            savedInPlace: true,
+            ...editing,
+          }
         : { name: "generate", threadId: id, savedInPlace: true },
       { replace: true },
     );
@@ -309,6 +324,8 @@ export function GenerateChat({
   const [platform, setPlatform] = useState<PlatformId | null>(null);
   const [variations, setVariations] = useState(DEFAULT_VARIATIONS);
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
+  // Edit details' stage, where the panel renders the draft (§12.7).
+  const [stageEl, setStageEl] = useState<HTMLDivElement | null>(null);
   // A template chat's detail tags, waiting beside the plus (§11.6).
   const [tags, setTags] = useState<DetailTagValue[]>([]);
 
@@ -457,6 +474,8 @@ export function GenerateChat({
       setDoc(null);
       setTags([]);
       setHintDismissed(true);
+      // A message sent from Edit details returns to the thread (§12.7).
+      if (editorOpenRef.current) closeEditor();
       follow();
       if (fromStart) {
         // The count goes up on a template chat's first send (§12.3).
@@ -645,10 +664,12 @@ export function GenerateChat({
       if (!editorOpenRef.current) preserve(anchor);
       opener.current = { el: from, draftId };
       const openId = ++openCount.current;
+      const turn = threadRef.current.turns.find((t) => t.id === turnId);
+      const snapshot = turn && isAssistantTurn(turn) ? turn.drafts : [];
       setEditor((current) =>
         current && current.turnId === turnId
           ? { ...current, draftId, focus: focus ?? current.focus }
-          : { turnId, draftId, openId, focus },
+          : { turnId, draftId, openId, focus, snapshot },
       );
     },
     [preserve],
@@ -696,6 +717,77 @@ export function GenerateChat({
     opener.current = null;
     setEditor(null);
   }, [preserve]);
+
+  // ── Edit details' address (template chats, §12.7) ──────────────────────
+  // Opening Edit details writes `edit` (and `field`) into the URL as a new
+  // history entry, so Back returns to the thread; Back to chat goes back
+  // through that entry. A URL that arrives with `edit` (a link, a reload,
+  // forward) opens it on that draft, focused on `field`.
+  const chatRoute = route.name === "templateChat" ? route : null;
+  const pushedEdit = useRef(false);
+  const editorDraftId = editor && editorTurn ? editor.draftId : null;
+  // Only the editor's own opens and closes write the address: on mount the
+  // address is what opens the editor (below), never the other way round.
+  const lastEditorDraft = useRef(editorDraftId);
+  useEffect(() => {
+    if (lastEditorDraft.current === editorDraftId) return;
+    lastEditorDraft.current = editorDraftId;
+    if (!template || !chatRoute) return;
+    const want = editorDraftId;
+    const have = chatRoute.edit ?? null;
+    if (want === have) return;
+    if (want) {
+      const field = editor?.focus?.fieldKey;
+      pushedEdit.current = true;
+      navigate({ ...chatRoute, edit: want, ...(field ? { field } : { field: undefined }) });
+    } else if (pushedEdit.current) {
+      pushedEdit.current = false;
+      window.history.back();
+    } else {
+      navigate({ ...chatRoute, edit: undefined, field: undefined }, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs on the editor's own changes
+  }, [editorDraftId]);
+  useEffect(() => {
+    if (!template || !chatRoute) return;
+    const edit = chatRoute.edit ?? null;
+    if (!edit) {
+      // Back past the entry Edit details wrote.
+      if (editorDraftId) {
+        pushedEdit.current = false;
+        closeEditor();
+      }
+      return;
+    }
+    if (edit === editorDraftId) return;
+    const turn = threadRef.current.turns.find(
+      (t) => isAssistantTurn(t) && t.drafts.some((d) => d.id === edit && d.schema),
+    );
+    if (!turn) return;
+    const preview = previews.current.get(edit) ?? null;
+    openEditor(
+      turn.id,
+      edit,
+      preview,
+      preview,
+      chatRoute.field
+        ? { draftId: edit, fieldKey: chatRoute.field, nonce: ++openCount.current }
+        : null,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- follows the address only
+  }, [chatRoute?.edit, chatRoute?.field]);
+
+  // Discard (§12.7): the turn's drafts back as the panel found them.
+  const canDiscard = useMemo(() => {
+    if (!editor || !editorTurn) return false;
+    return editorTurn.drafts.some((d) => {
+      const was = editor.snapshot.find((x) => x.id === d.id);
+      return was !== undefined && !sameEdits(d, was);
+    });
+  }, [editor, editorTurn]);
+  const discard = useCallback(() => {
+    if (editor) restoreDrafts(editor.turnId, editor.snapshot);
+  }, [editor, restoreDrafts]);
 
   // Focus after the panel goes: back to its opener, or, when the panel went
   // with focus in it and nothing to go back to, to the composer.
@@ -1065,6 +1157,11 @@ export function GenerateChat({
   // (thread and dock) sits in a row with the panel, which the CSS lays out
   // beside it (inline) or over it (sheet).
   const editorPresentation = editorOpen ? (inline ? "inline" : "sheet") : undefined;
+  // Edit details (template chats, §12.7): the thread gives way to the stage,
+  // the draft rendered large in its well, with the compact chat box docked
+  // under it and the panel beside it (or over it, below 1180px).
+  const editView = Boolean(template && editorOpen && selectedDraft);
+  const lookOptions = template?.variants?.map((v) => ({ id: v.id, label: v.name })) ?? [];
   return (
     <>
       {exportExtras}
@@ -1073,7 +1170,7 @@ export function GenerateChat({
           ref={headerRef}
           // A template chat is named by its template (Brand Templates / Now
           // hiring), as every frame of it draws the header.
-          title={template ? template.name : thread.title}
+          title={editView ? "Edit details" : template ? template.name : thread.title}
           titleId={titleId}
           onNewChat={startNewChat}
           onHistory={openHistory}
@@ -1082,10 +1179,29 @@ export function GenerateChat({
               ? { label: "Brand Templates", route: { name: "portal" }, onClick: openBrandTemplates }
               : undefined
           }
+          {...(editView && template && chatRoute
+            ? {
+                middle: {
+                  label: template.name,
+                  route: { ...chatRoute, edit: undefined, field: undefined },
+                  onClick: closeEditor,
+                },
+                actions: (
+                  <ChatButton kind="tertiary" size="small" onClick={closeEditor}>
+                    Back to chat
+                  </ChatButton>
+                ),
+              }
+            : {})}
         />
-        <div className="sp-chat-split" data-editor={editorPresentation}>
+        <div
+          className="sp-chat-split"
+          data-editor={editorPresentation}
+          data-view={editView ? "edit" : undefined}
+        >
           <div ref={chatRef} className="sp-chat-split__chat">
-            <div className="sp-chat-thread-frame">
+            {editView && <div ref={setStageEl} className="sp-chat-stage" />}
+            <div className="sp-chat-thread-frame" hidden={editView}>
               <div
                 ref={scrollRef}
                 className="sp-chat-thread"
@@ -1186,6 +1302,31 @@ export function GenerateChat({
               presentation={editorPresentation}
               saveToLibrary={saveToLibrary}
               exportError={downloadError}
+              openDrafts={editor.snapshot}
+              onDiscard={discard}
+              canDiscard={canDiscard}
+              {...(editView
+                ? {
+                    stageTarget: stageEl,
+                    looks:
+                      lookOptions.length > 1
+                        ? {
+                            options: lookOptions,
+                            selectedId:
+                              selectedDraft.variantId ??
+                              (template ? defaultVariant(template)?.id : undefined) ??
+                              "",
+                            onSelect: (id: string) =>
+                              changeLook(editorTurn.id, selectedDraft.id, id),
+                          }
+                        : null,
+                    caption: {
+                      value: captionFor(selectedDraft, { templateFallback: false }),
+                      onChange: (next: string) =>
+                        editCaption(editorTurn.id, selectedDraft.id, next),
+                    },
+                  }
+                : {})}
             />
           )}
         </div>

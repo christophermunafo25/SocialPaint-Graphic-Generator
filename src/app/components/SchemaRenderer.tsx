@@ -41,8 +41,13 @@ interface SchemaRendererProps {
   brandKit: BrandKit | null;
   /** Record open/download usage events (default true; builder previews pass false). */
   instrument?: boolean;
-  /** Optional overlay painted in canvas space (Template Builder field boxes). */
-  overlay?: React.ReactNode;
+  /** Optional overlay painted in canvas space (Template Builder field boxes).
+   * A function gets the layout's field rects (by field id, canvas px) and
+   * the live scale, for chrome that sits on laid-out fields and keeps its
+   * on-screen size (the chat's Missing markers). Never exported. */
+  overlay?:
+    | React.ReactNode
+    | ((ctx: { rects: ReadonlyMap<string, Rect>; scale: number }) => React.ReactNode);
   /** Layout warnings for the hosting page (e.g. text that can't fit at its
    * minimum size). Called whenever the layout pass re-runs. */
   onWarnings?(warnings: string[]): void;
@@ -250,7 +255,11 @@ export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererPro
             })}
           </div>
           {overlay && (
-            <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>{overlay}</div>
+            <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+              {typeof overlay === "function"
+                ? overlay({ rects: layout.fieldRects, scale })
+                : overlay}
+            </div>
           )}
         </div>
       </div>

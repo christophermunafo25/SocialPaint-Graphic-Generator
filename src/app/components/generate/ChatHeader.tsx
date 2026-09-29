@@ -29,6 +29,7 @@ export function ChatBreadcrumb({
   heading = false,
   onRoot,
   root = GENERATE_ROOT,
+  middle,
 }: {
   current?: string;
   /** Lets the thread name itself by the chat's title. */
@@ -38,6 +39,9 @@ export function ChatBreadcrumb({
   /** The first crumb: "Generate" by default; "Brand Templates" in a
    * template chat (template-chat PROMPT §12.2). */
   root?: { label: string; route: Route };
+  /** A crumb between the root and the current one (Edit details' "Now
+   * hiring", which goes back to the chat). */
+  middle?: { label: string; route: Route; onClick(): void };
 }) {
   const Current = heading ? "h1" : "span";
   return (
@@ -53,6 +57,25 @@ export function ChatBreadcrumb({
       >
         {root.label}
       </a>
+      {middle && (
+        <>
+          <span className="sp-chat-crumbs__sep" aria-hidden>
+            /
+          </span>
+          <a
+            className="sp-chat-crumbs__root sp-chat-crumbs__mid"
+            href={routeToUrl(middle.route)}
+            title={middle.label}
+            onClick={(e) => {
+              if (!isPlainClick(e)) return;
+              e.preventDefault();
+              middle.onClick();
+            }}
+          >
+            {middle.label}
+          </a>
+        </>
+      )}
       {current !== undefined && (
         <>
           <span className="sp-chat-crumbs__sep" aria-hidden>
@@ -89,11 +112,12 @@ export const ChatHeader = forwardRef<
     onHistory(): void;
     /** A template chat's first crumb and where it goes (Brand Templates). */
     root?: { label: string; route: Route; onClick(): void };
+    middle?: { label: string; route: Route; onClick(): void };
     /** Replaces History and New chat (a template chat's Start state, which
      * has only the admin's Bulk fill). */
     actions?: React.ReactNode;
   }
->(function ChatHeader({ title, titleId, onNewChat, onHistory, root, actions }, ref) {
+>(function ChatHeader({ title, titleId, onNewChat, onHistory, root, middle, actions }, ref) {
   return (
     <header ref={ref} className="sp-chat-header">
       <ChatBreadcrumb
@@ -102,6 +126,7 @@ export const ChatHeader = forwardRef<
         heading
         onRoot={root ? root.onClick : onNewChat}
         root={root}
+        middle={middle}
       />
       <div className="sp-chat-header__actions">
         {actions ?? (

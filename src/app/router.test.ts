@@ -4,6 +4,7 @@ import {
   routeState,
   routeToUrl,
   templateChatPageKey,
+  withHistoryState,
   urlToRoute,
   type Route,
 } from "./router";
@@ -162,5 +163,17 @@ describe("Template chat routes (Template chat PROMPT §12.1)", () => {
       key({ name: "templateChat", templateId: "t-1", threadId: "c" }),
     );
     expect(key({ name: "templateChat", templateId: "t-2" })).not.toBe(fresh);
+  });
+});
+
+describe("withHistoryState", () => {
+  it("restores savedInPlace on a chat's address from its history entry, and nothing else", () => {
+    const chat = urlToRoute("/templates/t-1/chat/c-1", "");
+    expect(withHistoryState(chat, { savedInPlace: true })).toMatchObject({ savedInPlace: true });
+    expect(withHistoryState(chat, null)).toBe(chat);
+    const portal = urlToRoute("/templates", "");
+    expect(withHistoryState(portal, { savedInPlace: true })).toBe(portal);
+    const fresh = urlToRoute("/generate", "");
+    expect(withHistoryState(fresh, { savedInPlace: true })).toBe(fresh);
   });
 });

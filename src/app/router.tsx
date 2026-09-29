@@ -305,6 +305,22 @@ export function urlToRoute(pathname: string, search: string): Route {
   }
 }
 
+const HISTORY_SAVED_IN_PLACE = { savedInPlace: true } as const;
+
+/** A route read back from a history entry, with the savedInPlace mark the
+ * entry was written with (navigate). Only a chat's own address takes it. */
+export function withHistoryState(route: Route, state: unknown): Route {
+  const marked =
+    typeof state === "object" &&
+    state !== null &&
+    (state as { savedInPlace?: unknown }).savedInPlace === true;
+  if (!marked) return route;
+  if ((route.name === "generate" || route.name === "templateChat") && route.threadId) {
+    return { ...route, savedInPlace: true };
+  }
+  return route;
+}
+
 export function RouterProvider({ children }: { children: React.ReactNode }) {
   const [route, setRoute] = useState<Route>(() =>
     urlToRoute(window.location.pathname, window.location.search),
@@ -312,15 +328,27 @@ export function RouterProvider({ children }: { children: React.ReactNode }) {
 
   const navigate = useCallback((next: Route, options?: NavigateOptions) => {
     const url = routeToUrl(next);
+    // savedInPlace never reaches the URL, but it rides in the history entry,
+    // so back and forward within a chat saved in place (Edit details' own
+    // entries) find the page they left and do not remount it.
+    const state = "savedInPlace" in next && next.savedInPlace ? HISTORY_SAVED_IN_PLACE : null;
     if (url !== window.location.pathname + window.location.search) {
-      window.history[options?.replace ? "replaceState" : "pushState"](null, "", url);
+      window.history[options?.replace ? "replaceState" : "pushState"](state, "", url);
+    } else if (state) {
+      window.history.replaceState(state, "", url);
     }
     setRoute(routeState(next));
   }, []);
 
   // Back/forward move the app without writing to history again.
   useEffect(() => {
-    const onPop = () => setRoute(urlToRoute(window.location.pathname, window.location.search));
+    const onPop = () =>
+      setRoute(
+        withHistoryState(
+          urlToRoute(window.location.pathname, window.location.search),
+          window.history.state,
+        ),
+      );
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);

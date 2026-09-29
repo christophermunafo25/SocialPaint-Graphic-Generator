@@ -119,6 +119,10 @@ export type ChatAction =
   | { type: "lookChanged"; turnId: string; draftId: string; variantId: string; at: string }
   /** The member wrote the caption themselves (Edit details, §12.7). */
   | { type: "captionEdited"; turnId: string; draftId: string; caption: string; at: string }
+  /** Discard in Edit details (§12.7): each named draft's values, look,
+   * caption and typed keys go back to `drafts`, as they were when the
+   * panel opened. Everything else about the draft is untouched. */
+  | { type: "draftsRestored"; turnId: string; drafts: ChatDraft[]; at: string }
   /** "Try again" on the thread's last turn: replaces it in place with a
    * fresh step 1 turn whose id is `runId`. Ignored for any other turn or
    * while it runs (the controller re-sends an older turn with "sent"). */
@@ -320,6 +324,24 @@ export function chatReducer(state: ChatThread, action: ChatAction): ChatThread {
           : { ...draft, captionOverride: action.caption },
       );
 
+    case "draftsRestored": {
+      let next = state;
+      for (const saved of action.drafts) {
+        next = updateDraft(next, action.turnId, saved.id, action.at, (draft) =>
+          sameEdits(draft, saved)
+            ? draft
+            : {
+                ...draft,
+                values: saved.values,
+                variantId: saved.variantId,
+                captionOverride: saved.captionOverride,
+                memberKeys: saved.memberKeys,
+              },
+        );
+      }
+      return next;
+    }
+
     case "retry": {
       const last = state.turns[state.turns.length - 1];
       if (!last || !isAssistantTurn(last) || last.id !== action.turnId || isRunningTurn(last)) {
@@ -450,6 +472,23 @@ function updateDraft(
     return changed ? { ...turn, drafts } : turn;
   });
   return changed ? { ...state, turns, updatedAt: at } : state;
+}
+
+/** Whether two versions of a draft differ in nothing Edit details changes:
+ * its values, look, caption and typed keys. */
+export function sameEdits(a: ChatDraft, b: ChatDraft): boolean {
+  return (
+    a.variantId === b.variantId &&
+    a.captionOverride === b.captionOverride &&
+    JSON.stringify(a.memberKeys ?? []) === JSON.stringify(b.memberKeys ?? []) &&
+    sameValues(a.values, b.values)
+  );
+}
+
+function sameValues(a: FieldValues, b: FieldValues): boolean {
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  for (const k of keys) if ((a[k] ?? "") !== (b[k] ?? "")) return false;
+  return true;
 }
 
 /** `keys` added to `existing`, in first-seen order; undefined when there is

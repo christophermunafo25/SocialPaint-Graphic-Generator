@@ -9,6 +9,7 @@ import {
   isUserTurn,
   type ChatDetail,
   type ChatDocument,
+  type ChatDraft,
   type ChatPhoto,
   type ChatThread,
   type ChatTurn,
@@ -86,6 +87,8 @@ export interface ChatController {
   changeLook(turnId: string, draftId: string, variantId: string): void;
   /** A draft's caption, written by the member (§12.7). */
   editCaption(turnId: string, draftId: string, caption: string): void;
+  /** Discard: the turn's drafts back as they were in `drafts` (§12.7). */
+  restoreDrafts(turnId: string, drafts: ChatDraft[]): void;
   /** New chat: stops a run in flight, then empties the thread. */
   reset(): void;
   /** The chat was saved for the first time, as `id` (PROMPT §9.8). */
@@ -410,6 +413,12 @@ export function useChatController(opts: ChatControllerOptions): ChatController {
     [apply],
   );
 
+  const restoreDrafts = useCallback(
+    (turnId: string, drafts: ChatDraft[]) =>
+      apply({ type: "draftsRestored", turnId, drafts, at: now() }),
+    [apply],
+  );
+
   const reset = useCallback(() => {
     stop();
     apply({ type: "reset", at: now() });
@@ -428,6 +437,7 @@ export function useChatController(opts: ChatControllerOptions): ChatController {
     editValues,
     changeLook,
     editCaption,
+    restoreDrafts,
     reset,
     assignId,
   };

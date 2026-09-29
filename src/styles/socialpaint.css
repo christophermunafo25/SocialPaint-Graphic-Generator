@@ -9871,3 +9871,131 @@ button.sp-chat-draft__preview {
 .sp-chat-icon-btn[data-blocked] {
   cursor: default;
 }
+
+/* ── Template chat: Edit details (Figma "Brand Templates · Chat", frames
+   04 and 05; template-chat PROMPT §12.7) ───────────────────────────────────
+   The thread gives way to the stage: a well at the card radius on
+   --gen-stage-graphic's ground (the frames' #ECECEC well), filling the chat
+   column above the docked chat box, 16 above it, the draft rendered large
+   in it (fit to the stage, centred, 40 in from its edges). The panel is the
+   editor beside it, with no preview of its own. */
+.sp-chat-stage {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  margin-bottom: var(--space-sm);
+  box-sizing: border-box;
+  padding: 40px;
+  border-radius: var(--radius-card);
+  background: var(--gen-sunken);
+  container-type: size;
+}
+.sp-chat-stage .sp-chat-editor__graphic {
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+@media (max-width: 767px) {
+  .sp-chat-stage {
+    padding: var(--space-sm);
+  }
+}
+.sp-chat-split[data-view="edit"] .sp-chat-split__chat {
+  padding-top: 0;
+}
+.sp-chat-split[data-view="edit"]:not([data-editor="inline"]) {
+  padding-top: var(--space-md);
+}
+/* In the stage layout the fields list fills the panel down to its footer. */
+.sp-chat-editor[data-stage] .sp-chat-editor__fields {
+  flex: 1 1 auto;
+}
+.sp-chat-editor[data-stage] .sp-chat-editor__spacer {
+  display: none;
+}
+
+/* The footer's two actions: Discard (tertiary) and Download PNG taking the
+   rest of the width, 8 apart, both 44 tall. */
+.sp-chat-editor__actions {
+  display: flex;
+  gap: var(--space-2xs);
+  width: 100%;
+}
+.sp-chat-editor__actions .sp-chat-editor__action {
+  flex: 1 1 auto;
+  width: auto;
+}
+.sp-chat-editor__discard {
+  flex: none;
+}
+
+/* Field statuses (§11.11): after the label, 8 apart; "Optional" stays
+   right-aligned. A 6px dot and a word, 5 apart, the word 12/125% muted. */
+.sp-chat-field__labelrow {
+  justify-content: flex-start;
+  gap: 8px;
+}
+.sp-chat-field__optional {
+  margin-left: auto;
+}
+.sp-chat-field__status {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 5px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+.sp-chat-field__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--state-danger);
+}
+.sp-chat-field__status[data-status="edited"] .sp-chat-field__dot {
+  background: var(--editor-accent);
+}
+@media (forced-colors: active) {
+  .sp-chat-field__dot {
+    background: CanvasText;
+  }
+}
+
+/* The Missing marker on the stage (§11.13): in the renderer's overlay, in
+   canvas px, the tag counter-scaled to its 28px on screen. The marker
+   colours read on every look. An image slot's rect gets a dashed white
+   outline, its width counter-scaled too. */
+.sp-chat-marker {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+.sp-chat-marker[data-kind="image"] {
+  border: var(--marker-edge, 1px) dashed var(--gen-marker-edge);
+}
+.sp-chat-marker__tag {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  height: var(--gen-h-tag);
+  box-sizing: border-box;
+  padding: 0 9px 0 8px;
+  border: 1px dashed var(--gen-marker-edge);
+  border-radius: var(--radius-tag);
+  background: var(--gen-marker-bg);
+  color: var(--gen-marker-fg);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  line-height: 1.3;
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.sp-chat-marker__tag:focus-visible {
+  outline: 2px solid transparent;
+  box-shadow: var(--focus-ring-tight);
+}

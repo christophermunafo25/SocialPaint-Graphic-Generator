@@ -15,7 +15,14 @@ import type { LineMeasurer } from "../render/autoFit";
 import type { AssistantTurn, ChatDetail, ChatDraft, ChatThread, UserTurn } from "./chat";
 import { missingFields } from "./draftDownload";
 import { captionFor, fillInEntries, tooLongFields } from "./draftView";
-import { buildGenerateInput, chatReducer, emptyThread, type ChatAction } from "./chatReducer";
+import {
+  buildGenerateInput,
+  chatReducer,
+  emptyThread,
+  sameEdits,
+  type ChatAction,
+} from "./chatReducer";
+import { blockedNote, fieldStatus } from "./editDetails";
 import { runChat, type ChatRunEffects } from "./chatRun";
 import { NOTHING_FIT, fillingInStatus } from "./runCopy";
 import { fromStoredThread, toStoredThread } from "./threadStorage";
@@ -359,5 +366,66 @@ describe("the draft's view in a template chat", () => {
     expect(captionFor(d)).toBe("Join us as Designer");
     expect(captionFor(d, { templateFallback: false })).toBe("");
     expect(captionFor({ ...d, captionOverride: "Mine" }, { templateFallback: false })).toBe("Mine");
+  });
+});
+
+describe("Edit details", () => {
+  it("shows one status, Missing before Too long before Edited", () => {
+    expect(fieldStatus({ missing: true, tooLong: true, edited: true })).toBe("missing");
+    expect(fieldStatus({ missing: false, tooLong: true, edited: true })).toBe("tooLong");
+    expect(fieldStatus({ missing: false, tooLong: false, edited: true })).toBe("edited");
+    expect(fieldStatus({ missing: false, tooLong: false, edited: false })).toBeNull();
+  });
+
+  it("names what to fill and what to shorten under Download PNG", () => {
+    expect(blockedNote(["Button link"], [])).toBe("Fill required: Button link");
+    expect(blockedNote([], ["Role"])).toBe("Shorten: Role");
+    expect(blockedNote(["Button link", "Photo"], ["Role"])).toBe(
+      "Fill required: Button link, Photo. Shorten: Role",
+    );
+  });
+
+  it("Discard puts the values, look, caption and typed keys back exactly", async () => {
+    const first = await send(fresh(), "Hiring", result([proposal({ role: "Designer" })]));
+    const turnId = first.turn.id;
+    const snapshot = first.turn.drafts;
+    const draftId = snapshot[0].id;
+    let thread = chatReducer(first.thread, {
+      type: "valuesEdited",
+      turnId,
+      edits: [{ draftId, fieldKey: "apply_link", value: "jobs.co" }],
+      at: T0,
+    });
+    thread = chatReducer(thread, {
+      type: "lookChanged",
+      turnId,
+      draftId,
+      variantId: "lime",
+      at: T0,
+    });
+    thread = chatReducer(thread, {
+      type: "captionEdited",
+      turnId,
+      draftId,
+      caption: "Mine",
+      at: T0,
+    });
+    const edited = (thread.turns[1] as AssistantTurn).drafts[0];
+    expect(sameEdits(edited, snapshot[0])).toBe(false);
+    const restored = chatReducer(thread, {
+      type: "draftsRestored",
+      turnId,
+      drafts: snapshot,
+      at: T0,
+    });
+    const back = (restored.turns[1] as AssistantTurn).drafts[0];
+    expect(sameEdits(back, snapshot[0])).toBe(true);
+    expect(back).toMatchObject({ variantId: "moss", values: { role: "Designer" } });
+    expect(back.captionOverride).toBeUndefined();
+    expect(back.memberKeys).toBeUndefined();
+    // Nothing to put back: the same state.
+    expect(
+      chatReducer(restored, { type: "draftsRestored", turnId, drafts: snapshot, at: T0 }),
+    ).toBe(restored);
   });
 });
