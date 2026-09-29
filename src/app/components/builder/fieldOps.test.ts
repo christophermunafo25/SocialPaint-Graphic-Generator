@@ -13,6 +13,7 @@ import {
   clipboardHasStyle,
   copyStyle,
   fieldFromPalette,
+  fixedPatch,
   isSvgSource,
   logoFieldFromAsset,
   svgIntrinsicSize,
@@ -475,5 +476,51 @@ describe("fieldFromPalette: new text fields", () => {
     const f = fieldFromPalette(item, { x: 540, y: 540 }, [], null, { width: 1080, height: 1080 });
     expect(f).toMatchObject({ textSizing: "shrink", minFontScale: 0.75 });
     expect(f.minFontSizePx).toBeUndefined();
+  });
+});
+
+describe("fixedPatch", () => {
+  const base: TemplateField = {
+    id: "f1",
+    label: "Photo",
+    fieldKey: "photo",
+    type: "image",
+    x: 0,
+    y: 0,
+    width: 100,
+    height: 100,
+  };
+
+  it("turning Fixed on clears every member-input key", () => {
+    expect(
+      fixedPatch({ ...base, type: "text", optional: true, placeholder: "Hi", maxLength: 9 }, true),
+    ).toEqual({
+      static: true,
+      required: undefined,
+      optional: undefined,
+      placeholder: undefined,
+      maxLength: undefined,
+    });
+  });
+
+  it("making an image editable keeps its designed artwork", () => {
+    const art = "template-backgrounds/c1/photo.png";
+    expect(fixedPatch({ ...base, static: true, staticValue: art }, false)).toEqual({
+      static: undefined,
+      staticValue: art,
+    });
+  });
+
+  it("making text editable keeps its copy as the placeholder when it has none", () => {
+    const text: TemplateField = { ...base, type: "text", static: true, staticValue: "Now hiring" };
+    expect(fixedPatch(text, false)).toEqual({
+      static: undefined,
+      staticValue: undefined,
+      placeholder: "Now hiring",
+    });
+    expect(fixedPatch({ ...text, placeholder: "Role" }, false)).toEqual({
+      static: undefined,
+      staticValue: undefined,
+    });
   });
 });

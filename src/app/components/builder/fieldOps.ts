@@ -621,3 +621,30 @@ export function textFieldFromPaste(
     staticValue: text,
   };
 }
+
+/** The patch that turns Fixed on or off. The one definition the inspector's
+ * switch and the builder's bulk toggle share, so a field comes out the same
+ * whichever way the admin flipped it.
+ *
+ * On: the member-input keys go (requiredness, optional, placeholder, max
+ * chars). Off: the designed content survives as the member-facing preview.
+ * Images keep their artwork (the renderer falls back to it); text keeps its
+ * copy as the placeholder when it has none. */
+export function fixedPatch(field: TemplateField, fixed: boolean): Partial<TemplateField> {
+  if (fixed) {
+    return {
+      static: true,
+      required: undefined,
+      optional: undefined,
+      placeholder: undefined,
+      maxLength: undefined,
+    };
+  }
+  return {
+    static: undefined,
+    staticValue: field.type === "image" ? field.staticValue : undefined,
+    ...(field.type !== "image" && !field.placeholder && field.staticValue
+      ? { placeholder: field.staticValue.slice(0, 80) }
+      : {}),
+  };
+}

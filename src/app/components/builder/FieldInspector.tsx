@@ -69,6 +69,7 @@ import {
   compactControlStyle,
 } from "./InspectorControls";
 import { AlignControls } from "./AlignControls";
+import { fixedPatch } from "./fieldOps";
 import { FillPicker, fillSwatchCss, getFill } from "./FillPicker";
 import { ImageSourceChooser, ImageSourceDialog, pickableAssets } from "../ImageSourceChooser";
 import { parseHex, toHex } from "@/lib/color";
@@ -810,29 +811,7 @@ export function FieldInspector(props: FieldInspectorProps) {
                 <Switch
                   checked={isStatic}
                   ariaLabel="Fixed element"
-                  onChange={(next) =>
-                    onChange(
-                      next
-                        ? {
-                            static: true,
-                            required: undefined,
-                            optional: undefined,
-                            placeholder: undefined,
-                            maxLength: undefined,
-                          }
-                        : {
-                            static: undefined,
-                            // The designed content survives as the member-facing
-                            // preview: images keep their artwork (the renderer
-                            // falls back to it), text keeps its copy as the
-                            // placeholder.
-                            staticValue: field.type === "image" ? field.staticValue : undefined,
-                            ...(field.type !== "image" && !field.placeholder && field.staticValue
-                              ? { placeholder: field.staticValue.slice(0, 80) }
-                              : {}),
-                          },
-                    )
-                  }
+                  onChange={(next) => onChange(fixedPatch(field, next))}
                 />
               </PropertyRow>
               <p style={hintStyle}>
