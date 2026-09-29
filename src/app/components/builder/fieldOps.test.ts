@@ -456,9 +456,24 @@ describe("pill palette tile", () => {
     expect(f.shape).toBeUndefined();
   });
 
+  it("the pill has no shrink floor: a plate hugs its text", () => {
+    const item = PALETTE_ITEMS.find((p) => p.id === "pill")!;
+    const f = fieldFromPalette(item, { x: 540, y: 540 }, [], kit, { width: 1080, height: 1080 });
+    expect(f.minFontScale).toBeUndefined();
+  });
+
   it("falls back to ink when the company has no brand colors yet", () => {
     const item = PALETTE_ITEMS.find((p) => p.id === "pill")!;
     const f = fieldFromPalette(item, { x: 540, y: 540 }, [], null, { width: 1080, height: 1080 });
     expect(f.plateColor).toBe("#111111");
+  });
+});
+
+describe("fieldFromPalette: new text fields", () => {
+  it("lands as Shrink with the default 75% floor", () => {
+    const item = PALETTE_ITEMS.find((p) => p.type === "text" && p.id !== "pill")!;
+    const f = fieldFromPalette(item, { x: 540, y: 540 }, [], null, { width: 1080, height: 1080 });
+    expect(f).toMatchObject({ textSizing: "shrink", minFontScale: 0.75 });
+    expect(f.minFontSizePx).toBeUndefined();
   });
 });

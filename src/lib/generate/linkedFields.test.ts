@@ -18,8 +18,8 @@ import {
 } from "./linkedFields";
 import { deriveTryNext } from "./tryNext";
 
-// The real isRequiredField, behind a spy, so one test can stand in for the
-// day a member field can be optional (every member field is required today).
+// The real isRequiredField, behind a spy, so a test can force requiredness
+// independently of the optional flag.
 vi.mock("../templates/fieldRules", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../templates/fieldRules")>();
   return { ...actual, isRequiredField: vi.fn(actual.isRequiredField) };
@@ -389,8 +389,22 @@ describe("buildLinkedFields: required", () => {
       draft("a", [field({ fieldKey: "headline", required: false })]),
       draft("b", [field({ fieldKey: "headline", required: false })]),
     ]);
-    // Every member field is required today, whatever the legacy flag says.
+    // A member field is required unless marked optional, whatever the
+    // legacy flag says.
     expect(texts(entries)[0].required).toBe(true);
+  });
+
+  it("reads the optional flag: a group is optional only when every member is", () => {
+    const entries = build([
+      draft("a", [field({ fieldKey: "headline", optional: true })]),
+      draft("b", [field({ fieldKey: "headline", optional: true })]),
+    ]);
+    expect(texts(entries)[0].required).toBe(false);
+    const mixed = build([
+      draft("a", [field({ fieldKey: "headline", optional: true })]),
+      draft("b", [field({ fieldKey: "headline" })]),
+    ]);
+    expect(texts(mixed)[0].required).toBe(true);
   });
 
   it("is required when any member is, and optional when none is", () => {

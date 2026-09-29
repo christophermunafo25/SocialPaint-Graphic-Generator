@@ -3,20 +3,22 @@ import type { FieldValues, TemplateSchema } from "@/lib/types";
 import { useBrand } from "@/lib/brand/BrandContext";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { SchemaRenderer } from "./SchemaRenderer";
+import type { EmptyFieldsMode } from "@/lib/render/emptyFields";
 import photoPlaceholder from "@/assets/socialpaint/photo-placeholder.jpg";
 
 /** Card-sized live preview of a template (no usage instrumentation). One
  * template that can't render shows a quiet placeholder card; it must never
  * take the whole gallery grid down with it.
  *
- * Member photo slots get a standard placeholder portrait — a gallery card
- * should look like a finished graphic, not a form. Thumbnails ONLY: the
- * member flow keeps the empty upload state, where "no photo yet" is the
- * honest signal. */
+ * Under "placeholder" (the default), member photo slots get a standard
+ * placeholder portrait: a gallery card should look like a finished graphic,
+ * not a form. The other modes show what the member's graphic really holds,
+ * so they get no portrait. */
 export function TemplateThumbnail({
   template,
   values: seededValues,
   variantId,
+  emptyFields = "placeholder",
 }: {
   template: TemplateSchema;
   /** Overrides on top of the placeholders — the Generate results pass their
@@ -24,17 +26,20 @@ export function TemplateThumbnail({
   values?: FieldValues;
   /** Which look to paint; absent = the default. */
   variantId?: string;
+  /** What an empty member field does (render/emptyFields). */
+  emptyFields?: EmptyFieldsMode;
 }) {
   const { kit } = useBrand();
   const values = useMemo<FieldValues>(() => {
     const out: FieldValues = {};
+    if (emptyFields !== "placeholder") return { ...seededValues };
     for (const f of template.fields) {
       // Designed artwork (imported photos) beats the generic portrait —
       // the renderer already falls back to staticValue on its own.
       if (f.type === "image" && !f.static && !f.staticValue) out[f.fieldKey] = photoPlaceholder;
     }
     return { ...out, ...seededValues };
-  }, [template, seededValues]);
+  }, [template, seededValues, emptyFields]);
   return (
     <div className="w-full h-full pointer-events-none">
       <ErrorBoundary
@@ -58,6 +63,7 @@ export function TemplateThumbnail({
           brandKit={kit}
           instrument={false}
           variantId={variantId}
+          emptyFields={emptyFields}
         />
       </ErrorBoundary>
     </div>

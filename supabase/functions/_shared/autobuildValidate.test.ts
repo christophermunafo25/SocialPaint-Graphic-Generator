@@ -434,3 +434,26 @@ describe("select and static rules", () => {
     expect(out.fields[1].maxLength).toBe(1);
   });
 });
+
+describe("text lands as Shrink at a 75% floor", () => {
+  it("gives proposed and unclaimed text a relative floor, and images none", () => {
+    const out = validateProposal(
+      proposal([
+        field({}),
+        field({ sourceId: "1:11", label: "Photo", fieldKey: "photo", type: "image" }),
+      ]),
+      extraction([
+        element("1:10"),
+        element("1:11", "image"),
+        element("1:12", "text", { text: "Fine print" }),
+      ]),
+      brand,
+      "figma",
+    );
+    const byKey = new Map(out.fields.map((f) => [f.fieldKey, f]));
+    expect(byKey.get("headline")).toMatchObject({ textSizing: "shrink", minFontScale: 0.75 });
+    expect(byKey.get("photo")?.minFontScale).toBeUndefined();
+    const unclaimed = out.fields.find((f) => f.staticValue === "Fine print");
+    expect(unclaimed).toMatchObject({ static: true, textSizing: "shrink", minFontScale: 0.75 });
+  });
+});

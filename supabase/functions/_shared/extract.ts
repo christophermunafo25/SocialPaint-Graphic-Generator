@@ -137,6 +137,8 @@ export interface SuggestedField {
   lineHeight?: number;
   placeholder?: string;
   textSizing?: "free" | "shrink";
+  /** Relative shrink floor, matching TemplateField.minFontScale. */
+  minFontScale?: number;
   objectFit?: "cover";
   /** Element opacity 0–100, only when the node is not fully opaque. */
   opacity?: number;
@@ -596,9 +598,13 @@ export function walk(
             ? style.lineHeightPercentFontSize / 100
             : undefined,
       placeholder: content?.slice(0, 80),
-      // The box and size come from Figma — the designed size IS the size.
-      // Shrinking to fit is the admin's opt-in, not the importer's default.
-      textSizing: "free",
+      // The box and size come from Figma, and the designed size is the
+      // ceiling. Text shrinks to a 75% floor so a member's longer copy stays
+      // in the box. Fixed text keeps its designed copy, which fits at its
+      // set size, so shrink changes nothing for it; if browser metrics make
+      // it overflow by a hair, shrinking is the better failure.
+      textSizing: "shrink",
+      minFontScale: 0.75,
       // colorHex carries no alpha, so a translucent ink folds its alpha (and
       // the paint's opacity) into the element opacity alongside the node's.
       opacity: fill?.type === "SOLID" ? foldedOpacity(node, fill) : opacityOf(node),

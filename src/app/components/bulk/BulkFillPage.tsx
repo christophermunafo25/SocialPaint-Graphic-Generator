@@ -732,7 +732,12 @@ function PreviewCard({
           marginInline: "auto",
         }}
       >
-        <TemplateThumbnail template={template} values={values} variantId={variantId} />
+        <TemplateThumbnail
+          template={template}
+          values={values}
+          variantId={variantId}
+          emptyFields="hideOptional"
+        />
       </div>
     </div>
   );

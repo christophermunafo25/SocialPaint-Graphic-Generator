@@ -89,6 +89,8 @@ export interface ValidatedField {
   letterSpacingPx?: number;
   lineHeight?: number;
   textSizing?: "free" | "shrink";
+  /** Relative shrink floor, matching TemplateField.minFontScale. */
+  minFontScale?: number;
   objectFit?: "cover";
 }
 
@@ -366,6 +368,7 @@ export function validateProposal(
       typeStyleKey,
       ...(brandHex !== undefined ? { colorHex: brandHex } : {}),
       textSizing: type === "text" || type === "multiline" ? ("shrink" as const) : undefined,
+      minFontScale: type === "text" || type === "multiline" ? 0.75 : undefined,
       objectFit: type === "image" ? "cover" : undefined,
     });
   }
@@ -409,6 +412,7 @@ export function validateProposal(
         static: true,
         staticValue: el.kind === "text" ? el.text : undefined,
         textSizing: el.kind === "text" ? ("shrink" as const) : undefined,
+        minFontScale: el.kind === "text" ? 0.75 : undefined,
         objectFit: el.kind === "image" ? "cover" : undefined,
       });
       warnings.push(

@@ -21,7 +21,8 @@ import {
 import { resolveFieldStyle } from "@/lib/brand/resolveStyle";
 import { loadGoogleFonts, schemaFontUsage } from "@/lib/render/fonts";
 import { exportSchemaPng, renderSchemaBlob, type ExportOutcome } from "@/lib/render/exportPng";
-import { applyVariantToSchema, getVariant } from "@/lib/templates/variants";
+import { applyVariantToSchema, getVariant, hiddenFieldKeys } from "@/lib/templates/variants";
+import { isLeftOff, paintsNothing, type EmptyFieldsMode } from "@/lib/render/emptyFields";
 import { stores } from "@/lib/stores";
 
 export interface SchemaRendererHandle {
@@ -53,6 +54,12 @@ interface SchemaRendererProps {
    * default look renders — a single-variant template is byte for byte the
    * pre-feature path. */
   variantId?: string | null;
+  /** What an empty member field does (render/emptyFields): "placeholder"
+   * (default) paints its placeholder, "hideOptional" leaves an empty
+   * optional field off, "chat" also paints nothing for an empty required
+   * one while keeping its slot. Layout and painting read the same mode, so
+   * measurement always agrees with what is painted and exported. */
+  emptyFields?: EmptyFieldsMode;
 }
 
 /** Renders ANY TemplateSchema onto a live-scaled canvas sized from
@@ -61,7 +68,16 @@ interface SchemaRendererProps {
  * changes is field content — positions and styling are locked in the schema. */
 export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererProps>(
   function SchemaRenderer(
-    { schema: source, values, brandKit, instrument = true, overlay, onWarnings, variantId },
+    {
+      schema: source,
+      values,
+      brandKit,
+      instrument = true,
+      overlay,
+      onWarnings,
+      variantId,
+      emptyFields = "placeholder",
+    },
     ref,
   ) {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -73,6 +89,7 @@ export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererPro
     /** The look actually painted, for the usage events — a stale id records
      * the default it fell back to, never the id that was asked for. */
     const renderedVariantId = getVariant(source, variantId)?.id;
+    const hiddenKeys = useMemo(() => hiddenFieldKeys(source, variantId), [source, variantId]);
     const background = useDataUrl(schema.backgroundUrl || undefined);
     const backgroundDataUrl = background.dataUrl;
 
@@ -116,8 +133,8 @@ export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererPro
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fontsTick deliberately busts the cache
     const measurer = useMemo(() => createCanvasMeasurer(), [fontsTick]);
     const layout = useMemo(
-      () => computeLayout(schema, values, brandKit, measurer),
-      [schema, values, brandKit, measurer],
+      () => computeLayout(schema, values, brandKit, measurer, { emptyFields, hiddenKeys }),
+      [schema, values, brandKit, measurer, emptyFields, hiddenKeys],
     );
 
     // Surface layout warnings (text at its floor that still overflows) to
@@ -209,17 +226,28 @@ export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererPro
                 }}
               />
             )}
-            {schema.fields.map((field) => (
-              <FieldBox
-                key={field.id}
-                field={field}
-                value={values[field.fieldKey]}
-                brandKit={brandKit}
-                templateId={schema.id}
-                rect={layout.fieldRects.get(field.id)}
-                fontSize={layout.fontSizes.get(field.id)}
-              />
-            ))}
+            {schema.fields.map((field) => {
+              const value = values[field.fieldKey];
+              // Left off (an empty optional field) or, in a chat, an empty
+              // required one: nothing reaches the canvas or the export.
+              if (
+                isLeftOff(field, value, emptyFields) ||
+                paintsNothing(field, value, emptyFields)
+              ) {
+                return null;
+              }
+              return (
+                <FieldBox
+                  key={field.id}
+                  field={field}
+                  value={value}
+                  brandKit={brandKit}
+                  templateId={schema.id}
+                  rect={layout.fieldRects.get(field.id)}
+                  fontSize={layout.fontSizes.get(field.id)}
+                />
+              );
+            })}
           </div>
           {overlay && (
             <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>{overlay}</div>

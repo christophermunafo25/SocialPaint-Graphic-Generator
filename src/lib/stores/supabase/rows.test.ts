@@ -67,6 +67,24 @@ describe("template field row mapping", () => {
     expect(roundTrip(shape).maskUrl).toBeUndefined();
   });
 
+  it("round-trips the optional flag, writing null (never false) when off", () => {
+    const text: TemplateField = { ...shape, type: "text", shape: undefined, static: undefined };
+    expect(roundTrip({ ...text, optional: true }).optional).toBe(true);
+    expect(roundTrip(text).optional).toBeUndefined();
+    expect(fieldToRow("t1", text, 0).is_optional).toBeNull();
+    expect(fieldToRow("t1", { ...text, optional: false }, 0).is_optional).toBeNull();
+    expect(fieldToRow("t1", { ...text, optional: true }, 0).is_optional).toBe(true);
+  });
+
+  it("round-trips the relative shrink floor, coercing Postgres' string numeric", () => {
+    const text: TemplateField = { ...shape, type: "text", shape: undefined, minFontScale: 0.75 };
+    expect(roundTrip(text).minFontScale).toBe(0.75);
+    expect(roundTrip(shape).minFontScale).toBeUndefined();
+    const row = { id: "f1", ...fieldToRow("t1", text, 0) } as TemplateFieldRow;
+    (row as unknown as Record<string, unknown>).min_font_scale = "0.60";
+    expect(toTemplateField(row).minFontScale).toBe(0.6);
+  });
+
   it("coerces numeric columns Postgres returns as strings", () => {
     const row = { id: "f1", ...fieldToRow("t1", shape, 0) } as TemplateFieldRow;
     // Postgres `numeric` arrives as a string through the JS client.

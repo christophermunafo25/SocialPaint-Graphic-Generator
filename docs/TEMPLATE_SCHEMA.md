@@ -49,7 +49,7 @@ Types:
 - `select` — fixed `options` list.
 - `shape` — decorative design element (`shape`: rect | ellipse | triangle |
   star; a "Line" is a thin rect). Fill reuses the text pipeline (`colorHex` /
-  brand `colorKey` / `textGradient`); rects honor `cornerRadius`; non-rects
+  `textGradient`); rects honor `cornerRadius`; non-rects
   render as inline SVG so gradients survive the PNG export. Always
   `static: true` — shapes never appear in the member form.
 
@@ -71,27 +71,42 @@ defines the property):
 - `fontFamily`, `fontSizePx`, `align`, `verticalAlign` (top/middle/bottom
   placement within the box, default middle), `uppercase`, `letterSpacingPx`,
   `lineHeight`.
-- `colorKey` — a brand-kit palette key, resolved at render time so
-  re-branding restyles existing templates; `colorHex` — any exact color via
-  the full picker; `textGradient` — an optional text-fill gradient
-  (angle + stops). Precedence: type style → colorKey → colorHex; gradient
-  wins over solid when set. `fontWeight` is a free 100–900 value.
+- `colorHex` — any exact color via the full picker (brand colors copy their
+  hex here at pick time; there is no field-level palette binding, only a
+  bound type style's `colorKey` stays live); `textGradient` — an optional
+  text-fill gradient (angle + stops). Precedence: type style → colorHex;
+  gradient wins over solid when set. `fontWeight` is a free 100–900 value.
 
 Guardrails:
 
 - `maxLength` — hard char limit enforced by the input.
-- `autoFit` (+ `minFontSizePx`) — shrink-to-fit text. Generalized from the
-  reference generators: `fontSize = clamp(min, (2·width)/(len·0.58), fontSizePx)`
-  (see `src/lib/render/autoFit.ts`).
-- `fixedWidth` — the box width is a HARD constraint: single-line text shrinks
-  at exactly the point it would escape (real canvas `measureText` in the
-  field's font, letter-spacing accounted for — not the estimate above),
-  multi-line wraps at the edge, and both clip so nothing leaves the box.
-  Takes precedence over `autoFit` for single-line sizing.
+- `textSizing` — how text responds to its content, always measured against
+  real glyphs (`src/lib/render/autoFit.ts`):
+  - `free` (or absent): the font size is fixed and the box grows taller as
+    lines wrap.
+  - `shrink`: the box is exactly as drawn; the font shrinks from the set size
+    until the text fits, never below its floor.
+  - `fill`: the box is exactly as drawn; the font is the largest size that
+    fits, growing up from its floor.
+- `minFontScale` — the floor for `shrink` and `fill`, as a fraction of the
+  set size (0.25 to 1; the builder's "Min text" shows it as a percentage).
+  New fields and imports get 0.75. It wins over `minFontSizePx`.
+- `minFontSizePx` — the older absolute floor in px. Templates saved before
+  `minFontScale` keep it and render exactly as before; with neither set the
+  floor is 18px. Both are read through `minFontSizeFor` only.
 - `aspectRatio` — enforced by the crop dialog for image fields.
-- `required` — legacy column, no longer read or set by the builder. Whether a
-  field blocks download is derived: every non-fixed field is required;
-  shapes never are (see `src/lib/templates/fieldRules.ts`).
+- `optional` — the admin marked this member field optional (text, multiline,
+  select or image). An optional field never blocks download, and when it is
+  empty it is left off the graphic wherever a member works: the fill page,
+  public links, bulk fill and the chats (`src/lib/render/emptyFields.ts`).
+  Inside a layout group the stack closes up around it. The builder and
+  gallery thumbnails keep painting its placeholder. Turning Fixed on clears
+  it. In the caption an empty optional tag merges to nothing.
+- Requiredness is derived, never stored: a non-fixed field is required
+  unless it is `optional`; shapes never are (`isRequiredField` in
+  `src/lib/templates/fieldRules.ts`, mirrored for the Edge Functions).
+- `required` — legacy column, never read. It stays in the table so old rows
+  load; nothing sets it.
 - `placeholder` — ghost text in the form and on the canvas preview.
 
 Identity:

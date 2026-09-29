@@ -247,7 +247,13 @@ export interface TemplateField {
   fontStyle?: "normal" | "italic";
   fontStretch?: string; // CSS font-stretch keyword; see FontStretch in render/fontCatalog
   fontSizePx?: number;
-  minFontSizePx?: number; // shrink floor
+  /** Absolute shrink floor in canvas px. Older templates carry this; new
+   * fields use minFontScale. Read through minFontSizeFor (render/autoFit). */
+  minFontSizePx?: number;
+  /** Relative shrink floor: the smallest size Shrink or Fill may reach, as a
+   * fraction of the field's set size (0.25 to 1). Wins over minFontSizePx.
+   * New fields and imports default to 0.75 (DEFAULT_MIN_FONT_SCALE). */
+  minFontScale?: number;
   /** The field's own solid fill. Brand colors copy their hex here at pick
    * time — no field-level binding back to the palette. A bound type style's
    * colorKey (the sanctioned live channel) still wins at render. */
@@ -267,13 +273,19 @@ export interface TemplateField {
    * never authored. "shrink": the box is exactly what the admin drew and the
    * font size decreases (measured, never estimated) until the content fits —
    * single-line text is width-constrained, multiline is height-constrained
-   * with wrapping at the box width. */
+   * with wrapping at the box width. "fill": the font size is the largest
+   * that fits the drawn box, growing up from the floor. */
   textSizing?: "free" | "shrink" | "fill";
   objectFit?: "cover" | "contain";
   aspectRatio?: number;
   options?: string[];
   placeholder?: string;
+  /** Legacy column, never read. Requiredness is isRequiredField. */
   required?: boolean;
+  /** The admin marked this member field optional: the member may leave it
+   * empty, and an empty optional field is left off the graphic wherever a
+   * member works (see render/emptyFields). Absent means required. */
+  optional?: boolean;
 }
 
 /** A point along one axis of a layout group: the main-axis anchor (which

@@ -122,7 +122,9 @@ export function checkRows(
 
     // "shrinks" is not a problem: shrink-to-fit is the designed behavior.
     // Only a value the renderer cannot make fit at the floor is refused.
-    for (const m of measureProposal(schema, values, kit, measure).fields) {
+    // Measured as the bulk stage paints: an empty optional field is left off.
+    const measured = measureProposal(schema, values, kit, measure, { emptyFields: "hideOptional" });
+    for (const m of measured.fields) {
       if (m.fit !== "overflows") continue;
       problems.push({
         kind: "overflows",

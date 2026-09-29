@@ -69,6 +69,7 @@ type StructuralKey =
   | "fontStretch"
   | "fontSizePx"
   | "minFontSizePx"
+  | "minFontScale"
   | "align"
   | "verticalAlign"
   | "uppercase"
@@ -80,7 +81,8 @@ type StructuralKey =
   | "aspectRatio"
   | "options"
   | "placeholder"
-  | "required";
+  | "required"
+  | "optional";
 
 // Compile-time proof that the override type cannot carry a structural
 // property. If someone adds `x?: number` to VariantFieldOverride, this line
@@ -220,6 +222,21 @@ export function applyVariantToFields(
     out.push(merged);
   }
   return changed ? out : fields;
+}
+
+const NO_HIDDEN_KEYS: ReadonlySet<string> = new Set();
+
+/** The fieldKeys a look hides. applyVariantToFields drops them before
+ * layout, so the layout pass is told they are gone on purpose (a group
+ * holding one skips it silently instead of warning it no longer exists). */
+export function hiddenFieldKeys(
+  schema: Pick<TemplateSchema, "variants">,
+  variantId?: string | null,
+): ReadonlySet<string> {
+  const overrides = getVariant(schema, variantId)?.overrides;
+  if (!overrides) return NO_HIDDEN_KEYS;
+  const keys = Object.keys(overrides).filter((k) => overrides[k]?.hidden === true);
+  return keys.length ? new Set(keys) : NO_HIDDEN_KEYS;
 }
 
 export interface ResolvedBackground {

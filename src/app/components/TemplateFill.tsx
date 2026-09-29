@@ -87,6 +87,22 @@ export function TemplateFill({
   /** The schema as the chosen look renders it — the FORM reads from this
    * too, so an element hidden in this look is not asked for. */
   const rendered = useMemo(() => applyVariantToSchema(template, variantId), [template, variantId]);
+  /** What the canvas paints. On a link with uploads switched off, image
+   * fields are not member fields for this visitor, who has no way to fill
+   * them: they keep their designed artwork whatever their optional flag, so
+   * an empty optional image is not left off. */
+  const paintSchema = useMemo(
+    () =>
+      allowUploads
+        ? template
+        : {
+            ...template,
+            fields: template.fields.map((f) =>
+              f.type === "image" && f.optional ? { ...f, optional: undefined } : f,
+            ),
+          },
+    [template, allowUploads],
+  );
   /** Steps before the first field: 1 for the look picker, else 0. */
   const lead = multiLook ? 1 : 0;
 
@@ -683,12 +699,13 @@ export function TemplateFill({
               >
                 <SchemaRenderer
                   ref={rendererRef}
-                  schema={template}
+                  schema={paintSchema}
                   values={values}
                   brandKit={brandKit}
                   instrument={instrument}
                   onWarnings={setLayoutWarnings}
                   variantId={variantId}
+                  emptyFields="hideOptional"
                 />
               </ErrorBoundary>
               {layoutWarnings.length > 0 && (

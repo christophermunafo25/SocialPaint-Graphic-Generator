@@ -1787,6 +1787,7 @@ export function TemplateBuilder({
                   ...f,
                   static: true,
                   required: undefined,
+                  optional: undefined,
                   placeholder: undefined,
                   maxLength: undefined,
                 }

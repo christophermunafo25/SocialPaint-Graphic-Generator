@@ -227,6 +227,7 @@ describe("rescaleTemplate — completeness", () => {
     fontStretch: "normal",
     fontSizePx: 48,
     minFontSizePx: 24,
+    minFontScale: 0.75, // a fraction of the set size, so it never rescales
     colorHex: "#112233",
     textGradient: { angle: 90, stops: [{ position: 0, color: "#000000" }] },
     align: "left",
@@ -241,6 +242,7 @@ describe("rescaleTemplate — completeness", () => {
     options: ["a"],
     placeholder: "Type here",
     required: true,
+    optional: false,
   };
 
   /** The px-length properties that MUST change under a 2× scale. */

@@ -53,6 +53,8 @@ const FIELDS: Row[] = [
     static_value: null,
     required: true,
     max_length: 40,
+    is_optional: true,
+    min_font_scale: "0.75",
   },
   {
     id: "bbbbbbbb-2222-4444-8888-bbbbbbbbbbbb",
@@ -240,6 +242,10 @@ describe("buildPublicPayload — what the visitor does receive", () => {
     // locked on the public page.
     expect(fields[0].max_length).toBe(40);
     expect(fields[0].required).toBe(true);
+    // Optional fields and the relative shrink floor (0039) render the same
+    // on the public page as on the fill page.
+    expect(fields[0].is_optional).toBe(true);
+    expect(fields[0].min_font_scale).toBe("0.75");
   });
 
   it("replaces every storage reference with a signed URL", () => {
