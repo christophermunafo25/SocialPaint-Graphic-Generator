@@ -9,6 +9,7 @@
 
 import type { BrandKit, FieldValues, GenerateRepairField, TemplateSchema } from "../types";
 import type { LineMeasurer } from "../render/autoFit";
+import type { LayoutOptions } from "../render/layout";
 import { measureProposal, type ProposalMeasurement } from "./measureProposal";
 
 /** The server round-trip, injected: template-generate's repair path via the
@@ -39,14 +40,22 @@ export async function repairProposal(
   kit: BrandKit | null,
   measure: LineMeasurer,
   repair: RepairFn,
+  opts: {
+    /** What the surface paints with (its empty-field mode and the look's
+     * hidden keys), so the measurement matches the card. */
+    layout?: LayoutOptions;
+    /** Values the member typed (Template chat PROMPT §9.6): measured like
+     * any other, never sent to be rewritten. */
+    protectedKeys?: ReadonlySet<string>;
+  } = {},
 ): Promise<RepairOutcome> {
-  const first = measureProposal(schema, proposal.values, kit, measure);
+  const first = measureProposal(schema, proposal.values, kit, measure, opts.layout);
   if (first.ok) {
     return { values: proposal.values, ok: true, repaired: false, measurement: first };
   }
 
   const requests: GenerateRepairField[] = first.fields
-    .filter((f) => f.fit === "overflows")
+    .filter((f) => f.fit === "overflows" && !opts.protectedKeys?.has(f.fieldKey))
     .map((f) => ({
       fieldKey: f.fieldKey,
       value: f.value,
@@ -55,6 +64,11 @@ export async function repairProposal(
       // what actually decides whether the round worked.
       characterBudget: Math.max(1, f.characterBudget ?? 1),
     }));
+
+  // Only the member's own values overflow: nothing to ask the model for.
+  if (requests.length === 0) {
+    return { values: proposal.values, ok: false, repaired: false, measurement: first };
+  }
 
   let rewrites: FieldValues;
   try {
@@ -72,6 +86,6 @@ export async function repairProposal(
     if (typeof rewrite === "string" && rewrite.trim()) merged[request.fieldKey] = rewrite.trim();
   }
 
-  const second = measureProposal(schema, merged, kit, measure);
+  const second = measureProposal(schema, merged, kit, measure, opts.layout);
   return { values: merged, ok: second.ok, repaired: true, measurement: second };
 }

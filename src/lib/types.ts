@@ -904,6 +904,9 @@ export interface StoredUserTurn {
   createdAt: string;
   hadPhoto?: { aspect: number };
   hadDocument?: { name: string; kind: ChatDocumentKind };
+  /** A template chat's detail tags: fields the member filled in themselves,
+   * as they typed them (Template chat PROMPT §12.3). */
+  details?: Array<{ fieldKey: string; label: string; value: string }>;
   platformHint?: PlatformId;
   variations: number;
   templateIdHint?: string;
@@ -922,6 +925,15 @@ export interface StoredDraft {
   /** The member's current values. A data: value (a photo or an uploaded
    * image) is deleted, not blanked: the key is absent. */
   values: FieldValues;
+  /** The template's look this draft is shown in (Template chat PROMPT
+   * §9.5); absent is the template's default. */
+  variantId?: string;
+  /** A caption the member wrote themselves (Edit details), shown instead of
+   * the model's. */
+  captionOverride?: string;
+  /** Fields the member typed (detail tags and their own edits): carried
+   * forward by a follow-up and never rewritten by repair (§12.8). */
+  memberKeys?: string[];
 }
 
 /** A finished assistant turn, as saved. Only finished turns are stored. */
@@ -937,6 +949,9 @@ export interface StoredAssistantTurn {
   error?: string;
   meta?: { model: string; candidateCount: number; mode: "library" | "freestyle" };
   drafts: StoredDraft[];
+  /** A template chat's one question (§12.6): the turn finished asking,
+   * with no drafts. */
+  question?: string;
 }
 
 export type StoredTurn = StoredUserTurn | StoredAssistantTurn;
@@ -947,6 +962,8 @@ export type StoredTurn = StoredUserTurn | StoredAssistantTurn;
 export interface GenerateThreadPreview {
   templateId?: string;
   design?: GeneratedDesign;
+  /** The draft's look, when it has one (template chats). */
+  variantId?: string;
   values: FieldValues;
   canvas: { width: number; height: number };
 }
@@ -959,6 +976,9 @@ export interface GenerateThreadSummary {
   platforms: PlatformId[];
   /** Null when the chat has no finished draft to show. */
   preview: GenerateThreadPreview | null;
+  /** The template a template chat is scoped to (migration 0039). Null for
+   * a Generate chat, and for a template chat whose template was deleted. */
+  templateId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -973,6 +993,8 @@ export interface GenerateThreadInput {
   title: string;
   platforms: PlatformId[];
   preview: GenerateThreadPreview | null;
+  /** A template chat's template; null for a Generate chat. */
+  templateId: string | null;
   turns: StoredTurn[];
 }
 

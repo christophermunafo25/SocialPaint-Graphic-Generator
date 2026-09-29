@@ -67,6 +67,7 @@ const answer = (
 });
 
 const input = (over: Partial<GenerateThreadInput> = {}): GenerateThreadInput => ({
+  templateId: null,
   title: "Creative Director post",
   platforms: ["instagram"],
   preview: {

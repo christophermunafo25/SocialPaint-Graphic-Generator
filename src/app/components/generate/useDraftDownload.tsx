@@ -45,6 +45,8 @@ import { SchemaRenderer, type SchemaRendererHandle } from "../SchemaRenderer";
  * it was asked for under, and whether it records usage. */
 interface ExportJob extends DownloadJob {
   schema: TemplateSchema;
+  /** The draft's look (template-chat §9.5). */
+  variantId?: string;
   values: FieldValues;
   brandKit: BrandKit | null;
   instrument: boolean;
@@ -158,6 +160,8 @@ function ExportStage({
           values={job.values}
           brandKit={job.brandKit}
           instrument={job.instrument}
+          variantId={job.variantId}
+          emptyFields="chat"
         />
       </ErrorBoundary>
     </div>
@@ -193,6 +197,7 @@ export function useDraftDownload(): DraftDownload {
         id: ++lastJobId.current,
         draftId: draft.id,
         schema,
+        variantId: draft.variantId,
         values,
         brandKit: kit,
         instrument: instrumentsUsage(draft),

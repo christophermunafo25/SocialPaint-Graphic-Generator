@@ -10,9 +10,20 @@
 // LinkedIn), but a draft is one card with one label, and the Figma labels
 // the 1080 × 1350 draft "Instagram" everywhere it names it.
 
-import type { FieldValues, GeneratedProposal, TemplateSchema } from "../types";
+import type {
+  BrandKit,
+  FieldValues,
+  GeneratedProposal,
+  TemplateField,
+  TemplateSchema,
+} from "../types";
 import { mergeCaption } from "../caption";
+import type { LineMeasurer } from "../render/autoFit";
+import type { LayoutOptions } from "../render/layout";
+import { isRequiredField } from "../templates/fieldRules";
 import { classifySize, platformById, type PlatformId } from "../templates/platforms";
+import { applyVariantToSchema, hiddenFieldKeys } from "../templates/variants";
+import { measureProposal } from "./measureProposal";
 import {
   isUserTurn,
   type AssistantTurn,
@@ -89,10 +100,21 @@ function taggedValuesUnchanged(
  *    one it has.
  *
  * The turn's photo plays no part: images have no caption text. */
-export function captionFor(draft: ChatDraft): string {
+export function captionFor(
+  draft: ChatDraft,
+  opts: {
+    /** False in a template chat (Template chat PROMPT §3 decision 9): the
+     * template's caption was written for its original purpose, so an
+     * empty model caption stays empty for the member to write. */
+    templateFallback?: boolean;
+  } = {},
+): string {
   const { proposal, schema, values } = draft;
+  // The member's own caption (Edit details) wins over everything.
+  if (draft.captionOverride !== undefined) return draft.captionOverride;
   if (!schema) return proposal.caption;
   if (!proposal.design) {
+    if (opts.templateFallback === false) return proposal.caption;
     return proposal.caption.trim() ? proposal.caption : mergeCaption(schema, values);
   }
   return taggedValuesUnchanged(schema.captionTemplate, values, proposal.values)
@@ -196,4 +218,78 @@ export function fallbackTitle(brief: string): string {
 export function turnPhoto(thread: ChatThread, assistant: AssistantTurn): ChatPhoto | null {
   const asked = thread.turns.find((t) => t.id === assistant.replyTo);
   return asked && isUserTurn(asked) ? (asked.photo ?? null) : null;
+}
+
+// ---------------------------------------------------------------------------
+// Looks, gaps and fit (Template chat PROMPT §9.3 to §9.5, §12.5)
+// ---------------------------------------------------------------------------
+
+/** The template as the draft's look renders it: a look can rebind a style
+ * or hide a field, so measurement, requiredness and the Fill in row all
+ * read this, never the base schema. Null for a gone template. */
+export function lookSchema(draft: ChatDraft): TemplateSchema | null {
+  return draft.schema ? applyVariantToSchema(draft.schema, draft.variantId) : null;
+}
+
+/** The layout options every chat draft surface paints and measures with:
+ * the chat's empty-field mode and the look's hidden keys (§9.3). */
+export function chatLayoutOptions(
+  schema: Pick<TemplateSchema, "variants">,
+  variantId?: string,
+): LayoutOptions {
+  return { emptyFields: "chat", hiddenKeys: hiddenFieldKeys(schema, variantId) };
+}
+
+/** One entry in the Fill in row: an empty member field of the draft's look. */
+export interface FillInEntry {
+  fieldKey: string;
+  label: string;
+  optional: boolean;
+  type: TemplateField["type"];
+}
+
+/** The Fill in row (§12.5): every empty member field of the draft's look,
+ * required ones first in form order, then optional ones. Pass the values
+ * that are painted (previewValues), so a slot the turn's photo fills is
+ * not listed. Empty for a gone template. */
+export function fillInEntries(draft: ChatDraft, values: FieldValues): FillInEntry[] {
+  const schema = lookSchema(draft);
+  if (!schema) return [];
+  const seen = new Set<string>();
+  const empty = schema.fields.filter((f) => {
+    if (f.static || f.type === "shape" || values[f.fieldKey] || seen.has(f.fieldKey)) {
+      return false;
+    }
+    seen.add(f.fieldKey);
+    return true;
+  });
+  const entry = (f: TemplateField): FillInEntry => ({
+    fieldKey: f.fieldKey,
+    label: f.label,
+    optional: !isRequiredField(f),
+    type: f.type,
+  });
+  return [
+    ...empty.filter((f) => isRequiredField(f)).map(entry),
+    ...empty.filter((f) => !isRequiredField(f)).map(entry),
+  ];
+}
+
+/** The fields that are too long (§9.4): measureProposal's "overflows"
+ * against the draft's look, as the card paints it. That covers shrink and
+ * fill text at its floor, free text that grows past its room, and a stack
+ * that overflows. Pure and cheap: recompute it whenever the values or the
+ * look change. Empty for a gone template or a freestyle design. */
+export function tooLongFields(
+  draft: ChatDraft,
+  values: FieldValues,
+  kit: BrandKit | null,
+  measure: LineMeasurer,
+): string[] {
+  const schema = lookSchema(draft);
+  if (!schema || !draft.schema) return [];
+  const opts = draft.proposal.design ? {} : chatLayoutOptions(draft.schema, draft.variantId);
+  return measureProposal(schema, values, kit, measure, opts)
+    .fields.filter((f) => f.fit === "overflows")
+    .map((f) => f.fieldKey);
 }

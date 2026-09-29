@@ -30,6 +30,7 @@
 import type { FieldValues, TemplateField } from "../types";
 import { ExportAssetError } from "../render/exportPng";
 import { isRequiredField } from "../templates/fieldRules";
+import { applyVariantToSchema } from "../templates/variants";
 import type { ChatDraft } from "./chat";
 
 /** The failure toast's title, as TemplateFill words it. The hook's `error`
@@ -63,7 +64,9 @@ export function instrumentsUsage(draft: ChatDraft): boolean {
  * gone, which has nothing to export anyway. */
 export function missingFields(draft: ChatDraft, values: FieldValues): TemplateField[] {
   const seen = new Set<string>();
-  return (draft.schema?.fields ?? []).filter((f) => {
+  // The draft's look: a field it hides is neither required nor listed.
+  const schema = draft.schema ? applyVariantToSchema(draft.schema, draft.variantId) : null;
+  return (schema?.fields ?? []).filter((f) => {
     if (!isRequiredField(f) || values[f.fieldKey] || seen.has(f.fieldKey)) return false;
     seen.add(f.fieldKey);
     return true;

@@ -18,6 +18,7 @@ import {
   isUserTurn,
   type AssistantTurn,
   type ChatDraft,
+  type ChatDetail,
   type ChatDocument,
   type ChatPhoto,
   type ChatThread,
@@ -63,11 +64,15 @@ export type ChatAction =
       text: string;
       photo?: ChatPhoto | null;
       document?: ChatDocument | null;
+      /** A template chat's detail tags. */
+      details?: ChatDetail[];
       platformHint?: PlatformId;
       variations: number;
       templateIdHint?: string;
       intent: UserTurn["intent"];
       mode: RunMode;
+      /** Overrides the asking status (a template chat's "Filling in X."). */
+      status?: string;
       at: string;
     }
   /** The model answered: step 2, measuring, one pending slot per proposal. */
@@ -77,7 +82,13 @@ export type ChatAction =
       proposals: ProposalShape[];
       meta: NonNullable<AssistantTurn["meta"]>;
       warnings: string[];
+      /** Overrides the measuring status (a template chat keeps its own). */
+      status?: string;
     }
+  /** The model asked one question instead of building (Template chat
+   * PROMPT §12.6): the turn finishes, done, with the question as its text
+   * and no drafts. */
+  | { type: "questionArrived"; runId: string; question: string; at: string }
   /** Step 3: a repair round is in flight, or the last proposal is being
    * resolved. The step never moves back. */
   | { type: "checking"; runId: string }
@@ -103,17 +114,39 @@ export type ChatAction =
       edits: Array<{ draftId: string; fieldKey: string; value: string }>;
       at: string;
     }
+  /** A draft's look changed (Template chat PROMPT §9.5): instant, never a
+   * model call. */
+  | { type: "lookChanged"; turnId: string; draftId: string; variantId: string; at: string }
+  /** The member wrote the caption themselves (Edit details, §12.7). */
+  | { type: "captionEdited"; turnId: string; draftId: string; caption: string; at: string }
   /** "Try again" on the thread's last turn: replaces it in place with a
    * fresh step 1 turn whose id is `runId`. Ignored for any other turn or
    * while it runs (the controller re-sends an older turn with "sent"). */
-  | { type: "retry"; turnId: string; runId: string; mode: RunMode; at: string }
+  | {
+      type: "retry";
+      turnId: string;
+      runId: string;
+      mode: RunMode;
+      status?: string;
+      at: string;
+    }
   /** The chat was saved for the first time (Phase 5). */
   | { type: "idAssigned"; id: string }
   /** New chat. */
   | { type: "reset"; at?: string };
 
-export function emptyThread(now: string = new Date().toISOString()): ChatThread {
-  return { id: null, title: NEW_CHAT_TITLE, turns: [], createdAt: now, updatedAt: now };
+export function emptyThread(
+  now: string = new Date().toISOString(),
+  templateId: string | null = null,
+): ChatThread {
+  return {
+    id: null,
+    ...(templateId ? { templateId } : {}),
+    title: NEW_CHAT_TITLE,
+    turns: [],
+    createdAt: now,
+    updatedAt: now,
+  };
 }
 
 export function chatReducer(state: ChatThread, action: ChatAction): ChatThread {
@@ -139,12 +172,13 @@ export function chatReducer(state: ChatThread, action: ChatAction): ChatThread {
         user.document = action.document;
         user.hadDocument = { name: action.document.name, kind: action.document.kind };
       }
+      if (action.details?.length) user.details = action.details.map((d) => ({ ...d }));
       // What the message sends, which is what a follow-up reuses: a pinned
       // template is filled exactly and goes without the platform hint
       // (buildGenerateInput), so a pinned message records no hint either.
       if (action.templateIdHint) user.templateIdHint = action.templateIdHint;
       else if (action.platformHint) user.platformHint = action.platformHint;
-      const assistant = askingTurn(action.runId, user, action.mode, action.at);
+      const assistant = askingTurn(action.runId, user, action.mode, action.at, action.status);
       return { ...state, turns: [...state.turns, user, assistant], updatedAt: action.at };
     }
 
@@ -157,7 +191,7 @@ export function chatReducer(state: ChatThread, action: ChatAction): ChatThread {
           phase: "measuring",
           step: 2,
           stepLabel: copy.stepLabel,
-          status: copy.status,
+          status: action.status ?? copy.status,
           pendingSlots: action.proposals.length,
           slotCanvases: action.proposals.map((p) => p.canvas),
           meta: action.meta,
@@ -216,6 +250,20 @@ export function chatReducer(state: ChatThread, action: ChatAction): ChatThread {
         };
       });
 
+    case "questionArrived": {
+      const question = action.question.trim();
+      if (!question) return state;
+      return finish(state, action.runId, action.at, (turn) => ({
+        ...turn,
+        phase: "done",
+        step: 3,
+        status: question,
+        question,
+        drafts: [],
+        pendingSlots: 0,
+      }));
+    }
+
     case "stopped":
       return finish(state, action.runId, action.at, (turn) => ({
         ...turn,
@@ -246,12 +294,31 @@ export function chatReducer(state: ChatThread, action: ChatAction): ChatThread {
           const values = applyEdits(draft, edits);
           if (values === draft.values) return draft;
           changed = true;
-          return { ...draft, values };
+          // What the member typed is theirs: carried forward, never repaired.
+          const typed = edits.map((e) => e.fieldKey).filter((k) => values[k] !== draft.values[k]);
+          const memberKeys = mergeKeys(draft.memberKeys, typed);
+          return { ...draft, values, ...(memberKeys ? { memberKeys } : {}) };
         });
         return changed ? { ...turn, drafts } : turn;
       });
       return changed ? { ...state, turns, updatedAt: action.at } : state;
     }
+
+    case "lookChanged":
+      return updateDraft(state, action.turnId, action.draftId, action.at, (draft) =>
+        !draft.schema ||
+        draft.variantId === action.variantId ||
+        !draft.schema.variants?.some((v) => v.id === action.variantId)
+          ? draft
+          : { ...draft, variantId: action.variantId },
+      );
+
+    case "captionEdited":
+      return updateDraft(state, action.turnId, action.draftId, action.at, (draft) =>
+        draft.captionOverride === action.caption
+          ? draft
+          : { ...draft, captionOverride: action.caption },
+      );
 
     case "retry": {
       const last = state.turns[state.turns.length - 1];
@@ -264,7 +331,7 @@ export function chatReducer(state: ChatThread, action: ChatAction): ChatThread {
         ...state,
         turns: [
           ...state.turns.slice(0, -1),
-          askingTurn(action.runId, user, action.mode, action.at),
+          askingTurn(action.runId, user, action.mode, action.at, action.status),
         ],
         updatedAt: action.at,
       };
@@ -274,7 +341,8 @@ export function chatReducer(state: ChatThread, action: ChatAction): ChatThread {
       return state.id === action.id ? state : { ...state, id: action.id };
 
     case "reset":
-      return emptyThread(action.at);
+      // A template chat stays one: New chat starts over on its template.
+      return emptyThread(action.at, state.templateId ?? null);
   }
 }
 
@@ -282,7 +350,13 @@ export function chatReducer(state: ChatThread, action: ChatAction): ChatThread {
 // Transition helpers
 // ---------------------------------------------------------------------------
 
-function askingTurn(id: string, user: UserTurn, mode: RunMode, at: string): AssistantTurn {
+function askingTurn(
+  id: string,
+  user: UserTurn,
+  mode: RunMode,
+  at: string,
+  status?: string,
+): AssistantTurn {
   const copy = askingCopy(mode);
   return {
     id,
@@ -292,7 +366,7 @@ function askingTurn(id: string, user: UserTurn, mode: RunMode, at: string): Assi
     phase: "asking",
     step: 1,
     stepLabel: copy.stepLabel,
-    status: copy.status,
+    status: status ?? copy.status,
     // The skeletons shown while the model call is in flight. Pending slots
     // take over once the proposals are known.
     expected: clampVariations(user.variations),
@@ -353,6 +427,40 @@ function titleIsReplaceable(state: ChatThread): boolean {
   if (isPlaceholderTitle(state.title)) return true;
   const brief = firstBrief(state.turns);
   return brief !== null && state.title === fallbackTitle(brief);
+}
+
+/** Applies `fn` to one draft of a finished turn. An unchanged draft, or a
+ * turn or draft that is not there, returns the state itself. */
+function updateDraft(
+  state: ChatThread,
+  turnId: string,
+  draftId: string,
+  at: string,
+  fn: (draft: ChatDraft) => ChatDraft,
+): ChatThread {
+  let changed = false;
+  const turns = state.turns.map((turn) => {
+    if (!isAssistantTurn(turn) || turn.id !== turnId || isRunningTurn(turn)) return turn;
+    const drafts = turn.drafts.map((draft) => {
+      if (draft.id !== draftId) return draft;
+      const next = fn(draft);
+      if (next !== draft) changed = true;
+      return next;
+    });
+    return changed ? { ...turn, drafts } : turn;
+  });
+  return changed ? { ...state, turns, updatedAt: at } : state;
+}
+
+/** `keys` added to `existing`, in first-seen order; undefined when there is
+ * nothing in either. */
+export function mergeKeys(
+  existing: readonly string[] | undefined,
+  keys: readonly string[],
+): string[] | undefined {
+  const out = [...(existing ?? [])];
+  for (const k of keys) if (!out.includes(k)) out.push(k);
+  return out.length ? out : undefined;
 }
 
 /** The member's edits to one draft. A draft whose template is gone cannot be
@@ -589,6 +697,9 @@ export function buildGenerateInput(
   prior: readonly ChatTurn[],
   user: UserTurn,
   mode: RunMode,
+  /** A template chat (Template chat PROMPT §12.3): its details travel as
+   * `details`, and its first message may be answered with one question. */
+  templateChat = false,
 ): GenerateInput {
   const previous = briefSoFar(prior);
   const followUp = user.intent !== "brief" && previous !== null;
@@ -607,6 +718,17 @@ export function buildGenerateInput(
     input.imageAspect = Math.min(10, Math.max(0.1, user.photo.aspect));
   }
   if (followUp && mode === "library") input.followUp = followUpFrom(prior);
+  // Detail tags travel structured, never folded into the text, and are
+  // applied verbatim (template-generate §10.1). Only a template chat has
+  // them, and they need its pinned template.
+  if (templateChat && user.templateIdHint && user.details?.length) {
+    input.details = user.details.map((d) => ({ fieldKey: d.fieldKey, value: d.value }));
+  }
+  // One question, on a first message with nothing structured to build from
+  // (§12.6). A follow-up (the answer) can never ask again.
+  if (templateChat && user.templateIdHint && !followUp && !user.details?.length && !user.document) {
+    input.allowQuestion = true;
+  }
   // The document's text goes with its own message only (PROMPT §12.3): a
   // follow-up carries the drafts its facts already landed in.
   if (user.document) {

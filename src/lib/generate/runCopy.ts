@@ -33,6 +33,9 @@ export const NOTHING_FIT =
  * same). */
 export const GENERATE_FAILED = "Generate failed. Try again.";
 
+/** A template chat's status while it builds (Template chat PROMPT §12.4). */
+export const fillingInStatus = (templateName: string) => `Filling in ${templateName}.`;
+
 /** The copy while the model call is in flight. */
 export function askingCopy(mode: RunMode): { stepLabel: string; status: string } {
   return {

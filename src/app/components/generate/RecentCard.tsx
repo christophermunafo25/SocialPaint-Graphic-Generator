@@ -70,7 +70,7 @@ export function RecentCard({
 }: {
   title: string;
   meta: ChatMeta;
-  preview: { schema: TemplateSchema; values: FieldValues } | null;
+  preview: { schema: TemplateSchema; values: FieldValues; variantId?: string } | null;
   onOpen(): void;
 }) {
   const metaId = useId();
@@ -92,7 +92,12 @@ export function RecentCard({
               } as React.CSSProperties
             }
           >
-            <TemplateThumbnail template={preview.schema} values={preview.values} />
+            <TemplateThumbnail
+              template={preview.schema}
+              values={preview.values}
+              variantId={preview.variantId}
+              emptyFields="chat"
+            />
           </span>
         )}
       </span>

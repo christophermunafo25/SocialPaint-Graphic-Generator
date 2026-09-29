@@ -25,6 +25,7 @@ interface ThreadSummaryRow {
   title: string;
   platforms: string[] | null;
   preview: GenerateThreadPreview | null;
+  template_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -35,7 +36,7 @@ interface ThreadRow extends ThreadSummaryRow {
 
 /** Recent and History never need a chat's turns, which are most of its
  * bytes: a list selects these and nothing else. */
-const SUMMARY_COLUMNS = "id, title, platforms, preview, created_at, updated_at";
+const SUMMARY_COLUMNS = "id, title, platforms, preview, template_id, created_at, updated_at";
 const RECORD_COLUMNS = `${SUMMARY_COLUMNS}, turns`;
 
 /** Rows per request while collecting the platforms in use. The loop runs
@@ -51,6 +52,7 @@ const toSummary = (r: ThreadSummaryRow): GenerateThreadSummary => ({
   title: r.title,
   platforms: platformsInOrder(r.platforms ?? []),
   preview: r.preview ?? null,
+  templateId: r.template_id ?? null,
   createdAt: r.created_at,
   updatedAt: r.updated_at,
 });
@@ -64,8 +66,8 @@ const toRecord = (r: ThreadRow): GenerateThreadRecord => ({
  * photo that slipped past threadStorage still never reaches the request. */
 function toRow(input: GenerateThreadInput) {
   assertNoDataUrls(input);
-  const { title, platforms, preview, turns } = normalizeThreadInput(input);
-  return { title, platforms, preview, turns };
+  const { title, platforms, preview, templateId, turns } = normalizeThreadInput(input);
+  return { title, platforms, preview, template_id: templateId, turns };
 }
 
 /** generate_threads (0038). Every policy on the table is

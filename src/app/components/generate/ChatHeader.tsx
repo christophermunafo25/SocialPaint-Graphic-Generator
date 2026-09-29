@@ -1,5 +1,5 @@
 import React, { forwardRef } from "react";
-import { routeToUrl } from "../../router";
+import { routeToUrl, type Route } from "../../router";
 import { ChatButton } from "./ChatButton";
 import { HistoryIcon, NewChatIcon } from "./icons";
 
@@ -8,6 +8,8 @@ import { HistoryIcon, NewChatIcon } from "./icons";
  * treats a real anchor. */
 const isPlainClick = (e: React.MouseEvent) =>
   !e.defaultPrevented && e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey;
+
+const GENERATE_ROOT = { label: "Generate", route: { name: "generate" } } as const;
 
 /** The breadcrumb over a chat and over History (Figma "Generate · Chat",
  * frames 04 and 05, "Breadcrumb"; PROMPT §8.4, §8.6): "Generate" in the
@@ -26,26 +28,30 @@ export function ChatBreadcrumb({
   currentId,
   heading = false,
   onRoot,
+  root = GENERATE_ROOT,
 }: {
   current?: string;
   /** Lets the thread name itself by the chat's title. */
   currentId?: string;
   heading?: boolean;
   onRoot(): void;
+  /** The first crumb: "Generate" by default; "Brand Templates" in a
+   * template chat (template-chat PROMPT §12.2). */
+  root?: { label: string; route: Route };
 }) {
   const Current = heading ? "h1" : "span";
   return (
     <nav aria-label="Breadcrumb" className="sp-chat-crumbs">
       <a
         className="sp-chat-crumbs__root"
-        href={routeToUrl({ name: "generate" })}
+        href={routeToUrl(root.route)}
         onClick={(e) => {
           if (!isPlainClick(e)) return;
           e.preventDefault();
           onRoot();
         }}
       >
-        Generate
+        {root.label}
       </a>
       {current !== undefined && (
         <>
@@ -81,18 +87,33 @@ export const ChatHeader = forwardRef<
     titleId?: string;
     onNewChat(): void;
     onHistory(): void;
+    /** A template chat's first crumb and where it goes (Brand Templates). */
+    root?: { label: string; route: Route; onClick(): void };
+    /** Replaces History and New chat (a template chat's Start state, which
+     * has only the admin's Bulk fill). */
+    actions?: React.ReactNode;
   }
->(function ChatHeader({ title, titleId, onNewChat, onHistory }, ref) {
+>(function ChatHeader({ title, titleId, onNewChat, onHistory, root, actions }, ref) {
   return (
     <header ref={ref} className="sp-chat-header">
-      <ChatBreadcrumb current={title ?? undefined} currentId={titleId} heading onRoot={onNewChat} />
+      <ChatBreadcrumb
+        current={title ?? undefined}
+        currentId={titleId}
+        heading
+        onRoot={root ? root.onClick : onNewChat}
+        root={root}
+      />
       <div className="sp-chat-header__actions">
-        <ChatButton kind="tertiary" size="small" icon={<HistoryIcon />} onClick={onHistory}>
-          History
-        </ChatButton>
-        <ChatButton kind="secondary" size="small" icon={<NewChatIcon />} onClick={onNewChat}>
-          New chat
-        </ChatButton>
+        {actions ?? (
+          <>
+            <ChatButton kind="tertiary" size="small" icon={<HistoryIcon />} onClick={onHistory}>
+              History
+            </ChatButton>
+            <ChatButton kind="secondary" size="small" icon={<NewChatIcon />} onClick={onNewChat}>
+              New chat
+            </ChatButton>
+          </>
+        )}
       </div>
     </header>
   );

@@ -102,6 +102,8 @@ export function DraftCard({
   downloading = false,
   previewRef,
   description,
+  variantId,
+  downloadBlocked = false,
 }: {
   /** The template name, or a freestyle draft's design name. */
   name: string;
@@ -123,6 +125,12 @@ export function DraftCard({
   /** The preview's accessible description, never drawn (the provenance
    * line, PROMPT §9.2). */
   description?: string;
+  /** The template's look to paint (template-chat §9.5). */
+  variantId?: string;
+  /** A required field is empty or a field is too long (template-chat
+   * §12.5): Download draws at 40% with aria-disabled, and still takes the
+   * click, which the page turns into opening the editor on that field. */
+  downloadBlocked?: boolean;
 }) {
   const descriptionId = useId();
   const compact = size === "compact";
@@ -165,7 +173,12 @@ export function DraftCard({
                 : { height: "calc(100% + 2px)" }),
             }}
           >
-            <TemplateThumbnail template={schema} values={values} />
+            <TemplateThumbnail
+              template={schema}
+              values={values}
+              variantId={variantId}
+              emptyFields="chat"
+            />
           </span>
           <EditOverlay small={compact} />
         </button>
@@ -193,6 +206,7 @@ export function DraftCard({
           templateName={name}
           busy={downloading}
           disabled={!schema}
+          blocked={downloadBlocked}
           onClick={() => onDownload()}
         />
       </div>

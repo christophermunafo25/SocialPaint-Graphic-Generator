@@ -37,11 +37,19 @@ export function DownloadButton({
   size,
   templateName,
   busy = false,
+  blocked = false,
   type = "button",
   className,
   onClick,
   ...rest
-}: { size: "regular" | "compact"; templateName: string; busy?: boolean } & ButtonProps) {
+}: {
+  size: "regular" | "compact";
+  templateName: string;
+  busy?: boolean;
+  /** Not ready to export (template-chat §12.5): 40%, aria-disabled, and
+   * the click still reaches `onClick`, which explains why. */
+  blocked?: boolean;
+} & ButtonProps) {
   return (
     <button
       type={type}
@@ -49,6 +57,8 @@ export function DownloadButton({
       data-preset="download"
       data-size={size}
       data-busy={busy || undefined}
+      data-blocked={blocked || undefined}
+      aria-disabled={blocked || undefined}
       aria-label={`Download "${templateName}" PNG`}
       aria-busy={busy || undefined}
       onClick={busy ? undefined : onClick}

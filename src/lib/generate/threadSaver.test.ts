@@ -391,10 +391,16 @@ describe("ThreadSaver (PROMPT §9.8)", () => {
     h.finish(run);
     await drain();
     h.dispatch({ type: "idAssigned", id: "chat-1" });
+    // The first edit is saved: the value, and the field now counts as the
+    // member's own (memberKeys).
     h.edit(run, "Changed");
-    h.edit(run, "Now hiring");
     await vi.advanceTimersByTimeAsync(SAVE_DEBOUNCE_MS * 2);
-    expect(h.writes).toHaveLength(1);
+    expect(h.writes).toHaveLength(2);
+    // Away and back again inside the debounce: nothing new to write.
+    h.edit(run, "Something else");
+    h.edit(run, "Changed");
+    await vi.advanceTimersByTimeAsync(SAVE_DEBOUNCE_MS * 2);
+    expect(h.writes).toHaveLength(2);
   });
 
   it("never stores the photo", async () => {

@@ -9606,3 +9606,268 @@ button.sp-chat-draft__preview {
   display: flex;
   justify-content: flex-end;
 }
+
+/* ── Template chat (Figma "Brand Templates · Chat"; template-chat PROMPT
+   §11.9, §11.10, §12.2, §12.5) ───────────────────────────────────────────── */
+
+/* Start: the template preview (176 × 220 at --radius-menu in the sunken
+   well, the card shadow), 12 over a row of the name and two links, 8
+   apart with a muted dot between; 28 to the greeting (Display Medium
+   35/120% at -1.5%, centred, at most 565 wide); 28 to the chat box. The
+   header sits above, as the thread's does. */
+.sp-tchat-start {
+  padding-top: var(--space-md);
+}
+.sp-tchat-start__preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 176px;
+  height: 220px;
+  border-radius: var(--radius-menu);
+  background: var(--gen-sunken);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.sp-tchat-start__art {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  width: 100%;
+}
+.sp-tchat-start__links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.25;
+  font-weight: var(--weight-ui);
+}
+.sp-tchat-start__name {
+  color: var(--text-primary);
+}
+.sp-tchat-start__dot {
+  color: var(--text-muted);
+}
+.sp-tchat-start__link {
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--text-secondary);
+  font: inherit;
+  cursor: pointer;
+}
+.sp-tchat-start__link:hover {
+  color: var(--text-primary);
+}
+.sp-tchat-start__link:focus-visible {
+  outline: 2px solid transparent;
+  box-shadow: var(--focus-ring-tight);
+}
+.sp-tchat-start__greeting {
+  max-width: 565px;
+  margin: 28px 0 0;
+  font-family: var(--font-head);
+  font-size: 35px;
+  line-height: 1.2;
+  font-weight: var(--weight-head);
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
+  text-align: center;
+}
+@media (max-width: 767px) {
+  .sp-tchat-start__greeting {
+    font-size: 28px;
+  }
+}
+
+/* A template that is gone or unpublished. */
+.sp-tchat-gone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  text-align: center;
+}
+
+/* The template card at the top of the thread (sp-template-ref 376:71):
+   the card recipe, 10 16 10 10, 14 apart: a 56 × 70 thumbnail at
+   --radius-tag in the sunken well, the name (15/125% Medium, -1%) over the
+   size meta (mono 12, secondary), and Change template at the end. */
+.sp-card.sp-chat-tref {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-sizing: border-box;
+  width: 100%;
+  padding: calc(10px - var(--border-width)) calc(16px - var(--border-width))
+    calc(10px - var(--border-width)) calc(10px - var(--border-width));
+  border-radius: var(--radius-card);
+}
+.sp-chat-tref__thumb {
+  display: block;
+  flex-shrink: 0;
+  width: 56px;
+  max-height: 70px;
+  border-radius: var(--radius-tag);
+  background: var(--gen-sunken);
+  overflow: hidden;
+}
+.sp-chat-tref__text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.sp-chat-tref__name {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 1.25;
+  font-weight: var(--weight-ui);
+  letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-chat-tref__meta {
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.25;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* The Fill in row: "Fill in" (13/125% muted), then the Missing tags,
+   wrapping, 6 apart. */
+.sp-chat-fillin {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.sp-chat-fillin__label {
+  margin-right: 2px;
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.25;
+}
+.sp-chat-fillin__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The result: the draft card and the Looks card side by side, 12 apart,
+   the Looks card taking the rest of the row; on a narrow column it wraps
+   under the card. */
+.sp-chat-turn__result {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: var(--space-xs);
+}
+.sp-card.sp-chat-looks {
+  display: flex;
+  flex: 1 1 320px;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: calc(18px - var(--border-width)) calc(20px - var(--border-width))
+    calc(20px - var(--border-width));
+  border-radius: var(--radius-card);
+}
+.sp-chat-looks__title {
+  margin: 0;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.25;
+  font-weight: var(--weight-ui);
+}
+.sp-chat-looks__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+}
+.sp-chat-looks__option {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 100%;
+}
+/* One look: the draft in that look, at --radius-tag, with the draft
+   cards' selected outline (a 1px inverse edge, 2px out) on the chosen one. */
+.sp-chat-looks__thumb {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-tag);
+  background: var(--gen-well);
+  overflow: hidden;
+  cursor: pointer;
+}
+.sp-chat-looks__thumb[data-selected] {
+  outline: 1px solid var(--gen-inverse);
+  outline-offset: 2px;
+}
+.sp-chat-looks__thumb:focus-visible {
+  outline: 2px solid transparent;
+  box-shadow: var(--focus-ring);
+}
+.sp-chat-looks__name {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.25;
+}
+.sp-chat-looks__selected {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.sp-chat-looks[data-skeleton] {
+  pointer-events: none;
+}
+.sp-chat-looks[data-skeleton] .sp-chat-looks__thumb {
+  background: var(--gen-stage);
+  cursor: default;
+}
+.sp-chat-looks__bar {
+  display: block;
+  width: 64px;
+  height: 10px;
+  border-radius: var(--radius-control);
+  background: var(--gen-stage);
+}
+.sp-chat-looks__bar[data-short] {
+  width: 56px;
+}
+
+/* A card download that is not ready (a required field empty, a field too
+   long): the glyph at 40%, still a control that explains itself. */
+.sp-chat-icon-btn[data-blocked] .sp-chat-icon-btn__glyph {
+  opacity: 0.4;
+}
+.sp-chat-icon-btn[data-blocked] {
+  cursor: default;
+}

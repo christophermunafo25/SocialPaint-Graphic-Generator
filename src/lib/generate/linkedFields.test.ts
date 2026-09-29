@@ -8,6 +8,7 @@ import {
   findGroupForField,
   groupValue,
   inputField,
+  linkedFillIn,
   labelKey,
   photoTargetsFor,
   sizeNames,
@@ -1012,5 +1013,31 @@ describe("sizeNames", () => {
         ratio: "onTie",
       }),
     ).toEqual(["Instagram · 4:5", "Instagram · 9:16"]);
+  });
+});
+
+describe("linkedFillIn (template-chat §12.12)", () => {
+  const fields = [
+    field({ fieldKey: "headline", label: "Headline" }),
+    field({ fieldKey: "link", label: "Link", optional: true }),
+    field({ fieldKey: "photo", label: "Photo", type: "image" }),
+  ];
+
+  it("lists one tag per group empty in any draft, leading to the first draft missing it", () => {
+    const a = draft("a", fields, { headline: "Now hiring" });
+    const b = draft("b", fields, {}, LINKEDIN);
+    const values = { a: a.values, b: b.values };
+    const gaps = linkedFillIn([a, b], values, NO_PHOTO);
+    expect(gaps.map((g) => [g.label.split(" · ")[0], g.draftId, g.fieldKey, g.optional])).toEqual([
+      ["Headline", "b", "headline", false],
+      ["Photo", "a", "photo", false],
+      ["Photo", "b", "photo", false],
+      ["Link", "a", "link", true],
+    ]);
+  });
+
+  it("leaves out what every draft has, and the slot the turn's photo fills", () => {
+    const a = draft("a", fields, { headline: "Hi", link: "x.co", photo: "data:x" });
+    expect(linkedFillIn([a], { a: a.values }, NO_PHOTO)).toEqual([]);
   });
 });

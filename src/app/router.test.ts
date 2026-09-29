@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { generatePageKey, routeState, routeToUrl, urlToRoute, type Route } from "./router";
+import {
+  generatePageKey,
+  routeState,
+  routeToUrl,
+  templateChatPageKey,
+  urlToRoute,
+  type Route,
+} from "./router";
 
 const parse = (url: string): Route => {
   const u = new URL(url, "http://localhost");
@@ -107,5 +114,53 @@ describe("routeState", () => {
     expect(first).not.toBe(sidebarGenerate);
     expect(second).not.toBe(first);
     expect(second).toEqual(sidebarGenerate);
+  });
+});
+
+describe("Template chat routes (Template chat PROMPT §12.1)", () => {
+  it("reads a new and a saved template chat, keeping edit and field", () => {
+    expect(urlToRoute("/templates/t-1/chat", "")).toEqual({
+      name: "templateChat",
+      templateId: "t-1",
+    });
+    expect(urlToRoute("/templates/t-1/chat/c-9", "?edit=d-2&field=apply_link")).toEqual({
+      name: "templateChat",
+      templateId: "t-1",
+      threadId: "c-9",
+      edit: "d-2",
+      field: "apply_link",
+    });
+    // A field with no draft to edit means nothing.
+    expect(urlToRoute("/templates/t-1/chat", "?field=role")).toEqual({
+      name: "templateChat",
+      templateId: "t-1",
+    });
+  });
+
+  it("round-trips every template chat route, and leaves the fill and bulk pages alone", () => {
+    for (const url of [
+      "/templates/t-1/chat",
+      "/templates/t-1/chat/c-9",
+      "/templates/t-1/chat/c-9?edit=d-2&field=apply_link",
+      "/templates/t-1/chat?edit=d-2",
+    ]) {
+      const [path, qs = ""] = url.split("?");
+      expect(routeToUrl(urlToRoute(path, qs ? `?${qs}` : ""))).toBe(url);
+    }
+    expect(urlToRoute("/templates/t-1", "")).toEqual({ name: "template", templateId: "t-1" });
+    expect(urlToRoute("/templates/t-1/bulk", "")).toEqual({ name: "bulk", templateId: "t-1" });
+  });
+
+  it("keys the page per template and chat, through the first save and Edit details", () => {
+    const key = (r: Parameters<typeof templateChatPageKey>[0]) => templateChatPageKey(r);
+    const fresh = key({ name: "templateChat", templateId: "t-1" });
+    expect(
+      key({ name: "templateChat", templateId: "t-1", threadId: "c", savedInPlace: true }),
+    ).toBe(fresh);
+    expect(key({ name: "templateChat", templateId: "t-1", threadId: "c" })).not.toBe(fresh);
+    expect(key({ name: "templateChat", templateId: "t-1", threadId: "c", edit: "d" })).toBe(
+      key({ name: "templateChat", templateId: "t-1", threadId: "c" }),
+    );
+    expect(key({ name: "templateChat", templateId: "t-2" })).not.toBe(fresh);
   });
 });

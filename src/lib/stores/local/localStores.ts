@@ -474,6 +474,7 @@ const toThreadSummary = (r: GenerateThreadRec): GenerateThreadSummary => ({
   title: r.title,
   platforms: platformsInOrder(r.platforms),
   preview: r.preview ?? null,
+  templateId: r.templateId ?? null,
   createdAt: r.createdAt,
   updatedAt: r.updatedAt,
 });

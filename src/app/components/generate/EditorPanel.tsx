@@ -612,6 +612,8 @@ function StageGraphic({
             brandKit={kit}
             instrument={instrumentsUsage(draft)}
             onWarnings={visible ? onWarnings : undefined}
+            variantId={draft.variantId}
+            emptyFields="chat"
           />
         </div>
       </div>
