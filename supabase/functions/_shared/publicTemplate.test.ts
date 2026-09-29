@@ -394,6 +394,24 @@ describe("variations", () => {
     expect((payload.template.variants as Row[]).map((v) => v.id)).toEqual(["v-light"]);
   });
 
+  it("a look that recolours a plate or a stroke keeps that colour on the public link", () => {
+    const payload = build({
+      template: {
+        ...TEMPLATE,
+        variants: [
+          {
+            id: "v-plate",
+            name: "Plate",
+            overrides: { name: { plateColor: "#E4002B", strokeColor: "#0A0A0A" } },
+          },
+        ],
+      },
+    });
+    const [plate] = payload.template.variants as Row[];
+    const overrides = plate.overrides as Record<string, Record<string, unknown>>;
+    expect(overrides.name).toEqual({ plateColor: "#E4002B", strokeColor: "#0A0A0A" });
+  });
+
   it("a type style only a served variation binds reaches the kit", () => {
     const unpinned = build({ template: withVariants, signed: signedAll });
     expect((unpinned.brandKit.type_styles as Row[]).map((s) => s.key)).toContain("never-bound");
