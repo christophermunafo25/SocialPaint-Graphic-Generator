@@ -7,11 +7,14 @@
 //  - The member's photo lives on the UserTurn in memory only. It is never
 //    sent anywhere (only hasImage and imageAspect cross the wire) and never
 //    persisted: what a saved chat keeps is `hadPhoto`, the aspect alone.
+//  - An attached document is text read in the browser. It lives on the
+//    UserTurn in memory, crosses the wire once with that message, and is
+//    never persisted: a saved chat keeps `hadDocument`, its name and kind.
 //  - A draft carries its canvas size apart from its schema, so a reopened
 //    chat whose library template has since gone still knows the card's
 //    shape (schema null is the "no longer available" state).
 
-import type { FieldValues, GeneratedProposal, TemplateSchema } from "../types";
+import type { ChatDocumentKind, FieldValues, GeneratedProposal, TemplateSchema } from "../types";
 import type { PlatformId } from "../templates/platforms";
 
 /** A photo attached to one message. `dataUrl` is the downscaled image in
@@ -22,6 +25,14 @@ export interface ChatPhoto {
   source: "upload" | "paste" | "brand";
   /** The Brand Studio asset it came from, when source is "brand". */
   assetId?: string;
+}
+
+/** A document attached to one message: the text the browser extracted
+ * from it (capped, see documentText.ts), its file name and its kind. */
+export interface ChatDocument {
+  name: string;
+  kind: ChatDocumentKind;
+  text: string;
 }
 
 export interface ChatDraft {
@@ -47,6 +58,10 @@ export interface UserTurn {
   photo?: ChatPhoto;
   /** What is persisted instead of the photo. */
   hadPhoto?: { aspect: number };
+  /** In memory only, never persisted, sent with this message only. */
+  document?: ChatDocument;
+  /** What is persisted instead of the document. */
+  hadDocument?: { name: string; kind: ChatDocumentKind };
   platformHint?: PlatformId;
   variations: number;
   templateIdHint?: string;

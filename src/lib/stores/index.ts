@@ -20,6 +20,7 @@ import { SupabasePublicLinkStore } from "./supabase/publicLinkStore";
 import { FigmaImporter } from "./supabase/figmaImporter";
 import { SupabaseGenerateProvider } from "./supabase/generateProvider";
 import { SupabaseGenerateThreadStore } from "./supabase/generateThreadStore";
+import { SupabaseMemberHintStore } from "./supabase/memberHintStore";
 import {
   LocalAccountStore,
   LocalBrandAssetStore,
@@ -28,6 +29,7 @@ import {
   LocalDesignImportProvider,
   LocalGenerateProvider,
   LocalGenerateThreadStore,
+  LocalMemberHintStore,
   LocalPeopleStore,
   LocalPublicLinkStore,
   LocalTemplateStore,
@@ -48,6 +50,7 @@ function createStores(): Stores {
       designImport: new FigmaImporter(),
       generate: new SupabaseGenerateProvider(),
       generateThreads: new SupabaseGenerateThreadStore(),
+      memberHints: new SupabaseMemberHintStore(),
       backend: "supabase",
     };
   }
@@ -75,6 +78,7 @@ function createStores(): Stores {
     designImport: new LocalDesignImportProvider(),
     generate: new LocalGenerateProvider(),
     generateThreads: new LocalGenerateThreadStore(),
+    memberHints: new LocalMemberHintStore(),
     backend: "local",
   };
 }

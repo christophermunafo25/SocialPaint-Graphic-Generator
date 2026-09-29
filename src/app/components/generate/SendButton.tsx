@@ -1,5 +1,5 @@
 import React from "react";
-import { ArrowUp } from "lucide-react";
+import { SendArrowGlyph } from "./icons";
 
 type SendButtonProps = {
   state: "disabled" | "ready" | "stop";
@@ -7,13 +7,14 @@ type SendButtonProps = {
   onStop?(): void;
 } & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "children" | "type" | "disabled">;
 
-/** The composer's 44px round send control (Figma "Generate · Chat",
- * sp-icon-btn / Send 283:13, State Disabled / Ready / Stop). Ready and
+/** The chat box's 36px round send control (Figma sp-send 431:23, Rest /
+ * Hover / Loading × Light / Dark; Template chat PROMPT §11.8). Ready and
  * disabled submit the composer's form ("Generate"); disabled draws the
  * sunken fill with a muted arrow rather than dimming the button. Stop is a
  * plain button ("Stop generating") that calls `onStop` and never submits,
- * so a run can be stopped while the text stays editable. Ready and Stop are
- * Deep Moss and Slime identity fills, never status.
+ * so a run can be stopped while the text stays editable. Ready, hover and
+ * Stop are the themed --gen-send-* identity fills, never status, and hover
+ * is a colour swap with no transition.
  *
  * `state` alone decides whether it is inert, so the props leave out
  * `disabled` (passing it is a type error, not a silent no-op). Disabled is
@@ -41,10 +42,10 @@ export function SendButton({ state, onStop, onClick, className, ...rest }: SendB
         }}
       >
         {/* The stop glyph (PROMPT §6): a filled 12px square at a 2px corner,
-            centred in a 20px box. An SVG, so under forced colours it takes
+            centred in a 16px box. An SVG, so under forced colours it takes
             the forced text colour the way the arrow does. */}
-        <svg width={20} height={20} viewBox="0 0 20 20" aria-hidden>
-          <rect x={4} y={4} width={12} height={12} rx={2} fill="currentColor" />
+        <svg width={16} height={16} viewBox="0 0 16 16" aria-hidden>
+          <rect x={2} y={2} width={12} height={12} rx={2} fill="currentColor" />
         </svg>
       </button>
     );
@@ -66,7 +67,7 @@ export function SendButton({ state, onStop, onClick, className, ...rest }: SendB
         onClick?.(e);
       }}
     >
-      <ArrowUp size={20} strokeWidth={1.5} absoluteStrokeWidth aria-hidden />
+      <SendArrowGlyph aria-hidden />
     </button>
   );
 }

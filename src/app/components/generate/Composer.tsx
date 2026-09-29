@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useDropzone, type FileRejection } from "react-dropzone";
 import type { BrandAsset } from "@/lib/types";
-import type { ChatPhoto } from "@/lib/generate/chat";
+import type { ChatDocument, ChatPhoto } from "@/lib/generate/chat";
+import { upsertDetail, type DetailField, type DetailTagValue } from "@/lib/generate/details";
+import { DocumentReadError, readDocument } from "@/lib/generate/documentText";
 import { DEFAULT_VARIATIONS, MAX_BRIEF } from "@/lib/generate/chatReducer";
 import type { PlatformId } from "@/lib/templates/platforms";
 import { downscaleImage } from "@/lib/render/downscaleImage";
@@ -16,8 +18,9 @@ import {
   rejectionMessage,
   useUploadChip,
 } from "../imageUpload";
-import { AttachMenu } from "./AttachMenu";
-import { AttachmentThumb } from "./AttachmentThumb";
+import { AttachMenu, type AttachMenuHandle } from "./AttachMenu";
+import { AttachmentThumb, FileAttachment } from "./AttachmentThumb";
+import { DetailTag } from "./DetailTag";
 import { PlatformSelect } from "./PlatformSelect";
 import { SendButton } from "./SendButton";
 import { VariationsStepper } from "./VariationsStepper";
@@ -43,10 +46,26 @@ export interface ComposerProps {
    * attaching another replaces it. */
   photo: ChatPhoto | null;
   onPhotoChange(next: ChatPhoto | null): void;
+  /** The document waiting to go with the next message, read in the
+   * browser (PROMPT §12.3). One per message: attaching another replaces
+   * it. Without a handler the File row's picks are ignored. */
+  document?: ChatDocument | null;
+  onDocumentChange?(next: ChatDocument | null): void;
+  /** A template chat's Details (PROMPT §11.4 to §11.6): the menu's rows and
+   * the tags beside the plus. The Generate chat passes none. */
+  details?: {
+    fields: DetailField[];
+    tags: DetailTagValue[];
+    onTagsChange(next: DetailTagValue[]): void;
+  };
+  /** The plus hint glow (PROMPT §12.10). The page decides when. */
+  hint?: boolean;
+  /** The plus menu opened. */
+  onPlusOpened?(): void;
   /** A run is in flight: Send is Stop, and the text stays editable. */
   running: boolean;
   /** Only called with non-empty trimmed text, not running, not disabled,
-   * and with no photo still being read. */
+   * and with no photo or document still being read. */
   onSubmit(): void;
   onStop(): void;
   placeholder: string;
@@ -68,17 +87,20 @@ export interface ComposerProps {
   disabled?: boolean;
 }
 
-/** The chat's message box (Figma "Generate · Chat", sp-chat-composer
- * 283:76; frames 01 to 05): one <form> on the card surface recipe holding
- * the photo row, the textarea and a toolbar.
+/** The chat box (Option D, Figma sp-chat-box 483:787; Template chat PROMPT
+ * §11.1): one <form> on the card surface recipe holding the attachments
+ * row, the textarea and a toolbar.
  *
- *  - Large (the Start state): Attach, the platform select and the
- *    Variations stepper on the left, Send on the right; a 64px textarea
- *    when empty. Attached, the photo row sits above the text and the
- *    textarea hugs its lines.
- *  - Compact (the thread): Attach and Send only. A follow-up reuses the
- *    platform and variation count of the thread's last composer send, so
- *    neither control is here.
+ *  - The toolbar's left holds the plus (the attach menu) and, in a template
+ *    chat, the Tags slot beside it; the tags wrap onto new rows and push
+ *    the toolbar down, never scrolling or clipping (so the plus's glow is
+ *    never cut off). Its right holds, on the Large size only, the platform
+ *    select and the Variations stepper, then Send.
+ *  - Large (the Start state): a 64px textarea when empty. Attached, the
+ *    attachments row sits above the text and the textarea hugs its lines.
+ *  - Compact (the thread, and both sizes of a template chat): the plus and
+ *    Send only. A follow-up reuses the platform and variation count of the
+ *    thread's last composer send, so neither control is here.
  *
  * Enter sends and Shift+Enter breaks the line (not mid-composition, so an
  * IME's Enter still picks its candidate). The textarea grows with its text
@@ -97,7 +119,12 @@ export interface ComposerProps {
  * nothing else with it. No crop here: the drafts' photo slots have
  * different aspects, and the editor crops at the real slot's. When two
  * attaches overlap, the later one wins (and a removal cancels the one in
- * flight), so a slow read can never overwrite a newer choice. */
+ * flight), so a slow read can never overwrite a newer choice.
+ *
+ * A document (the File row) is read here too, in the browser, into its
+ * text (documentText.ts): nothing uploads. It shares the upload chip while
+ * it is read, and a refused one says why under the text and attaches
+ * nothing. Tags and files alone never make a message: Send needs text. */
 export function Composer({
   size,
   value,
@@ -116,8 +143,15 @@ export function Composer({
   onVariationsChange,
   textareaRef,
   disabled = false,
+  document: doc = null,
+  onDocumentChange,
+  details,
+  hint = false,
+  onPlusOpened,
 }: ComposerProps) {
   const [photoError, setPhotoError] = useState<string | null>(null);
+  const menuRef = useRef<AttachMenuHandle>(null);
+  const [editingTag, setEditingTag] = useState<string | null>(null);
   const { chip, runChip, clearChip } = useUploadChip();
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   // Bumped by every attach and every removal; a read that finishes under
@@ -125,17 +159,23 @@ export function Composer({
   const attachSeq = useRef(0);
   // A photo is still being read. Send waits for it: a message sent in the
   // meantime would go without the photo the member just attached, and the
-  // photo would then land on the next message instead.
-  const [reading, setReading] = useState(false);
-  // The latest handler, for a read that finishes after a re-render.
+  // photo would then land on the next message instead. Documents alike.
+  const [readingPhoto, setReading] = useState(false);
+  const [readingDoc, setReadingDoc] = useState(false);
+  const reading = readingPhoto || readingDoc;
+  const docSeq = useRef(0);
+  // The latest handlers, for a read that finishes after a re-render.
   const onPhotoChangeRef = useRef(onPhotoChange);
   onPhotoChangeRef.current = onPhotoChange;
+  const onDocumentChangeRef = useRef(onDocumentChange);
+  onDocumentChangeRef.current = onDocumentChange;
   // A read that lands after its composer has gone (New chat swaps the
   // thread's composer for the Start state's) belonged to a chat that is no
   // longer on screen, and is dropped.
   useEffect(
     () => () => {
       attachSeq.current += 1;
+      docSeq.current += 1;
     },
     [],
   );
@@ -211,6 +251,44 @@ export function Composer({
       ),
     [attach],
   );
+
+  /** A document from the File row: read in the browser into its text. A
+   * refusal (type, size, no text) says why and attaches nothing. */
+  const takeDocument = useCallback(
+    (file: File) => {
+      if (!onDocumentChangeRef.current) return;
+      const seq = ++docSeq.current;
+      setReadingDoc(true);
+      const processing = readDocument(file).then(
+        (read) => {
+          if (seq !== docSeq.current) return;
+          setReadingDoc(false);
+          setPhotoError(null);
+          onDocumentChangeRef.current?.(read);
+        },
+        (e: unknown) => {
+          if (seq === docSeq.current) {
+            setReadingDoc(false);
+            setPhotoError(
+              e instanceof DocumentReadError ? e.message : "Couldn't find any text in that file",
+            );
+          }
+          throw e instanceof Error ? e : new Error(String(e));
+        },
+      );
+      processing.catch(() => clearChip());
+      runChip(file.name, processing);
+    },
+    [runChip, clearChip],
+  );
+
+  const removeDocument = () => {
+    docSeq.current += 1;
+    setReadingDoc(false);
+    setPhotoError(null);
+    onDocumentChange?.(null);
+    inputRef.current?.focus();
+  };
 
   const removePhoto = () => {
     attachSeq.current += 1;
@@ -294,7 +372,7 @@ export function Composer({
   // then takes that up to six lines; past it the box scrolls, and the
   // scroll position survives the collapse so typing at the end of a long
   // brief does not jump.
-  const attachedRow = Boolean(photo || chip);
+  const attachedRow = Boolean(photo || doc || chip);
   const fit = useCallback(() => {
     const el = inputRef.current;
     if (!el) return;
@@ -342,6 +420,7 @@ export function Composer({
       {attachedRow && (
         <div className="sp-chat-composer__attachments">
           {photo && <AttachmentThumb src={photo.dataUrl} onRemove={removePhoto} />}
+          {doc && <FileAttachment name={doc.name} kind={doc.kind} onRemove={removeDocument} />}
           {chip && (
             <div className="sp-chat-composer__chip">
               <UploadChipView chip={chip} />
@@ -367,13 +446,46 @@ export function Composer({
         </p>
       )}
       <div className="sp-chat-composer__toolbar">
-        <div className="sp-chat-composer__tools">
+        <div className="sp-chat-composer__lead">
           <AttachMenu
+            ref={menuRef}
             containerRef={rootRef}
             disabled={disabled}
+            hint={hint}
+            onOpened={onPlusOpened}
             onPickFile={(file) => takeFile(file, "upload")}
+            onPickDocument={takeDocument}
             onPickAsset={takeAsset}
+            onEditingChange={setEditingTag}
+            details={
+              details && {
+                fields: details.fields,
+                tags: details.tags,
+                onAdd: (field, value) =>
+                  details.onTagsChange(upsertDetail(details.tags, field, value)),
+              }
+            }
           />
+          {details && details.tags.length > 0 && (
+            <div className="sp-chat-composer__tags" role="list" aria-label="Details">
+              {details.tags.map((tag) => (
+                <span key={tag.fieldKey} role="listitem" className="sp-chat-composer__tag">
+                  <DetailTag
+                    tag={tag}
+                    editing={editingTag === tag.fieldKey}
+                    disabled={disabled}
+                    onEdit={() => menuRef.current?.openDetail(tag.fieldKey)}
+                    onRemove={() => {
+                      details.onTagsChange(details.tags.filter((t) => t !== tag));
+                      inputRef.current?.focus();
+                    }}
+                  />
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="sp-chat-composer__tools">
           {size === "large" && onPlatformChange && (
             <PlatformSelect
               value={platform ?? null}
@@ -390,8 +502,8 @@ export function Composer({
               disabled={disabled}
             />
           )}
+          <SendButton state={running ? "stop" : canSend ? "ready" : "disabled"} onStop={stop} />
         </div>
-        <SendButton state={running ? "stop" : canSend ? "ready" : "disabled"} onStop={stop} />
       </div>
     </form>
   );

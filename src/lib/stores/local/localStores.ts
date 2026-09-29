@@ -27,6 +27,8 @@ import type {
   DesignImportProvider,
   GenerateProvider,
   GenerateThreadStore,
+  MemberHintState,
+  MemberHintStore,
   PublicLinkStore,
   TemplateStore,
   UsageStore,
@@ -768,5 +770,54 @@ export class LocalDesignImportProvider implements DesignImportProvider {
         editableCount: 2,
       },
     };
+  }
+}
+
+/** First-run hints on the localStorage backend: one key, a map by user id,
+ * with the Supabase store's semantics. Storage that throws (a private
+ * window, a full quota) reads as no hints yet and drops the write. */
+const MEMBER_HINTS_KEY = "sp:member-hints:v1";
+
+function readHints(): Record<string, MemberHintState> {
+  try {
+    const raw = localStorage.getItem(MEMBER_HINTS_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" ? (parsed as Record<string, MemberHintState>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeHints(all: Record<string, MemberHintState>): void {
+  try {
+    localStorage.setItem(MEMBER_HINTS_KEY, JSON.stringify(all));
+  } catch {
+    // A hint is a nicety; losing one never breaks the chat.
+  }
+}
+
+export class LocalMemberHintStore implements MemberHintStore {
+  async get(userId: string): Promise<MemberHintState> {
+    const row = readHints()[userId];
+    return {
+      plusOpened: row?.plusOpened === true,
+      templateChatsStarted:
+        typeof row?.templateChatsStarted === "number" ? Math.max(0, row.templateChatsStarted) : 0,
+    };
+  }
+
+  async markPlusOpened(userId: string): Promise<void> {
+    const all = readHints();
+    all[userId] = { ...(await this.get(userId)), plusOpened: true };
+    writeHints(all);
+  }
+
+  async noteTemplateChatStarted(userId: string): Promise<number> {
+    const all = readHints();
+    const current = await this.get(userId);
+    const next = current.templateChatsStarted + 1;
+    all[userId] = { ...current, templateChatsStarted: next };
+    writeHints(all);
+    return next;
   }
 }

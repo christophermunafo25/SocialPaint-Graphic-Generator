@@ -12,6 +12,7 @@ import {
   isUserTurn,
   type AssistantTurn,
   type ChatDraft,
+  type ChatDocument,
   type ChatPhoto,
   type ChatThread,
 } from "@/lib/generate/chat";
@@ -264,6 +265,9 @@ function GenerateChat({
   // ── The composer ────────────────────────────────────────────────────────
   const [text, setText] = useState("");
   const [photo, setPhoto] = useState<ChatPhoto | null>(null);
+  // The document waiting to go with the next message: text read in the
+  // browser, sent once with that message and never saved (PROMPT §12.3).
+  const [doc, setDoc] = useState<ChatDocument | null>(null);
   const [platform, setPlatform] = useState<PlatformId | null>(null);
   const [variations, setVariations] = useState(DEFAULT_VARIATIONS);
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
@@ -349,17 +353,20 @@ function GenerateChat({
       ? send({
           text,
           photo,
+          document: doc,
           platformHint: platform,
           variations,
           templateIdHint: pinned?.id,
         })
       : // The compact composer has no platform or count: the controller
         // reuses the thread's last composer send (never a chip's).
-        send({ text, photo });
+        send({ text, photo, document: doc });
     if (!started) return;
-    // The photo is snapshotted on the message; the composer starts clean.
+    // The photo and the document are snapshotted on the message; the
+    // composer starts clean.
     setText("");
     setPhoto(null);
+    setDoc(null);
     follow();
     if (fromStart) {
       // A pinned template is for one send.
@@ -383,6 +390,7 @@ function GenerateChat({
     reset();
     setText("");
     setPhoto(null);
+    setDoc(null);
     setPlatform(null);
     setVariations(DEFAULT_VARIATIONS);
     setPinnedId(null);
@@ -782,6 +790,8 @@ function GenerateChat({
                       onChange={setText}
                       photo={photo}
                       onPhotoChange={setPhoto}
+                      document={doc}
+                      onDocumentChange={setDoc}
                       running={running}
                       onSubmit={submit}
                       onStop={stop}
@@ -880,6 +890,7 @@ function GenerateChat({
                         key={turn.id}
                         text={turn.text}
                         photo={turn.photo?.dataUrl}
+                        document={turn.document ?? turn.hadDocument}
                         note={turn.id === photoNoteId ? PHOTO_NOT_SAVED : undefined}
                       />
                     ) : (
@@ -926,6 +937,8 @@ function GenerateChat({
                   onChange={setText}
                   photo={photo}
                   onPhotoChange={setPhoto}
+                  document={doc}
+                  onDocumentChange={setDoc}
                   running={running}
                   onSubmit={submit}
                   onStop={stop}

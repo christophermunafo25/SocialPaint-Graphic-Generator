@@ -7,6 +7,7 @@ import { primaryPlatformOf } from "@/lib/generate/draftView";
 import {
   isAssistantTurn,
   isUserTurn,
+  type ChatDocument,
   type ChatPhoto,
   type ChatThread,
   type ChatTurn,
@@ -37,6 +38,9 @@ export interface ChatSendInput {
   /** The composer's attachment. Snapshotted on the message; only its flag
    * and aspect cross the wire. */
   photo?: ChatPhoto | null;
+  /** The composer's document: its extracted text goes with this message
+   * only and is never saved (PROMPT §12.3). */
+  document?: ChatDocument | null;
   /** `null` is an explicit "Any platform"; left out, a follow-up reuses the
    * thread's last composer send (the compact composer has no platform
    * select; a Try next chip's platform was for its own run). */
@@ -104,8 +108,12 @@ export interface ChatControllerOptions {
 }
 
 /** The fields of a message that decide its run. */
-type RunRequest = Omit<UserTurn, "id" | "role" | "createdAt" | "hadPhoto" | "photo"> & {
+type RunRequest = Omit<
+  UserTurn,
+  "id" | "role" | "createdAt" | "hadPhoto" | "photo" | "hadDocument" | "document"
+> & {
   photo: ChatPhoto | null;
+  document?: ChatDocument | null;
 };
 
 const newId = (): string =>
@@ -254,6 +262,7 @@ export function useChatController(opts: ChatControllerOptions): ChatController {
       return start({
         text,
         photo: input.photo ?? null,
+        document: input.document ?? null,
         // A chip's count of one and its platform were for its own run.
         ...fillSendGaps(input, lastComposerTurn(turns)),
         ...(input.templateIdHint ? { templateIdHint: input.templateIdHint } : {}),
@@ -321,6 +330,7 @@ export function useChatController(opts: ChatControllerOptions): ChatController {
         start({
           text: user.text,
           photo: user.photo ?? null,
+          document: user.document ?? null,
           ...(user.platformHint ? { platformHint: user.platformHint } : {}),
           variations: user.variations,
           ...(user.templateIdHint ? { templateIdHint: user.templateIdHint } : {}),

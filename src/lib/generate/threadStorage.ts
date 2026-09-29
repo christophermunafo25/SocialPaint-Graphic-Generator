@@ -130,12 +130,15 @@ function storedTurn(turn: UserTurn | FinishedTurn): StoredTurn {
 function storedUserTurn(turn: UserTurn): StoredUserTurn {
   // The photo stays behind. Its aspect is what says one was attached.
   const aspect = turn.hadPhoto?.aspect ?? turn.photo?.aspect;
+  const document = turn.hadDocument ?? turn.document;
   return {
     id: turn.id,
     role: "user",
     text: prose(turn.text),
     createdAt: turn.createdAt,
     ...(aspect !== undefined ? { hadPhoto: { aspect } } : {}),
+    // The document's text stays behind too; its name and kind remain.
+    ...(document ? { hadDocument: { name: prose(document.name), kind: document.kind } } : {}),
     ...(turn.platformHint ? { platformHint: turn.platformHint } : {}),
     variations: turn.variations,
     ...(turn.templateIdHint ? { templateIdHint: turn.templateIdHint } : {}),
@@ -291,6 +294,9 @@ function restoredUserTurn(turn: StoredUserTurn): UserTurn {
     text: turn.text,
     createdAt: turn.createdAt,
     ...(turn.hadPhoto ? { hadPhoto: { aspect: turn.hadPhoto.aspect } } : {}),
+    ...(turn.hadDocument
+      ? { hadDocument: { name: turn.hadDocument.name, kind: turn.hadDocument.kind } }
+      : {}),
     ...(turn.platformHint ? { platformHint: turn.platformHint } : {}),
     variations: turn.variations,
     ...(turn.templateIdHint ? { templateIdHint: turn.templateIdHint } : {}),

@@ -890,14 +890,20 @@ export interface GenerateRepairResult {
 // store refuses a write that still carries a data: value anywhere.
 // ---------------------------------------------------------------------------
 
+/** The kinds of document a chat message can carry (Template chat PROMPT
+ * §12.3): read in the browser, text only. */
+export type ChatDocumentKind = "pdf" | "txt" | "md";
+
 /** A member's message, as saved. `hadPhoto` is all that remains of a photo:
- * its aspect, so a reopened chat can say one was attached. */
+ * its aspect, so a reopened chat can say one was attached. `hadDocument` is
+ * all that remains of a document: its name and kind, never its text. */
 export interface StoredUserTurn {
   id: string;
   role: "user";
   text: string;
   createdAt: string;
   hadPhoto?: { aspect: number };
+  hadDocument?: { name: string; kind: ChatDocumentKind };
   platformHint?: PlatformId;
   variations: number;
   templateIdHint?: string;

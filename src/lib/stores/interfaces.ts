@@ -352,6 +352,23 @@ export interface StyleImportResult {
  * v1 ships a stub; a vision-model implementation can drop in later. */
 export type DetectFields = (imageUrl: string) => Promise<import("../types").TemplateField[]>;
 
+/** First-run hints (Template chat PROMPT §8.4, §12.10), per user and never
+ * per company: whether they have opened the chat box's plus, and how many
+ * template chats they have started. Self-scoped (migration 0039). */
+export interface MemberHintState {
+  plusOpened: boolean;
+  templateChatsStarted: number;
+}
+
+export interface MemberHintStore {
+  /** An absent row resolves to { plusOpened: false, templateChatsStarted: 0 }. */
+  get(userId: string): Promise<MemberHintState>;
+  /** Opening the plus once turns its hint off for good, on every device. */
+  markPlusOpened(userId: string): Promise<void>;
+  /** A template chat's first send. Resolves to the new count. */
+  noteTemplateChatStarted(userId: string): Promise<number>;
+}
+
 /** The signed-in user's own profile and preferences (Settings → Account).
  * Real accounts only: the localStorage dev backend has no users, says so via
  * isAvailable(), and the Account section explains instead of offering
@@ -378,6 +395,7 @@ export interface Stores {
   designImport: DesignImportProvider;
   generate: GenerateProvider;
   generateThreads: GenerateThreadStore;
+  memberHints: MemberHintStore;
   /** "supabase" or "local" — surfaced in the dev switcher so it's obvious
    * which backend is active. */
   backend: "supabase" | "local";

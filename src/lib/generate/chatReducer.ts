@@ -18,6 +18,7 @@ import {
   isUserTurn,
   type AssistantTurn,
   type ChatDraft,
+  type ChatDocument,
   type ChatPhoto,
   type ChatThread,
   type ChatTurn,
@@ -42,6 +43,9 @@ import {
 export const MAX_TURNS = 40;
 /** The server's brief cap, which the composer's maxLength mirrors. */
 export const MAX_BRIEF = 1500;
+/** The server's limits on a sent document (template-generate §10.1). */
+export const MAX_DOCUMENT_NAME = 120;
+export const MAX_DOCUMENT_TEXT = 12_000;
 /** The Variations stepper's range and default (PROMPT §7.7, §15 item 4):
  * the server clamps `count` to 1 to 3. */
 export const MIN_VARIATIONS = 1;
@@ -58,6 +62,7 @@ export type ChatAction =
       userTurnId: string;
       text: string;
       photo?: ChatPhoto | null;
+      document?: ChatDocument | null;
       platformHint?: PlatformId;
       variations: number;
       templateIdHint?: string;
@@ -129,6 +134,10 @@ export function chatReducer(state: ChatThread, action: ChatAction): ChatThread {
         // fact about it that may be persisted.
         user.photo = action.photo;
         user.hadPhoto = { aspect: action.photo.aspect };
+      }
+      if (action.document) {
+        user.document = action.document;
+        user.hadDocument = { name: action.document.name, kind: action.document.kind };
       }
       // What the message sends, which is what a follow-up reuses: a pinned
       // template is filled exactly and goes without the platform hint
@@ -598,6 +607,16 @@ export function buildGenerateInput(
     input.imageAspect = Math.min(10, Math.max(0.1, user.photo.aspect));
   }
   if (followUp && mode === "library") input.followUp = followUpFrom(prior);
+  // The document's text goes with its own message only (PROMPT §12.3): a
+  // follow-up carries the drafts its facts already landed in.
+  if (user.document) {
+    input.documents = [
+      {
+        name: user.document.name.slice(0, MAX_DOCUMENT_NAME) || "Document",
+        text: user.document.text.slice(0, MAX_DOCUMENT_TEXT),
+      },
+    ];
+  }
   return input;
 }
 

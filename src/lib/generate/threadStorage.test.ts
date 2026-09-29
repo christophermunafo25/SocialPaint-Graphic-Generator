@@ -321,6 +321,34 @@ describe("toStoredThread: the photo and every data URL", () => {
     expect(JSON.stringify(stored)).not.toContain("base64");
   });
 
+  it("saves a message's document as its name and kind, never its text", async () => {
+    const DOC = { name: "Job post.pdf", kind: "pdf" as const, text: "Creative Director, remote." };
+    const actions: ChatAction[] = [
+      {
+        type: "sent",
+        runId: "a1",
+        userTurnId: "u1",
+        text: BRIEF,
+        document: DOC,
+        variations: 1,
+        intent: "brief",
+        mode: "library",
+        at: T0,
+      },
+      { type: "done", runId: "a1", at: T1 },
+    ];
+    const thread = actions.reduce(chatReducer, emptyThread(T0));
+    const stored = toStoredThread(thread);
+    expect(storedUser(stored, 0).hadDocument).toEqual({ name: "Job post.pdf", kind: "pdf" });
+    expect(JSON.stringify(stored)).not.toContain("Creative Director, remote.");
+    // Reopened, then saved again: the record survives byte for byte.
+    const restored = await fromStoredThread(recordOf(thread), loadersFor([]));
+    const u1 = restored.turns[0] as UserTurn;
+    expect(u1.hadDocument).toEqual({ name: "Job post.pdf", kind: "pdf" });
+    expect(u1).not.toHaveProperty("document");
+    expect(JSON.stringify(toStoredThread(restored).turns)).toBe(JSON.stringify(stored.turns));
+  });
+
   it("keeps the aspect of a photo whose message never recorded it", () => {
     const stored = toStoredThread(
       threadOf([user("u1", BRIEF, { photo: PHOTO }), answer("a1", "u1", "done", [])]),
