@@ -1,7 +1,7 @@
 import type { MemberHintState, MemberHintStore } from "../interfaces";
 import { supabase } from "./client";
 
-/** member_hints (migration 0039): one self-scoped row per user, written
+/** member_hints (migration 0040): one self-scoped row per user, written
  * only through its two atomic RPCs so two tabs never lose a count. */
 export class SupabaseMemberHintStore implements MemberHintStore {
   async get(userId: string): Promise<MemberHintState> {

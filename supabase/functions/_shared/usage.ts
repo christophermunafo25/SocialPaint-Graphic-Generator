@@ -1,4 +1,4 @@
-// Model usage metering (migration 0039, ai_usage_events). Every Anthropic
+// Model usage metering (migration 0040, ai_usage_events). Every Anthropic
 // response's `usage` becomes one row, written with the service role so a
 // member can never forge or erase it. Pure apart from the one insert, and
 // that insert is injected, so the same code runs in Deno and under vitest.

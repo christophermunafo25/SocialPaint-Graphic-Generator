@@ -30,7 +30,7 @@ This folder holds the build prompt for the template chat designed on the Figma p
 
 Ship in this order:
 
-1. Apply migration `0039_template_chat.sql` (`supabase db push`). The functions and the app both read the new columns, so nothing else can go first.
+1. Apply migration `0040_template_chat.sql` (`supabase db push`). The functions and the app both read the new columns, so nothing else can go first.
 2. Redeploy `template-generate`, `template-autobuild` and `brand-from-website`. All three now log token usage, and `template-generate` reads `is_optional` and takes the new request fields.
 3. Deploy the app. An app ahead of the functions sends details, documents and questions to a function that ignores them.
 4. Run `./supabase/verify/run.sh` against a real Postgres. The new tables are self-scoped or admin-only, and those checks are not in CI.

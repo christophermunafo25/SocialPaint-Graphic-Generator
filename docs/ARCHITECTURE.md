@@ -102,18 +102,18 @@ from the platform in migration 0009.)
   chat (title, `platforms` text[], `preview` and `turns` jsonb). **Private
   to its author**: every policy is `user_id = auth.uid()`, so not even a
   company admin reads another member's chats. Never holds a photo or any
-  `data:` value. See Generate below. `template_id` (migration 0039) scopes a
+  `data:` value. See Generate below. `template_id` (migration 0040) scopes a
   template chat to its template; the insert and update policies only accept
   a template of the row's own company, and a deleted template nulls it.
-- `template_fields.is_optional` and `min_font_scale` (migration 0039): an
+- `template_fields.is_optional` and `min_font_scale` (migration 0040): an
   admin can mark a member field optional, and the shrink floor can be a
   fraction of the set size. See `docs/TEMPLATE_SCHEMA.md`. The legacy
   `required` column is never read.
-- `member_hints` (migration 0039): first-run hints, one row per user,
+- `member_hints` (migration 0040): first-run hints, one row per user,
   strictly self-scoped (`user_id = auth.uid()`, like
   `user_notification_prefs`), written only through the atomic RPCs
   `note_template_chat_started()` and `mark_plus_opened()`.
-- `ai_usage_events` (migration 0039): one row per model call, with its
+- `ai_usage_events` (migration 0040): one row per model call, with its
   function, kind, model and token counts. **Written only by Edge Functions
   (service role)**; there are no insert, update or delete policies, so no
   member can forge or erase usage. Company admins read their company's rows
@@ -643,7 +643,7 @@ nothing more: no quotas or credits.
 
 ### Deploying the template chat
 
-Ship in this order: migration `0039` (the functions select `is_optional`
+Ship in this order: migration `0040` (the functions select `is_optional`
 and write `ai_usage_events`; the client writes both new field columns and
 reads `template_id`), then `template-generate`, `template-autobuild` and
 `brand-from-website`, then the app (an older function ignores `details`,

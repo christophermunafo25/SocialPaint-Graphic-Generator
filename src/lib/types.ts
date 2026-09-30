@@ -976,7 +976,7 @@ export interface GenerateThreadSummary {
   platforms: PlatformId[];
   /** Null when the chat has no finished draft to show. */
   preview: GenerateThreadPreview | null;
-  /** The template a template chat is scoped to (migration 0039). Null for
+  /** The template a template chat is scoped to (migration 0040). Null for
    * a Generate chat, and for a template chat whose template was deleted. */
   templateId: string | null;
   createdAt: string;

@@ -1,4 +1,4 @@
--- Template chat (0039): optional fields and the relative floor persist; a
+-- Template chat (0040): optional fields and the relative floor persist; a
 -- thread can point only at a template of its own company (published or
 -- not); member_hints is strictly self-scoped; ai_usage_events is readable by
 -- a company's admins only, never writable by any client, and a row with no

@@ -178,7 +178,7 @@ export interface UsageStore {
   /** Current-calendar-month totals for Settings → Usage & plan. The month
    * boundary follows `timeZone` too. */
   getMonthlyUsage(companyId: string, timeZone?: string): Promise<MonthlyUsage>;
-  /** Model requests and tokens since `sinceIso` (migration 0039's
+  /** Model requests and tokens since `sinceIso` (migration 0040's
    * ai_usage_summary; template-chat PROMPT §14). Admin-only under RLS: a
    * member's call reads zeros. Null where no model calls can happen (the
    * localStorage backend), so the card is not shown. */
@@ -362,7 +362,7 @@ export type DetectFields = (imageUrl: string) => Promise<import("../types").Temp
 
 /** First-run hints (Template chat PROMPT §8.4, §12.10), per user and never
  * per company: whether they have opened the chat box's plus, and how many
- * template chats they have started. Self-scoped (migration 0039). */
+ * template chats they have started. Self-scoped (migration 0040). */
 export interface MemberHintState {
   plusOpened: boolean;
   templateChatsStarted: number;
