@@ -132,6 +132,8 @@ export interface TemplateFieldRow {
   text_gradient: import("../../types").TextGradient | null;
   font_size_px: number | null;
   min_font_size_px: number | null;
+  /** numeric(3,2): Postgres hands it back as a string. */
+  min_font_scale: number | string | null;
   /** Retired live palette binding (prompt 23) — the column survives in the
    * DB, unread and written null, until it has been dead long enough to drop. */
   color_key?: string | null;
@@ -147,6 +149,9 @@ export interface TemplateFieldRow {
   options: string[] | null;
   placeholder: string | null;
   required: boolean;
+  /** Null when the field is required: the flag is written true or null,
+   * never false, so "unset" stays distinguishable. */
+  is_optional: boolean | null;
 }
 
 const opt = <T>(v: T | null): T | undefined => (v === null ? undefined : v);
@@ -192,6 +197,7 @@ export const toTemplateField = (r: TemplateFieldRow): TemplateField => ({
   textGradient: opt(r.text_gradient),
   fontSizePx: opt(r.font_size_px) === undefined ? undefined : Number(r.font_size_px),
   minFontSizePx: opt(r.min_font_size_px) === undefined ? undefined : Number(r.min_font_size_px),
+  minFontScale: opt(r.min_font_scale) === undefined ? undefined : Number(r.min_font_scale),
   align: opt(r.align),
   verticalAlign: opt(r.vertical_align),
   uppercase: opt(r.uppercase),
@@ -204,6 +210,7 @@ export const toTemplateField = (r: TemplateFieldRow): TemplateField => ({
   options: opt(r.options),
   placeholder: opt(r.placeholder),
   required: r.required,
+  optional: r.is_optional ? true : undefined,
 });
 
 export const fieldToRow = (
@@ -245,6 +252,7 @@ export const fieldToRow = (
   text_gradient: f.textGradient ?? null,
   font_size_px: f.fontSizePx ?? null,
   min_font_size_px: f.minFontSizePx ?? null,
+  min_font_scale: f.minFontScale ?? null,
   align: f.align ?? null,
   vertical_align: f.verticalAlign ?? null,
   uppercase: f.uppercase ?? null,
@@ -257,6 +265,7 @@ export const fieldToRow = (
   options: f.options ?? null,
   placeholder: f.placeholder ?? null,
   required: f.required ?? false,
+  is_optional: f.optional ? true : null,
 });
 
 export interface TemplateRow {

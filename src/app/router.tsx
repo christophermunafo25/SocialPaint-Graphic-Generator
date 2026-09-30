@@ -69,6 +69,20 @@ export type Route =
    * the URL: a reload, back and forward, and every other way to the chat
    * read the address alone, and so mount the saved chat afresh. */
   | { name: "generate"; templateId?: string; threadId?: string; savedInPlace?: boolean }
+  /** A template chat (docs/design/template-chat/PROMPT.md §12.1):
+   * `/templates/<templateId>/chat` is a new chat on that template, and
+   * `/templates/<templateId>/chat/<threadId>` a saved one. `edit` and `field`
+   * open that chat's Edit details on a draft, focused on a field.
+   * `savedInPlace` is the Generate route's: the page's own address change
+   * after its first save, never in the URL (templateChatPageKey). */
+  | {
+      name: "templateChat";
+      templateId: string;
+      threadId?: string;
+      edit?: string;
+      field?: string;
+      savedInPlace?: boolean;
+    }
   /** Every saved chat, newest first. The filter bar's state rides in the
    * URL like the Brand templates route's: selecting a chip or typing a
    * query IS a navigation, and an unknown platform reads as no filter. */
@@ -120,6 +134,15 @@ export function routeToUrl(route: Route): string {
       return `/templates/${encodeURIComponent(route.templateId)}`;
     case "bulk":
       return `/templates/${encodeURIComponent(route.templateId)}/bulk`;
+    case "templateChat": {
+      const base = `/templates/${encodeURIComponent(route.templateId)}/chat`;
+      const path = route.threadId ? `${base}/${encodeURIComponent(route.threadId)}` : base;
+      const params = new URLSearchParams();
+      if (route.edit) params.set("edit", route.edit);
+      if (route.edit && route.field) params.set("field", route.field);
+      const qs = params.toString();
+      return qs ? `${path}?${qs}` : path;
+    }
     case "generate":
       if (route.threadId) return `/generate/c/${encodeURIComponent(route.threadId)}`;
       return route.templateId
@@ -174,6 +197,15 @@ export function generatePageKey(route: Extract<Route, { name: "generate" }>): st
   return route.threadId && !route.savedInPlace ? `chat:${route.threadId}` : "new";
 }
 
+/** What App keys a template chat's page on: generatePageKey's rule, per
+ * template. Opening another chat starts fresh; the first save's own address
+ * change (savedInPlace) and moving in and out of Edit details (`edit`,
+ * `field`) keep the page mounted. */
+export function templateChatPageKey(route: Extract<Route, { name: "templateChat" }>): string {
+  const chat = route.threadId && !route.savedInPlace ? `chat:${route.threadId}` : "new";
+  return `template:${route.templateId}:${chat}`;
+}
+
 /** The route state a navigation sets: always a fresh object, so going to
  * the address already on screen is still a change the page sees. The
  * sidebar hands over the same route object on every click, which React
@@ -191,13 +223,24 @@ const parsePlatform = (raw: string | null): PlatformId | undefined =>
  * dead end. */
 export function urlToRoute(pathname: string, search: string): Route {
   const params = new URLSearchParams(search);
-  const [head, tail, third] = pathname.split("/").filter(Boolean);
+  const [head, tail, third, fourth] = pathname.split("/").filter(Boolean);
 
   switch (head) {
     case "onboarding":
       return { name: "onboarding" };
     case "templates":
       if (tail && third === "bulk") return { name: "bulk", templateId: decodeURIComponent(tail) };
+      if (tail && third === "chat") {
+        const edit = params.get("edit") ?? undefined;
+        const field = edit ? (params.get("field") ?? undefined) : undefined;
+        return {
+          name: "templateChat",
+          templateId: decodeURIComponent(tail),
+          ...(fourth ? { threadId: decodeURIComponent(fourth) } : {}),
+          ...(edit ? { edit } : {}),
+          ...(field ? { field } : {}),
+        };
+      }
       if (tail) return { name: "template", templateId: decodeURIComponent(tail) };
       return {
         name: "portal",
@@ -262,6 +305,22 @@ export function urlToRoute(pathname: string, search: string): Route {
   }
 }
 
+const HISTORY_SAVED_IN_PLACE = { savedInPlace: true } as const;
+
+/** A route read back from a history entry, with the savedInPlace mark the
+ * entry was written with (navigate). Only a chat's own address takes it. */
+export function withHistoryState(route: Route, state: unknown): Route {
+  const marked =
+    typeof state === "object" &&
+    state !== null &&
+    (state as { savedInPlace?: unknown }).savedInPlace === true;
+  if (!marked) return route;
+  if ((route.name === "generate" || route.name === "templateChat") && route.threadId) {
+    return { ...route, savedInPlace: true };
+  }
+  return route;
+}
+
 export function RouterProvider({ children }: { children: React.ReactNode }) {
   const [route, setRoute] = useState<Route>(() =>
     urlToRoute(window.location.pathname, window.location.search),
@@ -269,15 +328,27 @@ export function RouterProvider({ children }: { children: React.ReactNode }) {
 
   const navigate = useCallback((next: Route, options?: NavigateOptions) => {
     const url = routeToUrl(next);
+    // savedInPlace never reaches the URL, but it rides in the history entry,
+    // so back and forward within a chat saved in place (Edit details' own
+    // entries) find the page they left and do not remount it.
+    const state = "savedInPlace" in next && next.savedInPlace ? HISTORY_SAVED_IN_PLACE : null;
     if (url !== window.location.pathname + window.location.search) {
-      window.history[options?.replace ? "replaceState" : "pushState"](null, "", url);
+      window.history[options?.replace ? "replaceState" : "pushState"](state, "", url);
+    } else if (state) {
+      window.history.replaceState(state, "", url);
     }
     setRoute(routeState(next));
   }, []);
 
   // Back/forward move the app without writing to history again.
   useEffect(() => {
-    const onPop = () => setRoute(urlToRoute(window.location.pathname, window.location.search));
+    const onPop = () =>
+      setRoute(
+        withHistoryState(
+          urlToRoute(window.location.pathname, window.location.search),
+          window.history.state,
+        ),
+      );
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);

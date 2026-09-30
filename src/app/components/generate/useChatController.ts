@@ -7,6 +7,9 @@ import { primaryPlatformOf } from "@/lib/generate/draftView";
 import {
   isAssistantTurn,
   isUserTurn,
+  type ChatDetail,
+  type ChatDocument,
+  type ChatDraft,
   type ChatPhoto,
   type ChatThread,
   type ChatTurn,
@@ -27,7 +30,7 @@ import {
   type ChatAction,
 } from "@/lib/generate/chatReducer";
 import { runChat, type ChatRunEffects } from "@/lib/generate/chatRun";
-import type { RunMode } from "@/lib/generate/runCopy";
+import { fillingInStatus, type RunMode } from "@/lib/generate/runCopy";
 import type { TryNextAction } from "@/lib/generate/tryNext";
 
 /** A message from the Start state's composer, the thread's compact
@@ -37,6 +40,9 @@ export interface ChatSendInput {
   /** The composer's attachment. Snapshotted on the message; only its flag
    * and aspect cross the wire. */
   photo?: ChatPhoto | null;
+  /** The composer's document: its extracted text goes with this message
+   * only and is never saved (PROMPT §12.3). */
+  document?: ChatDocument | null;
   /** `null` is an explicit "Any platform"; left out, a follow-up reuses the
    * thread's last composer send (the compact composer has no platform
    * select; a Try next chip's platform was for its own run). */
@@ -46,6 +52,8 @@ export interface ChatSendInput {
   variations?: number;
   /** A pinned Start from chip: fill exactly this published template. */
   templateIdHint?: string;
+  /** A template chat's detail tags (Template chat PROMPT §12.3). */
+  details?: ChatDetail[];
 }
 
 export interface ChatController {
@@ -75,6 +83,12 @@ export interface ChatController {
     turnId: string,
     edits: Array<{ draftId: string; fieldKey: string; value: string }>,
   ): void;
+  /** A draft's look (Template chat PROMPT §9.5): instant, no model call. */
+  changeLook(turnId: string, draftId: string, variantId: string): void;
+  /** A draft's caption, written by the member (§12.7). */
+  editCaption(turnId: string, draftId: string, caption: string): void;
+  /** Discard: the turn's drafts back as they were in `drafts` (§12.7). */
+  restoreDrafts(turnId: string, drafts: ChatDraft[]): void;
   /** New chat: stops a run in flight, then empties the thread. */
   reset(): void;
   /** The chat was saved for the first time, as `id` (PROMPT §9.8). */
@@ -101,11 +115,18 @@ export interface ChatControllerOptions {
    * before each template is fetched. Without it a library proposal's size
    * counts as one of its own. */
   published?: ReadonlyArray<Pick<TemplateSchema, "id" | "canvasWidth" | "canvasHeight">> | null;
+  /** A template chat (Template chat PROMPT §12): every message pins this
+   * template, asks for one draft and names it in the status. */
+  template?: Pick<TemplateSchema, "id" | "name"> | null;
 }
 
 /** The fields of a message that decide its run. */
-type RunRequest = Omit<UserTurn, "id" | "role" | "createdAt" | "hadPhoto" | "photo"> & {
+type RunRequest = Omit<
+  UserTurn,
+  "id" | "role" | "createdAt" | "hadPhoto" | "photo" | "hadDocument" | "document"
+> & {
   photo: ChatPhoto | null;
+  document?: ChatDocument | null;
 };
 
 const newId = (): string =>
@@ -153,7 +174,7 @@ export function useChatController(opts: ChatControllerOptions): ChatController {
   optsRef.current = opts;
 
   const [thread, setThread] = useState<ChatThread>(() =>
-    settleOrphanedRuns(opts.initial ?? emptyThread()),
+    settleOrphanedRuns(opts.initial ?? emptyThread(undefined, opts.template?.id ?? null)),
   );
   // The thread as of the last dispatch, ahead of React's render: a run reads
   // it between awaits, and a second send in the same tick sees the first.
@@ -197,7 +218,7 @@ export function useChatController(opts: ChatControllerOptions): ChatController {
       user: UserTurn,
       mode: RunMode,
     ) => {
-      const { kit, published } = optsRef.current;
+      const { kit, published, template } = optsRef.current;
       const abort = new AbortController();
       runRef.current = { id: runId, abort };
       try {
@@ -210,6 +231,7 @@ export function useChatController(opts: ChatControllerOptions): ChatController {
             mode,
             kit,
             published,
+            templateChat: Boolean(template),
             signal: abort.signal,
             alive: () => runRef.current?.id === runId,
             dispatch: apply,
@@ -235,7 +257,16 @@ export function useChatController(opts: ChatControllerOptions): ChatController {
       const mode = pickMode(prior, request, libraryEmpty);
       const runId = newId();
       const userTurnId = newId();
-      apply({ type: "sent", runId, userTurnId, ...request, mode, at: now() });
+      const { template } = optsRef.current;
+      apply({
+        type: "sent",
+        runId,
+        userTurnId,
+        ...request,
+        mode,
+        ...(template ? { status: fillingInStatus(template.name) } : {}),
+        at: now(),
+      });
       const user = threadRef.current.turns.find(
         (t): t is UserTurn => isUserTurn(t) && t.id === userTurnId,
       );
@@ -251,9 +282,23 @@ export function useChatController(opts: ChatControllerOptions): ChatController {
       const text = input.text.trim();
       if (!text) return false;
       const { turns } = threadRef.current;
+      const { template } = optsRef.current;
+      if (template) {
+        // A template chat: its template, one draft, no platform (§12.3).
+        return start({
+          text,
+          photo: input.photo ?? null,
+          document: input.document ?? null,
+          ...(input.details?.length ? { details: input.details } : {}),
+          variations: 1,
+          templateIdHint: template.id,
+          intent: lastUserTurn(turns) ? "followUp" : "brief",
+        });
+      }
       return start({
         text,
         photo: input.photo ?? null,
+        document: input.document ?? null,
         // A chip's count of one and its platform were for its own run.
         ...fillSendGaps(input, lastComposerTurn(turns)),
         ...(input.templateIdHint ? { templateIdHint: input.templateIdHint } : {}),
@@ -321,6 +366,8 @@ export function useChatController(opts: ChatControllerOptions): ChatController {
         start({
           text: user.text,
           photo: user.photo ?? null,
+          document: user.document ?? null,
+          ...(user.details?.length ? { details: user.details } : {}),
           ...(user.platformHint ? { platformHint: user.platformHint } : {}),
           variations: user.variations,
           ...(user.templateIdHint ? { templateIdHint: user.templateIdHint } : {}),
@@ -333,7 +380,15 @@ export function useChatController(opts: ChatControllerOptions): ChatController {
       const prior = current.turns.slice(0, userIndex);
       const mode = pickMode(prior, user, libraryEmpty);
       const runId = newId();
-      apply({ type: "retry", turnId: turn.id, runId, mode, at: now() });
+      const { template } = optsRef.current;
+      apply({
+        type: "retry",
+        turnId: turn.id,
+        runId,
+        mode,
+        ...(template ? { status: fillingInStatus(template.name) } : {}),
+        at: now(),
+      });
       if (threadRef.current === current) return;
       void execute(runId, companyId, prior, user, mode);
     },
@@ -343,6 +398,24 @@ export function useChatController(opts: ChatControllerOptions): ChatController {
   const editValues = useCallback(
     (turnId: string, edits: Array<{ draftId: string; fieldKey: string; value: string }>) =>
       apply({ type: "valuesEdited", turnId, edits, at: now() }),
+    [apply],
+  );
+
+  const changeLook = useCallback(
+    (turnId: string, draftId: string, variantId: string) =>
+      apply({ type: "lookChanged", turnId, draftId, variantId, at: now() }),
+    [apply],
+  );
+
+  const editCaption = useCallback(
+    (turnId: string, draftId: string, caption: string) =>
+      apply({ type: "captionEdited", turnId, draftId, caption, at: now() }),
+    [apply],
+  );
+
+  const restoreDrafts = useCallback(
+    (turnId: string, drafts: ChatDraft[]) =>
+      apply({ type: "draftsRestored", turnId, drafts, at: now() }),
     [apply],
   );
 
@@ -362,6 +435,9 @@ export function useChatController(opts: ChatControllerOptions): ChatController {
     stop,
     retry,
     editValues,
+    changeLook,
+    editCaption,
+    restoreDrafts,
     reset,
     assignId,
   };

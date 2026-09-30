@@ -154,12 +154,14 @@ export function clampThreadTitle(title: string): string {
 }
 
 /** What both stores write: the title the column accepts and the platforms
- * in their one order. Turns and preview pass through as given. */
+ * in their one order. Turns, preview and the template pass through as
+ * given (an absent templateId, from an older caller, writes null). */
 export function normalizeThreadInput(input: GenerateThreadInput): GenerateThreadInput {
   return {
     title: clampThreadTitle(input.title),
     platforms: platformsInOrder(input.platforms),
     preview: input.preview,
+    templateId: input.templateId ?? null,
     turns: input.turns,
   };
 }

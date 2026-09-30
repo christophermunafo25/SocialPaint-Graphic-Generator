@@ -94,6 +94,7 @@ export function toStoredThread(thread: ChatThread): GenerateThreadInput {
     title: storedTitle(thread),
     platforms: platformsOf(turns),
     preview: previewOf(turns),
+    templateId: thread.templateId ?? null,
     turns,
   });
 }
@@ -130,12 +131,25 @@ function storedTurn(turn: UserTurn | FinishedTurn): StoredTurn {
 function storedUserTurn(turn: UserTurn): StoredUserTurn {
   // The photo stays behind. Its aspect is what says one was attached.
   const aspect = turn.hadPhoto?.aspect ?? turn.photo?.aspect;
+  const document = turn.hadDocument ?? turn.document;
   return {
     id: turn.id,
     role: "user",
     text: prose(turn.text),
     createdAt: turn.createdAt,
     ...(aspect !== undefined ? { hadPhoto: { aspect } } : {}),
+    // The document's text stays behind too; its name and kind remain.
+    ...(document ? { hadDocument: { name: prose(document.name), kind: document.kind } } : {}),
+    // Detail tags are text the member typed: safe to keep, as they are.
+    ...(turn.details?.length
+      ? {
+          details: turn.details.map((d) => ({
+            fieldKey: d.fieldKey,
+            label: prose(d.label),
+            value: prose(d.value),
+          })),
+        }
+      : {}),
     ...(turn.platformHint ? { platformHint: turn.platformHint } : {}),
     variations: turn.variations,
     ...(turn.templateIdHint ? { templateIdHint: turn.templateIdHint } : {}),
@@ -159,6 +173,7 @@ function storedAssistantTurn(turn: FinishedTurn): StoredAssistantTurn {
       ? { meta: { model: prose(meta.model), candidateCount: meta.candidateCount, mode: meta.mode } }
       : {}),
     drafts: turn.drafts.map(storedDraft),
+    ...(turn.question ? { question: prose(turn.question) } : {}),
   };
 }
 
@@ -177,6 +192,11 @@ function storedDraft(draft: ChatDraft): StoredDraft {
     },
     canvas: { width: draft.canvas.width, height: draft.canvas.height },
     values: draft.values,
+    ...(draft.variantId ? { variantId: draft.variantId } : {}),
+    ...(draft.captionOverride !== undefined
+      ? { captionOverride: prose(draft.captionOverride) }
+      : {}),
+    ...(draft.memberKeys?.length ? { memberKeys: [...draft.memberKeys] } : {}),
   };
 }
 
@@ -216,6 +236,7 @@ function previewOf(turns: readonly StoredTurn[]): GenerateThreadPreview | null {
     const { design, templateId } = first.proposal;
     return {
       ...(design ? { design } : { templateId }),
+      ...(first.variantId ? { variantId: first.variantId } : {}),
       values: first.values,
       canvas: first.canvas,
     };
@@ -277,6 +298,7 @@ export async function fromStoredThread(
   const brief = firstBrief(turns);
   return {
     id: record.id,
+    ...(record.templateId ? { templateId: record.templateId } : {}),
     title: record.title.trim() || (brief ? fallbackTitle(brief) : "") || NEW_CHAT_TITLE,
     turns,
     createdAt: record.createdAt,
@@ -291,8 +313,12 @@ function restoredUserTurn(turn: StoredUserTurn): UserTurn {
     text: turn.text,
     createdAt: turn.createdAt,
     ...(turn.hadPhoto ? { hadPhoto: { aspect: turn.hadPhoto.aspect } } : {}),
+    ...(turn.hadDocument
+      ? { hadDocument: { name: turn.hadDocument.name, kind: turn.hadDocument.kind } }
+      : {}),
     ...(turn.platformHint ? { platformHint: turn.platformHint } : {}),
     variations: turn.variations,
+    ...(turn.details?.length ? { details: turn.details.map((d) => ({ ...d })) } : {}),
     ...(turn.templateIdHint ? { templateIdHint: turn.templateIdHint } : {}),
     intent: turn.intent,
   };
@@ -326,6 +352,7 @@ async function restoredAssistantTurn(
     warnings: turn.warnings,
     ...(turn.error ? { error: turn.error } : {}),
     ...(turn.meta ? { meta: turn.meta } : {}),
+    ...(turn.question ? { question: turn.question } : {}),
   };
 }
 
@@ -353,5 +380,11 @@ async function restoredDraft(
     // render, the shape it was saved with.
     canvas: schema ? { width: schema.canvasWidth, height: schema.canvasHeight } : draft.canvas,
     values: draft.values,
+    // A look deleted since the chat was saved falls back to the default.
+    ...(draft.variantId && schema?.variants?.some((v) => v.id === draft.variantId)
+      ? { variantId: draft.variantId }
+      : {}),
+    ...(draft.captionOverride !== undefined ? { captionOverride: draft.captionOverride } : {}),
+    ...(draft.memberKeys?.length ? { memberKeys: [...draft.memberKeys] } : {}),
   };
 }

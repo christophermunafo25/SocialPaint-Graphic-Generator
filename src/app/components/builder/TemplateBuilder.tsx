@@ -103,6 +103,7 @@ import {
   copyToClipboard,
   duplicateFields,
   fieldFromPalette,
+  fixedPatch,
   isSvgSource,
   isTypingTarget,
   logoFieldFromAsset,
@@ -1772,28 +1773,14 @@ export function TemplateBuilder({
   /** Bulk Fixed toggle over a selection — the recovery move after an import
    * lands twenty elements. Shapes are excluded (always fixed by definition)
    * and dropdowns too (they exist only as member inputs); both match what the
-   * inspector's own checkbox allows. Patches mirror the inspector exactly so
-   * a bulk toggle and a one-at-a-time toggle produce identical fields. */
+   * inspector's own checkbox allows. Both apply fixedPatch, so a bulk toggle
+   * and a one-at-a-time toggle produce identical fields. */
   const setFixed = useCallback(
     (ids: string[], fixed: boolean) => {
       const idSet = new Set(ids);
       const eligible = (f: TemplateField) =>
         idSet.has(f.id) && f.type !== "shape" && f.type !== "select";
-      setFields(
-        draft.fields.map((f) =>
-          eligible(f)
-            ? fixed
-              ? {
-                  ...f,
-                  static: true,
-                  required: undefined,
-                  placeholder: undefined,
-                  maxLength: undefined,
-                }
-              : { ...f, static: undefined, staticValue: undefined }
-            : f,
-        ),
-      );
+      setFields(draft.fields.map((f) => (eligible(f) ? { ...f, ...fixedPatch(f, fixed) } : f)));
     },
     [draft.fields, setFields],
   );

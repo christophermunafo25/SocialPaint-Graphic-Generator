@@ -1,8 +1,13 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AlertTriangle } from "lucide-react";
-import type { BrandKit } from "@/lib/types";
+import type { BrandKit, TemplateField } from "@/lib/types";
 import type { ChatDraft, ChatPhoto } from "@/lib/generate/chat";
-import { draftName, previewValues } from "@/lib/generate/draftView";
+import { draftName, previewValues, tooLongFields } from "@/lib/generate/draftView";
+import { indefiniteArticle } from "@/lib/generate/tryNext";
+import { blockedNote } from "@/lib/generate/editDetails";
+import { createCanvasMeasurer } from "@/lib/render/autoFit";
+import type { Rect } from "@/lib/render/layout";
 import {
   EXPORT_ERROR_TITLE,
   exportErrorMessage,
@@ -26,7 +31,8 @@ import { ErrorBoundary } from "../ErrorBoundary";
 import { FieldInput } from "../FieldInput";
 import { SchemaRenderer, type SchemaRendererHandle } from "../SchemaRenderer";
 import { ChatButton } from "./ChatButton";
-import { EditorField } from "./EditorField";
+import { EditorField, fieldStatus } from "./EditorField";
+import { TagPlusGlyph } from "./icons";
 import { CloseButton } from "./IconButton";
 import { useScrollFades } from "./ScrollFade";
 import { SegmentSwitch, type SegmentOption } from "./SegmentSwitch";
@@ -145,6 +151,21 @@ function useFadeRoom(list: HTMLElement | null): boolean {
   return room;
 }
 
+/** The member field an entry edits on one draft: a text group's member on
+ * it, or an image slot of it. Undefined when the entry has none there. */
+function fieldKeyOn(entry: LinkedEntry, draftId: string): string | undefined {
+  if (entry.kind === "image") return entry.draftId === draftId ? entry.field.fieldKey : undefined;
+  return entry.members.find((m) => m.draftId === draftId)?.fieldKey;
+}
+
+/** An empty input's placeholder (template-chat PROMPT §11.12): the field's
+ * own, else "Add a location" from its label. */
+function withPlaceholder(field: TemplateField): TemplateField {
+  if (field.placeholder || field.type === "image" || field.type === "select") return field;
+  const label = field.label.trim().toLowerCase();
+  return label ? { ...field, placeholder: `Add ${indefiniteArticle(label)} ${label}` } : field;
+}
+
 /** The focusable elements inside `root`, in tab order, for the sheet's
  * focus trap (the panel itself, focusable only so a click on its body keeps
  * focus inside, is not one of them). */
@@ -229,6 +250,12 @@ export function EditorPanel({
   presentation,
   saveToLibrary = null,
   exportError = null,
+  stageTarget = null,
+  looks = null,
+  caption = null,
+  openDrafts = null,
+  onDiscard,
+  canDiscard = false,
 }: {
   /** The turn's drafts. A draft whose template is gone (schema null)
    * cannot be edited or shown, and is left out of the switch and the
@@ -247,8 +274,25 @@ export function EditorPanel({
   presentation: "inline" | "sheet";
   saveToLibrary?: EditorSaveToLibrary | null;
   exportError?: string | null;
+  /** Edit details' stage (template-chat PROMPT §12.7): the page's large
+   * well. The draft is rendered there instead of in the panel, with the
+   * Missing markers over it, and the panel has no preview of its own. */
+  stageTarget?: HTMLElement | null;
+  /** The look switch, for a template with more than one look. */
+  looks?: { options: SegmentOption[]; selectedId: string; onSelect(id: string): void } | null;
+  /** The Caption field: the caption shown, and the member's own. */
+  caption?: { value: string; onChange(next: string): void } | null;
+  /** The drafts as they were when the panel opened: a field that differs
+   * from them says "Edited". */
+  openDrafts?: ChatDraft[] | null;
+  /** Discard puts the fields, the look and the caption back. */
+  onDiscard?(): void;
+  /** Something has changed since the panel opened. */
+  canDiscard?: boolean;
 }) {
   const { kit } = useBrand();
+  const stageMode = stageTarget !== null;
+  const captionId = useId();
   const prefix = useId();
   const titleId = useId();
   const blockedId = useId();
@@ -276,17 +320,55 @@ export function EditorPanel({
   // Download PNG waits for the stage's draft to be complete, as the fill
   // page's does: the entries that fill its gaps, in the panel's order,
   // name them, and the first is where the button takes the member.
+  // A value too long for its line at its floor blocks it too (§9.4),
+  // measured against the draft's look as the stage paints it.
+  const measure = useMemo(() => createCanvasMeasurer(), []);
+  const tooLong = useMemo(
+    () => new Set(selected ? tooLongFields(selected, values, kit, measure) : []),
+    [selected, values, kit, measure],
+  );
+  const missingKeys = useMemo(
+    () => new Set(selected ? missingFields(selected, values).map((f) => f.fieldKey) : []),
+    [selected, values],
+  );
   const blocked = useMemo(() => {
     if (!selected) return null;
     const missing = missingFields(selected, values);
-    if (missing.length === 0) return null;
+    if (missing.length === 0 && tooLong.size === 0) return null;
     const hits = new Set(missing.map((f) => findGroupForField(entries, selected.id, f.fieldKey)));
     const listed = entries.filter((e) => hits.has(e));
     const unlisted = missing
       .filter((f) => !findGroupForField(entries, selected.id, f.fieldKey))
       .map((f) => f.label);
-    return { first: listed[0], labels: [...listed.map((e) => e.label), ...unlisted] };
-  }, [selected, values, entries]);
+    const long = entries.filter((e) => {
+      const key = fieldKeyOn(e, selected.id);
+      return key !== undefined && tooLong.has(key);
+    });
+    return {
+      first: listed[0] ?? long[0],
+      note: blockedNote(
+        [...listed.map((e) => e.label), ...unlisted],
+        long.map((e) => e.label),
+      ),
+    };
+  }, [selected, values, entries, tooLong]);
+
+  // Each field's status (§11.11): Missing, Too long, Edited.
+  const statusOf = useCallback(
+    (entry: LinkedEntry) => {
+      if (!selected) return null;
+      const key = fieldKeyOn(entry, selected.id);
+      if (key === undefined) return null;
+      const opened = openDrafts?.find((d) => d.id === selected.id);
+      const was = opened ? (opened.values[key] ?? "") : undefined;
+      return fieldStatus({
+        missing: missingKeys.has(key),
+        tooLong: tooLong.has(key),
+        edited: was !== undefined && was !== (selected.values[key] ?? ""),
+      });
+    },
+    [selected, openDrafts, missingKeys, tooLong],
+  );
 
   // ── Focus ───────────────────────────────────────────────────────────────
   const hostRef = useRef<HTMLDivElement | null>(null);
@@ -329,6 +411,14 @@ export function EditorPanel({
       : undefined;
     if (!focusEntry(asked ?? entries[0])) closeRef.current?.focus({ preventScroll: true });
   }, [focusRequest, entries, focusEntry]);
+
+  /** A Missing marker on the stage: focus its field's input. */
+  const focusField = useCallback(
+    (fieldKey: string) => {
+      if (selected) focusEntry(findGroupForField(entries, selected.id, fieldKey));
+    },
+    [selected, entries, focusEntry],
+  );
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
@@ -417,11 +507,30 @@ export function EditorPanel({
 
   const hint = editsHint(usable.length);
 
+  const stage =
+    shown.length > 0
+      ? shown.map((d) => (
+          <StageGraphic
+            key={d.id}
+            draft={d}
+            photo={photo}
+            kit={kit}
+            visible={d.id === selected?.id}
+            rendererRef={rendererRef}
+            onWarnings={setWarnings}
+            onMarker={stageMode ? focusField : undefined}
+          />
+        ))
+      : drafts[0] && (
+          <p className="sp-chat-editor__gone">{draftName(drafts[0])} is no longer available.</p>
+        );
+
   const panel = (
     <aside
       ref={panelRef}
       className="sp-card sp-chat-editor"
       data-presentation={presentation}
+      data-stage={stageMode || undefined}
       role="complementary"
       aria-label="Edit details"
       // Focusable, never a tab stop: a click on the panel's body (the
@@ -437,7 +546,7 @@ export function EditorPanel({
         <CloseButton ref={closeRef} onClick={onClose} />
       </div>
 
-      {options.length > 1 && selected && (
+      {!stageMode && options.length > 1 && selected && (
         <SegmentSwitch
           variant="editor"
           options={options}
@@ -447,30 +556,15 @@ export function EditorPanel({
         />
       )}
 
-      <div className="sp-chat-editor__stage">
-        {shown.length > 0
-          ? shown.map((d) => (
-              <StageGraphic
-                key={d.id}
-                draft={d}
-                photo={photo}
-                kit={kit}
-                visible={d.id === selected?.id}
-                rendererRef={rendererRef}
-                onWarnings={setWarnings}
-              />
-            ))
-          : drafts[0] && (
-              <p className="sp-chat-editor__gone">{draftName(drafts[0])} is no longer available.</p>
-            )}
-      </div>
+      {!stageMode && <div className="sp-chat-editor__stage">{stage}</div>}
+      {stageMode && stageTarget && createPortal(stage, stageTarget)}
       {selected && warnings.length > 0 && (
         <p role="status" className="sp-chat-editor__warning">
           {warnings[0]}
         </p>
       )}
 
-      {entries.length > 0 && (
+      {(entries.length > 0 || looks || caption) && (
         <div
           ref={setFields}
           className="sp-chat-editor__fields"
@@ -487,6 +581,22 @@ export function EditorPanel({
             if (list?.contains(e.target)) revealInList(list, e.target);
           }}
         >
+          {looks && looks.options.length > 1 && (
+            <div className="sp-chat-field">
+              <div className="sp-chat-field__labelrow">
+                <span className="sp-chat-field__label" id={`${prefix}look`}>
+                  Look
+                </span>
+              </div>
+              <SegmentSwitch
+                variant="editor"
+                options={looks.options}
+                selectedId={looks.selectedId}
+                onSelect={looks.onSelect}
+                aria-labelledby={`${prefix}look`}
+              />
+            </div>
+          )}
           {entries.map((entry) => {
             const id = controlId(prefix, entry);
             return (
@@ -495,10 +605,11 @@ export function EditorPanel({
                 label={entry.label}
                 htmlFor={id}
                 optional={entry.kind === "text" && !entry.required}
+                status={statusOf(entry)}
               >
                 <FieldInput
                   variant="chat"
-                  field={inputField(entry, usable)}
+                  field={withPlaceholder(inputField(entry, usable))}
                   value={groupValue(entry, usable, selected?.id)}
                   onChange={(next) => onEdit(editsFor(entry, next))}
                   inputId={id}
@@ -506,6 +617,18 @@ export function EditorPanel({
               </EditorField>
             );
           })}
+          {caption && (
+            <EditorField label="Caption" htmlFor={captionId}>
+              <textarea
+                id={captionId}
+                className="sp-chat-input"
+                rows={3}
+                value={caption.value}
+                placeholder="Add a caption"
+                onChange={(e) => caption.onChange(e.target.value)}
+              />
+            </EditorField>
+          )}
         </div>
       )}
 
@@ -514,22 +637,34 @@ export function EditorPanel({
       <div className="sp-chat-editor__footer">
         {hint && <p className="sp-chat-editor__hint">{hint}</p>}
         {saveToLibrary && <SaveToLibrary {...saveToLibrary} />}
-        <ChatButton
-          kind="primary"
-          className="sp-chat-editor__action"
-          aria-disabled={exporting || blocked !== null || !selected || undefined}
-          aria-busy={exporting || undefined}
-          aria-describedby={blocked ? blockedId : undefined}
-          onClick={() => {
-            if (blocked) focusEntry(blocked.first);
-            else if (selected) void download();
-          }}
-        >
-          Download PNG
-        </ChatButton>
+        <div className="sp-chat-editor__actions">
+          {onDiscard && (
+            <ChatButton
+              kind="tertiary"
+              className="sp-chat-editor__discard"
+              disabled={!canDiscard}
+              onClick={onDiscard}
+            >
+              Discard
+            </ChatButton>
+          )}
+          <ChatButton
+            kind="primary"
+            className="sp-chat-editor__action"
+            aria-disabled={exporting || blocked !== null || !selected || undefined}
+            aria-busy={exporting || undefined}
+            aria-describedby={blocked ? blockedId : undefined}
+            onClick={() => {
+              if (blocked) focusEntry(blocked.first);
+              else if (selected) void download();
+            }}
+          >
+            Download PNG
+          </ChatButton>
+        </div>
         {blocked && (
           <p id={blockedId} className="sp-chat-editor__note" role="status" aria-live="polite">
-            Fill required: {blocked.labels.join(", ")}
+            {blocked.note}
           </p>
         )}
       </div>
@@ -570,6 +705,7 @@ function StageGraphic({
   visible,
   rendererRef,
   onWarnings,
+  onMarker,
 }: {
   draft: ChatDraft;
   photo: ChatPhoto | null;
@@ -577,8 +713,31 @@ function StageGraphic({
   visible: boolean;
   rendererRef: React.RefObject<SchemaRendererHandle | null>;
   onWarnings(warnings: string[]): void;
+  /** Edit details' stage: every empty required field gets a Missing
+   * marker, which focuses its field (§11.13). */
+  onMarker?(fieldKey: string): void;
 }) {
   const values = useMemo(() => previewValues(draft, photo), [draft, photo]);
+  const missing = useMemo(
+    () => (onMarker ? missingFields(draft, values) : []),
+    [onMarker, draft, values],
+  );
+  const overlay = useCallback(
+    ({ rects, scale }: { rects: ReadonlyMap<string, Rect>; scale: number }) =>
+      missing.map((f) => {
+        const rect = rects.get(f.id);
+        return rect ? (
+          <MissingMarker
+            key={f.id}
+            field={f}
+            rect={rect}
+            scale={scale}
+            onClick={() => onMarker?.(f.fieldKey)}
+          />
+        ) : null;
+      }),
+    [missing, onMarker],
+  );
   const schema = draft.schema;
   if (!schema) return null;
   return (
@@ -612,10 +771,71 @@ function StageGraphic({
             brandKit={kit}
             instrument={instrumentsUsage(draft)}
             onWarnings={visible ? onWarnings : undefined}
+            variantId={draft.variantId}
+            emptyFields="chat"
+            overlay={missing.length > 0 ? overlay : undefined}
           />
         </div>
       </div>
     </ErrorBoundary>
+  );
+}
+
+/** A Missing marker on the edit stage (template-chat PROMPT §11.13): the
+ * Missing tag in the marker colours (a dark scrim, a white dashed edge,
+ * white ink), which read on every look. A text field's sits in its reserved
+ * slot, vertically centred and aligned as the field aligns its text; an
+ * image field's rect is outlined, the tag centred in it. It is counter-
+ * scaled so it draws at its 28px on screen whatever the stage's scale, and
+ * turns with the field. It lives in the renderer's overlay, so it never
+ * reaches an export; clicking it focuses the field. */
+function MissingMarker({
+  field,
+  rect,
+  scale,
+  onClick,
+}: {
+  field: TemplateField;
+  rect: Rect;
+  scale: number;
+  onClick(): void;
+}) {
+  const image = field.type === "image";
+  const justify = image
+    ? "center"
+    : field.align === "center"
+      ? "center"
+      : field.align === "right"
+        ? "flex-end"
+        : "flex-start";
+  const origin = justify === "center" ? "center" : justify === "flex-end" ? "right" : "left";
+  return (
+    <div
+      className="sp-chat-marker"
+      data-kind={image ? "image" : "text"}
+      style={
+        {
+          left: rect.x,
+          top: rect.y,
+          width: rect.width,
+          height: rect.height,
+          justifyContent: justify,
+          transform: field.rotation ? `rotate(${field.rotation}deg)` : undefined,
+          "--marker-edge": `${1 / Math.max(scale, 0.01)}px`,
+        } as React.CSSProperties
+      }
+    >
+      <button
+        type="button"
+        className="sp-chat-marker__tag"
+        aria-label={`Add ${field.label}`}
+        style={{ transform: `scale(${1 / Math.max(scale, 0.01)})`, transformOrigin: origin }}
+        onClick={onClick}
+      >
+        <TagPlusGlyph aria-hidden />
+        <span>{field.label}</span>
+      </button>
+    </div>
   );
 }
 

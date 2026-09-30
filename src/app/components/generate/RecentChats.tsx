@@ -47,7 +47,8 @@ export function RecentChats({
   onSettled,
 }: {
   companyId: string;
-  onOpen(threadId: string): void;
+  /** A chat's card: its id, and its template when it is a template chat. */
+  onOpen(threadId: string, templateId: string | null): void;
   onViewAll(): void;
   /** Called once the row's height is known, at mount when a cached list
    * has chats. */
@@ -119,7 +120,7 @@ export function RecentChats({
             title={chat.title.trim() || NEW_CHAT_TITLE}
             meta={chatMeta(chat.platforms, chat.updatedAt)}
             preview={previewOf(chat).preview}
-            onOpen={() => onOpen(chat.id)}
+            onOpen={() => onOpen(chat.id, chat.templateId)}
           />
         ))}
       </div>

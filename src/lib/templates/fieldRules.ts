@@ -2,12 +2,10 @@ import type { TemplateField } from "../types";
 
 /** A field the member must fill before the graphic renders.
  *
- * There is no Required toggle any more: an element is either fixed (the
- * admin owns it, the member never sees it) or it is a form field, and a
- * form field with nothing in it is a hole in the graphic. One carve-out
- * survives because it is not a field at all:
- *
- *  - Shapes are design-only. They never reach the member form.
+ * An element is either fixed (the admin owns it, the member never sees it)
+ * or it is a form field. A form field is required unless the admin marked
+ * it Optional; an empty optional field is left off the graphic instead of
+ * leaving a hole. Shapes are design-only and never reach the member form.
  *
  * A non-fixed image is required like any other field: the member uploads
  * one before the graphic renders. (The generate edge function still skips
@@ -17,8 +15,9 @@ import type { TemplateField } from "../types";
  * The Deno runtime cannot import from src, so the edge functions carry a
  * byte-identical copy in supabase/functions/_shared/fieldRules.ts. Change
  * both or neither. */
-export function isRequiredField(f: Pick<TemplateField, "static" | "type">): boolean {
+export function isRequiredField(f: Pick<TemplateField, "static" | "type" | "optional">): boolean {
   if (f.static) return false;
   if (f.type === "shape") return false;
+  if (f.optional) return false;
   return true;
 }

@@ -17,7 +17,7 @@ import {
   measuredTextWidth,
   type LineMeasurer,
 } from "../render/autoFit";
-import { computeLayout, fitFieldText, groupFieldKeys } from "../render/layout";
+import { computeLayout, fitFieldText, groupFieldKeys, type LayoutOptions } from "../render/layout";
 
 /** How one proposed value sits in its box:
  *  - "fits": nothing to do.
@@ -102,11 +102,12 @@ function fitsInContext(
   field: TemplateField,
   style: ResolvedFieldStyle,
   text: string,
+  opts: LayoutOptions,
 ): boolean {
   if (overflowsAlone(field, style, text, measure)) return false;
   const groups = containingGroups(schema, field.fieldKey);
   if (groups.length === 0) return true;
-  const layout = computeLayout(schema, { ...values, [field.fieldKey]: text }, kit, measure);
+  const layout = computeLayout(schema, { ...values, [field.fieldKey]: text }, kit, measure, opts);
   return groups.every((g) => layout.groupRects.get(g.id)?.overflows !== true);
 }
 
@@ -127,10 +128,11 @@ export function characterBudget(
   field: TemplateField,
   style: ResolvedFieldStyle,
   value: string,
+  opts: LayoutOptions = {},
 ): number {
   const fits = (len: number) =>
     len === 0 ||
-    fitsInContext(schema, values, kit, measure, field, style, value.slice(0, len).trimEnd());
+    fitsInContext(schema, values, kit, measure, field, style, value.slice(0, len).trimEnd(), opts);
   let lo = 0;
   let hi = value.length;
   // Largest len with fits(len); fits(0) holds by definition.
@@ -144,16 +146,19 @@ export function characterBudget(
 
 /** Measure one proposal's values against the real template. Covers filled,
  * member-editable text and multiline fields; select values are the admin's
- * own options and image fields are never text, so neither is measured. */
+ * own options and image fields are never text, so neither is measured.
+ * `opts` must match what the surface paints (its emptyFields mode and the
+ * look's hidden keys), so a stack is measured the way it will render. */
 export function measureProposal(
   schema: MeasurableSchema,
   values: FieldValues,
   kit: BrandKit | null,
   measure: LineMeasurer,
+  opts: LayoutOptions = {},
 ): ProposalMeasurement {
   // One layout pass with the full proposal: a stack that grows off the
   // canvas is an overflow even when every member fits its own box.
-  const layout = computeLayout(schema, values, kit, measure);
+  const layout = computeLayout(schema, values, kit, measure, opts);
   const groups = schema.layoutGroups ?? [];
   const overflowingGroupKeys = new Set(
     groups
@@ -184,7 +189,16 @@ export function measureProposal(
 
     const entry: FieldMeasurement = { fieldKey: field.fieldKey, label: field.label, fit, value };
     if (fit === "overflows") {
-      entry.characterBudget = characterBudget(schema, values, kit, measure, field, style, value);
+      entry.characterBudget = characterBudget(
+        schema,
+        values,
+        kit,
+        measure,
+        field,
+        style,
+        value,
+        opts,
+      );
     }
     fields.push(entry);
   }

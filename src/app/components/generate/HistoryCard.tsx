@@ -21,7 +21,7 @@ type HistoryCardProps =
       state?: "default";
       title: string;
       meta: ChatMeta;
-      preview: { schema: TemplateSchema; values: FieldValues } | null;
+      preview: { schema: TemplateSchema; values: FieldValues; variantId?: string } | null;
       /** Width over height of the draft, for the placeholder box while
        * `preview` is null. Ignored once `preview` is set. */
       aspect?: number;
@@ -90,7 +90,12 @@ export function HistoryCard(props: HistoryCardProps) {
                 an inner border (the template card's fix, 2026-09-15). */}
             {preview && (
               <span className="sp-chat-history-card__art">
-                <TemplateThumbnail template={preview.schema} values={preview.values} />
+                <TemplateThumbnail
+                  template={preview.schema}
+                  values={preview.values}
+                  variantId={preview.variantId}
+                  emptyFields="chat"
+                />
               </span>
             )}
           </span>

@@ -21,6 +21,8 @@ import {
   logError,
 } from "../_shared/http.ts";
 import { parseBody, requireString } from "../_shared/validate.ts";
+import { serviceClient } from "../_shared/figma.ts";
+import { recordModelUsage, type AnthropicUsage, type UsageKind } from "../_shared/usage.ts";
 import {
   BrandExtractionError,
   extractEvidence,
@@ -228,9 +230,16 @@ interface ClaudeAttempt {
   raw: unknown[];
 }
 
+/** One model call. Every response that comes back is metered as `kind`
+ * (ai_usage_events) before anything else happens to it; `record` never
+ * throws. */
 async function callClaude(
   apiKey: string,
   userText: string,
+  meter: {
+    record: (kind: UsageKind, usage: AnthropicUsage | undefined) => Promise<void>;
+    kind: UsageKind;
+  },
   retry?: { priorContent: unknown[]; toolUseId: string; errors: string[] },
 ): Promise<ClaudeAttempt> {
   const messages: unknown[] = [{ role: "user", content: [{ type: "text", text: userText }] }];
@@ -271,7 +280,9 @@ async function callClaude(
   }
   const body = (await res.json()) as {
     content: Array<{ type: string; id?: string; name?: string; input?: unknown }>;
+    usage?: AnthropicUsage;
   };
+  await meter.record(meter.kind, body.usage);
   const toolUse = body.content.find((b) => b.type === "tool_use" && b.name === "extract_brand");
   if (!toolUse?.input) throw new HttpError(502, "The model returned no extraction.");
   return { input: toolUse.input, toolUseId: toolUse.id ?? "", raw: body.content };
@@ -389,17 +400,37 @@ Deno.serve(async (req) => {
     // 3. One forced tool call; one retry carrying the validation errors.
     const inputHost = page.finalUrl.hostname.toLowerCase();
     const userText = buildUserText(page.finalUrl, evidence, css);
-    let attempt = await callClaude(apiKey, userText);
+    // Usage is logged with the service role, since only it may write
+    // ai_usage_events. This runs during onboarding, before any company
+    // exists, so the row carries the caller and no company; this client is
+    // used for that insert and nothing else.
+    const usageDb = serviceClient();
+    const userId = userData.user.id;
+    const record = (kind: UsageKind, usage: AnthropicUsage | undefined) =>
+      recordModelUsage(usageDb, {
+        companyId: null,
+        userId,
+        fn: "brand-from-website",
+        kind,
+        model: ANTHROPIC_MODEL,
+        usage,
+      });
+    let attempt = await callClaude(apiKey, userText, { record, kind: "brand" });
     let extracted: ExtractedBrand;
     try {
       extracted = validateExtraction(attempt.input, inputHost);
     } catch (e) {
       if (!(e instanceof BrandExtractionError)) throw e;
-      attempt = await callClaude(apiKey, userText, {
-        priorContent: attempt.raw,
-        toolUseId: attempt.toolUseId,
-        errors: e.errors,
-      });
+      attempt = await callClaude(
+        apiKey,
+        userText,
+        { record, kind: "retry" },
+        {
+          priorContent: attempt.raw,
+          toolUseId: attempt.toolUseId,
+          errors: e.errors,
+        },
+      );
       try {
         extracted = validateExtraction(attempt.input, inputHost);
       } catch {

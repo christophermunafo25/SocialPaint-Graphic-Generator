@@ -6,7 +6,7 @@ import { AuthPage } from "./components/auth/AuthPage";
 import { PeopleAdmin } from "./components/admin/PeopleAdmin";
 import { BrandProvider, useBrand } from "@/lib/brand/BrandContext";
 import { ColorSchemeProvider } from "@/lib/colorScheme";
-import { RouterProvider, generatePageKey, useRouter } from "./router";
+import { RouterProvider, generatePageKey, templateChatPageKey, useRouter } from "./router";
 import { readCanvaReturn, takeCanvaConnectPending } from "@/lib/canvaReturn";
 import { AppShell } from "./components/AppShell";
 import { DevBackendBanner } from "./components/DevBackendBanner";
@@ -15,6 +15,7 @@ import { Portal } from "./components/Portal";
 import { TemplateUsePage } from "./components/TemplateUsePage";
 import { BulkFillPage } from "./components/bulk/BulkFillPage";
 import { GeneratePage } from "./components/generate/GeneratePage";
+import { TemplateChatPage } from "./components/generate/TemplateChatPage";
 import { GenerateHistoryPage } from "./components/generate/GenerateHistoryPage";
 import { OnboardingWizard } from "./components/onboarding/OnboardingWizard";
 import { AdminTemplates } from "./components/admin/AdminTemplates";
@@ -202,6 +203,16 @@ function Screen() {
           <GeneratePage
             key={`${company.id}:${generatePageKey(route)}`}
             templateIdHint={route.templateId}
+            threadId={route.threadId}
+          />
+        )}
+        {route.name === "templateChat" && (
+          // A template chat (template-chat PROMPT §12.1), keyed like the
+          // Generate chat: per workspace, per template and per saved chat,
+          // and not by the Edit details query.
+          <TemplateChatPage
+            key={`${company.id}:${templateChatPageKey(route)}`}
+            templateId={route.templateId}
             threadId={route.threadId}
           />
         )}

@@ -69,9 +69,15 @@ import {
   compactControlStyle,
 } from "./InspectorControls";
 import { AlignControls } from "./AlignControls";
+import { fixedPatch } from "./fieldOps";
 import { FillPicker, fillSwatchCss, getFill } from "./FillPicker";
 import { ImageSourceChooser, ImageSourceDialog, pickableAssets } from "../ImageSourceChooser";
 import { parseHex, toHex } from "@/lib/color";
+import {
+  DEFAULT_FONT_SIZE,
+  DEFAULT_MIN_FONT_SCALE,
+  DEFAULT_MIN_FONT_SIZE,
+} from "@/lib/render/autoFit";
 
 interface FieldInspectorProps {
   field: TemplateField;
@@ -264,7 +270,13 @@ export function FieldInspector(props: FieldInspectorProps) {
   // so there is nothing for a sizing mode to fit into; the control hides.
   const canSetSizing = (field.type === "text" || field.type === "multiline") && !field.plateColor;
   const setSizingMode = (mode: TextSizingMode) => {
-    onChange({ textSizing: mode === "free" ? undefined : mode });
+    // Shrink and Fill need a floor; a field with none gets the default 75%.
+    const needsFloor =
+      mode !== "free" && field.minFontScale === undefined && field.minFontSizePx === undefined;
+    onChange({
+      textSizing: mode === "free" ? undefined : mode,
+      ...(needsFloor ? { minFontScale: DEFAULT_MIN_FONT_SCALE } : {}),
+    });
   };
 
   /** Constrain-proportions for the W/H pair — a panel behavior (linked
@@ -299,6 +311,16 @@ export function FieldInspector(props: FieldInspectorProps) {
    * can lock it, exactly like any other locked property. */
   const sizingMode: TextSizingMode = resolved.textSizing ?? "free";
   const sizingLocked = locked.has("textSizing");
+  /** What an old absolute floor (or none, which means 18px) works out to
+   * as a share of the set size, so nothing changes until the admin types.
+   * The base is the set size in Fill mode too. */
+  const minTextPlaceholder = String(
+    Math.round(
+      ((field.minFontSizePx ?? DEFAULT_MIN_FONT_SIZE) /
+        (resolved.fontSizePx ?? DEFAULT_FONT_SIZE)) *
+        100,
+    ),
+  );
   /** Whether the Member input section has anything to show: Max chars for
    * text under Shrink or Fill (under Free it lives in Layout), Options for
    * a dropdown. Nothing for an image. */
@@ -789,28 +811,7 @@ export function FieldInspector(props: FieldInspectorProps) {
                 <Switch
                   checked={isStatic}
                   ariaLabel="Fixed element"
-                  onChange={(next) =>
-                    onChange(
-                      next
-                        ? {
-                            static: true,
-                            required: undefined,
-                            placeholder: undefined,
-                            maxLength: undefined,
-                          }
-                        : {
-                            static: undefined,
-                            // The designed content survives as the member-facing
-                            // preview: images keep their artwork (the renderer
-                            // falls back to it), text keeps its copy as the
-                            // placeholder.
-                            staticValue: field.type === "image" ? field.staticValue : undefined,
-                            ...(field.type !== "image" && !field.placeholder && field.staticValue
-                              ? { placeholder: field.staticValue.slice(0, 80) }
-                              : {}),
-                          },
-                    )
-                  }
+                  onChange={(next) => onChange(fixedPatch(field, next))}
                 />
               </PropertyRow>
               <p style={hintStyle}>
@@ -819,6 +820,20 @@ export function FieldInspector(props: FieldInspectorProps) {
               </p>
             </>
           )}
+
+          {!isStatic &&
+            (field.type === "text" ||
+              field.type === "multiline" ||
+              field.type === "select" ||
+              field.type === "image") && (
+              <PropertyRow label="Optional">
+                <Switch
+                  checked={Boolean(field.optional)}
+                  ariaLabel="Optional field"
+                  onChange={(next) => onChange({ optional: next || undefined })}
+                />
+              </PropertyRow>
+            )}
 
           {/* One slot: Content while fixed (fixed content moves to This
               variation in variation mode), Placeholder otherwise. Placeholder
@@ -1051,14 +1066,25 @@ export function FieldInspector(props: FieldInspectorProps) {
           {isText && field.type !== "select" && sizingMode !== "free" && !field.plateColor && (
             <PropertyRow label="Min text">
               <NumericField
-                suffix="px"
-                ariaLabel="Minimum text size"
+                suffix="%"
+                ariaLabel="Minimum text size, as a percentage of the set size"
                 precision={0}
-                min={1}
+                min={25}
+                max={100}
                 allowEmpty
-                placeholder="18"
-                value={field.minFontSizePx}
-                onCommit={(v) => onChange({ minFontSizePx: v })}
+                placeholder={minTextPlaceholder}
+                value={
+                  field.minFontScale === undefined
+                    ? undefined
+                    : Math.round(field.minFontScale * 100)
+                }
+                onCommit={(v) =>
+                  onChange(
+                    v === undefined
+                      ? { minFontScale: undefined }
+                      : { minFontScale: v / 100, minFontSizePx: undefined },
+                  )
+                }
               />
             </PropertyRow>
           )}

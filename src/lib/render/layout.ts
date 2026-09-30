@@ -20,14 +20,16 @@ import type { BrandKit, FieldValues, LayoutGroup, TemplateField, TemplateSchema 
 import { isFreeGroup, parseGroupChildRef } from "../types";
 import { resolveFieldStyle, type ResolvedFieldStyle } from "../brand/resolveStyle";
 import {
-  DEFAULT_MIN_FONT_SIZE,
+  DEFAULT_FONT_SIZE,
   fitTextWith,
+  minFontSizeFor,
   measuredTextHeight as measuredHeight,
   measuredTextWidth,
   wrapLines,
   type LineMeasurer,
   type TextFit,
 } from "./autoFit";
+import { isLeftOff, type EmptyFieldsMode } from "./emptyFields";
 
 // The measurement and wrapping implementations live in autoFit.ts (the one
 // module every surface shares); re-exported here so layout consumers keep a
@@ -279,6 +281,10 @@ interface Ctx {
   /** fieldKeys placed by a group — first claim wins across the whole pass. */
   claimed: Set<string>;
   warned: Set<string>;
+  /** fieldKeys deliberately absent from this render: hidden by the look, or
+   * left off as empty optional fields. A group skips them silently; only a
+   * reference to a field that truly no longer exists warns. */
+  hidden: ReadonlySet<string>;
 }
 
 const styleOf = (ctx: Ctx, f: TemplateField): ResolvedFieldStyle => {
@@ -350,7 +356,9 @@ function sizedChildren(
     }
     const f = ctx.fields.get(ref);
     if (!f) {
-      warnOnce(ctx, `Group "${group.name}": field "${ref}" no longer exists — skipped.`);
+      if (!ctx.hidden.has(ref)) {
+        warnOnce(ctx, `Group "${group.name}": field "${ref}" no longer exists — skipped.`);
+      }
       continue;
     }
     if (ctx.claimed.has(ref)) {
@@ -559,7 +567,9 @@ function placeFreeGroup(ctx: Ctx, group: LayoutGroup, ancestors: Set<string>): v
     }
     const f = ctx.fields.get(ref);
     if (!f) {
-      warnOnce(ctx, `Group "${group.name}": field "${ref}" no longer exists — skipped.`);
+      if (!ctx.hidden.has(ref)) {
+        warnOnce(ctx, `Group "${group.name}": field "${ref}" no longer exists — skipped.`);
+      }
       continue;
     }
     if (ctx.claimed.has(ref)) {
@@ -620,7 +630,7 @@ function applyShrink(ctx: Ctx, group: LayoutGroup, anchorPos: number, vertical: 
       const text = renderedText(f, ctx.values[f.fieldKey]);
       const current =
         ctx.result.fontSizes.get(f.id) ?? resolvedFontSize(f, style, text, ctx.measure);
-      const floor = style.minFontSizePx ?? DEFAULT_MIN_FONT_SIZE;
+      const floor = minFontSizeFor(style, style.fontSizePx ?? DEFAULT_FONT_SIZE);
       const next = Math.max(floor, Math.floor(current * scale));
       if (next < current) {
         ctx.result.fontSizes.set(f.id, next);
@@ -634,17 +644,28 @@ function applyShrink(ctx: Ctx, group: LayoutGroup, anchorPos: number, vertical: 
   }
 }
 
+export interface LayoutOptions {
+  /** What empty member fields do (render/emptyFields). Default "placeholder". */
+  emptyFields?: EmptyFieldsMode;
+  /** fieldKeys the look hides. Looks remove hidden fields before layout;
+   * this tells a group they are gone on purpose, so it does not warn. */
+  hiddenKeys?: ReadonlySet<string>;
+}
+
 /**
  * THE layout pass. Every field gets a rect: ungrouped fields resolve to their
  * authored rects (normalized to top-left space) and text sizes exactly as the
  * renderer computed them before groups existed; grouped children get stacked,
  * hugged, and anchored. Deterministic given the measurer.
+ *
+ * A field left off by `opts.emptyFields` gets no rect and no font size.
  */
 export function computeLayout(
   schema: Pick<TemplateSchema, "fields" | "layoutGroups" | "canvasWidth" | "canvasHeight">,
   values: FieldValues,
   kit: BrandKit | null,
   measure: LineMeasurer,
+  opts: LayoutOptions = {},
 ): LayoutResult {
   const result: LayoutResult = {
     fieldRects: new Map(),
@@ -652,8 +673,14 @@ export function computeLayout(
     fontSizes: new Map(),
     warnings: [],
   };
+  const hidden = new Set(opts.hiddenKeys);
+  const fields = schema.fields.filter((f) => {
+    if (!isLeftOff(f, values[f.fieldKey], opts.emptyFields)) return true;
+    hidden.add(f.fieldKey);
+    return false;
+  });
   const ctx: Ctx = {
-    fields: new Map(schema.fields.map((f) => [f.fieldKey, f])),
+    fields: new Map(fields.map((f) => [f.fieldKey, f])),
     groups: new Map((schema.layoutGroups ?? []).map((g) => [g.id, g])),
     values,
     kit,
@@ -664,13 +691,14 @@ export function computeLayout(
     styles: new Map(),
     claimed: new Set(),
     warned: new Set(),
+    hidden,
   };
 
   // Baseline: every field at its rect and renderer-identical font size.
   // Free text hugs — its height is computed from the wrapped content, grown
   // from the verticalAlign anchor; everything else keeps its authored rect.
   // Groups then override their children's rects (and, under shrink, sizes).
-  for (const f of schema.fields) {
+  for (const f of fields) {
     if (!isTextual(f)) {
       result.fieldRects.set(f.id, authoredRect(f));
       continue;
@@ -701,7 +729,7 @@ export function computeLayout(
       warnOnce(
         ctx,
         `"${f.label}": the text doesn't fit even at the minimum size (${Math.round(
-          style.minFontSizePx ?? DEFAULT_MIN_FONT_SIZE,
+          minFontSizeFor(style, style.fontSizePx ?? DEFAULT_FONT_SIZE),
         )}px) — shorten it or enlarge the box.`,
       );
     }

@@ -11,6 +11,7 @@ export interface ResolvedFieldStyle {
   fontStretch?: string;
   fontSizePx?: number;
   minFontSizePx?: number;
+  minFontScale?: number;
   uppercase?: boolean;
   letterSpacingPx?: number;
   lineHeight?: number;
@@ -103,6 +104,7 @@ export function resolveFieldStyle(field: TemplateField, kit: BrandKit | null): R
     fontStretch: face ? keepAbsent(rawStretch, face.stretch, "normal") : rawStretch,
     fontSizePx: pick(style?.fontSizePx, field.fontSizePx),
     minFontSizePx: field.minFontSizePx,
+    minFontScale: field.minFontScale,
     uppercase: pick(style?.uppercase, field.uppercase),
     letterSpacingPx: pick(style?.letterSpacingPx, field.letterSpacingPx),
     lineHeight: pick(style?.lineHeight, field.lineHeight),

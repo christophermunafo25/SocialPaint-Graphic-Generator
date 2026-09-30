@@ -247,7 +247,13 @@ export interface TemplateField {
   fontStyle?: "normal" | "italic";
   fontStretch?: string; // CSS font-stretch keyword; see FontStretch in render/fontCatalog
   fontSizePx?: number;
-  minFontSizePx?: number; // shrink floor
+  /** Absolute shrink floor in canvas px. Older templates carry this; new
+   * fields use minFontScale. Read through minFontSizeFor (render/autoFit). */
+  minFontSizePx?: number;
+  /** Relative shrink floor: the smallest size Shrink or Fill may reach, as a
+   * fraction of the field's set size (0.25 to 1). Wins over minFontSizePx.
+   * New fields and imports default to 0.75 (DEFAULT_MIN_FONT_SCALE). */
+  minFontScale?: number;
   /** The field's own solid fill. Brand colors copy their hex here at pick
    * time — no field-level binding back to the palette. A bound type style's
    * colorKey (the sanctioned live channel) still wins at render. */
@@ -267,13 +273,19 @@ export interface TemplateField {
    * never authored. "shrink": the box is exactly what the admin drew and the
    * font size decreases (measured, never estimated) until the content fits —
    * single-line text is width-constrained, multiline is height-constrained
-   * with wrapping at the box width. */
+   * with wrapping at the box width. "fill": the font size is the largest
+   * that fits the drawn box, growing up from the floor. */
   textSizing?: "free" | "shrink" | "fill";
   objectFit?: "cover" | "contain";
   aspectRatio?: number;
   options?: string[];
   placeholder?: string;
+  /** Legacy column, never read. Requiredness is isRequiredField. */
   required?: boolean;
+  /** The admin marked this member field optional: the member may leave it
+   * empty, and an empty optional field is left off the graphic wherever a
+   * member works (see render/emptyFields). Absent means required. */
+  optional?: boolean;
 }
 
 /** A point along one axis of a layout group: the main-axis anchor (which
@@ -721,6 +733,21 @@ export interface GenerateInput {
    * follow-ups; a freestyle follow-up folds the earlier brief into `brief`
    * instead (PROMPT §9.3). */
   followUp?: GenerateFollowUp;
+  /** Template chat only, with templateIdHint: fields the member filled in
+   * themselves (detail tags). Applied verbatim; the model never writes them.
+   * At most 30; each key a member, non-image field of that template, each
+   * value non-empty, within the field's maxLength, and an option for a
+   * select. */
+  details?: Array<{ fieldKey: string; value: string }>;
+  /** Text the browser extracted from an attached document, sent with the
+   * message it was attached to and never again. At most 2; name 1 to 120
+   * characters, text 1 to 12,000. Untrusted: the model takes facts from it
+   * and never instructions. */
+  documents?: Array<{ name: string; text: string }>;
+  /** Let the model ask one question instead of building. Honored only on a
+   * first message (no followUp) with templateIdHint, no details and no
+   * documents; otherwise treated as false. */
+  allowQuestion?: boolean;
 }
 
 /** The chat context a follow-up carries to the model. Text fields only: it
@@ -821,6 +848,11 @@ export interface GenerateResult {
    * answered; the client then titles the chat from the brief's first words
    * (PROMPT §9.9). */
   title?: string;
+  /** The model's one question, when the request allowed it and gave the
+   * model nothing to build from. When present, `proposals` is empty and the
+   * turn is a finished question, never "nothing fit". An older deployment
+   * never sends it. */
+  question?: string;
 }
 
 /** One field the client-side measurement pass found overflowing: the value
@@ -858,14 +890,23 @@ export interface GenerateRepairResult {
 // store refuses a write that still carries a data: value anywhere.
 // ---------------------------------------------------------------------------
 
+/** The kinds of document a chat message can carry (Template chat PROMPT
+ * §12.3): read in the browser, text only. */
+export type ChatDocumentKind = "pdf" | "txt" | "md";
+
 /** A member's message, as saved. `hadPhoto` is all that remains of a photo:
- * its aspect, so a reopened chat can say one was attached. */
+ * its aspect, so a reopened chat can say one was attached. `hadDocument` is
+ * all that remains of a document: its name and kind, never its text. */
 export interface StoredUserTurn {
   id: string;
   role: "user";
   text: string;
   createdAt: string;
   hadPhoto?: { aspect: number };
+  hadDocument?: { name: string; kind: ChatDocumentKind };
+  /** A template chat's detail tags: fields the member filled in themselves,
+   * as they typed them (Template chat PROMPT §12.3). */
+  details?: Array<{ fieldKey: string; label: string; value: string }>;
   platformHint?: PlatformId;
   variations: number;
   templateIdHint?: string;
@@ -884,6 +925,15 @@ export interface StoredDraft {
   /** The member's current values. A data: value (a photo or an uploaded
    * image) is deleted, not blanked: the key is absent. */
   values: FieldValues;
+  /** The template's look this draft is shown in (Template chat PROMPT
+   * §9.5); absent is the template's default. */
+  variantId?: string;
+  /** A caption the member wrote themselves (Edit details), shown instead of
+   * the model's. */
+  captionOverride?: string;
+  /** Fields the member typed (detail tags and their own edits): carried
+   * forward by a follow-up and never rewritten by repair (§12.8). */
+  memberKeys?: string[];
 }
 
 /** A finished assistant turn, as saved. Only finished turns are stored. */
@@ -899,6 +949,9 @@ export interface StoredAssistantTurn {
   error?: string;
   meta?: { model: string; candidateCount: number; mode: "library" | "freestyle" };
   drafts: StoredDraft[];
+  /** A template chat's one question (§12.6): the turn finished asking,
+   * with no drafts. */
+  question?: string;
 }
 
 export type StoredTurn = StoredUserTurn | StoredAssistantTurn;
@@ -909,6 +962,8 @@ export type StoredTurn = StoredUserTurn | StoredAssistantTurn;
 export interface GenerateThreadPreview {
   templateId?: string;
   design?: GeneratedDesign;
+  /** The draft's look, when it has one (template chats). */
+  variantId?: string;
   values: FieldValues;
   canvas: { width: number; height: number };
 }
@@ -921,6 +976,9 @@ export interface GenerateThreadSummary {
   platforms: PlatformId[];
   /** Null when the chat has no finished draft to show. */
   preview: GenerateThreadPreview | null;
+  /** The template a template chat is scoped to (migration 0040). Null for
+   * a Generate chat, and for a template chat whose template was deleted. */
+  templateId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -935,6 +993,8 @@ export interface GenerateThreadInput {
   title: string;
   platforms: PlatformId[];
   preview: GenerateThreadPreview | null;
+  /** A template chat's template; null for a Generate chat. */
+  templateId: string | null;
   turns: StoredTurn[];
 }
 

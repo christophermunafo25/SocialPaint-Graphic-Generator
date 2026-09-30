@@ -12,7 +12,7 @@ import type {
  * there is a schema to render it with, and the width over height of its
  * canvas, for the card's placeholder box until then. */
 export interface ChatCardPreview {
-  preview: { schema: TemplateSchema; values: FieldValues } | null;
+  preview: { schema: TemplateSchema; values: FieldValues; variantId?: string } | null;
   /** Undefined when the chat made no draft (the stage stays bare). */
   aspect?: number;
 }
@@ -104,7 +104,10 @@ export function useThreadPreviews(
         return { preview: schema ? { schema, values: p.values } : null, aspect };
       }
       const schema = p.templateId ? templates.get(p.templateId) : null;
-      return { preview: schema ? { schema, values: p.values } : null, aspect };
+      return {
+        preview: schema ? { schema, values: p.values, variantId: p.variantId } : null,
+        aspect,
+      };
     },
     [companyId, templates],
   );

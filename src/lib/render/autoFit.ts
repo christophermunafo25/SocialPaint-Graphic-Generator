@@ -11,8 +11,9 @@
 //    width but not the height still shrinks.
 //  - "fill":   the box is fixed and the text is sized to FILL it — growing
 //    as well as shrinking, so the block is as large as both axes allow.
-//    The set size is ignored (the box decides); minFontSizePx still floors
-//    it, and the result is reported back to the inspector as computed.
+//    The set size is ignored (the box decides); the floor (minFontSizeFor)
+//    still holds, and the result is reported back to the inspector as
+//    computed.
 
 export type TextSizingMode = "free" | "shrink" | "fill";
 
@@ -36,6 +37,20 @@ export interface MeasuredTextStyle {
 export const DEFAULT_FONT_SIZE = 45;
 /** The one shrink floor default — the value the inspector advertises. */
 export const DEFAULT_MIN_FONT_SIZE = 18;
+/** The relative floor new fields and imports get: 75% of the set size. */
+export const DEFAULT_MIN_FONT_SCALE = 0.75;
+
+/** The smallest size a shrink or fill field may reach, in canvas px.
+ * `base` is the field's set size (fontSizePx after its type style),
+ * in Fill mode too: Fill grows upward from this floor. A relative floor
+ * wins; otherwise the absolute one older templates carry, then 18px. */
+export function minFontSizeFor(
+  style: { minFontScale?: number; minFontSizePx?: number },
+  base: number,
+): number {
+  if (style.minFontScale !== undefined) return Math.max(1, Math.round(base * style.minFontScale));
+  return style.minFontSizePx ?? DEFAULT_MIN_FONT_SIZE;
+}
 export const DEFAULT_LINE_HEIGHT = 1.1;
 
 /** Compose the canvas `font` shorthand.
@@ -216,6 +231,7 @@ export interface TextFitInput extends MeasuredTextStyle {
   height: number;
   fontSizePx?: number;
   minFontSizePx?: number;
+  minFontScale?: number;
   textSizing?: TextSizingMode;
 }
 
@@ -234,10 +250,10 @@ export function fitTextWith(measure: LineMeasurer, input: TextFitInput, text: st
   if (mode === "free" || !text) return { fontSizePx: base, overflows: false };
   if (mode === "fill") {
     // The box decides, not the set size: search the whole range upward.
-    const min = input.minFontSizePx ?? DEFAULT_MIN_FONT_SIZE;
+    const min = minFontSizeFor(input, base);
     return largestFittingSize(measure, input, text, min, FILL_MAX_FONT_SIZE);
   }
-  const min = Math.min(input.minFontSizePx ?? DEFAULT_MIN_FONT_SIZE, base);
+  const min = Math.min(minFontSizeFor(input, base), base);
   return largestFittingSize(measure, input, text, min, base);
 }
 

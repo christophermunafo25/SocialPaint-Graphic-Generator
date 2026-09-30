@@ -145,6 +145,28 @@ export class SupabaseUsageStore implements UsageStore {
     );
   }
 
+  async getAiUsage(
+    companyId: string,
+    sinceIso: string,
+  ): Promise<{ requests: number; inputTokens: number; outputTokens: number }> {
+    const { data, error } = await supabase().rpc("ai_usage_summary", {
+      p_company: companyId,
+      p_since: sinceIso,
+    });
+    if (error) throw error;
+    // A set-returning function comes back as rows; bigints may arrive as
+    // strings.
+    const row = (Array.isArray(data) ? data[0] : data) as
+      | { requests: number | string; input_tokens: number | string; output_tokens: number | string }
+      | null
+      | undefined;
+    return {
+      requests: Number(row?.requests ?? 0),
+      inputTokens: Number(row?.input_tokens ?? 0),
+      outputTokens: Number(row?.output_tokens ?? 0),
+    };
+  }
+
   async getMonthlyUsage(companyId: string, timeZone = "UTC"): Promise<MonthlyUsage> {
     const { data, error } = await supabase()
       .from("usage_events")

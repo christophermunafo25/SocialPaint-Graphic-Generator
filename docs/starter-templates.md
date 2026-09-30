@@ -37,6 +37,14 @@ passes with no service role and no seeding edge function.
   template and surface as a toast, because seeding must never fail
   onboarding.
 
+Text floors: the blueprints set an absolute `minFontSizePx` of 60% of each
+type-ramp size (`floor()` in `blueprints.ts`), not the relative
+`minFontScale` that new builder fields and imports get (75%). Starters keep
+their own floors on purpose; both render through `minFontSizeFor`. No
+blueprint field is `optional`, and because seeding is idempotent, starters
+a company already has never pick up the flag. An admin can mark a starter's
+field optional in the builder like any other.
+
 Provenance lives in `autobuildMeta`: `{ source: "starter", starterKey,
 starterVersion, seededAt }`, alongside the pre-existing required keys
 (`model` and `sourceKind` read "starter"). There are no new columns.

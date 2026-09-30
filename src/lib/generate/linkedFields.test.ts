@@ -8,6 +8,7 @@ import {
   findGroupForField,
   groupValue,
   inputField,
+  linkedFillIn,
   labelKey,
   photoTargetsFor,
   sizeNames,
@@ -18,8 +19,8 @@ import {
 } from "./linkedFields";
 import { deriveTryNext } from "./tryNext";
 
-// The real isRequiredField, behind a spy, so one test can stand in for the
-// day a member field can be optional (every member field is required today).
+// The real isRequiredField, behind a spy, so a test can force requiredness
+// independently of the optional flag.
 vi.mock("../templates/fieldRules", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../templates/fieldRules")>();
   return { ...actual, isRequiredField: vi.fn(actual.isRequiredField) };
@@ -389,8 +390,22 @@ describe("buildLinkedFields: required", () => {
       draft("a", [field({ fieldKey: "headline", required: false })]),
       draft("b", [field({ fieldKey: "headline", required: false })]),
     ]);
-    // Every member field is required today, whatever the legacy flag says.
+    // A member field is required unless marked optional, whatever the
+    // legacy flag says.
     expect(texts(entries)[0].required).toBe(true);
+  });
+
+  it("reads the optional flag: a group is optional only when every member is", () => {
+    const entries = build([
+      draft("a", [field({ fieldKey: "headline", optional: true })]),
+      draft("b", [field({ fieldKey: "headline", optional: true })]),
+    ]);
+    expect(texts(entries)[0].required).toBe(false);
+    const mixed = build([
+      draft("a", [field({ fieldKey: "headline", optional: true })]),
+      draft("b", [field({ fieldKey: "headline" })]),
+    ]);
+    expect(texts(mixed)[0].required).toBe(true);
   });
 
   it("is required when any member is, and optional when none is", () => {
@@ -998,5 +1013,31 @@ describe("sizeNames", () => {
         ratio: "onTie",
       }),
     ).toEqual(["Instagram · 4:5", "Instagram · 9:16"]);
+  });
+});
+
+describe("linkedFillIn (template-chat §12.12)", () => {
+  const fields = [
+    field({ fieldKey: "headline", label: "Headline" }),
+    field({ fieldKey: "link", label: "Link", optional: true }),
+    field({ fieldKey: "photo", label: "Photo", type: "image" }),
+  ];
+
+  it("lists one tag per group empty in any draft, leading to the first draft missing it", () => {
+    const a = draft("a", fields, { headline: "Now hiring" });
+    const b = draft("b", fields, {}, LINKEDIN);
+    const values = { a: a.values, b: b.values };
+    const gaps = linkedFillIn([a, b], values, NO_PHOTO);
+    expect(gaps.map((g) => [g.label.split(" · ")[0], g.draftId, g.fieldKey, g.optional])).toEqual([
+      ["Headline", "b", "headline", false],
+      ["Photo", "a", "photo", false],
+      ["Photo", "b", "photo", false],
+      ["Link", "a", "link", true],
+    ]);
+  });
+
+  it("leaves out what every draft has, and the slot the turn's photo fills", () => {
+    const a = draft("a", fields, { headline: "Hi", link: "x.co", photo: "data:x" });
+    expect(linkedFillIn([a], { a: a.values }, NO_PHOTO)).toEqual([]);
   });
 });

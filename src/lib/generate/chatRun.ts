@@ -28,13 +28,22 @@ import type {
   TemplateSchema,
 } from "../types";
 import type { LineMeasurer } from "../render/autoFit";
+import { applyVariantToSchema, defaultVariant } from "../templates/variants";
+import { chatLayoutOptions } from "./draftView";
 import type { ChatDraft, ChatTurn, UserTurn } from "./chat";
-import { buildGenerateInput, repairBriefFor, type ChatAction } from "./chatReducer";
+import {
+  buildGenerateInput,
+  latestDoneTurn,
+  mergeKeys,
+  repairBriefFor,
+  type ChatAction,
+} from "./chatReducer";
 import { designToSchema } from "./designToSchema";
 import { measureProposal } from "./measureProposal";
 import { repairProposal } from "./repairProposal";
 import {
   GENERATE_FAILED,
+  fillingInStatus,
   overflowingDesignWarning,
   unavailableWarning,
   unfittableDraftWarning,
@@ -74,6 +83,12 @@ export interface ChatRun {
    * sizes are read, so step 2 can say how many sizes it is rendering
    * before each template is fetched. */
   published?: ReadonlyArray<Pick<TemplateSchema, "id" | "canvasWidth" | "canvasHeight">> | null;
+  /** A template chat (Template chat PROMPT §12): one pinned template, its
+   * details and its one question go on the wire; a draft that still
+   * overflows after repair is kept and flagged rather than dropped; the
+   * member's own values are carried forward and never repaired; each draft
+   * takes a look. */
+  templateChat?: boolean;
   /** Aborts the generate and repair requests (Stop). */
   signal: AbortSignal;
   /** False once the run is no longer the one the chat wants (stopped,
@@ -88,10 +103,22 @@ export interface ChatRun {
  * with the server's sentence. */
 export async function runChat(run: ChatRun, fx: ChatRunEffects): Promise<void> {
   const { runId, companyId, prior, user, mode, kit, published, signal, alive, dispatch } = run;
+  const templateChat = run.templateChat === true;
   try {
-    const res = await fx.generate(companyId, buildGenerateInput(prior, user, mode), signal);
+    const res = await fx.generate(
+      companyId,
+      buildGenerateInput(prior, user, mode, templateChat),
+      signal,
+    );
     if (!alive()) return;
     if (res.title) dispatch({ type: "titleSet", title: res.title, runId, at: fx.now() });
+
+    // The one question (§12.6): a finished turn with no drafts, never
+    // "nothing fit". Only a template chat's first message can get one.
+    if (res.question?.trim() && res.proposals.length === 0) {
+      dispatch({ type: "questionArrived", runId, question: res.question, at: fx.now() });
+      return;
+    }
 
     const shapes: ProposalShape[] = res.proposals.map((p) => ({
       templateName: p.templateName,
@@ -109,7 +136,14 @@ export async function runChat(run: ChatRun, fx: ChatRunEffects): Promise<void> {
         mode: res.meta.mode === "freestyle" ? "freestyle" : mode,
       },
       warnings: res.warnings ?? [],
+      ...(templateChat && shapes[0] ? { status: fillingInStatus(shapes[0].templateName) } : {}),
     });
+
+    // What this message continues from, in a template chat: the latest
+    // finished draft (its look and the values the member typed) and the
+    // detail tags sent now.
+    const previous = templateChat ? (latestDoneTurn(prior)?.drafts[0] ?? null) : null;
+    const typedNow = (user.details ?? []).map((d) => d.fieldKey);
 
     // The measurement pass: the function checked character counts; only a
     // browser can check glyphs. One proposal at a time, in order.
@@ -130,6 +164,7 @@ export async function runChat(run: ChatRun, fx: ChatRunEffects): Promise<void> {
         signal,
         fx,
         onRepair: () => dispatch({ type: "checking", runId }),
+        template: templateChat ? { previous, typedNow } : null,
       });
       if (!alive()) return;
       dispatch(
@@ -168,6 +203,7 @@ function toDraft(
   proposal: GeneratedProposal,
   schema: TemplateSchema,
   values: FieldValues,
+  extra: Pick<ChatDraft, "variantId" | "memberKeys"> = {},
 ): ChatDraft {
   return {
     id,
@@ -175,6 +211,8 @@ function toDraft(
     schema,
     canvas: { width: schema.canvasWidth, height: schema.canvasHeight },
     values,
+    ...(extra.variantId ? { variantId: extra.variantId } : {}),
+    ...(extra.memberKeys?.length ? { memberKeys: extra.memberKeys } : {}),
   };
 }
 
@@ -194,6 +232,9 @@ async function resolveProposal(
     fx: ChatRunEffects;
     /** A repair round is about to run: step 3. */
     onRepair: () => void;
+    /** A template chat's continuity: the draft this one follows, and the
+     * detail keys sent with this message. Null in a Generate chat. */
+    template: { previous: ChatDraft | null; typedNow: string[] } | null;
   },
 ): Promise<{ draft: ChatDraft } | { warning: string }> {
   const { fx } = ctx;
@@ -213,18 +254,48 @@ async function resolveProposal(
   }
   const schema = await fx.getTemplate(proposal.templateId);
   if (!schema) return { warning: unavailableWarning(proposal.templateName) };
-  // Overflowing values get one repair round; a proposal that still
-  // overflows is dropped, never shown.
+
+  // A template chat's draft keeps the previous draft's look (a new chat
+  // takes the template's default), carries forward what the member typed
+  // when the new proposal leaves it empty, and never sends it to repair.
+  const tpl = ctx.template;
+  const prev =
+    tpl?.previous && tpl.previous.proposal.templateId === schema.id ? tpl.previous : null;
+  const variantId = tpl
+    ? ((prev?.variantId && schema.variants?.some((v) => v.id === prev.variantId)
+        ? prev.variantId
+        : undefined) ?? defaultVariant(schema)?.id)
+    : undefined;
+  const memberKeys = tpl ? mergeKeys(prev?.memberKeys, tpl.typedNow) : undefined;
+  let values = proposal.values;
+  if (prev?.memberKeys?.length) {
+    const carried: FieldValues = { ...values };
+    for (const key of prev.memberKeys) {
+      if (!carried[key] && prev.values[key]) carried[key] = prev.values[key];
+    }
+    values = carried;
+  }
+
+  // Measured as the card paints it: the look applied, empty fields as the
+  // chat shows them. Overflowing values get one repair round; in a Generate
+  // chat a proposal that still overflows is dropped, never shown, while a
+  // template chat keeps it and flags the fields too long (§9.6).
   const outcome = await repairProposal(
-    { templateId: proposal.templateId, values: proposal.values },
-    schema,
+    { templateId: proposal.templateId, values },
+    applyVariantToSchema(schema, variantId),
     ctx.kit,
     ctx.measure,
     (templateId, fields) => {
       ctx.onRepair();
       return fx.repair(ctx.companyId, { templateId, brief: ctx.repairBrief, fields }, ctx.signal);
     },
+    {
+      layout: chatLayoutOptions(schema, variantId),
+      protectedKeys: new Set(memberKeys ?? []),
+    },
   );
-  if (!outcome.ok) return { warning: unfittableDraftWarning(proposal.templateName) };
-  return { draft: toDraft(fx.newId(), proposal, schema, outcome.values) };
+  if (!outcome.ok && !tpl) return { warning: unfittableDraftWarning(proposal.templateName) };
+  return {
+    draft: toDraft(fx.newId(), proposal, schema, outcome.values, { variantId, memberKeys }),
+  };
 }

@@ -139,12 +139,15 @@ describe("text field extraction", () => {
     fills: [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }],
   };
 
-  it("keeps the designed size (free sizing) and carries opacity", () => {
+  it("lands text as Shrink at a 75% floor and carries opacity", () => {
     const { out } = run(headline);
     expect(out[0]).toMatchObject({
       type: "text",
-      // The designed size IS the size — shrink is the admin's opt-in.
-      textSizing: "free",
+      // The designed size is the ceiling; a member's longer copy shrinks,
+      // never below 75% of it.
+      textSizing: "shrink",
+      minFontScale: 0.75,
+      fontSizePx: 165,
       align: "center",
       colorHex: "#FFFFFF",
       opacity: 50,

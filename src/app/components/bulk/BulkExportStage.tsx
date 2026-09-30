@@ -125,6 +125,7 @@ export const BulkExportStage = forwardRef<
         brandKit={brandKit}
         instrument={false}
         variantId={variantId}
+        emptyFields="hideOptional"
       />
     </div>
   );

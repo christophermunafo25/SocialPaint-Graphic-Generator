@@ -45,6 +45,7 @@ import {
   type ValidatedField,
 } from "../_shared/autobuildValidate.ts";
 import { AUTOBUILD_SYSTEM_PROMPT } from "./prompt.ts";
+import { recordModelUsage, type AnthropicUsage, type UsageKind } from "../_shared/usage.ts";
 import { canvaEnabled, getCanvaToken } from "../_shared/canva.ts";
 import {
   CanvaExportError,
@@ -401,10 +402,17 @@ function buildUserText(
   return parts.join("\n\n");
 }
 
+/** One model call. Every response that comes back is metered as `kind`
+ * (ai_usage_events) before anything else happens to it; `record` never
+ * throws. */
 async function callClaude(
   apiKey: string,
   imageBase64: string,
   userText: string,
+  meter: {
+    record: (kind: UsageKind, usage: AnthropicUsage | undefined) => Promise<void>;
+    kind: UsageKind;
+  },
   retryErrors?: { priorContent: unknown[]; toolUseId: string; errors: string[] },
 ): Promise<{ proposal: ModelProposal; toolUseId: string; raw: unknown[] }> {
   const messages: unknown[] = [
@@ -456,7 +464,9 @@ async function callClaude(
   }
   const body = (await res.json()) as {
     content: Array<{ type: string; id?: string; name?: string; input?: unknown }>;
+    usage?: AnthropicUsage;
   };
+  await meter.record(meter.kind, body.usage);
   const toolUse = body.content.find((b) => b.type === "tool_use" && b.name === "propose_template");
   if (!toolUse?.input) throw new HttpError(502, "The model returned no proposal.");
   return {
@@ -627,7 +637,16 @@ Deno.serve(async (req) => {
       proposalKind,
       platesBehindText,
     );
-    let attempt = await callClaude(apiKey, imageBase64, userText);
+    const record = (kind: UsageKind, usage: AnthropicUsage | undefined) =>
+      recordModelUsage(db, {
+        companyId,
+        userId: caller.userId,
+        fn: "template-autobuild",
+        kind,
+        model: ANTHROPIC_MODEL,
+        usage,
+      });
+    let attempt = await callClaude(apiKey, imageBase64, userText, { record, kind: "autobuild" });
     let validated;
     try {
       validated = validateProposal(
@@ -642,11 +661,17 @@ Deno.serve(async (req) => {
       );
     } catch (e) {
       if (!(e instanceof AutobuildValidationError)) throw e;
-      attempt = await callClaude(apiKey, imageBase64, userText, {
-        priorContent: attempt.raw,
-        toolUseId: attempt.toolUseId,
-        errors: e.errors,
-      });
+      attempt = await callClaude(
+        apiKey,
+        imageBase64,
+        userText,
+        { record, kind: "retry" },
+        {
+          priorContent: attempt.raw,
+          toolUseId: attempt.toolUseId,
+          errors: e.errors,
+        },
+      );
       try {
         validated = validateProposal(
           attempt.proposal,

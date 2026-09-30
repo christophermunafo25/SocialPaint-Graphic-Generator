@@ -1,8 +1,9 @@
 // Generate: a member's brief in, filled template proposals out. This function
-// EXTRACTS (the published library as a candidate list), ASKS (one forced tool
+// EXTRACTS (the published library as a candidate list), ASKS (one tool
 // call), VALIDATES (never trusting model output), and RESPONDS. It writes
-// nothing to the database beyond the shared rate-limit counters — the client
-// renders the proposals as chat drafts.
+// nothing to the database beyond the shared rate-limit counters and one
+// ai_usage_events row per model call — the client renders the proposals as
+// chat drafts.
 //
 // The chat rides the same request. A follow-up adds an optional followUp (the
 // chat's first brief and the drafts on screen) that library mode shows the
@@ -13,6 +14,13 @@
 // The model's only degrees of freedom are a templateId from the candidate
 // set and string values for fields an admin deliberately exposed. Layout,
 // type, color, and every locked property are unreachable by construction.
+//
+// A template chat (Template chat PROMPT §10) pins one template and may add
+// the member's own detail values, the text of an attached document, and, on
+// a first message with nothing else to go on, leave to ask one question
+// instead of building. The model fills only what it has facts for; an empty
+// field is legal and the client flags it. Every model response is metered
+// into ai_usage_events.
 //
 // v1 is the authenticated portal. The public-link variant would change how
 // companyId and the candidate list are resolved — which is why candidates
@@ -57,6 +65,19 @@ import {
   type RepairModelOutput,
   type TemplateRowLike,
 } from "../_shared/generateValidate.ts";
+import {
+  detailsSection,
+  documentsSection,
+  parseDetails,
+  parseDocuments,
+  pickToolUse,
+  resolveDetails,
+  validateQuestion,
+  type DocumentInput,
+  type ModelContentBlock,
+  type ResolvedDetail,
+} from "../_shared/generateValidate.ts";
+import { recordModelUsage, type AnthropicUsage, type UsageKind } from "../_shared/usage.ts";
 import { GENERATE_SYSTEM_PROMPT } from "./prompt.ts";
 
 const ANTHROPIC_MODEL = Deno.env.get("ANTHROPIC_MODEL") ?? "claude-sonnet-4-6";
@@ -90,7 +111,7 @@ const REPLY_AND_TITLE_PROPERTIES = {
   reply: {
     type: "string",
     description:
-      "One or two sentences to the member about what you made: which sizes, and any assumption they should check. Plain voice, no exclamation marks, never an em dash.",
+      "One or two sentences to the member about what you made. If a required field is still empty, name it plainly so they know to add it. Never ask a question, no exclamation marks, no marketing filler, never an em dash.",
   },
   title: {
     type: "string",
@@ -124,7 +145,7 @@ const PROPOSE_POSTS_TOOL = {
             values: {
               type: "array",
               description:
-                "One entry per non-image field of the chosen template. Never include image fields.",
+                "Values for the fields you have facts for. Leave out any field the brief, details, documents and current draft do not cover. Never include image fields or fields the member already filled.",
               items: {
                 type: "object",
                 additionalProperties: false,
@@ -156,6 +177,22 @@ const PROPOSE_POSTS_TOOL = {
   },
 };
 
+/** The one-question tool, offered only when a first message may ask
+ * (allowQuestion honored). */
+const ASK_MEMBER_TOOL = {
+  name: "ask_member",
+  description:
+    "Ask the member one short question, in one or two sentences, for the few facts that matter most. Only when the request allows it and the brief, details and documents give nothing to put in any field.",
+  input_schema: {
+    type: "object",
+    additionalProperties: false,
+    required: ["question"],
+    properties: {
+      question: { type: "string" },
+    },
+  },
+};
+
 function buildUserText(
   brief: string,
   candidates: CandidateTemplate[],
@@ -164,12 +201,17 @@ function buildUserText(
   hinted: boolean,
   image: { aspect: number | undefined } | undefined,
   followUpText: string | undefined,
+  details: ResolvedDetail[],
+  documents: DocumentInput[],
+  mayAsk: boolean,
 ): string {
   const parts: string[] = [];
   parts.push(`Brief: ${brief}`);
   // A chat follow-up reads as context for the brief, so it sits right after
   // it (followUpSection, built by the caller against the published list).
   if (followUpText) parts.push(followUpText);
+  if (details.length > 0) parts.push(detailsSection(details));
+  if (documents.length > 0) parts.push(documentsSection(documents));
   if (platformHint) parts.push(`The member is posting on: ${platformHint}.`);
   if (image) {
     parts.push(
@@ -180,7 +222,7 @@ function buildUserText(
   }
   if (hinted) {
     parts.push(
-      `The member picked this template themselves — fill it. Return ${count === 1 ? "one proposal" : `${count} proposals, each a distinct take on the brief`}.`,
+      `The member picked this template themselves. Use it for every proposal. Return ${count === 1 ? "one proposal" : `${count} proposals, each a distinct take on the brief`}.`,
     );
   } else {
     parts.push(
@@ -190,6 +232,11 @@ function buildUserText(
   parts.push(
     `Candidate templates (choose templateId from these; the fields listed are the only ones you may write):\n${JSON.stringify(modelCandidates(candidates))}`,
   );
+  if (mayAsk) {
+    parts.push(
+      "You may ask the member one question instead of building (see Asking first). Ask only if nothing here gives you a fact for any field.",
+    );
+  }
   return parts.join("\n\n");
 }
 
@@ -220,23 +267,47 @@ const REPAIR_VALUES_TOOL = {
   },
 };
 
-async function callClaude<T>(
+type Tool = { name: string } & Record<string, unknown>;
+
+/** One model response, narrowed to the tool call acted on. */
+interface ClaudeAttempt {
+  /** The tool that was actually called, one of the set offered. */
+  toolName: string;
+  input: unknown;
+  toolUseId: string;
+  raw: unknown[];
+  /** Tools also called in the same response and ignored (pickToolUse). */
+  dropped: string[];
+}
+
+/** Meters one model response. Built per request, so the caller's company and
+ * user ride along; never throws (recordModelUsage). */
+type Meter = (kind: UsageKind, usage: AnthropicUsage | undefined) => Promise<void>;
+
+/** One model call. With one tool it is forced; with several, `any` makes the
+ * model call exactly one of them. `retry` carries the previous response and
+ * its validation errors, and offers the same tool set again. Every response
+ * that comes back, usable or not, is metered as `kind` before anything else
+ * happens to it. */
+async function callClaude(
   apiKey: string,
   userText: string,
-  tool: { name: string } & Record<string, unknown>,
-  retryErrors?: { priorContent: unknown[]; toolUseId: string; errors: string[] },
-): Promise<{ output: T; toolUseId: string; raw: unknown[] }> {
+  tools: Tool[],
+  meter: { record: Meter; kind: UsageKind },
+  retry?: { prior: ClaudeAttempt; errors: string[] },
+): Promise<ClaudeAttempt> {
   const messages: unknown[] = [{ role: "user", content: [{ type: "text", text: userText }] }];
-  if (retryErrors) {
-    messages.push({ role: "assistant", content: retryErrors.priorContent });
+  if (retry) {
+    const called = retry.prior.toolName;
+    messages.push({ role: "assistant", content: retry.prior.raw });
     messages.push({
       role: "user",
       content: [
         {
           type: "tool_result",
-          tool_use_id: retryErrors.toolUseId,
+          tool_use_id: retry.prior.toolUseId,
           is_error: true,
-          content: `Your proposals failed validation: ${retryErrors.errors.join(" ")} Correct these and call ${tool.name} again.`,
+          content: `Your ${called} call failed validation: ${retry.errors.join(" ")} Correct these and call ${called} again.`,
         },
       ],
     });
@@ -255,8 +326,11 @@ async function callClaude<T>(
       system: [
         { type: "text", text: GENERATE_SYSTEM_PROMPT, cache_control: { type: "ephemeral" } },
       ],
-      tools: [tool],
-      tool_choice: { type: "tool", name: tool.name },
+      tools,
+      tool_choice:
+        tools.length === 1
+          ? { type: "tool", name: tools[0].name }
+          : { type: "any", disable_parallel_tool_use: true },
       messages,
     }),
   });
@@ -266,14 +340,21 @@ async function callClaude<T>(
     throw new HttpError(502, `The model request failed (${res.status}). Try again.`);
   }
   const body = (await res.json()) as {
-    content: Array<{ type: string; id?: string; name?: string; input?: unknown }>;
+    content: ModelContentBlock[];
+    usage?: AnthropicUsage;
   };
-  const toolUse = body.content.find((b) => b.type === "tool_use" && b.name === tool.name);
-  if (!toolUse?.input) throw new HttpError(502, "The model returned no proposals.");
+  await meter.record(meter.kind, body.usage);
+  const picked = pickToolUse(
+    body.content,
+    tools.map((t) => t.name),
+  );
+  if (!picked) throw new HttpError(502, "The model returned no proposals.");
   return {
-    output: toolUse.input as T,
-    toolUseId: toolUse.id ?? "",
+    toolName: picked.name,
+    input: picked.input,
+    toolUseId: picked.id,
     raw: body.content,
+    dropped: picked.dropped,
   };
 }
 
@@ -429,9 +510,11 @@ function buildFreestyleUserText(input: {
   references: unknown[];
   count: number;
   image: { aspect: number | undefined } | undefined;
+  documents: DocumentInput[];
 }): string {
   const parts: string[] = [];
   parts.push(`Brief: ${input.brief}`);
+  if (input.documents.length > 0) parts.push(documentsSection(input.documents));
   if (input.platform) parts.push(`The member is posting on: ${input.platform}.`);
   if (input.image) {
     parts.push(
@@ -455,7 +538,7 @@ function buildFreestyleUserText(input: {
   parts.push(
     input.references.length
       ? `The team's published templates, as style reference (match their spacing, hierarchy, and voice):\n${JSON.stringify(input.references)}`
-      : "The team has no published templates to reference — design cleanly from the palette and type styles alone.",
+      : "The team has no published templates to reference. Design cleanly from the palette and type styles alone.",
   );
   return parts.join("\n\n");
 }
@@ -465,11 +548,13 @@ async function handleFreestyle(
   db: ReturnType<typeof serviceClient>,
   apiKey: string,
   companyId: string,
+  meter: Meter,
   input: {
     brief: string;
     platformHint: GeneratePlatform | undefined;
     count: number;
     image: { aspect: number | undefined } | undefined;
+    documents: DocumentInput[];
   },
 ): Promise<Response> {
   const warnings: string[] = [];
@@ -557,21 +642,25 @@ async function handleFreestyle(
     references,
     count: input.count,
     image: input.image,
+    documents: input.documents,
   });
 
-  let attempt = await callClaude<FreestyleModelOutput>(apiKey, userText, PROPOSE_DESIGNS_TOOL);
+  const tools = [PROPOSE_DESIGNS_TOOL];
+  let attempt = await callClaude(apiKey, userText, tools, { record: meter, kind: "freestyle" });
   let validated;
   try {
-    validated = validateFreestyle(attempt.output, ctx, input.count);
+    validated = validateFreestyle(attempt.input as FreestyleModelOutput, ctx, input.count);
   } catch (e) {
     if (!(e instanceof GenerateValidationError)) throw e;
-    attempt = await callClaude<FreestyleModelOutput>(apiKey, userText, PROPOSE_DESIGNS_TOOL, {
-      priorContent: attempt.raw,
-      toolUseId: attempt.toolUseId,
-      errors: e.errors,
-    });
+    attempt = await callClaude(
+      apiKey,
+      userText,
+      tools,
+      { record: meter, kind: "retry" },
+      { prior: attempt, errors: e.errors },
+    );
     try {
-      validated = validateFreestyle(attempt.output, ctx, input.count);
+      validated = validateFreestyle(attempt.input as FreestyleModelOutput, ctx, input.count);
     } catch {
       return json(
         {
@@ -617,9 +706,9 @@ async function handleFreestyle(
 }
 
 // ---------------------------------------------------------------------------
-// Repair — round two of the client's measurement pass (see the shared module
+// Repair: round two of the client's measurement pass (see the shared module
 // for the contract). Same auth, same quota buckets: a repair is a model call
-// and costs exactly what a generate does.
+// and costs exactly what a generate does, and is metered as one.
 // ---------------------------------------------------------------------------
 
 interface RepairBody {
@@ -673,6 +762,7 @@ async function handleRepair(
   db: ReturnType<typeof serviceClient>,
   apiKey: string,
   companyId: string,
+  meter: Meter,
   rawRepair: unknown,
 ): Promise<Response> {
   const repair = parseRepair(rawRepair);
@@ -693,7 +783,7 @@ async function handleRepair(
   }
   const { data: fieldRows, error: fieldsErr } = await db
     .from("template_fields")
-    .select("field_key, label, type, is_static, required, max_length, placeholder, options")
+    .select("field_key, label, type, is_static, is_optional, max_length, placeholder, options")
     .eq("template_id", repair.templateId)
     .order("sort_order", { ascending: true });
   if (fieldsErr) {
@@ -708,19 +798,22 @@ async function handleRepair(
   if (errors.length > 0) throw new HttpError(400, errors.join(" "));
 
   const userText = buildRepairUserText(repair.brief, candidate, requests);
-  let attempt = await callClaude<RepairModelOutput>(apiKey, userText, REPAIR_VALUES_TOOL);
+  const tools = [REPAIR_VALUES_TOOL];
+  let attempt = await callClaude(apiKey, userText, tools, { record: meter, kind: "repair" });
   let validated;
   try {
-    validated = validateRepair(attempt.output, requests);
+    validated = validateRepair(attempt.input as RepairModelOutput, requests);
   } catch (e) {
     if (!(e instanceof GenerateValidationError)) throw e;
-    attempt = await callClaude<RepairModelOutput>(apiKey, userText, REPAIR_VALUES_TOOL, {
-      priorContent: attempt.raw,
-      toolUseId: attempt.toolUseId,
-      errors: e.errors,
-    });
+    attempt = await callClaude(
+      apiKey,
+      userText,
+      tools,
+      { record: meter, kind: "retry" },
+      { prior: attempt, errors: e.errors },
+    );
     try {
-      validated = validateRepair(attempt.output, requests);
+      validated = validateRepair(attempt.input as RepairModelOutput, requests);
     } catch {
       return json(
         { error: "The rewrite couldn't fit the measured budgets. Drop that proposal." },
@@ -768,8 +861,18 @@ Deno.serve(async (req) => {
     ]);
     if (!allowed) return tooMany(req);
 
+    const meter: Meter = (kind, usage) =>
+      recordModelUsage(db, {
+        companyId,
+        userId: caller.userId,
+        fn: "template-generate",
+        kind,
+        model: ANTHROPIC_MODEL,
+        usage,
+      });
+
     if (body.repair !== undefined) {
-      return await handleRepair(json, db, apiKey, companyId, body.repair);
+      return await handleRepair(json, db, apiKey, companyId, meter, body.repair);
     }
 
     const brief = requireString(body.brief, "brief", 1500);
@@ -804,12 +907,40 @@ Deno.serve(async (req) => {
     // narrows the candidate list; it only adds a section to the user text.
     const followUp = parseFollowUp(body.followUp);
 
+    // Template chat fields (PROMPT §10.1). Details belong to one template, so
+    // they need its hint, and a freestyle design has no fields to hold them.
+    // Documents are text the browser extracted; nothing else of the file
+    // ever arrives.
+    const detailInputs = parseDetails(body.details) ?? [];
+    const documents = parseDocuments(body.documents) ?? [];
+    if (
+      body.allowQuestion !== undefined &&
+      body.allowQuestion !== null &&
+      typeof body.allowQuestion !== "boolean"
+    ) {
+      throw new HttpError(400, "allowQuestion must be a boolean.");
+    }
+    if (detailInputs.length > 0 && (!templateIdHint || mode === "freestyle")) {
+      throw new HttpError(400, "details need a templateIdHint and library mode.");
+    }
+    // A question is only ever the first thing a chat says, and only when the
+    // member gave nothing structured to build from; a follow-up (the answer
+    // to that question) can never ask again.
+    const mayAsk =
+      body.allowQuestion === true &&
+      mode === "library" &&
+      Boolean(templateIdHint) &&
+      !followUp &&
+      detailInputs.length === 0 &&
+      documents.length === 0;
+
     if (mode === "freestyle") {
-      return await handleFreestyle(json, db, apiKey, companyId, {
+      return await handleFreestyle(json, db, apiKey, companyId, meter, {
         brief,
         platformHint,
         count,
         image,
+        documents,
       });
     }
 
@@ -842,7 +973,7 @@ Deno.serve(async (req) => {
     const { data: fieldRows, error: fieldsErr } = await db
       .from("template_fields")
       .select(
-        "template_id, field_key, label, type, is_static, required, max_length, placeholder, options",
+        "template_id, field_key, label, type, is_static, is_optional, max_length, placeholder, options",
       )
       .in(
         "template_id",
@@ -890,7 +1021,11 @@ Deno.serve(async (req) => {
     // template reused off that list costs the one retry, like any bad id.
     const followUpText = followUp ? followUpSection(followUp, published) : undefined;
 
-    // 3. One forced tool call; one retry carrying the validation errors.
+    // With a hint, candidates is exactly that template.
+    const details = templateIdHint ? resolveDetails(detailInputs, candidates[0]) : [];
+
+    // 3. One tool call (forced, or one of two when a question is allowed);
+    //    one retry carrying the validation errors, offering the same tools.
     //    No vision input: the templates are known structured data and the
     //    field list carries the signal (unlike auto-build, which reads an
     //    unknown design and needs the pixels).
@@ -902,20 +1037,30 @@ Deno.serve(async (req) => {
       Boolean(templateIdHint),
       image,
       followUpText,
+      details,
+      documents,
+      mayAsk,
     );
-    let attempt = await callClaude<GenerateModelOutput>(apiKey, userText, PROPOSE_POSTS_TOOL);
+    const tools = mayAsk ? [PROPOSE_POSTS_TOOL, ASK_MEMBER_TOOL] : [PROPOSE_POSTS_TOOL];
+    const settle = (a: ClaudeAttempt) =>
+      a.toolName === ASK_MEMBER_TOOL.name
+        ? { question: validateQuestion(a.input) }
+        : validateGeneration(a.input as GenerateModelOutput, candidates, count, details);
+    let attempt = await callClaude(apiKey, userText, tools, { record: meter, kind: "generate" });
     let validated;
     try {
-      validated = validateGeneration(attempt.output, candidates, count);
+      validated = settle(attempt);
     } catch (e) {
       if (!(e instanceof GenerateValidationError)) throw e;
-      attempt = await callClaude<GenerateModelOutput>(apiKey, userText, PROPOSE_POSTS_TOOL, {
-        priorContent: attempt.raw,
-        toolUseId: attempt.toolUseId,
-        errors: e.errors,
-      });
+      attempt = await callClaude(
+        apiKey,
+        userText,
+        tools,
+        { record: meter, kind: "retry" },
+        { prior: attempt, errors: e.errors },
+      );
       try {
-        validated = validateGeneration(attempt.output, candidates, count);
+        validated = settle(attempt);
       } catch {
         return json(
           {
@@ -926,6 +1071,26 @@ Deno.serve(async (req) => {
         );
       }
     }
+    // Both tools in one response should not happen with parallel tool use
+    // off; if it does, the proposals win and the question is let go.
+    if (attempt.dropped.length > 0) {
+      warnings.push(`The model also called ${attempt.dropped.join(", ")}, which was ignored.`);
+    }
+
+    // Provenance is the product's stated position: every generated thing
+    // can answer which model made it, from which library, and when.
+    const meta = {
+      model: ANTHROPIC_MODEL,
+      generatedAt: new Date().toISOString(),
+      candidateCount: candidates.length,
+      briefLength: brief.length,
+    };
+
+    // A question is a finished turn with no proposals. An older client
+    // ignores `question`; an older function never sends it.
+    if ("question" in validated) {
+      return json({ proposals: [], question: validated.question, warnings, meta });
+    }
 
     return json({
       proposals: validated.proposals,
@@ -935,14 +1100,7 @@ Deno.serve(async (req) => {
       reply: validated.reply,
       title: validated.title,
       warnings: [...warnings, ...validated.warnings],
-      // Provenance is the product's stated position: every generated thing
-      // can answer which model made it, from which library, and when.
-      meta: {
-        model: ANTHROPIC_MODEL,
-        generatedAt: new Date().toISOString(),
-        candidateCount: candidates.length,
-        briefLength: brief.length,
-      },
+      meta,
     });
   } catch (e) {
     if (e instanceof HttpError) return json({ error: e.message }, e.status);

@@ -277,9 +277,14 @@ export function GenerateHistoryPage() {
     navigate({ name: "generate" });
   }, [navigate]);
 
-  const openChat = (id: string) => {
+  // A template chat opens on its template's page (template-chat §12.1).
+  const openChat = (id: string, templateId: string | null) => {
     requestComposerFocus();
-    navigate({ name: "generate", threadId: id });
+    navigate(
+      templateId
+        ? { name: "templateChat", templateId, threadId: id }
+        : { name: "generate", threadId: id },
+    );
   };
 
   const retry = () => {
@@ -356,7 +361,7 @@ export function GenerateHistoryPage() {
                 meta={chatMeta(chat.platforms, chat.updatedAt, now)}
                 preview={preview}
                 aspect={aspect}
-                onOpen={() => openChat(chat.id)}
+                onOpen={() => openChat(chat.id, chat.templateId)}
               />
             );
           })}

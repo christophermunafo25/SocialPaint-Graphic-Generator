@@ -6,6 +6,7 @@
 import type { BrandKit, FieldType, ShapeKind, TemplateField } from "@/lib/types";
 import { newId } from "@/lib/stores/local/db";
 import { suggestFieldKey } from "@/lib/caption";
+import { DEFAULT_MIN_FONT_SCALE } from "@/lib/render/autoFit";
 
 export interface PaletteItem {
   /** Stable id carried through drag-and-drop (shapes share type "shape"). */
@@ -249,6 +250,7 @@ export function fieldFromPalette(
           colorHex: kit?.colors.find((c) => c.key === "text")?.hex ?? kit?.colors[0]?.hex,
           align: "left" as const,
           textSizing: "shrink" as const,
+          minFontScale: DEFAULT_MIN_FONT_SCALE,
         }
       : {}),
     ...(item.type === "shape"
@@ -273,6 +275,7 @@ export function fieldFromPalette(
           // Plated fields hug (box = text + padding) — sizing modes have
           // nothing to fit into, so the pill is born plain "free".
           textSizing: undefined,
+          minFontScale: undefined,
         }
       : {}),
     ...(item.type === "select" ? { options: [] } : {}),
@@ -485,6 +488,7 @@ const TEXT_STYLE_PROPS = [
   "fontStretch",
   "fontSizePx",
   "minFontSizePx",
+  "minFontScale",
   "uppercase",
   "letterSpacingPx",
   "lineHeight",
@@ -615,5 +619,32 @@ export function textFieldFromPaste(
     fieldKey: suggestFieldKey("Pasted text", existing),
     static: true,
     staticValue: text,
+  };
+}
+
+/** The patch that turns Fixed on or off. The one definition the inspector's
+ * switch and the builder's bulk toggle share, so a field comes out the same
+ * whichever way the admin flipped it.
+ *
+ * On: the member-input keys go (requiredness, optional, placeholder, max
+ * chars). Off: the designed content survives as the member-facing preview.
+ * Images keep their artwork (the renderer falls back to it); text keeps its
+ * copy as the placeholder when it has none. */
+export function fixedPatch(field: TemplateField, fixed: boolean): Partial<TemplateField> {
+  if (fixed) {
+    return {
+      static: true,
+      required: undefined,
+      optional: undefined,
+      placeholder: undefined,
+      maxLength: undefined,
+    };
+  }
+  return {
+    static: undefined,
+    staticValue: field.type === "image" ? field.staticValue : undefined,
+    ...(field.type !== "image" && !field.placeholder && field.staticValue
+      ? { placeholder: field.staticValue.slice(0, 80) }
+      : {}),
   };
 }

@@ -42,7 +42,7 @@ const NAV: NavItem[] = [
     route: { name: "portal" },
     Icon: Paintbrush,
     adminOnly: false,
-    matches: ["portal", "template"],
+    matches: ["portal", "template", "templateChat"],
   },
   {
     label: "Generate",

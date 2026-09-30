@@ -58,7 +58,7 @@
 //  - A draft whose template is gone (schema null) cannot be edited. It
 //    takes no part and does not count as a size.
 
-import type { BrandKit, TemplateField } from "../types";
+import type { BrandKit, FieldValues, TemplateField } from "../types";
 import { resolveFieldStyle } from "../brand/resolveStyle";
 import { isRequiredField } from "../templates/fieldRules";
 import { aspectRatioOf } from "../templates/platforms";
@@ -430,4 +430,39 @@ export function inputField(entry: LinkedEntry, drafts: ChatDraft[] = []): Templa
     ...(entry.options ? { options: entry.options } : {}),
     ...(entry.placeholder !== undefined ? { placeholder: entry.placeholder } : {}),
   };
+}
+
+/** One tag in a Generate chat turn's Fill in row (template-chat PROMPT
+ * §12.12): a linked field group, or an image slot, left empty in at least
+ * one draft, and where the tag leads (the first draft missing it). */
+export interface LinkedFillIn {
+  id: string;
+  label: string;
+  optional: boolean;
+  draftId: string;
+  fieldKey: string;
+}
+
+/** A turn's Fill in row across its drafts: one tag per linked group (or
+ * image slot) that is empty in any draft, in the editor's order, required
+ * ones first. `values` gives each draft's painted values (the turn's photo
+ * in its slot), so a slot the photo fills is not listed. */
+export function linkedFillIn(
+  drafts: ChatDraft[],
+  values: Record<string, FieldValues>,
+  opts: { kit: BrandKit | null; photoTargets: Record<string, string | null> },
+): LinkedFillIn[] {
+  const out: LinkedFillIn[] = [];
+  for (const entry of buildLinkedFields(drafts, opts)) {
+    const missing = membersOf(entry).find((m) => !values[m.draftId]?.[m.fieldKey]);
+    if (!missing) continue;
+    out.push({
+      id: entry.id,
+      label: entry.label,
+      optional: entry.kind === "text" ? !entry.required : !isRequiredField(entry.field),
+      draftId: missing.draftId,
+      fieldKey: missing.fieldKey,
+    });
+  }
+  return [...out.filter((e) => !e.optional), ...out.filter((e) => e.optional)];
 }

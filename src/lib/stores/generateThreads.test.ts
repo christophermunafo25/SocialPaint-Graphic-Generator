@@ -239,12 +239,14 @@ describe("normalizeThreadInput", () => {
       title: "x".repeat(130),
       platforms: ["instagram", "linkedin"],
       preview,
+      templateId: "t-1",
       turns,
     });
     expect(out.title).toHaveLength(THREAD_TITLE_MAX);
     expect(out.platforms).toEqual(["linkedin", "instagram"]);
     expect(out.preview).toBe(preview);
     expect(out.turns).toBe(turns);
+    expect(out.templateId).toBe("t-1");
   });
 });
 

@@ -12,12 +12,18 @@ import {
   isUserTurn,
   type AssistantTurn,
   type ChatDraft,
+  type ChatDocument,
   type ChatPhoto,
   type ChatThread,
 } from "@/lib/generate/chat";
-import { DEFAULT_VARIATIONS } from "@/lib/generate/chatReducer";
+import { DEFAULT_VARIATIONS, latestDoneTurn, sameEdits } from "@/lib/generate/chatReducer";
 import { missingFields } from "@/lib/generate/draftDownload";
-import { previewValues, turnPhoto } from "@/lib/generate/draftView";
+import { captionFor, previewValues, tooLongFields, turnPhoto } from "@/lib/generate/draftView";
+import { defaultVariant } from "@/lib/templates/variants";
+import { detailFieldsFor, detailKindOf, type DetailTagValue } from "@/lib/generate/details";
+import { createCanvasMeasurer } from "@/lib/render/autoFit";
+import type { MemberHintState } from "@/lib/stores/interfaces";
+import type { TemplateSchema } from "@/lib/types";
 import { threadWritesSettled } from "@/lib/generate/threadSaver";
 import { fromStoredThread } from "@/lib/generate/threadStorage";
 import { deriveTryNext, platformsAskedFor, type TryNextAction } from "@/lib/generate/tryNext";
@@ -29,7 +35,8 @@ import { useBrand } from "@/lib/brand/BrandContext";
 import { useRouter } from "../../router";
 import { useFullViewport } from "../layout/ChromeContext";
 import { Page } from "../layout/Page";
-import { AssistantTurnView } from "./AssistantTurnView";
+import { AssistantTurnView, type TemplateTurnProps } from "./AssistantTurnView";
+import { ChatButton } from "./ChatButton";
 import { ChatHeader } from "./ChatHeader";
 import { ChatLoading, ChatUnavailable, THREAD_PLACEHOLDER } from "./ChatLoadStates";
 import { Composer } from "./Composer";
@@ -42,6 +49,8 @@ import {
 import { ChatFootnote, LegalLinks } from "./LegalLinks";
 import { RecentChats } from "./RecentChats";
 import { ScrollFade, useScrollFades } from "./ScrollFade";
+import { TemplateRefCard } from "./TemplateRefCard";
+import { TemplateChatStart } from "./TemplateChatStart";
 import { ChipRow, SuggestionChip } from "./SuggestionChip";
 import { UserMessage } from "./UserMessage";
 import { requestComposerFocus, requestHistoryFocus, takeComposerFocus } from "./composerFocus";
@@ -74,6 +83,13 @@ const START_REVEAL_MS = 400;
 /** Under the first message of a reopened chat that had a photo (PROMPT
  * §9.8, proposed copy): photos are never saved. */
 const PHOTO_NOT_SAVED = "Photos aren't saved with chats. Attach it again to use it in a new draft.";
+/** A template chat's placeholders (template-chat PROMPT §15). */
+const TEMPLATE_START_PLACEHOLDER = "Give me the scoop and I'll paint the rest";
+const TEMPLATE_THREAD_PLACEHOLDER = "Anything to add while the paint's still wet?";
+
+/** The plus hint shows on a member's first three template chats (§12.10). */
+const HINT_CHATS = 3;
+
 /** Under the composer until a save succeeds (PROMPT §9.8, proposed copy). */
 const NOT_SAVED_YET = "This chat isn't saved yet.";
 
@@ -102,6 +118,9 @@ interface EditorState {
   draftId: string;
   openId: number;
   focus: { draftId: string; fieldKey: string; nonce: number } | null;
+  /** The turn's drafts as they were when the panel opened: what "Edited"
+   * compares against, and what Discard puts back (template-chat §12.7). */
+  snapshot: ChatDraft[];
 }
 
 /** Save to library's progress for one freestyle draft (PROMPT §8.5). */
@@ -180,16 +199,20 @@ type SaveState =
  * templates fetched again and nothing of its photos but the note under the
  * first message that had one.
  */
-function GenerateChat({
+export function GenerateChat({
   templateIdHint,
   initial,
+  template = null,
 }: {
   /** "Use this one" from a template card: pins its Start from chip. */
   templateIdHint?: string;
   /** A saved chat to continue; null for a new chat. */
   initial: ChatThread | null;
+  /** A template chat (template-chat PROMPT §12): the published template the
+   * whole thread is scoped to. Null for a Generate chat. */
+  template?: TemplateSchema | null;
 }) {
-  const { company, role } = useAuth();
+  const { company, role, user } = useAuth();
   const { kit } = useBrand();
   const { route, navigate } = useRouter();
   const configured = stores.generate.isConfigured();
@@ -202,7 +225,7 @@ function GenerateChat({
   // With no published templates the library has nothing to fill, but
   // freestyle still works from the brand kit: every run goes freestyle and
   // the Start state says why.
-  const libraryEmpty = published !== null && published.length === 0;
+  const libraryEmpty = !template && published !== null && published.length === 0;
 
   // ── Saving (§9.8) ──────────────────────────────────────────────────────
   // The saver sees every transition of the thread (the controller's
@@ -216,18 +239,49 @@ function GenerateChat({
     onCreated: (id) => onFirstSave.current(id),
   });
 
-  const { thread, running, full, send, runTryNext, stop, retry, editValues, reset, assignId } =
-    useChatController({
-      companyId: company?.id ?? null,
-      kit,
-      libraryEmpty,
-      published,
-      initial,
-      onChange: observe,
-    });
+  const templateRef = useMemo(
+    () => (template ? { id: template.id, name: template.name } : null),
+    [template],
+  );
+  const {
+    thread,
+    running,
+    full,
+    send,
+    runTryNext,
+    stop,
+    retry,
+    editValues,
+    changeLook,
+    editCaption,
+    restoreDrafts,
+    reset,
+    assignId,
+  } = useChatController({
+    companyId: company?.id ?? null,
+    kit,
+    libraryEmpty,
+    published,
+    initial,
+    onChange: observe,
+    template: templateRef,
+  });
   onFirstSave.current = (id) => {
     assignId(id);
-    navigate({ name: "generate", threadId: id, savedInPlace: true }, { replace: true });
+    // An Edit details already open keeps its address (edit, field).
+    const editing = route.name === "templateChat" ? { edit: route.edit, field: route.field } : {};
+    navigate(
+      template
+        ? {
+            name: "templateChat",
+            templateId: template.id,
+            threadId: id,
+            savedInPlace: true,
+            ...editing,
+          }
+        : { name: "generate", threadId: id, savedInPlace: true },
+      { replace: true },
+    );
   };
   const inThread = thread.turns.length > 0;
   useFullViewport(inThread);
@@ -264,9 +318,53 @@ function GenerateChat({
   // ── The composer ────────────────────────────────────────────────────────
   const [text, setText] = useState("");
   const [photo, setPhoto] = useState<ChatPhoto | null>(null);
+  // The document waiting to go with the next message: text read in the
+  // browser, sent once with that message and never saved (PROMPT §12.3).
+  const [doc, setDoc] = useState<ChatDocument | null>(null);
   const [platform, setPlatform] = useState<PlatformId | null>(null);
   const [variations, setVariations] = useState(DEFAULT_VARIATIONS);
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
+  // Edit details' stage, where the panel renders the draft (§12.7).
+  const [stageEl, setStageEl] = useState<HTMLDivElement | null>(null);
+  // A template chat's detail tags, waiting beside the plus (§11.6).
+  const [tags, setTags] = useState<DetailTagValue[]>([]);
+
+  // ── The plus hint (template chats, §12.10) ─────────────────────────────
+  // On for a template chat's Start state while the box is empty, the plus
+  // has never been opened, and the member has started fewer than three
+  // template chats; only once the flags have loaded, so it never flashes on
+  // and off. Typing, opening the plus or sending turns it off for the rest
+  // of this page view; opening the plus turns it off for good.
+  const hintUser = user?.id ?? "local";
+  const [hints, setHints] = useState<MemberHintState | null>(null);
+  const [hintDismissed, setHintDismissed] = useState(false);
+  useEffect(() => {
+    if (!template) return;
+    let alive = true;
+    stores.memberHints
+      .get(hintUser)
+      .then((h) => alive && setHints(h))
+      .catch(() => {
+        // Unknown flags: no hint rather than a wrong one.
+      });
+    return () => {
+      alive = false;
+    };
+  }, [template, hintUser]);
+  useEffect(() => {
+    if (text) setHintDismissed(true);
+  }, [text]);
+  const onPlusOpened = useCallback(() => {
+    setHintDismissed(true);
+    if (!template) return;
+    setHints((h) => {
+      if (h && !h.plusOpened) {
+        void stores.memberHints.markPlusOpened(hintUser).catch(() => {});
+        return { ...h, plusOpened: true };
+      }
+      return h;
+    });
+  }, [template, hintUser]);
 
   // "New chat", a chat opened from History, and a first send (whose Large
   // composer gives way to the dock's) each land focus in the composer
@@ -323,6 +421,22 @@ function GenerateChat({
   // The editor panel, while it is open.
   const [editor, setEditor] = useState<EditorState | null>(null);
   const paletteSize = kit?.colors.length ?? 0;
+  // One canvas measurer for the page's "too long" checks (§9.4).
+  const measure = useMemo(() => createCanvasMeasurer(), []);
+  // The Details rows: the template's member text fields in its current look,
+  // which is the latest draft's (§11.4).
+  const currentLook = useMemo(
+    () => latestDoneTurn(thread.turns)?.drafts[0]?.variantId,
+    [thread.turns],
+  );
+  const detailFields = useMemo(
+    () => (template ? detailFieldsFor(template, currentLook) : []),
+    [template, currentLook],
+  );
+  const composerDetails = useMemo(
+    () => (template ? { fields: detailFields, tags, onTagsChange: setTags } : undefined),
+    [template, detailFields, tags],
+  );
   const lastTurn = thread.turns[thread.turns.length - 1];
   // The first message of a reopened chat that was sent with a photo: the
   // photo was not saved, and the note under it says so (§9.8). A message
@@ -345,21 +459,49 @@ function GenerateChat({
 
   const submit = () => {
     const fromStart = !inThread;
+    if (template) {
+      // A template chat: its template, one draft, and the detail tags as
+      // structured details (§12.3).
+      const started = send({
+        text,
+        photo,
+        document: doc,
+        details: tags.map((t) => ({ fieldKey: t.fieldKey, label: t.label, value: t.value })),
+      });
+      if (!started) return;
+      setText("");
+      setPhoto(null);
+      setDoc(null);
+      setTags([]);
+      setHintDismissed(true);
+      // A message sent from Edit details returns to the thread (§12.7).
+      if (editorOpenRef.current) closeEditor();
+      follow();
+      if (fromStart) {
+        // The count goes up on a template chat's first send (§12.3).
+        void stores.memberHints.noteTemplateChatStarted(hintUser).catch(() => {});
+        if (composerRef.current?.form?.contains(document.activeElement)) requestComposerFocus();
+      }
+      return;
+    }
     const started = fromStart
       ? send({
           text,
           photo,
+          document: doc,
           platformHint: platform,
           variations,
           templateIdHint: pinned?.id,
         })
       : // The compact composer has no platform or count: the controller
         // reuses the thread's last composer send (never a chip's).
-        send({ text, photo });
+        send({ text, photo, document: doc });
     if (!started) return;
-    // The photo is snapshotted on the message; the composer starts clean.
+    // The photo and the document are snapshotted on the message; the
+    // composer starts clean.
     setText("");
     setPhoto(null);
+    setDoc(null);
     follow();
     if (fromStart) {
       // A pinned template is for one send.
@@ -383,6 +525,8 @@ function GenerateChat({
     reset();
     setText("");
     setPhoto(null);
+    setDoc(null);
+    setTags([]);
     setPlatform(null);
     setVariations(DEFAULT_VARIATIONS);
     setPinnedId(null);
@@ -396,8 +540,12 @@ function GenerateChat({
    * stays mounted when the URL was already a new chat's. */
   const startNewChat = useCallback(() => {
     clearChat();
-    navigate({ name: "generate" });
-  }, [clearChat, navigate]);
+    navigate(template ? { name: "templateChat", templateId: template.id } : { name: "generate" });
+  }, [clearChat, navigate, template]);
+
+  /** Brand Templates, from the breadcrumb and "Change template": the chat
+   * stays saved in History (§12.4). */
+  const openBrandTemplates = useCallback(() => navigate({ name: "portal" }), [navigate]);
 
   // The sidebar's Generate from inside a chat at /generate: the router
   // hands over a fresh route object for the same address (routeState), and
@@ -409,7 +557,13 @@ function GenerateChat({
   useEffect(() => {
     if (route === seenRoute.current) return;
     seenRoute.current = route;
-    if (route.name === "generate" && !route.threadId && inThread) clearChat();
+    if (
+      (route.name === "generate" || route.name === "templateChat") &&
+      !route.threadId &&
+      inThread
+    ) {
+      clearChat();
+    }
   }, [route, inThread, clearChat]);
 
   // The Start from hint (above), after the effect that empties the chat: an
@@ -432,9 +586,15 @@ function GenerateChat({
   /** A Recent card: the chat opens at its own address, a page of its own,
    * with focus in its composer once it has loaded (§9.10). */
   const openChat = useCallback(
-    (threadId: string) => {
+    (threadId: string, templateId: string | null) => {
       requestComposerFocus();
-      navigate({ name: "generate", threadId });
+      // A template chat opens on its template's page, which sends it on to
+      // /generate/c/<id> when that template has gone (template-chat §12.1).
+      navigate(
+        templateId
+          ? { name: "templateChat", templateId, threadId }
+          : { name: "generate", threadId },
+      );
     },
     [navigate],
   );
@@ -504,10 +664,12 @@ function GenerateChat({
       if (!editorOpenRef.current) preserve(anchor);
       opener.current = { el: from, draftId };
       const openId = ++openCount.current;
+      const turn = threadRef.current.turns.find((t) => t.id === turnId);
+      const snapshot = turn && isAssistantTurn(turn) ? turn.drafts : [];
       setEditor((current) =>
         current && current.turnId === turnId
           ? { ...current, draftId, focus: focus ?? current.focus }
-          : { turnId, draftId, openId, focus },
+          : { turnId, draftId, openId, focus, snapshot },
       );
     },
     [preserve],
@@ -555,6 +717,77 @@ function GenerateChat({
     opener.current = null;
     setEditor(null);
   }, [preserve]);
+
+  // ── Edit details' address (template chats, §12.7) ──────────────────────
+  // Opening Edit details writes `edit` (and `field`) into the URL as a new
+  // history entry, so Back returns to the thread; Back to chat goes back
+  // through that entry. A URL that arrives with `edit` (a link, a reload,
+  // forward) opens it on that draft, focused on `field`.
+  const chatRoute = route.name === "templateChat" ? route : null;
+  const pushedEdit = useRef(false);
+  const editorDraftId = editor && editorTurn ? editor.draftId : null;
+  // Only the editor's own opens and closes write the address: on mount the
+  // address is what opens the editor (below), never the other way round.
+  const lastEditorDraft = useRef(editorDraftId);
+  useEffect(() => {
+    if (lastEditorDraft.current === editorDraftId) return;
+    lastEditorDraft.current = editorDraftId;
+    if (!template || !chatRoute) return;
+    const want = editorDraftId;
+    const have = chatRoute.edit ?? null;
+    if (want === have) return;
+    if (want) {
+      const field = editor?.focus?.fieldKey;
+      pushedEdit.current = true;
+      navigate({ ...chatRoute, edit: want, ...(field ? { field } : { field: undefined }) });
+    } else if (pushedEdit.current) {
+      pushedEdit.current = false;
+      window.history.back();
+    } else {
+      navigate({ ...chatRoute, edit: undefined, field: undefined }, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs on the editor's own changes
+  }, [editorDraftId]);
+  useEffect(() => {
+    if (!template || !chatRoute) return;
+    const edit = chatRoute.edit ?? null;
+    if (!edit) {
+      // Back past the entry Edit details wrote.
+      if (editorDraftId) {
+        pushedEdit.current = false;
+        closeEditor();
+      }
+      return;
+    }
+    if (edit === editorDraftId) return;
+    const turn = threadRef.current.turns.find(
+      (t) => isAssistantTurn(t) && t.drafts.some((d) => d.id === edit && d.schema),
+    );
+    if (!turn) return;
+    const preview = previews.current.get(edit) ?? null;
+    openEditor(
+      turn.id,
+      edit,
+      preview,
+      preview,
+      chatRoute.field
+        ? { draftId: edit, fieldKey: chatRoute.field, nonce: ++openCount.current }
+        : null,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- follows the address only
+  }, [chatRoute?.edit, chatRoute?.field]);
+
+  // Discard (§12.7): the turn's drafts back as the panel found them.
+  const canDiscard = useMemo(() => {
+    if (!editor || !editorTurn) return false;
+    return editorTurn.drafts.some((d) => {
+      const was = editor.snapshot.find((x) => x.id === d.id);
+      return was !== undefined && !sameEdits(d, was);
+    });
+  }, [editor, editorTurn]);
+  const discard = useCallback(() => {
+    if (editor) restoreDrafts(editor.turnId, editor.snapshot);
+  }, [editor, restoreDrafts]);
 
   // Focus after the panel goes: back to its opener, or, when the panel went
   // with focus in it and nothing to go back to, to the composer.
@@ -685,11 +918,14 @@ function GenerateChat({
       if (!draft) return;
       const values = previewValues(draft, turnPhoto(current, turn));
       const missing = missingFields(draft, values);
-      if (missing.length === 0) {
+      // A template chat also holds back a value too long for its line at
+      // its floor (§9.4, §12.5); the editor says what to shorten.
+      const tooLong = templateRef ? tooLongFields(draft, values, kit, measure) : [];
+      if (missing.length === 0 && tooLong.length === 0) {
         void download(draft, values);
         return;
       }
-      const gap = missing.find((f) => f.type !== "image") ?? missing[0];
+      const gap = missing.find((f) => f.type !== "image") ?? missing[0] ?? { fieldKey: tooLong[0] };
       const preview = previews.current.get(draftId) ?? null;
       const card = preview?.closest(".sp-chat-draft") ?? null;
       const active = document.activeElement;
@@ -700,7 +936,7 @@ function GenerateChat({
         nonce: ++openCount.current,
       });
     },
-    [download, openEditor],
+    [download, openEditor, templateRef, kit, measure],
   );
   useEffect(() => {
     if (!downloadError) return;
@@ -748,6 +984,34 @@ function GenerateChat({
     [follow, keepFocusInChat, retry],
   );
 
+  // ── A template chat's turns (§12.5) ────────────────────────────────────
+  // A Fill in tag opens the editor on its field; a look switch is instant.
+  // (Edit details replaces the editor here in Phase 5 of the template chat.)
+  const onFillIn = useCallback(
+    (turnId: string, draftId: string, fieldKey: string) => {
+      const active = document.activeElement;
+      const tag =
+        active instanceof HTMLElement && scrollRef.current?.contains(active) ? active : null;
+      const preview = previews.current.get(draftId) ?? null;
+      openEditor(turnId, draftId, tag ?? preview, tag ?? preview, {
+        draftId,
+        fieldKey,
+        nonce: ++openCount.current,
+      });
+    },
+    [openEditor, scrollRef],
+  );
+  const templateTurn = useMemo((): TemplateTurnProps | null => {
+    if (!template) return null;
+    return {
+      lookCount: template.variants?.length ?? 0,
+      aspect: template.canvasWidth / template.canvasHeight,
+      measure,
+      onFillIn,
+      onChangeLook: changeLook,
+    };
+  }, [template, measure, onFillIn, changeLook]);
+
   // The export stage and the failure toast sit beside whichever state is
   // showing, at one place in the tree, so a download in flight survives
   // New chat (the stage portals itself to <body>).
@@ -757,6 +1021,49 @@ function GenerateChat({
       {!editorOpen && downloadError && <ExportErrorToast detail={downloadError} />}
     </>
   );
+
+  // ── A template chat's Start state (template-chat frames 01, 01a, 01b) ──
+  const hint =
+    Boolean(template) &&
+    !inThread &&
+    !hintDismissed &&
+    !text &&
+    hints !== null &&
+    !hints.plusOpened &&
+    hints.templateChatsStarted < HINT_CHATS;
+  if (!inThread && template) {
+    return (
+      <>
+        {exportExtras}
+        <TemplateChatStart
+          template={template}
+          isAdmin={role === "admin"}
+          onBrandTemplates={openBrandTemplates}
+          onFillByHand={() => navigate({ name: "template", templateId: template.id })}
+          onBulkFill={() => navigate({ name: "bulk", templateId: template.id })}
+          composer={
+            <Composer
+              size="compact"
+              value={text}
+              onChange={setText}
+              photo={photo}
+              onPhotoChange={setPhoto}
+              document={doc}
+              onDocumentChange={setDoc}
+              details={composerDetails}
+              hint={hint}
+              onPlusOpened={onPlusOpened}
+              running={running}
+              onSubmit={submit}
+              onStop={stop}
+              placeholder={TEMPLATE_START_PLACEHOLDER}
+              textareaRef={composerRef}
+            />
+          }
+        />
+      </>
+    );
+  }
 
   // ── Start state (frames 01 to 03) ──────────────────────────────────────
   if (!inThread) {
@@ -782,6 +1089,8 @@ function GenerateChat({
                       onChange={setText}
                       photo={photo}
                       onPhotoChange={setPhoto}
+                      document={doc}
+                      onDocumentChange={setDoc}
                       running={running}
                       onSubmit={submit}
                       onStop={stop}
@@ -848,20 +1157,51 @@ function GenerateChat({
   // (thread and dock) sits in a row with the panel, which the CSS lays out
   // beside it (inline) or over it (sheet).
   const editorPresentation = editorOpen ? (inline ? "inline" : "sheet") : undefined;
+  // Edit details (template chats, §12.7): the thread gives way to the stage,
+  // the draft rendered large in its well, with the compact chat box docked
+  // under it and the panel beside it (or over it, below 1180px).
+  const editView = Boolean(template && editorOpen && selectedDraft);
+  const lookOptions = template?.variants?.map((v) => ({ id: v.id, label: v.name })) ?? [];
   return (
     <>
       {exportExtras}
       <Page layout={{ className: "sp-chat-page", state: "thread" }}>
         <ChatHeader
           ref={headerRef}
-          title={thread.title}
+          // A template chat is named by its template (Brand Templates / Now
+          // hiring), as every frame of it draws the header.
+          title={editView ? "Edit details" : template ? template.name : thread.title}
           titleId={titleId}
           onNewChat={startNewChat}
           onHistory={openHistory}
+          root={
+            template
+              ? { label: "Brand Templates", route: { name: "portal" }, onClick: openBrandTemplates }
+              : undefined
+          }
+          {...(editView && template && chatRoute
+            ? {
+                middle: {
+                  label: template.name,
+                  route: { ...chatRoute, edit: undefined, field: undefined },
+                  onClick: closeEditor,
+                },
+                actions: (
+                  <ChatButton kind="tertiary" size="small" onClick={closeEditor}>
+                    Back to chat
+                  </ChatButton>
+                ),
+              }
+            : {})}
         />
-        <div className="sp-chat-split" data-editor={editorPresentation}>
+        <div
+          className="sp-chat-split"
+          data-editor={editorPresentation}
+          data-view={editView ? "edit" : undefined}
+        >
           <div ref={chatRef} className="sp-chat-split__chat">
-            <div className="sp-chat-thread-frame">
+            {editView && <div ref={setStageEl} className="sp-chat-stage" />}
+            <div className="sp-chat-thread-frame" hidden={editView}>
               <div
                 ref={scrollRef}
                 className="sp-chat-thread"
@@ -874,12 +1214,17 @@ function GenerateChat({
                 aria-labelledby={titleId}
               >
                 <div ref={columnRef} className="sp-chat-thread__column">
+                  {template && (
+                    <TemplateRefCard template={template} onChange={openBrandTemplates} />
+                  )}
                   {thread.turns.map((turn) =>
                     isUserTurn(turn) ? (
                       <UserMessage
                         key={turn.id}
                         text={turn.text}
                         photo={turn.photo?.dataUrl}
+                        document={turn.document ?? turn.hadDocument}
+                        tags={turn.details?.map((d) => ({ ...d, kind: detailKindOf(d) }))}
                         note={turn.id === photoNoteId ? PHOTO_NOT_SAVED : undefined}
                       />
                     ) : (
@@ -906,6 +1251,8 @@ function GenerateChat({
                         onDownloadDraft={downloadDraft}
                         onTryNext={onTryNext}
                         onRetry={onRetry}
+                        template={templateTurn}
+                        onFillIn={onFillIn}
                       />
                     ),
                   )}
@@ -926,10 +1273,14 @@ function GenerateChat({
                   onChange={setText}
                   photo={photo}
                   onPhotoChange={setPhoto}
+                  document={doc}
+                  onDocumentChange={setDoc}
+                  details={composerDetails}
+                  onPlusOpened={onPlusOpened}
                   running={running}
                   onSubmit={submit}
                   onStop={stop}
-                  placeholder={THREAD_PLACEHOLDER}
+                  placeholder={template ? TEMPLATE_THREAD_PLACEHOLDER : THREAD_PLACEHOLDER}
                   textareaRef={composerRef}
                   disabled={full}
                 />
@@ -951,6 +1302,31 @@ function GenerateChat({
               presentation={editorPresentation}
               saveToLibrary={saveToLibrary}
               exportError={downloadError}
+              openDrafts={editor.snapshot}
+              onDiscard={discard}
+              canDiscard={canDiscard}
+              {...(editView
+                ? {
+                    stageTarget: stageEl,
+                    looks:
+                      lookOptions.length > 1
+                        ? {
+                            options: lookOptions,
+                            selectedId:
+                              selectedDraft.variantId ??
+                              (template ? defaultVariant(template)?.id : undefined) ??
+                              "",
+                            onSelect: (id: string) =>
+                              changeLook(editorTurn.id, selectedDraft.id, id),
+                          }
+                        : null,
+                    caption: {
+                      value: captionFor(selectedDraft, { templateFallback: false }),
+                      onChange: (next: string) =>
+                        editCaption(editorTurn.id, selectedDraft.id, next),
+                    },
+                  }
+                : {})}
             />
           )}
         </div>
@@ -998,7 +1374,7 @@ function SavedChat({ threadId }: { threadId: string }) {
   const { company } = useAuth();
   const { navigate } = useRouter();
   const companyId = company?.id ?? null;
-  const load = useAsync(async (): Promise<ChatThread | null> => {
+  const load = useAsync(async (): Promise<ChatThread | { templateId: string } | null> => {
     if (!companyId) return null;
     // A write of this chat may still be in flight (it was left a moment
     // ago, with an edit to write): read the row it leaves, never the one
@@ -1006,11 +1382,27 @@ function SavedChat({ threadId }: { threadId: string }) {
     await threadWritesSettled();
     const record = await stores.generateThreads.get(companyId, threadId);
     if (!record) return null;
+    // A template chat whose template is still published belongs on its
+    // template's page (template-chat §12.1); one whose template has gone
+    // stays here, an ordinary Generate chat.
+    if (record.templateId) {
+      const t = await stores.templates.get(record.templateId);
+      if (t && t.status === "published" && t.companyId === companyId) {
+        return { templateId: t.id };
+      }
+    }
     return fromStoredThread(record, {
       companyId,
       getTemplate: (id) => stores.templates.get(id),
     });
   }, [companyId, threadId]);
+  const moveTo =
+    load.status === "ready" && load.data && "templateId" in load.data && !("turns" in load.data)
+      ? load.data.templateId
+      : null;
+  useEffect(() => {
+    if (moveTo) navigate({ name: "templateChat", templateId: moveTo, threadId }, { replace: true });
+  }, [moveTo, navigate, threadId]);
 
   const newChat = useCallback(() => {
     requestComposerFocus();
@@ -1021,7 +1413,9 @@ function SavedChat({ threadId }: { threadId: string }) {
     navigate({ name: "generateHistory" });
   }, [navigate]);
 
-  if (load.status === "loading") return <ChatLoading onNewChat={newChat} onHistory={history} />;
+  if (load.status === "loading" || moveTo) {
+    return <ChatLoading onNewChat={newChat} onHistory={history} />;
+  }
   if (load.status === "error") {
     return (
       <ChatUnavailable
@@ -1032,7 +1426,7 @@ function SavedChat({ threadId }: { threadId: string }) {
       />
     );
   }
-  if (!load.data) {
+  if (!load.data || !("turns" in load.data)) {
     return <ChatUnavailable reason="missing" onNewChat={newChat} onHistory={history} />;
   }
   return <GenerateChat initial={load.data} />;

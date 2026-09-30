@@ -84,6 +84,15 @@ fi
 sed -E 's/^psql:[^:]+:[0-9]+: NOTICE:  //' /tmp/verify-generate.out \
   | grep -vE '^(DO|CREATE FUNCTION|SET|RESET|INSERT|UPDATE|DELETE|BEGIN|ROLLBACK).*$'
 
+echo "==> Template chat checks"
+if ! psql -X -v ON_ERROR_STOP=1 -d "$DB" -f 70_template_chat.sql > /tmp/verify-template-chat.out 2>&1; then
+  sed -E 's/^psql:[^:]+:[0-9]+: (NOTICE|ERROR):  /\1: /' /tmp/verify-template-chat.out
+  echo "FAILED: a template chat check did not pass"
+  exit 1
+fi
+sed -E 's/^psql:[^:]+:[0-9]+: NOTICE:  //' /tmp/verify-template-chat.out \
+  | grep -vE '^(DO|CREATE FUNCTION|SET|RESET|INSERT|UPDATE|DELETE|BEGIN|ROLLBACK).*$'
+
 echo "==> Storage references stay in their company's folder"
 # The read-only audit that can also run against production, run here over
 # seeded rows: it must flag exactly the references A's rows plant in B's

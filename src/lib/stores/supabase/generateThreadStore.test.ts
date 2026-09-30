@@ -53,6 +53,7 @@ const row = (i: number, over: Record<string, unknown> = {}) => ({
 });
 
 const input = (over: Partial<GenerateThreadInput> = {}): GenerateThreadInput => ({
+  templateId: null,
   title: "Creative Director post",
   platforms: ["instagram", "linkedin"],
   preview: null,
@@ -86,7 +87,7 @@ describe("SupabaseGenerateThreadStore.list", () => {
     expect(req.method).toBe("GET");
     expect(req.url.pathname).toBe("/rest/v1/generate_threads");
     expect(params(req.url)).toEqual({
-      select: "id,title,platforms,preview,created_at,updated_at",
+      select: "id,title,platforms,preview,template_id,created_at,updated_at",
       company_id: `eq.${COMPANY}`,
       order: "updated_at.desc,id.desc",
       limit: "13",
@@ -156,14 +157,15 @@ describe("SupabaseGenerateThreadStore.get", () => {
   });
 
   it("reads one chat with its turns", async () => {
-    h.answer = () => [{ ...row(0, { id: ID }), turns: input().turns }];
+    h.answer = () => [{ ...row(0, { id: ID, template_id: "t-7" }), turns: input().turns }];
     const rec = await store.get(COMPANY, ID);
     expect(params(last().url)).toMatchObject({
-      select: "id,title,platforms,preview,created_at,updated_at,turns",
+      select: "id,title,platforms,preview,template_id,created_at,updated_at,turns",
       company_id: `eq.${COMPANY}`,
       id: `eq.${ID}`,
     });
     expect(rec?.id).toBe(ID);
+    expect(rec?.templateId).toBe("t-7");
     expect(rec?.turns).toEqual(input().turns);
   });
 
@@ -176,7 +178,7 @@ describe("SupabaseGenerateThreadStore.get", () => {
 describe("SupabaseGenerateThreadStore writes", () => {
   it("creates in the company, never naming the user, and returns the record", async () => {
     h.answer = ({ method }) => (method === "POST" ? [{ ...row(0, { id: ID }), turns: [] }] : []);
-    const rec = await store.create(COMPANY, input({ title: "t".repeat(130) }));
+    const rec = await store.create(COMPANY, input({ title: "t".repeat(130), templateId: "t-7" }));
     const req = last();
     expect(req.method).toBe("POST");
     const body = req.body as Record<string, unknown>;
@@ -186,6 +188,7 @@ describe("SupabaseGenerateThreadStore writes", () => {
     expect(body.platforms).toEqual(["linkedin", "instagram"]);
     expect(typeof body.updated_at).toBe("string");
     expect(body.turns).toEqual(input().turns);
+    expect(body.template_id).toBe("t-7");
     expect(rec.id).toBe(ID);
   });
 
