@@ -102,7 +102,25 @@ from the platform in migration 0009.)
   chat (title, `platforms` text[], `preview` and `turns` jsonb). **Private
   to its author**: every policy is `user_id = auth.uid()`, so not even a
   company admin reads another member's chats. Never holds a photo or any
-  `data:` value. See Generate below.
+  `data:` value. See Generate below. `template_id` (migration 0039) scopes a
+  template chat to its template; the insert and update policies only accept
+  a template of the row's own company, and a deleted template nulls it.
+- `template_fields.is_optional` and `min_font_scale` (migration 0039): an
+  admin can mark a member field optional, and the shrink floor can be a
+  fraction of the set size. See `docs/TEMPLATE_SCHEMA.md`. The legacy
+  `required` column is never read.
+- `member_hints` (migration 0039): first-run hints, one row per user,
+  strictly self-scoped (`user_id = auth.uid()`, like
+  `user_notification_prefs`), written only through the atomic RPCs
+  `note_template_chat_started()` and `mark_plus_opened()`.
+- `ai_usage_events` (migration 0039): one row per model call, with its
+  function, kind, model and token counts. **Written only by Edge Functions
+  (service role)**; there are no insert, update or delete policies, so no
+  member can forge or erase usage. Company admins read their company's rows
+  (`ai_usage_summary(p_company, p_since)`, security invoker, so the
+  admin-only read policy decides who gets numbers). Rows with a null
+  `company_id` (onboarding's `brand-from-website`) are visible to no one
+  but the operator.
 
 The database ships **empty of tenant data**. Onboarding creates everything.
 
@@ -358,9 +376,10 @@ without it the function answers 503 and says so.
   platform, or falls back to the whole library with a warning. One forced
   tool call (`propose_posts`): the model picks a `templateId` from the
   candidates and writes string values into fields an admin exposed, and
-  nothing else, so the output is on brand by construction.
-  `validateGeneration` checks every value; a failure retries once with the
-  errors attached, then answers 502.
+  nothing else, so the output is on brand by construction. It fills only
+  the fields it has facts for; an empty field is legal and costs no retry,
+  and the chat flags it (the Fill in row). `validateGeneration` checks every
+  value; a failure retries once with the errors attached, then answers 502.
 - **Freestyle** (`mode: "freestyle"`). The model proposes new layouts
   (`propose_designs`) for the platform's canvas, held to brand palette keys
   and brand type styles, with up to 12 published templates digested as
@@ -536,6 +555,101 @@ through the same helpers (`src/lib/stores/generateThreads.ts`).
    for `followUp`, `reply`, `title` and the reworded messages. The client
    also runs against the older deployment, with the fallbacks above.
 
+## Template chat
+
+A member opens a brand template, says what the post is for in one message,
+and SocialPaint builds the graphic right away. Whatever the message did not
+cover is flagged on the result for the member to fill in by hand, so a post
+takes one model turn instead of a back-and-forth. It lives at
+`/templates/<templateId>/chat` (a saved one at `.../chat/<threadId>`,
+Edit details at `...?edit=<draftId>&field=<fieldKey>`). The spec is
+`docs/design/template-chat/PROMPT.md`.
+
+It is the Generate chat in a second mode, not a parallel system: the same
+reducer, run, controller, thread store, renderer and editor, scoped to one
+template for the whole thread (`ChatThread.templateId`,
+`generate_threads.template_id`). `TemplateChatPage` loads the template and
+hands it to `GenerateChat` as `template`.
+
+- **Entry.** A Brand Templates card opens the chat when
+  `stores.generate.isConfigured()`, else the fill page (local mode, no model
+  key), so a member always has a way to make the post. The chat links to
+  the fill page ("Fill in by hand") and, for admins, Bulk fill. A template
+  that is unpublished or not the company's shows "This template isn't
+  available any more."; a saved template chat whose template is gone opens
+  at `/generate/c/<id>` as an ordinary Generate chat, and that route hands a
+  chat whose template is live back to its template's page.
+- **The run.** Every message pins the template (`templateIdHint`), asks for
+  one draft, and sends the member's detail tags as structured `details`
+  (applied verbatim; the model never writes them). A chat's first message
+  with no details and no document may be answered with one question
+  (`allowQuestion`, the `ask_member` tool); the answer is an ordinary
+  follow-up, so a chat can never ask twice. The question settles the turn as
+  done with no drafts (`questionArrived`), never "nothing fit".
+- **Looks.** A draft carries its `variantId`: a new draft takes the
+  template's default, a follow-up's keeps the previous draft's, and the
+  Looks card beside the result switches instantly with no model call.
+  Measurement, requiredness, the Fill in row and every renderer read the
+  look-applied schema.
+- **Empty fields and fit.** The model fills only what it has facts for.
+  Every chat surface paints with `emptyFields="chat"`: an empty optional
+  field is left off, an empty required one keeps its slot and paints
+  nothing. `fillInEntries` lists what is missing; `tooLongFields` (the
+  measurement pass's "overflows", against the look) what does not fit at its
+  floor. Either blocks the card's Download and Download PNG. A draft that
+  still overflows after repair is kept and flagged, never dropped, and
+  repair never rewrites a value the member typed (`ChatDraft.memberKeys`,
+  from detail tags and edits), which a follow-up also carries forward when
+  its proposal leaves it empty.
+- **Edit details.** The thread gives way to a stage (the draft rendered
+  large, with Missing markers in the renderer's overlay, never exported) and
+  `EditorPanel` in its stage mode beside it: the look switch, the fields
+  with Missing, Too long and Edited statuses, a Caption field (the member's
+  own caption, `captionOverride`; the template's caption template is never
+  used), Discard (the drafts as the panel found them, `draftsRestored`) and
+  Download PNG. Opening it is a history entry, so Back returns to the thread.
+  Edits never call the model.
+- **The chat box** (both chats): the plus opens Upload (Photo, File, Brand
+  Studio) and, in a template chat, Details (the template's member text
+  fields in the current look), each becoming a tag beside the plus. The
+  plus glows on a member's first three template chats until they type, open
+  it or send (`MemberHintStore`); it is the one place a brand colour draws
+  attention (the `socialpaint.css` header records the exception).
+
+### Documents
+
+The File row takes one PDF, TXT or MD file per message, at most 10 MB, read
+**in the browser** (`documentText.ts`; PDFs through `pdfjs-dist`'s legacy
+build, loaded lazily in its own chunk, first 10 pages). The text is
+whitespace-collapsed and capped at 12,000 characters, sent once as
+`documents` with that message, and never uploaded or saved: a saved message
+keeps `hadDocument`, the file's name and kind. The server quotes it to the
+model as JSON inside a section that marks it untrusted data, so nothing in a
+document can change the template, the tool or the rules. A follow-up does
+not resend it; its facts are already in the drafts.
+
+### AI usage metering
+
+Every Anthropic response in `template-generate` (first attempt, validation
+retry, repair, freestyle), `template-autobuild` and `brand-from-website` is
+written to `ai_usage_events` by `_shared/usage.ts` (`recordModelUsage`),
+with the service role. A logging failure is logged and swallowed; it never
+fails the member's request. `brand-from-website` runs before a company
+exists, so it logs with no company and the caller's user. Settings → Usage
+shows admins this calendar month's requests and tokens
+(`UsageStore.getAiUsage`, from the workspace's local midnight on the 1st);
+the local backend has no model calls and shows no card. It measures and
+nothing more: no quotas or credits.
+
+### Deploying the template chat
+
+Ship in this order: migration `0039` (the functions select `is_optional`
+and write `ai_usage_events`; the client writes both new field columns and
+reads `template_id`), then `template-generate`, `template-autobuild` and
+`brand-from-website`, then the app (an older function ignores `details`,
+`documents` and `allowQuestion`). Run `supabase/verify/run.sh` against a
+real Postgres; `70_template_chat.sql` covers the new policies.
+
 ## Brand rules engine & design-system import
 
 Brand Studio defines unlimited **type styles** ("Heading", "Body", …). Every
@@ -649,4 +763,6 @@ only as Edge Function secrets. No secrets in code, ever.
 Local dev: `npm run dev`. With Supabase: `supabase start` (or a hosted
 project), `supabase db push` (or run migrations), `supabase functions deploy
 figma-status figma-connect figma-import canva-auth integration-status
-template-autobuild template-generate`, fill `.env`.
+template-autobuild template-generate brand-from-website`, fill `.env`.
+The model-backed functions need the `ANTHROPIC_API_KEY` (and optionally
+`ANTHROPIC_MODEL`) secret.

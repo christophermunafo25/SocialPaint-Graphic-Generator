@@ -178,6 +178,14 @@ export interface UsageStore {
   /** Current-calendar-month totals for Settings → Usage & plan. The month
    * boundary follows `timeZone` too. */
   getMonthlyUsage(companyId: string, timeZone?: string): Promise<MonthlyUsage>;
+  /** Model requests and tokens since `sinceIso` (migration 0039's
+   * ai_usage_summary; template-chat PROMPT §14). Admin-only under RLS: a
+   * member's call reads zeros. Null where no model calls can happen (the
+   * localStorage backend), so the card is not shown. */
+  getAiUsage(
+    companyId: string,
+    sinceIso: string,
+  ): Promise<{ requests: number; inputTokens: number; outputTokens: number } | null>;
   /** Raw events since `sinceIso` for the Insights page — every column the
    * aggregation needs (buildInsights does all the counting client-side,
    * like every other Insights number). The filter only has to be generous;

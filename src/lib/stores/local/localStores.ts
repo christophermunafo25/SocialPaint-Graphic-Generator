@@ -315,6 +315,12 @@ export class LocalBrandAssetStore implements BrandAssetStore {
 }
 
 export class LocalUsageStore implements UsageStore {
+  /** No model calls happen on the localStorage backend, so there is no AI
+   * usage to show and Settings leaves the card out. */
+  async getAiUsage(): Promise<null> {
+    return null;
+  }
+
   async record(
     companyId: string,
     templateId: string,
