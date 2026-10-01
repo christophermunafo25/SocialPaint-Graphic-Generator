@@ -92,7 +92,11 @@ async function send(
   thread: ChatThread,
   text: string,
   res: GenerateResult,
-  opts: { details?: ChatDetail[]; repair?: ChatRunEffects["repair"] } = {},
+  opts: {
+    details?: ChatDetail[];
+    interview?: { skipped: string[] };
+    repair?: ChatRunEffects["repair"];
+  } = {},
 ) {
   const runId = `run-${thread.turns.length}`;
   const userTurnId = `user-${thread.turns.length}`;
@@ -103,6 +107,7 @@ async function send(
     userTurnId,
     text,
     details: opts.details,
+    interview: opts.interview,
     variations: 1,
     templateIdHint: "tpl-1",
     intent: prior.length ? "followUp" : "brief",
@@ -306,6 +311,36 @@ describe("a template chat's draft", () => {
     expect((stored.turns[0] as { details?: unknown }).details).toEqual([
       { fieldKey: "apply_link", label: "Button link", value: "jobs.co" },
     ]);
+  });
+
+  it("keeps a message sent from the questions, with its skips, through a save and reopen", async () => {
+    const first = await send(fresh(), "Button link: jobs.co", result([proposal({})]), {
+      details: [{ fieldKey: "apply_link", label: "Button link", value: "jobs.co" }],
+      interview: { skipped: ["location"] },
+    });
+    const stored = toStoredThread(first.thread);
+    expect((stored.turns[0] as { interview?: unknown }).interview).toEqual({
+      skipped: ["location"],
+    });
+    const reopened = await fromStoredThread(
+      { id: "c1", createdAt: T0, updatedAt: T0, ...stored },
+      { companyId: "co-1", getTemplate: () => Promise.resolve(TEMPLATE) },
+    );
+    expect(JSON.stringify(toStoredThread(reopened))).toBe(JSON.stringify(stored));
+  });
+
+  it("leaves a field skipped in the questions empty, whatever the model wrote", async () => {
+    const first = await send(
+      fresh(),
+      "Role: Designer",
+      result([proposal({ role: "Designer", apply_link: "jobs.co" })]),
+      {
+        details: [{ fieldKey: "role", label: "Role", value: "Designer" }],
+        interview: { skipped: ["apply_link"] },
+      },
+    );
+    expect(first.turn.drafts[0].values).not.toHaveProperty("apply_link");
+    expect(first.turn.drafts[0].values.role).toBe("Designer");
   });
 
   it("starts New chat over on the same template", () => {

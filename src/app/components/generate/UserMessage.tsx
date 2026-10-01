@@ -11,7 +11,8 @@ import { DetailTag } from "./DetailTag";
  * name and kind; its text is never kept). Then the message on the sunken
  * fill, up to 472 wide, keeping the member's own line breaks, with its
  * detail tags in the Sent state 10 below the text. `note` is a quiet line
- * under the bubble (the "photos aren't saved" notice on a reopened chat). */
+ * under the bubble (the "photos aren't saved" notice on a reopened chat).
+ * With no text and no tags there is no bubble (a photo sent on its own). */
 export function UserMessage({
   text,
   photo,
@@ -33,18 +34,20 @@ export function UserMessage({
           {document && <FileAttachment name={document.name} kind={document.kind} />}
         </div>
       )}
-      <div className="sp-chat-user__bubble">
-        <p className="sp-chat-user__text">{text}</p>
-        {tags && tags.length > 0 && (
-          <div className="sp-chat-user__tags" role="list" aria-label="Details">
-            {tags.map((tag) => (
-              <span key={tag.fieldKey} role="listitem">
-                <DetailTag tag={tag} />
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
+      {(text || (tags && tags.length > 0)) && (
+        <div className="sp-chat-user__bubble">
+          {text && <p className="sp-chat-user__text">{text}</p>}
+          {tags && tags.length > 0 && (
+            <div className="sp-chat-user__tags" role="list" aria-label="Details">
+              {tags.map((tag) => (
+                <span key={tag.fieldKey} role="listitem">
+                  <DetailTag tag={tag} />
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       {note && <p className="sp-chat-user__note">{note}</p>}
     </div>
   );

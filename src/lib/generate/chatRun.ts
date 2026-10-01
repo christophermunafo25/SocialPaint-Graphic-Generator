@@ -144,6 +144,16 @@ export async function runChat(run: ChatRun, fx: ChatRunEffects): Promise<void> {
     // detail tags sent now.
     const previous = templateChat ? (latestDoneTurn(prior)?.drafts[0] ?? null) : null;
     const typedNow = (user.details ?? []).map((d) => d.fieldKey);
+    // A field the member skipped in the template chat's questions stays
+    // empty, whatever the model wrote into it.
+    const skipped = new Set(user.interview?.skipped ?? []);
+    const withoutSkipped = (p: GeneratedProposal): GeneratedProposal =>
+      skipped.size === 0
+        ? p
+        : {
+            ...p,
+            values: Object.fromEntries(Object.entries(p.values).filter(([k]) => !skipped.has(k))),
+          };
 
     // The measurement pass: the function checked character counts; only a
     // browser can check glyphs. One proposal at a time, in order.
@@ -155,7 +165,7 @@ export async function runChat(run: ChatRun, fx: ChatRunEffects): Promise<void> {
       // The bar reaches step 3 before the turn completes, whether or not a
       // repair round runs.
       if (i === res.proposals.length - 1) dispatch({ type: "checking", runId });
-      const outcome = await resolveProposal(proposal, i, {
+      const outcome = await resolveProposal(withoutSkipped(proposal), i, {
         companyId,
         kit,
         measure,

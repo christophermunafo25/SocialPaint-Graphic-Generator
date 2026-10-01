@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from
 import { useDropzone, type FileRejection } from "react-dropzone";
 import type { BrandAsset } from "@/lib/types";
 import type { ChatDocument, ChatPhoto } from "@/lib/generate/chat";
-import { upsertDetail, type DetailField, type DetailTagValue } from "@/lib/generate/details";
 import { DocumentReadError, readDocument } from "@/lib/generate/documentText";
 import { DEFAULT_VARIATIONS, MAX_BRIEF } from "@/lib/generate/chatReducer";
 import type { PlatformId } from "@/lib/templates/platforms";
@@ -18,9 +17,8 @@ import {
   rejectionMessage,
   useUploadChip,
 } from "../imageUpload";
-import { AttachMenu, type AttachMenuHandle } from "./AttachMenu";
+import { AttachMenu } from "./AttachMenu";
 import { AttachmentThumb, FileAttachment } from "./AttachmentThumb";
-import { DetailTag } from "./DetailTag";
 import { PlatformSelect } from "./PlatformSelect";
 import { SendButton } from "./SendButton";
 import { VariationsStepper } from "./VariationsStepper";
@@ -51,17 +49,6 @@ export interface ComposerProps {
    * it. Without a handler the File row's picks are ignored. */
   document?: ChatDocument | null;
   onDocumentChange?(next: ChatDocument | null): void;
-  /** A template chat's Details (PROMPT §11.4 to §11.6): the menu's rows and
-   * the tags beside the plus. The Generate chat passes none. */
-  details?: {
-    fields: DetailField[];
-    tags: DetailTagValue[];
-    onTagsChange(next: DetailTagValue[]): void;
-  };
-  /** The plus hint glow (PROMPT §12.10). The page decides when. */
-  hint?: boolean;
-  /** The plus menu opened. */
-  onPlusOpened?(): void;
   /** A run is in flight: Send is Stop, and the text stays editable. */
   running: boolean;
   /** Only called with non-empty trimmed text, not running, not disabled,
@@ -91,11 +78,9 @@ export interface ComposerProps {
  * §11.1): one <form> on the card surface recipe holding the attachments
  * row, the textarea and a toolbar.
  *
- *  - The toolbar's left holds the plus (the attach menu) and, in a template
- *    chat, the Tags slot beside it; the tags wrap onto new rows and push
- *    the toolbar down, never scrolling or clipping (so the plus's glow is
- *    never cut off). Its right holds, on the Large size only, the platform
- *    select and the Variations stepper, then Send.
+ *  - The toolbar's left holds the plus (the attach menu). Its right holds,
+ *    on the Large size only, the platform select and the Variations
+ *    stepper, then Send.
  *  - Large (the Start state): a 64px textarea when empty. Attached, the
  *    attachments row sits above the text and the textarea hugs its lines.
  *  - Compact (the thread, and both sizes of a template chat): the plus and
@@ -124,7 +109,7 @@ export interface ComposerProps {
  * A document (the File row) is read here too, in the browser, into its
  * text (documentText.ts): nothing uploads. It shares the upload chip while
  * it is read, and a refused one says why under the text and attaches
- * nothing. Tags and files alone never make a message: Send needs text. */
+ * nothing. Files alone never make a message: Send needs text. */
 export function Composer({
   size,
   value,
@@ -145,13 +130,8 @@ export function Composer({
   disabled = false,
   document: doc = null,
   onDocumentChange,
-  details,
-  hint = false,
-  onPlusOpened,
 }: ComposerProps) {
   const [photoError, setPhotoError] = useState<string | null>(null);
-  const menuRef = useRef<AttachMenuHandle>(null);
-  const [editingTag, setEditingTag] = useState<string | null>(null);
   const { chip, runChip, clearChip } = useUploadChip();
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   // Bumped by every attach and every removal; a read that finishes under
@@ -448,42 +428,12 @@ export function Composer({
       <div className="sp-chat-composer__toolbar">
         <div className="sp-chat-composer__lead">
           <AttachMenu
-            ref={menuRef}
             containerRef={rootRef}
             disabled={disabled}
-            hint={hint}
-            onOpened={onPlusOpened}
             onPickFile={(file) => takeFile(file, "upload")}
             onPickDocument={takeDocument}
             onPickAsset={takeAsset}
-            onEditingChange={setEditingTag}
-            details={
-              details && {
-                fields: details.fields,
-                tags: details.tags,
-                onAdd: (field, value) =>
-                  details.onTagsChange(upsertDetail(details.tags, field, value)),
-              }
-            }
           />
-          {details && details.tags.length > 0 && (
-            <div className="sp-chat-composer__tags" role="list" aria-label="Details">
-              {details.tags.map((tag) => (
-                <span key={tag.fieldKey} role="listitem" className="sp-chat-composer__tag">
-                  <DetailTag
-                    tag={tag}
-                    editing={editingTag === tag.fieldKey}
-                    disabled={disabled}
-                    onEdit={() => menuRef.current?.openDetail(tag.fieldKey)}
-                    onRemove={() => {
-                      details.onTagsChange(details.tags.filter((t) => t !== tag));
-                      inputRef.current?.focus();
-                    }}
-                  />
-                </span>
-              ))}
-            </div>
-          )}
         </div>
         <div className="sp-chat-composer__tools">
           {size === "large" && onPlatformChange && (

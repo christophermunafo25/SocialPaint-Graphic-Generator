@@ -84,6 +84,10 @@ export interface UserTurn {
   /** A template chat's detail tags, as the member typed them. Sent as
    * `details` and applied verbatim; safe to persist (§12.3). */
   details?: ChatDetail[];
+  /** A template chat's answers to its questions (interview.ts): set on the
+   * message the questions built, with the fields the member skipped. The
+   * thread shows that message as the questions and answers. Persisted. */
+  interview?: { skipped: string[] };
   platformHint?: PlatformId;
   variations: number;
   templateIdHint?: string;

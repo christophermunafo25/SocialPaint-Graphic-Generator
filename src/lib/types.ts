@@ -907,6 +907,8 @@ export interface StoredUserTurn {
   /** A template chat's detail tags: fields the member filled in themselves,
    * as they typed them (Template chat PROMPT §12.3). */
   details?: Array<{ fieldKey: string; label: string; value: string }>;
+  /** Sent from the template chat's questions, with the fields skipped. */
+  interview?: { skipped: string[] };
   platformHint?: PlatformId;
   variations: number;
   templateIdHint?: string;

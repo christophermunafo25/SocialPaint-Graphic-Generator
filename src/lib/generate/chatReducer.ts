@@ -66,6 +66,8 @@ export type ChatAction =
       document?: ChatDocument | null;
       /** A template chat's detail tags. */
       details?: ChatDetail[];
+      /** Sent from a template chat's questions. */
+      interview?: { skipped: string[] };
       platformHint?: PlatformId;
       variations: number;
       templateIdHint?: string;
@@ -177,6 +179,7 @@ export function chatReducer(state: ChatThread, action: ChatAction): ChatThread {
         user.hadDocument = { name: action.document.name, kind: action.document.kind };
       }
       if (action.details?.length) user.details = action.details.map((d) => ({ ...d }));
+      if (action.interview) user.interview = { skipped: [...action.interview.skipped] };
       // What the message sends, which is what a follow-up reuses: a pinned
       // template is filled exactly and goes without the platform hint
       // (buildGenerateInput), so a pinned message records no hint either.
