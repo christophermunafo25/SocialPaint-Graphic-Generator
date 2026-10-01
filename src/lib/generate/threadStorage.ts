@@ -150,6 +150,9 @@ function storedUserTurn(turn: UserTurn): StoredUserTurn {
           })),
         }
       : {}),
+    ...(turn.interview
+      ? { interview: { skipped: turn.interview.skipped.map((k) => prose(k)) } }
+      : {}),
     ...(turn.platformHint ? { platformHint: turn.platformHint } : {}),
     variations: turn.variations,
     ...(turn.templateIdHint ? { templateIdHint: turn.templateIdHint } : {}),
@@ -319,6 +322,7 @@ function restoredUserTurn(turn: StoredUserTurn): UserTurn {
     ...(turn.platformHint ? { platformHint: turn.platformHint } : {}),
     variations: turn.variations,
     ...(turn.details?.length ? { details: turn.details.map((d) => ({ ...d })) } : {}),
+    ...(turn.interview ? { interview: { skipped: [...turn.interview.skipped] } } : {}),
     ...(turn.templateIdHint ? { templateIdHint: turn.templateIdHint } : {}),
     intent: turn.intent,
   };

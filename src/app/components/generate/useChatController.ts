@@ -54,6 +54,8 @@ export interface ChatSendInput {
   templateIdHint?: string;
   /** A template chat's detail tags (Template chat PROMPT §12.3). */
   details?: ChatDetail[];
+  /** Sent from a template chat's questions, with the fields skipped. */
+  interview?: { skipped: string[] };
 }
 
 export interface ChatController {
@@ -290,6 +292,7 @@ export function useChatController(opts: ChatControllerOptions): ChatController {
           photo: input.photo ?? null,
           document: input.document ?? null,
           ...(input.details?.length ? { details: input.details } : {}),
+          ...(input.interview ? { interview: input.interview } : {}),
           variations: 1,
           templateIdHint: template.id,
           intent: lastUserTurn(turns) ? "followUp" : "brief",

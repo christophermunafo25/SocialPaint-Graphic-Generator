@@ -195,73 +195,12 @@ export function DocGlyph(props: ChatIconProps) {
   );
 }
 
-/** A text detail. */
-export function HeadlineGlyph(props: ChatIconProps) {
-  return (
-    <Glyph box={18} stroke={1.5} {...props}>
-      <path d="M3.5 4.75V3.25H14.5V4.75" />
-      <path d="M9 3.25V14.75" />
-      <path d="M6.75 14.75H11.25" />
-    </Glyph>
-  );
-}
-
-/** A date or time detail. */
-export function CalendarGlyph(props: ChatIconProps) {
-  return (
-    <Glyph box={18} stroke={1.5} {...props}>
-      <path d="M13.25 3.75H4.75C3.645 3.75 2.75 4.645 2.75 5.75V13.25C2.75 14.355 3.645 15.25 4.75 15.25H13.25C14.355 15.25 15.25 14.355 15.25 13.25V5.75C15.25 4.645 14.355 3.75 13.25 3.75Z" />
-      <path d="M2.75 7.25H15.25" />
-      <path d="M6 2.25V5" />
-      <path d="M12 2.25V5" />
-    </Glyph>
-  );
-}
-
-/** A place detail. */
-export function LocationGlyph(props: ChatIconProps) {
-  return (
-    <Glyph box={18} stroke={1.5} {...props}>
-      <path d="M9 15.5C9 15.5 13.5 11.4 13.5 7.8C13.5 6.606 13.026 5.462 12.182 4.618C11.338 3.774 10.194 3.3 9 3.3C7.807 3.3 6.662 3.774 5.818 4.618C4.974 5.462 4.5 6.606 4.5 7.8C4.5 11.4 9 15.5 9 15.5Z" />
-      <path d="M9 9.4C9.884 9.4 10.6 8.684 10.6 7.8C10.6 6.917 9.884 6.2 9 6.2C8.116 6.2 7.4 6.917 7.4 7.8C7.4 8.684 8.116 9.4 9 9.4Z" />
-    </Glyph>
-  );
-}
-
-/** A link detail. */
-export function LinkGlyph(props: ChatIconProps) {
-  return (
-    <Glyph box={18} stroke={1.5} {...props}>
-      <path d="M7.5 10.5L10.5 7.5" />
-      <path d="M8.3 5.2L9.3 4.2C9.897 3.603 10.706 3.268 11.55 3.268C12.394 3.268 13.203 3.603 13.8 4.2C14.397 4.796 14.732 5.606 14.732 6.45C14.732 7.293 14.397 8.103 13.8 8.7L12.8 9.7M9.7 12.8L8.7 13.8C8.103 14.396 7.294 14.732 6.45 14.732C5.606 14.732 4.797 14.396 4.2 13.8C3.603 13.203 3.268 12.393 3.268 11.55C3.268 10.706 3.603 9.896 4.2 9.3L5.2 8.3" />
-    </Glyph>
-  );
-}
-
 /** A link tag's lead glyph (sp-tag / Link 432:40), drawn at 15px. */
 export function GlobeGlyph(props: ChatIconProps) {
   return (
     <Glyph box={18} stroke={1.5} {...props}>
       <path d="M15.5 9C15.5 12.59 12.59 15.5 9 15.5C5.41 15.5 2.5 12.59 2.5 9C2.5 5.41 5.41 2.5 9 2.5C12.59 2.5 15.5 5.41 15.5 9Z" />
       <path d="M2.5 9H15.5M9 2.5C10.9 4.5 11.8 6.6 11.8 9C11.8 11.4 10.9 13.5 9 15.5C7.1 13.5 6.2 11.4 6.2 9C6.2 6.6 7.1 4.5 9 2.5Z" />
-    </Glyph>
-  );
-}
-
-/** A Details row's trailing chevron. */
-export function ChevronRightGlyph(props: ChatIconProps) {
-  return (
-    <Glyph box={16} stroke={1.33} {...props}>
-      <path d="M6.667 4.444L10.222 8L6.667 11.556" />
-    </Glyph>
-  );
-}
-
-/** The detail popover's back control. */
-export function BackGlyph(props: ChatIconProps) {
-  return (
-    <Glyph box={18} stroke={1.5} {...props}>
-      <path d="M10.5 5L6.5 9L10.5 13" />
     </Glyph>
   );
 }

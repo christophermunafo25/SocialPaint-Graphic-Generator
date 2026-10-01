@@ -16,13 +16,22 @@ import {
   type ChatPhoto,
   type ChatThread,
 } from "@/lib/generate/chat";
-import { DEFAULT_VARIATIONS, latestDoneTurn, sameEdits } from "@/lib/generate/chatReducer";
+import { DEFAULT_VARIATIONS, sameEdits } from "@/lib/generate/chatReducer";
 import { missingFields } from "@/lib/generate/draftDownload";
 import { captionFor, previewValues, tooLongFields, turnPhoto } from "@/lib/generate/draftView";
 import { defaultVariant } from "@/lib/templates/variants";
-import { detailFieldsFor, detailKindOf, type DetailTagValue } from "@/lib/generate/details";
+import { detailKindOf } from "@/lib/generate/details";
+import {
+  PHOTO_ANSWER,
+  checkAnswer,
+  currentStep,
+  interviewIntro,
+  interviewMessage,
+  interviewSteps,
+  interviewTranscript,
+  type InterviewAnswers,
+} from "@/lib/generate/interview";
 import { createCanvasMeasurer } from "@/lib/render/autoFit";
-import type { MemberHintState } from "@/lib/stores/interfaces";
 import type { TemplateSchema } from "@/lib/types";
 import { threadWritesSettled } from "@/lib/generate/threadSaver";
 import { fromStoredThread } from "@/lib/generate/threadStorage";
@@ -50,9 +59,9 @@ import { ChatFootnote, LegalLinks } from "./LegalLinks";
 import { RecentChats } from "./RecentChats";
 import { ScrollFade, useScrollFades } from "./ScrollFade";
 import { TemplateRefCard } from "./TemplateRefCard";
-import { TemplateChatStart } from "./TemplateChatStart";
 import { ChipRow, SuggestionChip } from "./SuggestionChip";
 import { UserMessage } from "./UserMessage";
+import { InterviewLive, InterviewTranscript } from "./InterviewView";
 import { requestComposerFocus, requestHistoryFocus, takeComposerFocus } from "./composerFocus";
 import { useChatController } from "./useChatController";
 import { useDraftDownload } from "./useDraftDownload";
@@ -84,11 +93,9 @@ const START_REVEAL_MS = 400;
  * §9.8, proposed copy): photos are never saved. */
 const PHOTO_NOT_SAVED = "Photos aren't saved with chats. Attach it again to use it in a new draft.";
 /** A template chat's placeholders (template-chat PROMPT §15). */
-const TEMPLATE_START_PLACEHOLDER = "Give me the scoop and I'll paint the rest";
+const TEMPLATE_ANSWER_PLACEHOLDER = "Type your answer";
+const TEMPLATE_PHOTO_PLACEHOLDER = "Attach a photo with the plus";
 const TEMPLATE_THREAD_PLACEHOLDER = "Anything to add while the paint's still wet?";
-
-/** The plus hint shows on a member's first three template chats (§12.10). */
-const HINT_CHATS = 3;
 
 /** Under the composer until a save succeeds (PROMPT §9.8, proposed copy). */
 const NOT_SAVED_YET = "This chat isn't saved yet.";
@@ -212,7 +219,7 @@ export function GenerateChat({
    * whole thread is scoped to. Null for a Generate chat. */
   template?: TemplateSchema | null;
 }) {
-  const { company, role, user } = useAuth();
+  const { company, role } = useAuth();
   const { kit } = useBrand();
   const { route, navigate } = useRouter();
   const configured = stores.generate.isConfigured();
@@ -284,7 +291,9 @@ export function GenerateChat({
     );
   };
   const inThread = thread.turns.length > 0;
-  useFullViewport(inThread);
+  // A template chat opens straight into its questions, laid out as a thread.
+  const threadLayout = inThread || Boolean(template);
+  useFullViewport(threadLayout);
 
   // ── The Start column's first paint ─────────────────────────────────────
   // The column is centred in the page, so a row that lands under the
@@ -326,45 +335,15 @@ export function GenerateChat({
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
   // Edit details' stage, where the panel renders the draft (§12.7).
   const [stageEl, setStageEl] = useState<HTMLDivElement | null>(null);
-  // A template chat's detail tags, waiting beside the plus (§11.6).
-  const [tags, setTags] = useState<DetailTagValue[]>([]);
-
-  // ── The plus hint (template chats, §12.10) ─────────────────────────────
-  // On for a template chat's Start state while the box is empty, the plus
-  // has never been opened, and the member has started fewer than three
-  // template chats; only once the flags have loaded, so it never flashes on
-  // and off. Typing, opening the plus or sending turns it off for the rest
-  // of this page view; opening the plus turns it off for good.
-  const hintUser = user?.id ?? "local";
-  const [hints, setHints] = useState<MemberHintState | null>(null);
-  const [hintDismissed, setHintDismissed] = useState(false);
-  useEffect(() => {
-    if (!template) return;
-    let alive = true;
-    stores.memberHints
-      .get(hintUser)
-      .then((h) => alive && setHints(h))
-      .catch(() => {
-        // Unknown flags: no hint rather than a wrong one.
-      });
-    return () => {
-      alive = false;
-    };
-  }, [template, hintUser]);
-  useEffect(() => {
-    if (text) setHintDismissed(true);
-  }, [text]);
-  const onPlusOpened = useCallback(() => {
-    setHintDismissed(true);
-    if (!template) return;
-    setHints((h) => {
-      if (h && !h.plusOpened) {
-        void stores.memberHints.markPlusOpened(hintUser).catch(() => {});
-        return { ...h, plusOpened: true };
-      }
-      return h;
-    });
-  }, [template, hintUser]);
+  // ── A template chat's questions (interview.ts) ─────────────────────────
+  // Asked one at a time before the first build. The answers live here until
+  // the last one, when they go as one message: each answer a detail used
+  // verbatim, the photo step's answer the message's photo.
+  const steps = useMemo(() => (template ? interviewSteps(template) : []), [template]);
+  const [answers, setAnswers] = useState<InterviewAnswers>({});
+  const [answerError, setAnswerError] = useState<string | null>(null);
+  const interviewing = Boolean(template) && !inThread;
+  const step = interviewing ? currentStep(steps, answers) : null;
 
   // "New chat", a chat opened from History, and a first send (whose Large
   // composer gives way to the dock's) each land focus in the composer
@@ -409,7 +388,7 @@ export function GenerateChat({
   }, [published]);
 
   // ── The thread ─────────────────────────────────────────────────────────
-  const { scrollRef, columnRef, columnWidth, follow, preserve } = useThreadScroll(inThread);
+  const { scrollRef, columnRef, columnWidth, follow, preserve } = useThreadScroll(threadLayout);
   const fades = useScrollFades(scrollRef);
   // The thread as of the last render, for callbacks that stay stable (the
   // turns are memoized on them) but act on the current drafts.
@@ -423,20 +402,6 @@ export function GenerateChat({
   const paletteSize = kit?.colors.length ?? 0;
   // One canvas measurer for the page's "too long" checks (§9.4).
   const measure = useMemo(() => createCanvasMeasurer(), []);
-  // The Details rows: the template's member text fields in its current look,
-  // which is the latest draft's (§11.4).
-  const currentLook = useMemo(
-    () => latestDoneTurn(thread.turns)?.drafts[0]?.variantId,
-    [thread.turns],
-  );
-  const detailFields = useMemo(
-    () => (template ? detailFieldsFor(template, currentLook) : []),
-    [template, currentLook],
-  );
-  const composerDetails = useMemo(
-    () => (template ? { fields: detailFields, tags, onTagsChange: setTags } : undefined),
-    [template, detailFields, tags],
-  );
   const lastTurn = thread.turns[thread.turns.length - 1];
   // The first message of a reopened chat that was sent with a photo: the
   // photo was not saved, and the note under it says so (§9.8). A message
@@ -457,31 +422,111 @@ export function GenerateChat({
     });
   }, [lastTurn, running, full, paletteSize, thread.turns]);
 
+  /** Records the answer to the step being asked (null skips it) and moves
+   * on; focus stays in the chat box, wherever the answer came from. */
+  const answer = useCallback(
+    (value: string | null) => {
+      if (!step) return;
+      setAnswers((a) => ({ ...a, [step.fieldKey]: value }));
+      setAnswerError(null);
+      setText("");
+      follow();
+      composerRef.current?.focus();
+    },
+    [step, follow],
+  );
+  /** Back to the question before the one being asked. */
+  const answerBack = useCallback(() => {
+    const i = step ? steps.indexOf(step) : steps.length;
+    const prev = steps[i - 1];
+    if (!prev) return;
+    setAnswers((a) => {
+      const next = { ...a };
+      delete next[prev.fieldKey];
+      return next;
+    });
+    if (prev.type === "image") setPhoto(null);
+    setAnswerError(null);
+    composerRef.current?.focus();
+  }, [step, steps]);
+
+  /** Sends the answers as the chat's first message (§12.3's send, with the
+   * questions' details). */
+  const buildFromAnswers = useCallback(() => {
+    const message = interviewMessage(steps, answers);
+    const started = send({
+      text: message.text,
+      photo,
+      document: doc,
+      details: message.details,
+      interview: { skipped: message.skipped },
+    });
+    if (!started) return false;
+    setText("");
+    setPhoto(null);
+    setDoc(null);
+    follow();
+    if (composerRef.current?.form?.contains(document.activeElement)) requestComposerFocus();
+    return true;
+  }, [steps, answers, send, photo, doc, follow]);
+
+  // A photo attached while its step is asked (or before it) answers it.
+  useEffect(() => {
+    if (step?.type === "image" && photo) answer(PHOTO_ANSWER);
+  }, [step, photo, answer]);
+
+  // Taking the photo back off the chat box un-answers its step.
+  useEffect(() => {
+    if (!interviewing || photo) return;
+    const answered = steps.find((s) => s.type === "image" && answers[s.fieldKey] === PHOTO_ANSWER);
+    if (!answered) return;
+    setAnswers((a) => {
+      const next = { ...a };
+      delete next[answered.fieldKey];
+      return next;
+    });
+  }, [interviewing, photo, steps, answers]);
+
+  // The last answer builds the graphic, once per set of answers: a refused
+  // send leaves "Build it" to try again.
+  const autoBuilt = useRef<InterviewAnswers | null>(null);
+  useEffect(() => {
+    if (!interviewing || step || steps.length === 0 || running) return;
+    if (autoBuilt.current === answers) return;
+    autoBuilt.current = answers;
+    buildFromAnswers();
+  }, [interviewing, step, steps.length, running, answers, buildFromAnswers]);
+
   const submit = () => {
     const fromStart = !inThread;
+    if (interviewing) {
+      if (!step) {
+        buildFromAnswers();
+        return;
+      }
+      if (step.type === "image") {
+        setAnswerError(
+          step.optional
+            ? "Attach a photo with the plus, or skip it."
+            : "Attach a photo with the plus.",
+        );
+        return;
+      }
+      const checked = checkAnswer(step, text);
+      if (checked.ok) answer(checked.value);
+      else setAnswerError(checked.error);
+      return;
+    }
     if (template) {
-      // A template chat: its template, one draft, and the detail tags as
-      // structured details (§12.3).
-      const started = send({
-        text,
-        photo,
-        document: doc,
-        details: tags.map((t) => ({ fieldKey: t.fieldKey, label: t.label, value: t.value })),
-      });
+      // A template chat's follow-up: its template, one draft (§12.3).
+      const started = send({ text, photo, document: doc });
       if (!started) return;
       setText("");
       setPhoto(null);
       setDoc(null);
-      setTags([]);
-      setHintDismissed(true);
       // A message sent from Edit details returns to the thread (§12.7).
       if (editorOpenRef.current) closeEditor();
       follow();
-      if (fromStart) {
-        // The count goes up on a template chat's first send (§12.3).
-        void stores.memberHints.noteTemplateChatStarted(hintUser).catch(() => {});
-        if (composerRef.current?.form?.contains(document.activeElement)) requestComposerFocus();
-      }
       return;
     }
     const started = fromStart
@@ -526,7 +571,9 @@ export function GenerateChat({
     setText("");
     setPhoto(null);
     setDoc(null);
-    setTags([]);
+    setAnswers({});
+    setAnswerError(null);
+    autoBuilt.current = null;
     setPlatform(null);
     setVariations(DEFAULT_VARIATIONS);
     setPinnedId(null);
@@ -1022,51 +1069,8 @@ export function GenerateChat({
     </>
   );
 
-  // ── A template chat's Start state (template-chat frames 01, 01a, 01b) ──
-  const hint =
-    Boolean(template) &&
-    !inThread &&
-    !hintDismissed &&
-    !text &&
-    hints !== null &&
-    !hints.plusOpened &&
-    hints.templateChatsStarted < HINT_CHATS;
-  if (!inThread && template) {
-    return (
-      <>
-        {exportExtras}
-        <TemplateChatStart
-          template={template}
-          isAdmin={role === "admin"}
-          onBrandTemplates={openBrandTemplates}
-          onFillByHand={() => navigate({ name: "template", templateId: template.id })}
-          onBulkFill={() => navigate({ name: "bulk", templateId: template.id })}
-          composer={
-            <Composer
-              size="compact"
-              value={text}
-              onChange={setText}
-              photo={photo}
-              onPhotoChange={setPhoto}
-              document={doc}
-              onDocumentChange={setDoc}
-              details={composerDetails}
-              hint={hint}
-              onPlusOpened={onPlusOpened}
-              running={running}
-              onSubmit={submit}
-              onStop={stop}
-              placeholder={TEMPLATE_START_PLACEHOLDER}
-              textareaRef={composerRef}
-            />
-          }
-        />
-      </>
-    );
-  }
-
   // ── Start state (frames 01 to 03) ──────────────────────────────────────
-  if (!inThread) {
+  if (!threadLayout) {
     return (
       <>
         {exportExtras}
@@ -1179,6 +1183,30 @@ export function GenerateChat({
               ? { label: "Brand Templates", route: { name: "portal" }, onClick: openBrandTemplates }
               : undefined
           }
+          {...(template && !editView
+            ? {
+                actions: (
+                  <>
+                    <ChatButton
+                      kind="tertiary"
+                      size="small"
+                      onClick={() => navigate({ name: "template", templateId: template.id })}
+                    >
+                      Fill in by hand
+                    </ChatButton>
+                    {role === "admin" && (
+                      <ChatButton
+                        kind="tertiary"
+                        size="small"
+                        onClick={() => navigate({ name: "bulk", templateId: template.id })}
+                      >
+                        Bulk fill
+                      </ChatButton>
+                    )}
+                  </>
+                ),
+              }
+            : {})}
           {...(editView && template && chatRoute
             ? {
                 middle: {
@@ -1217,8 +1245,37 @@ export function GenerateChat({
                   {template && (
                     <TemplateRefCard template={template} onChange={openBrandTemplates} />
                   )}
+                  {interviewing && (
+                    <InterviewLive
+                      intro={interviewIntro(template?.name ?? "", steps)}
+                      answered={steps
+                        .filter((s) => s.fieldKey in answers)
+                        .map((s) => ({ step: s, answer: answers[s.fieldKey] }))}
+                      step={step}
+                      photo={photo?.dataUrl}
+                      error={answerError}
+                      canBack={steps.some((s) => s.fieldKey in answers)}
+                      busy={running}
+                      onAnswer={answer}
+                      onSkip={() => answer(null)}
+                      onBack={answerBack}
+                      onBuild={buildFromAnswers}
+                    />
+                  )}
                   {thread.turns.map((turn) =>
-                    isUserTurn(turn) ? (
+                    isUserTurn(turn) && turn.interview && template ? (
+                      <InterviewTranscript
+                        key={turn.id}
+                        intro={interviewIntro(template.name, steps)}
+                        pairs={interviewTranscript(steps, {
+                          details: turn.details,
+                          skipped: turn.interview.skipped,
+                          hadPhoto: Boolean(turn.photo || turn.hadPhoto),
+                        })}
+                        photo={turn.photo?.dataUrl}
+                        note={turn.id === photoNoteId ? PHOTO_NOT_SAVED : undefined}
+                      />
+                    ) : isUserTurn(turn) ? (
                       <UserMessage
                         key={turn.id}
                         text={turn.text}
@@ -1275,12 +1332,18 @@ export function GenerateChat({
                   onPhotoChange={setPhoto}
                   document={doc}
                   onDocumentChange={setDoc}
-                  details={composerDetails}
-                  onPlusOpened={onPlusOpened}
                   running={running}
                   onSubmit={submit}
                   onStop={stop}
-                  placeholder={template ? TEMPLATE_THREAD_PLACEHOLDER : THREAD_PLACEHOLDER}
+                  placeholder={
+                    interviewing
+                      ? step?.type === "image"
+                        ? TEMPLATE_PHOTO_PLACEHOLDER
+                        : (step?.placeholder ?? TEMPLATE_ANSWER_PLACEHOLDER)
+                      : template
+                        ? TEMPLATE_THREAD_PLACEHOLDER
+                        : THREAD_PLACEHOLDER
+                  }
                   textareaRef={composerRef}
                   disabled={full}
                 />

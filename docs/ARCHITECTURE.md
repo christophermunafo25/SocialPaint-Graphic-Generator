@@ -579,13 +579,26 @@ hands it to `GenerateChat` as `template`.
   available any more."; a saved template chat whose template is gone opens
   at `/generate/c/<id>` as an ordinary Generate chat, and that route hands a
   chat whose template is live back to its template's page.
+- **The questions.** A new template chat opens on its first question, not a
+  brief (`interview.ts`, rendered by `InterviewView.tsx`). The questions are
+  built from the template's fields, never by the model: one per member
+  text, multiline or select field in the default look, then one photo
+  question for the first member image slot. Required fields come first;
+  optional ones offer Skip, and a skipped field is left off. Answers are
+  checked against the field (maxLength, a select's options) and held in the
+  page; nothing is saved until the last answer, which sends one message on
+  its own: every answer as a `details` entry, the photo as the message's
+  photo, and `UserTurn.interview.skipped`. The thread shows that message as
+  the questions and answers again (`interviewTranscript`), rebuilt from the
+  template and the saved details.
 - **The run.** Every message pins the template (`templateIdHint`), asks for
-  one draft, and sends the member's detail tags as structured `details`
-  (applied verbatim; the model never writes them). A chat's first message
-  with no details and no document may be answered with one question
-  (`allowQuestion`, the `ask_member` tool); the answer is an ordinary
-  follow-up, so a chat can never ask twice. The question settles the turn as
-  done with no drafts (`questionArrived`), never "nothing fit".
+  one draft, and sends the answers as structured `details` (applied
+  verbatim; the model never writes them, and writes only the caption, reply
+  and title). A first message with no details and no document may still be
+  answered with one question (`allowQuestion`, the `ask_member` tool), which
+  only a template with nothing but skipped optional fields can reach now.
+  The question settles the turn as done with no drafts (`questionArrived`),
+  never "nothing fit".
 - **Looks.** A draft carries its `variantId`: a new draft takes the
   template's default, a follow-up's keeps the previous draft's, and the
   Looks card beside the result switches instantly with no model call.
@@ -599,7 +612,7 @@ hands it to `GenerateChat` as `template`.
   floor. Either blocks the card's Download and Download PNG. A draft that
   still overflows after repair is kept and flagged, never dropped, and
   repair never rewrites a value the member typed (`ChatDraft.memberKeys`,
-  from detail tags and edits), which a follow-up also carries forward when
+  from the answers and edits), which a follow-up also carries forward when
   its proposal leaves it empty.
 - **Edit details.** The thread gives way to a stage (the draft rendered
   large, with Missing markers in the renderer's overlay, never exported) and
@@ -610,11 +623,8 @@ hands it to `GenerateChat` as `template`.
   Download PNG. Opening it is a history entry, so Back returns to the thread.
   Edits never call the model.
 - **The chat box** (both chats): the plus opens Upload (Photo, File, Brand
-  Studio) and, in a template chat, Details (the template's member text
-  fields in the current look), each becoming a tag beside the plus. The
-  plus glows on a member's first three template chats until they type, open
-  it or send (`MemberHintStore`); it is the one place a brand colour draws
-  attention (the `socialpaint.css` header records the exception).
+  Studio). The Details section and the plus hint went when the questions
+  came in; `MemberHintStore` and its RPCs remain but nothing reads them.
 
 ### Documents
 
