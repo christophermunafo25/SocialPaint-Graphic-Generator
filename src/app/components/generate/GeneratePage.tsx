@@ -1210,7 +1210,7 @@ export function GenerateChat({
                       </ChatButton>
                     )}
                     {role === "admin" && (
-                      <ChatButton kind="tertiary" size="small" onClick={() => setSharing(true)}>
+                      <ChatButton kind="accent" size="small" onClick={() => setSharing(true)}>
                         Public link
                       </ChatButton>
                     )}

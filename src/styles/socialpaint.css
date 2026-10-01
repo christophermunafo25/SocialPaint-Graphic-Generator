@@ -627,6 +627,10 @@ html {
   --gen-btn-secondary-fg: var(--ink-900);
   --gen-btn-tertiary-bg: var(--ink-700);
   --gen-btn-tertiary-fg: var(--text-primary);
+  /* Accent: the one header action that leaves the app (Public link), set
+     apart from its neutral neighbours. Slime on Deep Moss, inverted here. */
+  --gen-btn-accent-bg: var(--slime);
+  --gen-btn-accent-fg: var(--deep-moss);
   --gen-tile: var(--chip-raised);
   --gen-sunken: var(--ink-700);
   --gen-inverse: var(--white);
@@ -852,6 +856,8 @@ html {
   --gen-btn-secondary-fg: var(--slime);
   --gen-btn-tertiary-bg: var(--paper-100);
   --gen-btn-tertiary-fg: var(--ink-900);
+  --gen-btn-accent-bg: var(--deep-moss);
+  --gen-btn-accent-fg: var(--slime);
   --gen-tile: var(--gray);
   --gen-sunken: var(--paper-100);
   --gen-inverse: var(--ink-900);
@@ -6451,6 +6457,10 @@ input[type="radio"] {
 .sp-chat-btn[data-kind="tertiary"] {
   --chat-btn-bg: var(--gen-btn-tertiary-bg);
   --chat-btn-fg: var(--gen-btn-tertiary-fg);
+}
+.sp-chat-btn[data-kind="accent"] {
+  --chat-btn-bg: var(--gen-btn-accent-bg);
+  --chat-btn-fg: var(--gen-btn-accent-fg);
 }
 .sp-chat-btn[data-size="small"] {
   gap: 6px;
