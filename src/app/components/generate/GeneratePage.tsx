@@ -45,6 +45,7 @@ import { useRouter } from "../../router";
 import { useFullViewport } from "../layout/ChromeContext";
 import { Page } from "../layout/Page";
 import { AssistantTurnView, type TemplateTurnProps } from "./AssistantTurnView";
+import { TemplateLinksDialog } from "../admin/TemplateLinksDialog";
 import { ChatButton } from "./ChatButton";
 import { ChatHeader } from "./ChatHeader";
 import { ChatLoading, ChatUnavailable, THREAD_PLACEHOLDER } from "./ChatLoadStates";
@@ -399,6 +400,8 @@ export function GenerateChat({
   const [captionPicks, setCaptionPicks] = useState<Record<string, string>>({});
   // The editor panel, while it is open.
   const [editor, setEditor] = useState<EditorState | null>(null);
+  // A template chat's Public link dialog (admins), as the fill page has it.
+  const [sharing, setSharing] = useState(false);
   const paletteSize = kit?.colors.length ?? 0;
   // One canvas measurer for the page's "too long" checks (§9.4).
   const measure = useMemo(() => createCanvasMeasurer(), []);
@@ -1066,6 +1069,9 @@ export function GenerateChat({
     <>
       {downloadStage}
       {!editorOpen && downloadError && <ExportErrorToast detail={downloadError} />}
+      {sharing && template && (
+        <TemplateLinksDialog template={template} onClose={() => setSharing(false)} />
+      )}
     </>
   );
 
@@ -1201,6 +1207,11 @@ export function GenerateChat({
                         onClick={() => navigate({ name: "bulk", templateId: template.id })}
                       >
                         Bulk fill
+                      </ChatButton>
+                    )}
+                    {role === "admin" && (
+                      <ChatButton kind="tertiary" size="small" onClick={() => setSharing(true)}>
+                        Public link
                       </ChatButton>
                     )}
                   </>
