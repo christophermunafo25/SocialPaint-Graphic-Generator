@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ArrowLeft, Link2, Table2 } from "lucide-react";
+import { ArrowLeft, Link2, Sparkles, Table2 } from "lucide-react";
 import type { FieldValues } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
@@ -76,6 +76,9 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
   /** Bulk fill follows the same rule: admin-only, and only once there is a
    * published template to fill. A draft has nothing to run forty times. */
   const canBulkFill = role === "admin" && template.status === "published";
+  /** The template chat asks for each field and builds the graphic; it needs
+   * a published template and a configured model, and is for everyone. */
+  const canAssist = template.status === "published" && stores.generate.isConfigured();
 
   return (
     <Page>
@@ -110,6 +113,16 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
             >
               <Link2 style={{ width: 14, height: 14 }} />
               Public link
+            </button>
+          )}
+          {canAssist && (
+            <button
+              onClick={() => navigate({ name: "templateChat", templateId: template.id })}
+              className="sp-btn sp-btn-primary"
+              title="Answer a few questions and let AI fill in this template"
+            >
+              <Sparkles style={{ width: 14, height: 14 }} />
+              Use AI to assist
             </button>
           )}
         </div>

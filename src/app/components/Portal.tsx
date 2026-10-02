@@ -126,16 +126,10 @@ export function Portal() {
 
   /** The generation entry point: TemplateUsePage fills the template in and
    *  downloads the graphic. */
-  // A card opens the template chat on it (template-chat PROMPT §12.1), which
-  // links to the fill page. Where Generate is not configured (the local
-  // backend, or no model key) the card opens the fill page, so a member
-  // always has a way to make the post.
-  const openTemplate = (t: CatalogTemplate) =>
-    navigate(
-      stores.generate.isConfigured()
-        ? { name: "templateChat", templateId: t.id }
-        : { name: "template", templateId: t.id },
-    );
+  // A card opens the fill page: filling in by hand is the default, and the
+  // page offers "Use AI to assist", the template chat, where Generate is
+  // configured.
+  const openTemplate = (t: CatalogTemplate) => navigate({ name: "template", templateId: t.id });
 
   // ── Sticky pin ──────────────────────────────────────────────────────────
   const sentinel = useRef<HTMLDivElement>(null);

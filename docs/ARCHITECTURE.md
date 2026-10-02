@@ -571,10 +571,11 @@ template for the whole thread (`ChatThread.templateId`,
 `generate_threads.template_id`). `TemplateChatPage` loads the template and
 hands it to `GenerateChat` as `template`.
 
-- **Entry.** A Brand Templates card opens the chat when
-  `stores.generate.isConfigured()`, else the fill page (local mode, no model
-  key), so a member always has a way to make the post. The chat links to
-  the fill page ("Fill in by hand") and, for admins, Bulk fill. A template
+- **Entry.** A Brand Templates card opens the fill page: filling in by hand
+  is the default. The fill page offers "Use AI to assist", which opens the
+  chat, when the template is published and `stores.generate.isConfigured()`.
+  The chat links back to the fill page ("Fill in by hand") and, for admins,
+  Bulk fill and Public link. A template
   that is unpublished or not the company's shows "This template isn't
   available any more."; a saved template chat whose template is gone opens
   at `/generate/c/<id>` as an ordinary Generate chat, and that route hands a
