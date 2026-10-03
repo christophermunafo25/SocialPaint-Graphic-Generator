@@ -32,6 +32,9 @@ jobs:
       - name: Install (frozen lockfile)
         run: npm ci
 
+      - name: Tokens (generated file is current, nothing shadows a token)
+        run: npm run tokens:check
+
       - name: Typecheck (app)
         run: npm run typecheck
 

@@ -26,7 +26,6 @@
      here would shadow (and, self-referentially, destroy) the real ones. */
   --input: transparent;
   --input-background: var(--bg-surface);
-  --switch-background: var(--border-strong);
   --font-weight-medium: 500;
   --font-weight-normal: 400;
   /* Four categorical series from the brand palette — hues label categories
