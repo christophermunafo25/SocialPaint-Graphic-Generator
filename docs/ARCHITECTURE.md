@@ -252,6 +252,14 @@ expression lives in the template graphics. Fonts load via the Google Fonts css2 
 runtime `@font-face` with data URLs for uploads (export-safe — see
 `src/lib/render/fonts.ts`).
 
+Token values come from the Figma file "Master UX-UI". `design/tokens/master.tokens.json`
+is its export (made with the development plugin in `design/tokens/figma-export/`), and
+`npm run tokens` generates `src/styles/tokens.css` from it with `scripts/build-tokens.mjs`.
+Nobody edits either file by hand. While the new look moves page by page
+(`docs/design/new-look/`), `src/styles/legacy-bridge.css` points old token names at the
+Figma ones. `npm run tokens:check`, part of `npm run verify` and CI, fails when
+`tokens.css` is out of date or when a stylesheet redeclares a token it owns.
+
 ## PNG export
 
 `renderSchemaBlob` (src/lib/render/exportPng.ts) is THE rasterization path —

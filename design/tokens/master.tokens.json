@@ -1,0 +1,1711 @@
+{
+  "$description": "SocialPaint design tokens exported from the Figma file \"Master UX-UI\" (mEJRslarcQDkgPeY6AObi5). This file is the source for src/styles/tokens.css. Do not edit values here by hand: change the Figma variables or styles, re-export, then run `npm run tokens`.",
+  "source": {
+    "figmaFile": "mEJRslarcQDkgPeY6AObi5",
+    "name": "Master UX-UI",
+    "exported": "2026-10-02"
+  },
+  "primitives": {
+    "green/slime": {
+      "css": "--slime",
+      "value": "#17FF7E"
+    },
+    "green/deep-moss": {
+      "css": "--deep-moss",
+      "value": "#082A23"
+    },
+    "blue/lapis": {
+      "css": "--lapis",
+      "value": "#14E4FF"
+    },
+    "blue/ocean-tide": {
+      "css": "--ocean-tide",
+      "value": "#09243D"
+    },
+    "pink/christina": {
+      "css": "--christina",
+      "value": "#FF3FE5"
+    },
+    "pink/orchid": {
+      "css": "--orchid",
+      "value": "#30133D"
+    },
+    "warm/fire": {
+      "css": "--fire",
+      "value": "#FF3627"
+    },
+    "warm/choco": {
+      "css": "--choco",
+      "value": "#2B0E1E"
+    },
+    "blue/clouds": {
+      "css": "--clouds",
+      "value": "#D9F9FF"
+    },
+    "green/mint": {
+      "css": "--mint",
+      "value": "#E9FCE3"
+    },
+    "green/lime": {
+      "css": "--lime",
+      "value": "#D8F8C8"
+    },
+    "pink/soft-pink": {
+      "css": "--soft-pink",
+      "value": "#FEE7FC"
+    },
+    "warm/vanilla": {
+      "css": "--vanilla",
+      "value": "#FFFEF1"
+    },
+    "warm/peach": {
+      "css": "--peach",
+      "value": "#FFE7D3"
+    },
+    "purple/lilac": {
+      "css": "--lilac",
+      "value": "#EEE1FF"
+    },
+    "neutral/ink-900": {
+      "css": "--ink-900",
+      "value": "#0B0B0C"
+    },
+    "neutral/ink-800": {
+      "css": "--ink-800",
+      "value": "#171819"
+    },
+    "neutral/ink-700": {
+      "css": "--ink-700",
+      "value": "#2F3133"
+    },
+    "neutral/paper-000": {
+      "css": "--paper-000",
+      "value": "#FFFFFF"
+    },
+    "neutral/paper-050": {
+      "css": "--paper-050",
+      "value": "#F9F9F8"
+    },
+    "neutral/paper-100": {
+      "css": "--paper-100",
+      "value": "#ECECEC"
+    },
+    "purple/violet": {
+      "css": "--violet",
+      "value": "#A782FF"
+    },
+    "purple/kara": {
+      "css": "--kara",
+      "value": "#240C39"
+    },
+    "neutral/ink-750": {
+      "css": "--ink-750",
+      "value": "#272727"
+    },
+    "neutral/ink-500": {
+      "css": "--ink-500",
+      "value": "#636363"
+    },
+    "neutral/ink-300": {
+      "css": "--ink-300",
+      "value": "#A0A0A0"
+    },
+    "neutral/paper-075": {
+      "css": "--paper-075",
+      "value": "#F1F1F1"
+    },
+    "alpha/ink-750-70": {
+      "css": "--ink-750-70",
+      "value": "#272727B2"
+    },
+    "alpha/ink-750-16": {
+      "css": "--ink-750-16",
+      "value": "#27272729"
+    },
+    "alpha/ink-750-08": {
+      "css": "--ink-750-08",
+      "value": "#27272714"
+    },
+    "alpha/paper-075-56": {
+      "css": "--paper-075-56",
+      "value": "#F1F1F18F"
+    },
+    "alpha/paper-075-20": {
+      "css": "--paper-075-20",
+      "value": "#F1F1F133"
+    },
+    "alpha/paper-075-10": {
+      "css": "--paper-075-10",
+      "value": "#F1F1F11A"
+    },
+    "alpha/ink-900-50": {
+      "css": "--ink-900-50",
+      "value": "#0B0B0C80"
+    },
+    "blue/selection": {
+      "css": "--selection",
+      "value": "#0D99FF"
+    },
+    "red/error": {
+      "css": "--error",
+      "value": "#D43535",
+      "description": "Error red for Light surfaces. White on it reads 4.8:1, and as text it reads 4.6:1 on Paper."
+    },
+    "alpha/transparent": {
+      "css": "--transparent",
+      "value": "#FFFFFF00"
+    },
+    "alpha/black-05": {
+      "css": "--black-05",
+      "value": "#0000000D"
+    },
+    "alpha/black-15": {
+      "css": "--black-15",
+      "value": "#00000026"
+    },
+    "alpha/slime-10": {
+      "css": "--slime-10",
+      "value": "#17FF7E1A"
+    },
+    "alpha/ink-750-75": {
+      "css": "--ink-750-75",
+      "value": "#272727BF"
+    },
+    "alpha/paper-075-75": {
+      "css": "--paper-075-75",
+      "value": "#F1F1F1BF"
+    },
+    "alpha/black-10": {
+      "css": "--black-10",
+      "value": "#0000001A"
+    },
+    "alpha/black-30": {
+      "css": "--black-30",
+      "value": "#0000004D"
+    },
+    "alpha/paper-000-15": {
+      "css": "--paper-000-15",
+      "value": "#FFFFFF26"
+    },
+    "alpha/paper-000-10": {
+      "css": "--paper-000-10",
+      "value": "#FFFFFF1A"
+    },
+    "alpha/slime-60": {
+      "css": "--slime-60",
+      "value": "#17FF7E99"
+    },
+    "alpha/slime-30": {
+      "css": "--slime-30",
+      "value": "#17FF7E4D"
+    },
+    "neutral/paper-075-warm": {
+      "css": "--paper-075-warm",
+      "value": "#F1F1EF"
+    },
+    "alpha/paper-075-08": {
+      "css": "--paper-075-08",
+      "value": "#F1F1F114"
+    },
+    "alpha/ink-900-16": {
+      "css": "--ink-900-16",
+      "value": "#0B0B0C29"
+    },
+    "alpha/paper-075-30": {
+      "css": "--paper-075-30",
+      "value": "#F1F1F14D"
+    },
+    "alpha/ink-900-72": {
+      "css": "--ink-900-72",
+      "value": "#0B0B0CB8"
+    },
+    "alpha/ink-900-65": {
+      "css": "--ink-900-65",
+      "value": "#0B0B0CA6"
+    },
+    "neutral/paper-200": {
+      "css": "--paper-200",
+      "value": "#D1D1D1"
+    },
+    "alpha/ink-900-75": {
+      "css": "--ink-900-75",
+      "value": "#0B0B0CBF"
+    },
+    "alpha/paper-075-50": {
+      "css": "--paper-075-50",
+      "value": "#F1F1F180"
+    },
+    "alpha/ink-900-05": {
+      "css": "--ink-900-05",
+      "value": "#0B0B0C0D"
+    },
+    "alpha/ink-900-10": {
+      "css": "--ink-900-10",
+      "value": "#0B0B0C1A"
+    },
+    "alpha/paper-000-06": {
+      "css": "--paper-000-06",
+      "value": "#FFFFFF0F"
+    },
+    "alpha/paper-000-12": {
+      "css": "--paper-000-12",
+      "value": "#FFFFFF1F"
+    },
+    "alpha/deep-moss-35": {
+      "css": "--deep-moss-35",
+      "value": "#082A2359"
+    },
+    "red/error-on-dark": {
+      "css": "--error-on-dark",
+      "value": "#EC5656",
+      "description": "Error red for Dark surfaces. Ink on it reads 5.7:1 (4.7:1 pressed), and as text it reads 5.1:1 on the raised surface."
+    }
+  },
+  "radius": {
+    "radius/xs": {
+      "css": "--radius-xs",
+      "value": 2,
+      "description": "Hairline details such as swatch chips."
+    },
+    "radius/control": {
+      "css": "--radius-control",
+      "value": 7,
+      "description": "Buttons, nav and rail items, segments, chips with a square corner, row menu triggers."
+    },
+    "radius/menu-item": {
+      "css": "--radius-menu-item",
+      "value": 7,
+      "description": "Rows inside menus and popovers."
+    },
+    "radius/field": {
+      "css": "--radius-control-md",
+      "value": 9,
+      "description": "Inputs, selects, tab tracks, filters, Download PNG and the tooltip."
+    },
+    "radius/inset": {
+      "css": "--radius-media-plate",
+      "value": 15,
+      "description": "Media or wells set 8 in from a card edge (0.6 smoothing)."
+    },
+    "radius/menu": {
+      "css": "--radius-menu",
+      "value": 16,
+      "description": "Menus, popovers and the message bubble."
+    },
+    "radius/card": {
+      "css": "--radius-card",
+      "value": 20,
+      "description": "Cards, the composer, the editor panel and the sidebar (0.6 smoothing)."
+    },
+    "radius/pill": {
+      "css": "--radius-pill",
+      "value": 999,
+      "description": "Tags, status chips, switches, round icon buttons and the send button."
+    }
+  },
+  "spacing": {
+    "space/3xs": {
+      "css": "--space-3xs",
+      "value": 4
+    },
+    "space/2xs": {
+      "css": "--space-2xs",
+      "value": 8
+    },
+    "space/xs": {
+      "css": "--space-xs",
+      "value": 12
+    },
+    "space/sm": {
+      "css": "--space-sm",
+      "value": 16
+    },
+    "space/md": {
+      "css": "--space-md",
+      "value": 24,
+      "description": "Default card padding."
+    },
+    "space/lg": {
+      "css": "--space-lg",
+      "value": 32
+    },
+    "space/xl": {
+      "css": "--space-xl",
+      "value": 48
+    },
+    "space/2xl": {
+      "css": "--space-2xl",
+      "value": 64
+    },
+    "space/3xl": {
+      "css": "--space-3xl",
+      "value": 96
+    },
+    "focus/width": {
+      "css": "--focus-width",
+      "value": 1,
+      "description": "Focus ring weight. 1px, from the code’s --focus-width (was 2px)."
+    },
+    "focus/offset": {
+      "css": "--focus-offset",
+      "value": 2,
+      "description": "Gap between an element and its focus ring. 2px, from the code’s --focus-offset."
+    }
+  },
+  "brand": {
+    "surface/sunken": {
+      "css": "--surface-sunken",
+      "light": "neutral/paper-100",
+      "dark": "neutral/ink-700",
+      "resolved": {
+        "light": "#ECECEC",
+        "dark": "#2F3133"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "STROKE_COLOR"]
+    },
+    "surface/inverse": {
+      "css": "--surface-inverse",
+      "light": "neutral/ink-900",
+      "dark": "neutral/paper-000",
+      "resolved": {
+        "light": "#0B0B0C",
+        "dark": "#FFFFFF"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "STROKE_COLOR"]
+    },
+    "text/primary": {
+      "css": "--text-primary",
+      "light": "neutral/ink-750",
+      "dark": "neutral/paper-075",
+      "resolved": {
+        "light": "#272727",
+        "dark": "#F1F1F1"
+      },
+      "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+    },
+    "text/secondary": {
+      "css": "--text-secondary",
+      "light": "neutral/ink-500",
+      "dark": "neutral/ink-300",
+      "resolved": {
+        "light": "#636363",
+        "dark": "#A0A0A0"
+      },
+      "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+    },
+    "text/inverse": {
+      "css": "--text-inverse",
+      "light": "neutral/paper-000",
+      "dark": "neutral/ink-900",
+      "resolved": {
+        "light": "#FFFFFF",
+        "dark": "#0B0B0C"
+      },
+      "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+    },
+    "accent/green": {
+      "css": "--accent-green",
+      "light": "green/slime",
+      "dark": "green/slime",
+      "resolved": {
+        "light": "#17FF7E",
+        "dark": "#17FF7E"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+    },
+    "accent/blue": {
+      "css": "--accent-blue",
+      "light": "blue/lapis",
+      "dark": "blue/lapis",
+      "resolved": {
+        "light": "#14E4FF",
+        "dark": "#14E4FF"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+    },
+    "accent/pink": {
+      "css": "--accent-pink",
+      "light": "pink/christina",
+      "dark": "pink/christina",
+      "resolved": {
+        "light": "#FF3FE5",
+        "dark": "#FF3FE5"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+    },
+    "accent/warm": {
+      "css": "--accent-warm",
+      "light": "warm/fire",
+      "dark": "warm/fire",
+      "resolved": {
+        "light": "#FF3627",
+        "dark": "#FF3627"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+    },
+    "accent/purple": {
+      "css": "--accent-purple",
+      "light": "purple/violet",
+      "dark": "purple/violet",
+      "resolved": {
+        "light": "#A782FF",
+        "dark": "#A782FF"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+    },
+    "field/green": {
+      "css": "--field-green",
+      "light": "green/deep-moss",
+      "dark": "green/deep-moss",
+      "resolved": {
+        "light": "#082A23",
+        "dark": "#082A23"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+    },
+    "field/blue": {
+      "css": "--field-blue",
+      "light": "blue/ocean-tide",
+      "dark": "blue/ocean-tide",
+      "resolved": {
+        "light": "#09243D",
+        "dark": "#09243D"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+    },
+    "field/pink": {
+      "css": "--field-pink",
+      "light": "pink/orchid",
+      "dark": "pink/orchid",
+      "resolved": {
+        "light": "#30133D",
+        "dark": "#30133D"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+    },
+    "field/warm": {
+      "css": "--field-warm",
+      "light": "warm/choco",
+      "dark": "warm/choco",
+      "resolved": {
+        "light": "#2B0E1E",
+        "dark": "#2B0E1E"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+    },
+    "field/purple": {
+      "css": "--field-purple",
+      "light": "purple/kara",
+      "dark": "purple/kara",
+      "resolved": {
+        "light": "#240C39",
+        "dark": "#240C39"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+    },
+    "tint/green": {
+      "css": "--tint-green",
+      "light": "green/lime",
+      "dark": "green/lime",
+      "resolved": {
+        "light": "#D8F8C8",
+        "dark": "#D8F8C8"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+    },
+    "tint/blue": {
+      "css": "--tint-blue",
+      "light": "blue/clouds",
+      "dark": "blue/clouds",
+      "resolved": {
+        "light": "#D9F9FF",
+        "dark": "#D9F9FF"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+    },
+    "tint/pink": {
+      "css": "--tint-pink",
+      "light": "pink/soft-pink",
+      "dark": "pink/soft-pink",
+      "resolved": {
+        "light": "#FEE7FC",
+        "dark": "#FEE7FC"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+    },
+    "tint/warm": {
+      "css": "--tint-warm",
+      "light": "warm/peach",
+      "dark": "warm/peach",
+      "resolved": {
+        "light": "#FFE7D3",
+        "dark": "#FFE7D3"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+    },
+    "tint/purple": {
+      "css": "--tint-purple",
+      "light": "purple/lilac",
+      "dark": "purple/lilac",
+      "resolved": {
+        "light": "#EEE1FF",
+        "dark": "#EEE1FF"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+    },
+    "wash/green": {
+      "css": "--wash-green",
+      "light": "green/mint",
+      "dark": "green/mint",
+      "resolved": {
+        "light": "#E9FCE3",
+        "dark": "#E9FCE3"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+    },
+    "wash/warm": {
+      "css": "--wash-warm",
+      "light": "warm/vanilla",
+      "dark": "warm/vanilla",
+      "resolved": {
+        "light": "#FFFEF1",
+        "dark": "#FFFEF1"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+    },
+    "surface/page": {
+      "css": "--surface-page",
+      "light": "neutral/paper-050",
+      "dark": "neutral/ink-900",
+      "resolved": {
+        "light": "#F9F9F8",
+        "dark": "#0B0B0C"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "STROKE_COLOR"]
+    },
+    "surface/raised": {
+      "css": "--surface-raised",
+      "light": "neutral/paper-000",
+      "dark": "neutral/ink-800",
+      "resolved": {
+        "light": "#FFFFFF",
+        "dark": "#171819"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "STROKE_COLOR"]
+    },
+    "text/muted": {
+      "css": "--text-muted",
+      "light": "alpha/ink-750-70",
+      "dark": "alpha/paper-075-56",
+      "resolved": {
+        "light": "#272727B2",
+        "dark": "#F1F1F18F"
+      },
+      "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+    },
+    "border/default": {
+      "css": "--border-default",
+      "light": "alpha/ink-750-08",
+      "dark": "alpha/paper-075-10",
+      "resolved": {
+        "light": "#27272714",
+        "dark": "#F1F1F11A"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "STROKE_COLOR"]
+    },
+    "border/strong": {
+      "css": "--border-strong",
+      "light": "alpha/ink-750-16",
+      "dark": "alpha/paper-075-20",
+      "resolved": {
+        "light": "#27272729",
+        "dark": "#F1F1F133"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "STROKE_COLOR"]
+    },
+    "overlay/scrim": {
+      "css": "--overlay-scrim",
+      "light": "alpha/ink-900-50",
+      "dark": "alpha/ink-900-50",
+      "resolved": {
+        "light": "#0B0B0C80",
+        "dark": "#0B0B0C80"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"]
+    },
+    "state/selection": {
+      "css": "--state-selection",
+      "light": "blue/selection",
+      "dark": "blue/selection",
+      "resolved": {
+        "light": "#0D99FF",
+        "dark": "#0D99FF"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+    },
+    "state/error": {
+      "css": "--state-error",
+      "light": "red/error",
+      "dark": "red/error-on-dark",
+      "resolved": {
+        "light": "#D43535",
+        "dark": "#EC5656"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "Destructive fill and error text. Light uses red/error (#D43535) under a white label; Dark uses red/error-on-dark (#EC5656) under an ink label."
+    },
+    "theme/is-light": {
+      "type": "boolean",
+      "selector": "[data-theme=\"light\"]",
+      "light": true,
+      "dark": false
+    },
+    "theme/is-dark": {
+      "type": "boolean",
+      "selector": "[data-theme=\"dark\"]",
+      "light": false,
+      "dark": true
+    },
+    "border/raised": {
+      "css": "--border-raised",
+      "light": "alpha/transparent",
+      "dark": "alpha/paper-075-20",
+      "resolved": {
+        "light": "#FFFFFF00",
+        "dark": "#F1F1F133"
+      },
+      "scopes": ["STROKE_COLOR"]
+    },
+    "shadow/raised": {
+      "css": "--shadow-raised",
+      "light": "alpha/black-05",
+      "dark": "alpha/black-15",
+      "resolved": {
+        "light": "#0000000D",
+        "dark": "#00000026"
+      },
+      "scopes": ["EFFECT_COLOR"],
+      "description": "Resting shadow for raised surfaces. 5% in light, 15% in dark."
+    },
+    "accent/green-subtle": {
+      "css": "--accent-green-subtle",
+      "light": "alpha/slime-10",
+      "dark": "alpha/slime-10",
+      "resolved": {
+        "light": "#17FF7E1A",
+        "dark": "#17FF7E1A"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Accent green at 10%. Fill for the dark Secondary button (New chat), paired with an accent/green hairline."
+    },
+    "text/subtle": {
+      "css": "--text-subtle",
+      "light": "alpha/ink-750-75",
+      "dark": "alpha/paper-075-75",
+      "resolved": {
+        "light": "#272727BF",
+        "dark": "#F1F1F1BF"
+      },
+      "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "Primary text at 75%. Labels and icons on quiet header actions such as History and Back to chat."
+    },
+    "overlay/edge": {
+      "css": "--overlay-edge",
+      "light": "alpha/paper-075-20",
+      "dark": "alpha/paper-075-20",
+      "resolved": {
+        "light": "#F1F1F133",
+        "dark": "#F1F1F133"
+      },
+      "scopes": ["STROKE_COLOR"],
+      "description": "Hairline on controls that sit over imagery, like the Edit overlay on result cards. Same in light and dark."
+    },
+    "shadow/floating": {
+      "css": "--shadow-floating",
+      "light": "alpha/black-10",
+      "dark": "alpha/black-30",
+      "resolved": {
+        "light": "#0000001A",
+        "dark": "#0000004D"
+      },
+      "scopes": ["EFFECT_COLOR"],
+      "description": "Shadow for menus, popovers, toolbars and cards lifting on hover. 10% in light, 30% in dark."
+    },
+    "bevel/top": {
+      "css": "--bevel-top",
+      "light": "alpha/transparent",
+      "dark": "alpha/paper-000-15",
+      "resolved": {
+        "light": "#FFFFFF00",
+        "dark": "#FFFFFF26"
+      },
+      "scopes": ["EFFECT_COLOR"],
+      "description": "Top highlight on raised surfaces. Transparent in light, 15% white in dark."
+    },
+    "bevel/bottom": {
+      "css": "--bevel-bottom",
+      "light": "alpha/transparent",
+      "dark": "alpha/paper-000-10",
+      "resolved": {
+        "light": "#FFFFFF00",
+        "dark": "#FFFFFF1A"
+      },
+      "scopes": ["EFFECT_COLOR"],
+      "description": "Bottom highlight on raised surfaces. Transparent in light, 10% white in dark."
+    },
+    "accent/green-glow": {
+      "css": "--accent-green-glow",
+      "light": "alpha/slime-60",
+      "dark": "alpha/slime-30",
+      "resolved": {
+        "light": "#17FF7E99",
+        "dark": "#17FF7E4D"
+      },
+      "scopes": ["EFFECT_COLOR"],
+      "description": "Accent green for the plus hint glow. Stronger in light so it reads on white. Effect color only."
+    },
+    "text/strong": {
+      "css": "--text-strong",
+      "light": "neutral/ink-900",
+      "dark": "neutral/paper-075",
+      "resolved": {
+        "light": "#0B0B0C",
+        "dark": "#F1F1F1"
+      },
+      "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "Primary type and icons: Black in light, #F1F1F1 in dark (CJ, 2026-10-01). text/primary stays #272727 for data marks."
+    },
+    "button/primary-bg": {
+      "css": "--btn-primary-bg",
+      "light": "green/deep-moss",
+      "dark": "green/slime",
+      "resolved": {
+        "light": "#082A23",
+        "dark": "#17FF7E"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Primary button fill. Deep moss in Light, slime in Dark."
+    },
+    "button/primary-fg": {
+      "css": "--btn-primary-fg",
+      "light": "green/slime",
+      "dark": "green/deep-moss",
+      "resolved": {
+        "light": "#17FF7E",
+        "dark": "#082A23"
+      },
+      "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "Primary button label and icon."
+    },
+    "input/fill": {
+      "css": "--input-bg",
+      "light": "neutral/paper-075-warm",
+      "dark": "alpha/paper-075-08",
+      "resolved": {
+        "light": "#F1F1EF",
+        "dark": "#F1F1F114"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Text inputs and selects."
+    },
+    "control/track": {
+      "css": "--control-track",
+      "light": "neutral/paper-075-warm",
+      "dark": "neutral/ink-900",
+      "resolved": {
+        "light": "#F1F1EF",
+        "dark": "#0B0B0C"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Segmented control and tab track."
+    },
+    "control/thumb": {
+      "css": "--control-thumb",
+      "light": "neutral/paper-000",
+      "dark": "neutral/ink-700",
+      "resolved": {
+        "light": "#FFFFFF",
+        "dark": "#2F3133"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Selected segment or tab."
+    },
+    "switch/track-on": {
+      "css": "--switch-track-on",
+      "light": "neutral/ink-900",
+      "dark": "neutral/paper-075",
+      "resolved": {
+        "light": "#0B0B0C",
+        "dark": "#F1F1F1"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Switch track when on."
+    },
+    "switch/track-off": {
+      "css": "--switch-background",
+      "light": "alpha/ink-900-16",
+      "dark": "alpha/paper-075-30",
+      "resolved": {
+        "light": "#0B0B0C29",
+        "dark": "#F1F1F14D"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Switch track when off."
+    },
+    "control/fill": {
+      "css": "--control-fill",
+      "light": "neutral/paper-100",
+      "dark": "neutral/ink-800",
+      "resolved": {
+        "light": "#ECECEC",
+        "dark": "#171819"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Neutral controls that sit on the page, like filters and the search trigger."
+    },
+    "status/positive-bg": {
+      "css": "--status-positive-bg",
+      "light": "green/deep-moss",
+      "dark": "neutral/ink-700",
+      "resolved": {
+        "light": "#082A23",
+        "dark": "#2F3133"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Connected status pill."
+    },
+    "status/active-bg": {
+      "css": "--status-active-bg",
+      "light": "green/slime",
+      "dark": "neutral/ink-700",
+      "resolved": {
+        "light": "#17FF7E",
+        "dark": "#2F3133"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Active link status pill."
+    },
+    "status/active-fg": {
+      "css": "--status-active-fg",
+      "light": "green/deep-moss",
+      "dark": "green/slime",
+      "resolved": {
+        "light": "#082A23",
+        "dark": "#17FF7E"
+      },
+      "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "Active link status label."
+    },
+    "chip/selected-bg": {
+      "css": "--chip-selected-bg",
+      "light": "neutral/ink-900",
+      "dark": "neutral/ink-700",
+      "resolved": {
+        "light": "#0B0B0C",
+        "dark": "#2F3133"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Selected platform chip."
+    },
+    "chip/selected-tile": {
+      "css": "--chip-selected-tile",
+      "light": "neutral/ink-700",
+      "dark": "neutral/ink-800",
+      "resolved": {
+        "light": "#2F3133",
+        "dark": "#171819"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Logo tile inside a selected platform chip."
+    },
+    "chip/tile": {
+      "css": "--chip-tile",
+      "light": "neutral/paper-000",
+      "dark": "neutral/ink-900",
+      "resolved": {
+        "light": "#FFFFFF",
+        "dark": "#0B0B0C"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Logo tile inside a platform chip."
+    },
+    "text/on-fill": {
+      "css": "--text-on-fill",
+      "light": "neutral/paper-000",
+      "dark": "neutral/paper-000",
+      "resolved": {
+        "light": "#FFFFFF",
+        "dark": "#FFFFFF"
+      },
+      "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "Text and icons on dark fills in both modes."
+    },
+    "tag/overlay-bg": {
+      "css": "--tag-overlay-bg",
+      "light": "alpha/ink-900-72",
+      "dark": "alpha/ink-900-72",
+      "resolved": {
+        "light": "#0B0B0CB8",
+        "dark": "#0B0B0CB8"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Tags that sit on top of a color or image."
+    },
+    "tag/detail-fg": {
+      "css": "--tag-detail-fg",
+      "light": "alpha/ink-900-65",
+      "dark": "neutral/paper-075",
+      "resolved": {
+        "light": "#0B0B0CA6",
+        "dark": "#F1F1F1"
+      },
+      "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "Text and icons in the detail tags under the composer."
+    },
+    "tag/sent-bg": {
+      "css": "--tag-sent-bg",
+      "light": "neutral/paper-200",
+      "dark": "neutral/paper-000",
+      "resolved": {
+        "light": "#D1D1D1",
+        "dark": "#FFFFFF"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Detail tags inside a sent message."
+    },
+    "tag/sent-fg": {
+      "css": "--tag-sent-fg",
+      "light": "alpha/ink-900-75",
+      "dark": "neutral/ink-900",
+      "resolved": {
+        "light": "#0B0B0CBF",
+        "dark": "#0B0B0C"
+      },
+      "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "Text and icons in sent detail tags."
+    },
+    "tag/sent-border": {
+      "css": "--tag-sent-border",
+      "light": "alpha/transparent",
+      "dark": "alpha/paper-075-50",
+      "resolved": {
+        "light": "#FFFFFF00",
+        "dark": "#F1F1F180"
+      },
+      "scopes": ["STROKE_COLOR"],
+      "description": "Hairline around sent detail tags in Dark."
+    },
+    "state/hover": {
+      "css": "--state-hover",
+      "light": "alpha/ink-900-05",
+      "dark": "alpha/paper-000-06",
+      "resolved": {
+        "light": "#0B0B0C0D",
+        "dark": "#FFFFFF0F"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Hover tint laid over an element. Ink at 5% in Light, white at 6% in Dark."
+    },
+    "state/pressed": {
+      "css": "--state-pressed",
+      "light": "alpha/ink-900-10",
+      "dark": "alpha/paper-000-12",
+      "resolved": {
+        "light": "#0B0B0C1A",
+        "dark": "#FFFFFF1F"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Pressed tint for actions, twice the hover. Ink at 10% in Light, white at 12% in Dark."
+    },
+    "state/hover-inverse": {
+      "css": "--state-hover-inverse",
+      "light": "alpha/paper-000-06",
+      "dark": "alpha/ink-900-05",
+      "resolved": {
+        "light": "#FFFFFF0F",
+        "dark": "#0B0B0C0D"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Hover tint on fills that flip between modes, like the primary button, the attach button and a switch that is on."
+    },
+    "state/pressed-inverse": {
+      "css": "--state-pressed-inverse",
+      "light": "alpha/paper-000-12",
+      "dark": "alpha/ink-900-10",
+      "resolved": {
+        "light": "#FFFFFF1F",
+        "dark": "#0B0B0C1A"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Pressed tint on fills that flip between modes."
+    },
+    "state/hover-on-color": {
+      "css": "--state-hover-on-color",
+      "light": "alpha/ink-900-05",
+      "dark": "alpha/ink-900-05",
+      "resolved": {
+        "light": "#0B0B0C0D",
+        "dark": "#0B0B0C0D"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Hover tint on Slime and red fills, which stay light in both modes."
+    },
+    "state/pressed-on-color": {
+      "css": "--state-pressed-on-color",
+      "light": "alpha/ink-900-10",
+      "dark": "alpha/ink-900-10",
+      "resolved": {
+        "light": "#0B0B0C1A",
+        "dark": "#0B0B0C1A"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Pressed tint on Slime and red fills."
+    },
+    "state/selected": {
+      "css": "--state-selected",
+      "light": "neutral/paper-050",
+      "dark": "neutral/ink-700",
+      "resolved": {
+        "light": "#F9F9F8",
+        "dark": "#2F3133"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Selected row on a raised surface: nav items, menu items and the Settings gear. Paper in Light, #2F3133 in Dark."
+    },
+    "overlay/hover": {
+      "css": "--overlay-hover",
+      "light": "alpha/deep-moss-35",
+      "dark": "alpha/deep-moss-35",
+      "resolved": {
+        "light": "#082A2359",
+        "dark": "#082A2359"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Dims a preview on hover so the Edit button reads. Deep Moss at 35% in both modes."
+    },
+    "overlay/control": {
+      "css": "--overlay-control",
+      "light": "neutral/paper-000",
+      "dark": "neutral/paper-000",
+      "resolved": {
+        "light": "#FFFFFF",
+        "dark": "#FFFFFF"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "White control over imagery, like the Edit button on a hovered preview. Same in both modes."
+    },
+    "overlay/control-fg": {
+      "css": "--overlay-control-fg",
+      "light": "neutral/ink-900",
+      "dark": "neutral/ink-900",
+      "resolved": {
+        "light": "#0B0B0C",
+        "dark": "#0B0B0C"
+      },
+      "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "Icon on overlay/control. Ink in both modes."
+    },
+    "focus/ring": {
+      "css": "--ring",
+      "light": "neutral/ink-750",
+      "dark": "neutral/paper-000",
+      "resolved": {
+        "light": "#272727",
+        "dark": "#FFFFFF"
+      },
+      "scopes": ["STROKE_COLOR"],
+      "description": "Keyboard focus ring from the code’s --ring: ink (#272727) in Light, white in Dark. 1px (focus/width), drawn 2px outside the edge (focus/offset); elements inside a track or a tight chip row draw it against the edge."
+    }
+  },
+  "textStyles": {
+    "Title/Display": {
+      "family": "Raveo Display",
+      "style": "Display Medium",
+      "size": 44,
+      "lineHeight": "110%",
+      "letterSpacing": "-2.5%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "NONE"
+    },
+    "Title/Page": {
+      "family": "Raveo Display",
+      "style": "Display Medium",
+      "size": 30,
+      "lineHeight": "120%",
+      "letterSpacing": "-2%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "NONE"
+    },
+    "Title/Section": {
+      "family": "Raveo Display",
+      "style": "Display Medium",
+      "size": 24,
+      "lineHeight": "120%",
+      "letterSpacing": "-1.5%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "NONE"
+    },
+    "Title/Group": {
+      "family": "Raveo Display",
+      "style": "Display Medium",
+      "size": 20,
+      "lineHeight": "130%",
+      "letterSpacing": "-1.5%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "NONE"
+    },
+    "Title/Card": {
+      "family": "Raveo Display",
+      "style": "Display Medium",
+      "size": 18,
+      "lineHeight": "125%",
+      "letterSpacing": "-1%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "NONE"
+    },
+    "Label/L": {
+      "family": "Raveo Display",
+      "style": "Display Medium",
+      "size": 15,
+      "lineHeight": "125%",
+      "letterSpacing": "-1%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "NONE"
+    },
+    "Label/M": {
+      "family": "Raveo Display",
+      "style": "Display Medium",
+      "size": 14,
+      "lineHeight": "125%",
+      "letterSpacing": "0%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "NONE"
+    },
+    "Label/S": {
+      "family": "Raveo Display",
+      "style": "Display Medium",
+      "size": 13,
+      "lineHeight": "125%",
+      "letterSpacing": "0%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "NONE"
+    },
+    "Label/XS": {
+      "family": "Raveo Display",
+      "style": "Display Medium",
+      "size": 12,
+      "lineHeight": "125%",
+      "letterSpacing": "0%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "NONE"
+    },
+    "Body/L": {
+      "family": "Raveo Display",
+      "style": "Display Regular",
+      "size": 16,
+      "lineHeight": "150%",
+      "letterSpacing": "0%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "NONE"
+    },
+    "Body/M": {
+      "family": "Raveo Display",
+      "style": "Display Regular",
+      "size": 15,
+      "lineHeight": "150%",
+      "letterSpacing": "0%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "NONE"
+    },
+    "Body/S": {
+      "family": "Raveo Display",
+      "style": "Display Regular",
+      "size": 14,
+      "lineHeight": "140%",
+      "letterSpacing": "0%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "NONE"
+    },
+    "Caption/M": {
+      "family": "Raveo Display",
+      "style": "Display Regular",
+      "size": 13,
+      "lineHeight": "125%",
+      "letterSpacing": "0%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "NONE"
+    },
+    "Caption/S": {
+      "family": "Raveo Display",
+      "style": "Display Regular",
+      "size": 12,
+      "lineHeight": "125%",
+      "letterSpacing": "0%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "NONE"
+    },
+    "Caption/XS": {
+      "family": "Raveo Display",
+      "style": "Display Regular",
+      "size": 11,
+      "lineHeight": "130%",
+      "letterSpacing": "0%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "NONE"
+    },
+    "Mono/Display": {
+      "family": "Geist Mono",
+      "style": "Regular",
+      "size": 32,
+      "lineHeight": "112%",
+      "letterSpacing": "-2%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "NONE"
+    },
+    "Mono/M": {
+      "family": "Geist Mono",
+      "style": "Regular",
+      "size": 14,
+      "lineHeight": "140%",
+      "letterSpacing": "4%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "NONE"
+    },
+    "Mono/S": {
+      "family": "Geist Mono",
+      "style": "Regular",
+      "size": 12,
+      "lineHeight": "140%",
+      "letterSpacing": "4%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "NONE"
+    },
+    "Mono/XS": {
+      "family": "Geist Mono",
+      "style": "Regular",
+      "size": 10,
+      "lineHeight": "125%",
+      "letterSpacing": "4%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "NONE"
+    },
+    "Mono/Eyebrow": {
+      "family": "Geist Mono",
+      "style": "Regular",
+      "size": 10,
+      "lineHeight": "125%",
+      "letterSpacing": "4%",
+      "textCase": "UPPER",
+      "leadingTrim": "NONE"
+    },
+    "Caption/XXS": {
+      "family": "Raveo Display",
+      "style": "Display Regular",
+      "size": 9,
+      "lineHeight": "125%",
+      "letterSpacing": "0%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "NONE"
+    },
+    "Mono/XXS": {
+      "family": "Geist Mono",
+      "style": "Regular",
+      "size": 9,
+      "lineHeight": "125%",
+      "letterSpacing": "4%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "NONE"
+    },
+    "Mono/Code": {
+      "family": "IBM Plex Mono",
+      "style": "Regular",
+      "size": 12,
+      "lineHeight": "150%",
+      "letterSpacing": "0%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "NONE"
+    },
+    "Trimmed/Caption/M": {
+      "family": "Raveo Display",
+      "style": "Display Regular",
+      "size": 13,
+      "lineHeight": "125%",
+      "letterSpacing": "0%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "CAP_HEIGHT"
+    },
+    "Trimmed/Mono/S": {
+      "family": "Geist Mono",
+      "style": "Regular",
+      "size": 12,
+      "lineHeight": "140%",
+      "letterSpacing": "4%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "CAP_HEIGHT"
+    },
+    "Trimmed/Caption/XS": {
+      "family": "Raveo Display",
+      "style": "Display Regular",
+      "size": 11,
+      "lineHeight": "130%",
+      "letterSpacing": "0%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "CAP_HEIGHT"
+    },
+    "Trimmed/Label/XS": {
+      "family": "Raveo Display",
+      "style": "Display Medium",
+      "size": 12,
+      "lineHeight": "125%",
+      "letterSpacing": "0%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "CAP_HEIGHT"
+    },
+    "Trimmed/Title/Card": {
+      "family": "Raveo Display",
+      "style": "Display Medium",
+      "size": 18,
+      "lineHeight": "125%",
+      "letterSpacing": "-1%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "CAP_HEIGHT"
+    },
+    "Trimmed/Label/S": {
+      "family": "Raveo Display",
+      "style": "Display Medium",
+      "size": 13,
+      "lineHeight": "125%",
+      "letterSpacing": "0%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "CAP_HEIGHT"
+    },
+    "Trimmed/Title/Display": {
+      "family": "Raveo Display",
+      "style": "Display Medium",
+      "size": 44,
+      "lineHeight": "110%",
+      "letterSpacing": "-2.5%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "CAP_HEIGHT"
+    },
+    "Trimmed/Title/Page": {
+      "family": "Raveo Display",
+      "style": "Display Medium",
+      "size": 30,
+      "lineHeight": "120%",
+      "letterSpacing": "-2%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "CAP_HEIGHT"
+    },
+    "Trimmed/Body/L": {
+      "family": "Raveo Display",
+      "style": "Display Regular",
+      "size": 16,
+      "lineHeight": "150%",
+      "letterSpacing": "0%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "CAP_HEIGHT"
+    },
+    "Trimmed/Body/S": {
+      "family": "Raveo Display",
+      "style": "Display Regular",
+      "size": 14,
+      "lineHeight": "140%",
+      "letterSpacing": "0%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "CAP_HEIGHT"
+    },
+    "Trimmed/Caption/S": {
+      "family": "Raveo Display",
+      "style": "Display Regular",
+      "size": 12,
+      "lineHeight": "125%",
+      "letterSpacing": "0%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "CAP_HEIGHT"
+    },
+    "Trimmed/Label/M": {
+      "family": "Raveo Display",
+      "style": "Display Medium",
+      "size": 14,
+      "lineHeight": "125%",
+      "letterSpacing": "0%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "CAP_HEIGHT"
+    },
+    "Trimmed/Mono/M": {
+      "family": "Geist Mono",
+      "style": "Regular",
+      "size": 14,
+      "lineHeight": "140%",
+      "letterSpacing": "4%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "CAP_HEIGHT"
+    },
+    "Trimmed/Body/M": {
+      "family": "Raveo Display",
+      "style": "Display Regular",
+      "size": 15,
+      "lineHeight": "150%",
+      "letterSpacing": "0%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "CAP_HEIGHT"
+    },
+    "Button/M": {
+      "family": "Raveo Display",
+      "style": "Display Medium",
+      "size": 14,
+      "lineHeight": "125%",
+      "letterSpacing": "-1%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "NONE"
+    },
+    "Button/S": {
+      "family": "Raveo Display",
+      "style": "Display Medium",
+      "size": 12,
+      "lineHeight": "130%",
+      "letterSpacing": "-1%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "CAP_HEIGHT"
+    },
+    "Control/M": {
+      "family": "Raveo Display",
+      "style": "Display Medium",
+      "size": 14,
+      "lineHeight": "AUTO",
+      "letterSpacing": "-1%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "NONE"
+    },
+    "Control/S": {
+      "family": "Raveo Display",
+      "style": "Display Medium",
+      "size": 13,
+      "lineHeight": "130%",
+      "letterSpacing": "-1%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "NONE"
+    },
+    "Body/XS": {
+      "family": "Raveo Display",
+      "style": "Display Regular",
+      "size": 13,
+      "lineHeight": "140%",
+      "letterSpacing": "0%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "NONE"
+    },
+    "Trimmed/Label/XXS": {
+      "family": "Raveo Display",
+      "style": "Display Medium",
+      "size": 10,
+      "lineHeight": "125%",
+      "letterSpacing": "0%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "CAP_HEIGHT"
+    },
+    "Trimmed/Button/M": {
+      "family": "Raveo Display",
+      "style": "Display Medium",
+      "size": 14,
+      "lineHeight": "125%",
+      "letterSpacing": "-1%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "CAP_HEIGHT"
+    },
+    "Title/Panel": {
+      "family": "Raveo Display",
+      "style": "Display Medium",
+      "size": 17,
+      "lineHeight": "125%",
+      "letterSpacing": "-1%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "NONE"
+    },
+    "Title/Metric": {
+      "family": "Raveo Display",
+      "style": "Display Medium",
+      "size": 40,
+      "lineHeight": "110%",
+      "letterSpacing": "-3%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "NONE"
+    }
+  },
+  "effectStyles": {
+    "Elevation/Small": [
+      {
+        "type": "INNER_SHADOW",
+        "visible": true,
+        "x": 0,
+        "y": 1,
+        "blur": 0,
+        "spread": 0,
+        "color": "#FFFFFF00",
+        "colorVar": "bevel/top"
+      },
+      {
+        "type": "INNER_SHADOW",
+        "visible": true,
+        "x": 0,
+        "y": -1,
+        "blur": 0,
+        "spread": 0,
+        "color": "#FFFFFF00",
+        "colorVar": "bevel/bottom"
+      },
+      {
+        "type": "DROP_SHADOW",
+        "visible": true,
+        "x": 2,
+        "y": 2,
+        "blur": 8,
+        "spread": 0,
+        "color": "#0000000D",
+        "colorVar": "shadow/raised"
+      }
+    ],
+    "Elevation/Medium": [
+      {
+        "type": "INNER_SHADOW",
+        "visible": true,
+        "x": 0,
+        "y": 1,
+        "blur": 0,
+        "spread": 0,
+        "color": "#FFFFFF00",
+        "colorVar": "bevel/top"
+      },
+      {
+        "type": "INNER_SHADOW",
+        "visible": true,
+        "x": 0,
+        "y": -1,
+        "blur": 0,
+        "spread": 0,
+        "color": "#FFFFFF00",
+        "colorVar": "bevel/bottom"
+      },
+      {
+        "type": "DROP_SHADOW",
+        "visible": true,
+        "x": 4,
+        "y": 4,
+        "blur": 16,
+        "spread": 0,
+        "color": "#0000000D",
+        "colorVar": "shadow/raised"
+      }
+    ],
+    "Elevation/Large": [
+      {
+        "type": "INNER_SHADOW",
+        "visible": true,
+        "x": 0,
+        "y": 1,
+        "blur": 0,
+        "spread": 0,
+        "color": "#FFFFFF00",
+        "colorVar": "bevel/top"
+      },
+      {
+        "type": "INNER_SHADOW",
+        "visible": true,
+        "x": 0,
+        "y": -1,
+        "blur": 0,
+        "spread": 0,
+        "color": "#FFFFFF00",
+        "colorVar": "bevel/bottom"
+      },
+      {
+        "type": "DROP_SHADOW",
+        "visible": true,
+        "x": 6,
+        "y": 6,
+        "blur": 25,
+        "spread": 0,
+        "color": "#0000000D",
+        "colorVar": "shadow/raised"
+      }
+    ],
+    "Elevation/Floating": [
+      {
+        "type": "INNER_SHADOW",
+        "visible": true,
+        "x": 0,
+        "y": 1,
+        "blur": 0,
+        "spread": 0,
+        "color": "#FFFFFF00",
+        "colorVar": "bevel/top"
+      },
+      {
+        "type": "INNER_SHADOW",
+        "visible": true,
+        "x": 0,
+        "y": -1,
+        "blur": 0,
+        "spread": 0,
+        "color": "#FFFFFF00",
+        "colorVar": "bevel/bottom"
+      },
+      {
+        "type": "DROP_SHADOW",
+        "visible": true,
+        "x": 8,
+        "y": 8,
+        "blur": 32,
+        "spread": 0,
+        "color": "#0000001A",
+        "colorVar": "shadow/floating"
+      }
+    ],
+    "Glow/Hint": [
+      {
+        "type": "DROP_SHADOW",
+        "visible": true,
+        "x": 0,
+        "y": 0,
+        "blur": 0,
+        "spread": 3,
+        "color": "#17FF7E99",
+        "colorVar": "accent/green-glow"
+      },
+      {
+        "type": "DROP_SHADOW",
+        "visible": true,
+        "x": 0,
+        "y": 0,
+        "blur": 12,
+        "spread": 1,
+        "color": "#17FF7E99",
+        "colorVar": "accent/green-glow"
+      }
+    ],
+    "Grain/Coarse": [
+      {
+        "type": "NOISE",
+        "visible": true,
+        "color": "#FFFFFF1A",
+        "noise": {
+          "size": 0.5,
+          "density": 1,
+          "kind": "MONOTONE"
+        }
+      }
+    ],
+    "Elevation/Thumb": [
+      {
+        "type": "DROP_SHADOW",
+        "visible": true,
+        "x": 0,
+        "y": 1,
+        "blur": 3,
+        "spread": 0,
+        "color": "#00000014"
+      }
+    ]
+  }
+}

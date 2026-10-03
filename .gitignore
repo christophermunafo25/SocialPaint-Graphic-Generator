@@ -10,3 +10,6 @@ dist/
 # figma-dogfood harness artifacts (raw file fixture and generated snapshot)
 supabase/verify/fixtures/
 supabase/verify/figma-dogfood.snapshot.md
+
+# new look screenshot loop captures (npm run shots)
+.shots/

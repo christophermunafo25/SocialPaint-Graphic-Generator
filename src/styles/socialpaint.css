@@ -1,4 +1,11 @@
 /* ==========================================================================
+   NEW LOOK (2026-10): token values come from the Figma file "Master
+   UX-UI" (mEJRslarcQDkgPeY6AObi5) through src/styles/tokens.css, which
+   is generated (npm run tokens) and never edited by hand. Old names that
+   map one to one to a Figma token are set in legacy-bridge.css. Where
+   this header disagrees with docs/design/new-look/RULES.md, RULES.md
+   wins; Phase 9 rewrites this header.
+
    SocialPaint Design System — platform UI tokens.
    Ported from the "SocialPaint Design System" Claude Design project
    (tokens/*.css, SKILL.md, docs/02-tokens.md), 2026-07-30.
@@ -128,30 +135,18 @@ html {
    working accent all draw from the same value, so there are no separate
    "-logo" cuts any more. */
 :root {
-  --slime: #17ff7e;
-  --lapis: #14e4ff;
-  --christina: #ff3fe5;
   --aqua: var(--lapis); /* --aqua is the legacy name for Lapis — new code uses --lapis */
   --purple-kara: #9f60ff;
-  --fire: #ff3627;
   --text-on-brand: #272727; /* Ink carries display-size glyphs on any of the four */
   /* The deep cut for SMALL mono glyphs on a brand fill (2026-09-05, at
      Chris's direction). Ink lands under 4.5:1 on Purple Kara and Fire;
-     this value — the frame's #0b0b0c, the same value as --ink-900 below —
+     this value — the frame's #0b0b0c, the same value as --ink-900 —
      clears AA on all four. One token, bound by the seat, never branched
      per hue. */
   --text-on-brand-deep: #0b0b0c;
   --white: #ffffff;
   --gray: #f1f1f1;
   --ink: #272727;
-  /* Neutrals and Deep Moss from the Figma Primitives collection
-     (2026-09-25, "Navigation" page). Names mirror Figma's. */
-  --deep-moss: #082a23;
-  --ink-900: #0b0b0c;
-  --ink-800: #171819;
-  --ink-700: #2f3133;
-  --paper-050: #f9f9f8;
-  --paper-100: #ececec;
   /* Selected segment on a sunken track, dark; Figma Generate · Chat
      (2026-09-25). Its only reader is --gen-seg-on-bg / --gen-editor-seg-on-bg. */
   --ink-600: #3d4042;
@@ -240,28 +235,11 @@ html {
      10px eyebrow, and only ever inside .sp-tag--solid and its variants. */
   --type-tag-size: 8px;
 
-  /* Spacing — 4px base, nothing off the scale. */
-  --space-3xs: 4px;
-  --space-2xs: 8px;
-  --space-xs: 12px;
-  --space-sm: 16px;
-  --space-md: 24px; /* default card padding */
-  --space-lg: 32px; /* card padding when a headline is present */
-  --space-xl: 48px;
-  --space-2xl: 64px;
-  --space-3xl: 96px;
-
   /* Shape — hold the gap between soft containers and crisp controls. */
-  --radius-control: 5px;
-  --radius-control-md: 9px; /* 36px chat controls: chips, tiles, small buttons (Generate chat) */
   --radius-control-lg: 12px; /* larger controls (-lg buttons and inputs, the Generate chat's buttons and fields) */
-  --radius-card: 20px;
   /* The Option D chat box (Figma "Brand Templates · Chat", 2026-09-28):
-     the plus, tags, the tooltip bubble and the template ref thumb; the
-     attach menu; and menu rows. */
+     the plus, tags, the tooltip bubble and the template ref thumb. */
   --radius-tag: 8px;
-  --radius-menu: 16px;
-  --radius-menu-item: 10px;
   /* Media cards run a tighter pair than content panels — a small card
      carries a small radius, a large panel a large one. Both values are set
      explicitly and chosen optically: at 12px on an 8px frame the
@@ -269,11 +247,6 @@ html {
      pair that reads right. */
   --radius-media: 12px; /* the media card itself */
   --radius-media-inner: 9px; /* its thumbnail well */
-  /* The template card's preview well (2026-09-25): the card moves to
-     --radius-card with an 8px frame, and the Figma draws the well at 15 —
-     kept as drawn rather than the 12 the nested-radius rule would give. */
-  --radius-media-plate: 15px;
-  --radius-pill: 999px;
 
   /* ── Generate chat (Figma "Generate · Chat", 2026-09-25) ──
      Control heights on the chat page come from its frames, not from the
@@ -352,8 +325,6 @@ html {
   --dur-state: 140ms;
   --dur-panel: 220ms;
   --dur-reveal: 400ms;
-  --focus-width: 2px;
-  --focus-offset: 2px;
 }
 
 @media (min-width: 768px) {
@@ -397,7 +368,6 @@ html {
    this mode). One ladder: #0B0B0C canvas → #171819
    card/surface/raised → #2a2a2a hover → #323232 border-on-surface. */
 [data-theme="dark"] {
-  --bg-canvas: #0b0b0c;
   --gate-canvas: var(--bg-canvas); /* see the light block */
   /* Build-picker tiles (Figma 221:321). Four icon tiles, each a flat
      colour with the glyph knocked out in its deep tint; light mode swaps
@@ -414,16 +384,10 @@ html {
   --start-tile-canva: #00ebff;
   --start-glyph-canva: #071b25;
   --start-input-bg: var(--chip-raised);
-  --bg-surface: var(--ink-800);
-  /* THE lifted fill (2026-09; lifted from the frames' #131314 on
-     2026-09-15, at CJ's direction — "slightly lighter"; #161617 → #171819
-     on 2026-09-25, the Figma "Navigation" page, which also gave it its
-     primitive rung, --ink-800). The two-step Brand Studio frames flattened
-     chrome onto this same value (2026-09-15): the rail, inputs, and menus
-     no longer read lighter than the cards beside them — surface, raised,
-     and card are one rung, and separation is the lit edge's job. All text
-     tokens stay past AA on it (primary 15.7, secondary 6.8, muted 5.7). */
-  --bg-card: var(--ink-800);
+  /* The two-step Brand Studio frames flattened chrome onto the lifted fill
+     (2026-09-15): the rail, inputs, and menus no longer read lighter than
+     the cards beside them — surface, raised, and card are one rung, and
+     separation is the lit edge's job. */
   --bg-raised: var(--ink-800);
   --bg-hover: #2a2a2a;
   --bg-plate: #ffffff; /* imagery plate, never inverts */
@@ -431,8 +395,6 @@ html {
      off variants live in the component tier. */
   --tag-bg: rgba(241, 241, 241, 0.25);
   --tag-fg: #ffffff;
-  --border: rgba(241, 241, 241, 0.1); /* decorative separation only */
-  --border-strong: rgba(241, 241, 241, 0.2);
   /* The lit edge (2026-09-02, at Chris's direction): light from above.
      Until 2026-09-25 it was a 1px top hairline at 20% white at rest (the
      2026-09 frames drew 25%; softened 2026-09-15, at CJ's direction) and a
@@ -461,17 +423,11 @@ html {
      15% and bottom 10% white, layered over the card edge. */
   --card-highlight: inset 0 1px 0 rgb(255 255 255 / 0.15), inset 0 -1px 0 rgb(255 255 255 / 0.1);
 
-  --text-primary: #f1f1f1;
-  --text-secondary: #a0a0a0; /* 6.8:1 on surface, 5.5:1 on hover */
   /* The native <select> chevron, drawn in --text-secondary. A background
      image can't read a custom property, so the ink is baked per theme. */
   --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a0a0a0' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  /* Muted must still clear AA: 0.56 reads 4.6:1 on --bg-hover (its worst
-     seat), 5.7:1 on surface. Quieter-than-secondary comes from size and
-     casing, not from dipping under the contrast floor (a11y audit,
-     2026-08-14). Truly disabled controls use --text-disabled, which is
-     AA-exempt and must never style readable text. */
-  --text-muted: rgba(241, 241, 241, 0.56);
+  /* Truly disabled controls use --text-disabled, which is AA-exempt and
+     must never style readable text. */
   --text-disabled: rgba(241, 241, 241, 0.25);
   --text-on-accent: #272727;
 
@@ -482,17 +438,12 @@ html {
   --bg-surface-raised: #202020;
   --bg-surface-hover: #2a2a2a;
 
-  /* Action fill — the primary button, and any control that fills to show it is on.
-     Neutral by rule: it inverts against the surface instead of carrying a hue. */
-  --fill-action: #f1f1f1;
-  --text-on-action: #272727;
   --border-control: #f1f1f1; /* the edge of a pressable outlined control */
 
   /* Interactive emphasis carries the brand (amended 2026-08-14, at
      Chris's direction): Slime is the working accent, and on this canvas
-     it clears text contrast outright (15.00:1), so it may carry text,
-     borders, and the ring here. Aqua informs. Danger and warning stay the
-     functional hues — severity never rides a brand colour.
+     it may carry text and borders. Aqua informs. Danger and warning stay
+     the functional hues — severity never rides a brand colour.
 
      PAIRING RULE: --fill-primary/--fill-attention/--fill-info are BRAND
      fills in both themes now — any glyph on them takes --text-on-accent
@@ -508,12 +459,8 @@ html {
   --state-attention: var(--slime);
   --fill-attention: var(--slime);
 
-  /* Functional signals, outside the brand palette. Clay is lifted from
-     #c94040, which reaches only 3.8:1 on the canvas and 3.3:1 on surface.
-     #e57373 reads 6.2:1 on canvas, 5.9:1 on surface, 4.8:1 on hover. */
-  --state-danger-on-surface: #e57373;
+  /* Functional signals, outside the brand palette. */
   --state-warning-on-surface: #ffd900;
-  --state-danger: #e57373;
   --fill-danger: #e57373;
   --state-warning: #ffd900;
   --fill-warning: #ffd900;
@@ -522,8 +469,6 @@ html {
      literal rgba() because Chrome drops the alpha when it interpolates a
      color-mix()'d colour inside a keyframe. Neutral, like every wash. */
   --flash-rgb: 23, 255, 126; /* the confirm flash is a Slime wash */
-
-  --ring: var(--slime); /* 15.00:1 on canvas, 13.24:1 on surface */
 
   /* Size-gallery cover plates. The field runs OPPOSITE the page — a light
      plate on this dark canvas holding a dark app mock — because inverting
@@ -550,7 +495,6 @@ html {
   --chip-bg-selected: var(--white);
   --chip-fg: var(--text-primary);
   --chip-fg-selected: var(--ink-900);
-  --chip-tile: var(--chip-raised);
   --chip-tile-active: var(--bg-canvas);
   --chip-tile-active-fg: var(--text-primary);
   --chip-tile-selected: var(--ink-900);
@@ -558,10 +502,6 @@ html {
      accent-mark fallback. */
   --chip-tile-selected-fg: var(--slime);
   --chip-mark-mono-alpha: 0.9;
-
-  /* Figma "Navigation" page (2026-09-25). The page title's ink, one step
-     past --text-primary. */
-  --text-heading: var(--paper-050);
 
   /* Sidebar nav rows: hover is a neutral wash; active is a soft neutral
      pill with a white label (Figma 442:3563, 2026-09-28; an inverted white
@@ -598,10 +538,8 @@ html {
      box-shadow lists, and a `none` inside a list invalidates the whole
      declaration — edge and focus ring with it. Dark chips and the search
      trigger keep their edges only. */
-  --shadow-rail: 6px 6px 25px 0 rgb(0 0 0 / 0.15);
   --shadow-rest: 0 0 0 0 transparent;
   --shadow-rest-hover: 0 0 0 0 transparent;
-  --shadow-card: 6px 6px 25px 0 rgb(0 0 0 / 0.15);
   --shadow-card-hover: 6px 6px 25px 0 rgb(0 0 0 / 0.3);
 
   /* Neutral chart ink (Insights, 2026-09-15) — data marks that carry no
@@ -627,14 +565,7 @@ html {
   --gen-btn-secondary-fg: var(--ink-900);
   --gen-btn-tertiary-bg: var(--ink-700);
   --gen-btn-tertiary-fg: var(--text-primary);
-  /* Accent: the one header action that leaves the app (Public link), set
-     apart from its neutral neighbours. Slime on Deep Moss, inverted here. */
-  --gen-btn-accent-bg: var(--slime);
-  --gen-btn-accent-fg: var(--deep-moss);
   --gen-tile: var(--chip-raised);
-  --gen-sunken: var(--ink-700);
-  --gen-inverse: var(--white);
-  --gen-on-inverse: var(--ink-900);
   --gen-well: var(--bg-hover);
   --gen-stage: var(--bg-canvas);
   --gen-stage-graphic: var(--bg-hover);
@@ -681,15 +612,10 @@ html {
   --start-input-bg: var(--bg-raised);
   --accent-wash: color-mix(in srgb, var(--slime) 30%, transparent);
   --accent-wash-strong: color-mix(in srgb, var(--slime) 48%, transparent);
-  --bg-canvas: var(--paper-050);
   /* The auth gate and onboarding ground keeps the pre-2026-09-25 canvas:
      the gate frames are their own design, and the canvas move is not
      theirs. */
   --gate-canvas: var(--gray);
-  --bg-surface: #ffffff;
-  /* Light is unaffected by the dark card split: every card renders exactly
-     as it did on --bg-surface. */
-  --bg-card: var(--bg-surface);
   --bg-raised: #e8e8e8;
   --bg-hover: #e2e2e2;
   --bg-plate: #ffffff;
@@ -697,8 +623,6 @@ html {
      an ink wash mirrors dark's white wash until CJ confirms. */
   --tag-bg: rgba(39, 39, 39, 0.12);
   --tag-fg: #272727;
-  --border: rgba(39, 39, 39, 0.08);
-  --border-strong: rgba(39, 39, 39, 0.16);
   /* The lit edge, light theme. White on a white card is invisible, so the
      alphas ride the ink. Since 2026-09-25 the cards, rail, chips, and
      search trigger draw no edge in light (the shadow separates them); the
@@ -721,15 +645,8 @@ html {
   --edge-alpha-chip-hover: 0.25;
   --card-highlight: 0 0 0 0 transparent; /* dark only */
 
-  --text-primary: #272727;
-  /* #666 reached only 4.43:1 on --bg-hover, its worst seat; one step down
-     clears AA on every rung (4.6:1 hover, 5.7:1 canvas, 6:1 on cards). */
-  --text-secondary: #636363;
   /* See the dark block: the select chevron in this theme's --text-secondary. */
   --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23636363' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  /* 0.7 reads 4.6:1 on --bg-hover, 5.9:1 on white cards — see the dark
-     block's muted note. */
-  --text-muted: rgba(39, 39, 39, 0.7);
   --text-disabled: rgba(39, 39, 39, 0.25);
   --text-on-accent: #272727;
 
@@ -740,8 +657,6 @@ html {
   --bg-surface-raised: #f0f0f0;
   --bg-surface-hover: #e7e7e7;
 
-  --fill-action: #272727;
-  --text-on-action: #f1f1f1;
   --border-control: #272727;
 
   /* On light the brand rides FILLS and washes only: no brand colour
@@ -758,9 +673,7 @@ html {
   --fill-attention: var(--slime);
 
   /* Functional signals, outside the brand palette. */
-  --state-danger-on-surface: #c94040;
   --state-warning-on-surface: #756200;
-  --state-danger: #c94040;
   --fill-danger: #c94040;
   --state-warning: #756200;
   --fill-warning: #ffd900;
@@ -768,8 +681,6 @@ html {
   /* See the dark block for why this is a bare rgb triplet. The flash is
      a wash — fill-tier, so Slime is legal on light. */
   --flash-rgb: 23, 255, 126;
-
-  --ring: #272727; /* 14.18:1 on the light canvas */
 
   /* Size-gallery cover plates — see the dark block: the field runs opposite
      the page, so light mode gets the near-black plate with a white app mock
@@ -793,7 +704,6 @@ html {
   --chip-bg-selected: var(--ink-900);
   --chip-fg: var(--text-primary);
   --chip-fg-selected: var(--white);
-  --chip-tile: var(--bg-canvas);
   --chip-tile-active: var(--ink-700);
   --chip-tile-active-fg: var(--text-on-action);
   --chip-tile-selected: var(--paper-050);
@@ -801,8 +711,6 @@ html {
   --chip-mark-mono-alpha: 0.85;
 
   /* See the dark block for these groups. */
-  --text-heading: var(--ink-900);
-
   --nav-hover-bg: var(--paper-050);
   --nav-hover-fg: var(--text-primary);
   /* Soft pill (Figma 442:3477, 2026-09-28): the sunken paper with an ink
@@ -831,10 +739,8 @@ html {
 
   /* Elevation — see the dark block. Light draws no edges on these
      surfaces, so the shadow alone lifts them. */
-  --shadow-rail: 6px 6px 25px 0 rgb(53 53 53 / 0.05);
   --shadow-rest: 6px 6px 25px 0 rgb(53 53 53 / 0.05);
   --shadow-rest-hover: 6px 6px 25px 0 rgb(53 53 53 / 0.07);
-  --shadow-card: 6px 6px 25px 0 rgb(53 53 53 / 0.05);
   --shadow-card-hover: 6px 6px 25px 0 rgb(53 53 53 / 0.1);
 
   /* Neutral chart ink — the dark block's steps on the light theme's ink. */
@@ -856,12 +762,7 @@ html {
   --gen-btn-secondary-fg: var(--slime);
   --gen-btn-tertiary-bg: var(--paper-100);
   --gen-btn-tertiary-fg: var(--ink-900);
-  --gen-btn-accent-bg: var(--deep-moss);
-  --gen-btn-accent-fg: var(--slime);
   --gen-tile: var(--gray);
-  --gen-sunken: var(--paper-100);
-  --gen-inverse: var(--ink-900);
-  --gen-on-inverse: var(--white);
   --gen-well: var(--bg-hover);
   --gen-stage: var(--bg-hover);
   --gen-stage-graphic: var(--white);
@@ -893,8 +794,9 @@ html {
    so component indirection only earns its keep where a recipe genuinely
    differs between themes. Everything here resolves to semantic tokens. */
 [data-theme] {
-  /* Focus — 2px ring at 2px offset. Where a box-shadow stands in for an
-     outline (inputs), the canvas-coloured first layer creates the offset. */
+  /* Focus — a --focus-width ring at --focus-offset. Where a box-shadow
+     stands in for an outline (inputs), the canvas-coloured first layer
+     creates the offset. */
   --focus-ring:
     0 0 0 var(--focus-offset) var(--bg-surface),
     0 0 0 calc(var(--focus-offset) + var(--focus-width)) var(--ring);
@@ -950,7 +852,6 @@ html {
      so CJ can revert to the wash in one line. The off pair outlines an
      unselected option inside editors only. Theme-facing --tag-bg/--tag-fg
      live in the theme blocks. */
-  --tag-bg-on-media: rgba(11, 11, 12, 0.72);
   --tag-fg-on-media: #ffffff;
   --tag-border-off: var(--border-strong);
 
@@ -968,20 +869,6 @@ html {
      inverting with the theme, like --bg-plate. */
   --plate-dark: #0b0b0c;
   --plate-light: #f9f9f8;
-}
-
-/* One pair replaces the old per-theme values: the primary button is the neutral
-   action fill, which already inverts per theme. Hover is the standard 8% state
-   layer of the label into the fill, so it stays correct in both themes. */
-:root {
-  --btn-primary-bg: var(--fill-action);
-  --btn-primary-fg: var(--text-on-action);
-  --btn-primary-bg-hover: color-mix(in srgb, var(--text-on-action) 8%, var(--fill-action));
-  /* A text box is flat on the surface it sits on — same fill, a hairline
-     to bound it. A scope whose fields sit on a lifted panel (the pre-app
-     shell, Figma 148:1421) raises this one property; the box itself never
-     changes. */
-  --input-bg: var(--bg-surface);
 }
 
 /* Selection is neutral system-wide, like every other selection surface. */
@@ -1015,10 +902,10 @@ optgroup {
   letter-spacing: var(--type-body-track);
 }
 
-/* Focus: 2px ring at 2px offset on every interactive element, both modes. */
+/* Focus: a --focus-width ring at --focus-offset on every interactive element, both modes. */
 :focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
+  outline: var(--focus-width) solid var(--ring);
+  outline-offset: var(--focus-offset);
 }
 
 /* ── Platform UI primitives ─────────────────────────────────────────────── */
@@ -2159,8 +2046,8 @@ select.sp-input:disabled {
 /* The picker's two areas take the arrow keys; give them the system's ring
    when reached by keyboard so the focused channel is never a mystery. */
 .sp-color-pop .react-colorful__interactive:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
+  outline: var(--focus-width) solid var(--ring);
+  outline-offset: var(--focus-offset);
   border-radius: inherit;
 }
 .sp-color-pop__row {
@@ -2241,8 +2128,8 @@ select.sp-input:disabled {
   color: var(--text-primary);
 }
 .sp-gate__drop:focus-within {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
+  outline: var(--focus-width) solid var(--ring);
+  outline-offset: var(--focus-offset);
 }
 .sp-gate__rows {
   display: flex;
@@ -2565,7 +2452,7 @@ select.sp-input:disabled {
    the fill so it reads on the white card around it. */
 .sp-gate[data-theme="light"] .sp-btn-primary:focus-visible,
 .sp-gate[data-theme="light"] .sp-gate__cta:focus-visible {
-  outline: 2px solid var(--ring);
+  outline: var(--focus-width) solid var(--ring);
   outline-offset: 3px;
 }
 

@@ -1,9 +1,11 @@
 # CI and branch protection
 
 Every pull request and every push to `main` runs `.github/workflows/ci.yml`:
-install with a frozen lockfile, app typecheck (`tsc`), edge-function typecheck
-(`deno check`), lint, format check, tests, and a production build (which runs
-the `scripts/check-production-env.mjs` configuration guard). Any failing step
+install with a frozen lockfile, the token check (`tokens.css` matches the
+Figma export and no stylesheet redeclares a token), app typecheck (`tsc`),
+edge-function typecheck (`deno check`), lint, format check, tests, and a
+production build (which runs the `scripts/check-production-env.mjs`
+configuration guard). Any failing step
 fails the run. The same pipeline runs locally as one command:
 
 ```bash

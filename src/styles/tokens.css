@@ -1,0 +1,484 @@
+/* GENERATED FILE. Do not edit.
+   Source: design/tokens/master.tokens.json, exported 2026-10-02 from the Figma
+   file "Master UX-UI" (mEJRslarcQDkgPeY6AObi5).
+   Rebuild: npm run tokens. CI fails if this file and the JSON disagree. */
+
+:root {
+  /* Primitives: raw values. Components never read these directly. */
+  --slime: #17ff7e;
+  --deep-moss: #082a23;
+  --lapis: #14e4ff;
+  --ocean-tide: #09243d;
+  --christina: #ff3fe5;
+  --orchid: #30133d;
+  --fire: #ff3627;
+  --choco: #2b0e1e;
+  --clouds: #d9f9ff;
+  --mint: #e9fce3;
+  --lime: #d8f8c8;
+  --soft-pink: #fee7fc;
+  --vanilla: #fffef1;
+  --peach: #ffe7d3;
+  --lilac: #eee1ff;
+  --ink-900: #0b0b0c;
+  --ink-800: #171819;
+  --ink-700: #2f3133;
+  --paper-000: #ffffff;
+  --paper-050: #f9f9f8;
+  --paper-100: #ececec;
+  --violet: #a782ff;
+  --kara: #240c39;
+  --ink-750: #272727;
+  --ink-500: #636363;
+  --ink-300: #a0a0a0;
+  --paper-075: #f1f1f1;
+  --ink-750-70: rgb(39 39 39 / 0.7);
+  --ink-750-16: rgb(39 39 39 / 0.16);
+  --ink-750-08: rgb(39 39 39 / 0.08);
+  --paper-075-56: rgb(241 241 241 / 0.56);
+  --paper-075-20: rgb(241 241 241 / 0.2);
+  --paper-075-10: rgb(241 241 241 / 0.1);
+  --ink-900-50: rgb(11 11 12 / 0.5);
+  --selection: #0d99ff;
+  --error: #d43535;
+  --transparent: rgb(255 255 255 / 0);
+  --black-05: rgb(0 0 0 / 0.05);
+  --black-15: rgb(0 0 0 / 0.15);
+  --slime-10: rgb(23 255 126 / 0.1);
+  --ink-750-75: rgb(39 39 39 / 0.75);
+  --paper-075-75: rgb(241 241 241 / 0.75);
+  --black-10: rgb(0 0 0 / 0.1);
+  --black-30: rgb(0 0 0 / 0.3);
+  --paper-000-15: rgb(255 255 255 / 0.15);
+  --paper-000-10: rgb(255 255 255 / 0.1);
+  --slime-60: rgb(23 255 126 / 0.6);
+  --slime-30: rgb(23 255 126 / 0.3);
+  --paper-075-warm: #f1f1ef;
+  --paper-075-08: rgb(241 241 241 / 0.08);
+  --ink-900-16: rgb(11 11 12 / 0.16);
+  --paper-075-30: rgb(241 241 241 / 0.3);
+  --ink-900-72: rgb(11 11 12 / 0.72);
+  --ink-900-65: rgb(11 11 12 / 0.65);
+  --paper-200: #d1d1d1;
+  --ink-900-75: rgb(11 11 12 / 0.75);
+  --paper-075-50: rgb(241 241 241 / 0.5);
+  --ink-900-05: rgb(11 11 12 / 0.05);
+  --ink-900-10: rgb(11 11 12 / 0.1);
+  --paper-000-06: rgb(255 255 255 / 0.06);
+  --paper-000-12: rgb(255 255 255 / 0.12);
+  --deep-moss-35: rgb(8 42 35 / 0.35);
+  --error-on-dark: #ec5656;
+  /* Radius */
+  --radius-xs: 2px;
+  --radius-control: 7px;
+  --radius-menu-item: 7px;
+  --radius-control-md: 9px;
+  --radius-media-plate: 15px;
+  --radius-menu: 16px;
+  --radius-card: 20px;
+  --radius-pill: 999px;
+  /* Spacing */
+  --space-3xs: 4px;
+  --space-2xs: 8px;
+  --space-xs: 12px;
+  --space-sm: 16px;
+  --space-md: 24px;
+  --space-lg: 32px;
+  --space-xl: 48px;
+  --space-2xl: 64px;
+  --space-3xl: 96px;
+  --focus-width: 1px;
+  --focus-offset: 2px;
+  /* Text styles (font shorthand + tracking). Apply them with the .t-* classes. */
+  --type-title-display: 500 44px/1.1 var(--font-ui);
+  --type-title-display-tracking: -0.025em;
+  --type-title-page: 500 30px/1.2 var(--font-ui);
+  --type-title-page-tracking: -0.02em;
+  --type-title-section: 500 24px/1.2 var(--font-ui);
+  --type-title-section-tracking: -0.015em;
+  --type-title-group: 500 20px/1.3 var(--font-ui);
+  --type-title-group-tracking: -0.015em;
+  --type-title-card: 500 18px/1.25 var(--font-ui);
+  --type-title-card-tracking: -0.01em;
+  --type-label-l: 500 15px/1.25 var(--font-ui);
+  --type-label-l-tracking: -0.01em;
+  --type-label-m: 500 14px/1.25 var(--font-ui);
+  --type-label-m-tracking: 0;
+  --type-label-s: 500 13px/1.25 var(--font-ui);
+  --type-label-s-tracking: 0;
+  --type-label-xs: 500 12px/1.25 var(--font-ui);
+  --type-label-xs-tracking: 0;
+  --type-body-l: 400 16px/1.5 var(--font-ui);
+  --type-body-l-tracking: 0;
+  --type-body-m: 400 15px/1.5 var(--font-ui);
+  --type-body-m-tracking: 0;
+  --type-body-s: 400 14px/1.4 var(--font-ui);
+  --type-body-s-tracking: 0;
+  --type-caption-m: 400 13px/1.25 var(--font-ui);
+  --type-caption-m-tracking: 0;
+  --type-caption-s: 400 12px/1.25 var(--font-ui);
+  --type-caption-s-tracking: 0;
+  --type-caption-xs: 400 11px/1.3 var(--font-ui);
+  --type-caption-xs-tracking: 0;
+  --type-mono-display: 400 32px/1.12 var(--font-mono);
+  --type-mono-display-tracking: -0.02em;
+  --type-mono-m: 400 14px/1.4 var(--font-mono);
+  --type-mono-m-tracking: 0.04em;
+  --type-mono-s: 400 12px/1.4 var(--font-mono);
+  --type-mono-s-tracking: 0.04em;
+  --type-mono-xs: 400 10px/1.25 var(--font-mono);
+  --type-mono-xs-tracking: 0.04em;
+  --type-mono-eyebrow: 400 10px/1.25 var(--font-mono);
+  --type-mono-eyebrow-tracking: 0.04em;
+  --type-caption-xxs: 400 9px/1.25 var(--font-ui);
+  --type-caption-xxs-tracking: 0;
+  --type-mono-xxs: 400 9px/1.25 var(--font-mono);
+  --type-mono-xxs-tracking: 0.04em;
+  --type-mono-code: 400 12px/1.5 var(--font-code, var(--font-mono));
+  --type-mono-code-tracking: 0;
+  --type-button-m: 500 14px/1.25 var(--font-ui);
+  --type-button-m-tracking: -0.01em;
+  --type-button-s: 500 12px/1.3 var(--font-ui);
+  --type-button-s-tracking: -0.01em;
+  --type-control-m: 500 14px/normal var(--font-ui);
+  --type-control-m-tracking: -0.01em;
+  --type-control-s: 500 13px/1.3 var(--font-ui);
+  --type-control-s-tracking: -0.01em;
+  --type-body-xs: 400 13px/1.4 var(--font-ui);
+  --type-body-xs-tracking: 0;
+  --type-label-xxs: 500 10px/1.25 var(--font-ui);
+  --type-label-xxs-tracking: 0;
+  --type-title-panel: 500 17px/1.25 var(--font-ui);
+  --type-title-panel-tracking: -0.01em;
+  --type-title-metric: 500 40px/1.1 var(--font-ui);
+  --type-title-metric-tracking: -0.03em;
+}
+
+[data-theme="light"] {
+  --surface-sunken: var(--paper-100); /* surface/sunken */
+  --surface-inverse: var(--ink-900); /* surface/inverse */
+  --text-primary: var(--ink-750); /* text/primary */
+  --text-secondary: var(--ink-500); /* text/secondary */
+  --text-inverse: var(--paper-000); /* text/inverse */
+  --accent-green: var(--slime); /* accent/green */
+  --accent-blue: var(--lapis); /* accent/blue */
+  --accent-pink: var(--christina); /* accent/pink */
+  --accent-warm: var(--fire); /* accent/warm */
+  --accent-purple: var(--violet); /* accent/purple */
+  --field-green: var(--deep-moss); /* field/green */
+  --field-blue: var(--ocean-tide); /* field/blue */
+  --field-pink: var(--orchid); /* field/pink */
+  --field-warm: var(--choco); /* field/warm */
+  --field-purple: var(--kara); /* field/purple */
+  --tint-green: var(--lime); /* tint/green */
+  --tint-blue: var(--clouds); /* tint/blue */
+  --tint-pink: var(--soft-pink); /* tint/pink */
+  --tint-warm: var(--peach); /* tint/warm */
+  --tint-purple: var(--lilac); /* tint/purple */
+  --wash-green: var(--mint); /* wash/green */
+  --wash-warm: var(--vanilla); /* wash/warm */
+  --surface-page: var(--paper-050); /* surface/page */
+  --surface-raised: var(--paper-000); /* surface/raised */
+  --text-muted: var(--ink-750-70); /* text/muted */
+  --border-default: var(--ink-750-08); /* border/default */
+  --border-strong: var(--ink-750-16); /* border/strong */
+  --overlay-scrim: var(--ink-900-50); /* overlay/scrim */
+  --state-selection: var(--selection); /* state/selection */
+  --state-error: var(--error); /* state/error */
+  --border-raised: var(--transparent); /* border/raised */
+  --shadow-raised: var(--black-05); /* shadow/raised */
+  --accent-green-subtle: var(--slime-10); /* accent/green-subtle */
+  --text-subtle: var(--ink-750-75); /* text/subtle */
+  --overlay-edge: var(--paper-075-20); /* overlay/edge */
+  --shadow-floating: var(--black-10); /* shadow/floating */
+  --bevel-top: var(--transparent); /* bevel/top */
+  --bevel-bottom: var(--transparent); /* bevel/bottom */
+  --accent-green-glow: var(--slime-60); /* accent/green-glow */
+  --text-strong: var(--ink-900); /* text/strong */
+  --btn-primary-bg: var(--deep-moss); /* button/primary-bg */
+  --btn-primary-fg: var(--slime); /* button/primary-fg */
+  --input-bg: var(--paper-075-warm); /* input/fill */
+  --control-track: var(--paper-075-warm); /* control/track */
+  --control-thumb: var(--paper-000); /* control/thumb */
+  --switch-track-on: var(--ink-900); /* switch/track-on */
+  --switch-background: var(--ink-900-16); /* switch/track-off */
+  --control-fill: var(--paper-100); /* control/fill */
+  --status-positive-bg: var(--deep-moss); /* status/positive-bg */
+  --status-active-bg: var(--slime); /* status/active-bg */
+  --status-active-fg: var(--deep-moss); /* status/active-fg */
+  --chip-selected-bg: var(--ink-900); /* chip/selected-bg */
+  --chip-selected-tile: var(--ink-700); /* chip/selected-tile */
+  --chip-tile: var(--paper-000); /* chip/tile */
+  --text-on-fill: var(--paper-000); /* text/on-fill */
+  --tag-overlay-bg: var(--ink-900-72); /* tag/overlay-bg */
+  --tag-detail-fg: var(--ink-900-65); /* tag/detail-fg */
+  --tag-sent-bg: var(--paper-200); /* tag/sent-bg */
+  --tag-sent-fg: var(--ink-900-75); /* tag/sent-fg */
+  --tag-sent-border: var(--transparent); /* tag/sent-border */
+  --state-hover: var(--ink-900-05); /* state/hover */
+  --state-pressed: var(--ink-900-10); /* state/pressed */
+  --state-hover-inverse: var(--paper-000-06); /* state/hover-inverse */
+  --state-pressed-inverse: var(--paper-000-12); /* state/pressed-inverse */
+  --state-hover-on-color: var(--ink-900-05); /* state/hover-on-color */
+  --state-pressed-on-color: var(--ink-900-10); /* state/pressed-on-color */
+  --state-selected: var(--paper-050); /* state/selected */
+  --overlay-hover: var(--deep-moss-35); /* overlay/hover */
+  --overlay-control: var(--paper-000); /* overlay/control */
+  --overlay-control-fg: var(--ink-900); /* overlay/control-fg */
+  --ring: var(--ink-750); /* focus/ring */
+}
+
+[data-theme="dark"] {
+  --surface-sunken: var(--ink-700); /* surface/sunken */
+  --surface-inverse: var(--paper-000); /* surface/inverse */
+  --text-primary: var(--paper-075); /* text/primary */
+  --text-secondary: var(--ink-300); /* text/secondary */
+  --text-inverse: var(--ink-900); /* text/inverse */
+  --accent-green: var(--slime); /* accent/green */
+  --accent-blue: var(--lapis); /* accent/blue */
+  --accent-pink: var(--christina); /* accent/pink */
+  --accent-warm: var(--fire); /* accent/warm */
+  --accent-purple: var(--violet); /* accent/purple */
+  --field-green: var(--deep-moss); /* field/green */
+  --field-blue: var(--ocean-tide); /* field/blue */
+  --field-pink: var(--orchid); /* field/pink */
+  --field-warm: var(--choco); /* field/warm */
+  --field-purple: var(--kara); /* field/purple */
+  --tint-green: var(--lime); /* tint/green */
+  --tint-blue: var(--clouds); /* tint/blue */
+  --tint-pink: var(--soft-pink); /* tint/pink */
+  --tint-warm: var(--peach); /* tint/warm */
+  --tint-purple: var(--lilac); /* tint/purple */
+  --wash-green: var(--mint); /* wash/green */
+  --wash-warm: var(--vanilla); /* wash/warm */
+  --surface-page: var(--ink-900); /* surface/page */
+  --surface-raised: var(--ink-800); /* surface/raised */
+  --text-muted: var(--paper-075-56); /* text/muted */
+  --border-default: var(--paper-075-10); /* border/default */
+  --border-strong: var(--paper-075-20); /* border/strong */
+  --overlay-scrim: var(--ink-900-50); /* overlay/scrim */
+  --state-selection: var(--selection); /* state/selection */
+  --state-error: var(--error-on-dark); /* state/error */
+  --border-raised: var(--paper-075-20); /* border/raised */
+  --shadow-raised: var(--black-15); /* shadow/raised */
+  --accent-green-subtle: var(--slime-10); /* accent/green-subtle */
+  --text-subtle: var(--paper-075-75); /* text/subtle */
+  --overlay-edge: var(--paper-075-20); /* overlay/edge */
+  --shadow-floating: var(--black-30); /* shadow/floating */
+  --bevel-top: var(--paper-000-15); /* bevel/top */
+  --bevel-bottom: var(--paper-000-10); /* bevel/bottom */
+  --accent-green-glow: var(--slime-30); /* accent/green-glow */
+  --text-strong: var(--paper-075); /* text/strong */
+  --btn-primary-bg: var(--slime); /* button/primary-bg */
+  --btn-primary-fg: var(--deep-moss); /* button/primary-fg */
+  --input-bg: var(--paper-075-08); /* input/fill */
+  --control-track: var(--ink-900); /* control/track */
+  --control-thumb: var(--ink-700); /* control/thumb */
+  --switch-track-on: var(--paper-075); /* switch/track-on */
+  --switch-background: var(--paper-075-30); /* switch/track-off */
+  --control-fill: var(--ink-800); /* control/fill */
+  --status-positive-bg: var(--ink-700); /* status/positive-bg */
+  --status-active-bg: var(--ink-700); /* status/active-bg */
+  --status-active-fg: var(--slime); /* status/active-fg */
+  --chip-selected-bg: var(--ink-700); /* chip/selected-bg */
+  --chip-selected-tile: var(--ink-800); /* chip/selected-tile */
+  --chip-tile: var(--ink-900); /* chip/tile */
+  --text-on-fill: var(--paper-000); /* text/on-fill */
+  --tag-overlay-bg: var(--ink-900-72); /* tag/overlay-bg */
+  --tag-detail-fg: var(--paper-075); /* tag/detail-fg */
+  --tag-sent-bg: var(--paper-000); /* tag/sent-bg */
+  --tag-sent-fg: var(--ink-900); /* tag/sent-fg */
+  --tag-sent-border: var(--paper-075-50); /* tag/sent-border */
+  --state-hover: var(--paper-000-06); /* state/hover */
+  --state-pressed: var(--paper-000-12); /* state/pressed */
+  --state-hover-inverse: var(--ink-900-05); /* state/hover-inverse */
+  --state-pressed-inverse: var(--ink-900-10); /* state/pressed-inverse */
+  --state-hover-on-color: var(--ink-900-05); /* state/hover-on-color */
+  --state-pressed-on-color: var(--ink-900-10); /* state/pressed-on-color */
+  --state-selected: var(--ink-700); /* state/selected */
+  --overlay-hover: var(--deep-moss-35); /* overlay/hover */
+  --overlay-control: var(--paper-000); /* overlay/control */
+  --overlay-control-fg: var(--ink-900); /* overlay/control-fg */
+  --ring: var(--paper-000); /* focus/ring */
+}
+
+[data-theme] {
+  --elevation-small:
+    inset 0 1px 0 0 var(--bevel-top), inset 0 -1px 0 0 var(--bevel-bottom),
+    2px 2px 8px 0 var(--shadow-raised);
+  --elevation-medium:
+    inset 0 1px 0 0 var(--bevel-top), inset 0 -1px 0 0 var(--bevel-bottom),
+    4px 4px 16px 0 var(--shadow-raised);
+  --elevation-large:
+    inset 0 1px 0 0 var(--bevel-top), inset 0 -1px 0 0 var(--bevel-bottom),
+    6px 6px 25px 0 var(--shadow-raised);
+  --elevation-floating:
+    inset 0 1px 0 0 var(--bevel-top), inset 0 -1px 0 0 var(--bevel-bottom),
+    8px 8px 32px 0 var(--shadow-floating);
+  --glow-hint: 0 0 0 3px var(--accent-green-glow), 0 0 12px 1px var(--accent-green-glow);
+  /* Grain/Coarse: no CSS equivalent (NOISE) */
+  --elevation-thumb: 0 1px 3px 0 rgb(0 0 0 / 0.08);
+}
+
+/* Text style classes. Pair a style with .t-trim for Figma's cap-height trim. */
+.t-title-display {
+  font: var(--type-title-display);
+  letter-spacing: var(--type-title-display-tracking);
+}
+
+.t-title-page {
+  font: var(--type-title-page);
+  letter-spacing: var(--type-title-page-tracking);
+}
+
+.t-title-section {
+  font: var(--type-title-section);
+  letter-spacing: var(--type-title-section-tracking);
+}
+
+.t-title-group {
+  font: var(--type-title-group);
+  letter-spacing: var(--type-title-group-tracking);
+}
+
+.t-title-card {
+  font: var(--type-title-card);
+  letter-spacing: var(--type-title-card-tracking);
+}
+
+.t-label-l {
+  font: var(--type-label-l);
+  letter-spacing: var(--type-label-l-tracking);
+}
+
+.t-label-m {
+  font: var(--type-label-m);
+  letter-spacing: var(--type-label-m-tracking);
+}
+
+.t-label-s {
+  font: var(--type-label-s);
+  letter-spacing: var(--type-label-s-tracking);
+}
+
+.t-label-xs {
+  font: var(--type-label-xs);
+  letter-spacing: var(--type-label-xs-tracking);
+}
+
+.t-body-l {
+  font: var(--type-body-l);
+  letter-spacing: var(--type-body-l-tracking);
+}
+
+.t-body-m {
+  font: var(--type-body-m);
+  letter-spacing: var(--type-body-m-tracking);
+}
+
+.t-body-s {
+  font: var(--type-body-s);
+  letter-spacing: var(--type-body-s-tracking);
+}
+
+.t-caption-m {
+  font: var(--type-caption-m);
+  letter-spacing: var(--type-caption-m-tracking);
+}
+
+.t-caption-s {
+  font: var(--type-caption-s);
+  letter-spacing: var(--type-caption-s-tracking);
+}
+
+.t-caption-xs {
+  font: var(--type-caption-xs);
+  letter-spacing: var(--type-caption-xs-tracking);
+}
+
+.t-mono-display {
+  font: var(--type-mono-display);
+  letter-spacing: var(--type-mono-display-tracking);
+}
+
+.t-mono-m {
+  font: var(--type-mono-m);
+  letter-spacing: var(--type-mono-m-tracking);
+}
+
+.t-mono-s {
+  font: var(--type-mono-s);
+  letter-spacing: var(--type-mono-s-tracking);
+}
+
+.t-mono-xs {
+  font: var(--type-mono-xs);
+  letter-spacing: var(--type-mono-xs-tracking);
+}
+
+.t-mono-eyebrow {
+  font: var(--type-mono-eyebrow);
+  letter-spacing: var(--type-mono-eyebrow-tracking);
+  text-transform: uppercase;
+}
+
+.t-caption-xxs {
+  font: var(--type-caption-xxs);
+  letter-spacing: var(--type-caption-xxs-tracking);
+}
+
+.t-mono-xxs {
+  font: var(--type-mono-xxs);
+  letter-spacing: var(--type-mono-xxs-tracking);
+}
+
+.t-mono-code {
+  font: var(--type-mono-code);
+  letter-spacing: var(--type-mono-code-tracking);
+}
+
+.t-button-m {
+  font: var(--type-button-m);
+  letter-spacing: var(--type-button-m-tracking);
+}
+
+.t-button-s {
+  font: var(--type-button-s);
+  letter-spacing: var(--type-button-s-tracking);
+  text-box: trim-both cap alphabetic;
+}
+
+.t-control-m {
+  font: var(--type-control-m);
+  letter-spacing: var(--type-control-m-tracking);
+}
+
+.t-control-s {
+  font: var(--type-control-s);
+  letter-spacing: var(--type-control-s-tracking);
+}
+
+.t-body-xs {
+  font: var(--type-body-xs);
+  letter-spacing: var(--type-body-xs-tracking);
+}
+
+.t-label-xxs {
+  font: var(--type-label-xxs);
+  letter-spacing: var(--type-label-xxs-tracking);
+  text-box: trim-both cap alphabetic;
+}
+
+.t-title-panel {
+  font: var(--type-title-panel);
+  letter-spacing: var(--type-title-panel-tracking);
+}
+
+.t-title-metric {
+  font: var(--type-title-metric);
+  letter-spacing: var(--type-title-metric-tracking);
+}
+
+.t-trim {
+  text-box: trim-both cap alphabetic;
+}

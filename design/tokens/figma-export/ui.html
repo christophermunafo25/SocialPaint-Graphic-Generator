@@ -1,0 +1,57 @@
+<style>
+  body {
+    font:
+      13px/1.4 system-ui,
+      sans-serif;
+    margin: 16px;
+    color: #0b0b0c;
+  }
+  p {
+    margin: 0 0 12px;
+  }
+  button {
+    font: inherit;
+    padding: 8px 14px;
+    border: 0;
+    border-radius: 7px;
+    background: #082a23;
+    color: #17ff7e;
+    cursor: pointer;
+  }
+  button.quiet {
+    background: #ececec;
+    color: #0b0b0c;
+  }
+  .error {
+    color: #d43535;
+  }
+</style>
+<p id="status">Reading variables and styles…</p>
+<button id="save" disabled>Save master.tokens.json</button>
+<button id="close" class="quiet">Close</button>
+<script>
+  let json = null;
+  const status = document.getElementById("status");
+  const save = document.getElementById("save");
+  onmessage = (event) => {
+    const msg = event.data.pluginMessage;
+    if (msg.error) {
+      status.textContent = msg.error;
+      status.className = "error";
+      return;
+    }
+    json = msg.json;
+    status.textContent = msg.summary + ". Save it as design/tokens/master.tokens.json.";
+    save.disabled = false;
+  };
+  save.onclick = () => {
+    const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "master.tokens.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+  document.getElementById("close").onclick = () =>
+    parent.postMessage({ pluginMessage: "close" }, "*");
+</script>
