@@ -1,0 +1,1325 @@
+{
+  "$description": "Sample workspace for the local dev backend (no Supabase), used by scripts/new-look/shots.mjs. Generic sample data, never seeded into a real account.",
+  "localStorage": {
+    "brand-portal-dev-db": {
+      "companies": [
+        {
+          "id": "aeb81106-2389-4212-a9e9-2474372b36e1",
+          "name": "Acme Studios",
+          "slug": "acme-studios",
+          "createdAt": "2026-09-30T19:42:17.573Z",
+          "timezone": "America/Chicago",
+          "linkDefaults": {
+            "allowUploads": true,
+            "expiryDays": null,
+            "useCap": null
+          }
+        }
+      ],
+      "brandKits": [
+        {
+          "colors": [
+            {
+              "key": "primary",
+              "name": "Primary",
+              "hex": "#2F3B4C"
+            },
+            {
+              "key": "secondary",
+              "name": "Secondary",
+              "hex": "#E7EAEF"
+            },
+            {
+              "key": "accent",
+              "name": "Accent",
+              "hex": "#C9A227"
+            },
+            {
+              "key": "text",
+              "name": "Text",
+              "hex": "#1A1F26"
+            },
+            {
+              "key": "background",
+              "name": "Background",
+              "hex": "#F6F7F9"
+            }
+          ],
+          "typeStyles": [
+            {
+              "key": "heading",
+              "name": "Heading",
+              "font": {
+                "source": "google",
+                "family": "Montserrat"
+              },
+              "weight": 700,
+              "uppercase": true,
+              "colorKey": "text",
+              "textSizing": "shrink"
+            },
+            {
+              "key": "subhead",
+              "name": "Subhead",
+              "font": {
+                "source": "google",
+                "family": "Montserrat"
+              },
+              "weight": 600,
+              "colorKey": "text"
+            },
+            {
+              "key": "body",
+              "name": "Body",
+              "font": {
+                "source": "google",
+                "family": "Inter"
+              },
+              "weight": 400,
+              "colorKey": "text",
+              "maxLength": 200
+            }
+          ],
+          "guidelines": [],
+          "headingFont": {
+            "source": "google",
+            "family": "Montserrat"
+          },
+          "bodyFont": {
+            "source": "google",
+            "family": "Inter"
+          },
+          "id": "e5d0c221-d51f-415b-aa96-149739ac6092",
+          "companyId": "aeb81106-2389-4212-a9e9-2474372b36e1"
+        }
+      ],
+      "brandAssets": [],
+      "templates": [
+        {
+          "companyId": "aeb81106-2389-4212-a9e9-2474372b36e1",
+          "name": "Product launch",
+          "description": "Announce a launch with a product image, a headline, and a call to action.",
+          "category": "Announcements",
+          "tags": ["launch", "product"],
+          "status": "published",
+          "canvasWidth": 1080,
+          "canvasHeight": 1350,
+          "backgroundUrl": "",
+          "backgroundColor": "#FFFFFF",
+          "fields": [
+            {
+              "id": "starter-launch-01-kicker",
+              "fieldKey": "kicker",
+              "label": "Kicker",
+              "type": "text",
+              "x": 850,
+              "y": 89,
+              "width": 150,
+              "height": 16,
+              "static": true,
+              "staticValue": "Product launch",
+              "fontFamily": "IBM Plex Mono",
+              "fontWeight": 500,
+              "fontSizePx": 16,
+              "lineHeight": 1,
+              "letterSpacingPx": 1.2,
+              "uppercase": true,
+              "align": "right",
+              "colorHex": "#6E6E70"
+            },
+            {
+              "id": "starter-launch-01-image_bg",
+              "fieldKey": "image_bg",
+              "label": "Product image backdrop",
+              "type": "shape",
+              "x": 80,
+              "y": 165,
+              "width": 920,
+              "height": 560,
+              "static": true,
+              "shape": "rect",
+              "colorHex": "#F1F0EC"
+            },
+            {
+              "id": "starter-launch-01-image",
+              "fieldKey": "image",
+              "label": "Product image",
+              "type": "image",
+              "x": 80,
+              "y": 165,
+              "width": 920,
+              "height": 560,
+              "placeholder": "Add a product image",
+              "objectFit": "cover"
+            },
+            {
+              "id": "starter-launch-01-eyebrow",
+              "fieldKey": "eyebrow",
+              "label": "Eyebrow",
+              "type": "text",
+              "x": 80,
+              "y": 768,
+              "width": 920,
+              "height": 22,
+              "placeholder": "Now available",
+              "fontFamily": "IBM Plex Mono",
+              "fontWeight": 500,
+              "fontSizePx": 22,
+              "lineHeight": 1,
+              "letterSpacingPx": 1.6,
+              "uppercase": true,
+              "colorHex": "#2F3B4C"
+            },
+            {
+              "id": "starter-launch-01-headline",
+              "fieldKey": "headline",
+              "label": "Headline",
+              "type": "multiline",
+              "x": 80,
+              "y": 812,
+              "width": 920,
+              "height": 288,
+              "placeholder": "The thing your team has been asking for is here.",
+              "fontFamily": "Montserrat",
+              "fontWeight": 600,
+              "fontSizePx": 104,
+              "minFontSizePx": 62,
+              "lineHeight": 0.92,
+              "letterSpacingPx": -3,
+              "verticalAlign": "top",
+              "textSizing": "shrink",
+              "colorHex": "#111112"
+            },
+            {
+              "id": "starter-launch-01-subhead",
+              "fieldKey": "subhead",
+              "label": "Subhead",
+              "type": "multiline",
+              "x": 80,
+              "y": 1122,
+              "width": 920,
+              "height": 35,
+              "placeholder": "One sentence on what it does and who it is for. Twenty words or fewer.",
+              "fontFamily": "Inter",
+              "fontWeight": 400,
+              "fontSizePx": 26,
+              "lineHeight": 1.36,
+              "letterSpacingPx": -0.1,
+              "verticalAlign": "top",
+              "colorHex": "#6E6E70"
+            },
+            {
+              "id": "starter-launch-01-cta",
+              "fieldKey": "cta",
+              "label": "Call to action",
+              "type": "text",
+              "x": 80,
+              "y": 1200,
+              "width": 360,
+              "height": 78,
+              "placeholder": "Read the announcement",
+              "fontFamily": "Inter",
+              "fontWeight": 500,
+              "fontSizePx": 26,
+              "minFontSizePx": 16,
+              "lineHeight": 1.32,
+              "letterSpacingPx": -0.1,
+              "verticalAlign": "top",
+              "textSizing": "shrink",
+              "colorHex": "#FFFFFF",
+              "plateColor": "#2F3B4C",
+              "platePaddingX": 32,
+              "platePaddingY": 22
+            }
+          ],
+          "variants": [
+            {
+              "id": "light",
+              "name": "Light",
+              "isDefault": true,
+              "overrides": {}
+            },
+            {
+              "id": "dark",
+              "name": "Dark",
+              "backgroundColor": "#101011",
+              "overrides": {
+                "kicker": {
+                  "colorHex": "#A2A2A4"
+                },
+                "image_bg": {
+                  "colorHex": "#1B1B1D"
+                },
+                "eyebrow": {
+                  "colorHex": "#4E627E"
+                },
+                "headline": {
+                  "colorHex": "#F7F6F3"
+                },
+                "subhead": {
+                  "colorHex": "#A2A2A4"
+                },
+                "cta": {
+                  "plateColor": "#4E627E"
+                }
+              }
+            }
+          ],
+          "captionTemplate": "Acme Studios just launched something new.",
+          "autobuildMeta": {
+            "model": "starter",
+            "sourceKind": "starter",
+            "generatedAt": "2026-09-30T19:42:17.583Z",
+            "elementCount": 7,
+            "editableCount": 5,
+            "source": "starter",
+            "starterKey": "launch-01",
+            "starterVersion": 1,
+            "seededAt": "2026-09-30T19:42:17.583Z"
+          },
+          "id": "c68b6e95-8115-4f2f-88c7-265bbd39cf41",
+          "createdAt": "2026-09-30T19:42:17.583Z",
+          "updatedAt": "2026-09-30T19:42:17.583Z"
+        },
+        {
+          "companyId": "aeb81106-2389-4212-a9e9-2474372b36e1",
+          "name": "Feature highlight",
+          "description": "Spotlight one new feature with a big headline and a supporting line.",
+          "category": "Announcements",
+          "tags": ["feature", "update"],
+          "status": "published",
+          "canvasWidth": 1080,
+          "canvasHeight": 1080,
+          "backgroundUrl": "",
+          "backgroundColor": "#FFFFFF",
+          "fields": [
+            {
+              "id": "starter-feature-02-kicker",
+              "fieldKey": "kicker",
+              "label": "Kicker",
+              "type": "text",
+              "x": 893,
+              "y": 89,
+              "width": 107,
+              "height": 16,
+              "static": true,
+              "staticValue": "What's new",
+              "fontFamily": "IBM Plex Mono",
+              "fontWeight": 500,
+              "fontSizePx": 16,
+              "lineHeight": 1,
+              "letterSpacingPx": 1.2,
+              "uppercase": true,
+              "align": "right",
+              "colorHex": "#6E6E70"
+            },
+            {
+              "id": "starter-feature-02-eyebrow",
+              "fieldKey": "eyebrow",
+              "label": "Eyebrow",
+              "type": "text",
+              "x": 80,
+              "y": 304,
+              "width": 920,
+              "height": 22,
+              "placeholder": "Feature",
+              "fontFamily": "IBM Plex Mono",
+              "fontWeight": 500,
+              "fontSizePx": 22,
+              "lineHeight": 1,
+              "letterSpacingPx": 1.6,
+              "uppercase": true,
+              "colorHex": "#2F3B4C"
+            },
+            {
+              "id": "starter-feature-02-headline",
+              "fieldKey": "headline",
+              "label": "Headline",
+              "type": "multiline",
+              "x": 80,
+              "y": 354,
+              "width": 920,
+              "height": 142,
+              "placeholder": "Schedule a month of posts without leaving the calendar.",
+              "fontFamily": "Montserrat",
+              "fontWeight": 600,
+              "fontSizePx": 76,
+              "minFontSizePx": 46,
+              "lineHeight": 0.94,
+              "letterSpacingPx": -2.5,
+              "verticalAlign": "top",
+              "textSizing": "shrink",
+              "colorHex": "#111112"
+            },
+            {
+              "id": "starter-feature-02-subhead",
+              "fieldKey": "subhead",
+              "label": "Subhead",
+              "type": "multiline",
+              "x": 80,
+              "y": 524,
+              "width": 920,
+              "height": 90,
+              "placeholder": "Two lines on what changed and why it matters to the person reading this.",
+              "fontFamily": "Inter",
+              "fontWeight": 400,
+              "fontSizePx": 34,
+              "lineHeight": 1.32,
+              "letterSpacingPx": -0.2,
+              "verticalAlign": "top",
+              "colorHex": "#6E6E70"
+            },
+            {
+              "id": "starter-feature-02-rule",
+              "fieldKey": "rule",
+              "label": "Rule",
+              "type": "shape",
+              "x": 80,
+              "y": 795,
+              "width": 920,
+              "height": 3,
+              "static": true,
+              "shape": "rect",
+              "colorHex": "#2F3B4C"
+            },
+            {
+              "id": "starter-feature-02-footnote",
+              "fieldKey": "footnote",
+              "label": "Footnote",
+              "type": "text",
+              "x": 80,
+              "y": 980,
+              "width": 600,
+              "height": 28,
+              "placeholder": "Available to every plan today",
+              "fontFamily": "Inter",
+              "fontWeight": 400,
+              "fontSizePx": 20,
+              "lineHeight": 1.42,
+              "letterSpacingPx": 0,
+              "colorHex": "#111112"
+            }
+          ],
+          "variants": [
+            {
+              "id": "light",
+              "name": "Light",
+              "isDefault": true,
+              "overrides": {}
+            },
+            {
+              "id": "dark",
+              "name": "Dark",
+              "backgroundColor": "#101011",
+              "overrides": {
+                "kicker": {
+                  "colorHex": "#A2A2A4"
+                },
+                "eyebrow": {
+                  "colorHex": "#4E627E"
+                },
+                "headline": {
+                  "colorHex": "#F7F6F3"
+                },
+                "subhead": {
+                  "colorHex": "#A2A2A4"
+                },
+                "rule": {
+                  "colorHex": "#4E627E"
+                },
+                "footnote": {
+                  "colorHex": "#F7F6F3"
+                }
+              }
+            }
+          ],
+          "captionTemplate": "New in Acme Studios: less busywork.",
+          "autobuildMeta": {
+            "model": "starter",
+            "sourceKind": "starter",
+            "generatedAt": "2026-09-30T19:42:17.583Z",
+            "elementCount": 6,
+            "editableCount": 4,
+            "source": "starter",
+            "starterKey": "feature-02",
+            "starterVersion": 1,
+            "seededAt": "2026-09-30T19:42:17.583Z"
+          },
+          "id": "c6ee9277-cfeb-4fbc-90af-0757718051d7",
+          "createdAt": "2026-09-30T19:42:17.583Z",
+          "updatedAt": "2026-09-30T19:42:17.583Z"
+        },
+        {
+          "companyId": "aeb81106-2389-4212-a9e9-2474372b36e1",
+          "name": "Company milestone",
+          "description": "Mark a milestone with a story headline beside a full-height team photo.",
+          "category": "Company",
+          "tags": ["milestone", "story"],
+          "status": "published",
+          "canvasWidth": 1600,
+          "canvasHeight": 900,
+          "backgroundUrl": "",
+          "backgroundColor": "#FFFFFF",
+          "fields": [
+            {
+              "id": "starter-milestone-03-kicker",
+              "fieldKey": "kicker",
+              "label": "Kicker",
+              "type": "text",
+              "x": 804,
+              "y": 89,
+              "width": 96,
+              "height": 16,
+              "static": true,
+              "staticValue": "Milestone",
+              "fontFamily": "IBM Plex Mono",
+              "fontWeight": 500,
+              "fontSizePx": 16,
+              "lineHeight": 1,
+              "letterSpacingPx": 1.2,
+              "uppercase": true,
+              "align": "right",
+              "colorHex": "#6E6E70"
+            },
+            {
+              "id": "starter-milestone-03-eyebrow",
+              "fieldKey": "eyebrow",
+              "label": "Eyebrow",
+              "type": "text",
+              "x": 80,
+              "y": 291,
+              "width": 820,
+              "height": 22,
+              "placeholder": "2019 to 2026",
+              "fontFamily": "IBM Plex Mono",
+              "fontWeight": 500,
+              "fontSizePx": 22,
+              "lineHeight": 1,
+              "letterSpacingPx": 1.6,
+              "uppercase": true,
+              "colorHex": "#2F3B4C"
+            },
+            {
+              "id": "starter-milestone-03-headline",
+              "fieldKey": "headline",
+              "label": "Headline",
+              "type": "multiline",
+              "x": 80,
+              "y": 337,
+              "width": 820,
+              "height": 213,
+              "placeholder": "Seven years of building alongside the teams who use this.",
+              "fontFamily": "Montserrat",
+              "fontWeight": 600,
+              "fontSizePx": 76,
+              "minFontSizePx": 46,
+              "lineHeight": 0.94,
+              "letterSpacingPx": -2.5,
+              "verticalAlign": "top",
+              "textSizing": "shrink",
+              "colorHex": "#111112"
+            },
+            {
+              "id": "starter-milestone-03-subhead",
+              "fieldKey": "subhead",
+              "label": "Subhead",
+              "type": "multiline",
+              "x": 80,
+              "y": 574,
+              "width": 820,
+              "height": 70,
+              "placeholder": "A sentence of context: what the milestone is, and the people who got you here.",
+              "fontFamily": "Inter",
+              "fontWeight": 400,
+              "fontSizePx": 26,
+              "lineHeight": 1.36,
+              "letterSpacingPx": -0.1,
+              "verticalAlign": "top",
+              "colorHex": "#6E6E70"
+            },
+            {
+              "id": "starter-milestone-03-image_bg",
+              "fieldKey": "image_bg",
+              "label": "Team photo backdrop",
+              "type": "shape",
+              "x": 980,
+              "y": 0,
+              "width": 620,
+              "height": 900,
+              "static": true,
+              "shape": "rect",
+              "colorHex": "#F1F0EC"
+            },
+            {
+              "id": "starter-milestone-03-image",
+              "fieldKey": "image",
+              "label": "Team photo",
+              "type": "image",
+              "x": 980,
+              "y": 0,
+              "width": 620,
+              "height": 900,
+              "placeholder": "Add a team photo",
+              "objectFit": "cover"
+            }
+          ],
+          "variants": [
+            {
+              "id": "light",
+              "name": "Light",
+              "isDefault": true,
+              "overrides": {}
+            },
+            {
+              "id": "dark",
+              "name": "Dark",
+              "backgroundColor": "#101011",
+              "overrides": {
+                "kicker": {
+                  "colorHex": "#A2A2A4"
+                },
+                "eyebrow": {
+                  "colorHex": "#4E627E"
+                },
+                "headline": {
+                  "colorHex": "#F7F6F3"
+                },
+                "subhead": {
+                  "colorHex": "#A2A2A4"
+                },
+                "image_bg": {
+                  "colorHex": "#1B1B1D"
+                }
+              }
+            }
+          ],
+          "captionTemplate": "A milestone worth sharing from Acme Studios.",
+          "autobuildMeta": {
+            "model": "starter",
+            "sourceKind": "starter",
+            "generatedAt": "2026-09-30T19:42:17.584Z",
+            "elementCount": 6,
+            "editableCount": 4,
+            "source": "starter",
+            "starterKey": "milestone-03",
+            "starterVersion": 1,
+            "seededAt": "2026-09-30T19:42:17.584Z"
+          },
+          "id": "cfdee527-3ae6-462b-8a7d-391bea56b5e1",
+          "createdAt": "2026-09-30T19:42:17.584Z",
+          "updatedAt": "2026-09-30T19:42:17.584Z"
+        },
+        {
+          "companyId": "aeb81106-2389-4212-a9e9-2474372b36e1",
+          "name": "Partnership announcement",
+          "description": "Two logos side by side with a shared headline about what comes next.",
+          "category": "Announcements",
+          "tags": ["partnership"],
+          "status": "published",
+          "canvasWidth": 1200,
+          "canvasHeight": 630,
+          "backgroundUrl": "",
+          "backgroundColor": "#FFFFFF",
+          "fields": [
+            {
+              "id": "starter-partnership-04-eyebrow",
+              "fieldKey": "eyebrow",
+              "label": "Eyebrow",
+              "type": "text",
+              "x": 519,
+              "y": 64,
+              "width": 162,
+              "height": 22,
+              "placeholder": "Partnership",
+              "fontFamily": "IBM Plex Mono",
+              "fontWeight": 500,
+              "fontSizePx": 22,
+              "lineHeight": 1,
+              "letterSpacingPx": 1.6,
+              "uppercase": true,
+              "align": "center",
+              "colorHex": "#2F3B4C"
+            },
+            {
+              "id": "starter-partnership-04-logo_frame",
+              "fieldKey": "logo_frame",
+              "label": "Logo frame",
+              "type": "shape",
+              "x": 261,
+              "y": 164,
+              "width": 300,
+              "height": 84,
+              "static": true,
+              "shape": "rect",
+              "strokeColor": "#DEDDD8",
+              "strokeWidthPx": 1
+            },
+            {
+              "id": "starter-partnership-04-logo",
+              "fieldKey": "logo",
+              "label": "Your logo",
+              "type": "image",
+              "x": 261,
+              "y": 164,
+              "width": 300,
+              "height": 84,
+              "placeholder": "Add your logo",
+              "objectFit": "contain"
+            },
+            {
+              "id": "starter-partnership-04-plus",
+              "fieldKey": "plus",
+              "label": "Plus",
+              "type": "text",
+              "x": 593,
+              "y": 195,
+              "width": 14,
+              "height": 22,
+              "static": true,
+              "staticValue": "+",
+              "fontFamily": "IBM Plex Mono",
+              "fontWeight": 500,
+              "fontSizePx": 22,
+              "lineHeight": 1,
+              "letterSpacingPx": 1.6,
+              "uppercase": true,
+              "colorHex": "#6E6E70"
+            },
+            {
+              "id": "starter-partnership-04-partner_logo_frame",
+              "fieldKey": "partner_logo_frame",
+              "label": "Partner logo frame",
+              "type": "shape",
+              "x": 639,
+              "y": 164,
+              "width": 300,
+              "height": 84,
+              "static": true,
+              "shape": "rect",
+              "strokeColor": "#DEDDD8",
+              "strokeWidthPx": 1
+            },
+            {
+              "id": "starter-partnership-04-partner_logo",
+              "fieldKey": "partner_logo",
+              "label": "Partner logo",
+              "type": "image",
+              "x": 639,
+              "y": 164,
+              "width": 300,
+              "height": 84,
+              "placeholder": "Add the partner logo",
+              "objectFit": "contain"
+            },
+            {
+              "id": "starter-partnership-04-headline",
+              "fieldKey": "headline",
+              "label": "Headline",
+              "type": "multiline",
+              "x": 72,
+              "y": 326,
+              "width": 1056,
+              "height": 102,
+              "placeholder": "Acme Studios and Partner are building something together.",
+              "fontFamily": "Montserrat",
+              "fontWeight": 600,
+              "fontSizePx": 52,
+              "minFontSizePx": 31,
+              "lineHeight": 0.98,
+              "letterSpacingPx": -1.5,
+              "align": "center",
+              "verticalAlign": "top",
+              "textSizing": "shrink",
+              "colorHex": "#111112"
+            },
+            {
+              "id": "starter-partnership-04-subhead",
+              "fieldKey": "subhead",
+              "label": "Subhead",
+              "type": "multiline",
+              "x": 72,
+              "y": 444,
+              "width": 1056,
+              "height": 28,
+              "placeholder": "One line on what the partnership does for the people reading this.",
+              "fontFamily": "Inter",
+              "fontWeight": 400,
+              "fontSizePx": 20,
+              "lineHeight": 1.42,
+              "letterSpacingPx": 0,
+              "align": "center",
+              "verticalAlign": "top",
+              "colorHex": "#6E6E70"
+            }
+          ],
+          "variants": [
+            {
+              "id": "light",
+              "name": "Light",
+              "isDefault": true,
+              "overrides": {}
+            },
+            {
+              "id": "dark",
+              "name": "Dark",
+              "backgroundColor": "#101011",
+              "overrides": {
+                "eyebrow": {
+                  "colorHex": "#4E627E"
+                },
+                "logo_frame": {
+                  "strokeColor": "#2E2E31"
+                },
+                "plus": {
+                  "colorHex": "#A2A2A4"
+                },
+                "partner_logo_frame": {
+                  "strokeColor": "#2E2E31"
+                },
+                "headline": {
+                  "colorHex": "#F7F6F3"
+                },
+                "subhead": {
+                  "colorHex": "#A2A2A4"
+                }
+              }
+            }
+          ],
+          "captionTemplate": "Acme Studios has a new partner.",
+          "autobuildMeta": {
+            "model": "starter",
+            "sourceKind": "starter",
+            "generatedAt": "2026-09-30T19:42:17.585Z",
+            "elementCount": 8,
+            "editableCount": 5,
+            "source": "starter",
+            "starterKey": "partnership-04",
+            "starterVersion": 1,
+            "seededAt": "2026-09-30T19:42:17.585Z"
+          },
+          "id": "bc12dde2-d34a-439c-97da-668893678e69",
+          "createdAt": "2026-09-30T19:42:17.585Z",
+          "updatedAt": "2026-09-30T19:42:17.585Z"
+        },
+        {
+          "companyId": "aeb81106-2389-4212-a9e9-2474372b36e1",
+          "name": "Stat highlight",
+          "description": "Lead with one big number and the line that gives it meaning.",
+          "category": "Results",
+          "tags": ["stat", "proof"],
+          "status": "published",
+          "canvasWidth": 1080,
+          "canvasHeight": 1080,
+          "backgroundUrl": "",
+          "backgroundColor": "#FFFFFF",
+          "fields": [
+            {
+              "id": "starter-stat-05-kicker",
+              "fieldKey": "kicker",
+              "label": "Kicker",
+              "type": "text",
+              "x": 850,
+              "y": 89,
+              "width": 150,
+              "height": 16,
+              "static": true,
+              "staticValue": "By the numbers",
+              "fontFamily": "IBM Plex Mono",
+              "fontWeight": 500,
+              "fontSizePx": 16,
+              "lineHeight": 1,
+              "letterSpacingPx": 1.2,
+              "uppercase": true,
+              "align": "right",
+              "colorHex": "#6E6E70"
+            },
+            {
+              "id": "starter-stat-05-eyebrow",
+              "fieldKey": "eyebrow",
+              "label": "Eyebrow",
+              "type": "text",
+              "x": 80,
+              "y": 336,
+              "width": 920,
+              "height": 22,
+              "placeholder": "Q2 results",
+              "fontFamily": "IBM Plex Mono",
+              "fontWeight": 500,
+              "fontSizePx": 22,
+              "lineHeight": 1,
+              "letterSpacingPx": 1.6,
+              "uppercase": true,
+              "colorHex": "#2F3B4C"
+            },
+            {
+              "id": "starter-stat-05-stat",
+              "fieldKey": "stat",
+              "label": "Stat",
+              "type": "text",
+              "x": 80,
+              "y": 370,
+              "width": 920,
+              "height": 129,
+              "placeholder": "3.2x",
+              "fontFamily": "Montserrat",
+              "fontWeight": 600,
+              "fontSizePx": 140,
+              "minFontSizePx": 84,
+              "lineHeight": 0.92,
+              "letterSpacingPx": -4,
+              "textSizing": "shrink",
+              "colorHex": "#111112"
+            },
+            {
+              "id": "starter-stat-05-stat_label",
+              "fieldKey": "stat_label",
+              "label": "Stat label",
+              "type": "multiline",
+              "x": 80,
+              "y": 511,
+              "width": 920,
+              "height": 102,
+              "placeholder": "faster from brief to published post",
+              "fontFamily": "Montserrat",
+              "fontWeight": 600,
+              "fontSizePx": 52,
+              "minFontSizePx": 31,
+              "lineHeight": 0.98,
+              "letterSpacingPx": -1.5,
+              "verticalAlign": "top",
+              "textSizing": "shrink",
+              "colorHex": "#6E6E70"
+            },
+            {
+              "id": "starter-stat-05-rule",
+              "fieldKey": "rule",
+              "label": "Rule",
+              "type": "shape",
+              "x": 80,
+              "y": 775,
+              "width": 920,
+              "height": 3,
+              "static": true,
+              "shape": "rect",
+              "colorHex": "#2F3B4C"
+            },
+            {
+              "id": "starter-stat-05-source",
+              "fieldKey": "source",
+              "label": "Source",
+              "type": "text",
+              "x": 80,
+              "y": 992,
+              "width": 500,
+              "height": 16,
+              "placeholder": "Source: internal data, Q2 2026",
+              "fontFamily": "IBM Plex Mono",
+              "fontWeight": 500,
+              "fontSizePx": 16,
+              "lineHeight": 1,
+              "letterSpacingPx": 1.2,
+              "uppercase": true,
+              "colorHex": "#6E6E70"
+            }
+          ],
+          "variants": [
+            {
+              "id": "light",
+              "name": "Light",
+              "isDefault": true,
+              "overrides": {}
+            },
+            {
+              "id": "dark",
+              "name": "Dark",
+              "backgroundColor": "#101011",
+              "overrides": {
+                "kicker": {
+                  "colorHex": "#A2A2A4"
+                },
+                "eyebrow": {
+                  "colorHex": "#4E627E"
+                },
+                "stat": {
+                  "colorHex": "#F7F6F3"
+                },
+                "stat_label": {
+                  "colorHex": "#A2A2A4"
+                },
+                "rule": {
+                  "colorHex": "#4E627E"
+                },
+                "source": {
+                  "colorHex": "#A2A2A4"
+                }
+              }
+            }
+          ],
+          "captionTemplate": "The numbers behind Acme Studios.",
+          "autobuildMeta": {
+            "model": "starter",
+            "sourceKind": "starter",
+            "generatedAt": "2026-09-30T19:42:17.585Z",
+            "elementCount": 6,
+            "editableCount": 4,
+            "source": "starter",
+            "starterKey": "stat-05",
+            "starterVersion": 1,
+            "seededAt": "2026-09-30T19:42:17.585Z"
+          },
+          "id": "3023dd4a-dcc5-45a4-9a52-337736812bc0",
+          "createdAt": "2026-09-30T19:42:17.585Z",
+          "updatedAt": "2026-09-30T19:42:17.585Z"
+        },
+        {
+          "companyId": "aeb81106-2389-4212-a9e9-2474372b36e1",
+          "name": "Event promo",
+          "description": "A story-sized invitation with the date, time, and a seat-saving call to action.",
+          "category": "Events",
+          "tags": ["event", "webinar"],
+          "status": "published",
+          "canvasWidth": 1080,
+          "canvasHeight": 1920,
+          "backgroundUrl": "",
+          "backgroundColor": "#FFFFFF",
+          "fields": [
+            {
+              "id": "starter-event-06-image_bg",
+              "fieldKey": "image_bg",
+              "label": "Event photo backdrop",
+              "type": "shape",
+              "x": 80,
+              "y": 226,
+              "width": 920,
+              "height": 746,
+              "static": true,
+              "shape": "rect",
+              "colorHex": "#F1F0EC"
+            },
+            {
+              "id": "starter-event-06-image",
+              "fieldKey": "image",
+              "label": "Event photo",
+              "type": "image",
+              "x": 80,
+              "y": 226,
+              "width": 920,
+              "height": 746,
+              "placeholder": "Add a speaker or venue photo",
+              "objectFit": "cover"
+            },
+            {
+              "id": "starter-event-06-eyebrow",
+              "fieldKey": "eyebrow",
+              "label": "Eyebrow",
+              "type": "text",
+              "x": 80,
+              "y": 1058,
+              "width": 920,
+              "height": 22,
+              "placeholder": "Live webinar",
+              "fontFamily": "IBM Plex Mono",
+              "fontWeight": 500,
+              "fontSizePx": 22,
+              "lineHeight": 1,
+              "letterSpacingPx": 1.6,
+              "uppercase": true,
+              "colorHex": "#2F3B4C"
+            },
+            {
+              "id": "starter-event-06-headline",
+              "fieldKey": "headline",
+              "label": "Headline",
+              "type": "multiline",
+              "x": 80,
+              "y": 1102,
+              "width": 920,
+              "height": 142,
+              "placeholder": "How five teams cut their production time in half.",
+              "fontFamily": "Montserrat",
+              "fontWeight": 600,
+              "fontSizePx": 76,
+              "minFontSizePx": 46,
+              "lineHeight": 0.94,
+              "letterSpacingPx": -2.5,
+              "verticalAlign": "top",
+              "textSizing": "shrink",
+              "colorHex": "#111112"
+            },
+            {
+              "id": "starter-event-06-subhead",
+              "fieldKey": "subhead",
+              "label": "Subhead",
+              "type": "multiline",
+              "x": 80,
+              "y": 1266,
+              "width": 920,
+              "height": 35,
+              "placeholder": "One line on what attendees will walk away with.",
+              "fontFamily": "Inter",
+              "fontWeight": 400,
+              "fontSizePx": 26,
+              "lineHeight": 1.36,
+              "letterSpacingPx": -0.1,
+              "verticalAlign": "top",
+              "colorHex": "#6E6E70"
+            },
+            {
+              "id": "starter-event-06-hairline_1",
+              "fieldKey": "hairline_1",
+              "label": "Hairline",
+              "type": "shape",
+              "x": 80,
+              "y": 1405,
+              "width": 920,
+              "height": 1,
+              "static": true,
+              "shape": "rect",
+              "colorHex": "#DEDDD8"
+            },
+            {
+              "id": "starter-event-06-date_label",
+              "fieldKey": "date_label",
+              "label": "Date label",
+              "type": "text",
+              "x": 80,
+              "y": 1423,
+              "width": 100,
+              "height": 16,
+              "static": true,
+              "staticValue": "Date",
+              "fontFamily": "IBM Plex Mono",
+              "fontWeight": 500,
+              "fontSizePx": 16,
+              "lineHeight": 1,
+              "letterSpacingPx": 1.2,
+              "uppercase": true,
+              "colorHex": "#6E6E70"
+            },
+            {
+              "id": "starter-event-06-date",
+              "fieldKey": "date",
+              "label": "Date",
+              "type": "text",
+              "x": 400,
+              "y": 1414,
+              "width": 600,
+              "height": 35,
+              "placeholder": "Thursday, 12 November",
+              "fontFamily": "Inter",
+              "fontWeight": 400,
+              "fontSizePx": 26,
+              "lineHeight": 1.36,
+              "letterSpacingPx": -0.1,
+              "align": "right",
+              "colorHex": "#111112"
+            },
+            {
+              "id": "starter-event-06-hairline_2",
+              "fieldKey": "hairline_2",
+              "label": "Hairline",
+              "type": "shape",
+              "x": 80,
+              "y": 1493,
+              "width": 920,
+              "height": 1,
+              "static": true,
+              "shape": "rect",
+              "colorHex": "#DEDDD8"
+            },
+            {
+              "id": "starter-event-06-time_label",
+              "fieldKey": "time_label",
+              "label": "Time label",
+              "type": "text",
+              "x": 80,
+              "y": 1511,
+              "width": 100,
+              "height": 16,
+              "static": true,
+              "staticValue": "Time",
+              "fontFamily": "IBM Plex Mono",
+              "fontWeight": 500,
+              "fontSizePx": 16,
+              "lineHeight": 1,
+              "letterSpacingPx": 1.2,
+              "uppercase": true,
+              "colorHex": "#6E6E70"
+            },
+            {
+              "id": "starter-event-06-time",
+              "fieldKey": "time",
+              "label": "Time",
+              "type": "text",
+              "x": 400,
+              "y": 1502,
+              "width": 600,
+              "height": 35,
+              "placeholder": "1:00 PM CT, 45 minutes",
+              "fontFamily": "Inter",
+              "fontWeight": 400,
+              "fontSizePx": 26,
+              "lineHeight": 1.36,
+              "letterSpacingPx": -0.1,
+              "align": "right",
+              "colorHex": "#111112"
+            },
+            {
+              "id": "starter-event-06-hairline_3",
+              "fieldKey": "hairline_3",
+              "label": "Hairline",
+              "type": "shape",
+              "x": 80,
+              "y": 1581,
+              "width": 920,
+              "height": 1,
+              "static": true,
+              "shape": "rect",
+              "colorHex": "#DEDDD8"
+            },
+            {
+              "id": "starter-event-06-where_label",
+              "fieldKey": "where_label",
+              "label": "Where label",
+              "type": "text",
+              "x": 80,
+              "y": 1599,
+              "width": 100,
+              "height": 16,
+              "static": true,
+              "staticValue": "Where",
+              "fontFamily": "IBM Plex Mono",
+              "fontWeight": 500,
+              "fontSizePx": 16,
+              "lineHeight": 1,
+              "letterSpacingPx": 1.2,
+              "uppercase": true,
+              "colorHex": "#6E6E70"
+            },
+            {
+              "id": "starter-event-06-where",
+              "fieldKey": "where",
+              "label": "Where",
+              "type": "text",
+              "x": 400,
+              "y": 1590,
+              "width": 600,
+              "height": 35,
+              "placeholder": "Online, link sent after signup",
+              "fontFamily": "Inter",
+              "fontWeight": 400,
+              "fontSizePx": 26,
+              "lineHeight": 1.36,
+              "letterSpacingPx": -0.1,
+              "align": "right",
+              "colorHex": "#111112"
+            },
+            {
+              "id": "starter-event-06-cta",
+              "fieldKey": "cta",
+              "label": "Call to action",
+              "type": "text",
+              "x": 80,
+              "y": 1737,
+              "width": 920,
+              "height": 94,
+              "placeholder": "Save your seat",
+              "fontFamily": "Inter",
+              "fontWeight": 500,
+              "fontSizePx": 26,
+              "minFontSizePx": 16,
+              "lineHeight": 1.32,
+              "letterSpacingPx": -0.1,
+              "align": "center",
+              "verticalAlign": "top",
+              "textSizing": "shrink",
+              "colorHex": "#FFFFFF",
+              "plateColor": "#2F3B4C",
+              "platePaddingX": 32,
+              "platePaddingY": 30
+            }
+          ],
+          "variants": [
+            {
+              "id": "light",
+              "name": "Light",
+              "isDefault": true,
+              "overrides": {}
+            },
+            {
+              "id": "dark",
+              "name": "Dark",
+              "backgroundColor": "#101011",
+              "overrides": {
+                "image_bg": {
+                  "colorHex": "#1B1B1D"
+                },
+                "eyebrow": {
+                  "colorHex": "#4E627E"
+                },
+                "headline": {
+                  "colorHex": "#F7F6F3"
+                },
+                "subhead": {
+                  "colorHex": "#A2A2A4"
+                },
+                "hairline_1": {
+                  "colorHex": "#2E2E31"
+                },
+                "date_label": {
+                  "colorHex": "#A2A2A4"
+                },
+                "date": {
+                  "colorHex": "#F7F6F3"
+                },
+                "hairline_2": {
+                  "colorHex": "#2E2E31"
+                },
+                "time_label": {
+                  "colorHex": "#A2A2A4"
+                },
+                "time": {
+                  "colorHex": "#F7F6F3"
+                },
+                "hairline_3": {
+                  "colorHex": "#2E2E31"
+                },
+                "where_label": {
+                  "colorHex": "#A2A2A4"
+                },
+                "where": {
+                  "colorHex": "#F7F6F3"
+                },
+                "cta": {
+                  "plateColor": "#4E627E"
+                }
+              }
+            }
+          ],
+          "captionTemplate": "Join Acme Studios live.",
+          "autobuildMeta": {
+            "model": "starter",
+            "sourceKind": "starter",
+            "generatedAt": "2026-09-30T19:42:17.586Z",
+            "elementCount": 15,
+            "editableCount": 8,
+            "source": "starter",
+            "starterKey": "event-06",
+            "starterVersion": 1,
+            "seededAt": "2026-09-30T19:42:17.586Z"
+          },
+          "id": "6ac58c78-dbb1-445a-bcd8-f12604748c50",
+          "createdAt": "2026-09-30T19:42:17.586Z",
+          "updatedAt": "2026-09-30T19:42:17.586Z"
+        }
+      ],
+      "usageEvents": [],
+      "templateLinks": [],
+      "companyCanvasPresets": [],
+      "generateThreads": []
+    },
+    "brand-portal-company": "aeb81106-2389-4212-a9e9-2474372b36e1",
+    "brand-portal-dev-role": "admin",
+    "sp-sidebar-collapsed": "0"
+  }
+}

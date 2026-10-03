@@ -1,0 +1,43 @@
+/* TEMPORARY BRIDGE for the new look (Phase 1). Delete in Phase 9.
+
+   Points legacy token names at the generated Figma tokens in tokens.css, so
+   CSS that has not moved to the new primitives still reads Figma values. A
+   name is bridged only when every rule that reads it plays the same role in
+   Figma. Names used in more than one role stay on their legacy values until
+   the phase that rebuilds their components (see docs/design/new-look/BRIDGE.md):
+   --nav-active-bg, --nav-active-fg, --media-overlay, --edit-chip-bg,
+   --shadow-rest, --radius-control-lg.
+
+   Remove a line here when its last reader moves to the Figma token. */
+
+[data-theme] {
+  /* Surfaces and text */
+  --bg-canvas: var(--surface-page);
+  --bg-surface: var(--surface-raised);
+  --bg-card: var(--surface-raised);
+  --text-heading: var(--text-strong);
+  --border: var(--border-default);
+  --gen-sunken: var(--surface-sunken);
+  --gen-inverse: var(--surface-inverse);
+  --gen-on-inverse: var(--text-inverse);
+  --fill-action: var(--surface-inverse);
+  --text-on-action: var(--text-inverse);
+  --tag-bg-on-media: var(--tag-overlay-bg);
+
+  /* Error red (#D43535 Light, #EC5656 Dark) */
+  --state-danger: var(--state-error);
+  --state-danger-on-surface: var(--state-error);
+
+  /* Primary action. tokens.css already sets --btn-primary-bg/fg to Figma's
+     Deep Moss and Slime pair. Figma's hover lays state/hover-inverse over the
+     fill; the legacy hover mixed toward --fill-action, which would flash ink. */
+  --btn-primary-bg-hover:
+    linear-gradient(var(--state-hover-inverse), var(--state-hover-inverse)), var(--btn-primary-bg);
+  --gen-btn-accent-bg: var(--btn-primary-bg);
+  --gen-btn-accent-fg: var(--btn-primary-fg);
+
+  /* Cards and the sidebar use Elevation/Small. The legacy bevel
+     (--card-highlight) already matches Figma's, so only the drop changes. */
+  --shadow-card: 2px 2px 8px 0 var(--shadow-raised);
+  --shadow-rail: 2px 2px 8px 0 var(--shadow-raised);
+}
