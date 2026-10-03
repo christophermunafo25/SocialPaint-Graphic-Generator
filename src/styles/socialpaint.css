@@ -1015,10 +1015,10 @@ optgroup {
   letter-spacing: var(--type-body-track);
 }
 
-/* Focus: 2px ring at 2px offset on every interactive element, both modes. */
+/* Focus: a --focus-width ring at --focus-offset on every interactive element, both modes. */
 :focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
+  outline: var(--focus-width) solid var(--ring);
+  outline-offset: var(--focus-offset);
 }
 
 /* ── Platform UI primitives ─────────────────────────────────────────────── */
@@ -2159,8 +2159,8 @@ select.sp-input:disabled {
 /* The picker's two areas take the arrow keys; give them the system's ring
    when reached by keyboard so the focused channel is never a mystery. */
 .sp-color-pop .react-colorful__interactive:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
+  outline: var(--focus-width) solid var(--ring);
+  outline-offset: var(--focus-offset);
   border-radius: inherit;
 }
 .sp-color-pop__row {
@@ -2241,8 +2241,8 @@ select.sp-input:disabled {
   color: var(--text-primary);
 }
 .sp-gate__drop:focus-within {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
+  outline: var(--focus-width) solid var(--ring);
+  outline-offset: var(--focus-offset);
 }
 .sp-gate__rows {
   display: flex;
@@ -2565,7 +2565,7 @@ select.sp-input:disabled {
    the fill so it reads on the white card around it. */
 .sp-gate[data-theme="light"] .sp-btn-primary:focus-visible,
 .sp-gate[data-theme="light"] .sp-gate__cta:focus-visible {
-  outline: 2px solid var(--ring);
+  outline: var(--focus-width) solid var(--ring);
   outline-offset: 3px;
 }
 
