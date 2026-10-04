@@ -278,6 +278,16 @@ switching (the Workspaces card) and sign out; on the local backend the dev role 
 sits in `DevBackendBanner`. What each role reaches is `screenFor` (`src/app/router.tsx`)
 and `settingsSections.ts`, pinned by `src/app/routes.test.ts`.
 
+Brand Templates is on the new look (Phase 4; styles in `src/styles/brand-templates.css`).
+The library's template card is one button with the preview hover drawn on it. A page
+under the library (the fill page, the template chat) heads itself with
+`layout/Breadcrumb.tsx` in place of a title. The fill page (`TemplateFill`, shared with
+the public link page) puts the graphic on a stage beside `details/DetailsPanel.tsx`, the
+one Details panel: Look, the template's member fields on the Field primitive (a photo on
+the Upload control, whose picking and cropping is `imagePick.tsx`, shared with Generate's
+editor), the caption with Copy, and the download buttons. The template chat's Edit details
+is the same panel, titled "Edit details", with Close and Discard.
+
 ## PNG export
 
 `renderSchemaBlob` (src/lib/render/exportPng.ts) is THE rasterization path —
@@ -599,7 +609,12 @@ hands it to `GenerateChat` as `template`.
 
 - **Entry.** A Brand Templates card opens the fill page: filling in by hand
   is the default. The fill page offers "Use AI to assist", which opens the
-  chat, when the template is published and `stores.generate.isConfigured()`.
+  chat, when the template is published and
+  `stores.generate.isTemplateChatAvailable()` (wherever Generate is
+  configured, and on the local backend in a development build, where a
+  stand-in in `src/lib/stores/local/templateChatStandIn.ts` fills the
+  template with the answers as typed and every other field with its
+  placeholder; Generate itself keeps reading `isConfigured()`).
   The chat links back to the fill page ("Fill in by hand") and, for admins,
   Bulk fill and Public link. A template
   that is unpublished or not the company's shows "This template isn't
@@ -607,7 +622,7 @@ hands it to `GenerateChat` as `template`.
   at `/generate/c/<id>` as an ordinary Generate chat, and that route hands a
   chat whose template is live back to its template's page.
 - **The questions.** A new template chat opens on its first question, not a
-  brief (`interview.ts`, rendered by `InterviewView.tsx`). The questions are
+  brief (`interview.ts`, rendered by `chat/TemplateChatViews.tsx`). The questions are
   built from the template's fields, never by the model: one per member
   text, multiline or select field in the default look, then one photo
   question for the first member image slot. Required fields come first;
@@ -643,12 +658,17 @@ hands it to `GenerateChat` as `template`.
   its proposal leaves it empty.
 - **Edit details.** The thread gives way to a stage (the draft rendered
   large, with Missing markers in the renderer's overlay, never exported) and
-  `EditorPanel` in its stage mode beside it: the look switch, the fields
-  with Missing, Too long and Edited statuses, a Caption field (the member's
+  `EditorPanel` beside it, drawn as the Details panel: the look switch, the
+  fields with Missing and Too long on their error lines and Edited on their
+  label rows, a Caption field (the member's
   own caption, `captionOverride`; the template's caption template is never
   used), Discard (the drafts as the panel found them, `draftsRestored`) and
   Download PNG. Opening it is a history entry, so Back returns to the thread.
   Edits never call the model.
+- **The views.** A template chat renders on the new look's Composer,
+  Message bubble and Assistant message (`chat/`), sharing the chat box's
+  behaviour with Generate through `useComposer`; Generate keeps its own
+  views until Phase 5 of the new look.
 - **The chat box** (both chats): the plus opens Upload (Photo, File, Brand
   Studio). The Details section and the plus hint went when the questions
   came in; `MemberHintStore` and its RPCs remain but nothing reads them.

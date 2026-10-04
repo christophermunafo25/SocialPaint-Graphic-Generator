@@ -97,6 +97,7 @@ These apply to every string a phase adds or changes in the interface.
 - Never "ship" or "shipped". No testimonials or quotes from invented people. No bracketed placeholders.
 - No explanatory helper copy under titles. Page headers are a title alone.
 - Fields show an error when the value is invalid or a required value is missing. No hint or helper text.
+- A field's label row may carry what the Field draws: Edited, "Optional", or a text action such as "Copy". These are markers and actions, not hint text; problems with the value go on the error line.
 - Strings the frames do not show are proposed copy: list them in the PR for CJ to confirm.
 
 ## 10. How every phase works

@@ -328,12 +328,101 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   flex-direction: column;
   gap: 6px; /* off the scale, as drawn (48:38) */
 }
+.ui-field__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+.ui-field__lead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
 .ui-field__label {
   color: var(--text-secondary);
+}
+.ui-field__end {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex: none;
+}
+.ui-field__marker {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+/* Edited: a 6 dot on state/selection, 5 before the word (217:2271). */
+.ui-field__edited {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.ui-field__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--state-selection);
+}
+.ui-field__action {
+  border-radius: var(--radius-control);
+  color: var(--text-strong);
+  white-space: nowrap;
 }
 .ui-field__error {
   margin: 0;
   color: var(--state-error);
+}
+
+/* ── Upload (216:2291): the photo field's control. One button, 56 tall on
+   input/fill; the keyboard ring sits around the row. ── */
+.ui-upload {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px; /* off the scale, as drawn (216:2265) */
+  width: 100%;
+  height: 56px;
+  padding: var(--space-2xs) var(--space-xs) var(--space-2xs) var(--space-2xs);
+  border-radius: var(--radius-control-md);
+  --_fill: var(--input-bg);
+  color: var(--text-strong);
+  text-align: left;
+  cursor: pointer;
+}
+.ui-upload__tile {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-control);
+  background: var(--surface-raised);
+  color: var(--text-strong);
+}
+.ui-upload__thumb {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-control);
+  object-fit: cover;
+}
+.ui-upload__placeholder,
+.ui-upload__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ui-upload__placeholder {
+  color: var(--text-secondary);
+}
+.ui-upload__replace {
+  flex: none;
 }
 
 /* ── Select (49:40) and Compact select (99:568) ── */
@@ -1164,4 +1253,113 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   height: 100%;
   border-radius: var(--radius-pill);
   background: var(--accent-green);
+}
+
+/* ── Composer (61:504): the chat box on surface/raised with Elevation/Small.
+   The component's 5 border/raised edge lies under its own fill, so it
+   draws nothing; its 5 stays in the padding. Body/L is drawn trimmed: 20
+   above the text's cap and 30 to the toolbar, so the untrimmed line sits 6
+   higher and 6 closer. ── */
+.ui-composer {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  padding: 19px 17px 17px 25px; /* 20/12/12/20 inside the 5 edge */
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+  color: var(--text-strong);
+}
+.ui-composer[data-drag-active] {
+  box-shadow:
+    var(--elevation-small),
+    inset 0 0 0 1px var(--state-selection);
+}
+.ui-composer__input {
+  display: block;
+  width: 100%;
+  resize: none;
+  overflow-y: hidden;
+  background: transparent;
+  color: var(--text-strong);
+  caret-color: var(--text-strong);
+}
+.ui-composer__input::placeholder {
+  color: var(--text-secondary);
+  opacity: 1;
+}
+.ui-composer__attachments {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2xs);
+  margin-top: 6px;
+}
+.ui-composer__error {
+  margin: -16px 0 0;
+  color: var(--state-error);
+}
+.ui-composer__toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-xs);
+}
+.ui-composer__inputs {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px; /* as drawn (61:472) */
+  padding: var(--space-3xs) 0;
+}
+.ui-composer__output {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Message bubble (61:505) ── */
+.ui-bubble {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* as drawn (61:505) */
+  max-width: 472px;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-menu);
+  background: var(--surface-sunken);
+  color: var(--text-strong);
+}
+.ui-bubble__text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ui-bubble__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ── Assistant message (61:532) ── */
+.ui-assistant {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  min-width: 0;
+  color: var(--text-strong);
+}
+.ui-assistant__message {
+  margin: 0;
+  white-space: pre-wrap;
+}
+.ui-assistant__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  width: 100%;
+  min-width: 0;
 }

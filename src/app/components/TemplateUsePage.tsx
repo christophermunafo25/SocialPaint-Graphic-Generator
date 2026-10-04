@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ArrowLeft, Link2, Sparkles, Table2 } from "lucide-react";
+import { LayoutGrid, Link, Sparkles } from "lucide-react";
 import type { FieldValues } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
@@ -7,10 +7,12 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { useBrand } from "@/lib/brand/BrandContext";
 import { useRouter } from "../router";
 import { ErrorState } from "./ErrorState";
-import { Bone, SkeletonLines } from "./Skeleton";
+import { Bone } from "./Skeleton";
 import { TemplateFill } from "./TemplateFill";
 import { TemplateLinksDialog } from "./admin/TemplateLinksDialog";
+import { BreadcrumbHeader } from "./layout/Breadcrumb";
 import { Page } from "./layout/Page";
+import { Button } from "./primitives";
 
 /** Member self-service flow. Loads the template through the authenticated
  * store, then hands it to the shared fill surface — the same component the
@@ -25,21 +27,23 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
   const [sharing, setSharing] = useState(false);
 
   if (templateState.status === "loading") {
-    // The fill layout's shape — toolbar line, preview plate, form lines —
-    // so the page doesn't jump when the template lands.
+    // The fill page's shape (header, stage, panel), so nothing jumps when
+    // the template lands.
     return (
-      <Page>
+      <Page layout={{ className: "sp-fill-page" }}>
         <div aria-busy="true" aria-label="Loading template">
-          <div className="flex items-center justify-between gap-3 mb-5">
-            <Bone w={132} h={13} />
-            <Bone w={104} h={34} r="var(--radius-control)" />
+          <div className="sp-shell-pagehead">
+            <Bone w={220} h={14} tone="var(--surface-sunken)" />
           </div>
-          <div className="grid gap-6 lg:grid-cols-2 items-start">
-            <div className="sp-card sp-media-card">
-              <div className="sp-media-card__preview sp-skeleton__block" />
+          <div className="sp-fill">
+            <div className="sp-fill__graphic">
+              <div className="sp-fill__stage" />
             </div>
-            <div className="sp-card p-4">
-              <SkeletonLines lines={4} />
+            <div className="sp-details sp-fill__panel">
+              <Bone w={80} h={18} tone="var(--surface-sunken)" />
+              <Bone w="100%" h={40} r="var(--radius-control-md)" tone="var(--surface-sunken)" />
+              <Bone w="100%" h={40} r="var(--radius-control-md)" tone="var(--surface-sunken)" />
+              <Bone w="100%" h={40} r="var(--radius-control-md)" tone="var(--surface-sunken)" />
             </div>
           </div>
         </div>
@@ -57,10 +61,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
   }
   if (!template) {
     return (
-      <p
-        className="text-center py-24"
-        style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}
-      >
+      <p className="t-body-s text-center py-24" style={{ color: "var(--text-secondary)" }}>
         Template not found.
       </p>
     );
@@ -77,56 +78,49 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
    * published template to fill. A draft has nothing to run forty times. */
   const canBulkFill = role === "admin" && template.status === "published";
   /** The template chat asks for each field and builds the graphic; it needs
-   * a published template and a configured model, and is for everyone. */
-  const canAssist = template.status === "published" && stores.generate.isConfigured();
+   * a published template and somewhere for the chat to run
+   * (isTemplateChatAvailable), and is for everyone. */
+  const canAssist = template.status === "published" && stores.generate.isTemplateChatAvailable();
 
   return (
-    <Page>
+    <Page layout={{ className: "sp-fill-page" }}>
       {sharing && <TemplateLinksDialog template={template} onClose={() => setSharing(false)} />}
 
-      <div className="flex items-center justify-between gap-3 mb-5">
-        <button
-          onClick={() => navigate({ name: "portal" })}
-          className="flex items-center gap-1.5"
-          style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}
-        >
-          <ArrowLeft style={{ width: 14, height: 14 }} />
-          Brand Templates
-        </button>
-
-        <div className="flex items-center gap-2">
-          {canBulkFill && (
-            <button
-              onClick={() => navigate({ name: "bulk", templateId: template.id })}
-              className="sp-btn sp-btn-ghost"
-              title="Fill this template from a spreadsheet, one graphic per row"
-            >
-              <Table2 style={{ width: 14, height: 14 }} />
-              Bulk fill
-            </button>
-          )}
-          {canShare && (
-            <button
-              onClick={() => setSharing(true)}
-              className="sp-btn sp-btn-ghost"
-              title="Create a link anyone can fill in without an account"
-            >
-              <Link2 style={{ width: 14, height: 14 }} />
-              Public link
-            </button>
-          )}
-          {canAssist && (
-            <button
-              onClick={() => navigate({ name: "templateChat", templateId: template.id })}
-              className="sp-btn sp-btn-primary"
-              title="Answer a few questions and let AI fill in this template"
-            >
-              <Sparkles style={{ width: 14, height: 14 }} />
-              Use AI to assist
-            </button>
-          )}
-        </div>
-      </div>
+      <BreadcrumbHeader
+        crumbs={[
+          { label: "Brand Templates", onClick: () => navigate({ name: "portal" }) },
+          { label: template.name },
+        ]}
+        actions={
+          (canAssist || canBulkFill || canShare) && (
+            <>
+              {canAssist && (
+                <Button
+                  kind="neutralOnPage"
+                  icon={Sparkles}
+                  onClick={() => navigate({ name: "templateChat", templateId: template.id })}
+                >
+                  Use AI to assist
+                </Button>
+              )}
+              {canBulkFill && (
+                <Button
+                  kind="neutralOnPage"
+                  icon={LayoutGrid}
+                  onClick={() => navigate({ name: "bulk", templateId: template.id })}
+                >
+                  Bulk fill
+                </Button>
+              )}
+              {canShare && (
+                <Button kind="neutralOnPage" icon={Link} onClick={() => setSharing(true)}>
+                  Public link
+                </Button>
+              )}
+            </>
+          )
+        }
+      />
 
       <TemplateFill
         template={template}

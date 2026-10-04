@@ -106,7 +106,7 @@ function PublicFill({ token, data }: { token: string; data: PublicTemplate }) {
         onExported={onExported}
         onShared={onShared}
         allowUploads={allowUploads}
-        previewFirstOnMobile
+        variant="public"
         footer={<ResumeNote resumable={resumable} resumed={resumed} />}
       />
     </PublicFrame>
@@ -121,15 +121,9 @@ function PublicFill({ token, data }: { token: string; data: PublicTemplate }) {
 function ResumeNote({ resumable, resumed }: { resumable: boolean; resumed: boolean }) {
   if (!resumable) return null;
   return (
-    <div
-      className="flex items-start"
-      style={{ gap: "var(--space-2xs)", paddingTop: "var(--space-3xs)" }}
-    >
-      <Info
-        style={{ width: 14, height: 14, color: "var(--text-muted)", flexShrink: 0, marginTop: 2 }}
-        aria-hidden
-      />
-      <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
+    <div className="sp-fill__resume">
+      <Info size={14} className="ui-icon" aria-hidden />
+      <p className="t-caption-s">
         {resumed
           ? "We brought back what you'd typed. It's saved on this device only: a photo needs adding again, and another browser or phone will start fresh."
           : "What you type is saved on this device, so you can close the tab and come back. A photo isn't saved, and another browser or phone will start fresh."}

@@ -43,10 +43,22 @@ const firstTemplate = devDb.templates[0].id;
 // The fixture's Generate threads: a finished result, then a question.
 const resultThread = devDb.generateThreads[0].id;
 const questionThread = devDb.generateThreads[2].id;
+// The saved template chat (new look, Phase 4): its template and its draft.
+const templateChat = devDb.generateThreads.find((t) => t.templateId);
+const chatTemplate = templateChat.templateId;
+const chatDraft = templateChat.turns.at(-1).drafts[0].id;
 
 const ROUTES = [
   ["brand-templates", "/templates"],
+  ["brand-templates-platform", "/templates?platform=instagram"],
+  ["brand-templates-search", "/templates?q=launch"],
   ["template-fill", `/templates/${firstTemplate}`],
+  ["template-chat", `/templates/${chatTemplate}/chat`],
+  ["template-chat-result", `/templates/${chatTemplate}/chat/${templateChat.id}`],
+  [
+    "template-chat-edit",
+    `/templates/${chatTemplate}/chat/${templateChat.id}?edit=${encodeURIComponent(chatDraft)}`,
+  ],
   ["generate", "/generate"],
   ["generate-history", "/generate/history"],
   ["generate-thread", `/generate/c/${resultThread}`],

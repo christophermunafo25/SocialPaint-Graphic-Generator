@@ -1,4 +1,5 @@
 import React from "react";
+import { Bone } from "../Skeleton";
 
 /** Skeleton geometry matches a real card — square frame, title line, meta
  *  line — so the layout doesn't jump when the data lands. A shelf of these
@@ -20,20 +21,30 @@ export function SkeletonCard() {
   );
 }
 
-/** One shelf's worth of loading state. */
-export function TemplateShelfSkeleton({ cards = 4 }: { cards?: number }) {
+/** The library's loading state (new look): a shelf of cards in the new
+ *  card's shape, its preview and lines as sunken bones. Not drawn in the
+ *  file; built from the card itself so nothing jumps when the data lands. */
+export function LibraryShelfSkeleton({ cards = 4 }: { cards?: number }) {
   return (
-    <section className="sp-shelf" aria-busy="true" aria-label="Loading templates">
-      {/* The title line only: the count eyebrow it used to stand in for is
-          gone from the real shelf (2026-09-25). */}
-      <div className="sp-shelf__header">
-        <span className="sp-skeleton__line sp-skeleton__block" style={{ width: 160, height: 18 }} />
+    <section className="sp-lib-shelf" aria-busy="true" aria-label="Loading templates">
+      <div className="sp-lib-shelf__header">
+        <Bone w={240} h={17} tone="var(--surface-sunken)" />
       </div>
-      <div className="sp-shelf__rail">
-        <div className="sp-railfade__track sp-shelf__track">
+      <div className="sp-lib-rail">
+        <div className="sp-lib-rail__track sp-lib-shelf__track">
           {Array.from({ length: cards }, (_, i) => (
-            <div key={i} className="sp-shelf__item">
-              <SkeletonCard />
+            <div key={i} className="sp-lib-shelf__item" aria-hidden>
+              <div className="sp-tcard">
+                <div className="sp-tcard__preview">
+                  <div className="sp-tcard__frame" />
+                </div>
+                <span className="sp-tcard__meta">
+                  <span className="sp-tcard__text">
+                    <Bone w="70%" h={15} tone="var(--surface-sunken)" />
+                    <Bone w="45%" h={12} tone="var(--surface-sunken)" />
+                  </span>
+                </span>
+              </div>
             </div>
           ))}
         </div>

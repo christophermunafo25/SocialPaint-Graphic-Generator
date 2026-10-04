@@ -4096,29 +4096,14 @@ input[type="radio"] {
     opacity: 0;
   }
 }
-
-/* --- Template card ---------------------------------------------------------
-   The member gallery card. One control — the whole card — with a circular
-   arrow that reads as the "open this" affordance. It is a decorative span,
-   not a nested button, so keyboard users get a single stop per card. */
-.sp-template-card {
-  display: block;
-  width: 100%;
-  height: 100%;
-  text-align: left;
-  cursor: pointer;
-  transition: box-shadow var(--dur-state) var(--ease);
-}
 /* Hover deepens the card shadow and nothing else — no edge change, no
    lift (2026-09-25; before, the edge brightened and the card rose 4px).
    The Generate chat's recent and history cards take the same two rules;
    a loading history card is not a control, so it takes no hover. */
-.sp-template-card:hover,
 .sp-chat-recent-card:hover,
 .sp-chat-history-card[data-state="default"]:hover {
   --card-shadow-now: var(--shadow-card-hover);
 }
-.sp-template-card:focus-visible,
 .sp-chat-recent-card:focus-visible,
 .sp-chat-history-card:focus-visible {
   outline: none;
@@ -4147,21 +4132,6 @@ input[type="radio"] {
   flex: 1;
   min-width: 0;
 }
-.sp-template-card__title {
-  /* Block, not the span's default inline: ellipsis only truncates a block
-     box, so an inline title never clipped and a long name ran under the
-     arrow and into the next card. */
-  display: block;
-  font-family: var(--font-ui);
-  font-size: var(--type-body-size); /* 15, the Figma "Navigation" card (13 before) */
-  line-height: 1.25;
-  font-weight: var(--weight-ui);
-  letter-spacing: -0.01em;
-  color: var(--text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 .sp-template-card__desc {
   font-size: var(--type-caption-size);
   line-height: var(--type-caption-lh);
@@ -4170,37 +4140,6 @@ input[type="radio"] {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-/* Meta line — mono, uppercase, with the platform mark. Platform identity
-   lives here and in the shelf header, never in an invented per-platform
-   colour: the palette is spoken for. */
-.sp-template-card__metaline {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3xs);
-  margin-top: var(--space-3xs);
-  font-family: var(--font-mono);
-  font-size: var(--type-caption-size);
-  line-height: 1.4;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.sp-template-card__platformicon {
-  width: 13px;
-  height: 13px;
-  flex-shrink: 0;
-}
-
-.sp-template-card__tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3xs);
-  margin-top: var(--space-2xs);
 }
 .sp-tag {
   display: inline-flex;
@@ -4414,108 +4353,6 @@ input[type="radio"] {
   color: var(--text-muted);
 }
 
-/* --- Shelf track ---------------------------------------------------------- */
-.sp-shelf__rail {
-  --shelf-visible: 1.15;
-}
-@media (min-width: 480px) {
-  .sp-shelf__rail {
-    --shelf-visible: 2;
-  }
-}
-@media (min-width: 768px) {
-  .sp-shelf__rail {
-    --shelf-visible: 3;
-  }
-}
-/* Three across every laptop width, four only on large external monitors
-   (2026-09-23, at CJ's direction — "larger on laptop"). 1800 clears the
-   16" MacBook Pro's 1728 default, the widest common laptop viewport; at
-   1440 a card goes from ~265 to ~355 wide. */
-@media (min-width: 1800px) {
-  .sp-shelf__rail {
-    --shelf-visible: 4;
-  }
-}
-.sp-shelf__track {
-  /* One knob for the card gap, read back by the item-width formula below
-     so the two can never drift: 16 on mobile, 12 from --bp-md up (the
-     frames draw 10; 12 is the on-scale rendering). */
-  --shelf-gap: var(--space-sm);
-  gap: var(--shelf-gap);
-  scroll-snap-type: x mandatory;
-  scroll-behavior: smooth;
-  /* The scroller's overflow-x: auto clips vertically too, so the block
-     padding is the room a card's paint needs: 6 on top (the focus ring,
-     and the header-to-card gap the Figma "Navigation" page draws) and 24
-     below for the card shadow (6px offset, 25px blur; the frame draws 25).
-     The bottom padding counts toward the gap to the next shelf, which the
-     .sp-shelf margins are tuned around. (Until 2026-09-25 the top padding
-     was headroom for a 4px hover lift, cancelled by a -4px margin.)
-     Mobile (the bleed model): 16 on the left so the first card sits on
-     the text gutter, 2 on the right so the rail reads as running off the
-     screen edge. scroll-padding moves the snapport in to match the left
-     inset: without it, mandatory snap parks the first card short of its
-     inset and the rail never reports itself at the start. */
-  padding: 6px 2px var(--space-md) var(--space-sm);
-  scroll-padding-inline-start: var(--space-sm);
-}
-/* From --bp-md up the column's own gutter does the inset work: the track
-   runs flush (0 each side — a focus ring's 2px horizontal reach clips at
-   the scroller's ends, as the frames draw it). */
-@media (min-width: 768px) {
-  .sp-shelf__track {
-    --shelf-gap: var(--space-xs);
-    padding: 6px 0 var(--space-md);
-    scroll-padding-inline-start: 0;
-  }
-}
-.sp-shelf__track:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring-tight);
-}
-.sp-shelf__item {
-  /* Exactly --shelf-visible cards fill the track before it scrolls. The
-     percentage resolves against the track's own content box, so the count
-     holds at any column width without measuring anything in JS. Width is
-     DERIVED, never authored — it reads the track's own gap knob, so a
-     padding or gap change can never silently clip the last card again. */
-  --shelf-item-w: calc(
-    (100% - (var(--shelf-visible) - 1) * var(--shelf-gap)) / var(--shelf-visible)
-  );
-  flex: 0 0 var(--shelf-item-w);
-  width: var(--shelf-item-w);
-  scroll-snap-align: start;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sp-shelf__track {
-    scroll-behavior: auto;
-  }
-}
-.sp-template-card__go {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  flex-shrink: 0;
-  border-radius: var(--radius-pill);
-  /* Filled, no border (2026-09-25; an outlined circle before): sunken at
-     rest, then Deep Moss with a Slime arrow (light) or white with an ink
-     arrow (dark) while the card is hovered or focused. */
-  background: var(--card-go-bg);
-  color: var(--card-go-fg);
-  transition:
-    background var(--dur-state) var(--ease),
-    color var(--dur-state) var(--ease);
-}
-.sp-template-card:hover .sp-template-card__go,
-.sp-template-card:focus-visible .sp-template-card__go {
-  background: var(--card-go-bg-hover);
-  color: var(--card-go-fg-hover);
-}
-
 /* --- Shell layout primitives (App Shell Reframe) ---------------------------
    One content column, one header pattern, one card recipe, two grids. Every
    page inherits these instead of defining its own container. */
@@ -4625,20 +4462,6 @@ input[type="radio"] {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
-/* Brand Templates' filtered view matches its shelves: three across laptop
-   widths, four only from 1800 (see .sp-shelf__rail). Template Builder
-   keeps the denser admin grid above. */
-@media (min-width: 1440px) {
-  .sp-grid-media--portal {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-@media (min-width: 1800px) {
-  .sp-grid-media--portal {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
 /* Content-panel grid: 12 columns, same --space-md gap. */
 .sp-grid-12 {
   display: grid;
@@ -4656,12 +4479,6 @@ input[type="radio"] {
   .sp-span-6 {
     grid-column: span 12;
   }
-}
-
-/* Equal-height media cards across a grid row. */
-.sp-grid-media .sp-template-card,
-.sp-grid-media .sp-reveal__item {
-  height: 100%;
 }
 
 /* --- Size gallery ----------------------------------------------------------
@@ -4696,8 +4513,7 @@ input[type="radio"] {
 /* Inside a dialog (the size gallery is one) a card never shadows, so its
    hover brightens the edge instead (15% → 25%) — in light that edge is
    the dialog card's 1px border. Outranks the hover rules above. */
-[role="dialog"] .sp-sizecard:hover,
-[role="dialog"] .sp-template-card:hover {
+[role="dialog"] .sp-sizecard:hover {
   --card-shadow-now: 0 0 0 0 transparent;
   --edge-alpha: var(--edge-alpha-hover);
 }
@@ -5594,106 +5410,6 @@ input[type="radio"] {
   }
 }
 
-/* Shelves — one section per platform. The margins are small because the
-   track's 24px bottom padding (the card shadow's room) already sits under
-   every shelf: tuned to the Figma "Navigation" page (2026-09-25), about 44
-   from the chip row to the first shelf title and 36 from a shelf's last
-   card to the next title (64 and 48 before). */
-.sp-shelf {
-  margin-top: var(--space-3xs);
-}
-.sp-shelf:first-of-type {
-  margin-top: var(--space-md);
-}
-/* The header is the View all hit area's 44 tall, the title centred in it;
-   the track's 6px top padding is the gap to the cards. */
-.sp-shelf__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
-  min-height: 44px;
-  margin-bottom: 0;
-  /* 2px, matching nothing else on the scale: the frames seat the header
-     text 2px in from the column edge (0 16 on mobile — see the bleed
-     block). */
-  padding: 0 2px;
-}
-.sp-shelf__title {
-  font-family: var(--font-head);
-  font-size: var(--type-cardtitle-size);
-  line-height: var(--type-cardtitle-lh);
-  font-weight: var(--weight-head);
-  letter-spacing: -0.015em;
-  color: var(--text-primary);
-  margin-bottom: 0;
-}
-.sp-shelf__viewall {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-3xs);
-  min-height: 44px;
-  padding: 0 var(--space-2xs);
-  border: none;
-  background: transparent;
-  /* Neutral since 2026-09-25 (Slime in dark before). */
-  color: var(--text-primary);
-  font-family: var(--font-ui);
-  font-size: var(--type-label-size);
-  line-height: 1.1;
-  font-weight: var(--weight-ui);
-  letter-spacing: 0.01em;
-  cursor: pointer;
-  border-radius: var(--radius-control);
-}
-.sp-shelf__viewall:hover {
-  text-decoration: underline;
-}
-.sp-shelf__viewall:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring-tight);
-}
-
-/* Scaffolding only — phase 4 swaps these for the card track and the grid. */
-.sp-shelf__placeholder {
-  border: 1px dashed var(--border-strong);
-  border-radius: var(--radius-card);
-  padding: var(--space-xl);
-  text-align: center;
-  font-family: var(--font-mono);
-  font-size: var(--type-caption-size);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.sp-resultline {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
-  margin: var(--space-md) 0 var(--space-sm);
-}
-.sp-resultline__clear {
-  border: none;
-  background: transparent;
-  color: var(--state-primary);
-  font-family: var(--font-ui);
-  font-size: var(--type-label-size);
-  font-weight: var(--weight-ui);
-  min-height: 44px;
-  padding: 0 var(--space-2xs);
-  border-radius: var(--radius-control);
-  cursor: pointer;
-}
-.sp-resultline__clear:hover {
-  text-decoration: underline;
-}
-.sp-resultline__clear:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring-tight);
-}
-
 /* Visually hidden live region. */
 .sp-live {
   position: absolute;
@@ -5709,24 +5425,6 @@ input[type="radio"] {
   .sp-railfade::after {
     width: 40px;
   }
-}
-
-/* Result sections — one per group, so each keeps its own frame ratio and a
-   mixed search result never forces stories and banners into one shape. */
-.sp-resultgroup {
-  margin-bottom: var(--space-xl);
-}
-.sp-resultgroup__title {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-2xs);
-  font-family: var(--font-head);
-  font-size: var(--type-cardtitle-size);
-  line-height: var(--type-cardtitle-lh);
-  font-weight: var(--weight-head);
-  letter-spacing: -0.015em; /* the shelf title's */
-  color: var(--text-primary);
-  margin-bottom: var(--space-xs);
 }
 
 /* Empty state — the DS pattern: a headline naming the way out, one line of
@@ -5758,34 +5456,6 @@ input[type="radio"] {
   justify-content: center;
   gap: var(--space-2xs);
   margin-top: var(--space-md);
-}
-
-/* --- Entrance reveal ------------------------------------------------------
-   Sections fade and rise once as they scroll in, their cards staggered.
-   `armed` is only set from JS, so nothing is ever stuck invisible if the
-   script doesn't run. Timing comes from the DS ladder — one easing, and the
-   reveal duration — rather than a bespoke curve. */
-.sp-reveal[data-reveal="armed"] .sp-reveal__item,
-.sp-reveal[data-reveal="armed"] .sp-shelf__header,
-.sp-reveal[data-reveal="armed"] .sp-resultgroup__title {
-  opacity: 0;
-  transform: translateY(40px);
-}
-.sp-reveal[data-reveal] .sp-reveal__item,
-.sp-reveal[data-reveal] .sp-shelf__header,
-.sp-reveal[data-reveal] .sp-resultgroup__title {
-  transition:
-    opacity var(--dur-reveal) var(--ease),
-    transform var(--dur-reveal) var(--ease);
-}
-.sp-reveal[data-reveal] .sp-reveal__item {
-  transition-delay: calc(var(--reveal-i, 0) * 80ms);
-}
-.sp-reveal[data-reveal="in"] .sp-reveal__item,
-.sp-reveal[data-reveal="in"] .sp-shelf__header,
-.sp-reveal[data-reveal="in"] .sp-resultgroup__title {
-  opacity: 1;
-  transform: none;
 }
 
 /* --- Skeletons -----------------------------------------------------------
@@ -5876,15 +5546,7 @@ input[type="radio"] {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  /* State still changes; it just doesn't travel or pulse. */
-  .sp-reveal[data-reveal] .sp-reveal__item,
-  .sp-reveal[data-reveal] .sp-shelf__header,
-  .sp-reveal[data-reveal] .sp-resultgroup__title {
-    opacity: 1;
-    transform: none;
-    transition: none;
-    transition-delay: 0ms;
-  }
+  /* State still changes; it just doesn't pulse. */
   .sp-skeleton__block {
     animation: none;
   }
@@ -5942,10 +5604,6 @@ input[type="radio"] {
   .sp-page--bleed {
     padding: var(--space-md) 0 calc(30px + env(safe-area-inset-bottom, 0px));
   }
-  .sp-page--bleed .sp-resultline,
-  .sp-page--bleed .sp-resultgroup {
-    padding-inline: var(--space-sm);
-  }
   .sp-page--bleed .sp-emptystate {
     margin-inline: var(--space-sm);
   }
@@ -5957,9 +5615,6 @@ input[type="radio"] {
      out would put the last chip's ring off screen at the rail's end. */
   .sp-page--bleed .sp-filterbar .sp-railfade {
     margin-inline-end: 0;
-  }
-  .sp-page--bleed .sp-shelf__header {
-    padding: 0 var(--space-sm);
   }
 
   /* iOS Safari zooms the whole page when a focused field's font-size sits
@@ -7971,8 +7626,8 @@ button.sp-chat-draft__preview {
    shadow, 20 radius). The frame is 8 from the card's outer edge as drawn:
    the recipe's 1px transparent frame counts toward it, so the padding is
    the remainder. Hover deepens the card shadow and nothing else, and focus
-   composes the tight ring into the full list: both join the template
-   card's rules (.sp-template-card:hover / :focus-visible). The loading
+   composes the tight ring into the full list (the media cards' hover and
+   focus rules). The loading
    history card is not a control, so it takes neither. */
 .sp-chat-recent-card,
 .sp-chat-history-card {
@@ -8601,18 +8256,6 @@ button.sp-chat-draft__preview {
 .sp-chat-turn__retry {
   display: flex;
 }
-/* A template chat's questions (interview.ts): each question in the
-   assistant's voice, its quick answers (a select's options, Skip, Back)
-   under it, and a refused answer's reason. */
-.sp-chat-ask__limit {
-  color: var(--text-muted);
-}
-.sp-chat-ask__error {
-  margin: 0;
-  font-size: var(--type-caption-size);
-  line-height: var(--type-caption-lh);
-  color: var(--state-danger-on-surface);
-}
 
 /* The progress row (frame 04, "Progress"), 12 apart: a 120 × 4 track on
    the sunken fill at a 2 radius, its inverse fill at step ÷ 3 easing over
@@ -9152,56 +8795,6 @@ button.sp-chat-draft__preview {
   text-align: center;
 }
 
-/* The template card at the top of the thread (sp-template-ref 376:71):
-   the card recipe, 10 16 10 10, 14 apart: a 56 × 70 thumbnail at
-   --radius-tag in the sunken well, the name (15/125% Medium, -1%) over the
-   size meta (mono 12, secondary), and Change template at the end. */
-.sp-card.sp-chat-tref {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  box-sizing: border-box;
-  width: 100%;
-  padding: calc(10px - var(--border-width)) calc(16px - var(--border-width))
-    calc(10px - var(--border-width)) calc(10px - var(--border-width));
-  border-radius: var(--radius-card);
-}
-.sp-chat-tref__thumb {
-  display: block;
-  flex-shrink: 0;
-  width: 56px;
-  max-height: 70px;
-  border-radius: var(--radius-tag);
-  background: var(--gen-sunken);
-  overflow: hidden;
-}
-.sp-chat-tref__text {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-.sp-chat-tref__name {
-  overflow: hidden;
-  color: var(--text-primary);
-  font-family: var(--font-ui);
-  font-size: 15px;
-  line-height: 1.25;
-  font-weight: var(--weight-ui);
-  letter-spacing: -0.01em;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.sp-chat-tref__meta {
-  color: var(--text-secondary);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  line-height: 1.25;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
 /* The Fill in row: "Fill in" (13/125% muted), then the Missing tags,
    wrapping, 6 apart. */
 .sp-chat-fillin {
@@ -9224,100 +8817,6 @@ button.sp-chat-draft__preview {
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-/* The result: the draft card and the Looks card side by side, 12 apart,
-   the Looks card taking the rest of the row; on a narrow column it wraps
-   under the card. */
-.sp-chat-turn__result {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: stretch;
-  gap: var(--space-xs);
-}
-.sp-card.sp-chat-looks {
-  display: flex;
-  flex: 1 1 320px;
-  flex-direction: column;
-  gap: 16px;
-  min-width: 0;
-  box-sizing: border-box;
-  padding: calc(18px - var(--border-width)) calc(20px - var(--border-width))
-    calc(20px - var(--border-width));
-  border-radius: var(--radius-card);
-}
-.sp-chat-looks__title {
-  margin: 0;
-  color: var(--text-primary);
-  font-family: var(--font-ui);
-  font-size: 14px;
-  line-height: 1.25;
-  font-weight: var(--weight-ui);
-}
-.sp-chat-looks__options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px 24px;
-}
-.sp-chat-looks__option {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-width: 100%;
-}
-/* One look: the draft in that look, at --radius-tag, with the draft
-   cards' selected outline (a 1px inverse edge, 2px out) on the chosen one. */
-.sp-chat-looks__thumb {
-  display: block;
-  width: 100%;
-  padding: 0;
-  border: none;
-  border-radius: var(--radius-tag);
-  background: var(--gen-well);
-  overflow: hidden;
-  cursor: pointer;
-}
-.sp-chat-looks__thumb[data-selected] {
-  outline: 1px solid var(--gen-inverse);
-  outline-offset: 2px;
-}
-.sp-chat-looks__thumb:focus-visible {
-  outline: 2px solid transparent;
-  box-shadow: var(--focus-ring);
-}
-.sp-chat-looks__name {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin: 0;
-  color: var(--text-primary);
-  font-family: var(--font-ui);
-  font-size: 14px;
-  line-height: 1.25;
-}
-.sp-chat-looks__selected {
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-.sp-chat-looks[data-skeleton] {
-  pointer-events: none;
-}
-.sp-chat-looks[data-skeleton] .sp-chat-looks__thumb {
-  background: var(--gen-stage);
-  cursor: default;
-}
-.sp-chat-looks__bar {
-  display: block;
-  width: 64px;
-  height: 10px;
-  border-radius: var(--radius-control);
-  background: var(--gen-stage);
-}
-.sp-chat-looks__bar[data-short] {
-  width: 56px;
 }
 
 /* A card download that is not ready (a required field empty, a field too

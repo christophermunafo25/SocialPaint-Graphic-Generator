@@ -6,6 +6,10 @@ import type {
   CompanyPatch,
   CompanyTemplateLink,
   DesignImportResult,
+  GenerateInput,
+  GenerateRepairInput,
+  GenerateRepairResult,
+  GenerateResult,
   GenerateThreadInput,
   GenerateThreadRecord,
   GenerateThreadSummary,
@@ -25,6 +29,7 @@ import type {
   BrandKitStore,
   CompanyStore,
   DesignImportProvider,
+  GenerateCallOptions,
   GenerateProvider,
   GenerateThreadStore,
   MemberHintState,
@@ -629,17 +634,42 @@ export class LocalPublicLinkStore implements PublicLinkStore {
 /** Generate needs Edge Functions and a model key, neither of which the dev
  * backend has — so it says so, and the surface shows an honest disabled
  * state instead of a button that cannot work (the designImport precedent).
- * It takes no call options: there is no request to abort. */
+ *
+ * The template chat is the exception (new look, Phase 4): in a development
+ * build a stand-in answers template chat requests from the workspace's own
+ * template (templateChatStandIn.ts), so the chat runs end to end locally.
+ * The import sits behind import.meta.env.DEV, so a production bundle has
+ * none of it and refuses everything, as before. */
 export class LocalGenerateProvider implements GenerateProvider {
   isConfigured(): boolean {
     return false;
   }
-  async generate(): Promise<never> {
+  isTemplateChatAvailable(): boolean {
+    return import.meta.env.DEV;
+  }
+  async generate(
+    companyId: string,
+    input: GenerateInput,
+    opts?: GenerateCallOptions,
+  ): Promise<GenerateResult> {
+    if (import.meta.env.DEV) {
+      const { standInGenerate } = await import("./templateChatStandIn");
+      return standInGenerate(
+        companyId,
+        input,
+        (id) => new LocalTemplateStore().get(id),
+        opts?.signal,
+      );
+    }
     throw new Error(
       "Generate requires the Supabase backend and an Anthropic API key (see .env.example).",
     );
   }
-  async repair(): Promise<never> {
+  async repair(_companyId: string, input: GenerateRepairInput): Promise<GenerateRepairResult> {
+    if (import.meta.env.DEV) {
+      const { standInRepair } = await import("./templateChatStandIn");
+      return standInRepair(input);
+    }
     throw new Error(
       "Generate requires the Supabase backend and an Anthropic API key (see .env.example).",
     );

@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { Field, Input, TextArea, focusFirstInvalid } from "./Field";
 import { Filter } from "./Filter";
 import { SearchField } from "./SearchField";
+import { Upload } from "./Upload";
 
 describe("Field", () => {
   it("labels its control", () => {
@@ -114,5 +115,43 @@ describe("SearchField", () => {
     expect(document.activeElement).toBe(screen.getByRole("searchbox"));
     await userEvent.keyboard("{Escape}");
     expect(screen.getByRole("button", { name: "Search templates" })).toBeTruthy();
+  });
+});
+
+describe("Field markers", () => {
+  it("draws Edited, Optional and an action on the label row", async () => {
+    const onCopy = vi.fn();
+    render(
+      <Field label="Caption" edited optional action={{ label: "Copy", onClick: onCopy }}>
+        <TextArea />
+      </Field>,
+    );
+    expect(screen.getByText("Edited")).toBeTruthy();
+    expect(screen.getByText("Optional")).toBeTruthy();
+    // The markers are not part of the control's name.
+    expect(screen.getByLabelText("Caption").tagName).toBe("TEXTAREA");
+    await userEvent.click(screen.getByRole("button", { name: "Copy" }));
+    expect(onCopy).toHaveBeenCalled();
+  });
+});
+
+describe("Upload", () => {
+  it("is one button, empty or filled", async () => {
+    const onClick = vi.fn();
+    const { rerender } = render(<Upload placeholder="Add a photo" onClick={onClick} />);
+    await userEvent.click(screen.getByRole("button", { name: "Add a photo" }));
+    expect(onClick).toHaveBeenCalled();
+    rerender(<Upload placeholder="Add a photo" thumbnail="data:," fileName="portrait.jpg" />);
+    expect(screen.getByRole("button").textContent).toBe("portrait.jpgReplace");
+  });
+
+  it("takes a dropped file", () => {
+    const onDropFile = vi.fn();
+    render(<Upload placeholder="Add a photo" onDropFile={onDropFile} />);
+    const file = new File(["x"], "portrait.jpg", { type: "image/jpeg" });
+    const drop = new Event("drop", { bubbles: true, cancelable: true });
+    Object.defineProperty(drop, "dataTransfer", { value: { files: [file], types: ["Files"] } });
+    screen.getByRole("button").dispatchEvent(drop);
+    expect(onDropFile).toHaveBeenCalledWith(file);
   });
 });

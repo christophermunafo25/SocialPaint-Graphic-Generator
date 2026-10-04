@@ -278,6 +278,11 @@ export interface GenerateProvider {
    * Functions and no model key, so it says false and the surface explains
    * rather than offering a button that cannot work. */
   isConfigured(): boolean;
+  /** The template chat can run (new look, Phase 4): wherever isConfigured()
+   * is true, and on the local backend in a development build, where a
+   * stand-in answers template chat requests only. Generate itself keeps
+   * reading isConfigured(). */
+  isTemplateChatAvailable(): boolean;
   /** `opts.signal` aborts the request when the member presses Stop. An
    * aborted call can still finish on the server and count toward the rate
    * limit; the caller ignores whatever it resolves to either way. */

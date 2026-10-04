@@ -3,5 +3,6 @@
 @import "./legacy-bridge.css";
 @import "./primitives.css";
 @import "./shell.css";
+@import "./brand-templates.css";
 @import "./tailwind.css";
 @import "./theme.css";

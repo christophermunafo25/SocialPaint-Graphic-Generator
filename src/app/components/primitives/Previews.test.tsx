@@ -31,6 +31,12 @@ describe("PreviewOverlay and ResultCard", () => {
     render(<PreviewOverlay>preview</PreviewOverlay>);
     expect(screen.queryByRole("button")).toBeNull();
   });
+
+  it("draws a decorative Edit circle that is not a control", () => {
+    const { container } = render(<PreviewOverlay decorativeEdit>preview</PreviewOverlay>);
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(container.querySelector(".ui-preview__edit")?.getAttribute("aria-hidden")).toBe("true");
+  });
 });
 
 describe("LookTile", () => {

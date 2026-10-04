@@ -1,0 +1,825 @@
+/* ==========================================================================
+   Brand Templates (new look, Phase 4): the library, the fill page and the
+   template chat, built from the primitives. Measurements are from
+   docs/design/new-look/PHASE-4-SCREENS.md. Tokens and .t-* classes only;
+   nothing here declares a token. --chrome-top and --z-sticky are the
+   layout's own values (the sticky offset under the mobile bar, the sticky
+   layer), not colours.
+   ========================================================================== */
+
+/* ── The library (13:5776, 13:6310, 13:6511) ─────────────────────────────── */
+
+/* The filter bar pins under the app chrome as the page scrolls. Flat at
+   rest; pinned, the page's own ground runs behind it and fades out 24
+   below, so cards scroll under it without meeting an edge. The sentinel
+   above it tells the page when it has pinned. */
+.sp-lib-sentinel {
+  height: 1px;
+  margin-top: -1px;
+}
+.sp-lib-filterbar {
+  position: sticky;
+  top: var(--chrome-top);
+  z-index: var(--z-sticky);
+  display: flex;
+  align-items: center;
+  gap: 7px; /* the chip rail's gap, as drawn (13:5856) */
+  min-height: 56px;
+}
+.sp-lib-filterbar::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 calc(-1 * var(--space-md));
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(to bottom, var(--surface-page) 70%, transparent);
+  opacity: 0;
+}
+.sp-lib-filterbar[data-pinned]::before {
+  opacity: 1;
+}
+.sp-lib-search {
+  flex: none;
+  display: flex;
+}
+
+/* A rail that scrolls sideways and fades out at its right edge over 96 to
+   the page (13:5978), the fade gone once the end is in view. The chips'
+   rail and the shelves' rails share it. */
+.sp-lib-rail {
+  position: relative;
+  min-width: 0;
+}
+.sp-lib-rail::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--space-3xl);
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(to right, transparent, var(--surface-page));
+}
+.sp-lib-rail[data-at-end]::after {
+  opacity: 0;
+}
+.sp-lib-rail__track {
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.sp-lib-rail__track::-webkit-scrollbar {
+  display: none;
+}
+
+/* The chips' rail: the focus ring's room inside the scroller on every side
+   (a scroller clips), cancelled by the rail's margins, so the chips sit
+   exactly where they are drawn. */
+.sp-lib-chips {
+  flex: 1;
+  margin: -4px;
+}
+.sp-lib-chips__track {
+  align-items: center;
+  gap: 7px;
+  padding: 4px;
+  scroll-padding-inline: 4px;
+}
+
+/* The page under the filter bar: 40 down to the first shelf (16 + 24),
+   then 32 between shelves, 24 between a platform's groups and 28 between
+   a search's (PHASE-4.md §8). */
+.sp-lib-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  padding-top: 40px;
+}
+.sp-lib-body[data-state="platform"] {
+  gap: var(--space-md);
+}
+.sp-lib-body[data-state="search"] {
+  gap: 28px; /* as drawn (13:6635) */
+}
+
+/* A shelf: its header 32 tall, 16 above the rail. */
+.sp-lib-shelf {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+.sp-lib-shelf__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-height: 32px;
+  padding-left: var(--space-3xs);
+  color: var(--text-strong);
+}
+.sp-lib-shelf__header > h2 {
+  margin: 0;
+}
+/* "View all": a text link, 32 tall, underlined (13:5921). */
+.sp-lib-link {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 var(--space-2xs);
+  border-radius: var(--radius-control);
+  color: var(--text-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  white-space: nowrap;
+}
+/* Cards 302 wide, 16 apart. The track pads for the cards' shadow and the
+   focus ring (a scroller clips both) and steps back by as much. */
+.sp-lib-shelf__track {
+  gap: var(--space-sm);
+  padding: 4px 4px var(--space-sm);
+  margin: -4px -4px calc(-1 * var(--space-sm));
+  scroll-padding-inline: 4px;
+}
+.sp-lib-shelf__item {
+  flex: none;
+  width: 302px;
+}
+
+/* The result line (13:6452): what the page shows, and Clear. */
+.sp-lib-resultline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+.sp-lib-eyebrow {
+  margin: 0;
+  font: var(--type-mono-eyebrow);
+  letter-spacing: var(--type-mono-eyebrow-tracking);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* A result group (13:6456): its label and count, then three columns of
+   cards 17 apart (as drawn, off the scale). */
+.sp-lib-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+.sp-lib-group__header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px; /* as drawn (13:6457) */
+  padding-left: var(--space-3xs);
+  color: var(--text-strong);
+}
+.sp-lib-group__header > h2 {
+  margin: 0;
+}
+.sp-lib-group__count {
+  color: var(--text-secondary);
+}
+.sp-lib-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 17px;
+  align-items: start;
+}
+@media (max-width: 1023px) {
+  .sp-lib-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 599px) {
+  .sp-lib-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sp-lib-shelf__item {
+    width: min(302px, 78vw);
+  }
+}
+
+/* Empty and no results: not drawn. Today's copy, centred, with Buttons. */
+.sp-lib-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding: var(--space-2xl) var(--space-lg);
+  text-align: center;
+  color: var(--text-strong);
+}
+.sp-lib-empty > p {
+  margin: 0;
+}
+.sp-lib-empty__body {
+  color: var(--text-secondary);
+}
+.sp-lib-empty__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2xs);
+  margin-top: var(--space-xs);
+}
+
+/* Terms and Privacy under the page (13:6040). */
+.sp-lib-legal {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-sm);
+  margin: var(--space-xl) 0 0;
+  color: var(--text-secondary);
+}
+.sp-lib-legal > a {
+  color: inherit;
+  text-decoration: none;
+}
+.sp-lib-legal > a:hover {
+  text-decoration: underline;
+}
+
+/* ── Template card (13:5924): the Result card's anatomy with a go arrow.
+   One button; hover and keyboard focus show the preview hover (the dim
+   and the Edit circle) in place of a ring. ── */
+.sp-tcard {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: var(--space-2xs);
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+  color: var(--text-strong);
+  text-align: left;
+  cursor: pointer;
+}
+.sp-tcard:focus-visible {
+  outline: 2px solid transparent; /* a ring in forced colours only */
+}
+.sp-tcard:hover .ui-preview__overlay,
+.sp-tcard:focus-visible .ui-preview__overlay {
+  opacity: 1;
+}
+.sp-tcard__preview {
+  border-radius: var(--radius-media-plate);
+}
+.sp-tcard__frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: var(--frame-ratio, 4 / 5);
+  overflow: hidden;
+  border-radius: inherit;
+  background: var(--surface-sunken);
+}
+.sp-tcard__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding: var(--space-sm) var(--space-2xs) var(--space-2xs);
+}
+.sp-tcard__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xs);
+}
+.sp-tcard__title,
+.sp-tcard__size {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-tcard__size {
+  color: var(--text-secondary);
+}
+.sp-tcard__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px; /* as drawn (13:6653) */
+  padding-top: 6px;
+}
+.sp-tcard__go {
+  flex: none;
+}
+
+/* ── Below 768 the library's rails bleed to the screen edge (.sp-page--bleed
+   drops the page's side padding); text and grids keep a 16 gutter. ── */
+@media (max-width: 767px) {
+  .sp-page--bleed .sp-lib-filterbar,
+  .sp-page--bleed .sp-lib-resultline,
+  .sp-page--bleed .sp-lib-group,
+  .sp-page--bleed .sp-lib-empty,
+  .sp-page--bleed .sp-lib-legal,
+  .sp-page--bleed .sp-lib-shelf__header {
+    padding-inline: var(--space-sm);
+  }
+  .sp-page--bleed .sp-lib-shelf__track {
+    padding-inline: var(--space-sm);
+    margin-inline: 0;
+    scroll-padding-inline: var(--space-sm);
+  }
+  .sp-page--bleed .sp-lib-chips {
+    margin-right: 0;
+  }
+}
+
+/* ── The fill page (156:674, 159:716) ─────────────────────────────────────
+   The page column ends 28 above the viewport's foot (156:747), and the
+   split fills what is left under the header: 45 + 36 + 24 + 28 at desktop
+   width (48 above below 1280). */
+.sp-page.sp-fill-page {
+  --_top: 48px;
+  padding-bottom: 28px;
+}
+@media (min-width: 1280px) {
+  .sp-page.sp-fill-page {
+    --_top: 45px;
+  }
+}
+.sp-fill {
+  display: flex;
+  gap: var(--space-md);
+  height: calc(100dvh - var(--dev-banner-h, 0px) - var(--_top, 48px) - 88px);
+  min-height: 560px;
+}
+/* The public link page has no header; its attribution sits under it. */
+.sp-fill[data-place="public"] {
+  height: calc(100dvh - 180px);
+}
+.sp-fill__graphic {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+/* The stage (156:763): control/fill, radius 20, padding 40, the graphic
+   centred and as large as both its sides allow. */
+.sp-fill__stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xl);
+  border-radius: var(--radius-card);
+  background: var(--control-fill);
+  overflow: hidden;
+  container-type: size;
+}
+.sp-fill__art {
+  width: min(100cqw, calc(100cqh * var(--art-ratio, 1)));
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  /* Elevation/Small without its bevels, as drawn (156:764). */
+  box-shadow: 2px 2px 8px 0 var(--shadow-raised);
+}
+.sp-fill__note {
+  margin: var(--space-xs) 0 0;
+  color: var(--text-secondary);
+}
+.sp-fill__legal {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-sm);
+  margin: 0;
+  padding-top: var(--space-sm);
+  color: var(--text-secondary);
+}
+.sp-fill__legal > a {
+  color: inherit;
+  text-decoration: none;
+}
+.sp-fill__legal > a:hover {
+  text-decoration: underline;
+}
+.sp-fill__panel {
+  flex: none;
+  width: 380px;
+}
+.sp-fill__grow {
+  flex: 1;
+}
+/* Today's export messages, at the foot of the viewport. */
+.sp-fill-toast {
+  position: fixed;
+  left: 50%;
+  /* Above the local backend's warning bar, where it shows. */
+  bottom: calc(var(--space-lg) + var(--dev-banner-h, 0px));
+  z-index: var(--z-sticky);
+  transform: translateX(-50%);
+  max-width: min(560px, calc(100vw - 32px));
+}
+
+/* Below 1024 the graphic and the panel stack; the public link page shows
+   the graphic first, as today, and the member page the panel. */
+@media (max-width: 1023px) {
+  .sp-fill,
+  .sp-fill[data-place="public"] {
+    flex-direction: column;
+    height: auto;
+    min-height: 0;
+  }
+  .sp-fill[data-place="member"] .sp-fill__graphic {
+    order: 2;
+  }
+  .sp-fill__stage {
+    container-type: normal;
+    padding: var(--space-md);
+  }
+  .sp-fill__art {
+    width: min(100%, 480px);
+  }
+  .sp-fill__panel {
+    width: auto;
+  }
+}
+
+/* ── The Details panel (156:782; 13:8148 in the template chat) ──────────── */
+.sp-details {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  min-height: 0;
+  padding: 20px; /* as drawn (156:782) */
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+  color: var(--text-strong);
+}
+.sp-details__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+  min-height: 32px;
+}
+.sp-details__head > h2 {
+  margin: 0;
+}
+/* The fields scroll; the title and the footer stay put. The ring's room is
+   padded in and stepped back, since a scroller clips. */
+.sp-details__fields {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin: -4px;
+  padding: 4px;
+  overflow-y: auto;
+}
+/* Multiline fields and the caption hug their text (156:820): no resize
+   grip, and no 100 floor. */
+.sp-details .ui-input[data-size="multiline"] {
+  field-sizing: content;
+  min-height: 40px;
+  resize: none;
+}
+/* Look's segments share the panel's width (156:792). */
+.sp-details__look {
+  display: flex;
+  width: 100%;
+}
+.sp-details__look > * {
+  flex: 1;
+}
+.sp-details__foot {
+  display: flex;
+  gap: var(--space-2xs);
+}
+@media (max-width: 1023px) {
+  .sp-details__fields {
+    overflow: visible;
+  }
+}
+/* The public link page's note on what survives a closed tab. */
+.sp-fill__resume {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2xs);
+  padding-top: var(--space-xs);
+  color: var(--text-secondary);
+}
+.sp-fill__resume > p {
+  margin: 0;
+}
+
+/* ── The template chat (13:7064 to 13:8148) ─────────────────────────────────
+   The thread's frame, scroll and dock are still Generate's (Phase 5 moves
+   them); the turns inside are the new look's. */
+
+/* The person's side: a bubble or a 64 photo, on the right. */
+.sp-tchat-user {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+.sp-tchat-user__photo {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-control-md);
+  object-fit: cover;
+}
+.sp-tchat-user__note {
+  margin: 0;
+  color: var(--text-secondary);
+}
+/* The template in the opening (13:7166): 112 wide, radius 7, the drawn
+   2/2/4 shadow. */
+.sp-tchat-tref {
+  display: block;
+  width: 112px;
+  overflow: hidden;
+  border-radius: var(--radius-control);
+  box-shadow: 2px 2px 4px 0 var(--shadow-raised);
+}
+.sp-tchat-ask {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+.sp-tchat-ask__error {
+  margin: 0;
+  color: var(--state-error);
+}
+.sp-tchat-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+  padding-top: var(--space-3xs);
+}
+
+/* The Fill in row (13:7871): Caption/M, then a Missing tag per gap. */
+.sp-tchat-fillin {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+.sp-tchat-fillin__label {
+  color: var(--text-secondary);
+}
+.sp-tchat-fillin__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The result row: the Result card beside the Looks card, 12 apart. */
+.sp-tchat-results {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: var(--space-xs);
+}
+.sp-tchat-result {
+  flex: none;
+  max-width: 100%;
+}
+.sp-tchat-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--surface-sunken);
+}
+.sp-tchat-preview > * {
+  width: 100%;
+}
+
+/* The Looks card (13:7899): Look tiles centred on a 264 sunken well, then
+   "Look" and the chosen name. */
+.sp-tchat-looks {
+  box-sizing: border-box;
+  flex: 1 1 280px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-2xs);
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+  color: var(--text-strong);
+}
+.sp-tchat-looks__well {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px; /* as drawn (13:7899) */
+  height: 264px;
+  padding: 0 var(--space-sm);
+  overflow-x: auto;
+  border-radius: var(--radius-media-plate);
+  background: var(--surface-sunken);
+}
+.sp-tchat-looks__well .ui-look-tile {
+  width: auto;
+}
+.sp-tchat-looks__thumb {
+  display: block;
+  height: 160px;
+  overflow: hidden;
+  border-radius: var(--radius-control);
+}
+.sp-tchat-looks__meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xs);
+  padding: var(--space-sm) var(--space-2xs) var(--space-2xs);
+}
+.sp-tchat-looks__name {
+  color: var(--text-secondary);
+}
+
+/* The caption card (13:7920). */
+.sp-tchat-caption {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-sm) 20px 20px;
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+  color: var(--text-strong);
+}
+.sp-tchat-caption__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+.sp-tchat-caption__text {
+  margin: 0;
+  white-space: pre-wrap;
+}
+.sp-tchat-warnings > p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+/* Building (13:7358): the cards' shapes, their contents as sunken bars. */
+.sp-tchat-skeleton {
+  pointer-events: none;
+}
+.sp-tchat-skeleton__preview {
+  display: block;
+  border-radius: var(--radius-media-plate);
+  background: var(--surface-sunken);
+}
+.sp-tchat-skeleton__meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  padding: var(--space-sm) var(--space-2xs) var(--space-2xs);
+}
+.sp-tchat-skeleton__bar {
+  display: block;
+  height: 10px;
+  border-radius: 6px;
+  background: var(--surface-sunken);
+}
+
+/* Edit details (13:8148): the Details panel beside the stage, or over the
+   chat as a sheet below 1180. */
+.sp-tchat-details {
+  flex: none;
+  width: 380px;
+  min-height: 0;
+}
+.sp-tchat-details:focus {
+  outline: none;
+}
+.sp-tchat-details[data-presentation="sheet"] {
+  position: relative;
+  width: min(380px, 100%);
+  height: 100%;
+}
+/* The chat's header sits right on the thread (13:7138); the thread's own
+   top padding and Edit details' split carry the gap. */
+.sp-chat-page > .sp-shell-pagehead {
+  margin-bottom: 0;
+}
+.sp-tchat-legal {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-sm);
+  margin: 0;
+  color: var(--text-secondary);
+}
+.sp-tchat-legal > a {
+  color: inherit;
+  text-decoration: none;
+}
+.sp-tchat-legal > a:hover {
+  text-decoration: underline;
+}
+
+/* ── The Public links dialog (168:758): New link, a divider, then Links ── */
+.sp-links__note {
+  margin: 0;
+  color: var(--text-secondary);
+}
+.sp-links__alert,
+.sp-links__error {
+  margin: 0;
+  color: var(--state-error);
+}
+.sp-links__confirm {
+  margin: 0;
+  color: var(--text-secondary);
+}
+.sp-links__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2xs);
+}
+.sp-links__fresh,
+.sp-links__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+.sp-links__form > h3,
+.sp-links__list > h3 {
+  margin: 0;
+}
+.sp-links__pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-xs);
+}
+@media (max-width: 599px) {
+  .sp-links__pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.sp-links__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+.sp-links__divider {
+  margin: 0;
+  border: 0;
+  border-top: 1px solid var(--border-default);
+}
+.sp-links__list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px; /* as drawn (168:760) */
+}
+.sp-links__rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-links__row {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.sp-links__rowhead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+.sp-links__rowname,
+.sp-links__rowactions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+/* Four Stats in equal columns (168:760); two on a phone. */
+.sp-links__stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+@media (max-width: 599px) {
+  .sp-links__stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.sp-links__look {
+  width: 180px;
+}
