@@ -511,3 +511,218 @@
 .sp-fill__resume > p {
   margin: 0;
 }
+
+/* ── The template chat (13:7064 to 13:8148) ─────────────────────────────────
+   The thread's frame, scroll and dock are still Generate's (Phase 5 moves
+   them); the turns inside are the new look's. */
+
+/* The person's side: a bubble or a 64 photo, on the right. */
+.sp-tchat-user {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+.sp-tchat-user__photo {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-control-md);
+  object-fit: cover;
+}
+.sp-tchat-user__note {
+  margin: 0;
+  color: var(--text-secondary);
+}
+/* The template in the opening (13:7166): 112 wide, radius 7, the drawn
+   2/2/4 shadow. */
+.sp-tchat-tref {
+  display: block;
+  width: 112px;
+  overflow: hidden;
+  border-radius: var(--radius-control);
+  box-shadow: 2px 2px 4px 0 var(--shadow-raised);
+}
+.sp-tchat-ask {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+.sp-tchat-ask__error {
+  margin: 0;
+  color: var(--state-error);
+}
+.sp-tchat-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+  padding-top: var(--space-3xs);
+}
+
+/* The Fill in row (13:7871): Caption/M, then a Missing tag per gap. */
+.sp-tchat-fillin {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+.sp-tchat-fillin__label {
+  color: var(--text-secondary);
+}
+.sp-tchat-fillin__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The result row: the Result card beside the Looks card, 12 apart. */
+.sp-tchat-results {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: var(--space-xs);
+}
+.sp-tchat-result {
+  flex: none;
+  max-width: 100%;
+}
+.sp-tchat-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--surface-sunken);
+}
+.sp-tchat-preview > * {
+  width: 100%;
+}
+
+/* The Looks card (13:7899): Look tiles centred on a 264 sunken well, then
+   "Look" and the chosen name. */
+.sp-tchat-looks {
+  box-sizing: border-box;
+  flex: 1 1 280px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-2xs);
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+  color: var(--text-strong);
+}
+.sp-tchat-looks__well {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px; /* as drawn (13:7899) */
+  height: 264px;
+  padding: 0 var(--space-sm);
+  overflow-x: auto;
+  border-radius: var(--radius-media-plate);
+  background: var(--surface-sunken);
+}
+.sp-tchat-looks__well .ui-look-tile {
+  width: auto;
+}
+.sp-tchat-looks__thumb {
+  display: block;
+  height: 160px;
+  overflow: hidden;
+  border-radius: var(--radius-control);
+}
+.sp-tchat-looks__meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xs);
+  padding: var(--space-sm) var(--space-2xs) var(--space-2xs);
+}
+.sp-tchat-looks__name {
+  color: var(--text-secondary);
+}
+
+/* The caption card (13:7920). */
+.sp-tchat-caption {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-sm) 20px 20px;
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+  color: var(--text-strong);
+}
+.sp-tchat-caption__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+.sp-tchat-caption__text {
+  margin: 0;
+  white-space: pre-wrap;
+}
+.sp-tchat-warnings > p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+/* Building (13:7358): the cards' shapes, their contents as sunken bars. */
+.sp-tchat-skeleton {
+  pointer-events: none;
+}
+.sp-tchat-skeleton__preview {
+  display: block;
+  border-radius: var(--radius-media-plate);
+  background: var(--surface-sunken);
+}
+.sp-tchat-skeleton__meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  padding: var(--space-sm) var(--space-2xs) var(--space-2xs);
+}
+.sp-tchat-skeleton__bar {
+  display: block;
+  height: 10px;
+  border-radius: 6px;
+  background: var(--surface-sunken);
+}
+
+/* Edit details (13:8148): the Details panel beside the stage, or over the
+   chat as a sheet below 1180. */
+.sp-tchat-details {
+  flex: none;
+  width: 380px;
+  min-height: 0;
+}
+.sp-tchat-details:focus {
+  outline: none;
+}
+.sp-tchat-details[data-presentation="sheet"] {
+  position: relative;
+  width: min(380px, 100%);
+  height: 100%;
+}
+/* The chat's header sits right on the thread (13:7138); the thread's own
+   top padding and Edit details' split carry the gap. */
+.sp-chat-page > .sp-shell-pagehead {
+  margin-bottom: 0;
+}
+.sp-tchat-legal {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-sm);
+  margin: 0;
+  color: var(--text-secondary);
+}
+.sp-tchat-legal > a {
+  color: inherit;
+  text-decoration: none;
+}
+.sp-tchat-legal > a:hover {
+  text-decoration: underline;
+}

@@ -13,7 +13,9 @@ import { useBrand } from "@/lib/brand/BrandContext";
 import { DOCUMENT_ACCEPT } from "@/lib/generate/documentText";
 import { ImageSourceDialog, pickableAssets } from "../ImageSourceChooser";
 import { BrandStudioGlyph, FileGlyph, PhotoGlyph } from "./icons";
-import { PlusButton } from "./PlusButton";
+import { AttachButton } from "../primitives";
+import { Tooltip } from "../Tooltip";
+import { PLUS_TOOLTIP, PlusButton } from "./PlusButton";
 
 /** The native picker's list for Photo: the three formats the upload
  * pipeline takes, the same list FieldInput's replace dialog offers. The
@@ -65,7 +67,12 @@ export function AttachMenu({
   onPickFile,
   onPickDocument,
   onPickAsset,
+  trigger = "plus",
 }: {
+  /** The plus that opens it: the legacy chat box's (PlusButton), or the
+   * Attach button primitive (102:569) on the new look's Composer (the
+   * template chat, PHASE-4 §9 D1). Phase 5 moves Generate over. */
+  trigger?: "plus" | "attach";
   /** The chat box card. A menu with no room below opens above this box
    * rather than over it. Without it, the plus's own box is used. */
   containerRef?: React.RefObject<HTMLElement | null>;
@@ -234,15 +241,31 @@ export function AttachMenu({
 
   return (
     <>
-      <PlusButton
-        ref={buttonRef}
-        id={buttonId}
-        expanded={open}
-        aria-controls={open ? panelId : undefined}
-        disabled={disabled}
-        onClick={() => (open ? close(false) : setOpenOn("first"))}
-        onKeyDown={onButtonKeyDown}
-      />
+      {trigger === "attach" ? (
+        <Tooltip content={PLUS_TOOLTIP} placement="right" gap={4} suppressed={open}>
+          <AttachButton
+            ref={buttonRef}
+            id={buttonId}
+            label="Add"
+            aria-haspopup="menu"
+            aria-expanded={open}
+            aria-controls={open ? panelId : undefined}
+            disabled={disabled}
+            onClick={() => (open ? close(false) : setOpenOn("first"))}
+            onKeyDown={onButtonKeyDown}
+          />
+        </Tooltip>
+      ) : (
+        <PlusButton
+          ref={buttonRef}
+          id={buttonId}
+          expanded={open}
+          aria-controls={open ? panelId : undefined}
+          disabled={disabled}
+          onClick={() => (open ? close(false) : setOpenOn("first"))}
+          onKeyDown={onButtonKeyDown}
+        />
+      )}
       <input
         ref={photoRef}
         type="file"

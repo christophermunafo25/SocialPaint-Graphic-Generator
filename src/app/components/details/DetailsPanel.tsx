@@ -40,9 +40,12 @@ export interface DetailsPanelProps {
   /** Look, as a Segmented control, when the template has more than one. */
   look?: DetailsLook | null;
   /** The member fields to show, in the template's order. */
-  fields: TemplateField[];
-  values: FieldValues;
-  onValueChange(fieldKey: string, value: string): void;
+  fields?: TemplateField[];
+  values?: FieldValues;
+  onValueChange?(fieldKey: string, value: string): void;
+  /** The field rows, built by the caller from DetailField, in place of
+   * `fields` (the template chat, whose rows edit a draft). */
+  fieldRows?: React.ReactNode;
   /** A field's character cap, where the brand sets one. */
   maxLengthFor?(field: TemplateField): number | undefined;
   /** A field's error line: a required value missing, or the value too long. */
@@ -53,8 +56,14 @@ export interface DetailsPanelProps {
   caption?: DetailsCaption | null;
   /** The footer's buttons. */
   footer: React.ReactNode;
-  /** The form the fields sit in, for focusFirstInvalid. */
+  /** The form the fields sit in, for focusFirstInvalid; it is also the
+   * fields' scroller. */
   formRef?: React.Ref<HTMLFormElement>;
+  /** The panel itself, and what the caller puts on it (the template chat's
+   * Escape and focus handling). */
+  panelRef?: React.Ref<HTMLElement>;
+  panelProps?: React.HTMLAttributes<HTMLElement>;
+  closeRef?: React.Ref<HTMLButtonElement>;
   className?: string;
 }
 
@@ -71,15 +80,19 @@ export function DetailsPanel({
   onClose,
   closeLabel = "Close",
   look,
-  fields,
-  values,
+  fields = [],
+  values = {},
   onValueChange,
+  fieldRows,
   maxLengthFor,
   errors = {},
   isEdited,
   caption,
   footer,
   formRef,
+  panelRef,
+  panelProps,
+  closeRef,
   className,
 }: DetailsPanelProps) {
   const titleId = useId();
@@ -98,14 +111,16 @@ export function DetailsPanel({
 
   return (
     <section
-      className={["sp-details", className].filter(Boolean).join(" ")}
+      ref={panelRef}
       aria-labelledby={titleId}
+      {...panelProps}
+      className={["sp-details", className].filter(Boolean).join(" ")}
     >
       <div className="sp-details__head">
         <h2 id={titleId} className="t-title-card">
           {title}
         </h2>
-        {onClose && <IconButton icon={X} label={closeLabel} onClick={onClose} />}
+        {onClose && <IconButton ref={closeRef} icon={X} label={closeLabel} onClick={onClose} />}
       </div>
 
       <form
@@ -131,12 +146,13 @@ export function DetailsPanel({
           </div>
         )}
 
+        {fieldRows}
         {fields.map((field) => (
           <DetailField
             key={field.id}
             field={field}
             value={values[field.fieldKey] ?? ""}
-            onChange={(v) => onValueChange(field.fieldKey, v)}
+            onChange={(v) => onValueChange?.(field.fieldKey, v)}
             maxLength={maxLengthFor?.(field) ?? field.maxLength}
             error={errors[field.fieldKey]}
             edited={isEdited?.(field.fieldKey) ?? false}
@@ -159,13 +175,17 @@ export function DetailsPanel({
   );
 }
 
-function DetailField({
+/** One field row of the panel: the Field with the control its type takes
+ * (Input, TextArea, Select, or the Upload row for a photo). */
+export function DetailField({
   field,
   value,
   onChange,
   maxLength,
   error,
   edited,
+  optional: optionalProp,
+  controlId,
 }: {
   field: TemplateField;
   value: string;
@@ -173,8 +193,12 @@ function DetailField({
   maxLength?: number;
   error?: string;
   edited: boolean;
+  /** Whether it can stay empty; by default, from the field. */
+  optional?: boolean;
+  /** The control's id, for a caller that focuses it. */
+  controlId?: string;
 }) {
-  const optional = !isRequiredField(field);
+  const optional = optionalProp ?? !isRequiredField(field);
   if (field.type === "image") {
     return (
       <PhotoField
@@ -184,6 +208,7 @@ function DetailField({
         error={error}
         edited={edited}
         optional={optional}
+        controlId={controlId}
       />
     );
   }
@@ -192,6 +217,7 @@ function DetailField({
     <Field label={field.label} error={error} edited={edited} optional={optional}>
       {field.type === "multiline" ? (
         <TextArea
+          id={controlId}
           value={value}
           maxLength={maxLength}
           placeholder={field.placeholder ?? field.label}
@@ -200,6 +226,7 @@ function DetailField({
         />
       ) : field.type === "select" ? (
         <Select
+          id={controlId}
           ariaLabel={field.label}
           size="lg"
           value={value || undefined}
@@ -209,6 +236,7 @@ function DetailField({
         />
       ) : (
         <Input
+          id={controlId}
           value={value}
           maxLength={maxLength}
           placeholder={field.placeholder ?? field.label}
@@ -232,6 +260,7 @@ function PhotoField({
   error,
   edited,
   optional,
+  controlId,
 }: {
   field: TemplateField;
   value: string;
@@ -239,6 +268,7 @@ function PhotoField({
   error?: string;
   edited: boolean;
   optional: boolean;
+  controlId?: string;
 }) {
   // The picked file's or brand image's name. Not part of the values (a
   // value is the cropped picture itself), so a photo that arrived another
@@ -287,6 +317,7 @@ function PhotoField({
       />
       <Field label={field.label} error={error ?? pick.error} edited={edited} optional={optional}>
         <Upload
+          id={controlId}
           placeholder={placeholder}
           thumbnail={value || null}
           fileName={shownName}

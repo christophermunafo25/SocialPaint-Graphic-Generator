@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { AlertTriangle } from "lucide-react";
 import type { BrandKit, TemplateField } from "@/lib/types";
 import type { ChatDraft, ChatPhoto } from "@/lib/generate/chat";
-import { draftName, previewValues, tooLongFields } from "@/lib/generate/draftView";
+import { captionFor, draftName, previewValues, tooLongFields } from "@/lib/generate/draftView";
 import { indefiniteArticle } from "@/lib/generate/tryNext";
 import { blockedNote } from "@/lib/generate/editDetails";
 import { createCanvasMeasurer } from "@/lib/render/autoFit";
@@ -27,6 +27,9 @@ import {
   type LinkedEntry,
 } from "@/lib/generate/linkedFields";
 import { useBrand } from "@/lib/brand/BrandContext";
+import { TOO_LONG_ERROR, requiredError } from "@/lib/templates/fieldCopy";
+import { DetailField, DetailsPanel } from "../details/DetailsPanel";
+import { Button, Toast } from "../primitives";
 import { ErrorBoundary } from "../ErrorBoundary";
 import { FieldInput } from "../FieldInput";
 import { SchemaRenderer, type SchemaRendererHandle } from "../SchemaRenderer";
@@ -256,6 +259,7 @@ export function EditorPanel({
   openDrafts = null,
   onDiscard,
   canDiscard = false,
+  details = false,
 }: {
   /** The turn's drafts. A draft whose template is gone (schema null)
    * cannot be edited or shown, and is left out of the switch and the
@@ -289,6 +293,10 @@ export function EditorPanel({
   onDiscard?(): void;
   /** Something has changed since the panel opened. */
   canDiscard?: boolean;
+  /** The template chat's Edit details (PHASE-4 §9 D4): drawn as the
+   * Details panel from its first render (its stage arrives a commit later,
+   * and a panel that changed form then would remount and drop focus). */
+  details?: boolean;
 }) {
   const { kit } = useBrand();
   const stageMode = stageTarget !== null;
@@ -373,12 +381,12 @@ export function EditorPanel({
   // ── Focus ───────────────────────────────────────────────────────────────
   const hostRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLElement | null>(null);
-  const fieldsRef = useRef<HTMLDivElement | null>(null);
+  const fieldsRef = useRef<HTMLElement | null>(null);
   const closeRef = useRef<HTMLButtonElement | null>(null);
   const fades = useScrollFades(fieldsRef);
   // The list mounts with its first field, so it is held as state too.
-  const [fieldsEl, setFieldsEl] = useState<HTMLDivElement | null>(null);
-  const setFields = useCallback((el: HTMLDivElement | null) => {
+  const [fieldsEl, setFieldsEl] = useState<HTMLElement | null>(null);
+  const setFields = useCallback((el: HTMLElement | null) => {
     fieldsRef.current = el;
     setFieldsEl(el);
   }, []);
@@ -524,6 +532,92 @@ export function EditorPanel({
       : drafts[0] && (
           <p className="sp-chat-editor__gone">{draftName(drafts[0])} is no longer available.</p>
         );
+
+  // Edit details (the template chat, 13:8148; PHASE-4 §9 D4): the same
+  // logic on the Details panel. Missing and Too long show on each field's
+  // error line, Edited on its label row; Discard and Download PNG close it.
+  const editedOf = (entry: LinkedEntry): boolean => {
+    if (!selected) return false;
+    const key = fieldKeyOn(entry, selected.id);
+    const opened = openDrafts?.find((d) => d.id === selected.id);
+    if (key === undefined || !opened) return false;
+    return (opened.values[key] ?? "") !== (selected.values[key] ?? "");
+  };
+  const errorOf = (entry: LinkedEntry): string | undefined => {
+    if (!selected) return undefined;
+    const key = fieldKeyOn(entry, selected.id);
+    if (key === undefined) return undefined;
+    if (missingKeys.has(key)) {
+      return requiredError({ label: entry.label, type: entry.kind === "image" ? "image" : "text" });
+    }
+    return tooLong.has(key) ? TOO_LONG_ERROR : undefined;
+  };
+  const openedCaption = useMemo(() => {
+    const opened = selected && openDrafts?.find((d) => d.id === selected.id);
+    return opened ? captionFor(opened, { templateFallback: false }) : null;
+  }, [selected, openDrafts]);
+  const detailsPanel = details ? (
+    <DetailsPanel
+      title="Edit details"
+      onClose={onClose}
+      closeRef={closeRef}
+      panelRef={panelRef}
+      panelProps={
+        {
+          role: "complementary",
+          "aria-label": "Edit details",
+          tabIndex: -1,
+          onKeyDown,
+          "data-presentation": presentation,
+        } as React.HTMLAttributes<HTMLElement>
+      }
+      className="sp-tchat-details"
+      formRef={setFields as React.Ref<HTMLFormElement>}
+      look={looks}
+      fieldRows={entries.map((entry) => (
+        <DetailField
+          key={entry.id}
+          controlId={controlId(prefix, entry)}
+          field={withPlaceholder(inputField(entry, usable))}
+          value={groupValue(entry, usable, selected?.id)}
+          onChange={(next) => onEdit(editsFor(entry, next))}
+          optional={entry.kind === "text" ? !entry.required : undefined}
+          error={errorOf(entry)}
+          edited={editedOf(entry)}
+        />
+      ))}
+      caption={
+        caption
+          ? {
+              value: caption.value,
+              onChange: caption.onChange,
+              edited: openedCaption !== null && openedCaption !== caption.value,
+            }
+          : null
+      }
+      footer={
+        <>
+          {onDiscard && (
+            <Button kind="neutral" size="lg" disabled={!canDiscard} onClick={onDiscard}>
+              Discard
+            </Button>
+          )}
+          <Button
+            kind="primary"
+            size="lg"
+            className="sp-fill__grow"
+            aria-busy={exporting || undefined}
+            onClick={() => {
+              if (blocked) focusEntry(blocked.first);
+              else if (selected && !exporting) void download();
+            }}
+          >
+            Download PNG
+          </Button>
+        </>
+      }
+    />
+  ) : null;
 
   const panel = (
     <aside
@@ -687,7 +781,17 @@ export function EditorPanel({
       aria-labelledby={sheet ? titleId : undefined}
     >
       {sheet && <div className="sp-chat-editor-sheet__scrim" aria-hidden onClick={onClose} />}
-      {panel}
+      {detailsPanel ?? panel}
+      {detailsPanel && (
+        <>
+          {stageTarget && createPortal(stage, stageTarget)}
+          {toast && (
+            <div key={toast.at} className="sp-fill-toast" aria-live="assertive">
+              <Toast message={`${EXPORT_ERROR_TITLE}. ${toast.detail}`} />
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

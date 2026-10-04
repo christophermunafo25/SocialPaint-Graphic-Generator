@@ -1,18 +1,8 @@
 import React, { memo, useCallback, useId, useMemo } from "react";
 import type { AssistantTurn, ChatDraft, ChatPhoto } from "@/lib/generate/chat";
 import { isRunningTurn } from "@/lib/generate/chatReducer";
-import {
-  captionFor,
-  captionTabs,
-  draftName,
-  fillInEntries,
-  previewValues,
-  tooLongFields,
-} from "@/lib/generate/draftView";
-import { missingFields } from "@/lib/generate/draftDownload";
+import { captionFor, captionTabs, draftName, previewValues } from "@/lib/generate/draftView";
 import { linkedFillIn, photoTargetsFor } from "@/lib/generate/linkedFields";
-import type { LineMeasurer } from "@/lib/render/autoFit";
-import { hasVariants } from "@/lib/templates/variants";
 import { useBrand } from "@/lib/brand/BrandContext";
 import { progressLabel, provenanceSentence } from "@/lib/generate/runCopy";
 import type { TryNextAction } from "@/lib/generate/tryNext";
@@ -22,7 +12,6 @@ import { ChatButton } from "./ChatButton";
 import { DraftCard, type DraftCardSize } from "./DraftCard";
 import { DraftCardSkeleton } from "./DraftCardSkeleton";
 import { FillInRow } from "./FillInRow";
-import { LookPicker, LookPickerSkeleton } from "./LookPicker";
 import { ChipRow, SuggestionChip } from "./SuggestionChip";
 
 /** A slot's shape while its canvas is unknown (PROMPT §7.15): 4:5 for the
@@ -141,97 +130,6 @@ function ThreadDraft({
   );
 }
 
-/** A template chat's result (template-chat PROMPT §12.5): the Fill in row,
- * then the draft card and the Looks card side by side, 12 apart. The card's
- * Download is blocked while a required field is empty or a field is too
- * long; both are recomputed from the draft, its look and the template on
- * every render, never stored. */
-function TemplateResult({
-  turnId,
-  draft,
-  photo,
-  size,
-  selected,
-  downloading,
-  maxWidth,
-  description,
-  measure,
-  registerPreview,
-  onEditDraft,
-  onDownloadDraft,
-  onFillIn,
-  onChangeLook,
-}: {
-  turnId: string;
-  draft: ChatDraft;
-  photo: ChatPhoto | null;
-  size: DraftCardSize;
-  selected: boolean;
-  downloading: boolean;
-  maxWidth: number | undefined;
-  description: string | undefined;
-  measure: LineMeasurer;
-  registerPreview(draftId: string, el: HTMLButtonElement | null): void;
-  onEditDraft(turnId: string, draftId: string): void;
-  onDownloadDraft(turnId: string, draftId: string): void;
-  onFillIn(turnId: string, draftId: string, fieldKey: string): void;
-  onChangeLook(turnId: string, draftId: string, variantId: string): void;
-}) {
-  const { kit } = useBrand();
-  const values = useMemo(() => previewValues(draft, photo), [draft, photo]);
-  const entries = useMemo(
-    () => fillInEntries(draft, values).map((e) => ({ ...e, key: e.fieldKey })),
-    [draft, values],
-  );
-  const blocked = useMemo(
-    () =>
-      missingFields(draft, values).length > 0 ||
-      tooLongFields(draft, values, kit, measure).length > 0,
-    [draft, values, kit, measure],
-  );
-  const schema = draft.schema;
-  return (
-    <>
-      <FillInRow entries={entries} onFill={(key) => onFillIn(turnId, draft.id, key)} />
-      <div className="sp-chat-turn__result">
-        <ThreadDraft
-          draft={draft}
-          photo={photo}
-          size={size}
-          selected={selected}
-          downloading={downloading}
-          maxWidth={maxWidth}
-          description={description}
-          registerPreview={registerPreview}
-          onEdit={() => onEditDraft(turnId, draft.id)}
-          onDownload={() => onDownloadDraft(turnId, draft.id)}
-          downloadBlocked={blocked}
-        />
-        {schema && hasVariants(schema) && (
-          <LookPicker
-            schema={schema}
-            values={values}
-            variantId={draft.variantId}
-            onPick={(variantId) => onChangeLook(turnId, draft.id, variantId)}
-          />
-        )}
-      </div>
-    </>
-  );
-}
-
-/** What a template chat's turns need from the page (template-chat §12). */
-export interface TemplateTurnProps {
-  /** The template's looks, for the Looks skeleton while a draft builds. */
-  lookCount: number;
-  /** Its shape, for the skeletons. */
-  aspect: number;
-  /** The page's canvas measurer, for "too long" (§9.4). */
-  measure: LineMeasurer;
-  onFillIn(turnId: string, draftId: string, fieldKey: string): void;
-  onChangeLook(turnId: string, draftId: string, variantId: string): void;
-}
-
 /**
  * An assistant turn in the Generate chat (Figma "Generate · Chat", frames
  * 04 and 05, "Message · SocialPaint"; PROMPT §8.4, §9.2): a column, 16
@@ -278,7 +176,6 @@ export const AssistantTurnView = memo(function AssistantTurnView({
   onDownloadDraft,
   onTryNext,
   onRetry,
-  template = null,
   onFillIn,
 }: {
   turn: AssistantTurn;
@@ -314,10 +211,6 @@ export const AssistantTurnView = memo(function AssistantTurnView({
   onDownloadDraft(turnId: string, draftId: string): void;
   onTryNext(action: TryNextAction): void;
   onRetry(turnId: string): void;
-  /** A template chat: one draft beside its Looks card, the Fill in row, a
-   * caption that never falls back to the template's, and no Try next row.
-   * Null in a Generate chat. The page passes one stable object. */
-  template?: TemplateTurnProps | null;
   /** A Generate chat's Fill in tag (§12.12): the editor opens on the first
    * draft missing that field. */
   onFillIn?(turnId: string, draftId: string, fieldKey: string): void;
@@ -331,21 +224,20 @@ export const AssistantTurnView = memo(function AssistantTurnView({
   const tabs = useMemo(() => captionTabs(turn.drafts), [turn.drafts]);
   const captionDraft =
     turn.drafts.find((d) => d.id === captionDraftId) ?? (turn.drafts[0] as ChatDraft | undefined);
-  const templateChat = template !== null;
   // A Generate chat's Fill in row: one tag per linked group left empty in
   // any draft, once the turn is done (§12.12).
   const linkedGaps = useMemo(() => {
-    if (templateChat || running || turn.drafts.length === 0) return [];
+    if (running || turn.drafts.length === 0) return [];
     const values: Record<string, Record<string, string>> = {};
     for (const d of turn.drafts) values[d.id] = previewValues(d, photo);
     return linkedFillIn(turn.drafts, values, {
       kit,
       photoTargets: photoTargetsFor(turn.drafts, photo),
     });
-  }, [templateChat, running, turn.drafts, photo, kit]);
+  }, [running, turn.drafts, photo, kit]);
   const caption = useMemo(
-    () => (captionDraft ? captionFor(captionDraft, { templateFallback: !templateChat }) : ""),
-    [captionDraft, templateChat],
+    () => (captionDraft ? captionFor(captionDraft, { templateFallback: true }) : ""),
+    [captionDraft],
   );
 
   return (
@@ -360,34 +252,7 @@ export const AssistantTurnView = memo(function AssistantTurnView({
         )}
       </div>
 
-      {template && turn.drafts[0] && (
-        <TemplateResult
-          turnId={turn.id}
-          draft={turn.drafts[0]}
-          photo={photo}
-          size={cardSize}
-          selected={turn.drafts[0].id === selectedDraftId}
-          downloading={turn.drafts[0].id === busyDraftId}
-          maxWidth={maxWidth}
-          description={description}
-          measure={template.measure}
-          registerPreview={registerPreview}
-          onEditDraft={onEditDraft}
-          onDownloadDraft={onDownloadDraft}
-          onFillIn={template.onFillIn}
-          onChangeLook={template.onChangeLook}
-        />
-      )}
-      {template && !turn.drafts[0] && skeletons.length > 0 && (
-        <div className="sp-chat-turn__result">
-          <DraftCardSkeleton aspect={template.aspect} size={cardSize} maxWidth={maxWidth} />
-          {template.lookCount > 1 && (
-            <LookPickerSkeleton count={template.lookCount} aspect={template.aspect} />
-          )}
-        </div>
-      )}
-
-      {!template && onFillIn && linkedGaps.length > 0 && (
+      {onFillIn && linkedGaps.length > 0 && (
         <FillInRow
           entries={linkedGaps.map((g) => ({ key: g.id, label: g.label, optional: g.optional }))}
           onFill={(key) => {
@@ -397,7 +262,7 @@ export const AssistantTurnView = memo(function AssistantTurnView({
         />
       )}
 
-      {!template && (turn.drafts.length > 0 || skeletons.length > 0) && (
+      {(turn.drafts.length > 0 || skeletons.length > 0) && (
         <div className="sp-chat-turn__drafts">
           {turn.drafts.map((draft) => (
             <ThreadDraft
@@ -462,7 +327,7 @@ export const AssistantTurnView = memo(function AssistantTurnView({
         </div>
       )}
 
-      {!template && tryNext.length > 0 && (
+      {tryNext.length > 0 && (
         <ChipRow label="Try next">
           {tryNext.map((action) => (
             <SuggestionChip

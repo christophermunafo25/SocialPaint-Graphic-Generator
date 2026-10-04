@@ -10,6 +10,8 @@ export interface PreviewOverlayProps {
   onEdit?(): void;
   /** The Edit button's name ("Edit Now hiring"). */
   editLabel?: string;
+  /** The Edit button, for a caller that returns focus to it. */
+  editRef?: React.Ref<HTMLButtonElement>;
   /** Draws the Edit circle as part of the look, not as a control: for a
    * preview inside a control of its own (the library's template card,
    * which is one button that opens the fill page). aria-hidden. */
@@ -26,6 +28,7 @@ export function PreviewOverlay({
   children,
   onEdit,
   editLabel = "Edit",
+  editRef,
   decorativeEdit = false,
   className,
   "data-demo-state": demoState,
@@ -41,6 +44,7 @@ export function PreviewOverlay({
         )}
         {onEdit && (
           <button
+            ref={editRef}
             type="button"
             aria-label={editLabel}
             onClick={onEdit}
@@ -62,8 +66,14 @@ export interface ResultCardProps {
   preview: React.ReactNode;
   onEdit?(): void;
   editLabel?: string;
+  editRef?: React.Ref<HTMLButtonElement>;
   onDownload?(): void;
   downloadLabel?: string;
+  /** A download is being made: Download is busy and takes no click. */
+  downloadBusy?: boolean;
+  /** The preview's frame, for a caller that sizes it (a width and an
+   * aspect ratio). */
+  previewStyle?: React.CSSProperties;
   className?: string;
   "data-demo-state"?: DemoStateAttr;
 }
@@ -77,14 +87,22 @@ export function ResultCard({
   preview,
   onEdit,
   editLabel,
+  editRef,
   onDownload,
   downloadLabel = "Download",
+  downloadBusy = false,
+  previewStyle,
   className,
   "data-demo-state": demoState,
 }: ResultCardProps) {
   return (
-    <div className={cx("ui-result-card", className)}>
-      <PreviewOverlay onEdit={onEdit} editLabel={editLabel} data-demo-state={demoState}>
+    <div className={cx("ui-result-card", className)} style={previewStyle}>
+      <PreviewOverlay
+        onEdit={onEdit}
+        editLabel={editLabel}
+        editRef={editRef}
+        data-demo-state={demoState}
+      >
         {preview}
       </PreviewOverlay>
       <div className="ui-result-card__meta">
@@ -92,7 +110,17 @@ export function ResultCard({
           <span className="t-label-l">{title}</span>
           <span className="t-label-xs ui-result-card__size">{meta}</span>
         </div>
-        {onDownload && <IconButton icon={Download} label={downloadLabel} onClick={onDownload} />}
+        {onDownload && (
+          <IconButton
+            icon={Download}
+            label={downloadLabel}
+            aria-busy={downloadBusy || undefined}
+            aria-disabled={downloadBusy || undefined}
+            onClick={() => {
+              if (!downloadBusy) onDownload();
+            }}
+          />
+        )}
       </div>
     </div>
   );

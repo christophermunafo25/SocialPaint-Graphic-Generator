@@ -110,22 +110,20 @@ export interface ComposerProps {
  * text (documentText.ts): nothing uploads. It shares the upload chip while
  * it is read, and a refused one says why under the text and attaches
  * nothing. Files alone never make a message: Send needs text. */
-export function Composer({
+/** The chat box's behaviour, shared by the legacy chat box (Composer,
+ * below) and the new look's Composer (chat/ChatComposer.tsx, the template
+ * chat; PHASE-4 §9 D1): the photo and document pipelines, paste and drop,
+ * Enter to send, Send and Stop, and the auto-grow. Phase 5 moves Generate
+ * onto the new one and deletes the legacy view. */
+export function useComposer({
   size,
   value,
-  onChange,
   photo,
   onPhotoChange,
   running,
   onSubmit,
   onStop,
   placeholder,
-  platform,
-  onPlatformChange,
-  covered,
-  dimUncovered = false,
-  variations,
-  onVariationsChange,
   textareaRef,
   disabled = false,
   document: doc = null,
@@ -380,6 +378,65 @@ export function Composer({
     return () => ro.disconnect();
   }, [fit]);
 
+  return {
+    dropProps,
+    isDragActive,
+    rootRef,
+    onPaste,
+    setTextarea,
+    onKeyDown,
+    attachedRow,
+    chip,
+    removePhoto,
+    removeDocument,
+    photoError,
+    canSend,
+    stop,
+    submit,
+    stopping,
+    takeFile,
+    takeDocument,
+    takeAsset,
+  };
+}
+
+export function Composer(props: ComposerProps) {
+  const {
+    size,
+    value,
+    onChange,
+    photo,
+    running,
+    placeholder,
+    platform,
+    onPlatformChange,
+    covered,
+    dimUncovered = false,
+    variations,
+    onVariationsChange,
+    disabled = false,
+    document: doc = null,
+  } = props;
+  const {
+    dropProps,
+    isDragActive,
+    rootRef,
+    onPaste,
+    setTextarea,
+    onKeyDown,
+    attachedRow,
+    chip,
+    removePhoto,
+    removeDocument,
+    photoError,
+    canSend,
+    stop,
+    submit,
+    stopping,
+    takeFile,
+    takeDocument,
+    takeAsset,
+  } = useComposer(props);
   return (
     <form
       {...dropProps}

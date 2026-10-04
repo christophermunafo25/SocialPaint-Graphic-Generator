@@ -26,3 +26,8 @@ export function requiredError(field: { label: string; type: string }): string {
   if (field.type === "image") return `${addPhotoPlaceholder(field.label)}.`;
   return `Fill in the ${labelInSentence(field.label)}.`;
 }
+
+/** The error under a value too long for its line at its smallest size (the
+ * template chat's Edit details): the Missing and Too long statuses moved to
+ * the Field's error line (PHASE-4.md §9 D3). */
+export const TOO_LONG_ERROR = "Too long to fit. Shorten it.";

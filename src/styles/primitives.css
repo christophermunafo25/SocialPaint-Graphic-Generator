@@ -1254,3 +1254,113 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   border-radius: var(--radius-pill);
   background: var(--accent-green);
 }
+
+/* ── Composer (61:504): the chat box on surface/raised with Elevation/Small
+   and the border/raised edge outside it (transparent in Light). Body/L is
+   drawn trimmed: 20 above the text's cap and 30 to the toolbar, so the
+   untrimmed line sits 6 higher and 6 closer. ── */
+.ui-composer {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  padding: 14px var(--space-xs) var(--space-xs) 20px;
+  border: 5px solid var(--border-raised);
+  border-radius: 25px; /* 20 inside the 5 edge, as drawn */
+  background: var(--surface-raised);
+  background-clip: padding-box;
+  box-shadow: var(--elevation-small);
+  color: var(--text-strong);
+}
+.ui-composer[data-drag-active] {
+  box-shadow:
+    var(--elevation-small),
+    inset 0 0 0 1px var(--state-selection);
+}
+.ui-composer__input {
+  display: block;
+  width: 100%;
+  resize: none;
+  overflow-y: hidden;
+  background: transparent;
+  color: var(--text-strong);
+  caret-color: var(--text-strong);
+}
+.ui-composer__input::placeholder {
+  color: var(--text-secondary);
+  opacity: 1;
+}
+.ui-composer__attachments {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2xs);
+  margin-top: 6px;
+}
+.ui-composer__error {
+  margin: -16px 0 0;
+  color: var(--state-error);
+}
+.ui-composer__toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-xs);
+}
+.ui-composer__inputs {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px; /* as drawn (61:472) */
+  padding: var(--space-3xs) 0;
+}
+.ui-composer__output {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Message bubble (61:505) ── */
+.ui-bubble {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* as drawn (61:505) */
+  max-width: 472px;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-menu);
+  background: var(--surface-sunken);
+  color: var(--text-strong);
+}
+.ui-bubble__text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ui-bubble__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ── Assistant message (61:532) ── */
+.ui-assistant {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  min-width: 0;
+  color: var(--text-strong);
+}
+.ui-assistant__message {
+  margin: 0;
+  white-space: pre-wrap;
+}
+.ui-assistant__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  width: 100%;
+  min-width: 0;
+}

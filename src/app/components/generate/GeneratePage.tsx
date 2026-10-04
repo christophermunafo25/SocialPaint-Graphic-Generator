@@ -1,3 +1,4 @@
+import { ArrowLeft, LayoutGrid, Link, Pencil } from "lucide-react";
 import React, {
   useCallback,
   useEffect,
@@ -17,7 +18,7 @@ import {
   type ChatThread,
 } from "@/lib/generate/chat";
 import { DEFAULT_VARIATIONS, sameEdits } from "@/lib/generate/chatReducer";
-import { missingFields } from "@/lib/generate/draftDownload";
+import { EXPORT_ERROR_TITLE, missingFields } from "@/lib/generate/draftDownload";
 import { captionFor, previewValues, tooLongFields, turnPhoto } from "@/lib/generate/draftView";
 import { defaultVariant } from "@/lib/templates/variants";
 import { detailKindOf } from "@/lib/generate/details";
@@ -44,9 +45,18 @@ import { useBrand } from "@/lib/brand/BrandContext";
 import { useRouter } from "../../router";
 import { useFullViewport } from "../layout/ChromeContext";
 import { Page } from "../layout/Page";
-import { AssistantTurnView, type TemplateTurnProps } from "./AssistantTurnView";
+import { BreadcrumbHeader } from "../layout/Breadcrumb";
+import { Button, Toast } from "../primitives";
+import { ChatComposer } from "../chat/ChatComposer";
+import {
+  TemplateInterviewLive,
+  TemplateInterviewTranscript,
+  TemplateTurn,
+  TemplateUserTurn,
+  type TemplateTurnHandlers,
+} from "../chat/TemplateChatViews";
+import { AssistantTurnView } from "./AssistantTurnView";
 import { TemplateLinksDialog } from "../admin/TemplateLinksDialog";
-import { ChatButton } from "./ChatButton";
 import { ChatHeader } from "./ChatHeader";
 import { ChatLoading, ChatUnavailable, THREAD_PLACEHOLDER } from "./ChatLoadStates";
 import { Composer } from "./Composer";
@@ -59,10 +69,8 @@ import {
 import { ChatFootnote, LegalLinks } from "./LegalLinks";
 import { RecentChats } from "./RecentChats";
 import { ScrollFade, useScrollFades } from "./ScrollFade";
-import { TemplateRefCard } from "./TemplateRefCard";
 import { ChipRow, SuggestionChip } from "./SuggestionChip";
 import { UserMessage } from "./UserMessage";
-import { InterviewLive, InterviewTranscript } from "./InterviewView";
 import { requestComposerFocus, requestHistoryFocus, takeComposerFocus } from "./composerFocus";
 import { useChatController } from "./useChatController";
 import { useDraftDownload } from "./useDraftDownload";
@@ -1055,16 +1063,18 @@ export function GenerateChat({
     },
     [openEditor, scrollRef],
   );
-  const templateTurn = useMemo((): TemplateTurnProps | null => {
+  const templateHandlers = useMemo((): TemplateTurnHandlers | null => {
     if (!template) return null;
     return {
-      lookCount: template.variants?.length ?? 0,
-      aspect: template.canvasWidth / template.canvasHeight,
-      measure,
+      template,
+      registerPreview,
+      onEditDraft: openDraftEditor,
+      onDownloadDraft: downloadDraft,
       onFillIn,
       onChangeLook: changeLook,
+      onRetry,
     };
-  }, [template, measure, onFillIn, changeLook]);
+  }, [template, registerPreview, openDraftEditor, downloadDraft, onFillIn, changeLook, onRetry]);
 
   // The export stage and the failure toast sit beside whichever state is
   // showing, at one place in the tree, so a download in flight survives
@@ -1072,7 +1082,15 @@ export function GenerateChat({
   const exportExtras = (
     <>
       {downloadStage}
-      {!editorOpen && downloadError && <ExportErrorToast detail={downloadError} />}
+      {!editorOpen &&
+        downloadError &&
+        (template ? (
+          <div className="sp-fill-toast" aria-live="assertive">
+            <Toast message={`${EXPORT_ERROR_TITLE}. ${downloadError}`} />
+          </div>
+        ) : (
+          <ExportErrorToast detail={downloadError} />
+        ))}
       {sharing && template && (
         <TemplateLinksDialog template={template} onClose={() => setSharing(false)} />
       )}
@@ -1180,63 +1198,65 @@ export function GenerateChat({
     <>
       {exportExtras}
       <Page layout={{ className: "sp-chat-page", state: "thread" }}>
-        <ChatHeader
-          ref={headerRef}
-          // A template chat is named by its template (Brand Templates / Now
-          // hiring), as every frame of it draws the header.
-          title={editView ? "Edit details" : template ? template.name : thread.title}
-          titleId={titleId}
-          onNewChat={startNewChat}
-          onHistory={openHistory}
-          root={
-            template
-              ? { label: "Brand Templates", route: { name: "portal" }, onClick: openBrandTemplates }
-              : undefined
-          }
-          {...(template && !editView
-            ? {
-                actions: (
-                  <>
-                    <ChatButton
-                      kind="tertiary"
-                      size="small"
-                      onClick={() => navigate({ name: "template", templateId: template.id })}
+        {template ? (
+          // A template chat's header (13:7138, 13:8222): the breadcrumb and
+          // its actions on the new look's Buttons.
+          <BreadcrumbHeader
+            ref={headerRef}
+            currentId={titleId}
+            crumbs={
+              editView
+                ? [
+                    { label: "Brand Templates", onClick: openBrandTemplates },
+                    { label: template.name, onClick: closeEditor },
+                    { label: "Edit details" },
+                  ]
+                : [
+                    { label: "Brand Templates", onClick: openBrandTemplates },
+                    { label: template.name },
+                  ]
+            }
+            actions={
+              editView ? (
+                <Button kind="neutral" icon={ArrowLeft} onClick={closeEditor}>
+                  Back to chat
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    kind="neutral"
+                    icon={Pencil}
+                    onClick={() => navigate({ name: "template", templateId: template.id })}
+                  >
+                    Fill in by hand
+                  </Button>
+                  {role === "admin" && (
+                    <Button
+                      kind="neutral"
+                      icon={LayoutGrid}
+                      onClick={() => navigate({ name: "bulk", templateId: template.id })}
                     >
-                      Fill in by hand
-                    </ChatButton>
-                    {role === "admin" && (
-                      <ChatButton
-                        kind="tertiary"
-                        size="small"
-                        onClick={() => navigate({ name: "bulk", templateId: template.id })}
-                      >
-                        Bulk fill
-                      </ChatButton>
-                    )}
-                    {role === "admin" && (
-                      <ChatButton kind="accent" size="small" onClick={() => setSharing(true)}>
-                        Public link
-                      </ChatButton>
-                    )}
-                  </>
-                ),
-              }
-            : {})}
-          {...(editView && template && chatRoute
-            ? {
-                middle: {
-                  label: template.name,
-                  route: { ...chatRoute, edit: undefined, field: undefined },
-                  onClick: closeEditor,
-                },
-                actions: (
-                  <ChatButton kind="tertiary" size="small" onClick={closeEditor}>
-                    Back to chat
-                  </ChatButton>
-                ),
-              }
-            : {})}
-        />
+                      Bulk fill
+                    </Button>
+                  )}
+                  {role === "admin" && (
+                    <Button kind="primary" icon={Link} onClick={() => setSharing(true)}>
+                      Public link
+                    </Button>
+                  )}
+                </>
+              )
+            }
+          />
+        ) : (
+          <ChatHeader
+            ref={headerRef}
+            title={thread.title}
+            titleId={titleId}
+            onNewChat={startNewChat}
+            onHistory={openHistory}
+          />
+        )}
         <div
           className="sp-chat-split"
           data-editor={editorPresentation}
@@ -1257,12 +1277,10 @@ export function GenerateChat({
                 aria-labelledby={titleId}
               >
                 <div ref={columnRef} className="sp-chat-thread__column">
-                  {template && (
-                    <TemplateRefCard template={template} onChange={openBrandTemplates} />
-                  )}
-                  {interviewing && (
-                    <InterviewLive
-                      intro={interviewIntro(template?.name ?? "", steps)}
+                  {interviewing && template && (
+                    <TemplateInterviewLive
+                      template={template}
+                      intro={interviewIntro(template.name, steps)}
                       answered={steps
                         .filter((s) => s.fieldKey in answers)
                         .map((s) => ({ step: s, answer: answers[s.fieldKey] }))}
@@ -1279,14 +1297,22 @@ export function GenerateChat({
                   )}
                   {thread.turns.map((turn) =>
                     isUserTurn(turn) && turn.interview && template ? (
-                      <InterviewTranscript
+                      <TemplateInterviewTranscript
                         key={turn.id}
+                        template={template}
                         intro={interviewIntro(template.name, steps)}
                         pairs={interviewTranscript(steps, {
                           details: turn.details,
                           skipped: turn.interview.skipped,
                           hadPhoto: Boolean(turn.photo || turn.hadPhoto),
                         })}
+                        photo={turn.photo?.dataUrl}
+                        note={turn.id === photoNoteId ? PHOTO_NOT_SAVED : undefined}
+                      />
+                    ) : isUserTurn(turn) && template ? (
+                      <TemplateUserTurn
+                        key={turn.id}
+                        text={turn.text}
                         photo={turn.photo?.dataUrl}
                         note={turn.id === photoNoteId ? PHOTO_NOT_SAVED : undefined}
                       />
@@ -1298,6 +1324,19 @@ export function GenerateChat({
                         document={turn.document ?? turn.hadDocument}
                         tags={turn.details?.map((d) => ({ ...d, kind: detailKindOf(d) }))}
                         note={turn.id === photoNoteId ? PHOTO_NOT_SAVED : undefined}
+                      />
+                    ) : templateHandlers ? (
+                      <TemplateTurn
+                        key={turn.id}
+                        turn={turn}
+                        photo={turnPhoto(thread, turn)}
+                        canRetry={
+                          turn.phase === "error" && !running && (turn === lastTurn || !full)
+                        }
+                        busyDraftId={
+                          busyId && turn.drafts.some((d) => d.id === busyId) ? busyId : null
+                        }
+                        handlers={templateHandlers}
                       />
                     ) : (
                       <AssistantTurnView
@@ -1323,7 +1362,6 @@ export function GenerateChat({
                         onDownloadDraft={downloadDraft}
                         onTryNext={onTryNext}
                         onRetry={onRetry}
-                        template={templateTurn}
                         onFillIn={onFillIn}
                       />
                     ),
@@ -1339,32 +1377,63 @@ export function GenerateChat({
                     This chat is full. Start a new chat to keep going.
                   </p>
                 )}
-                <Composer
-                  size="compact"
-                  value={text}
-                  onChange={setText}
-                  photo={photo}
-                  onPhotoChange={setPhoto}
-                  document={doc}
-                  onDocumentChange={setDoc}
-                  running={running}
-                  onSubmit={submit}
-                  onStop={stop}
-                  placeholder={
-                    interviewing
-                      ? step?.type === "image"
-                        ? TEMPLATE_PHOTO_PLACEHOLDER
-                        : (step?.placeholder ?? TEMPLATE_ANSWER_PLACEHOLDER)
-                      : template
-                        ? TEMPLATE_THREAD_PLACEHOLDER
-                        : THREAD_PLACEHOLDER
-                  }
-                  textareaRef={composerRef}
-                  disabled={full}
-                />
+                {template ? (
+                  <ChatComposer
+                    value={text}
+                    onChange={setText}
+                    photo={photo}
+                    onPhotoChange={setPhoto}
+                    document={doc}
+                    onDocumentChange={setDoc}
+                    running={running}
+                    onSubmit={submit}
+                    onStop={stop}
+                    placeholder={
+                      interviewing
+                        ? step?.type === "image"
+                          ? TEMPLATE_PHOTO_PLACEHOLDER
+                          : (step?.placeholder ?? TEMPLATE_ANSWER_PLACEHOLDER)
+                        : TEMPLATE_THREAD_PLACEHOLDER
+                    }
+                    textareaRef={composerRef}
+                    disabled={full}
+                  />
+                ) : (
+                  <Composer
+                    size="compact"
+                    value={text}
+                    onChange={setText}
+                    photo={photo}
+                    onPhotoChange={setPhoto}
+                    document={doc}
+                    onDocumentChange={setDoc}
+                    running={running}
+                    onSubmit={submit}
+                    onStop={stop}
+                    placeholder={
+                      interviewing
+                        ? step?.type === "image"
+                          ? TEMPLATE_PHOTO_PLACEHOLDER
+                          : (step?.placeholder ?? TEMPLATE_ANSWER_PLACEHOLDER)
+                        : template
+                          ? TEMPLATE_THREAD_PLACEHOLDER
+                          : THREAD_PLACEHOLDER
+                    }
+                    textareaRef={composerRef}
+                    disabled={full}
+                  />
+                )}
                 {unsaved && <p className="sp-chat-dock__note">{NOT_SAVED_YET}</p>}
               </div>
-              <ChatFootnote />
+              {template ? (
+                // The template chat's footnote is the legal links alone, as
+                // its frames draw it (13:7195).
+                <p className="t-caption-s sp-tchat-legal">
+                  <LegalLinks />
+                </p>
+              ) : (
+                <ChatFootnote />
+              )}
             </div>
           </div>
           {editor && editorTurn && selectedDraft && editorPresentation && (
@@ -1385,6 +1454,7 @@ export function GenerateChat({
               canDiscard={canDiscard}
               {...(editView
                 ? {
+                    details: true,
                     stageTarget: stageEl,
                     looks:
                       lookOptions.length > 1
