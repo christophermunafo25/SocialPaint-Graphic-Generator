@@ -88,3 +88,95 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   flex: none;
   display: block;
 }
+
+/* ── Button (43:123) ───────────────────────────────────────────────────────
+   Large and Medium sit at the field radius, Default and Small at the control
+   radius, as drawn. */
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--_h);
+  padding: 0 var(--_px);
+  gap: var(--_gap);
+  border-radius: var(--_r);
+  color: var(--_fg);
+}
+.ui-btn[data-size="lg"],
+.ui-btn[data-size="md"] {
+  --_h: 44px;
+  --_px: 18px; /* off the scale, as drawn (43:3) */
+  --_gap: var(--space-2xs);
+  --_r: var(--radius-control-md);
+}
+.ui-btn[data-size="md"] {
+  --_h: 40px;
+}
+.ui-btn[data-size="default"] {
+  --_h: 36px;
+  --_px: var(--space-sm);
+  --_gap: 6px; /* off the scale, as drawn (43:13) */
+  --_r: var(--radius-control);
+}
+.ui-btn[data-size="sm"] {
+  --_h: 28px;
+  --_px: 10px; /* off the scale, as drawn (43:18) */
+  --_gap: 6px;
+  --_r: var(--radius-control);
+}
+.ui-btn[data-kind="primary"] {
+  --_fill: var(--btn-primary-bg);
+  --_fg: var(--btn-primary-fg);
+  --_hover: var(--state-hover-inverse);
+  --_pressed: var(--state-pressed-inverse);
+}
+.ui-btn[data-kind="neutral"] {
+  --_fill: var(--surface-sunken);
+  --_fg: var(--text-strong);
+}
+.ui-btn[data-kind="neutralOnPage"] {
+  --_fill: var(--control-fill);
+  --_fg: var(--text-strong);
+}
+.ui-btn[data-kind="destructive"] {
+  --_fill: var(--state-error);
+  --_fg: var(--text-inverse);
+  --_hover: var(--state-hover-on-color);
+  --_pressed: var(--state-pressed-on-color);
+}
+
+/* ── Send button (44:9) ── */
+.ui-send {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-pill);
+  --_fill: var(--accent-green);
+  --_hover: var(--state-hover-on-color);
+  --_pressed: var(--state-pressed-on-color);
+  color: var(--field-green);
+}
+.ui-send__stop {
+  width: 12px;
+  height: 12px;
+  border-radius: var(--radius-xs);
+  background: currentColor;
+}
+
+/* ── Attach button (102:569) ── */
+.ui-attach {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-control);
+  --_fill: var(--surface-inverse);
+  --_hover: var(--state-hover-inverse);
+  --_pressed: var(--state-pressed-inverse);
+  /* The glyph takes the raised surface's colour, as drawn: white on ink in
+     Light, ink on white in Dark. */
+  color: var(--surface-raised);
+}

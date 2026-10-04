@@ -147,7 +147,8 @@
   flex-direction: column;
   gap: var(--space-sm);
 }
-.dev-ui-sheet__group > h2 {
+.dev-ui-sheet h2,
+.dev-ui-sheet h3 {
   margin: 0;
 }
 .dev-ui-sheet__line {
