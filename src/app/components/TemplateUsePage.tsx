@@ -77,8 +77,9 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
    * published template to fill. A draft has nothing to run forty times. */
   const canBulkFill = role === "admin" && template.status === "published";
   /** The template chat asks for each field and builds the graphic; it needs
-   * a published template and a configured model, and is for everyone. */
-  const canAssist = template.status === "published" && stores.generate.isConfigured();
+   * a published template and somewhere for the chat to run
+   * (isTemplateChatAvailable), and is for everyone. */
+  const canAssist = template.status === "published" && stores.generate.isTemplateChatAvailable();
 
   return (
     <Page>

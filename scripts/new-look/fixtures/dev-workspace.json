@@ -1666,6 +1666,118 @@
           "userId": "local-dev-user",
           "createdAt": "2026-09-30T09:40:00.000Z",
           "updatedAt": "2026-09-30T09:40:12.000Z"
+        },
+        {
+          "title": "Product launch",
+          "platforms": ["instagram"],
+          "preview": {
+            "templateId": "c68b6e95-8115-4f2f-88c7-265bbd39cf41",
+            "values": {
+              "eyebrow": "Out today",
+              "headline": "Acme Pro is here: every brand asset in one place.",
+              "subhead": "Templates, logos and fonts your whole team can reach in a click.",
+              "cta": "See what's new"
+            },
+            "canvas": {
+              "width": 1080,
+              "height": 1350
+            }
+          },
+          "templateId": "c68b6e95-8115-4f2f-88c7-265bbd39cf41",
+          "turns": [
+            {
+              "id": "fx-tc-u1",
+              "role": "user",
+              "text": "Eyebrow: Out today\nHeadline: Acme Pro is here: every brand asset in one place.\nSubhead: Templates, logos and fonts your whole team can reach in a click.\nCall to action: See what's new",
+              "createdAt": "2026-10-02T14:10:00.000Z",
+              "hadPhoto": {
+                "aspect": 0.8
+              },
+              "details": [
+                {
+                  "fieldKey": "eyebrow",
+                  "label": "Eyebrow",
+                  "value": "Out today"
+                },
+                {
+                  "fieldKey": "headline",
+                  "label": "Headline",
+                  "value": "Acme Pro is here: every brand asset in one place."
+                },
+                {
+                  "fieldKey": "subhead",
+                  "label": "Subhead",
+                  "value": "Templates, logos and fonts your whole team can reach in a click."
+                },
+                {
+                  "fieldKey": "cta",
+                  "label": "Call to action",
+                  "value": "See what's new"
+                }
+              ],
+              "interview": {
+                "skipped": []
+              },
+              "variations": 1,
+              "templateIdHint": "c68b6e95-8115-4f2f-88c7-265bbd39cf41",
+              "intent": "brief"
+            },
+            {
+              "id": "fx-tc-a1",
+              "role": "assistant",
+              "createdAt": "2026-10-02T14:10:12.000Z",
+              "replyTo": "fx-tc-u1",
+              "phase": "done",
+              "status": "Here's Product launch, filled in with your answers.",
+              "reply": "Here's Product launch, filled in with your answers.",
+              "warnings": [],
+              "meta": {
+                "model": "fixture",
+                "candidateCount": 1,
+                "mode": "library"
+              },
+              "drafts": [
+                {
+                  "id": "fx-tc-d1",
+                  "proposal": {
+                    "templateId": "c68b6e95-8115-4f2f-88c7-265bbd39cf41",
+                    "templateName": "Product launch",
+                    "values": {
+                      "eyebrow": "Out today",
+                      "headline": "Acme Pro is here: every brand asset in one place.",
+                      "subhead": "Templates, logos and fonts your whole team can reach in a click.",
+                      "cta": "See what's new"
+                    },
+                    "caption": "Acme Studios just launched something new.",
+                    "why": "",
+                    "imageFieldsNeeded": [
+                      {
+                        "fieldKey": "image",
+                        "label": "Product image",
+                        "required": true
+                      }
+                    ]
+                  },
+                  "canvas": {
+                    "width": 1080,
+                    "height": 1350
+                  },
+                  "values": {
+                    "eyebrow": "Out today",
+                    "headline": "Acme Pro is here: every brand asset in one place.",
+                    "subhead": "Templates, logos and fonts your whole team can reach in a click.",
+                    "cta": "See what's new"
+                  },
+                  "memberKeys": ["eyebrow", "headline", "subhead", "cta"]
+                }
+              ]
+            }
+          ],
+          "id": "fixture-thread-product-launch",
+          "companyId": "aeb81106-2389-4212-a9e9-2474372b36e1",
+          "userId": "local-dev-user",
+          "createdAt": "2026-10-02T14:10:00.000Z",
+          "updatedAt": "2026-10-02T14:10:30.000Z"
         }
       ]
     },

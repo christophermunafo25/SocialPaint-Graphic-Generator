@@ -38,8 +38,9 @@ const usable = (t: TemplateSchema | null, companyId: string): t is TemplateSchem
  *  - A saved chat whose template was deleted, or is no longer published,
  *    opens at /generate/c/<id> as an ordinary Generate chat. One saved
  *    under another template goes to that template's address.
- *  - Where Generate is not configured (the local backend, no model key),
- *    the template opens on its fill page instead, as the cards do.
+ *  - Where the template chat cannot run (isTemplateChatAvailable: a
+ *    production build on the local backend), the template opens on its
+ *    fill page instead, as the cards do.
  *
  * Once loaded it is the Generate chat in its template mode (GenerateChat),
  * so saving, the editor, downloads and follow-ups are that page's.
@@ -54,7 +55,7 @@ export function TemplateChatPage({
   const { company } = useAuth();
   const { navigate } = useRouter();
   const companyId = company?.id ?? null;
-  const configured = stores.generate.isConfigured();
+  const configured = stores.generate.isTemplateChatAvailable();
   // Read once: the first save's own address change keeps this page mounted
   // and must not load the chat over itself (templateChatPageKey).
   const [openedId] = useState(threadId ?? null);
@@ -90,7 +91,7 @@ export function TemplateChatPage({
     return { kind: "ready", template, initial };
   }, [companyId, configured, openedId, templateId]);
 
-  // Not configured: the fill page, as the Brand Templates cards fall back.
+  // Unavailable: the fill page, as the Brand Templates cards fall back.
   useEffect(() => {
     if (!configured) navigate({ name: "template", templateId }, { replace: true });
   }, [configured, navigate, templateId]);
