@@ -23,6 +23,11 @@ export interface AuthState {
   role: Role;
   user: { id: string; email: string } | null; // null in dev mode / signed out
   companies: Company[]; // dev: all companies; real: the user's companies
+  /** The person's role in one of their workspaces (the Workspaces card).
+   * Real auth reads it from the memberships it already loads; the dev
+   * backend has one role for every workspace. Null for a workspace that is
+   * not theirs. */
+  roleFor(companyId: string): Role | null;
   isDevAuth: boolean;
   backend: "supabase" | "local";
   setCompany(companyId: string): Promise<void>;
@@ -97,6 +102,7 @@ export function DevAuthProvider({ children }: { children: React.ReactNode }) {
       role,
       user: null,
       companies,
+      roleFor: (id: string) => (companies.some((c) => c.id === id) ? role : null),
       isDevAuth: true,
       backend: stores.backend,
       setCompany,

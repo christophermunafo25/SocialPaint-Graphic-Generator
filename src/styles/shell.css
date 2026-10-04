@@ -1,0 +1,38 @@
+/* ==========================================================================
+   The shell (new look, Phase 3): the sidebar, page headers and the
+   compositions Phase 3 adds inside Settings, built from the primitives.
+   Measurements are from docs/design/new-look/PHASE-3-SHELL.md. Tokens and
+   .t-* classes only; nothing here declares a token.
+   ========================================================================== */
+
+/* ── Settings › Workspace, Workspaces (13:14698) ── */
+.sp-workspaces {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-workspaces__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) 0;
+  color: var(--text-strong);
+}
+.sp-workspaces__row + .sp-workspaces__row {
+  border-top: 1px solid var(--border-default);
+}
+.sp-workspaces__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* as drawn (13:14707) */
+}
+.sp-workspaces__text > :first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-workspaces__meta {
+  color: var(--text-secondary);
+}

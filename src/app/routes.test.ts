@@ -8,12 +8,12 @@ import { routeToUrl, screenFor, urlToRoute, type SettingsSection } from "./route
 /** What an address shows a role: the screen, and for Settings the section
  * it lands on. The new look must keep every address reachable, and a member
  * must reach exactly what they reached before (PHASE-3.md §3). */
-function lands(url: string, role: "admin" | "member"): string {
+function lands(url: string, role: "admin" | "member", canSwitchWorkspace = false): string {
   const [path, query = ""] = url.split("?");
   const route = urlToRoute(path, query ? `?${query}` : "");
   const screen = screenFor(route, role);
   if (screen !== "settings" || route.name !== "settings") return screen;
-  return `settings/${resolveSettingsSection(route.section, role)}`;
+  return `settings/${resolveSettingsSection(route.section, { role, canSwitchWorkspace })}`;
 }
 
 const TABLE: Array<[url: string, admin: string, member: string]> = [
@@ -61,8 +61,8 @@ describe("every address, for each role", () => {
 });
 
 describe("the Settings rail, for each role", () => {
-  const keys = (role: "admin" | "member"): SettingsSection[] =>
-    settingsSectionsFor(role).map((s) => s.key);
+  const keys = (role: "admin" | "member", canSwitchWorkspace = false): SettingsSection[] =>
+    settingsSectionsFor({ role, canSwitchWorkspace }).map((s) => s.key);
 
   it("shows an admin every section, People in Team's place", () => {
     expect(keys("admin")).toEqual([
@@ -76,7 +76,21 @@ describe("the Settings rail, for each role", () => {
     ]);
   });
 
-  it("shows a member Account alone", () => {
+  it("shows an admin the same rail whether or not they can switch", () => {
+    expect(keys("admin", true)).toEqual(keys("admin"));
+  });
+
+  it("shows a member with one workspace Account alone", () => {
     expect(keys("member")).toEqual(["account"]);
+  });
+
+  it("shows a member who can switch workspaces Workspace too", () => {
+    expect(keys("member", true)).toEqual(["workspace", "account"]);
+  });
+
+  it("lands a member who can switch on Account, and lets them open Workspace", () => {
+    expect(lands("/settings", "member", true)).toBe("settings/account");
+    expect(lands("/settings/workspace", "member", true)).toBe("settings/workspace");
+    expect(lands("/settings/people", "member", true)).toBe("settings/account");
   });
 });

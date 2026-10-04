@@ -47,14 +47,15 @@ const RENDER: Record<SettingsSection, () => React.ReactNode> = {
  * not at the route: a member lands on Account with the admin sections
  * hidden, never shown-and-disabled. */
 export function SettingsAdmin({ section }: { section?: SettingsSection }) {
-  const { company, role } = useAuth();
+  const { company, role, companies, isDevAuth } = useAuth();
   const { navigate } = useRouter();
 
   const isAdmin = role === "admin";
-  const visible = settingsSectionsFor(role);
+  const viewer = { role, canSwitchWorkspace: companies.length > 1 || isDevAuth };
+  const visible = settingsSectionsFor(viewer);
   // Unknown or absent section → workspace for admins; anything a member
   // cannot see → account.
-  const active = visible.find((s) => s.key === resolveSettingsSection(section, role))!;
+  const active = visible.find((s) => s.key === resolveSettingsSection(section, viewer))!;
 
   // Keep the URL honest when the request was corrected (a member deep-linked
   // to an admin section, or no section was given) — without a history entry.

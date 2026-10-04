@@ -12,14 +12,18 @@ import { SkeletonLines } from "../../Skeleton";
 import { Switch } from "../../Switch";
 import { kitShape } from "../brand/kitPlumbing";
 import { ControlRow, SettingsCard } from "./settingsShared";
+import { WorkspacesCard } from "./WorkspacesCard";
 
 /** Workspace facts, finally editable: name, slug, timezone, the canvas
  * sizes this workspace offers, and the two brand enforcement switches. */
 export function WorkspaceSection() {
-  const { company } = useAuth();
+  const { company, role } = useAuth();
   const [error, setError] = useState<string | null>(null);
 
   if (!company) return null;
+  // A member reaches this section only to switch workspaces (PHASE-3.md §9):
+  // the Workspaces card, and nothing they cannot change.
+  if (role !== "admin") return <WorkspacesCard />;
 
   return (
     <div className="space-y-6">
@@ -33,6 +37,7 @@ export function WorkspaceSection() {
           {error}
         </p>
       )}
+      <WorkspacesCard />
       <SettingsCard title="Workspace">
         <NameField onError={setError} />
         <SlugField onError={setError} />
