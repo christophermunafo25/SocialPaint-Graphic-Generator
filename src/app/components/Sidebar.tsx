@@ -72,7 +72,15 @@ const NAV: NavItem[] = [
     adminOnly: true,
     matches: ["brandStudio"],
   },
-  { label: "People", route: { name: "people" }, Icon: Users, adminOnly: true, matches: ["people"] },
+  // People now lives in Settings; this row goes when the sidebar is rebuilt
+  // (new look, Phase 3, step 3).
+  {
+    label: "People",
+    route: { name: "settings", section: "people" },
+    Icon: Users,
+    adminOnly: true,
+    matches: [],
+  },
   {
     // Members reach Settings too — the page lands them on Account (theme,
     // sign out) and hides the admin sections.

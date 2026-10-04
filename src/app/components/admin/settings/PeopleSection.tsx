@@ -5,14 +5,15 @@ import type { Member } from "@/lib/stores/interfaces";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
-import { Page, PageHeader } from "../layout/Page";
-import { ConfirmDialog } from "../ConfirmDialog";
-import { ErrorState } from "../ErrorState";
-import { SkeletonRows } from "../Skeleton";
+import { ConfirmDialog } from "../../ConfirmDialog";
+import { ErrorState } from "../../ErrorState";
+import { SkeletonRows } from "../../Skeleton";
 
-/** Team management: invite by email, change roles, remove. Invites are sent
- * by the invite-member Edge Function (admin-verified server-side). */
-export function PeopleAdmin() {
+/** Settings › People (new look, Phase 3: People moved here from its own
+ * page): invite by email, change roles, remove. Invites are sent by the
+ * invite-member Edge Function (admin-verified server-side). Phase 7
+ * rebuilds it to the People frame (13:14769). */
+export function PeopleSection() {
   const { company, user, isDevAuth } = useAuth();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<Role>("member");
@@ -59,17 +60,13 @@ export function PeopleAdmin() {
   };
 
   return (
-    <Page narrow={900}>
+    <div>
       <ConfirmDialog
         open={removing !== null}
         title={`Remove ${removing?.email ?? ""} from ${company?.name ?? "this company"}?`}
         confirmLabel="Remove member"
         onCancel={() => setRemoving(null)}
         onConfirm={confirmRemove}
-      />
-      <PageHeader
-        title="People"
-        description="Admins build and manage the brand; members use the portal to fill in templates."
       />
 
       {isDevAuth && (
@@ -230,6 +227,6 @@ export function PeopleAdmin() {
           ))
         )}
       </div>
-    </Page>
+    </div>
   );
 }

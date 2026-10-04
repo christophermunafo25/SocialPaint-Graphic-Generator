@@ -37,10 +37,10 @@ const BRAND_CATEGORIES: readonly BrandCategory[] = [
  * SettingsAdmin, which also owns the role gating (Account is the one
  * section members can reach). */
 export type SettingsSection =
-  "workspace" | "team" | "integrations" | "usage" | "sharing" | "account" | "advanced";
+  "workspace" | "people" | "integrations" | "usage" | "sharing" | "account" | "advanced";
 const SETTINGS_SECTIONS: readonly SettingsSection[] = [
   "workspace",
-  "team",
+  "people",
   "integrations",
   "usage",
   "sharing",
@@ -101,7 +101,6 @@ export type Route =
    * selected tab rides along (D4) — both in the URL so the view is
    * shareable; the defaults (30d, exports) stay out of it. */
   | { name: "dashboard"; range?: InsightsRange; metric?: InsightsMetric }
-  | { name: "people" }
   | { name: "settings"; section?: SettingsSection }
   /** The primitives sheet and the Figma Interaction states table
    * (docs/design/new-look/PHASE-2.md). Development builds only: urlToRoute
@@ -181,8 +180,6 @@ export function routeToUrl(route: Route): string {
       const qs = params.toString();
       return qs ? `/insights?${qs}` : "/insights";
     }
-    case "people":
-      return "/people";
     case "settings":
       return route.section ? `/settings/${route.section}` : "/settings";
     case "devUi":
@@ -299,9 +296,12 @@ export function urlToRoute(pathname: string, search: string): Route {
           : undefined,
       };
     }
+    // People lives in Settings (new look, Phase 3). The old addresses land
+    // on its section; RouterProvider rewrites the address bar to match.
     case "people":
-      return { name: "people" };
+      return { name: "settings", section: "people" };
     case "settings":
+      if (tail === "team") return { name: "settings", section: "people" };
       if (tail && (SETTINGS_SECTIONS as readonly string[]).includes(tail)) {
         return { name: "settings", section: tail as SettingsSection };
       }
@@ -332,6 +332,23 @@ export function withHistoryState(route: Route, state: unknown): Route {
   return route;
 }
 
+/** The routes only admins reach. A member who opens one sees the gallery,
+ * with the address left as it is (App.tsx). Settings is not among them: it
+ * gates its own sections (settingsSections.ts). */
+const ADMIN_ONLY: ReadonlySet<Route["name"]> = new Set([
+  "bulk",
+  "adminTemplates",
+  "builder",
+  "brandStudio",
+  "dashboard",
+]);
+
+/** The screen a route shows for a role: the route's own, or the gallery for
+ * a member on an admin-only route. */
+export function screenFor(route: Route, role: "admin" | "member"): Route["name"] {
+  return role !== "admin" && ADMIN_ONLY.has(route.name) ? "portal" : route.name;
+}
+
 export function RouterProvider({ children }: { children: React.ReactNode }) {
   const [route, setRoute] = useState<Route>(() =>
     urlToRoute(window.location.pathname, window.location.search),
@@ -353,13 +370,15 @@ export function RouterProvider({ children }: { children: React.ReactNode }) {
 
   // Back/forward move the app without writing to history again.
   useEffect(() => {
-    const onPop = () =>
-      setRoute(
-        withHistoryState(
-          urlToRoute(window.location.pathname, window.location.search),
-          window.history.state,
-        ),
-      );
+    const onPop = () => {
+      const next = urlToRoute(window.location.pathname, window.location.search);
+      // An old address in history (/people) reads as its new one.
+      const canonical = routeToUrl(next);
+      if (window.location.pathname + window.location.search !== canonical) {
+        window.history.replaceState(window.history.state, "", canonical);
+      }
+      setRoute(withHistoryState(next, window.history.state));
+    };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);

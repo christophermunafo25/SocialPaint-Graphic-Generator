@@ -60,9 +60,10 @@ const ROUTES = [
   ["bs-type-styles", "/brand-studio/type-styles"],
   ["bs-images", "/brand-studio/images"],
   ["bs-import", "/brand-studio/import"],
-  ["people", "/people"],
+  // People lives in Settings; /people redirects there (new look, Phase 3).
+  ["people-redirect", "/people"],
   ["settings-workspace", "/settings/workspace"],
-  ["settings-team", "/settings/team"],
+  ["settings-people", "/settings/people"],
   ["settings-integrations", "/settings/integrations"],
   ["settings-usage", "/settings/usage"],
   ["settings-sharing", "/settings/sharing"],
