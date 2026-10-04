@@ -261,6 +261,7 @@ function LookCard({
               }}
               role="radio"
               aria-checked={on}
+              aria-label={v.name}
               tabIndex={on ? 0 : -1}
               selected={on}
               name={v.name}

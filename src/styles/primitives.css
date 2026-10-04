@@ -1255,21 +1255,20 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   background: var(--accent-green);
 }
 
-/* ── Composer (61:504): the chat box on surface/raised with Elevation/Small
-   and the border/raised edge outside it (transparent in Light). Body/L is
-   drawn trimmed: 20 above the text's cap and 30 to the toolbar, so the
-   untrimmed line sits 6 higher and 6 closer. ── */
+/* ── Composer (61:504): the chat box on surface/raised with Elevation/Small.
+   The component's 5 border/raised edge lies under its own fill, so it
+   draws nothing; its 5 stays in the padding. Body/L is drawn trimmed: 20
+   above the text's cap and 30 to the toolbar, so the untrimmed line sits 6
+   higher and 6 closer. ── */
 .ui-composer {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 24px;
   width: 100%;
-  padding: 14px var(--space-xs) var(--space-xs) 20px;
-  border: 5px solid var(--border-raised);
-  border-radius: 25px; /* 20 inside the 5 edge, as drawn */
+  padding: 19px 17px 17px 25px; /* 20/12/12/20 inside the 5 edge */
+  border-radius: var(--radius-card);
   background: var(--surface-raised);
-  background-clip: padding-box;
   box-shadow: var(--elevation-small);
   color: var(--text-strong);
 }
