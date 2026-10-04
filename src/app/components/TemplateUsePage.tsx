@@ -36,14 +36,18 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
             <Bone w={220} h={14} tone="var(--surface-sunken)" />
           </div>
           <div className="sp-fill">
-            <div className="sp-fill__graphic">
-              <div className="sp-fill__stage" />
+            <div className="sp-fill__form">
+              <Bone w={220} h={28} r="var(--radius-pill)" tone="var(--surface-sunken)" />
+              <div className="sp-fill__step">
+                <Bone w={96} h={10} tone="var(--surface-sunken)" />
+                <Bone w="100%" h={40} r="var(--radius-control-md)" tone="var(--surface-sunken)" />
+              </div>
             </div>
-            <div className="sp-details sp-fill__panel">
-              <Bone w={80} h={18} tone="var(--surface-sunken)" />
-              <Bone w="100%" h={40} r="var(--radius-control-md)" tone="var(--surface-sunken)" />
-              <Bone w="100%" h={40} r="var(--radius-control-md)" tone="var(--surface-sunken)" />
-              <Bone w="100%" h={40} r="var(--radius-control-md)" tone="var(--surface-sunken)" />
+            <div className="sp-fill__preview">
+              <div className="sp-fill__previewcard">
+                <Bone w={80} h={17} tone="var(--surface-sunken)" />
+                <Bone w="100%" h={480} r="var(--radius-media-plate)" tone="var(--surface-sunken)" />
+              </div>
             </div>
           </div>
         </div>
