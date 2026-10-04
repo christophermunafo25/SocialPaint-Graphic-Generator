@@ -3,6 +3,13 @@ import { Download, Loader2, Minus, Settings, X } from "lucide-react";
 import {
   AttachButton,
   Button,
+  CompactSelect,
+  Field,
+  Filter,
+  Input,
+  SearchField,
+  Select,
+  TextArea,
   IconButton,
   RowMenuTrigger,
   SendButton,
@@ -57,6 +64,10 @@ export const SHEET_GROUPS: SheetGroup[] = [
     title: "Icon buttons",
     render: () => <IconButtonsGroup />,
   },
+  {
+    title: "Fields and pickers",
+    render: () => <FieldsGroup />,
+  },
 ];
 
 function IconButtonsGroup() {
@@ -73,6 +84,86 @@ function IconButtonsGroup() {
       <ThemeToggle label="Switch theme" />
       <StepperButton icon={Minus} label="Decrease (disabled)" disabled />
       <Stepper label="Variations" value={value} min={1} max={3} onChange={setValue} />
+    </div>
+  );
+}
+
+const LOOKS = [
+  { value: "moss", label: "Moss" },
+  { value: "lime", label: "Lime" },
+  { value: "ocean", label: "Ocean" },
+];
+
+function FieldsGroup() {
+  const [look, setLook] = React.useState("moss");
+  const [platform, setPlatform] = React.useState("");
+  const [query, setQuery] = React.useState("");
+  const [open, setOpen] = React.useState(false);
+  return (
+    <div className="dev-ui-sheet__panel">
+      <div className="dev-ui-w-288 dev-ui-sheet__stack">
+        <Field label="Headline">
+          <Input placeholder="Creative Director" />
+        </Field>
+        <Field label="Headline" error="Add a headline.">
+          <Input />
+        </Field>
+        <Field label="Location">
+          <Input size="sm" placeholder="Chicago" />
+        </Field>
+        <Field label="Description">
+          <TextArea placeholder="What the role is and who it is for." />
+        </Field>
+        <Field label="Disabled">
+          <Input disabled value="Locked by the template" readOnly />
+        </Field>
+      </div>
+      <div className="dev-ui-w-288 dev-ui-sheet__stack">
+        <Field label="Look">
+          <Select ariaLabel="Look" value={look} options={LOOKS} onSelect={setLook} />
+        </Field>
+        <Field label="Look, large">
+          <Select
+            ariaLabel="Look, large"
+            size="lg"
+            value={look}
+            options={LOOKS}
+            onSelect={setLook}
+          />
+        </Field>
+        <Select
+          ariaLabel="Look, disabled"
+          value={undefined}
+          placeholder="Pick a look"
+          options={LOOKS}
+          onSelect={setLook}
+          disabled
+        />
+        <div className="dev-ui-sheet__line">
+          <CompactSelect
+            ariaLabel="Platform"
+            value={platform}
+            options={[
+              { value: "", label: "Any platform" },
+              { value: "instagram", label: "Instagram" },
+              { value: "linkedin", label: "LinkedIn" },
+            ]}
+            onSelect={setPlatform}
+          />
+          <Filter aria-haspopup="menu" aria-expanded={false}>
+            Last 30 days
+          </Filter>
+        </div>
+        <SearchField
+          open={open}
+          onOpenChange={setOpen}
+          value={query}
+          onChange={setQuery}
+          onClear={() => setQuery("")}
+          label="Search templates"
+          placeholder="Search templates"
+        />
+      </div>
     </div>
   );
 }

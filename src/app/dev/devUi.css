@@ -166,3 +166,30 @@
   border-radius: var(--radius-card);
   background: var(--surface-raised);
 }
+
+/* Fixed widths the frame gives some cells' elements. */
+.dev-ui-w-200 {
+  width: 200px;
+}
+.dev-ui-w-288 {
+  width: 288px;
+}
+/* The Input row's Focused look, drawn the way the frame draws it: a 2 × 18
+   caret before the placeholder (48:20). A real input shows the browser's
+   caret; this only stands in for it in a static cell. */
+.dev-ui-input-demo {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--text-secondary);
+}
+.dev-ui-input-demo__caret {
+  width: 2px;
+  height: 18px;
+  background: var(--text-strong);
+}
+.dev-ui-sheet__stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}

@@ -278,3 +278,233 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   width: 20px;
   height: 28px;
 }
+
+/* ── Input (48:37) ─────────────────────────────────────────────────────────
+   No border. Focus shows the caret and nothing else. Small sits at the
+   control radius, as drawn (48:23). */
+.ui-input {
+  display: block;
+  width: 100%;
+  height: 40px;
+  padding: 0 var(--space-xs);
+  border-radius: var(--radius-control-md);
+  --_fill: var(--input-bg);
+  color: var(--text-strong);
+  caret-color: var(--text-strong);
+  white-space: normal;
+}
+.ui-input::placeholder {
+  color: var(--text-secondary);
+  opacity: 1;
+}
+.ui-input[data-size="sm"] {
+  height: 32px;
+  padding: 0 10px; /* off the scale, as drawn (48:23) */
+  border-radius: var(--radius-control);
+}
+.ui-input[data-size="multiline"] {
+  height: auto;
+  min-height: 100px;
+  padding: 10px var(--space-xs); /* 10 is off the scale, as drawn (48:30) */
+  resize: vertical;
+}
+
+/* ── Field (48:38): label, control, and the error 6 under it ── */
+.ui-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px; /* off the scale, as drawn (48:38) */
+}
+.ui-field__label {
+  color: var(--text-secondary);
+}
+.ui-field__error {
+  margin: 0;
+  color: var(--state-error);
+}
+
+/* ── Select (49:40) and Compact select (99:568) ── */
+.ui-select,
+.ui-compact-select {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-strong);
+}
+.ui-select {
+  width: 100%;
+  height: 36px;
+  padding: 0 var(--space-xs);
+  gap: 2px; /* as drawn (49:16) */
+  border-radius: var(--radius-control-md);
+  --_fill: var(--input-bg);
+}
+.ui-select[data-size="lg"] {
+  height: 40px;
+}
+.ui-select__value {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+.ui-select[data-placeholder] .ui-select__value {
+  color: var(--text-secondary);
+}
+.ui-select .ui-select__chevron {
+  color: var(--text-secondary);
+}
+.ui-compact-select {
+  height: 28px;
+  padding: 0 6px 0 9px; /* off the scale, as drawn (99:556) */
+  gap: 6px;
+  border-radius: var(--radius-control);
+  --_fill: var(--surface-sunken);
+}
+
+/* ── Filter (99:547) ── */
+.ui-filter {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 12px 0 14px; /* off the scale, as drawn (50:42) */
+  gap: 10px;
+  border-radius: var(--radius-control-md);
+  --_fill: var(--control-fill);
+  color: var(--text-strong);
+}
+
+/* ── Search field (50:62). Open, the field shows the caret; it takes no
+   tint. ── */
+.ui-search {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  padding: 8px 6px; /* off the scale, as drawn (50:60) */
+  border-radius: var(--radius-control-md);
+  --_fill: var(--control-fill);
+  color: var(--text-strong);
+}
+.ui-search--open {
+  box-sizing: border-box;
+  justify-content: flex-start;
+  width: 440px;
+  max-width: 100%;
+  padding: 8px 13px 8px 15px; /* off the scale, as drawn (50:61) */
+  gap: 10px;
+  background: var(--control-fill);
+}
+.ui-search__input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  background: transparent;
+  color: var(--text-strong);
+  caret-color: var(--text-strong);
+}
+.ui-search__input::placeholder {
+  color: var(--text-secondary);
+  opacity: 1;
+}
+.ui-search__input::-webkit-search-cancel-button {
+  display: none;
+}
+/* The clear glyph is drawn at 14; the hit area reaches 24. */
+.ui-search__clear {
+  position: relative;
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-pill);
+  color: var(--text-secondary);
+}
+.ui-search__clear::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+}
+
+/* ── Menu (57:423), Menu item (96:507), Menu label (57:419), Menu divider
+   (57:421). Shared by Menu, Select and Compact select. Focus in a menu is
+   its hover look. ── */
+.ui-menu {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* as drawn (57:423) */
+  min-width: 200px;
+  padding: 6px; /* off the scale, as drawn (57:423) */
+  border-radius: var(--radius-menu);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-medium);
+  color: var(--text-strong);
+  outline: none;
+}
+.ui-menu--floating {
+  position: fixed;
+  z-index: 500; /* the popover layer; z-index is not a Figma token */
+  max-height: 320px;
+  overflow-y: auto;
+}
+.ui-menu__caption {
+  margin: 0;
+  padding: var(--space-2xs) 10px var(--space-3xs);
+  color: var(--text-secondary);
+  white-space: normal;
+}
+.ui-menu-item {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  height: 34px;
+  padding: var(--space-2xs) var(--space-2xs) var(--space-2xs) 10px; /* 10 as drawn (57:410) */
+  gap: 10px;
+  border-radius: var(--radius-control);
+  color: var(--text-strong);
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+  white-space: nowrap;
+}
+.ui-menu-item[data-highlighted],
+.ui-menu-item[data-demo-state="hover"] {
+  background: var(--state-hover);
+}
+.ui-menu-item[data-selected],
+.ui-menu-item[data-demo-state="selected"] {
+  background: var(--state-selected);
+}
+.ui-menu-item[data-dimmed] .ui-menu-item__label {
+  color: var(--text-secondary);
+}
+.ui-menu-item[data-disabled] {
+  opacity: 0.4;
+  cursor: default;
+}
+.ui-menu-item__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ui-menu-item__meta {
+  color: var(--text-secondary);
+}
+.ui-menu-item__chevron {
+  color: var(--text-secondary);
+}
+.ui-menu-label {
+  padding: 10px 0 6px 10px; /* off the scale, as drawn (57:419) */
+  color: var(--text-secondary);
+}
+.ui-menu-divider {
+  padding: var(--space-3xs);
+}
+.ui-menu-divider::before {
+  content: "";
+  display: block;
+  height: 1px;
+  background: var(--border-default);
+}
