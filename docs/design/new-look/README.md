@@ -48,12 +48,16 @@ The Figma file stays the source of truth. To change a color, radius, spacing val
 
 ```bash
 npx playwright install chromium            # once
-npm run shots -- capture .shots/before     # 21 routes plus onboarding, both themes, 1440 wide
+npm run shots -- capture .shots/before     # 23 routes, onboarding and /dev/ui, both themes, 1440 wide
 npm run shots -- compare .shots/before .shots/after .shots/diff
+npm run shots -- capture .shots/ui --only dev-ui --width 3172
+npm run shots -- compare-image docs/design/new-look/reference/interaction-states.png .shots/ui/dev-ui-light.png .shots/ui-diff/states.png
 npm run shots -- props .shots/props.json   # every custom property at the root, both themes
 npm run shots -- props-compare .shots/a.json .shots/b.json
 ```
 
-`capture` and `props` start their own Vite server on port 4317 with the Supabase variables blanked, so they always run on the local backend, and seed it with a sample workspace ("Acme Studios", six starter templates). `--only brand-templates,settings-workspace` limits a capture, and `--base http://127.0.0.1:5173` points it at a server that is already running. `compare` writes a heatmap per changed screen: magenta marks the pixels that moved. The fill page is captured at `/templates/<id>`. Generate and the template chat need Supabase and the model key, so on the local backend Generate shows its setup notice and the chat is not captured. Phase 2 seeds Generate threads into the fixture, so a thread, its result and History are captured; the template chat's states wait for Phase 4's stand-in provider.
+`capture` and `props` start their own Vite server on port 4317 with the Supabase variables blanked, so they always run on the local backend, and seed it with a sample workspace ("Acme Studios", six starter templates). `--only brand-templates,settings-workspace` limits a capture, and `--base http://127.0.0.1:5173` points it at a server that is already running. `compare` writes a heatmap per changed screen: magenta marks the pixels that moved. The fill page is captured at `/templates/<id>`. Generate and the template chat need Supabase and the model key, so on the local backend Generate shows its setup notice and the chat is not captured. The fixture carries three Generate threads (a result in two sizes, a follow-up, a question), so History and two threads are captured (`generate-thread`, `generate-thread-question`); the template chat's states wait for Phase 4's stand-in provider.
+
+`dev-ui` is the primitives sheet (development builds only). Its Interaction states table is 3172 wide like the frame, so capture it with `--width 3172` and compare it with the Figma export using `compare-image`, which writes the same heatmap as `compare` for any two images over their overlap. Expect text antialiasing, Figma's corner smoothing and the artwork stand-ins in the heatmap; anything else is a difference to fix.
 
 If a change to the local backend's storage format breaks the seed, refresh it: run the app on the local backend, finish onboarding, then copy the `brand-portal-dev-db` and `brand-portal-company` entries from localStorage into the matching fields of `scripts/new-look/fixtures/dev-workspace.json`.
