@@ -50,6 +50,8 @@ const chatDraft = templateChat.turns.at(-1).drafts[0].id;
 
 const ROUTES = [
   ["brand-templates", "/templates"],
+  ["brand-templates-platform", "/templates?platform=instagram"],
+  ["brand-templates-search", "/templates?q=launch"],
   ["template-fill", `/templates/${firstTemplate}`],
   ["template-chat", `/templates/${chatTemplate}/chat`],
   ["template-chat-result", `/templates/${chatTemplate}/chat/${templateChat.id}`],

@@ -10,6 +10,10 @@ export interface PreviewOverlayProps {
   onEdit?(): void;
   /** The Edit button's name ("Edit Now hiring"). */
   editLabel?: string;
+  /** Draws the Edit circle as part of the look, not as a control: for a
+   * preview inside a control of its own (the library's template card,
+   * which is one button that opens the fill page). aria-hidden. */
+  decorativeEdit?: boolean;
   className?: string;
   "data-demo-state"?: DemoStateAttr;
 }
@@ -22,6 +26,7 @@ export function PreviewOverlay({
   children,
   onEdit,
   editLabel = "Edit",
+  decorativeEdit = false,
   className,
   "data-demo-state": demoState,
 }: PreviewOverlayProps) {
@@ -29,6 +34,11 @@ export function PreviewOverlay({
     <div className={cx("ui-preview", className)} data-demo-state={demoState}>
       {children}
       <div className="ui-preview__overlay">
+        {decorativeEdit && !onEdit && (
+          <span className="ui-preview__edit" aria-hidden>
+            <Pencil size={20} className="ui-icon" />
+          </span>
+        )}
         {onEdit && (
           <button
             type="button"
