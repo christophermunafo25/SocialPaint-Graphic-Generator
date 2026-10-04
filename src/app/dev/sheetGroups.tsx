@@ -1,9 +1,14 @@
 import React from "react";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, Minus, Settings, X } from "lucide-react";
 import {
   AttachButton,
   Button,
+  IconButton,
+  RowMenuTrigger,
   SendButton,
+  Stepper,
+  StepperButton,
+  ThemeToggle,
   type ButtonKind,
   type ButtonSize,
 } from "@/app/components/primitives";
@@ -48,4 +53,26 @@ export const SHEET_GROUPS: SheetGroup[] = [
       </>
     ),
   },
+  {
+    title: "Icon buttons",
+    render: () => <IconButtonsGroup />,
+  },
 ];
+
+function IconButtonsGroup() {
+  const [value, setValue] = React.useState(1);
+  return (
+    <div className="dev-ui-sheet__panel">
+      <IconButton icon={X} label="Close" />
+      <IconButton icon={X} label="Close (disabled)" disabled />
+      <IconButton variant="ghost" icon={Settings} label="Settings" />
+      <IconButton variant="ghost" icon={Settings} label="Settings (selected)" selected />
+      <IconButton variant="ghost" icon={Settings} label="Settings (disabled)" disabled />
+      <RowMenuTrigger label="More actions" aria-haspopup="menu" aria-expanded={false} />
+      <RowMenuTrigger label="More actions (disabled)" disabled />
+      <ThemeToggle label="Switch theme" />
+      <StepperButton icon={Minus} label="Decrease (disabled)" disabled />
+      <Stepper label="Variations" value={value} min={1} max={3} onChange={setValue} />
+    </div>
+  );
+}

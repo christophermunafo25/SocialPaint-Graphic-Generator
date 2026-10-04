@@ -180,3 +180,101 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
      Light, ink on white in Dark. */
   color: var(--surface-raised);
 }
+
+/* ── Icon button (95:516) ── */
+.ui-iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+.ui-iconbtn[data-variant="filled"] {
+  border-radius: var(--radius-pill);
+  --_fill: var(--surface-sunken);
+  color: var(--text-strong);
+}
+.ui-iconbtn[data-variant="ghost"] {
+  border-radius: var(--radius-control);
+  color: var(--text-secondary);
+}
+.ui-iconbtn[data-variant="ghost"][data-selected],
+.ui-iconbtn[data-variant="ghost"][data-demo-state="selected"] {
+  --_fill: var(--state-selected);
+  color: var(--text-strong);
+}
+
+/* ── Row menu trigger (44:29): surface/sunken while its menu is open, in
+   place of the pressed tint other menus hold. ── */
+.ui-rowmenu {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-control);
+  color: var(--text-secondary);
+}
+.ui-rowmenu[aria-expanded="true"],
+.ui-rowmenu[data-demo-state="open"] {
+  --_fill: var(--surface-sunken);
+  --_tint: transparent;
+}
+
+/* ── Theme toggle (102:574): the sun in Light, the moon in Dark, by the
+   nearest [data-theme]. Two levels cover the app's html and one nested
+   theme (a panel or a /dev/ui column). ── */
+.ui-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  --_fill: var(--surface-sunken);
+  color: var(--text-secondary);
+}
+[data-theme="light"] .ui-theme-toggle__moon,
+[data-theme="dark"] .ui-theme-toggle__sun,
+[data-theme="dark"] [data-theme="light"] .ui-theme-toggle__moon,
+[data-theme="light"] [data-theme="dark"] .ui-theme-toggle__sun {
+  display: none;
+}
+[data-theme="dark"] [data-theme="light"] .ui-theme-toggle__sun,
+[data-theme="light"] [data-theme="dark"] .ui-theme-toggle__moon {
+  display: block;
+}
+
+/* ── Stepper button (100:544) and Stepper (100:545) ── */
+.ui-stepbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-pill);
+  color: var(--text-strong);
+  --_disabled-opacity: 0.32;
+}
+.ui-stepper {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 3px 0 9px; /* off the scale, as drawn (100:545) */
+  gap: 6px;
+  border-radius: var(--radius-control);
+  background: var(--surface-sunken);
+  color: var(--text-strong);
+  white-space: nowrap;
+}
+.ui-stepper__controls {
+  display: inline-flex;
+  align-items: center;
+}
+.ui-stepper__value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 28px;
+}
