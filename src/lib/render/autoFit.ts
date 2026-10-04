@@ -37,8 +37,6 @@ export interface MeasuredTextStyle {
 export const DEFAULT_FONT_SIZE = 45;
 /** The one shrink floor default — the value the inspector advertises. */
 export const DEFAULT_MIN_FONT_SIZE = 18;
-/** The relative floor new fields and imports get: 75% of the set size. */
-export const DEFAULT_MIN_FONT_SCALE = 0.75;
 
 /** The smallest size a shrink or fill field may reach, in canvas px.
  * `base` is the field's set size (fontSizePx after its type style),

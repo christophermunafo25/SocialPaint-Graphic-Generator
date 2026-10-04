@@ -139,14 +139,13 @@ describe("text field extraction", () => {
     fills: [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }],
   };
 
-  it("lands text as Shrink at a 75% floor and carries opacity", () => {
+  it("lands text as Shrink at the default floor and carries opacity", () => {
     const { out } = run(headline);
     expect(out[0]).toMatchObject({
       type: "text",
       // The designed size is the ceiling; a member's longer copy shrinks,
-      // never below 75% of it.
+      // to the 18px default floor.
       textSizing: "shrink",
-      minFontScale: 0.75,
       fontSizePx: 165,
       align: "center",
       colorHex: "#FFFFFF",

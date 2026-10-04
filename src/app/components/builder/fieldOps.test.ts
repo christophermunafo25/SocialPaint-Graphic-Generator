@@ -471,10 +471,11 @@ describe("pill palette tile", () => {
 });
 
 describe("fieldFromPalette: new text fields", () => {
-  it("lands as Shrink with the default 75% floor", () => {
+  it("lands as Shrink with no floor of its own (the 18px default)", () => {
     const item = PALETTE_ITEMS.find((p) => p.type === "text" && p.id !== "pill")!;
     const f = fieldFromPalette(item, { x: 540, y: 540 }, [], null, { width: 1080, height: 1080 });
-    expect(f).toMatchObject({ textSizing: "shrink", minFontScale: 0.75 });
+    expect(f).toMatchObject({ textSizing: "shrink" });
+    expect(f.minFontScale).toBeUndefined();
     expect(f.minFontSizePx).toBeUndefined();
   });
 });

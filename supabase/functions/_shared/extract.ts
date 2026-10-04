@@ -599,12 +599,11 @@ export function walk(
             : undefined,
       placeholder: content?.slice(0, 80),
       // The box and size come from Figma, and the designed size is the
-      // ceiling. Text shrinks to a 75% floor so a member's longer copy stays
-      // in the box. Fixed text keeps its designed copy, which fits at its
+      // ceiling. Text shrinks (to the 18px default floor) so a member's
+      // longer copy stays in the box. Fixed text keeps its designed copy, which fits at its
       // set size, so shrink changes nothing for it; if browser metrics make
       // it overflow by a hair, shrinking is the better failure.
       textSizing: "shrink",
-      minFontScale: 0.75,
       // colorHex carries no alpha, so a translucent ink folds its alpha (and
       // the paint's opacity) into the element opacity alongside the node's.
       opacity: fill?.type === "SOLID" ? foldedOpacity(node, fill) : opacityOf(node),

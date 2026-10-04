@@ -6,7 +6,6 @@
 import type { BrandKit, FieldType, ShapeKind, TemplateField } from "@/lib/types";
 import { newId } from "@/lib/stores/local/db";
 import { suggestFieldKey } from "@/lib/caption";
-import { DEFAULT_MIN_FONT_SCALE } from "@/lib/render/autoFit";
 
 export interface PaletteItem {
   /** Stable id carried through drag-and-drop (shapes share type "shape"). */
@@ -249,8 +248,9 @@ export function fieldFromPalette(
           fontSizePx: Math.max(18, Math.min(90, Math.round(height * 0.5))),
           colorHex: kit?.colors.find((c) => c.key === "text")?.hex ?? kit?.colors[0]?.hex,
           align: "left" as const,
+          // No floor of its own: shrink goes down to the 18px default
+          // (CJ, 2026-10-04; a 75% floor stopped long copy fitting).
           textSizing: "shrink" as const,
-          minFontScale: DEFAULT_MIN_FONT_SCALE,
         }
       : {}),
     ...(item.type === "shape"
