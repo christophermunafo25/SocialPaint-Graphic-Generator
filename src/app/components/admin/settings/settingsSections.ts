@@ -11,7 +11,7 @@ export const SETTINGS_SECTION_DEFS: readonly SettingsSectionDef[] = [
   { key: "workspace", label: "Workspace", adminOnly: true },
   { key: "people", label: "People", adminOnly: true },
   { key: "integrations", label: "Integrations", adminOnly: true },
-  { key: "usage", label: "Usage & plan", adminOnly: true },
+  { key: "usage", label: "Plan & usage", adminOnly: true },
   { key: "sharing", label: "Sharing", adminOnly: true },
   { key: "account", label: "Account", adminOnly: false },
   { key: "advanced", label: "Advanced", adminOnly: true },

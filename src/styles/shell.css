@@ -136,3 +136,67 @@
 .sp-shell-account__detail {
   color: var(--text-secondary);
 }
+
+/* ── Page header and page column (every screen; Part A §3) ──
+   The title alone (Title/Page) with the actions right, 36 tall, 24 above
+   the first content. */
+.sp-shell-pagehead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-height: 36px;
+  margin-bottom: var(--space-md);
+  color: var(--text-strong);
+}
+.sp-shell-pagehead > h1 {
+  margin: 0;
+  min-width: 0;
+}
+.sp-shell-pagehead__actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+/* At desktop width the page column starts 45 from the sidebar's edge and
+   45 from the top, as every frame draws it (13:5776; off the scale, kept as
+   drawn). Scoped to the page, so the pre-app shell's --page-pad is
+   untouched; the page's full-bleed bars read the same value. The narrower
+   tiers (32, 24, 16) stay as they are. */
+@media (min-width: 1280px) {
+  .sp-page {
+    --page-pad: 45px;
+    padding-top: 45px;
+  }
+}
+
+/* ── Settings: the rail (8:678) and the section column ──
+   200 wide, 32 from the section column at desktop width; above it on
+   narrow screens. */
+.sp-shell-settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+.sp-shell-settings__rail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* as drawn (13:14649) */
+}
+.sp-shell-settings__section {
+  flex: 1;
+  min-width: 0;
+}
+@media (min-width: 900px) {
+  .sp-shell-settings {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--space-lg);
+  }
+  .sp-shell-settings__rail {
+    flex: none;
+    width: 200px;
+  }
+}

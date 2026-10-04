@@ -252,7 +252,7 @@ export function Dashboard({ range, metric }: { range?: InsightsRange; metric?: I
 
   return (
     <Page>
-      <PageHeader title="Insights & Analytics" action={headerAction} />
+      <PageHeader title="Insights & Analytics" actions={headerAction} />
       <div className="relative">
         {/* Overlaid, not in-flow: the bar appearing must not shift the
             rows it is updating. */}

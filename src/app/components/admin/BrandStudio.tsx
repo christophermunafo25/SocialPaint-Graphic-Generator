@@ -34,7 +34,7 @@ export function BrandStudio({
       {category ? (
         <BrandDetail category={category} surface={surface} brand={brand} bindings={bindings} />
       ) : (
-        <BrandOverview brand={brand} companyId={company?.id} companyName={company?.name} />
+        <BrandOverview brand={brand} companyId={company?.id} />
       )}
 
       {brand.undoOffer && (

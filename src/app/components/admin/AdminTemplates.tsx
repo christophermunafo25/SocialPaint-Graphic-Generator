@@ -330,8 +330,7 @@ export function AdminTemplates() {
       />
       <PageHeader
         title="Template Builder"
-        description="Published templates appear in your team's Brand Templates."
-        action={
+        actions={
           <div className="flex items-center" style={{ gap: "var(--space-2xs)" }}>
             <button
               className="sp-btn"

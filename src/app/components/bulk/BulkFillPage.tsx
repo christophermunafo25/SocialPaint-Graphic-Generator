@@ -291,11 +291,7 @@ function BulkFill({
   return (
     <Page>
       <BackLink onClick={() => navigate({ name: "template", templateId: template.id })} />
-      <PageHeader
-        eyebrow="Bulk fill"
-        title={template.name}
-        description="One spreadsheet in, one graphic per row out, every one exported exactly as a single fill would be."
-      />
+      <PageHeader title="Bulk fill" />
 
       {/* The off-screen canvas is mounted for the whole visit, so the
           background and fonts are resolved once, before the first row. */}
