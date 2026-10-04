@@ -6,7 +6,10 @@ import {
   CompactSelect,
   Filter,
   SearchField,
+  Segment,
   Select,
+  Switch,
+  Tab,
   IconButton,
   RowMenuTrigger,
   SendButton,
@@ -98,5 +101,23 @@ export const RENDERERS: Record<string, (state: DemoState) => React.ReactNode> = 
       className="dev-ui-w-288"
       data-demo-state={s === "open" ? undefined : demo(s)}
     />
+  ),
+  Switch: (s) => (
+    <Switch
+      checked={s === "on"}
+      onChange={() => {}}
+      ariaLabel="Allow photo uploads"
+      data-demo-state={demo(s)}
+    />
+  ),
+  Segment: (s) => (
+    <Segment selected={s === "selected"} data-demo-state={demo(s)}>
+      Instagram
+    </Segment>
+  ),
+  Tab: (s) => (
+    <Tab dot="green" selected={s === "selected"} data-demo-state={demo(s)}>
+      Exports
+    </Tab>
   ),
 };

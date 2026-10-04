@@ -508,3 +508,128 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   height: 1px;
   background: var(--border-default);
 }
+
+/* ── Switch (49:45): a native checkbox over the track. Off is
+   switch/track-off under state/hover; on is switch/track-on under
+   state/hover-inverse. ── */
+.ui-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  cursor: pointer;
+}
+.ui-switch__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+.ui-switch__track {
+  box-sizing: border-box;
+  flex: none;
+  display: inline-flex;
+  width: 36px;
+  height: 20px;
+  padding: 2px; /* as drawn (49:41) */
+  border-radius: var(--radius-pill);
+  --_fill: var(--switch-background);
+  --_tint: transparent;
+  background: linear-gradient(var(--_tint), var(--_tint)), var(--_fill);
+}
+.ui-switch[data-checked] .ui-switch__track {
+  --_fill: var(--switch-track-on);
+}
+.ui-switch:not([data-disabled]):hover .ui-switch__track,
+.ui-switch[data-demo-state="hover"] .ui-switch__track {
+  --_tint: var(--state-hover);
+}
+.ui-switch[data-checked]:not([data-disabled]):hover .ui-switch__track,
+.ui-switch[data-checked][data-demo-state="hover"] .ui-switch__track {
+  --_tint: var(--state-hover-inverse);
+}
+.ui-switch__knob {
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+}
+.ui-switch[data-checked] .ui-switch__knob {
+  transform: translateX(16px);
+}
+.ui-switch__input:focus-visible + .ui-switch__track,
+.ui-switch[data-demo-state="focus"] .ui-switch__track {
+  outline: var(--focus-width) solid var(--ring);
+  outline-offset: var(--focus-offset);
+}
+.ui-switch[data-disabled] {
+  cursor: default;
+}
+.ui-switch[data-disabled] .ui-switch__track {
+  opacity: 0.4;
+}
+
+/* ── Segment (49:50) and Segmented control (49:51) ── */
+.ui-segmented,
+.ui-tabs {
+  display: inline-flex;
+  border-radius: var(--radius-control-md);
+  background: var(--control-track);
+}
+.ui-segmented {
+  padding: var(--space-3xs);
+  gap: var(--space-3xs);
+}
+.ui-segment,
+.ui-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-control);
+  color: var(--text-secondary);
+}
+.ui-segment {
+  height: 32px;
+  padding: 0 14px; /* off the scale, as drawn (49:47) */
+}
+.ui-segment[data-selected],
+.ui-segment[data-demo-state="selected"],
+.ui-tab[data-selected],
+.ui-tab[data-demo-state="selected"] {
+  --_fill: var(--control-thumb);
+  --_shadow: var(--elevation-thumb);
+  color: var(--text-strong);
+}
+
+/* ── Tab (49:62) and Tabs (49:63) ── */
+.ui-tabs {
+  padding: 3px; /* off the scale, as drawn (49:63) */
+  gap: 2px;
+}
+.ui-tab {
+  padding: 6px var(--space-xs); /* 6 is off the scale, as drawn (49:58) */
+  gap: 7px;
+}
+.ui-tab__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-pill);
+}
+.ui-tab__dot[data-dot="green"] {
+  background: var(--accent-green);
+}
+.ui-tab__dot[data-dot="blue"] {
+  background: var(--accent-blue);
+}
+.ui-tab__dot[data-dot="purple"] {
+  background: var(--accent-purple);
+}
+.ui-tab__dot[data-dot="pink"] {
+  background: var(--accent-pink);
+}
+.ui-tab__dot[data-dot="warm"] {
+  background: var(--accent-warm);
+}

@@ -8,7 +8,10 @@ import {
   Filter,
   Input,
   SearchField,
+  SegmentedControl,
   Select,
+  Switch,
+  Tabs,
   TextArea,
   IconButton,
   RowMenuTrigger,
@@ -67,6 +70,10 @@ export const SHEET_GROUPS: SheetGroup[] = [
   {
     title: "Fields and pickers",
     render: () => <FieldsGroup />,
+  },
+  {
+    title: "Toggles",
+    render: () => <TogglesGroup />,
   },
 ];
 
@@ -164,6 +171,39 @@ function FieldsGroup() {
           placeholder="Search templates"
         />
       </div>
+    </div>
+  );
+}
+
+function TogglesGroup() {
+  const [on, setOn] = React.useState(true);
+  const [off, setOff] = React.useState(false);
+  const [platform, setPlatform] = React.useState("instagram");
+  const [metric, setMetric] = React.useState("exports");
+  return (
+    <div className="dev-ui-sheet__panel">
+      <Switch checked={on} onChange={setOn} ariaLabel="Allow photo uploads" />
+      <Switch checked={off} onChange={setOff} ariaLabel="Fields may override type styles" />
+      <Switch checked={false} onChange={() => {}} ariaLabel="Disabled switch" disabled />
+      <SegmentedControl
+        aria-label="Platform"
+        options={[
+          { id: "instagram", label: "Instagram" },
+          { id: "linkedin", label: "LinkedIn" },
+        ]}
+        selectedId={platform}
+        onSelect={setPlatform}
+      />
+      <Tabs
+        aria-label="Metric"
+        items={[
+          { id: "exports", label: "Exports", dot: "green" },
+          { id: "opens", label: "Opens", dot: "blue" },
+          { id: "links", label: "Links", dot: "purple" },
+        ]}
+        selectedId={metric}
+        onSelect={setMetric}
+      />
     </div>
   );
 }
