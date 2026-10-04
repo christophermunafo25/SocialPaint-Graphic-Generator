@@ -23,7 +23,7 @@
   z-index: var(--z-sticky);
   display: flex;
   align-items: center;
-  gap: 7px; /* the chip rail's gap, as drawn (13:5856) */
+  gap: var(--space-2xs);
   min-height: 56px;
 }
 .sp-lib-filterbar::before {
@@ -82,9 +82,30 @@
 }
 .sp-lib-chips__track {
   align-items: center;
-  gap: 7px;
+  gap: var(--space-2xs);
   padding: 4px;
   scroll-padding-inline: 4px;
+}
+/* Today's chip size (CJ, 2026-10-04), over the frame's hugging 50: 48 tall
+   on a 152 floor, the chevron at the far right. A label that needs more
+   grows the chip by that much. The search square matches its height. */
+.sp-lib-chips .ui-platform-chip {
+  flex: none;
+  box-sizing: border-box;
+  min-width: 152px;
+  height: 48px;
+  padding: 0 var(--space-xs) 0 var(--space-2xs);
+  gap: var(--space-2xs);
+}
+.sp-lib-chips .ui-platform-chip__chevron {
+  margin-left: auto;
+}
+.sp-lib-search .ui-search:not(.ui-search--open) {
+  width: 48px;
+  height: 48px;
+}
+.sp-lib-search .ui-search--open {
+  height: 48px;
 }
 
 /* The page under the filter bar: 40 down to the first shelf (16 + 24),
@@ -134,17 +155,40 @@
   text-underline-offset: 3px;
   white-space: nowrap;
 }
-/* Cards 302 wide, 16 apart. The track pads for the cards' shadow and the
+/* Exactly --shelf-visible cards fill the rail before it scrolls (CJ,
+   2026-10-04: today's sizes, over the frame's fixed 302 with a fourth cut
+   by the fade): three across at laptop widths, four from 1800, two and a
+   bit on a phone. The width is derived from the rail's own gap, so the
+   two can never drift. The track pads for the cards' shadow and the
    focus ring (a scroller clips both) and steps back by as much. */
 .sp-lib-shelf__track {
-  gap: var(--space-sm);
+  --shelf-visible: 1.15;
+  --shelf-gap: var(--space-sm);
+  gap: var(--shelf-gap);
   padding: 4px 4px var(--space-sm);
   margin: -4px -4px calc(-1 * var(--space-sm));
   scroll-padding-inline: 4px;
+  scroll-snap-type: x mandatory;
+}
+@media (min-width: 480px) {
+  .sp-lib-shelf__track {
+    --shelf-visible: 2;
+  }
+}
+@media (min-width: 768px) {
+  .sp-lib-shelf__track {
+    --shelf-visible: 3;
+  }
+}
+@media (min-width: 1800px) {
+  .sp-lib-shelf__track {
+    --shelf-visible: 4;
+  }
 }
 .sp-lib-shelf__item {
   flex: none;
-  width: 302px;
+  width: calc((100% - (var(--shelf-visible) - 1) * var(--shelf-gap)) / var(--shelf-visible));
+  scroll-snap-align: start;
 }
 
 /* The result line (13:6452): what the page shows, and Clear. */
@@ -197,8 +241,10 @@
   .sp-lib-grid {
     grid-template-columns: minmax(0, 1fr);
   }
-  .sp-lib-shelf__item {
-    width: min(302px, 78vw);
+}
+@media (min-width: 1800px) {
+  .sp-lib-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
@@ -243,8 +289,8 @@
 }
 
 /* ── Template card (13:5924): the Result card's anatomy with a go arrow.
-   One button; hover and keyboard focus show the preview hover (the dim
-   and the Edit circle) in place of a ring. ── */
+   One button with the keyboard ring; hover and focus step through its
+   looks (CJ, 2026-10-04: today's hover, kept over the frame's dim). ── */
 .sp-tcard {
   box-sizing: border-box;
   display: flex;
@@ -258,24 +304,41 @@
   text-align: left;
   cursor: pointer;
 }
-.sp-tcard:focus-visible {
-  outline: 2px solid transparent; /* a ring in forced colours only */
-}
-.sp-tcard:hover .ui-preview__overlay,
-.sp-tcard:focus-visible .ui-preview__overlay {
-  opacity: 1;
-}
-.sp-tcard__preview {
-  border-radius: var(--radius-media-plate);
-}
 .sp-tcard__frame {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   aspect-ratio: var(--frame-ratio, 4 / 5);
   overflow: hidden;
-  border-radius: inherit;
+  border-radius: var(--radius-media-plate);
   background: var(--surface-sunken);
+}
+/* The looks a card steps through: dots, and the name while stepping, on
+   the Overlay tag, 8 in from the preview's bottom left. */
+.sp-tcard__looks {
+  position: absolute;
+  left: var(--space-2xs);
+  bottom: var(--space-2xs);
+  pointer-events: none;
+}
+.sp-tcard__dots {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3xs);
+}
+.sp-tcard__dots:not(:last-child) {
+  margin-right: 6px;
+}
+.sp-tcard__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: var(--radius-pill);
+  background: currentColor;
+  opacity: 0.45;
+}
+.sp-tcard__dot[data-on] {
+  opacity: 1;
 }
 .sp-tcard__meta {
   display: flex;
@@ -330,58 +393,181 @@
   }
 }
 
-/* ── The fill page (156:674, 159:716) ─────────────────────────────────────
-   The page column ends 28 above the viewport's foot (156:747), and the
-   split fills what is left under the header: 45 + 36 + 24 + 28 at desktop
-   width (48 above below 1280). */
+/* ── The fill page and the public link page ─────────────────────────────────
+   The step form on the left, the live Preview on the right (CJ,
+   2026-10-04: the earlier page on the new look, over the frames' single
+   Details panel; the breadcrumb header and the buttons stay the frame's). */
 .sp-page.sp-fill-page {
-  --_top: 48px;
-  padding-bottom: 28px;
-}
-@media (min-width: 1280px) {
-  .sp-page.sp-fill-page {
-    --_top: 45px;
-  }
+  padding-bottom: var(--space-xl);
 }
 .sp-fill {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
   gap: var(--space-md);
-  height: calc(100dvh - var(--dev-banner-h, 0px) - var(--_top, 48px) - 88px);
-  min-height: 560px;
+  align-items: start;
 }
-/* The public link page has no header; its attribution sits under it. */
-.sp-fill[data-place="public"] {
-  height: calc(100dvh - 180px);
-}
-.sp-fill__graphic {
-  flex: 1;
-  min-width: 0;
+.sp-fill__form {
   display: flex;
   flex-direction: column;
+  gap: var(--space-sm);
+  min-width: 0;
 }
-/* The stage (156:763): control/fill, radius 20, padding 40, the graphic
-   centred and as large as both its sides allow. */
-.sp-fill__stage {
-  flex: 1;
-  min-height: 0;
+.sp-fill__description {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+/* The step rail: a numbered dot per field, Look and Finish as pills. The
+   step being filled is inverse; a filled one shows its check. */
+.sp-fill__rail {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.sp-fill__stepdot,
+.sp-fill__stepchip {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-xl);
-  border-radius: var(--radius-card);
+  height: 28px;
+  border-radius: var(--radius-pill);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.sp-fill__stepdot {
+  width: 28px;
+}
+.sp-fill__stepchip {
+  padding: 0 var(--space-xs);
+}
+.sp-fill__stepdot[data-filled] {
+  box-shadow: none;
   background: var(--control-fill);
+  color: var(--text-strong);
+}
+.sp-fill__stepdot[data-error] {
+  box-shadow: inset 0 0 0 1px var(--state-error);
+  color: var(--state-error);
+}
+.sp-fill__stepdot[data-current],
+.sp-fill__stepchip[data-current] {
+  box-shadow: none;
+  background: var(--surface-inverse);
+  color: var(--text-inverse);
+}
+
+/* A step: a card with its count, the field, then Back and Next. */
+.sp-fill__step {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: 20px;
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+  color: var(--text-strong);
+}
+.sp-fill__stephead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+.sp-fill__stephead > h2 {
+  margin: 0;
+}
+.sp-fill__step:has(> .sp-fill__stephead > h2) .sp-fill__stephead {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3xs);
+}
+.sp-fill__eyebrow {
+  font: var(--type-mono-eyebrow);
+  letter-spacing: var(--type-mono-eyebrow-tracking);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+/* The field's label is the step's title. */
+.sp-fill__step .ui-field__label {
+  font: var(--type-label-l);
+  letter-spacing: var(--type-label-l-tracking);
+  color: var(--text-strong);
+}
+.sp-fill__step .ui-input[data-size="multiline"] {
+  field-sizing: content;
+  min-height: 64px;
+  resize: none;
+}
+.sp-fill__nav {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2xs);
+  padding-top: var(--space-3xs);
+}
+.sp-fill__looks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+.sp-fill__lookthumb {
+  display: block;
+  width: 100%;
   overflow: hidden;
-  container-type: size;
+  border-radius: var(--radius-control);
+}
+.sp-fill__downloads > .ui-btn {
+  width: 100%;
+}
+
+/* The Preview: sticky beside the steps, the graphic as large as the
+   window's height allows. */
+.sp-fill__preview {
+  position: sticky;
+  top: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.sp-fill__previewcard {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: 20px;
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+  color: var(--text-strong);
+}
+.sp-fill__previewhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+.sp-fill__previewhead > h2 {
+  margin: 0;
+}
+.sp-fill__size {
+  color: var(--text-secondary);
 }
 .sp-fill__art {
-  width: min(100cqw, calc(100cqh * var(--art-ratio, 1)));
-  border-radius: var(--radius-card);
+  width: 100%;
+  max-width: calc((100vh - 240px) * var(--art-ratio, 1));
+  margin-inline: auto;
   overflow: hidden;
-  /* Elevation/Small without its bevels, as drawn (156:764). */
-  box-shadow: 2px 2px 8px 0 var(--shadow-raised);
+  border-radius: var(--radius-media-plate);
+  background: var(--surface-sunken);
+  /* A hairline over the artwork's edge, so a white graphic still reads on
+     the white card. */
+  outline: 1px solid var(--border-default);
+  outline-offset: -1px;
 }
 .sp-fill__note {
-  margin: var(--space-xs) 0 0;
+  margin: 0;
   color: var(--text-secondary);
 }
 .sp-fill__legal {
@@ -399,13 +585,6 @@
 .sp-fill__legal > a:hover {
   text-decoration: underline;
 }
-.sp-fill__panel {
-  flex: none;
-  width: 380px;
-}
-.sp-fill__grow {
-  flex: 1;
-}
 /* Today's export messages, at the foot of the viewport. */
 .sp-fill-toast {
   position: fixed;
@@ -416,28 +595,28 @@
   transform: translateX(-50%);
   max-width: min(560px, calc(100vw - 32px));
 }
+/* The public link page's note on what survives a closed tab. */
+.sp-fill__resume {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2xs);
+  color: var(--text-secondary);
+}
+.sp-fill__resume > p {
+  margin: 0;
+}
 
-/* Below 1024 the graphic and the panel stack; the public link page shows
-   the graphic first, as today, and the member page the panel. */
+/* Below 1024 the steps and the preview stack: the steps first on the
+   member page, the preview first on the public link page. */
 @media (max-width: 1023px) {
-  .sp-fill,
-  .sp-fill[data-place="public"] {
-    flex-direction: column;
-    height: auto;
-    min-height: 0;
+  .sp-fill {
+    grid-template-columns: minmax(0, 1fr);
   }
-  .sp-fill[data-place="member"] .sp-fill__graphic {
-    order: 2;
+  .sp-fill__preview {
+    position: static;
   }
-  .sp-fill__stage {
-    container-type: normal;
-    padding: var(--space-md);
-  }
-  .sp-fill__art {
-    width: min(100%, 480px);
-  }
-  .sp-fill__panel {
-    width: auto;
+  .sp-fill[data-place="public"] .sp-fill__preview {
+    order: -1;
   }
 }
 
@@ -495,21 +674,13 @@
   display: flex;
   gap: var(--space-2xs);
 }
+.sp-details__grow {
+  flex: 1;
+}
 @media (max-width: 1023px) {
   .sp-details__fields {
     overflow: visible;
   }
-}
-/* The public link page's note on what survives a closed tab. */
-.sp-fill__resume {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2xs);
-  padding-top: var(--space-xs);
-  color: var(--text-secondary);
-}
-.sp-fill__resume > p {
-  margin: 0;
 }
 
 /* ── The template chat (13:7064 to 13:8148) ─────────────────────────────────

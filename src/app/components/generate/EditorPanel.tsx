@@ -605,7 +605,7 @@ export function EditorPanel({
           <Button
             kind="primary"
             size="lg"
-            className="sp-fill__grow"
+            className="sp-details__grow"
             aria-busy={exporting || undefined}
             onClick={() => {
               if (blocked) focusEntry(blocked.first);

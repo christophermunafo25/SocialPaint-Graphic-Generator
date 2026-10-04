@@ -279,14 +279,14 @@ sits in `DevBackendBanner`. What each role reaches is `screenFor` (`src/app/rout
 and `settingsSections.ts`, pinned by `src/app/routes.test.ts`.
 
 Brand Templates is on the new look (Phase 4; styles in `src/styles/brand-templates.css`).
-The library's template card is one button with the preview hover drawn on it. A page
+The library's template card is one button that steps through its looks on hover. A page
 under the library (the fill page, the template chat) heads itself with
-`layout/Breadcrumb.tsx` in place of a title. The fill page (`TemplateFill`, shared with
-the public link page) puts the graphic on a stage beside `details/DetailsPanel.tsx`, the
-one Details panel: Look, the template's member fields on the Field primitive (a photo on
-the Upload control, whose picking and cropping is `imagePick.tsx`, shared with Generate's
-editor), the caption with Copy, and the download buttons. The template chat's Edit details
-is the same panel, titled "Edit details", with Close and Discard.
+`layout/Breadcrumb.tsx` in place of a title. The fill page (`TemplateFill`, shared with the
+public link page) is a step form, one field per step on the Field primitive (a photo on the
+Upload control, whose picking and cropping is `imagePick.tsx`, shared with Generate's
+editor), then a finish step with the look, the caption with Copy and the downloads, beside
+a live Preview card. The template chat's Edit details is `details/DetailsPanel.tsx`: every
+field in one panel, with Close and Discard.
 
 ## PNG export
 

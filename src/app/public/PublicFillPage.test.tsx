@@ -6,6 +6,7 @@
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type { BrandKit, TemplateField, TemplateSchema } from "@/lib/types";
 import type { PublicTemplate } from "@/lib/publicLink/client";
 import { saveDraft } from "@/lib/publicLink/draft";
@@ -90,22 +91,24 @@ afterEach(() => {
 });
 
 describe("PublicFillPage", () => {
-  it("renders the Details panel with no header buttons", async () => {
+  it("renders the steps and the preview with no header buttons", async () => {
     vi.mocked(fetchPublicTemplate).mockResolvedValue(payload());
     render(<PublicFillPage token="tok" />);
-    expect(await screen.findByRole("heading", { name: "Details" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Preview" })).toBeTruthy();
     for (const name of ["Use AI to assist", "Bulk fill", "Public link"]) {
       expect(screen.queryByRole("button", { name })).toBeNull();
     }
-    expect(screen.getByRole("button", { name: "Download PNG" })).toBeTruthy();
+    // Headline, then the photo, then Finish.
+    expect(screen.getByRole("button", { name: /^Step 2: Photo/ })).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: /^Step 2: Photo/ }));
     expect(screen.getByRole("button", { name: /^Photo: Add a photo/ })).toBeTruthy();
   });
 
-  it("offers no photo field when the link turns uploads off", async () => {
+  it("offers no photo step when the link turns uploads off", async () => {
     vi.mocked(fetchPublicTemplate).mockResolvedValue(payload({ allowUploads: false }));
     render(<PublicFillPage token="tok" />);
-    await screen.findByRole("heading", { name: "Details" });
-    expect(screen.queryByRole("button", { name: /^Photo:/ })).toBeNull();
+    await screen.findByRole("heading", { name: "Preview" });
+    expect(screen.queryByRole("button", { name: /^Step 2: Photo/ })).toBeNull();
     expect(screen.getByLabelText("Headline")).toBeTruthy();
   });
 
@@ -115,6 +118,7 @@ describe("PublicFillPage", () => {
     render(<PublicFillPage token="tok" />);
     const headline = (await screen.findByLabelText("Headline")) as HTMLInputElement;
     expect(headline.value).toBe("Meet Acme Pro");
+    await userEvent.click(screen.getByRole("button", { name: /^Finish/ }));
     expect((screen.getByLabelText("Caption") as HTMLTextAreaElement).value).toBe("Meet Acme Pro");
   });
 });

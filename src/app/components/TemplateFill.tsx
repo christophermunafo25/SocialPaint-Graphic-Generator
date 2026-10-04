@@ -12,9 +12,11 @@ import { SchemaRenderer, type SchemaRendererHandle } from "./SchemaRenderer";
 import { ExportAssetError, type ExportOutcome } from "@/lib/render/exportPng";
 import { celebrate } from "@/lib/celebrate";
 import { openLinkedInComposer } from "@/lib/share/linkedin";
-import { DetailsPanel } from "./details/DetailsPanel";
+import { ArrowLeft, Check } from "lucide-react";
+import { COPIED_MS, DetailField } from "./details/DetailsPanel";
 import { LinkedInMark } from "./details/LinkedInMark";
-import { Button, Toast, focusFirstInvalid } from "./primitives";
+import { TemplateThumbnail } from "./TemplateThumbnail";
+import { Button, Field, LookTile, SegmentedControl, TextArea, Toast } from "./primitives";
 
 interface TemplateFillProps {
   template: TemplateSchema;
@@ -38,11 +40,11 @@ interface TemplateFillProps {
   /** Whether member-fillable image fields are offered. A public link can turn
    * them off; the member path never does. */
   allowUploads?: boolean;
-  /** Rendered under the graphic. The public page puts its resume note here. */
+  /** Rendered under the steps. The public page puts its resume note here. */
   footer?: React.ReactNode;
-  /** The public link page: the split sizes to its own frame, and the graphic
-   * comes before the panel on a phone (someone opening a link wants to see
-   * the graphic before they meet a form). */
+  /** The public link page: the preview comes before the steps on a phone
+   * (someone opening a link wants to see the graphic before they meet a
+   * form). */
   variant?: "member" | "public";
 }
 
@@ -59,10 +61,12 @@ const TOAST_COPY: Record<ToastKind, string> = {
     "Your browser blocked the new tab. Your caption is copied. Open LinkedIn and paste it into a new post.",
 };
 
-/** THE fill surface (new look, 156:674 and 159:716): the graphic on a
- * sunken stage beside the Details panel. Look, every member field and the
- * caption sit in the panel; Download PNG at its foot, then Download again
- * and Post to LinkedIn once there is a file.
+/** THE fill surface: the template filled in one step at a time on the
+ * left, the live Preview on the right (CJ, 2026-10-04: the earlier step
+ * form, on the new look's tokens and primitives, over the frames' single
+ * Details panel). With several looks, "Choose a look" comes first; every
+ * field is a step, reachable in one click from the step rail; Finish holds
+ * the look switch, the caption and the downloads.
  *
  * Used unchanged by the signed-in member page and by the public link page,
  * so a fix in one is a fix in both, and the PNG a stranger exports from a
@@ -119,36 +123,66 @@ export function TemplateFill({
     [formFields, values],
   );
 
+  /** Steps: the look picker (when there is a choice), one per field, then
+   * Finish. Free to move in both directions. */
+  const lead = multiLook ? 1 : 0;
+  const finishStep = lead + formFields.length;
+  const [step, setStep] = useState(0);
+  // A step index can outlive the field list it pointed into (uploads turned
+  // off, a look that hides a field): clamp rather than show a blank card.
+  const current = Math.min(step, finishStep);
+  const fieldIndex = current - lead;
+  const onFinish = current === finishStep;
+  const stepRef = useRef<HTMLDivElement>(null);
+  const movedRef = useRef(false);
+  useEffect(() => {
+    // Land focus on the step's control so people can type at once, but not
+    // on first render, where it would pull the page down.
+    if (!movedRef.current) return;
+    stepRef.current
+      ?.querySelector<HTMLElement>(
+        "input:not([type=file]), textarea, button.ui-upload, [role=radio][tabindex='0']",
+      )
+      ?.focus();
+  }, [current]);
+  const go = (next: number) => {
+    movedRef.current = true;
+    setStep(Math.max(0, Math.min(next, finishStep)));
+  };
+
   /** The caption follows the fields until the person types in it. */
   const [caption, setCaption] = useState<string | null>(null);
   const shownCaption = caption ?? mergeCaption(template, values);
+  const [copied, setCopied] = useState(false);
+  const copiedTimer = useRef<number | undefined>(undefined);
 
-  /** Set by a Download with required fields empty: from then on each empty
-   * required field shows its error, and fills clear them one by one. */
+  /** Set by a refused Download: from then on an empty required field shows
+   * its error on its step, and filling it clears it. */
   const [checked, setChecked] = useState(false);
-  const errors = useMemo(() => {
-    if (!checked) return {};
-    return Object.fromEntries(missingRequired.map((f) => [f.fieldKey, requiredError(f)]));
-  }, [checked, missingRequired]);
+  const errorOf = (key: string): string | undefined => {
+    if (!checked) return undefined;
+    const f = missingRequired.find((m) => m.fieldKey === key);
+    return f ? requiredError(f) : undefined;
+  };
 
   const [exporting, setExporting] = useState(false);
-  /** A file exists: the footer offers Download again and Post to LinkedIn. */
+  /** A file exists: Download again, and Post to LinkedIn leads. */
   const [downloaded, setDownloaded] = useState(false);
   const [toast, setToast] = useState<{ kind: ToastKind; detail?: string } | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
   const rendererRef = useRef<SchemaRendererHandle>(null);
   const downloadRef = useRef<HTMLButtonElement>(null);
-  const formRef = useRef<HTMLFormElement>(null);
   /** Text at its minimum size that still doesn't fit: said under the
-   * graphic; shortening the entry is the fix. */
+   * preview; shortening the entry is the fix. */
   const [layoutWarnings, setLayoutWarnings] = useState<string[]>([]);
-  const [focusInvalid, setFocusInvalid] = useState(0);
 
-  useEffect(() => () => window.clearTimeout(toastTimer.current), []);
-  // After a refused Download has drawn its errors, focus the first one.
-  useEffect(() => {
-    if (focusInvalid && formRef.current) focusFirstInvalid(formRef.current);
-  }, [focusInvalid]);
+  useEffect(
+    () => () => {
+      window.clearTimeout(toastTimer.current);
+      window.clearTimeout(copiedTimer.current);
+    },
+    [],
+  );
 
   const showToast = (kind: ToastKind, detail?: string) => {
     window.clearTimeout(toastTimer.current);
@@ -162,13 +196,17 @@ export function TemplateFill({
   const setValue = (fieldKey: string, value: string) =>
     onValuesChange({ ...values, [fieldKey]: value });
 
+  /** A required field still empty: show the errors and take the person to
+   * the first one. Returns whether it did. */
+  const sendToMissing = (): boolean => {
+    if (missingRequired.length === 0) return false;
+    setChecked(true);
+    go(lead + formFields.indexOf(missingRequired[0]));
+    return true;
+  };
+
   const handleDownload = async () => {
-    if (missingRequired.length > 0) {
-      setChecked(true);
-      setFocusInvalid((n) => n + 1);
-      return;
-    }
-    if (!rendererRef.current) return;
+    if (sendToMissing() || !rendererRef.current) return;
     setExporting(true);
     try {
       const outcome = await rendererRef.current.exportPng();
@@ -194,48 +232,24 @@ export function TemplateFill({
 
   /** Hand the caption to LinkedIn's composer. The graphic does NOT go with
    * it (LinkedIn takes no image from a URL), so the person attaches the
-   * file they just downloaded; the toast says so. */
+   * file they downloaded; the toast says so. A caption built from
+   * half-filled fields is worse than none, so it waits for them too. */
   const handlePostToLinkedIn = () => {
+    if (sendToMissing()) return;
     const opened = openLinkedInComposer(shownCaption);
     onShared?.();
     showToast(opened ? "linkedin" : "popup-blocked");
   };
 
-  const footerButtons = downloaded ? (
-    <>
-      <Button
-        ref={downloadRef}
-        kind="neutral"
-        size="lg"
-        onClick={() => void handleDownload()}
-        disabled={exporting}
-        aria-busy={exporting || undefined}
-      >
-        {exporting ? "Generating…" : "Download again"}
-      </Button>
-      <Button
-        kind="primary"
-        size="lg"
-        icon={LinkedInMark}
-        onClick={handlePostToLinkedIn}
-        className="sp-fill__grow"
-      >
-        Post to LinkedIn
-      </Button>
-    </>
-  ) : (
-    <Button
-      ref={downloadRef}
-      kind="primary"
-      size="lg"
-      onClick={() => void handleDownload()}
-      disabled={exporting}
-      aria-busy={exporting || undefined}
-      className="sp-fill__grow"
-    >
-      {exporting ? "Generating…" : "Download PNG"}
-    </Button>
-  );
+  const copyCaption = async () => {
+    await navigator.clipboard.writeText(shownCaption);
+    setCopied(true);
+    window.clearTimeout(copiedTimer.current);
+    copiedTimer.current = window.setTimeout(() => setCopied(false), COPIED_MS);
+  };
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const stepLabel = `Step ${pad(current + 1)} of ${pad(finishStep)}`;
 
   return (
     <>
@@ -246,8 +260,238 @@ export function TemplateFill({
       )}
 
       <div className="sp-fill" data-place={place}>
-        <div className="sp-fill__graphic">
-          <div className="sp-fill__stage">
+        {/* Left: the steps. */}
+        <div className="sp-fill__form">
+          {template.description && (
+            <p className="t-body-s sp-fill__description">{template.description}</p>
+          )}
+
+          {/* The step rail: every step one click away, forward or back. A
+              field's step shows a check once it has a value; Finish is the
+              flag at the end. */}
+          {(formFields.length > 0 || multiLook) && (
+            <nav aria-label="Steps" className="sp-fill__rail">
+              {multiLook && (
+                <button
+                  type="button"
+                  className="ui-reset ui-ring-tight sp-fill__stepchip t-label-xs"
+                  data-current={current === 0 || undefined}
+                  aria-current={current === 0 ? "step" : undefined}
+                  aria-label={`Step 1: Choose a look${look ? ` (${look.name})` : ""}`}
+                  onClick={() => go(0)}
+                >
+                  Look
+                </button>
+              )}
+              {formFields.map((f, i) => {
+                const filled = Boolean(values[f.fieldKey]);
+                const here = fieldIndex === i;
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    className="ui-reset ui-ring-tight sp-fill__stepdot t-label-xs"
+                    data-current={here || undefined}
+                    data-filled={(filled && !here) || undefined}
+                    data-error={(!filled && Boolean(errorOf(f.fieldKey))) || undefined}
+                    aria-current={here ? "step" : undefined}
+                    aria-label={`Step ${lead + i + 1}: ${f.label}${filled ? " (filled)" : ""}`}
+                    title={f.label}
+                    onClick={() => go(lead + i)}
+                  >
+                    {filled && !here ? <Check size={12} className="ui-icon" aria-hidden /> : i + 1}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                className="ui-reset ui-ring-tight sp-fill__stepchip t-label-xs"
+                data-current={onFinish || undefined}
+                aria-current={onFinish ? "step" : undefined}
+                aria-label="Finish: caption and download"
+                onClick={() => go(finishStep)}
+              >
+                Finish
+              </button>
+            </nav>
+          )}
+
+          {/* Choose a look: live thumbnails through the one renderer.
+              Picking one sets the look and moves to the first field. */}
+          {multiLook && current === 0 && (
+            <div ref={stepRef} className="sp-fill__step">
+              <div className="sp-fill__stephead">
+                <span className="sp-fill__eyebrow">{stepLabel}</span>
+                <h2 className="t-label-l">Choose a look</h2>
+              </div>
+              <LookChoice
+                template={template}
+                selectedId={look?.id}
+                onPick={(id) => {
+                  setVariantId(id);
+                  go(1);
+                }}
+              />
+            </div>
+          )}
+
+          {/* One field at a time. Enter on a one-line field moves on. */}
+          {fieldIndex >= 0 &&
+            fieldIndex < formFields.length &&
+            (() => {
+              const field = formFields[fieldIndex];
+              const maxLength = resolveFieldStyle(field, brandKit).maxLength;
+              const length = (values[field.fieldKey] ?? "").length;
+              return (
+                <div
+                  key={field.id}
+                  ref={stepRef}
+                  className="sp-fill__step"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && (e.target as HTMLElement).tagName === "INPUT") {
+                      e.preventDefault();
+                      go(current + 1);
+                    }
+                  }}
+                >
+                  <div className="sp-fill__stephead">
+                    <span className="sp-fill__eyebrow">{stepLabel}</span>
+                    {maxLength !== undefined && field.type !== "image" && (
+                      <span
+                        className="sp-fill__eyebrow"
+                        role="status"
+                        aria-live="polite"
+                        aria-label={`${length} of ${maxLength} characters used`}
+                      >
+                        {length}/{maxLength}
+                      </span>
+                    )}
+                  </div>
+                  <DetailField
+                    field={field}
+                    value={values[field.fieldKey] ?? ""}
+                    onChange={(v) => setValue(field.fieldKey, v)}
+                    maxLength={maxLength}
+                    error={errorOf(field.fieldKey)}
+                    edited={false}
+                  />
+                  <div className="sp-fill__nav">
+                    <Button
+                      kind="neutral"
+                      icon={ArrowLeft}
+                      onClick={() => go(current - 1)}
+                      disabled={current === 0}
+                    >
+                      Back
+                    </Button>
+                    <Button kind="primary" onClick={() => go(current + 1)}>
+                      {fieldIndex === formFields.length - 1 ? "Finish" : "Next"}
+                    </Button>
+                  </div>
+                </div>
+              );
+            })()}
+
+          {/* Finish: the look switch, the caption, the downloads. */}
+          {onFinish && (
+            <>
+              {multiLook && (
+                <div className="sp-fill__step">
+                  <Field label="Look">
+                    <SegmentedControl
+                      aria-label="Look"
+                      options={(template.variants ?? []).map((v) => ({ id: v.id, label: v.name }))}
+                      selectedId={look?.id ?? null}
+                      onSelect={setVariantId}
+                      className="sp-details__look"
+                    />
+                  </Field>
+                </div>
+              )}
+              {template.captionTemplate && (
+                <div className="sp-fill__step">
+                  <Field
+                    label="Caption"
+                    action={{
+                      label: copied ? "Copied" : "Copy",
+                      onClick: () => void copyCaption(),
+                    }}
+                  >
+                    <TextArea
+                      value={shownCaption}
+                      onChange={(e) => setCaption(e.target.value)}
+                      className="sp-fill__caption"
+                    />
+                  </Field>
+                </div>
+              )}
+              <div className="sp-fill__step sp-fill__downloads">
+                {downloaded ? (
+                  <>
+                    <Button
+                      kind="primary"
+                      size="lg"
+                      icon={LinkedInMark}
+                      onClick={handlePostToLinkedIn}
+                    >
+                      Post to LinkedIn
+                    </Button>
+                    <Button
+                      ref={downloadRef}
+                      kind="neutral"
+                      size="lg"
+                      onClick={() => void handleDownload()}
+                      disabled={exporting}
+                      aria-busy={exporting || undefined}
+                    >
+                      {exporting ? "Generating…" : "Download again"}
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      ref={downloadRef}
+                      kind="primary"
+                      size="lg"
+                      onClick={() => void handleDownload()}
+                      disabled={exporting}
+                      aria-busy={exporting || undefined}
+                    >
+                      {exporting ? "Generating…" : "Download PNG"}
+                    </Button>
+                    <Button
+                      kind="neutral"
+                      size="lg"
+                      icon={LinkedInMark}
+                      onClick={handlePostToLinkedIn}
+                    >
+                      Post to LinkedIn
+                    </Button>
+                  </>
+                )}
+              </div>
+              {finishStep > 0 && (
+                <div>
+                  <Button kind="neutralOnPage" icon={ArrowLeft} onClick={() => go(finishStep - 1)}>
+                    {formFields.length > 0 ? "Back to fields" : "Back to looks"}
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
+
+          {footer}
+        </div>
+
+        {/* Right: the live preview. */}
+        <div className="sp-fill__preview">
+          <div className="sp-fill__previewcard">
+            <div className="sp-fill__previewhead">
+              <h2 className="t-title-panel">Preview</h2>
+              <span className="t-caption-s sp-fill__size">
+                {template.canvasWidth} × {template.canvasHeight}
+              </span>
+            </div>
             <div
               className="sp-fill__art"
               style={
@@ -256,8 +500,8 @@ export function TemplateFill({
                 } as React.CSSProperties
               }
             >
-              {/* Canvas boundary: the panel beside it keeps working even if
-                  the graphic can't render this template. */}
+              {/* Canvas boundary: the form beside it keeps working even if
+                  the preview can't render this template. */}
               <ErrorBoundary
                 level="canvas"
                 context={{ templateId: template.id }}
@@ -282,13 +526,12 @@ export function TemplateFill({
                 />
               </ErrorBoundary>
             </div>
+            {layoutWarnings.length > 0 && (
+              <p role="status" className="t-caption-s sp-fill__note">
+                {layoutWarnings[0]}
+              </p>
+            )}
           </div>
-          {layoutWarnings.length > 0 && (
-            <p role="status" className="t-caption-s sp-fill__note">
-              {layoutWarnings[0]}
-            </p>
-          )}
-          {footer}
           <p className="t-caption-s sp-fill__legal">
             <a href={TERMS_URL} target="_blank" rel="noopener noreferrer">
               Terms of Service
@@ -298,29 +541,67 @@ export function TemplateFill({
             </a>
           </p>
         </div>
-
-        <DetailsPanel
-          title="Details"
-          className="sp-fill__panel"
-          formRef={formRef}
-          look={
-            multiLook
-              ? {
-                  options: (template.variants ?? []).map((v) => ({ id: v.id, label: v.name })),
-                  selectedId: look?.id ?? null,
-                  onSelect: setVariantId,
-                }
-              : null
-          }
-          fields={formFields}
-          values={values}
-          onValueChange={setValue}
-          maxLengthFor={(f) => resolveFieldStyle(f, brandKit).maxLength}
-          errors={errors}
-          caption={template.captionTemplate ? { value: shownCaption, onChange: setCaption } : null}
-          footer={footerButtons}
-        />
       </div>
     </>
+  );
+}
+
+/** The looks as live thumbnails on Look tiles: each the one renderer at
+ * small scale with the placeholder values, so what the person picks is
+ * what they will fill. A radio group; the arrows move the choice. */
+function LookChoice({
+  template,
+  selectedId,
+  onPick,
+}: {
+  template: TemplateSchema;
+  selectedId: string | undefined;
+  onPick(id: string): void;
+}) {
+  const looks = template.variants ?? [];
+  const refs = useRef(new Map<string, HTMLButtonElement>());
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    const i = looks.findIndex((v) => v.id === selectedId);
+    const step =
+      e.key === "ArrowRight" || e.key === "ArrowDown"
+        ? 1
+        : e.key === "ArrowLeft" || e.key === "ArrowUp"
+          ? -1
+          : 0;
+    if (!step) return;
+    e.preventDefault();
+    const next = looks[(Math.max(i, 0) + step + looks.length) % looks.length];
+    refs.current.get(next.id)?.focus();
+  };
+  return (
+    <div role="radiogroup" aria-label="Looks" className="sp-fill__looks" onKeyDown={onKeyDown}>
+      {looks.map((v) => {
+        const on = v.id === selectedId;
+        return (
+          <LookTile
+            key={v.id}
+            ref={(el) => {
+              if (el) refs.current.set(v.id, el);
+              else refs.current.delete(v.id);
+            }}
+            role="radio"
+            aria-checked={on}
+            aria-label={v.name}
+            tabIndex={on || (!selectedId && v === looks[0]) ? 0 : -1}
+            selected={on}
+            name={v.name}
+            onClick={() => onPick(v.id)}
+            thumbnail={
+              <span
+                className="sp-fill__lookthumb"
+                style={{ aspectRatio: `${template.canvasWidth} / ${template.canvasHeight}` }}
+              >
+                <TemplateThumbnail template={template} variantId={v.id} />
+              </span>
+            }
+          />
+        );
+      })}
+    </div>
   );
 }

@@ -35,9 +35,7 @@ export function LibraryShelfSkeleton({ cards = 4 }: { cards?: number }) {
           {Array.from({ length: cards }, (_, i) => (
             <div key={i} className="sp-lib-shelf__item" aria-hidden>
               <div className="sp-tcard">
-                <div className="sp-tcard__preview">
-                  <div className="sp-tcard__frame" />
-                </div>
+                <div className="sp-tcard__frame" />
                 <span className="sp-tcard__meta">
                   <span className="sp-tcard__text">
                     <Bone w="70%" h={15} tone="var(--surface-sunken)" />
