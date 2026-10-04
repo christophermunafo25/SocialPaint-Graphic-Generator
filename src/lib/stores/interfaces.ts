@@ -49,16 +49,11 @@ export interface CompanyStore {
    * current slug is always available to itself. */
   isSlugAvailable(slug: string, excludeCompanyId: string): Promise<boolean>;
   hasAnyCompany(): Promise<boolean>; // first-run / onboarding routing
-  /** The company's ENABLED subset of SIZE_CATALOG — dimension data always
-   * comes from the catalogue in code; the store only records which entries a
-   * workspace turned off. Omitting companyId returns the full catalogue
-   * (onboarding runs before a company exists). Never returns empty: a
-   * workspace that somehow disabled everything falls back to all. */
+  /** The canvas sizes a workspace offers: the whole SIZE_CATALOG (new look,
+   * Phase 3 removed the per-workspace toggles; company_canvas_presets is no
+   * longer read and Phase 9 drops it). companyId stays in the signature so
+   * the callers need not change. */
   listCanvasSizes(companyId?: string): Promise<CanvasSize[]>;
-  /** Settings → Workspace: every catalogue size with this company's on/off
-   * state. */
-  listCanvasSizeSettings(companyId: string): Promise<Array<{ size: CanvasSize; enabled: boolean }>>;
-  setCanvasSizeEnabled(companyId: string, sizeId: string, enabled: boolean): Promise<void>;
 }
 
 export interface TemplateStore {

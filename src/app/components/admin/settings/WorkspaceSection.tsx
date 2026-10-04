@@ -1,21 +1,17 @@
 import React, { useEffect, useRef, useState } from "react";
-import { platformById, type CanvasSize } from "@/lib/templates/platforms";
 import { stores } from "@/lib/stores";
-import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useBrand } from "@/lib/brand/BrandContext";
 import { browserTimeZone, isValidSlug, listTimeZones, toSlug } from "@/lib/companySettings";
 import { normalizeWebsite } from "@/lib/companyWebsite";
 import { ConfirmDialog } from "../../ConfirmDialog";
-import { ErrorState } from "../../ErrorState";
-import { SkeletonLines } from "../../Skeleton";
 import { Switch } from "../../Switch";
 import { kitShape } from "../brand/kitPlumbing";
 import { ControlRow, SettingsCard } from "./settingsShared";
 import { WorkspacesCard } from "./WorkspacesCard";
 
-/** Workspace facts, finally editable: name, slug, timezone, the canvas
- * sizes this workspace offers, and the two brand enforcement switches. */
+/** Workspace facts, finally editable: the workspaces you belong to, name,
+ * slug, website, timezone, and the two brand enforcement switches. */
 export function WorkspaceSection() {
   const { company, role } = useAuth();
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +40,6 @@ export function WorkspaceSection() {
         <WebsiteField onError={setError} />
         <TimezoneField onError={setError} />
       </SettingsCard>
-      <CanvasSizesCard companyId={company.id} onError={setError} />
       <BrandEnforcementCard onError={setError} />
       <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
         Changes save as you make them. There is no page-level save button.
@@ -355,72 +350,6 @@ function TimezoneField({ onError }: { onError(msg: string | null): void }) {
         {browserTimeZone()}.
       </p>
     </div>
-  );
-}
-
-/** Which of the catalogue's canvas sizes this workspace shows in the
- * builder's size picker. Turning one off hides it here only — the catalogue
- * itself (SIZE_CATALOG in code) is never modified. */
-function CanvasSizesCard({
-  companyId,
-  onError,
-}: {
-  companyId: string;
-  onError(msg: string | null): void;
-}) {
-  const [version, setVersion] = useState(0);
-  const state = useAsync<Array<{ size: CanvasSize; enabled: boolean }>>(
-    () => stores.companies.listCanvasSizeSettings(companyId),
-    [companyId, version],
-  );
-  const rows = state.status === "ready" ? state.data : [];
-  const enabledCount = rows.filter((r) => r.enabled).length;
-
-  const toggle = (sizeId: string, enabled: boolean) => {
-    onError(null);
-    void stores.companies
-      .setCanvasSizeEnabled(companyId, sizeId, enabled)
-      .then(() => setVersion((v) => v + 1))
-      .catch((e) => onError(e instanceof Error ? e.message : "Could not save that change."));
-  };
-
-  return (
-    <SettingsCard
-      title="Canvas sizes"
-      description="Sizes offered when someone creates a template. Turn off the ones this workspace never uses; custom sizes stay available in the builder."
-    >
-      {state.status === "loading" ? (
-        <SkeletonLines lines={4} label="Loading canvas sizes" />
-      ) : state.status === "error" ? (
-        <ErrorState
-          title="We couldn't load the canvas sizes."
-          detail="Check your connection and try again."
-          onRetry={state.retry}
-        />
-      ) : (
-        <div className="space-y-3">
-          {rows.map(({ size, enabled }) => (
-            <ControlRow
-              key={size.id}
-              title={`${size.assetType} (${size.width}×${size.height})`}
-              description={
-                enabled && enabledCount === 1
-                  ? "The last enabled size can't be turned off."
-                  : size.platforms.map((p) => platformById(p).label).join(" · ")
-              }
-              control={
-                <Switch
-                  checked={enabled}
-                  disabled={enabled && enabledCount === 1}
-                  onChange={(next) => toggle(size.id, next)}
-                  ariaLabel={`Offer ${size.assetType} ${size.width}×${size.height}`}
-                />
-              }
-            />
-          ))}
-        </div>
-      )}
-    </SettingsCard>
   );
 }
 
