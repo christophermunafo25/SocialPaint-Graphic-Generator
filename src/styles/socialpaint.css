@@ -4462,10 +4462,6 @@ input[type="radio"] {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
-/* Brand Templates' filtered view matches its shelves: three across laptop
-   widths, four only from 1800 (see .sp-shelf__rail). Template Builder
-   keeps the denser admin grid above. */
-
 /* Content-panel grid: 12 columns, same --space-md gap. */
 .sp-grid-12 {
   display: grid;
@@ -7630,8 +7626,8 @@ button.sp-chat-draft__preview {
    shadow, 20 radius). The frame is 8 from the card's outer edge as drawn:
    the recipe's 1px transparent frame counts toward it, so the padding is
    the remainder. Hover deepens the card shadow and nothing else, and focus
-   composes the tight ring into the full list: both join the template
-   card's rules (.sp-template-card:hover / :focus-visible). The loading
+   composes the tight ring into the full list (the media cards' hover and
+   focus rules). The loading
    history card is not a control, so it takes neither. */
 .sp-chat-recent-card,
 .sp-chat-history-card {
@@ -8260,18 +8256,6 @@ button.sp-chat-draft__preview {
 .sp-chat-turn__retry {
   display: flex;
 }
-/* A template chat's questions (interview.ts): each question in the
-   assistant's voice, its quick answers (a select's options, Skip, Back)
-   under it, and a refused answer's reason. */
-.sp-chat-ask__limit {
-  color: var(--text-muted);
-}
-.sp-chat-ask__error {
-  margin: 0;
-  font-size: var(--type-caption-size);
-  line-height: var(--type-caption-lh);
-  color: var(--state-danger-on-surface);
-}
 
 /* The progress row (frame 04, "Progress"), 12 apart: a 120 × 4 track on
    the sunken fill at a 2 radius, its inverse fill at step ÷ 3 easing over
@@ -8811,56 +8795,6 @@ button.sp-chat-draft__preview {
   text-align: center;
 }
 
-/* The template card at the top of the thread (sp-template-ref 376:71):
-   the card recipe, 10 16 10 10, 14 apart: a 56 × 70 thumbnail at
-   --radius-tag in the sunken well, the name (15/125% Medium, -1%) over the
-   size meta (mono 12, secondary), and Change template at the end. */
-.sp-card.sp-chat-tref {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  box-sizing: border-box;
-  width: 100%;
-  padding: calc(10px - var(--border-width)) calc(16px - var(--border-width))
-    calc(10px - var(--border-width)) calc(10px - var(--border-width));
-  border-radius: var(--radius-card);
-}
-.sp-chat-tref__thumb {
-  display: block;
-  flex-shrink: 0;
-  width: 56px;
-  max-height: 70px;
-  border-radius: var(--radius-tag);
-  background: var(--gen-sunken);
-  overflow: hidden;
-}
-.sp-chat-tref__text {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-.sp-chat-tref__name {
-  overflow: hidden;
-  color: var(--text-primary);
-  font-family: var(--font-ui);
-  font-size: 15px;
-  line-height: 1.25;
-  font-weight: var(--weight-ui);
-  letter-spacing: -0.01em;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.sp-chat-tref__meta {
-  color: var(--text-secondary);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  line-height: 1.25;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
 /* The Fill in row: "Fill in" (13/125% muted), then the Missing tags,
    wrapping, 6 apart. */
 .sp-chat-fillin {
@@ -8883,100 +8817,6 @@ button.sp-chat-draft__preview {
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-/* The result: the draft card and the Looks card side by side, 12 apart,
-   the Looks card taking the rest of the row; on a narrow column it wraps
-   under the card. */
-.sp-chat-turn__result {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: stretch;
-  gap: var(--space-xs);
-}
-.sp-card.sp-chat-looks {
-  display: flex;
-  flex: 1 1 320px;
-  flex-direction: column;
-  gap: 16px;
-  min-width: 0;
-  box-sizing: border-box;
-  padding: calc(18px - var(--border-width)) calc(20px - var(--border-width))
-    calc(20px - var(--border-width));
-  border-radius: var(--radius-card);
-}
-.sp-chat-looks__title {
-  margin: 0;
-  color: var(--text-primary);
-  font-family: var(--font-ui);
-  font-size: 14px;
-  line-height: 1.25;
-  font-weight: var(--weight-ui);
-}
-.sp-chat-looks__options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px 24px;
-}
-.sp-chat-looks__option {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-width: 100%;
-}
-/* One look: the draft in that look, at --radius-tag, with the draft
-   cards' selected outline (a 1px inverse edge, 2px out) on the chosen one. */
-.sp-chat-looks__thumb {
-  display: block;
-  width: 100%;
-  padding: 0;
-  border: none;
-  border-radius: var(--radius-tag);
-  background: var(--gen-well);
-  overflow: hidden;
-  cursor: pointer;
-}
-.sp-chat-looks__thumb[data-selected] {
-  outline: 1px solid var(--gen-inverse);
-  outline-offset: 2px;
-}
-.sp-chat-looks__thumb:focus-visible {
-  outline: 2px solid transparent;
-  box-shadow: var(--focus-ring);
-}
-.sp-chat-looks__name {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin: 0;
-  color: var(--text-primary);
-  font-family: var(--font-ui);
-  font-size: 14px;
-  line-height: 1.25;
-}
-.sp-chat-looks__selected {
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-.sp-chat-looks[data-skeleton] {
-  pointer-events: none;
-}
-.sp-chat-looks[data-skeleton] .sp-chat-looks__thumb {
-  background: var(--gen-stage);
-  cursor: default;
-}
-.sp-chat-looks__bar {
-  display: block;
-  width: 64px;
-  height: 10px;
-  border-radius: var(--radius-control);
-  background: var(--gen-stage);
-}
-.sp-chat-looks__bar[data-short] {
-  width: 56px;
 }
 
 /* A card download that is not ready (a required field empty, a field too
