@@ -59,7 +59,9 @@
   flex-direction: column;
   gap: var(--space-md);
   width: 325px;
-  height: calc(100vh - 20px);
+  /* --dev-banner-h: the local backend's warning bar (DevBackendBanner),
+     which the panel stops above; unset everywhere else. */
+  height: calc(100vh - 20px - var(--dev-banner-h, 0px));
   padding: 20px; /* as drawn (56:77) */
   border-radius: var(--radius-card);
   background: var(--surface-raised);

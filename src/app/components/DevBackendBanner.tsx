@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { stores } from "@/lib/stores";
 import type { Role } from "@/lib/types";
@@ -17,12 +18,31 @@ const ROLES = [
  * It also carries the dev role switch (new look, Phase 3: it left the
  * sidebar), because the banner shows for both roles on every screen. The
  * warning stays its own live region; the switch sits outside it. The
- * screenshot loop hides the whole banner by data-dev-banner. */
+ * screenshot loop hides the whole banner by data-dev-banner.
+ *
+ * It publishes its height as --dev-banner-h on <html>, so the sidebar
+ * stops above it rather than under it (the account gear would otherwise
+ * sit behind the banner on a short viewport). */
 export function DevBackendBanner() {
   const { role, setRole } = useAuth();
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const root = document.documentElement;
+    const publish = () => root.style.setProperty("--dev-banner-h", `${el.offsetHeight}px`);
+    publish();
+    const observer = new ResizeObserver(publish);
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty("--dev-banner-h");
+    };
+  }, []);
   if (stores.backend !== "local") return null;
   return (
     <div
+      ref={ref}
       data-dev-banner
       style={{
         position: "fixed",
