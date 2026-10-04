@@ -36,3 +36,103 @@
 .sp-workspaces__meta {
   color: var(--text-secondary);
 }
+
+/* ── Sidebar (56:646; collapsed 189:2151, 189:2415) ─────────────────────────
+   A floating panel inset 10 from the viewport's top, left and bottom (none
+   on the right: the page column starts at its edge), sticky to the
+   viewport. Expanded it is 325 wide; collapsed, a 76 rail. */
+.sp-shell-sidebar {
+  box-sizing: border-box;
+  flex: none;
+  width: 335px;
+  padding: 10px 0 10px 10px; /* the frame's inset, as drawn (56:76) */
+}
+.sp-shell-sidebar[data-collapsed] {
+  width: 86px;
+}
+.sp-shell-panel {
+  box-sizing: border-box;
+  position: sticky;
+  top: 10px;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  width: 325px;
+  height: calc(100vh - 20px);
+  padding: 20px; /* as drawn (56:77) */
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+  color: var(--text-strong);
+}
+.sp-shell-sidebar[data-collapsed] .sp-shell-panel {
+  width: 76px;
+  padding: 20px var(--space-sm);
+  align-items: center;
+}
+.sp-shell-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 32px;
+}
+.sp-shell-sidebar[data-collapsed] .sp-shell-panel__header {
+  justify-content: center;
+}
+.sp-shell-panel__utility {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+.sp-shell-logo,
+.sp-shell-mark {
+  display: inline-flex;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* The nav takes the free height and scrolls on short viewports, so the
+   account stays reachable. The 4px of padding keeps the rows' 2px-out
+   focus rings inside the scroll box. */
+.sp-shell-nav {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* as drawn (56:98) */
+  margin: calc(-1 * var(--space-3xs));
+  padding: var(--space-3xs);
+  overflow-y: auto;
+}
+.sp-shell-sidebar[data-collapsed] .sp-shell-nav {
+  align-items: center;
+}
+
+/* ── Account (56:1330; stacked in the collapsed rail, 189:2493) ── */
+.sp-shell-account {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+.sp-shell-account[data-collapsed] {
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+.sp-shell-account__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.sp-shell-account__text > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-shell-account__detail {
+  color: var(--text-secondary);
+}

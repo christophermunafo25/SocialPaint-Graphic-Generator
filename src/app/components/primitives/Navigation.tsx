@@ -5,13 +5,17 @@ export interface NavItemProps extends React.ButtonHTMLAttributes<HTMLButtonEleme
   icon: IconComponent;
   /** The page showing; sets aria-current="page". */
   selected?: boolean;
+  /** Off in the collapsed rail (the component's Show label boolean): the
+   * row is the icon alone, 38 wide, and the label becomes its accessible
+   * name. The caller adds the tooltip. */
+  showLabel?: boolean;
   "data-demo-state"?: DemoStateAttr;
 }
 
 /** Nav item (Figma 54:83): a sidebar row. Selected takes state/selected,
  * label and icon in full ink; focus is the 2px-out ring. */
 export const NavItem = React.forwardRef<HTMLButtonElement, NavItemProps>(function NavItem(
-  { icon: Icon, selected = false, className, children, type = "button", ...rest },
+  { icon: Icon, selected = false, showLabel = true, className, children, type = "button", ...rest },
   ref,
 ) {
   return (
@@ -19,12 +23,14 @@ export const NavItem = React.forwardRef<HTMLButtonElement, NavItemProps>(functio
       ref={ref}
       type={type}
       aria-current={selected ? "page" : undefined}
+      aria-label={!showLabel && typeof children === "string" ? children : undefined}
       className={cx("ui-reset ui-tint ui-ring ui-nav-item", className)}
       data-selected={selected || undefined}
+      data-icon-only={!showLabel || undefined}
       {...rest}
     >
       <Icon size={18} className="ui-icon" aria-hidden />
-      <span className="t-label-m">{children}</span>
+      {showLabel && <span className="t-label-m">{children}</span>}
     </button>
   );
 });
