@@ -328,12 +328,101 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   flex-direction: column;
   gap: 6px; /* off the scale, as drawn (48:38) */
 }
+.ui-field__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+.ui-field__lead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
 .ui-field__label {
   color: var(--text-secondary);
+}
+.ui-field__end {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex: none;
+}
+.ui-field__marker {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+/* Edited: a 6 dot on state/selection, 5 before the word (217:2271). */
+.ui-field__edited {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.ui-field__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--state-selection);
+}
+.ui-field__action {
+  border-radius: var(--radius-control);
+  color: var(--text-strong);
+  white-space: nowrap;
 }
 .ui-field__error {
   margin: 0;
   color: var(--state-error);
+}
+
+/* ── Upload (216:2291): the photo field's control. One button, 56 tall on
+   input/fill; the keyboard ring sits around the row. ── */
+.ui-upload {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px; /* off the scale, as drawn (216:2265) */
+  width: 100%;
+  height: 56px;
+  padding: var(--space-2xs) var(--space-xs) var(--space-2xs) var(--space-2xs);
+  border-radius: var(--radius-control-md);
+  --_fill: var(--input-bg);
+  color: var(--text-strong);
+  text-align: left;
+  cursor: pointer;
+}
+.ui-upload__tile {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-control);
+  background: var(--surface-raised);
+  color: var(--text-strong);
+}
+.ui-upload__thumb {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-control);
+  object-fit: cover;
+}
+.ui-upload__placeholder,
+.ui-upload__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ui-upload__placeholder {
+  color: var(--text-secondary);
+}
+.ui-upload__replace {
+  flex: none;
 }
 
 /* ── Select (49:40) and Compact select (99:568) ── */

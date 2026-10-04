@@ -329,3 +329,185 @@
     margin-right: 0;
   }
 }
+
+/* ── The fill page (156:674, 159:716) ─────────────────────────────────────
+   The page column ends 28 above the viewport's foot (156:747), and the
+   split fills what is left under the header: 45 + 36 + 24 + 28 at desktop
+   width (48 above below 1280). */
+.sp-page.sp-fill-page {
+  --_top: 48px;
+  padding-bottom: 28px;
+}
+@media (min-width: 1280px) {
+  .sp-page.sp-fill-page {
+    --_top: 45px;
+  }
+}
+.sp-fill {
+  display: flex;
+  gap: var(--space-md);
+  height: calc(100dvh - var(--dev-banner-h, 0px) - var(--_top, 48px) - 88px);
+  min-height: 560px;
+}
+/* The public link page has no header; its attribution sits under it. */
+.sp-fill[data-place="public"] {
+  height: calc(100dvh - 180px);
+}
+.sp-fill__graphic {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+/* The stage (156:763): control/fill, radius 20, padding 40, the graphic
+   centred and as large as both its sides allow. */
+.sp-fill__stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xl);
+  border-radius: var(--radius-card);
+  background: var(--control-fill);
+  overflow: hidden;
+  container-type: size;
+}
+.sp-fill__art {
+  width: min(100cqw, calc(100cqh * var(--art-ratio, 1)));
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  /* Elevation/Small without its bevels, as drawn (156:764). */
+  box-shadow: 2px 2px 8px 0 var(--shadow-raised);
+}
+.sp-fill__note {
+  margin: var(--space-xs) 0 0;
+  color: var(--text-secondary);
+}
+.sp-fill__legal {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-sm);
+  margin: 0;
+  padding-top: var(--space-sm);
+  color: var(--text-secondary);
+}
+.sp-fill__legal > a {
+  color: inherit;
+  text-decoration: none;
+}
+.sp-fill__legal > a:hover {
+  text-decoration: underline;
+}
+.sp-fill__panel {
+  flex: none;
+  width: 380px;
+}
+.sp-fill__grow {
+  flex: 1;
+}
+/* Today's export messages, at the foot of the viewport. */
+.sp-fill-toast {
+  position: fixed;
+  left: 50%;
+  /* Above the local backend's warning bar, where it shows. */
+  bottom: calc(var(--space-lg) + var(--dev-banner-h, 0px));
+  z-index: var(--z-sticky);
+  transform: translateX(-50%);
+  max-width: min(560px, calc(100vw - 32px));
+}
+
+/* Below 1024 the graphic and the panel stack; the public link page shows
+   the graphic first, as today, and the member page the panel. */
+@media (max-width: 1023px) {
+  .sp-fill,
+  .sp-fill[data-place="public"] {
+    flex-direction: column;
+    height: auto;
+    min-height: 0;
+  }
+  .sp-fill[data-place="member"] .sp-fill__graphic {
+    order: 2;
+  }
+  .sp-fill__stage {
+    container-type: normal;
+    padding: var(--space-md);
+  }
+  .sp-fill__art {
+    width: min(100%, 480px);
+  }
+  .sp-fill__panel {
+    width: auto;
+  }
+}
+
+/* ── The Details panel (156:782; 13:8148 in the template chat) ──────────── */
+.sp-details {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  min-height: 0;
+  padding: 20px; /* as drawn (156:782) */
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+  color: var(--text-strong);
+}
+.sp-details__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+  min-height: 32px;
+}
+.sp-details__head > h2 {
+  margin: 0;
+}
+/* The fields scroll; the title and the footer stay put. The ring's room is
+   padded in and stepped back, since a scroller clips. */
+.sp-details__fields {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin: -4px;
+  padding: 4px;
+  overflow-y: auto;
+}
+/* Multiline fields and the caption hug their text (156:820): no resize
+   grip, and no 100 floor. */
+.sp-details .ui-input[data-size="multiline"] {
+  field-sizing: content;
+  min-height: 40px;
+  resize: none;
+}
+/* Look's segments share the panel's width (156:792). */
+.sp-details__look {
+  display: flex;
+  width: 100%;
+}
+.sp-details__look > * {
+  flex: 1;
+}
+.sp-details__foot {
+  display: flex;
+  gap: var(--space-2xs);
+}
+@media (max-width: 1023px) {
+  .sp-details__fields {
+    overflow: visible;
+  }
+}
+/* The public link page's note on what survives a closed tab. */
+.sp-fill__resume {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2xs);
+  padding-top: var(--space-xs);
+  color: var(--text-secondary);
+}
+.sp-fill__resume > p {
+  margin: 0;
+}

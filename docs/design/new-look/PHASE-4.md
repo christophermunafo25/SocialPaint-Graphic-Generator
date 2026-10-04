@@ -135,7 +135,7 @@ Build to Part B.
 - **Details panel** (shared with the template chat's Edit details, §9 D4):
   - Container: padding 20, gap 16, `--radius-card`, `--surface-raised`, `--elevation-small`. Title "Details" in `.t-title-card`.
   - Fields, in the template's order (gap 12): "Look" (a `SegmentedControl` of the template's looks, when it has more than one), then every member field as a `Field` with `Input` or `TextArea`, the image fields as a `Field` with the Upload control (§9 D5), then "Caption" (a `TextArea`).
-  - A field the template marks optional shows "Optional" right of its label; Caption has the "Copy text" Action (§9 D3, D8). The fill page never shows Edited.
+  - A field the template marks optional shows "Optional" right of its label; Caption has the "Copy" Action (§9 D3, D8). The fill page never shows Edited.
   - The fields scroll inside the panel; its title and footer stay fixed (not drawn; ruled in §8).
 - **Footer.**
   - **Before a download:** one full-width primary `Button` (lg) "Download PNG".
@@ -243,7 +243,7 @@ Build to Part C, per §9 D1.
   - the stand-in's question, "What should the post say?"
   - the stand-in's reply and title
   - the photo field's "Add a photo" and "Replace" (§9 D5)
-  - "Copy text" and "Copied" on the Caption field (§9 D8)
+  - "Copy" and "Copied" on the Caption field (§9 D8; Copy is in Field 217:2271)
 - **Copy that goes:** the step form's labels and helper lines ("Step 0N of 0M", "Fill required: …", the LinkedIn helper lines), "Suggested caption", "Reset to suggestion" (§9 D8), the image field's source tabs and "Adjust crop" (§9 D5), and "Preview". List each in the PR.
 
 ## 8. Rulings on what the file leaves open
@@ -290,5 +290,5 @@ The Figma changes these lean on are in the Master file.
    - The image logic moves out of `FieldInput` into a shared module, so Generate's composer keeps working.
 6. **D6. The template card.** It stays one button that opens the fill page, and stops cycling looks. On hover and keyboard focus it shows the drawn preview hover (Result card 104:602 and the Interaction states rule; `PreviewOverlay` builds it): the `--overlay-hover` dim and the Edit circle, as part of the card's look, `aria-hidden` and not a second button.
 7. **D7. The Public links dialog** is rebuilt once, to 168:758 and 168:846, and used from all three places: the template chat, the fill page, and the Template Builder and Settings › Sharing. The buttons that open it in the Template Builder and Settings › Sharing stay as they are until their phases.
-8. **D8. Caption tools.** "Reset to suggestion" goes; copying stays. Post to LinkedIn only copies on its way to LinkedIn and only appears after a download, and the chat's Result draws a Copy caption button. So the Caption field on all six panel frames (fill page, Downloaded and Edit details, Light and Dark) has a "Copy text" Action at the right of its label row (D3). It reads "Copied" for 1.6 s after a click, as today. The caption keeps following the fields until the person types in it.
+8. **D8. Caption tools.** "Reset to suggestion" goes; copying stays. Post to LinkedIn only copies on its way to LinkedIn and only appears after a download, and the chat's Result draws a Copy caption button. So the Caption field on all six panel frames (fill page, Downloaded and Edit details, Light and Dark) has a text action, "Copy", at the right of its label row (D3; Field 217:2271). It reads "Copied" for 1.6 s after a click, as today. The caption keeps following the fields until the person types in it.
 9. **D9. Download again.** PLAN decision 7 and the Downloaded frames already say it.
