@@ -73,11 +73,7 @@ import { fixedPatch } from "./fieldOps";
 import { FillPicker, fillSwatchCss, getFill } from "./FillPicker";
 import { ImageSourceChooser, ImageSourceDialog, pickableAssets } from "../ImageSourceChooser";
 import { parseHex, toHex } from "@/lib/color";
-import {
-  DEFAULT_FONT_SIZE,
-  DEFAULT_MIN_FONT_SCALE,
-  DEFAULT_MIN_FONT_SIZE,
-} from "@/lib/render/autoFit";
+import { DEFAULT_FONT_SIZE, DEFAULT_MIN_FONT_SIZE } from "@/lib/render/autoFit";
 
 interface FieldInspectorProps {
   field: TemplateField;
@@ -270,13 +266,8 @@ export function FieldInspector(props: FieldInspectorProps) {
   // so there is nothing for a sizing mode to fit into; the control hides.
   const canSetSizing = (field.type === "text" || field.type === "multiline") && !field.plateColor;
   const setSizingMode = (mode: TextSizingMode) => {
-    // Shrink and Fill need a floor; a field with none gets the default 75%.
-    const needsFloor =
-      mode !== "free" && field.minFontScale === undefined && field.minFontSizePx === undefined;
-    onChange({
-      textSizing: mode === "free" ? undefined : mode,
-      ...(needsFloor ? { minFontScale: DEFAULT_MIN_FONT_SCALE } : {}),
-    });
+    // A field with no floor of its own shrinks to the 18px default.
+    onChange({ textSizing: mode === "free" ? undefined : mode });
   };
 
   /** Constrain-proportions for the W/H pair — a panel behavior (linked

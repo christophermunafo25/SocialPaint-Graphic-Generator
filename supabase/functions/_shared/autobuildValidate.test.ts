@@ -451,9 +451,11 @@ describe("text lands as Shrink at a 75% floor", () => {
       "figma",
     );
     const byKey = new Map(out.fields.map((f) => [f.fieldKey, f]));
-    expect(byKey.get("headline")).toMatchObject({ textSizing: "shrink", minFontScale: 0.75 });
+    expect(byKey.get("headline")).toMatchObject({ textSizing: "shrink" });
+    expect(byKey.get("headline")?.minFontScale).toBeUndefined();
     expect(byKey.get("photo")?.minFontScale).toBeUndefined();
     const unclaimed = out.fields.find((f) => f.staticValue === "Fine print");
-    expect(unclaimed).toMatchObject({ static: true, textSizing: "shrink", minFontScale: 0.75 });
+    expect(unclaimed).toMatchObject({ static: true, textSizing: "shrink" });
+    expect(unclaimed?.minFontScale).toBeUndefined();
   });
 });
