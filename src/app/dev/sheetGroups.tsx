@@ -1,8 +1,14 @@
 import React from "react";
-import { Download, Loader2, Minus, Settings, X } from "lucide-react";
+import { Download, Globe, Loader2, Minus, Settings, X } from "lucide-react";
 import {
   AttachButton,
   Button,
+  Chip,
+  ChoiceChip,
+  DetailTag,
+  PlatformChip,
+  Status,
+  Tag,
   CompactSelect,
   Field,
   Filter,
@@ -74,6 +80,10 @@ export const SHEET_GROUPS: SheetGroup[] = [
   {
     title: "Toggles",
     render: () => <TogglesGroup />,
+  },
+  {
+    title: "Chips and tags",
+    render: () => <ChipsGroup />,
   },
 ];
 
@@ -205,5 +215,54 @@ function TogglesGroup() {
         onSelect={setMetric}
       />
     </div>
+  );
+}
+
+function ChipsGroup() {
+  const [role, setRole] = React.useState("primary");
+  const [platform, setPlatform] = React.useState<"all" | "instagram" | "linkedin">("all");
+  return (
+    <>
+      <div className="dev-ui-sheet__line">
+        <Chip>Add a location</Chip>
+        <Chip>Make a Facebook version</Chip>
+        <Chip disabled>Disabled</Chip>
+      </div>
+      <div className="dev-ui-sheet__panel">
+        {["primary", "secondary", "accent"].map((r) => (
+          <ChoiceChip key={r} selected={role === r} onClick={() => setRole(r)}>
+            {r[0].toUpperCase() + r.slice(1)}
+          </ChoiceChip>
+        ))}
+        <Tag>Primary</Tag>
+        <Tag kind="overlay">On media</Tag>
+        <DetailTag icon={Globe} removeLabel="Remove socialpaint.ai/careers">
+          socialpaint.ai/careers
+        </DetailTag>
+        <DetailTag state="sent">Remote</DetailTag>
+        <Status tone="positive">Connected</Status>
+        <Status tone="active">Active</Status>
+        <Status tone="neutral">Expired</Status>
+        <Status tone="positive" size="sm">
+          Connected
+        </Status>
+      </div>
+      <div className="dev-ui-sheet__line" role="radiogroup" aria-label="Platform">
+        {(["all", "instagram", "linkedin"] as const).map((p) => (
+          <PlatformChip
+            key={p}
+            platform={p}
+            role="radio"
+            aria-checked={platform === p}
+            selected={platform === p}
+            onClick={() => setPlatform(p)}
+          >
+            {p === "all" ? "All" : p === "instagram" ? "Instagram" : "LinkedIn"}
+          </PlatformChip>
+        ))}
+        <Tag kind="filter">Hiring</Tag>
+        <Tag kind="missing">Location</Tag>
+      </div>
+    </>
   );
 }

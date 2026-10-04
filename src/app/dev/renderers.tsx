@@ -1,8 +1,13 @@
 import type React from "react";
-import { Minus, Settings, X } from "lucide-react";
+import { Globe, Minus, Settings, X } from "lucide-react";
 import {
   AttachButton,
   Button,
+  Chip,
+  ChoiceChip,
+  DetailTag,
+  PlatformChip,
+  Tag,
   CompactSelect,
   Filter,
   SearchField,
@@ -119,5 +124,26 @@ export const RENDERERS: Record<string, (state: DemoState) => React.ReactNode> = 
     <Tab dot="green" selected={s === "selected"} data-demo-state={demo(s)}>
       Exports
     </Tab>
+  ),
+  Chip: (s) => <Chip data-demo-state={demo(s)}>Add a location</Chip>,
+  "Choice chip": (s) => (
+    <ChoiceChip selected={s === "selected"} data-demo-state={demo(s)}>
+      Primary
+    </ChoiceChip>
+  ),
+  "Platform chip": (s) => (
+    <PlatformChip platform="all" selected={s === "selected"} data-demo-state={demo(s)}>
+      All
+    </PlatformChip>
+  ),
+  "Tag · Filter": (s) => (
+    <Tag kind="filter" data-demo-state={demo(s)}>
+      Hiring
+    </Tag>
+  ),
+  "Detail tag": (s) => (
+    <DetailTag icon={Globe} removeLabel="Remove socialpaint.ai/careers" data-demo-state={demo(s)}>
+      socialpaint.ai/careers
+    </DetailTag>
   ),
 };

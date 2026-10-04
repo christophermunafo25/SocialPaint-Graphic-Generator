@@ -633,3 +633,174 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 .ui-tab__dot[data-dot="warm"] {
   background: var(--accent-warm);
 }
+
+/* ── Chip (98:515) ── */
+.ui-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 10px; /* off the scale, as drawn (52:37) */
+  border-radius: var(--radius-control);
+  --_fill: var(--control-fill);
+  color: var(--text-strong);
+}
+
+/* ── Choice chip (98:532) ── */
+.ui-choice-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px; /* off the scale, as drawn (98:526) */
+  border-radius: var(--radius-pill);
+  --_fill: var(--surface-sunken);
+  color: var(--text-strong);
+}
+.ui-choice-chip[data-selected],
+.ui-choice-chip[data-demo-state="selected"] {
+  --_fill: var(--surface-inverse);
+  color: var(--text-inverse);
+}
+
+/* ── Platform chip (53:96) ── */
+.ui-platform-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 50px;
+  padding: var(--space-2xs) 9px var(--space-2xs) 7px; /* 7 and 9 as drawn (53:85) */
+  gap: 7px;
+  border-radius: var(--radius-control-md);
+  --_fill: var(--control-fill);
+  color: var(--text-strong);
+}
+.ui-platform-chip__tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-control);
+  background: var(--chip-tile);
+}
+.ui-platform-chip__chevron {
+  color: var(--text-secondary);
+}
+.ui-platform-chip[data-expanded] .ui-platform-chip__chevron,
+.ui-platform-chip[data-demo-state="selected"] .ui-platform-chip__chevron {
+  transform: rotate(90deg);
+}
+.ui-platform-chip[data-selected],
+.ui-platform-chip[data-demo-state="selected"] {
+  --_fill: var(--chip-selected-bg);
+  color: var(--text-on-fill);
+}
+.ui-platform-chip[data-selected] .ui-platform-chip__tile,
+.ui-platform-chip[data-demo-state="selected"] .ui-platform-chip__tile {
+  background: var(--chip-selected-tile);
+  color: var(--accent-green);
+}
+.ui-platform-chip[data-selected] .ui-platform-chip__chevron,
+.ui-platform-chip[data-demo-state="selected"] .ui-platform-chip__chevron {
+  color: var(--text-on-fill);
+}
+
+/* ── Tag (52:63) ── */
+.ui-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px; /* off the scale, as drawn (52:52) */
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+.ui-tag[data-kind="default"] {
+  height: 22px;
+  padding: 0 var(--space-2xs);
+  background: var(--surface-sunken);
+  color: var(--text-strong);
+}
+.ui-tag[data-kind="overlay"] {
+  height: 21px;
+  padding: 0 var(--space-2xs);
+  background: var(--tag-overlay-bg);
+  color: var(--text-on-fill);
+}
+.ui-tag[data-kind="filter"] {
+  height: 28px;
+  padding: 0 10px; /* off the scale, as drawn (52:56) */
+  --_fill: var(--surface-sunken);
+  color: var(--text-secondary);
+}
+.ui-tag[data-kind="missing"] {
+  height: 28px;
+  padding: 0 var(--space-xs) 0 10px; /* 10 as drawn (52:58) */
+  /* The 1px border, drawn as a shadow so the tight focus ring composes
+     with it (.ui-ring-tight reads --_shadow). */
+  --_shadow: inset 0 0 0 1px var(--text-secondary);
+  color: var(--text-secondary);
+}
+
+/* ── Detail tag (61:464) ── */
+.ui-detail-tag {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  gap: 6px; /* off the scale, as drawn (52:64) */
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+.ui-detail-tag[data-state="editable"] {
+  padding: 0 6px 0 9px; /* off the scale, as drawn (52:64) */
+  --_fill: var(--surface-page);
+  color: var(--tag-detail-fg);
+}
+.ui-detail-tag[data-state="sent"] {
+  padding: 0 9px;
+  background: var(--tag-sent-bg);
+  /* 0.75, as drawn (61:455). */
+  box-shadow: inset 0 0 0 0.75px var(--tag-sent-border);
+  color: var(--tag-sent-fg);
+}
+.ui-detail-tag__remove {
+  position: relative;
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-pill);
+  color: inherit;
+}
+.ui-detail-tag__remove::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+}
+.ui-detail-tag[data-demo-state="focus"] .ui-detail-tag__remove {
+  outline: var(--focus-width) solid var(--ring);
+  outline-offset: var(--focus-offset);
+}
+
+/* ── Status (52:51) ── */
+.ui-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--space-2xs);
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+.ui-status[data-size="default"] {
+  height: 21px;
+}
+.ui-status[data-size="sm"] {
+  height: 17px;
+}
+.ui-status[data-tone="positive"] {
+  background: var(--status-positive-bg);
+  color: var(--accent-green);
+}
+.ui-status[data-tone="active"] {
+  background: var(--status-active-bg);
+  color: var(--status-active-fg);
+}
+.ui-status[data-tone="neutral"] {
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
+}
