@@ -1316,7 +1316,358 @@
       "usageEvents": [],
       "templateLinks": [],
       "companyCanvasPresets": [],
-      "generateThreads": []
+      "generateThreads": [
+        {
+          "title": "Denver studio opening",
+          "platforms": ["instagram"],
+          "preview": {
+            "templateId": "c6ee9277-cfeb-4fbc-90af-0757718051d7",
+            "values": {
+              "kicker": "Studio news",
+              "eyebrow": "Now open",
+              "headline": "A second Acme Studios, now open in Denver",
+              "subhead": "Same team, more room to make things. Drop by the new space on Larimer Street.",
+              "footnote": "Open weekdays 9 to 6"
+            },
+            "canvas": {
+              "width": 1080,
+              "height": 1080
+            }
+          },
+          "templateId": null,
+          "turns": [
+            {
+              "id": "fx-u1",
+              "role": "user",
+              "text": "Announce our new Denver studio. It opens Monday on Larimer Street.",
+              "createdAt": "2026-09-28T15:02:00.000Z",
+              "variations": 1,
+              "intent": "brief"
+            },
+            {
+              "id": "fx-a1",
+              "role": "assistant",
+              "createdAt": "2026-09-28T15:02:20.000Z",
+              "replyTo": "fx-u1",
+              "phase": "done",
+              "status": "Here it is in two sizes, square and portrait, with a caption for each.",
+              "reply": "Here it is in two sizes, square and portrait, with a caption for each.",
+              "warnings": [],
+              "meta": {
+                "model": "fixture",
+                "candidateCount": 6,
+                "mode": "library"
+              },
+              "drafts": [
+                {
+                  "id": "fx-d1",
+                  "proposal": {
+                    "templateId": "c6ee9277-cfeb-4fbc-90af-0757718051d7",
+                    "templateName": "Feature highlight",
+                    "values": {
+                      "kicker": "Studio news",
+                      "eyebrow": "Now open",
+                      "headline": "A second Acme Studios, now open in Denver",
+                      "subhead": "Same team, more room to make things. Drop by the new space on Larimer Street.",
+                      "footnote": "Open weekdays 9 to 6"
+                    },
+                    "caption": "Acme Studios has a second home. Our Denver studio is open, so come say hello.",
+                    "why": "It leads with the news and leaves room for the details.",
+                    "imageFieldsNeeded": []
+                  },
+                  "canvas": {
+                    "width": 1080,
+                    "height": 1080
+                  },
+                  "values": {
+                    "kicker": "Studio news",
+                    "eyebrow": "Now open",
+                    "headline": "A second Acme Studios, now open in Denver",
+                    "subhead": "Same team, more room to make things. Drop by the new space on Larimer Street.",
+                    "footnote": "Open weekdays 9 to 6"
+                  }
+                },
+                {
+                  "id": "fx-d2",
+                  "proposal": {
+                    "templateId": "c68b6e95-8115-4f2f-88c7-265bbd39cf41",
+                    "templateName": "Product launch",
+                    "values": {
+                      "kicker": "Studio news",
+                      "eyebrow": "Now open",
+                      "headline": "A second Acme Studios, now open in Denver",
+                      "subhead": "Same team, more room to make things. Drop by the new space on Larimer Street.",
+                      "cta": "Plan a visit"
+                    },
+                    "caption": "Acme Studios has a second home. Our Denver studio is open, so come say hello.",
+                    "why": "It leads with the news and leaves room for the details.",
+                    "imageFieldsNeeded": [
+                      {
+                        "fieldKey": "image",
+                        "label": "Product image",
+                        "required": false
+                      }
+                    ]
+                  },
+                  "canvas": {
+                    "width": 1080,
+                    "height": 1350
+                  },
+                  "values": {
+                    "kicker": "Studio news",
+                    "eyebrow": "Now open",
+                    "headline": "A second Acme Studios, now open in Denver",
+                    "subhead": "Same team, more room to make things. Drop by the new space on Larimer Street.",
+                    "cta": "Plan a visit"
+                  }
+                }
+              ]
+            }
+          ],
+          "id": "fixture-thread-denver",
+          "companyId": "aeb81106-2389-4212-a9e9-2474372b36e1",
+          "userId": "local-dev-user",
+          "createdAt": "2026-09-28T15:02:00.000Z",
+          "updatedAt": "2026-09-28T15:03:10.000Z"
+        },
+        {
+          "title": "Denver studio, shorter headline",
+          "platforms": ["instagram"],
+          "preview": {
+            "templateId": "c6ee9277-cfeb-4fbc-90af-0757718051d7",
+            "values": {
+              "kicker": "Studio news",
+              "eyebrow": "Now open",
+              "headline": "A second Acme Studios, now open in Denver",
+              "subhead": "Same team, more room to make things. Drop by the new space on Larimer Street.",
+              "footnote": "Open weekdays 9 to 6"
+            },
+            "canvas": {
+              "width": 1080,
+              "height": 1080
+            }
+          },
+          "templateId": null,
+          "turns": [
+            {
+              "id": "fx-u1-b",
+              "role": "user",
+              "text": "Announce our new Denver studio. It opens Monday on Larimer Street.",
+              "createdAt": "2026-09-28T15:02:00.000Z",
+              "variations": 1,
+              "intent": "brief"
+            },
+            {
+              "id": "fx-a1-b",
+              "role": "assistant",
+              "createdAt": "2026-09-28T15:02:20.000Z",
+              "replyTo": "fx-u1-b",
+              "phase": "done",
+              "status": "Here it is in two sizes, square and portrait, with a caption for each.",
+              "reply": "Here it is in two sizes, square and portrait, with a caption for each.",
+              "warnings": [],
+              "meta": {
+                "model": "fixture",
+                "candidateCount": 6,
+                "mode": "library"
+              },
+              "drafts": [
+                {
+                  "id": "fx-d1-b",
+                  "proposal": {
+                    "templateId": "c6ee9277-cfeb-4fbc-90af-0757718051d7",
+                    "templateName": "Feature highlight",
+                    "values": {
+                      "kicker": "Studio news",
+                      "eyebrow": "Now open",
+                      "headline": "A second Acme Studios, now open in Denver",
+                      "subhead": "Same team, more room to make things. Drop by the new space on Larimer Street.",
+                      "footnote": "Open weekdays 9 to 6"
+                    },
+                    "caption": "Acme Studios has a second home. Our Denver studio is open, so come say hello.",
+                    "why": "It leads with the news and leaves room for the details.",
+                    "imageFieldsNeeded": []
+                  },
+                  "canvas": {
+                    "width": 1080,
+                    "height": 1080
+                  },
+                  "values": {
+                    "kicker": "Studio news",
+                    "eyebrow": "Now open",
+                    "headline": "A second Acme Studios, now open in Denver",
+                    "subhead": "Same team, more room to make things. Drop by the new space on Larimer Street.",
+                    "footnote": "Open weekdays 9 to 6"
+                  }
+                },
+                {
+                  "id": "fx-d2-b",
+                  "proposal": {
+                    "templateId": "c68b6e95-8115-4f2f-88c7-265bbd39cf41",
+                    "templateName": "Product launch",
+                    "values": {
+                      "kicker": "Studio news",
+                      "eyebrow": "Now open",
+                      "headline": "A second Acme Studios, now open in Denver",
+                      "subhead": "Same team, more room to make things. Drop by the new space on Larimer Street.",
+                      "cta": "Plan a visit"
+                    },
+                    "caption": "Acme Studios has a second home. Our Denver studio is open, so come say hello.",
+                    "why": "It leads with the news and leaves room for the details.",
+                    "imageFieldsNeeded": [
+                      {
+                        "fieldKey": "image",
+                        "label": "Product image",
+                        "required": false
+                      }
+                    ]
+                  },
+                  "canvas": {
+                    "width": 1080,
+                    "height": 1350
+                  },
+                  "values": {
+                    "kicker": "Studio news",
+                    "eyebrow": "Now open",
+                    "headline": "A second Acme Studios, now open in Denver",
+                    "subhead": "Same team, more room to make things. Drop by the new space on Larimer Street.",
+                    "cta": "Plan a visit"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "fx-u2-b",
+              "role": "user",
+              "text": "Make the headline shorter.",
+              "createdAt": "2026-09-29T10:17:00.000Z",
+              "variations": 1,
+              "intent": "followUp"
+            },
+            {
+              "id": "fx-a2-b",
+              "role": "assistant",
+              "createdAt": "2026-09-29T10:17:40.000Z",
+              "replyTo": "fx-u2-b",
+              "phase": "done",
+              "status": "Shorter headline, same layouts.",
+              "reply": "Shorter headline, same layouts.",
+              "warnings": [],
+              "meta": {
+                "model": "fixture",
+                "candidateCount": 6,
+                "mode": "library"
+              },
+              "drafts": [
+                {
+                  "id": "fx-d3-b",
+                  "proposal": {
+                    "templateId": "c6ee9277-cfeb-4fbc-90af-0757718051d7",
+                    "templateName": "Feature highlight",
+                    "values": {
+                      "kicker": "Studio news",
+                      "eyebrow": "Now open",
+                      "headline": "Acme Studios, now in Denver",
+                      "subhead": "Same team, more room to make things. Drop by the new space on Larimer Street.",
+                      "footnote": "Open weekdays 9 to 6"
+                    },
+                    "caption": "Acme Studios has a second home. Our Denver studio is open, so come say hello.",
+                    "why": "It leads with the news and leaves room for the details.",
+                    "imageFieldsNeeded": []
+                  },
+                  "canvas": {
+                    "width": 1080,
+                    "height": 1080
+                  },
+                  "values": {
+                    "kicker": "Studio news",
+                    "eyebrow": "Now open",
+                    "headline": "Acme Studios, now in Denver",
+                    "subhead": "Same team, more room to make things. Drop by the new space on Larimer Street.",
+                    "footnote": "Open weekdays 9 to 6"
+                  }
+                },
+                {
+                  "id": "fx-d4-b",
+                  "proposal": {
+                    "templateId": "c68b6e95-8115-4f2f-88c7-265bbd39cf41",
+                    "templateName": "Product launch",
+                    "values": {
+                      "kicker": "Studio news",
+                      "eyebrow": "Now open",
+                      "headline": "Acme Studios, now in Denver",
+                      "subhead": "Same team, more room to make things. Drop by the new space on Larimer Street.",
+                      "cta": "Plan a visit"
+                    },
+                    "caption": "Acme Studios has a second home. Our Denver studio is open, so come say hello.",
+                    "why": "It leads with the news and leaves room for the details.",
+                    "imageFieldsNeeded": [
+                      {
+                        "fieldKey": "image",
+                        "label": "Product image",
+                        "required": false
+                      }
+                    ]
+                  },
+                  "canvas": {
+                    "width": 1080,
+                    "height": 1350
+                  },
+                  "values": {
+                    "kicker": "Studio news",
+                    "eyebrow": "Now open",
+                    "headline": "Acme Studios, now in Denver",
+                    "subhead": "Same team, more room to make things. Drop by the new space on Larimer Street.",
+                    "cta": "Plan a visit"
+                  }
+                }
+              ]
+            }
+          ],
+          "id": "fixture-thread-denver-short",
+          "companyId": "aeb81106-2389-4212-a9e9-2474372b36e1",
+          "userId": "local-dev-user",
+          "createdAt": "2026-09-29T10:15:00.000Z",
+          "updatedAt": "2026-09-29T10:17:40.000Z"
+        },
+        {
+          "title": "Spring open house",
+          "platforms": [],
+          "preview": null,
+          "templateId": null,
+          "turns": [
+            {
+              "id": "fx-u3",
+              "role": "user",
+              "text": "A post inviting people to our spring open house.",
+              "createdAt": "2026-09-30T09:40:00.000Z",
+              "variations": 1,
+              "intent": "brief"
+            },
+            {
+              "id": "fx-a3",
+              "role": "assistant",
+              "createdAt": "2026-09-30T09:40:12.000Z",
+              "replyTo": "fx-u3",
+              "phase": "done",
+              "status": "What date and time is the open house?",
+              "warnings": [],
+              "meta": {
+                "model": "fixture",
+                "candidateCount": 6,
+                "mode": "library"
+              },
+              "drafts": [],
+              "question": "What date and time is the open house?"
+            }
+          ],
+          "id": "fixture-thread-open-house",
+          "companyId": "aeb81106-2389-4212-a9e9-2474372b36e1",
+          "userId": "local-dev-user",
+          "createdAt": "2026-09-30T09:40:00.000Z",
+          "updatedAt": "2026-09-30T09:40:12.000Z"
+        }
+      ]
     },
     "brand-portal-company": "aeb81106-2389-4212-a9e9-2474372b36e1",
     "brand-portal-dev-role": "admin",

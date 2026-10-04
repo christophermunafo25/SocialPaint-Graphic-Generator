@@ -29,13 +29,19 @@ import { chromium } from "playwright";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "../..");
 const fixture = JSON.parse(await readFile(path.join(here, "fixtures/dev-workspace.json"), "utf8"));
-const firstTemplate = fixture.localStorage["brand-portal-dev-db"].templates[0].id;
+const devDb = fixture.localStorage["brand-portal-dev-db"];
+const firstTemplate = devDb.templates[0].id;
+// The fixture's Generate threads: a finished result, then a question.
+const resultThread = devDb.generateThreads[0].id;
+const questionThread = devDb.generateThreads[2].id;
 
 const ROUTES = [
   ["brand-templates", "/templates"],
   ["template-fill", `/templates/${firstTemplate}`],
   ["generate", "/generate"],
   ["generate-history", "/generate/history"],
+  ["generate-thread", `/generate/c/${resultThread}`],
+  ["generate-thread-question", `/generate/c/${questionThread}`],
   ["template-builder", "/template-builder"],
   ["insights", "/insights"],
   ["brand-studio", "/brand-studio"],

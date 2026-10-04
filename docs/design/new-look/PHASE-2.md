@@ -120,7 +120,7 @@ The primitives must cover today's call sites without forcing a later phase to be
 ### Step 1: Generate threads in the dev fixture
 
 - **Seed the threads.** Add them to `brand-portal-dev-db.generateThreads` in `scripts/new-look/fixtures/dev-workspace.json`, scoped the way `LocalGenerateThreadStore` reads them (`LOCAL_DEV_USER_ID` and the Acme Studios company). Build them from the shapes in `src/lib/types.ts` and the test data named in §1, and check each one by loading it through `fromStoredThread`. Three threads:
-  1. **A finished result.** One user turn with two detail tags. One assistant turn whose reply carries two drafts of the same post in two sizes, each with a template id from the fixture, values and a caption, plus follow-up chips.
+  1. **A finished result.** One user turn (detail tags belong to template chats, so a Generate thread has none). One assistant turn whose reply carries two drafts of the same post in two sizes, each with a template id from the fixture, values and a caption, plus follow-up chips.
   2. **A follow-up.** The first thread with a second user turn and a second assistant turn.
   3. **A question.** One user turn, and an assistant turn that asks a question instead of returning drafts.
 
