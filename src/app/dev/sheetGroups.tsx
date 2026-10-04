@@ -1,4 +1,6 @@
 import React from "react";
+import photoPlaceholder from "@/assets/socialpaint/photo-placeholder.jpg";
+import { PublicLinksBody } from "../components/admin/TemplateLinksDialog";
 import {
   BarChart3,
   Building,
@@ -61,6 +63,7 @@ import {
   Tabs,
   Tag,
   TextArea,
+  Upload,
   ThemeToggle,
   Toast,
   Tooltip,
@@ -158,6 +161,34 @@ const LOOKS = [
   { value: "ocean", label: "Ocean" },
 ];
 
+/** A portrait for the Upload specimen: the placeholder the template cards
+ * use. */
+const SAMPLE_PHOTO = photoPlaceholder;
+
+/** Sample looks and a link for the Public links dialog (168:758): the
+ * local backend issues no links. */
+const SAMPLE_LOOKS = [
+  { id: "moss", name: "Moss", isDefault: true, overrides: {} },
+  { id: "lime", name: "Lime", overrides: {} },
+  { id: "ocean", name: "Ocean", overrides: {} },
+];
+const SAMPLE_LINKS = [
+  {
+    id: "link-1",
+    companyId: "co",
+    templateId: "tpl",
+    name: "Recruiting partners",
+    allowUploads: true,
+    pinnedVariantId: null,
+    expiresAt: null,
+    useCap: null,
+    useCount: 37,
+    revokedAt: null,
+    createdAt: "2026-09-14T12:00:00.000Z",
+    lastUsedAt: "2026-09-30T12:00:00.000Z",
+  },
+];
+
 function FieldsGroup() {
   const [look, setLook] = React.useState("moss");
   const [platform, setPlatform] = React.useState("");
@@ -181,6 +212,16 @@ function FieldsGroup() {
         <Field label="Disabled">
           <Input disabled value="Locked by the template" readOnly />
         </Field>
+        <Field label="Location" edited optional>
+          <Input defaultValue="Remote" />
+        </Field>
+        <Field label="Caption" action={{ label: "Copy", onClick: () => {} }}>
+          <TextArea defaultValue="Come paint with us." />
+        </Field>
+        <Field label="Photo" optional>
+          <Upload placeholder="Add a photo" />
+        </Field>
+        <Upload placeholder="Add a photo" thumbnail={SAMPLE_PHOTO} fileName="portrait.jpg" />
       </div>
       <div className="dev-ui-w-288 dev-ui-sheet__stack">
         <Field label="Look">
@@ -443,9 +484,23 @@ function ContainersGroup() {
         <ProgressBar value={0.4} label="Importing" />
       </SettingsCard>
       <ModalPanel title="Public links" icon={Link}>
-        <Field label="Headline">
-          <Input placeholder="Creative Director" />
-        </Field>
+        <PublicLinksBody
+          state="ready"
+          variants={SAMPLE_LOOKS}
+          defaults={{ allowUploads: true, expiryDays: null, useCap: null }}
+          links={SAMPLE_LINKS}
+          loadError={false}
+          onRetryLoad={() => {}}
+          busy={false}
+          error={null}
+          freshUrl={null}
+          missingAssets={null}
+          onCreate={() => {}}
+          onRevoke={() => {}}
+          onRegenerate={() => {}}
+          onPin={() => {}}
+          onToggleUploads={() => {}}
+        />
       </ModalPanel>
       <Modal open={open} onOpenChange={setOpen} title="Public links" icon={Link}>
         <Field label="Headline">

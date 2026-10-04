@@ -726,3 +726,100 @@
 .sp-tchat-legal > a:hover {
   text-decoration: underline;
 }
+
+/* ── The Public links dialog (168:758): New link, a divider, then Links ── */
+.sp-links__note {
+  margin: 0;
+  color: var(--text-secondary);
+}
+.sp-links__alert,
+.sp-links__error {
+  margin: 0;
+  color: var(--state-error);
+}
+.sp-links__confirm {
+  margin: 0;
+  color: var(--text-secondary);
+}
+.sp-links__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2xs);
+}
+.sp-links__fresh,
+.sp-links__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+.sp-links__form > h3,
+.sp-links__list > h3 {
+  margin: 0;
+}
+.sp-links__pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-xs);
+}
+@media (max-width: 599px) {
+  .sp-links__pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.sp-links__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+.sp-links__divider {
+  margin: 0;
+  border: 0;
+  border-top: 1px solid var(--border-default);
+}
+.sp-links__list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px; /* as drawn (168:760) */
+}
+.sp-links__rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-links__row {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.sp-links__rowhead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+.sp-links__rowname,
+.sp-links__rowactions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+/* Four Stats in equal columns (168:760); two on a phone. */
+.sp-links__stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+@media (max-width: 599px) {
+  .sp-links__stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.sp-links__look {
+  width: 180px;
+}
