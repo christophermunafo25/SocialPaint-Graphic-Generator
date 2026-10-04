@@ -196,3 +196,22 @@
 .dev-ui-w-285 {
   width: 285px;
 }
+/* Flat stand-ins for the frame's sample artwork (the template art is
+   sample content, not platform imagery). Artwork does not invert with the
+   theme, so they use the artwork palette's fixed values: the light green
+   post and the Deep Moss look. */
+.dev-ui-sample-preview {
+  display: block;
+  width: 211px;
+  height: 264px;
+  background: var(--tint-green);
+}
+.dev-ui-sample-thumb {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--field-green);
+}
+.dev-ui-w-227 {
+  width: 227px;
+}

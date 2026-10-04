@@ -21,26 +21,16 @@ import {
   AttachButton,
   Avatar,
   Button,
+  Card,
   Chip,
   ChoiceChip,
-  DetailTag,
-  PlatformChip,
-  Status,
-  Tag,
   CompactSelect,
+  DetailTag,
   Field,
   Filter,
-  Input,
-  SearchField,
-  SegmentedControl,
-  Select,
-  SettingsRailItem,
-  Switch,
-  Tabs,
-  TextArea,
-  Toast,
-  Tooltip,
   IconButton,
+  Input,
+  LookTile,
   Menu,
   MenuDivider,
   MenuItem,
@@ -48,12 +38,32 @@ import {
   MenuLabel,
   MenuLabelStatic,
   MenuPanel,
+  Metric,
+  Modal,
+  ModalPanel,
   NavItem,
+  PlatformChip,
+  Progress,
+  ProgressBar,
+  ResultCard,
   RowMenuTrigger,
+  SearchField,
+  SegmentedControl,
+  Select,
   SendButton,
+  SettingsCard,
+  SettingsRailItem,
+  Stat,
+  Status,
   Stepper,
   StepperButton,
+  Switch,
+  Tabs,
+  Tag,
+  TextArea,
   ThemeToggle,
+  Toast,
+  Tooltip,
   type ButtonKind,
   type ButtonSize,
 } from "@/app/components/primitives";
@@ -117,6 +127,10 @@ export const SHEET_GROUPS: SheetGroup[] = [
   {
     title: "Navigation, menus and overlays",
     render: () => <NavigationGroup />,
+  },
+  {
+    title: "Previews and containers",
+    render: () => <ContainersGroup />,
   },
 ];
 
@@ -377,6 +391,67 @@ function NavigationGroup() {
           onAction={() => setAttach("photo")}
         />
       </div>
+    </>
+  );
+}
+
+function ContainersGroup() {
+  const [look, setLook] = React.useState("moss");
+  const [open, setOpen] = React.useState(false);
+  return (
+    <>
+      <div className="dev-ui-sheet__line">
+        <ResultCard
+          title="Now hiring"
+          meta="1080 × 1350"
+          preview={<span className="dev-ui-sample-preview" />}
+          onEdit={() => {}}
+          editLabel="Edit Now hiring"
+          onDownload={() => {}}
+          downloadLabel="Download Now hiring"
+          className="dev-ui-w-227"
+        />
+        <div className="dev-ui-sheet__line" role="radiogroup" aria-label="Look">
+          {["moss", "lime"].map((id) => (
+            <LookTile
+              key={id}
+              name={id === "moss" ? "Moss" : "Lime"}
+              thumbnail={<span className="dev-ui-sample-thumb" />}
+              role="radio"
+              aria-checked={look === id}
+              selected={look === id}
+              onClick={() => setLook(id)}
+            />
+          ))}
+        </div>
+      </div>
+      <Card title="Your month in brief" subtitle="Aug 17 to Sep 15">
+        <Metric label="Exports" value="1,046" />
+      </Card>
+      <SettingsCard
+        title="Workspaces"
+        action={
+          <Button kind="neutral" onClick={() => setOpen(true)}>
+            Open modal
+          </Button>
+        }
+      >
+        <div className="dev-ui-sheet__line">
+          <Stat label="Created" value="Sep 14, 2026" />
+          <Progress value={1 / 3} label="1 of 3 · Reading your job post" />
+        </div>
+        <ProgressBar value={0.4} label="Importing" />
+      </SettingsCard>
+      <ModalPanel title="Public links" icon={Link}>
+        <Field label="Headline">
+          <Input placeholder="Creative Director" />
+        </Field>
+      </ModalPanel>
+      <Modal open={open} onOpenChange={setOpen} title="Public links" icon={Link}>
+        <Field label="Headline">
+          <Input placeholder="Creative Director" />
+        </Field>
+      </Modal>
     </>
   );
 }

@@ -7,6 +7,7 @@ import {
   ChoiceChip,
   DetailTag,
   PlatformChip,
+  ResultCard,
   Tag,
   CompactSelect,
   Filter,
@@ -17,6 +18,7 @@ import {
   Switch,
   Tab,
   IconButton,
+  LookTile,
   MenuItemStatic,
   NavItem,
   RowMenuTrigger,
@@ -178,5 +180,26 @@ export const RENDERERS: Record<string, (state: DemoState) => React.ReactNode> = 
     >
       Photo
     </MenuItemStatic>
+  ),
+  "Result card": (s) => (
+    <ResultCard
+      title="Now hiring"
+      meta="1080 × 1350"
+      preview={<span className="dev-ui-sample-preview" />}
+      onEdit={() => {}}
+      editLabel="Edit Now hiring"
+      onDownload={() => {}}
+      downloadLabel="Download Now hiring"
+      className="dev-ui-w-227"
+      data-demo-state={s === "static" ? undefined : "hover"}
+    />
+  ),
+  "Look tile": (s) => (
+    <LookTile
+      name="Moss"
+      thumbnail={<span className="dev-ui-sample-thumb" />}
+      selected={s === "selected"}
+      data-demo-state={demo(s)}
+    />
   ),
 };
