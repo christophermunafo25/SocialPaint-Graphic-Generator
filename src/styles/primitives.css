@@ -69,13 +69,16 @@
 }
 
 /* Every primitive: no inherited box model surprises, and labels never wrap
-   (house rule: one-line button text). */
+   (house rule: one-line button text). The font reset has no specificity,
+   so a .t-* class on the same element (an input's) always wins over it. */
+:where(.ui-reset) {
+  font: inherit;
+}
 .ui-reset {
   box-sizing: border-box;
   margin: 0;
   border: 0;
   padding: 0;
-  font: inherit;
   color: inherit;
   text-decoration: none;
   white-space: nowrap;
@@ -222,8 +225,9 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 }
 
 /* ── Theme toggle (102:574): the sun in Light, the moon in Dark, by the
-   nearest [data-theme]. Two levels cover the app's html and one nested
-   theme (a panel or a /dev/ui column). ── */
+   nearest [data-theme]. Each deeper level of nesting wins by specificity;
+   three levels cover the app's html, a themed panel and a theme inside it
+   (/dev/ui's Dark column inside its Light table). ── */
 .ui-theme-toggle {
   display: inline-flex;
   align-items: center;
@@ -242,6 +246,14 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 }
 [data-theme="dark"] [data-theme="light"] .ui-theme-toggle__sun,
 [data-theme="light"] [data-theme="dark"] .ui-theme-toggle__moon {
+  display: block;
+}
+[data-theme="dark"] [data-theme="light"] [data-theme="dark"] .ui-theme-toggle__sun,
+[data-theme="light"] [data-theme="dark"] [data-theme="light"] .ui-theme-toggle__moon {
+  display: none;
+}
+[data-theme="dark"] [data-theme="light"] [data-theme="dark"] .ui-theme-toggle__moon,
+[data-theme="light"] [data-theme="dark"] [data-theme="light"] .ui-theme-toggle__sun {
   display: block;
 }
 
@@ -353,6 +365,11 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 }
 .ui-select .ui-select__chevron {
   color: var(--text-secondary);
+}
+/* The compact value is trimmed Button/S, whose descenders sit outside its
+   box; the field select's ellipsis clip would cut them off. */
+.ui-compact-select .ui-select__value {
+  overflow: visible;
 }
 .ui-compact-select {
   height: 28px;
@@ -493,6 +510,10 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  /* The label is cap-trimmed: widen the clip box past the descenders
+     without moving the line. */
+  padding-block: 0.3em;
+  margin-block: -0.3em;
 }
 .ui-menu-item__meta {
   color: var(--text-secondary);

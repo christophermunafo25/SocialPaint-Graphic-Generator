@@ -286,7 +286,7 @@ Where the file and RULES disagree, the file wins (RULES, opening line), and the 
 | Choice chip focus | 2 px out, as drawn. RULES §6 does not list it among the tight rings. |
 | Detail tag focus | The ring wraps the remove button only, as drawn. |
 | Tag Default and Overlay | Not interactive: they render a `span`, with no hover and no focus. |
-| Raw glyphs | Filter chevron: lucide `ChevronDown` at 14. Search clear: lucide `X` at 14 in a 24 × 24 hit area. Send's Stop: a 12 × 12 square at `--radius-xs`. |
+| Raw glyphs | Filter chevron: lucide `ChevronDown` at 16 (the frame's 9 × 4.5 vector is lucide's chevron at that size). Search clear: lucide `X` at 14 in a 24 × 24 hit area. Send's Stop: a 12 × 12 square at `--radius-xs`. |
 | Theme toggle radius | `--radius-pill`. The file has a raw 999. |
 | Ghost icon button selected | Only on raised surfaces, where `--state-selected` reads. On the page it would vanish in Light. |
 | Result card download | The Filled Icon button at its standard 32. The file draws this instance at 34. |

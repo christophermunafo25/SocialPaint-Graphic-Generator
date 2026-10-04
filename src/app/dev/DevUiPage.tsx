@@ -29,7 +29,7 @@ function Row({ row }: { row: StateRow }) {
         <div key={mode} className="dev-ui-row__mode" data-theme={mode}>
           {row.cells.map((cell, i) =>
             isEmptyCell(cell) ? (
-              <div key={i} className="dev-ui-cell dev-ui-cell--empty">
+              <div key={i} className="dev-ui-cell dev-ui-cell--empty" data-surface={row.surface}>
                 <span className="t-caption-s dev-ui-cell__caption">{cell.empty}</span>
               </div>
             ) : (

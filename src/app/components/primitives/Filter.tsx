@@ -23,7 +23,7 @@ export const Filter = React.forwardRef<HTMLButtonElement, FilterProps>(function 
       {...rest}
     >
       <span className="t-control-m">{children}</span>
-      <ChevronDown size={14} className="ui-icon" aria-hidden />
+      <ChevronDown size={16} className="ui-icon" aria-hidden />
     </button>
   );
 });
