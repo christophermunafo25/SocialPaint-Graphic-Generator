@@ -3,8 +3,9 @@
 Every pull request and every push to `main` runs `.github/workflows/ci.yml`:
 install with a frozen lockfile, the token check (`tokens.css` matches the
 Figma export and no stylesheet redeclares a token), app typecheck (`tsc`),
-edge-function typecheck (`deno check`), lint, format check, tests, and a
-production build (which runs the `scripts/check-production-env.mjs`
+edge-function typecheck (`deno check`), lint, format check, tests (two Vitest
+projects: `unit` runs the `*.test.ts` files in node, `dom` runs the component
+`*.test.tsx` files in happy-dom), and a production build (which runs the `scripts/check-production-env.mjs`
 configuration guard). Any failing step
 fails the run. The same pipeline runs locally as one command:
 

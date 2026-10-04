@@ -26,6 +26,12 @@ import { SettingsAdmin } from "./components/admin/SettingsAdmin";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { setMonitoringContext } from "@/lib/monitoring";
 
+/** The primitives sheet (/dev/ui). A production build replaces
+ * import.meta.env.DEV with false, so neither the page nor its chunk ship. */
+const DevUiPage = import.meta.env.DEV
+  ? React.lazy(() => import("./dev/DevUiPage").then((m) => ({ default: m.DevUiPage })))
+  : null;
+
 /** Keeps the ambient error-report context current: route name, company id,
  * opaque user id, role. Ids and enums only — never email or name. */
 function MonitoringBridge() {
@@ -83,6 +89,16 @@ function Screen() {
   const brand = useBrand();
   const { route } = useRouter();
   const canvaReturn = useCanvaOAuthReturn(company?.id);
+
+  // The dev sheet needs no account or workspace, so it renders before any
+  // of the gates below.
+  if (route.name === "devUi" && DevUiPage) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevUiPage />
+      </React.Suspense>
+    );
+  }
 
   if (loading) {
     return (

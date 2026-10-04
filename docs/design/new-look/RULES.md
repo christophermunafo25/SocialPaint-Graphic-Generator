@@ -96,6 +96,7 @@ These apply to every string a phase adds or changes in the interface.
 - No "it's not X, it's Y" constructions, no three-part rhetorical lists and no runs of sentences that open the same way.
 - Never "ship" or "shipped". No testimonials or quotes from invented people. No bracketed placeholders.
 - No explanatory helper copy under titles. Page headers are a title alone.
+- Fields show an error when the value is invalid or a required value is missing. No hint or helper text.
 - Strings the frames do not show are proposed copy: list them in the PR for CJ to confirm.
 
 ## 10. How every phase works

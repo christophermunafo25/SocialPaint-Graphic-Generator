@@ -260,6 +260,14 @@ Nobody edits either file by hand. While the new look moves page by page
 Figma ones. `npm run tokens:check`, part of `npm run verify` and CI, fails when
 `tokens.css` is out of date or when a stylesheet redeclares a token it owns.
 
+Interface controls are the primitives in `src/app/components/primitives/`, one per
+component on the Figma file's Master UI Elements page, styled in
+`src/styles/primitives.css` with their interaction states built in and tested in the
+happy-dom Vitest project. In development, `/dev/ui` renders every primitive and the
+file's Interaction states table. Screens move onto the primitives in the phase that
+rebuilds them (`docs/design/new-look/PLAN.md`); the `.sp-btn`, `.sp-input` and
+`.sp-chat-*` classes stay until nothing uses them.
+
 ## PNG export
 
 `renderSchemaBlob` (src/lib/render/exportPng.ts) is THE rasterization path —

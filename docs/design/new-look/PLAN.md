@@ -43,9 +43,9 @@ Out of scope until they are designed: the Template Builder, onboarding and the s
 |---|---|---|---|
 | 0 | Handoff kit | This folder, the token export and its Figma plugin, the generator, the bridge, the screenshot tool | Done |
 | 1 | Foundation | Generated `tokens.css` wired in, the bridge, one definition per token, the 1 px focus ring, `tokens:check` in CI | Every changed value is on the expected list; nothing else moves |
-| 2 | Primitives | One React primitive per Figma component with its states built in, a dev-only `/dev/ui` route that renders the Interaction states table, chat fixtures for the local backend | `/dev/ui` matches 105:641 in both themes |
+| 2 | Primitives | One React primitive per Figma component with its states built in and tested, a dev-only `/dev/ui` route that renders the Interaction states table, Generate threads in the screenshot fixture. No screen changes: each area phase moves its screens onto the primitives | `/dev/ui` matches 105:641 in both themes; every screen unchanged |
 | 3 | Shell and navigation | Five nav items, Settings on the account gear, workspace switching inside Settings, title-only page headers, People inside Settings with `/people` redirecting, the canvas-size toggles removed | Every route still reachable; members see only what they saw before |
-| 4 | Brand Templates | The library, platform filters and search, the fill page with Use AI to assist (and the same form on the public link page), and the template chat, on the new primitives | Screens match their frames in both themes |
+| 4 | Brand Templates | A stand-in provider for the template chat on the local backend (first step), the library, platform filters and search, the fill page with Use AI to assist (and the same form on the public link page), and the template chat, on the new primitives | Screens match their frames in both themes |
 | 5 | Generate | Start, thread, result, edit and History | Same |
 | 6 | Brand Studio | Overview and the six detail pages, with the new cover images committed | Same |
 | 7 | Settings | All seven sections | Same |
@@ -76,6 +76,6 @@ Paths under "Code entry points" are relative to `src/app/components/` unless the
 
 - Vite 6 and React 18 SPA with its own history router (`src/app/router.tsx`), Supabase, Vercel. CI runs typecheck, the Deno check, lint, format check, tests and a build on every pull request.
 - One stylesheet, `src/styles/socialpaint.css` (9,797 lines, 366 custom properties), holds the design system and every page's CSS. `theme.css` aliases the shadcn and Tailwind names onto it.
-- Two control families live side by side: the July primitives (`.sp-btn`, `.sp-icon-btn`, `.sp-input`, `.sp-chip`) and the September chat set (`.sp-chat-btn`, `.sp-chat-icon-btn`, `.sp-chat-field`, `.sp-chat-select`, `.sp-chat-stepper`). Phase 2 replaces both.
+- Two control families live side by side: the July primitives (`.sp-btn`, `.sp-icon-btn`, `.sp-input`, `.sp-chip`) and the September chat set (`.sp-chat-btn`, `.sp-chat-icon-btn`, `.sp-chat-field`, `.sp-chat-select`, `.sp-chat-stepper`). Phase 2 builds the primitives that replace both families. Each area phase moves its screens onto them, and the old classes stay until nothing uses them.
 - Surfaces and text already match the Figma values. Most of the visible change is in controls, buttons, corners, shadows, states and layout.
-- Generate and the template chat need Supabase and the Anthropic key. On the local backend Generate shows a notice and the template chat opens the manual fill page, so Phase 2 adds fixtures for them.
+- Generate and the template chat need Supabase and the Anthropic key. On the local backend Generate shows a notice and the template chat opens the manual fill page. Phase 2 seeds Generate threads into the screenshot fixture, so a thread, its result and History render there. The template chat's states wait for Phase 4, whose first step adds a stand-in provider: it runs only on the local backend, never in a production build, and answers from the sample workspace (Acme Studios), never SocialPaint content.

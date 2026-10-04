@@ -102,7 +102,11 @@ export type Route =
    * shareable; the defaults (30d, exports) stay out of it. */
   | { name: "dashboard"; range?: InsightsRange; metric?: InsightsMetric }
   | { name: "people" }
-  | { name: "settings"; section?: SettingsSection };
+  | { name: "settings"; section?: SettingsSection }
+  /** The primitives sheet and the Figma Interaction states table
+   * (docs/design/new-look/PHASE-2.md). Development builds only: urlToRoute
+   * never returns it when import.meta.env.DEV is false. */
+  | { name: "devUi" };
 
 interface NavigateOptions {
   /** Replace the current history entry instead of pushing a new one. The
@@ -181,6 +185,8 @@ export function routeToUrl(route: Route): string {
       return "/people";
     case "settings":
       return route.section ? `/settings/${route.section}` : "/settings";
+    case "devUi":
+      return "/dev/ui";
   }
 }
 
@@ -300,6 +306,11 @@ export function urlToRoute(pathname: string, search: string): Route {
         return { name: "settings", section: tail as SettingsSection };
       }
       return { name: "settings" };
+    case "dev":
+      // Read at call time so a test can stub it; a production build
+      // replaces it with false and drops this branch.
+      if (import.meta.env.DEV && tail === "ui") return { name: "devUi" };
+      return { name: "portal" };
     default:
       return { name: "portal" };
   }

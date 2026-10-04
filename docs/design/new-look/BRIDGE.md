@@ -53,11 +53,11 @@ Names defined from these follow them: `--primary`, `--primary-foreground`, `--ac
 
 | Old name | Read by | Figma roles | Phase |
 |---|---|---|---|
-| `--nav-active-bg` | Selected segments (`.sp-seg`, `.sp-segmented__option`), tab strip tabs, the settings rail, choice tiles, selected chips, the gooey nav pill | `--state-selected` (nav), `--control-fill` (rail), `--control-thumb` (segments and tabs), `--chip-selected-bg` or `--surface-inverse` (chips) | 2, 3 and 7 |
-| `--nav-active-fg` | The selected sidebar row | `--text-strong` | 3 |
-| `--media-overlay` | `.sp-edit-overlay` (preview hover) and `.sp-chat-editor-sheet__scrim` | `--overlay-hover` and `--overlay-scrim` | 2 and 5 |
-| `--edit-chip-bg` | `.sp-edit-overlay__chip`, whose icon reads `--text-primary` | `--overlay-control` under `--overlay-control-fg` (bridging only the fill would put a white icon on a white chip in Dark) | 2 |
-| `--shadow-rest` | Platform chips, chat chips, the filter bar search field, the tooltip, the selected editor segment | The elevation each Figma component uses | 2 |
-| `--radius-control-lg` (12) | Large buttons and inputs, chat buttons and fields, the user message bubble, the import popover, the build picker card, gate controls | 9 for controls, 16 for the bubble and popovers, 20 for cards | 2, 4 to 6; the gate keeps 12 |
+| `--nav-active-bg` | Selected segments (`.sp-seg`, `.sp-segmented__option`), tab strip tabs, the settings rail, choice tiles, selected chips, the gooey nav pill | `--state-selected` (nav), `--control-fill` (rail), `--control-thumb` (segments and tabs), `--chip-selected-bg` or `--surface-inverse` (chips) | 3, 6, 7 and 8; the Template Builder's controls in 9 |
+| `--nav-active-fg` | The selected sidebar row | `--text-strong` | 3, 6, 7 and 8 (it is also read wherever `--nav-active-bg` is) |
+| `--media-overlay` | `.sp-edit-overlay` (preview hover) and `.sp-chat-editor-sheet__scrim` | `--overlay-hover` and `--overlay-scrim` | 4 to 6 (the editor sheet scrim in 5) |
+| `--edit-chip-bg` | `.sp-edit-overlay__chip`, whose icon reads `--text-primary` | `--overlay-control` under `--overlay-control-fg` (bridging only the fill would put a white icon on a white chip in Dark) | 4 to 6 |
+| `--shadow-rest` | Platform chips, chat chips, the filter bar search field, the tooltip, the selected editor segment | The elevation each Figma component uses | 4, 5 and 8 |
+| `--radius-control-lg` (12) | Large buttons and inputs, chat buttons and fields, the user message bubble, the import popover, the build picker card, gate controls | 9 for controls, 16 for the bubble and popovers, 20 for cards | 4 to 8; the build picker and import popover in 9; the gate keeps 12 |
 
 Page-scoped groups (`--gen-*` for the chats, `--chip-*`, `--sb-*` for the sidebar, `--start-*` for the build picker, `--gate-*`, `--viz-*`, `--edge-*`, `--card-*`) stay as they are until their page moves. Phase 9 deletes whatever is left, along with this file and `legacy-bridge.css`.

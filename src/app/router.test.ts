@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   generatePageKey,
   routeState,
@@ -175,5 +175,20 @@ describe("withHistoryState", () => {
     expect(withHistoryState(portal, { savedInPlace: true })).toBe(portal);
     const fresh = urlToRoute("/generate", "");
     expect(withHistoryState(fresh, { savedInPlace: true })).toBe(fresh);
+  });
+});
+
+describe("the dev-only /dev/ui route", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("resolves in a development build and maps back to its address", () => {
+    vi.stubEnv("DEV", true);
+    expect(urlToRoute("/dev/ui", "")).toEqual({ name: "devUi" });
+    expect(routeToUrl({ name: "devUi" })).toBe("/dev/ui");
+  });
+
+  it("falls back to the gallery in a production build", () => {
+    vi.stubEnv("DEV", false);
+    expect(urlToRoute("/dev/ui", "")).toEqual({ name: "portal" });
   });
 });

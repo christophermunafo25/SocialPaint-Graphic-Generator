@@ -1,19 +1,27 @@
 #!/usr/bin/env node
 /* Screenshot loop for the new look. See docs/design/new-look/README.md.
  *
- *   node scripts/new-look/shots.mjs capture <dir> [--only a,b] [--themes light,dark] [--base URL]
+ *   node scripts/new-look/shots.mjs capture <dir> [--only a,b] [--themes light,dark] [--base URL] [--width 1440]
  *   node scripts/new-look/shots.mjs compare <beforeDir> <afterDir> [outDir]
+ *   node scripts/new-look/shots.mjs compare-image <a.png> <b.png> <out.png>
  *   node scripts/new-look/shots.mjs props <file.json> [--names earlier.json] [--base URL]
  *   node scripts/new-look/shots.mjs props-compare <a.json> <b.json>
  *
  * capture and props start their own Vite dev server on the local backend
  * (Supabase env blanked, so .env is ignored) unless --base points at one,
  * seed it with fixtures/dev-workspace.json, and drive Chromium through
- * Playwright. Every route is saved at 1440 wide, full page, in both themes;
- * "onboarding" is the first screen of a browser with no workspace.
+ * Playwright. Every route is saved at 1440 wide (or --width), full page, in
+ * both themes; "onboarding" is the first screen of a browser with no
+ * workspace, and "dev-ui" is the primitives sheet, whose Interaction states
+ * table is 3172 wide (capture it with --width 3172).
  *
  * compare writes a heatmap per changed screen (changed pixels in magenta over
- * the dimmed new screen) and prints the share of pixels that moved.
+ * the dimmed new screen) and prints the share of pixels that moved. Both
+ * compare the overlap of two images of different sizes, from the top left.
+ * compare-image does it for any two images: the /dev/ui gate compares the
+ * Interaction states table with docs/design/new-look/reference/
+ * interaction-states.png, the Figma export (the reference is 4532 tall, so
+ * the overlap is the table).
  * props snapshots every custom property at the root in both themes, so a
  * refactor can prove it changed no value.
  *
@@ -21,7 +29,8 @@
  * Chromium that is already installed. */
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
-import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readdir, readFile, writeFile } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
@@ -29,13 +38,19 @@ import { chromium } from "playwright";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "../..");
 const fixture = JSON.parse(await readFile(path.join(here, "fixtures/dev-workspace.json"), "utf8"));
-const firstTemplate = fixture.localStorage["brand-portal-dev-db"].templates[0].id;
+const devDb = fixture.localStorage["brand-portal-dev-db"];
+const firstTemplate = devDb.templates[0].id;
+// The fixture's Generate threads: a finished result, then a question.
+const resultThread = devDb.generateThreads[0].id;
+const questionThread = devDb.generateThreads[2].id;
 
 const ROUTES = [
   ["brand-templates", "/templates"],
   ["template-fill", `/templates/${firstTemplate}`],
   ["generate", "/generate"],
   ["generate-history", "/generate/history"],
+  ["generate-thread", `/generate/c/${resultThread}`],
+  ["generate-thread-question", `/generate/c/${questionThread}`],
   ["template-builder", "/template-builder"],
   ["insights", "/insights"],
   ["brand-studio", "/brand-studio"],
@@ -54,6 +69,7 @@ const ROUTES = [
   ["settings-account", "/settings/account"],
   ["settings-advanced", "/settings/advanced"],
   ["onboarding", "/templates", { fresh: true }],
+  ["dev-ui", "/dev/ui"],
 ];
 
 // ---------------------------------------------------------------- args
@@ -108,7 +124,8 @@ const launch = () =>
   chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 
 async function newContext(browser, theme, { fresh = false } = {}) {
-  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const width = Number(flags.width ?? 1440);
+  const context = await browser.newContext({ viewport: { width, height: 900 } });
   const seed = fresh ? {} : fixture.localStorage;
   const entries = Object.entries(seed).map(([k, v]) => [
     k,
@@ -268,6 +285,23 @@ async function compare(beforeDir, afterDir, outDir = path.join(afterDir, "diff")
   await writeFile(path.join(outDir, "report.json"), JSON.stringify(rows, null, 2));
 }
 
+// ---------------------------------------------------------- compare-image
+async function compareImage(a, b, out) {
+  const tmp = await mkdtemp(path.join(os.tmpdir(), "shots-"));
+  const name = path.basename(out);
+  await mkdir(path.join(tmp, "a"));
+  await mkdir(path.join(tmp, "b"));
+  await copyFile(a, path.join(tmp, "a", name));
+  await copyFile(b, path.join(tmp, "b", name));
+  await compare(path.join(tmp, "a"), path.join(tmp, "b"), path.join(tmp, "diff"));
+  const heatmap = path.join(tmp, "diff", name);
+  if (existsSync(heatmap)) {
+    await mkdir(path.dirname(out), { recursive: true });
+    await copyFile(heatmap, out);
+    console.log(`heatmap -> ${out}`);
+  }
+}
+
 // ---------------------------------------------------------------- props
 async function stylesheetNames() {
   const dir = path.join(root, "src/styles");
@@ -345,6 +379,7 @@ async function propsCompare(fileA, fileB) {
 // ---------------------------------------------------------------- main
 if (mode === "capture" && positional[0]) await capture(positional[0]);
 else if (mode === "compare" && positional[1]) await compare(...positional);
+else if (mode === "compare-image" && positional[2]) await compareImage(...positional);
 else if (mode === "props" && positional[0]) await props(positional[0]);
 else if (mode === "props-compare" && positional[1]) await propsCompare(...positional);
 else usage();

@@ -1,5 +1,6 @@
 @import "./socialpaint.css";
 @import "./tokens.css";
 @import "./legacy-bridge.css";
+@import "./primitives.css";
 @import "./tailwind.css";
 @import "./theme.css";
