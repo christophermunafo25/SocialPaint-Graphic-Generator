@@ -193,3 +193,6 @@
   flex-direction: column;
   gap: var(--space-sm);
 }
+.dev-ui-w-285 {
+  width: 285px;
+}

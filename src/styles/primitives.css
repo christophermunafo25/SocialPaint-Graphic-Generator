@@ -468,6 +468,11 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   user-select: none;
   white-space: nowrap;
 }
+/* Focus in a menu is the hover look (Radix marks it data-highlighted), not
+   the ring. */
+.ui-menu-item:focus-visible {
+  outline: none;
+}
 .ui-menu-item[data-highlighted],
 .ui-menu-item[data-demo-state="hover"] {
   background: var(--state-hover);
@@ -803,4 +808,87 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 .ui-status[data-tone="neutral"] {
   background: var(--surface-sunken);
   color: var(--text-secondary);
+}
+.ui-menu--popover {
+  z-index: 500; /* the popover layer; z-index is not a Figma token */
+}
+
+/* ── Nav item (54:83) and Settings rail item (54:100) ── */
+.ui-nav-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 36px;
+  padding: 0 10px; /* off the scale, as drawn (54:75) */
+  gap: var(--space-xs);
+  border-radius: var(--radius-control);
+  color: var(--text-secondary);
+  text-align: left;
+}
+.ui-nav-item[data-selected],
+.ui-nav-item[data-demo-state="selected"] {
+  --_fill: var(--state-selected);
+  color: var(--text-strong);
+}
+.ui-rail-item[data-selected],
+.ui-rail-item[data-demo-state="selected"] {
+  --_fill: var(--control-fill);
+}
+
+/* ── Avatar (54:62) ── */
+.ui-avatar {
+  box-sizing: border-box;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  color: var(--text-strong);
+}
+.ui-avatar[data-size="default"] {
+  width: 32px;
+  height: 32px;
+}
+.ui-avatar[data-size="lg"] {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--border-default);
+}
+.ui-avatar[data-shape="square"] {
+  border-radius: var(--radius-control);
+}
+
+/* ── Tooltip (58:434), the chart tooltip ── */
+.ui-tooltip {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 10px; /* off the scale, as drawn (58:434) */
+  gap: var(--space-2xs);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-control-md);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-medium);
+  color: var(--text-strong);
+  white-space: nowrap;
+}
+.ui-tooltip__label {
+  color: var(--text-secondary);
+}
+
+/* ── Toast (58:431) ── */
+.ui-toast {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-xs) var(--space-sm);
+  gap: var(--space-sm);
+  border: 1px solid var(--border-raised);
+  border-radius: var(--radius-menu);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-medium);
+  color: var(--text-strong);
+}
+.ui-toast__action {
+  border-radius: var(--radius-control);
+  color: var(--text-strong);
 }

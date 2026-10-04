@@ -1,5 +1,5 @@
 import type React from "react";
-import { Globe, Minus, Settings, X } from "lucide-react";
+import { Building, Globe, Image, Minus, Settings, Sparkles, X } from "lucide-react";
 import {
   AttachButton,
   Button,
@@ -13,9 +13,12 @@ import {
   SearchField,
   Segment,
   Select,
+  SettingsRailItem,
   Switch,
   Tab,
   IconButton,
+  MenuItemStatic,
+  NavItem,
   RowMenuTrigger,
   SendButton,
   StepperButton,
@@ -145,5 +148,35 @@ export const RENDERERS: Record<string, (state: DemoState) => React.ReactNode> = 
     <DetailTag icon={Globe} removeLabel="Remove socialpaint.ai/careers" data-demo-state={demo(s)}>
       socialpaint.ai/careers
     </DetailTag>
+  ),
+  "Nav item": (s) => (
+    <NavItem
+      icon={Sparkles}
+      selected={s === "selected"}
+      className="dev-ui-w-285"
+      data-demo-state={demo(s)}
+    >
+      Generate
+    </NavItem>
+  ),
+  "Settings rail item": (s) => (
+    <SettingsRailItem
+      icon={Building}
+      selected={s === "selected"}
+      className="dev-ui-w-200"
+      data-demo-state={demo(s)}
+    >
+      Workspace
+    </SettingsRailItem>
+  ),
+  "Menu item": (s) => (
+    <MenuItemStatic
+      icon={Image}
+      selected={s === "selected"}
+      className="dev-ui-w-288"
+      data-demo-state={s === "focus" ? "hover" : demo(s)}
+    >
+      Photo
+    </MenuItemStatic>
   ),
 };

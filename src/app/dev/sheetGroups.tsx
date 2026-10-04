@@ -1,7 +1,25 @@
 import React from "react";
-import { Download, Globe, Loader2, Minus, Settings, X } from "lucide-react";
+import {
+  BarChart3,
+  Building,
+  Download,
+  FileText,
+  Globe,
+  Image,
+  Link,
+  Loader2,
+  Minus,
+  Paintbrush,
+  Pencil,
+  Settings,
+  Sparkles,
+  Trash2,
+  Users,
+  X,
+} from "lucide-react";
 import {
   AttachButton,
+  Avatar,
   Button,
   Chip,
   ChoiceChip,
@@ -16,10 +34,21 @@ import {
   SearchField,
   SegmentedControl,
   Select,
+  SettingsRailItem,
   Switch,
   Tabs,
   TextArea,
+  Toast,
+  Tooltip,
   IconButton,
+  Menu,
+  MenuDivider,
+  MenuItem,
+  MenuItemStatic,
+  MenuLabel,
+  MenuLabelStatic,
+  MenuPanel,
+  NavItem,
   RowMenuTrigger,
   SendButton,
   Stepper,
@@ -84,6 +113,10 @@ export const SHEET_GROUPS: SheetGroup[] = [
   {
     title: "Chips and tags",
     render: () => <ChipsGroup />,
+  },
+  {
+    title: "Navigation, menus and overlays",
+    render: () => <NavigationGroup />,
   },
 ];
 
@@ -262,6 +295,87 @@ function ChipsGroup() {
         ))}
         <Tag kind="filter">Hiring</Tag>
         <Tag kind="missing">Location</Tag>
+      </div>
+    </>
+  );
+}
+
+const NAV = [
+  { id: "templates", label: "Brand Templates", icon: Paintbrush },
+  { id: "generate", label: "Generate", icon: Sparkles },
+  { id: "insights", label: "Insights & Analytics", icon: BarChart3 },
+];
+const RAIL = [
+  { id: "workspace", label: "Workspace", icon: Building },
+  { id: "people", label: "People", icon: Users },
+  { id: "sharing", label: "Sharing", icon: Link },
+];
+
+function NavigationGroup() {
+  const [page, setPage] = React.useState("generate");
+  const [section, setSection] = React.useState("workspace");
+  const [attach, setAttach] = React.useState("photo");
+  return (
+    <>
+      <div className="dev-ui-sheet__panel">
+        <div className="dev-ui-w-285 dev-ui-sheet__stack">
+          {NAV.map((n) => (
+            <NavItem
+              key={n.id}
+              icon={n.icon}
+              selected={page === n.id}
+              onClick={() => setPage(n.id)}
+            >
+              {n.label}
+            </NavItem>
+          ))}
+        </div>
+        <div className="dev-ui-sheet__stack">
+          <Avatar initials="AS" size="lg" label="Acme Studios" />
+          <Avatar initials="AS" />
+          <Avatar initials="AS" shape="square" />
+        </div>
+        <Menu trigger={<RowMenuTrigger label="More actions" />} align="end">
+          <MenuLabel>Template</MenuLabel>
+          <MenuItem icon={Pencil}>Rename</MenuItem>
+          <MenuItem icon={FileText} meta="Optional">
+            Details
+          </MenuItem>
+          <MenuDivider />
+          <MenuItem icon={Trash2}>Delete</MenuItem>
+        </Menu>
+        <MenuPanel>
+          <MenuLabelStatic>Upload</MenuLabelStatic>
+          {["photo", "document", "website"].map((id) => (
+            <MenuItemStatic
+              key={id}
+              icon={id === "photo" ? Image : id === "document" ? FileText : Globe}
+              selected={attach === id}
+            >
+              {id[0].toUpperCase() + id.slice(1)}
+            </MenuItemStatic>
+          ))}
+        </MenuPanel>
+      </div>
+      <div className="dev-ui-sheet__line">
+        <div className="dev-ui-w-200 dev-ui-sheet__stack">
+          {RAIL.map((r) => (
+            <SettingsRailItem
+              key={r.id}
+              icon={r.icon}
+              selected={section === r.id}
+              onClick={() => setSection(r.id)}
+            >
+              {r.label}
+            </SettingsRailItem>
+          ))}
+        </div>
+        <Tooltip label="Tue, Sep 8" value="56 exports" />
+        <Toast
+          message={"Added \u201cCustom 1\u201d"}
+          actionLabel="Undo"
+          onAction={() => setAttach("photo")}
+        />
       </div>
     </>
   );
