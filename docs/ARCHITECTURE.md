@@ -270,6 +270,14 @@ file's Interaction states table. Screens move onto the primitives in the phase t
 rebuilds them (`docs/design/new-look/PLAN.md`); the `.sp-btn`, `.sp-input` and
 `.sp-chat-*` classes stay until nothing uses them.
 
+The shell is the sidebar (`src/app/components/Sidebar.tsx`: the Figma Sidebar component,
+expanded or collapsed, built on the primitives and styled in `src/styles/shell.css`) and
+the page header (`layout/Page.tsx`: a title and its actions). Settings opens from the
+account gear and holds People (`/people` and `/settings/team` redirect there), workspace
+switching (the Workspaces card) and sign out; on the local backend the dev role switch
+sits in `DevBackendBanner`. What each role reaches is `screenFor` (`src/app/router.tsx`)
+and `settingsSections.ts`, pinned by `src/app/routes.test.ts`.
+
 ## PNG export
 
 `renderSchemaBlob` (src/lib/render/exportPng.ts) is THE rasterization path —
