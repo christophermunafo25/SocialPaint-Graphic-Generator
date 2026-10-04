@@ -1,0 +1,90 @@
+/* ==========================================================================
+   Primitives: one component per Master component in the Figma file "Master
+   UX-UI" (page Master UI Elements, 24:674), with their interaction states.
+   The React side is src/app/components/primitives/. Values come from
+   docs/design/new-look/PHASE-2-COMPONENTS.md; states from RULES.md §6 and
+   the Interaction states table (105:641).
+
+   Every rule here reads semantic tokens, radius and spacing tokens, the
+   elevation composites and the .t-* classes from tokens.css. Nothing here
+   declares a token, so tokens:check stays green; component-local custom
+   properties start with --_ so they can never collide with one.
+
+   [data-demo-state] pairs every state selector so /dev/ui can show a state
+   without a pointer or keyboard. Only /dev/ui sets it.
+   ========================================================================== */
+
+/* ── Shared state mechanics ─────────────────────────────────────────────────
+   Fill and tint: a component sets --_fill (its base) and, where they differ
+   from the neutral pair, --_hover and --_pressed. Hover and pressed lay the
+   tint over the fill and change nothing else. An open menu holds the
+   pressed tint. A selected item ([data-selected]) keeps its look on hover. */
+.ui-tint {
+  --_fill: transparent;
+  --_tint: transparent;
+  background: linear-gradient(var(--_tint), var(--_tint)), var(--_fill);
+}
+.ui-tint:not(:disabled, [aria-disabled="true"], [data-selected]):hover,
+.ui-tint[data-demo-state="hover"] {
+  --_tint: var(--_hover, var(--state-hover));
+}
+.ui-tint:not(:disabled, [aria-disabled="true"], [data-selected]):active,
+.ui-tint[data-demo-state="pressed"],
+.ui-tint[aria-expanded="true"],
+.ui-tint[data-demo-state="open"] {
+  --_tint: var(--_pressed, var(--state-pressed));
+}
+
+/* Disabled is 40% with no hover (the Stepper button sets 0.32). */
+.ui-tint:disabled,
+.ui-tint[aria-disabled="true"],
+.ui-disabled {
+  opacity: var(--_disabled-opacity, 0.4);
+  cursor: default;
+}
+
+/* Focus. The default is the global ring (socialpaint.css :focus-visible):
+   --focus-width of --ring at --focus-offset. .ui-ring repeats it for the
+   demo state. .ui-ring-tight draws it against the edge, composed with any
+   shadow the component carries (--_shadow); the transparent outline is the
+   forced-colors fallback. .ui-ring-none is for text fields, whose focus is
+   the caret alone. */
+.ui-ring[data-demo-state="focus"] {
+  outline: var(--focus-width) solid var(--ring);
+  outline-offset: var(--focus-offset);
+}
+.ui-ring-tight {
+  box-shadow: var(--_shadow, 0 0 0 0 transparent);
+}
+.ui-ring-tight:focus-visible,
+.ui-ring-tight[data-demo-state="focus"] {
+  outline: 2px solid transparent;
+  outline-offset: 0;
+  box-shadow:
+    0 0 0 var(--focus-width) var(--ring),
+    var(--_shadow, 0 0 0 0 transparent);
+}
+.ui-ring-none:focus-visible {
+  outline: none;
+}
+
+/* Every primitive: no inherited box model surprises, and labels never wrap
+   (house rule: one-line button text). */
+.ui-reset {
+  box-sizing: border-box;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-decoration: none;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+button.ui-reset:not(:disabled, [aria-disabled="true"]) {
+  cursor: pointer;
+}
+.ui-icon {
+  flex: none;
+  display: block;
+}

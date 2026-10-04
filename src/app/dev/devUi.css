@@ -1,0 +1,167 @@
+/* /dev/ui only (development builds). Lays out the Interaction states table
+   to the frame's measurements (Figma 105:641; PHASE-2-COMPONENTS.md Part C,
+   "Page layout") and the component sheet under it. Tokens only. */
+
+.dev-ui {
+  min-height: 100vh;
+  background: var(--surface-page);
+  color: var(--text-strong);
+}
+
+/* ── The table (3172 wide, like the frame) ── */
+.dev-ui-states {
+  box-sizing: border-box;
+  width: 3172px;
+  /* The frame's padding is 64, a raw value (105:641). */
+  padding: 64px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+  background: var(--surface-page);
+  color: var(--text-strong);
+}
+.dev-ui-states h1,
+.dev-ui-states h2,
+.dev-ui-states p {
+  margin: 0;
+}
+.dev-ui-states__header {
+  width: 1100px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+.dev-ui-states__rules {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  color: var(--text-secondary);
+}
+.dev-ui-table {
+  display: flex;
+  flex-direction: column;
+}
+.dev-ui-row {
+  display: flex;
+  gap: var(--space-md);
+}
+.dev-ui-row__label {
+  box-sizing: border-box;
+  flex: none;
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xs);
+  padding: var(--space-sm) 0;
+}
+.dev-ui-row__label--head {
+  padding: 0 0 var(--space-xs);
+  color: var(--text-secondary);
+}
+.dev-ui-row__label--family {
+  /* 40 above the family title, as drawn. */
+  padding: 40px 0 var(--space-sm);
+}
+.dev-ui-row__caption {
+  width: 284px;
+  color: var(--text-secondary);
+  white-space: normal;
+}
+.dev-ui-row__mode {
+  box-sizing: border-box;
+  flex: none;
+  width: 1348px;
+  display: flex;
+  gap: var(--space-xs);
+  padding: var(--space-2xs) var(--space-sm);
+  background: var(--surface-page);
+  color: var(--text-strong);
+}
+.dev-ui-row__mode--head {
+  flex-direction: column;
+  gap: var(--space-2xs);
+  padding: var(--space-sm) var(--space-sm) var(--space-xs);
+}
+.dev-ui-row__states {
+  display: flex;
+  gap: var(--space-xs);
+  color: var(--text-secondary);
+}
+.dev-ui-row__states > * {
+  width: 320px;
+}
+
+.dev-ui-cell {
+  box-sizing: border-box;
+  flex: none;
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* The cell's gap is 10, a raw value (105:672). */
+  gap: 10px;
+  padding: var(--space-sm) var(--space-sm) var(--space-xs);
+  border-radius: var(--radius-media-plate);
+}
+.dev-ui-cell[data-surface="raised"] {
+  background: var(--surface-raised);
+}
+.dev-ui-cell[data-surface="page"] {
+  background: var(--surface-page);
+}
+.dev-ui-cell[data-surface="sunken"] {
+  background: var(--surface-sunken);
+}
+.dev-ui-cell[data-surface="track"] {
+  background: var(--control-track);
+}
+.dev-ui-cell--empty {
+  justify-content: center;
+}
+.dev-ui-cell__element {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 100%;
+}
+.dev-ui-cell__caption {
+  color: var(--text-secondary);
+}
+
+/* ── The component sheet ── */
+.dev-ui-sheet {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  max-width: 1600px;
+}
+.dev-ui-sheet__mode {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  padding: var(--space-xl);
+  background: var(--surface-page);
+  color: var(--text-strong);
+}
+.dev-ui-sheet__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+.dev-ui-sheet__group > h2 {
+  margin: 0;
+}
+.dev-ui-sheet__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+.dev-ui-sheet__panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+}

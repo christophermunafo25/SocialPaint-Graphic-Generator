@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* Screenshot loop for the new look. See docs/design/new-look/README.md.
  *
- *   node scripts/new-look/shots.mjs capture <dir> [--only a,b] [--themes light,dark] [--base URL]
+ *   node scripts/new-look/shots.mjs capture <dir> [--only a,b] [--themes light,dark] [--base URL] [--width 1440]
  *   node scripts/new-look/shots.mjs compare <beforeDir> <afterDir> [outDir]
  *   node scripts/new-look/shots.mjs props <file.json> [--names earlier.json] [--base URL]
  *   node scripts/new-look/shots.mjs props-compare <a.json> <b.json>
@@ -9,8 +9,10 @@
  * capture and props start their own Vite dev server on the local backend
  * (Supabase env blanked, so .env is ignored) unless --base points at one,
  * seed it with fixtures/dev-workspace.json, and drive Chromium through
- * Playwright. Every route is saved at 1440 wide, full page, in both themes;
- * "onboarding" is the first screen of a browser with no workspace.
+ * Playwright. Every route is saved at 1440 wide (or --width), full page, in
+ * both themes; "onboarding" is the first screen of a browser with no
+ * workspace, and "dev-ui" is the primitives sheet, whose Interaction states
+ * table is 3172 wide (capture it with --width 3172).
  *
  * compare writes a heatmap per changed screen (changed pixels in magenta over
  * the dimmed new screen) and prints the share of pixels that moved.
@@ -60,6 +62,7 @@ const ROUTES = [
   ["settings-account", "/settings/account"],
   ["settings-advanced", "/settings/advanced"],
   ["onboarding", "/templates", { fresh: true }],
+  ["dev-ui", "/dev/ui"],
 ];
 
 // ---------------------------------------------------------------- args
@@ -114,7 +117,8 @@ const launch = () =>
   chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 
 async function newContext(browser, theme, { fresh = false } = {}) {
-  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const width = Number(flags.width ?? 1440);
+  const context = await browser.newContext({ viewport: { width, height: 900 } });
   const seed = fresh ? {} : fixture.localStorage;
   const entries = Object.entries(seed).map(([k, v]) => [
     k,
