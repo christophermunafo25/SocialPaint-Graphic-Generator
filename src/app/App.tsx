@@ -3,10 +3,15 @@ import { DevAuthProvider, useAuth } from "@/lib/auth/AuthContext";
 import { SupabaseAuthProvider } from "@/lib/auth/SupabaseAuthProvider";
 import { stores } from "@/lib/stores";
 import { AuthPage } from "./components/auth/AuthPage";
-import { PeopleAdmin } from "./components/admin/PeopleAdmin";
 import { BrandProvider, useBrand } from "@/lib/brand/BrandContext";
 import { ColorSchemeProvider } from "@/lib/colorScheme";
-import { RouterProvider, generatePageKey, templateChatPageKey, useRouter } from "./router";
+import {
+  RouterProvider,
+  generatePageKey,
+  screenFor,
+  templateChatPageKey,
+  useRouter,
+} from "./router";
 import { readCanvaReturn, takeCanvaConnectPending } from "@/lib/canvaReturn";
 import { AppShell } from "./components/AppShell";
 import { DevBackendBanner } from "./components/DevBackendBanner";
@@ -157,7 +162,9 @@ function Screen() {
     return <OnboardingWizard firstRun={!company} />;
   }
 
-  const adminOnly = (node: React.ReactNode) => (role === "admin" ? node : <Portal />);
+  // A member on an admin-only route sees the gallery, with the address left
+  // as it is (screenFor, router.tsx).
+  const gated = screenFor(route, role) !== route.name;
 
   return (
     <AppShell>
@@ -200,9 +207,9 @@ function Screen() {
           />
         )}
       >
-        {route.name === "portal" && <Portal />}
+        {(gated || route.name === "portal") && <Portal />}
         {route.name === "template" && <TemplateUsePage templateId={route.templateId} />}
-        {route.name === "bulk" && adminOnly(<BulkFillPage templateId={route.templateId} />)}
+        {!gated && route.name === "bulk" && <BulkFillPage templateId={route.templateId} />}
         {route.name === "generate" && (
           // Keyed per chat (PROMPT §11.1): opening another chat, or leaving
           // one for a new chat, starts from fresh state. Every new chat
@@ -233,25 +240,25 @@ function Screen() {
           />
         )}
         {route.name === "generateHistory" && <GenerateHistoryPage />}
-        {route.name === "adminTemplates" && adminOnly(<AdminTemplates />)}
-        {route.name === "builder" &&
-          adminOnly(
-            // Keyed: the builder's saved-id and wizard state assume one
-            // template per mount, and create-a-version navigates builder →
-            // builder (the freshly duplicated copy).
-            <TemplateBuilder
-              key={route.templateId ?? "new"}
-              templateId={route.templateId}
-              reflowParam={route.reflow ?? null}
-            />,
-          )}
-        {route.name === "brandStudio" &&
-          adminOnly(<BrandStudio category={route.category} surface={route.surface} />)}
-        {route.name === "dashboard" &&
-          adminOnly(<Dashboard range={route.range} metric={route.metric} />)}
-        {route.name === "people" && adminOnly(<PeopleAdmin />)}
-        {/* NOT adminOnly: members reach Account (theme, sign out). The page
-            itself gates the admin sections and lands a member on Account. */}
+        {!gated && route.name === "adminTemplates" && <AdminTemplates />}
+        {!gated && route.name === "builder" && (
+          // Keyed: the builder's saved-id and wizard state assume one
+          // template per mount, and create-a-version navigates builder →
+          // builder (the freshly duplicated copy).
+          <TemplateBuilder
+            key={route.templateId ?? "new"}
+            templateId={route.templateId}
+            reflowParam={route.reflow ?? null}
+          />
+        )}
+        {!gated && route.name === "brandStudio" && (
+          <BrandStudio category={route.category} surface={route.surface} />
+        )}
+        {!gated && route.name === "dashboard" && (
+          <Dashboard range={route.range} metric={route.metric} />
+        )}
+        {/* Not admin-only: members reach Account (and their workspaces).
+            The page gates its own sections (settingsSections.ts). */}
         {route.name === "settings" && <SettingsAdmin section={route.section} />}
       </ErrorBoundary>
     </AppShell>

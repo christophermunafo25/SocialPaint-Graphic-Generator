@@ -63,8 +63,10 @@ from the platform in migration 0009.)
   styles, and rules.
 - `brand_assets` (logo | font | image; Storage-backed)
 - `company_canvas_presets` — per-workspace canvas-size opt-outs, keyed by
-  `SIZE_CATALOG` ids (`src/lib/templates/platforms.ts`, the single source of
-  size dimension data since 0029; the old `canvas_presets` table is gone).
+  `SIZE_CATALOG` ids. No longer read or written: since the new look's Phase 3
+  every workspace offers the whole catalogue (`src/lib/templates/platforms.ts`,
+  the single source of size dimension data since 0029), and Phase 9 drops the
+  table.
 - `templates` + `template_fields` — the heart of the system; see
   `docs/TEMPLATE_SCHEMA.md`. `templates.variants` (migration 0031) holds the
   template's colourways as one jsonb blob keyed by `field_key`, like
@@ -267,6 +269,14 @@ happy-dom Vitest project. In development, `/dev/ui` renders every primitive and 
 file's Interaction states table. Screens move onto the primitives in the phase that
 rebuilds them (`docs/design/new-look/PLAN.md`); the `.sp-btn`, `.sp-input` and
 `.sp-chat-*` classes stay until nothing uses them.
+
+The shell is the sidebar (`src/app/components/Sidebar.tsx`: the Figma Sidebar component,
+expanded or collapsed, built on the primitives and styled in `src/styles/shell.css`) and
+the page header (`layout/Page.tsx`: a title and its actions). Settings opens from the
+account gear and holds People (`/people` and `/settings/team` redirect there), workspace
+switching (the Workspaces card) and sign out; on the local backend the dev role switch
+sits in `DevBackendBanner`. What each role reaches is `screenFor` (`src/app/router.tsx`)
+and `settingsSections.ts`, pinned by `src/app/routes.test.ts`.
 
 ## PNG export
 

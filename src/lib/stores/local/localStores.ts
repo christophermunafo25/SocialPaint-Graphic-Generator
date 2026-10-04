@@ -156,34 +156,10 @@ export class LocalCompanyStore implements CompanyStore {
   async hasAnyCompany(): Promise<boolean> {
     return readDb().companies.length > 0;
   }
-  // Dimension data lives in SIZE_CATALOG (code); the stored rows only record
-  // which catalogue ids this workspace turned off.
-  async listCanvasSizes(companyId?: string): Promise<CanvasSize[]> {
-    if (!companyId) return SIZE_CATALOG;
-    const disabled = this.disabledSizeIds(companyId);
-    const filtered = SIZE_CATALOG.filter((s) => !disabled.has(s.id));
-    return filtered.length > 0 ? filtered : SIZE_CATALOG;
-  }
-  async listCanvasSizeSettings(
-    companyId: string,
-  ): Promise<Array<{ size: CanvasSize; enabled: boolean }>> {
-    const disabled = this.disabledSizeIds(companyId);
-    return SIZE_CATALOG.map((size) => ({ size, enabled: !disabled.has(size.id) }));
-  }
-  async setCanvasSizeEnabled(companyId: string, sizeId: string, enabled: boolean): Promise<void> {
-    mutate((db) => {
-      const rows = db.companyCanvasPresets as CompanyPresetRec[];
-      const i = rows.findIndex((r) => r.companyId === companyId && r.presetId === sizeId);
-      if (i >= 0) rows[i] = { ...rows[i], enabled };
-      else rows.push({ companyId, presetId: sizeId, enabled });
-    });
-  }
-  private disabledSizeIds(companyId: string): Set<string> {
-    return new Set(
-      (readDb().companyCanvasPresets as CompanyPresetRec[])
-        .filter((r) => r.companyId === companyId && !r.enabled)
-        .map((r) => r.presetId),
-    );
+  // Every workspace offers the whole catalogue (new look, Phase 3); the
+  // stored companyCanvasPresets rows are no longer read.
+  async listCanvasSizes(_companyId?: string): Promise<CanvasSize[]> {
+    return SIZE_CATALOG;
   }
 }
 

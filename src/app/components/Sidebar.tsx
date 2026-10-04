@@ -2,41 +2,37 @@ import React, { useEffect, useState } from "react";
 import {
   BarChart3,
   Frame,
-  LogOut,
-  Moon,
   Paintbrush,
   PanelLeft,
   PencilRuler,
   Settings,
   Sparkles,
-  Sun,
-  Users,
 } from "lucide-react";
-import { stores } from "@/lib/stores";
-import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useColorScheme } from "@/lib/colorScheme";
 import { useRouter, type Route } from "../router";
 import { useChrome } from "./layout/ChromeContext";
-import { GooeyNavPill } from "./GooeyNavPill";
 import { BrandLockup, BrandMark } from "./BrandMark";
+import { Tooltip } from "./Tooltip";
+import { Avatar, IconButton, NavItem, ThemeToggle } from "./primitives";
 
 // Re-exported so existing `import { BrandMark } from "../Sidebar"` call sites
 // keep working; the components themselves live in BrandMark.tsx.
 export { BrandMark };
 
-interface NavItem {
+interface NavDef {
   label: string;
   route: Route;
   Icon: typeof Paintbrush;
   adminOnly: boolean;
-  /** Route names that keep this item highlighted. */
-  matches: string[];
+  /** Route names that keep this item selected. */
+  matches: Route["name"][];
 }
 
-/** Figma order: Brand templates · Templates · Insights & Analytics ·
- * Brand Studio · People · Settings & Admin. Members see only the first. */
-const NAV: NavItem[] = [
+/** The five nav items of the Sidebar (Figma 56:646), in its order. People
+ * and Settings live in Settings, opened from the account gear. A member
+ * sees the first two. */
+const NAV: NavDef[] = [
   {
     label: "Brand Templates",
     route: { name: "portal" },
@@ -72,187 +68,98 @@ const NAV: NavItem[] = [
     adminOnly: true,
     matches: ["brandStudio"],
   },
-  { label: "People", route: { name: "people" }, Icon: Users, adminOnly: true, matches: ["people"] },
-  {
-    // Members reach Settings too — the page lands them on Account (theme,
-    // sign out) and hides the admin sections.
-    label: "Settings & Admin",
-    route: { name: "settings" },
-    Icon: Settings,
-    adminOnly: false,
-    matches: ["settings"],
-  },
 ];
 
-/** Two-state light/dark quick toggle for the sidebar header. Reads and
- * writes the same ColorScheme state as Settings' System/Light/Dark control —
- * the two always agree; Settings remains the full three-way control. */
-function QuickThemeToggle() {
-  const { resolved, setScheme } = useColorScheme();
-  const next = resolved === "dark" ? "light" : "dark";
-  return (
-    <button
-      onClick={() => setScheme(next)}
-      title={`Switch to ${next} mode`}
-      aria-label={`Switch to ${next} mode`}
-      className="sp-icon-btn sp-icon-btn--theme"
-    >
-      {resolved === "dark" ? (
-        <Moon style={{ width: 15, height: 15 }} strokeWidth={1.5} />
-      ) : (
-        <Sun style={{ width: 15, height: 15 }} strokeWidth={1.5} />
-      )}
-    </button>
-  );
+/** The nav items a role sees. */
+export function navFor(role: "admin" | "member"): NavDef[] {
+  return NAV.filter((item) => role === "admin" || !item.adminOnly);
 }
 
-/** Workspace switcher + dev role toggle + user row — shared between the
- * desktop sidebar's bottom block and the mobile dropdown. */
-function AccountBlock({ onNavigate }: { onNavigate(route: Route): void }) {
-  const { company, companies, role, user, isDevAuth, setCompany, setRole, signOut, backend } =
-    useAuth();
-  const initials = (user?.email ?? company?.name ?? "?")
+/** The light and dark quick toggle (Figma 102:574). It writes the same
+ * colour scheme Settings' System / Light / Dark control does, so the two
+ * always agree. The glyph follows the theme in CSS. */
+function SidebarThemeToggle() {
+  const { resolved, setScheme } = useColorScheme();
+  const next = resolved === "dark" ? "light" : "dark";
+  return <ThemeToggle label={`Switch to ${next} mode`} onClick={() => setScheme(next)} />;
+}
+
+function useAccount() {
+  const { company, role, user } = useAuth();
+  const source = user?.email ?? company?.name ?? "?";
+  const initials = source
     .split(/[@\s._-]+/)
     .filter(Boolean)
     .slice(0, 2)
     .map((s) => s[0]!.toUpperCase())
     .join("");
-  const displayName = user
+  const name = user
     ? user.email
         .split("@")[0]
         .replace(/[._-]+/g, " ")
         .replace(/\b\w/g, (c) => c.toUpperCase())
     : (company?.name ?? "Workspace");
+  // The dev backend has no accounts: the second line says where you are.
+  const detail = user?.email ?? `${company?.name ?? "Workspace"} · ${role}`;
+  return { initials, name, detail };
+}
 
-  return (
-    <>
-      {(companies.length > 1 || isDevAuth) && (
-        <select
-          value={company?.id ?? ""}
-          onChange={(e) => {
-            if (e.target.value === "__new__") onNavigate({ name: "onboarding" });
-            else void setCompany(e.target.value);
-          }}
-          className="sp-input mb-2"
-          style={{ fontSize: "var(--type-caption-size)", padding: "6px 10px" }}
-          aria-label="Workspace"
-        >
-          {companies.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-          <option value="__new__">+ Create company…</option>
-        </select>
-      )}
-      {isDevAuth && (
-        <div
-          className="sp-tabstrip mb-3"
-          data-stretch
-          role="group"
-          aria-label="Dev role (localStorage backend)"
-        >
-          {(["admin", "member"] as const).map((r) => (
-            <button
-              key={r}
-              onClick={() => setRole(r)}
-              aria-pressed={role === r}
-              className="sp-tabstrip__tab py-1 capitalize"
-              style={{ fontSize: 11 }}
-            >
-              {r}
-            </button>
-          ))}
-        </div>
-      )}
-      <div className="flex items-center gap-3">
-        <span
-          className="sp-avatar flex items-center justify-center flex-shrink-0"
-          title={`${displayName}${company ? ` · ${company.name}` : ""} · ${role}${backend === "local" ? " · dev backend" : ""}`}
-          style={{
-            width: 38,
-            height: 38,
-            fontSize: "var(--type-caption-size)",
-            fontWeight: "var(--weight-ui)",
-          }}
-        >
-          {initials}
-        </span>
-        <span className="min-w-0 flex-1 text-left">
-          <span
-            className="block truncate"
-            title={displayName}
-            style={{
-              fontSize: "var(--type-label-size)",
-              lineHeight: 1.25,
-              fontWeight: 500,
-              color: "var(--sb-fg-active)",
-            }}
-          >
-            {displayName}
-          </span>
-          <span
-            className="block truncate"
-            title={user?.email ?? `${company?.name ?? "Workspace"} · ${role}`}
-            style={{ fontSize: 11, lineHeight: 1.3, color: "var(--sb-fg)" }}
-          >
-            {user?.email ?? `${company?.name ?? "Workspace"} · ${role}`}
-          </span>
-        </span>
-        {signOut && (
-          <button
-            onClick={() => void signOut()}
-            title="Sign out"
-            aria-label="Sign out"
-            className="sp-icon-btn"
-            // The collapse button's neutral hover on a 28px control square.
-            style={{ width: 28, height: 28, borderRadius: "var(--radius-control)" }}
-          >
-            <LogOut style={{ width: 14, height: 14 }} strokeWidth={1.5} />
-          </button>
-        )}
+/** The Account block (Figma 56:1330): avatar, name and email, and the gear
+ * that opens Settings, selected while Settings shows. Stacked in the
+ * collapsed rail (189:2493). */
+function SidebarAccount({
+  collapsed,
+  onOpenSettings,
+}: {
+  collapsed: boolean;
+  onOpenSettings(): void;
+}) {
+  const { route } = useRouter();
+  const { initials, name, detail } = useAccount();
+  const inSettings = route.name === "settings";
+  const gear = (
+    <IconButton
+      variant="ghost"
+      icon={Settings}
+      label="Settings"
+      selected={inSettings}
+      aria-current={inSettings ? "page" : undefined}
+      onClick={onOpenSettings}
+    />
+  );
+  if (collapsed) {
+    return (
+      <div className="sp-shell-account" data-collapsed>
+        <Avatar initials={initials} size="lg" label={name} />
+        {gear}
       </div>
-    </>
+    );
+  }
+  return (
+    <div className="sp-shell-account">
+      <Avatar initials={initials} size="lg" />
+      <div className="sp-shell-account__text">
+        <span className="t-label-s" title={name}>
+          {name}
+        </span>
+        <span className="t-caption-xs sp-shell-account__detail" title={detail}>
+          {detail}
+        </span>
+      </div>
+      {gear}
+    </div>
   );
 }
 
-/** App-shell navigation. Desktop (≥1024px): the persistent left sidebar
- * (Figma node 13:28) with a collapsible icon rail. Mobile: no rail at all —
- * a slim top bar with the brand and a menu button; the nav drops down
- * vertically from the top as a panel over a scrim. SocialPaint product UI —
- * tenant brand kits never re-color it. */
+/** App-shell navigation. Desktop (1024 and wider): the floating Sidebar
+ * (Figma 56:646), expanded or collapsed to its 76 rail. Narrower: no rail,
+ * a slim top bar with the brand and a menu button, the nav dropping down
+ * over a scrim (today's behavior; below desktop the new look changes only
+ * its contents). SocialPaint product UI: tenant brand kits never recolour
+ * it. */
 export function Sidebar() {
-  const { role, company, backend } = useAuth();
+  const { role } = useAuth();
   const { route, navigate } = useRouter();
-  const mobileNavRef = React.useRef<HTMLDivElement>(null);
-  const railNavRef = React.useRef<HTMLElement>(null);
-
-  // Right-aligned nav counts — only where a REAL count exists: Templates
-  // (admin), People (Supabase backend only; the dev backend has no real
-  // accounts, and a fabricated 0 would be noise). Refreshes on navigation.
-  const countsState = useAsync<Record<string, number>>(async () => {
-    if (!company || role !== "admin") return {};
-    const out: Record<string, number> = {};
-    await Promise.all([
-      stores.templates
-        .listAll(company.id)
-        .then((l) => {
-          out.Templates = l.length;
-        })
-        .catch(() => undefined),
-      backend === "supabase"
-        ? stores.people
-            .list(company.id)
-            .then((l) => {
-              out.People = l.length;
-            })
-            .catch(() => undefined)
-        : Promise.resolve(),
-    ]);
-    return out;
-  }, [company, role, backend, route.name]);
-  const countFor = (label: string): number | null =>
-    countsState.status === "ready" ? (countsState.data[label] ?? null) : null;
   const [isNarrow, setIsNarrow] = useState(() => window.matchMedia("(max-width: 1023px)").matches);
   const [menuOpen, setMenuOpen] = useState(false);
   // Collapse state lives in ChromeContext: the Template Builder borrows the
@@ -281,10 +188,11 @@ export function Sidebar() {
     navigate(target);
     setMenuOpen(false);
   };
+  const home: Route = { name: role === "admin" ? "adminTemplates" : "portal" };
+  const items = navFor(role);
+  const openSettings = () => go({ name: "settings" });
 
-  const items = NAV.filter((item) => role === "admin" || !item.adminOnly);
-
-  // ── Mobile: top bar + drop-down navigation ──────────────────────────────
+  // ── Narrow: top bar + drop-down navigation ──────────────────────────────
   if (isNarrow) {
     return (
       <>
@@ -312,14 +220,11 @@ export function Sidebar() {
           }}
         >
           <div className="flex items-center justify-between px-4" style={{ height: 56 }}>
-            <button
-              onClick={() => go({ name: role === "admin" ? "adminTemplates" : "portal" })}
-              aria-label="SocialPaint home"
-            >
+            <button onClick={() => go(home)} aria-label="SocialPaint home">
               <BrandLockup height={18} />
             </button>
             <div className="flex items-center gap-2">
-              <QuickThemeToggle />
+              <SidebarThemeToggle />
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
                 aria-expanded={menuOpen}
@@ -373,26 +278,20 @@ export function Sidebar() {
                   overflowY: "auto",
                 }}
               >
-                <div ref={mobileNavRef} className="relative flex flex-col gap-1.5">
-                  <GooeyNavPill containerRef={mobileNavRef} watch={route.name} />
-                  {items.map(({ label, route: target, Icon, matches }) => {
-                    const active = matches.includes(route.name);
-                    return (
-                      <button
-                        key={label}
-                        onClick={() => go(target)}
-                        className="sp-sidebar-item"
-                        data-active={active}
-                        aria-current={active ? "page" : undefined}
-                      >
-                        <Icon style={{ width: 17, height: 17, flexShrink: 0 }} strokeWidth={1.5} />
-                        {label}
-                      </button>
-                    );
-                  })}
+                <div className="sp-shell-nav">
+                  {items.map(({ label, route: target, Icon, matches }) => (
+                    <NavItem
+                      key={label}
+                      icon={Icon}
+                      selected={matches.includes(route.name)}
+                      onClick={() => go(target)}
+                    >
+                      {label}
+                    </NavItem>
+                  ))}
                 </div>
                 <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--sb-border)" }}>
-                  <AccountBlock onNavigate={go} />
+                  <SidebarAccount collapsed={false} onOpenSettings={openSettings} />
                 </div>
               </nav>
             </div>
@@ -402,140 +301,73 @@ export function Sidebar() {
     );
   }
 
-  // ── Desktop: persistent left sidebar ────────────────────────────────────
+  // ── Desktop: the floating Sidebar ───────────────────────────────────────
   const collapsed = sidebarCollapsed;
+  const collapseButton = (
+    <IconButton
+      variant="ghost"
+      icon={PanelLeft}
+      label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+      aria-expanded={!collapsed}
+      onClick={() => setSidebarCollapsed(!collapsed)}
+    />
+  );
   return (
-    <div
-      className="flex-shrink-0"
-      style={{
-        // Floating panel: inset --sb-inset from the top, left, and bottom.
-        width: `calc(${collapsed ? "var(--sb-width-collapsed)" : "var(--sb-width)"} + var(--sb-inset))`,
-        padding: "var(--sb-inset) 0 var(--sb-inset) var(--sb-inset)",
-        transition: "width var(--dur-panel) var(--ease)",
-      }}
-    >
-      <aside
-        className="sp-sidebar flex flex-col sticky"
-        style={{
-          top: "var(--sb-inset)",
-          width: collapsed ? "var(--sb-width-collapsed)" : "var(--sb-width)",
-          height: "calc(100vh - 2 * var(--sb-inset))",
-          padding: collapsed ? "20px 12px" : "20px",
-          transition: "width var(--dur-panel) var(--ease)",
-          zIndex: 30,
-        }}
-      >
-        {/* Header row: logo + utility icon buttons (theme quick toggle,
-            collapse), vertically centered with the logo. */}
-        <div
-          className={`flex items-center ${collapsed ? "justify-center" : "justify-between"} mb-6`}
-        >
-          {!collapsed && (
+    <div className="sp-shell-sidebar" data-collapsed={collapsed || undefined}>
+      <aside className="sp-shell-panel" aria-label="Sidebar">
+        {collapsed ? (
+          <>
+            <div className="sp-shell-panel__header">{collapseButton}</div>
             <button
-              onClick={() => go({ name: role === "admin" ? "adminTemplates" : "portal" })}
-              title="Home"
+              className="sp-shell-mark"
+              onClick={() => go(home)}
+              aria-label="SocialPaint home"
+            >
+              <BrandMark width={24} />
+            </button>
+          </>
+        ) : (
+          <div className="sp-shell-panel__header">
+            <button
+              className="sp-shell-logo"
+              onClick={() => go(home)}
               aria-label="SocialPaint home"
             >
               <BrandLockup height={24} />
             </button>
-          )}
-          <div className="flex items-center gap-2">
-            {!collapsed && <QuickThemeToggle />}
-            <button
-              onClick={() => setSidebarCollapsed(!collapsed)}
-              title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-              className="sp-icon-btn"
-            >
-              <PanelLeft style={{ width: 15, height: 15 }} strokeWidth={1.5} />
-            </button>
+            <div className="sp-shell-panel__utility">
+              <SidebarThemeToggle />
+              {collapseButton}
+            </div>
           </div>
-        </div>
-        {collapsed && (
-          <button
-            onClick={() => go({ name: role === "admin" ? "adminTemplates" : "portal" })}
-            title="SocialPaint home"
-            className="mx-auto mb-6"
-            style={{ color: "var(--text-primary)" }}
-          >
-            <BrandMark width={26} />
-          </button>
         )}
 
-        {/* Nav — scrolls on short viewports so the user block stays reachable. */}
-        <nav
-          className="flex flex-col flex-1 min-h-0 overflow-y-auto"
-          style={{ gap: 2, position: "relative" }}
-          aria-label="Primary"
-          ref={railNavRef}
-        >
-          <GooeyNavPill containerRef={railNavRef} watch={`${route.name}:${collapsed}`} />
+        {/* Nav: scrolls on short viewports so the account stays reachable. */}
+        <nav className="sp-shell-nav" aria-label="Primary">
           {items.map(({ label, route: target, Icon, matches }) => {
-            const active = matches.includes(route.name);
-            const count = countFor(label);
-            return (
-              <button
+            const item = (
+              <NavItem
                 key={label}
+                icon={Icon}
+                selected={matches.includes(route.name)}
+                showLabel={!collapsed}
                 onClick={() => go(target)}
-                className="sp-sidebar-item"
-                data-active={active}
-                title={collapsed ? label : undefined}
-                aria-current={active ? "page" : undefined}
-                style={collapsed ? { justifyContent: "center", padding: 0 } : undefined}
               >
-                <Icon style={{ width: 18, height: 18, flexShrink: 0 }} strokeWidth={1.5} />
-                {!collapsed && label}
-                {!collapsed && count !== null && (
-                  <span
-                    className="ml-auto"
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 11,
-                      color: active ? "inherit" : "var(--text-muted)",
-                    }}
-                  >
-                    {count}
-                  </span>
-                )}
-              </button>
+                {label}
+              </NavItem>
+            );
+            return collapsed ? (
+              <Tooltip key={label} content={label} placement="right">
+                {item}
+              </Tooltip>
+            ) : (
+              item
             );
           })}
         </nav>
 
-        <div style={{ height: 16 }} />
-
-        {!collapsed ? (
-          <AccountBlock onNavigate={go} />
-        ) : (
-          <div className="flex justify-center">
-            <span
-              className="sp-avatar flex items-center justify-center"
-              style={{
-                width: 34,
-                height: 34,
-                fontSize: 11,
-                fontWeight: "var(--weight-ui)",
-              }}
-            >
-              <CollapsedInitials />
-            </span>
-          </div>
-        )}
+        <SidebarAccount collapsed={collapsed} onOpenSettings={openSettings} />
       </aside>
     </div>
-  );
-}
-
-function CollapsedInitials() {
-  const { company, user } = useAuth();
-  return (
-    <>
-      {(user?.email ?? company?.name ?? "?")
-        .split(/[@\s._-]+/)
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((s) => s[0]!.toUpperCase())
-        .join("")}
-    </>
   );
 }

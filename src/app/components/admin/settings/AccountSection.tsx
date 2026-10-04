@@ -8,6 +8,7 @@ import { useColorScheme, type ColorScheme } from "@/lib/colorScheme";
 import { InlineEdit } from "../../InlineEdit";
 import { SkeletonLines } from "../../Skeleton";
 import { Switch } from "../../Switch";
+import { Button } from "../../primitives";
 import { ControlRow, DevBackendNotice, SettingsCard } from "./settingsShared";
 
 const SCHEMES: Array<{ key: ColorScheme; label: string; Icon: typeof Sun; hint: string }> = [
@@ -96,11 +97,12 @@ export function AccountSection() {
         )}
       </SettingsCard>
 
+      {/* The way out, here since the sidebar lost its button (Figma
+          13:15776 draws it under the cards). */}
       {signOut && (
-        <button onClick={() => void signOut()} className="sp-btn sp-btn-ghost">
-          <LogOut className="w-3.5 h-3.5" />
+        <Button kind="neutralOnPage" icon={LogOut} onClick={() => void signOut()}>
           Sign out
-        </button>
+        </Button>
       )}
     </div>
   );

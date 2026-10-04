@@ -1,0 +1,204 @@
+/* ==========================================================================
+   The shell (new look, Phase 3): the sidebar, page headers and the
+   compositions Phase 3 adds inside Settings, built from the primitives.
+   Measurements are from docs/design/new-look/PHASE-3-SHELL.md. Tokens and
+   .t-* classes only; nothing here declares a token.
+   ========================================================================== */
+
+/* ── Settings › Workspace, Workspaces (13:14698) ── */
+.sp-workspaces {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-workspaces__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) 0;
+  color: var(--text-strong);
+}
+.sp-workspaces__row + .sp-workspaces__row {
+  border-top: 1px solid var(--border-default);
+}
+.sp-workspaces__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* as drawn (13:14707) */
+}
+.sp-workspaces__text > :first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-workspaces__meta {
+  color: var(--text-secondary);
+}
+
+/* ── Sidebar (56:646; collapsed 189:2151, 189:2415) ─────────────────────────
+   A floating panel inset 10 from the viewport's top, left and bottom (none
+   on the right: the page column starts at its edge), sticky to the
+   viewport. Expanded it is 325 wide; collapsed, a 76 rail. */
+.sp-shell-sidebar {
+  box-sizing: border-box;
+  flex: none;
+  width: 335px;
+  padding: 10px 0 10px 10px; /* the frame's inset, as drawn (56:76) */
+}
+.sp-shell-sidebar[data-collapsed] {
+  width: 86px;
+}
+.sp-shell-panel {
+  box-sizing: border-box;
+  position: sticky;
+  top: 10px;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  width: 325px;
+  /* --dev-banner-h: the local backend's warning bar (DevBackendBanner),
+     which the panel stops above; unset everywhere else. */
+  height: calc(100vh - 20px - var(--dev-banner-h, 0px));
+  padding: 20px; /* as drawn (56:77) */
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+  color: var(--text-strong);
+}
+.sp-shell-sidebar[data-collapsed] .sp-shell-panel {
+  width: 76px;
+  padding: 20px var(--space-sm);
+  align-items: center;
+}
+.sp-shell-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 32px;
+}
+.sp-shell-sidebar[data-collapsed] .sp-shell-panel__header {
+  justify-content: center;
+}
+.sp-shell-panel__utility {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+.sp-shell-logo,
+.sp-shell-mark {
+  display: inline-flex;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* The nav takes the free height and scrolls on short viewports, so the
+   account stays reachable. The 4px of padding keeps the rows' 2px-out
+   focus rings inside the scroll box. */
+.sp-shell-nav {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* as drawn (56:98) */
+  margin: calc(-1 * var(--space-3xs));
+  padding: var(--space-3xs);
+  overflow-y: auto;
+}
+.sp-shell-sidebar[data-collapsed] .sp-shell-nav {
+  align-items: center;
+}
+
+/* ── Account (56:1330; stacked in the collapsed rail, 189:2493) ── */
+.sp-shell-account {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+.sp-shell-account[data-collapsed] {
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+.sp-shell-account__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.sp-shell-account__text > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-shell-account__detail {
+  color: var(--text-secondary);
+}
+
+/* ── Page header and page column (every screen; Part A §3) ──
+   The title alone (Title/Page) with the actions right, 36 tall, 24 above
+   the first content. */
+.sp-shell-pagehead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-height: 36px;
+  margin-bottom: var(--space-md);
+  color: var(--text-strong);
+}
+.sp-shell-pagehead > h1 {
+  margin: 0;
+  min-width: 0;
+}
+.sp-shell-pagehead__actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+/* At desktop width the page column starts 45 from the sidebar's edge and
+   45 from the top, as every frame draws it (13:5776; off the scale, kept as
+   drawn). Scoped to the page, so the pre-app shell's --page-pad is
+   untouched; the page's full-bleed bars read the same value. The narrower
+   tiers (32, 24, 16) stay as they are. */
+@media (min-width: 1280px) {
+  .sp-page {
+    --page-pad: 45px;
+    padding-top: 45px;
+  }
+}
+
+/* ── Settings: the rail (8:678) and the section column ──
+   200 wide, 32 from the section column at desktop width; above it on
+   narrow screens. */
+.sp-shell-settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+.sp-shell-settings__rail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* as drawn (13:14649) */
+}
+.sp-shell-settings__section {
+  flex: 1;
+  min-width: 0;
+}
+@media (min-width: 900px) {
+  .sp-shell-settings {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--space-lg);
+  }
+  .sp-shell-settings__rail {
+    flex: none;
+    width: 200px;
+  }
+}

@@ -136,6 +136,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       role: (company && roleByCompany[company.id]) ?? "member",
       user: session?.user ? { id: session.user.id, email: session.user.email ?? "" } : null,
       companies,
+      roleFor: (id: string) => roleByCompany[id] ?? null,
       isDevAuth: false,
       backend: stores.backend,
       setCompany,

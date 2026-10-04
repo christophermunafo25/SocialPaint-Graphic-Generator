@@ -50,7 +50,7 @@ Out of scope until they are designed: the Template Builder, onboarding and the s
 | 6 | Brand Studio | Overview and the six detail pages, with the new cover images committed | Same |
 | 7 | Settings | All seven sections | Same |
 | 8 | Insights | The dashboard and its cards | Same |
-| 9 | Cleanup and QA | Delete the bridge, dead tokens and the old control classes, remove unused packages, add lint rules against raw colors and inline type, a full screenshot, contrast and keyboard pass, update `ARCHITECTURE.md` and the stylesheet header | Nothing legacy left |
+| 9 | Cleanup and QA | Delete the bridge, dead tokens and the old control classes, drop the unread `company_canvas_presets` table (a migration; Phase 3 stopped reading it), remove unused packages, add lint rules against raw colors and inline type, a full screenshot, contrast and keyboard pass, update `ARCHITECTURE.md` and the stylesheet header | Nothing legacy left |
 
 Posting straight to people's own social accounts through connectors comes after the new look; until then LinkedIn stays the one place to post. Behavior changes that need data or product work land in their area's phase, and that phase's prompt specifies them: plan management in Settings (the code has no billing; the Plan card is a placeholder by design), Insights filters by template, member and platform with the month summary, font roles moving from Fonts to Type styles in Brand Studio, authored questions per template field (a `TemplateField` change) in the template chat, and Connectors in the attach menu.
 

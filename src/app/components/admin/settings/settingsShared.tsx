@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { X } from "lucide-react";
 
-/** The PeopleAdmin-style dev-backend notice: a section that depends on the
+/** The People section's dev-backend notice: a section that depends on the
  * Supabase backend says so instead of rendering a button that fails. */
 export function DevBackendNotice({ children }: { children: React.ReactNode }) {
   return (

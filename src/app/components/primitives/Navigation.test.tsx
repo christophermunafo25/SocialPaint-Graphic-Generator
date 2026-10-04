@@ -27,6 +27,19 @@ describe("NavItem and SettingsRailItem", () => {
   });
 });
 
+describe("NavItem without its label", () => {
+  it("is named by its label and shows the icon alone", () => {
+    render(
+      <NavItem icon={Sparkles} showLabel={false}>
+        Generate
+      </NavItem>,
+    );
+    const item = screen.getByRole("button", { name: "Generate" });
+    expect(item.textContent).toBe("");
+    expect(item.dataset.iconOnly).toBe("true");
+  });
+});
+
 describe("Avatar", () => {
   it("is decorative unless it carries a label", () => {
     const { container } = render(<Avatar initials="AS" />);

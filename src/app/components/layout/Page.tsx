@@ -49,35 +49,20 @@ export function Page({
   );
 }
 
-/** The one page-header pattern: optional eyebrow, title at a single size,
- * one-line description 8px beneath, optional primary action right-aligned on
- * the title's baseline. 32px below the block. */
+/** The page header (new look): the title alone, with the page's actions on
+ * the right (RULES §9: no eyebrow, no helper line). 36 tall, 24 above the
+ * page's first content, as every screen draws it. */
 export function PageHeader({
-  eyebrow,
   title,
-  description,
-  action,
+  actions,
 }: {
-  eyebrow?: React.ReactNode;
   title: React.ReactNode;
-  description?: React.ReactNode;
-  action?: React.ReactNode;
+  actions?: React.ReactNode;
 }) {
   return (
-    <header
-      className="sp-pagehead flex items-start justify-between gap-4"
-      style={{ marginBottom: "var(--space-lg)" }}
-    >
-      <div className="min-w-0">
-        {eyebrow && (
-          <p className="sp-eyebrow" style={{ marginBottom: 6 }}>
-            {eyebrow}
-          </p>
-        )}
-        <h1 className="sp-page-title">{title}</h1>
-        {description && <p className="sp-pagehead__desc">{description}</p>}
-      </div>
-      {action && <div className="flex-shrink-0">{action}</div>}
+    <header className="sp-shell-pagehead">
+      <h1 className="t-title-page">{title}</h1>
+      {actions && <div className="sp-shell-pagehead__actions">{actions}</div>}
     </header>
   );
 }

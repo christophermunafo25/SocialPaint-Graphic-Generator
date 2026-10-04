@@ -48,15 +48,7 @@ const readDismissed = (companyId: string | undefined): boolean => {
 /** The overview: the setup strip, then three even columns of lifted
  * category cards — each a REAL link to its detail page, editable through
  * the cover's overlay affordance (D8). */
-export function BrandOverview({
-  brand,
-  companyId,
-  companyName,
-}: {
-  brand: BrandDraft;
-  companyId?: string;
-  companyName?: string;
-}) {
+export function BrandOverview({ brand, companyId }: { brand: BrandDraft; companyId?: string }) {
   const linkClick = useLinkClick();
   const { navigate } = useRouter();
   const { loading } = useBrand();
@@ -121,7 +113,7 @@ export function BrandOverview({
 
   return (
     <>
-      <PageHeader eyebrow={companyName} title="Brand Studio" />
+      <PageHeader title="Brand Studio" />
 
       {brand.error && (
         <p

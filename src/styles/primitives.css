@@ -17,8 +17,9 @@
 /* ── Shared state mechanics ─────────────────────────────────────────────────
    Fill and tint: a component sets --_fill (its base) and, where they differ
    from the neutral pair, --_hover and --_pressed. Hover and pressed lay the
-   tint over the fill and change nothing else. An open menu holds the
-   pressed tint. A selected item ([data-selected]) keeps its look on hover. */
+   tint over the fill and change nothing else. An open menu (a control with
+   aria-haspopup, expanded) holds the pressed tint; a disclosure such as
+   the sidebar's collapse button does not. A selected item ([data-selected]) keeps its look on hover. */
 .ui-tint {
   --_fill: transparent;
   --_tint: transparent;
@@ -30,7 +31,7 @@
 }
 .ui-tint:not(:disabled, [aria-disabled="true"], [data-selected]):active,
 .ui-tint[data-demo-state="pressed"],
-.ui-tint[aria-expanded="true"],
+.ui-tint[aria-haspopup]:not([aria-haspopup="false"])[aria-expanded="true"],
 .ui-tint[data-demo-state="open"] {
   --_tint: var(--_pressed, var(--state-pressed));
 }
@@ -845,6 +846,11 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   border-radius: var(--radius-control);
   color: var(--text-secondary);
   text-align: left;
+}
+/* Icon only (the collapsed rail): 38 x 36, as drawn (189:2424). */
+.ui-nav-item[data-icon-only] {
+  width: 38px;
+  justify-content: center;
 }
 .ui-nav-item[data-selected],
 .ui-nav-item[data-demo-state="selected"] {

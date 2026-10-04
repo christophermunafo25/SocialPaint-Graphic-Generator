@@ -503,10 +503,10 @@ html {
   --chip-tile-selected-fg: var(--slime);
   --chip-mark-mono-alpha: 0.9;
 
-  /* Sidebar nav rows: hover is a neutral wash; active is a soft neutral
-     pill with a white label (Figma 442:3563, 2026-09-28; an inverted white
-     pill with an ink label before) — see .sp-goo. Every selection control
-     that reads these tokens follows. */
+  /* Selection controls not yet on the primitives (segments, chips, choice
+     tiles, the builder's rails): hover is a neutral wash; active is a soft
+     neutral pill with a white label (Figma 442:3563, 2026-09-28). The
+     sidebar moved to the NavItem primitive (new look, Phase 3). */
   --nav-hover-bg: var(--bg-hover);
   --nav-hover-fg: var(--text-primary);
   --nav-active-bg: var(--bg-hover);
@@ -517,13 +517,6 @@ html {
   --icon-btn-fg: var(--text-secondary);
   --icon-btn-bg-hover: var(--bg-hover);
   --icon-btn-fg-hover: var(--text-primary);
-
-  /* The theme toggle: a filled circle with a white moon (Figma 442:3563,
-     2026-09-28; a Slime moon before). */
-  --theme-btn-bg: var(--bg-hover);
-  --theme-btn-fg: var(--white);
-  --theme-btn-bg-hover: rgb(255 255 255 / 0.25);
-  --theme-btn-fg-hover: var(--white);
 
   /* Template card go button: filled at rest, inverts to white with an ink
      arrow while the card is hovered or focused. */
@@ -723,13 +716,6 @@ html {
   --icon-btn-bg-hover: var(--paper-050);
   --icon-btn-fg-hover: var(--text-primary);
 
-  /* The theme toggle: a paper circle with an ink sun at 50%, 90% on hover
-     (3.65:1 at rest, past the 3:1 non-text floor). */
-  --theme-btn-bg: var(--paper-050);
-  --theme-btn-fg: color-mix(in srgb, var(--ink-900) 50%, transparent);
-  --theme-btn-bg-hover: var(--paper-100);
-  --theme-btn-fg-hover: color-mix(in srgb, var(--ink-900) 90%, transparent);
-
   /* Go button: sunken at rest; Deep Moss with a Slime arrow on card hover
      (11.45:1). */
   --card-go-bg: var(--paper-100);
@@ -832,17 +818,11 @@ html {
   --viz-downloads: var(--viz-series-1);
   --viz-opens: var(--viz-series-2);
 
-  /* Sidebar. The rail is 324 wide (Figma "Navigation" page 325, 2026-09-25;
-     248 before) and floats --sb-inset from the viewport's top, left, and
-     bottom (Figma 10, the nearest step 12). Nav rows are 36 tall (40
-     before). */
-  --sb-width: 324px;
-  --sb-width-collapsed: 76px;
-  --sb-inset: var(--space-xs);
-  --nav-row-h: 36px;
+  /* The narrow layout's top bar and drawer (and theme.css's --sidebar
+     aliases) read these; the desktop sidebar is in shell.css (new look,
+     Phase 3). */
   --sb-bg: var(--bg-surface);
   --sb-border: var(--border);
-  --sb-fg: var(--text-secondary);
   --sb-fg-active: var(--text-primary);
 
   /* Tags (Brand Studio two-step frames). Solid is the one tag look;
@@ -929,18 +909,6 @@ optgroup {
   font-weight: var(--weight-head);
   letter-spacing: var(--type-h4-track);
   color: var(--text-heading);
-}
-/* The page description (2026-09-25, the Figma "Navigation" page): 14
-   Regular on the heading ink at 75%, one short line under the title. The
-   frame draws the light value as pure black at 75%; it takes the heading
-   ink instead (8.95:1 on the light canvas, 10.58:1 on dark). */
-.sp-pagehead__desc {
-  max-width: 460px;
-  margin-top: var(--space-2xs);
-  font-size: 14px;
-  line-height: 1.2;
-  font-weight: 400;
-  color: color-mix(in srgb, var(--text-heading) 75%, transparent);
 }
 
 /* Brand moments — the onboarding and sign-in front doors, the only places
@@ -1337,7 +1305,6 @@ select.sp-input:disabled {
 .sp-card,
 .sp-emptystate,
 .sp-start-card,
-.sp-sidebar,
 .sp-platform-chip,
 .sp-chat-chip,
 .sp-filterbar .sp-searchfield {
@@ -1371,9 +1338,6 @@ select.sp-input:disabled {
 .sp-card {
   border-radius: var(--radius-card);
 }
-.sp-sidebar {
-  --edge-alpha: var(--edge-alpha-rail);
-}
 .sp-platform-chip,
 .sp-chat-chip,
 .sp-filterbar .sp-searchfield {
@@ -1390,7 +1354,6 @@ select.sp-input:disabled {
 [data-theme="light"] .sp-card,
 [data-theme="light"] .sp-emptystate,
 [data-theme="light"] .sp-start-card,
-[data-theme="light"] .sp-sidebar,
 [data-theme="light"] .sp-platform-chip,
 [data-theme="light"] .sp-chat-chip,
 [data-theme="light"] .sp-filterbar .sp-searchfield {
@@ -3219,13 +3182,6 @@ select.sp-input:disabled {
     grid-template-columns: minmax(0, 1fr);
   }
 }
-@media (max-width: 639.98px) {
-  /* A page-header action row (Insights' range control is the first) wraps
-     under the title on a phone instead of squeezing it off the screen. */
-  .sp-pagehead {
-    flex-wrap: wrap;
-  }
-}
 .sp-logos-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -3513,46 +3469,11 @@ select.sp-input:disabled {
   align-items: baseline;
   gap: var(--space-2xs);
 }
-
-/* Settings & Admin: persistent section rail + content pane. Below 900px the
-   rail collapses to a horizontal scroller above the content, with the rail
-   leading because it is navigation, not a preview. */
-.sp-settings-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-lg);
-  align-items: start;
-}
-.sp-settings-rail {
-  display: flex;
-  flex-direction: row;
-  gap: 2px;
-  overflow-x: auto;
-  /* Room for the focus ring so the scroller doesn't clip it. */
-  padding: 2px;
-  margin: -2px;
-}
-.sp-settings-rail button {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  border-radius: var(--radius-media-inner);
-  font-size: var(--type-label-size);
-  color: var(--text-secondary);
-  text-align: left;
-  white-space: nowrap;
-  cursor: pointer;
-  transition:
-    background var(--dur-state) var(--ease),
-    color var(--dur-state) var(--ease);
-}
-/* The section rail speaks the sidebar nav's language (2026-09-25): a
-   neutral hover wash and the active pill at the same 9px radius.
-   The Slime wash it used for active is retired. It has no travelling pill,
-   so the active colour needs no delay. .sp-railitem is the same recipe
-   for any other vertical list of this kind (the size gallery's category
-   rail); geometry stays with the caller. */
+/* A vertical rail of choices (the size gallery's category rail, in the
+   Template Builder): a neutral hover wash and the active pill at the 9px
+   radius; geometry stays with the caller. The Settings rail moved to the
+   SettingsRailItem primitive (new look, Phase 3); this stays for the
+   builder until it is designed. */
 .sp-railitem {
   border-radius: var(--radius-media-inner);
   color: var(--text-secondary);
@@ -3560,12 +3481,10 @@ select.sp-input:disabled {
     background var(--dur-state) var(--ease),
     color var(--dur-state) var(--ease);
 }
-.sp-settings-rail button:hover,
 .sp-railitem:hover {
   background: var(--nav-hover-bg);
   color: var(--nav-hover-fg);
 }
-.sp-settings-rail button[data-active="true"],
 .sp-railitem[aria-checked="true"],
 .sp-railitem[aria-selected="true"] {
   background: var(--nav-active-bg);
@@ -3607,23 +3526,6 @@ select.sp-input:disabled {
   outline: none;
   box-shadow: var(--focus-ring-tight);
 }
-.sp-settings-rail button:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring-tight);
-}
-@media (min-width: 900px) {
-  .sp-settings-layout {
-    grid-template-columns: 200px minmax(0, 1fr);
-  }
-  .sp-settings-rail {
-    flex-direction: column;
-    overflow-x: visible;
-    position: sticky;
-    /* 900-1023 still renders the mobile header, so the offset rides on
-       --chrome-top (0 beside the rail). */
-    top: calc(var(--chrome-top) + var(--space-lg));
-  }
-}
 
 /* Brand-moment surface (hero headers, identity chips). Flat logo green —
    everything ON it is Ink, no exceptions, both themes (Ink is the only
@@ -3663,66 +3565,6 @@ select.sp-input:disabled {
     opacity: 0;
     transform: translateX(-50%) translateY(8px);
   }
-}
-
-/* ── Sidebar — a floating surface panel, rounded on all four corners ──────
-   Wears the shared surface edge (2026-09-02): transparent 1px frame for
-   layout, the hairlines in --edge-lit (assembled beside .sp-card) at the
-   rail's own rung, --edge-alpha-rail. Since 2026-09-25 it also takes the
-   rail shadow; light draws the shadow only. --sb-border is no longer read
-   here; it stays for any rail chrome that still separates with a line. */
-.sp-sidebar {
-  background: var(--sb-bg);
-  border: 1px solid transparent;
-  border-radius: var(--radius-card);
-  box-shadow: var(--edge-lit), var(--shadow-rail);
-}
-.sp-sidebar-item {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  height: var(--nav-row-h);
-  padding: 0 10px;
-  border-radius: var(--radius-media-inner);
-  border: 1px solid transparent;
-  font-size: 14px;
-  line-height: 1.25;
-  font-weight: var(--weight-ui);
-  letter-spacing: var(--type-body-track);
-  color: var(--sb-fg);
-  transition:
-    background var(--dur-state) var(--ease),
-    color var(--dur-state) var(--ease);
-  white-space: nowrap;
-  overflow: hidden;
-}
-/* Hover is a neutral wash (2026-09-25: --nav-hover-*, radius 9). */
-.sp-sidebar-item:hover {
-  background: var(--nav-hover-bg);
-  color: var(--nav-hover-fg);
-}
-/* Active: the travelling pill underneath is the background, so the row
-   stays transparent — also while hovered, which is why this rule comes
-   after :hover. The pill is a soft neutral (2026-09-28), so the label
-   reads on the rail as well as on the pill and changes colour at once.
-   (While the pill was inverted, 2026-09-25 to 09-28, the label held its
-   colour change for 240ms so it never showed white on the white rail.) */
-.sp-sidebar-item[data-active="true"] {
-  background: transparent;
-  color: var(--nav-active-fg);
-}
-
-/* The account avatar (rail and drawer, and the collapsed rail's 34px one).
-   Neutral, per the DS Avatar recipe — green means success/commit. The
-   plate is the hover rung since 2026-09-25 (--bg-raised before). */
-.sp-avatar {
-  border-radius: var(--radius-pill);
-  background: var(--bg-hover);
-  border: 1px solid var(--border);
-  color: var(--text-primary);
 }
 
 /* --- Canvas editor chrome (Template builder) ------------------------------
@@ -4030,56 +3872,6 @@ html[data-sp-fullscreen] .sp-appshell > main {
 }
 [data-theme="light"] .sp-palette-tile:hover {
   background: color-mix(in srgb, var(--hover-hue) 22%, transparent);
-}
-
-/* Gooey nav pill — the BYQ gem's liquid indicator, vertical, bound to the
-   ACTIVE row only. A soft neutral pill since 2026-09-28 (Figma 442:3477 /
-   442:3563): the sunken paper with an ink label in light, the hover grey
-   with a white label in dark, at the row hover's 9px radius. In dark it
-   matches the hover wash; in light it sits one step deeper. (Inverted
-   from 2026-09-25, an ink pill in light and a white one in dark.) Solid because
-   the goo filter's alpha threshold crushes translucent washes. Gem motion
-   verbatim: 0.55s travel, 0.62s overshoot drop, fused mid-flight. Reduced
-   motion snaps. */
-.sp-goo {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-}
-.sp-goo__blob {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: var(--w, 0px);
-  height: var(--h, 0px);
-  border-radius: var(--radius-media-inner);
-  background: var(--nav-active-bg);
-  transform: translate(var(--x, 0px), var(--y, 0px));
-  transition:
-    transform 0.55s cubic-bezier(0.16, 1, 0.3, 1),
-    width 0.55s cubic-bezier(0.16, 1, 0.3, 1),
-    height 0.55s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: transform, width, height;
-}
-.sp-goo__drop {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 1.6rem;
-  height: 1.6rem;
-  margin: -0.8rem 0 0 -0.8rem;
-  border-radius: var(--radius-pill);
-  background: var(--nav-active-bg);
-  transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(var(--ds, 0));
-  transition: transform 0.62s cubic-bezier(0.34, 1.4, 0.5, 1);
-  will-change: transform;
-}
-@media (prefers-reduced-motion: reduce) {
-  .sp-goo__blob,
-  .sp-goo__drop {
-    transition-duration: 0.001ms;
-  }
 }
 
 /* Upload processing chip (FieldInput) — the BYQ drop-zone gem's chip
@@ -4751,16 +4543,6 @@ input[type="radio"] {
 .sp-icon-btn:hover {
   background: var(--icon-btn-bg-hover);
   color: var(--icon-btn-fg-hover);
-}
-/* The theme toggle: filled at rest (a paper circle with an ink sun in
-   light, a hover-grey circle with a Slime moon in dark). */
-.sp-icon-btn--theme {
-  background: var(--theme-btn-bg);
-  color: var(--theme-btn-fg);
-}
-.sp-icon-btn--theme:hover {
-  background: var(--theme-btn-bg-hover);
-  color: var(--theme-btn-fg-hover);
 }
 
 /* THE content column. Beside the rail (>= --bp-lg) it is centred in the
@@ -6144,13 +5926,6 @@ input[type="radio"] {
     padding: var(--space-md) var(--page-pad)
       calc(var(--space-2xl) + env(safe-area-inset-bottom, 0px));
   }
-  /* 44px touch floor for the drop-down nav items (matches
-     .sp-shelf__viewall's min-height: 44px pattern); desktop keeps the 36px
-     pointer target. */
-  .sp-sidebar-item {
-    height: auto;
-    min-height: 44px;
-  }
 }
 @media (max-width: 767px) {
   /* 16px page gutter on mobile, per the DS layout spec. :root so the
@@ -6167,7 +5942,6 @@ input[type="radio"] {
   .sp-page--bleed {
     padding: var(--space-md) 0 calc(30px + env(safe-area-inset-bottom, 0px));
   }
-  .sp-page--bleed .sp-pagehead,
   .sp-page--bleed .sp-resultline,
   .sp-page--bleed .sp-resultgroup {
     padding-inline: var(--space-sm);

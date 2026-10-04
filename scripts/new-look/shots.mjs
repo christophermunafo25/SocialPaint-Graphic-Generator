@@ -60,9 +60,10 @@ const ROUTES = [
   ["bs-type-styles", "/brand-studio/type-styles"],
   ["bs-images", "/brand-studio/images"],
   ["bs-import", "/brand-studio/import"],
-  ["people", "/people"],
+  // People lives in Settings; /people redirects there (new look, Phase 3).
+  ["people-redirect", "/people"],
   ["settings-workspace", "/settings/workspace"],
-  ["settings-team", "/settings/team"],
+  ["settings-people", "/settings/people"],
   ["settings-integrations", "/settings/integrations"],
   ["settings-usage", "/settings/usage"],
   ["settings-sharing", "/settings/sharing"],
@@ -151,6 +152,9 @@ async function settle(page) {
   await page.waitForLoadState("networkidle").catch(() => {});
   await page.waitForTimeout(1200);
   await page.evaluate(async () => {
+    // The dev backend banner (and its dev role switch) never shows in a
+    // capture: by its attribute, or by its text in a build without it.
+    for (const el of document.querySelectorAll("[data-dev-banner]")) el.style.display = "none";
     for (const el of document.querySelectorAll("[role=status]")) {
       if ((el.textContent ?? "").startsWith("Dev backend")) el.style.display = "none";
     }
