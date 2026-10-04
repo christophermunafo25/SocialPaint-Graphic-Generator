@@ -304,6 +304,24 @@
   text-align: left;
   cursor: pointer;
 }
+/* Hover deepens the card's shadow to Elevation/Large and fills the go
+   arrow with the primary pair, eased (CJ, 2026-10-04: today's hover). */
+.sp-tcard {
+  transition: box-shadow var(--dur-state) var(--ease);
+}
+.sp-tcard:hover {
+  box-shadow: var(--elevation-large);
+}
+.sp-tcard__go {
+  transition:
+    background-color var(--dur-state) var(--ease),
+    color var(--dur-state) var(--ease);
+}
+.sp-tcard:hover .sp-tcard__go,
+.sp-tcard:focus-visible .sp-tcard__go {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+}
 .sp-tcard__frame {
   position: relative;
   display: flex;
