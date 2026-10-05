@@ -25,20 +25,11 @@ export const CATEGORY_TITLES: Record<BrandCategory, string> = {
   import: "Import",
 };
 
-/** The rows the Fonts page shows: the heading face, the body face (one row
- * when they are the same family), then uploaded font assets not already
- * listed as one of the faces. The overview's FONTS count matches. */
-export function fontRowCount(draft: BrandDraft["draft"], assets: BrandAsset[]): number {
-  const fontAssets = assets.filter((a) => a.kind === "font");
-  const headingFamily = draft.headingFont?.family;
-  const bodyFamily = draft.bodyFont?.family;
-  const faceRows = headingFamily && bodyFamily && headingFamily === bodyFamily ? 1 : 2;
-  const listed = new Set(
-    [draft.headingFont, draft.bodyFont]
-      .filter((f) => f?.source === "custom")
-      .map((f) => f?.assetId),
-  );
-  return faceRows + fontAssets.filter((a) => !listed.has(a.id)).length;
+/** The rows the Fonts page shows: one per uploaded font file (PHASE-6 §9
+ * D3: Fonts is the account's library of files; roles live on Type styles).
+ * The overview's count matches. */
+export function fontRowCount(assets: BrandAsset[]): number {
+  return assets.filter((a) => a.kind === "font").length;
 }
 
 /** The overview card's meta line, in sentence case (13:9043). Zero anywhere
@@ -56,7 +47,7 @@ export function categoryCount(
     case "logos":
       return n(assets.filter((a) => a.kind === "logo").length, "logo", "logos");
     case "typography":
-      return n(fontRowCount(draft, assets), "font", "fonts");
+      return n(fontRowCount(assets), "font", "fonts");
     case "type-styles":
       return n(draft.typeStyles.length, "style", "styles");
     case "images":

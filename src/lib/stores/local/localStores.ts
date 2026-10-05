@@ -294,6 +294,26 @@ export class LocalBrandAssetStore implements BrandAssetStore {
       return next;
     });
   }
+  async replace(
+    id: string,
+    file: File,
+    metadata: BrandAsset["metadata"] = {},
+  ): Promise<BrandAsset> {
+    const url = await fileToDataUrl(file);
+    return mutate((db) => {
+      const assets = db.brandAssets as BrandAsset[];
+      const i = assets.findIndex((a) => a.id === id);
+      if (i < 0) throw new Error("Asset not found.");
+      const next: BrandAsset = {
+        ...assets[i],
+        name: file.name,
+        url,
+        metadata: { ...assets[i].metadata, ...metadata },
+      };
+      assets[i] = next;
+      return next;
+    });
+  }
   async remove(id: string): Promise<void> {
     mutate((db) => {
       db.brandAssets = (db.brandAssets as BrandAsset[]).filter((a) => a.id !== id);

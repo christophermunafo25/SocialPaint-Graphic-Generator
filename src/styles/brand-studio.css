@@ -660,3 +660,75 @@ label.sp-bs-add:focus-within {
   flex: none;
   color: var(--text-strong);
 }
+
+/* ── Fonts (13:13689, 13:13980) ── */
+.sp-bs-font-wrap + .sp-bs-font-wrap,
+.sp-bs-font-wrap + .sp-bs-font,
+.sp-bs-font + .sp-bs-font {
+  border-top: 1px solid var(--border-default);
+}
+.sp-bs-font {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+  padding: 20px 0; /* as drawn */
+}
+.sp-bs-font__aa {
+  flex: none;
+  width: 48px;
+  font-size: 36px;
+  line-height: 1;
+  color: var(--text-strong);
+}
+/* The face isn't loaded while it uploads: the chrome face, greyed. */
+.sp-bs-font__aa--pending {
+  color: var(--text-secondary);
+}
+.sp-bs-font__id {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xs);
+  width: 220px;
+  min-width: 0;
+}
+.sp-bs-font__id--pending {
+  gap: var(--space-2xs);
+}
+.sp-bs-font__family,
+.sp-bs-font__file {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-bs-font__file {
+  color: var(--text-secondary);
+}
+.sp-bs-font__added {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3xs);
+  color: var(--text-strong);
+}
+.sp-bs-font__specimen {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+.sp-bs-font > .ui-rowmenu {
+  flex: none;
+  color: var(--text-strong);
+}
+.sp-bs-font__blocked {
+  padding-bottom: var(--space-sm);
+}
+@media (max-width: 767.98px) {
+  .sp-bs-font__specimen {
+    display: none;
+  }
+}

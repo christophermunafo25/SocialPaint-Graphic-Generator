@@ -102,6 +102,38 @@ export class SupabaseBrandAssetStore implements BrandAssetStore {
     return toBrandAsset(data as BrandAssetRow);
   }
 
+  async replace(
+    id: string,
+    file: File,
+    metadata: BrandAsset["metadata"] = {},
+  ): Promise<BrandAsset> {
+    const { data: current, error: readError } = await supabase()
+      .from("brand_assets")
+      .select("company_id, kind, storage_path, metadata")
+      .eq("id", id)
+      .single();
+    if (readError) throw readError;
+    const row = current as Pick<BrandAssetRow, "company_id" | "kind" | "storage_path" | "metadata">;
+    const path = `${row.company_id}/${row.kind}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+    const up = await supabase().storage.from(BUCKETS.brandAssets).upload(path, file);
+    if (up.error) throw up.error;
+    const { data, error } = await supabase()
+      .from("brand_assets")
+      .update({ name: file.name, storage_path: path, metadata: { ...row.metadata, ...metadata } })
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) {
+      await supabase().storage.from(BUCKETS.brandAssets).remove([path]);
+      throw error;
+    }
+    // The old file goes once the row points at the new one.
+    if (row.storage_path && !/^https?:\/\//.test(row.storage_path)) {
+      await supabase().storage.from(BUCKETS.brandAssets).remove([row.storage_path]);
+    }
+    return toBrandAsset(data as BrandAssetRow);
+  }
+
   async remove(id: string): Promise<void> {
     const { data, error } = await supabase()
       .from("brand_assets")
