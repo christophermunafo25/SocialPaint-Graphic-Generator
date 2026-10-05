@@ -9,8 +9,15 @@ import { routeToUrl } from "../../../router";
 import { MAX_UPLOAD_EDGE_PX } from "../../imageUpload";
 import { consumeAddFlow } from "./addFlow";
 import type { BrandDraft } from "./kitPlumbing";
+import {
+  Button,
+  Input,
+  ProgressBar,
+  RowContextMenu,
+  RowMenu,
+  type RowMenuGroup,
+} from "../../primitives";
 import { AddSlot } from "./primitives/AddSlot";
-import { RowMenu, type RowMenuGroup, type RowMenuHandle } from "./primitives/RowMenu";
 import { useLinkClick } from "./useLinkClick";
 
 const IMAGE_ACCEPT = "image/png,image/jpeg,image/webp,image/svg+xml";
@@ -51,14 +58,25 @@ const readImageSize = (file: File): Promise<{ width?: number; height?: number }>
     img.src = url;
   });
 
-/** The Images page: an empty-state drop zone, or the four-column library —
- * image cards keep a row menu (D9), never an overlay. */
+/** A file mid-upload: a card with its name and an indeterminate bar until
+ * the asset lands (PHASE-6 §9 D9; the frames draw none, Fonts draws one). */
+interface PendingImage {
+  key: string;
+  name: string;
+}
+
+/** The Images page (13:11956): an empty-state drop zone, or four columns of
+ * image cards (the plate, the name with its row menu, "JPG · 1200 × 800"),
+ * each card's menu also on right-click (§9 D7), then Add images. */
 export function ImagesDetail({ brand }: { brand: BrandDraft }) {
   const { company, assets, refresh, setError } = brand;
   const images = assets.filter((a) => a.kind === "image");
+  const [pending, setPending] = useState<PendingImage[]>([]);
 
   const uploadImage = async (file: File) => {
     if (!company) return;
+    const key = `${file.name}-${Date.now()}-${Math.random()}`;
+    setPending((prev) => [...prev, { key, name: file.name }]);
     try {
       const prepared = await prepareImage(file);
       const size = await readImageSize(prepared);
@@ -66,6 +84,8 @@ export function ImagesDetail({ brand }: { brand: BrandDraft }) {
       await refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Image upload failed.");
+    } finally {
+      setPending((prev) => prev.filter((p) => p.key !== key));
     }
   };
 
@@ -96,36 +116,14 @@ export function ImagesDetail({ brand }: { brand: BrandDraft }) {
     />
   );
 
-  if (!images.length) {
+  if (!images.length && !pending.length) {
     return (
       <>
-        <div {...drop.bind} data-active={drop.active} className="sp-images-empty">
-          <p
-            style={{
-              fontFamily: "var(--font-ui)",
-              fontWeight: "var(--weight-ui)" as React.CSSProperties["fontWeight"],
-              fontSize: "var(--type-label-size)",
-              color: "var(--text-primary)",
-            }}
-          >
-            No images yet
-          </p>
-          <p
-            style={{
-              fontSize: "var(--type-caption-size)",
-              color: "var(--text-muted)",
-              maxWidth: 360,
-            }}
-          >
-            Drop JPG, PNG, or SVG files here. Large photos are resized before upload.
-          </p>
-          <button
-            className="sp-btn sp-btn-primary"
-            style={{ marginTop: "var(--space-2xs)" }}
-            onClick={() => addInputRef.current?.click()}
-          >
+        <div {...drop.bind} data-active={drop.active} className="sp-bs-images-empty">
+          <p className="t-label-s">No images yet</p>
+          <Button kind="primary" size="lg" onClick={() => addInputRef.current?.click()}>
             Upload images
-          </button>
+          </Button>
         </div>
         {hiddenPicker}
       </>
@@ -134,9 +132,20 @@ export function ImagesDetail({ brand }: { brand: BrandDraft }) {
 
   return (
     <>
-      <div className="sp-logos-grid">
+      <div className="sp-bs-images">
         {images.map((a) => (
           <ImageCard key={a.id} asset={a} brand={brand} />
+        ))}
+        {pending.map((p) => (
+          <div key={p.key} className="sp-bs-image" data-uploading>
+            <span className="sp-bs-image__plate sp-bs-bone" />
+            <span className="sp-bs-image__meta">
+              <span className="sp-bs-image__row">
+                <span className="t-label-s sp-bs-image__name">{p.name}</span>
+              </span>
+              <ProgressBar label={`Uploading ${p.name}`} />
+            </span>
+          </div>
         ))}
         <AddSlot
           label="Add images"
@@ -145,7 +154,7 @@ export function ImagesDetail({ brand }: { brand: BrandDraft }) {
           onFiles={(files) => {
             for (const f of files) void uploadRef.current(f);
           }}
-          style={{ minHeight: 132, alignSelf: "stretch" }}
+          style={{ minHeight: 207, alignSelf: "stretch" }}
         />
       </div>
       {hiddenPicker}
@@ -153,21 +162,28 @@ export function ImagesDetail({ brand }: { brand: BrandDraft }) {
   );
 }
 
+/** One image. Rename edits the name in place (Enter or blur saves, Escape
+ * cancels); Download and Copy link wait for the signed address; Remove is
+ * red (Undo can't bring the file back) and refused while a template uses
+ * the image (§9 D6). */
 function ImageCard({ asset, brand }: { asset: BrandAsset; brand: BrandDraft }) {
   const { company, refresh, setError } = brand;
-  const menuRef = useRef<RowMenuHandle>(null);
   const downloadRef = useRef<HTMLAnchorElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  /** Back to the card's menu trigger once the rename closes from the keyboard. */
+  const refocus = () =>
+    window.setTimeout(() => cardRef.current?.querySelector<HTMLElement>(".ui-rowmenu")?.focus());
   const linkClick = useLinkClick();
   const signed = useSignedUrl(asset.url);
   const [renaming, setRenaming] = useState(false);
   const [blocked, setBlocked] = useState<string | null>(null);
   const [natural, setNatural] = useState<{ width: number; height: number } | null>(null);
 
-  // Older assets carry no recorded size — read the natural one from the
+  // Older assets carry no recorded size: read the natural one from the
   // loaded image, without writing anything back.
   const width = asset.metadata.width ?? natural?.width;
   const height = asset.metadata.height ?? natural?.height;
-  const ext = asset.name.split(".").pop()?.toUpperCase() ?? "FILE";
+  const ext = asset.name.split(".").pop()?.toUpperCase() ?? "File";
   const meta = width && height ? `${ext} · ${width} × ${height}` : ext;
 
   const rename = async (next: string) => {
@@ -208,7 +224,7 @@ function ImageCard({ asset, brand }: { asset: BrandAsset; brand: BrandDraft }) {
   const groups: RowMenuGroup[] = [
     {
       items: [
-        { label: "Rename", onSelect: () => setRenaming(true) },
+        { label: "Rename", movesFocus: true, onSelect: () => setRenaming(true) },
         {
           label: "Download",
           disabled: !signed.url,
@@ -219,87 +235,82 @@ function ImageCard({ asset, brand }: { asset: BrandAsset; brand: BrandDraft }) {
     },
     { items: [{ label: "Remove", destructive: true, onSelect: () => void remove() }] },
   ];
+  const label = `More actions for ${asset.name}`;
 
   return (
-    <div
-      className="sp-card sp-logo-card sp-menu-row"
-      style={{ cursor: "default" }}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        menuRef.current?.openAt(e.clientX, e.clientY);
-      }}
-    >
-      <span className="sp-image-card__plate">
-        {signed.url && (
-          <img
-            src={signed.url}
-            alt={asset.name}
-            onLoad={(e) => {
-              if (!asset.metadata.width) {
-                setNatural({
-                  width: e.currentTarget.naturalWidth,
-                  height: e.currentTarget.naturalHeight,
-                });
-              }
-            }}
-          />
-        )}
-      </span>
-      <span className="sp-color-card__row">
-        {renaming ? (
-          <input
-            className="sp-input sp-input--mini"
-            aria-label={`Rename ${asset.name}`}
-            defaultValue={asset.name}
-            autoFocus
-            onFocus={(e) => e.target.select()}
-            onBlur={(e) => {
-              void rename(e.target.value.trim());
-              setRenaming(false);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") e.currentTarget.blur();
-              else if (e.key === "Escape") setRenaming(false);
-            }}
-          />
-        ) : (
-          <span className="sp-color-card__name">{asset.name}</span>
-        )}
-        <RowMenu ref={menuRef} groups={groups} ariaLabel={`More actions for ${asset.name}`} />
-      </span>
-      <span className="sp-eyebrow" style={{ padding: "0 var(--space-3xs)" }}>
-        {meta}
-      </span>
-      {blocked && (
-        <div
-          role="alert"
-          className="flex flex-col items-start"
-          style={{ gap: "var(--space-3xs)", padding: "0 var(--space-3xs)" }}
-        >
-          <span style={{ fontSize: "var(--type-caption-size)", color: "var(--state-danger)" }}>
-            {blocked}
+    <RowContextMenu groups={groups} label={label} disabled={renaming}>
+      <div ref={cardRef} className="sp-bs-image">
+        <span className="sp-bs-image__plate">
+          {signed.url && (
+            <img
+              src={signed.url}
+              alt={asset.name}
+              onLoad={(e) => {
+                if (!asset.metadata.width) {
+                  setNatural({
+                    width: e.currentTarget.naturalWidth,
+                    height: e.currentTarget.naturalHeight,
+                  });
+                }
+              }}
+            />
+          )}
+        </span>
+        <span className="sp-bs-image__meta">
+          <span className="sp-bs-image__row">
+            {renaming ? (
+              <Input
+                size="sm"
+                aria-label={`Rename ${asset.name}`}
+                defaultValue={asset.name}
+                autoFocus
+                onFocus={(e) => e.target.select()}
+                onBlur={(e) => {
+                  void rename(e.target.value.trim());
+                  setRenaming(false);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.currentTarget.blur();
+                    refocus();
+                  } else if (e.key === "Escape") {
+                    e.stopPropagation();
+                    setRenaming(false);
+                    refocus();
+                  }
+                }}
+              />
+            ) : (
+              <span className="t-label-s sp-bs-image__name">{asset.name}</span>
+            )}
+            <RowMenu groups={groups} label={label} />
           </span>
-          <a
-            href={routeToUrl({ name: "adminTemplates" })}
-            onClick={linkClick({ name: "adminTemplates" })}
-            className="sp-btn sp-btn-tertiary"
-            style={{ height: 24, padding: "0 6px", fontSize: "var(--type-caption-size)" }}
-          >
-            Show templates
-          </a>
-        </div>
-      )}
-      {/* The real download anchor the menu item clicks. */}
-      <a
-        ref={downloadRef}
-        href={signed.url ?? "#"}
-        download={asset.name}
-        className="sr-only"
-        tabIndex={-1}
-        aria-hidden
-      >
-        Download {asset.name}
-      </a>
-    </div>
+          <span className="t-label-xs sp-bs-image__size">{meta}</span>
+          {blocked && (
+            <span role="alert" className="sp-bs-image__blocked">
+              <span className="t-caption-s sp-bs-error-line">{blocked}</span>
+              <a
+                href={routeToUrl({ name: "adminTemplates" })}
+                onClick={linkClick({ name: "adminTemplates" })}
+                className="ui-ring t-label-xs sp-bs-quiet-action"
+              >
+                Show templates
+              </a>
+            </span>
+          )}
+        </span>
+        {/* The real download anchor the menu item clicks. */}
+        <a
+          ref={downloadRef}
+          href={signed.url ?? "#"}
+          download={asset.name}
+          className="sr-only"
+          tabIndex={-1}
+          aria-hidden
+        >
+          Download {asset.name}
+        </a>
+      </div>
+    </RowContextMenu>
   );
 }

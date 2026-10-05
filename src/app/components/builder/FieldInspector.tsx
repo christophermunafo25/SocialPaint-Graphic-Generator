@@ -74,6 +74,7 @@ import { FillPicker, fillSwatchCss, getFill } from "./FillPicker";
 import { ImageSourceChooser, ImageSourceDialog, pickableAssets } from "../ImageSourceChooser";
 import { parseHex, toHex } from "@/lib/color";
 import { DEFAULT_FONT_SIZE, DEFAULT_MIN_FONT_SIZE } from "@/lib/render/autoFit";
+import { styleFaces } from "@/lib/brand/fontRoles";
 
 interface FieldInspectorProps {
   field: TemplateField;
@@ -324,11 +325,8 @@ export function FieldInspector(props: FieldInspectorProps) {
   const fontAssets = useMemo(() => assets.filter((a) => a.kind === "font"), [assets]);
 
   const familyGroups = useMemo(() => {
-    const brand = [
-      ...new Set(
-        [kit?.headingFont?.family, kit?.bodyFont?.family].filter((f): f is string => Boolean(f)),
-      ),
-    ];
+    // The faces the type styles use (PHASE-6 §9 D3).
+    const brand = [...new Set(styleFaces(kit).map((f) => f.family))];
     const uploaded = [...customFamilyStyles(fontAssets).keys()].filter((f) => !brand.includes(f));
     const google = GOOGLE_FONTS.filter((f) => !brand.includes(f) && !uploaded.includes(f));
     return [

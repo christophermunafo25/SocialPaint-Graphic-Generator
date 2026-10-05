@@ -159,6 +159,7 @@ import {
   type Axis,
 } from "./alignOps";
 import { GroupInspector } from "./GroupInspector";
+import { roleFace } from "@/lib/brand/fontRoles";
 
 /** The builder is a desktop tool: below this width the canvas + inspector
  * layout breaks, so we explain rather than attempt a responsive builder.
@@ -1356,7 +1357,8 @@ export function TemplateBuilder({
       type: "text",
       ...rect,
       zIndex: maxZ(draft.fields) + 1,
-      fontFamily: kit?.headingFont?.family,
+      // The face of the style used for Heading (PHASE-6 §9 D3).
+      fontFamily: roleFace(kit, "heading").family,
       fontSizePx: Math.max(18, Math.min(90, Math.round(rect.height * 0.55))),
       colorHex: kit?.colors.find((c) => c.key === "text")?.hex ?? kit?.colors[0]?.hex,
       align: "left",

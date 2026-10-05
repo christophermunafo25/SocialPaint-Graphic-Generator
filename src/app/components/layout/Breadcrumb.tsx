@@ -4,7 +4,14 @@ export interface Crumb {
   label: string;
   /** Where the crumb goes. The last crumb is the page itself and has none. */
   onClick?(): void;
+  /** With an address, the crumb is a real link: a plain click runs
+   * `onClick` in place, and a modified or middle click is the browser's
+   * (a new tab or window). */
+  href?: string;
 }
+
+const isPlainClick = (e: React.MouseEvent) =>
+  !e.defaultPrevented && e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey;
 
 /** The page header with a breadcrumb in place of the title (new look,
  * 156:748; the template chat and Generate use it too): the trail on the
@@ -40,6 +47,18 @@ export const BreadcrumbHeader = React.forwardRef<
                 >
                   {crumb.label}
                 </h1>
+              ) : crumb.href ? (
+                <a
+                  href={crumb.href}
+                  className="ui-reset ui-ring t-label-m sp-shell-crumbs__link"
+                  onClick={(e) => {
+                    if (!isPlainClick(e)) return;
+                    e.preventDefault();
+                    crumb.onClick?.();
+                  }}
+                >
+                  {crumb.label}
+                </a>
               ) : (
                 <button
                   type="button"

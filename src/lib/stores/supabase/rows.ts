@@ -12,6 +12,7 @@ import type {
   TemplateStatus,
 } from "../../types";
 import { BUCKETS, toImageSource } from "../storageRef";
+import { withFontRoles } from "../../brand/fontRoles";
 
 export interface CompanyRow {
   id: string;
@@ -61,7 +62,11 @@ export interface BrandKitRow {
   allow_off_palette: boolean | null;
 }
 
-export const toBrandKit = (r: BrandKitRow): BrandKit => ({
+/** A kit row as the app reads it, with its font roles in place (PHASE-6 §9
+ * D3: a kit stored before roles gets them as it loads). */
+export const toBrandKit = (r: BrandKitRow): BrandKit => withFontRoles(toBrandKitRow(r));
+
+const toBrandKitRow = (r: BrandKitRow): BrandKit => ({
   id: r.id,
   companyId: r.company_id,
   colors: r.colors ?? [],

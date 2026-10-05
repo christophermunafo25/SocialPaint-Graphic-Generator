@@ -8,7 +8,8 @@ import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useBrand } from "@/lib/brand/BrandContext";
-import { DEFAULT_PALETTE, DEFAULT_TYPE_STYLES } from "@/lib/theme";
+import { DEFAULT_PALETTE } from "@/lib/theme";
+import { typeStylesWithRoles } from "@/lib/brand/fontRoles";
 import { dedupeColorKeys } from "./kitOps";
 
 export type KitShape = Omit<BrandKit, "id" | "companyId">;
@@ -20,7 +21,9 @@ export type KitShape = Omit<BrandKit, "id" | "companyId">;
 export function kitShape(kit: BrandKit | null): KitShape {
   return {
     colors: dedupeColorKeys(kit?.colors ?? DEFAULT_PALETTE),
-    typeStyles: kit?.typeStyles?.length ? kit.typeStyles : DEFAULT_TYPE_STYLES,
+    // With font roles in place (PHASE-6 §9 D3); the defaults stand in for a
+    // kit with no styles, taking its faces.
+    typeStyles: typeStylesWithRoles(kit),
     // Guidelines have no surface anymore but the data is preserved — every
     // save carries them through untouched.
     guidelines: kit?.guidelines ?? [],
@@ -196,6 +199,50 @@ export function useBrandDraft() {
     [history, flush, showUndo],
   );
 
+  /** Escape on an in-place edit (PHASE-6 §9 D7 to D9): back to where the
+   * edit began, and the undo steps it recorded go with it, so Undo can't
+   * reapply part of a cancelled edit. `depth` is the stack's length when the
+   * edit began. */
+  const cancelTo = useCallback(
+    (snapshot: KitShape, depth: number) => {
+      setHistory((h) => h.slice(0, depth));
+      setDraft(snapshot);
+      draftRef.current = snapshot;
+      lastCommit.current = null;
+      showUndo(null);
+      void flush();
+    },
+    [flush, showUndo],
+  );
+
+  /** A logo file is gone (PHASE-6 §9 D6): apply the primary handoff without
+   * an undo step, and point every step that named the deleted file as a
+   * primary at the handoff's result instead, so no Undo can restore a
+   * primary pointing at a file that no longer exists. */
+  const forgetAsset = useCallback(
+    (assetId: string, patch: Partial<KitShape>) => {
+      const next = { ...draftRef.current, ...patch };
+      const scrub = (k: KitShape): KitShape => {
+        const out = { ...k };
+        for (const key of [
+          "primaryLogoAssetId",
+          "primaryLogoDarkAssetId",
+          "primaryLogoLightAssetId",
+        ] as const) {
+          if (out[key] === assetId) out[key] = next[key];
+        }
+        return out;
+      };
+      setDraft(next);
+      draftRef.current = next;
+      setHistory((h) => h.map(scrub));
+      setUndoOffer((o) => (o ? { ...o, snapshot: scrub(o.snapshot) } : o));
+      lastCommit.current = null;
+      if (Object.keys(patch).length) schedule();
+    },
+    [schedule],
+  );
+
   // ⌘Z anywhere on the page, except where the browser's own text undo is
   // what the user means. A focused checkbox or swatch has no text undo to
   // defer to, so the shortcut still reaches the kit from there.
@@ -227,6 +274,10 @@ export function useBrandDraft() {
     draft,
     commit,
     undo,
+    cancelTo,
+    forgetAsset,
+    /** The undo stack's length, which an in-place edit records on start. */
+    historyDepth: history.length,
     canUndo: history.length > 0,
     undoOffer,
     dismissUndo: () => showUndo(null),

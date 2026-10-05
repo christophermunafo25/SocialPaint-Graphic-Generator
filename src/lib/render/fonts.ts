@@ -2,7 +2,6 @@ import type {
   BrandAsset,
   BrandKit,
   FontAssetMetadata,
-  FontRef,
   TemplateField,
   TemplateSchema,
 } from "../types";
@@ -17,6 +16,7 @@ import {
 } from "./fontCatalog";
 import { canvasFontShorthand } from "./autoFit";
 import { resolveImageUrl } from "@/lib/stores/supabase/signedUrls";
+import { styleFaces } from "../brand/fontRoles";
 
 /** Curated Google Fonts list offered in Brand Studio / onboarding. */
 export const GOOGLE_FONTS = [
@@ -261,7 +261,8 @@ export async function registerCustomFont(asset: BrandAsset): Promise<void> {
  * and embeds nothing at export. Registration was previously session-local to
  * the upload — after a reload, only heading/body customs came back. */
 export async function loadBrandFonts(kit: BrandKit, fontAssets: BrandAsset[]): Promise<void> {
-  const refs = [kit.headingFont, kit.bodyFont].filter((r): r is FontRef => Boolean(r));
+  // The faces the type styles use (PHASE-6 §9 D3).
+  const refs = styleFaces(kit);
   loadGoogleFonts(refs.filter((r) => r.source === "google").map((r) => r.family));
   await Promise.all(fontAssets.map((asset) => registerCustomFont(asset)));
 }

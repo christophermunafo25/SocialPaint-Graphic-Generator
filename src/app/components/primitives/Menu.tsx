@@ -1,7 +1,9 @@
-import React from "react";
+import React, { useRef } from "react";
+import * as ContextMenu from "@radix-ui/react-context-menu";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Check, ChevronRight } from "lucide-react";
 import { cx, type DemoStateAttr, type IconComponent } from "./cx";
+import { RowMenuTrigger } from "./IconButton";
 
 export interface MenuProps {
   /** The control that opens it (a RowMenuTrigger, an AttachButton, a
@@ -134,4 +136,152 @@ export function MenuItemStatic({
 }
 export function MenuLabelStatic({ children }: { children: React.ReactNode }) {
   return <div className="ui-menu-label t-label-xs t-trim">{children}</div>;
+}
+
+/** One action in a row's menu. `checked` present (true or false) makes it a
+ * radio item with a check on the current one; `destructive` draws it in the
+ * error red (an action Undo can't bring back, PHASE-6 §9 D6). */
+export interface RowMenuAction {
+  label: string;
+  onSelect(): void;
+  disabled?: boolean;
+  destructive?: boolean;
+  checked?: boolean;
+  /** The action moves focus itself (it opens an editor), so the menu
+   * doesn't hand focus back to its trigger as it closes. */
+  movesFocus?: boolean;
+}
+
+/** A group of actions, with an optional label above it; groups are
+ * separated by a divider. */
+export interface RowMenuGroup {
+  label?: string;
+  items: RowMenuAction[];
+}
+
+type MenuKit = {
+  Item: typeof DropdownMenu.Item;
+  Label: typeof DropdownMenu.Label;
+  Separator: typeof DropdownMenu.Separator;
+};
+
+const DROPDOWN: MenuKit = DropdownMenu;
+const CONTEXT: MenuKit = ContextMenu as unknown as MenuKit;
+
+function RowMenuItems({
+  groups,
+  kit,
+  onChosen,
+}: {
+  groups: RowMenuGroup[];
+  kit: MenuKit;
+  onChosen(item: RowMenuAction): void;
+}) {
+  return (
+    <>
+      {groups.map((g, gi) => (
+        <React.Fragment key={gi}>
+          {gi > 0 && <kit.Separator className="ui-menu-divider" />}
+          {g.label && <kit.Label className="ui-menu-label t-label-xs t-trim">{g.label}</kit.Label>}
+          {g.items.map((item) => (
+            <kit.Item
+              key={item.label}
+              className="ui-menu-item"
+              disabled={item.disabled}
+              // Only a choice overrides Radix's own role: an explicit
+              // undefined would erase "menuitem".
+              {...(item.checked !== undefined
+                ? { role: "menuitemradio", "aria-checked": item.checked }
+                : {})}
+              data-selected={item.checked || undefined}
+              data-destructive={item.destructive || undefined}
+              onSelect={() => {
+                onChosen(item);
+                item.onSelect();
+              }}
+            >
+              <MenuItemContent selected={item.checked}>{item.label}</MenuItemContent>
+            </kit.Item>
+          ))}
+        </React.Fragment>
+      ))}
+    </>
+  );
+}
+
+/** A row's "More actions" menu (Row menu trigger 44:29 and Menu 57:423):
+ * the ellipsis trigger, shown at rest, and its menu, aligned to the
+ * trigger's end. Wrap the row in `RowContextMenu` with the same groups so
+ * a right-click opens the same menu at the pointer (PHASE-6 §9 D7). */
+export function RowMenu({
+  groups,
+  label,
+  className,
+}: {
+  groups: RowMenuGroup[];
+  /** Names the trigger and the menu: "More actions for Montserrat". */
+  label: string;
+  className?: string;
+}) {
+  const chosen = useRef<RowMenuAction | null>(null);
+  return (
+    <DropdownMenu.Root modal={false}>
+      <DropdownMenu.Trigger asChild>
+        <RowMenuTrigger label={label} className={className} />
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          className="ui-menu ui-menu--popover"
+          align="end"
+          sideOffset={4}
+          collisionPadding={8}
+          aria-label={label}
+          onCloseAutoFocus={(e) => {
+            if (chosen.current?.movesFocus) e.preventDefault();
+            chosen.current = null;
+          }}
+        >
+          <RowMenuItems groups={groups} kit={DROPDOWN} onChosen={(i) => (chosen.current = i)} />
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
+  );
+}
+
+/** Right-click on `children` (a card or row) opens its menu at the pointer,
+ * as the trigger's does: the arrows move, Escape closes. */
+export function RowContextMenu({
+  groups,
+  label,
+  children,
+  disabled = false,
+}: {
+  groups: RowMenuGroup[];
+  label: string;
+  /** One element; it receives the context-menu handler. */
+  children: React.ReactElement;
+  /** While the row is being edited, the browser's own menu shows instead. */
+  disabled?: boolean;
+}) {
+  const chosen = useRef<RowMenuAction | null>(null);
+  return (
+    <ContextMenu.Root modal={false}>
+      <ContextMenu.Trigger asChild disabled={disabled}>
+        {children}
+      </ContextMenu.Trigger>
+      <ContextMenu.Portal>
+        <ContextMenu.Content
+          className="ui-menu ui-menu--popover"
+          collisionPadding={8}
+          aria-label={label}
+          onCloseAutoFocus={(e) => {
+            if (chosen.current?.movesFocus) e.preventDefault();
+            chosen.current = null;
+          }}
+        >
+          <RowMenuItems groups={groups} kit={CONTEXT} onChosen={(i) => (chosen.current = i)} />
+        </ContextMenu.Content>
+      </ContextMenu.Portal>
+    </ContextMenu.Root>
+  );
 }

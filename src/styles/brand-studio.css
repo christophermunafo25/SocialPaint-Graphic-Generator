@@ -1,0 +1,945 @@
+/* ── Brand Studio on the new look (PHASE-6.md; frames 13:9043 to 13:12879) ──
+   The page column, the detail header's actions, the toast and the legal
+   links, then each page's parts. */
+
+/* The page column: the header, the content 24 under it, and the legal links
+   at the foot of a viewport-tall column (13:9173). */
+.sp-bs-page {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - var(--chrome-top));
+  padding-bottom: calc(28px + var(--dev-banner-h, 0px)); /* as drawn */
+}
+.sp-bs-content {
+  flex: 1 0 auto;
+}
+
+/* The detail header's actions (13:9388): the save status, 16, then Undo. */
+.sp-bs-head__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+.sp-bs-head__status {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* Terms and Privacy at the foot of every Brand Studio page, not underlined
+   (13:9173). */
+.sp-bs-legal {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-sm);
+  margin: 0;
+  padding-top: var(--space-xl);
+  color: var(--text-secondary);
+}
+.sp-bs-legal > a {
+  color: inherit;
+  text-decoration: none;
+}
+.sp-bs-legal > a:hover {
+  text-decoration: underline;
+}
+
+/* The toast (13:9850): centred on the page column, 75 above the window's
+   foot (32 above the legal links at rest), sticky while the page scrolls.
+   The anchor takes no room. */
+.sp-bs-toast-anchor {
+  position: sticky;
+  bottom: calc(75px + var(--dev-banner-h, 0px));
+  z-index: var(--z-sticky);
+  display: flex;
+  justify-content: center;
+  height: 0;
+}
+.sp-bs-toast-anchor > .ui-toast {
+  position: absolute;
+  bottom: 0;
+  max-width: min(560px, calc(100vw - 32px));
+}
+
+/* A save error under the header. */
+.sp-bs-error {
+  margin: 0 0 var(--space-md);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-control-md);
+  background: color-mix(in srgb, var(--state-error) 10%, transparent);
+  color: var(--state-error);
+}
+/* A loading stand-in: a sunken bar. */
+.sp-bs-bone {
+  display: block;
+  border-radius: var(--radius-xs);
+  background: var(--surface-sunken);
+}
+
+/* ── Overview (13:9043) ── */
+.sp-bs-overview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+/* The setup strip: the status and the reason on one baseline row, the five
+   bars under them, and the action. */
+.sp-bs-strip {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+  color: var(--text-strong);
+}
+.sp-bs-strip__progress {
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* as drawn */
+  min-width: 0;
+}
+.sp-bs-strip__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-xs);
+  margin: 0;
+}
+.sp-bs-strip__reason {
+  color: var(--text-secondary);
+}
+.sp-bs-strip__bars {
+  display: flex;
+  gap: var(--space-3xs);
+}
+.sp-bs-strip__bar {
+  width: 32px;
+  height: 4px;
+  border-radius: var(--radius-xs);
+  background: var(--surface-sunken);
+}
+.sp-bs-strip__bar[data-ready="true"] {
+  background: var(--surface-inverse);
+}
+
+/* Three columns of category cards, 16 apart; two under 1024, one under 480. */
+.sp-bs-overview__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+@media (max-width: 1023.98px) {
+  .sp-bs-overview__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 479.98px) {
+  .sp-bs-overview__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.sp-bs-cat {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: var(--space-2xs);
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+  color: var(--text-strong);
+  text-decoration: none;
+}
+.sp-bs-cat__cover {
+  display: block;
+  aspect-ratio: 3 / 2;
+  border-radius: var(--radius-media-plate);
+  background: var(--surface-sunken);
+}
+.sp-bs-cat__cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.sp-bs-cat__meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xs);
+  min-width: 0;
+  padding: var(--space-sm) var(--space-2xs) var(--space-2xs);
+}
+.sp-bs-cat__title,
+.sp-bs-cat__count {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-bs-cat__count {
+  color: var(--text-secondary);
+}
+
+/* The "+ Add" slot that ends every collection (13:9455). */
+.sp-bs-add {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3xs);
+  width: 100%;
+  padding: var(--space-sm);
+  border: 1px dashed var(--text-secondary);
+  border-radius: var(--radius-card);
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.sp-bs-add:hover,
+.sp-bs-add[data-active="true"] {
+  background: var(--state-hover);
+}
+/* A label wrapping a file input: its ring follows the input's focus. */
+label.sp-bs-add:focus-within {
+  outline: var(--focus-width) solid var(--ring);
+  outline-offset: var(--focus-offset);
+}
+.sp-bs-add__detail {
+  color: var(--text-secondary);
+}
+
+/* ── Colors (13:9309, 13:9470) ── */
+/* Six columns of swatch cards, 12 apart; four under 1280, three under 1024,
+   two under 480. */
+.sp-bs-colors {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  /* Equal rows, so Add color keeps a card's height on a row of its own. */
+  grid-auto-rows: 1fr;
+  gap: var(--space-xs);
+  align-items: start;
+}
+@media (max-width: 1279.98px) {
+  .sp-bs-colors {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+@media (max-width: 1023.98px) {
+  .sp-bs-colors {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 479.98px) {
+  .sp-bs-colors {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.sp-bs-color-cell {
+  position: relative;
+  min-width: 0;
+}
+.sp-bs-color-cell[data-open] {
+  z-index: 2;
+}
+.sp-bs-color {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: var(--space-2xs);
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+  color: var(--text-strong);
+  text-align: left;
+}
+/* The open card (13:9632): a 1px ring in text/strong on its own edge. */
+.sp-bs-color[aria-expanded="true"] {
+  box-shadow:
+    var(--elevation-small),
+    inset 0 0 0 1px var(--text-strong);
+}
+.sp-bs-color__swatch {
+  height: 88px;
+  border-radius: var(--radius-media-plate);
+}
+.sp-bs-color__fill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--swatch);
+  box-shadow: inset 0 0 0 1px var(--border-default);
+}
+.sp-bs-color__role {
+  position: absolute;
+  top: var(--space-2xs);
+  left: var(--space-2xs);
+}
+.sp-bs-color__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: var(--space-xs) var(--space-3xs) var(--space-3xs);
+}
+.sp-bs-color__name,
+.sp-bs-color__hex {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-bs-color__hex {
+  color: var(--text-secondary);
+}
+/* Behind an open editor, the rest of the grid and the summary blur 1.5px
+   and take no clicks: a click there only closes the editor (§8). */
+.sp-bs-colors-page[data-editing] .sp-bs-color-cell:not([data-open]),
+.sp-bs-colors-page[data-editing] .sp-bs-colors > .sp-bs-add,
+.sp-bs-colors-page[data-editing] .sp-bs-roles {
+  filter: blur(1.5px);
+  pointer-events: none;
+}
+
+/* A floating editor (13:9633): 300 wide, Elevation/Medium, 10 under its
+   card, left-aligned; right-aligned or above where §8 says. */
+.sp-bs-popover {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  z-index: 3;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* as drawn */
+  width: 300px;
+  max-width: calc(100vw - 32px);
+  padding: 14px; /* as drawn */
+  border-radius: var(--radius-menu);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-medium);
+  color: var(--text-strong);
+}
+.sp-bs-popover[data-end] {
+  left: auto;
+  right: 0;
+}
+.sp-bs-popover[data-above] {
+  top: auto;
+  bottom: calc(100% + 10px);
+}
+.sp-bs-popover__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 32px;
+  padding: var(--space-3xs) 0 0 2px;
+}
+/* Remove where Undo brings it back: quiet text, not red (§9 D6). */
+.sp-bs-quiet-action {
+  border-radius: var(--radius-control);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.sp-bs-quiet-action:hover {
+  color: var(--text-strong);
+}
+.sp-bs-error-line {
+  margin: 0;
+  color: var(--state-error);
+}
+.sp-bs-color-popover__value {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+.sp-bs-color-popover__value > :last-child {
+  flex: 1;
+  min-width: 0;
+}
+.sp-bs-color-popover__contrast {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 2px;
+  color: var(--text-secondary);
+}
+.sp-bs-color-popover__contrast > p {
+  margin: 0;
+}
+.sp-bs-color-popover__role {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 2px 2px 0;
+}
+.sp-bs-color-popover__label {
+  color: var(--text-secondary);
+}
+.sp-bs-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Who holds each role (13:9457), 24 under the grid. */
+.sp-bs-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs) var(--space-md);
+  margin-top: var(--space-md);
+}
+.sp-bs-roles__item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2xs);
+}
+.sp-bs-roles__role {
+  color: var(--text-secondary);
+}
+/* The open card shows its ring, not the edit overlay. */
+.sp-bs-color[aria-expanded="true"] .ui-preview__overlay {
+  opacity: 0;
+}
+
+/* ── Logos (13:10014, 13:10150) ── */
+.sp-bs-logos-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+.sp-bs-logos-filter {
+  align-self: flex-start;
+}
+/* Four columns, 16 apart; three under 1024, two under 768. */
+.sp-bs-logos {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-sm);
+  align-items: start;
+}
+@media (max-width: 1023.98px) {
+  .sp-bs-logos {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 767.98px) {
+  .sp-bs-logos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.sp-bs-logo {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  padding: var(--space-2xs);
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+  color: var(--text-strong);
+  text-align: left;
+}
+.sp-bs-logo__plate {
+  display: block;
+  height: 132px;
+  border-radius: var(--radius-media-plate);
+}
+/* The proof plate: one fixed ground per surface, never inverting. */
+.sp-bs-plate {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  overflow: hidden;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px var(--border-default);
+}
+.sp-bs-plate__half {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+.sp-bs-plate__half[data-plate="dark"] {
+  background: var(--plate-dark);
+}
+.sp-bs-plate__half[data-plate="light"] {
+  background: var(--plate-light);
+}
+.sp-bs-plate__half img {
+  max-width: 70%;
+  max-height: 60%;
+  object-fit: contain;
+}
+.sp-bs-logo__plate:not(.ui-preview) {
+  position: relative;
+  overflow: hidden;
+}
+.sp-bs-logo__meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  min-width: 0;
+  padding: var(--space-xs) var(--space-3xs) var(--space-3xs);
+}
+.sp-bs-logo__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-bs-logo__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3xs);
+}
+/* The card, editing in place (13:10267). */
+.sp-bs-logo__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* as drawn */
+  padding: 10px 0 2px;
+}
+.sp-bs-choice-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 2px;
+}
+.sp-bs-choice-row__label {
+  color: var(--text-secondary);
+}
+.sp-bs-note {
+  margin: 0;
+  color: var(--text-secondary);
+}
+/* Remove where Undo can't bring it back (a file): red (§9 D6). */
+.sp-bs-quiet-action[data-destructive] {
+  color: var(--state-error);
+}
+.sp-bs-quiet-action[data-destructive]:hover {
+  color: var(--state-error);
+  text-decoration: underline;
+}
+
+/* ── Type styles and Fonts: one list card (13:10975, 13:13776) ── */
+.sp-bs-list {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  padding: var(--space-2xs);
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+  color: var(--text-strong);
+}
+.sp-bs-list__rows {
+  display: flex;
+  flex-direction: column;
+  padding: 0 var(--space-sm);
+}
+.sp-bs-list > .sp-bs-add {
+  border-radius: var(--radius-media-plate);
+}
+/* Rows 1px apart; the open editor sits under its row with no divider. */
+.sp-bs-style + .sp-bs-style {
+  border-top: 1px solid var(--border-default);
+}
+.sp-bs-style__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  min-width: 0;
+  padding: 20px 0; /* as drawn */
+}
+.sp-bs-style__spec {
+  flex: none;
+  width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-strong);
+}
+.sp-bs-style__rename {
+  background: var(--input-bg);
+  border-radius: var(--radius-control);
+}
+.sp-bs-style__face {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  color: var(--text-secondary);
+}
+.sp-bs-style__face > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-bs-style__values {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+.sp-bs-style__slash {
+  color: var(--text-secondary);
+}
+.sp-bs-style__value {
+  border-radius: var(--radius-control);
+  color: var(--text-strong);
+  cursor: text;
+}
+.sp-bs-style__value[data-auto] {
+  color: var(--text-secondary);
+}
+.sp-bs-style__value-input {
+  width: 64px;
+}
+.sp-bs-style__blocked {
+  padding-bottom: var(--space-sm);
+}
+/* The editor (13:11314): 640 wide, two columns of fields 16 apart. */
+.sp-bs-style__editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  max-width: 640px;
+  padding-bottom: var(--space-md);
+}
+.sp-bs-style__fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-xs) var(--space-sm);
+}
+@media (max-width: 767.98px) {
+  .sp-bs-style__fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sp-bs-style__row {
+    flex-wrap: wrap;
+  }
+}
+.sp-bs-style__toggles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.sp-bs-style__toggle-label {
+  color: var(--text-secondary);
+}
+.sp-bs-style__toggle-gap {
+  width: 10px;
+}
+.sp-bs-style__rules {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-control-md);
+  background: var(--surface-sunken);
+}
+.sp-bs-style__rule {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  margin: 0;
+  color: var(--text-secondary);
+}
+.sp-bs-style__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+/* A row's menu trigger, at rest as drawn (§9 D7). */
+.sp-bs-style__row > .ui-rowmenu {
+  flex: none;
+  color: var(--text-strong);
+}
+
+/* ── Fonts (13:13689, 13:13980) ── */
+.sp-bs-font-wrap + .sp-bs-font-wrap,
+.sp-bs-font-wrap + .sp-bs-font,
+.sp-bs-font + .sp-bs-font {
+  border-top: 1px solid var(--border-default);
+}
+.sp-bs-font {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+  padding: 20px 0; /* as drawn */
+}
+.sp-bs-font__aa {
+  flex: none;
+  width: 48px;
+  font-size: 36px;
+  line-height: 1;
+  color: var(--text-strong);
+}
+/* The face isn't loaded while it uploads: the chrome face, greyed. */
+.sp-bs-font__aa--pending {
+  color: var(--text-secondary);
+}
+.sp-bs-font__id {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xs);
+  width: 220px;
+  min-width: 0;
+}
+.sp-bs-font__id--pending {
+  gap: var(--space-2xs);
+}
+.sp-bs-font__family,
+.sp-bs-font__file {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-bs-font__file {
+  color: var(--text-secondary);
+}
+.sp-bs-font__added {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3xs);
+  color: var(--text-strong);
+}
+.sp-bs-font__specimen {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+.sp-bs-font > .ui-rowmenu {
+  flex: none;
+  color: var(--text-strong);
+}
+.sp-bs-font__blocked {
+  padding-bottom: var(--space-sm);
+}
+@media (max-width: 767.98px) {
+  .sp-bs-font__specimen {
+    display: none;
+  }
+}
+
+/* ── Images (13:11956, 13:12050) ── */
+.sp-bs-images-empty {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  min-height: 320px;
+  border: 1px dashed var(--text-secondary);
+  border-radius: var(--radius-card);
+  color: var(--text-strong);
+}
+.sp-bs-images-empty > p {
+  margin: 0;
+}
+.sp-bs-images-empty[data-active="true"] {
+  background: var(--state-hover);
+}
+/* Four columns, 16 apart; three under 1024, two under 768. */
+.sp-bs-images {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-sm);
+  align-items: start;
+}
+@media (max-width: 1023.98px) {
+  .sp-bs-images {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 767.98px) {
+  .sp-bs-images {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.sp-bs-image {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: var(--space-2xs);
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+  color: var(--text-strong);
+}
+.sp-bs-image__plate {
+  position: relative;
+  display: block;
+  height: 132px;
+  overflow: hidden;
+  border-radius: var(--radius-media-plate);
+}
+.sp-bs-image__plate::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px var(--border-default);
+  pointer-events: none;
+}
+.sp-bs-image__plate img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.sp-bs-image__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 6px 0 var(--space-3xs) var(--space-3xs);
+}
+.sp-bs-image[data-uploading] .sp-bs-image__meta {
+  gap: var(--space-2xs);
+  padding-right: var(--space-3xs);
+}
+.sp-bs-image__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2xs);
+  min-height: 32px;
+}
+.sp-bs-image__name,
+.sp-bs-image__size {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-bs-image__size {
+  color: var(--text-secondary);
+}
+.sp-bs-image__row > .ui-rowmenu {
+  flex: none;
+  color: var(--text-strong);
+}
+.sp-bs-image__blocked {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3xs);
+  padding-top: var(--space-2xs);
+}
+
+/* ── Import (13:12670, 13:12871, 13:12978) ── */
+.sp-bs-import-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+/* Two equal raised cards, 24 apart; stacked under 768. */
+.sp-bs-import {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-md);
+  align-items: start;
+}
+@media (max-width: 767.98px) {
+  .sp-bs-import {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.sp-bs-import__leg,
+.sp-bs-import__status {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+  padding: var(--space-md);
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+  color: var(--text-strong);
+}
+.sp-bs-import__leg > p,
+.sp-bs-import__status > p {
+  margin: 0;
+}
+.sp-bs-import__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+.sp-bs-import__row > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+/* Disabled Import is drawn neutral at 40%, not primary at 40%. */
+.sp-bs-import__row > .ui-btn[data-kind="primary"]:disabled {
+  background: var(--surface-sunken);
+  color: var(--text-strong);
+}
+/* Choose tokens.json: a neutral md button that is also the file picker and
+   a drop target, so it stays a label around the input. */
+.sp-bs-import__choose {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  height: 40px;
+  padding: 0 18px;
+  border-radius: var(--radius-control);
+  background: var(--surface-sunken);
+  color: var(--text-strong);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.sp-bs-import__choose:has(input:focus-visible) {
+  outline: var(--focus-width) solid var(--ring);
+  outline-offset: var(--focus-offset);
+}
+.sp-bs-import__choose[data-active="true"] {
+  box-shadow: inset 0 0 0 1px var(--text-secondary);
+}
+.sp-bs-import__note {
+  color: var(--text-secondary);
+}
+.sp-bs-import__status--done {
+  gap: 6px;
+}
+.sp-bs-import__matched {
+  color: var(--text-secondary);
+}
+.sp-bs-import__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding-top: 10px;
+}
+/* A text link on text/secondary, not underlined: the breadcrumb's link. */
+.sp-bs-link {
+  border-radius: var(--radius-control);
+  color: var(--text-secondary);
+  text-decoration: none;
+  cursor: pointer;
+}
+.sp-bs-link:hover {
+  color: var(--text-strong);
+}
+.sp-bs-import__note .sp-bs-link {
+  color: var(--text-strong);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

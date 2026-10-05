@@ -20,14 +20,6 @@ export function applyBrandTheme(kit: BrandKit | null): void {
     root.style.setProperty(brandVar, color.hex);
     touched.add(brandVar);
   }
-  if (kit.headingFont) {
-    root.style.setProperty("--brand-font-heading", `"${kit.headingFont.family}", sans-serif`);
-    touched.add("--brand-font-heading");
-  }
-  if (kit.bodyFont) {
-    root.style.setProperty("--brand-font-body", `"${kit.bodyFont.family}", sans-serif`);
-    touched.add("--brand-font-body");
-  }
 }
 
 /** Sensible starting type styles offered by onboarding — pure defaults the

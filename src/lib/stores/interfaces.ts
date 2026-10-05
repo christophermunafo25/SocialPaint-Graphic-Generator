@@ -119,6 +119,10 @@ export interface BrandAssetStore {
     id: string,
     patch: { name?: string; metadata?: BrandAsset["metadata"] },
   ): Promise<BrandAsset>;
+  /** Swap an asset's file and keep its id, so everything pointing at the
+   * asset follows (Brand Studio's Replace file, PHASE-6 §9 D6). The name
+   * becomes the new file's; the metadata patch merges as `update` does. */
+  replace(id: string, file: File, metadata?: BrandAsset["metadata"]): Promise<BrandAsset>;
   remove(id: string): Promise<void>;
 }
 

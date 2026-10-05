@@ -6,6 +6,7 @@
 import type { BrandKit, FieldType, ShapeKind, TemplateField } from "@/lib/types";
 import { newId } from "@/lib/stores/local/db";
 import { suggestFieldKey } from "@/lib/caption";
+import { roleFace } from "@/lib/brand/fontRoles";
 
 export interface PaletteItem {
   /** Stable id carried through drag-and-drop (shapes share type "shape"). */
@@ -244,7 +245,8 @@ export function fieldFromPalette(
     zIndex: maxZ(existing) + 1,
     ...(isText
       ? {
-          fontFamily: kit?.headingFont?.family,
+          // The face of the style used for Heading (PHASE-6 §9 D3).
+          fontFamily: roleFace(kit, "heading").family,
           fontSizePx: Math.max(18, Math.min(90, Math.round(height * 0.5))),
           colorHex: kit?.colors.find((c) => c.key === "text")?.hex ?? kit?.colors[0]?.hex,
           align: "left" as const,

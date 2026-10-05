@@ -181,8 +181,18 @@ export function Progress({
   );
 }
 
-/** Progress bar (Figma 58:451): import progress. */
-export function ProgressBar({ value, label }: { value: number; label: string }) {
+/** Progress bar (Figma 58:451): import progress. Without a `value` it is
+ * indeterminate: a segment slides along the track while the length of the
+ * work is unknown (Brand Studio's uploads and imports), and stands still
+ * under reduced motion. */
+export function ProgressBar({ value, label }: { value?: number; label: string }) {
+  if (value === undefined) {
+    return (
+      <div className="ui-progress-bar" role="progressbar" aria-label={label} data-indeterminate>
+        <span className="ui-progress-bar__fill" />
+      </div>
+    );
+  }
   const percent = Math.round(Math.min(1, Math.max(0, value)) * 100);
   return (
     <div
