@@ -13,16 +13,16 @@ import {
   type LogoSurface,
 } from "./kitOps";
 import type { BrandDraft } from "./kitPlumbing";
+import { Button, ChoiceChip, Input, PreviewOverlay, SegmentedControl, Tag } from "../../primitives";
 import { AddSlot } from "./primitives/AddSlot";
-import { EditOverlay } from "./primitives/EditOverlay";
-import { Tag } from "./primitives/Tag";
-import { TagChoice } from "./primitives/TagChoice";
 import { useInPlaceEdit, type InPlaceEdit } from "./primitives/useInPlaceEdit";
 
 const SURFACE_LABELS: Record<LogoSurface, string> = { dark: "Dark", light: "Light" };
 
-/** The Logos page: a surface filter in the URL, four columns of proof-plate
- * cards, per-surface primaries (D12), everything edited in place. */
+/** The Logos page (13:10014): a surface filter in the URL, four columns of
+ * proof-plate cards with the edit overlay (PHASE-6 §9 D8), per-surface
+ * primaries, everything edited in place on the card (13:10150) and
+ * autosaved; Done closes (§9 D2). */
 export function LogosDetail({ brand, surface }: { brand: BrandDraft; surface?: LogoSurface }) {
   const { company, draft, commit, assets, refresh, setError } = brand;
   const { navigate } = useRouter();
@@ -73,34 +73,23 @@ export function LogosDetail({ brand, surface }: { brand: BrandDraft; surface?: L
   const setFilter = (next?: LogoSurface) =>
     navigate({ name: "brandStudio", category: "logos", surface: next }, { replace: true });
 
-  const segments: Array<{ label: string; value?: LogoSurface; count: number }> = [
-    { label: "All", value: undefined, count: logos.length },
-    { label: "Dark", value: "dark", count: onSurface("dark").length },
-    { label: "Light", value: "light", count: onSurface("light").length },
+  const segments = [
+    { id: "all", label: `All ${logos.length}` },
+    { id: "dark", label: `Dark ${onSurface("dark").length}` },
+    { id: "light", label: `Light ${onSurface("light").length}` },
   ];
 
   return (
-    <>
-      <div
-        className="sp-segmented sp-logo-toolbar"
-        role="radiogroup"
+    <div className="sp-bs-logos-page">
+      <SegmentedControl
         aria-label="Filter logos by surface"
-      >
-        {segments.map((seg) => (
-          <button
-            key={seg.label}
-            type="button"
-            role="radio"
-            aria-checked={surface === seg.value}
-            className="sp-segmented__option"
-            onClick={() => setFilter(seg.value)}
-          >
-            {seg.label} {seg.count}
-          </button>
-        ))}
-      </div>
+        options={segments}
+        selectedId={surface ?? "all"}
+        onSelect={(id) => setFilter(id === "all" ? undefined : (id as LogoSurface))}
+        className="sp-bs-logos-filter"
+      />
 
-      <div className="sp-logos-grid">
+      <div className="sp-bs-logos">
         {filtered.map((a) =>
           a.id === edit.editingId ? (
             <LogoEditingCard
@@ -115,20 +104,22 @@ export function LogosDetail({ brand, surface }: { brand: BrandDraft; surface?: L
             <button
               key={a.id}
               type="button"
-              className="sp-card sp-logo-card sp-has-overlay"
+              className="ui-reset ui-ring sp-bs-logo"
               aria-label={`Edit ${a.name}`}
               data-edit-item={a.id}
               onClick={() => edit.start(a.id)}
             >
-              <LogoPlate asset={a} />
-              <span className="sp-color-card__row">
-                <span className="sp-color-card__name">{a.name}</span>
-              </span>
-              <span className="sp-logo-card__tags">
-                {isPrimary(a) && <Tag>Primary</Tag>}
-                {logoSurfaces(a).map((s) => (
-                  <Tag key={s}>{SURFACE_LABELS[s]}</Tag>
-                ))}
+              <PreviewOverlay decorative className="sp-bs-logo__plate">
+                <LogoPlate asset={a} />
+              </PreviewOverlay>
+              <span className="sp-bs-logo__meta">
+                <span className="t-label-l sp-bs-logo__name">{a.name}</span>
+                <span className="sp-bs-logo__tags">
+                  {isPrimary(a) && <Tag>Primary</Tag>}
+                  {logoSurfaces(a).map((s) => (
+                    <Tag key={s}>{SURFACE_LABELS[s]}</Tag>
+                  ))}
+                </span>
               </span>
             </button>
           ),
@@ -141,7 +132,7 @@ export function LogosDetail({ brand, surface }: { brand: BrandDraft; surface?: L
           onFiles={(files) => {
             for (const f of files) void uploadRef.current(f);
           }}
-          style={{ minHeight: 132, alignSelf: "stretch" }}
+          style={{ minHeight: 213 }}
         />
       </div>
       {/* The setup strip's "Upload logo" opens the picker straight away. */}
@@ -158,21 +149,20 @@ export function LogosDetail({ brand, surface }: { brand: BrandDraft; surface?: L
           e.target.value = "";
         }}
       />
-    </>
+    </div>
   );
 }
 
 /** The proof plate: one half per surface the logo shows on, each on its
- * fixed ground. */
+ * fixed ground, which never inverts with the theme. */
 function LogoPlate({ asset }: { asset: BrandAsset }) {
   return (
-    <span className="sp-logo-card__plate">
+    <span className="sp-bs-plate">
       {logoSurfaces(asset).map((s) => (
-        <span key={s} className="sp-logo-card__half" data-plate={s}>
+        <span key={s} className="sp-bs-plate__half" data-plate={s}>
           <SignedImg src={asset.url} alt="" />
         </span>
       ))}
-      <EditOverlay />
     </span>
   );
 }
@@ -301,7 +291,10 @@ function LogoEditingCard({ asset, logos, brand, edit, primaryFor }: LogoEditingP
   return (
     <div
       ref={rootRef}
-      className="sp-card sp-logo-editing"
+      role="group"
+      aria-label={`Edit ${asset.name}`}
+      className="sp-bs-logo"
+      data-editing
       onKeyDown={(e) => {
         if (e.key === "Escape") {
           e.stopPropagation();
@@ -309,76 +302,81 @@ function LogoEditingCard({ asset, logos, brand, edit, primaryFor }: LogoEditingP
         }
       }}
     >
-      <LogoPlate asset={asset} />
+      <span className="sp-bs-logo__plate">
+        <LogoPlate asset={asset} />
+      </span>
 
-      <input
-        className="sp-input sp-input--mini"
-        aria-label="Logo name"
-        value={name}
-        autoFocus
-        onChange={(e) => setName(e.target.value)}
-        onBlur={() => void saveName()}
-        onKeyDown={(e) => e.key === "Enter" && finish()}
-      />
+      <div className="sp-bs-logo__fields">
+        <Input
+          size="sm"
+          aria-label="Logo name"
+          value={name}
+          autoFocus
+          onChange={(e) => setName(e.target.value)}
+          onBlur={() => void saveName()}
+          onKeyDown={(e) => e.key === "Enter" && finish()}
+        />
 
-      <span className="sp-eyebrow">Show on</span>
-      <div className="flex flex-wrap" style={{ gap: "var(--space-2xs)" }}>
-        {(["dark", "light"] as const).map((s) => (
-          <TagChoice
-            key={s}
-            role="checkbox"
-            checked={surfaces.includes(s)}
-            onChange={(next) => void toggleSurface(s, next)}
+        <div className="sp-bs-choice-row">
+          <span id={`${asset.id}-show`} className="t-label-xs sp-bs-choice-row__label">
+            Show on
+          </span>
+          <div role="group" aria-labelledby={`${asset.id}-show`} className="sp-bs-chips">
+            {(["dark", "light"] as const).map((s) => (
+              <ChoiceChip
+                key={s}
+                selected={surfaces.includes(s)}
+                onClick={() => void toggleSurface(s, !surfaces.includes(s))}
+              >
+                {SURFACE_LABELS[s]}
+              </ChoiceChip>
+            ))}
+          </div>
+          {note && (
+            <p className="t-caption-s sp-bs-note" role="status">
+              {note}
+            </p>
+          )}
+        </div>
+
+        <div className="sp-bs-choice-row">
+          <span id={`${asset.id}-primary`} className="t-label-xs sp-bs-choice-row__label">
+            Primary
+          </span>
+          <div role="group" aria-labelledby={`${asset.id}-primary`} className="sp-bs-chips">
+            {(["dark", "light"] as const).map((s) => (
+              <ChoiceChip
+                key={s}
+                selected={primaryFor(s) === asset.id}
+                disabled={!surfaces.includes(s)}
+                onClick={() => primaryFor(s) !== asset.id && makePrimary(s)}
+              >
+                On {s}
+              </ChoiceChip>
+            ))}
+          </div>
+        </div>
+
+        {blocked && (
+          <p className="t-caption-s sp-bs-error-line" role="alert">
+            {blocked}
+          </p>
+        )}
+
+        <div className="sp-bs-popover__foot">
+          {/* The file goes, and Undo can't bring it back: red (§9 D6). */}
+          <button
+            type="button"
+            className="ui-reset ui-ring t-label-xs sp-bs-quiet-action"
+            data-destructive
+            onClick={() => void remove()}
           >
-            {SURFACE_LABELS[s]}
-          </TagChoice>
-        ))}
-      </div>
-      {note && (
-        <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>{note}</p>
-      )}
-
-      <span className="sp-eyebrow">Primary</span>
-      <div className="flex flex-wrap" style={{ gap: "var(--space-2xs)" }}>
-        {(["dark", "light"] as const).map((s) => (
-          <TagChoice
-            key={s}
-            role="checkbox"
-            checked={primaryFor(s) === asset.id}
-            disabled={!surfaces.includes(s)}
-            onChange={(next) => next && makePrimary(s)}
-          >
-            On {s}
-          </TagChoice>
-        ))}
-      </div>
-
-      {blocked && (
-        <p
-          role="alert"
-          style={{ fontSize: "var(--type-caption-size)", color: "var(--state-danger)" }}
-        >
-          {blocked}
-        </p>
-      )}
-
-      <div className="flex items-center justify-between" style={{ marginTop: "var(--space-3xs)" }}>
-        <button
-          type="button"
-          className="sp-btn sp-btn-tertiary"
-          style={{ height: 28, padding: "0 10px", fontSize: "var(--type-caption-size)" }}
-          onClick={() => void remove()}
-        >
-          Remove
-        </button>
-        <button
-          type="button"
-          className="sp-btn sp-btn-ghost"
-          style={{ height: 28, padding: "0 10px", fontSize: "var(--type-caption-size)" }}
-          onClick={finish}
-        >
-          Done
-        </button>
+            Remove
+          </button>
+          <Button kind="primary" size="sm" onClick={finish}>
+            Done
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -68,7 +68,22 @@ function DetailSkeleton({ category }: { category: BrandCategory }) {
       </div>
     );
   }
-  if (category === "logos" || category === "images") {
+  if (category === "logos") {
+    return (
+      <div className="sp-bs-logos" aria-busy="true" aria-label={label}>
+        {Array.from({ length: 4 }, (_, i) => (
+          <div key={i} className="sp-bs-logo" aria-hidden>
+            <span className="sp-bs-logo__plate sp-bs-bone" />
+            <span className="sp-bs-logo__meta">
+              <span className="sp-bs-bone" style={{ width: 96, height: 10 }} />
+              <span className="sp-bs-bone" style={{ width: 64, height: 8 }} />
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (category === "images") {
     return (
       <div className="sp-logos-grid" aria-busy="true" aria-label={label}>
         {Array.from({ length: 4 }, (_, i) => (

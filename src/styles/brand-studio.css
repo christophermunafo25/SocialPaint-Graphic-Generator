@@ -401,3 +401,124 @@ label.sp-bs-add:focus-within {
 .sp-bs-color[aria-expanded="true"] .ui-preview__overlay {
   opacity: 0;
 }
+
+/* ── Logos (13:10014, 13:10150) ── */
+.sp-bs-logos-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+.sp-bs-logos-filter {
+  align-self: flex-start;
+}
+/* Four columns, 16 apart; three under 1024, two under 768. */
+.sp-bs-logos {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-sm);
+  align-items: start;
+}
+@media (max-width: 1023.98px) {
+  .sp-bs-logos {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 767.98px) {
+  .sp-bs-logos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.sp-bs-logo {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  padding: var(--space-2xs);
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+  color: var(--text-strong);
+  text-align: left;
+}
+.sp-bs-logo__plate {
+  display: block;
+  height: 132px;
+  border-radius: var(--radius-media-plate);
+}
+/* The proof plate: one fixed ground per surface, never inverting. */
+.sp-bs-plate {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  overflow: hidden;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px var(--border-default);
+}
+.sp-bs-plate__half {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+.sp-bs-plate__half[data-plate="dark"] {
+  background: var(--plate-dark);
+}
+.sp-bs-plate__half[data-plate="light"] {
+  background: var(--plate-light);
+}
+.sp-bs-plate__half img {
+  max-width: 70%;
+  max-height: 60%;
+  object-fit: contain;
+}
+.sp-bs-logo__plate:not(.ui-preview) {
+  position: relative;
+  overflow: hidden;
+}
+.sp-bs-logo__meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  min-width: 0;
+  padding: var(--space-xs) var(--space-3xs) var(--space-3xs);
+}
+.sp-bs-logo__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-bs-logo__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3xs);
+}
+/* The card, editing in place (13:10267). */
+.sp-bs-logo__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* as drawn */
+  padding: 10px 0 2px;
+}
+.sp-bs-choice-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 2px;
+}
+.sp-bs-choice-row__label {
+  color: var(--text-secondary);
+}
+.sp-bs-note {
+  margin: 0;
+  color: var(--text-secondary);
+}
+/* Remove where Undo can't bring it back (a file): red (§9 D6). */
+.sp-bs-quiet-action[data-destructive] {
+  color: var(--state-error);
+}
+.sp-bs-quiet-action[data-destructive]:hover {
+  color: var(--state-error);
+  text-decoration: underline;
+}
