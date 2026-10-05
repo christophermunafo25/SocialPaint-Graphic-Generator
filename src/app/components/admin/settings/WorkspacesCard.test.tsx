@@ -5,7 +5,10 @@ import { describe, expect, it, vi } from "vitest";
 import { AuthContext, type AuthState } from "@/lib/auth/AuthContext";
 import type { Company } from "@/lib/types";
 import { RouterProvider } from "../../../router";
-import { WorkspacesCard, workspaceInitials } from "./WorkspacesCard";
+import { WorkspacesCard, workspaceInitials, workspaceMeta } from "./WorkspacesCard";
+
+const people = vi.hoisted(() => ({ list: vi.fn(async () => [] as unknown[]) }));
+vi.mock("@/lib/stores", () => ({ stores: { people } }));
 
 const company = (id: string, name: string) => ({ id, name }) as Company;
 const ACME = company("c1", "Acme Health");
@@ -31,12 +34,21 @@ function renderCard(over: Partial<AuthState> = {}) {
 }
 
 describe("WorkspacesCard", () => {
-  it("marks the current workspace and shows each role, with no count", () => {
+  it("marks the current workspace and counts people only where the viewer is admin (D2)", async () => {
+    people.list.mockResolvedValueOnce([{}, {}, {}]);
     renderCard();
     expect(screen.getByText("Current")).toBeTruthy();
-    expect(screen.getByText("Admin")).toBeTruthy();
+    expect(await screen.findByText("Admin · 3 people")).toBeTruthy();
     expect(screen.getByText("Member")).toBeTruthy();
-    expect(screen.queryByText(/people/)).toBeNull();
+    expect(people.list).toHaveBeenCalledTimes(1);
+    expect(people.list).toHaveBeenCalledWith("c1");
+  });
+
+  it("writes the meta line", () => {
+    expect(workspaceMeta("Admin", 26)).toBe("Admin · 26 people");
+    expect(workspaceMeta("Admin", 1)).toBe("Admin · 1 person");
+    expect(workspaceMeta("Member", undefined)).toBe("Member");
+    expect(workspaceMeta("Admin", 0)).toBe("Admin");
   });
 
   it("switches to another workspace", async () => {

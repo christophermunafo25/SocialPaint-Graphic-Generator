@@ -984,6 +984,7 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   flex: none;
   align-items: center;
   justify-content: center;
+  border: 1px solid var(--border-default); /* every size, as drawn (54:62, 13:14708) */
   border-radius: var(--radius-pill);
   background: var(--surface-sunken);
   color: var(--text-strong);
@@ -995,7 +996,6 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 .ui-avatar[data-size="lg"] {
   width: 38px;
   height: 38px;
-  border: 1px solid var(--border-default);
 }
 .ui-avatar[data-shape="square"] {
   border-radius: var(--radius-control);

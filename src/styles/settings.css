@@ -39,13 +39,13 @@
 /* Cards whose header sits closer to its rows than the primitive's 20, as
    drawn: Workspaces 8 (13:14698), the integrations 12 (13:15179), Public
    links 16 (13:15512). */
-.ui-settings-card[data-gap="8"] {
+.ui-settings-card.sp-st-gap-8 {
   gap: var(--space-2xs);
 }
-.ui-settings-card[data-gap="12"] {
+.ui-settings-card.sp-st-gap-12 {
   gap: var(--space-xs);
 }
-.ui-settings-card[data-gap="16"] {
+.ui-settings-card.sp-st-gap-16 {
   gap: var(--space-sm);
 }
 
@@ -71,4 +71,36 @@
   display: flex;
   justify-content: flex-end;
   gap: var(--space-2xs);
+}
+
+/* A failed save, over the section's cards. */
+.sp-st-error {
+  margin: 0;
+  color: var(--state-error);
+}
+
+/* Two fields a row, 16 apart both ways (13:14727). */
+.sp-st-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+@media (max-width: 599.98px) {
+  .sp-st-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Switch rows, 16 apart (13:14755): the label, then its switch. */
+.sp-st-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+.sp-st-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  color: var(--text-strong);
 }
