@@ -181,3 +181,223 @@
 .sp-bs-cat__count {
   color: var(--text-secondary);
 }
+
+/* The "+ Add" slot that ends every collection (13:9455). */
+.sp-bs-add {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3xs);
+  width: 100%;
+  padding: var(--space-sm);
+  border: 1px dashed var(--text-secondary);
+  border-radius: var(--radius-card);
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.sp-bs-add:hover,
+.sp-bs-add[data-active="true"] {
+  background: var(--state-hover);
+}
+/* A label wrapping a file input: its ring follows the input's focus. */
+label.sp-bs-add:focus-within {
+  outline: var(--focus-width) solid var(--ring);
+  outline-offset: var(--focus-offset);
+}
+.sp-bs-add__detail {
+  color: var(--text-secondary);
+}
+
+/* ── Colors (13:9309, 13:9470) ── */
+/* Six columns of swatch cards, 12 apart; four under 1280, three under 1024,
+   two under 480. */
+.sp-bs-colors {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--space-xs);
+  align-items: start;
+}
+@media (max-width: 1279.98px) {
+  .sp-bs-colors {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+@media (max-width: 1023.98px) {
+  .sp-bs-colors {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 479.98px) {
+  .sp-bs-colors {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.sp-bs-color-cell {
+  position: relative;
+  min-width: 0;
+}
+.sp-bs-color-cell[data-open] {
+  z-index: 2;
+}
+.sp-bs-color {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: var(--space-2xs);
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+  color: var(--text-strong);
+  text-align: left;
+}
+/* The open card (13:9632): a 1px ring in text/strong on its own edge. */
+.sp-bs-color[aria-expanded="true"] {
+  box-shadow:
+    var(--elevation-small),
+    inset 0 0 0 1px var(--text-strong);
+}
+.sp-bs-color__swatch {
+  height: 88px;
+  border-radius: var(--radius-media-plate);
+}
+.sp-bs-color__fill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--swatch);
+  box-shadow: inset 0 0 0 1px var(--border-default);
+}
+.sp-bs-color__role {
+  position: absolute;
+  top: var(--space-2xs);
+  left: var(--space-2xs);
+}
+.sp-bs-color__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: var(--space-xs) var(--space-3xs) var(--space-3xs);
+}
+.sp-bs-color__name,
+.sp-bs-color__hex {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-bs-color__hex {
+  color: var(--text-secondary);
+}
+/* Behind an open editor, the rest of the grid and the summary blur 1.5px
+   and take no clicks: a click there only closes the editor (§8). */
+.sp-bs-colors-page[data-editing] .sp-bs-color-cell:not([data-open]),
+.sp-bs-colors-page[data-editing] .sp-bs-colors > .sp-bs-add,
+.sp-bs-colors-page[data-editing] .sp-bs-roles {
+  filter: blur(1.5px);
+  pointer-events: none;
+}
+
+/* A floating editor (13:9633): 300 wide, Elevation/Medium, 10 under its
+   card, left-aligned; right-aligned or above where §8 says. */
+.sp-bs-popover {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  z-index: 3;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* as drawn */
+  width: 300px;
+  max-width: calc(100vw - 32px);
+  padding: 14px; /* as drawn */
+  border-radius: var(--radius-menu);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-medium);
+  color: var(--text-strong);
+}
+.sp-bs-popover[data-end] {
+  left: auto;
+  right: 0;
+}
+.sp-bs-popover[data-above] {
+  top: auto;
+  bottom: calc(100% + 10px);
+}
+.sp-bs-popover__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 32px;
+  padding: var(--space-3xs) 0 0 2px;
+}
+/* Remove where Undo brings it back: quiet text, not red (§9 D6). */
+.sp-bs-quiet-action {
+  border-radius: var(--radius-control);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.sp-bs-quiet-action:hover {
+  color: var(--text-strong);
+}
+.sp-bs-error-line {
+  margin: 0;
+  color: var(--state-error);
+}
+.sp-bs-color-popover__value {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+.sp-bs-color-popover__value > :last-child {
+  flex: 1;
+  min-width: 0;
+}
+.sp-bs-color-popover__contrast {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 2px;
+  color: var(--text-secondary);
+}
+.sp-bs-color-popover__contrast > p {
+  margin: 0;
+}
+.sp-bs-color-popover__role {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 2px 2px 0;
+}
+.sp-bs-color-popover__label {
+  color: var(--text-secondary);
+}
+.sp-bs-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Who holds each role (13:9457), 24 under the grid. */
+.sp-bs-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs) var(--space-md);
+  margin-top: var(--space-md);
+}
+.sp-bs-roles__item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2xs);
+}
+.sp-bs-roles__role {
+  color: var(--text-secondary);
+}
+/* The open card shows its ring, not the edit overlay. */
+.sp-bs-color[aria-expanded="true"] .ui-preview__overlay {
+  opacity: 0;
+}

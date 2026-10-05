@@ -55,13 +55,13 @@ function DetailSkeleton({ category }: { category: BrandCategory }) {
   const label = `Loading ${CATEGORY_TITLES[category]}`;
   if (category === "colors") {
     return (
-      <div className="sp-colors-grid" aria-busy="true" aria-label={label}>
+      <div className="sp-bs-colors" aria-busy="true" aria-label={label}>
         {Array.from({ length: 6 }, (_, i) => (
-          <div key={i} className="sp-card sp-color-card" aria-hidden>
-            <Bone w="100%" h={88} r="var(--radius-media-inner)" />
-            <span className="sp-color-card__row">
-              <Bone w={56} h={13} />
-              <Bone w={44} h={10} />
+          <div key={i} className="sp-bs-color" aria-hidden>
+            <span className="sp-bs-color__swatch sp-bs-bone" />
+            <span className="sp-bs-color__meta">
+              <span className="sp-bs-bone" style={{ width: 56, height: 10 }} />
+              <span className="sp-bs-bone" style={{ width: 44, height: 8 }} />
             </span>
           </div>
         ))}

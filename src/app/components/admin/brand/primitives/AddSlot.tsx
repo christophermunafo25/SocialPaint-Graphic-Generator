@@ -4,7 +4,7 @@ import { useFileDrop } from "@/lib/useFileDrop";
 interface AddSlotProps {
   /** Rendered as "+ {label}" — pass "Add color", "Add logo", … */
   label: string;
-  /** Optional mono detail line, e.g. "SVG or PNG". */
+  /** Optional detail line, e.g. "SVG or PNG". */
   detail?: string;
   /** Without `onFiles`: a plain button. */
   onClick?(): void;
@@ -16,7 +16,9 @@ interface AddSlotProps {
   style?: React.CSSProperties;
 }
 
-/** The dashed "+ Add" slot that ends every collection (D10). */
+/** The dashed "+ Add" slot that ends every collection (13:9455): radius 20,
+ * a 1px dashed edge in text/secondary, the label in Button/M. A file slot
+ * takes a drop too, and lights up under one (PHASE-6 §9 D9). */
 export function AddSlot({
   label,
   detail,
@@ -30,14 +32,14 @@ export function AddSlot({
 
   const body = (
     <>
-      <span className="sp-add-slot__label">+ {label}</span>
-      {detail && <span className="sp-add-slot__detail">{detail}</span>}
+      <span className="t-button-m sp-bs-add__label">+ {label}</span>
+      {detail && <span className="t-label-xs sp-bs-add__detail">{detail}</span>}
     </>
   );
 
   if (onFiles) {
     return (
-      <label {...drop.bind} data-active={drop.active} className="sp-add-slot" style={style}>
+      <label {...drop.bind} data-active={drop.active} className="ui-ring sp-bs-add" style={style}>
         {body}
         {/* sr-only, not hidden: a display:none input can't take keyboard
             focus, and the slot must open from the keyboard too. */}
@@ -58,7 +60,7 @@ export function AddSlot({
   }
 
   return (
-    <button type="button" className="sp-add-slot" style={style} onClick={onClick}>
+    <button type="button" className="ui-reset ui-ring sp-bs-add" style={style} onClick={onClick}>
       {body}
     </button>
   );
