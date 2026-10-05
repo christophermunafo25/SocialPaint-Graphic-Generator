@@ -18,9 +18,14 @@ const DEBOUNCE_MS = 150;
 export function LibrarySearch({
   value,
   onChange,
+  label = "Search templates",
+  placeholder = "Search templates, platforms, sizes, or use cases",
 }: {
   value: string;
   onChange(next: string): void;
+  /** The field's name; History's is "Search chats". */
+  label?: string;
+  placeholder?: string;
 }) {
   const [draft, setDraft] = useState(value);
   const [open, setOpen] = useState(value !== "");
@@ -55,8 +60,8 @@ export function LibrarySearch({
           setDraft("");
           onChange("");
         }}
-        label="Search templates"
-        placeholder="Search templates, platforms, sizes, or use cases"
+        label={label}
+        placeholder={placeholder}
       />
     </div>
   );

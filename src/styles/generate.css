@@ -371,3 +371,87 @@
 .sp-chat-thread-frame[data-chat="generate"] > .sp-chat-scroll-fade[data-position="top"] {
   height: 68px;
 }
+
+/* ── History (13:3359) ── */
+/* A square card: the stage takes what the meta leaves, sunken and padded
+   16, centring the draft at its own ratio (container units resolve against
+   the stage's content box) at the control radius. */
+.sp-gen-card--history {
+  aspect-ratio: 1;
+  min-width: 0;
+}
+.sp-gen-card--history[data-state="loading"] {
+  cursor: default;
+}
+.sp-gen-card--history[data-state="loading"]:hover {
+  box-shadow: var(--elevation-small);
+}
+.sp-gen-card__stage {
+  flex: 1 0 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-sm);
+  border-radius: var(--radius-media-plate);
+  background: var(--surface-sunken);
+  container-type: size;
+}
+.sp-gen-card__graphic {
+  position: relative;
+  flex-shrink: 0;
+  aspect-ratio: var(--fit-ratio);
+  width: min(100cqw, 100cqh * var(--fit-ratio));
+  border-radius: var(--radius-control);
+  overflow: hidden;
+}
+.sp-gen-card__overscan {
+  position: absolute;
+  inset: -1px;
+}
+
+.sp-gen-history-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  flex-shrink: 0;
+}
+.sp-gen-history-head__title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+.sp-gen-history-head__title > h1 {
+  margin: 0;
+}
+/* A landing point when a chat's History or View all brings the member
+   here, not a control: no ring. */
+.sp-gen-history-head__title > h1:focus {
+  outline: none;
+}
+/* The library's filter bar, 24 under the header. The page itself never
+   scrolls (the grid does), so the bar never pins. */
+.sp-chat-page[data-state="history"] .sp-lib-filterbar {
+  position: static;
+  flex-shrink: 0;
+  margin-top: var(--space-md);
+}
+/* Four columns, 12 apart (13:3509); three, then two, as the page narrows. */
+.sp-chat-page[data-state="history"] .sp-chat-history-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+@media (max-width: 1100px) {
+  .sp-chat-page[data-state="history"] .sp-chat-history-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 767px) {
+  .sp-chat-page[data-state="history"] .sp-chat-history-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+/* The bottom fade runs 132 over the grid's foot (13:3594). */
+.sp-chat-page[data-state="history"] .sp-chat-scroll-fade[data-position="bottom"] {
+  height: 132px;
+}
