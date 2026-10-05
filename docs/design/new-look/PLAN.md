@@ -47,11 +47,12 @@ Out of scope until they are designed: the Template Builder, onboarding and the s
 | 4 | Brand Templates | A stand-in provider for the template chat on the local backend (first step), the library, platform filters and search, the fill page with Use AI to assist (and the same form on the public link page), and the template chat, on the new primitives | Screens match their frames in both themes |
 | 5 | Generate | Start, thread, result, edit and History | Same |
 | 6 | Brand Studio | Overview and the six detail pages, with the new cover images committed | Same |
-| 7 | Settings | All seven sections | Same |
+| 7 | Settings | All seven sections; the Plan card's no-plan state ("Early access") | Same |
+| 7b | Billing | Plan management on Stripe (Checkout, the customer portal, a webhook), the plan picker and every Plan card state; its own PR right after Phase 7 (CJ, 2026-10-05; `PHASE-7B.md`) | Fixture screenshots of every card state; CJ's Stripe sandbox run |
 | 8 | Insights | The dashboard and its cards | Same |
 | 9 | Cleanup and QA | Delete the bridge, dead tokens and the old control classes, drop the unread `company_canvas_presets` table (a migration; Phase 3 stopped reading it), remove unused packages, add lint rules against raw colors and inline type, a full screenshot, contrast and keyboard pass, update `ARCHITECTURE.md` and the stylesheet header | Nothing legacy left |
 
-Posting straight to people's own social accounts through connectors comes after the new look; until then LinkedIn stays the one place to post. Behavior changes that need data or product work land in their area's phase, and that phase's prompt specifies them: plan management in Settings (the code has no billing; the Plan card is a placeholder by design), Insights filters by template, member and platform with the month summary, font roles moving from Fonts to Type styles in Brand Studio, and authored questions per template field (a `TemplateField` change) in the template chat. Connectors in the attach menu (with Context: web pages and past posts) come after the new look, each as its own feature (CJ, 2026-10-04).
+Posting straight to people's own social accounts through connectors comes after the new look; until then LinkedIn stays the one place to post. Behavior changes that need data or product work land in their area's phase, and that phase's prompt specifies them: plan management on Stripe in Phase 7b (moved from Phase 7 by CJ, 2026-10-05; Phase 7 builds the no-plan "Early access" card), Insights filters by template, member and platform with the month summary, font roles moving from Fonts to Type styles in Brand Studio, and authored questions per template field (a `TemplateField` change) in the template chat. Connectors in the attach menu (with Context: web pages and past posts) come after the new look, each as its own feature (CJ, 2026-10-04).
 
 ## Screen map
 
