@@ -229,6 +229,7 @@ Build to Part D, per §9 D6, D7 and D11.
 Numbered as in the draft. CJ's list covered D1, D2, D3, D6 and D7 to D9; D4, D5, D11 and D12 are built as the draft recommended (marked "as recommended"), and the rest of D10 as CJ answered it.
 
 1. **D1. Covers.** Commit the new Colors, Logos, Fonts, Type styles and Import covers now. The new Images cover waits until CJ confirms the rights to its two photos ("Photo · Laptop in hard light" and "Photo · Hiring", from the brand file); today's Images cover stays meanwhile.
+   - **Follow-up (CJ, 2026-10-05):** CJ holds the licence for the Images cover's photos; the new Images cover shipped after Phase 6.
 2. **D2. Autosave.** Keep autosave and Undo. The editors' button reads **"Done"** (its layer is already named Done in the frames) and closes the editor; the header keeps "All changes saved".
 3. **D3. Font roles move to type styles,** with a **"Use for"** setting drawn in Type styles · All properties (13:11196 / 13:11730): None, Heading and Body as ChoiceChips, inline beside "Always uppercase" and "Shrink to fit the box", like the color editor's Role row. One style holds each role, and picking a role for another style moves it there, with a toast like the color roles'.
    - New text in the builder binds to the style used for Heading, instead of copying the heading face.
