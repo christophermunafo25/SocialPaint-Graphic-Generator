@@ -522,3 +522,141 @@ label.sp-bs-add:focus-within {
   color: var(--state-error);
   text-decoration: underline;
 }
+
+/* ── Type styles and Fonts: one list card (13:10975, 13:13776) ── */
+.sp-bs-list {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  padding: var(--space-2xs);
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+  color: var(--text-strong);
+}
+.sp-bs-list__rows {
+  display: flex;
+  flex-direction: column;
+  padding: 0 var(--space-sm);
+}
+.sp-bs-list > .sp-bs-add {
+  border-radius: var(--radius-media-plate);
+}
+/* Rows 1px apart; the open editor sits under its row with no divider. */
+.sp-bs-style + .sp-bs-style {
+  border-top: 1px solid var(--border-default);
+}
+.sp-bs-style__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  min-width: 0;
+  padding: 20px 0; /* as drawn */
+}
+.sp-bs-style__spec {
+  flex: none;
+  width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-strong);
+}
+.sp-bs-style__rename {
+  background: var(--input-bg);
+  border-radius: var(--radius-control);
+}
+.sp-bs-style__face {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  color: var(--text-secondary);
+}
+.sp-bs-style__face > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-bs-style__values {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+.sp-bs-style__slash {
+  color: var(--text-secondary);
+}
+.sp-bs-style__value {
+  border-radius: var(--radius-control);
+  color: var(--text-strong);
+  cursor: text;
+}
+.sp-bs-style__value[data-auto] {
+  color: var(--text-secondary);
+}
+.sp-bs-style__value-input {
+  width: 64px;
+}
+.sp-bs-style__blocked {
+  padding-bottom: var(--space-sm);
+}
+/* The editor (13:11314): 640 wide, two columns of fields 16 apart. */
+.sp-bs-style__editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  max-width: 640px;
+  padding-bottom: var(--space-md);
+}
+.sp-bs-style__fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-xs) var(--space-sm);
+}
+@media (max-width: 767.98px) {
+  .sp-bs-style__fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sp-bs-style__row {
+    flex-wrap: wrap;
+  }
+}
+.sp-bs-style__toggles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.sp-bs-style__toggle-label {
+  color: var(--text-secondary);
+}
+.sp-bs-style__toggle-gap {
+  width: 10px;
+}
+.sp-bs-style__rules {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-control-md);
+  background: var(--surface-sunken);
+}
+.sp-bs-style__rule {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  margin: 0;
+  color: var(--text-secondary);
+}
+.sp-bs-style__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+/* A row's menu trigger, at rest as drawn (§9 D7). */
+.sp-bs-style__row > .ui-rowmenu {
+  flex: none;
+  color: var(--text-strong);
+}

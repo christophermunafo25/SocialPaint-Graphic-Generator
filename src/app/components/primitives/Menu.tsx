@@ -177,8 +177,11 @@ function RowMenuItems({ groups, kit }: { groups: RowMenuGroup[]; kit: MenuKit })
               key={item.label}
               className="ui-menu-item"
               disabled={item.disabled}
-              role={item.checked !== undefined ? "menuitemradio" : undefined}
-              aria-checked={item.checked}
+              // Only a choice overrides Radix's own role: an explicit
+              // undefined would erase "menuitem".
+              {...(item.checked !== undefined
+                ? { role: "menuitemradio", "aria-checked": item.checked }
+                : {})}
               data-selected={item.checked || undefined}
               data-destructive={item.destructive || undefined}
               onSelect={() => item.onSelect()}
