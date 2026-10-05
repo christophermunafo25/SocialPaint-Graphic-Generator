@@ -1078,6 +1078,21 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 .ui-result-card > .ui-preview {
   border-radius: var(--radius-media-plate);
 }
+/* The whole preview opens the editor, not only the Edit circle: the
+   button's hit area covers the well (the overlay still draws on hover and
+   focus). */
+.ui-result-card .ui-preview__edit::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+/* The card the editor is open on (Generate · Edit 13:3150): a 0.75
+   outline in text/strong on the card's edge. */
+.ui-result-card[data-selected] {
+  box-shadow:
+    var(--elevation-small),
+    inset 0 0 0 0.75px var(--text-strong);
+}
 .ui-result-card__meta {
   display: flex;
   align-items: center;
@@ -1093,6 +1108,11 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 }
 .ui-result-card__size {
   color: var(--text-secondary);
+}
+.ui-result-card__text > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ── Look tile (104:996) ── */
@@ -1405,6 +1425,14 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+.ui-bubble__tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 /* ── Assistant message (61:532) ── */

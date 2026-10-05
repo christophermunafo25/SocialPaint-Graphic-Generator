@@ -1,5 +1,4 @@
-import React, { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import { Check, Copy } from "lucide-react";
+import React, { memo, useCallback, useId, useMemo, useRef } from "react";
 import type { TemplateSchema } from "@/lib/types";
 import type { AssistantTurn, ChatDraft, ChatPhoto } from "@/lib/generate/chat";
 import { isRunningTurn } from "@/lib/generate/chatReducer";
@@ -8,8 +7,9 @@ import { PHOTO_ANSWER, type InterviewStep } from "@/lib/generate/interview";
 import { progressLabel, provenanceSentence } from "@/lib/generate/runCopy";
 import { defaultVariant, hasVariants } from "@/lib/templates/variants";
 import { TemplateThumbnail } from "../TemplateThumbnail";
-import { Button, Chip, IconButton, LookTile, Progress, ResultCard, Tag } from "../primitives";
-import { AssistantMessage, MessageBubble } from "./Messages";
+import { Button, Chip, LookTile, Progress, ResultCard, Tag } from "../primitives";
+import { CaptionCard } from "./CaptionCard";
+import { AssistantMessage, MessageBubble, UserMessage } from "./Messages";
 
 /** The result card's preview height (13:7871): 264, the width following
  * the template's shape. */
@@ -180,22 +180,12 @@ export function TemplateInterviewLive({
 
 /** A message the person typed after the build (a follow-up): its photo,
  * then the bubble. */
-export function TemplateUserTurn({
-  text,
-  photo,
-  note,
-}: {
+export function TemplateUserTurn(props: {
   text: string;
   photo?: string | null;
   note?: React.ReactNode;
 }) {
-  return (
-    <div className="sp-tchat-user">
-      {photo && <img src={photo} alt="Attached photo" className="sp-tchat-user__photo" />}
-      {text && <MessageBubble>{text}</MessageBubble>}
-      {note && <p className="t-caption-s sp-tchat-user__note">{note}</p>}
-    </div>
-  );
+  return <UserMessage {...props} />;
 }
 
 /** What a template turn needs from the page. */
@@ -289,37 +279,6 @@ function LookCard({
         </span>
         <span className="t-caption-s sp-tchat-looks__name">{name}</span>
       </div>
-    </div>
-  );
-}
-
-/** The caption card (13:7920): "Caption" with a copy button, then the
- * caption. Copy shows a check for a moment and says so. */
-function CaptionCard({ caption }: { caption: string }) {
-  const [copied, setCopied] = useState<string | null>(null);
-  const timer = useRef<number | undefined>(undefined);
-  useEffect(() => () => window.clearTimeout(timer.current), []);
-  const shown = copied === caption;
-  return (
-    <div className="sp-tchat-caption">
-      <div className="sp-tchat-caption__head">
-        <span className="t-label-m">Caption</span>
-        <IconButton
-          icon={shown ? Check : Copy}
-          label={shown ? "Caption copied" : "Copy caption"}
-          onClick={() => {
-            void navigator.clipboard.writeText(caption).then(() => {
-              setCopied(caption);
-              window.clearTimeout(timer.current);
-              timer.current = window.setTimeout(() => setCopied(null), 1500);
-            });
-          }}
-        />
-      </div>
-      <p className="t-body-m sp-tchat-caption__text">{caption}</p>
-      <span className="sr-only" role="status">
-        {shown ? "Caption copied" : ""}
-      </span>
     </div>
   );
 }

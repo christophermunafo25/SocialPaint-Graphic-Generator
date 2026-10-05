@@ -147,22 +147,36 @@ export function ModalPanel({ title, icon: Icon, children, closeLabel = "Close" }
   );
 }
 
-/** Progress (Figma 58:450): step progress under the generating message. */
-export function Progress({ value, label }: { value: number; label: string }) {
+/** Progress (Figma 58:450): step progress under the generating message.
+ * With `steps`, the bar counts steps (1 to max) and is named by the status
+ * sentence it sits under, speaking the label as its value; the drawn label
+ * is then hidden from assistive tech rather than read twice (Generate). */
+export function Progress({
+  value,
+  label,
+  steps,
+}: {
+  value: number;
+  label: string;
+  steps?: { now: number; max: number; labelledBy: string };
+}) {
   const percent = Math.round(Math.min(1, Math.max(0, value)) * 100);
+  const aria = steps
+    ? {
+        "aria-valuemin": 1,
+        "aria-valuemax": steps.max,
+        "aria-valuenow": steps.now,
+        "aria-labelledby": steps.labelledBy,
+      }
+    : { "aria-valuemin": 0, "aria-valuemax": 100, "aria-valuenow": percent };
   return (
-    <div
-      className="ui-progress"
-      role="progressbar"
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={percent}
-      aria-valuetext={label}
-    >
+    <div className="ui-progress" role="progressbar" aria-valuetext={label} {...aria}>
       <span className="ui-progress__track">
         <span className="ui-progress__fill" style={{ width: `${percent}%` }} />
       </span>
-      <span className="t-label-xs ui-progress__label">{label}</span>
+      <span className="t-label-xs ui-progress__label" aria-hidden={steps ? true : undefined}>
+        {label}
+      </span>
     </div>
   );
 }

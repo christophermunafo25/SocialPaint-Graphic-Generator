@@ -55,9 +55,9 @@ import {
   TemplateUserTurn,
   type TemplateTurnHandlers,
 } from "../chat/TemplateChatViews";
-import { AssistantTurnView } from "./AssistantTurnView";
+import { GenerateHeader } from "../chat/GenerateHeader";
+import { GenerateTurn } from "../chat/GenerateTurn";
 import { TemplateLinksDialog } from "../admin/TemplateLinksDialog";
-import { ChatHeader } from "./ChatHeader";
 import { ChatLoading, ChatUnavailable, THREAD_PLACEHOLDER } from "./ChatLoadStates";
 import {
   EXPORT_TOAST_MS,
@@ -68,7 +68,7 @@ import {
 import { LegalLinks } from "./LegalLinks";
 import { RecentChats } from "./RecentChats";
 import { ScrollFade, useScrollFades } from "./ScrollFade";
-import { UserMessage } from "./UserMessage";
+import { UserMessage } from "../chat/Messages";
 import { requestComposerFocus, requestHistoryFocus, takeComposerFocus } from "./composerFocus";
 import { useChatController } from "./useChatController";
 import { useDraftDownload } from "./useDraftDownload";
@@ -1186,7 +1186,7 @@ export function GenerateChat({
             }
           />
         ) : (
-          <ChatHeader
+          <GenerateHeader
             ref={headerRef}
             title={thread.title}
             titleId={titleId}
@@ -1201,7 +1201,11 @@ export function GenerateChat({
         >
           <div ref={chatRef} className="sp-chat-split__chat">
             {editView && <div ref={setStageEl} className="sp-chat-stage" />}
-            <div className="sp-chat-thread-frame" hidden={editView}>
+            <div
+              className="sp-chat-thread-frame"
+              data-chat={template ? undefined : "generate"}
+              hidden={editView}
+            >
               <div
                 ref={scrollRef}
                 className="sp-chat-thread"
@@ -1276,7 +1280,7 @@ export function GenerateChat({
                         handlers={templateHandlers}
                       />
                     ) : (
-                      <AssistantTurnView
+                      <GenerateTurn
                         key={turn.id}
                         turn={turn}
                         photo={turnPhoto(thread, turn)}
@@ -1306,6 +1310,11 @@ export function GenerateChat({
                 </div>
               </div>
               <ScrollFade position="top" visible={fades.top} gutter={fades.gutter} />
+              {!template && (
+                // Generate's thread also fades at the foot while more lies
+                // below (13:2807).
+                <ScrollFade position="bottom" visible={fades.bottom} gutter={fades.gutter} />
+              )}
             </div>
             <div className="sp-chat-dock">
               <div className="sp-chat-dock__composer">

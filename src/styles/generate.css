@@ -302,3 +302,73 @@
 .sp-gen-recent[data-blurred] {
   filter: blur(3px);
 }
+
+/* ── The thread's turns (13:2757, 13:3080) ── */
+/* The Result cards, 12 apart, wrapping, each its own width. */
+.sp-gen-results {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-xs);
+}
+.sp-gen-result {
+  flex: none;
+  max-width: 100%;
+}
+/* The artwork sizes itself to contain (GenerateTurn), not to the well. */
+.sp-gen-result .sp-tchat-preview > * {
+  width: auto;
+}
+.sp-gen-result__art {
+  display: block;
+  flex: none;
+}
+.sp-gen-result__gone {
+  padding: var(--space-sm);
+  color: var(--text-secondary);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+/* A skeleton's meta row (13:2766): the two bars, then the action circle. */
+.sp-gen-result__skelmeta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding: var(--space-sm) var(--space-2xs) var(--space-2xs);
+}
+.sp-gen-result__skelmeta .sp-tchat-skeleton__meta {
+  flex: 1;
+  min-width: 0;
+  gap: 9px;
+  padding: 3px 0;
+}
+/* Try next (13:3125): Caption/M, then the Chips, 8 apart. */
+.sp-gen-trynext {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+.sp-gen-trynext__label {
+  color: var(--text-secondary);
+}
+
+/* A saved chat while it opens: the member's bubble and the status line as
+   plain sunken wells. */
+.sp-gen-loading__bubble {
+  display: block;
+  width: min(320px, 70%);
+  height: 46px;
+  border-radius: var(--radius-menu);
+  background: var(--surface-sunken);
+}
+.sp-gen-loading__status {
+  display: block;
+  width: 100%;
+  padding: 6px 0;
+}
+/* Generate's thread fades 68 at the top (13:2968) and 56 at the foot
+   (13:2807). */
+.sp-chat-thread-frame[data-chat="generate"] > .sp-chat-scroll-fade[data-position="top"] {
+  height: 68px;
+}
