@@ -49,7 +49,19 @@ const TEMPLATE: TemplateSchema = {
   updatedAt: T0,
 };
 
-const get = async (id: string) => (id === TEMPLATE.id ? TEMPLATE : null);
+/** A landscape template (X's 1600 × 900) beside the portrait one. */
+const WIDE: TemplateSchema = {
+  ...TEMPLATE,
+  id: "tpl-2",
+  name: "Open role",
+  canvasWidth: 1600,
+  canvasHeight: 900,
+};
+const loaders = {
+  get: async (id: string) => [TEMPLATE, WIDE].find((t) => t.id === id) ?? null,
+  listPublished: async (companyId: string) =>
+    companyId === "co-1" ? [TEMPLATE, WIDE] : ([] as TemplateSchema[]),
+};
 
 afterEach(() => {
   vi.useRealTimers();
@@ -59,7 +71,7 @@ afterEach(() => {
 /** Runs a build past the stand-in's delay. */
 async function build(input: Parameters<typeof standInGenerate>[1]) {
   vi.useFakeTimers();
-  const pending = standInGenerate("co-1", input, get);
+  const pending = standInGenerate("co-1", input, loaders);
   await vi.runAllTimersAsync();
   return pending;
 }
@@ -131,16 +143,55 @@ describe("standInGenerate", () => {
     expect(res.question).toBe(STAND_IN_QUESTION);
   });
 
-  it("refuses a request without a template hint", async () => {
-    await expect(standInGenerate("co-1", { brief: "Anything" }, get)).rejects.toThrow(
-      STAND_IN_REFUSAL,
-    );
-  });
-
   it("refuses another company's template", async () => {
     await expect(
-      standInGenerate("co-2", { brief: "x", templateIdHint: "tpl-1" }, get),
+      standInGenerate("co-2", { brief: "x", templateIdHint: "tpl-1" }, loaders),
     ).rejects.toThrow();
+  });
+});
+
+describe("standInGenerate for Generate", () => {
+  it("fills up to `count` published templates, titled from the brief", async () => {
+    const res = await build({ brief: "Announce our new Denver studio. Opens Monday.", count: 2 });
+    expect(res.proposals.map((p) => p.templateId)).toEqual(["tpl-1", "tpl-2"]);
+    expect(res.title).toBe("Announce our new Denver studio");
+    expect(res.reply).toBe("Here are 2 drafts from your templates.");
+  });
+
+  it("prefers templates serving the platform hint", async () => {
+    const res = await build({ brief: "Hiring", count: 1, platformHint: "x" });
+    expect(res.proposals.map((p) => p.templateId)).toEqual(["tpl-2"]);
+  });
+
+  it("keeps a follow-up's templates and values", async () => {
+    const res = await build({
+      brief: "Make it Friday",
+      count: 3,
+      followUp: {
+        previousBrief: "x",
+        drafts: [
+          {
+            templateId: "tpl-2",
+            templateName: "Open role",
+            values: [{ fieldKey: "eyebrow", value: "Out Friday" }],
+          },
+        ],
+      },
+    });
+    expect(res.proposals).toHaveLength(1);
+    expect(res.proposals[0].values.eyebrow).toBe("Out Friday");
+    expect(res.title).toBeUndefined();
+  });
+
+  it("puts the photo in the first member image slot", async () => {
+    const res = await build({ brief: "x", count: 1, hasImage: true });
+    expect(res.proposals[0].imageTargetFieldKey).toBe("image");
+  });
+
+  it("refuses a new design", async () => {
+    await expect(
+      standInGenerate("co-1", { brief: "x", mode: "freestyle" }, loaders),
+    ).rejects.toThrow(STAND_IN_REFUSAL);
   });
 
   it("stops when the chat aborts", async () => {
@@ -148,7 +199,7 @@ describe("standInGenerate", () => {
     const pending = standInGenerate(
       "co-1",
       { brief: "x", templateIdHint: "tpl-1" },
-      get,
+      loaders,
       stop.signal,
     );
     stop.abort();
@@ -168,18 +219,16 @@ describe("standInRepair", () => {
 });
 
 describe("LocalGenerateProvider", () => {
-  it("runs the template chat in a development build and Generate never", () => {
-    const provider = new LocalGenerateProvider();
-    expect(provider.isConfigured()).toBe(false);
-    expect(provider.isTemplateChatAvailable()).toBe(true);
+  it("runs both chats in a development build", () => {
+    expect(new LocalGenerateProvider().isConfigured()).toBe(true);
   });
 
-  it("offers no template chat in a production build", async () => {
+  it("runs neither in a production build", async () => {
     vi.stubEnv("DEV", false);
     const provider = new LocalGenerateProvider();
-    expect(provider.isTemplateChatAvailable()).toBe(false);
+    expect(provider.isConfigured()).toBe(false);
     await expect(
       provider.generate("co-1", { brief: "x", templateIdHint: "tpl-1" }),
-    ).rejects.toThrow(STAND_IN_REFUSAL);
+    ).rejects.toThrow(/Supabase backend/);
   });
 });

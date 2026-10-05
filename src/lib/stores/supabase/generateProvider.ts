@@ -15,10 +15,6 @@ export class SupabaseGenerateProvider implements GenerateProvider {
     return isSupabaseConfigured;
   }
 
-  isTemplateChatAvailable(): boolean {
-    return this.isConfigured();
-  }
-
   // The chat's Stop aborts the fetch through functions.invoke's `signal`. An
   // aborted call surfaces as a fetch error with no body, so it throws the
   // fallback sentence below; the chat has already settled the turn as

@@ -231,11 +231,7 @@ export function GenerateChat({
   const { company, role } = useAuth();
   const { kit } = useBrand();
   const { route, navigate } = useRouter();
-  // A template chat runs where its stand-in does (the local backend in a
-  // dev build); Generate itself needs the real provider.
-  const configured = template
-    ? stores.generate.isTemplateChatAvailable()
-    : stores.generate.isConfigured();
+  const configured = stores.generate.isConfigured();
 
   const publishedState = useAsync(
     () => (company ? stores.templates.listPublished(company.id) : Promise.resolve([])),

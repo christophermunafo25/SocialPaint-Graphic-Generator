@@ -1,7 +1,7 @@
-// The template chat's stand-in on the local backend (new look, Phase 4,
-// PHASE-4.md §9 D2). The dev backend has no Edge Functions and no model key,
-// so Generate stays off there; the template chat still runs end to end with
-// this stand-in in its place. It never writes copy of its own onto a graphic:
+// The chat stand-in on the local backend (new look, Phase 4 for the
+// template chat, Phase 5 for Generate). The dev backend has no Edge
+// Functions and no model key; in a development build both chats run end to
+// end with this stand-in in the model's place. It never writes copy of its own onto a graphic:
 // it fills the one template the chat is on with the member's answers, as
 // typed, and every other text field with that field's own placeholder, which
 // the workspace's admin wrote. So it only ever answers from the workspace's
@@ -13,6 +13,7 @@
 import { mergeCaption } from "../../caption";
 import type {
   FieldValues,
+  GeneratedProposal,
   GenerateInput,
   GenerateRepairInput,
   GenerateRepairResult,
@@ -20,6 +21,7 @@ import type {
   TemplateSchema,
 } from "../../types";
 import { isRequiredField } from "../../templates/fieldRules";
+import { classifySize } from "../../templates/platforms";
 
 /** How long a build takes, so the chat's Building state shows. */
 export const STAND_IN_DELAY_MS = 1200;
@@ -30,10 +32,13 @@ export const STAND_IN_QUESTION = "What should the post say?";
 
 export const STAND_IN_MODEL = "local stand-in";
 
-/** Refused for anything but a template chat: Generate itself stays off on
- * the local backend and says so. */
+/** Refused for what it cannot do: new designs (freestyle) need the model,
+ * which needs the Supabase backend and a key. */
 export const STAND_IN_REFUSAL =
-  "Generate requires the Supabase backend and an Anthropic API key (see .env.example).";
+  "New designs need the Supabase backend and an Anthropic API key (see .env.example).";
+
+/** Most templates a Generate run fills, as the server caps `count`. */
+const MAX_PROPOSALS = 3;
 
 /** Waits `ms`, or rejects at once when the chat's Stop aborts. */
 function wait(ms: number, signal?: AbortSignal): Promise<void> {
@@ -82,47 +87,104 @@ export function standInValues(template: TemplateSchema, input: GenerateInput): F
   return values;
 }
 
-/** One template chat build on the local backend. `getTemplate` reads the
- * local store; a request without `templateIdHint` is refused. */
+/** What the stand-in reads from the local store. */
+export interface StandInLoaders {
+  get(id: string): Promise<TemplateSchema | null>;
+  listPublished(companyId: string): Promise<TemplateSchema[]>;
+}
+
+/** A proposal filling `template` (standInValues), its caption merged. */
+function proposalFor(template: TemplateSchema, input: GenerateInput): GeneratedProposal {
+  const values = standInValues(template, input);
+  const firstImage = template.fields.find((f) => !f.static && f.type === "image");
+  return {
+    templateId: template.id,
+    templateName: template.name,
+    values,
+    caption: mergeCaption(template, values),
+    why: "",
+    imageFieldsNeeded: template.fields
+      .filter((f) => !f.static && f.type === "image")
+      .map((f) => ({ fieldKey: f.fieldKey, label: f.label, required: isRequiredField(f) })),
+    ...(input.hasImage && firstImage ? { imageTargetFieldKey: firstImage.fieldKey } : {}),
+  };
+}
+
+/** The templates a Generate run fills: a follow-up's own, or up to `count`
+ * published templates, those serving the platform hint first, then the
+ * rest, each in the store's order (most recently updated first). */
+function pickTemplates(published: TemplateSchema[], input: GenerateInput): TemplateSchema[] {
+  const count = Math.max(1, Math.min(MAX_PROPOSALS, input.count ?? MAX_PROPOSALS));
+  const byId = new Map(published.map((t) => [t.id, t]));
+  const carried = (input.followUp?.drafts ?? [])
+    .map((d) => byId.get(d.templateId))
+    .filter((t): t is TemplateSchema => Boolean(t));
+  if (carried.length > 0) return carried.slice(0, count);
+  const hint = input.platformHint;
+  const serves = (t: TemplateSchema) =>
+    hint !== undefined && classifySize(t.canvasWidth, t.canvasHeight).platforms.includes(hint);
+  return [...published.filter(serves), ...published.filter((t) => !serves(t))].slice(0, count);
+}
+
+/** A title from the brief's first sentence, at most six words (2 to 60
+ * characters). */
+function titleFrom(brief: string): string {
+  const sentence = brief
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(/(?<=[.!?])\s/)[0];
+  const words = sentence.split(" ").slice(0, 6).join(" ");
+  return words.replace(/[.!?,;:]+$/, "").slice(0, 60) || "New chat";
+}
+
+/** One build on the local backend: a template chat (`templateIdHint`
+ * set) fills that template; a Generate run fills up to `count` published
+ * templates. A freestyle request is refused. */
 export async function standInGenerate(
   companyId: string,
   input: GenerateInput,
-  getTemplate: (id: string) => Promise<TemplateSchema | null>,
+  loaders: StandInLoaders,
   signal?: AbortSignal,
 ): Promise<GenerateResult> {
-  if (!input.templateIdHint) throw new Error(STAND_IN_REFUSAL);
-  const template = await getTemplate(input.templateIdHint);
-  if (!template || template.companyId !== companyId || template.status !== "published") {
-    throw new Error("That template isn't available any more.");
+  if (input.mode === "freestyle") throw new Error(STAND_IN_REFUSAL);
+  let templates: TemplateSchema[];
+  if (input.templateIdHint) {
+    const template = await loaders.get(input.templateIdHint);
+    if (!template || template.companyId !== companyId || template.status !== "published") {
+      throw new Error("That template isn't available any more.");
+    }
+    templates = [template];
+  } else {
+    templates = pickTemplates(await loaders.listPublished(companyId), input);
+    if (templates.length === 0) throw new Error(STAND_IN_REFUSAL);
   }
   await wait(STAND_IN_DELAY_MS, signal);
   const meta = {
     model: STAND_IN_MODEL,
     generatedAt: new Date().toISOString(),
-    candidateCount: 1,
+    candidateCount: templates.length,
     briefLength: input.brief.length,
   };
-  if (input.allowQuestion) {
+  if (input.allowQuestion && input.templateIdHint) {
     return { proposals: [], warnings: [], meta, question: STAND_IN_QUESTION };
   }
-  const values = standInValues(template, input);
+  const template = templates[0];
   return {
-    proposals: [
-      {
-        templateId: template.id,
-        templateName: template.name,
-        values,
-        caption: mergeCaption(template, values),
-        why: "",
-        imageFieldsNeeded: template.fields
-          .filter((f) => !f.static && f.type === "image")
-          .map((f) => ({ fieldKey: f.fieldKey, label: f.label, required: isRequiredField(f) })),
-      },
-    ],
+    proposals: templates.map((t) => proposalFor(t, input)),
     warnings: [],
     meta,
-    reply: `Here's ${template.name}, filled in with your answers.`,
-    title: template.name,
+    ...(input.templateIdHint
+      ? {
+          reply: `Here's ${template.name}, filled in with your answers.`,
+          title: template.name,
+        }
+      : {
+          reply:
+            templates.length === 1
+              ? `Here's ${template.name}, from your templates.`
+              : `Here are ${templates.length} drafts from your templates.`,
+          title: input.followUp ? undefined : titleFrom(input.brief),
+        }),
   };
 }
 

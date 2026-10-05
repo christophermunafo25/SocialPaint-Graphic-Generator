@@ -631,20 +631,15 @@ export class LocalPublicLinkStore implements PublicLinkStore {
   }
 }
 
-/** Generate needs Edge Functions and a model key, neither of which the dev
- * backend has — so it says so, and the surface shows an honest disabled
- * state instead of a button that cannot work (the designImport precedent).
- *
- * The template chat is the exception (new look, Phase 4): in a development
- * build a stand-in answers template chat requests from the workspace's own
- * template (templateChatStandIn.ts), so the chat runs end to end locally.
- * The import sits behind import.meta.env.DEV, so a production bundle has
- * none of it and refuses everything, as before. */
+/** Generate and the template chat need Edge Functions and a model key,
+ * neither of which the dev backend has. In a development build a stand-in
+ * answers both chats from the workspace's own templates
+ * (templateChatStandIn.ts), so they run end to end locally. The import
+ * sits behind import.meta.env.DEV, so a production bundle has none of it:
+ * it says it is not configured and refuses everything, and the surfaces
+ * explain rather than offering a button that cannot work. */
 export class LocalGenerateProvider implements GenerateProvider {
   isConfigured(): boolean {
-    return false;
-  }
-  isTemplateChatAvailable(): boolean {
     return import.meta.env.DEV;
   }
   async generate(
@@ -654,10 +649,11 @@ export class LocalGenerateProvider implements GenerateProvider {
   ): Promise<GenerateResult> {
     if (import.meta.env.DEV) {
       const { standInGenerate } = await import("./templateChatStandIn");
+      const store = new LocalTemplateStore();
       return standInGenerate(
         companyId,
         input,
-        (id) => new LocalTemplateStore().get(id),
+        { get: (id) => store.get(id), listPublished: (id) => store.listPublished(id) },
         opts?.signal,
       );
     }
