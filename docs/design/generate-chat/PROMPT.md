@@ -755,8 +755,8 @@ Accept when: `npm run verify` is green, the bundle has no dead Generate code, an
 
 1. The Start state has no page title (the dark frames and today's page have none; the light frames show "Generate").
 2. The My templates / Something new toggle leaves the composer. Freestyle runs from "Try another layout" and when the library is empty.
-3. "Start from" chips are the company's published templates and pin `templateIdHint`; the frame's labels are sample names.
-4. Variations runs 1 to 3 to match the server; the frame's Max sample shows 4. Default 2.
+3. "Start from" chips are the company's published templates and pin `templateIdHint`; the frame's labels are sample names. (Removed by CJ, 2026-10-04, in the new look's Phase 5: the fill page's Use AI to assist fills one chosen template.)
+4. Variations runs 1 to 3 to match the server; the frame's Max sample shows 4. Default 2. (Confirmed by CJ, 2026-10-04, in the new look's Phase 5: the default stays 2.)
 5. The progress bar has three steps: reading the brief, rendering, checking the fit.
 6. The server returns an optional `reply` and `title`, and accepts a `followUp` context.
 7. Try next is derived on the client by the rules in §9.4.
