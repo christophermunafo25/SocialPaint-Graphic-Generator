@@ -695,6 +695,51 @@
 .sp-details__grow {
   flex: 1;
 }
+/* Generate's footer: Save to library (and its saved state or error) full
+   width above Discard and Download PNG (PHASE-5 §9 D8). */
+.sp-details__footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+.sp-details__note {
+  margin: 0;
+  color: var(--text-secondary);
+}
+.sp-details__note[role="alert"] {
+  color: var(--state-error);
+}
+/* Generate's preview stage (13:3312): 290 tall, the draft contained 10
+   inside a sunken well, with the fill page's hairline so a white graphic
+   still reads (PHASE-5 §8). It gives up height on a short window so the
+   fields keep room. */
+.sp-details__stage {
+  display: flex;
+  flex: 0 1 290px;
+  align-items: center;
+  justify-content: center;
+  height: 290px;
+  min-height: 180px;
+  box-sizing: border-box;
+  padding: 10px;
+  border-radius: var(--radius-control-md);
+  background: var(--surface-sunken);
+  container-type: size;
+}
+@media (max-height: 760px) {
+  .sp-details__stage {
+    min-height: 120px;
+  }
+}
+.sp-details__stage .sp-chat-editor__graphic {
+  outline: 1px solid var(--border-default);
+  outline-offset: -1px;
+}
+.sp-details__warning {
+  flex: none;
+  margin: calc(var(--space-2xs) - var(--space-sm)) 0 0;
+  color: var(--text-secondary);
+}
 @media (max-width: 1023px) {
   .sp-details__fields {
     overflow: visible;

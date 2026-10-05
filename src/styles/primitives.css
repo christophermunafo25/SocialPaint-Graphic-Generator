@@ -618,6 +618,7 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 .ui-menu-label {
   padding: 10px 0 6px 10px; /* off the scale, as drawn (57:419) */
   color: var(--text-secondary);
+  letter-spacing: 0.08em; /* as drawn (13:1746; PHASE-5 §8) */
 }
 .ui-menu-divider {
   padding: var(--space-3xs);

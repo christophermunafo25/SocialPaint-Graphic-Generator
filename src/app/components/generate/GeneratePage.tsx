@@ -1373,7 +1373,6 @@ export function GenerateChat({
               canDiscard={canDiscard}
               {...(editView
                 ? {
-                    details: true,
                     stageTarget: stageEl,
                     looks:
                       lookOptions.length > 1

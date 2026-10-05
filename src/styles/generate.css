@@ -252,9 +252,8 @@
   flex-direction: column;
   gap: 2px;
 }
-/* The frame's section labels track 0.08em (13:1746). */
+/* The frame's section labels are set in capitals (13:1746). */
 .sp-attach__label {
-  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 .sp-attach__item {
