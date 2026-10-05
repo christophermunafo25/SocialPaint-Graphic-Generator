@@ -334,3 +334,31 @@
   flex: 1;
   min-width: 0;
 }
+
+/* ── Account (13:15649) ── */
+/* Stats two a row, 16 across and 20 down (13:15780). */
+.sp-st-grid--stats {
+  row-gap: 20px; /* off the scale, as drawn */
+}
+/* The display name, then its pencil 6 after it (13:15777). */
+.sp-st-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px; /* off the scale, as drawn */
+}
+.sp-st-name__edit {
+  display: inline-flex;
+  border-radius: var(--radius-control);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.sp-st-name__edit:hover {
+  color: var(--text-strong);
+}
+/* Appearance: a 300 track, its three segments equal (13:15802). */
+.sp-st-appearance {
+  width: 300px;
+}
+.sp-st-appearance > .ui-segment {
+  flex: 1;
+}
