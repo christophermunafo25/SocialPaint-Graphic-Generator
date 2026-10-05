@@ -142,6 +142,31 @@ describe("materializeStarter", () => {
     expect(inputs).toMatchSnapshot();
   });
 
+  it("copies the faces of the Heading and Body styles, without binding (PHASE-6 §9 D3)", () => {
+    const roles = kit(REFERENCE_COLORS, {
+      typeStyles: [
+        {
+          key: "display",
+          name: "Display",
+          useFor: "heading",
+          font: { source: "google", family: "Lora" },
+        },
+        {
+          key: "copy",
+          name: "Copy",
+          useFor: "body",
+          font: { source: "google", family: "DM Sans" },
+        },
+      ],
+    });
+    const input = materializeStarter(STARTER_BLUEPRINTS[0], ctx({ kit: roles }));
+    const families = new Set(input.fields.map((f) => f.fontFamily).filter(Boolean));
+    expect(families.has("Lora")).toBe(true);
+    expect(families.has("DM Sans")).toBe(true);
+    expect(families.has("Montserrat")).toBe(false);
+    expect(input.fields.every((f) => !f.typeStyleKey)).toBe(true);
+  });
+
   it("stamps starter provenance and publishes", () => {
     const input = materializeStarter(STARTER_BLUEPRINTS[0], ctx());
     expect(input.status).toBe("published");

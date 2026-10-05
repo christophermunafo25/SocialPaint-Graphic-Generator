@@ -471,6 +471,29 @@ describe("pill palette tile", () => {
 });
 
 describe("fieldFromPalette: new text fields", () => {
+  it("copies the face of the style used for Heading, without binding (PHASE-6 §9 D3)", () => {
+    const item = PALETTE_ITEMS.find((p) => p.id === "text")!;
+    const kit = {
+      id: "k1",
+      companyId: "c1",
+      colors: [],
+      guidelines: [],
+      typeStyles: [
+        { key: "a", name: "A", useFor: null, font: { source: "google" as const, family: "Lora" } },
+        {
+          key: "b",
+          name: "B",
+          useFor: "heading" as const,
+          font: { source: "google" as const, family: "Oswald" },
+        },
+      ],
+      headingFont: { source: "google" as const, family: "Montserrat" },
+    };
+    const f = fieldFromPalette(item, { x: 540, y: 540 }, [], kit, { width: 1080, height: 1080 });
+    expect(f.fontFamily).toBe("Oswald");
+    expect(f.typeStyleKey).toBeUndefined();
+  });
+
   it("lands as Shrink with no floor of its own (the 18px default)", () => {
     const item = PALETTE_ITEMS.find((p) => p.type === "text" && p.id !== "pill")!;
     const f = fieldFromPalette(item, { x: 540, y: 540 }, [], null, { width: 1080, height: 1080 });

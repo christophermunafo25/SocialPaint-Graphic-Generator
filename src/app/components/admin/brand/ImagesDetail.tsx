@@ -169,6 +169,10 @@ export function ImagesDetail({ brand }: { brand: BrandDraft }) {
 function ImageCard({ asset, brand }: { asset: BrandAsset; brand: BrandDraft }) {
   const { company, refresh, setError } = brand;
   const downloadRef = useRef<HTMLAnchorElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  /** Back to the card's menu trigger once the rename closes from the keyboard. */
+  const refocus = () =>
+    window.setTimeout(() => cardRef.current?.querySelector<HTMLElement>(".ui-rowmenu")?.focus());
   const linkClick = useLinkClick();
   const signed = useSignedUrl(asset.url);
   const [renaming, setRenaming] = useState(false);
@@ -220,7 +224,7 @@ function ImageCard({ asset, brand }: { asset: BrandAsset; brand: BrandDraft }) {
   const groups: RowMenuGroup[] = [
     {
       items: [
-        { label: "Rename", onSelect: () => setRenaming(true) },
+        { label: "Rename", movesFocus: true, onSelect: () => setRenaming(true) },
         {
           label: "Download",
           disabled: !signed.url,
@@ -235,7 +239,7 @@ function ImageCard({ asset, brand }: { asset: BrandAsset; brand: BrandDraft }) {
 
   return (
     <RowContextMenu groups={groups} label={label} disabled={renaming}>
-      <div className="sp-bs-image">
+      <div ref={cardRef} className="sp-bs-image">
         <span className="sp-bs-image__plate">
           {signed.url && (
             <img
@@ -266,10 +270,13 @@ function ImageCard({ asset, brand }: { asset: BrandAsset; brand: BrandDraft }) {
                   setRenaming(false);
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") e.currentTarget.blur();
-                  else if (e.key === "Escape") {
+                  if (e.key === "Enter") {
+                    e.currentTarget.blur();
+                    refocus();
+                  } else if (e.key === "Escape") {
                     e.stopPropagation();
                     setRenaming(false);
+                    refocus();
                   }
                 }}
               />

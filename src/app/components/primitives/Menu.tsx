@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import * as ContextMenu from "@radix-ui/react-context-menu";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Check, ChevronRight } from "lucide-react";
@@ -147,6 +147,9 @@ export interface RowMenuAction {
   disabled?: boolean;
   destructive?: boolean;
   checked?: boolean;
+  /** The action moves focus itself (it opens an editor), so the menu
+   * doesn't hand focus back to its trigger as it closes. */
+  movesFocus?: boolean;
 }
 
 /** A group of actions, with an optional label above it; groups are
@@ -165,7 +168,15 @@ type MenuKit = {
 const DROPDOWN: MenuKit = DropdownMenu;
 const CONTEXT: MenuKit = ContextMenu as unknown as MenuKit;
 
-function RowMenuItems({ groups, kit }: { groups: RowMenuGroup[]; kit: MenuKit }) {
+function RowMenuItems({
+  groups,
+  kit,
+  onChosen,
+}: {
+  groups: RowMenuGroup[];
+  kit: MenuKit;
+  onChosen(item: RowMenuAction): void;
+}) {
   return (
     <>
       {groups.map((g, gi) => (
@@ -184,7 +195,10 @@ function RowMenuItems({ groups, kit }: { groups: RowMenuGroup[]; kit: MenuKit })
                 : {})}
               data-selected={item.checked || undefined}
               data-destructive={item.destructive || undefined}
-              onSelect={() => item.onSelect()}
+              onSelect={() => {
+                onChosen(item);
+                item.onSelect();
+              }}
             >
               <MenuItemContent selected={item.checked}>{item.label}</MenuItemContent>
             </kit.Item>
@@ -209,6 +223,7 @@ export function RowMenu({
   label: string;
   className?: string;
 }) {
+  const chosen = useRef<RowMenuAction | null>(null);
   return (
     <DropdownMenu.Root modal={false}>
       <DropdownMenu.Trigger asChild>
@@ -221,8 +236,12 @@ export function RowMenu({
           sideOffset={4}
           collisionPadding={8}
           aria-label={label}
+          onCloseAutoFocus={(e) => {
+            if (chosen.current?.movesFocus) e.preventDefault();
+            chosen.current = null;
+          }}
         >
-          <RowMenuItems groups={groups} kit={DROPDOWN} />
+          <RowMenuItems groups={groups} kit={DROPDOWN} onChosen={(i) => (chosen.current = i)} />
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>
@@ -244,6 +263,7 @@ export function RowContextMenu({
   /** While the row is being edited, the browser's own menu shows instead. */
   disabled?: boolean;
 }) {
+  const chosen = useRef<RowMenuAction | null>(null);
   return (
     <ContextMenu.Root modal={false}>
       <ContextMenu.Trigger asChild disabled={disabled}>
@@ -254,8 +274,12 @@ export function RowContextMenu({
           className="ui-menu ui-menu--popover"
           collisionPadding={8}
           aria-label={label}
+          onCloseAutoFocus={(e) => {
+            if (chosen.current?.movesFocus) e.preventDefault();
+            chosen.current = null;
+          }}
         >
-          <RowMenuItems groups={groups} kit={CONTEXT} />
+          <RowMenuItems groups={groups} kit={CONTEXT} onChosen={(i) => (chosen.current = i)} />
         </ContextMenu.Content>
       </ContextMenu.Portal>
     </ContextMenu.Root>

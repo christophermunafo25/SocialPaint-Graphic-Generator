@@ -162,6 +162,10 @@ function StyleRow({
   const [renaming, setRenaming] = useState(false);
   const [editingValue, setEditingValue] = useState<ValueField | null>(null);
   const [blocked, setBlocked] = useState<string | null>(null);
+  const rowRef = useRef<HTMLDivElement>(null);
+  /** Focus back on a control in this row once an editor has closed. */
+  const refocus = (selector: string) =>
+    window.setTimeout(() => rowRef.current?.querySelector<HTMLElement>(selector)?.focus());
 
   const update = (patch: Partial<BrandTypeStyle>) =>
     onChange(styles.map((x) => (x.key === s.key ? { ...x, ...patch } : x)));
@@ -193,9 +197,9 @@ function StyleRow({
   const groups: RowMenuGroup[] = [
     {
       items: [
-        { label: "Rename", onSelect: () => setRenaming(true) },
+        { label: "Rename", movesFocus: true, onSelect: () => setRenaming(true) },
         { label: "Duplicate", onSelect: duplicate },
-        { label: "Edit all properties", onSelect: () => setExpanded(!expanded) },
+        { label: "Edit all properties", movesFocus: true, onSelect: () => setExpanded(!expanded) },
       ],
     },
     { items: [{ label: "Remove", onSelect: () => void remove() }] },
@@ -231,7 +235,7 @@ function StyleRow({
 
   const label = `More actions for ${s.name}`;
   return (
-    <div className="sp-bs-style" data-expanded={expanded || undefined}>
+    <div ref={rowRef} className="sp-bs-style" data-expanded={expanded || undefined}>
       <RowContextMenu groups={groups} label={label} disabled={renaming || editingValue !== null}>
         <div className="sp-bs-style__row">
           {renaming ? (
@@ -248,10 +252,13 @@ function StyleRow({
                 setRenaming(false);
               }}
               onKeyDown={(e) => {
-                if (e.key === "Enter") e.currentTarget.blur();
-                else if (e.key === "Escape") {
+                if (e.key === "Enter") {
+                  e.currentTarget.blur();
+                  refocus(".sp-bs-style__row .ui-rowmenu");
+                } else if (e.key === "Escape") {
                   e.currentTarget.value = s.name;
                   setRenaming(false);
+                  refocus(".sp-bs-style__row .ui-rowmenu");
                 }
               }}
             />
@@ -281,14 +288,21 @@ function StyleRow({
                     initial={valueFor(field)}
                     onSave={(raw, moveNext) => {
                       saveValue(field, raw);
-                      setEditingValue(moveNext ? (VALUE_ORDER[i + 1] ?? null) : null);
+                      const next = moveNext ? (VALUE_ORDER[i + 1] ?? null) : null;
+                      setEditingValue(next);
+                      // Enter on the last value lands back on it.
+                      if (moveNext && !next) refocus(`[data-value="${field}"]`);
                     }}
-                    onCancel={() => setEditingValue(null)}
+                    onCancel={() => {
+                      setEditingValue(null);
+                      refocus(`[data-value="${field}"]`);
+                    }}
                   />
                 ) : (
                   <button
                     type="button"
                     className="ui-reset ui-ring sp-bs-style__value"
+                    data-value={field}
                     data-auto={valueFor(field) === undefined || undefined}
                     aria-label={`${s.name} ${VALUE_NAME[field]}: ${displayFor(field)}`}
                     onClick={() => setEditingValue(field)}
@@ -317,7 +331,10 @@ function StyleRow({
           onDelete={() => {
             if (remove()) setExpanded(false);
           }}
-          onDone={() => setExpanded(false)}
+          onDone={() => {
+            setExpanded(false);
+            refocus(".sp-bs-style__row .ui-rowmenu");
+          }}
         />
       )}
     </div>
@@ -362,6 +379,11 @@ function StyleEditor({
   onDone(): void;
 }) {
   const useForId = useId();
+  const editorRef = useRef<HTMLDivElement>(null);
+  // Opening the editor moves focus into it, to the style's name.
+  useEffect(() => {
+    editorRef.current?.querySelector<HTMLInputElement>("[data-style-name]")?.focus();
+  }, []);
   const fontAssets = brand.assets.filter((a) => a.kind === "font");
   const update = (patch: Partial<BrandTypeStyle>) =>
     onChange(styles.map((x) => (x.key === s.key ? { ...x, ...patch } : x)));
@@ -420,6 +442,7 @@ function StyleEditor({
 
   return (
     <div
+      ref={editorRef}
       className="sp-bs-style__editor"
       onKeyDown={(e) => {
         if (e.key === "Escape" && !(e.target as Element).closest("[role=listbox]")) onDone();

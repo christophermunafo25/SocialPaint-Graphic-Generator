@@ -217,6 +217,8 @@ label.sp-bs-add:focus-within {
 .sp-bs-colors {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
+  /* Equal rows, so Add color keeps a card's height on a row of its own. */
+  grid-auto-rows: 1fr;
   gap: var(--space-xs);
   align-items: start;
 }
