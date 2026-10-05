@@ -200,3 +200,31 @@
     flex-basis: 100%;
   }
 }
+
+/* ── Integrations (13:15051) ── */
+/* The title, then its status pill, 10 apart (13:15181). */
+.sp-st-integration .ui-settings-card__header > h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* off the scale, as drawn */
+}
+.sp-st-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  flex: none;
+}
+.sp-st-wrap {
+  margin: 0;
+  white-space: normal;
+}
+/* The token form under the Figma card: the field, then Connect on its row. */
+.sp-st-token {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2xs);
+}
+.sp-st-token > .ui-field {
+  flex: 1;
+  min-width: 0;
+}
