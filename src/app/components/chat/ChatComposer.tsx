@@ -1,10 +1,12 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { Globe } from "lucide-react";
 import type { PlatformId } from "@/lib/templates/platforms";
 import { MAX_BRIEF, MAX_VARIATIONS, MIN_VARIATIONS } from "@/lib/generate/chatReducer";
+import { upsertDetail, type DetailTagValue } from "@/lib/generate/details";
 import { UploadChipView } from "../imageUpload";
-import { AttachMenu } from "../generate/AttachMenu";
 import { useComposer, type ComposerProps } from "../generate/Composer";
-import { SendButton, Stepper } from "../primitives";
+import { DetailTag, SendButton, Stepper } from "../primitives";
+import { AttachMenu, type AttachMenuHandle } from "./AttachMenu";
 import { FileTile, PhotoTile, PlatformSelect } from "./Attachments";
 
 export interface ChatComposerProps extends Omit<
@@ -20,8 +22,14 @@ export interface ChatComposerProps extends Omit<
   };
   /** The Start state's Variations (Generate only): the Stepper. */
   variations?: { value: number; onChange(next: number): void };
-  /** The Tags row beside the plus: the message's detail tags. */
-  tags?: React.ReactNode;
+  /** Generate's details (PHASE-5 §9 D4): the attach menu's DETAILS
+   * section, and the message's tags in the Tags row beside the plus. */
+  details?: {
+    value: readonly DetailTagValue[];
+    onChange(next: DetailTagValue[]): void;
+  };
+  /** Whether the attach menu or Add a detail is showing. */
+  onMenuOpenChange?(open: boolean): void;
 }
 
 /** The Composer (Figma 61:504): the attachments, the text, then the
@@ -42,8 +50,10 @@ export function ChatComposer(props: ChatComposerProps) {
     document: doc,
     platform,
     variations,
-    tags,
+    details,
+    onMenuOpenChange,
   } = props;
+  const menuRef = useRef<AttachMenuHandle>(null);
   const c = useComposer({ ...props, size: "compact", platform: undefined, variations: undefined });
   return (
     <form
@@ -86,14 +96,41 @@ export function ChatComposer(props: ChatComposerProps) {
       <div className="ui-composer__toolbar">
         <div className="ui-composer__inputs">
           <AttachMenu
-            trigger="attach"
+            ref={menuRef}
             containerRef={c.rootRef}
             disabled={disabled}
             onPickFile={(file) => c.takeFile(file, "upload")}
             onPickDocument={c.takeDocument}
             onPickAsset={c.takeAsset}
+            onOpenChange={onMenuOpenChange}
+            details={
+              details && {
+                value: details.value,
+                onSet: (kind, v) => details.onChange(upsertDetail(details.value, kind, v)),
+              }
+            }
           />
-          {tags && <div className="ui-composer__tags">{tags}</div>}
+          {details && details.value.length > 0 && (
+            <TagRail>
+              {details.value.map((tag) => (
+                <li key={tag.fieldKey}>
+                  <DetailTag
+                    icon={tag.kind === "link" ? Globe : undefined}
+                    editLabel={`Edit ${tag.label}: ${tag.value}`}
+                    onEdit={(e) => menuRef.current?.editDetail(tag.fieldKey, e.currentTarget)}
+                    removeLabel={`Remove ${tag.label}`}
+                    onRemove={() => {
+                      details.onChange(details.value.filter((t) => t.fieldKey !== tag.fieldKey));
+                      // The x goes with its tag; focus goes to the text.
+                      c.rootRef.current?.querySelector("textarea")?.focus();
+                    }}
+                  >
+                    {tag.value}
+                  </DetailTag>
+                </li>
+              ))}
+            </TagRail>
+          )}
         </div>
         <div className="ui-composer__output">
           {platform && (
@@ -124,5 +161,33 @@ export function ChatComposer(props: ChatComposerProps) {
         </div>
       </div>
     </form>
+  );
+}
+
+/** The Tags row (13:2557): one line of tags that scrolls sideways, 48 of
+ * room after the last, under a 121 fade to the composer's fill while more
+ * lies past the right edge. */
+function TagRail({ children }: { children: React.ReactNode }) {
+  const listRef = useRef<HTMLUListElement>(null);
+  const [more, setMore] = useState(false);
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    const measure = () => setMore(list.scrollLeft + list.clientWidth < list.scrollWidth - 1);
+    measure();
+    list.addEventListener("scroll", measure, { passive: true });
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+    observer?.observe(list);
+    return () => {
+      list.removeEventListener("scroll", measure);
+      observer?.disconnect();
+    };
+  }, [children]);
+  return (
+    <div className="ui-composer__tags" data-more={more || undefined}>
+      <ul ref={listRef} className="ui-composer__tag-list" aria-label="Details">
+        {children}
+      </ul>
+    </div>
   );
 }

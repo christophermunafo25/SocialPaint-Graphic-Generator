@@ -3,7 +3,7 @@
 // tag beside the plus and travels with the message as a `details` entry,
 // applied verbatim; the model never writes it.
 
-import type { TemplateField, TemplateSchema } from "../types";
+import type { GenerateFactKind, TemplateField, TemplateSchema } from "../types";
 import { isRequiredField } from "../templates/fieldRules";
 import { applyVariantToSchema } from "../templates/variants";
 
@@ -91,4 +91,31 @@ export function upsertDetail(
   };
   if (i < 0) return [...tags, tag];
   return tags.map((t, j) => (j === i ? tag : t));
+}
+
+/** Generate's Details (new look, Phase 5; Figma 13:2285): not tied to a
+ * template, so a fixed four, each tag's fieldKey its kind. They travel as
+ * `facts`, which the model places wherever a field fits. */
+export interface GenerateDetailKind {
+  fieldKey: GenerateFactKind;
+  label: string;
+  kind: DetailKind;
+  placeholder: string;
+}
+
+export const GENERATE_DETAILS: readonly GenerateDetailKind[] = [
+  { fieldKey: "headline", label: "Headline", kind: "text", placeholder: "Spring open house" },
+  { fieldKey: "date", label: "Date & time", kind: "date", placeholder: "Saturday, May 4 at 6 PM" },
+  { fieldKey: "place", label: "Location", kind: "place", placeholder: "Denver, CO" },
+  { fieldKey: "link", label: "Link", kind: "link", placeholder: "example.com/rsvp" },
+];
+
+/** A fact's longest value, as template-generate caps it. */
+export const MAX_FACT_VALUE = 300;
+
+const FACT_KINDS = new Set<string>(GENERATE_DETAILS.map((d) => d.fieldKey));
+
+/** Whether a sent detail's key is one of Generate's kinds. */
+export function isFactKind(key: string): key is GenerateFactKind {
+  return FACT_KINDS.has(key);
 }

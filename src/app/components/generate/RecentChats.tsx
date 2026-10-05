@@ -45,7 +45,10 @@ export function RecentChats({
   onOpen,
   onViewAll,
   onSettled,
+  blurred = false,
 }: {
+  /** The attach menu or Add a detail is open over it (PHASE-5 §9 D6). */
+  blurred?: boolean;
   companyId: string;
   /** A chat's card: its id, and its template when it is a template chat. */
   onOpen(threadId: string, templateId: string | null): void;
@@ -104,7 +107,11 @@ export function RecentChats({
   if (!chats || chats.length === 0) return null;
 
   return (
-    <section className="sp-gen-recent" aria-labelledby={headingId}>
+    <section
+      className="sp-gen-recent"
+      data-blurred={blurred || undefined}
+      aria-labelledby={headingId}
+    >
       <div className="sp-gen-recent__head">
         <h2 id={headingId} className="t-title-panel">
           Recent

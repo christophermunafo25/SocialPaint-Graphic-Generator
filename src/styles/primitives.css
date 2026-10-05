@@ -880,6 +880,18 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   box-shadow: inset 0 0 0 0.75px var(--tag-sent-border);
   color: var(--tag-sent-fg);
 }
+.ui-detail-tag__value {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* Cap-trimmed: widen the clip box past the descenders without moving
+     the line, as the menu item's label does. */
+  padding-block: 0.3em;
+  margin-block: -0.3em;
+  border-radius: var(--radius-control);
+  color: inherit;
+  cursor: pointer;
+}
 .ui-detail-tag__remove {
   position: relative;
   display: inline-flex;
@@ -1321,8 +1333,50 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 /* The Tags row beside the plus (61:476): detail tags, scrolling sideways
    behind a fade to the composer's fill (Phase 5). */
 .ui-composer__tags {
+  position: relative;
   flex: 1;
   min-width: 0;
+}
+.ui-composer__tag-list {
+  display: flex;
+  gap: 6px; /* as drawn (13:2558) */
+  min-height: 28px;
+  margin: 0;
+  /* Room for the value buttons' and remove buttons' 2px-out rings, which
+     the sideways scroll would clip. */
+  padding: 4px 48px 4px 4px;
+  margin-block: -4px;
+  margin-inline-start: -4px;
+  list-style: none;
+  overflow-x: auto;
+  overflow-y: clip;
+  scrollbar-width: none;
+}
+.ui-composer__tag-list::-webkit-scrollbar {
+  display: none;
+}
+.ui-composer__tag-list > li {
+  flex: none;
+  display: flex;
+}
+.ui-composer__tags::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  right: 0;
+  width: 121px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--surface-raised) 0%, transparent) 0%,
+    color-mix(in srgb, var(--surface-raised) 55%, transparent) 40%,
+    color-mix(in srgb, var(--surface-raised) 92%, transparent) 75%,
+    var(--surface-raised) 100%
+  );
+  pointer-events: none;
+  opacity: 0;
+}
+.ui-composer__tags[data-more]::after {
+  opacity: 1;
 }
 .ui-composer__output {
   display: flex;

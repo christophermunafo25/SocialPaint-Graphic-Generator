@@ -20,6 +20,7 @@ import type {
   GenerateResult,
   TemplateSchema,
 } from "../../types";
+import { detailKindOf } from "../../generate/details";
 import { isRequiredField } from "../../templates/fieldRules";
 import { classifySize } from "../../templates/platforms";
 
@@ -84,7 +85,30 @@ export function standInValues(template: TemplateSchema, input: GenerateInput): F
   for (const d of input.details ?? []) {
     if (memberKeys.has(d.fieldKey)) values[d.fieldKey] = d.value;
   }
+  // Generate's facts: each into the first text field that reads as its
+  // kind (a headline into a headline or title field), one field per fact.
+  const textFields = template.fields.filter(
+    (f) => !f.static && (f.type === "text" || f.type === "multiline"),
+  );
+  const used = new Set<string>();
+  for (const fact of input.facts ?? []) {
+    const field = textFields.find((f) => !used.has(f.fieldKey) && factFits(fact.kind, f));
+    if (!field) continue;
+    used.add(field.fieldKey);
+    values[field.fieldKey] =
+      field.maxLength !== undefined ? fact.value.slice(0, field.maxLength) : fact.value;
+  }
   return values;
+}
+
+const HEADLINE = /\b(headline|title|heading)\b/;
+
+/** Whether a field reads as a fact's kind, by its label or key. */
+function factFits(kind: string, field: TemplateSchema["fields"][number]): boolean {
+  if (kind === "headline") {
+    return HEADLINE.test(`${field.label} ${field.fieldKey}`.toLowerCase().replace(/[_-]+/g, " "));
+  }
+  return detailKindOf(field) === kind;
 }
 
 /** What the stand-in reads from the local store. */

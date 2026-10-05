@@ -11,7 +11,7 @@
 // "Try again" on the thread's last turn replaces that turn in place with a
 // fresh one under a new id, which retires the old id the same way.
 
-import type { FieldValues, GenerateFollowUp, GenerateInput } from "../types";
+import type { FieldValues, GenerateFactKind, GenerateFollowUp, GenerateInput } from "../types";
 import type { PlatformId } from "../templates/platforms";
 import {
   isAssistantTurn,
@@ -25,6 +25,7 @@ import {
   type ChatTurn,
   type UserTurn,
 } from "./chat";
+import { isFactKind, MAX_FACT_VALUE } from "./details";
 import { fallbackTitle } from "./draftView";
 import {
   DONE_FALLBACK,
@@ -765,6 +766,16 @@ export function buildGenerateInput(
   // them, and they need its pinned template.
   if (templateChat && user.templateIdHint && user.details?.length) {
     input.details = user.details.map((d) => ({ fieldKey: d.fieldKey, value: d.value }));
+  }
+  // Generate's details (new look, Phase 5) are not tied to a template:
+  // they travel as facts, one per kind, for the model to place.
+  if (!templateChat && user.details?.length) {
+    const byKind = new Map<GenerateFactKind, string>();
+    for (const d of user.details) {
+      const value = d.value.trim().slice(0, MAX_FACT_VALUE);
+      if (isFactKind(d.fieldKey) && value) byKind.set(d.fieldKey, value);
+    }
+    if (byKind.size > 0) input.facts = [...byKind].map(([kind, value]) => ({ kind, value }));
   }
   // One question, on a first message with nothing structured to build from
   // (§12.6). A follow-up (the answer) can never ask again.

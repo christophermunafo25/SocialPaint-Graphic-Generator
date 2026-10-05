@@ -236,3 +236,69 @@
   position: absolute;
   inset: -4px; /* a 24 hit area */
 }
+
+/* ── Attach menu (13:1746) and Add a detail (13:2285), PHASE-5 §9 D3/D4 ──
+   On the Menu primitive's panel, rows and labels. 300 wide, Elevation/
+   Medium; fixed off the composer box by AttachMenu. */
+.sp-attach {
+  position: fixed;
+  z-index: 500; /* the popover layer; z-index is not a Figma token */
+  width: 300px;
+  max-width: calc(100vw - 16px);
+  overflow-y: auto;
+}
+.sp-attach__section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+/* The frame's section labels track 0.08em (13:1746). */
+.sp-attach__label {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.sp-attach__item {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+/* As the Menu primitive: keyboard focus is the hover look (57:410). */
+.sp-attach__item:focus {
+  outline: none;
+  background: var(--state-hover);
+}
+.sp-attach--detail {
+  padding-top: 9px; /* as drawn (13:2285) */
+}
+.sp-attach__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0 4px 4px;
+}
+.sp-attach__back {
+  display: inline-flex;
+  border-radius: var(--radius-control);
+  color: var(--text-strong);
+  cursor: pointer;
+}
+.sp-attach__title {
+  margin: 0;
+  color: var(--text-strong);
+}
+.sp-attach__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 6px 6px;
+}
+.sp-attach__foot {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Behind the attach menu and Add a detail, the Recent row alone blurs
+   (PHASE-5 §9 D6); the greeting and the composer stay sharp. */
+.sp-gen-recent[data-blurred] {
+  filter: blur(3px);
+}

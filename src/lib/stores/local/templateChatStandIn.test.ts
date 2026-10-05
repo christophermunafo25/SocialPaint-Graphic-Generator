@@ -99,6 +99,31 @@ describe("standInValues", () => {
     expect(values).not.toHaveProperty("image");
   });
 
+  it("puts Generate's facts into the fields that read as their kind", () => {
+    const events: TemplateSchema = {
+      ...TEMPLATE,
+      fields: [
+        ...TEMPLATE.fields,
+        field("when", { label: "Event date" }),
+        field("rsvp", { label: "RSVP link", maxLength: 10 }),
+      ],
+    };
+    const values = standInValues(events, {
+      brief: "x",
+      facts: [
+        { kind: "headline", value: "Spring open house" },
+        { kind: "date", value: "Saturday" },
+        { kind: "place", value: "Denver" },
+        { kind: "link", value: "example.com/rsvp" },
+      ],
+    });
+    expect(values.headline).toBe("Spring open house");
+    expect(values.when).toBe("Saturday");
+    expect(values.rsvp).toBe("example.co");
+    // No field reads as a place, so the location goes nowhere.
+    expect(Object.values(values)).not.toContain("Denver");
+  });
+
   it("keeps a follow-up's values for this template", () => {
     const values = standInValues(TEMPLATE, {
       brief: "Make it shorter",

@@ -21,7 +21,7 @@ import { DEFAULT_VARIATIONS, sameEdits } from "@/lib/generate/chatReducer";
 import { EXPORT_ERROR_TITLE, missingFields } from "@/lib/generate/draftDownload";
 import { captionFor, previewValues, tooLongFields, turnPhoto } from "@/lib/generate/draftView";
 import { defaultVariant } from "@/lib/templates/variants";
-import { detailKindOf } from "@/lib/generate/details";
+import { detailKindOf, type DetailTagValue } from "@/lib/generate/details";
 import {
   PHOTO_ANSWER,
   checkAnswer,
@@ -328,6 +328,10 @@ export function GenerateChat({
   // The document waiting to go with the next message: text read in the
   // browser, sent once with that message and never saved (PROMPT §12.3).
   const [doc, setDoc] = useState<ChatDocument | null>(null);
+  // Generate's detail tags for the next message (PHASE-5 §9 D4).
+  const [details, setDetails] = useState<DetailTagValue[]>([]);
+  // The attach menu or Add a detail is showing: Start blurs Recent (§9 D6).
+  const [menuOpen, setMenuOpen] = useState(false);
   const [platform, setPlatform] = useState<PlatformId | null>(null);
   const [variations, setVariations] = useState(DEFAULT_VARIATIONS);
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
@@ -508,6 +512,10 @@ export function GenerateChat({
       follow();
       return;
     }
+    // The tags travel with their message, as the server's facts.
+    const sentDetails = details.length
+      ? { details: details.map(({ fieldKey, label, value }) => ({ fieldKey, label, value })) }
+      : {};
     const started = fromStart
       ? send({
           text,
@@ -515,16 +523,18 @@ export function GenerateChat({
           document: doc,
           platformHint: platform,
           variations,
+          ...sentDetails,
         })
       : // The compact composer has no platform or count: the controller
         // reuses the thread's last composer send (never a chip's).
-        send({ text, photo, document: doc });
+        send({ text, photo, document: doc, ...sentDetails });
     if (!started) return;
-    // The photo and the document are snapshotted on the message; the
-    // composer starts clean.
+    // The photo, the document and the tags are snapshotted on the message;
+    // the composer starts clean.
     setText("");
     setPhoto(null);
     setDoc(null);
+    setDetails([]);
     follow();
     if (fromStart) {
       // The Large composer leaves with the Start state; the member keeps
@@ -547,6 +557,7 @@ export function GenerateChat({
     setText("");
     setPhoto(null);
     setDoc(null);
+    setDetails([]);
     setAnswers({});
     setAnswerError(null);
     autoBuilt.current = null;
@@ -1076,6 +1087,8 @@ export function GenerateChat({
                       dimUncovered: published !== null && !libraryEmpty,
                     }}
                     variations={{ value: variations, onChange: setVariations }}
+                    details={{ value: details, onChange: setDetails }}
+                    onMenuOpenChange={setMenuOpen}
                     textareaRef={composerRef}
                   />
                 ) : (
@@ -1090,6 +1103,7 @@ export function GenerateChat({
               </div>
               {configured && company && (
                 <RecentChats
+                  blurred={menuOpen}
                   companyId={company.id}
                   onOpen={openChat}
                   onViewAll={openHistory}
@@ -1319,6 +1333,8 @@ export function GenerateChat({
                         ? TEMPLATE_THREAD_PLACEHOLDER
                         : THREAD_PLACEHOLDER
                   }
+                  // A template chat's details come from its questions.
+                  details={template ? undefined : { value: details, onChange: setDetails }}
                   textareaRef={composerRef}
                   disabled={full}
                 />
