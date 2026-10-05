@@ -279,6 +279,14 @@ switching (the Workspaces card) and sign out; on the local backend the dev role 
 sits in `DevBackendBanner`. What each role reaches is `screenFor` (`src/app/router.tsx`)
 and `settingsSections.ts`, pinned by `src/app/routes.test.ts`.
 
+Settings is on the new look (Phase 7; styles in `src/styles/settings.css`, the `sp-st-*`
+classes). Each section is a column of primitive `SettingsCard`s with the action in the card's
+header; the rail items are real links, and legal links sit at the foot. Feedback with no place
+on the page goes to one toast (`settings/settingsToast.tsx`), and every destructive action keeps
+a confirm on `Modal` (`settings/SettingsConfirm.tsx`: `ConfirmModal`, and `TypedConfirmModal`
+for revoke-all and delete). The Plan card shows the no-plan state, "Early access", until billing
+lands in Phase 7b. A public link's address is still shown only once, so Sharing has no Copy.
+
 Brand Studio is on the new look (Phase 6; styles in `src/styles/brand-studio.css`, the
 `sp-bs-*` classes). Detail pages head themselves with `BreadcrumbHeader` (save status and
 Undo on the right); file rows and cards carry `RowMenu` / `RowContextMenu` (the same menu

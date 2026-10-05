@@ -111,10 +111,3 @@ const compact = new Intl.NumberFormat("en", { notation: "compact", maximumFracti
 
 /** A token count as Settings' AI usage card shows it: "1.2M", "318.4K". */
 export const compactCount = (n: number): string => compact.format(n);
-
-/** Settings' AI usage line (template-chat PROMPT §15, proposed copy):
- * "128 requests · 412K tokens in · 38K out, this month". */
-export function aiUsageLine(u: { requests: number; inputTokens: number; outputTokens: number }) {
-  const requests = `${u.requests.toLocaleString("en")} request${u.requests === 1 ? "" : "s"}`;
-  return `${requests} · ${compact.format(u.inputTokens)} tokens in · ${compact.format(u.outputTokens)} out, this month`;
-}
