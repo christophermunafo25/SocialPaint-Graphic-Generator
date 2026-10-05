@@ -43,11 +43,10 @@ The `.sp-gate[data-theme="dark"] .sp-gate__panel` override of `--input-bg` stays
 | `--text-on-action` | `--text-inverse` | Light `#F1F1F1` → `#FFFFFF`; Dark `#272727` → `#0B0B0C` |
 | `--tag-bg-on-media` | `--tag-overlay-bg` | None |
 | `--state-danger`, `--state-danger-on-surface` | `--state-error` | `#C94040` → `#D43535`; Dark `#E57373` → `#EC5656` |
-| `--gen-btn-accent-bg`, `--gen-btn-accent-fg` | `--btn-primary-bg`, `--btn-primary-fg` | None (already Deep Moss and Slime) |
 | `--btn-primary-bg-hover` | `--btn-primary-bg` under `--state-hover-inverse` | Follows the new primary pair (the old mix toward `--fill-action` would flash ink) |
 | `--shadow-card`, `--shadow-rail` | Elevation/Small's drop: `2px 2px 8px 0 var(--shadow-raised)` | 6/6 blur 25 → 2/2 blur 8. The old Dark bevel (`--card-highlight`) already matches Figma's |
 
-Names defined from these follow them: `--primary`, `--primary-foreground`, `--accent-foreground`, `--destructive`, `--sidebar-ring` and `--radius` in `theme.css`, and `--danger-wash`, `--chip-tile-active-fg`, `--focus-ring`, `--focus-ring-tight` and the Light `--gen-seg-on-shadow` in `socialpaint.css`.
+Names defined from these follow them: `--primary`, `--primary-foreground`, `--accent-foreground`, `--destructive`, `--sidebar-ring` and `--radius` in `theme.css`, and `--danger-wash`, `--chip-tile-active-fg`, `--focus-ring` and `--focus-ring-tight` in `socialpaint.css`.
 
 ## 3. Left alone until their components move
 
@@ -55,9 +54,9 @@ Names defined from these follow them: `--primary`, `--primary-foreground`, `--ac
 |---|---|---|---|
 | `--nav-active-bg` | Selected segments (`.sp-seg`, `.sp-segmented__option`), tab strip tabs, choice tiles, selected chips, the size gallery rail (`.sp-railitem`). The sidebar and the Settings rail moved to primitives in Phase 3 | `--control-fill` (rail), `--control-thumb` (segments and tabs), `--chip-selected-bg` or `--surface-inverse` (chips) | 6, 7 and 8; the Template Builder's controls in 9 |
 | `--nav-active-fg` | Wherever `--nav-active-bg` is (the sidebar row moved to NavItem in Phase 3) | `--text-strong` | 6, 7 and 8; the Template Builder's controls in 9 |
-| `--media-overlay` | `.sp-edit-overlay` (Brand Studio's preview hover) and `.sp-chat-editor-sheet__scrim` (the chat editor as a sheet, Generate's and the template chat's below 1180) | `--overlay-hover` and `--overlay-scrim` | 5 and 6 (Brand Templates' previews moved to PreviewOverlay in 4) |
+| `--media-overlay` | `.sp-edit-overlay` (Brand Studio's preview hover) and `.sp-chat-editor-sheet__scrim` (the chats' editor as a sheet below 1180) | `--overlay-hover` and `--overlay-scrim` | 6 (Brand Templates' previews moved to PreviewOverlay in 4, Generate's in 5); the sheet's scrim when the chats' layout moves |
 | `--edit-chip-bg` | `.sp-edit-overlay__chip` (Brand Studio), whose icon reads `--text-primary` | `--overlay-control` under `--overlay-control-fg` (bridging only the fill would put a white icon on a white chip in Dark) | 6 |
-| `--shadow-rest` | The legacy platform chips and filter bar search field (Generate History, the Template Builder, the size gallery; Brand Templates moved off them in Phase 4), chat chips, the tooltip, the selected editor segment | The elevation each Figma component uses | 5, 8 and 9 |
-| `--radius-control-lg` (12) | Large buttons and inputs, Generate's chat buttons and fields and user message bubble (the template chat moved to the primitives in Phase 4), the import popover, the build picker card, gate controls | 9 for controls, 16 for the bubble and popovers, 20 for cards | 5 to 8; the build picker and import popover in 9; the gate keeps 12 |
+| `--shadow-rest` | The legacy platform chips and filter bar search field (the Template Builder and the size gallery; Brand Templates moved off them in Phase 4, Generate History in 5), and the tooltip | The elevation each Figma component uses | 8 and 9 |
+| `--radius-control-lg` (12) | Large buttons and inputs (`.sp-btn-lg`, `.sp-input-lg`), the import popover, the build picker card, gate controls (both chats moved to the primitives in Phases 4 and 5) | 9 for controls, 16 for popovers, 20 for cards | 6 to 8; the build picker and import popover in 9; the gate keeps 12 |
 
-Page-scoped groups (`--gen-*` for the chats, `--chip-*`, `--sb-*` for the narrow layout's top bar and drawer (the desktop sidebar left it in Phase 3), `--start-*` for the build picker, `--gate-*`, `--viz-*`, `--edge-*`, `--card-*`) stay as they are until their page moves. Phase 9 deletes whatever is left, along with this file and `legacy-bridge.css`.
+Page-scoped groups (`--gen-*` for the chats, down to the scroll fade and the template chat's Missing marker since Phase 5, `--chip-*`, `--sb-*` for the narrow layout's top bar and drawer (the desktop sidebar left it in Phase 3), `--start-*` for the build picker, `--gate-*`, `--viz-*`, `--edge-*`, `--card-*`) stay as they are until their page moves. Phase 9 deletes whatever is left, along with this file and `legacy-bridge.css`.

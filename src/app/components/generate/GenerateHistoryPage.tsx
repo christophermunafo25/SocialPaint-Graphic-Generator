@@ -14,7 +14,6 @@ import {
   initialHistory,
   isEmptyHistory,
   loadingCount,
-  loadingShapes,
   pendingRequest,
   showingChats,
 } from "@/lib/generate/historyPaging";
@@ -30,14 +29,13 @@ import { useRouter } from "../../router";
 import { ErrorState } from "../ErrorState";
 import { useFullViewport } from "../layout/ChromeContext";
 import { Page } from "../layout/Page";
-import { GroupChips } from "../templates/GroupChips";
-import { TemplateSearchField } from "../templates/TemplateSearchField";
-import { ChatBreadcrumb } from "./ChatHeader";
-import { ChatButton } from "./ChatButton";
+import { MessageSquarePlus } from "lucide-react";
+import { Button } from "../primitives";
+import { LibrarySearch } from "../templates/LibrarySearch";
+import { PlatformFilter } from "../templates/PlatformFilter";
 import { HistoryCard } from "./HistoryCard";
 import { LegalLinks } from "./LegalLinks";
 import { ScrollFade, useScrollFades } from "./ScrollFade";
-import { NewChatIcon } from "./icons";
 import { requestComposerFocus, takeHistoryFocus } from "./composerFocus";
 import { useThreadPreviews } from "./useThreadPreviews";
 
@@ -73,15 +71,16 @@ const NO_CHATS = "No chats yet";
 const noMatch = (query: string) => (query ? `No chats match “${query}”.` : "That set is empty.");
 
 /**
- * Every chat the member has started (Figma "Generate · Chat", frame 07;
- * PROMPT §8.6), at /generate/history. A full-height column like the
- * thread: the header (the breadcrumb, the "History" title with New chat on
- * its row, and the description), the filter bar, the grid of chats as the
- * only scrolling region, and the legal links at the foot.
+ * Every chat the member has started (new look, 13:3359; PROMPT §8.6), at
+ * /generate/history. A full-height column like the thread: the header (the
+ * breadcrumb, then the "History" title with New chat on its row), the
+ * filter bar, the grid of chats as the only scrolling region, and the legal
+ * links at the foot.
  *
- * The filter bar is the Brand Templates one: the search field ("Search
- * chats", a case-insensitive title search) and the platform chips, one per
- * platform the member's chats use, in PLATFORMS order, after "All chats".
+ * The filter bar is the library's: the search, collapsed to its icon until
+ * opened ("Search chats", a case-insensitive title search), and the
+ * platform chips, one per platform the member's chats use, in PLATFORMS
+ * order, after "All chats" (PHASE-5 §9 D11).
  * The URL is the state, as on Brand Templates: a chip is a navigation, and
  * typing settles into the URL in place (replace) so the back button is not
  * buried under keystrokes. A platform the member's chats never use is no
@@ -318,9 +317,9 @@ export function GenerateHistoryPage() {
           Chats you start in Generate show up here, newest first.
         </p>
         <div className="sp-emptystate__actions">
-          <ChatButton kind="secondary" size="small" icon={<NewChatIcon />} onClick={newChat}>
+          <Button kind="primary" size="sm" icon={MessageSquarePlus} onClick={newChat}>
             New chat
-          </ChatButton>
+          </Button>
         </div>
       </div>
     );
@@ -329,13 +328,13 @@ export function GenerateHistoryPage() {
       <div className="sp-emptystate">
         <p className="sp-emptystate__title">{noMatch(query)}</p>
         <div className="sp-emptystate__actions">
-          <ChatButton
-            kind="tertiary"
-            size="small"
+          <Button
+            kind="neutralOnPage"
+            size="sm"
             onClick={() => setFilter({ platform: null, q: "" })}
           >
             Clear
-          </ChatButton>
+          </Button>
         </div>
       </div>
     );
@@ -366,11 +365,9 @@ export function GenerateHistoryPage() {
             );
           })}
           {loading &&
-            loadingShapes(list.items.length, loadingCount(list.items.length, columns)).map(
-              (shape, i) => (
-                <HistoryCard key={`loading-${i}`} state="loading" loadingShape={shape} />
-              ),
-            )}
+            Array.from({ length: loadingCount(list.items.length, columns) }, (_, i) => (
+              <HistoryCard key={`loading-${i}`} state="loading" />
+            ))}
         </div>
         {failed && (
           <ErrorState
@@ -385,31 +382,50 @@ export function GenerateHistoryPage() {
 
   return (
     <Page layout={{ className: "sp-chat-page", state: "history" }}>
-      <header className="sp-chat-history-head">
-        <ChatBreadcrumb current="History" onRoot={newChat} />
-        <div className="sp-chat-history-head__title">
-          <h1 ref={titleRef} tabIndex={-1} className="sp-page-title">
+      {/* The header (13:3433): "Generate" / "History", then the title in
+          Title/Page with New chat on its row. */}
+      <header className="sp-gen-history-head">
+        <nav aria-label="Breadcrumb" className="sp-shell-crumbs">
+          <ol>
+            <li>
+              <button
+                type="button"
+                className="ui-reset ui-ring t-label-m sp-shell-crumbs__link"
+                onClick={newChat}
+              >
+                Generate
+              </button>
+            </li>
+            <li>
+              <span className="t-body-s sp-shell-crumbs__sep" aria-hidden>
+                /
+              </span>
+              <span className="t-label-m sp-shell-crumbs__current" aria-current="page">
+                History
+              </span>
+            </li>
+          </ol>
+        </nav>
+        <div className="sp-gen-history-head__title">
+          <h1 ref={titleRef} tabIndex={-1} className="t-title-page">
             History
           </h1>
-          <ChatButton kind="secondary" size="small" icon={<NewChatIcon />} onClick={newChat}>
+          <Button kind="primary" icon={MessageSquarePlus} onClick={newChat}>
             New chat
-          </ChatButton>
+          </Button>
         </div>
-        <p className="sp-chat-history-head__desc">
-          Every chat and the posts it made, newest first. Open one to pick up where you left off.
-        </p>
       </header>
 
       {!noChats && (
-        <div className="sp-filterbar">
-          <TemplateSearchField
+        <div className="sp-lib-filterbar">
+          <LibrarySearch
             value={rawQuery}
             onChange={(q) => setFilter({ q }, true)}
+            label="Search chats"
             placeholder="Search chats"
-            ariaLabel="Search chats"
           />
           {facets.length > 0 && (
-            <GroupChips
+            <PlatformFilter
               facets={facets}
               selected={platform ?? null}
               onSelect={(next) => setFilter({ platform: next })}

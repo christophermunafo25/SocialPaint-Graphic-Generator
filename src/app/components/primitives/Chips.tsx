@@ -148,21 +148,30 @@ export interface DetailTagProps {
   onRemove?(): void;
   /** The remove button's name, e.g. "Remove socialpaint.ai/careers". */
   removeLabel?: string;
+  /** Editable only: the value becomes a button that edits the detail
+   * (Generate, PHASE-5 §9 D4). */
+  onEdit?(event: React.MouseEvent<HTMLButtonElement>): void;
+  /** The value button's name, e.g. "Edit Link: socialpaint.ai/careers". */
+  editLabel?: string;
   className?: string;
   "data-demo-state"?: DemoStateAttr;
 }
 
 /** Detail tag (Figma 61:464). Keyboard focus lands on the remove button,
- * whose ring sits 2px out around its 14 glyph; the hit area reaches 24. */
+ * whose ring sits 2px out around its 14 glyph; the hit area reaches 24.
+ * With onEdit, the value is a button too and takes focus first. */
 export function DetailTag({
   state = "editable",
   children,
   icon: Icon,
   onRemove,
   removeLabel = "Remove",
+  onEdit,
+  editLabel,
   className,
   "data-demo-state": demoState,
 }: DetailTagProps) {
+  const editable = state === "editable" && onEdit;
   return (
     <span
       className={cx("ui-tint ui-detail-tag", className)}
@@ -170,7 +179,18 @@ export function DetailTag({
       data-demo-state={demoState}
     >
       {Icon && <Icon size={15} className="ui-icon" aria-hidden />}
-      <span className="t-caption-s t-trim">{children}</span>
+      {editable ? (
+        <button
+          type="button"
+          aria-label={editLabel}
+          onClick={onEdit}
+          className="ui-reset ui-ring ui-detail-tag__value t-caption-s t-trim"
+        >
+          {children}
+        </button>
+      ) : (
+        <span className="t-caption-s t-trim">{children}</span>
+      )}
       {state === "editable" && (
         <button
           type="button"

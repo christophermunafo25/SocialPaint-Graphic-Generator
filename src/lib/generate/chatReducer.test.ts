@@ -1089,6 +1089,34 @@ describe("buildGenerateInput", () => {
     });
   });
 
+  it("sends Generate's details as facts, one per kind, and never as details", () => {
+    const first = userTurn({
+      intent: "brief",
+      details: [
+        { fieldKey: "headline", label: "Headline", value: "  Spring open house " },
+        { fieldKey: "date", label: "Date & time", value: "Friday" },
+        { fieldKey: "date", label: "Date & time", value: "Saturday" },
+        { fieldKey: "venue", label: "Venue", value: "Not a kind" },
+        { fieldKey: "link", label: "Link", value: "   " },
+      ],
+    });
+    const input = buildGenerateInput([], first, "freestyle");
+    expect(input.facts).toEqual([
+      { kind: "headline", value: "Spring open house" },
+      { kind: "date", value: "Saturday" },
+    ]);
+    expect(input.details).toBeUndefined();
+    // A template chat's details stay field-keyed.
+    const pinned = userTurn({
+      intent: "brief",
+      templateIdHint: "tpl-1",
+      details: [{ fieldKey: "headline", label: "Headline", value: "Hi" }],
+    });
+    const chat = buildGenerateInput([], pinned, "library", true);
+    expect(chat.facts).toBeUndefined();
+    expect(chat.details).toEqual([{ fieldKey: "headline", value: "Hi" }]);
+  });
+
   it("carries only the photo's flag and its clamped aspect", () => {
     const first = userTurn({ intent: "brief", photo: PHOTO });
     const input = buildGenerateInput([], first, "library");

@@ -37,6 +37,11 @@ export interface DetailsPanelProps {
   /** The header's close button (the template chat's Edit details). */
   onClose?(): void;
   closeLabel?: string;
+  /** Generate's size switch (13:3312): which draft the stage shows and
+   * Download PNG exports, as a Segmented control under the title. */
+  sizeSwitch?: DetailsLook | null;
+  /** Generate's preview stage, under the size switch. */
+  stage?: React.ReactNode;
   /** Look, as a Segmented control, when the template has more than one. */
   look?: DetailsLook | null;
   /** The member fields to show, in the template's order. */
@@ -56,6 +61,8 @@ export interface DetailsPanelProps {
   caption?: DetailsCaption | null;
   /** The footer's buttons. */
   footer: React.ReactNode;
+  /** Above the footer's row, full width (Generate's Save to library). */
+  footerLead?: React.ReactNode;
   /** The form the fields sit in, for focusFirstInvalid; it is also the
    * fields' scroller. */
   formRef?: React.Ref<HTMLFormElement>;
@@ -79,6 +86,8 @@ export function DetailsPanel({
   title,
   onClose,
   closeLabel = "Close",
+  sizeSwitch,
+  stage,
   look,
   fields = [],
   values = {},
@@ -89,6 +98,7 @@ export function DetailsPanel({
   isEdited,
   caption,
   footer,
+  footerLead,
   formRef,
   panelRef,
   panelProps,
@@ -122,6 +132,17 @@ export function DetailsPanel({
         </h2>
         {onClose && <IconButton ref={closeRef} icon={X} label={closeLabel} onClick={onClose} />}
       </div>
+
+      {sizeSwitch && sizeSwitch.options.length > 1 && (
+        <SegmentedControl
+          aria-label="Size"
+          options={sizeSwitch.options}
+          selectedId={sizeSwitch.selectedId}
+          onSelect={sizeSwitch.onSelect}
+          className="sp-details__look"
+        />
+      )}
+      {stage}
 
       <form
         ref={formRef}
@@ -170,7 +191,14 @@ export function DetailsPanel({
         )}
       </form>
 
-      <div className="sp-details__foot">{footer}</div>
+      {footerLead ? (
+        <div className="sp-details__footer">
+          {footerLead}
+          <div className="sp-details__foot">{footer}</div>
+        </div>
+      ) : (
+        <div className="sp-details__foot">{footer}</div>
+      )}
     </section>
   );
 }

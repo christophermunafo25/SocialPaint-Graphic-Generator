@@ -7,7 +7,6 @@ import {
   initialHistory,
   isEmptyHistory,
   loadingCount,
-  loadingShapes,
   pendingRequest,
   showingChats,
   type HistoryPaging,
@@ -188,15 +187,6 @@ describe("loadingCount", () => {
   it("is four before the grid has been measured", () => {
     expect(loadingCount(12, 0)).toBe(4);
     expect(loadingCount(0, Number.NaN)).toBe(4);
-  });
-});
-
-describe("loadingShapes", () => {
-  it("alternates 4:5 and 1.91:1 by place in the grid, even places portrait", () => {
-    expect(loadingShapes(0)).toEqual(["portrait", "landscape", "portrait", "landscape"]);
-    // The frame: seven chats, then landscape, portrait, landscape, portrait.
-    expect(loadingShapes(7)).toEqual(["landscape", "portrait", "landscape", "portrait"]);
-    expect(loadingShapes(12, 2)).toEqual(["portrait", "landscape"]);
   });
 });
 

@@ -33,7 +33,7 @@ const HOLD_PX = 2;
  * scroller (in the CSS) for the same reason: this hook owns the position.
  *
  * It also reports the thread column's width, which a wide draft card must
- * fit (DraftCard's `maxWidth`): 760 beside the rail, less on a narrow
+ * fit (GenerateTurn's `maxWidth`): 760 beside the rail, less on a narrow
  * window.
  *
  * `preserve(el)` is for a change the member made to the layout rather

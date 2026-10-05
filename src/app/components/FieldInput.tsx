@@ -13,25 +13,12 @@ interface FieldInputProps {
   onChange(value: string): void;
   /** DOM id for the control so the page can associate a real <label>. */
   inputId?: string;
-  /** "chat" dresses the text, multiline and select controls in the Generate
-   * editor's look (Figma "Generate · Chat", sp-input 288:230): the
-   * sp-chat-input class instead of sp-input. Image fields keep their own
-   * control either way. Defaults to "default". */
-  variant?: "default" | "chat";
 }
 
 /** Member input for one template field. Enforces the field's guardrails
  * (maxLength, aspect-ratio crop, fixed options) — content only, never style. */
-export function FieldInput({
-  field,
-  value,
-  onChange,
-  inputId,
-  variant = "default",
-}: FieldInputProps) {
-  // Only the control's class changes with the variant; the guardrails,
-  // markup and behaviour are the same for both.
-  const controlClass = variant === "chat" ? "sp-chat-input" : "sp-input";
+export function FieldInput({ field, value, onChange, inputId }: FieldInputProps) {
+  const controlClass = "sp-input";
   switch (field.type) {
     case "text":
       return (
@@ -57,9 +44,7 @@ export function FieldInput({
           onChange={(e) => onChange(e.target.value)}
           rows={3}
           className={controlClass}
-          // The chat tile sizes itself to its text; its stylesheet decides
-          // whether a resize grip shows, so the inline rule stays default-only.
-          style={variant === "chat" ? undefined : { resize: "vertical" }}
+          style={{ resize: "vertical" }}
         />
       );
     case "select":

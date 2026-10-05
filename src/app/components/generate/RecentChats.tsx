@@ -9,7 +9,7 @@ import { RecentCard } from "./RecentCard";
 import { useThreadPreviews } from "./useThreadPreviews";
 
 /** The Start state shows this many chats (PROMPT §8.2, §9.9). */
-const RECENT_COUNT = 4;
+const RECENT_COUNT = 3;
 
 /** The last list the Recent row showed, for this page load, per account and
  * workspace. A Start state shown again (New chat, back from a chat) draws
@@ -23,10 +23,10 @@ const lastShown = new Map<string, GenerateThreadSummary[]>();
 const NO_CHATS: readonly GenerateThreadSummary[] = [];
 
 /**
- * Recent on the Start state (Figma "Generate · Chat", frame 01, "Recent";
- * PROMPT §8.2 item 4): the member's four most recently updated chats, 56
- * under what sits above. A header row ("Recent", and View all, which opens
- * History), 12, then up to four RecentCards in a four-column grid: the
+ * Recent on the Start state (13:1560; PHASE-5.md §9 D1): the member's three
+ * most recently updated chats, 75 under the composer. A header row
+ * ("Recent", and View all, which opens History), 12, then up to three
+ * RecentCards in one row of three columns: the
  * chat's first draft letterboxed in the well, its title, and its platforms
  * and date ("Instagram, LinkedIn · Today", §9.9). A card opens its chat.
  *
@@ -45,7 +45,10 @@ export function RecentChats({
   onOpen,
   onViewAll,
   onSettled,
+  blurred = false,
 }: {
+  /** The attach menu or Add a detail is open over it (PHASE-5 §9 D6). */
+  blurred?: boolean;
   companyId: string;
   /** A chat's card: its id, and its template when it is a template chat. */
   onOpen(threadId: string, templateId: string | null): void;
@@ -104,16 +107,24 @@ export function RecentChats({
   if (!chats || chats.length === 0) return null;
 
   return (
-    <section className="sp-chat-recent" aria-labelledby={headingId}>
-      <div className="sp-chat-recent__head">
-        <h2 id={headingId} className="sp-chat-recent__title">
+    <section
+      className="sp-gen-recent"
+      data-blurred={blurred || undefined}
+      aria-labelledby={headingId}
+    >
+      <div className="sp-gen-recent__head">
+        <h2 id={headingId} className="t-title-panel">
           Recent
         </h2>
-        <button type="button" className="sp-chat-recent__viewall" onClick={onViewAll}>
+        <button
+          type="button"
+          className="ui-reset ui-ring t-label-m sp-lib-link"
+          onClick={onViewAll}
+        >
           View all
         </button>
       </div>
-      <div className="sp-chat-recent__grid">
+      <div className="sp-gen-recent__grid">
         {chats.map((chat) => (
           <RecentCard
             key={chat.id}

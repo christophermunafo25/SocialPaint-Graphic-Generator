@@ -31,14 +31,9 @@ import { TOO_LONG_ERROR, requiredError } from "@/lib/templates/fieldCopy";
 import { DetailField, DetailsPanel } from "../details/DetailsPanel";
 import { Button, Toast } from "../primitives";
 import { ErrorBoundary } from "../ErrorBoundary";
-import { FieldInput } from "../FieldInput";
 import { SchemaRenderer, type SchemaRendererHandle } from "../SchemaRenderer";
-import { ChatButton } from "./ChatButton";
-import { EditorField, fieldStatus } from "./EditorField";
 import { TagPlusGlyph } from "./icons";
-import { CloseButton } from "./IconButton";
-import { useScrollFades } from "./ScrollFade";
-import { SegmentSwitch, type SegmentOption } from "./SegmentSwitch";
+import type { SegmentOption } from "../primitives";
 
 /** Save to library, for a freestyle draft and an admin viewer (PROMPT
  * §8.5, §15 item 10). The page owns the store call and its state; the
@@ -55,19 +50,6 @@ export interface EditorSaveToLibrary {
  * the panel's and the page's alike. */
 export const EXPORT_TOAST_MS = 6000;
 
-/** The footer hint (PROMPT §8.5): what an edit reaches, by how many sizes
- * the turn has. Nothing for one. */
-function editsHint(sizes: number): string | null {
-  if (sizes === 2) return "Edits update both sizes.";
-  if (sizes >= 3) return "Edits update every size.";
-  return null;
-}
-
-/** How far the fields list's edge fades reach, in px: the list keeps a
- * field it scrolls to (focus, a Try next chip) clear of them. The CSS's
- * --editor-fields-fade is the same length. */
-const FIELDS_FADE = 32;
-
 /** A control's id from an entry's (unique in the list, stable while the
  * drafts are), under the panel's own prefix so two panels never clash. */
 const controlId = (prefix: string, entry: LinkedEntry) =>
@@ -83,7 +65,7 @@ function focusTarget(control: HTMLElement): HTMLElement | null {
   if (!fileInput && control.getClientRects().length > 0) return control;
   return (
     control
-      .closest(".sp-chat-field")
+      .closest(".ui-field")
       ?.querySelector<HTMLElement>(
         'input:not([type="file"]), textarea, select, button, [tabindex="0"]',
       ) ?? null
@@ -96,7 +78,7 @@ function focusTarget(control: HTMLElement): HTMLElement | null {
  * they are (focus is moved with preventScroll). */
 function reveal(scroller: HTMLElement, el: HTMLElement, inset: number) {
   const box = scroller.getBoundingClientRect();
-  const rect = (el.closest(".sp-chat-field") ?? el).getBoundingClientRect();
+  const rect = (el.closest(".ui-field") ?? el).getBoundingClientRect();
   const top = box.top + inset;
   const bottom = box.bottom - inset;
   if (rect.top < top) scroller.scrollTop -= top - rect.top;
@@ -107,51 +89,10 @@ function reveal(scroller: HTMLElement, el: HTMLElement, inset: number) {
 /** The fields list's ring room: its own padding, the focus ring's reach. */
 const ringRoom = (list: HTMLElement) => parseFloat(getComputedStyle(list).paddingTop) || 0;
 
-/** Whether the fields list is tall enough for its edge fades: both fades,
- * and its tallest field (an upload well, most often) with its ring's reach
- * between them. A shorter list, on a short window, draws no fades, so no
- * focused field is ever veiled by one. */
-function hasFadeRoom(list: HTMLElement): boolean {
-  let tallest = 0;
-  for (const child of Array.from(list.children)) {
-    tallest = Math.max(tallest, (child as HTMLElement).offsetHeight);
-  }
-  // 1px of slack for fractional layout.
-  return list.clientHeight + 1 >= 2 * FIELDS_FADE + tallest + 2 * ringRoom(list);
-}
-
-/** reveal() inside the fields list, clear of its fades, or of its edges
- * when it is too short to draw them. */
+/** reveal() inside the fields list, clear of its edges by the ring's
+ * reach. */
 function revealInList(list: HTMLElement | null, el: HTMLElement) {
-  if (list) reveal(list, el, hasFadeRoom(list) ? FIELDS_FADE : ringRoom(list));
-}
-
-/** hasFadeRoom, kept current as the list or any field changes size, or
- * fields come and go. */
-function useFadeRoom(list: HTMLElement | null): boolean {
-  const [room, setRoom] = useState(true);
-  useEffect(() => {
-    if (!list) return;
-    const check = () => setRoom(hasFadeRoom(list));
-    const ro = new ResizeObserver(check);
-    const observe = () => {
-      ro.disconnect();
-      ro.observe(list);
-      for (const child of Array.from(list.children)) ro.observe(child);
-    };
-    const mo = new MutationObserver(() => {
-      observe();
-      check();
-    });
-    observe();
-    mo.observe(list, { childList: true });
-    check();
-    return () => {
-      ro.disconnect();
-      mo.disconnect();
-    };
-  }, [list]);
-  return room;
+  if (list) reveal(list, el, ringRoom(list));
 }
 
 /** The member field an entry edits on one draft: a text group's member on
@@ -181,39 +122,31 @@ function tabbables(root: HTMLElement): HTMLElement[] {
 }
 
 /**
- * The Generate chat's editor (Figma "Generate · Chat", frame 06, "Editor
- * panel"; PROMPT §8.5, §9.5). Opened from a draft card's preview, or by the
- * Try next row's fill chip on one field; it edits every draft of the turn
- * at once and exports the one it shows.
- *
- * A card on the surface recipe, 380 wide, a column 16 apart:
+ * The chats' editor, on the Details panel (new look: Generate · Edit
+ * 13:3312, PHASE-5 §9 D8; the template chat's Edit details 13:8148,
+ * PHASE-4 §9 D4). Opened from a result card, or by a Fill in tag on one
+ * field; it edits every draft of the turn at once and exports the one it
+ * shows. In order:
  *
  *  1. "Edit details" and Close.
- *  2. With two or more drafts, the size switch (SegmentSwitch's editor
- *     look), "Instagram · 4:5", or "Instagram 1" and "Instagram 2" for
- *     drafts of one size (linkedFields' sizeNames), each segment's tooltip
- *     the design's name and size (sizeTitle): which draft the preview shows
- *     and Download PNG exports. Edits reach every draft whichever is
- *     picked.
- *  3. The preview stage, 290 tall on the --gen-well: the picked draft
- *     rendered live by the one renderer (SchemaRenderer), with the turn's
- *     photo in its slot, contained 10 inside the well (the frame's 216 ×
- *     270 for 4:5). Its first layout warning shows under it, as on the fill
- *     page. On a short window the stage gives up a little height (down to
- *     180) so the fields keep room.
- *  4. The fields (linkedFields.ts): one input per linked group (a field the
- *     drafts share is edited once and written to each), then the image
- *     slots the photo does not fill, each FieldInput in the chat look. An
- *     input reads the value of the draft on the stage. The list scrolls
- *     inside the panel when it runs taller than the room, its edges fading
- *     where more lies past them.
- *  5. A spacer, then the footer: the hint when there is more than one size,
- *     Save to library when the page offers it (freestyle, admin), and
- *     Download PNG, which exports the preview's own canvas through
- *     exportPng(), the fill page's path, so it is the same PNG. Like the
- *     fill page's Download it waits for every required field of the draft
- *     on the stage (missingFields): until then it says which ("Fill
- *     required: …", TemplateFill's line) and takes the member to the first.
+ *  2. Generate, with two or more drafts: the size switch, "Instagram · 4:5",
+ *     or "Instagram 1" and "Instagram 2" for drafts of one size
+ *     (linkedFields' sizeNames): which draft the stage shows and Download
+ *     PNG exports. Edits reach every draft whichever is picked.
+ *  3. Generate: the preview stage, 290 tall on a sunken well, the picked
+ *     draft rendered live by the one renderer (SchemaRenderer) with the
+ *     turn's photo in its slot, and its first layout warning under it. The
+ *     template chat renders the draft on the page's large stage instead
+ *     (`stageTarget`), with a Missing marker over each empty field.
+ *  4. The fields (linkedFields.ts) on DetailField: one input per linked
+ *     group, then the image slots the photo does not fill; Missing and Too
+ *     long on each field's error line, Edited on its label row. The
+ *     template chat adds Look and Caption.
+ *  5. The footer: Save to library above it when the page offers it
+ *     (freestyle, admin), then Discard and Download PNG, which exports the
+ *     stage's own canvas through exportPng(), the fill page's path. Until
+ *     every required field of the draft is filled, and nothing is too long,
+ *     Download PNG takes the member to the first field that needs it.
  *
  * Usage is recorded where it always is, inside SchemaRenderer: a published
  * library draft previews with `instrument` on, so opening it here records
@@ -259,7 +192,6 @@ export function EditorPanel({
   openDrafts = null,
   onDiscard,
   canDiscard = false,
-  details = false,
 }: {
   /** The turn's drafts. A draft whose template is gone (schema null)
    * cannot be edited or shown, and is left out of the switch and the
@@ -293,17 +225,10 @@ export function EditorPanel({
   onDiscard?(): void;
   /** Something has changed since the panel opened. */
   canDiscard?: boolean;
-  /** The template chat's Edit details (PHASE-4 §9 D4): drawn as the
-   * Details panel from its first render (its stage arrives a commit later,
-   * and a panel that changed form then would remount and drop focus). */
-  details?: boolean;
 }) {
   const { kit } = useBrand();
   const stageMode = stageTarget !== null;
-  const captionId = useId();
   const prefix = useId();
-  const titleId = useId();
-  const blockedId = useId();
 
   const usable = useMemo(() => drafts.filter((d) => d.schema !== null), [drafts]);
   const selected = usable.find((d) => d.id === selectedDraftId) ?? usable[0] ?? null;
@@ -361,36 +286,14 @@ export function EditorPanel({
     };
   }, [selected, values, entries, tooLong]);
 
-  // Each field's status (§11.11): Missing, Too long, Edited.
-  const statusOf = useCallback(
-    (entry: LinkedEntry) => {
-      if (!selected) return null;
-      const key = fieldKeyOn(entry, selected.id);
-      if (key === undefined) return null;
-      const opened = openDrafts?.find((d) => d.id === selected.id);
-      const was = opened ? (opened.values[key] ?? "") : undefined;
-      return fieldStatus({
-        missing: missingKeys.has(key),
-        tooLong: tooLong.has(key),
-        edited: was !== undefined && was !== (selected.values[key] ?? ""),
-      });
-    },
-    [selected, openDrafts, missingKeys, tooLong],
-  );
-
   // ── Focus ───────────────────────────────────────────────────────────────
   const hostRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLElement | null>(null);
   const fieldsRef = useRef<HTMLElement | null>(null);
   const closeRef = useRef<HTMLButtonElement | null>(null);
-  const fades = useScrollFades(fieldsRef);
-  // The list mounts with its first field, so it is held as state too.
-  const [fieldsEl, setFieldsEl] = useState<HTMLElement | null>(null);
   const setFields = useCallback((el: HTMLElement | null) => {
     fieldsRef.current = el;
-    setFieldsEl(el);
   }, []);
-  const fadeRoom = useFadeRoom(fieldsEl);
 
   const focusEntry = useCallback(
     (entry: LinkedEntry | undefined): boolean => {
@@ -513,8 +416,6 @@ export function EditorPanel({
     }
   };
 
-  const hint = editsHint(usable.length);
-
   const stage =
     shown.length > 0
       ? shown.map((d) => (
@@ -533,9 +434,8 @@ export function EditorPanel({
           <p className="sp-chat-editor__gone">{draftName(drafts[0])} is no longer available.</p>
         );
 
-  // Edit details (the template chat, 13:8148; PHASE-4 §9 D4): the same
-  // logic on the Details panel. Missing and Too long show on each field's
-  // error line, Edited on its label row; Discard and Download PNG close it.
+  // Missing and Too long show on each field's error line, Edited on its
+  // label row (PHASE-4 §9 D4, PHASE-5 §9 D8).
   const editedOf = (entry: LinkedEntry): boolean => {
     if (!selected) return false;
     const key = fieldKeyOn(entry, selected.id);
@@ -556,7 +456,8 @@ export function EditorPanel({
     const opened = selected && openDrafts?.find((d) => d.id === selected.id);
     return opened ? captionFor(opened, { templateFallback: false }) : null;
   }, [selected, openDrafts]);
-  const detailsPanel = details ? (
+
+  const panel = (
     <DetailsPanel
       title="Edit details"
       onClose={onClose}
@@ -566,6 +467,9 @@ export function EditorPanel({
         {
           role: "complementary",
           "aria-label": "Edit details",
+          // Focusable, never a tab stop: a click on the panel's body (the
+          // stage, the header) keeps focus in it, so Escape and the sheet's
+          // Tab trap still work.
           tabIndex: -1,
           onKeyDown,
           "data-presentation": presentation,
@@ -573,6 +477,23 @@ export function EditorPanel({
       }
       className="sp-tchat-details"
       formRef={setFields as React.Ref<HTMLFormElement>}
+      sizeSwitch={
+        !stageMode && selected
+          ? { options, selectedId: selected.id, onSelect: onSelectDraft }
+          : null
+      }
+      stage={
+        stageMode ? null : (
+          <>
+            <div className="sp-details__stage">{stage}</div>
+            {selected && warnings.length > 0 && (
+              <p role="status" className="t-caption-s sp-details__warning">
+                {warnings[0]}
+              </p>
+            )}
+          </>
+        )
+      }
       look={looks}
       fieldRows={entries.map((entry) => (
         <DetailField
@@ -595,6 +516,7 @@ export function EditorPanel({
             }
           : null
       }
+      footerLead={saveToLibrary ? <SaveToLibrary {...saveToLibrary} /> : undefined}
       footer={
         <>
           {onDiscard && (
@@ -617,154 +539,6 @@ export function EditorPanel({
         </>
       }
     />
-  ) : null;
-
-  const panel = (
-    <aside
-      ref={panelRef}
-      className="sp-card sp-chat-editor"
-      data-presentation={presentation}
-      data-stage={stageMode || undefined}
-      role="complementary"
-      aria-label="Edit details"
-      // Focusable, never a tab stop: a click on the panel's body (the
-      // stage, the header) keeps focus in it, so Escape and the sheet's
-      // Tab trap still work.
-      tabIndex={-1}
-      onKeyDown={onKeyDown}
-    >
-      <div className="sp-chat-editor__header">
-        <h2 id={titleId} className="sp-chat-editor__title">
-          Edit details
-        </h2>
-        <CloseButton ref={closeRef} onClick={onClose} />
-      </div>
-
-      {!stageMode && options.length > 1 && selected && (
-        <SegmentSwitch
-          variant="editor"
-          options={options}
-          selectedId={selected.id}
-          onSelect={onSelectDraft}
-          aria-label="Size"
-        />
-      )}
-
-      {!stageMode && <div className="sp-chat-editor__stage">{stage}</div>}
-      {stageMode && stageTarget && createPortal(stage, stageTarget)}
-      {selected && warnings.length > 0 && (
-        <p role="status" className="sp-chat-editor__warning">
-          {warnings[0]}
-        </p>
-      )}
-
-      {(entries.length > 0 || looks || caption) && (
-        <div
-          ref={setFields}
-          className="sp-chat-editor__fields"
-          data-short={!fadeRoom || undefined}
-          data-fade-top={(fadeRoom && fades.top) || undefined}
-          data-fade-bottom={(fadeRoom && fades.bottom) || undefined}
-          // Every focus in the list shows its whole field: the browser
-          // leaves a control that is partly in view where it is, which on
-          // a short list can cut its lower edge (and its focus border).
-          // Focus inside a portaled dialog bubbles here too; it is not the
-          // list's to scroll.
-          onFocus={(e) => {
-            const list = fieldsRef.current;
-            if (list?.contains(e.target)) revealInList(list, e.target);
-          }}
-        >
-          {looks && looks.options.length > 1 && (
-            <div className="sp-chat-field">
-              <div className="sp-chat-field__labelrow">
-                <span className="sp-chat-field__label" id={`${prefix}look`}>
-                  Look
-                </span>
-              </div>
-              <SegmentSwitch
-                variant="editor"
-                options={looks.options}
-                selectedId={looks.selectedId}
-                onSelect={looks.onSelect}
-                aria-labelledby={`${prefix}look`}
-              />
-            </div>
-          )}
-          {entries.map((entry) => {
-            const id = controlId(prefix, entry);
-            return (
-              <EditorField
-                key={entry.id}
-                label={entry.label}
-                htmlFor={id}
-                optional={entry.kind === "text" && !entry.required}
-                status={statusOf(entry)}
-              >
-                <FieldInput
-                  variant="chat"
-                  field={withPlaceholder(inputField(entry, usable))}
-                  value={groupValue(entry, usable, selected?.id)}
-                  onChange={(next) => onEdit(editsFor(entry, next))}
-                  inputId={id}
-                />
-              </EditorField>
-            );
-          })}
-          {caption && (
-            <EditorField label="Caption" htmlFor={captionId}>
-              <textarea
-                id={captionId}
-                className="sp-chat-input"
-                rows={3}
-                value={caption.value}
-                placeholder="Add a caption"
-                onChange={(e) => caption.onChange(e.target.value)}
-              />
-            </EditorField>
-          )}
-        </div>
-      )}
-
-      <div className="sp-chat-editor__spacer" aria-hidden />
-
-      <div className="sp-chat-editor__footer">
-        {hint && <p className="sp-chat-editor__hint">{hint}</p>}
-        {saveToLibrary && <SaveToLibrary {...saveToLibrary} />}
-        <div className="sp-chat-editor__actions">
-          {onDiscard && (
-            <ChatButton
-              kind="tertiary"
-              className="sp-chat-editor__discard"
-              disabled={!canDiscard}
-              onClick={onDiscard}
-            >
-              Discard
-            </ChatButton>
-          )}
-          <ChatButton
-            kind="primary"
-            className="sp-chat-editor__action"
-            aria-disabled={exporting || blocked !== null || !selected || undefined}
-            aria-busy={exporting || undefined}
-            aria-describedby={blocked ? blockedId : undefined}
-            onClick={() => {
-              if (blocked) focusEntry(blocked.first);
-              else if (selected) void download();
-            }}
-          >
-            Download PNG
-          </ChatButton>
-        </div>
-        {blocked && (
-          <p id={blockedId} className="sp-chat-editor__note" role="status" aria-live="polite">
-            {blocked.note}
-          </p>
-        )}
-      </div>
-
-      {toast && <ExportErrorToast key={toast.at} detail={toast.detail} />}
-    </aside>
   );
 
   // One wrapper in both presentations, the scrim's slot held by a hole
@@ -778,19 +552,15 @@ export function EditorPanel({
       className={sheet ? "sp-chat-editor-sheet" : "sp-chat-editor-host"}
       role={sheet ? "dialog" : undefined}
       aria-modal={sheet || undefined}
-      aria-labelledby={sheet ? titleId : undefined}
+      aria-label={sheet ? "Edit details" : undefined}
     >
       {sheet && <div className="sp-chat-editor-sheet__scrim" aria-hidden onClick={onClose} />}
-      {detailsPanel ?? panel}
-      {detailsPanel && (
-        <>
-          {stageTarget && createPortal(stage, stageTarget)}
-          {toast && (
-            <div key={toast.at} className="sp-fill-toast" aria-live="assertive">
-              <Toast message={`${EXPORT_ERROR_TITLE}. ${toast.detail}`} />
-            </div>
-          )}
-        </>
+      {panel}
+      {stageMode && stageTarget && createPortal(stage, stageTarget)}
+      {toast && (
+        <div key={toast.at} className="sp-fill-toast" aria-live="assertive">
+          <Toast message={`${EXPORT_ERROR_TITLE}. ${toast.detail}`} />
+        </div>
       )}
     </div>
   );
@@ -852,9 +622,9 @@ function StageGraphic({
       fallback={(retry) => (
         <div className="sp-chat-editor__fallback" hidden={!visible}>
           <p>We couldn't display this template.</p>
-          <ChatButton kind="tertiary" size="small" onClick={retry}>
+          <Button kind="neutral" size="sm" onClick={retry}>
             Try again
-          </ChatButton>
+          </Button>
         </div>
       )}
     >
@@ -965,7 +735,7 @@ export function ExportErrorToast({ detail }: { detail: string }) {
  * the button gives way to "Saved to Brand Templates." and Open in the
  * builder, and focus follows to it when it was on Save. A failed save shows
  * its message over the button, which stays to try again. */
-function SaveToLibrary({ state, error, onSave, onOpenBuilder }: EditorSaveToLibrary) {
+export function SaveToLibrary({ state, error, onSave, onOpenBuilder }: EditorSaveToLibrary) {
   const saveRef = useRef<HTMLButtonElement | null>(null);
   const builderRef = useRef<HTMLButtonElement | null>(null);
   const hadFocus = useRef(false);
@@ -981,17 +751,12 @@ function SaveToLibrary({ state, error, onSave, onOpenBuilder }: EditorSaveToLibr
   if (state === "saved") {
     return (
       <>
-        <p className="sp-chat-editor__note" role="status">
+        <p className="t-caption-s sp-details__note" role="status">
           Saved to Brand Templates.
         </p>
-        <ChatButton
-          ref={builderRef}
-          kind="tertiary"
-          className="sp-chat-editor__action"
-          onClick={onOpenBuilder}
-        >
+        <Button ref={builderRef} kind="neutral" size="lg" onClick={onOpenBuilder}>
           Open in the builder
-        </ChatButton>
+        </Button>
       </>
     );
   }
@@ -1000,14 +765,14 @@ function SaveToLibrary({ state, error, onSave, onOpenBuilder }: EditorSaveToLibr
   return (
     <>
       {state === "error" && error && (
-        <p className="sp-chat-editor__note" role="alert">
+        <p className="t-caption-s sp-details__note" role="alert">
           {error}
         </p>
       )}
-      <ChatButton
+      <Button
         ref={saveRef}
-        kind="tertiary"
-        className="sp-chat-editor__action"
+        kind="neutral"
+        size="lg"
         aria-disabled={busy || undefined}
         aria-busy={busy || undefined}
         onClick={() => {
@@ -1017,7 +782,7 @@ function SaveToLibrary({ state, error, onSave, onOpenBuilder }: EditorSaveToLibr
         }}
       >
         {busy ? "Saving…" : "Save to library"}
-      </ChatButton>
+      </Button>
     </>
   );
 }

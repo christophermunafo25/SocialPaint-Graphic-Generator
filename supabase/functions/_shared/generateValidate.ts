@@ -1352,6 +1352,61 @@ export function detailsSection(details: ResolvedDetail[]): string {
   return `The member filled these fields themselves; do not write them:\n${JSON.stringify(details)}`;
 }
 
+// ---------------------------------------------------------------------------
+// Generate's facts (new look, Phase 5): the detail tags a member adds in
+// Generate's composer. Not tied to a template, so not field-keyed like a
+// template chat's details: a kind and a value, at most one of each kind,
+// which the model uses as written wherever a field fits it, in library and
+// freestyle runs alike.
+// ---------------------------------------------------------------------------
+
+export const FACT_KINDS = ["headline", "date", "place", "link"] as const;
+export type FactKind = (typeof FACT_KINDS)[number];
+/** A fact's longest value: a headline or a URL, never a document. */
+const FACT_VALUE_MAX = 300;
+
+export interface FactInput {
+  kind: FactKind;
+  value: string;
+}
+
+/** Parse the optional facts request field: undefined when absent or null,
+ * else at most one { kind, value } per kind, each value trimmed and
+ * non-empty. A 400 names the bad entry and never echoes its value. */
+export function parseFacts(raw: unknown): FactInput[] | undefined {
+  if (raw === undefined || raw === null) return undefined;
+  if (!Array.isArray(raw) || raw.length > FACT_KINDS.length) {
+    throw new HttpError(400, `facts must be an array of at most ${FACT_KINDS.length} entries.`);
+  }
+  const seen = new Set<string>();
+  return raw.map((rawEntry: unknown, i) => {
+    const e = requireObject(rawEntry, `facts[${i}]`);
+    if (typeof e.kind !== "string" || !(FACT_KINDS as readonly string[]).includes(e.kind)) {
+      throw new HttpError(400, `facts[${i}].kind must be one of: ${FACT_KINDS.join(", ")}.`);
+    }
+    if (seen.has(e.kind)) throw new HttpError(400, `facts[${i}].kind repeats "${e.kind}".`);
+    seen.add(e.kind);
+    const value = requireString(e.value, `facts[${i}].value`, FACT_VALUE_MAX).trim();
+    if (!value) throw new HttpError(400, `facts[${i}].value must not be blank.`);
+    return { kind: e.kind as FactKind, value };
+  });
+}
+
+/** What each kind is, in the words the model reads. */
+const FACT_MEANING: Record<FactKind, string> = {
+  headline: "the headline",
+  date: "the date and time",
+  place: "the location",
+  link: "the link",
+};
+
+/** The user text section carrying the member's facts, quoted as JSON so
+ * what they typed stays apart from the instructions around it. */
+export function factsSection(facts: FactInput[]): string {
+  const list = facts.map((f) => ({ fact: FACT_MEANING[f.kind], value: f.value }));
+  return `The member gave these facts. Use each value exactly as written wherever a field fits it (the headline in a headline field, the date in a date field, and so on), and leave a fact out of a design with nowhere to put it. Never change or shorten a value:\n${JSON.stringify(list)}`;
+}
+
 /** The user text section carrying attached documents, quoted as JSON inside
  * a section that says it is data, the way followUpSection quotes drafts.
  * JSON.stringify escapes quotes and newlines, so nothing in a document can

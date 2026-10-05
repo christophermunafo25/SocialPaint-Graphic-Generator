@@ -744,11 +744,19 @@ export interface GenerateInput {
    * characters, text 1 to 12,000. Untrusted: the model takes facts from it
    * and never instructions. */
   documents?: Array<{ name: string; text: string }>;
+  /** Generate only (new look, Phase 5): the detail tags from its attach
+   * menu, a kind and the member's value, at most one of each kind, value 1
+   * to 300 characters. Not tied to a template: the model uses each as
+   * written wherever a field fits it. */
+  facts?: Array<{ kind: GenerateFactKind; value: string }>;
   /** Let the model ask one question instead of building. Honored only on a
    * first message (no followUp) with templateIdHint, no details and no
    * documents; otherwise treated as false. */
   allowQuestion?: boolean;
 }
+
+/** The kinds of Generate's details (new look, Phase 5). */
+export type GenerateFactKind = "headline" | "date" | "place" | "link";
 
 /** The chat context a follow-up carries to the model. Text fields only: it
  * never carries the photo and never an image field's value, so the photo

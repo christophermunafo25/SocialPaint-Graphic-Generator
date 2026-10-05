@@ -19,8 +19,11 @@ export function PlatformFilter({
   facets,
   selected,
   onSelect,
+  allLabel = "All",
 }: {
   facets: PlatformFacet[];
+  /** The first chip's label; History's is "All chats". */
+  allLabel?: string;
   /** null is the "All" chip. */
   selected: PlatformId | null;
   onSelect(next: PlatformId | null): void;
@@ -71,7 +74,7 @@ export function PlatformFilter({
       >
         {ids.map((id, i) => {
           const isSelected = selected === id;
-          const label = id === null ? "All" : facets[i - 1].platform.label;
+          const label = id === null ? allLabel : facets[i - 1].platform.label;
           return (
             <PlatformChip
               key={id ?? "all"}

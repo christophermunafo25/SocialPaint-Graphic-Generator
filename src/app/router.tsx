@@ -57,9 +57,7 @@ export type Route =
    * the URL lands on the gallery. */
   | { name: "bulk"; templateId: string }
   /** Generate, the chat (docs/design/generate-chat/PROMPT.md §11.1).
-   * `/generate` is a new chat; `templateId` is the "use this one" hint from
-   * a template card, which pins that template's Start from chip, in the URL
-   * so the intent survives a refresh; `threadId` is a saved chat at
+   * `/generate` is a new chat; `threadId` is a saved chat at
    * `/generate/c/<id>`. App keys the page by generatePageKey, so opening
    * another chat starts from fresh state.
    *
@@ -68,7 +66,7 @@ export type Route =
    * still showing it, so it must not remount (generatePageKey). Never in
    * the URL: a reload, back and forward, and every other way to the chat
    * read the address alone, and so mount the saved chat afresh. */
-  | { name: "generate"; templateId?: string; threadId?: string; savedInPlace?: boolean }
+  | { name: "generate"; threadId?: string; savedInPlace?: boolean }
   /** A template chat (docs/design/template-chat/PROMPT.md §12.1):
    * `/templates/<templateId>/chat` is a new chat on that template, and
    * `/templates/<templateId>/chat/<threadId>` a saved one. `edit` and `field`
@@ -148,9 +146,7 @@ export function routeToUrl(route: Route): string {
     }
     case "generate":
       if (route.threadId) return `/generate/c/${encodeURIComponent(route.threadId)}`;
-      return route.templateId
-        ? `/generate?template=${encodeURIComponent(route.templateId)}`
-        : "/generate";
+      return "/generate";
     case "generateHistory": {
       const params = new URLSearchParams();
       if (route.platform) params.set("platform", route.platform);
@@ -260,7 +256,7 @@ export function urlToRoute(pathname: string, search: string): Route {
       }
       // A chat's own address. A bare /generate/c (no id) is a new chat.
       if (tail === "c" && third) return { name: "generate", threadId: decodeURIComponent(third) };
-      return { name: "generate", templateId: params.get("template") ?? undefined };
+      return { name: "generate" };
     case "template-builder":
       if (!tail) return { name: "adminTemplates" };
       return {

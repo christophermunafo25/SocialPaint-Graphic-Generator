@@ -83,8 +83,8 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
   const canBulkFill = role === "admin" && template.status === "published";
   /** The template chat asks for each field and builds the graphic; it needs
    * a published template and somewhere for the chat to run
-   * (isTemplateChatAvailable), and is for everyone. */
-  const canAssist = template.status === "published" && stores.generate.isTemplateChatAvailable();
+   * (stores.generate.isConfigured()), and is for everyone. */
+  const canAssist = template.status === "published" && stores.generate.isConfigured();
 
   return (
     <Page layout={{ className: "sp-fill-page" }}>

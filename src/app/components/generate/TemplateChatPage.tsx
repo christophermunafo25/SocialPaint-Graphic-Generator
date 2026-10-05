@@ -8,7 +8,7 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { useAsync } from "@/lib/useAsync";
 import { useRouter } from "../../router";
 import { Page } from "../layout/Page";
-import { ChatButton } from "./ChatButton";
+import { Button } from "../primitives";
 import { ChatLoading, ChatUnavailable } from "./ChatLoadStates";
 import { requestComposerFocus, requestHistoryFocus } from "./composerFocus";
 import { GenerateChat } from "./GeneratePage";
@@ -38,9 +38,9 @@ const usable = (t: TemplateSchema | null, companyId: string): t is TemplateSchem
  *  - A saved chat whose template was deleted, or is no longer published,
  *    opens at /generate/c/<id> as an ordinary Generate chat. One saved
  *    under another template goes to that template's address.
- *  - Where the template chat cannot run (isTemplateChatAvailable: a
- *    production build on the local backend), the template opens on its
- *    fill page instead, as the cards do.
+ *  - Where the chat cannot run (isConfigured() false: a production build
+ *    on the local backend), the template opens on its fill page instead,
+ *    as the cards do.
  *
  * Once loaded it is the Generate chat in its template mode (GenerateChat),
  * so saving, the editor, downloads and follow-ups are that page's.
@@ -55,7 +55,7 @@ export function TemplateChatPage({
   const { company } = useAuth();
   const { navigate } = useRouter();
   const companyId = company?.id ?? null;
-  const configured = stores.generate.isTemplateChatAvailable();
+  const configured = stores.generate.isConfigured();
   // Read once: the first save's own address change keeps this page mounted
   // and must not load the chat over itself (templateChatPageKey).
   const [openedId] = useState(threadId ?? null);
@@ -140,9 +140,9 @@ export function TemplateChatPage({
         <div className="sp-chat-start">
           <div className="sp-emptystate sp-tchat-gone" role="status">
             <p className="sp-emptystate__title">This template isn't available any more.</p>
-            <ChatButton kind="tertiary" size="small" onClick={brandTemplates}>
+            <Button kind="neutralOnPage" size="sm" onClick={brandTemplates}>
               Back to Brand Templates
-            </ChatButton>
+            </Button>
           </div>
         </div>
       </Page>

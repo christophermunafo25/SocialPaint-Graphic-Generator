@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useId } from "react";
 import { Download, Pencil } from "lucide-react";
 import { cx, type DemoStateAttr } from "./cx";
 import { IconButton } from "./IconButton";
@@ -12,6 +12,8 @@ export interface PreviewOverlayProps {
   editLabel?: string;
   /** The Edit button, for a caller that returns focus to it. */
   editRef?: React.Ref<HTMLButtonElement>;
+  /** Extra attributes for the Edit button (aria-current, a description). */
+  editProps?: React.ButtonHTMLAttributes<HTMLButtonElement>;
   className?: string;
   "data-demo-state"?: DemoStateAttr;
 }
@@ -25,6 +27,7 @@ export function PreviewOverlay({
   onEdit,
   editLabel = "Edit",
   editRef,
+  editProps,
   className,
   "data-demo-state": demoState,
 }: PreviewOverlayProps) {
@@ -36,6 +39,7 @@ export function PreviewOverlay({
           <button
             ref={editRef}
             type="button"
+            {...editProps}
             aria-label={editLabel}
             onClick={onEdit}
             className="ui-reset ui-preview__edit"
@@ -61,6 +65,15 @@ export interface ResultCardProps {
   downloadLabel?: string;
   /** A download is being made: Download is busy and takes no click. */
   downloadBusy?: boolean;
+  /** Something must be filled in first: Download draws at 40% and still
+   * takes the click, which the caller turns into opening the editor. */
+  downloadBlocked?: boolean;
+  /** The card the editor is open on: outlined, and the Edit button is
+   * aria-current. */
+  selected?: boolean;
+  /** The preview's accessible description, never drawn (Generate's
+   * provenance line). */
+  description?: string;
   /** The preview's frame, for a caller that sizes it (a width and an
    * aspect ratio). */
   previewStyle?: React.CSSProperties;
@@ -81,20 +94,39 @@ export function ResultCard({
   onDownload,
   downloadLabel = "Download",
   downloadBusy = false,
+  downloadBlocked = false,
+  selected = false,
+  description,
   previewStyle,
   className,
   "data-demo-state": demoState,
 }: ResultCardProps) {
+  const descriptionId = useId();
   return (
-    <div className={cx("ui-result-card", className)} style={previewStyle}>
+    <div
+      className={cx("ui-result-card", className)}
+      style={previewStyle}
+      data-selected={selected || undefined}
+    >
       <PreviewOverlay
         onEdit={onEdit}
         editLabel={editLabel}
         editRef={editRef}
+        editProps={{
+          "aria-current": selected || undefined,
+          "aria-describedby": description ? descriptionId : undefined,
+        }}
         data-demo-state={demoState}
       >
         {preview}
       </PreviewOverlay>
+      {/* `hidden`, not sr-only: the Edit button's aria-describedby still
+          reads it, and browse mode does not hear it twice. */}
+      {description && onEdit && (
+        <span id={descriptionId} hidden>
+          {description}
+        </span>
+      )}
       <div className="ui-result-card__meta">
         <div className="ui-result-card__text">
           <span className="t-label-l">{title}</span>
@@ -105,7 +137,7 @@ export function ResultCard({
             icon={Download}
             label={downloadLabel}
             aria-busy={downloadBusy || undefined}
-            aria-disabled={downloadBusy || undefined}
+            aria-disabled={downloadBusy || downloadBlocked || undefined}
             onClick={() => {
               if (!downloadBusy) onDownload();
             }}

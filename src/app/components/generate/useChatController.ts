@@ -52,7 +52,9 @@ export interface ChatSendInput {
   variations?: number;
   /** A pinned Start from chip: fill exactly this published template. */
   templateIdHint?: string;
-  /** A template chat's detail tags (Template chat PROMPT §12.3). */
+  /** The message's detail tags: a template chat's answers, keyed by field
+   * (Template chat PROMPT §12.3), or Generate's, keyed by kind (PHASE-5
+   * §9 D4). */
   details?: ChatDetail[];
   /** Sent from a template chat's questions, with the fields skipped. */
   interview?: { skipped: string[] };
@@ -302,6 +304,8 @@ export function useChatController(opts: ChatControllerOptions): ChatController {
         text,
         photo: input.photo ?? null,
         document: input.document ?? null,
+        // Generate's detail tags (PHASE-5 §9 D4), sent as facts.
+        ...(input.details?.length ? { details: input.details } : {}),
         // A chip's count of one and its platform were for its own run.
         ...fillSendGaps(input, lastComposerTurn(turns)),
         ...(input.templateIdHint ? { templateIdHint: input.templateIdHint } : {}),

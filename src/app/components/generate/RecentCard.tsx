@@ -4,7 +4,7 @@ import type { ChatMeta } from "@/lib/generate/relativeDate";
 import { Bone } from "../Skeleton";
 import { TemplateThumbnail } from "../TemplateThumbnail";
 
-const SUNKEN = "var(--gen-sunken)";
+const SUNKEN = "var(--surface-sunken)";
 const RADIUS = "var(--radius-control)";
 
 /** The title and meta lines under a chat's preview, shared by the Recent and
@@ -29,23 +29,23 @@ export function ChatCardMeta({
 }) {
   if (bones) {
     return (
-      <span className="sp-chat-card-meta" data-bones aria-hidden>
-        <span className="sp-chat-card-meta__title">
+      <span className="sp-gen-card__meta" data-bones aria-hidden>
+        <span className="t-label-m sp-gen-card__title">
           <Bone tone={SUNKEN} w={128} h={10} r={RADIUS} />
         </span>
-        <span className="sp-chat-card-meta__line">
+        <span className="t-caption-s sp-gen-card__line">
           <Bone tone={SUNKEN} w={84} h={8} r={RADIUS} />
         </span>
       </span>
     );
   }
   return (
-    <span className="sp-chat-card-meta">
-      <span className="sp-chat-card-meta__title">{title}</span>
-      <span className="sp-chat-card-meta__line" id={metaId}>
-        {meta?.platforms && <span className="sp-chat-card-meta__platforms">{meta.platforms}</span>}
+    <span className="sp-gen-card__meta">
+      <span className="t-label-m sp-gen-card__title">{title}</span>
+      <span className="t-caption-s sp-gen-card__line" id={metaId}>
+        {meta?.platforms && <span className="sp-gen-card__platforms">{meta.platforms}</span>}
         {meta?.date && (
-          <span className="sp-chat-card-meta__date">
+          <span className="sp-gen-card__date">
             {/* A no-break space: a flex item drops a leading ordinary one. */}
             {meta.platforms ? `\u00a0· ${meta.date}` : meta.date}
           </span>
@@ -55,10 +55,11 @@ export function ChatCardMeta({
   );
 }
 
-/** A chat on the Start state's Recent row (Figma "Generate · Chat",
- * sp-recent-card 329:1044). One button, the surface recipe with an 8px
- * frame: a 104 tall well showing the chat's first draft letterboxed with
- * contain, then the title and meta. The accessible name is "Open <title>"
+/** A chat on the Start state's Recent row (13:1560, sp-recent-card). One
+ * button on the card recipe with an 8 frame: a 104 tall well showing the
+ * chat's first draft letterboxed with contain, then the title and meta.
+ * Hover deepens its shadow, as the library's cards do (no dim; CJ,
+ * 2026-10-04). The accessible name is "Open <title>"
  * with the meta as its description; the preview is decoration (a rendered
  * template carries its own text, which would otherwise read as the name).
  * `preview` null leaves the bare well, as the frame draws it. */
@@ -77,15 +78,15 @@ export function RecentCard({
   return (
     <button
       type="button"
-      className="sp-card sp-chat-recent-card"
+      className="ui-reset ui-ring sp-gen-card sp-gen-card--recent"
       onClick={onOpen}
       aria-label={`Open ${title}`}
       aria-describedby={metaId}
     >
-      <span className="sp-chat-recent-card__well" aria-hidden>
+      <span className="sp-gen-card__well" aria-hidden>
         {preview && (
           <span
-            className="sp-chat-recent-card__art"
+            className="sp-gen-card__art"
             style={
               {
                 "--fit-ratio": preview.schema.canvasWidth / preview.schema.canvasHeight,
