@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Settings, X } from "lucide-react";
 import React, { useState } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { IconButton, RowMenuTrigger, Stepper, StepperButton, ThemeToggle } from "./IconButton";
 
 describe("IconButton", () => {
@@ -47,6 +47,16 @@ describe("StepperButton", () => {
 });
 
 describe("Stepper", () => {
+  // The number rolls on Web Animations, which happy-dom never finishes;
+  // under reduced motion it swaps at once, which is what this checks.
+  beforeEach(() => {
+    vi.stubGlobal(
+      "matchMedia",
+      (query: string) => ({ matches: query.includes("reduce"), media: query }) as MediaQueryList,
+    );
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
   function Controlled() {
     const [value, setValue] = useState(1);
     return <Stepper label="Variations" value={value} min={1} max={3} onChange={setValue} />;

@@ -290,6 +290,10 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   justify-content: center;
   width: 20px;
   height: 28px;
+  overflow: hidden; /* the roll leaves and arrives out of sight */
+}
+.ui-stepper__num {
+  display: inline-block;
 }
 
 /* ── Input (48:37) ─────────────────────────────────────────────────────────
@@ -1313,6 +1317,12 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   align-items: flex-start;
   gap: 6px; /* as drawn (61:472) */
   padding: var(--space-3xs) 0;
+}
+/* The Tags row beside the plus (61:476): detail tags, scrolling sideways
+   behind a fade to the composer's fill (Phase 5). */
+.ui-composer__tags {
+  flex: 1;
+  min-width: 0;
 }
 .ui-composer__output {
   display: flex;

@@ -223,11 +223,7 @@ function Screen() {
           // started in, so switching workspace ends it (the unmount stops a
           // run in flight) and nothing written for one company is sent,
           // shown or saved under another.
-          <GeneratePage
-            key={`${company.id}:${generatePageKey(route)}`}
-            templateIdHint={route.templateId}
-            threadId={route.threadId}
-          />
+          <GeneratePage key={`${company.id}:${generatePageKey(route)}`} threadId={route.threadId} />
         )}
         {route.name === "templateChat" && (
           // A template chat (template-chat PROMPT §12.1), keyed like the

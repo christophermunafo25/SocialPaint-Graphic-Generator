@@ -4,5 +4,6 @@
 @import "./primitives.css";
 @import "./shell.css";
 @import "./brand-templates.css";
+@import "./generate.css";
 @import "./tailwind.css";
 @import "./theme.css";

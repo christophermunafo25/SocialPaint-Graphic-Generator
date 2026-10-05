@@ -59,17 +59,15 @@ import { AssistantTurnView } from "./AssistantTurnView";
 import { TemplateLinksDialog } from "../admin/TemplateLinksDialog";
 import { ChatHeader } from "./ChatHeader";
 import { ChatLoading, ChatUnavailable, THREAD_PLACEHOLDER } from "./ChatLoadStates";
-import { Composer } from "./Composer";
 import {
   EXPORT_TOAST_MS,
   EditorPanel,
   ExportErrorToast,
   type EditorSaveToLibrary,
 } from "./EditorPanel";
-import { ChatFootnote, LegalLinks } from "./LegalLinks";
+import { LegalLinks } from "./LegalLinks";
 import { RecentChats } from "./RecentChats";
 import { ScrollFade, useScrollFades } from "./ScrollFade";
-import { ChipRow, SuggestionChip } from "./SuggestionChip";
 import { UserMessage } from "./UserMessage";
 import { requestComposerFocus, requestHistoryFocus, takeComposerFocus } from "./composerFocus";
 import { useChatController } from "./useChatController";
@@ -79,12 +77,6 @@ import { useThreadScroll } from "./useThreadScroll";
 
 /** The Start state's composer placeholder (PROMPT §7.9). */
 const START_PLACEHOLDER = "Describe the post. Add any dates, names, or links it needs.";
-/** The placeholder while a Start from chip is pinned (proposed copy). */
-const pinnedPlaceholder = (templateName: string) =>
-  `Describe your ${templateName} post. Add any dates, names, or links it needs.`;
-
-/** How many Start from chips the row offers (PROMPT §9.7). */
-const MAX_STARTERS = 5;
 
 /** Every turn but the last shows no Try next row: one list for all of
  * them, so their props hold still across runs. */
@@ -216,12 +208,9 @@ type SaveState =
  * first message that had one.
  */
 export function GenerateChat({
-  templateIdHint,
   initial,
   template = null,
 }: {
-  /** "Use this one" from a template card: pins its Start from chip. */
-  templateIdHint?: string;
   /** A saved chat to continue; null for a new chat. */
   initial: ChatThread | null;
   /** A template chat (template-chat PROMPT §12): the published template the
@@ -362,27 +351,6 @@ export function GenerateChat({
   useEffect(() => {
     if (startReady && takeComposerFocus()) composerRef.current?.focus();
   });
-
-  // ── Start from (§9.7) ──────────────────────────────────────────────────
-  const [pinnedId, setPinnedId] = useState<string | null>(null);
-  // The route's hint pins its chip once, when the library confirms it is
-  // still published (a stale hint degrades to a library-wide generate).
-  // Once the member unpins it or sends, it stays unpinned. The effect that
-  // pins it follows the one that empties the chat on a new route (below),
-  // so a new chat on a hint's address, reached by back, pins it again.
-  const appliedHint = useRef<string | null>(null);
-
-  // The most recently updated published templates, the hinted one first.
-  const starters = useMemo(() => {
-    if (!published) return [];
-    const recent = [...published].sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
-    const hinted = templateIdHint ? recent.find((t) => t.id === templateIdHint) : undefined;
-    return (hinted ? [hinted, ...recent.filter((t) => t !== hinted)] : recent).slice(
-      0,
-      MAX_STARTERS,
-    );
-  }, [published, templateIdHint]);
-  const pinned = (pinnedId && published?.find((t) => t.id === pinnedId)) || null;
 
   // Platforms the published library covers, by each template's canvas size
   // (the catalogue's classification). Uncovered ones stay pickable but dim:
@@ -547,7 +515,6 @@ export function GenerateChat({
           document: doc,
           platformHint: platform,
           variations,
-          templateIdHint: pinned?.id,
         })
       : // The compact composer has no platform or count: the controller
         // reuses the thread's last composer send (never a chip's).
@@ -560,8 +527,6 @@ export function GenerateChat({
     setDoc(null);
     follow();
     if (fromStart) {
-      // A pinned template is for one send.
-      setPinnedId(null);
       // The Large composer leaves with the Start state; the member keeps
       // typing in the dock's.
       if (composerRef.current?.form?.contains(document.activeElement)) requestComposerFocus();
@@ -587,8 +552,6 @@ export function GenerateChat({
     autoBuilt.current = null;
     setPlatform(null);
     setVariations(DEFAULT_VARIATIONS);
-    setPinnedId(null);
-    appliedHint.current = null;
     setCaptionPicks({});
     setEditor(null);
     requestComposerFocus();
@@ -623,15 +586,6 @@ export function GenerateChat({
       clearChat();
     }
   }, [route, inThread, clearChat]);
-
-  // The Start from hint (above), after the effect that empties the chat: an
-  // emptied chat forgets the hint it applied, so the route it empties on
-  // pins its own hint, as a fresh load of its address does.
-  useEffect(() => {
-    if (!templateIdHint || !published || appliedHint.current === templateIdHint) return;
-    appliedHint.current = templateIdHint;
-    if (published.some((t) => t.id === templateIdHint)) setPinnedId(templateIdHint);
-  }, [templateIdHint, published]);
 
   /** History (§11.2). The button that was pressed unmounts with this page,
    * so the History page takes focus on its title (§9.10). */
@@ -1099,81 +1053,54 @@ export function GenerateChat({
       <>
         {exportExtras}
         <Page layout={{ className: "sp-chat-page", state: "start" }}>
-          <div className="sp-chat-start">
-            <div className="sp-chat-start__column" data-pending={startReady ? undefined : true}>
-              <div className="sp-chat-start__greeting">
-                <h1 className="sp-chat-start__title">What are we painting today?</h1>
-                <p className="sp-chat-start__sub">
-                  Describe it and I'll build it from your templates, already on brand.
-                </p>
-              </div>
-
-              {configured ? (
-                <>
-                  <div className="sp-chat-start__composer">
-                    <Composer
-                      size="large"
-                      value={text}
-                      onChange={setText}
-                      photo={photo}
-                      onPhotoChange={setPhoto}
-                      document={doc}
-                      onDocumentChange={setDoc}
-                      running={running}
-                      onSubmit={submit}
-                      onStop={stop}
-                      placeholder={pinned ? pinnedPlaceholder(pinned.name) : START_PLACEHOLDER}
-                      platform={platform}
-                      onPlatformChange={setPlatform}
-                      covered={published ? covered : null}
-                      dimUncovered={published !== null && !libraryEmpty}
-                      variations={variations}
-                      onVariationsChange={setVariations}
-                      textareaRef={composerRef}
-                    />
-                  </div>
-                  {libraryEmpty && (
-                    <p className="sp-chat-start__note">
-                      No published templates yet, so drafts come fresh from your brand kit.
+          <div className="sp-gen-start">
+            <div className="sp-gen-start__column" data-pending={startReady ? undefined : true}>
+              <div className="sp-gen-start__lead">
+                <h1 className="t-title-metric sp-gen-start__title">What are we painting today?</h1>
+                {configured ? (
+                  <ChatComposer
+                    value={text}
+                    onChange={setText}
+                    photo={photo}
+                    onPhotoChange={setPhoto}
+                    document={doc}
+                    onDocumentChange={setDoc}
+                    running={running}
+                    onSubmit={submit}
+                    onStop={stop}
+                    placeholder={START_PLACEHOLDER}
+                    platform={{
+                      value: platform,
+                      onChange: setPlatform,
+                      covered: published ? covered : null,
+                      dimUncovered: published !== null && !libraryEmpty,
+                    }}
+                    variations={{ value: variations, onChange: setVariations }}
+                    textareaRef={composerRef}
+                  />
+                ) : (
+                  <div className="sp-gen-start__unavailable">
+                    <p className="t-title-panel">Generate isn't available on this backend</p>
+                    <p className="t-body-s">
+                      It needs the Supabase backend and an Anthropic API key (see .env.example). The
+                      template library and manual fill work as usual.
                     </p>
-                  )}
-                  {starters.length > 0 && (
-                    <div className="sp-chat-start__starters">
-                      <ChipRow label="Start from" align="center">
-                        {starters.map((t) => (
-                          <SuggestionChip
-                            key={t.id}
-                            label={t.name}
-                            pressed={t.id === pinned?.id}
-                            onClick={() => setPinnedId((id) => (id === t.id ? null : t.id))}
-                          />
-                        ))}
-                      </ChipRow>
-                    </div>
-                  )}
-                  {company && (
-                    <RecentChats
-                      companyId={company.id}
-                      onOpen={openChat}
-                      onViewAll={openHistory}
-                      onSettled={onRecentSettled}
-                    />
-                  )}
-                </>
-              ) : (
-                <div className="sp-emptystate sp-chat-start__unavailable">
-                  <p className="sp-emptystate__title">Generate isn't available on this backend</p>
-                  <p className="sp-emptystate__body">
-                    It needs the Supabase backend and an Anthropic API key (see .env.example). The
-                    template library and manual fill work as usual.
-                  </p>
-                </div>
+                  </div>
+                )}
+              </div>
+              {configured && company && (
+                <RecentChats
+                  companyId={company.id}
+                  onOpen={openChat}
+                  onViewAll={openHistory}
+                  onSettled={onRecentSettled}
+                />
               )}
             </div>
           </div>
-          <footer className="sp-chat-footer">
+          <p className="t-caption-s sp-gen-legal">
             <LegalLinks />
-          </footer>
+          </p>
         </Page>
       </>
     );
@@ -1373,63 +1300,34 @@ export function GenerateChat({
                     This chat is full. Start a new chat to keep going.
                   </p>
                 )}
-                {template ? (
-                  <ChatComposer
-                    value={text}
-                    onChange={setText}
-                    photo={photo}
-                    onPhotoChange={setPhoto}
-                    document={doc}
-                    onDocumentChange={setDoc}
-                    running={running}
-                    onSubmit={submit}
-                    onStop={stop}
-                    placeholder={
-                      interviewing
-                        ? step?.type === "image"
-                          ? TEMPLATE_PHOTO_PLACEHOLDER
-                          : (step?.placeholder ?? TEMPLATE_ANSWER_PLACEHOLDER)
-                        : TEMPLATE_THREAD_PLACEHOLDER
-                    }
-                    textareaRef={composerRef}
-                    disabled={full}
-                  />
-                ) : (
-                  <Composer
-                    size="compact"
-                    value={text}
-                    onChange={setText}
-                    photo={photo}
-                    onPhotoChange={setPhoto}
-                    document={doc}
-                    onDocumentChange={setDoc}
-                    running={running}
-                    onSubmit={submit}
-                    onStop={stop}
-                    placeholder={
-                      interviewing
-                        ? step?.type === "image"
-                          ? TEMPLATE_PHOTO_PLACEHOLDER
-                          : (step?.placeholder ?? TEMPLATE_ANSWER_PLACEHOLDER)
-                        : template
-                          ? TEMPLATE_THREAD_PLACEHOLDER
-                          : THREAD_PLACEHOLDER
-                    }
-                    textareaRef={composerRef}
-                    disabled={full}
-                  />
-                )}
+                <ChatComposer
+                  value={text}
+                  onChange={setText}
+                  photo={photo}
+                  onPhotoChange={setPhoto}
+                  document={doc}
+                  onDocumentChange={setDoc}
+                  running={running}
+                  onSubmit={submit}
+                  onStop={stop}
+                  placeholder={
+                    interviewing
+                      ? step?.type === "image"
+                        ? TEMPLATE_PHOTO_PLACEHOLDER
+                        : (step?.placeholder ?? TEMPLATE_ANSWER_PLACEHOLDER)
+                      : template
+                        ? TEMPLATE_THREAD_PLACEHOLDER
+                        : THREAD_PLACEHOLDER
+                  }
+                  textareaRef={composerRef}
+                  disabled={full}
+                />
                 {unsaved && <p className="sp-chat-dock__note">{NOT_SAVED_YET}</p>}
               </div>
-              {template ? (
-                // The template chat's footnote is the legal links alone, as
-                // its frames draw it (13:7195).
-                <p className="t-caption-s sp-tchat-legal">
-                  <LegalLinks />
-                </p>
-              ) : (
-                <ChatFootnote />
-              )}
+              {/* The footnote is the legal links alone (13:2821, 13:7195). */}
+              <p className="t-caption-s sp-tchat-legal">
+                <LegalLinks />
+              </p>
             </div>
           </div>
           {editor && editorTurn && selectedDraft && editorPresentation && (
@@ -1488,20 +1386,13 @@ export function GenerateChat({
  * screen, and reading `threadId` again would load it over itself.
  */
 export function GeneratePage({
-  templateIdHint,
   threadId,
 }: {
-  /** "Use this one" from a template card: pins its Start from chip. */
-  templateIdHint?: string;
   /** A saved chat to open (/generate/c/<id>). */
   threadId?: string;
 }) {
   const [openedId] = useState(threadId ?? null);
-  return openedId ? (
-    <SavedChat threadId={openedId} />
-  ) : (
-    <GenerateChat templateIdHint={templateIdHint} initial={null} />
-  );
+  return openedId ? <SavedChat threadId={openedId} /> : <GenerateChat initial={null} />;
 }
 
 /**

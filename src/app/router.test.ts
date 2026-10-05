@@ -16,24 +16,13 @@ const parse = (url: string): Route => {
 
 describe("Generate routes (PROMPT §11.1)", () => {
   it("reads /generate as a new chat", () => {
-    expect(parse("/generate")).toEqual({ name: "generate", templateId: undefined });
+    expect(parse("/generate")).toEqual({ name: "generate" });
     expect(routeToUrl({ name: "generate" })).toBe("/generate");
-  });
-
-  it("keeps the template hint in the query", () => {
-    expect(parse("/generate?template=t%201")).toEqual({ name: "generate", templateId: "t 1" });
-    expect(routeToUrl({ name: "generate", templateId: "t 1" })).toBe("/generate?template=t%201");
   });
 
   it("reads a saved chat at /generate/c/<id>", () => {
     expect(parse("/generate/c/abc-123")).toEqual({ name: "generate", threadId: "abc-123" });
     expect(routeToUrl({ name: "generate", threadId: "abc-123" })).toBe("/generate/c/abc-123");
-  });
-
-  it("gives a chat's own address priority over a template hint", () => {
-    expect(routeToUrl({ name: "generate", threadId: "abc", templateId: "t" })).toBe(
-      "/generate/c/abc",
-    );
   });
 
   it("reads /generate/c with no id as a new chat", () => {
@@ -73,7 +62,6 @@ describe("Generate routes (PROMPT §11.1)", () => {
 
   it("keys a saved chat's page by its id and every new chat's page as one", () => {
     expect(generatePageKey({ name: "generate" })).toBe("new");
-    expect(generatePageKey({ name: "generate", templateId: "tpl" })).toBe("new");
     expect(generatePageKey({ name: "generate", threadId: "abc" })).toBe("chat:abc");
     // A chat id can never pose as the new-chat key.
     expect(generatePageKey({ name: "generate", threadId: "new" })).toBe("chat:new");
@@ -94,7 +82,6 @@ describe("Generate routes (PROMPT §11.1)", () => {
   it("round-trips every Generate route", () => {
     const routes: Route[] = [
       { name: "generate" },
-      { name: "generate", templateId: "tpl" },
       { name: "generate", threadId: "chat" },
       { name: "generateHistory" },
       { name: "generateHistory", platform: "facebook", q: "sale" },

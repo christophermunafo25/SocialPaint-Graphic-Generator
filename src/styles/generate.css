@@ -1,0 +1,238 @@
+/* ==========================================================================
+   Generate (new look, Phase 5): Start, the thread, the editor and History,
+   built from the primitives. Measurements are from
+   docs/design/new-look/PHASE-5-SCREENS.md. Tokens and .t-* classes only;
+   nothing here declares a token.
+   ========================================================================== */
+
+/* ── Start (13:1453) ───────────────────────────────────────────────────────
+   The greeting 35 over the Composer, Recent 75 under it, the column centred
+   and settling to the bottom of the room, the legal links at the foot. */
+.sp-gen-start {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 80px; /* as drawn (13:1527) */
+}
+.sp-gen-start__column {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 75px; /* as drawn (13:1529) */
+  width: 100%;
+  max-width: 760px;
+}
+/* Laid out but unseen until Recent has settled (at most 400ms), so the
+   column shows once, in its final place. */
+.sp-gen-start__column[data-pending] {
+  visibility: hidden;
+}
+.sp-gen-start__lead {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 35px; /* as drawn */
+}
+.sp-gen-start__title {
+  margin: 0;
+  text-align: center;
+  color: var(--text-strong);
+}
+.sp-gen-start__unavailable {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2xs);
+  text-align: center;
+  color: var(--text-strong);
+}
+.sp-gen-start__unavailable > p {
+  margin: 0;
+}
+.sp-gen-start__unavailable > .t-body-s {
+  color: var(--text-secondary);
+}
+/* Terms and Privacy, not underlined until hovered (13:1598). */
+.sp-gen-legal,
+.sp-tchat-legal {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-sm);
+  margin: 0;
+  color: var(--text-secondary);
+}
+.sp-gen-legal > a,
+.sp-tchat-legal > a {
+  color: inherit;
+  text-decoration: none;
+}
+.sp-gen-legal > a:hover,
+.sp-tchat-legal > a:hover {
+  text-decoration: underline;
+}
+.sp-gen-legal {
+  flex-shrink: 0;
+  padding-top: 30px; /* as drawn */
+}
+
+/* ── Recent (13:1560): one row of three cards ── */
+.sp-gen-recent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+.sp-gen-recent__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 32px;
+  padding-left: var(--space-3xs);
+  color: var(--text-strong);
+}
+.sp-gen-recent__head > h2 {
+  margin: 0;
+}
+.sp-gen-recent__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-xs);
+}
+@media (max-width: 599px) {
+  .sp-gen-recent__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ── A chat's card, on Recent and in History: one button on the card
+   recipe, its preview in a sunken well, then the title and meta. Hover
+   deepens the shadow, as the library's cards do (no dim). ── */
+.sp-gen-card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: var(--space-2xs);
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+  color: var(--text-strong);
+  text-align: left;
+  cursor: pointer;
+  transition: box-shadow var(--dur-state) var(--ease);
+}
+.sp-gen-card:hover {
+  box-shadow: var(--elevation-large);
+}
+.sp-gen-card__well {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 104px;
+  overflow: hidden;
+  border-radius: var(--radius-media-plate);
+  background: var(--surface-sunken);
+}
+.sp-gen-card__art {
+  height: 100%;
+  aspect-ratio: var(--fit-ratio, 1);
+  max-width: 100%;
+}
+.sp-gen-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* as drawn */
+  min-width: 0;
+  padding: 10px 6px var(--space-3xs);
+}
+.sp-gen-card__title,
+.sp-gen-card__line {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-gen-card__line {
+  display: flex;
+  color: var(--text-secondary);
+}
+.sp-gen-card__platforms {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sp-gen-card__date {
+  flex: none;
+}
+
+/* ── Attachments on a message (13:2383, 13:2540): the 64 photo and the
+   file tile, each with its round remove 4 in from the top right. ── */
+.sp-chat-tile {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
+.sp-chat-tile__photo {
+  display: block;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-control-md);
+  object-fit: cover;
+}
+.sp-chat-tile--file {
+  box-sizing: border-box;
+  align-items: center;
+  gap: 10px; /* as drawn */
+  height: 64px;
+  max-width: 280px;
+  padding: 7px 14px 7px 7px; /* 7 as drawn */
+  border-radius: var(--radius-control-md);
+  background: var(--input-bg);
+  color: var(--text-strong);
+}
+.sp-chat-tile--file[data-removable] {
+  padding-right: 35px; /* the remove's room, as drawn */
+}
+.sp-chat-tile__type {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  border-radius: var(--radius-control);
+  background: var(--surface-raised);
+}
+.sp-chat-tile__text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.sp-chat-tile__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-chat-tile__kind {
+  color: var(--text-secondary);
+}
+.sp-chat-tile__remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-inverse);
+  color: var(--text-inverse);
+}
+.sp-chat-tile__remove::after {
+  content: "";
+  position: absolute;
+  inset: -4px; /* a 24 hit area */
+}

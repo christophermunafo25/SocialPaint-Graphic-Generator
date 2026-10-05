@@ -1,6 +1,7 @@
 import React, { useId } from "react";
 import { Ellipsis, Minus, Moon, Plus, Sun } from "lucide-react";
 import { cx, type DemoStateAttr, type IconComponent } from "./cx";
+import { useRoll } from "./useRoll";
 
 interface IconOnlyProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "children"> {
   /** The accessible name. Icon-only controls have no visible label. */
@@ -125,7 +126,8 @@ export interface StepperProps {
 
 /** Stepper (Figma 100:545): a label, Decrease, the value and Increase on a
  * sunken track. The value is a polite live region, so each step is read
- * out. */
+ * out, and it rolls to each new value. At a limit the end button stays
+ * focusable (aria-disabled), so focus never drops out of the group. */
 export function Stepper({
   label,
   value,
@@ -138,6 +140,8 @@ export function Stepper({
   className,
 }: StepperProps) {
   const labelId = useId();
+  // The number rolls to each new value (Variations' familiar roll).
+  const roll = useRoll(value);
   return (
     <div role="group" aria-labelledby={labelId} className={cx("ui-stepper", className)}>
       <span id={labelId} className="t-button-s">
@@ -150,8 +154,10 @@ export function Stepper({
           disabled={disabled || value <= min}
           onClick={() => onChange(Math.max(min, value - 1))}
         />
-        <span className="ui-stepper__value t-button-s" aria-live="polite">
-          {value}
+        <span className="ui-stepper__value t-button-s">
+          <span ref={roll.ref} className="ui-stepper__num" aria-live="polite">
+            {roll.shown}
+          </span>
         </span>
         <StepperButton
           icon={Plus}

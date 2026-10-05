@@ -901,20 +901,6 @@
 .sp-chat-page > .sp-shell-pagehead {
   margin-bottom: 0;
 }
-.sp-tchat-legal {
-  display: flex;
-  justify-content: center;
-  gap: var(--space-sm);
-  margin: 0;
-  color: var(--text-secondary);
-}
-.sp-tchat-legal > a {
-  color: inherit;
-  text-decoration: none;
-}
-.sp-tchat-legal > a:hover {
-  text-decoration: underline;
-}
 
 /* ── The Public links dialog (168:758): New link, a divider, then Links ── */
 .sp-links__note {
