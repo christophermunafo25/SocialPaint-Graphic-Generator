@@ -433,7 +433,8 @@
 /* The library's filter bar, 24 under the header. The page itself never
    scrolls (the grid does), so the bar never pins. */
 .sp-chat-page[data-state="history"] .sp-lib-filterbar {
-  position: static;
+  /* Positioned, so its (unused) pin gradient stays inside it. */
+  position: relative;
   flex-shrink: 0;
   margin-top: var(--space-md);
 }

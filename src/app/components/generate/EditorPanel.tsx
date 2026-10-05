@@ -735,7 +735,7 @@ export function ExportErrorToast({ detail }: { detail: string }) {
  * the button gives way to "Saved to Brand Templates." and Open in the
  * builder, and focus follows to it when it was on Save. A failed save shows
  * its message over the button, which stays to try again. */
-function SaveToLibrary({ state, error, onSave, onOpenBuilder }: EditorSaveToLibrary) {
+export function SaveToLibrary({ state, error, onSave, onOpenBuilder }: EditorSaveToLibrary) {
   const saveRef = useRef<HTMLButtonElement | null>(null);
   const builderRef = useRef<HTMLButtonElement | null>(null);
   const hadFocus = useRef(false);
