@@ -68,7 +68,10 @@ import {
 import {
   detailsSection,
   documentsSection,
+  factsSection,
   parseDetails,
+  parseFacts,
+  type FactInput,
   parseDocuments,
   pickToolUse,
   resolveDetails,
@@ -204,6 +207,7 @@ function buildUserText(
   details: ResolvedDetail[],
   documents: DocumentInput[],
   mayAsk: boolean,
+  facts: FactInput[] = [],
 ): string {
   const parts: string[] = [];
   parts.push(`Brief: ${brief}`);
@@ -211,6 +215,7 @@ function buildUserText(
   // it (followUpSection, built by the caller against the published list).
   if (followUpText) parts.push(followUpText);
   if (details.length > 0) parts.push(detailsSection(details));
+  if (facts.length > 0) parts.push(factsSection(facts));
   if (documents.length > 0) parts.push(documentsSection(documents));
   if (platformHint) parts.push(`The member is posting on: ${platformHint}.`);
   if (image) {
@@ -511,9 +516,11 @@ function buildFreestyleUserText(input: {
   count: number;
   image: { aspect: number | undefined } | undefined;
   documents: DocumentInput[];
+  facts: FactInput[];
 }): string {
   const parts: string[] = [];
   parts.push(`Brief: ${input.brief}`);
+  if (input.facts.length > 0) parts.push(factsSection(input.facts));
   if (input.documents.length > 0) parts.push(documentsSection(input.documents));
   if (input.platform) parts.push(`The member is posting on: ${input.platform}.`);
   if (input.image) {
@@ -555,6 +562,7 @@ async function handleFreestyle(
     count: number;
     image: { aspect: number | undefined } | undefined;
     documents: DocumentInput[];
+    facts: FactInput[];
   },
 ): Promise<Response> {
   const warnings: string[] = [];
@@ -643,6 +651,7 @@ async function handleFreestyle(
     count: input.count,
     image: input.image,
     documents: input.documents,
+    facts: input.facts,
   });
 
   const tools = [PROPOSE_DESIGNS_TOOL];
@@ -913,6 +922,9 @@ Deno.serve(async (req) => {
     // ever arrives.
     const detailInputs = parseDetails(body.details) ?? [];
     const documents = parseDocuments(body.documents) ?? [];
+    // Generate's facts (new look, Phase 5): not tied to a template, so they
+    // go with any request, library or freestyle.
+    const facts = parseFacts(body.facts) ?? [];
     if (
       body.allowQuestion !== undefined &&
       body.allowQuestion !== null &&
@@ -932,6 +944,7 @@ Deno.serve(async (req) => {
       Boolean(templateIdHint) &&
       !followUp &&
       detailInputs.length === 0 &&
+      facts.length === 0 &&
       documents.length === 0;
 
     if (mode === "freestyle") {
@@ -941,6 +954,7 @@ Deno.serve(async (req) => {
         count,
         image,
         documents,
+        facts,
       });
     }
 
@@ -1040,6 +1054,7 @@ Deno.serve(async (req) => {
       details,
       documents,
       mayAsk,
+      facts,
     );
     const tools = mayAsk ? [PROPOSE_POSTS_TOOL, ASK_MEMBER_TOOL] : [PROPOSE_POSTS_TOOL];
     const settle = (a: ClaudeAttempt) =>

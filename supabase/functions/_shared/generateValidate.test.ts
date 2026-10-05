@@ -8,11 +8,13 @@ import {
   classifyPlatforms,
   detailsSection,
   documentsSection,
+  factsSection,
   followUpSection,
   modelCandidates,
   orientationOf,
   parseDetails,
   parseDocuments,
+  parseFacts,
   parseFollowUp,
   pickToolUse,
   resolveDetails,
@@ -1891,5 +1893,66 @@ describe("the system prompt", () => {
     expect(prompt).toContain("## Asking first");
     expect(prompt).toContain("Keep every value the new message does not ask you to change");
     expect(prompt).toContain("Never ask a question in the reply");
+  });
+});
+
+describe("parseFacts", () => {
+  it("is undefined when absent", () => {
+    expect(parseFacts(undefined)).toBeUndefined();
+    expect(parseFacts(null)).toBeUndefined();
+  });
+
+  it("trims each value and keeps the kinds", () => {
+    expect(
+      parseFacts([
+        { kind: "headline", value: "  Spring open house " },
+        { kind: "link", value: "https://example.com" },
+      ]),
+    ).toEqual([
+      { kind: "headline", value: "Spring open house" },
+      { kind: "link", value: "https://example.com" },
+    ]);
+  });
+
+  it("refuses an unknown kind, a repeated kind, a blank value and too many", () => {
+    expect(() => parseFacts([{ kind: "price", value: "$5" }])).toThrow(HttpError);
+    expect(() =>
+      parseFacts([
+        { kind: "date", value: "Friday" },
+        { kind: "date", value: "Saturday" },
+      ]),
+    ).toThrow(/repeats/);
+    expect(() => parseFacts([{ kind: "place", value: "   " }])).toThrow(/blank/);
+    expect(() => parseFacts([{ kind: "place", value: "x".repeat(301) }])).toThrow(HttpError);
+    expect(() =>
+      parseFacts(
+        ["headline", "date", "place", "link", "headline"].map((kind) => ({ kind, value: "v" })),
+      ),
+    ).toThrow(/at most 4/);
+    expect(() => parseFacts("headline")).toThrow(HttpError);
+  });
+
+  it("never echoes a value in its errors", () => {
+    try {
+      parseFacts([{ kind: "nope", value: "secret words" }]);
+    } catch (e) {
+      expect(String((e as Error).message)).not.toContain("secret");
+    }
+  });
+});
+
+describe("factsSection", () => {
+  it("quotes each fact as JSON under its meaning", () => {
+    const text = factsSection([
+      { kind: "date", value: 'May 4 at 6pm "sharp"' },
+      { kind: "place", value: "Denver" },
+    ]);
+    expect(text).toContain("exactly as written");
+    expect(text).toContain(
+      JSON.stringify([
+        { fact: "the date and time", value: 'May 4 at 6pm "sharp"' },
+        { fact: "the location", value: "Denver" },
+      ]),
+    );
   });
 });
