@@ -37,22 +37,44 @@ export const NavItem = React.forwardRef<HTMLButtonElement, NavItemProps>(functio
 
 /** Settings rail item (Figma 54:100): a Nav item on the page, so Selected
  * takes control/fill, and its focus ring sits against the edge. */
-export const SettingsRailItem = React.forwardRef<HTMLButtonElement, NavItemProps>(
+export interface SettingsRailItemProps extends Omit<NavItemProps, "onClick"> {
+  onClick?: React.MouseEventHandler<HTMLElement>;
+  /** A real link (cmd-click opens the section in a new tab); the caller's
+   * onClick handles the in-app click. Without it the item is a button. */
+  href?: string;
+}
+
+export const SettingsRailItem = React.forwardRef<HTMLElement, SettingsRailItemProps>(
   function SettingsRailItem(
-    { icon: Icon, selected = false, className, children, type = "button", ...rest },
+    { icon: Icon, selected = false, className, children, type = "button", href, ...rest },
     ref,
   ) {
-    return (
-      <button
-        ref={ref}
-        type={type}
-        aria-current={selected ? "page" : undefined}
-        className={cx("ui-reset ui-tint ui-ring-tight ui-nav-item ui-rail-item", className)}
-        data-selected={selected || undefined}
-        {...rest}
-      >
+    const shared = {
+      "aria-current": selected ? ("page" as const) : undefined,
+      className: cx("ui-reset ui-tint ui-ring-tight ui-nav-item ui-rail-item", className),
+      "data-selected": selected || undefined,
+    };
+    const content = (
+      <>
         <Icon size={18} className="ui-icon" aria-hidden />
         <span className="t-label-m">{children}</span>
+      </>
+    );
+    if (href !== undefined) {
+      return (
+        <a
+          ref={ref as React.Ref<HTMLAnchorElement>}
+          href={href}
+          {...shared}
+          {...(rest as unknown as React.AnchorHTMLAttributes<HTMLAnchorElement>)}
+        >
+          {content}
+        </a>
+      );
+    }
+    return (
+      <button ref={ref as React.Ref<HTMLButtonElement>} type={type} {...shared} {...rest}>
+        {content}
       </button>
     );
   },

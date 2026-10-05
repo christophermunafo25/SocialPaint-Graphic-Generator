@@ -10,7 +10,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthContext";
-import { useRouter, type SettingsSection } from "../../router";
+import { routeToUrl, useRouter, type SettingsSection } from "../../router";
+import { LegalLinks } from "../generate/LegalLinks";
 import { Page, PageHeader } from "../layout/Page";
 import { SettingsRailItem } from "../primitives";
 import { AccountSection } from "./settings/AccountSection";
@@ -21,6 +22,7 @@ import { PeopleSection } from "./settings/PeopleSection";
 import { resolveSettingsSection, settingsSectionsFor } from "./settings/settingsSections";
 import { UsageSection } from "./settings/UsageSection";
 import { WorkspaceSection } from "./settings/WorkspaceSection";
+import { useLinkClick } from "./brand/useLinkClick";
 
 /** The rail's icons, as the Settings frames draw them (8:678). */
 const ICONS: Record<SettingsSection, LucideIcon> = {
@@ -51,6 +53,7 @@ const RENDER: Record<SettingsSection, () => React.ReactNode> = {
 export function SettingsAdmin({ section }: { section?: SettingsSection }) {
   const { role, companies, isDevAuth } = useAuth();
   const { navigate } = useRouter();
+  const linkClick = useLinkClick();
 
   const viewer = { role, canSwitchWorkspace: companies.length > 1 || isDevAuth };
   const visible = settingsSectionsFor(viewer);
@@ -67,16 +70,22 @@ export function SettingsAdmin({ section }: { section?: SettingsSection }) {
   }, [section, active.key, navigate]);
 
   return (
-    <Page>
+    <Page layout={{ className: "sp-st-page" }}>
       <PageHeader title="Settings & Admin" />
       <div className="sp-shell-settings">
         <nav className="sp-shell-settings__rail" aria-label="Settings sections">
           {visible.map(({ key, label }) => (
+            // Real links: cmd-click opens a section in a new tab (D11).
             <SettingsRailItem
               key={key}
               icon={ICONS[key]}
               selected={key === active.key}
-              onClick={() => navigate({ name: "settings", section: key })}
+              href={routeToUrl({ name: "settings", section: key })}
+              onClick={(e) =>
+                linkClick({ name: "settings", section: key })(
+                  e as React.MouseEvent<HTMLAnchorElement>,
+                )
+              }
             >
               {label}
             </SettingsRailItem>
@@ -84,6 +93,9 @@ export function SettingsAdmin({ section }: { section?: SettingsSection }) {
         </nav>
         <div className="sp-shell-settings__section">{RENDER[active.key]()}</div>
       </div>
+      <p className="t-caption-s sp-st-legal">
+        <LegalLinks />
+      </p>
     </Page>
   );
 }

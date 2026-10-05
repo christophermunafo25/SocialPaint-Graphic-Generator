@@ -1,22 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { X } from "lucide-react";
 
-/** The People section's dev-backend notice: a section that depends on the
- * Supabase backend says so instead of rendering a button that fails. */
+/** The local backend's notice: a section that depends on the Supabase
+ * backend says so, in one quiet line, instead of rendering a button that
+ * fails (PHASE-7 §9 D11). */
 export function DevBackendNotice({ children }: { children: React.ReactNode }) {
-  return (
-    <p
-      className="px-4 py-3"
-      data-radius-control
-      style={{
-        fontSize: "var(--type-caption-size)",
-        background: "var(--bg-hover)",
-        color: "var(--text-secondary)",
-      }}
-    >
-      {children}
-    </p>
-  );
+  return <p className="t-body-s sp-st-notice">{children}</p>;
 }
 
 /** One titled card in a settings section. */

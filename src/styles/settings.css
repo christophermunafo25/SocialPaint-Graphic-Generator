@@ -1,0 +1,74 @@
+/* ── Settings on the new look (PHASE-7.md; frames 13:14570 to 13:15837) ──
+   The page column and legal links, the cards' drawn gaps, the confirms,
+   then each section's parts. */
+
+/* The page column: the header, the rail and section, and the legal links at
+   the foot of a viewport-tall column (13:14766). */
+.sp-st-page {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - var(--chrome-top));
+  padding-bottom: calc(28px + var(--dev-banner-h, 0px)); /* as drawn */
+}
+.sp-st-page > .sp-shell-settings {
+  flex: 1 0 auto;
+}
+.sp-st-legal {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-sm);
+  margin: 0;
+  padding-top: var(--space-xl);
+  color: var(--text-secondary);
+}
+.sp-st-legal > a {
+  color: inherit;
+  text-decoration: none;
+}
+.sp-st-legal > a:hover {
+  text-decoration: underline;
+}
+
+/* The section: cards 24 apart (13:14697). */
+.sp-st-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* Cards whose header sits closer to its rows than the primitive's 20, as
+   drawn: Workspaces 8 (13:14698), the integrations 12 (13:15179), Public
+   links 16 (13:15512). */
+.ui-settings-card[data-gap="8"] {
+  gap: var(--space-2xs);
+}
+.ui-settings-card[data-gap="12"] {
+  gap: var(--space-xs);
+}
+.ui-settings-card[data-gap="16"] {
+  gap: var(--space-sm);
+}
+
+/* The local backend's notice: one quiet line where a card's data would be. */
+.sp-st-notice {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+/* A confirm (on Modal): the question's consequence, then Cancel and the
+   action, right-aligned. */
+.sp-st-confirm__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin: 0;
+  color: var(--text-secondary);
+}
+.sp-st-confirm__body p {
+  margin: 0;
+}
+.sp-st-confirm__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2xs);
+}
