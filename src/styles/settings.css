@@ -253,3 +253,84 @@
   border-radius: var(--radius-xs);
   background: var(--surface-sunken);
 }
+
+/* ── Sharing (13:15384) ── */
+/* "Show revoked and expired", then its switch, 8 apart (13:15515). */
+.sp-st-filter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.sp-st-actions--end {
+  justify-content: flex-end;
+}
+/* The table (13:15519): Link takes the room, then Opens 80, Last used 96,
+   Expires 96 and the actions, 16 apart; rows 14 above and below, divided,
+   with no rule after the last. */
+.sp-st-table-wrap {
+  overflow-x: auto;
+}
+.sp-st-table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+  color: var(--text-strong);
+}
+.sp-st-table th {
+  padding: 0 0 10px var(--space-sm);
+  color: var(--text-secondary);
+  font-weight: inherit;
+  text-align: left;
+  white-space: nowrap;
+}
+.sp-st-table td {
+  padding: 14px 0 14px var(--space-sm);
+  white-space: nowrap;
+}
+.sp-st-table th:first-child,
+.sp-st-table td:first-child {
+  width: 100%;
+  padding-left: 0;
+  white-space: normal;
+}
+.sp-st-table th:nth-child(2),
+.sp-st-table td:nth-child(2) {
+  min-width: 80px;
+}
+.sp-st-table th:nth-child(3),
+.sp-st-table td:nth-child(3),
+.sp-st-table th:nth-child(4),
+.sp-st-table td:nth-child(4) {
+  min-width: 96px;
+}
+.sp-st-table thead tr,
+.sp-st-table tbody tr + tr {
+  border-bottom: 0;
+}
+.sp-st-table tbody tr {
+  border-top: 1px solid var(--border-default);
+}
+.sp-st-link {
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* as drawn (13:15527) */
+  min-width: 0;
+}
+.sp-st-link__name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+/* A regenerated address, shown once: the field, then Copy link. */
+.sp-st-fresh {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+.sp-st-fresh > .ui-input {
+  flex: 1;
+  min-width: 0;
+}

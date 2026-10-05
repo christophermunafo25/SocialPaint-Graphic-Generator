@@ -5,15 +5,16 @@ import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { publicLinkUrl } from "@/lib/publicLink/route";
-import { ConfirmDialog } from "../../ConfirmDialog";
 import { ErrorState } from "../../ErrorState";
 import { SkeletonRows } from "../../Skeleton";
-import { Switch } from "../../Switch";
+import { Button, Field, Input, RowMenu, SettingsCard, Status, Switch } from "../../primitives";
 import { TemplateLinksDialog } from "../TemplateLinksDialog";
-import { ControlRow, DevBackendNotice, SettingsCard, TypedConfirmDialog } from "./settingsShared";
+import { ConfirmModal, TypedConfirmModal } from "./SettingsConfirm";
+import { DevBackendNotice, SwitchRow } from "./settingsShared";
+import { useSettingsToast } from "./settingsToast";
 
 const shortDate = (iso: string): string =>
-  new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  new Date(iso).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" });
 
 /** The admin's view of why a link would refuse — same distinctions the
  * per-template dialog draws. */
@@ -28,24 +29,24 @@ function linkState(link: CompanyTemplateLink): { label: string; live: boolean } 
   return { label: "Active", live: true };
 }
 
-/** Everything publicly reachable, in one table — inventory and emergency
- * control. Editing an individual link stays in the template's own dialog;
- * this section exists so "what of ours is on the open internet right now"
- * and "cut it all off" have answers. */
+/** Settings › Sharing (13:15384): everything publicly reachable, in one
+ * table, the incident button, and the defaults new links start with.
+ * Editing a link stays in its template's Public links dialog ("Manage" in
+ * the row menu). An address is shown once, when it is made: there is no
+ * Copy on a row, since only a hash of it is stored (PHASE-7 §9 D4). */
 export function SharingSection() {
   const { company } = useAuth();
+  const toast = useSettingsToast();
   const available = stores.publicLinks.isAvailable();
   const [version, setVersion] = useState(0);
   const reload = () => setVersion((v) => v + 1);
   const [showInactive, setShowInactive] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [revoking, setRevoking] = useState<CompanyTemplateLink | null>(null);
   const [regenerating, setRegenerating] = useState<CompanyTemplateLink | null>(null);
   const [revokingAll, setRevokingAll] = useState(false);
   /** The one sight of a regenerated address. */
   const [freshUrl, setFreshUrl] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
   /** Template whose full link dialog is open. */
   const [managing, setManaging] = useState<TemplateSchema | null>(null);
 
@@ -59,49 +60,57 @@ export function SharingSection() {
 
   const run = (action: () => Promise<void>) => {
     setBusy(true);
-    setError(null);
     void action()
-      .catch((e) => setError(e instanceof Error ? e.message : "That didn't work. Try again."))
+      .catch((e) => toast(e instanceof Error ? e.message : "That didn't work. Try again."))
       .finally(() => {
         setBusy(false);
         reload();
       });
   };
 
-  const copy = async (url: string) => {
-    await navigator.clipboard.writeText(url);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1600);
-  };
-
   const openDialog = (templateId: string) => {
-    setError(null);
     void stores.templates
       .get(templateId)
       .then((t) => {
         if (t) setManaging(t);
-        else setError("That template no longer exists.");
+        else toast("That template no longer exists.");
       })
-      .catch((e) => setError(e instanceof Error ? e.message : "Could not open that template."));
+      .catch((e) => toast(e instanceof Error ? e.message : "Could not open that template."));
   };
+
+  const filter = (
+    <label className="sp-st-filter">
+      <span className="t-label-xs">Show revoked and expired</span>
+      <Switch
+        checked={showInactive}
+        onChange={setShowInactive}
+        ariaLabel="Show revoked and expired links"
+      />
+    </label>
+  );
 
   if (!available) {
     return (
-      <div className="space-y-6">
-        <DevBackendNotice>
-          Public links need the Supabase backend. This dev backend has no way to issue or check one.
-        </DevBackendNotice>
+      <div className="sp-st-section">
+        <SettingsCard title="Public links">
+          <DevBackendNotice>
+            Public links need the Supabase backend. This dev backend has no way to issue or check
+            one.
+          </DevBackendNotice>
+        </SettingsCard>
         <LinkDefaultsCard />
       </div>
     );
   }
 
+  const plural = (n: number) => `${n} active link${n === 1 ? "" : "s"}`;
+
   return (
-    <div className="space-y-6">
-      <ConfirmDialog
+    <div className="sp-st-section">
+      <ConfirmModal
         open={revoking !== null}
         title={`Revoke “${revoking?.name || "this link"}”?`}
-        description="Anyone who opens it from here on gets a page saying the link no longer works. Immediate, and not undoable. You'd create a new link instead."
+        body="Anyone who opens it from here on gets a page saying the link no longer works. Immediate, and not undoable. You'd create a new link instead."
         confirmLabel="Revoke link"
         onCancel={() => setRevoking(null)}
         onConfirm={() => {
@@ -113,11 +122,11 @@ export function SharingSection() {
           });
         }}
       />
-      <ConfirmDialog
+      <ConfirmModal
         open={regenerating !== null}
-        tone="primary"
+        destructive={false}
         title={`Regenerate “${regenerating?.name || "this link"}”?`}
-        description="You'll get a new address to share, and the old one stops working straight away."
+        body="You'll get a new address to share, and the old one stops working straight away."
         confirmLabel="Regenerate"
         onCancel={() => setRegenerating(null)}
         onConfirm={() => {
@@ -130,16 +139,10 @@ export function SharingSection() {
           });
         }}
       />
-      <TypedConfirmDialog
+      <TypedConfirmModal
         open={revokingAll}
         title="Revoke every active link?"
-        description={
-          <p>
-            All {active.length} active link{active.length === 1 ? "" : "s"} across every template
-            stop working immediately. Anyone holding one gets a page saying it no longer works. This
-            is the incident-response button. It cannot be undone, only re-shared link by link.
-          </p>
-        }
+        body={`All ${plural(active.length)} across every template stop working immediately. Anyone holding one gets a page saying it no longer works. This is the incident-response button. It cannot be undone, only re-shared link by link.`}
         expected={company?.name ?? ""}
         confirmLabel={`Revoke ${active.length} link${active.length === 1 ? "" : "s"}`}
         busy={busy}
@@ -166,77 +169,11 @@ export function SharingSection() {
         />
       )}
 
-      {error && (
-        <p
-          role="alert"
-          className="px-4 py-3"
-          data-radius-card
-          style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}
-        >
-          {error}
-        </p>
-      )}
+      {freshUrl && <FreshAddress url={freshUrl} onDone={() => setFreshUrl(null)} />}
 
-      {freshUrl && (
-        <div
-          className="sp-card p-4 space-y-2"
-          style={{ border: "1px solid var(--state-primary)" }}
-          role="status"
-          aria-live="polite"
-        >
-          <p className="sp-eyebrow">Your link is ready. Copy it here or later from Insights</p>
-          <input
-            readOnly
-            value={freshUrl}
-            aria-label="Public link address"
-            className="sp-input"
-            style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}
-            onFocus={(e) => e.currentTarget.select()}
-          />
-          <button onClick={() => void copy(freshUrl)} className="sp-btn sp-btn-primary w-full">
-            {copied ? (
-              <Check style={{ width: 14, height: 14 }} />
-            ) : (
-              <Copy style={{ width: 14, height: 14 }} />
-            )}
-            {copied ? "Copied" : "Copy link"}
-          </button>
-        </div>
-      )}
-
-      <div className="sp-card overflow-hidden">
-        <div className="flex items-center justify-between gap-3 flex-wrap px-4 pt-4 pb-3">
-          <div>
-            <h2 className="sp-panel-title">Public links</h2>
-            <p
-              style={{
-                fontSize: "var(--type-caption-size)",
-                color: "var(--text-muted)",
-                marginTop: 2,
-              }}
-            >
-              Every link across every template. “Manage” opens the template's own dialog for full
-              editing.
-            </p>
-          </div>
-          <label
-            className="flex items-center"
-            style={{
-              gap: "var(--space-2xs)",
-              fontSize: "var(--type-caption-size)",
-              color: "var(--text-secondary)",
-            }}
-          >
-            Show revoked and expired
-            <Switch
-              checked={showInactive}
-              onChange={setShowInactive}
-              ariaLabel="Show revoked and expired links"
-            />
-          </label>
-        </div>
+      <SettingsCard className="sp-st-gap-16" title="Public links" action={filter}>
         {state.status === "loading" ? (
-          <SkeletonRows rows={3} inset="var(--space-xs) var(--space-md)" label="Loading links" />
+          <SkeletonRows rows={3} inset="var(--space-xs) 0" label="Loading links" />
         ) : state.status === "error" ? (
           <ErrorState
             title="We couldn't load your links."
@@ -244,131 +181,81 @@ export function SharingSection() {
             onRetry={state.retry}
           />
         ) : shown.length === 0 ? (
-          <p
-            className="px-6 py-8 text-center"
-            style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}
-          >
+          <p className="t-body-s sp-st-empty">
             {links.length === 0
-              ? "Nothing is publicly reachable. Links are created from a template's Share dialog."
-              : "No active links. Toggle the filter to see revoked and expired ones."}
+              ? "Nothing is publicly reachable. Links are created from a template's Public links dialog."
+              : "No active links. Turn on Show revoked and expired to see the others."}
           </p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full" style={{ fontSize: "var(--type-label-size)", minWidth: 760 }}>
+          <div className="sp-st-table-wrap">
+            <table className="sp-st-table">
               <thead>
-                <tr className="text-left" style={{ borderBottom: "1px solid var(--border)" }}>
-                  {[
-                    "Template",
-                    "Link",
-                    "Status",
-                    "Created",
-                    "Last used",
-                    "Opens",
-                    "Expires",
-                    "",
-                  ].map((h, i) => (
-                    <th
-                      key={`${h}-${i}`}
-                      className="sp-eyebrow px-4 py-3"
-                      style={{ fontWeight: 400 }}
-                    >
-                      {h}
-                    </th>
-                  ))}
+                <tr className="t-label-xs">
+                  <th scope="col">Link</th>
+                  <th scope="col">Opens</th>
+                  <th scope="col">Last used</th>
+                  <th scope="col">Expires</th>
+                  <th scope="col">
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {shown.map((link) => {
-                  const s = linkState(link);
+                  const st = linkState(link);
+                  const name = link.name || "Untitled link";
                   return (
-                    <tr key={link.id} style={{ borderTop: "1px solid var(--border)" }}>
-                      <td
-                        className="px-4 py-3"
-                        style={{ color: "var(--text-primary)", fontWeight: 500 }}
-                      >
-                        {link.templateName}
-                      </td>
-                      <td className="px-4 py-3" style={{ color: "var(--text-secondary)" }}>
-                        {link.name || "Untitled link"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className="sp-eyebrow"
-                          style={{ color: s.live ? "var(--state-primary)" : "var(--text-muted)" }}
-                        >
-                          {s.label}
+                    <tr key={link.id}>
+                      <td>
+                        <span className="sp-st-link">
+                          <span className="sp-st-link__name">
+                            <span className="t-label-m">{name}</span>
+                            <Status tone={st.live ? "active" : "neutral"} size="sm">
+                              {st.label}
+                            </Status>
+                          </span>
+                          <span className="t-label-xs sp-st-meta">{link.templateName}</span>
                         </span>
                       </td>
-                      <td
-                        className="px-4 py-3"
-                        style={{
-                          fontFamily: "var(--font-mono)",
-                          fontSize: "var(--type-caption-size)",
-                          color: "var(--text-secondary)",
-                        }}
-                      >
-                        {shortDate(link.createdAt)}
-                      </td>
-                      <td
-                        className="px-4 py-3"
-                        style={{
-                          fontFamily: "var(--font-mono)",
-                          fontSize: "var(--type-caption-size)",
-                          color: "var(--text-muted)",
-                        }}
-                      >
-                        {link.lastUsedAt ? shortDate(link.lastUsedAt) : "Never"}
-                      </td>
-                      <td
-                        className="px-4 py-3"
-                        style={{
-                          fontFamily: "var(--font-mono)",
-                          fontSize: "var(--type-caption-size)",
-                          color: "var(--text-secondary)",
-                        }}
-                      >
+                      <td className="t-body-s">
                         {link.useCap ? `${link.useCount} of ${link.useCap}` : link.useCount}
                       </td>
-                      <td
-                        className="px-4 py-3"
-                        style={{
-                          fontFamily: "var(--font-mono)",
-                          fontSize: "var(--type-caption-size)",
-                          color: "var(--text-muted)",
-                        }}
-                      >
+                      <td className="t-body-s">
+                        {link.lastUsedAt ? shortDate(link.lastUsedAt) : "Never"}
+                      </td>
+                      <td className="t-body-s">
                         {link.expiresAt ? shortDate(link.expiresAt) : "Never"}
                       </td>
-                      <td className="px-4 py-3">
-                        <div
-                          className="flex items-center justify-end"
-                          style={{ gap: "var(--space-3xs)" }}
-                        >
-                          <button
-                            onClick={() => openDialog(link.templateId)}
-                            disabled={busy}
-                            className="sp-btn sp-btn-ghost"
-                          >
-                            Manage
-                          </button>
-                          <button
-                            onClick={() => setRegenerating(link)}
-                            disabled={busy}
-                            className="sp-btn sp-btn-ghost"
-                          >
-                            New address
-                          </button>
+                      <td>
+                        <span className="sp-st-actions sp-st-actions--end">
                           {!link.revokedAt && (
-                            <button
-                              onClick={() => setRevoking(link)}
+                            <Button
+                              kind="neutral"
+                              size="sm"
                               disabled={busy}
-                              className="sp-btn sp-btn-ghost"
-                              style={{ color: "var(--state-danger)" }}
+                              aria-label={`Revoke ${name}`}
+                              onClick={() => setRevoking(link)}
                             >
                               Revoke
-                            </button>
+                            </Button>
                           )}
-                        </div>
+                          <RowMenu
+                            label={`More actions for ${name}`}
+                            disabled={busy}
+                            groups={[
+                              {
+                                items: [
+                                  { label: "Manage", onSelect: () => openDialog(link.templateId) },
+                                  {
+                                    label: "New address",
+                                    movesFocus: true,
+                                    onSelect: () => setRegenerating(link),
+                                  },
+                                ],
+                              },
+                            ]}
+                          />
+                        </span>
                       </td>
                     </tr>
                   );
@@ -377,22 +264,17 @@ export function SharingSection() {
             </table>
           </div>
         )}
-      </div>
+      </SettingsCard>
 
       {active.length > 0 && (
         <SettingsCard
           title="Emergency"
-          description="For an incident: sever everything public in one action."
-        >
-          <button
-            onClick={() => setRevokingAll(true)}
-            disabled={busy}
-            className="sp-btn"
-            style={{ background: "var(--state-danger)", color: "var(--bg-surface)" }}
-          >
-            Revoke all {active.length} active link{active.length === 1 ? "" : "s"}
-          </button>
-        </SettingsCard>
+          action={
+            <Button kind="neutral" disabled={busy} onClick={() => setRevokingAll(true)}>
+              Revoke all {plural(active.length)}
+            </Button>
+          }
+        />
       )}
 
       <LinkDefaultsCard />
@@ -400,12 +282,46 @@ export function SharingSection() {
   );
 }
 
-/** Defaults for NEW links — the initial state of the create form in
+/** The one sight of a regenerated address: selectable, with Copy link,
+ * since the whole workflow is paste-into-an-email. Done puts it away for
+ * good; nobody can show it again. */
+function FreshAddress({ url, onDone }: { url: string; onDone(): void }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    await navigator.clipboard.writeText(url);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1600);
+  };
+  return (
+    <SettingsCard
+      title="Your link is ready"
+      action={
+        <Button kind="neutral" onClick={onDone}>
+          Done
+        </Button>
+      }
+    >
+      <div className="sp-st-fresh" role="status" aria-live="polite">
+        <Input
+          readOnly
+          value={url}
+          aria-label="Public link address"
+          onFocus={(e) => e.currentTarget.select()}
+        />
+        <Button kind="primary" icon={copied ? Check : Copy} onClick={() => void copy()}>
+          {copied ? "Copied" : "Copy link"}
+        </Button>
+      </div>
+    </SettingsCard>
+  );
+}
+
+/** Defaults for NEW links: the initial state of the create form in
  * TemplateLinksDialog. Stored on the company; each link still sets its own
  * values. */
 function LinkDefaultsCard() {
   const { company, refresh } = useAuth();
-  const [error, setError] = useState<string | null>(null);
+  const toast = useSettingsToast();
   const [busy, setBusy] = useState(false);
   const defaults = company?.linkDefaults ?? { allowUploads: true, expiryDays: null, useCap: null };
   const [expiryDays, setExpiryDays] = useState(
@@ -416,11 +332,10 @@ function LinkDefaultsCard() {
   const save = (patch: Partial<typeof defaults>) => {
     if (!company) return;
     setBusy(true);
-    setError(null);
     void stores.companies
       .update(company.id, { linkDefaults: { ...defaults, ...patch } })
       .then(() => refresh())
-      .catch((e) => setError(e instanceof Error ? e.message : "Could not save the defaults."))
+      .catch((e) => toast(e instanceof Error ? e.message : "Could not save the defaults."))
       .finally(() => setBusy(false));
   };
 
@@ -430,40 +345,16 @@ function LinkDefaultsCard() {
   };
 
   return (
-    <SettingsCard
-      title="Defaults for new links"
-      description="What the create form starts with. Each link can still be set individually."
-    >
-      {error && (
-        <p
-          role="alert"
-          style={{ fontSize: "var(--type-caption-size)", color: "var(--state-danger)" }}
-        >
-          {error}
-        </p>
-      )}
-      <ControlRow
-        title="Allow photo uploads"
-        control={
-          <Switch
-            checked={defaults.allowUploads}
-            disabled={busy}
-            onChange={(next) => save({ allowUploads: next })}
-            ariaLabel="New links allow photo uploads by default"
-          />
-        }
+    <SettingsCard title="Defaults for new links">
+      <SwitchRow
+        label="Allow photo uploads"
+        checked={defaults.allowUploads}
+        disabled={busy}
+        onChange={(next) => save({ allowUploads: next })}
       />
-      <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: "var(--space-xs)" }}>
-        <div>
-          <label
-            htmlFor="link-default-expiry"
-            className="sp-eyebrow block"
-            style={{ marginBottom: "var(--space-3xs)" }}
-          >
-            Expires after (days)
-          </label>
-          <input
-            id="link-default-expiry"
+      <div className="sp-st-grid">
+        <Field label="Expires after (days)">
+          <Input
             type="number"
             min={1}
             inputMode="numeric"
@@ -472,19 +363,10 @@ function LinkDefaultsCard() {
             disabled={busy}
             onChange={(e) => setExpiryDays(e.target.value)}
             onBlur={() => save({ expiryDays: parsePositive(expiryDays) })}
-            className="sp-input"
           />
-        </div>
-        <div>
-          <label
-            htmlFor="link-default-cap"
-            className="sp-eyebrow block"
-            style={{ marginBottom: "var(--space-3xs)" }}
-          >
-            Open limit
-          </label>
-          <input
-            id="link-default-cap"
+        </Field>
+        <Field label="Open limit">
+          <Input
             type="number"
             min={1}
             inputMode="numeric"
@@ -493,9 +375,8 @@ function LinkDefaultsCard() {
             disabled={busy}
             onChange={(e) => setUseCap(e.target.value)}
             onBlur={() => save({ useCap: parsePositive(useCap) })}
-            className="sp-input"
           />
-        </div>
+        </Field>
       </div>
     </SettingsCard>
   );
