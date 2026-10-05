@@ -1,7 +1,6 @@
 import React from "react";
 import { useBrand } from "@/lib/brand/BrandContext";
 import type { BrandCategory } from "../../../router";
-import { Bone } from "../../Skeleton";
 import { CATEGORY_TITLES } from "./categories";
 import { BrandDetailHeader } from "./BrandDetailHeader";
 import { ColorsDetail } from "./ColorsDetail";
@@ -85,11 +84,14 @@ function DetailSkeleton({ category }: { category: BrandCategory }) {
   }
   if (category === "images") {
     return (
-      <div className="sp-logos-grid" aria-busy="true" aria-label={label}>
+      <div className="sp-bs-images" aria-busy="true" aria-label={label}>
         {Array.from({ length: 4 }, (_, i) => (
-          <div key={i} className="sp-card sp-logo-card" aria-hidden>
-            <Bone w="100%" h={132} r="var(--radius-media-inner)" />
-            <Bone w={96} h={13} />
+          <div key={i} className="sp-bs-image" aria-hidden>
+            <span className="sp-bs-image__plate sp-bs-bone" />
+            <span className="sp-bs-image__meta">
+              <span className="sp-bs-bone" style={{ width: 96, height: 10 }} />
+              <span className="sp-bs-bone" style={{ width: 64, height: 8 }} />
+            </span>
           </div>
         ))}
       </div>
@@ -97,12 +99,11 @@ function DetailSkeleton({ category }: { category: BrandCategory }) {
   }
   if (category === "import") {
     return (
-      <div className="sp-import-grid" aria-busy="true" aria-label={label}>
+      <div className="sp-bs-import" aria-busy="true" aria-label={label}>
         {Array.from({ length: 2 }, (_, i) => (
-          <div key={i} className="sp-card sp-import-leg" aria-hidden>
-            <Bone w={140} h={13} />
-            <Bone w="70%" h={11} />
-            <Bone w={160} h={36} r="var(--radius-control)" />
+          <div key={i} className="sp-bs-import__leg" aria-hidden>
+            <span className="sp-bs-bone" style={{ width: 120, height: 10 }} />
+            <span className="sp-bs-bone" style={{ width: 160, height: 40 }} />
           </div>
         ))}
       </div>
@@ -110,19 +111,21 @@ function DetailSkeleton({ category }: { category: BrandCategory }) {
   }
   // Fonts and type styles: the list card with row-shaped bones.
   return (
-    <div className="sp-card sp-list-card" aria-busy="true" aria-label={label}>
-      {Array.from({ length: 3 }, (_, i) => (
-        <div key={i} className="sp-font-row" aria-hidden>
-          <Bone w={40} h={32} />
-          <span className="sp-font-row__id">
-            <Bone w={120} h={13} />
-            <Bone w={64} h={9} style={{ marginTop: 6 }} />
-          </span>
-          <span className="sp-font-row__specimen">
-            <Bone w="60%" h={14} />
-          </span>
-        </div>
-      ))}
+    <div className="sp-bs-list" aria-busy="true" aria-label={label}>
+      <div className="sp-bs-list__rows">
+        {Array.from({ length: 3 }, (_, i) => (
+          <div key={i} className="sp-bs-font" aria-hidden>
+            <span className="sp-bs-bone" style={{ width: 40, height: 32 }} />
+            <span className="sp-bs-font__id">
+              <span className="sp-bs-bone" style={{ width: 120, height: 10 }} />
+              <span className="sp-bs-bone" style={{ width: 64, height: 8 }} />
+            </span>
+            <span className="sp-bs-font__specimen">
+              <span className="sp-bs-bone" style={{ width: "60%", height: 12 }} />
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

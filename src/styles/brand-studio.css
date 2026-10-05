@@ -732,3 +732,212 @@ label.sp-bs-add:focus-within {
     display: none;
   }
 }
+
+/* ── Images (13:11956, 13:12050) ── */
+.sp-bs-images-empty {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  min-height: 320px;
+  border: 1px dashed var(--text-secondary);
+  border-radius: var(--radius-card);
+  color: var(--text-strong);
+}
+.sp-bs-images-empty > p {
+  margin: 0;
+}
+.sp-bs-images-empty[data-active="true"] {
+  background: var(--state-hover);
+}
+/* Four columns, 16 apart; three under 1024, two under 768. */
+.sp-bs-images {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-sm);
+  align-items: start;
+}
+@media (max-width: 1023.98px) {
+  .sp-bs-images {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 767.98px) {
+  .sp-bs-images {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.sp-bs-image {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: var(--space-2xs);
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+  color: var(--text-strong);
+}
+.sp-bs-image__plate {
+  position: relative;
+  display: block;
+  height: 132px;
+  overflow: hidden;
+  border-radius: var(--radius-media-plate);
+}
+.sp-bs-image__plate::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px var(--border-default);
+  pointer-events: none;
+}
+.sp-bs-image__plate img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.sp-bs-image__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 6px 0 var(--space-3xs) var(--space-3xs);
+}
+.sp-bs-image[data-uploading] .sp-bs-image__meta {
+  gap: var(--space-2xs);
+  padding-right: var(--space-3xs);
+}
+.sp-bs-image__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2xs);
+  min-height: 32px;
+}
+.sp-bs-image__name,
+.sp-bs-image__size {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-bs-image__size {
+  color: var(--text-secondary);
+}
+.sp-bs-image__row > .ui-rowmenu {
+  flex: none;
+  color: var(--text-strong);
+}
+.sp-bs-image__blocked {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3xs);
+  padding-top: var(--space-2xs);
+}
+
+/* ── Import (13:12670, 13:12871, 13:12978) ── */
+.sp-bs-import-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+/* Two equal raised cards, 24 apart; stacked under 768. */
+.sp-bs-import {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-md);
+  align-items: start;
+}
+@media (max-width: 767.98px) {
+  .sp-bs-import {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.sp-bs-import__leg,
+.sp-bs-import__status {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+  padding: var(--space-md);
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+  color: var(--text-strong);
+}
+.sp-bs-import__leg > p,
+.sp-bs-import__status > p {
+  margin: 0;
+}
+.sp-bs-import__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+.sp-bs-import__row > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+/* Disabled Import is drawn neutral at 40%, not primary at 40%. */
+.sp-bs-import__row > .ui-btn[data-kind="primary"]:disabled {
+  background: var(--surface-sunken);
+  color: var(--text-strong);
+}
+/* Choose tokens.json: a neutral md button that is also the file picker and
+   a drop target, so it stays a label around the input. */
+.sp-bs-import__choose {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  height: 40px;
+  padding: 0 18px;
+  border-radius: var(--radius-control);
+  background: var(--surface-sunken);
+  color: var(--text-strong);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.sp-bs-import__choose:has(input:focus-visible) {
+  outline: var(--focus-width) solid var(--ring);
+  outline-offset: var(--focus-offset);
+}
+.sp-bs-import__choose[data-active="true"] {
+  box-shadow: inset 0 0 0 1px var(--text-secondary);
+}
+.sp-bs-import__note {
+  color: var(--text-secondary);
+}
+.sp-bs-import__status--done {
+  gap: 6px;
+}
+.sp-bs-import__matched {
+  color: var(--text-secondary);
+}
+.sp-bs-import__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding-top: 10px;
+}
+/* A text link on text/secondary, not underlined: the breadcrumb's link. */
+.sp-bs-link {
+  border-radius: var(--radius-control);
+  color: var(--text-secondary);
+  text-decoration: none;
+  cursor: pointer;
+}
+.sp-bs-link:hover {
+  color: var(--text-strong);
+}
+.sp-bs-import__note .sp-bs-link {
+  color: var(--text-strong);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
