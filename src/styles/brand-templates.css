@@ -160,13 +160,16 @@
    by the fade): three across at laptop widths, four from 1800, two and a
    bit on a phone. The width is derived from the rail's own gap, so the
    two can never drift. The track pads for the cards' shadow and the
-   focus ring (a scroller clips both) and steps back by as much. */
+   focus ring (a scroller clips both) and the rail steps back by as much,
+   as the chips' rail does, so the fade ends where the cards are clipped. */
+.sp-lib-shelf > .sp-lib-rail {
+  margin: -4px -4px calc(-1 * var(--space-sm));
+}
 .sp-lib-shelf__track {
   --shelf-visible: 1.15;
   --shelf-gap: var(--space-sm);
   gap: var(--shelf-gap);
   padding: 4px 4px var(--space-sm);
-  margin: -4px -4px calc(-1 * var(--space-sm));
   scroll-padding-inline: 4px;
   scroll-snap-type: x mandatory;
 }
@@ -401,9 +404,11 @@
   .sp-page--bleed .sp-lib-shelf__header {
     padding-inline: var(--space-sm);
   }
+  .sp-page--bleed .sp-lib-shelf > .sp-lib-rail {
+    margin-inline: 0;
+  }
   .sp-page--bleed .sp-lib-shelf__track {
     padding-inline: var(--space-sm);
-    margin-inline: 0;
     scroll-padding-inline: var(--space-sm);
   }
   .sp-page--bleed .sp-lib-chips {
