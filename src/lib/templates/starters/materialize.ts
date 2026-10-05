@@ -35,6 +35,7 @@ import {
   ON_ACCENT_DARK,
   ON_ACCENT_LIGHT,
 } from "./neutrals";
+import { roleStyle } from "../../brand/fontRoles";
 
 export interface MaterializeContext {
   company: { id: string; name: string; website?: string };
@@ -209,8 +210,10 @@ function surviving(blueprint: StarterBlueprint, ctx: MaterializeContext): Starte
 
 function resolveFont(slot: SlotFont, kit: BrandKit): string {
   if (slot === "label") return LABEL_FONT_FAMILY;
-  if (slot === "display") return (kit.headingFont ?? DISPLAY_FONT_FALLBACK).family;
-  return (kit.bodyFont ?? BODY_FONT_FALLBACK).family;
+  // The face of the style used for Heading or Body, copied, not bound, so
+  // the slot keeps its own colors, weight and size (CJ, 2026-10-05).
+  if (slot === "display") return (roleStyle(kit, "heading")?.font ?? DISPLAY_FONT_FALLBACK).family;
+  return (roleStyle(kit, "body")?.font ?? BODY_FONT_FALLBACK).family;
 }
 
 /** One blueprint field as a concrete TemplateField in the LIGHT colorway. */

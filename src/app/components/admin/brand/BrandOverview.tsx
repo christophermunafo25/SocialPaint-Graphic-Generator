@@ -3,6 +3,7 @@ import { useBrand } from "@/lib/brand/BrandContext";
 import { routeToUrl, useRouter, type BrandCategory } from "../../../router";
 import { PageHeader } from "../../layout/Page";
 import { Button, PreviewOverlay } from "../../primitives";
+import { roleStyle } from "@/lib/brand/fontRoles";
 import { requestAddFlow } from "./addFlow";
 import { CATEGORY_ORDER, CATEGORY_TITLES, categoryCount } from "./categories";
 import type { BrandDraft } from "./kitPlumbing";
@@ -31,6 +32,9 @@ interface SetupSection {
   reason: string;
   /** The strip's one primary action, named for this section. */
   action: string;
+  /** The action opens the page without starting its add flow (the fonts
+   * check, which is about roles, not a new style). */
+  openOnly?: boolean;
 }
 
 const dismissKey = (companyId: string) => `sp:brand-setup-dismissed:${companyId}`;
@@ -71,10 +75,13 @@ export function BrandOverview({ brand, companyId }: { brand: BrandDraft; company
       action: "Upload logo",
     },
     {
-      category: "typography",
-      ready: !!(draft.headingFont?.family && draft.bodyFont?.family),
-      reason: "Fonts still need a heading and a body face.",
+      // The fonts check reads Type styles (PHASE-6 §9 D3): ready when one
+      // style is used for Heading and one for Body.
+      category: "type-styles",
+      ready: !!(roleStyle(draft, "heading") && roleStyle(draft, "body")),
+      reason: "Type styles still need a Heading and a Body.",
       action: "Set fonts",
+      openOnly: true,
     },
     {
       category: "type-styles",
@@ -105,7 +112,7 @@ export function BrandOverview({ brand, companyId }: { brand: BrandDraft; company
   };
 
   const startAddFlow = (section: SetupSection) => {
-    requestAddFlow(section.category);
+    if (!section.openOnly) requestAddFlow(section.category);
     navigate({ name: "brandStudio", category: section.category });
   };
 
@@ -134,8 +141,8 @@ export function BrandOverview({ brand, companyId }: { brand: BrandDraft; company
                 )}
               </p>
               <div className="sp-bs-strip__bars" aria-hidden>
-                {sections.map((s) => (
-                  <span key={s.category} className="sp-bs-strip__bar" data-ready={s.ready} />
+                {sections.map((s, i) => (
+                  <span key={i} className="sp-bs-strip__bar" data-ready={s.ready} />
                 ))}
               </div>
             </div>

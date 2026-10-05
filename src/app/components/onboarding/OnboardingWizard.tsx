@@ -27,6 +27,7 @@ import { ColorControl } from "../ColorControl";
 import { BrandMark } from "../BrandMark";
 import { PreAppShell } from "../PreAppShell";
 import gateOrbit from "@/assets/socialpaint/gate-orbit.webp";
+import { migrateFontRoles } from "@/lib/brand/fontRoles";
 
 /** First-run onboarding: walks a user from an empty database to a themed,
  * ready-to-use company workspace. Also reachable any time via "Create
@@ -231,7 +232,10 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
 
       const kit = await stores.brandKits.upsert(company.id, {
         colors,
-        typeStyles: DEFAULT_TYPE_STYLES,
+        // Born with font roles: the default styles take the faces onboarding
+        // found (PHASE-6 §9 D3, D12).
+        typeStyles: migrateFontRoles({ typeStyles: DEFAULT_TYPE_STYLES, headingFont, bodyFont })
+          .typeStyles,
         guidelines: [],
         headingFont,
         bodyFont,

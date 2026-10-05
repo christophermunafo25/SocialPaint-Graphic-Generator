@@ -8,7 +8,8 @@ import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useBrand } from "@/lib/brand/BrandContext";
-import { DEFAULT_PALETTE, DEFAULT_TYPE_STYLES } from "@/lib/theme";
+import { DEFAULT_PALETTE } from "@/lib/theme";
+import { typeStylesWithRoles } from "@/lib/brand/fontRoles";
 import { dedupeColorKeys } from "./kitOps";
 
 export type KitShape = Omit<BrandKit, "id" | "companyId">;
@@ -20,7 +21,9 @@ export type KitShape = Omit<BrandKit, "id" | "companyId">;
 export function kitShape(kit: BrandKit | null): KitShape {
   return {
     colors: dedupeColorKeys(kit?.colors ?? DEFAULT_PALETTE),
-    typeStyles: kit?.typeStyles?.length ? kit.typeStyles : DEFAULT_TYPE_STYLES,
+    // With font roles in place (PHASE-6 §9 D3); the defaults stand in for a
+    // kit with no styles, taking its faces.
+    typeStyles: typeStylesWithRoles(kit),
     // Guidelines have no surface anymore but the data is preserved — every
     // save carries them through untouched.
     guidelines: kit?.guidelines ?? [],

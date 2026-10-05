@@ -84,6 +84,10 @@ export interface BrandTypeStyle {
   maxLength?: number; // "never exceeds N characters"
   /** Locks the field's text sizing mode (see TemplateField.textSizing). */
   textSizing?: "free" | "shrink" | "fill";
+  /** The font role this style holds (PHASE-6 §9 D3): one style is used for
+   * Heading and one for Body. Null holds none; absent means the kit predates
+   * roles, and `withFontRoles` (lib/brand/fontRoles) gives it its roles. */
+  useFor?: "heading" | "body" | null;
 }
 
 export interface BrandKit {
@@ -93,6 +97,8 @@ export interface BrandKit {
   typeStyles: BrandTypeStyle[]; // unlimited
   /** Accepted free-text brand rules (from guidelines.md import or typed in). */
   guidelines: string[];
+  /** The faces before roles moved onto type styles (PHASE-6 §9 D3). Kept in
+   * the table, unread except by the roles migration, until Phase 9. */
   headingFont?: FontRef;
   bodyFont?: FontRef;
   primaryLogoAssetId?: string;

@@ -55,6 +55,7 @@ import { joinCompanyLinks } from "../linkInventory";
 import { monthStartIso, summarizeMonthlyUsage } from "../monthlyUsage";
 import { joinLinkUsage } from "../publicLinkUsage";
 import { fileToDataUrl, mutate, newId, readDb } from "./db";
+import { withFontRoles } from "../../brand/fontRoles";
 
 interface UsageEventRec {
   id: string;
@@ -229,8 +230,13 @@ export class LocalBrandKitStore implements BrandKitStore {
       (k) => k.companyId === companyId,
     );
     if (!kit) return null;
-    // Kits saved before the rules engine existed lack the new arrays.
-    return { ...kit, typeStyles: kit.typeStyles ?? [], guidelines: kit.guidelines ?? [] };
+    // Kits saved before the rules engine existed lack the new arrays; kits
+    // saved before font roles get them as they load (PHASE-6 §9 D3).
+    return withFontRoles({
+      ...kit,
+      typeStyles: kit.typeStyles ?? [],
+      guidelines: kit.guidelines ?? [],
+    });
   }
   async upsert(companyId: string, kit: Omit<BrandKit, "id" | "companyId">): Promise<BrandKit> {
     return mutate((db) => {
