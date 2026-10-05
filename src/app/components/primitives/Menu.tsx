@@ -217,17 +217,20 @@ export function RowMenu({
   groups,
   label,
   className,
+  disabled = false,
 }: {
   groups: RowMenuGroup[];
   /** Names the trigger and the menu: "More actions for Montserrat". */
   label: string;
   className?: string;
+  /** The trigger at 40%, with no menu (the viewer's own row in People). */
+  disabled?: boolean;
 }) {
   const chosen = useRef<RowMenuAction | null>(null);
   return (
     <DropdownMenu.Root modal={false}>
       <DropdownMenu.Trigger asChild>
-        <RowMenuTrigger label={label} className={className} />
+        <RowMenuTrigger label={label} className={className} disabled={disabled} />
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content

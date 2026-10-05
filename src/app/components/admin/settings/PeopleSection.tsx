@@ -1,25 +1,60 @@
 import React, { useState } from "react";
-import { Send, Trash2 } from "lucide-react";
 import type { Role } from "@/lib/types";
 import type { Member } from "@/lib/stores/interfaces";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
-import { ConfirmDialog } from "../../ConfirmDialog";
 import { ErrorState } from "../../ErrorState";
 import { SkeletonRows } from "../../Skeleton";
+import { Avatar, Button, Input, RowMenu, Select, SettingsCard } from "../../primitives";
+import { ConfirmModal } from "./SettingsConfirm";
+import { DevBackendNotice } from "./settingsShared";
+import { useSettingsToast } from "./settingsToast";
 
-/** Settings › People (new look, Phase 3: People moved here from its own
- * page): invite by email, change roles, remove. Invites are sent by the
- * invite-member Edge Function (admin-verified server-side). Phase 7
- * rebuilds it to the People frame (13:14769). */
+const ROLE_OPTIONS: Array<{ value: Role; label: string }> = [
+  { value: "member", label: "Member" },
+  { value: "admin", label: "Admin" },
+];
+
+/** Rows shown before "Show all {n} people" (PHASE-7 §9 D8). */
+const CAP = 8;
+
+/** You first, then admins, then members, each by name (or email). */
+export function sortMembers(members: Member[], viewerId: string | undefined): Member[] {
+  const key = (m: Member) => (m.name ?? m.email).toLowerCase();
+  const rank = (m: Member) => (m.userId === viewerId ? 0 : m.role === "admin" ? 1 : 2);
+  return [...members].sort((a, b) => rank(a) - rank(b) || key(a).localeCompare(key(b)));
+}
+
+/** "26 people · 3 admins". */
+export function peopleMeta(members: Member[]): string {
+  const admins = members.filter((m) => m.role === "admin").length;
+  const people = `${members.length} ${members.length === 1 ? "person" : "people"}`;
+  return `${people} · ${admins} ${admins === 1 ? "admin" : "admins"}`;
+}
+
+/** Two letters for a member: the first letters of their first two names,
+ * or the first two letters of their email. */
+export function memberInitials(m: Member): string {
+  const words = (m.name ?? "").trim().split(/\s+/).filter(Boolean);
+  if (words.length > 1) return (words[0][0] + words[1][0]).toUpperCase();
+  const local = m.email.split("@")[0].replace(/[^a-z0-9]/gi, "");
+  return (words[0] ?? local).slice(0, 2).toUpperCase();
+}
+
+/** Settings › People (13:14769): invite by email, change roles, remove.
+ * Invites are sent by the invite-member Edge Function (admin-verified
+ * server-side), and an invited person is a member at once. Rows show the
+ * name over the email; the list stops at eight with "Show all {n} people"
+ * (PHASE-7 §9 D2, D8). */
 export function PeopleSection() {
   const { company, user, isDevAuth } = useAuth();
+  const toast = useSettingsToast();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<Role>("member");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
+  const [removing, setRemoving] = useState<Member | null>(null);
 
   /** Bumped after mutations so the list reloads through the same hook. */
   const [version, setVersion] = useState(0);
@@ -28,117 +63,101 @@ export function PeopleSection() {
     () => (company ? stores.people.list(company.id) : Promise.resolve([])),
     [company, version],
   );
-  const members = membersState.status === "ready" ? membersState.data : [];
+  const members = membersState.status === "ready" ? sortMembers(membersState.data, user?.id) : [];
+  const shown = showAll ? members : members.slice(0, CAP);
 
-  /** Member pending remove confirmation. */
-  const [removing, setRemoving] = useState<Member | null>(null);
-
-  const confirmRemove = () => {
-    if (!company || !removing) return;
-    void stores.people
-      .remove(company.id, removing.userId)
-      .then(reload)
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed."));
-    setRemoving(null);
-  };
+  const failed = (e: unknown, fallback: string) =>
+    toast(e instanceof Error && e.message ? e.message : fallback);
 
   const invite = async () => {
-    if (!company || !email.trim()) return;
+    const address = email.trim().toLowerCase();
+    if (!company || !address) return;
     setBusy(true);
-    setError(null);
-    setNotice(null);
     try {
-      await stores.people.invite(company.id, email.trim().toLowerCase(), role);
-      setNotice(`Invite sent to ${email.trim()}.`);
+      await stores.people.invite(company.id, address, role);
+      toast(`Invite sent to ${address}.`);
       setEmail("");
       reload();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Invite failed.");
+      failed(e, "Invite failed.");
     } finally {
       setBusy(false);
     }
   };
 
+  const confirmRemove = () => {
+    if (!company || !removing) return;
+    const who = removing;
+    setRemoving(null);
+    void stores.people
+      .remove(company.id, who.userId)
+      .then(reload)
+      .catch((e) => failed(e, `Couldn't remove ${who.name ?? who.email}.`));
+  };
+
+  const changeRole = (m: Member, next: Role) => {
+    if (!company || next === m.role) return;
+    void stores.people
+      .setRole(company.id, m.userId, next)
+      .then(reload)
+      .catch((e) => failed(e, `Couldn't change ${m.name ?? m.email}'s role.`));
+  };
+
   return (
-    <div>
-      <ConfirmDialog
+    <div className="sp-st-section">
+      <ConfirmModal
         open={removing !== null}
-        title={`Remove ${removing?.email ?? ""} from ${company?.name ?? "this company"}?`}
+        title={`Remove ${removing?.name ?? removing?.email ?? ""} from ${company?.name ?? "this workspace"}?`}
+        body="They lose access to this workspace straight away. You can invite them again later."
         confirmLabel="Remove member"
         onCancel={() => setRemoving(null)}
         onConfirm={confirmRemove}
       />
 
-      {isDevAuth && (
-        <p
-          className="px-4 py-3 mb-5"
-          data-radius-control
-          style={{
-            fontSize: "var(--type-caption-size)",
-            background: "var(--bg-hover)",
-            color: "var(--text-secondary)",
-          }}
-        >
-          People management needs the Supabase backend with auth enabled. This dev backend has no
-          real accounts.
-        </p>
-      )}
+      <SettingsCard
+        title="People"
+        action={
+          members.length > 0 && <span className="t-label-xs sp-st-meta">{peopleMeta(members)}</span>
+        }
+      >
+        {isDevAuth && (
+          <DevBackendNotice>
+            People management needs the Supabase backend with auth enabled. This dev backend has no
+            real accounts.
+          </DevBackendNotice>
+        )}
 
-      <div className="flex gap-2 mb-2">
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && void invite()}
-          placeholder="person@company.com"
-          className="sp-input flex-1"
-          style={{ height: 40 }}
-        />
-        <select
-          value={role}
-          onChange={(e) => setRole(e.target.value as Role)}
-          className="sp-input"
-          style={{ width: "auto", height: 40 }}
-        >
-          <option value="member">Member</option>
-          <option value="admin">Admin</option>
-        </select>
-        <button
-          className="sp-btn sp-btn-primary"
-          style={{ height: 40 }}
-          disabled={busy || !email.trim() || isDevAuth}
-          onClick={() => void invite()}
-        >
-          <Send style={{ width: 13, height: 13 }} />
-          {busy ? "Inviting…" : "Invite"}
-        </button>
-      </div>
-      {error && (
-        <p
-          style={{
-            fontSize: "var(--type-caption-size)",
-            color: "var(--state-danger)",
-            marginBottom: "var(--space-2xs)",
-          }}
-        >
-          {error}
-        </p>
-      )}
-      {notice && (
-        <p
-          style={{
-            fontSize: "var(--type-caption-size)",
-            color: "var(--state-primary)",
-            marginBottom: "var(--space-2xs)",
-          }}
-        >
-          {notice}
-        </p>
-      )}
+        <div className="sp-st-invite">
+          <Input
+            type="email"
+            aria-label="Invite email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && void invite()}
+            placeholder="name@company.com"
+            disabled={isDevAuth}
+          />
+          <Select
+            ariaLabel="Invite as"
+            size="lg"
+            className="sp-st-invite__role"
+            value={role}
+            options={ROLE_OPTIONS}
+            onSelect={(v) => setRole(v as Role)}
+            disabled={isDevAuth}
+          />
+          <Button
+            kind="primary"
+            size="md"
+            disabled={busy || !email.trim() || isDevAuth}
+            onClick={() => void invite()}
+          >
+            {busy ? "Inviting…" : "Invite"}
+          </Button>
+        </div>
 
-      <div className="sp-card overflow-hidden mt-4">
         {membersState.status === "loading" ? (
-          <SkeletonRows rows={3} label="Loading your team" />
+          <SkeletonRows rows={3} inset="var(--space-xs) 0" label="Loading your team" />
         ) : membersState.status === "error" ? (
           <ErrorState
             title="We couldn't load your team."
@@ -146,87 +165,62 @@ export function PeopleSection() {
             onRetry={membersState.retry}
           />
         ) : members.length === 0 ? (
-          <p
-            className="px-6 py-8 text-center"
-            style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}
-          >
-            No members yet.
-          </p>
+          <p className="t-body-s sp-st-empty">No members yet.</p>
         ) : (
-          members.map((m, i) => (
-            <div
-              key={m.userId}
-              className="flex items-center gap-3"
-              style={{
-                padding: "var(--space-xs) var(--space-md)",
-                minHeight: 56,
-                ...(i > 0 ? { borderTop: "1px solid var(--border)" } : {}),
-              }}
-            >
-              <span
-                className="flex-shrink-0"
-                style={{
-                  width: 26,
-                  height: 26,
-                  borderRadius: "var(--radius-pill)",
-                  display: "grid",
-                  placeItems: "center",
-                  overflow: "hidden",
-                  background: "var(--bg-raised)",
-                  border: "1px solid var(--border)",
-                }}
-              >
-                <span
-                  style={{
-                    color: "var(--text-primary)",
-                    fontFamily: "var(--font-head)",
-                    fontWeight: "var(--weight-head)",
-                    fontSize: 11,
-                    letterSpacing: "var(--track-head)",
-                  }}
-                >
-                  {(m.name ?? m.email).slice(0, 1).toUpperCase()}
-                </span>
-              </span>
-              <div className="flex-1 min-w-0">
-                <p
-                  className="truncate"
-                  style={{ fontSize: "var(--type-label-size)", color: "var(--text-primary)" }}
-                >
-                  {m.email}
-                  {m.userId === user?.id && (
-                    <span style={{ color: "var(--text-muted)" }}> (you)</span>
-                  )}
-                </p>
-              </div>
-              <select
-                className="sp-input"
-                style={{ width: "auto", padding: "5px 8px", fontSize: "var(--type-caption-size)" }}
-                value={m.role}
-                disabled={m.userId === user?.id}
-                onChange={(e) => {
-                  if (!company) return;
-                  void stores.people
-                    .setRole(company.id, m.userId, e.target.value as Role)
-                    .then(reload)
-                    .catch((err) => setError(err instanceof Error ? err.message : "Failed."));
-                }}
-              >
-                <option value="member">Member</option>
-                <option value="admin">Admin</option>
-              </select>
-              <button
-                disabled={m.userId === user?.id}
-                onClick={() => setRemoving(m)}
-                aria-label={`Remove ${m.email}`}
-                style={{ opacity: m.userId === user?.id ? 0.3 : 1 }}
-              >
-                <Trash2 style={{ width: 15, height: 15, color: "var(--state-danger)" }} />
-              </button>
-            </div>
-          ))
+          <ul className="sp-st-list">
+            {shown.map((m) => {
+              const you = m.userId === user?.id;
+              const name = m.name ?? m.email;
+              return (
+                <li key={m.userId} className="sp-st-member">
+                  <Avatar initials={memberInitials(m)} />
+                  <span className="sp-st-member__text">
+                    <span className="sp-st-member__name">
+                      <span className="t-label-m">{name}</span>
+                      {you && <span className="t-label-m sp-st-meta">(you)</span>}
+                    </span>
+                    {m.name && <span className="t-label-xs sp-st-meta">{m.email}</span>}
+                  </span>
+                  <Select
+                    ariaLabel={`Role for ${name}`}
+                    className="sp-st-member__role"
+                    value={m.role}
+                    options={ROLE_OPTIONS}
+                    onSelect={(next) => changeRole(m, next as Role)}
+                    disabled={you}
+                  />
+                  <RowMenu
+                    label={`More actions for ${name}`}
+                    disabled={you}
+                    groups={[
+                      {
+                        items: [
+                          {
+                            label: "Remove from workspace",
+                            destructive: true,
+                            onSelect: () => setRemoving(m),
+                          },
+                        ],
+                      },
+                    ]}
+                  />
+                </li>
+              );
+            })}
+          </ul>
         )}
-      </div>
+
+        {members.length > CAP && (
+          <button
+            type="button"
+            className="ui-reset ui-ring t-label-m sp-st-show-all"
+            aria-expanded={showAll}
+            onClick={() => setShowAll((v) => !v)}
+          >
+            {showAll ? "Show fewer" : `Show all ${members.length} people`}
+          </button>
+        )}
+      </SettingsCard>
     </div>
   );
 }

@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
       );
     if (error) {
       logError("invite-member", error);
-      return json({ error: "Could not save the membership — try again." }, 500);
+      return json({ error: "Could not save the membership. Try again." }, 500);
     }
 
     return json({ ok: true, existing: !invited.data.user });

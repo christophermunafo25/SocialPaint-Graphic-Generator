@@ -23,6 +23,7 @@ import { resolveSettingsSection, settingsSectionsFor } from "./settings/settings
 import { UsageSection } from "./settings/UsageSection";
 import { WorkspaceSection } from "./settings/WorkspaceSection";
 import { useLinkClick } from "./brand/useLinkClick";
+import { SettingsToastProvider } from "./settings/settingsToast";
 
 /** The rail's icons, as the Settings frames draw them (8:678). */
 const ICONS: Record<SettingsSection, LucideIcon> = {
@@ -71,28 +72,30 @@ export function SettingsAdmin({ section }: { section?: SettingsSection }) {
 
   return (
     <Page layout={{ className: "sp-st-page" }}>
-      <PageHeader title="Settings & Admin" />
-      <div className="sp-shell-settings">
-        <nav className="sp-shell-settings__rail" aria-label="Settings sections">
-          {visible.map(({ key, label }) => (
-            // Real links: cmd-click opens a section in a new tab (D11).
-            <SettingsRailItem
-              key={key}
-              icon={ICONS[key]}
-              selected={key === active.key}
-              href={routeToUrl({ name: "settings", section: key })}
-              onClick={(e) =>
-                linkClick({ name: "settings", section: key })(
-                  e as React.MouseEvent<HTMLAnchorElement>,
-                )
-              }
-            >
-              {label}
-            </SettingsRailItem>
-          ))}
-        </nav>
-        <div className="sp-shell-settings__section">{RENDER[active.key]()}</div>
-      </div>
+      <SettingsToastProvider>
+        <PageHeader title="Settings & Admin" />
+        <div className="sp-shell-settings">
+          <nav className="sp-shell-settings__rail" aria-label="Settings sections">
+            {visible.map(({ key, label }) => (
+              // Real links: cmd-click opens a section in a new tab (D11).
+              <SettingsRailItem
+                key={key}
+                icon={ICONS[key]}
+                selected={key === active.key}
+                href={routeToUrl({ name: "settings", section: key })}
+                onClick={(e) =>
+                  linkClick({ name: "settings", section: key })(
+                    e as React.MouseEvent<HTMLAnchorElement>,
+                  )
+                }
+              >
+                {label}
+              </SettingsRailItem>
+            ))}
+          </nav>
+          <div className="sp-shell-settings__section">{RENDER[active.key]()}</div>
+        </div>
+      </SettingsToastProvider>
       <p className="t-caption-s sp-st-legal">
         <LegalLinks />
       </p>

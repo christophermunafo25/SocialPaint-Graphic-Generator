@@ -104,3 +104,99 @@
   gap: var(--space-sm);
   color: var(--text-strong);
 }
+
+/* The toast: centred on the page column, 75 above the window's foot,
+   sticky while the page scrolls (as Brand Studio's). The anchor takes no
+   room. */
+.sp-st-toast-anchor {
+  position: sticky;
+  bottom: calc(75px + var(--dev-banner-h, 0px));
+  z-index: var(--z-sticky);
+  display: flex;
+  justify-content: center;
+  height: 0;
+}
+.sp-st-toast-anchor > .ui-toast {
+  position: absolute;
+  bottom: 0;
+  max-width: min(560px, calc(100vw - 32px));
+}
+
+/* A meta line or a quiet word: 12 Medium on text/secondary. */
+.sp-st-meta {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.sp-st-empty {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+/* ── People (13:14769) ── */
+/* The invite row (13:14901): the email, the role (140), Invite; 8 apart. */
+.sp-st-invite {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+.sp-st-invite > .ui-input {
+  flex: 1;
+  min-width: 0;
+}
+.sp-st-invite__role {
+  flex: none;
+  width: 140px;
+}
+/* Rows 12 apart inside, 12 above and below, divided (13:14910). */
+.sp-st-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-st-list > li + li {
+  border-top: 1px solid var(--border-default);
+}
+.sp-st-member {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) 0;
+  color: var(--text-strong);
+}
+.sp-st-member__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* as drawn (13:14932) */
+}
+.sp-st-member__name {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+.sp-st-member__name > :first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sp-st-member__role {
+  flex: none;
+  width: 120px;
+}
+.sp-st-show-all {
+  align-self: flex-start;
+  border-radius: var(--radius-control);
+  color: var(--text-strong);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+@media (max-width: 599.98px) {
+  .sp-st-invite {
+    flex-wrap: wrap;
+  }
+  .sp-st-invite > .ui-input {
+    flex-basis: 100%;
+  }
+}
