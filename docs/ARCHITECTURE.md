@@ -59,7 +59,8 @@ from the platform in migration 0009.)
 - `companies`, `users`, `memberships` (role: `admin` | `member`)
 - `brand_kits` (palette jsonb, `type_styles` jsonb — the brand rules engine's
   named roles, `guidelines` jsonb — accepted free-text rules, heading/body
-  font refs, primary logo) — one active per company. Unlimited colors, type
+  font refs (unread since migration 0042; the font roles live on the type
+  styles), primary logo) — one active per company. Unlimited colors, type
   styles, and rules.
 - `brand_assets` (logo | font | image; Storage-backed)
 - `company_canvas_presets` — per-workspace canvas-size opt-outs, keyed by
@@ -277,6 +278,12 @@ account gear and holds People (`/people` and `/settings/team` redirect there), w
 switching (the Workspaces card) and sign out; on the local backend the dev role switch
 sits in `DevBackendBanner`. What each role reaches is `screenFor` (`src/app/router.tsx`)
 and `settingsSections.ts`, pinned by `src/app/routes.test.ts`.
+
+Brand Studio is on the new look (Phase 6; styles in `src/styles/brand-studio.css`, the
+`sp-bs-*` classes). Detail pages head themselves with `BreadcrumbHeader` (save status and
+Undo on the right); file rows and cards carry `RowMenu` / `RowContextMenu` (the same menu
+on right-click); preview cards use `PreviewOverlay decorative`. Escape on an in-place edit
+also drops that edit's undo steps (`brand.cancelTo`).
 
 Brand Templates is on the new look (Phase 4; styles in `src/styles/brand-templates.css`).
 The library's template card is one button that steps through its looks on hover. A page
@@ -730,6 +737,15 @@ property a style defines is an enforced rule ("Heading is always UPPERCASE",
 "Body never exceeds 120 characters"): fields bind via `typeStyleKey`, the
 builder locks the bound controls, and `resolveFieldStyle` applies the style at
 render time so a Brand Studio change restyles every template instantly.
+
+**Font roles** (migration 0042, `src/lib/brand/fontRoles.ts`): one type style
+holds `useFor: "heading"` and one `"body"`, set with the Use for chips in the
+style's All properties. New builder text and starter slots copy the role
+style's face (no binding); fonts load from the faces the styles use; the setup
+strip's fonts check is ready when both roles are held. Kits stored before the
+migration are given roles as they load (`withFontRoles`), by the same rule
+the SQL runs. `brand_kits.heading_font` / `body_font` stay in the table,
+unread, until Phase 9 of the new look.
 
 **Design-system import** (file-based, not a live connector): a design-tokens
 JSON (e.g. a Claude Design `tokens.json` export — W3C or flat formats) fills

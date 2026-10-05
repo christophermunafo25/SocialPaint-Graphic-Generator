@@ -233,6 +233,7 @@ Numbered as in the draft. CJ's list covered D1, D2, D3, D6 and D7 to D9; D4, D5,
 3. **D3. Font roles move to type styles,** with a **"Use for"** setting drawn in Type styles · All properties (13:11196 / 13:11730): None, Heading and Body as ChoiceChips, inline beside "Always uppercase" and "Shrink to fit the box", like the color editor's Role row. One style holds each role, and picking a role for another style moves it there, with a toast like the color roles'.
    - New text in the builder binds to the style used for Heading, instead of copying the heading face.
    - Starter seeding binds display slots to the Heading style and body slots to the Body style.
+   - **Revised during the build (CJ, 2026-10-05): take the face, don't bind.** A bound field takes every property its style defines (size, color, case), which would restyle starters and new text beyond their face. New builder text and starter slots copy the face of the Heading or Body role style instead (`roleFace`), with no binding.
    - Fonts load from the faces the type styles use, and the builder's "Brand fonts" group lists those faces plus uploaded fonts.
    - The setup strip's fonts check moves to Type styles: ready when one style is used for Heading and one for Body.
    - Drop the unused `--brand-font-heading` and `--brand-font-body` variables.

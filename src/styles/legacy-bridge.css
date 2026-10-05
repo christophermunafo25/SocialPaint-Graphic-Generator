@@ -5,8 +5,8 @@
    name is bridged only when every rule that reads it plays the same role in
    Figma. Names used in more than one role stay on their legacy values until
    the phase that rebuilds their components (see docs/design/new-look/BRIDGE.md):
-   --nav-active-bg, --nav-active-fg, --media-overlay, --edit-chip-bg,
-   --shadow-rest, --radius-control-lg.
+   --nav-active-bg, --nav-active-fg, --media-overlay, --shadow-rest,
+   --radius-control-lg.
 
    Remove a line here when its last reader moves to the Figma token. */
 
@@ -22,7 +22,6 @@
   --gen-on-inverse: var(--text-inverse);
   --fill-action: var(--surface-inverse);
   --text-on-action: var(--text-inverse);
-  --tag-bg-on-media: var(--tag-overlay-bg);
 
   /* Error red (#D43535 Light, #EC5656 Dark) */
   --state-danger: var(--state-error);

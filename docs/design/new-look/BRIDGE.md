@@ -41,7 +41,6 @@ The `.sp-gate[data-theme="dark"] .sp-gate__panel` override of `--input-bg` stays
 | `--gen-on-inverse` | `--text-inverse` | None |
 | `--fill-action` | `--surface-inverse` | Light `#272727` → `#0B0B0C`; Dark `#F1F1F1` → `#FFFFFF` |
 | `--text-on-action` | `--text-inverse` | Light `#F1F1F1` → `#FFFFFF`; Dark `#272727` → `#0B0B0C` |
-| `--tag-bg-on-media` | `--tag-overlay-bg` | None |
 | `--state-danger`, `--state-danger-on-surface` | `--state-error` | `#C94040` → `#D43535`; Dark `#E57373` → `#EC5656` |
 | `--btn-primary-bg-hover` | `--btn-primary-bg` under `--state-hover-inverse` | Follows the new primary pair (the old mix toward `--fill-action` would flash ink) |
 | `--shadow-card`, `--shadow-rail` | Elevation/Small's drop: `2px 2px 8px 0 var(--shadow-raised)` | 6/6 blur 25 → 2/2 blur 8. The old Dark bevel (`--card-highlight`) already matches Figma's |
@@ -54,8 +53,7 @@ Names defined from these follow them: `--primary`, `--primary-foreground`, `--ac
 |---|---|---|---|
 | `--nav-active-bg` | Selected segments (`.sp-seg`, `.sp-segmented__option`), tab strip tabs, choice tiles, selected chips, the size gallery rail (`.sp-railitem`). The sidebar and the Settings rail moved to primitives in Phase 3 | `--control-fill` (rail), `--control-thumb` (segments and tabs), `--chip-selected-bg` or `--surface-inverse` (chips) | 6, 7 and 8; the Template Builder's controls in 9 |
 | `--nav-active-fg` | Wherever `--nav-active-bg` is (the sidebar row moved to NavItem in Phase 3) | `--text-strong` | 6, 7 and 8; the Template Builder's controls in 9 |
-| `--media-overlay` | `.sp-edit-overlay` (Brand Studio's preview hover) and `.sp-chat-editor-sheet__scrim` (the chats' editor as a sheet below 1180) | `--overlay-hover` and `--overlay-scrim` | 6 (Brand Templates' previews moved to PreviewOverlay in 4, Generate's in 5); the sheet's scrim when the chats' layout moves |
-| `--edit-chip-bg` | `.sp-edit-overlay__chip` (Brand Studio), whose icon reads `--text-primary` | `--overlay-control` under `--overlay-control-fg` (bridging only the fill would put a white icon on a white chip in Dark) | 6 |
+| `--media-overlay` | `.sp-chat-editor-sheet__scrim` (the chats' editor as a sheet below 1180). Brand Studio's `.sp-edit-overlay` left in Phase 6 for PreviewOverlay | `--overlay-scrim` | When the chats' layout moves |
 | `--shadow-rest` | The legacy platform chips and filter bar search field (the Template Builder and the size gallery; Brand Templates moved off them in Phase 4, Generate History in 5), and the tooltip | The elevation each Figma component uses | 8 and 9 |
 | `--radius-control-lg` (12) | Large buttons and inputs (`.sp-btn-lg`, `.sp-input-lg`), the import popover, the build picker card, gate controls (both chats moved to the primitives in Phases 4 and 5) | 9 for controls, 16 for popovers, 20 for cards | 6 to 8; the build picker and import popover in 9; the gate keeps 12 |
 
