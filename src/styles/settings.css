@@ -362,3 +362,20 @@
 .sp-st-appearance > .ui-segment {
   flex: 1;
 }
+
+/* ── Advanced (13:15837) ── */
+/* The member select, then Transfer, 8 apart (13:15977). */
+.sp-st-transfer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+.sp-st-transfer > .ui-select {
+  flex: 1;
+  min-width: 0;
+}
+.sp-st-confirm__list {
+  margin: 0;
+  padding-left: 18px;
+  list-style: disc;
+}
