@@ -1234,6 +1234,9 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 .ui-metric {
   gap: var(--space-xs);
 }
+.ui-metric__sub {
+  color: var(--text-secondary);
+}
 
 /* ── Modal (58:484) ── */
 .ui-modal-scrim {

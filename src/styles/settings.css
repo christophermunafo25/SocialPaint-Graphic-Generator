@@ -228,3 +228,28 @@
   flex: 1;
   min-width: 0;
 }
+
+/* ── Plan & usage (13:15203) ── */
+/* Stats in three equal columns, 24 apart (13:15341, 13:15371). */
+.sp-st-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-md);
+}
+/* The month's four metrics, equal columns 16 apart (13:15354). */
+.sp-st-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: start;
+  gap: var(--space-sm);
+}
+@media (max-width: 767.98px) {
+  .sp-st-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.sp-st-bone {
+  display: block;
+  border-radius: var(--radius-xs);
+  background: var(--surface-sunken);
+}

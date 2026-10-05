@@ -109,6 +109,9 @@ export function exactMonthStartIso(timeZone: string, now: Date = new Date()): st
 
 const compact = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 });
 
+/** A token count as Settings' AI usage card shows it: "1.2M", "318.4K". */
+export const compactCount = (n: number): string => compact.format(n);
+
 /** Settings' AI usage line (template-chat PROMPT §15, proposed copy):
  * "128 requests · 412K tokens in · 38K out, this month". */
 export function aiUsageLine(u: { requests: number; inputTokens: number; outputTokens: number }) {
