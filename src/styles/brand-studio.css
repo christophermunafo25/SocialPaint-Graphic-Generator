@@ -59,3 +59,125 @@
   bottom: 0;
   max-width: min(560px, calc(100vw - 32px));
 }
+
+/* A save error under the header. */
+.sp-bs-error {
+  margin: 0 0 var(--space-md);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-control-md);
+  background: color-mix(in srgb, var(--state-error) 10%, transparent);
+  color: var(--state-error);
+}
+/* A loading stand-in: a sunken bar. */
+.sp-bs-bone {
+  display: block;
+  border-radius: var(--radius-xs);
+  background: var(--surface-sunken);
+}
+
+/* ── Overview (13:9043) ── */
+.sp-bs-overview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+/* The setup strip: the status and the reason on one baseline row, the five
+   bars under them, and the action. */
+.sp-bs-strip {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+  color: var(--text-strong);
+}
+.sp-bs-strip__progress {
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* as drawn */
+  min-width: 0;
+}
+.sp-bs-strip__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-xs);
+  margin: 0;
+}
+.sp-bs-strip__reason {
+  color: var(--text-secondary);
+}
+.sp-bs-strip__bars {
+  display: flex;
+  gap: var(--space-3xs);
+}
+.sp-bs-strip__bar {
+  width: 32px;
+  height: 4px;
+  border-radius: var(--radius-xs);
+  background: var(--surface-sunken);
+}
+.sp-bs-strip__bar[data-ready="true"] {
+  background: var(--surface-inverse);
+}
+
+/* Three columns of category cards, 16 apart; two under 1024, one under 480. */
+.sp-bs-overview__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+@media (max-width: 1023.98px) {
+  .sp-bs-overview__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 479.98px) {
+  .sp-bs-overview__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.sp-bs-cat {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: var(--space-2xs);
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+  color: var(--text-strong);
+  text-decoration: none;
+}
+.sp-bs-cat__cover {
+  display: block;
+  aspect-ratio: 3 / 2;
+  border-radius: var(--radius-media-plate);
+  background: var(--surface-sunken);
+}
+.sp-bs-cat__cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.sp-bs-cat__meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xs);
+  min-width: 0;
+  padding: var(--space-sm) var(--space-2xs) var(--space-2xs);
+}
+.sp-bs-cat__title,
+.sp-bs-cat__count {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-bs-cat__count {
+  color: var(--text-secondary);
+}

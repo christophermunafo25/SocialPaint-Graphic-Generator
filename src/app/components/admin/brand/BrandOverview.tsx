@@ -1,12 +1,11 @@
 import React, { useState } from "react";
 import { useBrand } from "@/lib/brand/BrandContext";
 import { routeToUrl, useRouter, type BrandCategory } from "../../../router";
-import { Bone } from "../../Skeleton";
 import { PageHeader } from "../../layout/Page";
+import { Button, PreviewOverlay } from "../../primitives";
 import { requestAddFlow } from "./addFlow";
 import { CATEGORY_ORDER, CATEGORY_TITLES, categoryCount } from "./categories";
 import type { BrandDraft } from "./kitPlumbing";
-import { EditOverlay } from "./primitives/EditOverlay";
 import { useLinkClick } from "./useLinkClick";
 import coverColors from "@/assets/socialpaint/brand-studio/brand-studio-cover-colors.webp";
 import coverLogos from "@/assets/socialpaint/brand-studio/brand-studio-cover-logos.webp";
@@ -45,9 +44,10 @@ const readDismissed = (companyId: string | undefined): boolean => {
   }
 };
 
-/** The overview: the setup strip, then three even columns of lifted
- * category cards — each a REAL link to its detail page, editable through
- * the cover's overlay affordance (D8). */
+/** The overview (13:9043): the setup strip, then three columns of category
+ * cards. Each card is a REAL link to its detail page; its cover carries the
+ * edit overlay on hover and keyboard focus, drawn as part of the card
+ * (PHASE-6 §9 D8). */
 export function BrandOverview({ brand, companyId }: { brand: BrandDraft; companyId?: string }) {
   const linkClick = useLinkClick();
   const { navigate } = useRouter();
@@ -115,91 +115,81 @@ export function BrandOverview({ brand, companyId }: { brand: BrandDraft; company
     <>
       <PageHeader title="Brand Studio" />
 
-      {brand.error && (
-        <p
-          className="mb-5 text-sm px-4 py-3"
-          data-radius-card
-          role="alert"
-          style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}
-        >
-          {brand.error}
-        </p>
-      )}
+      <div className="sp-bs-overview">
+        {brand.error && (
+          <p className="t-body-s sp-bs-error" role="alert">
+            {brand.error}
+          </p>
+        )}
 
-      {showStrip && (
-        <section className="sp-card sp-setup-strip">
-          <div className="min-w-0">
-            <p
-              style={{
-                fontFamily: "var(--font-ui)",
-                fontWeight: "var(--weight-ui)" as React.CSSProperties["fontWeight"],
-                fontSize: "var(--type-label-size)",
-                color: "var(--text-primary)",
-              }}
-            >
-              {allReady ? "All 5 sections ready" : `${readyCount} of 5 sections ready`}
-            </p>
-            <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
-              {allReady ? "Your templates have everything they draw from." : firstUnfinished.reason}
-            </p>
-            <div className="sp-setup-strip__bars" aria-hidden>
-              {sections.map((s) => (
-                <span key={s.category} className="sp-setup-strip__bar" data-ready={s.ready} />
-              ))}
+        {showStrip && (
+          <section className="sp-bs-strip" aria-label="Setup">
+            <div className="sp-bs-strip__progress">
+              <p className="sp-bs-strip__status">
+                <span className="t-button-m">
+                  {allReady ? "All 5 sections ready" : `${readyCount} of 5 sections ready`}
+                </span>
+                {!allReady && (
+                  <span className="t-label-xs sp-bs-strip__reason">{firstUnfinished.reason}</span>
+                )}
+              </p>
+              <div className="sp-bs-strip__bars" aria-hidden>
+                {sections.map((s) => (
+                  <span key={s.category} className="sp-bs-strip__bar" data-ready={s.ready} />
+                ))}
+              </div>
             </div>
+            {allReady ? (
+              <Button kind="neutral" onClick={dismiss}>
+                Dismiss
+              </Button>
+            ) : (
+              <Button kind="primary" onClick={() => startAddFlow(firstUnfinished)}>
+                {firstUnfinished.action}
+              </Button>
+            )}
+          </section>
+        )}
+
+        {loading ? (
+          <div className="sp-bs-overview__grid" aria-busy="true" aria-label="Loading Brand Studio">
+            {CATEGORY_ORDER.map((category) => (
+              <div key={category} className="sp-bs-cat" aria-hidden>
+                <span className="sp-bs-cat__cover" />
+                <span className="sp-bs-cat__meta">
+                  <span className="sp-bs-bone" style={{ width: 64, height: 10 }} />
+                  <span className="sp-bs-bone" style={{ width: 48, height: 8 }} />
+                </span>
+              </div>
+            ))}
           </div>
-          {allReady ? (
-            <button className="sp-btn sp-btn-tertiary flex-shrink-0" onClick={dismiss}>
-              Dismiss
-            </button>
-          ) : (
-            <button
-              className="sp-btn sp-btn-primary flex-shrink-0"
-              onClick={() => startAddFlow(firstUnfinished)}
-            >
-              {firstUnfinished.action}
-            </button>
-          )}
-        </section>
-      )}
-
-      {loading ? (
-        <div className="sp-brand-overview-grid" aria-busy="true" aria-label="Loading Brand Studio">
-          {CATEGORY_ORDER.map((category) => (
-            <div key={category} className="sp-card sp-overview-card" aria-hidden>
-              <Bone w="100%" h="auto" r="var(--radius-media)" style={{ aspectRatio: "3 / 2" }} />
-              <span className="sp-overview-card__label-row">
-                <Bone w={64} h={13} />
-                <Bone w={48} h={10} />
-              </span>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="sp-brand-overview-grid">
-          {CATEGORY_ORDER.map((category) => {
-            const route = { name: "brandStudio" as const, category };
-            return (
-              <a
-                key={category}
-                href={routeToUrl(route)}
-                onClick={linkClick(route)}
-                aria-label={`Edit ${CATEGORY_TITLES[category]}`}
-                className="sp-card sp-overview-card sp-has-overlay"
-              >
-                <span className="sp-overview-card__cover">
-                  <img src={COVERS[category]} alt="" />
-                  <EditOverlay />
-                </span>
-                <span className="sp-overview-card__label-row">
-                  <span className="sp-overview-card__name">{CATEGORY_TITLES[category]}</span>
-                  <span className="sp-eyebrow">{categoryCount(category, draft, assets)}</span>
-                </span>
-              </a>
-            );
-          })}
-        </div>
-      )}
+        ) : (
+          <div className="sp-bs-overview__grid">
+            {CATEGORY_ORDER.map((category) => {
+              const route = { name: "brandStudio" as const, category };
+              return (
+                <a
+                  key={category}
+                  href={routeToUrl(route)}
+                  onClick={linkClick(route)}
+                  aria-label={`Edit ${CATEGORY_TITLES[category]}`}
+                  className="ui-ring sp-bs-cat"
+                >
+                  <PreviewOverlay decorative className="sp-bs-cat__cover">
+                    <img src={COVERS[category]} alt="" />
+                  </PreviewOverlay>
+                  <span className="sp-bs-cat__meta">
+                    <span className="t-label-l sp-bs-cat__title">{CATEGORY_TITLES[category]}</span>
+                    <span className="t-label-xs sp-bs-cat__count">
+                      {categoryCount(category, draft, assets)}
+                    </span>
+                  </span>
+                </a>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </>
   );
 }

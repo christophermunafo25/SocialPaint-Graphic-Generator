@@ -219,8 +219,8 @@ Build to Part D, per §9 D6, D7 and D11.
 | Popover placement | Left-aligned 10 below the card; right-aligned in the last column; above the card when there is no room below. |
 | Specimens | Size, family and weight from the tenant's data, inline: an exception to RULES §5, since a specimen previews tenant content, not chrome. |
 | Inline value input | `Input` sm (32); the frame draws 28, which no Input size has. |
-| Toasts | The `Toast` primitive, centred on the page area 24 above the legal links; the frames' 5px stroke is not a token. |
-| Covers | Exported as WebP at 2x the card's plate (624 × 416) under today's file names; the Figma PNGs stay in `reference/covers/`. Images' export waits on D1. |
+| Toasts | The `Toast` primitive, centred on the page column 32 above the legal links (75 above the window's foot), as drawn; the frames' 5px stroke is not a token. |
+| Covers | WebP at the source's 708 × 474 (above 2x the card's plate) under today's file names; the Figma PNGs stay in `reference/covers/`. Images' export waits on D1. |
 | Page heading | The current crumb is the h1 (`BreadcrumbHeader`), as on the other breadcrumb pages. |
 | Import button | Button primary; disabled at 40% until the field holds a link (today's rule), not the frames' neutral-at-40% look. |
 

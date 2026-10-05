@@ -29,12 +29,7 @@ export function BrandDetail({ category, surface, brand, bindings }: BrandDetailP
     <>
       <BrandDetailHeader title={CATEGORY_TITLES[category]} brand={brand} />
       {brand.error && (
-        <p
-          className="mb-5 text-sm px-4 py-3"
-          data-radius-card
-          role="alert"
-          style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}
-        >
+        <p className="t-body-s sp-bs-error" role="alert">
           {brand.error}
         </p>
       )}
