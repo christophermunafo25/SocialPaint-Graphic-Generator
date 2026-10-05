@@ -85,6 +85,11 @@
   white-space: nowrap;
   -webkit-tap-highlight-color: transparent;
 }
+/* Text people type wraps as they type: the one-line rule is for labels,
+   never a textarea (the Composer, TextArea). Their own line breaks stay. */
+textarea.ui-reset {
+  white-space: pre-wrap;
+}
 button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   cursor: pointer;
 }
