@@ -9,13 +9,16 @@ export interface InPlaceEdit {
   start(id: string): void;
   /** Close, keeping every commit made while editing. */
   done(): void;
-  /** Close and restore the draft to where `start` found it — no toast. */
+  /** Close and restore the draft to where `start` found it, dropping the
+   * undo steps the edit recorded — no toast. */
   cancel(): void;
 }
 
 /** In-place editing for the detail pages (one card at a time). `start`
- * records the draft snapshot; `cancel` restores it through `brand.undo`
- * (which shows no toast); `done` keeps the committed changes. On exit,
+ * records the draft snapshot and the undo stack's depth; `cancel` restores
+ * the snapshot and drops every step recorded since (PHASE-6 §9 D7 to D9:
+ * Undo can't reapply part of a cancelled edit); `done` keeps the committed
+ * changes. On exit,
  * focus returns to the item — pages mark each resting card with
  * `data-edit-item={id}` so the hook can find it after the swap back.
  * Asset-store edits (a logo's name) are outside the kit draft and are not
@@ -23,6 +26,7 @@ export interface InPlaceEdit {
 export function useInPlaceEdit(brand: BrandDraft): InPlaceEdit {
   const [editingId, setEditingId] = useState<string | null>(null);
   const snapshot = useRef<KitShape | null>(null);
+  const depth = useRef(0);
   const brandRef = useRef(brand);
   brandRef.current = brand;
 
@@ -37,6 +41,7 @@ export function useInPlaceEdit(brand: BrandDraft): InPlaceEdit {
     setEditingId((current) => {
       if (current === id) return current;
       snapshot.current = brandRef.current.draft;
+      depth.current = brandRef.current.historyDepth;
       return id;
     });
   }, []);
@@ -56,7 +61,7 @@ export function useInPlaceEdit(brand: BrandDraft): InPlaceEdit {
       focusItem(current);
       return null;
     });
-    if (snap && snap !== brandRef.current.draft) brandRef.current.undo(snap);
+    if (snap && snap !== brandRef.current.draft) brandRef.current.cancelTo(snap, depth.current);
   }, []);
 
   return { editingId, start, done, cancel };

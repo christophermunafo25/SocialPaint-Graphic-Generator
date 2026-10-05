@@ -3,6 +3,8 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { useUnsavedChangesWarning } from "@/lib/useUnsavedChangesWarning";
 import { type BrandCategory } from "../../router";
 import { Page } from "../layout/Page";
+import { LegalLinks } from "../generate/LegalLinks";
+import { Toast } from "../primitives";
 import { BrandDetail } from "./brand/BrandDetail";
 import { BrandOverview } from "./brand/BrandOverview";
 import type { LogoSurface } from "./brand/kitOps";
@@ -30,30 +32,29 @@ export function BrandStudio({
   useUnsavedChangesWarning(brand.pending || brand.saving);
 
   return (
-    <Page>
-      {category ? (
-        <BrandDetail category={category} surface={surface} brand={brand} bindings={bindings} />
-      ) : (
-        <BrandOverview brand={brand} companyId={company?.id} />
-      )}
+    <Page layout={{ className: "sp-bs-page" }}>
+      <div className="sp-bs-content">
+        {category ? (
+          <BrandDetail category={category} surface={surface} brand={brand} bindings={bindings} />
+        ) : (
+          <BrandOverview brand={brand} companyId={company?.id} />
+        )}
+      </div>
 
-      {brand.undoOffer && (
-        <div className="sp-toast" role="status" aria-live="polite">
-          <span
-            className="flex-1"
-            style={{ fontSize: "var(--type-label-size)", color: "var(--text-primary)" }}
-          >
-            {brand.undoOffer.message}
-          </span>
-          <button
-            onClick={() => brand.undo(brand.undoOffer?.snapshot)}
-            className="sp-btn sp-btn-ghost"
-            style={{ height: 28, padding: "0 10px", fontSize: "var(--type-caption-size)" }}
-          >
-            Undo
-          </button>
-        </div>
-      )}
+      {/* The toast (13:9850): the Toast primitive, centred on the page. */}
+      <div className="sp-bs-toast-anchor">
+        {brand.undoOffer && (
+          <Toast
+            message={brand.undoOffer.message}
+            actionLabel="Undo"
+            onAction={() => brand.undo(brand.undoOffer?.snapshot)}
+          />
+        )}
+      </div>
+
+      <p className="t-caption-s sp-bs-legal">
+        <LegalLinks />
+      </p>
     </Page>
   );
 }

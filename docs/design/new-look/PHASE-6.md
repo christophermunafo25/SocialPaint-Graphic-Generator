@@ -226,7 +226,7 @@ Build to Part D, per §9 D6, D7 and D11.
 
 ## 9. Decisions (CJ, 2026-10-05)
 
-Numbered as in the draft. CJ's list covered D1, D2, D3, D6 and D7 to D9; D4, D5, D11 and D12 are built as the draft recommended (marked "as recommended"), and half of D10 is open.
+Numbered as in the draft. CJ's list covered D1, D2, D3, D6 and D7 to D9; D4, D5, D11 and D12 are built as the draft recommended (marked "as recommended"), and the rest of D10 as CJ answered it.
 
 1. **D1. Covers.** Commit the new Colors, Logos, Fonts, Type styles and Import covers now. The new Images cover waits until CJ confirms the rights to its two photos ("Photo · Laptop in hard light" and "Photo · Hiring", from the brand file); today's Images cover stays meanwhile.
 2. **D2. Autosave.** Keep autosave and Undo. The editors' button reads **"Done"** (its layer is already named Done in the frames) and closes the editor; the header keeps "All changes saved".
@@ -256,6 +256,6 @@ Numbered as in the draft. CJ's list covered D1, D2, D3, D6 and D7 to D9; D4, D5,
    Keep the edit overlay on the Overview, color and logo cards, rebuilt on `PreviewOverlay`: the Deep Moss dim and the Edit circle as part of the card, `aria-hidden` and not a second button. This is CJ's Brand Studio direction (2026-09-15). Font rows, type style rows and image cards keep their row menus.
 
    As recommended, these stay too: "Saving…" / "Saved {time}" beside "All changes saved", live edits, click outside to finish, focus return, hex validation with `rgb()` input, the role toasts, Fonts' "Added" check, an uploading card for images, Import's Enter, drop on Choose, 1-second delay and error lines, and multi-file uploads. These drop as drawn: the ⌘Z hint (the shortcut stays), the Images empty-state helper, Import's helper lines, and the Fonts role tags, role menu and "Change face…".
-8. **D10. Type styles' range.** The Weight select lists the cuts the family ships ("500", "500 Italic"), as recommended. **Open:** CJ's D3 keeps the "Shrink to fit the box" chip beside Use for, so the draft's Text sizing select (Shrink to fit, Fill, Free) is not built; a style already set to Fill or Free keeps its value and shows the chip off. Ask CJ before Step 6 whether Fill and Free need a way in.
+8. **D10. Type styles' range.** The Weight select lists the cuts the family ships ("500", "500 Italic"), as recommended. Text sizing keeps the "Shrink to fit the box" chip only, as drawn (CJ, 2026-10-05): the chip sets Shrink, and a style already on Fill or Free keeps its setting and shows the chip off.
 9. **D11. Import** (as recommended). Figma and tokens.json only. When Figma isn't connected, the Figma card is disabled with "Connect Figma in Settings" linking to Settings › Integrations; on the local backend it stays hidden. A successful import clears the link. Every page keeps the same header.
 10. **D12. New accounts' default type styles** (as recommended). Heading / Subhead / Body in Montserrat / Inter stay, taking the onboarding faces when onboarding found some; the frames' Display / Heading / Body / Label set is sample content and is not seeded.

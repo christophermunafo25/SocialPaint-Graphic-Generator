@@ -597,6 +597,10 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 .ui-menu-item[data-demo-state="selected"] {
   background: var(--state-selected);
 }
+/* An action Undo can't bring back (removing a file): the error red. */
+.ui-menu-item[data-destructive] {
+  color: var(--state-error);
+}
 .ui-menu-item[data-dimmed] .ui-menu-item__label {
   color: var(--text-secondary);
 }
@@ -1054,6 +1058,24 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 .ui-preview[data-demo-state="focus"] .ui-preview__overlay {
   opacity: 1;
 }
+/* Decorative: the card around the preview is the control, so its hover
+   and keyboard focus show the overlay (hover only where hover exists). */
+.ui-preview[data-decorative] {
+  display: block;
+}
+@media (hover: hover) {
+  :is(a, button, [role="button"]):hover > .ui-preview[data-decorative] .ui-preview__overlay,
+  :is(a, button, [role="button"]):hover .ui-preview[data-decorative] .ui-preview__overlay {
+    opacity: 1;
+  }
+}
+:is(a, button, [role="button"]):focus-visible .ui-preview[data-decorative] .ui-preview__overlay {
+  opacity: 1;
+}
+.ui-preview[data-small] .ui-preview__edit {
+  width: 32px;
+  height: 32px;
+}
 .ui-preview__edit {
   display: inline-flex;
   align-items: center;
@@ -1295,6 +1317,23 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   height: 100%;
   border-radius: var(--radius-pill);
   background: var(--accent-green);
+}
+.ui-progress-bar[data-indeterminate] .ui-progress-bar__fill {
+  width: 40%;
+  animation: ui-progress-slide 1.2s ease-in-out infinite;
+}
+@keyframes ui-progress-slide {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-progress-bar[data-indeterminate] .ui-progress-bar__fill {
+    animation: none;
+  }
 }
 
 /* ── Composer (61:504): the chat box on surface/raised with Elevation/Small.

@@ -288,7 +288,9 @@ function LogoEditingCard({ asset, logos, brand, edit, primaryFor }: LogoEditingP
         asset.id,
         logos.filter((l) => l.id !== asset.id),
       );
-      if (Object.keys(patch).length) commit(patch);
+      // Not an undo step: Undo can't bring the file back, so it must not
+      // bring back a primary pointing at it either (PHASE-6 §9 D6).
+      brand.forgetAsset(asset.id, patch);
       await refresh();
       edit.done();
     } catch (e) {

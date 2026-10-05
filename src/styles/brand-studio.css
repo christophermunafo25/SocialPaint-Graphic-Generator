@@ -1,0 +1,61 @@
+/* ── Brand Studio on the new look (PHASE-6.md; frames 13:9043 to 13:12879) ──
+   The page column, the detail header's actions, the toast and the legal
+   links, then each page's parts. */
+
+/* The page column: the header, the content 24 under it, and the legal links
+   at the foot of a viewport-tall column (13:9173). */
+.sp-bs-page {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - var(--chrome-top));
+  padding-bottom: calc(28px + var(--dev-banner-h, 0px)); /* as drawn */
+}
+.sp-bs-content {
+  flex: 1 0 auto;
+}
+
+/* The detail header's actions (13:9388): the save status, 16, then Undo. */
+.sp-bs-head__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+.sp-bs-head__status {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* Terms and Privacy at the foot of every Brand Studio page, not underlined
+   (13:9173). */
+.sp-bs-legal {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-sm);
+  margin: 0;
+  padding-top: var(--space-xl);
+  color: var(--text-secondary);
+}
+.sp-bs-legal > a {
+  color: inherit;
+  text-decoration: none;
+}
+.sp-bs-legal > a:hover {
+  text-decoration: underline;
+}
+
+/* The toast (13:9850): centred on the page column, 75 above the window's
+   foot (32 above the legal links at rest), sticky while the page scrolls.
+   The anchor takes no room. */
+.sp-bs-toast-anchor {
+  position: sticky;
+  bottom: calc(75px + var(--dev-banner-h, 0px));
+  z-index: var(--z-sticky);
+  display: flex;
+  justify-content: center;
+  height: 0;
+}
+.sp-bs-toast-anchor > .ui-toast {
+  position: absolute;
+  bottom: 0;
+  max-width: min(560px, calc(100vw - 32px));
+}

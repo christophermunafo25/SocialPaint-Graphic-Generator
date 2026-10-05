@@ -482,6 +482,7 @@ function ContainersGroup() {
           <Progress value={1 / 3} label="1 of 3 · Reading your job post" />
         </div>
         <ProgressBar value={0.4} label="Importing" />
+        <ProgressBar label="Uploading" />
       </SettingsCard>
       <ModalPanel title="Public links" icon={Link}>
         <PublicLinksBody

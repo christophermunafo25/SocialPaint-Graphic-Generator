@@ -14,6 +14,13 @@ export interface PreviewOverlayProps {
   editRef?: React.Ref<HTMLButtonElement>;
   /** Extra attributes for the Edit button (aria-current, a description). */
   editProps?: React.ButtonHTMLAttributes<HTMLButtonElement>;
+  /** The card around the preview is itself the control (a link or a
+   * button): the dim and the Edit circle are drawn as part of it, shown on
+   * its hover and keyboard focus, `aria-hidden` and never a second button
+   * (Brand Studio's cards, PHASE-6 §9 D8). */
+  decorative?: boolean;
+  /** A smaller Edit circle, for a preview under 80 tall. */
+  small?: boolean;
   className?: string;
   "data-demo-state"?: DemoStateAttr;
 }
@@ -28,9 +35,28 @@ export function PreviewOverlay({
   editLabel = "Edit",
   editRef,
   editProps,
+  decorative = false,
+  small = false,
   className,
   "data-demo-state": demoState,
 }: PreviewOverlayProps) {
+  if (decorative) {
+    return (
+      <span
+        className={cx("ui-preview", className)}
+        data-decorative
+        data-small={small || undefined}
+        data-demo-state={demoState}
+      >
+        {children}
+        <span className="ui-preview__overlay" aria-hidden>
+          <span className="ui-preview__edit">
+            <Pencil size={small ? 16 : 20} className="ui-icon" />
+          </span>
+        </span>
+      </span>
+    );
+  }
   return (
     <div className={cx("ui-preview", className)} data-demo-state={demoState}>
       {children}
