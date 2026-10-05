@@ -125,18 +125,6 @@ export function loadingCount(loaded: number, columns: number): number {
   return cols - (loaded % cols);
 }
 
-/** The shapes of the loading cards that follow `loaded` chats: 4:5 and
- * 1.91:1, alternating by place in the grid (even places portrait), as the
- * frame draws its loading row, so the pattern carries on across pages. */
-export function loadingShapes(
-  loaded: number,
-  count: number = HISTORY_LOADING_CARDS,
-): Array<"portrait" | "landscape"> {
-  return Array.from({ length: count }, (_, i) =>
-    (loaded + i) % 2 === 0 ? "portrait" : "landscape",
-  );
-}
-
 /** What the live region says once a page lands (PROMPT §8.6, proposed
  * copy): "Showing 12 chats", "Showing 1 chat". */
 export function showingChats(n: number): string {

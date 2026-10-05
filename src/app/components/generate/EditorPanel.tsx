@@ -65,7 +65,7 @@ function focusTarget(control: HTMLElement): HTMLElement | null {
   if (!fileInput && control.getClientRects().length > 0) return control;
   return (
     control
-      .closest(".sp-chat-field")
+      .closest(".ui-field")
       ?.querySelector<HTMLElement>(
         'input:not([type="file"]), textarea, select, button, [tabindex="0"]',
       ) ?? null
@@ -78,7 +78,7 @@ function focusTarget(control: HTMLElement): HTMLElement | null {
  * they are (focus is moved with preventScroll). */
 function reveal(scroller: HTMLElement, el: HTMLElement, inset: number) {
   const box = scroller.getBoundingClientRect();
-  const rect = (el.closest(".sp-chat-field") ?? el).getBoundingClientRect();
+  const rect = (el.closest(".ui-field") ?? el).getBoundingClientRect();
   const top = box.top + inset;
   const bottom = box.bottom - inset;
   if (rect.top < top) scroller.scrollTop -= top - rect.top;

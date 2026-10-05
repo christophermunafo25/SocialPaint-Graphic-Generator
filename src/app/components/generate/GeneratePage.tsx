@@ -701,7 +701,7 @@ export function GenerateChat({
   const openDraftEditor = useCallback(
     (turnId: string, draftId: string) => {
       const preview = previews.current.get(draftId) ?? null;
-      openEditor(turnId, draftId, preview, preview?.closest(".sp-chat-draft") ?? null, null);
+      openEditor(turnId, draftId, preview, preview?.closest(".ui-result-card") ?? null, null);
     },
     [openEditor],
   );
@@ -735,7 +735,7 @@ export function GenerateChat({
       (from?.el?.isConnected ? from.el : null) ??
       (from ? previews.current.get(from.draftId) : undefined) ??
       null;
-    preserve(target?.closest(".sp-chat-draft") ?? target);
+    preserve(target?.closest(".ui-result-card") ?? target);
     returnFocus.current = target;
     opener.current = null;
     setEditor(null);
@@ -950,7 +950,7 @@ export function GenerateChat({
       }
       const gap = missing.find((f) => f.type !== "image") ?? missing[0] ?? { fieldKey: tooLong[0] };
       const preview = previews.current.get(draftId) ?? null;
-      const card = preview?.closest(".sp-chat-draft") ?? null;
+      const card = preview?.closest(".ui-result-card") ?? null;
       const active = document.activeElement;
       const from = active instanceof HTMLElement && card?.contains(active) ? active : preview;
       openEditor(turnId, draftId, from, card, {

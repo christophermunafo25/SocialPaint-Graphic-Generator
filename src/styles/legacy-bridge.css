@@ -33,8 +33,6 @@
      fill; the legacy hover mixed toward --fill-action, which would flash ink. */
   --btn-primary-bg-hover:
     linear-gradient(var(--state-hover-inverse), var(--state-hover-inverse)), var(--btn-primary-bg);
-  --gen-btn-accent-bg: var(--btn-primary-bg);
-  --gen-btn-accent-fg: var(--btn-primary-fg);
 
   /* Cards and the sidebar use Elevation/Small. The legacy bevel
      (--card-highlight) already matches Figma's, so only the drop changes. */

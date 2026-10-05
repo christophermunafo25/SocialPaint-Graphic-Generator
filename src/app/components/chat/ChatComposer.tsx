@@ -4,15 +4,12 @@ import type { PlatformId } from "@/lib/templates/platforms";
 import { MAX_BRIEF, MAX_VARIATIONS, MIN_VARIATIONS } from "@/lib/generate/chatReducer";
 import { upsertDetail, type DetailTagValue } from "@/lib/generate/details";
 import { UploadChipView } from "../imageUpload";
-import { useComposer, type ComposerProps } from "../generate/Composer";
+import { useComposer, type ComposerProps } from "./useComposer";
 import { DetailTag, SendButton, Stepper } from "../primitives";
 import { AttachMenu, type AttachMenuHandle } from "./AttachMenu";
 import { FileTile, PhotoTile, PlatformSelect } from "./Attachments";
 
-export interface ChatComposerProps extends Omit<
-  ComposerProps,
-  "size" | "platform" | "onPlatformChange" | "covered" | "variations" | "onVariationsChange"
-> {
+export interface ChatComposerProps extends ComposerProps {
   /** The Start state's platform hint (Generate only): the Compact select. */
   platform?: {
     value: PlatformId | null;
@@ -54,7 +51,7 @@ export function ChatComposer(props: ChatComposerProps) {
     onMenuOpenChange,
   } = props;
   const menuRef = useRef<AttachMenuHandle>(null);
-  const c = useComposer({ ...props, size: "compact", platform: undefined, variations: undefined });
+  const c = useComposer(props);
   return (
     <form
       {...c.dropProps}

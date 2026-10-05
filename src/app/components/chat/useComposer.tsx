@@ -3,25 +3,17 @@ import { useDropzone, type FileRejection } from "react-dropzone";
 import type { BrandAsset } from "@/lib/types";
 import type { ChatDocument, ChatPhoto } from "@/lib/generate/chat";
 import { DocumentReadError, readDocument } from "@/lib/generate/documentText";
-import { DEFAULT_VARIATIONS, MAX_BRIEF } from "@/lib/generate/chatReducer";
-import type { PlatformId } from "@/lib/templates/platforms";
 import { downscaleImage } from "@/lib/render/downscaleImage";
 import { loadDataUrl } from "@/lib/render/useDataUrl";
 import {
   MAX_UPLOAD_BYTES,
   MAX_UPLOAD_EDGE_PX,
   UPLOAD_ACCEPT,
-  UploadChipView,
   imageAspectOf,
   readAndDownscale,
   rejectionMessage,
   useUploadChip,
 } from "../imageUpload";
-import { AttachMenu } from "./AttachMenu";
-import { AttachmentThumb, FileAttachment } from "./AttachmentThumb";
-import { PlatformSelect } from "./PlatformSelect";
-import { SendButton } from "./SendButton";
-import { VariationsStepper } from "./VariationsStepper";
 
 /** The textarea grows with its text to this many lines, then scrolls. */
 const MAX_LINES = 6;
@@ -37,7 +29,6 @@ const fileProblem = (file: File): string | null =>
       : null;
 
 export interface ComposerProps {
-  size: "large" | "compact";
   value: string;
   onChange(next: string): void;
   /** The photo waiting to go with the next message. One per message:
@@ -56,67 +47,39 @@ export interface ComposerProps {
   onSubmit(): void;
   onStop(): void;
   placeholder: string;
-  // Large only: the toolbar's platform select and variations stepper. Each
-  // renders when its change handler is given.
-  platform?: PlatformId | null;
-  onPlatformChange?(next: PlatformId | null): void;
-  covered?: ReadonlySet<PlatformId> | null;
-  dimUncovered?: boolean;
-  variations?: number;
-  onVariationsChange?(next: number): void;
   textareaRef?: React.Ref<HTMLTextAreaElement>;
   /** Nothing more can be sent (the chat is full, PROMPT §9.8): the
-   * textarea, Send, Attach and the toolbar tiles are inert. Stop stays
-   * live while a run is in flight. Only compact composers are disabled
-   * today (the full chat's dock and the saved-chat loading sketch); the
-   * large composer's platform select and Variations stepper honour it as
-   * well, on purpose, so the prop means the same thing at either size. */
+   * textarea, Send, Attach and the toolbar's controls are inert. Stop
+   * stays live while a run is in flight. */
   disabled?: boolean;
 }
 
-/** The chat box (Option D, Figma sp-chat-box 483:787; Template chat PROMPT
- * §11.1): one <form> on the card surface recipe holding the attachments
- * row, the textarea and a toolbar.
- *
- *  - The toolbar's left holds the plus (the attach menu). Its right holds,
- *    on the Large size only, the platform select and the Variations
- *    stepper, then Send.
- *  - Large (the Start state): a 64px textarea when empty. Attached, the
- *    attachments row sits above the text and the textarea hugs its lines.
- *  - Compact (the thread, and both sizes of a template chat): the plus and
- *    Send only. A follow-up reuses the platform and variation count of the
- *    thread's last composer send, so neither control is here.
+/**
+ * The Composer's behaviour (chat/ChatComposer.tsx draws it, Figma 61:504).
  *
  * Enter sends and Shift+Enter breaks the line (not mid-composition, so an
  * IME's Enter still picks its candidate). The textarea grows with its text
  * to six lines, then scrolls. Send is ready when the trimmed text is
- * non-empty, nothing is running and no photo is still being read,
- * disabled otherwise, and Stop while a run is in flight; the text stays
- * editable through a run. The whole card
- * takes the focus-within halo that the old composer carried.
+ * non-empty, nothing is running and no photo is still being read, and Stop
+ * while a run is in flight; the text stays editable through a run.
  *
  * The photo pipeline is FieldInput's, from the shared module: pasting an
  * image anywhere in the card, dropping one on it, the native picker and a
  * Brand Studio pick all go through the same accept list, size cap,
  * downscale, rejection copy and upload chip, and land as one ChatPhoto
  * with its measured aspect. The photo is a data URL in page memory and
- * never leaves the browser: this component hands it to its owner and does
- * nothing else with it. No crop here: the drafts' photo slots have
- * different aspects, and the editor crops at the real slot's. When two
- * attaches overlap, the later one wins (and a removal cancels the one in
- * flight), so a slow read can never overwrite a newer choice.
+ * never leaves the browser: this hands it to its owner and does nothing
+ * else with it. No crop here: the drafts' photo slots have different
+ * aspects, and the editor crops at the real slot's. When two attaches
+ * overlap, the later one wins (and a removal cancels the one in flight),
+ * so a slow read can never overwrite a newer choice.
  *
  * A document (the File row) is read here too, in the browser, into its
  * text (documentText.ts): nothing uploads. It shares the upload chip while
  * it is read, and a refused one says why under the text and attaches
- * nothing. Files alone never make a message: Send needs text. */
-/** The chat box's behaviour, shared by the legacy chat box (Composer,
- * below) and the new look's Composer (chat/ChatComposer.tsx, the template
- * chat; PHASE-4 §9 D1): the photo and document pipelines, paste and drop,
- * Enter to send, Send and Stop, and the auto-grow. Phase 5 moves Generate
- * onto the new one and deletes the legacy view. */
+ * nothing. Files alone never make a message: Send needs text.
+ */
 export function useComposer({
-  size,
   value,
   photo,
   onPhotoChange,
@@ -362,7 +325,7 @@ export function useComposer({
     el.style.overflowY = full > cap ? "auto" : "hidden";
     el.scrollTop = scrollTop;
   }, []);
-  useLayoutEffect(fit, [fit, value, placeholder, size, attachedRow]);
+  useLayoutEffect(fit, [fit, value, placeholder, attachedRow]);
   // A width change rewraps the text: refit when the box gets narrower or
   // wider (its own height changes come back here too, and are ignored).
   useEffect(() => {
@@ -398,120 +361,4 @@ export function useComposer({
     takeDocument,
     takeAsset,
   };
-}
-
-export function Composer(props: ComposerProps) {
-  const {
-    size,
-    value,
-    onChange,
-    photo,
-    running,
-    placeholder,
-    platform,
-    onPlatformChange,
-    covered,
-    dimUncovered = false,
-    variations,
-    onVariationsChange,
-    disabled = false,
-    document: doc = null,
-  } = props;
-  const {
-    dropProps,
-    isDragActive,
-    rootRef,
-    onPaste,
-    setTextarea,
-    onKeyDown,
-    attachedRow,
-    chip,
-    removePhoto,
-    removeDocument,
-    photoError,
-    canSend,
-    stop,
-    submit,
-    stopping,
-    takeFile,
-    takeDocument,
-    takeAsset,
-  } = useComposer(props);
-  return (
-    <form
-      {...dropProps}
-      className="sp-card sp-chat-composer"
-      data-size={size}
-      data-attached={attachedRow || undefined}
-      data-drag-active={isDragActive || undefined}
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (!stopping.current) submit();
-      }}
-      onPaste={onPaste}
-    >
-      {/* FieldInput's non-visual counterpart of the drag highlight. */}
-      <span className="sr-only" role="status" aria-live="polite">
-        {isDragActive ? "Drop the image to upload" : ""}
-      </span>
-      {attachedRow && (
-        <div className="sp-chat-composer__attachments">
-          {photo && <AttachmentThumb src={photo.dataUrl} onRemove={removePhoto} />}
-          {doc && <FileAttachment name={doc.name} kind={doc.kind} onRemove={removeDocument} />}
-          {chip && (
-            <div className="sp-chat-composer__chip">
-              <UploadChipView chip={chip} />
-            </div>
-          )}
-        </div>
-      )}
-      <textarea
-        ref={setTextarea}
-        className="sp-chat-composer__input"
-        rows={1}
-        value={value}
-        maxLength={MAX_BRIEF}
-        placeholder={placeholder}
-        aria-label="Describe the post"
-        disabled={disabled}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={onKeyDown}
-      />
-      {photoError && (
-        <p role="alert" className="sp-chat-composer__error">
-          {photoError}
-        </p>
-      )}
-      <div className="sp-chat-composer__toolbar">
-        <div className="sp-chat-composer__lead">
-          <AttachMenu
-            containerRef={rootRef}
-            disabled={disabled}
-            onPickFile={(file) => takeFile(file, "upload")}
-            onPickDocument={takeDocument}
-            onPickAsset={takeAsset}
-          />
-        </div>
-        <div className="sp-chat-composer__tools">
-          {size === "large" && onPlatformChange && (
-            <PlatformSelect
-              value={platform ?? null}
-              onChange={onPlatformChange}
-              covered={covered ?? null}
-              dimUncovered={dimUncovered}
-              disabled={disabled}
-            />
-          )}
-          {size === "large" && onVariationsChange && (
-            <VariationsStepper
-              value={variations ?? DEFAULT_VARIATIONS}
-              onChange={onVariationsChange}
-              disabled={disabled}
-            />
-          )}
-          <SendButton state={running ? "stop" : canSend ? "ready" : "disabled"} onStop={stop} />
-        </div>
-      </div>
-    </form>
-  );
 }

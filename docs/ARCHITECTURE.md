@@ -285,8 +285,8 @@ under the library (the fill page, the template chat) heads itself with
 public link page) is a step form, one field per step on the Field primitive (a photo on the
 Upload control, whose picking and cropping is `imagePick.tsx`, shared with Generate's
 editor), then a finish step with the look, the caption with Copy and the downloads, beside
-a live Preview card. The template chat's Edit details is `details/DetailsPanel.tsx`: every
-field in one panel, with Close and Discard.
+a live Preview card. Both chats' Edit details is `details/DetailsPanel.tsx`: every
+field in one panel, with Close and Discard; Generate's adds a size switch and its own stage.
 
 ## PNG export
 
@@ -373,10 +373,11 @@ migration 0030, which is live on the linked project (applied 2026-09-03).
 A member describes a post in their own words and gets finished drafts back,
 filled into the company's published templates, then edits and downloads
 them without leaving the page. Generate is a chat at `/generate`: a Start
-state (greeting, composer, Start from chips, Recent), a thread of messages
-and assistant turns, an editor panel beside the thread, and a History page
-at `/generate/history`. A saved chat reopens at `/generate/c/<id>`. The
-design and behavior spec is `docs/design/generate-chat/PROMPT.md`.
+state (greeting, composer, Recent), a thread of messages and assistant
+turns, an editor panel beside the thread, and a History page at
+`/generate/history`. A saved chat reopens at `/generate/c/<id>`. The
+design and behavior spec is `docs/design/generate-chat/PROMPT.md`; the new
+look (Phase 5) is `docs/design/new-look/PHASE-5.md`.
 
 - **Pure modules**, unit-tested, in `src/lib/generate/`: the chat
   model (`chat.ts`) and its reducer (`chatReducer.ts`), one run
@@ -388,9 +389,13 @@ design and behavior spec is `docs/design/generate-chat/PROMPT.md`.
   `dataUrls.ts`, a leaf with no chat imports because both thread stores
   run it and the store layer reaches the public link page's bundle).
 - **Components** in `src/app/components/generate/`: `GeneratePage` (Start
-  and thread), `GenerateHistoryPage`, `EditorPanel`, the hooks that hold the
-  side effects (`useChatController`, `useThreadPersistence`,
-  `useDraftDownload`), and the `sp-chat-*` pieces.
+  and thread), `GenerateHistoryPage`, `EditorPanel`, and the hooks that hold
+  the side effects (`useChatController`, `useThreadPersistence`,
+  `useDraftDownload`). The chat's pieces on the new look, shared with the
+  template chat, are in `src/app/components/chat/`: `ChatComposer` (on
+  `useComposer`), `AttachMenu` (Upload, and Generate's Details), the
+  messages, `GenerateTurn` on the Result card primitive, `CaptionCard` and
+  `GenerateHeader`. Styles are `src/styles/generate.css`.
 - **Server**: `supabase/functions/template-generate/` (the function and its
   system prompt) and `_shared/generateValidate.ts` (every parser and
   validator, pure, so vitest runs the same code the function does).
@@ -407,7 +412,7 @@ without it the function answers 503 and says so.
 
 - **Library** (the default). The candidates are the company's published
   templates with their field lists (the 40 most recently updated, with a
-  warning past that). `templateIdHint` (a pinned Start from chip) narrows
+  warning past that). `templateIdHint` (the template chat) narrows
   them to one; `platformHint` narrows them to templates sized for that
   platform, or falls back to the whole library with a warning. One forced
   tool call (`propose_posts`): the model picks a `templateId` from the
@@ -423,6 +428,14 @@ without it the function answers 503 and says so.
   proposal carries its `design` and a synthetic `freestyle-N` templateId.
   The chat runs freestyle when the library is empty, for "Try another
   layout", and to revise freestyle drafts.
+
+**Details.** A Generate message can carry detail tags from the attach
+menu: Headline, Date & time, Location and Link, one of each, typed as
+text. They are not tied to a template, so they travel as `facts` (a kind
+and a value, `parseFacts`), quoted into the prompt for library and
+freestyle runs alike, and the model uses each as written wherever a field
+fits it. A run with facts never asks a question first. The template chat's
+`details` are different: field-keyed, applied verbatim to its one template.
 
 **Measure and repair in the browser.** Deno has no font stack, so the
 function can only count characters. `measureProposal` lays every value out
@@ -609,12 +622,15 @@ hands it to `GenerateChat` as `template`.
 
 - **Entry.** A Brand Templates card opens the fill page: filling in by hand
   is the default. The fill page offers "Use AI to assist", which opens the
-  chat, when the template is published and
-  `stores.generate.isTemplateChatAvailable()` (wherever Generate is
-  configured, and on the local backend in a development build, where a
-  stand-in in `src/lib/stores/local/templateChatStandIn.ts` fills the
-  template with the answers as typed and every other field with its
-  placeholder; Generate itself keeps reading `isConfigured()`).
+  chat, when the template is published and `stores.generate.isConfigured()`.
+  That one switch is true wherever the model is reachable, and on the local
+  backend in a development build, where a stand-in
+  (`src/lib/stores/local/templateChatStandIn.ts`, imported behind
+  `import.meta.env.DEV`) answers both chats: the template chat with the
+  answers as typed and every other field from its placeholder, Generate
+  with up to its count of published templates, those sized for the platform
+  hint first, filled from their placeholders and the message's details. It
+  refuses freestyle, which needs the model.
   The chat links back to the fill page ("Fill in by hand") and, for admins,
   Bulk fill and Public link. A template
   that is unpublished or not the company's shows "This template isn't

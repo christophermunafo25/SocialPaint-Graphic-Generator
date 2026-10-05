@@ -8,7 +8,7 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { useAsync } from "@/lib/useAsync";
 import { useRouter } from "../../router";
 import { Page } from "../layout/Page";
-import { ChatButton } from "./ChatButton";
+import { Button } from "../primitives";
 import { ChatLoading, ChatUnavailable } from "./ChatLoadStates";
 import { requestComposerFocus, requestHistoryFocus } from "./composerFocus";
 import { GenerateChat } from "./GeneratePage";
@@ -140,9 +140,9 @@ export function TemplateChatPage({
         <div className="sp-chat-start">
           <div className="sp-emptystate sp-tchat-gone" role="status">
             <p className="sp-emptystate__title">This template isn't available any more.</p>
-            <ChatButton kind="tertiary" size="small" onClick={brandTemplates}>
+            <Button kind="neutralOnPage" size="sm" onClick={brandTemplates}>
               Back to Brand Templates
-            </ChatButton>
+            </Button>
           </div>
         </div>
       </Page>
