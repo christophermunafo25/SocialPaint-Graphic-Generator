@@ -51,7 +51,7 @@ Names defined from these follow them: `--primary`, `--primary-foreground`, `--ac
 
 | Old name | Read by | Figma roles | Phase |
 |---|---|---|---|
-| `--nav-active-bg` | Selected segments (`.sp-seg`, `.sp-segmented__option`), tab strip tabs, choice tiles, selected chips, the size gallery rail (`.sp-railitem`). The sidebar and the Settings rail moved to primitives in Phase 3 | `--control-fill` (rail), `--control-thumb` (segments and tabs), `--chip-selected-bg` or `--surface-inverse` (chips) | 6, 7 and 8; the Template Builder's controls in 9 |
+| `--nav-active-bg` | Selected segments (`.sp-seg`, `.sp-segmented__option`), tab strip tabs, selected chips, the size gallery rail (`.sp-railitem`). The sidebar and the Settings rail moved to primitives in Phase 3, Settings' Appearance tiles in Phase 7 | `--control-fill` (rail), `--control-thumb` (segments and tabs), `--chip-selected-bg` or `--surface-inverse` (chips) | 6, 7 and 8; the Template Builder's controls in 9 |
 | `--nav-active-fg` | Wherever `--nav-active-bg` is (the sidebar row moved to NavItem in Phase 3) | `--text-strong` | 6, 7 and 8; the Template Builder's controls in 9 |
 | `--media-overlay` | `.sp-chat-editor-sheet__scrim` (the chats' editor as a sheet below 1180). Brand Studio's `.sp-edit-overlay` left in Phase 6 for PreviewOverlay | `--overlay-scrim` | When the chats' layout moves |
 | `--shadow-rest` | The legacy platform chips and filter bar search field (the Template Builder and the size gallery; Brand Templates moved off them in Phase 4, Generate History in 5), and the tooltip | The elevation each Figma component uses | 8 and 9 |

@@ -1,19 +1,25 @@
 import React from "react";
-import { Download, Eye, Layers, Users } from "lucide-react";
 import type { MonthlyUsage } from "@/lib/types";
+import type { Member } from "@/lib/stores/interfaces";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
-import { aiUsageLine, exactMonthStartIso } from "@/lib/stores/monthlyUsage";
+import { compactCount, exactMonthStartIso } from "@/lib/stores/monthlyUsage";
 import { ErrorState } from "../../ErrorState";
-import { Kpi } from "../Kpi";
-import { SkeletonKpi } from "../../Skeleton";
-import { SettingsCard } from "./settingsShared";
+import { Metric, SettingsCard, Stat } from "../../primitives";
 
-/** Read-only current-month usage, the AI usage card, and the Plan card. The
- * Plan card is a deliberate placeholder: it establishes WHERE billing lands
- * so adding it later is a change to one card — it does not invent tiers,
- * prices, or quotas. */
+const count = (n: number): string => n.toLocaleString("en");
+
+/** This workspace's admins, for the Plan card. A viewer here is an admin,
+ * so the count is never below one (the local backend lists nobody). */
+export function adminCount(members: Member[]): number {
+  return Math.max(1, members.filter((m) => m.role === "admin").length);
+}
+
+/** Settings › Plan & usage (13:15203): the Plan card, this month's figures
+ * on one card titled with the month, then AI usage. The Plan card is the
+ * no-plan state, "Early access", with real values only; plans, prices and
+ * their buttons arrive with billing in Phase 7b (PHASE-7 §9 D1, D12). */
 export function UsageSection() {
   const { company, role } = useAuth();
   const state = useAsync<MonthlyUsage | null>(
@@ -22,90 +28,77 @@ export function UsageSection() {
     [company],
   );
 
-  const monthName = new Date().toLocaleDateString(undefined, {
+  const monthName = new Date().toLocaleDateString("en-US", {
     month: "long",
     year: "numeric",
     timeZone: company?.timezone ?? undefined,
   });
 
   return (
-    <div className="space-y-6">
-      {state.status === "loading" ? (
-        <div
-          className="grid grid-cols-2 lg:grid-cols-4 gap-6"
-          aria-busy="true"
-          aria-label="Loading usage"
-        >
-          <SkeletonKpi />
-          <SkeletonKpi />
-          <SkeletonKpi />
-          <SkeletonKpi />
-        </div>
-      ) : state.status === "error" ? (
-        <ErrorState
-          title="We couldn't load this month's usage."
-          detail="Check your connection and try again."
-          onRetry={state.retry}
-        />
-      ) : state.data ? (
-        <>
-          <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
-            {monthName}, in the workspace timezone. The full history lives on Insights.
-          </p>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-            <Kpi
-              label="Exports"
-              value={state.data.downloads}
-              Icon={Download}
-              chip="var(--viz-series-1)"
-            />
-            <Kpi
-              label="Opens"
-              value={state.data.opens}
-              Icon={Eye}
-              chip="var(--viz-series-2)"
-              sub={
-                state.data.publicOpens > 0
-                  ? `${state.data.publicOpens} via public links`
-                  : undefined
-              }
-            />
-            <Kpi
-              label="Templates used"
-              value={state.data.templatesUsed}
-              Icon={Layers}
-              chip="var(--bg-hover)"
-              chipFg="var(--text-primary)"
-            />
-            <Kpi
-              label="Members active"
-              value={state.data.membersActive}
-              Icon={Users}
-              chip="var(--bg-hover)"
-              chipFg="var(--text-primary)"
-            />
+    <div className="sp-st-section">
+      {company && <PlanCard companyId={company.id} />}
+
+      <SettingsCard title={monthName}>
+        {state.status === "loading" ? (
+          <div className="sp-st-metrics" aria-busy="true" aria-label="Loading usage">
+            {Array.from({ length: 4 }, (_, i) => (
+              <span key={i} className="sp-st-bone" style={{ width: 96, height: 74 }} />
+            ))}
           </div>
-        </>
-      ) : null}
+        ) : state.status === "error" ? (
+          <ErrorState
+            title="We couldn't load this month's usage."
+            detail="Check your connection and try again."
+            onRetry={state.retry}
+          />
+        ) : (
+          state.data && (
+            <div className="sp-st-metrics">
+              <Metric label="Exports" value={count(state.data.downloads)} />
+              <Metric
+                label="Opens"
+                value={count(state.data.opens)}
+                sub={
+                  state.data.publicOpens > 0
+                    ? `${count(state.data.publicOpens)} via public links`
+                    : undefined
+                }
+              />
+              <Metric label="Templates used" value={count(state.data.templatesUsed)} />
+              <Metric label="Members active" value={count(state.data.membersActive)} />
+            </div>
+          )
+        )}
+      </SettingsCard>
 
       {role === "admin" && company && (
         <AiUsageCard companyId={company.id} timeZone={company.timezone} />
       )}
-
-      <SettingsCard title="Plan">
-        <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-primary)" }}>
-          Free, no limits enforced
-        </p>
-      </SettingsCard>
     </div>
+  );
+}
+
+/** The Plan card (13:15331) with no plan: "Early access", this workspace's
+ * admins (no limit) and Members "Unlimited". No Brands row and no buttons
+ * until Phase 7b; the header's action slot is where they will go. */
+function PlanCard({ companyId }: { companyId: string }) {
+  const members = useAsync(() => stores.people.list(companyId), [companyId]);
+  const admins = members.status === "ready" ? count(adminCount(members.data)) : "…";
+  return (
+    <SettingsCard title="Early access">
+      <div className="sp-st-stats">
+        <Stat label="Admins" value={admins} />
+        <Stat label="Members" value="Unlimited" />
+      </div>
+    </SettingsCard>
   );
 }
 
 /** "AI usage" (template-chat PROMPT §14): this calendar month's model
  * requests and tokens, in the workspace timezone, from every model call the
- * Edge Functions metered (ai_usage_events). Admins only; the card is left
- * out where the store has nothing to report (the localStorage backend). It
- * measures and nothing more: no quota, no limit. */
+ * Edge Functions metered (ai_usage_events). Admins only; left out where the
+ * store has nothing to report (the localStorage backend). It measures and
+ * nothing more: no quota, no limit. */
 function AiUsageCard({ companyId, timeZone }: { companyId: string; timeZone?: string }) {
   const state = useAsync(
     () => stores.usage.getAiUsage(companyId, exactMonthStartIso(timeZone ?? "UTC")),
@@ -115,9 +108,9 @@ function AiUsageCard({ companyId, timeZone }: { companyId: string; timeZone?: st
   return (
     <SettingsCard title="AI usage">
       {state.status === "loading" ? (
-        <div
-          className="sp-skeleton__block sp-skeleton__line"
-          style={{ width: 280 }}
+        <span
+          className="sp-st-bone"
+          style={{ width: 280, height: 39 }}
           aria-busy="true"
           aria-label="Loading AI usage"
         />
@@ -129,9 +122,11 @@ function AiUsageCard({ companyId, timeZone }: { companyId: string; timeZone?: st
         />
       ) : (
         state.data && (
-          <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-primary)" }}>
-            {aiUsageLine(state.data)}
-          </p>
+          <div className="sp-st-stats">
+            <Stat label="Requests" value={count(state.data.requests)} />
+            <Stat label="Tokens in" value={compactCount(state.data.inputTokens)} />
+            <Stat label="Tokens out" value={compactCount(state.data.outputTokens)} />
+          </div>
         )
       )}
     </SettingsCard>

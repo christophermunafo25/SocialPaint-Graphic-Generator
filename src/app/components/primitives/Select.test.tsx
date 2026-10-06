@@ -46,4 +46,20 @@ describe("Select", () => {
     expect(trigger.textContent).toContain("Moss");
     expect(document.activeElement).toBe(trigger);
   });
+
+  it("jumps to a typed prefix, open or closed (PHASE-7 §9 D7)", async () => {
+    render(<Controlled />);
+    const trigger = screen.getByRole("combobox", { name: "Look" });
+    trigger.focus();
+    // Typing on the closed trigger opens the list at the first match.
+    await userEvent.keyboard("o");
+    const listbox = screen.getByRole("listbox");
+    expect(listbox.getAttribute("aria-activedescendant")).toMatch(/opt-2$/);
+    // Inside the list, a new letter moves to its first match.
+    await new Promise((r) => setTimeout(r, 550));
+    await userEvent.keyboard("l");
+    expect(listbox.getAttribute("aria-activedescendant")).toMatch(/opt-1$/);
+    await userEvent.keyboard("{Enter}");
+    expect(trigger.textContent).toContain("Lime");
+  });
 });

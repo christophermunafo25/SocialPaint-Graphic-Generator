@@ -4,53 +4,54 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { useBrand } from "@/lib/brand/BrandContext";
 import { browserTimeZone, isValidSlug, listTimeZones, toSlug } from "@/lib/companySettings";
 import { normalizeWebsite } from "@/lib/companyWebsite";
-import { ConfirmDialog } from "../../ConfirmDialog";
-import { Switch } from "../../Switch";
 import { kitShape } from "../brand/kitPlumbing";
-import { ControlRow, SettingsCard } from "./settingsShared";
+import { Field, Input, Select, SettingsCard } from "../../primitives";
+import { ConfirmModal } from "./SettingsConfirm";
+import { SwitchRow } from "./settingsShared";
 import { WorkspacesCard } from "./WorkspacesCard";
 
-/** Workspace facts, finally editable: the workspaces you belong to, name,
- * slug, website, timezone, and the two brand enforcement switches. */
+/** Settings › Workspace (13:14570): the workspaces you belong to, then
+ * Workspace details (name, slug, website, timezone) and the two brand
+ * enforcement switches. Everything saves as it changes (PHASE-7 §9 D6). */
 export function WorkspaceSection() {
   const { company, role } = useAuth();
   const [error, setError] = useState<string | null>(null);
 
   if (!company) return null;
-  // A member reaches this section only to switch workspaces (PHASE-3.md §9):
-  // the Workspaces card, and nothing they cannot change.
-  if (role !== "admin") return <WorkspacesCard />;
+  // A member reaches this section only to switch workspaces (PHASE-3.md §9,
+  // PHASE-7 §9 D3): the Workspaces card, and nothing they cannot change.
+  if (role !== "admin") {
+    return (
+      <div className="sp-st-section">
+        <WorkspacesCard />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="sp-st-section">
       {error && (
-        <p
-          role="alert"
-          className="px-4 py-3"
-          data-radius-card
-          style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}
-        >
+        <p role="alert" className="t-body-s sp-st-error">
           {error}
         </p>
       )}
       <WorkspacesCard />
-      <SettingsCard title="Workspace">
-        <NameField onError={setError} />
-        <SlugField onError={setError} />
-        <WebsiteField onError={setError} />
-        <TimezoneField onError={setError} />
+      <SettingsCard title="Workspace details">
+        <div className="sp-st-grid">
+          <NameField onError={setError} />
+          <SlugField onError={setError} />
+          <WebsiteField onError={setError} />
+          <TimezoneField onError={setError} />
+        </div>
       </SettingsCard>
       <BrandEnforcementCard onError={setError} />
-      <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
-        Changes save as you make them. There is no page-level save button.
-      </p>
     </div>
   );
 }
 
-/** Company name: plain input, saves on blur, optimistic with rollback. The
- * sidebar reads the name from the auth provider's company list, so a save
- * refreshes it — no reload. */
+/** Company name: saves on blur, optimistic with rollback; an empty name
+ * puts the old one back. The sidebar reads the name from the auth
+ * provider's company list, so a save refreshes it, no reload. */
 function NameField({ onError }: { onError(msg: string | null): void }) {
   const { company, refresh } = useAuth();
   const [value, setValue] = useState(company?.name ?? "");
@@ -79,32 +80,23 @@ function NameField({ onError }: { onError(msg: string | null): void }) {
   };
 
   return (
-    <div>
-      <label
-        htmlFor="ws-name"
-        className="sp-eyebrow block"
-        style={{ marginBottom: "var(--space-3xs)" }}
-      >
-        Name
-      </label>
-      <input
-        id="ws-name"
+    <Field label="Name">
+      <Input
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onBlur={() => void save()}
         onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
         maxLength={80}
         disabled={saving}
-        className="sp-input"
       />
-    </div>
+    </Field>
   );
 }
 
 /** Company website: saved as a bare domain plus optional path
  * (companyWebsite.ts owns the rule). Saves on blur like the name; an entry
- * that does not parse as a domain rolls back with an inline explanation
- * rather than storing junk. Clearing the field clears the column. */
+ * that does not parse as a domain rolls back and says why on the error
+ * line. Clearing the field clears the column. */
 function WebsiteField({ onError }: { onError(msg: string | null): void }) {
   const { company, refresh } = useAuth();
   const [value, setValue] = useState(company?.website ?? "");
@@ -141,16 +133,11 @@ function WebsiteField({ onError }: { onError(msg: string | null): void }) {
   };
 
   return (
-    <div>
-      <label
-        htmlFor="ws-website"
-        className="sp-eyebrow block"
-        style={{ marginBottom: "var(--space-3xs)" }}
-      >
-        Website
-      </label>
-      <input
-        id="ws-website"
+    <Field
+      label="Website"
+      error={invalid ? "That does not look like a domain. Try something like acme.com." : null}
+    >
+      <Input
         value={value}
         onChange={(e) => {
           setValue(e.target.value);
@@ -163,44 +150,34 @@ function WebsiteField({ onError }: { onError(msg: string | null): void }) {
         disabled={saving}
         spellCheck={false}
         autoComplete="url"
-        className="sp-input"
       />
-      <p
-        style={{
-          fontSize: "var(--type-caption-size)",
-          color: invalid ? "var(--state-danger)" : "var(--text-muted)",
-          marginTop: "var(--space-3xs)",
-        }}
-      >
-        {invalid
-          ? "That does not look like a domain. Try something like acme.com."
-          : "Stored without the protocol. Starter templates use it for their footer links."}
-      </p>
-    </div>
+    </Field>
   );
 }
 
-/** The slug: inline-editable with a live availability check, and a
- * confirmation that names the consequence — old bookmarked URLs with the
- * old slug stop resolving. Same character rules onboarding's create uses. */
+/** The slug: availability checks as you type (the error line speaks only
+ * when the id is taken or malformed), and leaving the field or Enter asks
+ * the confirm, which names the consequence: old bookmarked URLs with the
+ * old slug stop resolving. Cancel puts the old id back. Same character
+ * rules onboarding's create uses (PHASE-7 §9 D6). */
 function SlugField({ onError }: { onError(msg: string | null): void }) {
   const { company, refresh } = useAuth();
   const [value, setValue] = useState(company?.slug ?? "");
   const [availability, setAvailability] = useState<"unknown" | "checking" | "free" | "taken">(
     "unknown",
   );
-  const [confirming, setConfirming] = useState(false);
+  const [wantsConfirm, setWantsConfirm] = useState(false);
   const [saving, setSaving] = useState(false);
   const checkTimer = useRef<number | undefined>(undefined);
   useEffect(() => setValue(company?.slug ?? ""), [company?.slug]);
   useEffect(() => () => window.clearTimeout(checkTimer.current), []);
 
   const normalized = toSlug(value);
-  const changed = company && normalized !== company.slug;
+  const changed = !!company && normalized !== company.slug;
   const valid = isValidSlug(normalized);
 
   // Debounced availability check against the unique constraint (via the
-  // slug_available RPC — RLS hides other tenants' rows from a plain select).
+  // slug_available RPC: RLS hides other tenants' rows from a plain select).
   useEffect(() => {
     window.clearTimeout(checkTimer.current);
     if (!company || !changed || !valid) {
@@ -216,9 +193,20 @@ function SlugField({ onError }: { onError(msg: string | null): void }) {
     }, 350);
   }, [normalized, changed, valid, company]);
 
+  // Leaving the field asked for the change: confirm once the check is in.
+  const confirming = wantsConfirm && changed && valid && availability === "free";
+  useEffect(() => {
+    if (wantsConfirm && (availability === "taken" || !valid || !changed)) setWantsConfirm(false);
+  }, [wantsConfirm, availability, valid, changed]);
+
+  const cancel = () => {
+    setWantsConfirm(false);
+    setValue(company?.slug ?? "");
+  };
+
   const save = async () => {
     if (!company) return;
-    setConfirming(false);
+    setWantsConfirm(false);
     setSaving(true);
     onError(null);
     try {
@@ -232,71 +220,46 @@ function SlugField({ onError }: { onError(msg: string | null): void }) {
     }
   };
 
-  const hint = !valid
-    ? "Lowercase letters, numbers, and dashes only."
-    : availability === "taken"
-      ? "That id is already taken."
-      : availability === "checking"
-        ? "Checking availability…"
-        : availability === "free"
-          ? "Available."
-          : "Part of how this workspace is addressed.";
+  const error = !changed
+    ? null
+    : !valid
+      ? "Lowercase letters, numbers, and dashes only."
+      : availability === "taken"
+        ? "That id is already taken."
+        : null;
 
   return (
-    <div>
-      <ConfirmDialog
+    <>
+      <ConfirmModal
         open={confirming}
         title={`Change the workspace id to “${normalized}”?`}
-        description="Any URL someone bookmarked with the old id stops resolving. Nothing inside the app breaks. This is about links people saved."
+        body="Any URL someone bookmarked with the old id stops resolving. Nothing inside the app breaks. This is about links people saved."
         confirmLabel="Change id"
-        tone="primary"
-        onCancel={() => setConfirming(false)}
+        destructive={false}
+        busy={saving}
+        onCancel={cancel}
         onConfirm={() => void save()}
       />
-      <label
-        htmlFor="ws-slug"
-        className="sp-eyebrow block"
-        style={{ marginBottom: "var(--space-3xs)" }}
-      >
-        Slug
-      </label>
-      <div className="flex" style={{ gap: "var(--space-2xs)" }}>
-        <input
-          id="ws-slug"
+      <Field label="Slug" error={error}>
+        <Input
           value={value}
           onChange={(e) => setValue(e.target.value)}
+          onBlur={() => changed && setWantsConfirm(true)}
+          onKeyDown={(e) => e.key === "Enter" && changed && setWantsConfirm(true)}
           maxLength={60}
           disabled={saving}
           spellCheck={false}
           autoComplete="off"
-          className="sp-input flex-1"
-          style={{ fontFamily: "var(--font-mono)", fontSize: "var(--type-caption-size)" }}
         />
-        {changed && (
-          <button
-            onClick={() => setConfirming(true)}
-            disabled={saving || !valid || availability !== "free"}
-            className="sp-btn sp-btn-primary"
-          >
-            {saving ? "Saving…" : "Save"}
-          </button>
-        )}
-      </div>
-      <p
-        style={{
-          fontSize: "var(--type-caption-size)",
-          color: availability === "taken" || !valid ? "var(--state-danger)" : "var(--text-muted)",
-          marginTop: "var(--space-3xs)",
-        }}
-      >
-        {hint}
-      </p>
-    </div>
+      </Field>
+    </>
   );
 }
 
-/** Workspace timezone: every admin-facing date — Insights day buckets
- * included — follows this zone, so the whole team reads the same numbers. */
+/** Workspace timezone: every admin-facing date, Insights day buckets
+ * included, follows this zone, so the whole team reads the same numbers.
+ * A company with no zone shows the browser's; a zone this runtime doesn't
+ * know shows UTC. Type a few letters to jump (PHASE-7 §9 D7). */
 function TimezoneField({ onError }: { onError(msg: string | null): void }) {
   const { company, refresh } = useAuth();
   const [saving, setSaving] = useState(false);
@@ -318,38 +281,16 @@ function TimezoneField({ onError }: { onError(msg: string | null): void }) {
   };
 
   return (
-    <div>
-      <label
-        htmlFor="ws-tz"
-        className="sp-eyebrow block"
-        style={{ marginBottom: "var(--space-3xs)" }}
-      >
-        Timezone
-      </label>
-      <select
-        id="ws-tz"
+    <Field label="Timezone">
+      <Select
+        ariaLabel="Timezone"
+        size="lg"
         value={zones.includes(current) ? current : "UTC"}
-        onChange={(e) => void save(e.target.value)}
+        options={zones.map((z) => ({ value: z, label: z }))}
+        onSelect={(z) => void save(z)}
         disabled={saving}
-        className="sp-input"
-      >
-        {zones.map((z) => (
-          <option key={z} value={z}>
-            {z}
-          </option>
-        ))}
-      </select>
-      <p
-        style={{
-          fontSize: "var(--type-caption-size)",
-          color: "var(--text-muted)",
-          marginTop: "var(--space-3xs)",
-        }}
-      >
-        Insights charts bucket days in this zone, so everyone reads the same daily numbers. Yours is{" "}
-        {browserTimeZone()}.
-      </p>
-    </div>
+      />
+    </Field>
   );
 }
 
@@ -378,42 +319,21 @@ function BrandEnforcementCard({ onError }: { onError(msg: string | null): void }
   };
 
   return (
-    <SettingsCard
-      title="Brand enforcement"
-      description="Applied when templates render. These switch the rules engine and leave the editing UI alone."
-    >
-      <ControlRow
-        title="Fields may override bound type styles"
-        description={
-          kit?.allowStyleOverride
-            ? "A field's own settings win; the bound style fills the gaps."
-            : "Off: a bound style's font, color, and casing are locked, everywhere it is used."
-        }
-        control={
-          <Switch
-            checked={kit?.allowStyleOverride ?? false}
-            disabled={busy}
-            onChange={(next) => void save({ allowStyleOverride: next })}
-            ariaLabel="Fields may override bound type styles"
-          />
-        }
-      />
-      <ControlRow
-        title="Allow colors outside the palette"
-        description={
-          (kit?.allowOffPalette ?? true)
-            ? "Any hex renders as authored."
-            : "Off: a fill that isn't a brand color renders as the closest one in the palette."
-        }
-        control={
-          <Switch
-            checked={kit?.allowOffPalette ?? true}
-            disabled={busy}
-            onChange={(next) => void save({ allowOffPalette: next })}
-            ariaLabel="Allow colors outside the palette"
-          />
-        }
-      />
+    <SettingsCard title="Brand enforcement">
+      <div className="sp-st-rows">
+        <SwitchRow
+          label="Fields may override bound type styles"
+          checked={kit?.allowStyleOverride ?? false}
+          disabled={busy}
+          onChange={(next) => void save({ allowStyleOverride: next })}
+        />
+        <SwitchRow
+          label="Allow colors outside the palette"
+          checked={kit?.allowOffPalette ?? true}
+          disabled={busy}
+          onChange={(next) => void save({ allowOffPalette: next })}
+        />
+      </div>
     </SettingsCard>
   );
 }

@@ -1,10 +1,15 @@
 import React, { useState } from "react";
 import { stores } from "@/lib/stores";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { Button, Field, Input } from "../../primitives";
 
-/** The Figma personal-access-token form, lifted out of FigmaImportDialog so
- * credential entry lives in Settings → Integrations rather than inside a
- * modal about importing a frame. The token goes straight to the
+/** Figma's own page on personal access tokens (file-read scope). */
+const TOKEN_HELP_URL =
+  "https://help.figma.com/hc/en-us/articles/8085703771159-Manage-personal-access-tokens";
+
+/** The Figma personal-access-token form, under the Figma card in Settings ›
+ * Integrations: the token field with one "How to get a token" link in place
+ * of the old helper paragraph (PHASE-7 §9 D9), and Connect. The token goes straight to the
  * figma-connect Edge Function and is stored server-side; it never renders
  * back into any browser again. */
 export function FigmaConnectForm({ onConnected }: { onConnected(): void }) {
@@ -29,39 +34,27 @@ export function FigmaConnectForm({ onConnected }: { onConnected(): void }) {
   };
 
   return (
-    <div className="space-y-2">
-      <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
-        Paste a personal access token (Figma → Settings → Security → Personal access tokens,
-        file-read scope). It is stored server-side for the whole workspace and never reaches a
-        browser again.
-      </p>
-      <div className="flex" style={{ gap: "var(--space-2xs)" }}>
-        <input
+    <div className="sp-st-token">
+      <Field
+        label="Personal access token"
+        error={error}
+        action={{
+          label: "How to get a token",
+          onClick: () => window.open(TOKEN_HELP_URL, "_blank", "noopener,noreferrer"),
+        }}
+      >
+        <Input
           type="password"
           value={pat}
           onChange={(e) => setPat(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && void connect()}
           placeholder="figd_…"
-          aria-label="Figma personal access token"
-          className="sp-input flex-1"
-          style={{ fontFamily: "var(--font-mono)" }}
+          autoComplete="off"
         />
-        <button
-          onClick={() => void connect()}
-          disabled={busy || !pat.trim()}
-          className="sp-btn sp-btn-primary"
-        >
-          {busy ? "Connecting…" : "Connect"}
-        </button>
-      </div>
-      {error && (
-        <p
-          role="alert"
-          style={{ fontSize: "var(--type-caption-size)", color: "var(--state-danger)" }}
-        >
-          {error}
-        </p>
-      )}
+      </Field>
+      <Button kind="primary" disabled={busy || !pat.trim()} onClick={() => void connect()}>
+        {busy ? "Connecting…" : "Connect"}
+      </Button>
     </div>
   );
 }

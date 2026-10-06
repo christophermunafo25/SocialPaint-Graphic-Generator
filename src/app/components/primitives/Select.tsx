@@ -71,16 +71,41 @@ function SelectBase<T extends string>({
   useDismiss(open, dismissRefs, () => setOpen(false));
   useScrollActiveIntoView(open, active, surfaceRef);
 
+  const pendingActive = useRef<number | null>(null);
   useEffect(() => {
     if (!open) return;
     setActive(
-      Math.max(
-        0,
-        options.findIndex((o) => o.value === value),
-      ),
+      pendingActive.current ??
+        Math.max(
+          0,
+          options.findIndex((o) => o.value === value),
+        ),
     );
+    pendingActive.current = null;
     surfaceRef.current?.focus();
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Type-ahead (PHASE-7 §9 D7): letters typed within half a second build a
+  // prefix; the first option whose label starts with it becomes active, as
+  // in a native select. Typing the same letter again steps through the
+  // options that start with it.
+  const typed = useRef({ text: "", at: 0 });
+  const typeAhead = (key: string, from: number): number | null => {
+    const now = Date.now();
+    const fresh = now - typed.current.at > 500;
+    const text = (fresh ? "" : typed.current.text) + key.toLowerCase();
+    typed.current = { text, at: now };
+    const repeat = text.length > 1 && [...text].every((c) => c === text[0]);
+    const prefix = repeat ? text[0] : text;
+    const start = repeat || text.length === 1 ? from + 1 : from;
+    for (let n = 0; n < options.length; n++) {
+      const i = (start + n) % options.length;
+      if (options[i].label.toLowerCase().startsWith(prefix)) return i;
+    }
+    return null;
+  };
+  const isTypeAheadKey = (e: React.KeyboardEvent) =>
+    e.key.length === 1 && e.key !== " " && !e.metaKey && !e.ctrlKey && !e.altKey;
 
   const commit = (index: number) => {
     const option = options[index];
@@ -100,6 +125,10 @@ function SelectBase<T extends string>({
     else if (e.key === "Home") setActive(0);
     else if (e.key === "End") setActive(options.length - 1);
     else if (e.key === "Enter" || e.key === " ") commit(active);
+    else if (isTypeAheadKey(e)) {
+      const match = typeAhead(e.key, active);
+      if (match !== null) setActive(match);
+    }
   };
 
   const selected = options.find((o) => o.value === value);
@@ -121,6 +150,16 @@ function SelectBase<T extends string>({
         onKeyDown={(e) => {
           if (!open && (e.key === "ArrowDown" || e.key === "Enter" || e.key === " ")) {
             e.preventDefault();
+            setOpen(true);
+          } else if (!open && isTypeAheadKey(e)) {
+            // Typing on the closed trigger opens the list at the match.
+            e.preventDefault();
+            const from = Math.max(
+              0,
+              options.findIndex((o) => o.value === value),
+            );
+            const match = typeAhead(e.key, from);
+            pendingActive.current = match;
             setOpen(true);
           }
         }}

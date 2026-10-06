@@ -6,32 +6,29 @@ import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { buildWorkspaceExport } from "@/lib/export/workspaceExport";
 import { toSlug } from "@/lib/companySettings";
-import { ConfirmDialog } from "../../ConfirmDialog";
-import { DevBackendNotice, SettingsCard, TypedConfirmDialog } from "./settingsShared";
+import { Button, Select, SettingsCard } from "../../primitives";
+import { ConfirmModal, TypedConfirmModal } from "./SettingsConfirm";
+import { DevBackendNotice } from "./settingsShared";
+import { useSettingsToast } from "./settingsToast";
 
-/** The ways out: take your data, hand the keys over, or delete everything. */
+type OnError = (msg: string | null) => void;
+
+/** Settings › Advanced (13:15837), the ways out: take your data, hand the
+ * keys over, or delete everything. Each action sits in its card's header;
+ * transfer and delete keep their confirms (PHASE-7 §9 D5). */
 export function AdvancedSection() {
-  const [error, setError] = useState<string | null>(null);
+  const toast = useSettingsToast();
+  const onError: OnError = (msg) => msg && toast(msg);
   return (
-    <div className="space-y-6">
-      {error && (
-        <p
-          role="alert"
-          className="px-4 py-3"
-          data-radius-card
-          style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}
-        >
-          {error}
-        </p>
-      )}
-      <ExportCard onError={setError} />
-      <TransferCard onError={setError} />
-      <DeleteCard onError={setError} />
+    <div className="sp-st-section">
+      <ExportCard onError={onError} />
+      <TransferCard onError={onError} />
+      <DeleteCard onError={onError} />
     </div>
   );
 }
 
-function ExportCard({ onError }: { onError(msg: string | null): void }) {
+function ExportCard({ onError }: { onError: OnError }) {
   const { company } = useAuth();
   const [busy, setBusy] = useState(false);
 
@@ -72,17 +69,16 @@ function ExportCard({ onError }: { onError(msg: string | null): void }) {
   return (
     <SettingsCard
       title="Export workspace data"
-      description="One JSON file: templates with their fields, the brand kit with type styles and guidelines, the member list with roles, and usage events. Backgrounds, fonts, and logos are referenced by their storage paths. The binary files are not in the export."
-    >
-      <button onClick={() => void exportData()} disabled={busy} className="sp-btn sp-btn-primary">
-        <Download style={{ width: 14, height: 14 }} />
-        {busy ? "Assembling…" : "Export as JSON"}
-      </button>
-    </SettingsCard>
+      action={
+        <Button kind="primary" icon={Download} disabled={busy} onClick={() => void exportData()}>
+          {busy ? "Assembling…" : "Export as JSON"}
+        </Button>
+      }
+    />
   );
 }
 
-function TransferCard({ onError }: { onError(msg: string | null): void }) {
+function TransferCard({ onError }: { onError: OnError }) {
   const { company, user, isDevAuth, refresh } = useAuth();
   const [targetId, setTargetId] = useState("");
   const [confirming, setConfirming] = useState(false);
@@ -115,16 +111,15 @@ function TransferCard({ onError }: { onError(msg: string | null): void }) {
     }
   };
 
+  const who = (m: Member) => (m.name ? `${m.name} (${m.email})` : m.email);
+
   return (
-    <SettingsCard
-      title="Transfer ownership"
-      description="Make someone else the admin and step down to member yourself. They are promoted before you are demoted, so the workspace is never without an admin."
-    >
-      <ConfirmDialog
+    <SettingsCard title="Transfer ownership">
+      <ConfirmModal
         open={confirming}
-        tone="primary"
-        title={`Hand admin to ${target?.email ?? ""}?`}
-        description="They become an admin and you become a member. Only they (or another admin) can give admin back to you afterwards."
+        destructive={false}
+        title={`Hand admin to ${target ? (target.name ?? target.email) : ""}?`}
+        body="They become an admin and you become a member. Only they (or another admin) can give admin back to you afterwards."
         confirmLabel="Transfer"
         onCancel={() => setConfirming(false)}
         onConfirm={() => void transfer()}
@@ -134,40 +129,36 @@ function TransferCard({ onError }: { onError(msg: string | null): void }) {
           Transferring ownership needs the Supabase backend with auth enabled. This dev backend has
           no real accounts.
         </DevBackendNotice>
-      ) : others.length === 0 ? (
-        <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>
-          There is nobody to transfer to because you are the only member. Invite someone on the
-          People page first.
+      ) : membersState.status === "ready" && others.length === 0 ? (
+        <p className="t-body-s sp-st-empty">
+          There is nobody to transfer to because you are the only member. Invite someone in People
+          first.
         </p>
       ) : (
-        <div className="flex" style={{ gap: "var(--space-2xs)" }}>
-          <select
-            value={targetId}
-            onChange={(e) => setTargetId(e.target.value)}
-            className="sp-input flex-1"
-            aria-label="Transfer ownership to"
-          >
-            <option value="">Choose a member…</option>
-            {others.map((m) => (
-              <option key={m.userId} value={m.userId}>
-                {m.email} ({m.role})
-              </option>
-            ))}
-          </select>
-          <button
-            onClick={() => setConfirming(true)}
+        <div className="sp-st-transfer">
+          <Select
+            ariaLabel="Transfer ownership to"
+            size="lg"
+            placeholder="Choose a member…"
+            value={targetId || undefined}
+            options={others.map((m) => ({ value: m.userId, label: who(m) }))}
+            onSelect={setTargetId}
+          />
+          <Button
+            kind="primary"
+            size="md"
             disabled={busy || !target}
-            className="sp-btn sp-btn-primary"
+            onClick={() => setConfirming(true)}
           >
             {busy ? "Transferring…" : "Transfer"}
-          </button>
+          </Button>
         </div>
       )}
     </SettingsCard>
   );
 }
 
-function DeleteCard({ onError }: { onError(msg: string | null): void }) {
+function DeleteCard({ onError }: { onError: OnError }) {
   const { company, signOut, refresh } = useAuth();
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -213,15 +204,19 @@ function DeleteCard({ onError }: { onError(msg: string | null): void }) {
   return (
     <SettingsCard
       title="Delete workspace"
-      description="Permanently removes everything this workspace ever made. There is no recovery."
+      action={
+        <Button kind="destructive" disabled={busy || !company} onClick={() => setConfirming(true)}>
+          Delete this workspace
+        </Button>
+      }
     >
-      <TypedConfirmDialog
+      <TypedConfirmModal
         open={confirming}
         title={`Delete ${company?.name ?? "this workspace"}?`}
-        description={
-          <div className="space-y-2">
+        body={
+          <>
             <p>This destroys, permanently and immediately:</p>
-            <ul style={{ paddingLeft: 18, listStyle: "disc" }}>
+            <ul className="sp-st-confirm__list">
               <li>
                 {counts ? counts.templates : "…"} template{counts?.templates === 1 ? "" : "s"} and
                 their fields
@@ -238,7 +233,7 @@ function DeleteCard({ onError }: { onError(msg: string | null): void }) {
               <li>the brand kit and all usage history</li>
             </ul>
             <p>You will be signed out when it completes.</p>
-          </div>
+          </>
         }
         expected={company?.name ?? ""}
         confirmLabel="Delete workspace"
@@ -246,14 +241,6 @@ function DeleteCard({ onError }: { onError(msg: string | null): void }) {
         onCancel={() => setConfirming(false)}
         onConfirm={() => void destroy()}
       />
-      <button
-        onClick={() => setConfirming(true)}
-        disabled={busy || !company}
-        className="sp-btn"
-        style={{ background: "var(--state-danger)", color: "var(--bg-surface)" }}
-      >
-        Delete this workspace
-      </button>
     </SettingsCard>
   );
 }

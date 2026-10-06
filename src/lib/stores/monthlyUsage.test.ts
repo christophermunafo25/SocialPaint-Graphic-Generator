@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  aiUsageLine,
+  compactCount,
   exactMonthStartIso,
   monthStartIso,
   summarizeMonthlyUsage,
@@ -82,16 +82,10 @@ describe("exactMonthStartIso", () => {
   });
 });
 
-describe("aiUsageLine", () => {
-  it("reads as the Settings card's line, compact and singular where it should be", () => {
-    expect(aiUsageLine({ requests: 128, inputTokens: 412_300, outputTokens: 38_000 })).toBe(
-      "128 requests · 412.3K tokens in · 38K out, this month",
-    );
-    expect(aiUsageLine({ requests: 1, inputTokens: 900, outputTokens: 40 })).toBe(
-      "1 request · 900 tokens in · 40 out, this month",
-    );
-    expect(aiUsageLine({ requests: 2400, inputTokens: 3_100_000, outputTokens: 0 })).toBe(
-      "2,400 requests · 3.1M tokens in · 0 out, this month",
-    );
+describe("compactCount", () => {
+  it("compacts token counts as the AI usage card shows them", () => {
+    expect(compactCount(1_210_000)).toBe("1.2M");
+    expect(compactCount(318_400)).toBe("318.4K");
+    expect(compactCount(412)).toBe("412");
   });
 });

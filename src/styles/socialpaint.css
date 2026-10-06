@@ -2975,38 +2975,6 @@ select.sp-input:disabled {
   box-shadow: var(--focus-ring-tight);
 }
 
-/* Choice tiles (Settings > Appearance): a card-radius tile per option.
-   Selected takes the --nav-active-* pill and drops its hairline;
-   hover the neutral wash (2026-09-25; a Slime wash before). */
-.sp-choice-tile {
-  border: 1px solid var(--border-strong);
-  background: var(--bg-surface);
-  color: var(--text-primary);
-  transition:
-    background var(--dur-state) var(--ease),
-    color var(--dur-state) var(--ease),
-    border-color var(--dur-state) var(--ease);
-}
-.sp-choice-tile svg {
-  color: var(--text-secondary);
-}
-.sp-choice-tile:hover:not([aria-pressed="true"]) {
-  background: var(--nav-hover-bg);
-  color: var(--nav-hover-fg);
-}
-.sp-choice-tile[aria-pressed="true"] {
-  border-color: transparent;
-  background: var(--nav-active-bg);
-  color: var(--nav-active-fg);
-}
-.sp-choice-tile[aria-pressed="true"] svg {
-  color: inherit;
-}
-.sp-choice-tile:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring-tight);
-}
-
 /* Brand-moment surface (hero headers, identity chips). Flat logo green —
    everything ON it is Ink, no exceptions, both themes (Ink is the only
    legible glyph on any brand fill; white never clears contrast here). */

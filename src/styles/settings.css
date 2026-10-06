@@ -1,0 +1,381 @@
+/* ── Settings on the new look (PHASE-7.md; frames 13:14570 to 13:15837) ──
+   The page column and legal links, the cards' drawn gaps, the confirms,
+   then each section's parts. */
+
+/* The page column: the header, the rail and section, and the legal links at
+   the foot of a viewport-tall column (13:14766). */
+.sp-st-page {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - var(--chrome-top));
+  padding-bottom: calc(28px + var(--dev-banner-h, 0px)); /* as drawn */
+}
+.sp-st-page > .sp-shell-settings {
+  flex: 1 0 auto;
+}
+.sp-st-legal {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-sm);
+  margin: 0;
+  padding-top: var(--space-xl);
+  color: var(--text-secondary);
+}
+.sp-st-legal > a {
+  color: inherit;
+  text-decoration: none;
+}
+.sp-st-legal > a:hover {
+  text-decoration: underline;
+}
+
+/* The section: cards 24 apart (13:14697). */
+.sp-st-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* Cards whose header sits closer to its rows than the primitive's 20, as
+   drawn: Workspaces 8 (13:14698), the integrations 12 (13:15179), Public
+   links 16 (13:15512). */
+.ui-settings-card.sp-st-gap-8 {
+  gap: var(--space-2xs);
+}
+.ui-settings-card.sp-st-gap-12 {
+  gap: var(--space-xs);
+}
+.ui-settings-card.sp-st-gap-16 {
+  gap: var(--space-sm);
+}
+
+/* The local backend's notice: one quiet line where a card's data would be. */
+.sp-st-notice {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+/* A confirm (on Modal): the question's consequence, then Cancel and the
+   action, right-aligned. */
+.sp-st-confirm__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin: 0;
+  color: var(--text-secondary);
+}
+.sp-st-confirm__body p {
+  margin: 0;
+}
+.sp-st-confirm__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2xs);
+}
+
+/* A failed save, over the section's cards. */
+.sp-st-error {
+  margin: 0;
+  color: var(--state-error);
+}
+
+/* Two fields a row, 16 apart both ways (13:14727). */
+.sp-st-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+@media (max-width: 599.98px) {
+  .sp-st-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Switch rows, 16 apart (13:14755): the label, then its switch. */
+.sp-st-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+.sp-st-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  color: var(--text-strong);
+}
+
+/* The toast: centred on the page column, 75 above the window's foot,
+   sticky while the page scrolls (as Brand Studio's). The anchor takes no
+   room. */
+.sp-st-toast-anchor {
+  position: sticky;
+  bottom: calc(75px + var(--dev-banner-h, 0px));
+  z-index: var(--z-sticky);
+  display: flex;
+  justify-content: center;
+  height: 0;
+}
+.sp-st-toast-anchor > .ui-toast {
+  position: absolute;
+  bottom: 0;
+  max-width: min(560px, calc(100vw - 32px));
+}
+
+/* A meta line or a quiet word: 12 Medium on text/secondary. */
+.sp-st-meta {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.sp-st-empty {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+/* ── People (13:14769) ── */
+/* The invite row (13:14901): the email, the role (140), Invite; 8 apart. */
+.sp-st-invite {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+.sp-st-invite > .ui-input {
+  flex: 1;
+  min-width: 0;
+}
+.sp-st-invite__role {
+  flex: none;
+  width: 140px;
+}
+/* Rows 12 apart inside, 12 above and below, divided (13:14910). */
+.sp-st-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-st-list > li + li {
+  border-top: 1px solid var(--border-default);
+}
+.sp-st-member {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) 0;
+  color: var(--text-strong);
+}
+.sp-st-member__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* as drawn (13:14932) */
+}
+.sp-st-member__name {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+.sp-st-member__name > :first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sp-st-member__role {
+  flex: none;
+  width: 120px;
+}
+.sp-st-show-all {
+  align-self: flex-start;
+  border-radius: var(--radius-control);
+  color: var(--text-strong);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+@media (max-width: 599.98px) {
+  .sp-st-invite {
+    flex-wrap: wrap;
+  }
+  .sp-st-invite > .ui-input {
+    flex-basis: 100%;
+  }
+}
+
+/* ── Integrations (13:15051) ── */
+/* The title, then its status pill, 10 apart (13:15181). */
+.sp-st-integration .ui-settings-card__header > h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* off the scale, as drawn */
+}
+.sp-st-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  flex: none;
+}
+.sp-st-wrap {
+  margin: 0;
+  white-space: normal;
+}
+/* The token form under the Figma card: the field, then Connect on its row. */
+.sp-st-token {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2xs);
+}
+.sp-st-token > .ui-field {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Plan & usage (13:15203) ── */
+/* Stats in three equal columns, 24 apart (13:15341, 13:15371). */
+.sp-st-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-md);
+}
+/* The month's four metrics, equal columns 16 apart (13:15354). */
+.sp-st-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: start;
+  gap: var(--space-sm);
+}
+@media (max-width: 767.98px) {
+  .sp-st-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.sp-st-bone {
+  display: block;
+  border-radius: var(--radius-xs);
+  background: var(--surface-sunken);
+}
+
+/* ── Sharing (13:15384) ── */
+/* "Show revoked and expired", then its switch, 8 apart (13:15515). */
+.sp-st-filter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.sp-st-actions--end {
+  justify-content: flex-end;
+}
+/* The table (13:15519): Link takes the room, then Opens 80, Last used 96,
+   Expires 96 and the actions, 16 apart; rows 14 above and below, divided,
+   with no rule after the last. */
+.sp-st-table-wrap {
+  overflow-x: auto;
+}
+.sp-st-table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+  color: var(--text-strong);
+}
+.sp-st-table th {
+  padding: 0 0 10px var(--space-sm);
+  color: var(--text-secondary);
+  font-weight: inherit;
+  text-align: left;
+  white-space: nowrap;
+}
+.sp-st-table td {
+  padding: 14px 0 14px var(--space-sm);
+  white-space: nowrap;
+}
+.sp-st-table th:first-child,
+.sp-st-table td:first-child {
+  width: 100%;
+  padding-left: 0;
+  white-space: normal;
+}
+.sp-st-table th:nth-child(2),
+.sp-st-table td:nth-child(2) {
+  min-width: 80px;
+}
+.sp-st-table th:nth-child(3),
+.sp-st-table td:nth-child(3),
+.sp-st-table th:nth-child(4),
+.sp-st-table td:nth-child(4) {
+  min-width: 96px;
+}
+.sp-st-table thead tr,
+.sp-st-table tbody tr + tr {
+  border-bottom: 0;
+}
+.sp-st-table tbody tr {
+  border-top: 1px solid var(--border-default);
+}
+.sp-st-link {
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* as drawn (13:15527) */
+  min-width: 0;
+}
+.sp-st-link__name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+/* A regenerated address, shown once: the field, then Copy link. */
+.sp-st-fresh {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+.sp-st-fresh > .ui-input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Account (13:15649) ── */
+/* Stats two a row, 16 across and 20 down (13:15780). */
+.sp-st-grid--stats {
+  row-gap: 20px; /* off the scale, as drawn */
+}
+/* The display name, then its pencil 6 after it (13:15777). */
+.sp-st-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px; /* off the scale, as drawn */
+}
+.sp-st-name__edit {
+  display: inline-flex;
+  border-radius: var(--radius-control);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.sp-st-name__edit:hover {
+  color: var(--text-strong);
+}
+/* Appearance: a 300 track, its three segments equal (13:15802). */
+.sp-st-appearance {
+  width: 300px;
+}
+.sp-st-appearance > .ui-segment {
+  flex: 1;
+}
+
+/* ── Advanced (13:15837) ── */
+/* The member select, then Transfer, 8 apart (13:15977). */
+.sp-st-transfer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+.sp-st-transfer > .ui-select {
+  flex: 1;
+  min-width: 0;
+}
+.sp-st-confirm__list {
+  margin: 0;
+  padding-left: 18px;
+  list-style: disc;
+}

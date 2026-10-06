@@ -62,12 +62,22 @@ export function Stat({ label, value }: { label: React.ReactNode; value: React.Re
   );
 }
 
-/** Metric (Figma 59:452): a large number with its label. */
-export function Metric({ label, value }: { label: React.ReactNode; value: React.ReactNode }) {
+/** Metric (Figma 59:452): a large number with its label, and an optional
+ * line under it on text/secondary ("286 via public links", 13:15351). */
+export function Metric({
+  label,
+  value,
+  sub,
+}: {
+  label: React.ReactNode;
+  value: React.ReactNode;
+  sub?: React.ReactNode;
+}) {
   return (
     <div className="ui-metric">
       <span className="t-label-l">{label}</span>
       <span className="t-title-metric">{value}</span>
+      {sub && <span className="t-caption-m ui-metric__sub">{sub}</span>}
     </div>
   );
 }

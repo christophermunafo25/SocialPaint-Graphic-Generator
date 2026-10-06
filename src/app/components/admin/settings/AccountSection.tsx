@@ -1,94 +1,63 @@
-import React, { useState } from "react";
-import { LogOut, Monitor, Moon, Sun } from "lucide-react";
+import React, { useRef, useState } from "react";
+import { LogOut, Pencil } from "lucide-react";
 import type { NotificationPrefs } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useColorScheme, type ColorScheme } from "@/lib/colorScheme";
-import { InlineEdit } from "../../InlineEdit";
 import { SkeletonLines } from "../../Skeleton";
-import { Switch } from "../../Switch";
-import { Button } from "../../primitives";
-import { ControlRow, DevBackendNotice, SettingsCard } from "./settingsShared";
+import { Button, Input, SegmentedControl, SettingsCard, Stat } from "../../primitives";
+import { DevBackendNotice, SwitchRow } from "./settingsShared";
+import { useSettingsToast } from "./settingsToast";
 
-const SCHEMES: Array<{ key: ColorScheme; label: string; Icon: typeof Sun; hint: string }> = [
-  { key: "system", label: "System", Icon: Monitor, hint: "Follow the OS preference" },
-  { key: "light", label: "Light", Icon: Sun, hint: "Always light chrome" },
-  { key: "dark", label: "Dark", Icon: Moon, hint: "Always dark chrome" },
+const SCHEMES: Array<{ id: ColorScheme; label: string }> = [
+  { id: "system", label: "System" },
+  { id: "light", label: "Light" },
+  { id: "dark", label: "Dark" },
 ];
 
-/** The one section every member can reach: their own profile, appearance,
- * notification preferences, and the way out. */
+const ROLE_LABEL = { admin: "Admin", member: "Member" } as const;
+
+/** Settings › Account (13:15649), the one section every member reaches:
+ * their profile, appearance (per browser, PHASE-7 §9 D13), notification
+ * preferences and the way out. */
 export function AccountSection() {
   const { company, role, user, backend, signOut } = useAuth();
   const { scheme, setScheme } = useColorScheme();
+  const toast = useSettingsToast();
   const accountAvailable = stores.account.isAvailable() && user !== null;
-  const [error, setError] = useState<string | null>(null);
+  const failed = (e: unknown, fallback: string) =>
+    toast(e instanceof Error && e.message ? e.message : fallback);
 
   return (
-    <div className="space-y-6">
-      {error && (
-        <p
-          role="alert"
-          className="px-4 py-3"
-          data-radius-card
-          style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}
-        >
-          {error}
-        </p>
-      )}
-
+    <div className="sp-st-section">
       <SettingsCard title="Profile">
-        <div
-          className="grid gap-x-6 gap-y-2"
-          style={{ gridTemplateColumns: "140px 1fr", fontSize: "var(--type-label-size)" }}
-        >
-          <span style={{ color: "var(--text-muted)" }}>Email</span>
-          <span style={{ color: "var(--text-primary)" }}>
-            {user?.email ?? "None (dev backend)"}
-          </span>
-          <span style={{ color: "var(--text-muted)" }}>Role</span>
-          <span className="capitalize" style={{ color: "var(--text-primary)" }}>
-            {role}
-          </span>
-          <span style={{ color: "var(--text-muted)" }}>Workspace</span>
-          <span style={{ color: "var(--text-primary)" }}>{company?.name ?? "—"}</span>
-          <span style={{ color: "var(--text-muted)" }}>Backend</span>
-          <span style={{ color: "var(--text-primary)" }}>
-            {backend === "supabase" ? "Supabase (live)" : "Local dev (browser storage)"}
-          </span>
+        <div className="sp-st-grid sp-st-grid--stats">
+          {accountAvailable && <DisplayName userId={user!.id} onFailed={failed} />}
+          <Stat label="Email" value={user?.email ?? "None (dev backend)"} />
+          <Stat label="Role" value={ROLE_LABEL[role]} />
+          <Stat label="Workspace" value={company?.name ?? "None"} />
+          {/* A dev aid, on the local backend only (D11). */}
+          {backend !== "supabase" && <Stat label="Backend" value="Local dev (browser storage)" />}
         </div>
-        {accountAvailable ? <DisplayNameRow onError={setError} /> : null}
       </SettingsCard>
 
       <SettingsCard
         title="Appearance"
-        description="Applies to the SocialPaint chrome only. Template graphics and exports are identical in both modes."
-      >
-        <div className="grid grid-cols-3 gap-2">
-          {SCHEMES.map(({ key, label, Icon, hint }) => (
-            <button
-              key={key}
-              onClick={() => setScheme(key)}
-              title={hint}
-              aria-pressed={scheme === key}
-              className="sp-choice-tile flex flex-col items-center gap-1.5 py-3"
-              data-radius-card
-              style={{ fontSize: 12.5 }}
-            >
-              <Icon style={{ width: 16, height: 16 }} />
-              {label}
-            </button>
-          ))}
-        </div>
-      </SettingsCard>
+        action={
+          <SegmentedControl
+            aria-label="Appearance"
+            className="sp-st-appearance"
+            options={SCHEMES}
+            selectedId={scheme}
+            onSelect={(id) => setScheme(id as ColorScheme)}
+          />
+        }
+      />
 
-      <SettingsCard
-        title="Notifications"
-        description="Preferences only for now. Email delivery isn't set up yet, so nothing sends either way. What you choose here is honored the day it is."
-      >
+      <SettingsCard title="Notifications">
         {accountAvailable ? (
-          <NotificationRows userId={user!.id} onError={setError} />
+          <NotificationRows userId={user!.id} isAdmin={role === "admin"} onFailed={failed} />
         ) : (
           <DevBackendNotice>
             Notification preferences need the Supabase backend with auth enabled. This dev backend
@@ -97,71 +66,111 @@ export function AccountSection() {
         )}
       </SettingsCard>
 
-      {/* The way out, here since the sidebar lost its button (Figma
-          13:15776 draws it under the cards). */}
+      {/* The way out, here since the sidebar lost its button (13:15828). */}
       {signOut && (
-        <Button kind="neutralOnPage" icon={LogOut} onClick={() => void signOut()}>
-          Sign out
-        </Button>
+        <span>
+          <Button kind="neutralOnPage" icon={LogOut} onClick={() => void signOut()}>
+            Sign out
+          </Button>
+        </span>
       )}
     </div>
   );
 }
 
-function DisplayNameRow({ onError }: { onError(msg: string | null): void }) {
-  const { user } = useAuth();
+/** Display name, with its pencil at rest (13:15777). Editing happens in
+ * place on Input sm: Enter or leaving the field saves, Escape cancels, and
+ * focus returns to the pencil. */
+function DisplayName({
+  userId,
+  onFailed,
+}: {
+  userId: string;
+  onFailed(e: unknown, fallback: string): void;
+}) {
   const [version, setVersion] = useState(0);
-  const nameState = useAsync<string | null>(
-    () => (user ? stores.account.getDisplayName(user.id) : Promise.resolve(null)),
-    [user, version],
+  const [editing, setEditing] = useState(false);
+  const pencil = useRef<HTMLButtonElement>(null);
+  const state = useAsync<string | null>(
+    () => stores.account.getDisplayName(userId),
+    [userId, version],
   );
-  if (!user) return null;
+  const name = state.status === "ready" ? (state.data ?? "") : "";
+
+  const finish = (refocus: boolean) => {
+    setEditing(false);
+    if (refocus) window.setTimeout(() => pencil.current?.focus());
+  };
+  const save = async (raw: string, refocus: boolean) => {
+    const next = raw.trim();
+    finish(refocus);
+    if (next === name) return;
+    try {
+      await stores.account.setDisplayName(userId, next);
+      setVersion((v) => v + 1);
+    } catch (e) {
+      onFailed(e, "Could not save your name.");
+    }
+  };
+
   return (
-    <InlineEdit
+    <Stat
       label="Display name"
-      value={nameState.status === "ready" ? (nameState.data ?? "") : ""}
-      placeholder="Add a name"
-      ariaLabel="Edit display name"
-      maxLength={80}
-      disabled={nameState.status !== "ready"}
-      onSave={async (next) => {
-        onError(null);
-        try {
-          await stores.account.setDisplayName(user.id, next);
-          setVersion((v) => v + 1);
-        } catch (e) {
-          onError(e instanceof Error ? e.message : "Could not save your name.");
-          throw e;
-        }
-      }}
+      value={
+        editing ? (
+          <Input
+            size="sm"
+            aria-label="Display name"
+            defaultValue={name}
+            maxLength={80}
+            autoFocus
+            onFocus={(e) => e.target.select()}
+            onBlur={(e) => void save(e.target.value, false)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void save(e.currentTarget.value, true);
+              else if (e.key === "Escape") {
+                e.stopPropagation();
+                finish(true);
+              }
+            }}
+          />
+        ) : (
+          <span className="sp-st-name">
+            <span>{name || "Add a name"}</span>
+            <button
+              ref={pencil}
+              type="button"
+              className="ui-reset ui-ring sp-st-name__edit"
+              aria-label="Edit display name"
+              disabled={state.status !== "ready"}
+              onClick={() => setEditing(true)}
+            >
+              <Pencil size={14} className="ui-icon" aria-hidden />
+            </button>
+          </span>
+        )
+      }
     />
   );
 }
 
-const PREF_ROWS: Array<{ key: keyof NotificationPrefs; title: string; description: string }> = [
-  {
-    key: "inviteAccepted",
-    title: "Invited members accepted",
-    description: "When someone you invited joins the workspace.",
-  },
-  {
-    key: "weeklyDigest",
-    title: "Weekly usage digest",
-    description: "A summary of opens and exports, once a week.",
-  },
-  {
-    key: "linkExpiring",
-    title: "Public link expiring soon",
-    description: "Before a link you created stops working.",
-  },
+const PREF_ROWS: Array<{ key: keyof NotificationPrefs; title: string; adminOnly?: boolean }> = [
+  // Only admins invite, so only they hear back (PHASE-7 §9 D10).
+  { key: "inviteAccepted", title: "Invited members accepted", adminOnly: true },
+  { key: "weeklyDigest", title: "Weekly usage digest" },
+  { key: "linkExpiring", title: "Public link expiring soon" },
 ];
 
+/** The three notification switches (13:15809). Preferences save and are
+ * honoured once email delivery ships; nothing sends yet (D10). */
 function NotificationRows({
   userId,
-  onError,
+  isAdmin,
+  onFailed,
 }: {
   userId: string;
-  onError(msg: string | null): void;
+  isAdmin: boolean;
+  onFailed(e: unknown, fallback: string): void;
 }) {
   const [version, setVersion] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -174,9 +183,9 @@ function NotificationRows({
   }
   if (state.status === "error") {
     return (
-      <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>
+      <p className="t-body-s sp-st-empty">
         We couldn't load your preferences.{" "}
-        <button onClick={state.retry} className="underline">
+        <button type="button" onClick={state.retry} className="ui-reset ui-ring sp-st-show-all">
           Try again
         </button>
       </p>
@@ -185,28 +194,21 @@ function NotificationRows({
   const prefs = state.data;
   const save = (patch: Partial<NotificationPrefs>) => {
     setBusy(true);
-    onError(null);
     void stores.account
       .setNotificationPrefs(userId, { ...prefs, ...patch })
       .then(() => setVersion((v) => v + 1))
-      .catch((e) => onError(e instanceof Error ? e.message : "Could not save that preference."))
+      .catch((e) => onFailed(e, "Could not save that preference."))
       .finally(() => setBusy(false));
   };
   return (
-    <div className="space-y-3">
-      {PREF_ROWS.map(({ key, title, description }) => (
-        <ControlRow
+    <div className="sp-st-rows">
+      {PREF_ROWS.filter((r) => isAdmin || !r.adminOnly).map(({ key, title }) => (
+        <SwitchRow
           key={key}
-          title={title}
-          description={description}
-          control={
-            <Switch
-              checked={prefs[key]}
-              disabled={busy}
-              onChange={(next) => save({ [key]: next })}
-              ariaLabel={title}
-            />
-          }
+          label={title}
+          checked={prefs[key]}
+          disabled={busy}
+          onChange={(next) => save({ [key]: next })}
         />
       ))}
     </div>
