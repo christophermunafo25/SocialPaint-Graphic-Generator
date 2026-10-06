@@ -1,7 +1,7 @@
 # Edge Function deployment settings.
 #
-# This file exists for exactly one reason: two functions must accept a caller
-# with no JWT. Everything else in supabase/functions authenticates from the
+# This file exists for exactly one reason: three functions must accept a
+# caller with no JWT. Everything else in supabase/functions authenticates from the
 # caller's token and keeps the CLI's default `verify_jwt = true`, which is why
 # there was no config.toml before this feature.
 #
@@ -17,4 +17,11 @@ verify_jwt = false
 # Records that an anonymous visitor exported a graphic. Takes a token and the
 # word "download".
 [functions.public-link-event]
+verify_jwt = false
+
+# Stripe's billing webhook (Phase 7b). Stripe sends no JWT; the
+# Stripe-Signature header, checked on the raw body against
+# STRIPE_WEBHOOK_SECRET, is the authentication. See the header comment in
+# supabase/functions/billing-webhook/index.ts.
+[functions.billing-webhook]
 verify_jwt = false
