@@ -20,6 +20,9 @@ import {
   logError,
 } from "../_shared/http.ts";
 import { parseBody, requireUuid } from "../_shared/validate.ts";
+import { deleteDecision } from "../_shared/billing.ts";
+import { billingDb } from "../_shared/billingDb.ts";
+import { cancelSubscription, stripeClient, stripeKey } from "../_shared/stripe.ts";
 
 const BUCKETS = ["brand-assets", "template-backgrounds"];
 
@@ -35,10 +38,46 @@ Deno.serve(async (req) => {
     if ("error" in caller) return json({ error: caller.error }, caller.status);
 
     const db = serviceClient();
+
+    // Billing (PHASE-7B.md Q5, Q6): a plan that still renews blocks the
+    // delete; one with a cancel pending (or still incomplete) ends with the
+    // workspace, immediately and without a refund.
+    const billing = billingDb(db);
+    const link = await billing.companyLink(companyId);
+    const account = link?.billingAccountId
+      ? await billing.accountById(link.billingAccountId)
+      : null;
+    if (account) {
+      const owner = await billing.user(account.owner_user_id);
+      const decision = deleteDecision(
+        account,
+        caller.userId,
+        owner ? owner.name || owner.email : null,
+      );
+      if (!decision.allow) return json({ error: decision.message }, 409);
+      if (decision.endSubscription) {
+        const key = stripeKey();
+        if (!key) {
+          return json({ error: "This workspace's plan can't be ended right now. Try again." }, 503);
+        }
+        await cancelSubscription(stripeClient(key), decision.endSubscription);
+      }
+    }
+    // An open Checkout Session for the workspace dies with it.
+    const open = await billing.openCheckout(companyId);
+    if (open && Date.parse(open.expiresAt) > Date.now()) {
+      const key = stripeKey();
+      if (key) {
+        await stripeClient(key)
+          .checkout.sessions.expire(open.sessionId)
+          .catch((e) => logError("delete-company", e));
+      }
+    }
+
     const { error } = await db.from("companies").delete().eq("id", companyId);
     if (error) {
       logError("delete-company", error);
-      return json({ error: "Could not delete the workspace — try again." }, 500);
+      return json({ error: "Could not delete the workspace. Try again." }, 500);
     }
 
     // Best-effort binary sweep. Failures are logged, never surfaced — the

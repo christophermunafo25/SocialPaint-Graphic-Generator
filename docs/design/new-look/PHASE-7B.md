@@ -73,7 +73,7 @@ Recorded as given. §8 holds CJ's answers to the plan's questions (Q1 to Q13); t
 ## 3. Invariants
 
 - **Billing never blocks anything.** No limit is enforced, nothing locks, and `public_links_enabled` stays true for everyone.
-- **The webhook is the only writer** of `billing_accounts` and `companies.billing_account_id`. `checkout`, `portal` and `keep` never write plan state themselves (`keep` asks Stripe; the webhook writes what Stripe then says).
+- **The webhook is the only writer of plan state** (every plan field of `billing_accounts`, and `companies.billing_account_id`). `checkout` creates an owner's row once, holding only their Stripe customer, and records the open Checkout Session; `portal` and `keep` write nothing (`keep` asks Stripe; the webhook writes what Stripe then says). Refined during the build: a row per owner has to exist before the first subscription can name it.
 - **Unconfigured is Early access.** With no Stripe secret, `plans` returns `{ configured: false }`, every other action refuses with a clean 400, and the card shows Early access with no buttons. The local backend behaves the same.
 - **Every route and role stays as it is**; Plan & usage stays admin only.
 - **Redirects** go only to `ALLOWED_ORIGINS` (`requireAllowedRedirect`).
@@ -135,8 +135,8 @@ Recorded as given. §8 holds CJ's answers to the plan's questions (Q1 to Q13); t
 3. **Public details:** the terms of service URL, `https://www.socialpaint.ai/terms` (Checkout's terms consent needs it, Q11).
 4. **Webhook endpoint:** `https://rabbycynypcpwilbaedb.supabase.co/functions/v1/billing-webhook`, on API version `2026-09-30.endive` (Q13), with the six events in §2. Its signing secret is `STRIPE_WEBHOOK_SECRET`.
 5. **Secrets** (CJ sets them; never ask for values): `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, optional `STRIPE_AUTOMATIC_TAX`, and `BILLING_TEST_EMAILS` while the key is a test key.
-6. **Restricted live key** (expected; the PR confirms against what the code calls): Customers write, Checkout Sessions write (create and expire), Customer portal write, Subscriptions write, Products read, Prices read, Invoices read and Refunds write (the backstop). Everything else none.
-7. **Deploy:** `supabase db push` (0043), then `supabase functions deploy billing billing-webhook delete-company`.
+6. **Restricted live key**, checked against what the code calls (`_shared/stripe.ts`, `billing/index.ts`): Customers write (create), Checkout Sessions write (create, expire), Customer portal write (sessions), Subscriptions write (retrieve, update, cancel), Prices read (list), Products read (expanded on prices and subscriptions), Invoices read (retrieve, with its payments) and Refunds write (the backstop). Everything else none. Try the sandbox run on a restricted test key with the same permissions, so a missing one shows up before live.
+7. **Deploy:** `supabase db push` (0043; prod's 0039 file comes from the generate-new-designs worktree, as for 0042), then `supabase functions deploy billing billing-webhook delete-company`.
 8. **Going live** (Q2): delete the sandbox rows (`livemode` false), which puts their workspaces back on Early access; remove the sandbox webhook endpoint in Stripe; swap in the live key and live webhook secret; clear `BILLING_TEST_EMAILS`.
 
 ## 8. Decisions (CJ, 2026-10-05)

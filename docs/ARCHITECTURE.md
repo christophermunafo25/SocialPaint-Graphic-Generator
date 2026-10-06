@@ -279,6 +279,15 @@ switching (the Workspaces card) and sign out; on the local backend the dev role 
 sits in `DevBackendBanner`. What each role reaches is `screenFor` (`src/app/router.tsx`)
 and `settingsSections.ts`, pinned by `src/app/routes.test.ts`.
 
+Billing (Phase 7b, `docs/design/new-look/PHASE-7B.md`): plans are bought and changed on
+Stripe. `billing` (plans, checkout, portal, keep) sends people to Checkout or to the customer
+portal's page for one change; `billing-webhook` (no JWT; the Stripe signature authenticates)
+fetches each subscription and writes its state to `billing_accounts`, one row per payer, and
+links the workspace it covers through `companies.billing_account_id`. Admins read a workspace's
+plan with `workspace_plan()`. The rules live in `supabase/functions/_shared/billing*.ts`
+(tested under vitest); the plan catalog is mirrored in `src/lib/billing/catalog.ts`. Nothing is
+enforced, and without the Stripe secrets every workspace is on Early access.
+
 Settings is on the new look (Phase 7; styles in `src/styles/settings.css`, the `sp-st-*`
 classes). Each section is a column of primitive `SettingsCard`s with the action in the card's
 header; the rail items are real links, and legal links sit at the foot. Feedback with no place
