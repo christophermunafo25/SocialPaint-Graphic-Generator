@@ -3,6 +3,7 @@ import type { Company, CompanyPatch } from "../../types";
 import type { CompanyStore } from "../interfaces";
 import { supabase } from "./client";
 import { COMPANY_COLUMNS, toCompany, type CompanyRow } from "./rows";
+import { readFunctionError } from "./functionError";
 
 export class SupabaseCompanyStore implements CompanyStore {
   async list(): Promise<Company[]> {
@@ -67,7 +68,12 @@ export class SupabaseCompanyStore implements CompanyStore {
     const { data, error } = await supabase().functions.invoke("delete-company", {
       body: { companyId: id },
     });
-    if (error) throw new Error(`Workspace deletion failed: ${error.message}`);
+    if (error) {
+      // A refusal (a plan that still renews, PHASE-7B Q5) carries its reason.
+      throw new Error(
+        (await readFunctionError(error)) ?? `Workspace deletion failed: ${error.message}`,
+      );
+    }
     const body = data as { error?: string };
     if (body?.error) throw new Error(body.error);
   }

@@ -232,3 +232,33 @@ export class PlanCache {
     this.value = null;
   }
 }
+
+export type DeleteDecision =
+  { allow: true; endSubscription: string | null } | { allow: false; message: string };
+
+/** Q5 and Q6, deleting a workspace: a plan that still renews blocks it
+ * (the payer is told to cancel; another admin is told who pays). With a
+ * cancel pending, or an incomplete subscription, the delete goes ahead and
+ * ends that subscription immediately, without a refund. */
+export function deleteDecision(
+  account: Pick<
+    BillingAccountRow,
+    "owner_user_id" | "stripe_subscription_id" | "status" | "cancel_at_period_end" | "cancel_at"
+  > | null,
+  callerId: string,
+  ownerName: string | null,
+): DeleteDecision {
+  if (!account?.stripe_subscription_id || isEnded(account.status)) {
+    return { allow: true, endSubscription: null };
+  }
+  if (stillRenews(account)) {
+    return {
+      allow: false,
+      message:
+        account.owner_user_id === callerId
+          ? "Cancel the plan before deleting this workspace."
+          : `${ownerName ?? "Someone else"} pays for this workspace's plan.`,
+    };
+  }
+  return { allow: true, endSubscription: account.stripe_subscription_id };
+}

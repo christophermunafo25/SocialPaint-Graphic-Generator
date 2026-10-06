@@ -3,6 +3,7 @@ import {
   PlanCache,
   billingConfigured,
   cardState,
+  deleteDecision,
   formatUsd,
   hasUnendedPlan,
   perMonthCents,
@@ -218,5 +219,42 @@ describe("PlanCache (Q12)", () => {
     cache.clear();
     await cache.get(load, 6 * 60_000);
     expect(loads).toBe(3);
+  });
+});
+
+describe("deleteDecision (Q5, Q6)", () => {
+  const acct = (status: string | null, cancel = false) => ({
+    owner_user_id: "cj",
+    stripe_subscription_id: status ? "sub_1" : null,
+    status,
+    cancel_at_period_end: cancel,
+    cancel_at: null,
+  });
+  it("lets a workspace with no plan, or an ended one, go", () => {
+    expect(deleteDecision(null, "cj", null)).toEqual({ allow: true, endSubscription: null });
+    expect(deleteDecision(acct("canceled"), "cj", "CJ")).toEqual({
+      allow: true,
+      endSubscription: null,
+    });
+  });
+  it("blocks a plan that renews, telling the payer to cancel and others who pays", () => {
+    expect(deleteDecision(acct("active"), "cj", "CJ Munafo")).toEqual({
+      allow: false,
+      message: "Cancel the plan before deleting this workspace.",
+    });
+    expect(deleteDecision(acct("past_due"), "priya", "CJ Munafo")).toEqual({
+      allow: false,
+      message: "CJ Munafo pays for this workspace's plan.",
+    });
+  });
+  it("ends a pending-cancel or incomplete subscription with the workspace", () => {
+    expect(deleteDecision(acct("active", true), "cj", "CJ")).toEqual({
+      allow: true,
+      endSubscription: "sub_1",
+    });
+    expect(deleteDecision(acct("incomplete"), "priya", "CJ")).toEqual({
+      allow: true,
+      endSubscription: "sub_1",
+    });
   });
 });
