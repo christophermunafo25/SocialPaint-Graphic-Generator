@@ -63,6 +63,16 @@ const ROUTES = [
   ["generate-history", "/generate/history"],
   ["generate-thread", `/generate/c/${resultThread}`],
   ["generate-thread-question", `/generate/c/${questionThread}`],
+  // The sign-in gate, rendered without Supabase (PHASE-8B §9 D8).
+  ["auth-sign-in", "/dev/auth"],
+  [
+    "auth-sign-in-error",
+    `/dev/auth?error=${encodeURIComponent("That email and password don’t match.")}`,
+  ],
+  ["auth-sign-up", "/dev/auth?view=signup"],
+  ["auth-reset", "/dev/auth?view=forgot"],
+  ["auth-check-email", "/dev/auth?view=checkEmail"],
+  ["auth-new-password", "/dev/auth?view=setPassword"],
   ["template-builder", "/template-builder"],
   ["insights", "/insights"],
   ["brand-studio", "/brand-studio"],

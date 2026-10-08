@@ -36,6 +36,10 @@ import { setMonitoringContext } from "@/lib/monitoring";
 const DevUiPage = import.meta.env.DEV
   ? React.lazy(() => import("./dev/DevUiPage").then((m) => ({ default: m.DevUiPage })))
   : null;
+/** The sign-in gate without Supabase (/dev/auth, PHASE-8B §9 D8). */
+const DevAuthPage = import.meta.env.DEV
+  ? React.lazy(() => import("./dev/DevAuthPage").then((m) => ({ default: m.DevAuthPage })))
+  : null;
 
 /** Keeps the ambient error-report context current: route name, company id,
  * opaque user id, role. Ids and enums only — never email or name. */
@@ -101,6 +105,14 @@ function Screen() {
     return (
       <React.Suspense fallback={null}>
         <DevUiPage />
+      </React.Suspense>
+    );
+  }
+
+  if (route.name === "devAuth" && DevAuthPage) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevAuthPage view={route.view} error={route.error} />
       </React.Suspense>
     );
   }

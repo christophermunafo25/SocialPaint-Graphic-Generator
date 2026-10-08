@@ -112,7 +112,11 @@ export type Route =
   /** The primitives sheet and the Figma Interaction states table
    * (docs/design/new-look/PHASE-2.md). Development builds only: urlToRoute
    * never returns it when import.meta.env.DEV is false. */
-  | { name: "devUi" };
+  | { name: "devUi" }
+  /** The sign-in gate and onboarding without Supabase (PHASE-8B §9 D8):
+   * any view or error from the address, for the screenshot run and
+   * review. Development builds only, like devUi. */
+  | { name: "devAuth"; view?: string; error?: string };
 
 interface NavigateOptions {
   /** Replace the current history entry instead of pushing a new one. The
@@ -192,6 +196,13 @@ export function routeToUrl(route: Route): string {
       return route.section ? `/settings/${route.section}` : "/settings";
     case "devUi":
       return "/dev/ui";
+    case "devAuth": {
+      const params = new URLSearchParams();
+      if (route.view) params.set("view", route.view);
+      if (route.error) params.set("error", route.error);
+      const qs = params.toString();
+      return qs ? `/dev/auth?${qs}` : "/dev/auth";
+    }
   }
 }
 
@@ -325,6 +336,13 @@ export function urlToRoute(pathname: string, search: string): Route {
       // Read at call time so a test can stub it; a production build
       // replaces it with false and drops this branch.
       if (import.meta.env.DEV && tail === "ui") return { name: "devUi" };
+      if (import.meta.env.DEV && tail === "auth") {
+        return {
+          name: "devAuth",
+          view: params.get("view") ?? undefined,
+          error: params.get("error") ?? undefined,
+        };
+      }
       return { name: "portal" };
     default:
       return { name: "portal" };
