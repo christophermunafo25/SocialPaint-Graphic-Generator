@@ -4,7 +4,7 @@ You are a senior engineer on SocialPaint (this repository). This phase rebuilds 
 
 It also lands the product work PLAN.md schedules here: **filters by template, member and platform, with the range summary**. Two data faults found while drafting come with it, since the filters depend on them (§9 D2, D3). A third finding, that Settings › Sharing lost Copy on a wrong premise, was fixed in its own PR before this phase (§9 D1).
 
-**Before building:** CJ updates the Insights frames for the neutral change chip (§9 D7). Read the frames again first and note anything else that moved.
+**Before building:** the Insights frames were updated for the change chip (§9 D7, 2026-10-08). Read them again first and note anything else that moved.
 
 Be exact. Work through the steps in §5 in order, run the checks each step names, and commit after each step with `npm run verify` green (`npm run verify && git commit`). Check `git branch --show-current` before every commit. If something here turns out to be wrong once you are in the code, stop and explain the conflict instead of improvising.
 
@@ -28,7 +28,7 @@ Insights is **admins only**, as today; members never reach it.
 |---|---|---|---|
 | Header | Title; the range as a segmented control | Title with Export CSV (neutralOnPage); a row of four filter menus: "Last 30 days", "All templates", "All members", "All platforms" | 13:906, 13:911 |
 | Digest | None (findings are computed but never shown) | A heading from the range ("Your month in brief" on 30 days), the window's dates, and one sentence from the numbers (D5) | 13:925 |
-| Headline cards | Four KPIs with sparklines, count-up and an "Up 18% ↗" line | Exports, Opens, Posted to LinkedIn, Active members: the number, a neutral change chip whose arrow carries the direction, and "vs previous {range}" (D7, D8) | 13:940 |
+| Headline cards | Four KPIs with sparklines, count-up and an "Up 18% ↗" line | Exports, Opens, Posted to LinkedIn, Active members: the number, a change chip in the card's family colour whose arrow carries the direction, and "vs previous {range}" (D7, D8) | 13:940 |
 | Trend | An area chart with the previous window dashed | Bars per day (month on 12 months), the Exports / Opens / Posted tabs, the range note, a highlighted bar with its tooltip (D9) | 13:975 |
 | Top templates | Five rows, "See all" | Five rows with bar tracks, "View all" | 13:1036 |
 | Public links | Name, Views, Exports, Copy | Name over the template, an exports bar, Opens, Exports, Copy, "View all" to Settings › Sharing, five rows (D1, D11) | 13:1076 |
@@ -58,7 +58,7 @@ Insights is **admins only**, as today; members never reach it.
 - Commit: "New look phase 8: the data".
 
 ### Step 2: the shared pieces
-- The change chip, neutral in every state (`--surface-sunken`, `--text-primary`, the arrow carrying the direction; D7), the bar-list row (8 tall, radius 4), the "View all" link, and the chart colours (D6).
+- The change chip in its card's family colour (D7: Light field fill with accent label; Dark accent at 10% or 20% with accent label), the bar-list row (8 tall, radius 4), the "View all" link, and the chart colours (D6).
 - The filter row on `Filter` menus, the four filters in the URL.
 - Commit: "New look phase 8: the shared pieces".
 
@@ -133,7 +133,11 @@ CJ ruled on D1, D2, D3, D5, D7, D8, D10 and D13; D4, D6, D9, D11 and D12 are bui
 4. **D4. Public activity in the member filter** (as recommended): "Public links" as the last entry, so "All members" visibly includes outside fills.
 5. **D5. The digest:** a sentence built from the numbers `buildInsights` already returns, under the rule the findings follow (numbers only, no adjectives). Its heading and sentence take their window from `RANGE_LABEL`, since "month" fits only one of the four ranges.
 6. **D6. Chart colours** (as recommended): series on the accent tokens (Exports green, Opens blue, Posted violet `--accent-purple`), bars at rest on `--surface-sunken`, the grid on `--border-default`, bar-list fills on `--text-strong`, the leader bar full width in both lists.
-7. **D7. The change chip is neutral in every state:** `--surface-sunken` with `--text-primary`, the arrow carrying the direction. Brand colours carry no meaning in this system, and colouring by direction would make Slime read as good and Fire as bad. Neutral also covers flat and new with no extra rule. CJ updates the Insights frames to match before this is built.
+7. **D7. The change chip takes its card's family colour (revised by CJ, 2026-10-08; replaces the neutral chip).** The Insights frames (Light 13:832, Dark 13:1142) were updated to show it; take the chip tokens from the frames.
+   - Exports green, Opens blue, Posted to LinkedIn purple, Active members **pink** (moved off the warm family, so no chip reads as a warning).
+   - Light: the family's field token as the fill, its accent token on the label (`field/green` with `accent/green`, and so on).
+   - Dark: the accent token as the fill, at 10% for green and blue and 20% for purple and pink, with the same accent on the label.
+   - The colour is the card's identity and stays the same in every state (up, down, flat, new); the arrow and the words carry the direction, as `changeCopy` already does. Every label clears 4.5:1 in both modes.
 8. **D8. "vs previous {range}"**, from `RANGE_LABEL` ("vs previous 7 days", "vs previous 12 months"), matching the chart legend's "Previous 30 days". "Posted to LinkedIn" stays as drawn.
 9. **D9. The chart at rest** (as recommended): the busiest bar highlighted with its tooltip; hover and the keyboard move it; leaving puts it back. The axis comes from the data.
 10. **D10. As drawn:** the Weekday and Size cards and the sparklines go (with count-up, the previous-window line and the never-shown findings, keeping the template-share one for the digest).
