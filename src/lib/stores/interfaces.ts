@@ -74,7 +74,8 @@ export interface TemplateStore {
 /** Public share links for a published template.
  *
  * Every method here goes through the template-links Edge Function rather
- * than a table write: tokens are minted server-side and stored hashed, and
+ * than a table write: tokens are minted server-side (stored with their hash,
+ * and since migration 0033 in plaintext for Copy), and
  * every action lands in the link audit trail. A client that could write this
  * table directly would be a client that decides what a token is. */
 export interface PublicLinkStore {
@@ -83,7 +84,8 @@ export interface PublicLinkStore {
    * admin UI explains rather than offering a button that cannot work. */
   isAvailable(): boolean;
   list(companyId: string, templateId: string): Promise<TemplateLink[]>;
-  /** Returns the plaintext token, which is visible exactly once — here. */
+  /** Returns the plaintext token; since migration 0033 listAll returns it
+   * too, so the link can be copied again later. */
   create(
     companyId: string,
     templateId: string,

@@ -51,7 +51,7 @@ Be exact. Work through the steps in §5 in order, run the checks each step names
   - **Saving:** Name and Website save on blur with rollback and an error line; the slug's availability check and its confirm; website normalisation; the timezone fallback.
   - **Confirms:** removing a member, disconnecting an integration, revoking a link, revoking all (typed), transferring ownership and deleting the workspace (typed, with live counts) all stay confirmed, rebuilt on `Modal`.
   - **States:** loading skeletons, error states with Retry, empty lists, the busy labels ("Inviting…") and the local backend's notices (restyled, local only).
-  - **Shown once:** a public link's address is still shown only when it is made (D4).
+  - **Links:** a public link's address shows when it is made, and (corrected after Phase 7, see D4) can be copied again later from Sharing.
   - **Narrow layout:** below 900 the rail stacks above the section, as today.
 
 ## 4. Before you change anything
@@ -202,6 +202,7 @@ CJ decided D1 (revised: billing moves to Phase 7b) and took D2 to D13 as recomme
 3. **D3. Workspace member view.** Not drawn. A member who can switch sees the Workspaces card alone, laid out as drawn; Add workspace stays for members (today).
 4. **D4. Sharing's per-row Copy.** Addresses are stored hashed and shown once (a deliberate security choice, kept in Phase 4), so Copy can't fetch them.
    - Drop Copy. The row keeps Revoke and a row menu of "Manage" (the template's link dialog) and "New address" (regenerates under its confirm and shows the new one once).
+   - **Corrected (CJ, 2026-10-08; PHASE-8 §9 D1):** the premise was wrong. Migration 0033 (CJ, 2026-09-15) stores each link's token beside its hash, so every link made since then can be copied again. Sharing's rows got Copy back in the fix that followed Phase 7: disabled on links made before 0033, which New address makes copyable.
 5. **D5. Confirms and red.** Every confirm stays (member removal, disconnect, revoke, revoke all typed, transfer, delete typed with live counts), rebuilt on `Modal` with today's copy; the buttons on the page are neutral as drawn (Delete this workspace stays red as drawn), and the confirm's button carries the red.
 6. **D6. How Workspace details saves.** No Save buttons are drawn. Name, Website and Timezone save on blur with rollback, as today; the slug checks availability as you type (an error line only when taken or invalid, no "Available." hint) and asks its confirm on blur or Enter.
 7. **D7. Timezone.** About 400 zones, and the `Select` primitive has no type-ahead. Add type-ahead to `Select` (typing jumps to the first match, as native selects do); no search field.

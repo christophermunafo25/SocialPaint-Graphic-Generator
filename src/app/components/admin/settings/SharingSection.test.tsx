@@ -19,12 +19,19 @@ const link = (id: string, name: string, extra: Partial<CompanyTemplateLink> = {}
     revokedAt: null,
     useCap: null,
     useCount: 37,
+    token: `tok_${id}`,
     ...extra,
   }) as CompanyTemplateLink;
 
 const LINKS = [
   link("l1", "Recruiting partners"),
-  link("l2", "Career fair", { useCap: 200, useCount: 112, expiresAt: "2099-10-15T12:00:00Z" }),
+  // Made before migration 0033: no stored token.
+  link("l2", "Career fair", {
+    useCap: 200,
+    useCount: 112,
+    expiresAt: "2099-10-15T12:00:00Z",
+    token: null,
+  }),
   link("l3", "Old campaign", { revokedAt: "2026-09-02T12:00:00Z" }),
 ];
 
@@ -55,14 +62,14 @@ function renderSection() {
   );
 }
 
-describe("SharingSection (PHASE-7 §9 D4, D5)", () => {
+describe("SharingSection (PHASE-7 §9 D5, PHASE-8 §9 D1)", () => {
   it("lists active links, with the revoked ones behind the filter", async () => {
     renderSection();
     expect(await screen.findByText("Recruiting partners")).toBeTruthy();
     expect(screen.getByText("112 of 200")).toBeTruthy();
     expect(screen.queryByText("Old campaign")).toBeNull();
-    // No Copy on a row: an address is shown once (D4).
-    expect(screen.queryByRole("button", { name: /^Copy/ })).toBeNull();
+    // Copy on every active row (the token is stored since 0033).
+    expect(screen.getAllByRole("button", { name: /^Copy the link for/ })).toHaveLength(2);
     await userEvent.click(screen.getByRole("switch", { name: "Show revoked and expired links" }));
     const row = screen.getByText("Old campaign").closest("tr")!;
     expect(within(row).getByText(/^Revoked /)).toBeTruthy();
@@ -99,5 +106,25 @@ describe("SharingSection (PHASE-7 §9 D4, D5)", () => {
     );
     await userEvent.click(go);
     expect(stores.publicLinks.revoke).toHaveBeenCalledTimes(2);
+  });
+
+  it("copies an active link's address, and explains a link made before 0033", async () => {
+    const writeText = vi.fn(async () => undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    renderSection();
+    const copy = await screen.findByRole("button", {
+      name: "Copy the link for Recruiting partners",
+    });
+    await userEvent.click(copy);
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining("tok_l1"));
+    expect(
+      await screen.findByRole("button", { name: "Copy the link for Recruiting partners" }),
+    ).toBeTruthy();
+    expect(screen.getByText("Copied")).toBeTruthy();
+    const old = screen.getByRole("button", {
+      name: "Copy the link for Career fair",
+    }) as HTMLButtonElement;
+    expect(old.disabled).toBe(true);
+    expect(old.title).toContain("Use New address");
   });
 });

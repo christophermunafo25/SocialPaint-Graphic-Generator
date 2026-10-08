@@ -33,8 +33,9 @@ const B64URL = (bytes: Uint8Array): string =>
     .replace(/\//g, "_")
     .replace(/=+$/, "");
 
-/** A fresh link token. Server-side only — the client never mints one, and
- * the plaintext is returned exactly once, at creation. */
+/** A fresh link token. Server-side only: the client never mints one. The
+ * gate checks its hash; since migration 0033 the plaintext is stored too,
+ * so an admin can copy the link again later. */
 export function mintToken(): string {
   return B64URL(crypto.getRandomValues(new Uint8Array(TOKEN_BYTES)));
 }

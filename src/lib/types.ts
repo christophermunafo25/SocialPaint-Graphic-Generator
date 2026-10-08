@@ -454,11 +454,12 @@ export type NewTemplateInput = Omit<TemplateSchema, "id" | "createdAt" | "update
 
 /** A public share link for a published template.
  *
- * The token itself is NOT here: the gate verifies against its hash, and
- * this admin view never carries it. Since migration 0033 the plaintext IS
- * stored (admin-readable) so Insights can offer copy-to-clipboard — it
- * travels on PublicLinkUsageRow, not here. Links minted before 0033 have
- * no stored plaintext; regenerate remains their recovery path. */
+ * The token itself is not on this per-template view: the gate verifies
+ * against its hash. Since migration 0033 the plaintext is also stored
+ * (admin-readable), so a link can be copied again later: it travels on
+ * CompanyTemplateLink (Settings › Sharing) and PublicLinkUsageRow
+ * (Insights). Links minted before 0033 have no stored plaintext; New
+ * address (regenerate) gives them one. */
 export interface TemplateLink {
   id: string;
   /** Admin's own label ("Speaker confirmation email"). Never shown to a
@@ -479,7 +480,7 @@ export interface TemplateLink {
   lastUsedAt: string | null;
 }
 
-/** A newly minted link and its one and only sight of the plaintext token. */
+/** A newly minted (or regenerated) link with its plaintext token. */
 export interface TemplateLinkWithToken {
   link: TemplateLink;
   token: string;
@@ -505,6 +506,10 @@ export interface TemplateLinkPatch {
 export interface CompanyTemplateLink extends TemplateLink {
   templateId: string;
   templateName: string;
+  /** The plaintext token, for Copy in Settings › Sharing (migration 0033).
+   * Null on links minted before 0033, which stay copyable only after New
+   * address. Admin-read under RLS, like the rest of the row. */
+  token: string | null;
 }
 
 /** One provider's connection state, for Settings → Integrations. Status and

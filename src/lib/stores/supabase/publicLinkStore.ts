@@ -7,15 +7,16 @@ import type {
 import type { PublicLinkStore } from "../interfaces";
 import { isSupabaseConfigured, supabase } from "./client";
 
-/** Public share links. Every call goes through the template-links Edge
- * Function — the client never writes template_links, because the token has
+/** Public share links. Every write goes through the template-links Edge
+ * Function: the client never writes template_links, because the token has
  * to be minted and hashed somewhere the browser cannot reach, and because
  * every link action has to land in the audit trail on its way past.
  *
- * There is no getToken(): the plaintext exists only in the response that
- * created it. Losing a link means regenerating it, which is the correct
- * consequence — a token you can look up later is a token sitting in a
- * database waiting to be dumped. */
+ * Since migration 0033 (CJ, 2026-09-15) the plaintext token is stored
+ * beside its hash and admin-readable, so listAll returns it and a link can
+ * be copied again later. The gate still checks only the hash. Links minted
+ * before 0033 have no stored token; New address (regenerate) gives them
+ * one. */
 export class SupabasePublicLinkStore implements PublicLinkStore {
   isAvailable(): boolean {
     return isSupabaseConfigured;
@@ -75,7 +76,7 @@ export class SupabasePublicLinkStore implements PublicLinkStore {
       .from("template_links")
       .select(
         "id, name, allow_uploads, pinned_variant_id, expires_at, use_cap, use_count, " +
-          "revoked_at, created_at, last_used_at, template_id, templates!inner(name, company_id)",
+          "revoked_at, created_at, last_used_at, template_id, token, templates!inner(name, company_id)",
       )
       .eq("templates.company_id", companyId)
       .order("created_at", { ascending: false });
@@ -93,6 +94,7 @@ export class SupabasePublicLinkStore implements PublicLinkStore {
         created_at: string;
         last_used_at: string | null;
         template_id: string;
+        token: string | null;
         templates: { name: string } | null;
       }>
     ).map((r) => ({
@@ -108,6 +110,7 @@ export class SupabasePublicLinkStore implements PublicLinkStore {
       lastUsedAt: r.last_used_at,
       templateId: r.template_id,
       templateName: r.templates?.name ?? "(deleted template)",
+      token: r.token ?? null,
     }));
   }
 

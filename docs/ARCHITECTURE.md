@@ -176,9 +176,11 @@ route over the existing data path. **RLS is not relaxed anywhere for it.**
   constructed lazily inside a store method, so no authenticated call is made
   and no anon client is created.)
 - **Token.** 32 bytes from `crypto.getRandomValues`, base64url (43 chars),
-  minted server-side and stored as its SHA-256. Not derived from the template
-  id. Shown once, at creation — regenerate is the recovery path for a lost
-  link.
+  minted server-side and stored as its SHA-256, which is all the gate
+  checks. Not derived from the template id. Since migration 0033 the
+  plaintext is stored too (admin-readable), so Settings › Sharing and
+  Insights can copy a link again later; links minted before 0033 have none,
+  and New address (regenerate) gives them one.
 - **The gate.** `public_link_lookup(token_hash, consume)` applies every
   eligibility rule in ONE locked statement: not revoked, not expired, under
   its cap, template still exists and is still published, company's links
@@ -294,7 +296,8 @@ header; the rail items are real links, and legal links sit at the foot. Feedback
 on the page goes to one toast (`settings/settingsToast.tsx`), and every destructive action keeps
 a confirm on `Modal` (`settings/SettingsConfirm.tsx`: `ConfirmModal`, and `TypedConfirmModal`
 for revoke-all and delete). The Plan card shows the no-plan state, "Early access", until billing
-lands in Phase 7b. A public link's address is still shown only once, so Sharing has no Copy.
+lands in Phase 7b. Sharing's rows copy a link's address (its token is stored since 0033); links made
+before 0033 need New address first.
 
 Brand Studio is on the new look (Phase 6; styles in `src/styles/brand-studio.css`, the
 `sp-bs-*` classes). Detail pages head themselves with `BreadcrumbHeader` (save status and
