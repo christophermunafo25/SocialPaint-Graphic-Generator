@@ -298,6 +298,12 @@ a.sp-auth-strong {
   background: var(--surface-raised);
   box-shadow: var(--elevation-small);
 }
+.sp-onb-color-card .sp-color-control,
+.sp-onb-color-card .sp-color-control__row {
+  display: flex;
+  align-self: stretch;
+  width: 100%;
+}
 .sp-onb-color-card__chip {
   height: 48px;
   border-radius: var(--radius-control);
@@ -438,4 +444,155 @@ a.sp-auth-strong {
   height: 145px;
   overflow: hidden;
   border-radius: var(--radius-control-md);
+}
+
+/* ── Onboarding's steps (257:2) ── */
+.sp-onb-title {
+  margin: 0;
+  outline: none;
+}
+/* The step's questions and actions, 40 apart, as the column's parts are. */
+.sp-onb-step {
+  display: flex;
+  flex-direction: column;
+  gap: 40px; /* as drawn (257:3993) */
+}
+.sp-onb-note,
+.sp-onb-subtitle {
+  margin: 0;
+}
+.sp-onb-step > .sp-onb-note {
+  margin-bottom: calc(var(--space-md) - 40px);
+}
+/* Workspace ready's subtitle sits 8 under the title (259:5169). */
+.sp-onb-step > .sp-onb-subtitle:first-child {
+  margin-top: calc(var(--space-2xs) - 40px);
+}
+.sp-onb-failure {
+  margin: 0;
+  color: var(--state-error);
+}
+
+/* Pulling your brand (259:583): three rows, 8 apart; the label dims while
+   its row waits. */
+.sp-onb-pull {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-onb-pull__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm);
+  border-radius: 12px; /* as drawn; no Figma token yet */
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+}
+.sp-onb-pull__row[data-status="waiting"] .sp-onb-pull__label {
+  color: var(--text-secondary);
+}
+
+/* Your brand's logo tile (259:735): raised, 88 tall, radius 12. */
+.sp-onb-logos {
+  display: flex;
+  gap: var(--space-xs);
+}
+.sp-onb-logo-tile {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  height: 88px;
+  padding: var(--space-sm);
+  border-radius: 12px; /* as drawn; no Figma token yet */
+  --_fill: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+}
+.sp-onb-logo-tile > img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* Fonts: two side by side, 12 apart; on Your brand each is a card with the
+   sample over its role and picker (259:761). */
+.sp-onb-fonts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-xs);
+}
+.sp-onb-font-card__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+.sp-onb-font-card {
+  display: flex;
+  align-items: center;
+  gap: 14px; /* as drawn */
+  min-width: 0;
+  padding: var(--space-sm);
+  border-radius: 12px; /* as drawn; no Figma token yet */
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+}
+
+/* Invites (259:904): rows of email and role, 12 apart. */
+.sp-onb-invites {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+.sp-onb-invite {
+  display: flex;
+  flex-direction: column;
+  gap: 6px; /* as the Field's error sits */
+}
+.sp-onb-invite__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+.sp-onb-invite__row > .ui-input {
+  flex: 1;
+  min-width: 0;
+}
+.sp-onb-invite__role {
+  flex: none;
+  width: 112px;
+}
+.sp-onb-add-invite {
+  align-self: flex-start;
+}
+
+/* Workspace ready (259:1074): the starters, three columns of 152, 12 apart. */
+.sp-onb-starters {
+  display: grid;
+  grid-template-columns: repeat(3, 152px);
+  gap: var(--space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-onb-starter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  width: 100%;
+  border-radius: 12px; /* as drawn; no Figma token yet */
+  color: var(--text-strong);
+  text-align: left;
+}
+.sp-onb-starter__thumb {
+  display: block;
+  height: 190px;
+  overflow: hidden;
+  border-radius: 12px; /* as drawn; no Figma token yet */
+  background: var(--surface-sunken);
 }
