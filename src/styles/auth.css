@@ -89,8 +89,9 @@
   .sp-auth__panel {
     display: none;
   }
-  .sp-auth__column {
-    flex-basis: auto;
+  .sp-auth__column,
+  .sp-auth[data-width="wide"] .sp-auth__column {
+    flex: 1 1 auto;
     padding: var(--space-md) var(--page-pad, var(--space-md));
   }
 }
@@ -574,7 +575,7 @@ a.sp-auth-strong {
 /* Workspace ready (259:1074): the starters, three columns of 152, 12 apart. */
 .sp-onb-starters {
   display: grid;
-  grid-template-columns: repeat(3, 152px);
+  grid-template-columns: repeat(3, minmax(0, 152px));
   gap: var(--space-xs);
   margin: 0;
   padding: 0;
