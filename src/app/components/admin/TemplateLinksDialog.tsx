@@ -28,12 +28,10 @@ export interface NewLinkInput {
  * §9 D7): create, name, pin a look, revoke, regenerate. One dialog,
  * opened from the fill page, the template chat and Settings › Sharing.
  *
- * The one behaviour to understand before reading the rest: a link's address
- * is shown exactly ONCE, when it is created or regenerated. Tokens are
- * stored hashed, so there is nothing to look up later. That is the point:
- * a database that can hand back a working address is a database that hands
- * one to whoever dumps it, and it makes "New address" the recovery path for
- * a lost link rather than an exotic action. */
+ * A new or regenerated link's address shows here right away, with Copy
+ * link. Since migration 0033 (CJ, 2026-09-15) the token is also stored, so
+ * Settings › Sharing and Insights can copy the link again later. Links made
+ * before 0033 have no stored token; New address gives them one. */
 export function TemplateLinksDialog({
   template,
   onClose,
@@ -48,8 +46,7 @@ export function TemplateLinksDialog({
   const [loadError, setLoadError] = useState<Error | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  /** The one sight of a plaintext address, held only in this component's
-   * state and never written anywhere. */
+  /** A just-created or regenerated address, shown with Copy link. */
   const [freshUrl, setFreshUrl] = useState<string | null>(null);
   /** Elements whose image no longer exists in storage. A link to this
    * template refuses on every open, uniformly, by design, so the one place
@@ -325,7 +322,7 @@ function Confirm({
   );
 }
 
-/** The one sight of a working address: selectable, with Copy link focused
+/** A just-made address: selectable, with Copy link focused
  * on arrival, since the whole workflow is paste-into-an-email. */
 function FreshLink({ url }: { url: string }) {
   const copyRef = useRef<HTMLButtonElement>(null);

@@ -12,8 +12,11 @@ export function joinCompanyLinks(
   companyId: string,
 ): CompanyTemplateLink[] {
   const own = new Map(templates.filter((t) => t.companyId === companyId).map((t) => [t.id, t]));
-  return links
-    .filter((l) => own.has(l.templateId))
-    .map((l) => ({ ...l, templateName: own.get(l.templateId)!.name }))
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return (
+    links
+      .filter((l) => own.has(l.templateId))
+      // The local backend stores no tokens: nothing to copy there.
+      .map((l) => ({ ...l, templateName: own.get(l.templateId)!.name, token: null }))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  );
 }

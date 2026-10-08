@@ -2,8 +2,10 @@
 // regenerate.
 //
 // Every mutation lives here rather than behind an RLS write policy for two
-// reasons. Tokens are minted server-side and stored hashed, so the client
-// must never be the thing that decides what a token is; and every action
+// reasons. Tokens are minted server-side and stored with their hash (the
+// gate checks only the hash; since 0033 the plaintext is kept too, so an
+// admin can copy a link again), so the client must never be the thing that
+// decides what a token is; and every action
 // lands in the link audit trail, which only works if there is one door.
 //
 // Two authorisation checks, both required:
@@ -236,7 +238,8 @@ Deno.serve(async (req) => {
 
       const link = toView(created as LinkRow);
       await audit(db, link.id, companyId, "created", caller.userId, { name: link.name });
-      // The plaintext token is returned exactly once, here.
+      // The plaintext goes back with the new link; since 0033 it is also
+      // stored, so the link can be copied again from Sharing or Insights.
       return json({ link, token });
     }
 

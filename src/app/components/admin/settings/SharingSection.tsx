@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Check, Copy } from "lucide-react";
 import type { CompanyTemplateLink, TemplateSchema } from "@/lib/types";
 import { stores } from "@/lib/stores";
@@ -32,8 +32,14 @@ function linkState(link: CompanyTemplateLink): { label: string; live: boolean } 
 /** Settings › Sharing (13:15384): everything publicly reachable, in one
  * table, the incident button, and the defaults new links start with.
  * Editing a link stays in its template's Public links dialog ("Manage" in
- * the row menu). An address is shown once, when it is made: there is no
- * Copy on a row, since only a hash of it is stored (PHASE-7 §9 D4). */
+ * the row menu). Each active row has Copy, since migration 0033 stores the
+ * token; a link made before 0033 has none, so its Copy is disabled and New
+ * address (in the menu) gives it a copyable one (PHASE-8 §9 D1, correcting
+ * PHASE-7 §9 D4). */
+/** Why Copy is off on a link made before tokens were stored. */
+const NOT_COPYABLE =
+  "Made before links could be copied. Use New address in the menu to get one you can copy.";
+
 export function SharingSection() {
   const { company } = useAuth();
   const toast = useSettingsToast();
@@ -45,8 +51,25 @@ export function SharingSection() {
   const [revoking, setRevoking] = useState<CompanyTemplateLink | null>(null);
   const [regenerating, setRegenerating] = useState<CompanyTemplateLink | null>(null);
   const [revokingAll, setRevokingAll] = useState(false);
-  /** The one sight of a regenerated address. */
+  /** A just-regenerated address, shown with Copy link. */
   const [freshUrl, setFreshUrl] = useState<string | null>(null);
+  /** The row whose Copy just worked: it reads "Copied" for a moment. */
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const copyTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(copyTimer.current), []);
+
+  const copyLink = async (link: CompanyTemplateLink) => {
+    if (!link.token) return;
+    try {
+      await navigator.clipboard.writeText(publicLinkUrl(window.location.origin, link.token));
+    } catch {
+      toast("Couldn't copy the link.");
+      return;
+    }
+    setCopiedId(link.id);
+    window.clearTimeout(copyTimer.current);
+    copyTimer.current = window.setTimeout(() => setCopiedId(null), 1600);
+  };
   /** Template whose full link dialog is open. */
   const [managing, setManaging] = useState<TemplateSchema | null>(null);
 
@@ -228,6 +251,20 @@ export function SharingSection() {
                       </td>
                       <td>
                         <span className="sp-st-actions sp-st-actions--end">
+                          {st.live && (
+                            <Button
+                              kind="neutral"
+                              size="sm"
+                              icon={copiedId === link.id ? Check : Copy}
+                              disabled={!link.token}
+                              title={link.token ? undefined : NOT_COPYABLE}
+                              aria-label={`Copy the link for ${name}`}
+                              aria-description={link.token ? undefined : NOT_COPYABLE}
+                              onClick={() => void copyLink(link)}
+                            >
+                              {copiedId === link.id ? "Copied" : "Copy"}
+                            </Button>
+                          )}
                           {!link.revokedAt && (
                             <Button
                               kind="neutral"
@@ -282,9 +319,9 @@ export function SharingSection() {
   );
 }
 
-/** The one sight of a regenerated address: selectable, with Copy link,
- * since the whole workflow is paste-into-an-email. Done puts it away for
- * good; nobody can show it again. */
+/** A just-regenerated address: selectable, with Copy link, since the whole
+ * workflow is paste-into-an-email. Done puts it away; the row's Copy has it
+ * from now on. */
 function FreshAddress({ url, onDone }: { url: string; onDone(): void }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
