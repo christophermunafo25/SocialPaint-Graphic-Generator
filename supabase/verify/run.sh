@@ -93,6 +93,19 @@ fi
 sed -E 's/^psql:[^:]+:[0-9]+: NOTICE:  //' /tmp/verify-template-chat.out \
   | grep -vE '^(DO|CREATE FUNCTION|SET|RESET|INSERT|UPDATE|DELETE|BEGIN|ROLLBACK).*$'
 
+for check in "80_usage_attribution.sql:Usage attribution" "90_billing.sql:Billing"; do
+  file="${check%%:*}"
+  label="${check#*:}"
+  echo "==> $label checks"
+  if ! psql -X -v ON_ERROR_STOP=1 -d "$DB" -f "$file" > /tmp/verify-extra.out 2>&1; then
+    sed -E 's/^psql:[^:]+:[0-9]+: (NOTICE|ERROR):  /\1: /' /tmp/verify-extra.out
+    echo "FAILED: a $label check did not pass"
+    exit 1
+  fi
+  sed -E 's/^psql:[^:]+:[0-9]+: NOTICE:  //' /tmp/verify-extra.out \
+    | grep -vE '^(DO|CREATE FUNCTION|SET|RESET|INSERT|UPDATE|DELETE|BEGIN|ROLLBACK).*$'
+done
+
 echo "==> Storage references stay in their company's folder"
 # The read-only audit that can also run against production, run here over
 # seeded rows: it must flag exactly the references A's rows plant in B's

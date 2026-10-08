@@ -16,7 +16,13 @@
 import type { InsightEvent, TemplateSchema } from "../types";
 import type { Member } from "../stores/interfaces";
 import { dayKeyInZone } from "../stores/dailyActivity";
-import { aspectRatioOf, orientationOf } from "../templates/platforms";
+import {
+  aspectRatioOf,
+  classifySize,
+  orientationOf,
+  PLATFORMS,
+  type PlatformId,
+} from "../templates/platforms";
 import { ORIENTATION_LABEL } from "../templates/groups";
 
 export type InsightsRange = "7d" | "30d" | "90d" | "12m";
@@ -42,6 +48,45 @@ export interface InsightChange {
   direction: "up" | "down" | "flat" | "new";
   percent?: number;
   delta?: number;
+}
+
+/** The page's filters (PHASE-8.md §2): one template, one member (or the
+ * public links' visitors), one platform. A template's platforms come from
+ * its canvas size, as the Brand Templates chips do: the filter means
+ * "templates sized for this platform", never where a graphic was posted. */
+export interface InsightsFilters {
+  templateId?: string | null;
+  /** A member's user id, or PUBLIC_MEMBER for public-link visitors. */
+  member?: string | null;
+  platform?: PlatformId | null;
+}
+
+/** The member filter's entry for events from public links (D4). */
+export const PUBLIC_MEMBER = "public";
+
+/** When in the day an event happened, in the workspace's zone. */
+export type DayPart = "morning" | "afternoon" | "evening" | "night";
+
+/** Morning 5–12, afternoon 12–17, evening 17–22, night 22–5. */
+export function dayPartOf(hour: number): DayPart {
+  if (hour >= 5 && hour < 12) return "morning";
+  if (hour >= 12 && hour < 17) return "afternoon";
+  if (hour >= 17 && hour < 22) return "evening";
+  return "night";
+}
+
+/** The hour (0–23) of an instant in a zone. */
+export function hourInZone(iso: string, timeZone: string): number {
+  try {
+    const hour = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      hour: "numeric",
+      hourCycle: "h23",
+    }).format(new Date(iso));
+    return Number(hour) % 24;
+  } catch {
+    return new Date(iso).getUTCHours();
+  }
 }
 
 export interface InsightKpi {
@@ -110,6 +155,12 @@ export interface InsightTemplateRow {
 }
 
 export interface Insights {
+  /** The current window's first and last day keys (YYYY-MM-DD), in the
+   * workspace's zone: the digest's and the trend's dates. */
+  window: { start: string; end: string };
+  /** The weekday (0 = Monday) and part of day with the most exports in the
+   * current window; null with no exports. Earliest wins a tie. */
+  busiestSlot: { weekday: number; part: DayPart } | null;
   kpis: {
     exports: InsightKpi;
     opens: InsightKpi;
@@ -278,17 +329,56 @@ function percentagesOf(values: number[]): number[] {
   return out;
 }
 
+const platformsOf = (t: TemplateSchema): PlatformId[] =>
+  classifySize(t.canvasWidth, t.canvasHeight).platforms;
+
+/** The platforms the workspace's templates are sized for, in the fixed
+ * platform order: the platform filter's options. */
+export function platformsInUse(templates: TemplateSchema[]): PlatformId[] {
+  const used = new Set(templates.flatMap(platformsOf));
+  return PLATFORMS.map((p) => p.id).filter((id) => used.has(id));
+}
+
+/** Whether any filter is set. */
+export const hasFilters = (f: InsightsFilters | undefined): boolean =>
+  !!(f?.templateId || f?.member || f?.platform);
+
 export function buildInsights(input: {
   events: InsightEvent[];
   templates: TemplateSchema[];
   members: Member[];
   range: InsightsRange;
   timeZone: string;
+  filters?: InsightsFilters;
   now?: Date;
 }): Insights {
-  const { events, templates, members, range, timeZone } = input;
+  const { range, timeZone } = input;
+  const filters = input.filters ?? {};
   const now = input.now ?? new Date();
   const { current, previous } = buildWindows(range, timeZone, now);
+
+  // Filters narrow the events; they never redefine a count (§3). Templates
+  // out of scope leave the CSV rows and the unused-templates finding too;
+  // a member filter narrows Active members to that one person.
+  const templates = input.templates.filter(
+    (t) =>
+      (!filters.templateId || t.id === filters.templateId) &&
+      (!filters.platform || platformsOf(t).includes(filters.platform)),
+  );
+  const inScope = new Set(templates.map((t) => t.id));
+  const scoped = !!(filters.templateId || filters.platform);
+  const events = input.events.filter((e) => {
+    if (scoped && !inScope.has(e.templateId)) return false;
+    if (!filters.member) return true;
+    if (filters.member === PUBLIC_MEMBER) return e.actor === "public";
+    return e.actor === "member" && e.userId === filters.member;
+  });
+  const members =
+    filters.member && filters.member !== PUBLIC_MEMBER
+      ? input.members.filter((m) => m.userId === filters.member)
+      : filters.member === PUBLIC_MEMBER
+        ? []
+        : input.members;
 
   const bucketCount = current.buckets.length;
   const zeros = () => new Array<number>(bucketCount).fill(0);
@@ -332,6 +422,8 @@ export function buildInsights(input: {
   for (const t of templates) rowOf(t.id);
 
   const weekdayTotals = new Array<number>(7).fill(0);
+  /** Exports by weekday and part of day: the digest's busiest slot. */
+  const slotCounts = new Map<string, number>();
   const sizeCounts = new Map<string, number>();
   const sizeLabelOf = (t: TemplateSchema): string =>
     `${ORIENTATION_LABEL[orientationOf(t.canvasWidth, t.canvasHeight)]} ${aspectRatioOf(t.canvasWidth, t.canvasHeight)}`;
@@ -373,6 +465,8 @@ export function buildInsights(input: {
       row.exports += 1;
       if (e.actor === "public") row.publicDownloads += 1;
       weekdayTotals[weekdayOf(dayKey)] += 1;
+      const slot = `${weekdayOf(dayKey)}:${dayPartOf(hourInZone(e.createdAt, timeZone))}`;
+      slotCounts.set(slot, (slotCounts.get(slot) ?? 0) + 1);
       const template = templateById.get(e.templateId);
       // A deleted template has no size left to group by; its export still
       // counts everywhere else.
@@ -504,7 +598,23 @@ export function buildInsights(input: {
   ).length;
   if (unused > 0) findings.push({ kind: "unusedTemplates", count: unused });
 
+  // Busiest slot: most exports, then the earliest weekday and part.
+  const PART_ORDER: DayPart[] = ["morning", "afternoon", "evening", "night"];
+  let busiestSlot: Insights["busiestSlot"] = null;
+  let busiestCount = 0;
+  for (let w = 0; w < 7; w++) {
+    for (const part of PART_ORDER) {
+      const n = slotCounts.get(`${w}:${part}`) ?? 0;
+      if (n > busiestCount) {
+        busiestCount = n;
+        busiestSlot = { weekday: w, part };
+      }
+    }
+  }
+
   return {
+    window: { start: current.days[0], end: current.days[current.days.length - 1] },
+    busiestSlot,
     kpis,
     series,
     topTemplates,
