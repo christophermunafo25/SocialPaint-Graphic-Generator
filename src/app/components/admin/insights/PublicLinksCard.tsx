@@ -3,24 +3,22 @@ import { Check, Copy } from "lucide-react";
 import type { LinkCount } from "@/lib/insights/buildInsights";
 import type { PublicLinkUsageRow } from "@/lib/types";
 import { publicLinkUrl } from "@/lib/publicLink/route";
+import { routeToUrl } from "../../../router";
+import { useLinkClick } from "../brand/useLinkClick";
+import { Button } from "../../primitives";
+import { BarTrack } from "./BarTrack";
 
-/** name | views | exports | copy — the header row and every link row share
- * this template so the columns line up. The copy column is FIXED width:
- * header and rows are separate grids, and an `auto` column would collapse
- * to nothing on the header row and drag the number columns out of line. */
-const ROW_COLUMNS = "minmax(0, 1fr) 64px 64px 104px";
+/** The rows the card shows; "View all" opens Settings › Sharing (D11). */
+const CAP = 5;
 
-const numCell: React.CSSProperties = {
-  fontFamily: "var(--font-mono)",
-  fontSize: "var(--type-caption-size)",
-  textAlign: "right",
-};
+/** Why Copy is off on a link made before tokens were stored. */
+const NOT_COPYABLE =
+  "Made before links could be copied. Use New address in Settings › Sharing to get one you can copy.";
 
-/** Public links (CJ, 2026-09-15): each active link by NAME — never the URL
- * itself on screen — with its views and exports in the selected window and
- * a copy-to-clipboard button. The URL is rebuildable since migration 0033
- * stored the plaintext token; links minted before it can't be copied here
- * and say so (regenerating from the Share dialog mints a copyable one). */
+/** Public links (13:1076): the active links by exports in the window, five
+ * at most, each the link's name over its template, a bar of its exports,
+ * Opens, Exports and Copy. Since migration 0033 the token is stored, so a
+ * link copies its address; one made before 0033 has none (D1). */
 export function PublicLinksCard({
   links,
   counts,
@@ -30,26 +28,22 @@ export function PublicLinksCard({
   /** Per-link counts for the current window, from buildInsights. */
   counts: LinkCount[];
 }) {
+  const linkTo = useLinkClick();
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const timer = useRef<number | null>(null);
-  useEffect(
-    () => () => {
-      if (timer.current !== null) window.clearTimeout(timer.current);
-    },
-    [],
-  );
+  const timer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+
   const copy = async (linkId: string, token: string) => {
     try {
       await navigator.clipboard.writeText(publicLinkUrl(window.location.origin, token));
     } catch (e) {
-      // A denied write (no user activation, restrictive browser) must not
-      // claim "Copied" — the button simply stays put.
+      // A denied write must not claim "Copied": the button stays put.
       console.warn("clipboard write failed", e);
       return;
     }
     setCopiedId(linkId);
-    if (timer.current !== null) window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => setCopiedId(null), 2000);
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => setCopiedId(null), 1600);
   };
 
   const countOf = new Map(counts.map((c) => [c.linkId, c]));
@@ -57,80 +51,78 @@ export function PublicLinksCard({
     .map((l) => ({
       linkId: l.linkId,
       name: l.linkName || "Untitled link",
+      templateName: l.templateName,
       token: l.token,
-      views: countOf.get(l.linkId)?.views ?? 0,
+      opens: countOf.get(l.linkId)?.views ?? 0,
       exports: countOf.get(l.linkId)?.exports ?? 0,
     }))
-    .sort((a, b) => b.exports - a.exports || b.views - a.views || a.name.localeCompare(b.name));
+    .sort((a, b) => b.exports - a.exports || b.opens - a.opens || a.name.localeCompare(b.name))
+    .slice(0, CAP);
+  const max = Math.max(1, ...rows.map((r) => r.exports));
 
   return (
-    <div className="sp-card sp-card--content">
-      <h2 className="sp-section-title">Public links</h2>
-      <div
-        className="grid items-center"
-        style={{
-          gridTemplateColumns: ROW_COLUMNS,
-          columnGap: "var(--space-sm)",
-          marginTop: "var(--space-xs)",
-        }}
-      >
-        <span className="sp-eyebrow">Link</span>
-        <span className="sp-eyebrow" style={{ textAlign: "right" }}>
-          Views
-        </span>
-        <span className="sp-eyebrow" style={{ textAlign: "right" }}>
-          Exports
-        </span>
-        <span aria-hidden />
-      </div>
-      {rows.map((row) => (
-        <div
-          key={row.linkId}
-          className="grid items-center"
-          style={{
-            gridTemplateColumns: ROW_COLUMNS,
-            columnGap: "var(--space-sm)",
-            paddingBlock: "var(--space-2xs)",
-            borderTop: "1px solid var(--border)",
-          }}
+    <section className="sp-in-card sp-in-links" aria-labelledby="sp-in-links-title">
+      <div className="sp-in-card__head">
+        <h2 id="sp-in-links-title" className="t-title-panel">
+          Public links
+        </h2>
+        <a
+          className="ui-ring t-label-m sp-in-link"
+          href={routeToUrl({ name: "settings", section: "sharing" })}
+          onClick={linkTo({ name: "settings", section: "sharing" })}
         >
-          <span
-            className="truncate"
-            style={{
-              fontFamily: "var(--font-body)",
-              fontWeight: 400,
-              fontSize: "var(--type-label-size)",
-              letterSpacing: "var(--type-label-track)",
-              color: "var(--text-primary)",
-            }}
-          >
-            {row.name}
-          </span>
-          <span style={{ ...numCell, color: "var(--text-secondary)" }}>{row.views}</span>
-          <span style={{ ...numCell, color: "var(--text-primary)" }}>{row.exports}</span>
-          <button
-            className="sp-btn sp-btn-ghost"
-            style={{ minHeight: 28, padding: "2px var(--space-2xs)", justifySelf: "end" }}
-            disabled={row.token === null}
-            title={
-              row.token === null
-                ? "Created before copyable links — regenerate it from the template's Share dialog to get a URL you can copy here."
-                : undefined
-            }
-            aria-label={`Copy the link URL for ${row.name}`}
-            onClick={() => {
-              if (row.token !== null) void copy(row.linkId, row.token);
-            }}
-          >
-            {copiedId === row.linkId ? (
-              <Check style={{ width: 14, height: 14 }} />
-            ) : (
-              <Copy style={{ width: 14, height: 14 }} />
-            )}
-            {copiedId === row.linkId ? "Copied" : "Copy"}
-          </button>
-        </div>
-      ))}
-    </div>
+          View all
+        </a>
+      </div>
+      <table className="sp-in-links__table">
+        <thead>
+          <tr className="t-label-xs">
+            <th scope="col">Link</th>
+            <th scope="col" className="sp-in-links__bar">
+              <span className="sr-only">Exports, as a bar</span>
+            </th>
+            <th scope="col">Opens</th>
+            <th scope="col">Exports</th>
+            <th scope="col">
+              <span className="sr-only">Copy</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.linkId}>
+              <td>
+                <span className="sp-in-links__name">
+                  <span className="t-caption-m">{row.name}</span>
+                  <span className="t-label-xs sp-in-muted">{row.templateName}</span>
+                </span>
+              </td>
+              <td className="sp-in-links__bar">
+                <BarTrack value={row.exports} max={max} />
+              </td>
+              <td className="sp-in-links__num t-caption-m sp-in-muted">
+                {row.opens.toLocaleString("en-US")}
+              </td>
+              <td className="sp-in-links__num t-label-s">{row.exports.toLocaleString("en-US")}</td>
+              <td>
+                <Button
+                  kind="neutral"
+                  size="sm"
+                  icon={copiedId === row.linkId ? Check : Copy}
+                  disabled={row.token === null}
+                  title={row.token === null ? NOT_COPYABLE : undefined}
+                  aria-label={`Copy the link for ${row.name}`}
+                  onClick={() => {
+                    if (row.token !== null) void copy(row.linkId, row.token);
+                  }}
+                >
+                  {copiedId === row.linkId ? "Copied" : "Copy"}
+                </Button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
   );
 }

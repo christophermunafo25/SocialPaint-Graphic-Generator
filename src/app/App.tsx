@@ -251,7 +251,13 @@ function Screen() {
           <BrandStudio category={route.category} surface={route.surface} />
         )}
         {!gated && route.name === "dashboard" && (
-          <Dashboard range={route.range} metric={route.metric} />
+          <Dashboard
+            range={route.range}
+            metric={route.metric}
+            template={route.template}
+            member={route.member}
+            platform={route.platform}
+          />
         )}
         {/* Not admin-only: members reach Account (and their workspaces).
             The page gates its own sections (settingsSections.ts). */}

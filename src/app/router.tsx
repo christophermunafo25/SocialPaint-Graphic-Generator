@@ -98,7 +98,16 @@ export type Route =
   /** Insights. One date range drives every card (D2) and the trend chart's
    * selected tab rides along (D4) — both in the URL so the view is
    * shareable; the defaults (30d, exports) stay out of it. */
-  | { name: "dashboard"; range?: InsightsRange; metric?: InsightsMetric }
+  | {
+      name: "dashboard";
+      range?: InsightsRange;
+      metric?: InsightsMetric;
+      /** Insights' filters (PHASE-8.md §2): a template id, a member's user
+       * id or "public", a platform id. Absent means all. */
+      template?: string;
+      member?: string;
+      platform?: PlatformId;
+    }
   | { name: "settings"; section?: SettingsSection }
   /** The primitives sheet and the Figma Interaction states table
    * (docs/design/new-look/PHASE-2.md). Development builds only: urlToRoute
@@ -173,6 +182,9 @@ export function routeToUrl(route: Route): string {
       const params = new URLSearchParams();
       if (route.range) params.set("range", route.range);
       if (route.metric) params.set("metric", route.metric);
+      if (route.template) params.set("template", route.template);
+      if (route.member) params.set("member", route.member);
+      if (route.platform) params.set("platform", route.platform);
       const qs = params.toString();
       return qs ? `/insights?${qs}` : "/insights";
     }
@@ -289,6 +301,13 @@ export function urlToRoute(pathname: string, search: string): Route {
           : undefined,
         metric: (INSIGHTS_METRICS as readonly string[]).includes(rawMetric ?? "")
           ? (rawMetric as InsightsMetric)
+          : undefined,
+        // Ids are checked against the workspace's own templates and members
+        // on the page; an unknown one reads as "all" there.
+        template: params.get("template") || undefined,
+        member: params.get("member") || undefined,
+        platform: PLATFORMS.some((p) => p.id === params.get("platform"))
+          ? (params.get("platform") as PlatformId)
           : undefined,
       };
     }

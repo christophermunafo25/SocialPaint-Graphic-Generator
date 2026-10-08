@@ -2,105 +2,64 @@ import React from "react";
 import type { TopTemplate } from "@/lib/insights/buildInsights";
 import { routeToUrl } from "../../../router";
 import { useLinkClick } from "../brand/useLinkClick";
+import { Button } from "../../primitives";
+import { BarTrack } from "./BarTrack";
 
-/** Fully neutral by D6: the leader's bar is --viz-neutral-strong, the rest
- * --viz-neutral — rank is carried by order, width, and the name's text
- * colour, never by an accent. */
+/** Top templates (13:1036): five rows by exports, each the name and count
+ * over its bar, the leader full width (D6). A row opens its template in
+ * the builder; "View all" opens the template list (D11). */
 export function TopTemplatesCard({
   templates,
   error,
 }: {
   templates: TopTemplate[];
-  /** The templates load failed — the card shows its own retry row. */
-  error?: { retry: () => void };
+  /** The templates load failed: the card shows its own retry. */
+  error?: { retry(): void };
 }) {
   const linkTo = useLinkClick();
   const max = Math.max(1, ...templates.map((t) => t.exports));
   return (
-    <div className="sp-card sp-card--content flex flex-col" style={{ minWidth: 0 }}>
-      <div className="flex items-center justify-between" style={{ gap: "var(--space-xs)" }}>
-        <h2 className="sp-section-title">Top templates</h2>
+    <section className="sp-in-card sp-in-top" aria-labelledby="sp-in-top-title">
+      <div className="sp-in-card__head">
+        <h2 id="sp-in-top-title" className="t-title-panel">
+          Top templates
+        </h2>
         <a
-          className="sp-btn sp-btn-ghost"
+          className="ui-ring t-label-m sp-in-link"
           href={routeToUrl({ name: "adminTemplates" })}
           onClick={linkTo({ name: "adminTemplates" })}
         >
-          See all
+          View all
         </a>
       </div>
       {error ? (
-        <div
-          className="flex-1 flex flex-col items-center justify-center"
-          style={{ gap: "var(--space-2xs)", minHeight: 160 }}
-        >
-          <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>
-            We couldn't load this.
-          </p>
-          <button className="sp-btn sp-btn-ghost" onClick={error.retry}>
+        <div className="sp-in-empty">
+          <p className="t-body-s sp-in-muted">We couldn't load this.</p>
+          <Button kind="neutral" size="sm" onClick={error.retry}>
             Try again
-          </button>
+          </Button>
         </div>
       ) : templates.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center" style={{ minHeight: 160 }}>
-          <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>
-            No exports in this range
-          </p>
-        </div>
+        <p className="t-body-s sp-in-muted">No exports in this range.</p>
       ) : (
-        <div
-          className="flex-1 flex flex-col justify-around"
-          style={{ marginTop: "var(--space-2xs)" }}
-        >
-          {templates.map((t, i) => (
-            <a
-              key={t.templateId}
-              className="block"
-              href={routeToUrl({ name: "builder", templateId: t.templateId })}
-              onClick={linkTo({ name: "builder", templateId: t.templateId })}
-              style={{ paddingBlock: "var(--space-2xs)", minWidth: 0 }}
-            >
-              <span
-                className="flex items-baseline justify-between"
-                style={{ gap: "var(--space-xs)" }}
+        <ul className="sp-in-top__rows">
+          {templates.map((t) => (
+            <li key={t.templateId}>
+              <a
+                className="ui-ring sp-in-top__row"
+                href={routeToUrl({ name: "builder", templateId: t.templateId })}
+                onClick={linkTo({ name: "builder", templateId: t.templateId })}
               >
-                <span
-                  className="truncate"
-                  style={{
-                    fontFamily: "var(--font-body)",
-                    fontWeight: 400,
-                    fontSize: "var(--type-label-size)",
-                    letterSpacing: "var(--type-label-track)",
-                    color: i === 0 ? "var(--text-primary)" : "var(--text-secondary)",
-                  }}
-                >
-                  {t.name}
+                <span className="sp-in-top__line">
+                  <span className="t-caption-m">{t.name}</span>
+                  <span className="t-label-s">{t.exports.toLocaleString("en-US")}</span>
                 </span>
-                <span className="sp-eyebrow flex-shrink-0">{t.exports}</span>
-              </span>
-              <span
-                aria-hidden
-                className="block"
-                style={{
-                  height: 6,
-                  marginTop: 6,
-                  borderRadius: "var(--radius-pill)",
-                  background: "var(--viz-track)",
-                }}
-              >
-                <span
-                  className="block"
-                  style={{
-                    height: "100%",
-                    width: `${Math.max(2, (t.exports / max) * 100)}%`,
-                    borderRadius: "var(--radius-pill)",
-                    background: i === 0 ? "var(--viz-neutral-strong)" : "var(--viz-neutral)",
-                  }}
-                />
-              </span>
-            </a>
+                <BarTrack value={t.exports} max={max} />
+              </a>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
-    </div>
+    </section>
   );
 }

@@ -41,20 +41,41 @@ export function insightsCsv(rows: InsightTemplateRow[]): string {
   return lines.join("\n");
 }
 
+/** A file-name piece from a filter's label: "Product launch" → "product-launch". */
+const slug = (label: string): string =>
+  label
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+
+/** "insights-30d-2026-10-06.csv", or with the active filters,
+ * "insights-30d-product-launch-tiktok-2026-10-06.csv" (D11). */
+export function insightsCsvName(
+  range: InsightsRange,
+  date: string,
+  filters: string[] = [],
+): string {
+  const parts = filters.map(slug).filter(Boolean);
+  return ["insights", range, ...parts, date].join("-") + ".csv";
+}
+
 /** Client-side download, no dependency: a Blob behind a temporary anchor.
  * The file date follows the workspace timezone like every other Insights
- * boundary. */
+ * boundary; the rows and the name follow the filters. */
 export function downloadInsightsCsv(
   rows: InsightTemplateRow[],
   range: InsightsRange,
   timeZone: string,
+  /** The active filters' labels, for the file name. */
+  filters: string[] = [],
 ): void {
   const date = dayKeyInZone(new Date().toISOString(), timeZone);
   const blob = new Blob([insightsCsv(rows)], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `insights-${range}-${date}.csv`;
+  a.download = insightsCsvName(range, date, filters);
   a.click();
   URL.revokeObjectURL(url);
 }
