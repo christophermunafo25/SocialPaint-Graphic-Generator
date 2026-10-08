@@ -69,7 +69,8 @@ export function PlatformLogo({
 
 export interface PlatformChipProps extends ButtonAttrs {
   platform: PlatformId | "all";
-  /** Selected turns the chip ink, the mark Slime and the chevron down. */
+  /** Selected turns the tile ink (the whole chip in Dark), the mark Slime
+   * and the chevron down. */
   selected?: boolean;
   /** Its menu is open; the chevron points down. */
   expanded?: boolean;

@@ -818,10 +818,23 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 .ui-platform-chip[data-demo-state="selected"] .ui-platform-chip__chevron {
   transform: rotate(90deg);
 }
+/* Selected: in Light the chip keeps its fill and only the tile turns ink
+   (53:74); in Dark the whole chip turns ink. Set on the theme roots so a
+   chip takes the nearest theme's look. */
+[data-theme="light"] {
+  --_platform-chip-selected-fill: var(--control-fill);
+  --_platform-chip-selected-ink: var(--text-strong);
+  --_platform-chip-selected-chevron: var(--text-secondary);
+}
+[data-theme="dark"] {
+  --_platform-chip-selected-fill: var(--chip-selected-bg);
+  --_platform-chip-selected-ink: var(--text-on-fill);
+  --_platform-chip-selected-chevron: var(--text-on-fill);
+}
 .ui-platform-chip[data-selected],
 .ui-platform-chip[data-demo-state="selected"] {
-  --_fill: var(--chip-selected-bg);
-  color: var(--text-on-fill);
+  --_fill: var(--_platform-chip-selected-fill, var(--chip-selected-bg));
+  color: var(--_platform-chip-selected-ink, var(--text-on-fill));
 }
 .ui-platform-chip[data-selected] .ui-platform-chip__tile,
 .ui-platform-chip[data-demo-state="selected"] .ui-platform-chip__tile {
@@ -830,7 +843,7 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 }
 .ui-platform-chip[data-selected] .ui-platform-chip__chevron,
 .ui-platform-chip[data-demo-state="selected"] .ui-platform-chip__chevron {
-  color: var(--text-on-fill);
+  color: var(--_platform-chip-selected-chevron, var(--text-on-fill));
 }
 
 /* ── Tag (52:63) ── */
