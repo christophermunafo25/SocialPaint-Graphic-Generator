@@ -93,7 +93,7 @@ fi
 sed -E 's/^psql:[^:]+:[0-9]+: NOTICE:  //' /tmp/verify-template-chat.out \
   | grep -vE '^(DO|CREATE FUNCTION|SET|RESET|INSERT|UPDATE|DELETE|BEGIN|ROLLBACK).*$'
 
-for check in "80_usage_attribution.sql:Usage attribution" "90_billing.sql:Billing"; do
+for check in "80_usage_attribution.sql:Usage attribution" "85_onboarding.sql:Onboarding answers" "90_billing.sql:Billing"; do
   file="${check%%:*}"
   label="${check#*:}"
   echo "==> $label checks"

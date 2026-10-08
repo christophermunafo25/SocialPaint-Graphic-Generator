@@ -580,6 +580,9 @@ export class LocalAccountStore implements AccountStore {
   async setDisplayName(): Promise<never> {
     throw new Error(LocalAccountStore.REASON);
   }
+  async setJobRole(): Promise<never> {
+    throw new Error(LocalAccountStore.REASON);
+  }
   async getNotificationPrefs() {
     return { inviteAccepted: true, weeklyDigest: true, linkExpiring: true };
   }

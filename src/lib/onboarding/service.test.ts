@@ -10,7 +10,7 @@ vi.mock("../templates/starters/seed", () => ({
   seedStarterTemplates: (...args: unknown[]) => seed(...args),
 }));
 
-const { createWorkspace, seedNoticeFor, slugFor } = await import("./service");
+const { createWorkspace, savePerson, seedNoticeFor, slugFor } = await import("./service");
 
 function fakeStores(overrides: { website?: () => Promise<never> } = {}) {
   const company = { id: "c1", name: "Acme Studios", slug: "acme-studios" };
@@ -93,6 +93,40 @@ describe("createWorkspace", () => {
     expect(result.seeded).toBeNull();
     expect(seedNoticeFor(result.seeded)).toMatch(/could not be created/);
     spy.mockRestore();
+  });
+});
+
+describe("answers", () => {
+  it("saves the workspace profile with the website", async () => {
+    seed.mockResolvedValue({ created: [], existing: [], failed: [] });
+    const { stores } = fakeStores();
+    await createWorkspace(stores, {
+      name: "Acme",
+      slug: "acme",
+      website: "https://acme.example",
+      profile: { setupFor: "company", teamSize: "11_50" },
+      brand,
+    });
+    expect(stores.companies.update).toHaveBeenCalledWith("c1", {
+      website: "https://acme.example",
+      profile: { setupFor: "company", teamSize: "11_50" },
+    });
+  });
+
+  it("saves the person's name and role, and skips without accounts", async () => {
+    const account = {
+      isAvailable: vi.fn(() => true),
+      setDisplayName: vi.fn(async () => {}),
+      setJobRole: vi.fn(async () => {}),
+    };
+    const stores = { account } as unknown as Pick<Stores, "account">;
+    await savePerson(stores, "u1", { name: " Jordan Lee ", role: "marketing" });
+    expect(account.setDisplayName).toHaveBeenCalledWith("u1", "Jordan Lee");
+    expect(account.setJobRole).toHaveBeenCalledWith("u1", "marketing");
+    account.isAvailable.mockReturnValue(false);
+    account.setDisplayName.mockClear();
+    await savePerson(stores, "u1", { name: "Jordan" });
+    expect(account.setDisplayName).not.toHaveBeenCalled();
   });
 });
 
