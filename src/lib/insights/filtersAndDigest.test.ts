@@ -136,19 +136,35 @@ describe("digest (D5)", () => {
 
   it("writes one sentence from the numbers: the change, the leading template, the busiest slot", () => {
     const previous = event({ createdAt: "2026-08-05T15:00:00Z" });
-    const sentence = digestSentence(build([...EVENTS, previous]), "30d", false);
+    const sentence = digestSentence(build([...EVENTS, previous]), "30d");
     expect(sentence).toBe(
       "Your team exported 5 graphics, 400% more than the previous 30 days. Stat highlight drove 80% of them, and Tuesday mornings were the busiest.",
     );
   });
 
   it("says new, flat and empty plainly", () => {
-    expect(digestSentence(build(EVENTS), "30d", false)).toMatch(
+    expect(digestSentence(build(EVENTS), "30d")).toMatch(
       /^Your team exported 5 graphics, none in the previous 30 days\./,
     );
-    expect(digestSentence(build([]), "7d", false)).toBe("No exports in the last 7 days.");
-    expect(digestSentence(build([], { member: "u2" }), "30d", true)).toBe(
+    expect(digestSentence(build([]), "7d")).toBe("No exports in the last 7 days.");
+    expect(digestSentence(build([], { member: "u2" }), "30d", { member: "u2" })).toBe(
       "No exports match these filters.",
     );
+  });
+
+  it("names who exported, and drops the share under a template filter", () => {
+    const filters = { member: PUBLIC_MEMBER };
+    const publicOnly = [
+      event({ createdAt: "2026-09-08T14:00:00Z", actor: "public", userId: null }),
+    ];
+    expect(digestSentence(build(publicOnly, filters), "30d", filters)).toMatch(
+      /^Public link visitors exported 1 graphic,/,
+    );
+    const one = { member: "u1" };
+    expect(digestSentence(build(EVENTS, one), "30d", one, "Jordan Lee")).toMatch(
+      /^Jordan Lee exported /,
+    );
+    const square = { templateId: "square" };
+    expect(digestSentence(build(EVENTS, square), "30d", square)).not.toMatch(/drove/);
   });
 });

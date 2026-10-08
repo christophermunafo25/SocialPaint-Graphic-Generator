@@ -3,8 +3,8 @@
 // the findings' rule: numbers only, no adjectives. The window comes from
 // RANGE_LABEL, so the copy holds for every range, not only a month.
 
-import type { DayPart, Insights, InsightsRange } from "./buildInsights";
-import { RANGE_LABEL } from "./buildInsights";
+import type { DayPart, Insights, InsightsFilters, InsightsRange } from "./buildInsights";
+import { hasFilters, PUBLIC_MEMBER, RANGE_LABEL } from "./buildInsights";
 
 const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const PART_PLURAL: Record<DayPart, string> = {
@@ -49,12 +49,18 @@ export const digestHeading = (range: InsightsRange): string =>
  *  - the weekday and part of day with the most exports.
  * "Your team exported 1,128 graphics, 18% more than the previous 30 days.
  * Product launch drove 22% of them, and Tuesday mornings were the busiest."
+ * The subject follows the member filter ("Jordan Lee", "Public link
+ * visitors"), and a template filter drops the share: one template is all
+ * of them.
  */
 export function digestSentence(
   insights: Insights,
   range: InsightsRange,
-  filtered: boolean,
+  filters: InsightsFilters = {},
+  /** The filtered member's name, when the filter is one member. */
+  memberName?: string,
 ): string {
+  const filtered = hasFilters(filters);
   const exports = insights.kpis.exports;
   const window = RANGE_LABEL[range];
   if (exports.current === 0) {
@@ -68,9 +74,15 @@ export function digestSentence(
       : change.direction === "flat"
         ? `, the same as the previous ${window}`
         : `, ${change.percent}% ${change.direction === "up" ? "more" : "fewer"} than the previous ${window}`;
-  const first = `Your team exported ${graphics}${movement}.`;
+  const subject =
+    filters.member === PUBLIC_MEMBER
+      ? "Public link visitors"
+      : filters.member && memberName
+        ? memberName
+        : "Your team";
+  const first = `${subject} exported ${graphics}${movement}.`;
 
-  const share = insights.templateShare;
+  const share = filters.templateId ? null : insights.templateShare;
   const slot = insights.busiestSlot;
   const busiest = slot ? `${WEEKDAYS[slot.weekday]} ${PART_PLURAL[slot.part]}` : null;
   if (share && busiest) {

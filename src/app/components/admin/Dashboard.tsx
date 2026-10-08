@@ -287,7 +287,12 @@ export function Dashboard(route: Omit<DashboardRoute, "name">) {
               </span>
             </div>
             <p className="sp-in-digest__sentence">
-              {digestSentence(insights, loaded.range, filtered)}
+              {digestSentence(
+                insights,
+                loaded.range,
+                filters,
+                filters.member ? labelOf(memberOptions, filters.member) : undefined,
+              )}
             </p>
           </section>
 
