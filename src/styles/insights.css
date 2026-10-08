@@ -1,0 +1,412 @@
+/* ── Insights on the new look (PHASE-8.md; frames 13:832 and 13:1142) ──
+   The page's rhythm, the filters, the digest, the headline cards and their
+   change chips, the trend, and the two bar lists (Top templates and Public
+   links). Tokens and .t-* classes only. */
+
+/* The page: header, 20, filters, then 28 between every section (13:905). */
+.sp-in-page {
+  display: flex;
+  flex-direction: column;
+  gap: 28px; /* off the scale, as drawn */
+  padding-bottom: calc(40px + var(--dev-banner-h, 0px)); /* as drawn */
+}
+.sp-in-page > .sp-shell-pagehead {
+  margin-bottom: -8px; /* 20 under the header, not the column's 28 */
+}
+.sp-in-content {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.sp-in-content[aria-busy="true"] {
+  opacity: 0.56;
+}
+
+/* Filters (13:911): four menus, 8 apart. */
+.sp-in-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+}
+
+/* A raised card: Elevation/Small, radius 20 (every part of the page). */
+.sp-in-card {
+  box-sizing: border-box;
+  min-width: 0;
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+  color: var(--text-strong);
+}
+.sp-in-card h2,
+.sp-in-card p {
+  margin: 0;
+}
+.sp-in-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+/* "View all": a text link, underlined, on text/strong (13:1037). */
+.sp-in-link {
+  border-radius: var(--radius-control);
+  color: var(--text-strong);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}
+
+/* ── Digest (13:926): padding 24 / 28; the tile, the heading over its
+   dates, 16, then the sentence. ── */
+.sp-in-digest {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-md) 28px;
+}
+.sp-in-digest__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+.sp-in-digest__tile {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-control);
+  background: var(--surface-sunken);
+  color: var(--text-strong);
+}
+.sp-in-digest__titles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* as drawn */
+}
+.sp-in-muted {
+  color: var(--text-secondary);
+}
+/* The sentence: 22 / 30, −0.01em (13:938); no text style exists for it
+   yet (§8), so it is set here, on the body face. */
+.sp-in-digest__sentence {
+  max-width: 860px;
+  font: 400 22px/30px var(--font-ui); /* as the type tokens are written */
+  letter-spacing: -0.01em;
+}
+
+/* ── Headline cards (13:940): four across, 16 apart; padding 25. ── */
+.sp-in-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+@media (max-width: 1023.98px) {
+  .sp-in-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.sp-in-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: 25px; /* as drawn */
+}
+.sp-in-kpi__change {
+  display: flex;
+  flex-wrap: wrap; /* the comparison moves under the chip, never breaks */
+  align-items: center;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+.sp-in-kpi__change > * {
+  white-space: nowrap;
+}
+
+/* The change chip (D7): the card's family colour in every state, the arrow
+   and words carrying the direction. Light: the family's field fill with
+   its accent label. Dark: the accent as the fill (10% green and blue, 20%
+   purple and pink) with the same accent label. */
+.sp-in-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 21px;
+  padding: 0 var(--space-2xs);
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+.sp-in-chip[data-family="green"] {
+  background: var(--field-green);
+  color: var(--accent-green);
+}
+.sp-in-chip[data-family="blue"] {
+  background: var(--field-blue);
+  color: var(--accent-blue);
+}
+.sp-in-chip[data-family="purple"] {
+  background: var(--field-purple);
+  color: var(--accent-purple);
+}
+.sp-in-chip[data-family="pink"] {
+  background: var(--field-pink);
+  color: var(--accent-pink);
+}
+[data-theme="dark"] .sp-in-chip[data-family="green"] {
+  background: color-mix(in srgb, var(--accent-green) 10%, transparent);
+}
+[data-theme="dark"] .sp-in-chip[data-family="blue"] {
+  background: color-mix(in srgb, var(--accent-blue) 10%, transparent);
+}
+[data-theme="dark"] .sp-in-chip[data-family="purple"] {
+  background: color-mix(in srgb, var(--accent-purple) 20%, transparent);
+}
+[data-theme="dark"] .sp-in-chip[data-family="pink"] {
+  background: color-mix(in srgb, var(--accent-pink) 20%, transparent);
+}
+
+/* ── The row: the trend, 16, Top templates (304) (13:974). ── */
+.sp-in-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 304px;
+  gap: var(--space-sm);
+  align-items: stretch;
+}
+@media (max-width: 1023.98px) {
+  .sp-in-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ── Trend (13:975): 22 / 24 / 24 / 24; the tabs and the range note, 23,
+   then the chart (196 tall). ── */
+.sp-in-trend {
+  display: flex;
+  flex-direction: column;
+  gap: 23px; /* as drawn */
+  padding: 22px var(--space-md) var(--space-md);
+}
+.sp-in-trend__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+.sp-in-chart {
+  position: relative;
+  height: 196px;
+  border-radius: var(--radius-control);
+}
+.sp-in-chart:focus-visible {
+  outline: var(--focus-width) solid var(--ring);
+  outline-offset: var(--focus-offset);
+}
+/* The plot: 32 in from the left for the y labels, 30 up for the x labels. */
+.sp-in-chart__plot {
+  position: absolute;
+  inset: 6px 0 30px 32px;
+}
+.sp-in-chart__grid {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--border-default);
+}
+.sp-in-chart__ylabel {
+  position: absolute;
+  left: -32px;
+  transform: translateY(50%); /* centred on its gridline */
+  color: var(--text-secondary);
+}
+.sp-in-chart__bars {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  gap: 1px;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+.sp-in-chart__bar {
+  flex: 0 1 auto; /* narrower than drawn when the bars can't fit */
+  min-width: 2px;
+  min-height: 2px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+}
+.sp-in-chart__bar[data-selected] {
+  background: var(--sp-in-series);
+}
+.sp-in-chart__xlabels {
+  position: absolute;
+  left: 32px;
+  right: 0;
+  bottom: 0;
+  height: 20px;
+}
+/* 11 Medium, upper case, 0.08em (13:987); no text style exists (§8). */
+.sp-in-chart__xlabel {
+  position: absolute;
+  top: 6px;
+  transform: translateX(-50%);
+  color: var(--text-secondary);
+  font: 500 11px/1 var(--font-ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.sp-in-chart__xlabel[data-first] {
+  transform: none;
+}
+.sp-in-chart__tooltip {
+  position: absolute;
+  z-index: 1;
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+}
+.sp-in-chart__tooltip[data-edge="start"] {
+  transform: translate(-12px, -100%);
+}
+.sp-in-chart__tooltip[data-edge="end"] {
+  transform: translate(calc(-100% + 12px), -100%);
+}
+.sp-in-chart__tooltip > .ui-tooltip {
+  white-space: nowrap;
+}
+
+/* ── Bar lists: an 8-tall track, radius 4, its fill on text/strong, the
+   leader full width (D6). ── */
+.sp-in-track {
+  position: relative;
+  display: block;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--surface-sunken);
+}
+.sp-in-track > span {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--text-strong);
+}
+
+/* Top templates (13:1036): 24 in, the header, 24, rows 10 apart. */
+.sp-in-top {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-md);
+}
+.sp-in-top__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* as drawn */
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-in-top__row {
+  display: flex;
+  flex-direction: column;
+  gap: 7px; /* as drawn */
+  padding: 1.5px 0;
+  border-radius: var(--radius-control);
+  color: var(--text-strong);
+  text-decoration: none;
+}
+.sp-in-top__line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+.sp-in-top__line > :first-child {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Public links (13:1076): padding 24, gap 16; the table's columns 16
+   apart, rows 12 above and below, divided, none after the last. */
+.sp-in-links {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+}
+.sp-in-links__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.sp-in-links__table th {
+  padding: 0 0 8px var(--space-sm);
+  color: var(--text-secondary);
+  font-weight: inherit;
+  text-align: right;
+  white-space: nowrap;
+}
+.sp-in-links__table th:first-child {
+  padding-left: 0;
+  text-align: left;
+}
+.sp-in-links__table td {
+  padding: 12px 0 12px var(--space-sm);
+  text-align: right;
+  white-space: nowrap;
+}
+.sp-in-links__table td:first-child {
+  width: 240px;
+  min-width: 240px; /* as drawn: the bars start 256 in */
+  max-width: 240px;
+  padding-left: 0;
+  text-align: left;
+  white-space: normal;
+}
+.sp-in-links__table td.sp-in-links__bar {
+  width: 100%;
+}
+.sp-in-links__table td.sp-in-links__num {
+  width: 64px;
+  min-width: 64px;
+}
+.sp-in-links__table tbody tr + tr {
+  border-top: 1px solid var(--border-default);
+}
+.sp-in-links__name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* as drawn */
+  min-width: 0;
+}
+.sp-in-links__name > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 767.98px) {
+  .sp-in-links__table td.sp-in-links__bar,
+  .sp-in-links__table th.sp-in-links__bar {
+    display: none;
+  }
+  .sp-in-links__table td:first-child {
+    width: auto;
+    min-width: 0;
+    max-width: 120px;
+  }
+}
+
+/* The whole-page empty state (D12): the title and the way in. */
+.sp-in-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-3xl) var(--space-md);
+  text-align: center;
+}

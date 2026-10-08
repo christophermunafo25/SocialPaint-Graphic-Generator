@@ -32,6 +32,7 @@ import type {
   GenerateCallOptions,
   GenerateProvider,
   GenerateThreadStore,
+  Member,
   MemberHintState,
   MemberHintStore,
   PublicLinkStore,
@@ -340,7 +341,9 @@ export class LocalUsageStore implements UsageStore {
       companyId,
       templateId,
       action,
-      userId: userId ?? null,
+      // As the Supabase trigger does (0044, PHASE-8 §9 D2): a member event
+      // with no user is the signed-in member's, here the one dev user.
+      userId: userId ?? LOCAL_DEV_USER_ID,
       variantId: variantId ?? null,
       actor: "member",
       createdAt: new Date().toISOString(),
@@ -585,10 +588,14 @@ export class LocalAccountStore implements AccountStore {
   }
 }
 
-/** Dev mode has no real users — People management needs the Supabase backend. */
+/** Dev mode has no real users: People management needs the Supabase
+ * backend. A seeded workspace may list members (read-only), so Insights'
+ * member filter has names in development and in the screenshots. */
 export class LocalPeopleStore {
-  async list(): Promise<never[]> {
-    return [];
+  async list(companyId: string): Promise<Member[]> {
+    return (readDb().members as Array<Member & { companyId: string }>)
+      .filter((m) => m.companyId === companyId)
+      .map(({ userId, email, name, role }) => ({ userId, email, name, role }));
   }
   async invite(): Promise<void> {
     throw new Error("Inviting people requires the Supabase backend with auth enabled.");

@@ -9,7 +9,7 @@
  *
  * capture and props start their own Vite dev server on the local backend
  * (Supabase env blanked, so .env is ignored) unless --base points at one,
- * seed it with fixtures/dev-workspace.json, and drive Chromium through
+ * seed it with fixtures/dev-workspace.json (its clock pinned), and drive Chromium through
  * Playwright. Every route is saved at 1440 wide (or --width), full page, in
  * both themes; "onboarding" is the first screen of a browser with no
  * workspace, and "dev-ui" is the primitives sheet, whose Interaction states
@@ -139,6 +139,9 @@ const launch = () =>
 async function newContext(browser, theme, { fresh = false } = {}) {
   const width = Number(flags.width ?? 1440);
   const context = await browser.newContext({ viewport: { width, height: 900 } });
+  // The fixture's pinned "now" (seed-insights.mjs): Date stands still at it,
+  // timers keep running, so Insights' rolling windows match between runs.
+  if (fixture.pinnedClock) await context.clock.setFixedTime(new Date(fixture.pinnedClock));
   const seed = fresh ? {} : fixture.localStorage;
   const entries = Object.entries(seed).map(([k, v]) => [
     k,

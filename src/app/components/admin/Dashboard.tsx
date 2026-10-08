@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { ChartColumn } from "lucide-react";
 import type { InsightEvent, PublicLinkUsageRow, TemplateSchema } from "@/lib/types";
 import type { Member } from "@/lib/stores/interfaces";
 import { stores } from "@/lib/stores";
@@ -6,41 +7,61 @@ import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
 import {
   buildInsights,
+  hasFilters,
   insightWindowStartIso,
   INSIGHTS_RANGES,
+  platformsInUse,
+  PUBLIC_MEMBER,
   RANGE_LABEL,
+  type InsightsFilters,
   type InsightsMetric,
   type InsightsRange,
 } from "@/lib/insights/buildInsights";
-import { routeToUrl, useRouter } from "../../router";
+import { digestHeading, digestSentence, windowDates } from "@/lib/insights/digest";
+import { PLATFORMS, type PlatformId } from "@/lib/templates/platforms";
+import { routeToUrl, useRouter, type Route } from "../../router";
 import { Page, PageHeader } from "../layout/Page";
 import { ErrorState } from "../ErrorState";
-import { Bone, SkeletonLines } from "../Skeleton";
+import { Button } from "../primitives";
 import { useLinkClick } from "./brand/useLinkClick";
-import { BrandMark } from "../Sidebar";
 import { changeCopy, InsightKpi } from "./insights/InsightKpi";
 import { TrendCard } from "./insights/TrendCard";
 import { TopTemplatesCard } from "./insights/TopTemplatesCard";
-import { WeekdayCard } from "./insights/WeekdayCard";
-import { SizeCard } from "./insights/SizeCard";
 import { PublicLinksCard } from "./insights/PublicLinksCard";
+import { FilterMenu, type FilterOption } from "./insights/FilterMenu";
 import { downloadInsightsCsv } from "./insights/exportCsv";
 
-/** The one-screen Insights page (2026-09-15, Figma "UX-UI Designs" 106:2):
- * KPI row, trend beside Top templates, weekday beside sizes, findings.
- * One date range drives every card (D2); every comparison is against the
- * previous window of the same length (D3). Events are recorded inside
- * SchemaRenderer; this page only reads. */
-export function Dashboard({ range, metric }: { range?: InsightsRange; metric?: InsightsMetric }) {
+const RANGE_OPTION: Record<InsightsRange, string> = {
+  "7d": "Last 7 days",
+  "30d": "Last 30 days",
+  "90d": "Last 90 days",
+  "12m": "Last 12 months",
+};
+
+const METRIC_NAME: Record<InsightsMetric, string> = {
+  exports: "Exports",
+  opens: "Opens",
+  posted: "Posts to LinkedIn",
+};
+
+type DashboardRoute = Extract<Route, { name: "dashboard" }>;
+
+/** Insights & Analytics (Figma 13:832; PHASE-8.md): the filters, the
+ * digest, the four headline numbers, the trend beside Top templates, and
+ * Public links. The range and the filters live in the URL; every number
+ * compares with the previous window of the same length. Events are
+ * recorded in SchemaRenderer and the public link functions; this page
+ * only reads. */
+export function Dashboard(route: Omit<DashboardRoute, "name">) {
   const { company } = useAuth();
   const { navigate } = useRouter();
   const linkTo = useLinkClick();
-  const activeRange = range ?? "30d";
-  const activeMetric = metric ?? "exports";
+  const activeRange = route.range ?? "30d";
+  const activeMetric = route.metric ?? "exports";
 
-  // Three independent loads (one failed card never blanks the page). The
-  // events fetch covers the previous window too, so the comparisons and the
-  // dashed line come from the same read.
+  // Four independent loads (one failed card never blanks the page). The
+  // events cover the previous window too, so the comparisons come from the
+  // same read.
   const eventsState = useAsync<InsightEvent[] | null>(
     () =>
       company
@@ -59,18 +80,15 @@ export function Dashboard({ range, metric }: { range?: InsightsRange; metric?: I
     () => (company ? stores.people.list(company.id) : Promise.resolve([])),
     [company],
   );
-  // Names and tokens for the Public links card (counts come from the
-  // events, so they follow the selected range). A failure just drops the
-  // card, the way the old page dropped its links table.
   const linkUsageState = useAsync<PublicLinkUsageRow[]>(
     () => (company ? stores.usage.getPublicLinkUsage(company.id) : Promise.resolve([])),
     [company],
   );
 
-  // A range change keeps the CURRENT numbers visible (dimmed, under the
-  // 2px bar) until the new window lands — the page never blanks after its
-  // first load. The events are kept WITH the range that fetched them so
-  // the stale render stays internally consistent.
+  // A range change keeps the current numbers visible (dimmed) until the new
+  // window lands: the page never blanks after its first load. The events
+  // are kept with the range that fetched them, so a stale render stays
+  // consistent.
   const [loaded, setLoaded] = useState<{ events: InsightEvent[]; range: InsightsRange } | null>(
     null,
   );
@@ -81,9 +99,6 @@ export function Dashboard({ range, metric }: { range?: InsightsRange; metric?: I
   }, [eventsState, activeRange]);
   const refreshing = eventsState.status === "loading" && loaded !== null;
 
-  // Aggregation degrades per input: a failed templates or people load
-  // zeroes only what needs it, and the cards that need the missing input
-  // show their own inline retry row instead of these partial numbers.
   const templates = useMemo(
     () => (templatesState.status === "ready" ? templatesState.data : []),
     [templatesState],
@@ -92,57 +107,117 @@ export function Dashboard({ range, metric }: { range?: InsightsRange; metric?: I
     () => (peopleState.status === "ready" ? peopleState.data : []),
     [peopleState],
   );
+
+  // An id the workspace doesn't have reads as "all" (the route keeps it
+  // until the next choice).
+  const filters: InsightsFilters = {
+    templateId: templates.some((t) => t.id === route.template) ? route.template : null,
+    member:
+      route.member === PUBLIC_MEMBER || members.some((m) => m.userId === route.member)
+        ? route.member
+        : null,
+    platform: route.platform ?? null,
+  };
+
   const insights = useMemo(
     () =>
       loaded && company
         ? buildInsights({
             events: loaded.events,
             templates,
-            members,
             range: loaded.range,
             timeZone: company.timezone,
+            filters,
           })
         : null,
-    [loaded, templates, members, company],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [loaded, templates, company, filters.templateId, filters.member, filters.platform],
   );
-  // Both header controls, --space-xs apart: the range radiogroup (a
-  // navigation — changing it REPLACES the history entry, so Back leaves
-  // Insights rather than replaying ranges) and Export CSV.
-  const headerAction = (
-    <div className="flex items-center flex-wrap" style={{ gap: "var(--space-xs)" }}>
-      <div className="sp-segmented" role="radiogroup" aria-label="Date range">
-        {INSIGHTS_RANGES.map((r) => (
-          <button
-            key={r}
-            type="button"
-            role="radio"
-            aria-checked={activeRange === r}
-            className="sp-segmented__option"
-            onClick={() =>
-              navigate(
-                // The default stays out of the URL, like brandStudio's
-                // surface param.
-                { name: "dashboard", range: r === "30d" ? undefined : r, metric },
-                { replace: true },
-              )
-            }
-          >
-            {RANGE_LABEL[r]}
-          </button>
-        ))}
-      </div>
-      <button
-        className="sp-btn sp-btn-ghost"
-        disabled={!insights}
-        onClick={() => {
-          if (insights && loaded && company) {
-            downloadInsightsCsv(insights.templateRows, loaded.range, company.timezone);
-          }
-        }}
-      >
-        Export CSV
-      </button>
+
+  const go = (patch: Partial<Omit<DashboardRoute, "name">>) =>
+    // A filter is a view of the page, not a place: changes replace the
+    // history entry, so Back leaves Insights. Defaults stay off the URL.
+    navigate(
+      {
+        name: "dashboard",
+        range: route.range,
+        metric: route.metric,
+        template: route.template,
+        member: route.member,
+        platform: route.platform,
+        ...patch,
+      },
+      { replace: true },
+    );
+
+  const templateOptions: FilterOption[] = [
+    { value: null, label: "All templates" },
+    ...[...templates]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((t) => ({ value: t.id, label: t.name })),
+  ];
+  const memberOptions: FilterOption[] = [
+    { value: null, label: "All members" },
+    ...[...members]
+      .sort((a, b) => (a.name ?? a.email).localeCompare(b.name ?? b.email))
+      .map((m) => ({ value: m.userId, label: m.name ?? m.email })),
+    { value: PUBLIC_MEMBER, label: "Public links" },
+  ];
+  const platformOptions: FilterOption[] = [
+    { value: null, label: "All platforms" },
+    ...platformsInUse(templates).map((id) => ({
+      value: id,
+      label: PLATFORMS.find((p) => p.id === id)?.label ?? id,
+    })),
+  ];
+  const labelOf = (options: FilterOption[], value: string | null | undefined) =>
+    options.find((o) => o.value === value)?.label;
+
+  const filterRow = (
+    <div className="sp-in-filters">
+      <FilterMenu
+        name="Date range"
+        value={activeRange}
+        options={INSIGHTS_RANGES.map((r) => ({ value: r, label: RANGE_OPTION[r] }))}
+        onChange={(v) => go({ range: v === "30d" || !v ? undefined : (v as InsightsRange) })}
+      />
+      <FilterMenu
+        name="Template"
+        value={filters.templateId ?? null}
+        options={templateOptions}
+        onChange={(v) => go({ template: v ?? undefined })}
+      />
+      <FilterMenu
+        name="Member"
+        value={filters.member ?? null}
+        options={memberOptions}
+        onChange={(v) => go({ member: v ?? undefined })}
+      />
+      <FilterMenu
+        name="Platform"
+        value={filters.platform ?? null}
+        options={platformOptions}
+        onChange={(v) => go({ platform: (v as PlatformId | null) ?? undefined })}
+      />
     </div>
+  );
+
+  const exportCsv = (
+    <Button
+      kind="neutralOnPage"
+      disabled={!insights}
+      onClick={() => {
+        if (!insights || !loaded || !company) return;
+        const active = [
+          labelOf(templateOptions, filters.templateId),
+          filters.member ? labelOf(memberOptions, filters.member) : undefined,
+          filters.platform ? labelOf(platformOptions, filters.platform) : undefined,
+        ].filter((x): x is string => !!x && !x.startsWith("All "));
+        downloadInsightsCsv(insights.templateRows, loaded.range, company.timezone, active);
+      }}
+    >
+      Export CSV
+    </Button>
   );
 
   if (eventsState.status === "error") {
@@ -155,224 +230,156 @@ export function Dashboard({ range, metric }: { range?: InsightsRange; metric?: I
     );
   }
 
-  if (!loaded) {
-    // First load: each card's skeleton has the geometry of the card that
-    // is coming, so nothing jumps when the data lands.
-    return (
-      <Page>
-        <PageHeader title="Insights & Analytics" />
-        <div className="flex flex-col" style={{ gap: "var(--space-xs)" }}>
-          <div className="sp-insights-kpis">
-            {[0, 1, 2, 3].map((i) => (
-              <SkeletonInsightKpi key={i} />
-            ))}
-          </div>
-          <div className="sp-insights-row">
-            <div
-              className="sp-card sp-card--content"
-              aria-busy="true"
-              aria-label="Loading activity trend"
-            >
-              <Bone w="40%" h={16} />
-              <Bone w="100%" h={208} r="var(--radius-media-inner)" style={{ marginTop: 16 }} />
-            </div>
-            <div
-              className="sp-card sp-card--content"
-              aria-busy="true"
-              aria-label="Loading top templates"
-            >
-              <SkeletonLines lines={5} label="Loading top templates" />
-            </div>
-          </div>
-          <div className="sp-insights-row sp-insights-row--halves">
-            <div
-              className="sp-card sp-card--content"
-              aria-busy="true"
-              aria-label="Loading weekday activity"
-            >
-              <Bone w="50%" h={16} />
-              <Bone w="100%" h={148} r="var(--radius-media-inner)" style={{ marginTop: 16 }} />
-            </div>
-            <div
-              className="sp-card sp-card--content"
-              aria-busy="true"
-              aria-label="Loading exports by size"
-            >
-              <Bone w="50%" h={16} />
-              <Bone w={148} h={148} r="var(--radius-pill)" style={{ marginTop: 16 }} />
-            </div>
-          </div>
-        </div>
-      </Page>
-    );
-  }
+  if (!loaded) return <InsightsSkeleton />;
 
-  // The fetched span covers both windows — empty means the workspace has
-  // nothing to show for this range at all, and zero-filled KPI cards would
-  // read as activity that measured zero rather than none recorded.
-  if (loaded.events.length === 0 && !refreshing) {
+  // Nothing recorded at all in the fetched span: the whole-page empty state
+  // (D12), unless a filter is narrowing it (then the cards read zero).
+  if (loaded.events.length === 0 && !refreshing && !hasFilters(filters)) {
     return (
-      <Page>
+      <Page layout={{ className: "sp-in-page" }}>
         <PageHeader title="Insights & Analytics" />
-        <div className="sp-card relative overflow-hidden text-center py-20 px-6">
-          <span
-            aria-hidden
-            className="absolute"
-            style={{ right: -40, bottom: -30, opacity: 0.07, color: "var(--text-primary)" }}
-          >
-            <BrandMark width={280} />
-          </span>
-          <p style={{ fontSize: 14, color: "var(--text-primary)", fontWeight: 500 }}>
+        <section className="sp-in-card sp-in-empty" aria-labelledby="sp-in-empty-title">
+          <h2 id="sp-in-empty-title" className="t-title-panel">
             No usage yet
-          </p>
-          <p
-            style={{
-              fontSize: "var(--type-label-size)",
-              color: "var(--text-muted)",
-              marginTop: 6,
-            }}
-          >
-            Opens and downloads appear here as soon as people start using published templates: your
-            own team, and anyone filling one in through a public link.
-          </p>
+          </h2>
           <a
-            className="sp-btn sp-btn-primary"
-            style={{ marginTop: "var(--space-sm)" }}
+            className="ui-reset ui-tint ui-ring ui-btn"
+            data-kind="primary"
+            data-size="default"
             href={routeToUrl({ name: "portal" })}
             onClick={linkTo({ name: "portal" })}
           >
-            Open Brand Templates
+            <span className="t-button-m">Open Brand Templates</span>
           </a>
-        </div>
+        </section>
       </Page>
     );
   }
 
   const rangeLabel = RANGE_LABEL[loaded.range];
+  const filtered = hasFilters(filters);
+  const scopedTemplateIds = new Set(insights?.templateRows.map((r) => r.templateId));
+  const activeLinks =
+    linkUsageState.status === "ready"
+      ? linkUsageState.data.filter(
+          (l) => !l.revokedAt && (!filtered || scopedTemplateIds.has(l.templateId)),
+        )
+      : [];
 
   return (
-    <Page>
-      <PageHeader title="Insights & Analytics" actions={headerAction} />
-      <div className="relative">
-        {/* Overlaid, not in-flow: the bar appearing must not shift the
-            rows it is updating. */}
-        <div
-          className="sp-refresh-bar absolute"
-          style={{
-            insetInline: 0,
-            top: -8,
-            visibility: refreshing ? "visible" : "hidden",
-          }}
-          role="progressbar"
-          aria-label="Loading the new date range"
-          aria-hidden={!refreshing}
-        />
-        <div
-          className="flex flex-col"
-          style={{ gap: "var(--space-xs)", ...(refreshing ? { opacity: 0.56 } : {}) }}
-          aria-busy={refreshing || undefined}
-        >
-          {insights && (
-            <div className="sp-insights-kpis">
-              <InsightKpi
-                label="Exports"
-                value={insights.kpis.exports.current}
-                accent="var(--viz-series-1)"
-                change={insights.kpis.exports.change}
-                series={insights.series.exports}
-                rangeLabel={rangeLabel}
-              />
-              <InsightKpi
-                label="Opens"
-                value={insights.kpis.opens.current}
-                accent="var(--viz-series-2)"
-                change={insights.kpis.opens.change}
-                series={insights.series.opens}
-                rangeLabel={rangeLabel}
-              />
-              <InsightKpi
-                label="Posted to LinkedIn"
-                value={insights.kpis.posted.current}
-                accent="var(--viz-series-5)"
-                change={insights.kpis.posted.change}
-                series={insights.series.posted}
-                rangeLabel={rangeLabel}
-              />
-              <InsightKpi
-                label="Active members"
-                value={insights.kpis.activeMembers.current}
-                accent="var(--viz-series-4)"
-                change={insights.kpis.activeMembers.change}
-                series={insights.series.members}
-                rangeLabel={rangeLabel}
-              />
+    <Page layout={{ className: "sp-in-page" }}>
+      <PageHeader title="Insights & Analytics" actions={exportCsv} />
+      {filterRow}
+      {insights && (
+        <div className="sp-in-content" aria-busy={refreshing || undefined}>
+          <section className="sp-in-card sp-in-digest" aria-labelledby="sp-in-digest-title">
+            <div className="sp-in-digest__head">
+              <span className="sp-in-digest__tile" aria-hidden>
+                <ChartColumn size={24} className="ui-icon" />
+              </span>
+              <span className="sp-in-digest__titles">
+                <h2 id="sp-in-digest-title" className="t-title-panel">
+                  {digestHeading(loaded.range)}
+                </h2>
+                <span className="t-caption-m sp-in-muted">
+                  {windowDates(insights.window, loaded.range)}
+                </span>
+              </span>
             </div>
+            <p className="sp-in-digest__sentence">
+              {digestSentence(
+                insights,
+                loaded.range,
+                filters,
+                filters.member ? labelOf(memberOptions, filters.member) : undefined,
+              )}
+            </p>
+          </section>
+
+          <div className="sp-in-kpis">
+            <InsightKpi
+              label="Exports"
+              value={insights.kpis.exports.current}
+              change={insights.kpis.exports.change}
+              family="green"
+              rangeLabel={rangeLabel}
+            />
+            <InsightKpi
+              label="Opens"
+              value={insights.kpis.opens.current}
+              change={insights.kpis.opens.change}
+              family="blue"
+              rangeLabel={rangeLabel}
+            />
+            <InsightKpi
+              label="Posted to LinkedIn"
+              value={insights.kpis.posted.current}
+              change={insights.kpis.posted.change}
+              family="purple"
+              rangeLabel={rangeLabel}
+            />
+            <InsightKpi
+              label="Active members"
+              value={insights.kpis.activeMembers.current}
+              change={insights.kpis.activeMembers.change}
+              family="pink"
+              rangeLabel={rangeLabel}
+            />
+          </div>
+
+          <div className="sp-in-row">
+            <TrendCard
+              metric={activeMetric}
+              onMetricChange={(m) => go({ metric: m === "exports" ? undefined : m })}
+              series={insights.series[activeMetric]}
+              range={loaded.range}
+              rangeNote={`${loaded.range === "12m" ? "Monthly" : "Daily"}, ${windowDates(insights.window, loaded.range)}`}
+              summary={`${METRIC_NAME[activeMetric]} over the last ${rangeLabel}: ${insights.kpis[activeMetric].current.toLocaleString("en-US")}, ${changeCopy(insights.kpis[activeMetric].change).toLowerCase()}`}
+            />
+            <TopTemplatesCard
+              templates={insights.topTemplates}
+              error={
+                templatesState.status === "error" ? { retry: templatesState.retry } : undefined
+              }
+            />
+          </div>
+
+          {activeLinks.length > 0 && (
+            <PublicLinksCard links={activeLinks} counts={insights.linkCounts} />
           )}
-          {insights && (
-            <div className="sp-insights-row">
-              <TrendCard
-                metric={activeMetric}
-                onMetricChange={(m) =>
-                  navigate(
-                    { name: "dashboard", range, metric: m === "exports" ? undefined : m },
-                    { replace: true },
-                  )
-                }
-                series={insights.series[activeMetric]}
-                range={loaded.range}
-                rangeLabel={rangeLabel}
-                summary={`${activeMetric === "posted" ? "Posts to LinkedIn" : activeMetric === "opens" ? "Opens" : "Exports"} over the last ${rangeLabel}: ${insights.kpis[activeMetric].current.toLocaleString()}, ${changeCopy(insights.kpis[activeMetric].change).toLowerCase()}`}
-              />
-              <TopTemplatesCard
-                templates={insights.topTemplates}
-                error={
-                  templatesState.status === "error" ? { retry: templatesState.retry } : undefined
-                }
-              />
-            </div>
-          )}
-          {insights && (
-            <div className="sp-insights-row sp-insights-row--halves">
-              <WeekdayCard weekday={insights.weekday} />
-              <SizeCard
-                sizes={insights.sizes}
-                error={
-                  templatesState.status === "error" ? { retry: templatesState.retry } : undefined
-                }
-              />
-            </div>
-          )}
-          {insights &&
-            linkUsageState.status === "ready" &&
-            linkUsageState.data.some((l) => !l.revokedAt) && (
-              <PublicLinksCard
-                links={linkUsageState.data.filter((l) => !l.revokedAt)}
-                counts={insights.linkCounts}
-              />
-            )}
         </div>
-      </div>
+      )}
     </Page>
   );
 }
 
-/** The InsightKpi card's shape: label line, headline value, sparkline. */
-function SkeletonInsightKpi() {
+/** The first load: each part's shape, so nothing jumps when data lands. */
+function InsightsSkeleton() {
+  const bone = (w: number | string, h: number) => (
+    <span className="sp-st-bone" style={{ width: w, height: h }} />
+  );
   return (
-    <div
-      className="sp-card sp-card--content"
-      aria-busy="true"
-      aria-label="Loading key number"
-      style={{ paddingBlock: "var(--space-md)" }}
-    >
-      <Bone w={96} h={10} />
-      <div className="flex items-end justify-between gap-3" style={{ marginTop: 14 }}>
-        <Bone w={72} h={30} />
-        <div className="flex flex-col items-end" style={{ gap: 6 }}>
-          <Bone w={72} h={22} />
-          <Bone w={48} h={9} />
+    <Page layout={{ className: "sp-in-page" }}>
+      <PageHeader title="Insights & Analytics" />
+      <div className="sp-in-content" aria-busy="true" aria-label="Loading Insights">
+        <div className="sp-in-card sp-in-digest">
+          {bone(220, 20)}
+          {bone("70%", 26)}
+        </div>
+        <div className="sp-in-kpis">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="sp-in-card sp-in-kpi">
+              {bone(96, 14)}
+              {bone(88, 40)}
+              {bone(140, 18)}
+            </div>
+          ))}
+        </div>
+        <div className="sp-in-row">
+          <div className="sp-in-card sp-in-trend">{bone("100%", 230)}</div>
+          <div className="sp-in-card sp-in-top">{bone("100%", 230)}</div>
         </div>
       </div>
-    </div>
+    </Page>
   );
 }
