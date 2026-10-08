@@ -1,4 +1,7 @@
 import React from "react";
+import { BrandLockup } from "./BrandMark";
+import { AuthPanel } from "./auth/AuthPanel";
+import { PRIVACY, TERMS } from "@/lib/legal";
 
 /** The pre-app shell — sign in, account creation, and first-run onboarding
  * all render through it (Figma 148:1421, "Login Page Dark"). A 584px form
@@ -45,17 +48,47 @@ export function PreAppShell({
   layout = "split",
   tone = "dark",
   width = "form",
+  panel,
 }: {
   children: React.ReactNode;
   hero?: string;
   backdrop?: string;
-  layout?: "split" | "solo";
+  /** "auth" is the new look's way in (PHASE-8B, Figma 194:2 and 257:2):
+   * the logo, the form and the legal links in a column beside the art
+   * panel, always Light. "split" and "solo" are the earlier layouts, kept
+   * until nothing renders them (PHASE-8B §9 D9). */
+  layout?: "split" | "solo" | "auth";
+  /** The card the auth layout's panel centres on its art: the gate's
+   * composer, onboarding's workspace preview. */
+  panel?: React.ReactNode;
   tone?: "dark" | "app" | "light";
   /** "form" is the 584 column of the auth frames; "wide" is the 1220 card
    * of the onboarding frames (154:1576 → 158:267), whose 833 content column
-   * holds the four-up swatch grid. */
+   * holds the four-up swatch grid. In the auth layout, "form" is the gate's
+   * 400 column and "wide" onboarding's 480. */
   width?: "form" | "wide";
 }) {
+  if (layout === "auth") {
+    return (
+      <div className="sp-auth" data-theme="light" data-width={width}>
+        <div className="sp-auth__column">
+          <header className="sp-auth__header">
+            <BrandLockup height={24} scheme="light" />
+          </header>
+          <main className="sp-auth__form">{children}</main>
+          <footer className="sp-auth__footer t-caption-s">
+            <a className="sp-auth__legal" href={TERMS.href}>
+              {TERMS.label}
+            </a>
+            <a className="sp-auth__legal" href={PRIVACY.href}>
+              {PRIVACY.label}
+            </a>
+          </footer>
+        </div>
+        <AuthPanel>{panel}</AuthPanel>
+      </div>
+    );
+  }
   const split = layout === "split";
   return (
     <div

@@ -2,6 +2,14 @@ import React from "react";
 import photoPlaceholder from "@/assets/socialpaint/photo-placeholder.jpg";
 import { PublicLinksBody } from "../components/admin/TemplateLinksDialog";
 import {
+  AddColorButton,
+  ColorCard,
+  ColorDot,
+  ProgressSegments,
+  Question,
+  WorkspacePreview,
+} from "../components/onboarding/pieces";
+import {
   BarChart3,
   Building,
   Download,
@@ -67,6 +75,9 @@ import {
   ThemeToggle,
   Toast,
   Tooltip,
+  OptionTile,
+  OptionRadioGroup,
+  OptionCheckboxGroup,
   type ButtonKind,
   type ButtonSize,
 } from "@/app/components/primitives";
@@ -135,7 +146,93 @@ export const SHEET_GROUPS: SheetGroup[] = [
     title: "Previews and containers",
     render: () => <ContainersGroup />,
   },
+  {
+    title: "Onboarding (Phase 8b)",
+    render: () => <OnboardingGroup />,
+  },
 ];
+
+/** Onboarding's pieces (Figma 257:2): the Option tile in its states and
+ * groups, the progress bar, colours and the workspace preview. */
+function OnboardingGroup() {
+  const [role, setRole] = React.useState<string | undefined>("marketing");
+  const [makers, setMakers] = React.useState<string[]>(["team"]);
+  return (
+    <>
+      <div className="dev-ui-sheet__line">
+        <OptionTile label="Default" icon={Sparkles} selected={false} style={{ width: 234 }} />
+        <OptionTile
+          label="Hover"
+          icon={Sparkles}
+          selected={false}
+          data-demo-state="hover"
+          style={{ width: 234 }}
+        />
+        <OptionTile label="Selected" icon={Sparkles} selected style={{ width: 234 }} />
+        <OptionTile
+          label="Focus"
+          icon={Sparkles}
+          selected={false}
+          data-demo-state="focus"
+          style={{ width: 234 }}
+        />
+      </div>
+      <div className="dev-ui-sheet__panel" style={{ width: 480, display: "grid", gap: 32 }}>
+        <ProgressSegments done={2} />
+        <Question label="What is your role?" labelId="dev-role">
+          <OptionRadioGroup
+            aria-labelledby="dev-role"
+            layout="grid"
+            value={role}
+            onChange={setRole}
+            options={[
+              { value: "marketing", label: "Marketing", icon: Sparkles },
+              { value: "design", label: "Design", icon: Pencil },
+              { value: "people", label: "People and recruiting", icon: Users },
+              { value: "other", label: "Something else", icon: Globe },
+            ]}
+          />
+        </Question>
+        <Question label="Who will be making graphics?" labelId="dev-makers">
+          <OptionCheckboxGroup
+            aria-labelledby="dev-makers"
+            layout="hug"
+            values={makers}
+            onChange={setMakers}
+            options={[
+              { value: "team", label: "My marketing team" },
+              { value: "employees", label: "Employees across the company" },
+              { value: "me", label: "Just me" },
+            ]}
+          />
+        </Question>
+        <Question label="What are your brand colors?" error="Pick a color first.">
+          <div className="sp-onb-colors">
+            <ColorDot hex="#0F4C5C" name="Deep teal" onRemove={() => {}} />
+            <ColorDot hex="#2EC4B6" name="Teal" />
+            <AddColorButton shape="dot" />
+          </div>
+        </Question>
+        <div className="sp-onb-colors" data-cards>
+          <ColorCard hex="#0F4C5C" name="Deep teal" />
+          <ColorCard hex="#F7F4EC" name="Paper" />
+          <AddColorButton shape="tile" />
+        </div>
+      </div>
+      <div className="dev-ui-sheet__panel" data-theme="light">
+        <WorkspacePreview state={{ person: { name: "Jordan Lee", detail: "Marketing" } }} />
+        <WorkspacePreview
+          state={{
+            person: { name: "Jordan Lee", detail: "Marketing" },
+            workspace: { name: "Acme Studios", detail: "My company · 11–50 people" },
+            firstUp: { title: "Hiring posts", detail: "LinkedIn" },
+            brand: { colors: ["#0F4C5C", "#2EC4B6", "#FFBF69", "#F7F4EC"], font: "Manrope" },
+          }}
+        />
+      </div>
+    </>
+  );
+}
 
 function IconButtonsGroup() {
   const [value, setValue] = React.useState(1);

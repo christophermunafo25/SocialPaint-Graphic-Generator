@@ -18,12 +18,20 @@ export function BrandMark({ width = 28 }: { width?: number }) {
 /** The official horizontal lockup (2026-09, 244×44) — Slime mark + wordmark,
  * the wordmark in near-black #0B0B0C on light chrome and white on dark.
  * Rendered by height with width auto, so the aspect ratio lives in the
- * file. Shared by the sidebar and the sign-in page. */
-export function BrandLockup({ height = 16 }: { height?: number }) {
+ * file. Shared by the sidebar, the sign-in gate and onboarding. */
+export function BrandLockup({
+  height = 16,
+  scheme,
+}: {
+  height?: number;
+  /** A surface that keeps one theme whatever the app's (the Light gate,
+   * PHASE-8B §9 D1) names it; otherwise the lockup follows the app. */
+  scheme?: "light" | "dark";
+}) {
   const { resolved } = useColorScheme();
   return (
     <img
-      src={resolved === "dark" ? logoOnDark : logoOnLight}
+      src={(scheme ?? resolved) === "dark" ? logoOnDark : logoOnLight}
       alt="SocialPaint"
       style={{ height, width: "auto", display: "block" }}
     />

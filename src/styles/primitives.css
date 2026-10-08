@@ -1516,3 +1516,66 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   width: 100%;
   min-width: 0;
 }
+
+/* ── Option tile (257:4145) and its groups ───────────────────────────────────
+   Onboarding's answers. Default is raised on Elevation/Small, hover lays
+   state/hover over it (the frame's raw rgba(11,11,12,0.05) is that token),
+   selected is sunken with no shadow and shows the check. The check keeps
+   its space in every state so a hug row never rewraps (PHASE-8B §8). Radius
+   12 and the 16 × 14 padding are unbound in the file; they wait for Figma
+   tokens (PHASE-8B PR, the request list). */
+.ui-option-tile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: 46px; /* as drawn: 63 with a description */
+  padding: 14px 16px; /* as drawn; no Figma token yet */
+  border-radius: 12px; /* as drawn; no Figma token yet */
+  --_fill: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+  color: var(--text-strong);
+  text-align: left;
+}
+.ui-option-tile[data-selected] {
+  --_fill: var(--surface-sunken);
+  box-shadow: none;
+}
+.ui-option-tile__mark {
+  display: inline-flex;
+  flex: none;
+}
+.ui-option-tile__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px; /* as drawn */
+  min-width: 0;
+}
+.ui-option-tile__desc {
+  color: var(--text-secondary);
+  white-space: normal;
+}
+.ui-option-tile__check {
+  flex: none;
+  visibility: hidden;
+}
+.ui-option-tile[data-selected] .ui-option-tile__check {
+  visibility: visible;
+}
+.ui-option-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+}
+.ui-option-group[data-layout="grid"] {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-xs);
+}
+.ui-option-group[data-layout="full"] {
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+.ui-option-group[data-layout="hug"] .ui-option-tile__text {
+  flex: none;
+}
