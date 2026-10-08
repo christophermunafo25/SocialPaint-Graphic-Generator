@@ -120,6 +120,32 @@ export async function createWorkspace(
   return { company, kit, seeded };
 }
 
+/** Back from Invite your team to Your brand (D12): the workspace exists, so
+ * a change saves as an edit. A new logo file uploads; otherwise the kit
+ * keeps the logo it has. The starters keep the palette they were seeded
+ * with (materialize.ts). */
+export async function updateWorkspaceBrand(
+  stores: Pick<Stores, "brandAssets" | "brandKits">,
+  companyId: string,
+  brand: BrandDraft,
+  keepLogoAssetId?: string,
+): Promise<BrandKit> {
+  const { headingFont, bodyFont } = await uploadFonts(stores, companyId, brand);
+  let primaryLogoAssetId = keepLogoAssetId;
+  if (brand.logo) {
+    primaryLogoAssetId = (await stores.brandAssets.upload(companyId, "logo", brand.logo)).id;
+  }
+  return stores.brandKits.upsert(companyId, {
+    colors: brand.colors,
+    typeStyles: migrateFontRoles({ typeStyles: DEFAULT_TYPE_STYLES, headingFont, bodyFont })
+      .typeStyles,
+    guidelines: [],
+    headingFont,
+    bodyFont,
+    primaryLogoAssetId,
+  });
+}
+
 /** Uploaded font files become brand assets; the ones given a role replace
  * that role's Google family. */
 async function uploadFonts(

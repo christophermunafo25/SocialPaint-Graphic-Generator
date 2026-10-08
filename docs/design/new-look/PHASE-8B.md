@@ -194,7 +194,7 @@ If you find another one, stop and ask.
 | Straight apostrophes in onboarding ("Let's", "don't") | Curly, as the gate draws them |
 | The shell building block's panel (radius 25, gradient) | The frames win: radius 20 and the art image, as on the gate |
 | Option tile focus | The focus ring per RULES §6 (1 px, 2 px outside, at the tile's radius) |
-| Hug tiles growing 28 when selected | The check's space is reserved in every state, so rows never rewrap |
+| Hug tiles growing 28 when selected | As drawn: a hug tile grows by the check when chosen (reserving it widened every tile and rewrapped 03's sizes). Grid and full tiles keep the check's space in every state. |
 | CompactSelect at 40 tall in 08 | `Select` (40) with Admin and Member, the role picker's height as drawn |
 | Unlabelled font selects on 05b | Labelled "Heading font" and "Body font" (proposed copy) |
 | The Workspace preview's rows | It reflects the answers held so far, including 02's (from 02), 05b's brand (from 05b) and 08's invitees (from 08). The frames' omissions are slips. |

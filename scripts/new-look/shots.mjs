@@ -97,6 +97,17 @@ const ROUTES = [
   ["settings-account", "/settings/account"],
   ["settings-advanced", "/settings/advanced"],
   ["onboarding", "/templates", { fresh: true }],
+  // Onboarding's steps on stand-in services (PHASE-8B §9 D8).
+  ["onboarding-01-about-you", "/dev/onboarding?step=about"],
+  ["onboarding-02-set-up-for", "/dev/onboarding?step=setupFor"],
+  ["onboarding-03-your-team", "/dev/onboarding?step=team"],
+  ["onboarding-04-first-up", "/dev/onboarding?step=firstUp"],
+  ["onboarding-05-website", "/dev/onboarding?step=website"],
+  ["onboarding-05b-add-your-brand", "/dev/onboarding?step=addBrand"],
+  ["onboarding-06-pulling", "/dev/onboarding?step=pulling"],
+  ["onboarding-07-your-brand", "/dev/onboarding?step=brand"],
+  ["onboarding-08-invite", "/dev/onboarding?step=invite"],
+  ["onboarding-09-ready", "/dev/onboarding?step=ready"],
   ["dev-ui", "/dev/ui"],
 ];
 

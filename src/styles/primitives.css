@@ -1520,8 +1520,9 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 /* ── Option tile (257:4145) and its groups ───────────────────────────────────
    Onboarding's answers. Default is raised on Elevation/Small, hover lays
    state/hover over it (the frame's raw rgba(11,11,12,0.05) is that token),
-   selected is sunken with no shadow and shows the check. The check keeps
-   its space in every state so a hug row never rewraps (PHASE-8B §8). Radius
+   selected is sunken with no shadow and shows the check. In the grid and
+   full layouts the check keeps its space in every state; a hug tile grows
+   by it when chosen, as drawn (PHASE-8B §8). Radius
    12 and the 16 × 14 padding are unbound in the file; they wait for Figma
    tokens (PHASE-8B PR, the request list). */
 .ui-option-tile {
@@ -1558,6 +1559,11 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 .ui-option-tile__check {
   flex: none;
   visibility: hidden;
+}
+/* A hug tile grows by the check when chosen, as drawn (257:4136): keeping
+   its space would widen every tile and rewrap the row. */
+.ui-option-group[data-layout="hug"] .ui-option-tile:not([data-selected]) .ui-option-tile__check {
+  display: none;
 }
 .ui-option-tile[data-selected] .ui-option-tile__check {
   visibility: visible;
