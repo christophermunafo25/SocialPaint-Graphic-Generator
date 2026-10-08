@@ -114,7 +114,7 @@ export function AuthScreen({
   const sent = view === "checkEmail" || view === "resetSent";
 
   return (
-    <PreAppShell layout="auth" panel={<ComposerIllustration />}>
+    <PreAppShell panel={<ComposerIllustration />}>
       <h1 className="t-title-page sp-auth-title">{TITLE[view]}</h1>
 
       {sent ? (

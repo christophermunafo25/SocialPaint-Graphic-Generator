@@ -987,7 +987,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
   }
 
   return (
-    <PreAppShell layout="auth" width="wide" panel={<WorkspacePreview state={preview} />}>
+    <PreAppShell width="wide" panel={<WorkspacePreview state={preview} />}>
       {progress && <ProgressSegments done={progress.done} total={progress.total} />}
       <h1 ref={titleRef} id={titleId} tabIndex={-1} className="t-title-page sp-onb-title">
         {title}

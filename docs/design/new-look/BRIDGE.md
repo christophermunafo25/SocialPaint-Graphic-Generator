@@ -26,7 +26,7 @@
 | `--btn-primary-bg`, `--btn-primary-fg` | Ink and paper → Deep Moss and Slime in Light, Slime and Deep Moss in Dark |
 | `--switch-background` (was in `theme.css`) | Light ink 16% → `#0B0B0C` 16%; Dark white 20% → 30% |
 
-The `.sp-gate[data-theme="dark"] .sp-gate__panel` override of `--input-bg` stays: it is a component scope, and the gate is out of scope.
+The gate's `.sp-gate` overrides left with the old gate in Phase 8b.
 
 ## 2. Bridged names
 
@@ -55,6 +55,6 @@ Names defined from these follow them: `--primary`, `--primary-foreground`, `--ac
 | `--nav-active-fg` | Wherever `--nav-active-bg` is (the sidebar row moved to NavItem in Phase 3) | `--text-strong` | The Template Builder's controls in 9 |
 | `--media-overlay` | `.sp-chat-editor-sheet__scrim` (the chats' editor as a sheet below 1180). Brand Studio's `.sp-edit-overlay` left in Phase 6 for PreviewOverlay | `--overlay-scrim` | When the chats' layout moves |
 | `--shadow-rest` | The legacy platform chips and filter bar search field (the Template Builder and the size gallery; Brand Templates moved off them in Phase 4, Generate History in 5), and the tooltip | The elevation each Figma component uses | 9 |
-| `--radius-control-lg` (12) | Large buttons and inputs (`.sp-btn-lg`, `.sp-input-lg`), the import popover, the build picker card, gate controls (both chats moved to the primitives in Phases 4 and 5) | 9 for controls, 16 for popovers, 20 for cards | 9; the gate keeps 12 |
+| `--radius-control-lg` (12) | Large buttons and inputs (`.sp-btn-lg`, `.sp-input-lg`), the import popover and the build picker card (both chats moved to the primitives in Phases 4 and 5, the gate in Phase 8b) | 9 for controls, 16 for popovers, 20 for cards | 9 |
 
-Page-scoped groups (`--gen-*` for the chats, down to the scroll fade and the template chat's Missing marker since Phase 5, `--chip-*`, `--sb-*` for the narrow layout's top bar and drawer (the desktop sidebar left it in Phase 3), `--start-*` for the build picker, `--gate-*`, `--viz-series-*` (only `theme.css`'s `--chart-*` aliases read them since Insights left the old chart tokens in Phase 8), `--edge-*`, `--card-*`) stay as they are until their page moves. Phase 9 deletes whatever is left, along with this file and `legacy-bridge.css`.
+Page-scoped groups (`--gen-*` for the chats, down to the scroll fade and the template chat's Missing marker since Phase 5, `--chip-*`, `--sb-*` for the narrow layout's top bar and drawer (the desktop sidebar left it in Phase 3), `--start-*` for the build picker, `--viz-series-*` (only `theme.css`'s `--chart-*` aliases read them since Insights left the old chart tokens in Phase 8), `--edge-*`, `--card-*`) stay as they are until their page moves. Phase 9 deletes whatever is left, along with this file and `legacy-bridge.css`.
