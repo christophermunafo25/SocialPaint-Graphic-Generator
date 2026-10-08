@@ -20,6 +20,10 @@ interface Db {
    * by the one dev user. A database written before this key existed gets
    * it from the `empty()` spread in readDb. */
   generateThreads: unknown[];
+  /** Read-only in dev: people a seeded workspace lists (the screenshot
+   * fixture's members, so Insights' member filter has names). This backend
+   * has no accounts and cannot invite anyone. */
+  members: unknown[];
 }
 
 const KEY = "brand-portal-dev-db";
@@ -33,6 +37,7 @@ const empty = (): Db => ({
   templateLinks: [],
   companyCanvasPresets: [],
   generateThreads: [],
+  members: [],
 });
 
 export function readDb(): Db {
