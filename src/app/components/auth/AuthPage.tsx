@@ -1,70 +1,79 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { supabase } from "@/lib/stores/supabase/client";
+import { endRecovery } from "@/lib/auth/recovery";
+import { gateErrorFor, hasErrors, validateGate, type GateErrors } from "@/lib/auth/gateErrors";
+import { captureError } from "@/lib/monitoring";
 import { AuthScreen, type AuthView } from "./AuthScreen";
 
 /** The sign-in gate's controller: sign in, sign up and password reset
- * against Supabase. Rendered whenever the Supabase backend is active and
- * there is no session. Also handles the recovery redirect (Supabase fires
- * PASSWORD_RECOVERY after the email link). AuthScreen draws every view from
- * the state held here (PHASE-8B §9 D8). */
-export function AuthPage() {
-  const [view, setView] = useState<AuthView>("signin");
+ * against Supabase (PHASE-8B). Rendered whenever the Supabase backend is
+ * active and there is no session, and on New password while a reset is in
+ * progress (recovery.ts). AuthScreen draws every view from the state held
+ * here (D8).
+ *
+ * The rules run on submit (D3). A failed call shows our words under the
+ * field it belongs to (D4); Supabase's text goes to the console and
+ * Sentry only. */
+export function AuthPage({ initialView = "signin" }: { initialView?: AuthView }) {
+  const [view, setView] = useState<AuthView>(initialView);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-
-  useEffect(() => {
-    const { data: sub } = supabase().auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") setView("setPassword");
-    });
-    return () => sub.subscription.unsubscribe();
-  }, []);
+  const [errors, setErrors] = useState<GateErrors>({});
+  const [attempt, setAttempt] = useState(0);
 
   const go = (v: AuthView) => {
     setView(v);
-    setError(null);
-    setNotice(null);
+    setErrors({});
   };
 
-  const run = async (fn: () => Promise<void>) => {
-    setBusy(true);
-    setError(null);
-    setNotice(null);
-    try {
-      await fn();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
-    } finally {
-      setBusy(false);
-    }
+  const fail = (next: GateErrors) => {
+    setErrors(next);
+    setAttempt((n) => n + 1);
   };
 
   const actions: Partial<Record<AuthView, () => Promise<void>>> = {
     signin: async () => {
-      const { error: err } = await supabase().auth.signInWithPassword({ email, password });
-      if (err) throw err;
-      // Session change re-renders the app; nothing else to do.
+      const { error } = await supabase().auth.signInWithPassword({ email: email.trim(), password });
+      if (error) throw error;
+      // The session change re-renders the app; nothing else to do.
     },
     signup: async () => {
-      const { data, error: err } = await supabase().auth.signUp({ email, password });
-      if (err) throw err;
-      if (!data.session) setView("checkEmail"); // email confirmation required
+      const { data, error } = await supabase().auth.signUp({ email: email.trim(), password });
+      if (error) throw error;
+      if (!data.session) go("checkEmail"); // email confirmation required
     },
     forgot: async () => {
-      const { error: err } = await supabase().auth.resetPasswordForEmail(email, {
+      const { error } = await supabase().auth.resetPasswordForEmail(email.trim(), {
         redirectTo: window.location.origin,
       });
-      if (err) throw err;
-      setNotice("Password reset link sent. Check your email.");
+      if (error) throw error;
+      go("resetSent");
     },
     setPassword: async () => {
-      const { error: err } = await supabase().auth.updateUser({ password });
-      if (err) throw err;
-      setNotice("Password updated.");
-      setView("signin");
+      const { error } = await supabase().auth.updateUser({ password });
+      if (error) throw error;
+      // The reset link already signed them in: straight into the app (D5).
+      endRecovery();
     },
+  };
+
+  const submit = async () => {
+    const action = actions[view];
+    if (!action) return;
+    const invalid = validateGate(view, email, password);
+    if (hasErrors(invalid)) return fail(invalid);
+    setBusy(true);
+    setErrors({});
+    try {
+      await action();
+    } catch (e) {
+      console.error("Sign-in gate", e);
+      captureError(e, { route: "auth" });
+      fail(gateErrorFor(view, e));
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -73,14 +82,17 @@ export function AuthPage() {
       email={email}
       password={password}
       busy={busy}
-      error={error}
-      notice={notice}
-      onEmailChange={setEmail}
-      onPasswordChange={setPassword}
-      onSubmit={() => {
-        const action = actions[view];
-        if (action) void run(action);
+      errors={errors}
+      attempt={attempt}
+      onEmailChange={(v) => {
+        setEmail(v);
+        if (errors.email) setErrors((e) => ({ ...e, email: undefined }));
       }}
+      onPasswordChange={(v) => {
+        setPassword(v);
+        if (errors.password) setErrors((e) => ({ ...e, password: undefined }));
+      }}
+      onSubmit={() => void submit()}
       onGo={go}
     />
   );

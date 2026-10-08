@@ -28,10 +28,22 @@ export function BrandLockup({
    * PHASE-8B §9 D1) names it; otherwise the lockup follows the app. */
   scheme?: "light" | "dark";
 }) {
+  return scheme ? (
+    <LockupImage height={height} scheme={scheme} />
+  ) : (
+    <ThemedLockup height={height} />
+  );
+}
+
+function ThemedLockup({ height }: { height: number }) {
   const { resolved } = useColorScheme();
+  return <LockupImage height={height} scheme={resolved === "dark" ? "dark" : "light"} />;
+}
+
+function LockupImage({ height, scheme }: { height: number; scheme: "light" | "dark" }) {
   return (
     <img
-      src={(scheme ?? resolved) === "dark" ? logoOnDark : logoOnLight}
+      src={scheme === "dark" ? logoOnDark : logoOnLight}
       alt="SocialPaint"
       style={{ height, width: "auto", display: "block" }}
     />

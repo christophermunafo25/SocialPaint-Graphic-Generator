@@ -1,14 +1,18 @@
-import React, { useId } from "react";
-import { BrandMark } from "../BrandMark";
+import React, { useEffect, useRef } from "react";
+import { Loader2 } from "lucide-react";
+import type { GateErrors, GateView } from "@/lib/auth/gateErrors";
+import { PRIVACY, TERMS } from "@/lib/legal";
 import { PreAppShell } from "../PreAppShell";
-import gateOrbit from "@/assets/socialpaint/gate-orbit.webp";
+import { Button, Field, Input, focusFirstInvalid } from "../primitives";
+import { ComposerIllustration } from "./AuthPanel";
 
-export type AuthView = "signin" | "signup" | "forgot" | "checkEmail" | "setPassword";
+export type AuthView = GateView;
 
 export const AUTH_VIEWS: readonly AuthView[] = [
   "signin",
   "signup",
   "forgot",
+  "resetSent",
   "checkEmail",
   "setPassword",
 ];
@@ -18,209 +22,188 @@ export interface AuthScreenProps {
   email: string;
   password: string;
   busy: boolean;
-  error: string | null;
-  notice: string | null;
+  /** Messages under their fields (PHASE-8B §9 D3, D4). */
+  errors: GateErrors;
+  /** Bumped on each submit that came back with errors, so focus moves to
+   * the first field in error then, and not while the person types. */
+  attempt: number;
   onEmailChange(email: string): void;
   onPasswordChange(password: string): void;
   /** The view's action (sign in, sign up, send the link, save). */
   onSubmit(): void;
-  /** Move to another view; the controller clears errors and notices. */
+  /** Move to another view; the controller clears the errors. */
   onGo(view: AuthView): void;
 }
 
-/** The sign-in gate's screens, from props alone (PHASE-8B §9 D8): every view
- * and error renders without Supabase, so `/dev/auth`, the screenshot run and
- * the tests see what a signed-out visitor sees. AuthPage is the controller
- * that owns the Supabase calls.
+const TITLE: Record<AuthView, string> = {
+  signin: "Let’s get painting",
+  signup: "Create your account",
+  forgot: "Reset password",
+  resetSent: "Check your email",
+  checkEmail: "Check your email",
+  setPassword: "Choose a new password",
+};
+
+const SUBMIT: Partial<Record<AuthView, string>> = {
+  signin: "Sign in",
+  signup: "Create account",
+  forgot: "Send reset link",
+  setPassword: "Save password",
+};
+
+/** The sign-in gate (Figma 194:2, PHASE-8B-SCREENS.md), from props alone:
+ * every view and error renders without Supabase, so `/dev/auth`, the
+ * screenshot run and the tests see what a signed-out visitor sees.
+ * AuthPage is the controller that owns the Supabase calls.
  *
- * Each view is one <form>, so Enter submits that view's action, and because
- * the submit button carries the view's disabled rule, Enter obeys it too. */
+ * Each form view is one <form>: Enter submits it, and the rules run on
+ * submit with their messages under the fields (D3). Submit stays enabled;
+ * while a request runs it shows the spinner and holds (D10). Always Light
+ * (D1), beside the composer illustration (D6). */
 export function AuthScreen({
   view,
   email,
   password,
   busy,
-  error,
-  notice,
+  errors,
+  attempt,
   onEmailChange,
   onPasswordChange,
   onSubmit,
   onGo,
 }: AuthScreenProps) {
-  const emailId = useId();
-  const passwordId = useId();
-  const passwordHelpId = useId();
+  const formRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    if (attempt > 0 && formRef.current) focusFirstInvalid(formRef.current);
+  }, [attempt]);
 
-  const ready =
-    view === "signin"
-      ? !!email && !!password
-      : view === "signup"
-        ? !!email && password.length >= 8
-        : view === "forgot"
-          ? !!email
-          : view === "setPassword"
-            ? password.length >= 8
-            : false;
-  const canSubmit = ready && !busy;
-
-  const headline =
-    view === "signup"
-      ? "Create your account"
-      : view === "forgot"
-        ? "Reset password"
-        : view === "setPassword"
-          ? "Choose a new password"
-          : view === "checkEmail"
-            ? "Check your email"
-            : "Let’s get painting!";
-
-  const submitLabel =
-    view === "signup"
-      ? busy
-        ? "Creating…"
-        : "Create Account"
-      : view === "forgot"
-        ? busy
-          ? "Sending…"
-          : "Send Reset Link"
-        : view === "setPassword"
-          ? busy
-            ? "Saving…"
-            : "Save Password"
-          : busy
-            ? "Signing in…"
-            : "Sign In";
+  const link = (label: string, to: AuthView) => (
+    <button
+      type="button"
+      className="ui-reset ui-ring t-label-m sp-auth-link"
+      onClick={() => onGo(to)}
+    >
+      {label}
+    </button>
+  );
 
   const emailField = (
-    <div className="sp-gate__field">
-      <label htmlFor={emailId} className="sp-gate__label">
-        Email
-      </label>
-      <input
-        id={emailId}
+    <Field label="Email" error={errors.email}>
+      <Input
         type="email"
         value={email}
         autoComplete="email"
         autoFocus
         onChange={(e) => onEmailChange(e.target.value)}
-        className="sp-input sp-input-lg"
       />
-    </div>
+    </Field>
   );
 
   const passwordField = (
-    <div className="sp-gate__field">
-      <label htmlFor={passwordId} className="sp-gate__label">
-        {view === "setPassword" ? "New password" : "Password"}
-      </label>
-      <input
-        id={passwordId}
+    <Field label={view === "setPassword" ? "New password" : "Password"} error={errors.password}>
+      <Input
         type="password"
         value={password}
         autoComplete={view === "signin" ? "current-password" : "new-password"}
         autoFocus={view === "setPassword"}
-        aria-describedby={view === "signup" ? passwordHelpId : undefined}
         onChange={(e) => onPasswordChange(e.target.value)}
-        className="sp-input sp-input-lg"
       />
-      {/* The rule sits under the field as help, present before the user
-          submits rather than after they fail. No strength meter. */}
-      {view === "signup" && (
-        <p id={passwordHelpId} className="sp-gate__help">
-          At least 8 characters.
-        </p>
-      )}
-    </div>
+    </Field>
   );
 
-  const feedback = (
-    <>
-      {error && (
-        <p className="sp-gate__error" role="alert">
-          {error}
-        </p>
-      )}
-      {notice && (
-        <p className="sp-gate__notice" role="status">
-          {notice}
-        </p>
-      )}
-    </>
-  );
+  const sent = view === "checkEmail" || view === "resetSent";
 
   return (
-    <PreAppShell layout="solo" tone="light" backdrop={gateOrbit}>
-      <div className="sp-gate__intro">
-        <BrandMark width={64} />
-        <h1 className="sp-hero-title sp-gate__title">{headline}</h1>
-      </div>
+    <PreAppShell layout="auth" panel={<ComposerIllustration />}>
+      <h1 className="t-title-page sp-auth-title">{TITLE[view]}</h1>
 
-      {view === "checkEmail" ? (
-        <div className="sp-gate__form sp-gate__form--check">
-          {/* A dead end by design, and the screen a new user stares at for
-              a minute: the address on its own line, plain body colour, no
-              error styling anywhere near it. */}
-          <p className="sp-gate__footer">We sent a confirmation link to</p>
-          <p className="sp-gate__address">{email}</p>
-          <p className="sp-gate__footer">Open it, then come back and sign in.</p>
-          <button
-            type="button"
-            className="sp-btn sp-btn-primary sp-btn-lg"
+      {sent ? (
+        <>
+          <p className="t-body-m sp-auth-message">
+            {view === "checkEmail" ? "We sent a confirmation link to " : "We sent a reset link to "}
+            <span className="t-label-l sp-auth-strong">{email}</span>
+            {view === "checkEmail"
+              ? ". Open it, then come back and sign in."
+              : ". Open it to choose a new password."}
+          </p>
+          <Button
+            kind="primary"
+            size="lg"
+            className="sp-auth-submit"
             onClick={() => onGo("signin")}
           >
-            Back to Sign In
-          </button>
-        </div>
+            Back to sign in
+          </Button>
+        </>
       ) : (
         <form
-          className="sp-gate__form"
+          ref={formRef}
+          className="sp-auth-form"
+          noValidate
           onSubmit={(e) => {
             e.preventDefault();
-            if (canSubmit) onSubmit();
+            if (!busy) onSubmit();
           }}
         >
-          {view !== "setPassword" && emailField}
-          {view !== "forgot" && passwordField}
-          {feedback}
-          <button type="submit" className="sp-btn sp-btn-primary sp-btn-lg" disabled={!canSubmit}>
-            {submitLabel}
-          </button>
-          {view === "signin" && (
-            <button
-              type="button"
-              className="sp-gate__link"
-              style={{ alignSelf: "center" }}
-              onClick={() => onGo("forgot")}
+          <div className="sp-auth-fields">
+            {view !== "setPassword" && emailField}
+            {view === "signin" ? (
+              <div className="sp-auth-password">
+                {passwordField}
+                <div className="sp-auth-forgot">{link("Forgot password?", "forgot")}</div>
+              </div>
+            ) : (
+              view !== "forgot" && passwordField
+            )}
+          </div>
+          <div className="sp-auth-actions">
+            <Button
+              type="submit"
+              kind="primary"
+              size="lg"
+              className="sp-auth-submit"
+              icon={busy ? SpinningLoader : undefined}
+              aria-busy={busy || undefined}
+              aria-disabled={busy || undefined}
             >
-              Forgot password?
-            </button>
-          )}
+              {SUBMIT[view]}
+            </Button>
+            {view === "signup" && (
+              <p className="t-caption-s sp-auth-consent">
+                By creating an account, you agree to the{" "}
+                <a className="t-label-xs sp-auth-strong" href={TERMS.href}>
+                  {TERMS.label}
+                </a>{" "}
+                and{" "}
+                <a className="t-label-xs sp-auth-strong" href={PRIVACY.href}>
+                  {PRIVACY.label}
+                </a>
+                .
+              </p>
+            )}
+            {view === "signin" && (
+              <p className="sp-auth-switch">
+                <span className="t-body-s sp-auth-muted">Don’t have an account?</span>
+                {link("Sign up", "signup")}
+              </p>
+            )}
+            {view === "signup" && (
+              <p className="sp-auth-switch">
+                <span className="t-body-s sp-auth-muted">Already have an account?</span>
+                {link("Sign in", "signin")}
+              </p>
+            )}
+            {view === "forgot" && (
+              <p className="sp-auth-switch">{link("Back to sign in", "signin")}</p>
+            )}
+          </div>
         </form>
-      )}
-
-      {view === "signin" && (
-        <p className="sp-gate__footer">
-          Don’t have an account?{" "}
-          <button type="button" className="sp-gate__link" onClick={() => onGo("signup")}>
-            Sign up
-          </button>
-        </p>
-      )}
-      {view === "signup" && (
-        <p className="sp-gate__footer">
-          Already have an account?{" "}
-          <button type="button" className="sp-gate__link" onClick={() => onGo("signin")}>
-            Sign in
-          </button>
-        </p>
-      )}
-      {view === "forgot" && (
-        <p className="sp-gate__footer">
-          <button type="button" className="sp-gate__link" onClick={() => onGo("signin")}>
-            Back to sign in
-          </button>
-        </p>
       )}
     </PreAppShell>
   );
+}
+
+/** The busy spinner in the button's icon slot (D10). */
+function SpinningLoader(props: React.ComponentProps<typeof Loader2>) {
+  return <Loader2 {...props} className={`${props.className ?? ""} sp-auth-spin`} />;
 }
