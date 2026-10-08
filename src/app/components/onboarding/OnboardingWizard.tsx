@@ -1,17 +1,17 @@
 import React, { useEffect, useId, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, ArrowRight, Check, Loader2, Plus, Trash2, Upload, X } from "lucide-react";
-import type { BrandColor, FontRef } from "@/lib/types";
+import type { BrandColor } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useBrand } from "@/lib/brand/BrandContext";
 import { useRouter } from "../../router";
-import { DEFAULT_PALETTE, DEFAULT_TYPE_STYLES } from "@/lib/theme";
+import { DEFAULT_PALETTE } from "@/lib/theme";
 import { GOOGLE_FONTS, loadGoogleFonts } from "@/lib/render/fonts";
 import { FONT_ACCEPT, inspectFontFile } from "@/lib/brand/fontUpload";
 import { useFileDrop } from "@/lib/useFileDrop";
 import { useMotionTokens } from "@/lib/motionTokens";
-import { seedStarterTemplates } from "@/lib/templates/starters/seed";
+import { createWorkspace, seedNoticeFor } from "@/lib/onboarding/service";
 import { setSeedNotice } from "@/lib/templates/starters/seedNotice";
 import {
   isBrandFromWebsiteAvailable,
@@ -27,7 +27,6 @@ import { ColorControl } from "../ColorControl";
 import { BrandMark } from "../BrandMark";
 import { PreAppShell } from "../PreAppShell";
 import gateOrbit from "@/assets/socialpaint/gate-orbit.webp";
-import { migrateFontRoles } from "@/lib/brand/fontRoles";
 
 /** First-run onboarding: walks a user from an empty database to a themed,
  * ready-to-use company workspace. Also reachable any time via "Create
@@ -191,80 +190,22 @@ export function OnboardingWizard({ firstRun }: { firstRun: boolean }) {
     setSaving(true);
     setError(null);
     try {
-      const company = await stores.companies.create({ name: companyName.trim(), slug });
-
-      // The website (from the URL prefill) is a plain companies update —
-      // create_company_with_admin already made this user an admin, so RLS
-      // allows it. Best effort: a failed write must not fail onboarding.
-      if (website) {
-        try {
-          await stores.companies.update(company.id, { website });
-        } catch (e) {
-          console.error("Website save failed", e);
-        }
-      }
-
-      // Uploaded custom fonts become brand assets; chosen ones drive the kit.
-      let headingFont: FontRef = { source: "google", family: headingGoogle };
-      let bodyFont: FontRef = { source: "google", family: bodyGoogle };
-      for (const pf of pendingFonts) {
-        const check = await inspectFontFile(pf.file);
-        if (!check.ok) continue; // validated at add time; belt-and-braces
-        const asset = await stores.brandAssets.upload(company.id, "font", pf.file, {
-          ...check.metadata,
-          family: pf.family,
-        });
-        const ref: FontRef = { source: "custom", family: pf.family, assetId: asset.id };
-        if (pf.use === "heading") headingFont = ref;
-        if (pf.use === "body") bodyFont = ref;
-      }
-      loadGoogleFonts(
-        [headingFont, bodyFont].filter((f) => f.source === "google").map((f) => f.family),
-      );
-
-      let primaryLogoAssetId: string | undefined;
-      let logoAssetRef: string | undefined;
-      if (logoFile) {
-        const asset = await stores.brandAssets.upload(company.id, "logo", logoFile);
-        primaryLogoAssetId = asset.id;
-        logoAssetRef = asset.url;
-      }
-
-      const kit = await stores.brandKits.upsert(company.id, {
-        colors,
-        // Born with font roles: the default styles take the faces onboarding
-        // found (PHASE-6 §9 D3, D12).
-        typeStyles: migrateFontRoles({ typeStyles: DEFAULT_TYPE_STYLES, headingFont, bodyFont })
-          .typeStyles,
-        guidelines: [],
-        headingFont,
-        bodyFont,
-        primaryLogoAssetId,
+      const { company, seeded } = await createWorkspace(stores, {
+        name: companyName,
+        slug,
+        website,
+        brand: {
+          colors,
+          headingGoogle,
+          bodyGoogle,
+          fonts: pendingFonts,
+          logo: logoFile,
+        },
       });
-
-      // Starter templates: six brand-matched designs, seeded through the
-      // ordinary insert path (the RPC above made this user an admin, so RLS
-      // passes). A seeding failure must never fail onboarding — the seeder
-      // collects per-template failures, and anything that went wrong
-      // surfaces as a toast on the template list plus a console log.
-      try {
-        const seeded = await seedStarterTemplates(stores, {
-          company: { id: company.id, name: company.name, website },
-          kit,
-          logoAssetRef,
-        });
-        if (seeded.failed.length) {
-          console.error("Starter seeding failed for:", seeded.failed);
-          setSeedNotice(
-            "Some starter templates could not be created. Use Restore starter templates to try again.",
-          );
-        }
-      } catch (seedError) {
-        console.error("Starter seeding failed", seedError);
-        setSeedNotice(
-          "Your starter templates could not be created. Use Restore starter templates to try again.",
-        );
-      }
+      // A seeding shortfall never fails onboarding; it surfaces as a notice
+      // on the template list.
+      const notice = seedNoticeFor(seeded);
+      if (notice) setSeedNotice(notice);
 
       // Everything is saved. The last thing they see before the product:
       // let "Workspace ready" land for one reveal beat here, because the
