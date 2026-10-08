@@ -5,6 +5,7 @@ import { stores } from "../stores";
 import { supabase } from "../stores/supabase/client";
 import { COMPANY_COLUMNS, toCompany, type CompanyRow } from "../stores/supabase/rows";
 import { AuthContext, LS_COMPANY, type AuthState } from "./AuthContext";
+import { beginRecovery } from "./recovery";
 
 interface MembershipRow {
   company_id: string;
@@ -75,7 +76,10 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       .finally(() => {
         if (!cancelled) setAuthReady(true);
       });
-    const { data: sub } = supabase().auth.onAuthStateChange((_event, next) => {
+    const { data: sub } = supabase().auth.onAuthStateChange((event, next) => {
+      // The reset link signs the person in; the gate stays on New password
+      // until they save it (recovery.ts, PHASE-8B §9 D5).
+      if (event === "PASSWORD_RECOVERY") beginRecovery();
       // Ignore same-user churn (TOKEN_REFRESHED / focus re-emits): keeping the
       // previous object identity means no downstream effects re-run.
       setSession((prev) => {

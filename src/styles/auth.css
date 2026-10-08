@@ -108,6 +108,80 @@
   box-shadow: var(--elevation-floating);
 }
 
+/* ── The gate's form (200:174): title, fields, actions, 32 apart ── */
+.sp-auth-title {
+  margin: 0;
+  text-align: center;
+}
+.sp-auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+.sp-auth-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+.sp-auth-password {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+.sp-auth-forgot {
+  display: flex;
+  justify-content: flex-end;
+}
+.sp-auth-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+}
+.sp-auth-submit {
+  align-self: stretch;
+}
+.sp-auth-switch {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3xs);
+  margin: 0;
+}
+.sp-auth-muted {
+  color: var(--text-secondary);
+}
+.sp-auth-strong {
+  color: var(--text-strong);
+  text-decoration: none;
+}
+a.sp-auth-strong {
+  border-radius: var(--radius-control);
+}
+.sp-auth-consent {
+  max-width: 215px; /* as drawn: two lines */
+  margin: 0;
+  color: var(--text-secondary);
+  text-align: center;
+}
+.sp-auth-message {
+  margin: 0;
+  color: var(--text-secondary);
+  text-align: center;
+}
+.sp-auth-spin {
+  animation: sp-auth-spin 0.9s linear infinite;
+}
+@keyframes sp-auth-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sp-auth-spin {
+    animation: none;
+  }
+}
+
 /* ── The gate's composer (61:504) ── */
 .sp-auth-composer {
   display: flex;

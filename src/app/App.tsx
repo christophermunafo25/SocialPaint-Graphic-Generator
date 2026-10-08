@@ -3,6 +3,7 @@ import { DevAuthProvider, useAuth } from "@/lib/auth/AuthContext";
 import { SupabaseAuthProvider } from "@/lib/auth/SupabaseAuthProvider";
 import { stores } from "@/lib/stores";
 import { AuthPage } from "./components/auth/AuthPage";
+import { useRecovering } from "@/lib/auth/recovery";
 import { BrandProvider, useBrand } from "@/lib/brand/BrandContext";
 import { ColorSchemeProvider } from "@/lib/colorScheme";
 import {
@@ -98,6 +99,7 @@ function Screen() {
   const brand = useBrand();
   const { route } = useRouter();
   const canvaReturn = useCanvaOAuthReturn(company?.id);
+  const recovering = useRecovering();
 
   // The dev sheet needs no account or workspace, so it renders before any
   // of the gates below.
@@ -147,9 +149,11 @@ function Screen() {
     );
   }
 
-  // Real auth: no session → sign in / sign up.
-  if (backend === "supabase" && !user) {
-    return <AuthPage />;
+  // Real auth: no session → sign in / sign up. A password reset in progress
+  // has a session (the link signs them in), so the gate stays on New
+  // password until it's saved (recovery.ts, PHASE-8B §9 D5).
+  if (backend === "supabase" && (!user || recovering)) {
+    return <AuthPage initialView={recovering ? "setPassword" : "signin"} />;
   }
 
   // Same rule for the brand kit: don't render brand-aware screens against a

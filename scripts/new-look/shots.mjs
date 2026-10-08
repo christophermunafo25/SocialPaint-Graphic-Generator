@@ -70,7 +70,12 @@ const ROUTES = [
     `/dev/auth?error=${encodeURIComponent("That email and password don’t match.")}`,
   ],
   ["auth-sign-up", "/dev/auth?view=signup"],
+  [
+    "auth-sign-up-error",
+    `/dev/auth?view=signup&error=${encodeURIComponent("Use at least 8 characters.")}`,
+  ],
   ["auth-reset", "/dev/auth?view=forgot"],
+  ["auth-reset-sent", "/dev/auth?view=resetSent"],
   ["auth-check-email", "/dev/auth?view=checkEmail"],
   ["auth-new-password", "/dev/auth?view=setPassword"],
   ["template-builder", "/template-builder"],
