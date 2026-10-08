@@ -387,6 +387,8 @@ export interface AccountStore {
   isAvailable(): boolean;
   getDisplayName(userId: string): Promise<string | null>;
   setDisplayName(userId: string, name: string): Promise<void>;
+  /** Onboarding's "What is your role?" (users.job_role, migration 0045). */
+  setJobRole(userId: string, role: string): Promise<void>;
   /** Absent row resolves to all-on defaults — flipping delivery on later
    * honors what people chose rather than starting everyone silent. */
   getNotificationPrefs(userId: string): Promise<NotificationPrefs>;

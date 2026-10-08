@@ -51,6 +51,17 @@ export class SupabaseCompanyStore implements CompanyStore {
     }
     // Empty string clears the column back to null.
     if (patch.website !== undefined) row.website = patch.website || null;
+    if (patch.profile !== undefined) {
+      const p = patch.profile;
+      row.profile = {
+        setup_for: p.setupFor,
+        heard_from: p.heardFrom,
+        team_size: p.teamSize,
+        makers: p.makers,
+        first_up: p.firstUp,
+        platforms: p.platforms,
+      };
+    }
     const { data, error } = await supabase()
       .from("companies")
       .update(row)

@@ -3,6 +3,7 @@ import { DevAuthProvider, useAuth } from "@/lib/auth/AuthContext";
 import { SupabaseAuthProvider } from "@/lib/auth/SupabaseAuthProvider";
 import { stores } from "@/lib/stores";
 import { AuthPage } from "./components/auth/AuthPage";
+import { useRecovering } from "@/lib/auth/recovery";
 import { BrandProvider, useBrand } from "@/lib/brand/BrandContext";
 import { ColorSchemeProvider } from "@/lib/colorScheme";
 import {
@@ -22,7 +23,8 @@ import { BulkFillPage } from "./components/bulk/BulkFillPage";
 import { GeneratePage } from "./components/generate/GeneratePage";
 import { TemplateChatPage } from "./components/generate/TemplateChatPage";
 import { GenerateHistoryPage } from "./components/generate/GenerateHistoryPage";
-import { OnboardingWizard } from "./components/onboarding/OnboardingWizard";
+import { OnboardingFlow } from "./components/onboarding/OnboardingFlow";
+import { useOnboardingServices } from "./components/onboarding/services";
 import { AdminTemplates } from "./components/admin/AdminTemplates";
 import { TemplateBuilder } from "./components/builder/TemplateBuilder";
 import { BrandStudio } from "./components/admin/BrandStudio";
@@ -35,6 +37,16 @@ import { setMonitoringContext } from "@/lib/monitoring";
  * import.meta.env.DEV with false, so neither the page nor its chunk ship. */
 const DevUiPage = import.meta.env.DEV
   ? React.lazy(() => import("./dev/DevUiPage").then((m) => ({ default: m.DevUiPage })))
+  : null;
+/** Onboarding's steps on stand-in services (/dev/onboarding, PHASE-8B). */
+const DevOnboardingPage = import.meta.env.DEV
+  ? React.lazy(() =>
+      import("./dev/DevOnboardingPage").then((m) => ({ default: m.DevOnboardingPage })),
+    )
+  : null;
+/** The sign-in gate without Supabase (/dev/auth, PHASE-8B §9 D8). */
+const DevAuthPage = import.meta.env.DEV
+  ? React.lazy(() => import("./dev/DevAuthPage").then((m) => ({ default: m.DevAuthPage })))
   : null;
 
 /** Keeps the ambient error-report context current: route name, company id,
@@ -89,11 +101,19 @@ function useCanvaOAuthReturn(companyId: string | undefined) {
   return { notice, dismiss: () => setNotice(null) };
 }
 
+/** Onboarding on the real services (PHASE-8B): first run with no
+ * workspace, or the in-app Create company path. */
+function Onboarding({ inApp }: { inApp: boolean }) {
+  const services = useOnboardingServices();
+  return <OnboardingFlow services={services} inApp={inApp} />;
+}
+
 function Screen() {
   const { loading, error, retry, company, role, user, backend } = useAuth();
   const brand = useBrand();
   const { route } = useRouter();
   const canvaReturn = useCanvaOAuthReturn(company?.id);
+  const recovering = useRecovering();
 
   // The dev sheet needs no account or workspace, so it renders before any
   // of the gates below.
@@ -101,6 +121,22 @@ function Screen() {
     return (
       <React.Suspense fallback={null}>
         <DevUiPage />
+      </React.Suspense>
+    );
+  }
+
+  if (route.name === "devOnboarding" && DevOnboardingPage) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevOnboardingPage step={route.step} />
+      </React.Suspense>
+    );
+  }
+
+  if (route.name === "devAuth" && DevAuthPage) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevAuthPage view={route.view} error={route.error} />
       </React.Suspense>
     );
   }
@@ -135,9 +171,11 @@ function Screen() {
     );
   }
 
-  // Real auth: no session → sign in / sign up.
-  if (backend === "supabase" && !user) {
-    return <AuthPage />;
+  // Real auth: no session → sign in / sign up. A password reset in progress
+  // has a session (the link signs them in), so the gate stays on New
+  // password until it's saved (recovery.ts, PHASE-8B §9 D5).
+  if (backend === "supabase" && (!user || recovering)) {
+    return <AuthPage initialView={recovering ? "setPassword" : "signin"} />;
   }
 
   // Same rule for the brand kit: don't render brand-aware screens against a
@@ -159,7 +197,7 @@ function Screen() {
 
   // No company for this identity (or "Create company") → onboarding.
   if (!company || route.name === "onboarding") {
-    return <OnboardingWizard firstRun={!company} />;
+    return <Onboarding inApp={!!company} />;
   }
 
   // A member on an admin-only route sees the gallery, with the address left

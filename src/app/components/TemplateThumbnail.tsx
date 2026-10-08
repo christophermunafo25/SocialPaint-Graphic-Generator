@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import type { FieldValues, TemplateSchema } from "@/lib/types";
 import { useBrand } from "@/lib/brand/BrandContext";
+import type { BrandKit } from "@/lib/types";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { SchemaRenderer } from "./SchemaRenderer";
 import type { EmptyFieldsMode } from "@/lib/render/emptyFields";
@@ -19,6 +20,7 @@ export function TemplateThumbnail({
   values: seededValues,
   variantId,
   emptyFields = "placeholder",
+  brandKit,
 }: {
   template: TemplateSchema;
   /** Overrides on top of the placeholders — the Generate results pass their
@@ -28,8 +30,12 @@ export function TemplateThumbnail({
   variantId?: string;
   /** What an empty member field does (render/emptyFields). */
   emptyFields?: EmptyFieldsMode;
+  /** A kit other than the active workspace's: onboarding draws the new
+   * workspace's starters before it becomes the active one. */
+  brandKit?: BrandKit | null;
 }) {
-  const { kit } = useBrand();
+  const brand = useBrand();
+  const kit = brandKit !== undefined ? brandKit : brand.kit;
   const values = useMemo<FieldValues>(() => {
     const out: FieldValues = {};
     if (emptyFields !== "placeholder") return { ...seededValues };

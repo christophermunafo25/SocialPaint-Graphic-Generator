@@ -63,6 +63,21 @@ const ROUTES = [
   ["generate-history", "/generate/history"],
   ["generate-thread", `/generate/c/${resultThread}`],
   ["generate-thread-question", `/generate/c/${questionThread}`],
+  // The sign-in gate, rendered without Supabase (PHASE-8B §9 D8).
+  ["auth-sign-in", "/dev/auth"],
+  [
+    "auth-sign-in-error",
+    `/dev/auth?error=${encodeURIComponent("That email and password don’t match.")}`,
+  ],
+  ["auth-sign-up", "/dev/auth?view=signup"],
+  [
+    "auth-sign-up-error",
+    `/dev/auth?view=signup&error=${encodeURIComponent("Use at least 8 characters.")}`,
+  ],
+  ["auth-reset", "/dev/auth?view=forgot"],
+  ["auth-reset-sent", "/dev/auth?view=resetSent"],
+  ["auth-check-email", "/dev/auth?view=checkEmail"],
+  ["auth-new-password", "/dev/auth?view=setPassword"],
   ["template-builder", "/template-builder"],
   ["insights", "/insights"],
   ["brand-studio", "/brand-studio"],
@@ -82,6 +97,17 @@ const ROUTES = [
   ["settings-account", "/settings/account"],
   ["settings-advanced", "/settings/advanced"],
   ["onboarding", "/templates", { fresh: true }],
+  // Onboarding's steps on stand-in services (PHASE-8B §9 D8).
+  ["onboarding-01-about-you", "/dev/onboarding?step=about"],
+  ["onboarding-02-set-up-for", "/dev/onboarding?step=setupFor"],
+  ["onboarding-03-your-team", "/dev/onboarding?step=team"],
+  ["onboarding-04-first-up", "/dev/onboarding?step=firstUp"],
+  ["onboarding-05-website", "/dev/onboarding?step=website"],
+  ["onboarding-05b-add-your-brand", "/dev/onboarding?step=addBrand"],
+  ["onboarding-06-pulling", "/dev/onboarding?step=pulling"],
+  ["onboarding-07-your-brand", "/dev/onboarding?step=brand"],
+  ["onboarding-08-invite", "/dev/onboarding?step=invite"],
+  ["onboarding-09-ready", "/dev/onboarding?step=ready"],
   ["dev-ui", "/dev/ui"],
 ];
 

@@ -34,7 +34,13 @@ These are settled. Phase prompts build them and do not re-ask.
 
 In scope: every confirmed Master frame (the screen map below), the shell around them, and the system pages they draw from.
 
-Out of scope until they are designed: the Template Builder, onboarding and the sign-in gate, bulk fill, and layouts below desktop width (every Master frame is 1440 wide). These pick up the new token values and nothing else. Below desktop width, pages keep today's responsive behavior on the new tokens. The public link page is in between: it takes the new fill form in Phase 4 because it shares it, and the rest of that page waits for its own design.
+Out of scope until they are designed: the Template Builder, bulk fill, the Template Builder list (`AdminTemplates.tsx`), and layouts below desktop width (every Master frame is 1440 wide). These pick up the new token values and nothing else. Phase 9 then moves their controls onto the primitives without redesigning them, except the Template Builder's, which wait for its own design (PHASE-9 §9 D1, D10).
+
+The sign-in gate and onboarding are designed (CJ, 2026-10-08), and Phase 8b builds both, in Light only:
+- Master UX-UI's "Sign in and sign up" page (194:2) draws eight screens. The gate stays Light, as it has been since 2026-09-18, so its Dark frames aren't built.
+- The "Create account" page (257:2) redesigns onboarding: nine steps from About you to Workspace ready, a no-website branch, and an invite step.
+
+Below desktop width, pages keep today's responsive behavior on the new tokens. The public link page is in between: it takes the new fill form in Phase 4 because it shares it, and the rest of that page waits for its own design.
 
 ## Phases
 
@@ -50,6 +56,7 @@ Out of scope until they are designed: the Template Builder, onboarding and the s
 | 7 | Settings | All seven sections; the Plan card's no-plan state ("Early access") | Same |
 | 7b | Billing | Plan management on Stripe (Checkout, the customer portal, a webhook), the plan picker and every Plan card state; its own PR right after Phase 7 (CJ, 2026-10-05; `PHASE-7B.md`) | Fixture screenshots of every card state; CJ's Stripe sandbox run |
 | 8 | Insights | The dashboard and its cards | Same |
+| 8b | Sign-in gate and onboarding | Sign in, sign up and their error states, check your email, reset password, reset link sent and new password, beside the `sp-auth-panel` art; then the Create account onboarding (About you to Workspace ready, the no-website branch, invites). Light only. (CJ, 2026-10-08; `PHASE-8B.md`) | Same |
 | 9 | Cleanup and QA | Delete the bridge, dead tokens and the old control classes, drop the unread `company_canvas_presets` table (a migration; Phase 3 stopped reading it), remove unused packages, add lint rules against raw colors and inline type, a full screenshot, contrast and keyboard pass, update `ARCHITECTURE.md` and the stylesheet header | Nothing legacy left |
 
 Posting straight to people's own social accounts through connectors comes after the new look; until then LinkedIn stays the one place to post. Behavior changes that need data or product work land in their area's phase, and that phase's prompt specifies them: plan management on Stripe in Phase 7b (moved from Phase 7 by CJ, 2026-10-05; Phase 7 builds the no-plan "Early access" card), Insights filters by template, member and platform with the month summary, font roles moving from Fonts to Type styles in Brand Studio, and authored questions per template field (a `TemplateField` change) in the template chat. Connectors in the attach menu (with Context: web pages and past posts) come after the new look, each as its own feature (CJ, 2026-10-04).
@@ -64,6 +71,9 @@ Posting straight to people's own social accounts through connectors comes after 
 | Template chat (Use AI to assist) | Questions 13:7064 / 13:7211, Building 13:7358 / 13:7551, Result 13:7744 / 13:7946, Edit details 13:8148 / 13:8306, Public links 13:8464 / 13:8753 | `/templates/:id/chat` | `generate/TemplateChatPage.tsx`, `InterviewView.tsx`, `LookPicker.tsx`, `EditorPanel.tsx`, `admin/TemplateLinksDialog.tsx`, `lib/generate/interview.ts` |
 | Brand Studio | Overview 13:9043 / 13:9176 plus 36 flow frames, page 8:676 | `/brand-studio/:category` | `admin/brand/BrandOverview.tsx`, `admin/brand/*Detail.tsx`, `admin/brand/primitives/*` |
 | Insights | 13:832 / 13:1142, page 8:677 | `/insights` | `admin/Dashboard.tsx`, `admin/insights/*`, `lib/insights/buildInsights.ts` |
+| Sign-in gate | Sign in 200:168, Sign in error 201:254, Sign up 201:289, Sign up error 201:332, Check your email 201:373, Reset password 201:414, Reset link sent 201:454, New password 201:495 (Light; the Dark twins 204:563 to 204:1021 aren't built), page 194:2; panel art `sp-auth-panel` 221:3321 (Assets) | Shown with no session, at any URL | `auth/AuthPage.tsx`, `PreAppShell.tsx` |
+| Onboarding (Create account) | 01 About you 258:16, 02 Set up for 258:262, 03 Your team 258:438, 04 First up 258:708, 05 Website 259:357, 05b Add your brand 259:5170, 06 Pulling your brand 259:478, 07 Your brand 259:630, 08 Invite your team 259:799, 09 Workspace ready 259:968; shell 257:3, Option tile 257:4145; page 257:2 (Light only) | First sign-in with no workspace; the in-app Create company path | `onboarding/OnboardingWizard.tsx`, `PreAppShell.tsx` |
+| Template Builder list | None (unframed; Phase 9 moves its controls) | `/template-builder` | `admin/AdminTemplates.tsx` |
 | Settings | Workspace 13:14570 / 13:15992, People 13:14769 / 13:16191, Integrations 13:15051 / 13:16473, Plan & usage 13:15203 / 13:16625, Sharing 13:15384 / 13:16806, Account 13:15649 / 13:17071, Advanced 13:15837 / 13:17259, page 8:678 | `/settings/:section` (`team` becomes People) | `admin/SettingsAdmin.tsx`, `admin/settings/*Section.tsx`, `admin/PeopleAdmin.tsx` |
 | Shell | Every frame's sidebar | all | `Sidebar.tsx`, `GooeyNavPill.tsx`, `layout/Page.tsx` |
 | System | Master UI Elements 24:674 (Interaction states 105:641), Master Design System 3:15162 | `/dev/ui` (Phase 2) | `src/styles/*`, the new primitives |
