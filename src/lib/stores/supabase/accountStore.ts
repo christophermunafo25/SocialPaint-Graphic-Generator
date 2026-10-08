@@ -31,6 +31,11 @@ export class SupabaseAccountStore implements AccountStore {
     if (error) throw error;
   }
 
+  async setJobRole(userId: string, role: string): Promise<void> {
+    const { error } = await supabase().from("users").update({ job_role: role }).eq("id", userId);
+    if (error) throw error;
+  }
+
   async getNotificationPrefs(userId: string): Promise<NotificationPrefs> {
     const { data, error } = await supabase()
       .from("user_notification_prefs")

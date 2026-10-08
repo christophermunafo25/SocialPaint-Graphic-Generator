@@ -39,6 +39,19 @@ export interface CompanyPatch {
   linkDefaults?: CompanyLinkDefaults;
   /** Already-normalized website (companyWebsite.ts); empty string clears. */
   website?: string;
+  /** Onboarding's answers about the workspace (migration 0045). */
+  profile?: CompanyProfile;
+}
+
+/** What onboarding asks about a workspace (PHASE-8B §9 D11). Stored for
+ * later use; nothing in the app changes on these yet. */
+export interface CompanyProfile {
+  setupFor?: "company" | "clients" | "locations" | "just_me";
+  heardFrom?: string;
+  teamSize?: "just_me" | "2_10" | "11_50" | "51_200" | "201_plus";
+  makers?: string[];
+  firstUp?: string[];
+  platforms?: string[];
 }
 
 export interface BrandColor {

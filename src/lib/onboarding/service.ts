@@ -4,7 +4,7 @@
 // leaves nothing behind. Built on the ordinary stores, so the dev backend
 // and Supabase take the same path.
 
-import type { BrandColor, BrandKit, Company, FontRef } from "../types";
+import type { BrandColor, BrandKit, Company, CompanyProfile, FontRef } from "../types";
 import type { Stores } from "../stores/interfaces";
 import { DEFAULT_TYPE_STYLES } from "../theme";
 import { loadGoogleFonts } from "../render/fonts";
@@ -34,6 +34,8 @@ export interface WorkspaceDraft {
   slug: string;
   /** Normalised, from the website step or the brand pull. */
   website?: string;
+  /** Onboarding's answers about the workspace (D11). */
+  profile?: CompanyProfile;
   brand: BrandDraft;
 }
 
@@ -67,11 +69,16 @@ export async function createWorkspace(
   // atomically.
   const company = await stores.companies.create({ name: draft.name.trim(), slug: draft.slug });
 
-  if (draft.website) {
+  // The website and the answers are one best-effort update: neither may
+  // fail onboarding.
+  if (draft.website || draft.profile) {
     try {
-      await stores.companies.update(company.id, { website: draft.website });
+      await stores.companies.update(company.id, {
+        ...(draft.website ? { website: draft.website } : {}),
+        ...(draft.profile ? { profile: draft.profile } : {}),
+      });
     } catch (e) {
-      console.error("Website save failed", e);
+      console.error("Website and profile save failed", e);
     }
   }
 
@@ -145,4 +152,21 @@ export function seedNoticeFor(seeded: SeedResult | null): string | null {
     return "Some starter templates could not be created. Use Restore starter templates to try again.";
   }
   return null;
+}
+
+/** The person's own answers: their name (users.name) and role
+ * (users.job_role). Best effort, and skipped on the dev backend, which has
+ * no accounts: a failed write never fails onboarding. */
+export async function savePerson(
+  stores: Pick<Stores, "account">,
+  userId: string | undefined,
+  person: { name: string; role?: string },
+): Promise<void> {
+  if (!userId || !stores.account.isAvailable()) return;
+  try {
+    if (person.name.trim()) await stores.account.setDisplayName(userId, person.name.trim());
+    if (person.role) await stores.account.setJobRole(userId, person.role);
+  } catch (e) {
+    console.error("Saving the person's answers failed", e);
+  }
 }
