@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import type { InsightEvent, TemplateSchema } from "../types";
-import type { Member } from "../stores/interfaces";
 import {
   buildInsights,
   dayPartOf,
@@ -41,16 +40,11 @@ const TEMPLATES = [
   template("story", 1080, 1920, "Event promo"),
   template("link", 1200, 627, "Partner card"),
 ];
-const members: Member[] = [
-  { userId: "u1", email: "a@x.test", role: "admin" },
-  { userId: "u2", email: "b@x.test", role: "member" },
-];
 
 const build = (events: InsightEvent[], filters?: InsightsFilters, range: InsightsRange = "30d") =>
   buildInsights({
     events,
     templates: TEMPLATES,
-    members,
     range,
     timeZone: "America/Chicago",
     filters,

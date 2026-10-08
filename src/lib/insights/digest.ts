@@ -45,7 +45,7 @@ export const digestHeading = (range: InsightsRange): string =>
 /**
  * One sentence, in three parts, each only when its numbers exist:
  *  - the exports and how they moved against the previous window;
- *  - the template behind 20% or more of them (the templateShare finding);
+ *  - the template behind 20% or more of them (templateShare);
  *  - the weekday and part of day with the most exports.
  * "Your team exported 1,128 graphics, 18% more than the previous 30 days.
  * Product launch drove 22% of them, and Tuesday mornings were the busiest."
@@ -70,13 +70,13 @@ export function digestSentence(
         : `, ${change.percent}% ${change.direction === "up" ? "more" : "fewer"} than the previous ${window}`;
   const first = `Your team exported ${graphics}${movement}.`;
 
-  const share = insights.findings.find((f) => f.kind === "templateShare");
+  const share = insights.templateShare;
   const slot = insights.busiestSlot;
   const busiest = slot ? `${WEEKDAYS[slot.weekday]} ${PART_PLURAL[slot.part]}` : null;
-  if (share && share.kind === "templateShare" && busiest) {
+  if (share && busiest) {
     return `${first} ${share.name} drove ${share.percent}% of them, and ${busiest} were the busiest.`;
   }
-  if (share && share.kind === "templateShare") {
+  if (share) {
     return `${first} ${share.name} drove ${share.percent}% of them.`;
   }
   return busiest ? `${first} ${busiest} were the busiest.` : first;

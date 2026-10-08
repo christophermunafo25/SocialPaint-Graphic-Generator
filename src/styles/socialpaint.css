@@ -504,16 +504,6 @@ html {
   --shadow-rest-hover: 0 0 0 0 transparent;
   --shadow-card-hover: 6px 6px 25px 0 rgb(0 0 0 / 0.3);
 
-  /* Neutral chart ink (Insights, 2026-09-15) — data marks that carry no
-     series identity: secondary bars, donut slices, bar tracks. Chart ink,
-     not surfaces; the alpha steps ride the theme's text base. */
-  --viz-neutral-strong: #f1f1f1;
-  --viz-neutral: rgba(241, 241, 241, 0.28);
-  --viz-neutral-2: rgba(241, 241, 241, 0.64);
-  --viz-neutral-3: rgba(241, 241, 241, 0.4);
-  --viz-neutral-4: rgba(241, 241, 241, 0.22);
-  --viz-track: rgba(241, 241, 241, 0.06);
-
   --shadow-sm: none;
   --shadow-md: none;
 
@@ -659,14 +649,6 @@ html {
   --shadow-rest-hover: 6px 6px 25px 0 rgb(53 53 53 / 0.07);
   --shadow-card-hover: 6px 6px 25px 0 rgb(53 53 53 / 0.1);
 
-  /* Neutral chart ink — the dark block's steps on the light theme's ink. */
-  --viz-neutral-strong: #272727;
-  --viz-neutral: rgba(39, 39, 39, 0.28);
-  --viz-neutral-2: rgba(39, 39, 39, 0.64);
-  --viz-neutral-3: rgba(39, 39, 39, 0.4);
-  --viz-neutral-4: rgba(39, 39, 39, 0.22);
-  --viz-track: rgba(39, 39, 39, 0.06);
-
   --shadow-sm: none;
   --shadow-md: none;
 
@@ -714,10 +696,6 @@ html {
   --viz-series-3: var(--purple-kara);
   --viz-series-4: var(--fire);
   --viz-series-5: var(--christina);
-  --viz-grid: var(--border);
-  /* Aliases for existing consumers; migrate to the series tokens. */
-  --viz-downloads: var(--viz-series-1);
-  --viz-opens: var(--viz-series-2);
 
   /* The narrow layout's top bar and drawer (and theme.css's --sidebar
      aliases) read these; the desktop sidebar is in shell.css (new look,
@@ -2869,39 +2847,6 @@ select.sp-input:disabled {
   margin-bottom: var(--space-sm);
 }
 
-/* ── Insights (one-screen rebuild, 2026-09-15) ──────────────────────────────
-   Four fixed rows on one desktop screen: KPI row, trend beside Top
-   templates (304px), weekday beside sizes, findings. Rows stack under the
-   lg breakpoint; the KPI row steps 4 → 2 → 1. */
-.sp-insights-kpis {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--space-sm);
-}
-.sp-insights-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 304px;
-  gap: var(--space-sm);
-  align-items: stretch;
-}
-.sp-insights-row--halves {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-@media (max-width: 1023.98px) {
-  .sp-insights-kpis {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .sp-insights-row,
-  .sp-insights-row--halves {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-@media (max-width: 639.98px) {
-  .sp-insights-kpis {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
 /* The same card, editing in place. */
 .sp-logo-editing {
   display: flex;
@@ -4709,46 +4654,10 @@ input[type="radio"] {
   );
 }
 
-/* Insights range change: the stale numbers stay visible (dimmed by the
-   page) under a 2px indeterminate bar until the new window lands — the
-   skeleton treatment is for the FIRST load only. Neutral by rule: a
-   loading bar is state, and state never rides a brand colour. */
-.sp-refresh-bar {
-  position: relative;
-  height: 2px;
-  overflow: hidden;
-  border-radius: var(--radius-pill);
-  background: var(--viz-track);
-}
-.sp-refresh-bar::after {
-  content: "";
-  position: absolute;
-  inset-block: 0;
-  left: -40%;
-  width: 40%;
-  border-radius: var(--radius-pill);
-  background: var(--fill-action);
-  animation: sp-refresh-slide 1.2s var(--ease) infinite;
-}
-@keyframes sp-refresh-slide {
-  from {
-    left: -40%;
-  }
-  to {
-    left: 100%;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   /* State still changes; it just doesn't pulse. */
   .sp-skeleton__block {
     animation: none;
-  }
-  .sp-refresh-bar::after {
-    animation: none;
-    left: 0;
-    width: 100%;
-    opacity: 0.4;
   }
 }
 

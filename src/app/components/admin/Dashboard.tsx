@@ -125,14 +125,13 @@ export function Dashboard(route: Omit<DashboardRoute, "name">) {
         ? buildInsights({
             events: loaded.events,
             templates,
-            members,
             range: loaded.range,
             timeZone: company.timezone,
             filters,
           })
         : null,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [loaded, templates, members, company, filters.templateId, filters.member, filters.platform],
+    [loaded, templates, company, filters.templateId, filters.member, filters.platform],
   );
 
   const go = (patch: Partial<Omit<DashboardRoute, "name">>) =>

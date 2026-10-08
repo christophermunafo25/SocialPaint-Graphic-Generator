@@ -87,6 +87,11 @@ from the platform in migration 0009.)
   list of sites, and `0027_share_events.sql` for why). `actor` (`member` |
   `public`) and `link_id` separate public-link traffic from the team's own;
   a public fill has no `user_id` and is never given a fabricated one.
+  A member row inserted without a user takes the inserting session's
+  (`usage_events_attribute_member`, migration 0044): the fill page recorded
+  `user_id` null until then, so earlier member events stay unattributed.
+  Edge Functions run with no session, so one that ever logs a member event
+  passes the user itself.
 - `template_links` — public share links (migration 0026). Tokens are stored
   **hashed**; the plaintext exists only in the response that mints it.
   `pinned_variant_id` (0031) pins a link to one look; null lets the visitor
@@ -315,7 +320,30 @@ editor), then a finish step with the look, the caption with Copy and the downloa
 a live Preview card. Both chats' Edit details is `details/DetailsPanel.tsx`: every
 field in one panel, with Close and Discard; Generate's adds a size switch and its own stage.
 
-## PNG export
+## Insights
+
+`src/app/components/admin/Dashboard.tsx` (admins only; new look, Phase 8).
+`stores.usage.getInsightEvents` reads the raw events for the current window
+and the previous one of the same length, and `src/lib/insights/buildInsights.ts`
+does all the counting, so the dev and production backends can't disagree.
+Every `usage_events` read in `src/lib/stores/supabase/usageStore.ts` pages
+through `readAllPages` (1,000 rows a page, ordered by `created_at` then `id`),
+since PostgREST caps an unpaged read without saying so.
+
+- **Filters** live in the URL (`range`, `template`, `member`, `platform`;
+  the defaults stay off it) and replace the history entry. They narrow the
+  events and never redefine a count. The member filter's last entry, Public
+  links, keeps `actor = 'public'` rows. Platform matches a template by
+  `classifySize`. An unknown id reads as "all".
+- **The digest** (`src/lib/insights/digest.ts`) builds its heading and
+  sentence from the numbers alone: the export count and change, the leading
+  template's share when it is 20% or more, and the busiest weekday and part
+  of day in the workspace's zone.
+- **Export CSV** writes one row per template in scope, and its filename
+  carries the filters.
+- **Public links** lists the five busiest active links. Copy is disabled
+  for links made before 0033, which stored no token.
+
 
 `renderSchemaBlob` (src/lib/render/exportPng.ts) is THE rasterization path —
 the single export (`exportSchemaPng`, which adds delivery) and bulk fill both

@@ -1,4 +1,4 @@
-// The one-screen Insights page's aggregation (2026-09-15), kept pure so
+// The Insights page's aggregation (2026-09-15; new look, Phase 8), kept pure so
 // every counting rule is testable without a database — the pattern set by
 // dailyActivity.ts and monthlyUsage.ts. The store hands over raw events
 // (getInsightEvents) and this module does ALL the counting, so the numbers
@@ -10,20 +10,12 @@
 // - Public events are member-equivalent, counted ONCE: one fill through a
 //   link is one open and one export, the same as a member's — never added
 //   on top.
-// - Day, weekday, and month boundaries follow the WORKSPACE timezone
+// - Day and month boundaries, and the busiest weekday and part of day, follow the WORKSPACE timezone
 //   (company.timezone), exactly as dailyActivity.ts buckets days.
 
 import type { InsightEvent, TemplateSchema } from "../types";
-import type { Member } from "../stores/interfaces";
 import { dayKeyInZone } from "../stores/dailyActivity";
-import {
-  aspectRatioOf,
-  classifySize,
-  orientationOf,
-  PLATFORMS,
-  type PlatformId,
-} from "../templates/platforms";
-import { ORIENTATION_LABEL } from "../templates/groups";
+import { classifySize, PLATFORMS, type PlatformId } from "../templates/platforms";
 
 export type InsightsRange = "7d" | "30d" | "90d" | "12m";
 export type InsightsMetric = "exports" | "opens" | "posted";
@@ -111,34 +103,14 @@ export interface TopTemplate {
   exports: number;
 }
 
-export interface WeekdayInsight {
-  /** Exports summed Monday..Sunday (current window, workspace zone). */
-  totals: number[];
-  /** Busiest weekday, 0 = Monday. Earliest index wins a tie. */
-  busiest: number;
-  /** Mean exports per Monday–Friday calendar day in the window. */
-  weekdayAvg: number;
-  /** Mean exports per Saturday/Sunday calendar day in the window. */
-  weekendAvg: number;
-}
-
-export interface SizeSlice {
-  /** From the catalogue helpers, never hand-written: "Portrait 4:5". */
-  label: string;
-  exports: number;
-  /** Integer, and the slice percents sum to exactly 100 (largest-remainder
-   * rounding) — a donut legend that adds to 99 reads as a bug. */
+/** The leading template's share of the window's exports, when it is 20%
+ * or more: the digest's second clause. Numbers only; copy belongs to the
+ * rendering. */
+export interface TemplateShare {
+  templateId: string;
+  name: string;
   percent: number;
 }
-
-/** Findings the aggregator can compute from events + templates + members.
- * The unopened-public-link finding needs getPublicLinkUsage and is joined
- * in by the page. Numbers only — copy belongs to the rendering. */
-export type InsightFinding =
-  | { kind: "templateShare"; templateId: string; name: string; percent: number }
-  | { kind: "inactiveMembers"; count: number }
-  | { kind: "postingSlipped"; percent: number }
-  | { kind: "unusedTemplates"; count: number };
 
 /** One template's numbers in the window — the Export CSV rows. */
 export interface InsightTemplateRow {
@@ -167,22 +139,16 @@ export interface Insights {
     posted: InsightKpi;
     activeMembers: InsightKpi;
   };
-  /** Aligned current/previous series per metric. `members` counts DISTINCT
-   * active members per bucket — the Active members sparkline. */
+  /** Aligned current/previous series per metric: the trend. */
   series: {
     exports: TrendPoint[];
     opens: TrendPoint[];
     posted: TrendPoint[];
-    members: TrendPoint[];
   };
   /** Top 5 by exports in the window; templates with zero exports never
    * appear (the card says "No exports in this range" instead). */
   topTemplates: TopTemplate[];
-  weekday: WeekdayInsight;
-  /** Exports by orientation-and-ratio label, largest first: top 3 plus
-   * "Other" when more exist. Empty when the window has no sized exports. */
-  sizes: SizeSlice[];
-  findings: InsightFinding[];
+  templateShare: TemplateShare | null;
   templateRows: InsightTemplateRow[];
   /** Views and exports per public link in the CURRENT window. Only links
    * that produced an event appear — the page joins against the link list
@@ -314,21 +280,6 @@ function changeOf(current: number, previous: number, mode: "percent" | "delta"):
     : { direction, delta: Math.abs(diff) };
 }
 
-/** Integer percentages that sum to exactly 100 (largest remainder). */
-function percentagesOf(values: number[]): number[] {
-  const total = values.reduce((a, b) => a + b, 0);
-  if (total === 0) return values.map(() => 0);
-  const raw = values.map((v) => (v * 100) / total);
-  const floors = raw.map(Math.floor);
-  const out = [...floors];
-  const spare = 100 - floors.reduce((a, b) => a + b, 0);
-  const byRemainder = raw
-    .map((v, i) => [v - floors[i], i] as const)
-    .sort((a, b) => b[0] - a[0] || a[1] - b[1]);
-  for (let k = 0; k < spare; k++) out[byRemainder[k][1]] += 1;
-  return out;
-}
-
 const platformsOf = (t: TemplateSchema): PlatformId[] =>
   classifySize(t.canvasWidth, t.canvasHeight).platforms;
 
@@ -346,7 +297,6 @@ export const hasFilters = (f: InsightsFilters | undefined): boolean =>
 export function buildInsights(input: {
   events: InsightEvent[];
   templates: TemplateSchema[];
-  members: Member[];
   range: InsightsRange;
   timeZone: string;
   filters?: InsightsFilters;
@@ -358,8 +308,8 @@ export function buildInsights(input: {
   const { current, previous } = buildWindows(range, timeZone, now);
 
   // Filters narrow the events; they never redefine a count (§3). Templates
-  // out of scope leave the CSV rows and the unused-templates finding too;
-  // a member filter narrows Active members to that one person.
+  // out of scope leave the CSV rows too, and a member filter narrows
+  // Active members to that one person (Public links to none).
   const templates = input.templates.filter(
     (t) =>
       (!filters.templateId || t.id === filters.templateId) &&
@@ -373,23 +323,12 @@ export function buildInsights(input: {
     if (filters.member === PUBLIC_MEMBER) return e.actor === "public";
     return e.actor === "member" && e.userId === filters.member;
   });
-  const members =
-    filters.member && filters.member !== PUBLIC_MEMBER
-      ? input.members.filter((m) => m.userId === filters.member)
-      : filters.member === PUBLIC_MEMBER
-        ? []
-        : input.members;
-
   const bucketCount = current.buckets.length;
   const zeros = () => new Array<number>(bucketCount).fill(0);
   const counts = {
     exports: { current: zeros(), previous: zeros() },
     opens: { current: zeros(), previous: zeros() },
     posted: { current: zeros(), previous: zeros() },
-  };
-  const memberBuckets = {
-    current: Array.from({ length: bucketCount }, () => new Set<string>()),
-    previous: Array.from({ length: bucketCount }, () => new Set<string>()),
   };
   const totals = {
     exports: { current: 0, previous: 0 },
@@ -421,15 +360,8 @@ export function buildInsights(input: {
   // exporting the window wants the zeros too.
   for (const t of templates) rowOf(t.id);
 
-  const weekdayTotals = new Array<number>(7).fill(0);
   /** Exports by weekday and part of day: the digest's busiest slot. */
   const slotCounts = new Map<string, number>();
-  const sizeCounts = new Map<string, number>();
-  const sizeLabelOf = (t: TemplateSchema): string =>
-    `${ORIENTATION_LABEL[orientationOf(t.canvasWidth, t.canvasHeight)]} ${aspectRatioOf(t.canvasWidth, t.canvasHeight)}`;
-  /** Ids of templates with ANY event in the current window — the
-   * unused-published-templates finding's complement. */
-  const usedTemplates = new Set<string>();
   const countByLink = new Map<string, LinkCount>();
 
   for (const e of events) {
@@ -454,26 +386,16 @@ export function buildInsights(input: {
     }
     if (e.actor === "member" && e.userId) {
       activeMembers[win].add(e.userId);
-      memberBuckets[win][idx].add(e.userId);
     }
 
     if (win !== "current") continue;
 
-    usedTemplates.add(e.templateId);
     const row = rowOf(e.templateId);
     if (e.action === "download") {
       row.exports += 1;
       if (e.actor === "public") row.publicDownloads += 1;
-      weekdayTotals[weekdayOf(dayKey)] += 1;
       const slot = `${weekdayOf(dayKey)}:${dayPartOf(hourInZone(e.createdAt, timeZone))}`;
       slotCounts.set(slot, (slotCounts.get(slot) ?? 0) + 1);
-      const template = templateById.get(e.templateId);
-      // A deleted template has no size left to group by; its export still
-      // counts everywhere else.
-      if (template) {
-        const label = sizeLabelOf(template);
-        sizeCounts.set(label, (sizeCounts.get(label) ?? 0) + 1);
-      }
     } else if (e.action === "open") {
       row.opens += 1;
     } else if (e.action === "share") {
@@ -524,11 +446,6 @@ export function buildInsights(input: {
     exports: seriesOf("exports"),
     opens: seriesOf("opens"),
     posted: seriesOf("posted"),
-    members: current.buckets.map((date, i) => ({
-      date,
-      current: memberBuckets.current[i].size,
-      previous: memberBuckets.previous[i].size,
-    })),
   };
 
   const templateRows = [...rowByTemplate.values()].sort(
@@ -539,64 +456,17 @@ export function buildInsights(input: {
     .slice(0, 5)
     .map((r) => ({ templateId: r.templateId, name: r.name, exports: r.exports }));
 
-  // Busiest weekday: strict > so the EARLIEST index wins a tie.
-  let busiest = 0;
-  for (let i = 1; i < 7; i++) if (weekdayTotals[i] > weekdayTotals[busiest]) busiest = i;
-  let weekdayDays = 0;
-  let weekendDays = 0;
-  for (const day of current.days) {
-    if (weekdayOf(day) < 5) weekdayDays += 1;
-    else weekendDays += 1;
-  }
-  const weekdayExports = weekdayTotals.slice(0, 5).reduce((a, b) => a + b, 0);
-  const weekendExports = weekdayTotals[5] + weekdayTotals[6];
-  const weekday: WeekdayInsight = {
-    totals: weekdayTotals,
-    busiest,
-    weekdayAvg: weekdayDays === 0 ? 0 : weekdayExports / weekdayDays,
-    weekendAvg: weekendDays === 0 ? 0 : weekendExports / weekendDays,
-  };
-
-  const rankedSizes = [...sizeCounts.entries()].sort(
-    (a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1),
-  );
-  const shown = rankedSizes.slice(0, 3);
-  const rest = rankedSizes.slice(3);
-  const sizeEntries: Array<{ label: string; exports: number }> = shown.map(([label, exports]) => ({
-    label,
-    exports,
-  }));
-  if (rest.length > 0) {
-    sizeEntries.push({ label: "Other", exports: rest.reduce((n, [, c]) => n + c, 0) });
-  }
-  const sizePercents = percentagesOf(sizeEntries.map((s) => s.exports));
-  const sizes: SizeSlice[] = sizeEntries.map((s, i) => ({ ...s, percent: sizePercents[i] }));
-
-  const findings: InsightFinding[] = [];
+  let templateShare: TemplateShare | null = null;
   if (totals.exports.current > 0 && topTemplates.length > 0) {
     const share = topTemplates[0].exports / totals.exports.current;
     if (share >= 0.2) {
-      findings.push({
-        kind: "templateShare",
+      templateShare = {
         templateId: topTemplates[0].templateId,
         name: topTemplates[0].name,
         percent: Math.round(share * 100),
-      });
+      };
     }
   }
-  const inactive = members.filter((m) => !activeMembers.current.has(m.userId)).length;
-  if (inactive > 0) findings.push({ kind: "inactiveMembers", count: inactive });
-  if (
-    kpis.posted.change.direction === "down" &&
-    kpis.exports.change.direction === "up" &&
-    kpis.posted.change.percent !== undefined
-  ) {
-    findings.push({ kind: "postingSlipped", percent: kpis.posted.change.percent });
-  }
-  const unused = templates.filter(
-    (t) => t.status === "published" && !usedTemplates.has(t.id),
-  ).length;
-  if (unused > 0) findings.push({ kind: "unusedTemplates", count: unused });
 
   // Busiest slot: most exports, then the earliest weekday and part.
   const PART_ORDER: DayPart[] = ["morning", "afternoon", "evening", "night"];
@@ -618,9 +488,7 @@ export function buildInsights(input: {
     kpis,
     series,
     topTemplates,
-    weekday,
-    sizes,
-    findings,
+    templateShare,
     templateRows,
     linkCounts: [...countByLink.values()],
   };

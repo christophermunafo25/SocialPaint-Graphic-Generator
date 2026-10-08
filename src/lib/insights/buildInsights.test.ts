@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import type { InsightEvent, TemplateSchema } from "../types";
-import type { Member } from "../stores/interfaces";
 import { buildInsights, insightWindowStartIso, type InsightsRange } from "./buildInsights";
 
 /** A fixed clock (a Tuesday) so window math is deterministic. */
@@ -33,13 +32,10 @@ const template = (over: Partial<TemplateSchema> & { id: string }): TemplateSchem
   ...over,
 });
 
-const member = (userId: string): Member => ({ userId, email: `${userId}@x.test`, role: "member" });
-
 const build = (
   events: InsightEvent[],
   over?: {
     templates?: TemplateSchema[];
-    members?: Member[];
     range?: InsightsRange;
     timeZone?: string;
   },
@@ -47,7 +43,6 @@ const build = (
   buildInsights({
     events,
     templates: over?.templates ?? [template({ id: "t1" })],
-    members: over?.members ?? [],
     range: over?.range ?? "30d",
     timeZone: over?.timeZone ?? "UTC",
     now: NOW,
@@ -102,16 +97,13 @@ describe("buildInsights windows", () => {
   });
 
   it("active members report an absolute delta, not a percent", () => {
-    const insights = build(
-      [
-        event({ createdAt: "2026-09-14T10:00:00Z", userId: "u1" }),
-        event({ createdAt: "2026-09-14T11:00:00Z", userId: "u1" }),
-        event({ createdAt: "2026-09-14T10:00:00Z", userId: "u2" }),
-        event({ createdAt: "2026-09-13T10:00:00Z", userId: "u3" }),
-        event({ createdAt: "2026-08-10T10:00:00Z", userId: "u1" }),
-      ],
-      { members: [member("u1"), member("u2"), member("u3")] },
-    );
+    const insights = build([
+      event({ createdAt: "2026-09-14T10:00:00Z", userId: "u1" }),
+      event({ createdAt: "2026-09-14T11:00:00Z", userId: "u1" }),
+      event({ createdAt: "2026-09-14T10:00:00Z", userId: "u2" }),
+      event({ createdAt: "2026-09-13T10:00:00Z", userId: "u3" }),
+      event({ createdAt: "2026-08-10T10:00:00Z", userId: "u1" }),
+    ]);
     expect(insights.kpis.activeMembers.current).toBe(3);
     expect(insights.kpis.activeMembers.previous).toBe(1);
     expect(insights.kpis.activeMembers.change).toEqual({ direction: "up", delta: 2 });
@@ -144,7 +136,7 @@ describe("buildInsights counting rules", () => {
 });
 
 describe("buildInsights timezone boundaries", () => {
-  it("buckets days and weekdays in the workspace zone, not UTC", () => {
+  it("buckets days and the busiest weekday in the workspace zone, not UTC", () => {
     // 2026-09-13T02:00Z is Sunday 13th in UTC but Saturday 12th evening in
     // Los Angeles. In the LA workspace it must land on Saturday.
     const insights = build([event({ createdAt: "2026-09-13T02:00:00Z" })], {
@@ -152,9 +144,7 @@ describe("buildInsights timezone boundaries", () => {
       timeZone: "America/Los_Angeles",
     });
     const saturday = 5;
-    const sunday = 6;
-    expect(insights.weekday.totals[saturday]).toBe(1);
-    expect(insights.weekday.totals[sunday]).toBe(0);
+    expect(insights.busiestSlot).toEqual({ weekday: saturday, part: "evening" });
   });
 
   it("an event on the zone's today lands in the newest bucket", () => {
@@ -192,68 +182,19 @@ describe("buildInsights 12-month range", () => {
   });
 });
 
-describe("buildInsights sizes", () => {
-  const sized = [
-    template({ id: "p", canvasWidth: 1080, canvasHeight: 1350 }), // Portrait 4:5
-    template({ id: "s", canvasWidth: 1080, canvasHeight: 1080 }), // Square 1:1
-    template({ id: "v", canvasWidth: 1080, canvasHeight: 1920 }), // Vertical 9:16
-    template({ id: "l", canvasWidth: 1200, canvasHeight: 628 }), // Landscape 1.91:1
-  ];
-
-  it("labels sizes from the catalogue helpers", () => {
-    const insights = build([event({ templateId: "p", createdAt: "2026-09-14T10:00:00Z" })], {
-      templates: sized,
-    });
-    expect(insights.sizes).toEqual([{ label: "Portrait 4:5", exports: 1, percent: 100 }]);
-  });
-
-  it("rolls a fourth-and-beyond size into Other, percents summing to 100", () => {
-    const at = "2026-09-14T10:00:00Z";
-    const events = [
-      ...Array.from({ length: 4 }, () => event({ templateId: "p", createdAt: at })),
-      ...Array.from({ length: 3 }, () => event({ templateId: "s", createdAt: at })),
-      ...Array.from({ length: 2 }, () => event({ templateId: "v", createdAt: at })),
-      event({ templateId: "l", createdAt: at }),
-    ];
-    const insights = build(events, { templates: sized });
-    expect(insights.sizes.map((s) => s.label)).toEqual([
-      "Portrait 4:5",
-      "Square 1:1",
-      "Vertical 9:16",
-      "Other",
-    ]);
-    expect(insights.sizes.map((s) => s.exports)).toEqual([4, 3, 2, 1]);
-    expect(insights.sizes.reduce((n, s) => n + s.percent, 0)).toBe(100);
-  });
-});
-
-describe("buildInsights weekday", () => {
-  it("the earliest weekday wins a tie for busiest", () => {
-    // Wed Sep 9 and Thu Sep 10 get one export each — Wednesday (index 2)
-    // must win. (Sep 9 2026 is a Wednesday.)
+describe("buildInsights busiest slot", () => {
+  it("the earliest weekday wins a tie", () => {
+    // Wed Sep 9 and Thu Sep 10 get one export each, at the same hour, so
+    // Wednesday (index 2) must win. (Sep 9 2026 is a Wednesday.)
     const insights = build(
       [event({ createdAt: "2026-09-10T10:00:00Z" }), event({ createdAt: "2026-09-09T10:00:00Z" })],
       { range: "7d" },
     );
-    expect(insights.weekday.busiest).toBe(2);
-  });
-
-  it("computes weekday and weekend daily averages over calendar days", () => {
-    // 7d window Sep 9–15 holds 5 weekdays and 2 weekend days.
-    const insights = build(
-      [
-        event({ createdAt: "2026-09-09T10:00:00Z" }), // Wed
-        event({ createdAt: "2026-09-10T10:00:00Z" }), // Thu
-        event({ createdAt: "2026-09-12T10:00:00Z" }), // Sat
-      ],
-      { range: "7d" },
-    );
-    expect(insights.weekday.weekdayAvg).toBeCloseTo(2 / 5);
-    expect(insights.weekday.weekendAvg).toBeCloseTo(1 / 2);
+    expect(insights.busiestSlot?.weekday).toBe(2);
   });
 });
 
-describe("buildInsights top templates and findings", () => {
+describe("buildInsights top templates and their share", () => {
   it("ranks the top five by exports and drops zero-export templates", () => {
     const at = "2026-09-14T10:00:00Z";
     const templates = ["a", "b", "c", "d", "e", "f", "zero"].map((id) => template({ id }));
@@ -275,45 +216,12 @@ describe("buildInsights top templates and findings", () => {
       ...Array.from({ length: 7 }, () => event({ templateId: "small", createdAt: at })),
     ];
     const insights = build(events, { templates });
-    // "small" leads with 70% — the finding names the TOP template's share.
-    expect(insights.findings).toContainEqual({
-      kind: "templateShare",
+    // "small" leads with 70%: the share names the TOP template.
+    expect(insights.templateShare).toEqual({
       templateId: "small",
       name: "small",
       percent: 70,
     });
-  });
-
-  it("counts inactive members and unused published templates", () => {
-    const insights = build(
-      [event({ createdAt: "2026-09-14T10:00:00Z", userId: "u1", templateId: "t1" })],
-      {
-        templates: [
-          template({ id: "t1" }),
-          template({ id: "t2" }),
-          template({ id: "draft", status: "draft" }),
-        ],
-        members: [member("u1"), member("u2"), member("u3")],
-      },
-    );
-    expect(insights.findings).toContainEqual({ kind: "inactiveMembers", count: 2 });
-    // The draft is not counted — only published templates can be "unused".
-    expect(insights.findings).toContainEqual({ kind: "unusedTemplates", count: 1 });
-  });
-
-  it("flags posting slipping while exports grew", () => {
-    const cur = "2026-09-14T10:00:00Z";
-    const prev = "2026-08-10T10:00:00Z";
-    const insights = build([
-      // Exports: 1 → 2 (up). Posted: 2 → 1 (down 50%).
-      event({ createdAt: prev }),
-      event({ createdAt: cur }),
-      event({ createdAt: cur }),
-      event({ action: "share", createdAt: prev }),
-      event({ action: "share", createdAt: prev }),
-      event({ action: "share", createdAt: cur }),
-    ]);
-    expect(insights.findings).toContainEqual({ kind: "postingSlipped", percent: 50 });
   });
 });
 
