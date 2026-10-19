@@ -44,7 +44,7 @@ src/app/components/builder/  Admin Template Builder — a guided wizard:
                               (multi-select, ⌘C/X/V/D + context menu) + field
                               list (drag = member form order) + inspector
                               (z-order via To front/back; image corner radius)
-src/app/components/onboarding/ First-run wizard
+src/app/components/onboarding/ Create account (OnboardingFlow) and its pieces
 supabase/migrations/         Schema + RLS (dev-active, real-ready)
 supabase/functions/          figma-status / figma-connect / figma-import /
                               template-generate (Deno)
@@ -138,8 +138,14 @@ Real Supabase Auth is enabled. `0006_real_auth.sql` dropped the dev
 pass-through policies and activated production RLS:
 
 - **Identity**: email/password via Supabase Auth. `auth.users` inserts mirror
-  into `public.users` via the `handle_new_user` trigger. `AuthPage` handles
-  sign in / sign up / forgot / recovery.
+  into `public.users` via the `handle_new_user` trigger. The gate is
+  `auth/AuthPage.tsx` (the controller) over `AuthScreen.tsx` (every view
+  from props): sign in, sign up, reset password, reset link sent, check
+  your email and new password. The rules and our error words are in
+  `src/lib/auth/gateErrors.ts`; Supabase's own text goes to the console
+  and Sentry only. A reset link signs the person in, so
+  `src/lib/auth/recovery.ts` keeps the gate on New password until it's
+  saved (App reads it alongside the session).
 - **Provider selection**: `SupabaseAuthProvider` (session → memberships →
   company + role) when the Supabase backend is active; `DevAuthProvider`
   (tenant/role switcher) on the localStorage dev backend. Both implement the
@@ -354,15 +360,29 @@ decode warm-up), `navigator.share` on mobile with download fallback. Custom
 uploaded fonts are embedded via `fontEmbedCSS`; Google fonts render from the
 document font cache.
 
-## Adding a company / client
+## The way in: the gate and onboarding
 
-Every client starts from the identical blank slate:
+Both render through `PreAppShell` (new look, Phase 8b; Figma 194:2 and
+257:2): the logo, the form and the legal links beside the `sp-auth-panel`
+art, always Light. The Terms of Service and Privacy Policy links read
+`src/lib/legal.ts`, which points at placeholders until the pages exist.
 
-1. Header switcher → **+ Create company…** (or first run routes there
-   automatically).
-2. Wizard: name → colors → fonts (Google or upload) → logo.
-3. Land in the empty admin Templates view → build or import the first
-   template → publish.
+Onboarding (`onboarding/OnboardingFlow.tsx`) asks About you, Set up for,
+Your team, First up, Website (or Add your brand without one), then pulls
+the brand (`brand-from-website`), shows it for review, invites the team and
+lands on Workspace ready. Every answer stays in the flow's state until Your
+brand's "Looks good", which creates the workspace with its creator as admin
+(`create_company_with_admin`), saves its website and profile, uploads the
+logo, saves the kit (born with font roles) and seeds the starters, all
+through `src/lib/onboarding/service.ts`, so leaving earlier leaves nothing
+behind. The person's name goes to `users.name` and their role to
+`users.job_role`; the workspace's answers go to `companies.profile`
+(migration 0045). Nothing in the app reads the answers yet.
+
+The in-app "Create company" path runs the same flow from Your team. The
+flow's side effects sit behind `OnboardingServices`, so `/dev/onboarding`
+(and `/dev/auth` for the gate) render every step without a backend for the
+screenshot run.
 
 Everything set in onboarding is editable later in Brand Studio.
 
