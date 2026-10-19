@@ -3,7 +3,9 @@ dist/
 .env
 .env.local
 .DS_Store
-.claude/
+.claude/settings.local.json
+.claude/worktrees/
+.claude/qa/
 *.local
 *.tsbuildinfo
 
@@ -13,3 +15,7 @@ supabase/verify/figma-dogfood.snapshot.md
 
 # new look screenshot loop captures (npm run shots)
 .shots/
+
+# fidelity harness output and fonts that can't be redistributed
+test/fidelity/out/
+test/fidelity/fonts-private/
