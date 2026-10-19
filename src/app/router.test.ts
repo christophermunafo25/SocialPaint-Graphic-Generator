@@ -179,3 +179,37 @@ describe("the dev-only /dev/ui route", () => {
     expect(urlToRoute("/dev/ui", "")).toEqual({ name: "portal" });
   });
 });
+
+describe("the dev-only /dev/render route", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("resolves a fixture and its variant in a development build", () => {
+    vi.stubEnv("DEV", true);
+    expect(urlToRoute("/dev/render/starter-launch-01", "?variant=dark")).toEqual({
+      name: "devRender",
+      fixture: "starter-launch-01",
+      variant: "dark",
+    });
+    expect(urlToRoute("/dev/render/gtm-composer", "")).toEqual({
+      name: "devRender",
+      fixture: "gtm-composer",
+      variant: undefined,
+    });
+    expect(routeToUrl({ name: "devRender", fixture: "starter-launch-01", variant: "dark" })).toBe(
+      "/dev/render/starter-launch-01?variant=dark",
+    );
+    expect(routeToUrl({ name: "devRender", fixture: "gtm-composer" })).toBe(
+      "/dev/render/gtm-composer",
+    );
+  });
+
+  it("needs a fixture name", () => {
+    vi.stubEnv("DEV", true);
+    expect(urlToRoute("/dev/render", "")).toEqual({ name: "portal" });
+  });
+
+  it("falls back to the gallery in a production build", () => {
+    vi.stubEnv("DEV", false);
+    expect(urlToRoute("/dev/render/starter-launch-01", "")).toEqual({ name: "portal" });
+  });
+});
