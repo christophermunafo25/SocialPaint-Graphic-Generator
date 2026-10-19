@@ -60,7 +60,7 @@ const brandValue = (v) =>
   typeof v === "string" && tokens.primitives[v] ? cssVarOfPrimitive(v) : color(v);
 
 const FAMILY = {
-  "Raveo Display": "var(--font-ui)",
+  "Inter Tight": "var(--font-ui)",
   "Geist Mono": "var(--font-mono)",
   // Mono/Code is a documentation style in Figma; the app has no IBM Plex Mono.
   "IBM Plex Mono": "var(--font-code, var(--font-mono))",

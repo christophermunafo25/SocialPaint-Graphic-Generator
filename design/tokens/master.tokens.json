@@ -1119,89 +1119,89 @@
   },
   "textStyles": {
     "Title/Display": {
-      "family": "Raveo Display",
-      "style": "Display Medium",
+      "family": "Inter Tight",
+      "style": "Medium",
       "size": 44,
       "lineHeight": "110%",
-      "letterSpacing": "-2.5%",
+      "letterSpacing": "-1.5%",
       "textCase": "ORIGINAL",
       "leadingTrim": "NONE"
     },
     "Title/Page": {
-      "family": "Raveo Display",
-      "style": "Display Medium",
+      "family": "Inter Tight",
+      "style": "Medium",
       "size": 30,
       "lineHeight": "120%",
-      "letterSpacing": "-2%",
+      "letterSpacing": "-1%",
       "textCase": "ORIGINAL",
       "leadingTrim": "NONE"
     },
     "Title/Section": {
-      "family": "Raveo Display",
-      "style": "Display Medium",
+      "family": "Inter Tight",
+      "style": "Medium",
       "size": 24,
       "lineHeight": "120%",
-      "letterSpacing": "-1.5%",
+      "letterSpacing": "-0.5%",
       "textCase": "ORIGINAL",
       "leadingTrim": "NONE"
     },
     "Title/Group": {
-      "family": "Raveo Display",
-      "style": "Display Medium",
+      "family": "Inter Tight",
+      "style": "Medium",
       "size": 20,
       "lineHeight": "130%",
-      "letterSpacing": "-1.5%",
+      "letterSpacing": "-0.5%",
       "textCase": "ORIGINAL",
       "leadingTrim": "NONE"
     },
     "Title/Card": {
-      "family": "Raveo Display",
-      "style": "Display Medium",
+      "family": "Inter Tight",
+      "style": "Medium",
       "size": 18,
       "lineHeight": "125%",
-      "letterSpacing": "-1%",
+      "letterSpacing": "0%",
       "textCase": "ORIGINAL",
       "leadingTrim": "NONE"
     },
     "Label/L": {
-      "family": "Raveo Display",
-      "style": "Display Medium",
+      "family": "Inter Tight",
+      "style": "Medium",
       "size": 15,
       "lineHeight": "125%",
-      "letterSpacing": "-1%",
+      "letterSpacing": "0%",
       "textCase": "ORIGINAL",
       "leadingTrim": "NONE"
     },
     "Label/M": {
-      "family": "Raveo Display",
-      "style": "Display Medium",
+      "family": "Inter Tight",
+      "style": "Medium",
       "size": 14,
       "lineHeight": "125%",
-      "letterSpacing": "0%",
+      "letterSpacing": "1%",
       "textCase": "ORIGINAL",
       "leadingTrim": "NONE"
     },
     "Label/S": {
-      "family": "Raveo Display",
-      "style": "Display Medium",
+      "family": "Inter Tight",
+      "style": "Medium",
       "size": 13,
       "lineHeight": "125%",
-      "letterSpacing": "0%",
+      "letterSpacing": "1%",
       "textCase": "ORIGINAL",
       "leadingTrim": "NONE"
     },
     "Label/XS": {
-      "family": "Raveo Display",
-      "style": "Display Medium",
+      "family": "Inter Tight",
+      "style": "Medium",
       "size": 12,
       "lineHeight": "125%",
-      "letterSpacing": "0%",
+      "letterSpacing": "1%",
       "textCase": "ORIGINAL",
       "leadingTrim": "NONE"
     },
     "Body/L": {
-      "family": "Raveo Display",
-      "style": "Display Regular",
+      "family": "Inter Tight",
+      "style": "Regular",
       "size": 16,
       "lineHeight": "150%",
       "letterSpacing": "0%",
@@ -1209,8 +1209,8 @@
       "leadingTrim": "NONE"
     },
     "Body/M": {
-      "family": "Raveo Display",
-      "style": "Display Regular",
+      "family": "Inter Tight",
+      "style": "Regular",
       "size": 15,
       "lineHeight": "150%",
       "letterSpacing": "0%",
@@ -1218,8 +1218,8 @@
       "leadingTrim": "NONE"
     },
     "Body/S": {
-      "family": "Raveo Display",
-      "style": "Display Regular",
+      "family": "Inter Tight",
+      "style": "Regular",
       "size": 14,
       "lineHeight": "140%",
       "letterSpacing": "0%",
@@ -1227,8 +1227,8 @@
       "leadingTrim": "NONE"
     },
     "Caption/M": {
-      "family": "Raveo Display",
-      "style": "Display Regular",
+      "family": "Inter Tight",
+      "style": "Regular",
       "size": 13,
       "lineHeight": "125%",
       "letterSpacing": "0%",
@@ -1236,8 +1236,8 @@
       "leadingTrim": "NONE"
     },
     "Caption/S": {
-      "family": "Raveo Display",
-      "style": "Display Regular",
+      "family": "Inter Tight",
+      "style": "Regular",
       "size": 12,
       "lineHeight": "125%",
       "letterSpacing": "0%",
@@ -1245,8 +1245,8 @@
       "leadingTrim": "NONE"
     },
     "Caption/XS": {
-      "family": "Raveo Display",
-      "style": "Display Regular",
+      "family": "Inter Tight",
+      "style": "Regular",
       "size": 11,
       "lineHeight": "130%",
       "letterSpacing": "0%",
@@ -1299,8 +1299,8 @@
       "leadingTrim": "NONE"
     },
     "Caption/XXS": {
-      "family": "Raveo Display",
-      "style": "Display Regular",
+      "family": "Inter Tight",
+      "style": "Regular",
       "size": 9,
       "lineHeight": "125%",
       "letterSpacing": "0%",
@@ -1326,8 +1326,8 @@
       "leadingTrim": "NONE"
     },
     "Trimmed/Caption/M": {
-      "family": "Raveo Display",
-      "style": "Display Regular",
+      "family": "Inter Tight",
+      "style": "Regular",
       "size": 13,
       "lineHeight": "125%",
       "letterSpacing": "0%",
@@ -1344,8 +1344,8 @@
       "leadingTrim": "CAP_HEIGHT"
     },
     "Trimmed/Caption/XS": {
-      "family": "Raveo Display",
-      "style": "Display Regular",
+      "family": "Inter Tight",
+      "style": "Regular",
       "size": 11,
       "lineHeight": "130%",
       "letterSpacing": "0%",
@@ -1353,53 +1353,53 @@
       "leadingTrim": "CAP_HEIGHT"
     },
     "Trimmed/Label/XS": {
-      "family": "Raveo Display",
-      "style": "Display Medium",
+      "family": "Inter Tight",
+      "style": "Medium",
       "size": 12,
       "lineHeight": "125%",
-      "letterSpacing": "0%",
+      "letterSpacing": "1%",
       "textCase": "ORIGINAL",
       "leadingTrim": "CAP_HEIGHT"
     },
     "Trimmed/Title/Card": {
-      "family": "Raveo Display",
-      "style": "Display Medium",
+      "family": "Inter Tight",
+      "style": "Medium",
       "size": 18,
-      "lineHeight": "125%",
-      "letterSpacing": "-1%",
-      "textCase": "ORIGINAL",
-      "leadingTrim": "CAP_HEIGHT"
-    },
-    "Trimmed/Label/S": {
-      "family": "Raveo Display",
-      "style": "Display Medium",
-      "size": 13,
       "lineHeight": "125%",
       "letterSpacing": "0%",
       "textCase": "ORIGINAL",
       "leadingTrim": "CAP_HEIGHT"
     },
+    "Trimmed/Label/S": {
+      "family": "Inter Tight",
+      "style": "Medium",
+      "size": 13,
+      "lineHeight": "125%",
+      "letterSpacing": "1%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "CAP_HEIGHT"
+    },
     "Trimmed/Title/Display": {
-      "family": "Raveo Display",
-      "style": "Display Medium",
+      "family": "Inter Tight",
+      "style": "Medium",
       "size": 44,
       "lineHeight": "110%",
-      "letterSpacing": "-2.5%",
+      "letterSpacing": "-1.5%",
       "textCase": "ORIGINAL",
       "leadingTrim": "CAP_HEIGHT"
     },
     "Trimmed/Title/Page": {
-      "family": "Raveo Display",
-      "style": "Display Medium",
+      "family": "Inter Tight",
+      "style": "Medium",
       "size": 30,
       "lineHeight": "120%",
-      "letterSpacing": "-2%",
+      "letterSpacing": "-1%",
       "textCase": "ORIGINAL",
       "leadingTrim": "CAP_HEIGHT"
     },
     "Trimmed/Body/L": {
-      "family": "Raveo Display",
-      "style": "Display Regular",
+      "family": "Inter Tight",
+      "style": "Regular",
       "size": 16,
       "lineHeight": "150%",
       "letterSpacing": "0%",
@@ -1407,8 +1407,8 @@
       "leadingTrim": "CAP_HEIGHT"
     },
     "Trimmed/Body/S": {
-      "family": "Raveo Display",
-      "style": "Display Regular",
+      "family": "Inter Tight",
+      "style": "Regular",
       "size": 14,
       "lineHeight": "140%",
       "letterSpacing": "0%",
@@ -1416,8 +1416,8 @@
       "leadingTrim": "CAP_HEIGHT"
     },
     "Trimmed/Caption/S": {
-      "family": "Raveo Display",
-      "style": "Display Regular",
+      "family": "Inter Tight",
+      "style": "Regular",
       "size": 12,
       "lineHeight": "125%",
       "letterSpacing": "0%",
@@ -1425,11 +1425,11 @@
       "leadingTrim": "CAP_HEIGHT"
     },
     "Trimmed/Label/M": {
-      "family": "Raveo Display",
-      "style": "Display Medium",
+      "family": "Inter Tight",
+      "style": "Medium",
       "size": 14,
       "lineHeight": "125%",
-      "letterSpacing": "0%",
+      "letterSpacing": "1%",
       "textCase": "ORIGINAL",
       "leadingTrim": "CAP_HEIGHT"
     },
@@ -1443,8 +1443,8 @@
       "leadingTrim": "CAP_HEIGHT"
     },
     "Trimmed/Body/M": {
-      "family": "Raveo Display",
-      "style": "Display Regular",
+      "family": "Inter Tight",
+      "style": "Regular",
       "size": 15,
       "lineHeight": "150%",
       "letterSpacing": "0%",
@@ -1452,44 +1452,44 @@
       "leadingTrim": "CAP_HEIGHT"
     },
     "Button/M": {
-      "family": "Raveo Display",
-      "style": "Display Medium",
+      "family": "Inter Tight",
+      "style": "Medium",
       "size": 14,
       "lineHeight": "125%",
-      "letterSpacing": "-1%",
+      "letterSpacing": "0%",
       "textCase": "ORIGINAL",
       "leadingTrim": "NONE"
     },
     "Button/S": {
-      "family": "Raveo Display",
-      "style": "Display Medium",
+      "family": "Inter Tight",
+      "style": "Medium",
       "size": 12,
       "lineHeight": "130%",
-      "letterSpacing": "-1%",
+      "letterSpacing": "0%",
       "textCase": "ORIGINAL",
       "leadingTrim": "CAP_HEIGHT"
     },
     "Control/M": {
-      "family": "Raveo Display",
-      "style": "Display Medium",
+      "family": "Inter Tight",
+      "style": "Medium",
       "size": 14,
       "lineHeight": "AUTO",
-      "letterSpacing": "-1%",
+      "letterSpacing": "0%",
       "textCase": "ORIGINAL",
       "leadingTrim": "NONE"
     },
     "Control/S": {
-      "family": "Raveo Display",
-      "style": "Display Medium",
+      "family": "Inter Tight",
+      "style": "Medium",
       "size": 13,
       "lineHeight": "130%",
-      "letterSpacing": "-1%",
+      "letterSpacing": "0%",
       "textCase": "ORIGINAL",
       "leadingTrim": "NONE"
     },
     "Body/XS": {
-      "family": "Raveo Display",
-      "style": "Display Regular",
+      "family": "Inter Tight",
+      "style": "Regular",
       "size": 13,
       "lineHeight": "140%",
       "letterSpacing": "0%",
@@ -1497,38 +1497,38 @@
       "leadingTrim": "NONE"
     },
     "Trimmed/Label/XXS": {
-      "family": "Raveo Display",
-      "style": "Display Medium",
+      "family": "Inter Tight",
+      "style": "Medium",
       "size": 10,
+      "lineHeight": "125%",
+      "letterSpacing": "1%",
+      "textCase": "ORIGINAL",
+      "leadingTrim": "CAP_HEIGHT"
+    },
+    "Trimmed/Button/M": {
+      "family": "Inter Tight",
+      "style": "Medium",
+      "size": 14,
       "lineHeight": "125%",
       "letterSpacing": "0%",
       "textCase": "ORIGINAL",
       "leadingTrim": "CAP_HEIGHT"
     },
-    "Trimmed/Button/M": {
-      "family": "Raveo Display",
-      "style": "Display Medium",
-      "size": 14,
-      "lineHeight": "125%",
-      "letterSpacing": "-1%",
-      "textCase": "ORIGINAL",
-      "leadingTrim": "CAP_HEIGHT"
-    },
     "Title/Panel": {
-      "family": "Raveo Display",
-      "style": "Display Medium",
+      "family": "Inter Tight",
+      "style": "Medium",
       "size": 17,
       "lineHeight": "125%",
-      "letterSpacing": "-1%",
+      "letterSpacing": "0%",
       "textCase": "ORIGINAL",
       "leadingTrim": "NONE"
     },
     "Title/Metric": {
-      "family": "Raveo Display",
-      "style": "Display Medium",
+      "family": "Inter Tight",
+      "style": "Medium",
       "size": 40,
       "lineHeight": "110%",
-      "letterSpacing": "-3%",
+      "letterSpacing": "-2%",
       "textCase": "ORIGINAL",
       "leadingTrim": "NONE"
     }

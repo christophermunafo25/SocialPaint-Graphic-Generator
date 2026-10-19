@@ -55,7 +55,7 @@ Small, Medium, Large and Floating carry the Dark bevel (white at 15% on the top 
 
 - Every text in chrome uses a text style class from `tokens.css`: `.t-title-page`, `.t-body-m`, `.t-label-s`, `.t-mono-eyebrow` and the rest, one per Figma style. Add `.t-trim` where the frame uses a "Trimmed/" style.
 - No inline font sizes, weights or tracking, and no Tailwind text-size utilities in chrome.
-- Raveo Display Regular (400) sets reading text and Display Medium (500) sets controls and titles. Nothing in chrome is heavier. Geist Mono sets the mono styles; Mono/Code maps to the same face.
+- Inter Tight Regular (400) sets reading text and Medium (500) sets controls and titles. Nothing in chrome is heavier. Chrome faces are self-hosted under private " Platform" names (`"Inter Tight Platform"`), never the public family name, so a tenant's font can't collide with them. Tracking follows the Figma text styles, one point looser than Raveo at Medium (2026-10-19). Geist Mono sets the mono styles; Mono/Code maps to the same face.
 - Text and icons use `--text-strong` by default. `--text-primary` (`#272727`) stays for data marks.
 
 ## 6. Interaction states

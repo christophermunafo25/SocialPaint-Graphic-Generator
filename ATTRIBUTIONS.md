@@ -5,3 +5,5 @@ This Figma Make file includes photos from [Unsplash](https://unsplash.com) used 
 This app includes social media brand marks from [Social Media Icons 24x24](https://www.figma.com/community/file/1272984833509071933/social-media-icons-24x24) by Denis Abdullin (Figma Community) used under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
 This app self-hosts [Bricolage Grotesque](https://github.com/ateliertriay/bricolage) by Mathieu Triay, used under the [SIL Open Font License 1.1](src/assets/fonts/bricolage/OFL.txt).
+
+This app self-hosts [Inter Tight](https://fonts.google.com/specimen/Inter+Tight), the tight cut of Rasmus Andersson's [Inter](https://github.com/rsms/inter) family via Google Fonts, used under the [SIL Open Font License 1.1](src/assets/fonts/inter-tight/OFL.txt).

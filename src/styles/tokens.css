@@ -91,23 +91,23 @@
   --focus-offset: 2px;
   /* Text styles (font shorthand + tracking). Apply them with the .t-* classes. */
   --type-title-display: 500 44px/1.1 var(--font-ui);
-  --type-title-display-tracking: -0.025em;
+  --type-title-display-tracking: -0.015em;
   --type-title-page: 500 30px/1.2 var(--font-ui);
-  --type-title-page-tracking: -0.02em;
+  --type-title-page-tracking: -0.01em;
   --type-title-section: 500 24px/1.2 var(--font-ui);
-  --type-title-section-tracking: -0.015em;
+  --type-title-section-tracking: -0.005em;
   --type-title-group: 500 20px/1.3 var(--font-ui);
-  --type-title-group-tracking: -0.015em;
+  --type-title-group-tracking: -0.005em;
   --type-title-card: 500 18px/1.25 var(--font-ui);
-  --type-title-card-tracking: -0.01em;
+  --type-title-card-tracking: 0;
   --type-label-l: 500 15px/1.25 var(--font-ui);
-  --type-label-l-tracking: -0.01em;
+  --type-label-l-tracking: 0;
   --type-label-m: 500 14px/1.25 var(--font-ui);
-  --type-label-m-tracking: 0;
+  --type-label-m-tracking: 0.01em;
   --type-label-s: 500 13px/1.25 var(--font-ui);
-  --type-label-s-tracking: 0;
+  --type-label-s-tracking: 0.01em;
   --type-label-xs: 500 12px/1.25 var(--font-ui);
-  --type-label-xs-tracking: 0;
+  --type-label-xs-tracking: 0.01em;
   --type-body-l: 400 16px/1.5 var(--font-ui);
   --type-body-l-tracking: 0;
   --type-body-m: 400 15px/1.5 var(--font-ui);
@@ -137,21 +137,21 @@
   --type-mono-code: 400 12px/1.5 var(--font-code, var(--font-mono));
   --type-mono-code-tracking: 0;
   --type-button-m: 500 14px/1.25 var(--font-ui);
-  --type-button-m-tracking: -0.01em;
+  --type-button-m-tracking: 0;
   --type-button-s: 500 12px/1.3 var(--font-ui);
-  --type-button-s-tracking: -0.01em;
+  --type-button-s-tracking: 0;
   --type-control-m: 500 14px/normal var(--font-ui);
-  --type-control-m-tracking: -0.01em;
+  --type-control-m-tracking: 0;
   --type-control-s: 500 13px/1.3 var(--font-ui);
-  --type-control-s-tracking: -0.01em;
+  --type-control-s-tracking: 0;
   --type-body-xs: 400 13px/1.4 var(--font-ui);
   --type-body-xs-tracking: 0;
   --type-label-xxs: 500 10px/1.25 var(--font-ui);
-  --type-label-xxs-tracking: 0;
+  --type-label-xxs-tracking: 0.01em;
   --type-title-panel: 500 17px/1.25 var(--font-ui);
-  --type-title-panel-tracking: -0.01em;
+  --type-title-panel-tracking: 0;
   --type-title-metric: 500 40px/1.1 var(--font-ui);
-  --type-title-metric-tracking: -0.03em;
+  --type-title-metric-tracking: -0.02em;
 }
 
 [data-theme="light"] {
