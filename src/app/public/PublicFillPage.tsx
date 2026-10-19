@@ -53,9 +53,9 @@ export function PublicFillPage({ token }: { token: string }) {
 /** Fetch the template, then register the uploaded typefaces it renders with
  * BEFORE anything measures text.
  *
- * The order matters: SchemaRenderer re-measures once on document.fonts.ready,
- * and a face registered after that moment would never trigger a second pass —
- * the preview and the export would both use fallback metrics. */
+ * SchemaRenderer re-measures whenever a face finishes loading, so a late
+ * registration would still correct itself; registering first means the
+ * visitor never sees the fallback-metrics frame at all. */
 async function load(token: string): Promise<PublicTemplate> {
   const data = await fetchPublicTemplate(token);
   await Promise.all(data.fontAssets.map((asset) => registerCustomFont(asset)));

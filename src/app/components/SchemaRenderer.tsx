@@ -19,11 +19,18 @@ import {
   type Rect,
 } from "@/lib/render/layout";
 import { resolveFieldStyle } from "@/lib/brand/resolveStyle";
-import { loadGoogleFonts, schemaFontUsage } from "@/lib/render/fonts";
+import {
+  ensureSchemaFontsLoaded,
+  fontUsageLoaded,
+  loadGoogleFonts,
+  schemaFontUsage,
+} from "@/lib/render/fonts";
 import { exportSchemaPng, renderSchemaBlob, type ExportOutcome } from "@/lib/render/exportPng";
 import { applyVariantToSchema, getVariant, hiddenFieldKeys } from "@/lib/templates/variants";
 import { isLeftOff, paintsNothing, type EmptyFieldsMode } from "@/lib/render/emptyFields";
 import { stores } from "@/lib/stores";
+
+const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
 export interface SchemaRendererHandle {
   /** Renders the canvas to PNG and hands it to the user. Records a
@@ -113,24 +120,41 @@ export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererPro
       return () => observer.disconnect();
     }, [schema.canvasWidth, schema.canvasHeight]);
 
+    // Fixed-width fitting and the layout pass measure real glyphs, so every
+    // moment a face can land re-keys the measurer (fontsTick) and the layout
+    // re-runs with the real metrics instead of the fallback's.
+    const [fontsTick, setFontsTick] = useState(0);
+    const bumpFonts = useCallback(() => setFontsTick((t) => t + 1), []);
+
     // Best-effort load of every family the schema references (imported
     // Figma fonts and type-style-bound fonts included) so fields render in
-    // their designed typeface.
+    // their designed typeface — and re-measure once those exact faces have
+    // loaded. document.fonts.ready alone is not that moment: it can resolve
+    // before this schema's stylesheet has even been injected, and then
+    // nothing would ever measure again.
     useEffect(() => {
-      loadGoogleFonts(schemaFontUsage(schema, brandKit));
-    }, [schema, brandKit]);
-
-    // Fixed-width fitting and the layout pass measure real glyphs —
-    // re-render once webfonts finish loading so measurements switch from the
-    // fallback font's metrics.
-    const [fontsTick, setFontsReady] = useState(0);
-    useEffect(() => {
-      let mounted = true;
-      void document.fonts?.ready.then(() => mounted && setFontsReady(1));
+      let live = true;
+      const usage = schemaFontUsage(schema, brandKit);
+      loadGoogleFonts(usage);
+      void fontUsageLoaded(usage).then(() => live && bumpFonts());
       return () => {
-        mounted = false;
+        live = false;
       };
-    }, []);
+    }, [schema, brandKit, bumpFonts]);
+
+    // Any later face too: an uploaded brand font registered after mount, or
+    // a face the browser only fetched once the painted text asked for it.
+    useEffect(() => {
+      const fonts = document.fonts;
+      if (!fonts) return;
+      let live = true;
+      void fonts.ready.then(() => live && bumpFonts());
+      fonts.addEventListener?.("loadingdone", bumpFonts);
+      return () => {
+        live = false;
+        fonts.removeEventListener?.("loadingdone", bumpFonts);
+      };
+    }, [bumpFonts]);
 
     // THE layout pass: schema + values in, rects out. One measurer (and its
     // memo) per fonts generation — a webfont landing changes what the same
@@ -155,7 +179,35 @@ export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererPro
       }
     }, [instrument, schema.companyId, schema.id, renderedVariantId]);
 
+    // Exports rasterize the DOM as committed, so the layout must have been
+    // measured with the loaded faces first. settleLayout waits for them,
+    // re-keys the measurer, and resolves after React commits that pass and
+    // the browser paints it. Same faces measure the same, so a canvas that
+    // was already right re-renders identically.
+    const commitWaiters = useRef<Array<() => void>>([]);
+    useEffect(() => {
+      for (const resolve of commitWaiters.current.splice(0)) resolve();
+    }, [layout]);
+    // An export still waiting when the canvas unmounts must not hang; it
+    // proceeds to its "Canvas not mounted" error instead.
+    useEffect(
+      () => () => {
+        for (const resolve of commitWaiters.current.splice(0)) resolve();
+      },
+      [],
+    );
+    const settleLayout = useCallback(async () => {
+      await ensureSchemaFontsLoaded(schema, brandKit);
+      await new Promise<void>((resolve) => {
+        commitWaiters.current.push(resolve);
+        bumpFonts();
+      });
+      await nextFrame();
+      await nextFrame();
+    }, [schema, brandKit, bumpFonts]);
+
     const exportPng = useCallback(async () => {
+      await settleLayout();
       if (!canvasRef.current) throw new Error("Canvas not mounted");
       const outcome = await exportSchemaPng(schema, canvasRef.current, brandKit);
       // A dismissed share sheet produced no graphic — don't count it.
@@ -169,12 +221,13 @@ export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererPro
         );
       }
       return outcome;
-    }, [schema, instrument, brandKit, renderedVariantId]);
+    }, [schema, instrument, brandKit, renderedVariantId, settleLayout]);
 
     const renderBlob = useCallback(async () => {
+      await settleLayout();
       if (!canvasRef.current) throw new Error("Canvas not mounted");
       return renderSchemaBlob(schema, canvasRef.current, brandKit);
-    }, [schema, brandKit]);
+    }, [schema, brandKit, settleLayout]);
 
     useImperativeHandle(ref, () => ({ exportPng, renderBlob }), [exportPng, renderBlob]);
 
