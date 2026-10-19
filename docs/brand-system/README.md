@@ -56,12 +56,23 @@ Tracks that don't share files can run at the same time in separate worktrees (se
 
 ## The fidelity harness
 
-After Phase 0:
+Install the three browser engines once per machine:
+
+```bash
+npx playwright install chromium firefox webkit
+```
+
+Then, from the repo root:
 
 ```bash
 node scripts/fidelity/fidelity.mjs run                   # every fixture on chromium, firefox and webkit
 node scripts/fidelity/fidelity.mjs run --only gtm-composer
+node scripts/fidelity/fidelity.mjs run --engines webkit
 node scripts/fidelity/goldens.mjs fetch <fixture>        # figma fixtures, needs FIGMA_TOKEN
+node scripts/fidelity/fidelity.mjs bless <fixture>       # starter fixtures: today's Chromium render becomes the golden
+node scripts/fidelity/fidelity.mjs baseline <fixture> --approved   # only once CJ approves the numbers
 ```
 
-Results land in `test/fidelity/out/`: each render, its heatmap (changed pixels in magenta), and `report.json`.
+The runner starts its own Vite dev server on the local backend (port 4327, or `--port`; `--base` uses one already running). Results land in `test/fidelity/out/`: each render, its heatmap (changed pixels in magenta), and `report.json`. It exits non-zero when a render errors, changes size, or gets worse than its baseline by more than the fixture's tolerance (default 0.25 points). A fixture with a missing private font or no golden is reported as skipped, never as passed. `bless` refuses to replace an existing golden and `baseline` refuses to run without `--approved`.
+
+Starter fixtures render with Google Fonts, so a run needs network access. `test/fidelity/README.md` describes the fixture format.
