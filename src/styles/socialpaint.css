@@ -64,13 +64,13 @@
      cards, platform chips, and the search trigger (2026-09-25, the Figma
      "Navigation" page; before that, no drop shadows in either mode).
      The plus hint glow is the one box-shadow outside those tokens.
-   - One face for the whole chrome: Raveo Display (2026-09-25, the Figma
-     "Navigation" page). Headings set in Display Medium at −2% tracking in
-     sentence case; body and UI in Display Regular for text and Display
-     Medium for controls. It replaces Plus Jakarta Sans (headings) and
-     Inter Tight (body and UI, 2026-09-03). Nothing heavier than Medium
-     anywhere in chrome. Small labels (eyebrows, table headers) stay ALL
-     CAPS mono at 0.04em tracking.
+   - One face for the whole chrome: Inter Tight (2026-10-19, at CJ's
+     direction). Headings set in Medium at −1% tracking in sentence case;
+     body and UI in Regular for text and Medium for controls. It replaces
+     Raveo Display (2026-09-25 to 2026-10-19), which had replaced Plus
+     Jakarta Sans (headings) and Inter Tight (body and UI, 2026-09-03).
+     Nothing heavier than Medium anywhere in chrome. Small labels
+     (eyebrows, table headers) stay ALL CAPS mono at 0.04em tracking.
 
    Themes are scoped to [data-theme="light" | "dark"], which
    ColorSchemeProvider sets on <html> alongside the .dark class that
@@ -86,7 +86,12 @@
    tenant's font upload can never shadow the chrome (@font-face is
    document-global; see the Neuething incident, 2026-08-05). They are
    self-hosted — a CDN @import would register the public family name and
-   break that policy.
+   break that policy. The rule matters more for Inter Tight than it did
+   for Raveo: Inter Tight is in the Google Fonts catalogue tenants pick
+   from, and src/lib/render/fonts.ts loads catalogue fonts under their
+   public names, so a chrome face registered as "Inter Tight" would
+   replace a tenant's Inter Tight inside their templates with this latin
+   subset at 400–600. The chrome registers only "Inter Tight Platform".
 
    History: Plus Jakarta Sans SemiBold was the HEADING face (2026-08-31, at
    Chris's direction), every heading step tracking at −3%. Inter Tight was
@@ -100,7 +105,17 @@
    heavier — the browser would synthesise it. The files are the pre-09-03
    OTFs from git history, repacked as woff2 with the full glyph set (no
    unicode-range split). The Jakarta and Inter Tight faces and files were
-   removed on 2026-09-25, once nothing in chrome read them. */
+   removed on 2026-09-25, once nothing in chrome read them.
+
+   Inter Tight is the one chrome face again (2026-10-19, at CJ's
+   direction): Regular (400) for reading text, Medium (500) for controls,
+   titles, and every heading step. The latin and latin-ext files are the
+   variable 400–600 cut restored from f81c70b^; a third, arrows-only
+   subset (U+2190–2199, from google/fonts InterTight[wght] instanced to
+   400–600) covers the Insights change chip's → ↗ ↘, which Raveo carried
+   and the latin subset lacks. The files span 600, so a stray 600 would
+   now render a real SemiBold: chrome still asks for 400 and 500 only.
+   The Raveo faces and files were removed the same day. */
 @font-face {
   font-family: "Inter Tight Platform";
   src: url("../assets/fonts/inter-tight/InterTight-wght400-600-latin.woff2") format("woff2");
@@ -163,21 +178,38 @@ html {
   --gray: #f1f1f1;
   --ink: #272727;
 
-  /* Typography — Raveo Display carries headings, body, and UI (2026-09-25).
+  /* Typography — Inter Tight carries headings, body, and UI (2026-10-19,
+     at CJ's direction), after Raveo Display (2026-09-25 to 2026-10-19).
      History: ONE heading face (2026-09-23, at CJ's direction) was Plus
      Jakarta, carrying every step from display to cardtitle after the
      Bricolage Grotesque display experiment was retired; body and UI were
-     Inter Tight. The display steps below were rescaled for Jakarta's width
-     and retuned for Raveo the same day as the switch (see the ramp note). */
+     Inter Tight. The display steps below were rescaled for Jakarta's width,
+     retuned for Raveo the same day as that switch, and carried to Inter
+     Tight unchanged (see the ramp note). */
   --font-head: "Inter Tight Platform", system-ui, -apple-system, sans-serif;
   --weight-head: 500; /* every heading step — Inter Tight Medium */
-  --track-head: -0.01em; /* every heading step: one point looser than Raveo's −2% (Inter Tight needs +1pt at Medium for the same footprint, 2026-10-19) */
+  /* −1% on every heading step: one point looser than Raveo's −2%, because
+     Inter Tight Medium needs one more point of tracking than Raveo Medium
+     to set the same footprint (median width ratio 1.000 on the app's real
+     titles, 2026-10-19). The Figma text styles follow the same rule. */
+  --track-head: -0.01em;
   --font-body: "Inter Tight Platform", system-ui, -apple-system, sans-serif;
   --font-ui: "Inter Tight Platform", system-ui, -apple-system, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
   --weight-ui: 500; /* controls and titles — Inter Tight Medium */
 
-  /* Display steps, retuned for Raveo Display Medium (2026-09-25). Raveo
+  /* Display steps, kept as they are for Inter Tight (2026-10-19). Inter
+     Tight lands on Raveo's em box exactly: unitsPerEm 2048, ascent 0.969,
+     descent 0.241, no line gap, USE_TYPO_METRICS on both, and the same
+     0.728 em cap height, so line boxes, baselines and the cap-trim crop
+     do not move. With one point more tracking at Medium, it also sets the
+     same widths (within 0.2% on titles, labels and buttons; KPI digits
+     1.6% wider). Removing the ×1.04 below would shrink every display step
+     about 4% under the approved look, so it stays. Its x-height is taller
+     (0.546 vs 0.516 em), so lowercase reads a touch larger at equal px;
+     that is expected.
+
+     History — retuned for Raveo Display Medium (2026-09-25). Raveo
      sets the real headlines ~5% narrower than Jakarta SemiBold at equal px
      (median 1.049 across the hero, gate, and page titles; 7–10% on KPI
      digits) and a little shorter (cap height 0.728 vs 0.745 em, x-height
@@ -2099,7 +2131,8 @@ select.sp-input:disabled {
      number, and this title wore the condensed cut, so it took the same
      ×0.8 as the rest of the display voice (32 → 25.6, rounded up to 28 to
      keep it above the cardtitle step). ×1.04 for Raveo (2026-09-25, see
-     the ramp note): 29. */
+     the ramp note): 29, kept for Inter Tight (2026-10-19), which shares
+     Raveo's cap height. */
   font-size: 29px;
   line-height: var(--type-h3-lh);
   letter-spacing: var(--type-h3-track);
@@ -2227,8 +2260,8 @@ select.sp-input:disabled {
 /* The intro headline at 110%, the heading track, ink — the step both
    surfaces share now (the 38/45 split above is the dark frames'). The
    frames' Bricolage 45 through the Jakarta ×0.8 was 36 at −3%; through
-   the Raveo ×1.04 (2026-09-25, see the ramp note) it is 37 at the
-   heading face's −2%. */
+   the Raveo ×1.04 (2026-09-25, see the ramp note) it is 37, kept for
+   Inter Tight (2026-10-19) at the heading track, now −1%. */
 .sp-gate[data-theme="light"] .sp-hero-title {
   font-size: 37px;
   line-height: 1.1;
@@ -2638,8 +2671,9 @@ select.sp-input:disabled {
     width: 32px !important;
   }
   .sp-gate[data-theme="light"] .sp-hero-title {
-    /* The frames' 30 through the Jakarta ×0.8 (24), then the Raveo ×1.04
-       — the 310 column is what this step is really sized against. */
+    /* The frames' 30 through the Jakarta ×0.8 (24), then the Raveo ×1.04,
+       kept for Inter Tight (2026-10-19) — the 310 column is what this step
+       is really sized against. */
     font-size: 25px;
     max-width: 310px;
     margin-inline: auto;
