@@ -171,7 +171,7 @@ html {
      and retuned for Raveo the same day as the switch (see the ramp note). */
   --font-head: "Inter Tight Platform", system-ui, -apple-system, sans-serif;
   --weight-head: 500; /* every heading step — Inter Tight Medium */
-  --track-head: -0.02em; /* −2% on every heading step — the Figma page title's spec */
+  --track-head: -0.01em; /* every heading step: one point looser than Raveo's −2% (Inter Tight needs +1pt at Medium for the same footprint, 2026-10-19) */
   --font-body: "Inter Tight Platform", system-ui, -apple-system, sans-serif;
   --font-ui: "Inter Tight Platform", system-ui, -apple-system, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
@@ -2274,7 +2274,7 @@ select.sp-input:disabled {
   font-family: var(--font-head);
   font-weight: var(--weight-head);
   font-size: 18px;
-  letter-spacing: -0.03em;
+  letter-spacing: var(--track-head);
 }
 .sp-gate[data-theme="light"] .sp-btn-primary:hover:not(:disabled) {
   background: color-mix(in srgb, var(--gate-btn-bg) 86%, var(--white));
@@ -2591,7 +2591,7 @@ select.sp-input:disabled {
   font-family: var(--font-head);
   font-weight: var(--weight-head);
   font-size: 18px;
-  letter-spacing: -0.03em;
+  letter-spacing: var(--track-head);
 }
 .sp-gate[data-theme="light"] .sp-gate__cta:hover:not(:disabled) {
   background: color-mix(in srgb, var(--gate-btn-bg) 86%, var(--white));
@@ -4525,7 +4525,7 @@ input[type="radio"] {
 .sp-platform-chip__label {
   font-size: var(--type-label-size);
   font-weight: var(--weight-ui);
-  letter-spacing: -0.01em;
+  letter-spacing: var(--type-label-track);
   line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
@@ -5477,7 +5477,7 @@ input[type="radio"] {
      shipped pending a ramp decision; do not quietly rescale. */
   font-size: 16.5px;
   line-height: 1.18;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--track-head);
   color: var(--text-primary);
 }
 .sp-start-card__desc {
