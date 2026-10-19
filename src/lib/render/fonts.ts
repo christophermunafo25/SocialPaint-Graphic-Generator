@@ -55,6 +55,11 @@ export const GOOGLE_FONTS = [
 /** family → the style keys already requested from css2. Per-style, not per
  * family: a family loaded for Regular must still be able to fetch Bold later. */
 const loadedGoogleStyles = new Map<string, Set<string>>();
+/** family → settles once every css2 stylesheet injected for it has loaded
+ * (or failed). document.fonts.load resolves EMPTY while a family's
+ * @font-face rules are still in flight, so anything that waits on a face
+ * has to wait on its stylesheet first. */
+const googleStylesheets = new Map<string, Promise<void>>();
 const registeredCustomAssets = new Set<string>();
 /** family → assetId → @font-face css (data-URL src). Keyed per ASSET, not per
  * family: a brand that uploads Regular and Bold of the same family used to
@@ -163,8 +168,32 @@ export function loadGoogleFonts(request: string[] | FontUsage): void {
       "https://fonts.googleapis.com/css2?family=" +
       `${familyParam(family)}:${googleAxisQuery(fresh)}` +
       "&display=swap";
+    const sheet = new Promise<void>((resolve) => {
+      link.onload = () => resolve();
+      link.onerror = () => resolve();
+    });
+    const prior = googleStylesheets.get(family);
+    googleStylesheets.set(
+      family,
+      prior ? Promise.all([prior, sheet]).then(() => undefined) : sheet,
+    );
     document.head.appendChild(link);
   }
+}
+
+/** Settles once every face in `usage` has loaded (or definitively failed):
+ * first the family's injected css2 stylesheets, then a document.fonts.load
+ * per face. This is the moment text measured with these faces stops
+ * changing. It never rejects. */
+export async function fontUsageLoaded(usage: FontUsage): Promise<void> {
+  await Promise.all([...usage.keys()].map((family) => googleStylesheets.get(family)));
+  await Promise.all(
+    [...usage].flatMap(([family, styles]) =>
+      styles.map((style) =>
+        document.fonts.load(faceShorthand(family, style)).catch(() => undefined),
+      ),
+    ),
+  );
 }
 
 /** The @font-face blocks one uploaded asset registers.
@@ -296,13 +325,7 @@ export async function ensureSchemaFontsLoaded(
   schema: TemplateSchema,
   kit?: BrandKit | null,
 ): Promise<void> {
-  await Promise.all(
-    [...schemaFontUsage(schema, kit)].flatMap(([family, styles]) =>
-      styles.map((style) =>
-        document.fonts.load(faceShorthand(family, style)).catch(() => undefined),
-      ),
-    ),
-  );
+  await fontUsageLoaded(schemaFontUsage(schema, kit));
   await document.fonts.ready;
 }
 
