@@ -13,6 +13,8 @@ export default tseslint.config(
       "src/app/components/ui",
       "supabase",
       "scripts",
+      // Claude Code config and the worktrees other sessions keep under it.
+      ".claude",
     ],
   },
   {
