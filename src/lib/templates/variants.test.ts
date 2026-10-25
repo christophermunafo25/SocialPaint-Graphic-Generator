@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { TemplateField, TemplateSchema, TemplateVariant } from "@/lib/types";
 import {
@@ -15,6 +16,7 @@ import {
   retagVariants,
   unstyledKeys,
   unstyledVariantCount,
+  VARIANT_OVERRIDE_KEYS,
   variantByName,
 } from "./variants";
 
@@ -308,5 +310,22 @@ describe("builder helpers", () => {
     expect(nextVariantName(undefined)).toBe("Variation 1");
     expect(nextVariantName([green, blue])).toBe("Variation 3");
     expect(nextVariantName([{ ...green, name: "variation 2" }])).toBe("Variation 3");
+  });
+});
+
+describe("the public link's copy of the whitelist", () => {
+  // The edge functions cannot import from src, and neither type checker can
+  // follow an import across the boundary (tsc rejects the Deno file's `.ts`
+  // imports, deno check rejects src's extensionless ones), so read the copy
+  // as text. A key missing there is silently stripped from every public link.
+  it("matches this one, so a look renders the same on a public link as on the fill page", () => {
+    const source = readFileSync(
+      new URL("../../../supabase/functions/_shared/publicTemplate.ts", import.meta.url),
+      "utf8",
+    );
+    const list = source.match(/export const VARIANT_OVERRIDE_KEYS = \[([^\]]*)\]/);
+    expect(list).not.toBeNull();
+    const publicKeys = [...list![1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+    expect(publicKeys.sort()).toEqual([...VARIANT_OVERRIDE_KEYS].sort());
   });
 });

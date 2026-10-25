@@ -86,12 +86,16 @@ export function signValue(
 /** The per-element keys a variation may carry (the whitelist in
  * src/lib/templates/variants.ts). Anything else in the stored blob stays
  * home — a variation is appearance only, and the public payload is the last
- * place a stray geometry key should ever travel. */
-const VARIANT_OVERRIDE_KEYS = [
+ * place a stray geometry key should ever travel. The Deno runtime cannot
+ * import from src, so this is a copy; variants.test.ts fails if the two
+ * lists drift. */
+export const VARIANT_OVERRIDE_KEYS = [
   "colorHex",
   "textGradient",
   "typeStyleKey",
   "opacity",
+  "plateColor",
+  "strokeColor",
   "staticValue",
   "hidden",
 ] as const;
