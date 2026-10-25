@@ -1,1 +1,5 @@
-{ "name": "starter-milestone-03", "kind": "starter" }
+{
+  "name": "starter-milestone-03",
+  "kind": "starter",
+  "baseline": { "chromium": 0, "firefox": 0.57, "webkit": 1.21 }
+}

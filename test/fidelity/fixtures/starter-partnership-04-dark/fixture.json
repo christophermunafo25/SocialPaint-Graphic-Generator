@@ -1,1 +1,6 @@
-{ "name": "starter-partnership-04-dark", "kind": "starter", "variantId": "dark" }
+{
+  "name": "starter-partnership-04-dark",
+  "kind": "starter",
+  "variantId": "dark",
+  "baseline": { "chromium": 0, "firefox": 1.7, "webkit": 1.83 }
+}
