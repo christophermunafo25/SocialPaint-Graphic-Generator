@@ -7,6 +7,7 @@ import {
   fixtureFontAsset,
   fixtureFontUrl,
   resolveFileFixture,
+  resolveKeyedStarterFixture,
   resolveStarterFixture,
   type FidelityFixture,
   type FixtureFont,
@@ -55,6 +56,37 @@ describe("starter fixtures", () => {
   it("names no fixture for an unknown key or a non-starter name", () => {
     expect(resolveStarterFixture("starter-nope", undefined, workspace)).toBeNull();
     expect(resolveStarterFixture("gtm-composer", undefined, workspace)).toBeNull();
+  });
+
+  it("resolves a keyed starter with its own values and colourway", () => {
+    const fixture: FidelityFixture = {
+      name: "line-breaks-launch-dark",
+      kind: "starter",
+      starter: "launch-01",
+      variantId: "dark",
+      values: { headline: "A headline a member typed" },
+    };
+    const keyed = resolveKeyedStarterFixture(fixture, undefined, workspace)!;
+    const plain = resolveStarterFixture("starter-launch-01", "dark", workspace)!;
+    expect(keyed.values).toEqual(fixture.values);
+    expect(keyed.variantId).toBe("dark");
+    expect(keyed.schema.id).toBe("line-breaks-launch-dark");
+    expect({ ...keyed.schema, id: plain.schema.id }).toEqual(plain.schema);
+  });
+
+  it("keys nothing without a starter key or for an unknown blueprint", () => {
+    const base: FidelityFixture = { name: "x", kind: "starter" };
+    expect(resolveKeyedStarterFixture(base, undefined, workspace)).toBeNull();
+    expect(
+      resolveKeyedStarterFixture({ ...base, starter: "nope" }, undefined, workspace),
+    ).toBeNull();
+    expect(
+      resolveKeyedStarterFixture(
+        { ...base, kind: "figma", starter: "launch-01" },
+        undefined,
+        workspace,
+      ),
+    ).toBeNull();
   });
 });
 

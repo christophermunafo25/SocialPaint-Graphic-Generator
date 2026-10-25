@@ -1,0 +1,9 @@
+{
+  "name": "line-breaks-launch",
+  "kind": "starter",
+  "starter": "launch-01",
+  "values": {
+    "headline": "Every member of your team can now make graphics that look designed",
+    "subhead": "Templates your admins lock and your whole team fills, so every post looks consistent"
+  }
+}

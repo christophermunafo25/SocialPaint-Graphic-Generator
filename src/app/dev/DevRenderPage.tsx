@@ -7,6 +7,7 @@ import {
   fixtureFontAsset,
   fixtureFontUrl,
   resolveFileFixture,
+  resolveKeyedStarterFixture,
   resolveStarterFixture,
   type FidelityFixture,
   type ResolvedFixture,
@@ -61,7 +62,13 @@ async function resolveFixture(name: string, variant?: string): Promise<ResolvedF
   }
   const load = FIXTURE_FILES[`/test/fidelity/fixtures/${name}/fixture.json`];
   if (!load) throw new Error(`No fixture named ${name}`);
-  const resolved = resolveFileFixture(await load(), variant);
+  const file = { ...(await load()), name };
+  if (file.kind === "starter") {
+    const keyed = resolveKeyedStarterFixture(file, variant, await loadWorkspace());
+    if (!keyed) throw new Error(`No starter blueprint for ${name}`);
+    return keyed;
+  }
+  const resolved = resolveFileFixture(file, variant);
   if (!resolved) throw new Error(`Fixture ${name} has no schema`);
   return resolved;
 }

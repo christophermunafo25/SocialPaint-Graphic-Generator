@@ -20,6 +20,20 @@ describe("routeFor", () => {
     );
   });
 
+  it("renders a keyed starter by its own name, with its colourway", () => {
+    expect(
+      routeFor({
+        name: "line-breaks-launch-dark",
+        kind: "starter",
+        starter: "launch-01",
+        variantId: "dark",
+      }),
+    ).toBe("/dev/render/line-breaks-launch-dark?variant=dark");
+    expect(routeFor({ name: "line-breaks-launch", kind: "starter", starter: "launch-01" })).toBe(
+      "/dev/render/line-breaks-launch",
+    );
+  });
+
   it("renders a figma fixture by its own name, ignoring variantId", () => {
     expect(routeFor({ name: "gtm-composer", kind: "figma", variantId: "dark" })).toBe(
       "/dev/render/gtm-composer",

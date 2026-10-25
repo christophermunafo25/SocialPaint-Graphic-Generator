@@ -34,7 +34,7 @@ test/fidelity/
 | `goldenFrom`   | Compare with another fixture's `golden.png`: the same Figma frame rebuilt a second way                                                                                                       |
 | `tolerance`    | Points a run may exceed its baseline by (default 0.25)                                                                                                                                       |
 
-A starter fixture carries no schema. Its name is `starter-<starterKey>`, or `starter-<starterKey>-dark` with `variantId: "dark"`, and the dev render page materializes that blueprint against the sample workspace in `scripts/new-look/fixtures/dev-workspace.json`.
+A starter fixture carries no schema. Its name is `starter-<starterKey>`, or `starter-<starterKey>-dark` with `variantId: "dark"`, and the dev render page materializes that blueprint against the sample workspace in `scripts/new-look/fixtures/dev-workspace.json`. A starter fixture can instead take any name and give its blueprint with `starter: "<starterKey>"`; it then renders with its own `values` and `variantId` (the `line-breaks-launch` fixtures fill `launch-01` with member text).
 
 Images and fonts are referenced by root-relative URLs (`/test/fidelity/fixtures/<name>/grain.png`), which Vite serves in dev. Commit a font only when its license allows redistribution; otherwise put it in `fonts-private/`, and the runner reports the fixture as skipped, never as passed.
 
