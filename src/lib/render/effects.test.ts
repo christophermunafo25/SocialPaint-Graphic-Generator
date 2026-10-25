@@ -3,6 +3,7 @@ import type { FieldEffect } from "../types";
 import {
   filterCss,
   innerShadowFrames,
+  paintsBeyondBox,
   noiseEffects,
   readEffects,
   readStrokeAlign,
@@ -130,5 +131,29 @@ describe("scaleEffects on stored JSON", () => {
       { ...drop, x: 16, y: 16, blur: 64 },
     ]);
     expect(scaleEffects({ not: "a list" }, 2)).toEqual([]);
+  });
+});
+
+describe("paintsBeyondBox", () => {
+  const base = { type: "shape" as const };
+
+  it("is true for a drop shadow, a glow or a layer blur, which spill past the box", () => {
+    expect(paintsBeyondBox({ ...base, effects: [drop] })).toBe(true);
+    expect(paintsBeyondBox({ ...base, effects: [blur] })).toBe(true);
+  });
+
+  it("is false for inner shadows and grain, which stay inside", () => {
+    expect(paintsBeyondBox({ ...base, effects: [inner, noise] })).toBe(false);
+    expect(paintsBeyondBox(base)).toBe(false);
+  });
+
+  it("is true for a shape's center or outside stroke, false for inside or no stroke", () => {
+    expect(paintsBeyondBox({ ...base, strokeColor: "#000000", strokeAlign: "outside" })).toBe(true);
+    expect(paintsBeyondBox({ ...base, strokeColor: "#000000", strokeAlign: "center" })).toBe(true);
+    expect(paintsBeyondBox({ ...base, strokeColor: "#000000" })).toBe(false);
+    expect(paintsBeyondBox({ ...base, strokeAlign: "outside" })).toBe(false);
+    expect(paintsBeyondBox({ type: "text", strokeColor: "#000000", strokeAlign: "outside" })).toBe(
+      false,
+    );
   });
 });

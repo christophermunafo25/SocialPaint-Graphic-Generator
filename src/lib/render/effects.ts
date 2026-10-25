@@ -5,7 +5,7 @@
 // blur and noise paint over it, and stacks still space by the box.
 
 import type React from "react";
-import type { CornerRadius, FieldEffect, StrokeAlign } from "../types";
+import type { CornerRadius, FieldEffect, StrokeAlign, TemplateField } from "../types";
 
 type Shadow = Extract<FieldEffect, { type: "dropShadow" | "innerShadow" }>;
 type Noise = Extract<FieldEffect, { type: "noise" }>;
@@ -159,4 +159,20 @@ export function scaleEffects(raw: unknown, u: number): FieldEffect[] {
         return { ...e, size: r(e.size) };
     }
   });
+}
+
+/** True when a field paints beyond its own box: a drop shadow or glow, a
+ * layer blur's spill, or a shape's center or outside stroke. The builder's
+ * edit canvas clips every other field to its box. */
+export function paintsBeyondBox(
+  field: Pick<TemplateField, "effects" | "strokeColor" | "strokeAlign" | "type">,
+): boolean {
+  if (readEffects(field.effects).some((e) => e.type === "dropShadow" || e.type === "layerBlur")) {
+    return true;
+  }
+  return (
+    field.type === "shape" &&
+    Boolean(field.strokeColor) &&
+    readStrokeAlign(field.strokeAlign) !== "inside"
+  );
 }

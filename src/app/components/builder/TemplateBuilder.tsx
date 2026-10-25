@@ -3455,6 +3455,7 @@ export function TemplateBuilder({
                       backgroundColor: variantBackground.color,
                       backgroundGradient: variantBackground.gradient,
                     })}
+                    canvasEffects={selectedVariant?.canvasEffects ?? draft.canvasEffects}
                     appearanceOf={appearanceOf}
                     fields={draft.fields}
                     groups={groups}

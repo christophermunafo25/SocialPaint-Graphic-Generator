@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { BrandKit, LayoutGroup, TemplateField } from "@/lib/types";
 import { groupChildRef, isFreeGroup, parseGroupChildRef } from "@/lib/types";
 import { useDataUrl } from "@/lib/render/useDataUrl";
@@ -14,6 +14,14 @@ import {
 } from "@/lib/render/layout";
 import { resolveFieldStyle } from "@/lib/brand/resolveStyle";
 import { cornerRadiusCss, DEFAULT_FILL_HEX, FieldBoxContent } from "../SchemaRenderer";
+import {
+  innerShadowFrames,
+  noiseEffects,
+  paintsBeyondBox,
+  readEffects,
+} from "@/lib/render/effects";
+import { noiseLayerCss } from "@/lib/render/noise";
+import type { FieldEffect } from "@/lib/types";
 import { ErrorBoundary, FieldCrashFallback } from "../ErrorBoundary";
 import { PALETTE_MIME, isTypingTarget, paintOrder, type BuilderTool } from "./fieldOps";
 import { selectedFieldIds, selectedGroupIds } from "./groupOps";
@@ -25,6 +33,9 @@ interface FieldOverlayEditorProps {
   backgroundUrl: string;
   /** Canvas base fill (schemaBackgroundCss) — under the background image. */
   backgroundCss?: string;
+  /** The look's canvas effects: an inner shadow over the background and
+   * grain over every field, as the export paints them. */
+  canvasEffects?: FieldEffect[];
   fields: TemplateField[];
   /** Groups over the fields — plain or auto-layout (may be empty). */
   groups: LayoutGroup[];
@@ -586,6 +597,7 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
     canvasHeight,
     backgroundUrl,
     backgroundCss,
+    canvasEffects,
     fields,
     groups,
     layout,
@@ -613,6 +625,13 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
     selectionToolbar,
     appearanceOf,
   } = props;
+  // Canvas effects, painted as the export paints them: the inner shadow over
+  // the background, the grain above the topmost field but under the
+  // selection box, marquee and guides.
+  const canvasFx = useMemo(() => readEffects(canvasEffects), [canvasEffects]);
+  const canvasInner = useMemo(() => innerShadowFrames(canvasFx), [canvasFx]);
+  const canvasNoise = useMemo(() => noiseLayerCss(noiseEffects(canvasFx)), [canvasFx]);
+  const canvasNoiseZ = Math.max(0, ...fields.map((f) => f.zIndex ?? 0)) + 3;
   const { kit } = useBrand();
   /** THE ARTBOARD — every pointer-to-canvas conversion measures against this
    * element, so pan costs the conversion nothing: the element carries the
@@ -2052,6 +2071,13 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
                 }}
               />
             )}
+            {canvasInner.length > 0 && (
+              <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
+                {canvasInner.map((frameStyle, i) => (
+                  <div key={i} style={frameStyle} />
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Group frames: builder-only chrome (never in preview or export).
@@ -2410,7 +2436,9 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
                     style={{
                       position: "absolute",
                       inset: 0,
-                      overflow: "hidden",
+                      // Clipped to its box, unless its shadow, glow, blur or
+                      // stroke paints beyond it, as it does in the export.
+                      overflow: paintsBeyondBox((appearanceOf ?? same)(v)) ? "visible" : "hidden",
                       pointerEvents: "none",
                     }}
                   >
@@ -2544,6 +2572,25 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
               </div>
             );
           })}
+
+          {canvasNoise && (
+            // Canvas grain over every field, as the export paints it. Never
+            // hit-testable; it lightly tints a selected field's outline.
+            <div
+              style={{
+                width: canvasWidth,
+                height: canvasHeight,
+                transform: `scale(${scale})`,
+                transformOrigin: "top left",
+                position: "absolute",
+                top: 0,
+                left: 0,
+                pointerEvents: "none",
+                zIndex: canvasNoiseZ,
+                ...canvasNoise,
+              }}
+            />
+          )}
 
           {/* An empty artboard is not an error, but it should say what to do
           next. It rides in a chip of its own: the artboard behind it is the
