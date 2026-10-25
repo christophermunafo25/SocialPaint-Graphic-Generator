@@ -8,6 +8,9 @@
 // it lifts the layer toward the color by alpha x density / 2, which is what
 // the Phase 0 measurement found under the GTM panel.
 
+import type React from "react";
+import { rgbaPngDataUrl } from "./png";
+
 /** Cells per side. One cell is one grain; the tile repeats seamlessly. */
 export const NOISE_TILE_CELLS = 128;
 
@@ -68,4 +71,37 @@ export function noiseTile(spec: NoiseTileSpec): NoiseTile {
 /** A stable key for caching one tile's encoded data URL. */
 export function noiseTileKey(spec: NoiseTileSpec): string {
   return `${spec.color.toLowerCase()}|${spec.density}|${spec.seed ?? 1}`;
+}
+
+const tileUrls = new Map<string, string>();
+
+/** The tile as a PNG data URL, encoded once per spec. A data URL is what
+ * html-to-image embeds as-is, so the grain reaches every export. */
+export function noiseTileDataUrl(spec: NoiseTileSpec): string {
+  const key = noiseTileKey(spec);
+  let url = tileUrls.get(key);
+  if (!url) {
+    const tile = noiseTile(spec);
+    url = rgbaPngDataUrl(tile.width, tile.height, tile.data);
+    tileUrls.set(key, url);
+  }
+  return url;
+}
+
+/** CSS that paints noise layers over a box, top layer first (Figma lists
+ * effects bottom to top). Each tile cell is `size` px, drawn with hard
+ * edges so a grain stays a grain. Undefined with no layers. */
+export function noiseLayerCss(
+  layers: ReadonlyArray<NoiseTileSpec & { size: number }>,
+): React.CSSProperties | undefined {
+  if (!layers.length) return undefined;
+  const top = [...layers].reverse();
+  return {
+    backgroundImage: top.map((l) => `url("${noiseTileDataUrl(l)}")`).join(", "),
+    backgroundSize: top
+      .map((l) => `${Math.round(NOISE_TILE_CELLS * l.size * 100) / 100}px`)
+      .join(", "),
+    backgroundRepeat: "repeat",
+    imageRendering: "pixelated",
+  };
 }

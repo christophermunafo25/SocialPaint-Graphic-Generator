@@ -4,7 +4,8 @@
 // Effects never change layout. Shadows and glows paint around the box,
 // blur and noise paint over it, and stacks still space by the box.
 
-import type { FieldEffect, StrokeAlign } from "../types";
+import type React from "react";
+import type { CornerRadius, FieldEffect, StrokeAlign } from "../types";
 
 type Shadow = Extract<FieldEffect, { type: "dropShadow" | "innerShadow" }>;
 type Noise = Extract<FieldEffect, { type: "noise" }>;
@@ -73,36 +74,19 @@ export function readStrokeAlign(raw: unknown): StrokeAlign {
 
 const px = (v: number) => `${Math.round(v * 100) / 100}px`;
 
-function shadowPart(s: Shadow): string {
-  const inset = s.type === "innerShadow" ? "inset " : "";
-  return `${inset}${px(s.x)} ${px(s.y)} ${px(s.blur)} ${px(s.spread ?? 0)} ${s.color}`;
-}
-
-/** `box-shadow` for a box-shaped element (rect shapes, the image box, the
- * canvas): every drop and inner shadow. Figma lists effects bottom to top
- * and CSS paints the first shadow on top, so the list is reversed.
- * Undefined when there is nothing to paint. */
-export function boxShadowCss(effects: readonly FieldEffect[]): string | undefined {
-  const parts = effects
-    .filter((e): e is Shadow => e.type === "dropShadow" || e.type === "innerShadow")
-    .map(shadowPart)
-    .reverse();
-  return parts.length ? parts.join(", ") : undefined;
-}
-
-/** `filter` for an element whose painted alpha isn't its box (text, SVG
- * shapes, a masked image): drop shadows follow the glyphs or the shape,
- * then the layer blur. Inner shadows can't be expressed here and are
- * skipped; validation keeps them to rects and images. With `withShadows`
- * false only the blur is returned, for elements whose shadows already
- * paint as box-shadow. */
+/** `filter` for any field: drop shadows (glows included) follow the
+ * element's painted alpha, then the layer blur. Every shadow paints as a
+ * filter, never as `box-shadow`: WebKit misplaces box-shadow when
+ * html-to-image rasterizes through an SVG foreignObject, while filters
+ * export the same in every engine. A filter has no spread, so a drop
+ * shadow's spread is not painted. Inner shadows paint as frames
+ * (innerShadowFrames). With `withShadows` false only the blur is returned. */
 export function filterCss(effects: readonly FieldEffect[], withShadows = true): string | undefined {
   const parts: string[] = [];
   if (withShadows) {
     for (const e of effects) {
       if (e.type !== "dropShadow") continue;
-      // drop-shadow takes the same blur radius as box-shadow, and has no
-      // spread: a spread shadow on a non-box element paints without it.
+      // drop-shadow takes the same blur radius as box-shadow.
       parts.push(`drop-shadow(${px(e.x)} ${px(e.y)} ${px(e.blur)} ${e.color})`);
     }
   }
@@ -112,6 +96,39 @@ export function filterCss(effects: readonly FieldEffect[], withShadows = true): 
     if (e.type === "layerBlur" && e.radius > 0) parts.push(`blur(${px(e.radius / 2)})`);
   }
   return parts.length ? parts.join(" ") : undefined;
+}
+
+/** One inner shadow as a frame: a ring of the shadow's color around a hole
+ * the size of the box, shrunk by the spread and moved by the offset, then
+ * blurred. Drawn inside the box's clip, the ring's blurred inner edge is
+ * the inner shadow. The ring is wide enough that its blur never shows its
+ * outer edge. Corner radii are the box's own, so the hole's corners match.
+ * Styles are relative to the box; frames are drawn bottom to top. */
+export function innerShadowFrames(
+  effects: readonly FieldEffect[],
+  radius?: CornerRadius,
+): React.CSSProperties[] {
+  return effects
+    .filter((e): e is Shadow => e.type === "innerShadow")
+    .map((e) => {
+      const spread = Math.max(0, e.spread ?? 0);
+      const ring = Math.ceil(e.blur + Math.abs(e.x) + Math.abs(e.y) + spread + 4);
+      const outer = ring - spread;
+      const corner = (r: number) => px(Math.max(0, r - spread) + ring);
+      return {
+        position: "absolute",
+        left: px(e.x - outer),
+        top: px(e.y - outer),
+        width: `calc(100% + ${px(outer * 2)})`,
+        height: `calc(100% + ${px(outer * 2)})`,
+        boxSizing: "border-box",
+        border: `${px(ring)} solid ${e.color}`,
+        borderRadius: radius
+          ? `${corner(radius.tl)} ${corner(radius.tr)} ${corner(radius.br)} ${corner(radius.bl)}`
+          : px(ring),
+        ...(e.blur > 0 ? { filter: `blur(${px(e.blur / 2)})` } : {}),
+      };
+    });
 }
 
 /** The noise effects on an element, bottom to top. */

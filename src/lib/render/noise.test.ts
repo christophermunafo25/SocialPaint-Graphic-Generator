@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { NOISE_TILE_CELLS, mulberry32, noiseTile, noiseTileKey } from "./noise";
+import {
+  NOISE_TILE_CELLS,
+  mulberry32,
+  noiseLayerCss,
+  noiseTile,
+  noiseTileDataUrl,
+  noiseTileKey,
+} from "./noise";
 
 const alphas = (data: Uint8ClampedArray) => data.filter((_, i) => i % 4 === 3);
 
@@ -65,5 +72,28 @@ describe("noiseTileKey", () => {
     expect(noiseTileKey({ color: "#FFFFFF1A", density: 1 })).not.toBe(
       noiseTileKey({ color: "#FFFFFF1A", density: 0.5 }),
     );
+  });
+});
+
+describe("noiseLayerCss", () => {
+  it("paints each layer's tile at size px per grain, top layer first", () => {
+    const fine = { color: "#FFFFFF1A", density: 1, size: 0.5, seed: 1 };
+    const coarse = { color: "#00000033", density: 0.5, size: 2, seed: 2 };
+    const css = noiseLayerCss([fine, coarse])!;
+    const urls = String(css.backgroundImage).split(", ");
+    expect(urls).toHaveLength(2);
+    expect(urls[0]).toContain(noiseTileDataUrl(coarse));
+    expect(urls[1]).toContain(noiseTileDataUrl(fine));
+    expect(css.backgroundSize).toBe(`${NOISE_TILE_CELLS * 2}px, ${NOISE_TILE_CELLS * 0.5}px`);
+    expect(css.imageRendering).toBe("pixelated");
+  });
+
+  it("is undefined with no layers, so the element takes today's path", () => {
+    expect(noiseLayerCss([])).toBeUndefined();
+  });
+
+  it("encodes a tile once and reuses it", () => {
+    const spec = { color: "#FFFFFF1A", density: 1, seed: 9 };
+    expect(noiseTileDataUrl(spec)).toBe(noiseTileDataUrl({ ...spec }));
   });
 });

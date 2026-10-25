@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { FieldEffect } from "../types";
 import {
-  boxShadowCss,
   filterCss,
+  innerShadowFrames,
   noiseEffects,
   readEffects,
   readStrokeAlign,
@@ -59,16 +59,32 @@ describe("readStrokeAlign", () => {
   });
 });
 
-describe("boxShadowCss", () => {
-  it("is undefined with nothing to paint, so the element takes today's path", () => {
-    expect(boxShadowCss([])).toBeUndefined();
-    expect(boxShadowCss([blur, noise])).toBeUndefined();
+describe("innerShadowFrames", () => {
+  it("is empty without inner shadows, so nothing extra is drawn", () => {
+    expect(innerShadowFrames([drop, blur, noise])).toEqual([]);
   });
 
-  it("paints Figma's bottom-to-top list with CSS's top-first order", () => {
-    expect(boxShadowCss([drop, inner])).toBe(
-      "inset 0px 1px 0px 2px #FFFFFF40, 8px 8px 32px 0px #0000001A",
-    );
+  it("frames the box with a ring whose hole is the box moved by the offset", () => {
+    // inner: x 0, y 1, blur 0, spread 2 -> ring = 0 + 0 + 1 + 2 + 4 = 7, outer = 5
+    const [frame] = innerShadowFrames([inner]);
+    expect(frame).toMatchObject({
+      position: "absolute",
+      left: "-5px",
+      top: "-4px",
+      width: "calc(100% + 10px)",
+      height: "calc(100% + 10px)",
+      border: "7px solid #FFFFFF40",
+    });
+    // The hole: left -5 + 7 = 2 = 0 + spread; top -4 + 7 = 3 = 1 + spread.
+    expect(frame.filter).toBeUndefined(); // no blur, no filter
+  });
+
+  it("blurs at half the blur radius and keeps the hole's corners on the box's", () => {
+    const soft = { type: "innerShadow", x: 0, y: 6, blur: 16, color: "#00000080" } as const;
+    const [frame] = innerShadowFrames([soft], { tl: 20, tr: 20, br: 0, bl: 0 });
+    expect(frame.filter).toBe("blur(8px)");
+    // ring = 16 + 0 + 6 + 0 + 4 = 26: outer corners are the box's plus the ring.
+    expect(frame.borderRadius).toBe("46px 46px 26px 26px");
   });
 });
 
