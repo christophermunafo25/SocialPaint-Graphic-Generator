@@ -275,6 +275,9 @@ export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererPro
               height: schema.canvasHeight,
               position: "relative",
               overflow: "hidden",
+              // Its own stacking context, so canvas noise (and any field's
+              // zIndex) stays under the builder and Generate overlays.
+              isolation: "isolate",
               background: schemaBackgroundCss(schema),
             }}
           >

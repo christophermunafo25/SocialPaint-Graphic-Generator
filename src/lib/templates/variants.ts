@@ -418,6 +418,9 @@ export function cloneVariant(
       ? { backgroundGradient: structuredClone(source.backgroundGradient) }
       : {}),
     ...(source?.backgroundUrl !== undefined ? { backgroundUrl: source.backgroundUrl } : {}),
+    ...(source?.canvasEffects !== undefined
+      ? { canvasEffects: structuredClone(source.canvasEffects) }
+      : {}),
     overrides,
   };
 }

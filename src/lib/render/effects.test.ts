@@ -123,3 +123,12 @@ describe("scaleEffects", () => {
     expect("spread" in scaleEffects([drop], 2)[0]).toBe(false);
   });
 });
+
+describe("scaleEffects on stored JSON", () => {
+  it("drops malformed entries instead of saving them back or throwing", () => {
+    expect(scaleEffects([null, { type: "backgroundBlur", radius: 4 }, drop], 2)).toEqual([
+      { ...drop, x: 16, y: 16, blur: 64 },
+    ]);
+    expect(scaleEffects({ not: "a list" }, 2)).toEqual([]);
+  });
+});

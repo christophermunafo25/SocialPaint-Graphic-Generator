@@ -80,10 +80,11 @@ export class SupabaseTemplateStore implements TemplateStore {
     if ("layoutGroups" in patch) row.layout_groups = patch.layoutGroups ?? null;
     // Empty and absent both mean single-variant: the column goes back to null.
     if ("variants" in patch) row.variants = patch.variants?.length ? patch.variants : null;
-    // Written only when the patch sets it (an empty list clears it), so an
-    // ordinary save never names the 0048 column.
-    if (patch.canvasEffects !== undefined)
-      row.canvas_effects = patch.canvasEffects.length ? patch.canvasEffects : null;
+    // Written only when the patch names it, like the other jsonb blobs; an
+    // empty or absent list clears it. A draft read from a null column has no
+    // key (toTemplate), so an ordinary save never names the 0048 column.
+    if ("canvasEffects" in patch)
+      row.canvas_effects = patch.canvasEffects?.length ? patch.canvasEffects : null;
     if (patch.captionTemplate !== undefined) row.caption_template = patch.captionTemplate;
     if ("autobuildMeta" in patch) row.autobuild_meta = patch.autobuildMeta ?? null;
     const { error } = await supabase().from("templates").update(row).eq("id", id);

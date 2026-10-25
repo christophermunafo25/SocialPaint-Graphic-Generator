@@ -342,3 +342,18 @@ describe("effects in a variation (brand-system Phase 1)", () => {
     expect(applyVariantToSchema(base, "v-light")).toBe(base);
   });
 });
+
+describe("cloneVariant keeps canvas effects (brand-system Phase 1)", () => {
+  it("copies the source look's canvas effects, as a copy", () => {
+    const grain = [{ type: "noise", color: "#FFFFFF1A", size: 1, density: 1 }] as const;
+    const source: TemplateVariant = {
+      id: "v1",
+      name: "Grain",
+      canvasEffects: [...grain],
+      overrides: {},
+    };
+    const copy = cloneVariant(source, "v2", "Grain 2");
+    expect(copy.canvasEffects).toEqual(grain);
+    expect(copy.canvasEffects).not.toBe(source.canvasEffects);
+  });
+});

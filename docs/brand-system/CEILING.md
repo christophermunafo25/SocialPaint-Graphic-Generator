@@ -4,7 +4,6 @@ Written by brand-system Phase 0 on 2026-10-25, against `main` at 4094a0b (PR 169
 
 Support levels: **live** means a field property draws it, **workaround** means an admin can approximate it with today's fields, and **missing** means it can't be drawn.
 
-
 ## Since Phase 1
 
 Phase 1 (2026-10-25) added grain, drop shadows and glows, inner shadows, layer blur, center and outside strokes, and radial gradients (`docs/brand-system/PHASE-1.md`, `docs/TEMPLATE_SCHEMA.md`). The Phase 0 sections below are kept as measured, and these are the same frames rebuilt with depth. Each comparison now also reports a **blurred share**: the same threshold after a 4px blur of both images, which keeps tone and shadow and drops grain speckle. Two grain patterns never match pixel for pixel, so even a perfect grain scores high on the exact share.

@@ -101,8 +101,8 @@ export function filterCss(effects: readonly FieldEffect[], withShadows = true): 
 /** One inner shadow as a frame: a ring of the shadow's color around a hole
  * the size of the box, shrunk by the spread and moved by the offset, then
  * blurred. Drawn inside the box's clip, the ring's blurred inner edge is
- * the inner shadow. The ring is wide enough that its blur never shows its
- * outer edge. Corner radii are the box's own, so the hole's corners match.
+ * the inner shadow. The ring reaches blur + 4 px past the shadow's
+ * extent, so its outer edge lightens the shadow by about 1% at most. Corner radii are the box's own, so the hole's corners match.
  * Styles are relative to the box; frames are drawn bottom to top. */
 export function innerShadowFrames(
   effects: readonly FieldEffect[],
@@ -138,10 +138,11 @@ export function noiseEffects(effects: readonly FieldEffect[]): Noise[] {
 
 /** Effects scaled for a canvas resize by the uniform factor `u`, like
  * every other px length on a field (src/lib/templates/rescale.ts). Colors,
- * density and seeds don't scale. */
-export function scaleEffects(effects: readonly FieldEffect[], u: number): FieldEffect[] {
+ * density and seeds don't scale. Reads the stored list defensively, the way
+ * the renderer does: a malformed entry is dropped rather than saved back. */
+export function scaleEffects(raw: unknown, u: number): FieldEffect[] {
   const r = (v: number) => Math.round(v * u * 100) / 100;
-  return effects.map((e) => {
+  return readEffects(raw).map((e) => {
     switch (e.type) {
       case "dropShadow":
       case "innerShadow":
