@@ -310,3 +310,35 @@ describe("builder helpers", () => {
     expect(nextVariantName([{ ...green, name: "variation 2" }])).toBe("Variation 3");
   });
 });
+
+describe("effects in a variation (brand-system Phase 1)", () => {
+  const lightShadow = { type: "dropShadow", x: 0, y: 8, blur: 24, color: "#00000026" } as const;
+  const darkGlow = { type: "dropShadow", x: 0, y: 0, blur: 32, color: "#17FF7E66" } as const;
+  const grain = { type: "noise", color: "#FFFFFF1A", size: 1, density: 1 } as const;
+  const card = mkField({ fieldKey: "card", type: "shape", effects: [lightShadow] });
+  const dark: TemplateVariant = {
+    id: "v-dark",
+    name: "Dark",
+    overrides: { card: { effects: [darkGlow] } },
+    canvasEffects: [grain],
+  };
+
+  it("replaces a field's whole effects list, not a merge", () => {
+    expect(applyVariant(card, dark).effects).toEqual([darkGlow]);
+  });
+
+  it("leaves a field's effects alone when the variation doesn't name them", () => {
+    const merged = applyVariant(card, { ...dark, overrides: { card: { opacity: 50 } } });
+    expect(merged.effects).toEqual([lightShadow]);
+  });
+
+  it("swaps the canvas effects, and keeps the base's when the variation sets none", () => {
+    const base: TemplateSchema = {
+      ...schema([{ id: "v-light", name: "Light", isDefault: true, overrides: {} }, dark]),
+      fields: [card],
+      canvasEffects: [],
+    };
+    expect(applyVariantToSchema(base, "v-dark").canvasEffects).toEqual([grain]);
+    expect(applyVariantToSchema(base, "v-light")).toBe(base);
+  });
+});

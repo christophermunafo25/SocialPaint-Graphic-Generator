@@ -215,6 +215,8 @@ describe("rescaleTemplate — completeness", () => {
     shape: "rect",
     strokeColor: "#445566",
     strokeWidthPx: 4,
+    strokeAlign: "outside", // where the stroke sits, not a length
+    effects: [{ type: "dropShadow", x: 8, y: 8, blur: 32, color: "#0000001A" }],
     plateColor: "#082E17",
     platePaddingX: 24,
     platePaddingY: 12,
@@ -258,6 +260,7 @@ describe("rescaleTemplate — completeness", () => {
     "strokeWidthPx",
     "platePaddingX",
     "platePaddingY",
+    "effects",
   ];
 
   it("scales every geometric property and nothing else", () => {
@@ -288,5 +291,40 @@ describe("rescaleTemplate — completeness", () => {
     expect(f.letterSpacingPx).toBe(2);
     expect(f.cornerRadius).toEqual({ tl: 8, tr: 8, br: 8, bl: 8 });
     expect(f.lineHeight).toBe(1.4);
+  });
+});
+
+describe("rescaleTemplate — effects (brand-system Phase 1)", () => {
+  const shadow = { type: "dropShadow", x: 8, y: 8, blur: 32, color: "#0000001A" } as const;
+  const grain = { type: "noise", color: "#FFFFFF1A", size: 0.5, density: 1 } as const;
+
+  it("scales the canvas effects and every colourway's effects with the base's", () => {
+    const draft = baseDraft({
+      fields: [baseField({ fieldKey: "card", effects: [shadow] })],
+      canvasEffects: [grain],
+      variants: [
+        {
+          id: "dark",
+          name: "Dark",
+          overrides: { card: { effects: [shadow], colorHex: "#FFFFFF" } },
+          canvasEffects: [grain],
+        },
+      ],
+    });
+    const { draft: out } = rescaleTemplate(draft, { width: 2160, height: 2160 });
+    const doubled = { ...shadow, x: 16, y: 16, blur: 64 };
+    expect(out.fields[0].effects).toEqual([doubled]);
+    expect(out.canvasEffects).toEqual([{ ...grain, size: 1 }]);
+    expect(out.variants?.[0].overrides.card).toEqual({ effects: [doubled], colorHex: "#FFFFFF" });
+    expect(out.variants?.[0].canvasEffects).toEqual([{ ...grain, size: 1 }]);
+  });
+
+  it("adds no effects keys to a template that has none", () => {
+    const { draft: out } = rescaleTemplate(baseDraft({ fields: [baseField()] }), {
+      width: 2160,
+      height: 2160,
+    });
+    expect("canvasEffects" in out).toBe(false);
+    expect("effects" in out.fields[0]).toBe(false);
   });
 });
