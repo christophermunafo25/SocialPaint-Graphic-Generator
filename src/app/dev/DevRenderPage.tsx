@@ -100,7 +100,7 @@ const blobToBase64 = (blob: Blob): Promise<string> =>
     reader.readAsDataURL(blob);
   });
 
-/** /dev/render/:fixture?variant= — one fidelity fixture on a bare page at
+/** /dev/render/:fixture?variant=: one fidelity fixture on a bare page at
  * scale 1, for scripts/fidelity/fidelity.mjs. No app chrome, no usage
  * events. Development builds only: the router never returns this route
  * when import.meta.env.DEV is false. */

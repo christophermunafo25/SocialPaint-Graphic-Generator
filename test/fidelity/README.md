@@ -42,3 +42,7 @@ Images and fonts are referenced by root-relative URLs (`/test/fidelity/fixtures/
 - starter: `node scripts/fidelity/fidelity.mjs bless <name>`.
 
 Only CJ approves a new golden or baseline.
+
+## What the compare can't see
+
+The compare is the shots.mjs one: RGB only, a channel off by more than 6. It ignores alpha, so a transparent pixel and an opaque black one compare equal. `gtm-composer`'s transparent corners are therefore not measured; a render that painted them black would score the same.

@@ -15,7 +15,10 @@
  * It exits non-zero when a render errors, when its size differs from its
  * golden, or when its changed share exceeds the baseline by more than the
  * fixture's tolerance (default 0.25 points). A fixture whose font file is
- * missing, or that has no golden, is reported as skipped, never as passed.
+ * missing is reported as skipped, never as passed. A fixture with no golden
+ * or no baseline for an engine is reported and, under CI, fails, so losing
+ * either can't turn a regression green. The decisions live in
+ * src/app/dev/fidelityVerdict.ts, which has tests.
  *
  * bless records today's Chromium render as a starter fixture's golden. It
  * refuses to replace an existing golden without --approved.
@@ -33,6 +36,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium, firefox, webkit } from "playwright";
 import * as prettier from "prettier";
+import { DEFAULT_TOLERANCE, routeFor, verdictFor } from "../../src/app/dev/fidelityVerdict.ts";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "../..");
@@ -41,7 +45,6 @@ const outDir = path.join(root, "test/fidelity/out");
 
 const ENGINES = { chromium, firefox, webkit };
 const ALL_ENGINES = Object.keys(ENGINES);
-const DEFAULT_TOLERANCE = 0.25;
 /** Larger than the biggest canvas (1080 x 1920 stories), at 1x. */
 const VIEWPORT = { width: 2000, height: 2000 };
 const FIXTURE_TIMEOUT_MS = 60_000;
@@ -102,20 +105,6 @@ async function loadFixtures(only) {
 
 const fixtureFile = (name) => path.join(fixturesDir, name, "fixture.json");
 const goldenFile = (name) => path.join(fixturesDir, name, "golden.png");
-
-/** The dev render address for a fixture. A starter fixture named
- * starter-<key>-dark with variantId "dark" renders blueprint <key> in its
- * Dark colourway; a figma fixture renders its own file. */
-function routeFor(fixture) {
-  if (fixture.kind === "starter") {
-    let key = fixture.name.slice("starter-".length);
-    const variant = fixture.variantId;
-    if (variant && key.endsWith(`-${variant}`)) key = key.slice(0, -(variant.length + 1));
-    const route = `/dev/render/starter-${encodeURIComponent(key)}`;
-    return variant ? `${route}?variant=${encodeURIComponent(variant)}` : route;
-  }
-  return `/dev/render/${encodeURIComponent(fixture.name)}`;
-}
 
 async function writeFixture(name, fixture) {
   const file = fixtureFile(name);
@@ -303,18 +292,9 @@ async function openComparer() {
 const rel = (p) => path.relative(root, p);
 const pct = (v) => (v === undefined || v === null ? "" : `${v.toFixed(2)}%`);
 
-function verdictFor(fixture, engine, outcome, cmp) {
-  if (outcome.status === "skipped") return { verdict: "skipped", failed: false };
-  if (outcome.status === "error") return { verdict: "error", failed: true };
-  if (!cmp) return { verdict: "skipped", failed: false };
-  if (!cmp.sizeMatches) return { verdict: "size", failed: true };
-  const baseline = fixture.baseline?.[engine];
-  if (baseline === undefined) return { verdict: "no baseline", failed: false };
-  const tolerance = fixture.tolerance ?? DEFAULT_TOLERANCE;
-  if (cmp.changedPct > baseline + tolerance) return { verdict: "worse", failed: true };
-  if (cmp.changedPct < baseline - tolerance) return { verdict: "better", failed: false };
-  return { verdict: "pass", failed: false };
-}
+/** CI fails a fixture that has lost its golden or a baseline; a local run
+ * reports it, which is how a new fixture gets its first numbers. */
+const STRICT = Boolean(process.env.CI);
 
 async function measure(fixtures, selectedEngines) {
   const rendered = {};
@@ -344,7 +324,7 @@ async function measure(fixtures, selectedEngines) {
             note = "no golden";
           }
         }
-        const { verdict, failed } = verdictFor(fixture, engine, outcome, cmp);
+        const { verdict, failed } = verdictFor(fixture, engine, outcome, cmp, STRICT);
         rows.push({
           fixture: fixture.name,
           engine,

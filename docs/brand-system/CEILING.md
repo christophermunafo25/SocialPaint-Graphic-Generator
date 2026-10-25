@@ -23,7 +23,7 @@ Master UX-UI (`mEJRslarcQDkgPeY6AObi5`), node `200:208` ("sp-auth-panel", Sign i
 | Send button                 | `#17FF7E` circle, 36                                                                      | live       | Ellipse shape                                                                                                                                              |
 | Icons                       | Lucide plus, chevron, minus, arrow-up; 1.33 stroke; arrow in Deep Moss `#082A23`          | workaround | No icon element (`FieldType`, `types.ts:184`); SVG images with baked stroke colours                                                                        |
 | Decrease button             | 32% opacity                                                                                | live       | `opacity` (0 to 100, `types.ts:230`)                                                                                                                       |
-| Rounded panel corners       | Radius 20 on the frame, transparent outside                                               | workaround | The canvas has no radius; the panel image carries it over a transparent `#00000000` ground                                                                 |
+| Rounded panel corners       | Radius 20 on the frame, transparent outside                                               | workaround | The canvas has no radius; the panel image carries it over a transparent `#00000000` ground. Not measured: the compare ignores alpha, so opaque black corners would score the same |
 
 ### Changed share
 
@@ -72,6 +72,8 @@ Where it concentrates (Chromium):
 - **Subcopy, 1.34 points.** The lines break in different places ("for" lands on line two here). The subcopy has no tracking in Figma, so the difference is Plus Jakarta Sans as Figma ships it against Google's current build, or text layout itself. No schema property would fix it.
 - **Photo, 0.59 points.** Resampling of the pre-cropped photo, plus the mask edge.
 - **Subheading, website line and logo, under 0.5 points together:** glyph edges.
+
+Firefox and WebKit concentrate in the same places, and differ only in how they draw the condensed headline: Firefox 1.93 points on the headline, WebKit 2.32. The subcopy (1.34 to 1.35), the photo (0.57 to 0.70) and the subheading (0.36 to 0.37) barely move between engines.
 
 ## The importer against these frames
 

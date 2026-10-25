@@ -2,7 +2,7 @@
 /**
  * Goldens for figma fidelity fixtures (docs/brand-system/PHASE-0.md, Step 3).
  *
- *   node scripts/fidelity/goldens.mjs fetch <fixture>
+ *   node scripts/fidelity/goldens.mjs fetch <fixture> [--approved]
  *   node scripts/fidelity/goldens.mjs asset <fixture> <nodeId> <file.png>
  *
  * fetch exports the fixture's source node at scale 1 through the Figma REST
@@ -15,7 +15,8 @@
  *
  * FIGMA_TOKEN comes from the environment, or from .env.local when the
  * environment has none. It is never printed, committed or used in CI.
- * Goldens are CJ's to approve: run this only when a golden should change.
+ * Goldens are CJ's to approve: fetch won't replace an existing golden
+ * without --approved.
  */
 import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
@@ -47,7 +48,7 @@ async function token() {
 }
 
 /** "62-1210" (the URL form) and "62:1210" (the API form) name the same node. */
-const apiNodeId = (id) => id.replace("-", ":");
+const apiNodeId = (id) => id.replaceAll("-", ":");
 
 async function figma(pathname, tok) {
   const res = await fetch(`${API}${pathname}`, { headers: { "X-Figma-Token": tok } });
@@ -84,6 +85,9 @@ async function fetchGolden(name) {
   const tok = await token();
   const { source } = await readFixture(name);
   const dir = path.join(fixturesDir, name);
+  if (existsSync(path.join(dir, "golden.png")) && !process.argv.includes("--approved")) {
+    throw new Error(`${name} already has a golden. Replacing it needs CJ's approval (--approved).`);
+  }
   const bytes = await exportPng(source.fileKey, source.nodeId, path.join(dir, "golden.png"), tok);
   console.log(`golden.png      ${(bytes / 1024).toFixed(0)} KB`);
   const id = apiNodeId(source.nodeId);
