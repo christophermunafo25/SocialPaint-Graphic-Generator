@@ -29,6 +29,8 @@ import { exportSchemaPng, renderSchemaBlob, type ExportOutcome } from "@/lib/ren
 import { applyVariantToSchema, getVariant, hiddenFieldKeys } from "@/lib/templates/variants";
 import { isLeftOff, paintsNothing, type EmptyFieldsMode } from "@/lib/render/emptyFields";
 import { stores } from "@/lib/stores";
+import { gradientCss, radialGeometry } from "@/lib/render/gradient";
+import { readStrokeAlign } from "@/lib/render/effects";
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
@@ -383,15 +385,9 @@ function contentBaseStyle(field: TemplateField): React.CSSProperties {
   };
 }
 
-/** CSS linear-gradient from the shared gradient shape. */
-export function gradientCss(g: {
-  angle: number;
-  stops: Array<{ position: number; color: string }>;
-}): string {
-  return `linear-gradient(${g.angle}deg, ${g.stops
-    .map((s) => `${s.color} ${Math.round(s.position * 100)}%`)
-    .join(", ")})`;
-}
+/** CSS for the shared gradient shape, linear or radial
+ * (src/lib/render/gradient.ts). Re-exported for the builder's previews. */
+export { gradientCss };
 
 /** Canvas base fill: gradient → color → white. A background image (rendered
  * as an <img> above this) still wins visually. Shared with the builder's
@@ -493,28 +489,46 @@ const STAR_POINTS = "50,0 61,35 98,35 68,57 79,91 50,70 21,91 32,57 2,35 39,35";
 
 /** Decorative shape: fill = gradient → hex. Rects render
  * as plain divs (corner radius applies); ellipse/triangle/star render as
- * inline SVG so gradients survive the PNG export. Strokes are INNER strokes
- * (the painted size never exceeds the box): rects use a border-box border;
- * SVG shapes double the stroke width and clip to their own geometry, which
- * leaves exactly strokeWidthPx inside the edge. The viewBox is the field's
- * real size, so the stroke stays uniform at any aspect ratio. */
+ * inline SVG so gradients survive the PNG export. The viewBox is the field's
+ * real size, so the stroke stays uniform at any aspect ratio.
+ *
+ * Strokes sit where strokeAlign says, inside by default (the painted size
+ * never exceeds the box). Rects: inside is a border-box border; center and
+ * outside are an outline offset to straddle or hug the edge, which grows
+ * the corner radius outward exactly as those strokes do. SVG shapes: inside
+ * doubles the stroke and clips it to the shape; center draws it unclipped;
+ * outside doubles it and masks the shape's interior away. Center and
+ * outside paint beyond the box without moving it. */
 function ShapeFieldBox({ field }: { field: TemplateField }) {
   const kind = field.shape ?? "rect";
   const stroke = field.strokeColor;
   const strokeW = stroke ? Math.max(1, field.strokeWidthPx ?? 1) : 0;
+  const align = readStrokeAlign(field.strokeAlign);
   // Palette shapes always carry a colorHex; only a stroke-only import leaves
   // it unset, and there the outline IS the artwork — no default grey fill.
   const solid = field.colorHex ?? (stroke ? "transparent" : DEFAULT_FILL_HEX);
   const g = field.textGradient?.stops.length ? field.textGradient : undefined;
 
   if (kind === "rect") {
+    // Center and outside strokes are one outline, offset so it straddles or
+    // hugs the edge; it follows the corner radius outward and paints in a
+    // single pass, so there is no seam between two halves.
+    let stroked: React.CSSProperties = {};
+    if (stroke && align === "inside") {
+      stroked = { boxSizing: "border-box", border: `${strokeW}px solid ${stroke}` };
+    } else if (stroke) {
+      stroked = {
+        outline: `${strokeW}px solid ${stroke}`,
+        outlineOffset: align === "center" ? `${-strokeW / 2}px` : "0px",
+      };
+    }
     return (
       <div
         style={{
           ...contentBaseStyle(field),
           background: g ? gradientCss(g) : solid,
           borderRadius: cornerRadiusCss(field),
-          ...(stroke ? { boxSizing: "border-box", border: `${strokeW}px solid ${stroke}` } : {}),
+          ...stroked,
         }}
       />
     );
@@ -522,6 +536,7 @@ function ShapeFieldBox({ field }: { field: TemplateField }) {
 
   const gradId = `sp-shape-grad-${field.id}`;
   const clipId = `sp-shape-clip-${field.id}`;
+  const maskId = `sp-shape-mask-${field.id}`;
   const paint = g ? `url(#${gradId})` : solid;
   const w = field.width;
   const h = field.height;
@@ -548,32 +563,103 @@ function ShapeFieldBox({ field }: { field: TemplateField }) {
             .join(" ");
     return <polygon points={points} {...(extra as React.SVGProps<SVGPolygonElement>)} />;
   };
+  const stops = g?.stops.map((s, i) => (
+    <stop key={i} offset={`${Math.round(s.position * 100)}%`} stopColor={s.color} />
+  ));
+  // A stroke that sits outside the box needs the SVG to paint past its
+  // viewport; inside strokes keep today's clipped root.
+  const beyond = Boolean(stroke) && align !== "inside";
+  let strokeEl: React.ReactNode = null;
+  if (stroke && align === "inside") {
+    strokeEl = shapeEl({
+      fill: "none",
+      stroke,
+      strokeWidth: strokeW * 2,
+      clipPath: `url(#${clipId})`,
+    });
+  } else if (stroke && align === "center") {
+    strokeEl = shapeEl({ fill: "none", stroke, strokeWidth: strokeW });
+  } else if (stroke) {
+    strokeEl = shapeEl({ fill: "none", stroke, strokeWidth: strokeW * 2, mask: `url(#${maskId})` });
+  }
   return (
     <div style={contentBaseStyle(field)}>
-      <svg viewBox={`0 0 ${w} ${h}`} style={{ width: "100%", height: "100%", display: "block" }}>
+      <svg
+        viewBox={`0 0 ${w} ${h}`}
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "block",
+          ...(beyond ? { overflow: "visible" } : {}),
+        }}
+      >
         <defs>
-          {g && (
+          {g && g.kind === "radial" ? (
+            <RadialGradientDef id={gradId} gradient={g}>
+              {stops}
+            </RadialGradientDef>
+          ) : g ? (
             <linearGradient
               id={gradId}
               gradientTransform={`rotate(${(((g.angle - 90) % 360) + 360) % 360}, 0.5, 0.5)`}
             >
-              {g.stops.map((s, i) => (
-                <stop key={i} offset={`${Math.round(s.position * 100)}%`} stopColor={s.color} />
-              ))}
+              {stops}
             </linearGradient>
+          ) : null}
+          {stroke && align === "inside" && <clipPath id={clipId}>{shapeEl()}</clipPath>}
+          {stroke && align === "outside" && (
+            // The mask reaches as far as a mitered corner can (miter limit
+            // 4, at twice the stroke width), so sharp tips keep their points.
+            <mask
+              id={maskId}
+              maskUnits="userSpaceOnUse"
+              x={-strokeW * 8}
+              y={-strokeW * 8}
+              width={w + strokeW * 16}
+              height={h + strokeW * 16}
+            >
+              <rect
+                x={-strokeW * 8}
+                y={-strokeW * 8}
+                width={w + strokeW * 16}
+                height={h + strokeW * 16}
+                fill="white"
+              />
+              {shapeEl({ fill: "black" })}
+            </mask>
           )}
-          {stroke && <clipPath id={clipId}>{shapeEl()}</clipPath>}
         </defs>
         {shapeEl({ fill: paint })}
-        {stroke &&
-          shapeEl({
-            fill: "none",
-            stroke,
-            strokeWidth: strokeW * 2,
-            clipPath: `url(#${clipId})`,
-          })}
+        {strokeEl}
       </svg>
     </div>
+  );
+}
+
+/** An SVG radial gradient matching gradientCss's radial output: centred on
+ * `center`, its ellipse `radius` fractions of the box wide and tall. The
+ * gradient's own box is the shape's bounding box, so a unit circle scaled
+ * by the radii about the centre is that ellipse. */
+function RadialGradientDef({
+  id,
+  gradient,
+  children,
+}: {
+  id: string;
+  gradient: NonNullable<TemplateField["textGradient"]>;
+  children: React.ReactNode;
+}) {
+  const { cx, cy, rx, ry } = radialGeometry(gradient);
+  return (
+    <radialGradient
+      id={id}
+      cx={cx}
+      cy={cy}
+      r={1}
+      gradientTransform={`translate(${cx} ${cy}) scale(${rx} ${ry}) translate(${-cx} ${-cy})`}
+    >
+      {children}
+    </radialGradient>
   );
 }
 
@@ -645,9 +731,7 @@ function TextFieldBox({ field, value, brandKit, fontSize: layoutFontSize }: Fiel
         opacity: atFullStrength ? 1 : 0.55, // placeholder shows the real styling, dimmed
         ...(style.textGradient?.stops.length
           ? {
-              backgroundImage: `linear-gradient(${style.textGradient.angle}deg, ${style.textGradient.stops
-                .map((s) => `${s.color} ${Math.round(s.position * 100)}%`)
-                .join(", ")})`,
+              backgroundImage: gradientCss(style.textGradient),
               WebkitBackgroundClip: "text",
               backgroundClip: "text",
               color: "transparent",

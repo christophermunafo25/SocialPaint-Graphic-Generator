@@ -79,20 +79,14 @@ function shadowPart(s: Shadow): string {
 }
 
 /** `box-shadow` for a box-shaped element (rect shapes, the image box, the
- * canvas): every drop and inner shadow, plus an outside or center stroke
- * as a spread ring, which follows the border radius outward. Figma lists
- * effects bottom to top and CSS paints the first shadow on top, so the
- * list is reversed. Undefined when there is nothing to paint. */
-export function boxShadowCss(
-  effects: readonly FieldEffect[],
-  ring?: { width: number; color: string },
-): string | undefined {
+ * canvas): every drop and inner shadow. Figma lists effects bottom to top
+ * and CSS paints the first shadow on top, so the list is reversed.
+ * Undefined when there is nothing to paint. */
+export function boxShadowCss(effects: readonly FieldEffect[]): string | undefined {
   const parts = effects
     .filter((e): e is Shadow => e.type === "dropShadow" || e.type === "innerShadow")
     .map(shadowPart)
     .reverse();
-  // The ring paints above the shadows: a stroke is part of the shape.
-  if (ring && ring.width > 0) parts.unshift(`0 0 0 ${px(ring.width)} ${ring.color}`);
   return parts.length ? parts.join(", ") : undefined;
 }
 

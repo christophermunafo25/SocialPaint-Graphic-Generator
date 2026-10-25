@@ -63,18 +63,11 @@ describe("boxShadowCss", () => {
   it("is undefined with nothing to paint, so the element takes today's path", () => {
     expect(boxShadowCss([])).toBeUndefined();
     expect(boxShadowCss([blur, noise])).toBeUndefined();
-    expect(boxShadowCss([], { width: 0, color: "#FFFFFF" })).toBeUndefined();
   });
 
   it("paints Figma's bottom-to-top list with CSS's top-first order", () => {
     expect(boxShadowCss([drop, inner])).toBe(
       "inset 0px 1px 0px 2px #FFFFFF40, 8px 8px 32px 0px #0000001A",
-    );
-  });
-
-  it("puts an outside stroke ring above every shadow", () => {
-    expect(boxShadowCss([drop], { width: 5, color: "#FFFFFF40" })).toBe(
-      "0 0 0 5px #FFFFFF40, 8px 8px 32px 0px #0000001A",
     );
   });
 });
