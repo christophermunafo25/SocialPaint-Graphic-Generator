@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { LayoutGroup, TemplateField } from "../types";
+import type { LayoutGroup, TemplateField, TemplateSchema } from "../types";
 import type { LineMeasurer } from "../render/autoFit";
 import { characterBudget, measureProposal } from "./measureProposal";
 import { repairProposal } from "./repairProposal";
 import { resolveFieldStyle } from "../brand/resolveStyle";
+import { mergeCaption } from "../caption";
+import { computeLayout } from "../render/layout";
 
 /** Deterministic fake glyphs, same convention as layout.test.ts: every
  * character is half the font size wide, with the size parsed straight out of
@@ -265,5 +267,41 @@ describe("the repair round", () => {
     );
     expect(out.ok).toBe(false);
     expect(out.values.headline).toBe("x".repeat(50));
+  });
+});
+
+describe("line breaks", () => {
+  // At 40px a 400px line holds 20 characters; "e" alone ends the paragraph.
+  const orphaning = "aaaa bbbb cccc dddd e";
+
+  it("turns fits into shrinks when the extra shrink clears an orphan, never overflows", () => {
+    const head = mkField({ fieldKey: "head", type: "multiline", textSizing: "shrink" });
+    const m = measureProposal(schema([head]), { head: orphaning }, null, measure);
+    expect(m.fields[0].fit).toBe("shrinks");
+    expect(m.ok).toBe(true);
+    // The same value without the orphan still fits at the set size.
+    const plain = measureProposal(schema([head]), { head: "aaaa bbbb cccc dddd" }, null, measure);
+    expect(plain.fields[0].fit).toBe("fits");
+  });
+
+  it("keeps a joined Free value fitting its box", () => {
+    const body = mkField({ fieldKey: "body", type: "multiline", height: 80 });
+    const m = measureProposal(schema([body]), { body: orphaning }, null, measure);
+    expect(m.fields[0].fit).toBe("fits");
+  });
+
+  it("never puts a no-break space in stored values or the caption", () => {
+    const body = mkField({ fieldKey: "body", type: "multiline", height: 80 });
+    const values = { body: orphaning };
+    const template = {
+      ...schema([body]),
+      captionTemplate: "{body}",
+    } as unknown as TemplateSchema;
+    const painted = computeLayout(template, values, null, measure).texts.get(body.id);
+    expect(painted).toBe("aaaa bbbb cccc dddd\u00A0e");
+    measureProposal(template, values, null, measure);
+    expect(values.body).toBe(orphaning);
+    expect(mergeCaption(template, values)).toBe(orphaning);
+    expect(mergeCaption(template, values)).not.toContain("\u00A0");
   });
 });
