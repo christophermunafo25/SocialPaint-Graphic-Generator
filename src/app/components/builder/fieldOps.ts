@@ -500,9 +500,16 @@ const TEXT_STYLE_PROPS = [
   "colorHex",
   "textGradient",
   "opacity",
+  "effects",
 ] as const;
-const IMAGE_STYLE_PROPS = ["cornerRadius", "opacity", "objectFit"] as const;
-const SHAPE_STYLE_PROPS = ["colorHex", "textGradient", "cornerRadius", "opacity"] as const;
+const IMAGE_STYLE_PROPS = ["cornerRadius", "opacity", "objectFit", "effects"] as const;
+const SHAPE_STYLE_PROPS = [
+  "colorHex",
+  "textGradient",
+  "cornerRadius",
+  "opacity",
+  "effects",
+] as const;
 
 type StyleProp =
   | (typeof TEXT_STYLE_PROPS)[number]

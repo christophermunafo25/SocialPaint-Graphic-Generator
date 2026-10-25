@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { TemplateField } from "../../types";
-import { fieldToRow, toTemplateField, type TemplateFieldRow } from "./rows";
+import {
+  fieldToRow,
+  toTemplate,
+  toTemplateField,
+  type TemplateFieldRow,
+  type TemplateRow,
+} from "./rows";
 
 /** Field → row → field must be identity for everything the row can carry —
  * the column-by-column mappers are the one place a new property can silently
@@ -34,6 +40,29 @@ describe("template field row mapping", () => {
     const back = roundTrip(shape);
     expect(back.strokeColor).toBeUndefined();
     expect(back.strokeWidthPx).toBeUndefined();
+  });
+
+  it("round-trips effects and stroke alignment (migration 0048)", () => {
+    const deep: TemplateField = {
+      ...shape,
+      strokeColor: "#FFFFFF",
+      strokeWidthPx: 5,
+      strokeAlign: "outside",
+      effects: [
+        { type: "dropShadow", x: 8, y: 8, blur: 32, color: "#0000001A" },
+        { type: "noise", color: "#FFFFFF1A", size: 0.5, density: 1, seed: 7 },
+      ],
+    };
+    expect(roundTrip(deep)).toMatchObject({ strokeAlign: "outside", effects: deep.effects });
+  });
+
+  it("names no 0048 column for a field without effects, so saves work before it exists", () => {
+    const row = fieldToRow("t1", shape, 0);
+    expect("effects" in row).toBe(false);
+    expect("stroke_align" in row).toBe(false);
+    const back = roundTrip(shape);
+    expect(back.effects).toBeUndefined();
+    expect(back.strokeAlign).toBeUndefined();
   });
 
   it("round-trips plate properties on text fields", () => {
@@ -97,5 +126,37 @@ describe("template field row mapping", () => {
     expect(typeof back.strokeWidthPx).toBe("number");
     expect(back.platePaddingX).toBe(24);
     expect(back.platePaddingY).toBe(12.5);
+  });
+});
+
+describe("template row mapping (migration 0048)", () => {
+  const row: TemplateRow = {
+    id: "t1",
+    company_id: "c1",
+    name: "Panel",
+    description: "",
+    category: "",
+    tags: [],
+    status: "published",
+    canvas_width: 688,
+    canvas_height: 1021,
+    background_storage_path: null,
+    background_color: null,
+    background_gradient: null,
+    layout_groups: null,
+    caption_template: "",
+    autobuild_meta: null,
+    created_at: "",
+    updated_at: "",
+  };
+
+  it("reads canvas effects when the column has them", () => {
+    const grain = [{ type: "noise" as const, color: "#FFFFFF1A", size: 0.5, density: 1 }];
+    expect(toTemplate({ ...row, canvas_effects: grain }).canvasEffects).toEqual(grain);
+  });
+
+  it("adds no canvasEffects key for a null or missing column", () => {
+    expect("canvasEffects" in toTemplate(row)).toBe(false);
+    expect("canvasEffects" in toTemplate({ ...row, canvas_effects: null })).toBe(false);
   });
 });

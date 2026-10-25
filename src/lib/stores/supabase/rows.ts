@@ -123,6 +123,10 @@ export interface TemplateFieldRow {
   shape: import("../../types").ShapeKind | null;
   stroke_color: string | null;
   stroke_width_px: number | null;
+  /** Migration 0048. Optional: a row read before the column exists has
+   * neither key. */
+  stroke_align?: import("../../types").StrokeAlign | null;
+  effects?: import("../../types").FieldEffect[] | null;
   plate_color: string | null;
   plate_padding_x: number | null;
   plate_padding_y: number | null;
@@ -188,6 +192,8 @@ export const toTemplateField = (r: TemplateFieldRow): TemplateField => ({
   shape: opt(r.shape),
   strokeColor: opt(r.stroke_color),
   strokeWidthPx: opt(r.stroke_width_px) === undefined ? undefined : Number(r.stroke_width_px),
+  strokeAlign: opt(r.stroke_align),
+  effects: opt(r.effects),
   plateColor: opt(r.plate_color),
   platePaddingX: opt(r.plate_padding_x) === undefined ? undefined : Number(r.plate_padding_x),
   platePaddingY: opt(r.plate_padding_y) === undefined ? undefined : Number(r.plate_padding_y),
@@ -243,6 +249,10 @@ export const fieldToRow = (
   shape: f.shape ?? null,
   stroke_color: f.strokeColor ?? null,
   stroke_width_px: f.strokeWidthPx ?? null,
+  // Written only when set, so a field without them saves the same columns
+  // it did before migration 0048.
+  ...(f.strokeAlign !== undefined && { stroke_align: f.strokeAlign }),
+  ...(f.effects !== undefined && { effects: f.effects }),
   plate_color: f.plateColor ?? null,
   plate_padding_x: f.platePaddingX ?? null,
   plate_padding_y: f.platePaddingY ?? null,
@@ -287,6 +297,8 @@ export interface TemplateRow {
   background_color: string | null;
   background_gradient: import("../../types").TextGradient | null;
   layout_groups: import("../../types").LayoutGroup[] | null;
+  /** Migration 0048; absent on rows read before the column exists. */
+  canvas_effects?: import("../../types").FieldEffect[] | null;
   /** Colourways (migration 0031); null = single-variant. */
   variants?: import("../../types").TemplateVariant[] | null;
   caption_template: string;
@@ -308,6 +320,7 @@ export const toTemplate = (r: TemplateRow): TemplateSchema => ({
   canvasHeight: r.canvas_height,
   backgroundColor: r.background_color ?? undefined,
   backgroundGradient: r.background_gradient ?? undefined,
+  ...(r.canvas_effects != null && { canvasEffects: r.canvas_effects }),
   backgroundUrl: r.background_storage_path
     ? resolveUrl(BUCKETS.templateBackgrounds, r.background_storage_path)
     : "",

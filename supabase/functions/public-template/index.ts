@@ -202,7 +202,8 @@ Deno.serve(async (req) => {
         .from("templates")
         .select(
           "name, description, canvas_width, canvas_height, background_storage_path, " +
-            "background_color, background_gradient, layout_groups, variants, caption_template",
+            "background_color, background_gradient, canvas_effects, layout_groups, variants, " +
+            "caption_template",
         )
         .eq("id", link.template_id)
         .maybeSingle(),
