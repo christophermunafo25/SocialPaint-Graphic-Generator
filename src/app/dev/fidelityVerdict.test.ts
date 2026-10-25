@@ -89,4 +89,20 @@ describe("verdictFor", () => {
     });
     expect(verdictFor(fixture, "webkit", rendered, at(1), false).failed).toBe(false);
   });
+
+  it("fails a worse blurred share only where the fixture has a blur baseline", () => {
+    const blurred: VerdictFixture = { ...fixture, blurBaseline: { chromium: 2 } };
+    const atBlur = (changedPct: number, blurPct: number) => ({
+      changedPct,
+      blurPct,
+      sizeMatches: true,
+    });
+    expect(verdictFor(blurred, "chromium", rendered, atBlur(4.49, 2.2), true).verdict).toBe("pass");
+    expect(verdictFor(blurred, "chromium", rendered, atBlur(4.49, 2.3), true)).toEqual({
+      verdict: "worse",
+      failed: true,
+    });
+    // Firefox has an exact baseline but no blurred one: judged on the exact share.
+    expect(verdictFor(blurred, "firefox", rendered, atBlur(4.37, 50), true).verdict).toBe("pass");
+  });
 });
