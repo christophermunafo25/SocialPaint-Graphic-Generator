@@ -192,6 +192,66 @@ export function wrapLines(
   return lines;
 }
 
+// ---------------------------------------------------------------------------
+// Line breaks (docs/design/line-breaks-and-size-families, Phase 1)
+// ---------------------------------------------------------------------------
+
+/** The no-break space that keeps a paragraph's last two words together.
+ * It only ever lives in the string that is measured and painted. */
+export const NO_BREAK_SPACE = "\u00A0";
+
+const wordCount = (line: string): number => line.split(/[ \u00A0]+/).filter(Boolean).length;
+
+/** Indexes of the paragraphs (text between hard line breaks) that end on an
+ * orphan at this size and wrap width: two or more lines, a last line of
+ * exactly one word, and two or more words on the line above. A one-word
+ * paragraph is never an orphan, and neither is a stack, whose line above
+ * the last also holds a single word. */
+export function orphanedParagraphs(
+  text: string,
+  width: number,
+  style: MeasuredTextStyle,
+  fontSizePx: number,
+  measure: LineMeasurer,
+): number[] {
+  const out: number[] = [];
+  text.split("\n").forEach((paragraph, i) => {
+    if (!paragraph.includes(" ")) return;
+    const lines = wrapLines(paragraph, width, style, fontSizePx, measure);
+    if (lines.length < 2) return;
+    if (wordCount(lines[lines.length - 1]) === 1 && wordCount(lines[lines.length - 2]) >= 2) {
+      out.push(i);
+    }
+  });
+  return out;
+}
+
+/** The last two words of a paragraph joined by a no-break space, or null
+ * when it has fewer than two words to join. */
+export function lastWordPair(paragraph: string): string | null {
+  const body = paragraph.trimEnd();
+  const last = body.lastIndexOf(" ");
+  if (last <= 0) return null;
+  const start = body.lastIndexOf(" ", last - 1) + 1;
+  return `${body.slice(start, last)}${NO_BREAK_SPACE}${body.slice(last + 1)}`;
+}
+
+/** Replace the last space in each listed paragraph with a no-break space,
+ * so its last two words wrap as one. Trailing spaces are left as typed. */
+export function joinLastWords(text: string, paragraphs: readonly number[]): string {
+  const join = new Set(paragraphs);
+  return text
+    .split("\n")
+    .map((paragraph, i) => {
+      if (!join.has(i)) return paragraph;
+      const end = paragraph.trimEnd().length;
+      const at = paragraph.lastIndexOf(" ", end - 1);
+      if (at <= 0) return paragraph;
+      return `${paragraph.slice(0, at)}${NO_BREAK_SPACE}${paragraph.slice(at + 1)}`;
+    })
+    .join("\n");
+}
+
 /** A text field's hugged content height at the given size: line boxes times
  * the CSS line height, the same arithmetic the browser applies to the <p>. */
 export function measuredTextHeight(
@@ -266,7 +326,7 @@ export function fitTextWith(measure: LineMeasurer, input: TextFitInput, text: st
  * Multiline: no word may be wider than the box (an unbreakable word would
  * spill however small the rest gets), and the wrapped block must fit the
  * height. */
-function fitsAtSize(
+export function fitsAtSize(
   measure: LineMeasurer,
   input: TextFitInput,
   text: string,
@@ -280,7 +340,9 @@ function fitsAtSize(
     const width = measure(sample, font) + perGap * Math.max(0, sample.length - 1);
     return width <= input.width && size * lineH <= input.height;
   }
-  const words = sample.split(/[\s\n]+/).filter(Boolean);
+  // Spaces and hard breaks only: a no-break space joins its two words into
+  // one unbreakable run, exactly as the browser wraps it.
+  const words = sample.split(/[ \n]+/).filter(Boolean);
   const widest = words.every(
     (w) => measure(w, font) + perGap * Math.max(0, w.length - 1) <= input.width,
   );

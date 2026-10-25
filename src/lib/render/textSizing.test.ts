@@ -1,8 +1,16 @@
 import { describe, expect, it } from "vitest";
 import type { TemplateField } from "../types";
 import type { LineMeasurer } from "./autoFit";
-import { fitTextWith, wrapLines } from "./autoFit";
-import { computeLayout } from "./layout";
+import { resolveFieldStyle } from "../brand/resolveStyle";
+import {
+  NO_BREAK_SPACE,
+  fitTextWith,
+  joinLastWords,
+  lastWordPair,
+  orphanedParagraphs,
+  wrapLines,
+} from "./autoFit";
+import { computeLayout, typesetFieldText, typesetsMemberText } from "./layout";
 
 /** Deterministic fake glyphs, same convention as layout.test.ts: every
  * character is half the font size wide. */
@@ -379,5 +387,126 @@ describe("fill sizes text to the box", () => {
     const r = layout([filled]).fieldRects.get(filled.id)!;
     expect(r.height).toBe(192); // the authored box, not a hugged line
     expect(r.width).toBe(600);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Line breaks (docs/design/line-breaks-and-size-families, Phase 1)
+// ---------------------------------------------------------------------------
+
+describe("line breaks", () => {
+  const NB = NO_BREAK_SPACE;
+  const typeset = (f: TemplateField, value: string | undefined) =>
+    typesetFieldText(f, resolveFieldStyle(f, null), value, measure);
+  const multiline = (over: Partial<TemplateField> = {}) =>
+    mkField({ type: "multiline", textSizing: "shrink", minFontSizePx: 18, ...over });
+
+  // At 48px a 600px line holds 25 characters (24px each).
+  const clearable = "aaaa bbbb cccc dddd eeee f"; // 26 chars: one line from 46px
+  const stubborn = "aaaa bbbb cccc dddd eeee ffffff"; // 31 chars: needs 38px
+
+  describe("helpers", () => {
+    it("finds a paragraph that ends on one word under a line of several", () => {
+      expect(orphanedParagraphs(stubborn, 600, {}, 48, measure)).toEqual([0]);
+      expect(orphanedParagraphs("aaaa bbbb", 600, {}, 48, measure)).toEqual([]);
+    });
+
+    it("leaves a stack and a one-word paragraph alone", () => {
+      const stack = `aaaa bbbb cccc dddd eeee ${"f".repeat(22)} gggg`;
+      expect(wrapLines(stack, 600, {}, 48, measure)).toHaveLength(3);
+      expect(orphanedParagraphs(stack, 600, {}, 48, measure)).toEqual([]);
+      expect(orphanedParagraphs("w".repeat(40), 600, {}, 48, measure)).toEqual([]);
+    });
+
+    it("counts each hard line break as a new paragraph", () => {
+      expect(orphanedParagraphs(`aaaa bbbb\n${stubborn}\nok`, 600, {}, 48, measure)).toEqual([1]);
+    });
+
+    it("joins the last space of only the listed paragraphs", () => {
+      expect(joinLastWords("a b c\nd e f \ng h", [0, 1])).toBe(`a b${NB}c\nd e${NB}f \ng h`);
+      expect(lastWordPair("aa bb cc ")).toBe(`bb${NB}cc`);
+      expect(lastWordPair("single")).toBeNull();
+    });
+  });
+
+  describe("typesetFieldText", () => {
+    it("clears an orphan with the extra shrink when the 8% allows it", () => {
+      const out = typeset(multiline(), clearable);
+      expect(out).toEqual({ text: clearable, fontSizePx: 46, overflows: false });
+    });
+
+    it("joins the last two words when the 8% cap can't clear the orphan", () => {
+      const out = typeset(multiline(), stubborn);
+      expect(out.fontSizePx).toBe(48);
+      expect(out.text).toBe(`aaaa bbbb cccc dddd eeee${NB}ffffff`);
+      expect(wrapLines(out.text, 600, {}, 48, measure)).toEqual([
+        "aaaa bbbb cccc dddd",
+        `eeee${NB}ffffff`,
+      ]);
+    });
+
+    it("never crosses the floor to clear an orphan", () => {
+      const out = typeset(multiline({ minFontSizePx: 47 }), clearable);
+      expect(out.fontSizePx).toBe(48);
+      expect(out.text).toBe(`aaaa bbbb cccc dddd eeee${NB}f`);
+    });
+
+    it("joins a Free field at its fixed size", () => {
+      const out = typeset(multiline({ textSizing: "free" }), clearable);
+      expect(out).toEqual({
+        text: `aaaa bbbb cccc dddd eeee${NB}f`,
+        fontSizePx: 48,
+        overflows: false,
+      });
+    });
+
+    it("keeps the orphan when the last pair is wider than the box", () => {
+      const tooWide = `aaaa bbbb cccc dddd eeee ${"f".repeat(22)}`;
+      const out = typeset(multiline({ textSizing: "free" }), tooWide);
+      expect(out.text).toBe(tooWide);
+    });
+
+    it("joins a plated field at its narrower wrap width", () => {
+      // 24 chars fit 600px on one line, but not the 500px inside the plate.
+      const plated = multiline({ textSizing: "free", plateColor: "#000000", platePaddingX: 50 });
+      expect(typeset(plated, "aaaa bbbb cccc dddd eeee").text).toBe(`aaaa bbbb cccc dddd${NB}eeee`);
+      expect(typeset(multiline({ textSizing: "free" }), "aaaa bbbb cccc dddd eeee").text).toBe(
+        "aaaa bbbb cccc dddd eeee",
+      );
+    });
+
+    it("joins every orphaned paragraph across hard line breaks", () => {
+      const out = typeset(
+        multiline({ textSizing: "free", height: 400 }),
+        `${stubborn}\n${stubborn}`,
+      );
+      expect(out.text).toBe(
+        `aaaa bbbb cccc dddd eeee${NB}ffffff\naaaa bbbb cccc dddd eeee${NB}ffffff`,
+      );
+    });
+
+    it("leaves Fixed text, placeholders and a value equal to the placeholder as authored", () => {
+      const fixed = multiline({ static: true, staticValue: stubborn });
+      expect(typeset(fixed, undefined).text).toBe(stubborn);
+      const withPlaceholder = multiline({ placeholder: stubborn });
+      expect(typeset(withPlaceholder, undefined).text).toBe(stubborn);
+      expect(typeset(withPlaceholder, "").text).toBe(stubborn);
+      expect(typeset(withPlaceholder, `  ${stubborn} `).text).toBe(`  ${stubborn} `);
+      expect(typesetsMemberText(withPlaceholder, stubborn)).toBe(false);
+    });
+
+    it("leaves single-line fields untouched", () => {
+      const single = mkField({ type: "text", textSizing: "shrink" });
+      expect(typesetsMemberText(single, stubborn)).toBe(false);
+      expect(typeset(single, stubborn).text).toBe(stubborn);
+    });
+
+    it("paints and measures the joined string in the layout", () => {
+      const f = multiline({ textSizing: "free", fieldKey: "body" });
+      const result = computeLayout({ fields: [f], ...canvas }, { body: stubborn }, null, measure);
+      expect(result.texts.get(f.id)).toBe(`aaaa bbbb cccc dddd eeee${NB}ffffff`);
+      expect(result.fontSizes.get(f.id)).toBe(48);
+      expect(result.fieldRects.get(f.id)?.height).toBe(96);
+    });
   });
 });
