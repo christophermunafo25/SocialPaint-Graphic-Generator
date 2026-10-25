@@ -53,17 +53,16 @@ Out of scope:
 
 - **Effects never change layout.** `src/lib/render/layout.ts` stays untouched.
 - **Shadows and glow:**
-  - Rect shapes use `box-shadow`.
-  - Text, SVG shapes and images use `filter: drop-shadow()`.
+  - Every field type uses `filter: drop-shadow()`. Nothing paints as `box-shadow`: WebKit misplaces it when html-to-image exports through an SVG foreignObject (found while building; the planned box-shadow approach was dropped). A drop shadow's spread is therefore not painted.
   - Images take the filter on a wrapper outside the masked, clipped element.
-  - `innerShadow` is an inset box-shadow on rects and the image box, and is ignored elsewhere.
+  - `innerShadow` is a blurred frame drawn inside the clip of rects, the image box and the canvas, and is ignored elsewhere.
 - **Layer blur:** `filter: blur()`.
 - **Noise:**
   - A deterministic seeded tile from a pure module (`src/lib/render/noise.ts`).
   - Encoded once as a data URL and painted as a repeating overlay, clipped to the field.
   - Canvas noise is one overlay above every field.
 - **Stroke alignment:**
-  - Rects use a `box-shadow` spread ring.
+  - Rects use an `outline` offset to straddle or hug the edge (one paint, so no seam).
   - SVG shapes draw the stroke unclipped, with a mask that keeps the outside half.
 - **Radial gradients:**
   - `gradientCss` builds them for the canvas, rects and text.

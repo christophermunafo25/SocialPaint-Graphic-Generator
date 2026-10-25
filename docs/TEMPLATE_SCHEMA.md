@@ -105,11 +105,17 @@ layout; stacks still space by the box. Colors are `#RRGGBBAA`, lengths canvas
 px. A malformed entry is skipped at render time (`src/lib/render/effects.ts`).
 
 - `dropShadow` `{ x, y, blur, spread?, color }` — a glow is a drop shadow at
-  0, 0 in a brand color. Rect shapes paint it as `box-shadow` (spread
-  honoured); text, other shapes and images follow their painted alpha, where
-  spread doesn't apply.
-- `innerShadow` `{ x, y, blur, spread?, color }` — rect shapes and images
-  only; ignored elsewhere.
+  0, 0 in a brand color. Painted as a CSS `drop-shadow()` filter on every
+  field type, following the painted alpha (a rect's corners, a shape, the
+  glyphs and plate, a masked photo's shape). `spread` is stored but not
+  painted: filters have no spread, and `box-shadow`, which has one, is
+  misplaced by WebKit when html-to-image exports through an SVG
+  foreignObject.
+- `innerShadow` `{ x, y, blur, spread?, color }` — rect shapes, images and
+  the canvas only; ignored elsewhere. Painted as a blurred frame inside the
+  box's clip (a ring of the color around a hole the size of the box, moved
+  by the offset and shrunk by the spread). On a masked photo it follows the
+  photo's box under the mask, not the mask's own edge.
 - `layerBlur` `{ radius }` — blurs the element (CSS `blur()` at half the
   radius, as Figma exports it).
 - `noise` `{ color, size, density, seed? }` — Figma's monotone grain: grains

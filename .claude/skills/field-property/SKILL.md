@@ -15,5 +15,12 @@ description: The end-to-end checklist for adding or changing a TemplateField pro
 6. **Builder.** The control in `FieldInspector.tsx`, the operations in `fieldOps.ts`, and `FieldOverlayEditor.tsx`. That file contains a NUL byte, so search it with `grep -a`.
 7. **Starters.** `src/lib/templates/starters/` when blueprints should use it.
 8. **Import.** `supabase/functions/_shared/extract.ts` when Figma has the property, then `npm run typecheck:deno`.
-9. **Docs.** `docs/TEMPLATE_SCHEMA.md`.
-10. **Fixture.** A fidelity fixture that exercises the property, passing on all three engines.
+9. **The hand-kept lists the steps above miss** (found in brand-system Phase 1):
+   - `src/lib/templates/rescale.ts` (`scaleFieldType`) when the property holds px lengths, including inside variation overrides; its completeness test fails until the key is classified.
+   - `src/app/components/builder/fieldOps.ts` style copy lists (`TEXT_STYLE_PROPS`, `IMAGE_STYLE_PROPS`, `SHAPE_STYLE_PROPS`) when it is a look.
+   - `supabase/functions/_shared/publicTemplate.ts`: its own `VARIANT_OVERRIDE_KEYS` copy when it is overridable, and the template allowlist plus `supabase/functions/public-template/index.ts`'s select for a new `templates` column.
+   - `supabase/functions/_shared/autobuildValidate.ts` (`ValidatedField`) when the importer or autobuild should carry it.
+   - `src/lib/stores/supabase/templateStore.ts` create and update for a new `templates` column.
+   - Write a new column only when it is set (`fieldToRow`, the store), so saves keep working if the app ships before the migration.
+10. **Docs.** `docs/TEMPLATE_SCHEMA.md`.
+11. **Fixture.** A fidelity fixture that exercises the property, passing on all three engines.
