@@ -1,5 +1,6 @@
 {
   "name": "starter-partnership-04",
   "kind": "starter",
-  "baseline": { "chromium": 0, "firefox": 1.85, "webkit": 2.04 }
+  "baseline": { "chromium": 0, "firefox": 1.85, "webkit": 2.04 },
+  "blurBaseline": { "chromium": 0, "firefox": 1.25, "webkit": 1.7 }
 }

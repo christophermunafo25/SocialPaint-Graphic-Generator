@@ -2,5 +2,6 @@
   "name": "starter-partnership-04-dark",
   "kind": "starter",
   "variantId": "dark",
-  "baseline": { "chromium": 0, "firefox": 1.7, "webkit": 1.83 }
+  "baseline": { "chromium": 0, "firefox": 1.7, "webkit": 1.83 },
+  "blurBaseline": { "chromium": 0, "firefox": 1.12, "webkit": 1.58 }
 }

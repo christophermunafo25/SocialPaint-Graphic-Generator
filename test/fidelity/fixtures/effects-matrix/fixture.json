@@ -794,5 +794,7 @@
     "captionTemplate": "",
     "createdAt": "2026-10-25T00:00:00.000Z",
     "updatedAt": "2026-10-25T00:00:00.000Z"
-  }
+  },
+  "baseline": { "chromium": 0, "firefox": 0.41, "webkit": 2.12 },
+  "blurBaseline": { "chromium": 0, "firefox": 0.4, "webkit": 2.05 }
 }

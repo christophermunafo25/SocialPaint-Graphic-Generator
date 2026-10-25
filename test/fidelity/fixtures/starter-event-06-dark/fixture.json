@@ -2,5 +2,6 @@
   "name": "starter-event-06-dark",
   "kind": "starter",
   "variantId": "dark",
-  "baseline": { "chromium": 0, "firefox": 0.3, "webkit": 0.72 }
+  "baseline": { "chromium": 0, "firefox": 0.3, "webkit": 0.72 },
+  "blurBaseline": { "chromium": 0, "firefox": 0, "webkit": 0.2 }
 }

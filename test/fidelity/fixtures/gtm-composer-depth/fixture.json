@@ -275,5 +275,7 @@
     "canvasEffects": [
       { "type": "noise", "color": "#FFFFFF1A", "size": 0.5, "density": 1, "seed": 1 }
     ]
-  }
+  },
+  "baseline": { "chromium": 11.28, "firefox": 11.21, "webkit": 6.18 },
+  "blurBaseline": { "chromium": 0.45, "firefox": 0.69, "webkit": 0.69 }
 }
