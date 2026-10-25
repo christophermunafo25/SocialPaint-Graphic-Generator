@@ -48,6 +48,12 @@ const DevOnboardingPage = import.meta.env.DEV
 const DevAuthPage = import.meta.env.DEV
   ? React.lazy(() => import("./dev/DevAuthPage").then((m) => ({ default: m.DevAuthPage })))
   : null;
+/** One fidelity fixture on a bare page (/dev/render/:fixture, brand-system
+ * PHASE-0). The fixtures load through this chunk alone, so a production
+ * build ships none of them. */
+const DevRenderPage = import.meta.env.DEV
+  ? React.lazy(() => import("./dev/DevRenderPage").then((m) => ({ default: m.DevRenderPage })))
+  : null;
 
 /** Keeps the ambient error-report context current: route name, company id,
  * opaque user id, role. Ids and enums only — never email or name. */
@@ -137,6 +143,14 @@ function Screen() {
     return (
       <React.Suspense fallback={null}>
         <DevAuthPage view={route.view} error={route.error} />
+      </React.Suspense>
+    );
+  }
+
+  if (route.name === "devRender" && DevRenderPage) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevRenderPage fixture={route.fixture} variant={route.variant} />
       </React.Suspense>
     );
   }
@@ -305,6 +319,13 @@ function Screen() {
   );
 }
 
+/** The local backend's warning bar, on every page but the fidelity render
+ * page, which has to be the canvas alone. */
+function DevBanner() {
+  const { route } = useRouter();
+  return route.name === "devRender" ? null : <DevBackendBanner />;
+}
+
 export default function App() {
   const AuthProvider = stores.backend === "supabase" ? SupabaseAuthProvider : DevAuthProvider;
   return (
@@ -314,7 +335,7 @@ export default function App() {
           <RouterProvider>
             <MonitoringBridge />
             <Screen />
-            <DevBackendBanner />
+            <DevBanner />
           </RouterProvider>
         </BrandProvider>
       </AuthProvider>

@@ -117,7 +117,12 @@ export type Route =
    * any view or error from the address, for the screenshot run and
    * review. Development builds only, like devUi. */
   | { name: "devAuth"; view?: string; error?: string }
-  | { name: "devOnboarding"; step?: string };
+  | { name: "devOnboarding"; step?: string }
+  /** One fidelity fixture on a bare page (brand-system PHASE-0 Step 2):
+   * the render harness drives it through window.__spFidelity. `variant`
+   * picks a colourway ("dark" on starter fixtures). Development builds
+   * only, like devUi. */
+  | { name: "devRender"; fixture: string; variant?: string };
 
 interface NavigateOptions {
   /** Replace the current history entry instead of pushing a new one. The
@@ -206,6 +211,10 @@ export function routeToUrl(route: Route): string {
     }
     case "devOnboarding":
       return route.step ? `/dev/onboarding?step=${route.step}` : "/dev/onboarding";
+    case "devRender": {
+      const path = `/dev/render/${encodeURIComponent(route.fixture)}`;
+      return route.variant ? `${path}?variant=${encodeURIComponent(route.variant)}` : path;
+    }
   }
 }
 
@@ -347,6 +356,13 @@ export function urlToRoute(pathname: string, search: string): Route {
           name: "devAuth",
           view: params.get("view") ?? undefined,
           error: params.get("error") ?? undefined,
+        };
+      }
+      if (import.meta.env.DEV && tail === "render" && third) {
+        return {
+          name: "devRender",
+          fixture: decodeURIComponent(third),
+          variant: params.get("variant") ?? undefined,
         };
       }
       return { name: "portal" };

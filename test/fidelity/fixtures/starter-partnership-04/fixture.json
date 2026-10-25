@@ -1,0 +1,5 @@
+{
+  "name": "starter-partnership-04",
+  "kind": "starter",
+  "baseline": { "chromium": 0, "firefox": 1.85, "webkit": 2.04 }
+}

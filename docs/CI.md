@@ -15,6 +15,33 @@ npm run verify
 
 Requires Node 26 and Deno 2.x (`brew install deno`).
 
+## Render fidelity (separate workflow)
+
+`.github/workflows/fidelity.yml` runs the render fidelity harness
+(`node scripts/fidelity/fidelity.mjs run`, `docs/brand-system/README.md`) on
+pull requests that touch the renderer, export, template types, the Figma
+importer, the starters, or the harness and its fixtures. It renders every
+fixture in Chromium, Firefox and WebKit, compares each with its golden, and
+fails when a fixture gets worse than its approved baseline. The renders,
+heatmaps and `report.json` upload as the `fidelity-out` artifact on every
+run, pass or fail.
+
+It is kept out of `npm run verify` on purpose: it starts a dev server and
+three browsers, and takes about a minute, while verify stays fast. Run it
+locally before a pull request that touches those paths. It runs on macOS
+because the baselines were recorded there; text rasterizes differently on
+Linux. macOS runner minutes bill at a higher rate than Linux on private
+repositories, which is one reason it only runs when its paths change.
+
+Two things can move its numbers with no code change: the runner image
+(GitHub updates `macos-latest`), and Google Fonts, which the starter fixtures
+and most text load live, shipping a new build of a family. When the job fails
+across many fixtures at once, check those first: open the `fidelity-out`
+artifact's heatmaps, and if only glyph edges moved, re-measure the baselines
+with CJ's approval. It is not a required check today; add **`fidelity`** to the ruleset
+below if it should gate merges (it only reports on pull requests that touch
+its paths, so a required check would block the others).
+
 ## Build-guard variables (optional)
 
 CI builds with correctly-shaped placeholder Supabase values — it compiles the

@@ -1,0 +1,6 @@
+{
+  "name": "starter-stat-05-dark",
+  "kind": "starter",
+  "variantId": "dark",
+  "baseline": { "chromium": 0, "firefox": 0.69, "webkit": 0.82 }
+}

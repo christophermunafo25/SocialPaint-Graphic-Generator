@@ -1,0 +1,5 @@
+{
+  "name": "starter-stat-05",
+  "kind": "starter",
+  "baseline": { "chromium": 0, "firefox": 0.7, "webkit": 0.84 }
+}
