@@ -93,6 +93,7 @@ const VARIANT_OVERRIDE_KEYS = [
   "typeStyleKey",
   "opacity",
   "staticValue",
+  "effects",
   "hidden",
 ] as const;
 
@@ -103,6 +104,7 @@ interface VariantLike {
   backgroundColor?: unknown;
   backgroundGradient?: unknown;
   backgroundUrl?: unknown;
+  canvasEffects?: unknown;
   overrides?: Record<string, Record<string, unknown>> | null;
 }
 
@@ -155,6 +157,8 @@ function publicVariant(variant: VariantLike, fields: Row[], signed: Map<string, 
           backgroundUrl: signValue("template-backgrounds", variant.backgroundUrl, signed),
         }
       : {}),
+    // Appearance only: shadows, blur and grain, never a geometry key.
+    ...(Array.isArray(variant.canvasEffects) ? { canvasEffects: variant.canvasEffects } : {}),
     overrides,
   };
 }
@@ -225,6 +229,8 @@ export function buildPublicPayload(input: BuildInput): PublicPayload {
       ),
       background_color: template.background_color ?? null,
       background_gradient: template.background_gradient ?? null,
+      // Shadows, blur and grain over the canvas (migration 0048).
+      canvas_effects: template.canvas_effects ?? null,
       layout_groups: template.layout_groups ?? null,
       // Appearance overrides keyed by field_key, whitelisted key by key and
       // signed where they name an object. Pinned links carry ONE.

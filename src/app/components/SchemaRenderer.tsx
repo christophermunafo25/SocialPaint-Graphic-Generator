@@ -29,6 +29,16 @@ import { exportSchemaPng, renderSchemaBlob, type ExportOutcome } from "@/lib/ren
 import { applyVariantToSchema, getVariant, hiddenFieldKeys } from "@/lib/templates/variants";
 import { isLeftOff, paintsNothing, type EmptyFieldsMode } from "@/lib/render/emptyFields";
 import { stores } from "@/lib/stores";
+import { gradientCss, radialGeometry } from "@/lib/render/gradient";
+import {
+  filterCss,
+  innerShadowFrames,
+  noiseEffects,
+  readEffects,
+  readStrokeAlign,
+} from "@/lib/render/effects";
+import { NOISE_TILE_CELLS, noiseLayerCss, noiseTileDataUrl } from "@/lib/render/noise";
+import type { CornerRadius, FieldEffect } from "@/lib/types";
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
@@ -231,6 +241,12 @@ export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererPro
 
     useImperativeHandle(ref, () => ({ exportPng, renderBlob }), [exportPng, renderBlob]);
 
+    // Canvas effects: an inner shadow and noise. Other types don't apply to
+    // the canvas and are ignored.
+    const canvasEffects = useMemo(() => readEffects(schema.canvasEffects), [schema.canvasEffects]);
+    const canvasInner = innerShadowFrames(canvasEffects);
+    const canvasNoise = noiseLayerCss(noiseEffects(canvasEffects));
+
     return (
       <div
         ref={containerRef}
@@ -259,6 +275,9 @@ export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererPro
               height: schema.canvasHeight,
               position: "relative",
               overflow: "hidden",
+              // Its own stacking context, so canvas noise (and any field's
+              // zIndex) stays under the builder and Generate overlays.
+              isolation: "isolate",
               background: schemaBackgroundCss(schema),
             }}
           >
@@ -284,6 +303,14 @@ export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererPro
                 }}
               />
             )}
+            {canvasInner.length > 0 && (
+              // Under every field: a frame's inner shadow insets its fill.
+              <div style={{ ...overlayBase, overflow: "hidden" }}>
+                {canvasInner.map((frame, i) => (
+                  <div key={i} style={frame} />
+                ))}
+              </div>
+            )}
             {schema.fields.map((field) => {
               const value = values[field.fieldKey];
               // Left off (an empty optional field) or, in a chat, an empty
@@ -306,6 +333,10 @@ export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererPro
                 />
               );
             })}
+            {canvasNoise && (
+              // Over every field, as a Figma frame's noise is.
+              <div style={{ ...overlayBase, ...canvasNoise, zIndex: CANVAS_NOISE_Z }} />
+            )}
           </div>
           {overlay && (
             <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
@@ -383,15 +414,9 @@ function contentBaseStyle(field: TemplateField): React.CSSProperties {
   };
 }
 
-/** CSS linear-gradient from the shared gradient shape. */
-export function gradientCss(g: {
-  angle: number;
-  stops: Array<{ position: number; color: string }>;
-}): string {
-  return `linear-gradient(${g.angle}deg, ${g.stops
-    .map((s) => `${s.color} ${Math.round(s.position * 100)}%`)
-    .join(", ")})`;
-}
+/** CSS for the shared gradient shape, linear or radial
+ * (src/lib/render/gradient.ts). Re-exported for the builder's previews. */
+export { gradientCss };
 
 /** Canvas base fill: gradient → color → white. A background image (rendered
  * as an <img> above this) still wins visually. Shared with the builder's
@@ -488,40 +513,95 @@ export function FieldBoxContent({ field, value, brandKit, fontSize }: FieldBoxPr
   return <TextFieldBox field={field} value={effective} brandKit={brandKit} fontSize={fontSize} />;
 }
 
+/** Above any field's zIndex: canvas noise covers the whole graphic. */
+const CANVAS_NOISE_Z = 2147483000;
+
+/** An absolutely placed layer filling its parent, never hit-testable. */
+const overlayBase: React.CSSProperties = {
+  position: "absolute",
+  inset: 0,
+  pointerEvents: "none",
+};
+
+/** Inner shadows and noise drawn over a box-shaped element's content,
+ * clipped to its corner radius. Null when there is neither. */
+function BoxOverlay({ effects, radius }: { effects: FieldEffect[]; radius?: CornerRadius }) {
+  const frames = innerShadowFrames(effects, radius);
+  const noise = noiseLayerCss(noiseEffects(effects));
+  if (!frames.length && !noise) return null;
+  const r = radius ? `${radius.tl}px ${radius.tr}px ${radius.br}px ${radius.bl}px` : undefined;
+  return (
+    <div style={{ ...overlayBase, overflow: "hidden", borderRadius: r, ...(noise ?? {}) }}>
+      {frames.map((frame, i) => (
+        <div key={i} style={frame} />
+      ))}
+    </div>
+  );
+}
+
 /** 5-point star, unit square. */
 const STAR_POINTS = "50,0 61,35 98,35 68,57 79,91 50,70 21,91 32,57 2,35 39,35";
 
 /** Decorative shape: fill = gradient → hex. Rects render
  * as plain divs (corner radius applies); ellipse/triangle/star render as
- * inline SVG so gradients survive the PNG export. Strokes are INNER strokes
- * (the painted size never exceeds the box): rects use a border-box border;
- * SVG shapes double the stroke width and clip to their own geometry, which
- * leaves exactly strokeWidthPx inside the edge. The viewBox is the field's
- * real size, so the stroke stays uniform at any aspect ratio. */
+ * inline SVG so gradients survive the PNG export. The viewBox is the field's
+ * real size, so the stroke stays uniform at any aspect ratio.
+ *
+ * Strokes sit where strokeAlign says, inside by default (the painted size
+ * never exceeds the box). Rects: inside is a border-box border; center and
+ * outside are an outline offset to straddle or hug the edge, which grows
+ * the corner radius outward exactly as those strokes do. SVG shapes: inside
+ * doubles the stroke and clips it to the shape; center draws it unclipped;
+ * outside doubles it and masks the shape's interior away. Center and
+ * outside paint beyond the box without moving it. */
 function ShapeFieldBox({ field }: { field: TemplateField }) {
   const kind = field.shape ?? "rect";
   const stroke = field.strokeColor;
   const strokeW = stroke ? Math.max(1, field.strokeWidthPx ?? 1) : 0;
+  const align = readStrokeAlign(field.strokeAlign);
+  const effects = readEffects(field.effects);
   // Palette shapes always carry a colorHex; only a stroke-only import leaves
   // it unset, and there the outline IS the artwork — no default grey fill.
   const solid = field.colorHex ?? (stroke ? "transparent" : DEFAULT_FILL_HEX);
   const g = field.textGradient?.stops.length ? field.textGradient : undefined;
 
   if (kind === "rect") {
+    // Center and outside strokes are one outline, offset so it straddles or
+    // hugs the edge; it follows the corner radius outward and paints in a
+    // single pass, so there is no seam between two halves.
+    let stroked: React.CSSProperties = {};
+    if (stroke && align === "inside") {
+      stroked = { boxSizing: "border-box", border: `${strokeW}px solid ${stroke}` };
+    } else if (stroke) {
+      stroked = {
+        outline: `${strokeW}px solid ${stroke}`,
+        outlineOffset: align === "center" ? `${-strokeW / 2}px` : "0px",
+      };
+    }
+    // Drop shadows and blur are the filter; inner shadows and noise
+    // overlay the fill inside its corners.
+    const radius = cornerRadiusCss(field);
+    const rectFilter = filterCss(effects);
     return (
       <div
         style={{
           ...contentBaseStyle(field),
           background: g ? gradientCss(g) : solid,
-          borderRadius: cornerRadiusCss(field),
-          ...(stroke ? { boxSizing: "border-box", border: `${strokeW}px solid ${stroke}` } : {}),
+          borderRadius: radius,
+          ...stroked,
+          ...(rectFilter ? { filter: rectFilter } : {}),
+          ...(effects.length ? { position: "relative" } : {}),
         }}
-      />
+      >
+        {effects.length > 0 && <BoxOverlay effects={effects} radius={field.cornerRadius} />}
+      </div>
     );
   }
 
   const gradId = `sp-shape-grad-${field.id}`;
   const clipId = `sp-shape-clip-${field.id}`;
+  const maskId = `sp-shape-mask-${field.id}`;
+  const noiseId = `sp-shape-noise-${field.id}`;
   const paint = g ? `url(#${gradId})` : solid;
   const w = field.width;
   const h = field.height;
@@ -548,32 +628,130 @@ function ShapeFieldBox({ field }: { field: TemplateField }) {
             .join(" ");
     return <polygon points={points} {...(extra as React.SVGProps<SVGPolygonElement>)} />;
   };
+  const stops = g?.stops.map((s, i) => (
+    <stop key={i} offset={`${Math.round(s.position * 100)}%`} stopColor={s.color} />
+  ));
+  // A stroke that sits outside the box needs the SVG to paint past its
+  // viewport; inside strokes keep today's clipped root.
+  const beyond = Boolean(stroke) && align !== "inside";
+  let strokeEl: React.ReactNode = null;
+  if (stroke && align === "inside") {
+    strokeEl = shapeEl({
+      fill: "none",
+      stroke,
+      strokeWidth: strokeW * 2,
+      clipPath: `url(#${clipId})`,
+    });
+  } else if (stroke && align === "center") {
+    strokeEl = shapeEl({ fill: "none", stroke, strokeWidth: strokeW });
+  } else if (stroke) {
+    strokeEl = shapeEl({ fill: "none", stroke, strokeWidth: strokeW * 2, mask: `url(#${maskId})` });
+  }
+  // Drop shadows follow the shape's alpha; the blur follows them. Inner
+  // shadows don't apply to these shapes.
+  const svgFilter = filterCss(effects);
+  const noise = noiseEffects(effects);
   return (
-    <div style={contentBaseStyle(field)}>
-      <svg viewBox={`0 0 ${w} ${h}`} style={{ width: "100%", height: "100%", display: "block" }}>
+    <div style={{ ...contentBaseStyle(field), ...(svgFilter ? { filter: svgFilter } : {}) }}>
+      <svg
+        viewBox={`0 0 ${w} ${h}`}
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "block",
+          ...(beyond ? { overflow: "visible" } : {}),
+        }}
+      >
         <defs>
-          {g && (
+          {g && g.kind === "radial" ? (
+            <RadialGradientDef id={gradId} gradient={g}>
+              {stops}
+            </RadialGradientDef>
+          ) : g ? (
             <linearGradient
               id={gradId}
               gradientTransform={`rotate(${(((g.angle - 90) % 360) + 360) % 360}, 0.5, 0.5)`}
             >
-              {g.stops.map((s, i) => (
-                <stop key={i} offset={`${Math.round(s.position * 100)}%`} stopColor={s.color} />
-              ))}
+              {stops}
             </linearGradient>
+          ) : null}
+          {stroke && align === "inside" && <clipPath id={clipId}>{shapeEl()}</clipPath>}
+          {stroke && align === "outside" && (
+            // The mask reaches as far as a mitered corner can (miter limit
+            // 4, at twice the stroke width), so sharp tips keep their points.
+            <mask
+              id={maskId}
+              maskUnits="userSpaceOnUse"
+              x={-strokeW * 8}
+              y={-strokeW * 8}
+              width={w + strokeW * 16}
+              height={h + strokeW * 16}
+            >
+              <rect
+                x={-strokeW * 8}
+                y={-strokeW * 8}
+                width={w + strokeW * 16}
+                height={h + strokeW * 16}
+                fill="white"
+              />
+              {shapeEl({ fill: "black" })}
+            </mask>
           )}
-          {stroke && <clipPath id={clipId}>{shapeEl()}</clipPath>}
+          {noise.map((n, i) => {
+            const tile = NOISE_TILE_CELLS * n.size;
+            return (
+              <pattern
+                key={i}
+                id={`${noiseId}-${i}`}
+                patternUnits="userSpaceOnUse"
+                width={tile}
+                height={tile}
+              >
+                <image
+                  href={noiseTileDataUrl(n)}
+                  width={tile}
+                  height={tile}
+                  preserveAspectRatio="none"
+                  style={{ imageRendering: "pixelated" }}
+                />
+              </pattern>
+            );
+          })}
         </defs>
         {shapeEl({ fill: paint })}
-        {stroke &&
-          shapeEl({
-            fill: "none",
-            stroke,
-            strokeWidth: strokeW * 2,
-            clipPath: `url(#${clipId})`,
-          })}
+        {noise.map((_, i) => (
+          <React.Fragment key={i}>{shapeEl({ fill: `url(#${noiseId}-${i})` })}</React.Fragment>
+        ))}
+        {strokeEl}
       </svg>
     </div>
+  );
+}
+
+/** An SVG radial gradient matching gradientCss's radial output: centred on
+ * `center`, its ellipse `radius` fractions of the box wide and tall. The
+ * gradient's own box is the shape's bounding box, so a unit circle scaled
+ * by the radii about the centre is that ellipse. */
+function RadialGradientDef({
+  id,
+  gradient,
+  children,
+}: {
+  id: string;
+  gradient: NonNullable<TemplateField["textGradient"]>;
+  children: React.ReactNode;
+}) {
+  const { cx, cy, rx, ry } = radialGeometry(gradient);
+  return (
+    <radialGradient
+      id={id}
+      cx={cx}
+      cy={cy}
+      r={1}
+      gradientTransform={`translate(${cx} ${cy}) scale(${rx} ${ry}) translate(${-cx} ${-cy})`}
+    >
+      {children}
+    </radialGradient>
   );
 }
 
@@ -631,6 +809,35 @@ function TextFieldBox({ field, value, brandKit, fontSize: layoutFontSize }: Fiel
         justifyContent: justify,
       }
     : null;
+  // Drop shadows and blur follow the glyphs (and the plate, when there is
+  // one); inner shadows don't apply to text.
+  const effects = readEffects(field.effects);
+  const textFilter = filterCss(effects);
+  const textNoise = noiseLayerCss(noiseEffects(effects));
+  const textColor = resolveColor(style.colorKey, style.colorHex, brandKit);
+  const gradient = style.textGradient?.stops.length ? gradientCss(style.textGradient) : null;
+  // A gradient, grain, or both, painted as backgrounds clipped to the
+  // glyphs; the grain layers over the fill, the fill is the last layer.
+  let glyphFill: React.CSSProperties = {};
+  if (textNoise) {
+    glyphFill = {
+      backgroundImage: `${textNoise.backgroundImage}, ${
+        gradient ?? `linear-gradient(${textColor}, ${textColor})`
+      }`,
+      backgroundSize: `${textNoise.backgroundSize}, 100% 100%`,
+      imageRendering: "pixelated",
+      WebkitBackgroundClip: "text",
+      backgroundClip: "text",
+      color: "transparent",
+    };
+  } else if (gradient) {
+    glyphFill = {
+      backgroundImage: gradient,
+      WebkitBackgroundClip: "text",
+      backgroundClip: "text",
+      color: "transparent",
+    };
+  }
   const content = (
     <p
       style={{
@@ -641,18 +848,9 @@ function TextFieldBox({ field, value, brandKit, fontSize: layoutFontSize }: Fiel
         fontStyle: style.fontStyle,
         fontStretch: style.fontStretch,
         fontSize,
-        color: resolveColor(style.colorKey, style.colorHex, brandKit),
+        color: textColor,
         opacity: atFullStrength ? 1 : 0.55, // placeholder shows the real styling, dimmed
-        ...(style.textGradient?.stops.length
-          ? {
-              backgroundImage: `linear-gradient(${style.textGradient.angle}deg, ${style.textGradient.stops
-                .map((s) => `${s.color} ${Math.round(s.position * 100)}%`)
-                .join(", ")})`,
-              WebkitBackgroundClip: "text",
-              backgroundClip: "text",
-              color: "transparent",
-            }
-          : {}),
+        ...glyphFill,
         textAlign: field.align ?? "left",
         textTransform: style.uppercase ? "uppercase" : undefined,
         letterSpacing: style.letterSpacingPx ? `${style.letterSpacingPx}px` : undefined,
@@ -673,6 +871,7 @@ function TextFieldBox({ field, value, brandKit, fontSize: layoutFontSize }: Fiel
         display: "flex",
         alignItems,
         justifyContent: justify,
+        ...(textFilter ? { filter: textFilter } : {}),
       }}
     >
       {plateStyle ? <div style={plateStyle}>{content}</div> : content}
@@ -710,12 +909,19 @@ function ImageFieldBox({ field, value }: { field: TemplateField; value: string |
         maskRepeat: "no-repeat",
       }
     : {};
-  return (
+  // With effects, opacity and flip move to a wrapper outside the clipped,
+  // masked box, so drop shadows and blur (on the wrapper) follow the mask's
+  // shape instead of being cut off by it; inner shadows and noise overlay
+  // the photo inside the mask. Without effects the markup is today's.
+  const effects = readEffects(field.effects);
+  const box = (
     <div
       data-image-status={status}
       data-field-label={field.label}
       style={{
-        ...contentBaseStyle(field),
+        ...(effects.length
+          ? { width: "100%", height: "100%", position: "relative" }
+          : contentBaseStyle(field)),
         overflow: "hidden",
         borderRadius: cornerRadiusCss(field),
         display: "flex",
@@ -743,6 +949,14 @@ function ImageFieldBox({ field, value }: { field: TemplateField; value: string |
           {field.label}
         </span>
       )}
+      {effects.length > 0 && <BoxOverlay effects={effects} radius={field.cornerRadius} />}
+    </div>
+  );
+  if (!effects.length) return box;
+  const imageFilter = filterCss(effects);
+  return (
+    <div style={{ ...contentBaseStyle(field), ...(imageFilter ? { filter: imageFilter } : {}) }}>
+      {box}
     </div>
   );
 }

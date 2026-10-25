@@ -636,3 +636,31 @@ describe("masks", () => {
     expect((build({ fields }).template.template_fields as Row[])[2].mask_url).toBeNull();
   });
 });
+
+describe("depth effects (migration 0048)", () => {
+  const grain = [{ type: "noise", color: "#FFFFFF1A", size: 0.5, density: 1 }];
+  const glow = [{ type: "dropShadow", x: 0, y: 0, blur: 32, color: "#17FF7E66" }];
+
+  it("carries the canvas effects, and null when there are none", () => {
+    expect(
+      build({ template: { ...TEMPLATE, canvas_effects: grain } }).template.canvas_effects,
+    ).toEqual(grain);
+    expect(build().template.canvas_effects).toBeNull();
+  });
+
+  it("carries a variation's effects and canvas effects, still without geometry", () => {
+    const variants = [
+      {
+        id: "v-dark",
+        name: "Dark",
+        isDefault: true,
+        canvasEffects: grain,
+        overrides: { name: { effects: glow, x: 5 } },
+      },
+    ];
+    const served = build({ template: { ...TEMPLATE, variants } }).template.variants as Row[];
+    expect(served[0].canvasEffects).toEqual(grain);
+    const overrides = served[0].overrides as Record<string, Record<string, unknown>>;
+    expect(overrides.name).toEqual({ effects: glow });
+  });
+});

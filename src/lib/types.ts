@@ -179,7 +179,47 @@ export interface BrandAsset {
 export interface TextGradient {
   angle: number; // degrees, CSS linear-gradient convention
   stops: Array<{ position: number; color: string }>; // position 0..1, #RRGGBB
+  /** Absent = linear, the pre-radial shape byte for byte. A radial gradient
+   * ignores `angle` and spreads from `center` out to `radius`. */
+  kind?: "linear" | "radial";
+  /** Radial only: the centre, as fractions of the painted box (default
+   * 0.5, 0.5). */
+  center?: { x: number; y: number };
+  /** Radial only: the ellipse's radii, as fractions of the box's width and
+   * height (default 0.5, 0.5: touching the box's sides). */
+  radius?: { x: number; y: number };
 }
+
+/** One depth effect on a field or the canvas (brand-system Phase 1).
+ * Colors are #RRGGBBAA. Lengths are canvas pixels. A glow is a drop shadow
+ * at 0, 0 in a brand color. Effects never change layout: they paint around
+ * or over the box, and stacks still space by the box. */
+export type FieldEffect =
+  | {
+      type: "dropShadow";
+      x: number;
+      y: number;
+      blur: number;
+      spread?: number;
+      color: string;
+    }
+  /** Rect shapes and images only; ignored on text and other shapes. */
+  | {
+      type: "innerShadow";
+      x: number;
+      y: number;
+      blur: number;
+      spread?: number;
+      color: string;
+    }
+  | { type: "layerBlur"; radius: number }
+  /** Figma's MONOTONE noise: grains of `color` (its alpha is the grain's
+   * strength) covering `density` (0..1) of the box, each `size` px square.
+   * `seed` fixes the pattern so every export of a template is identical. */
+  | { type: "noise"; color: string; size: number; density: number; seed?: number };
+
+/** Where a shape's stroke sits on its edge. */
+export type StrokeAlign = "inside" | "center" | "outside";
 
 export type FieldType = "text" | "multiline" | "image" | "select" | "shape";
 
@@ -236,6 +276,11 @@ export interface TemplateField {
    * painted size never exceeds width × height). */
   strokeColor?: string; // #RRGGBB
   strokeWidthPx?: number; // >= 1 when strokeColor is set
+  /** Shape fields only: where the stroke sits. Absent = inside, today's
+   * stroke. Center and outside paint beyond the box without moving it. */
+  strokeAlign?: StrokeAlign;
+  /** Depth effects, painted in list order (Figma's order). Absent = none. */
+  effects?: FieldEffect[];
   /** Text fields only: a plate painted behind the text, sized to the text's
    * rendered box plus padding, sharing the field's cornerRadius. Full radius
    * makes a pill. The plate is part of the field: one element to select,
@@ -389,6 +434,9 @@ export interface VariantFieldOverride {
   /** Shape stroke color, replacing the field's strokeColor in this
    * variation (the stroke width stays shared). */
   strokeColor?: string;
+  /** The field's effects in this variation, replacing its whole list (a
+   * shadow that has to change on a dark ground, say). */
+  effects?: FieldEffect[];
   /** Fixed elements only: swap the fixed content — the logo's colourway
    * asset, a wordmark that flips to white. Ignored on member fields, whose
    * content is the member's. */
@@ -424,6 +472,8 @@ export interface TemplateVariant {
   /** A different background image (storage reference, like the template's
    * own backgroundUrl) for image-backed templates. */
   backgroundUrl?: string;
+  /** The canvas effects in this variation, replacing the template's list. */
+  canvasEffects?: FieldEffect[];
   /** Per-element overrides, keyed by the save-stable fieldKey. A field with
    * no entry inherits its base styling in this variation. */
   overrides: Record<string, VariantFieldOverride>;
@@ -448,6 +498,10 @@ export interface TemplateSchema {
    * background image (backgroundUrl) → gradient → color → white. */
   backgroundColor?: string;
   backgroundGradient?: TextGradient;
+  /** Effects on the whole canvas (absent = none). Noise paints over every
+   * field, as a Figma frame's effect does; an inner shadow insets the
+   * canvas edge. Other effect types are ignored here. */
+  canvasEffects?: FieldEffect[];
   fields: TemplateField[];
   /** Auto-layout stacks over the flat fields (absent = none — the pre-groups
    * rendering path, byte for byte). */

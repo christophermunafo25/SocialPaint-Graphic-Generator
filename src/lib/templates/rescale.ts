@@ -1,4 +1,11 @@
-import type { CornerRadius, LayoutGroup, NewTemplateInput, TemplateField } from "../types";
+import type {
+  CornerRadius,
+  LayoutGroup,
+  NewTemplateInput,
+  TemplateField,
+  TemplateVariant,
+} from "../types";
+import { scaleEffects } from "../render/effects";
 
 /** One field the rescale could not scale per-axis. The field still landed —
  * proportionally, via min(sx, sy) on both axes — but under a non-uniform
@@ -34,6 +41,8 @@ export function scaleFieldType(f: TemplateField, u: number): Partial<TemplateFie
     // Plate paddings are px lengths too; zero is a legitimate padding.
     ...(f.platePaddingX != null && { platePaddingX: roundPx(f.platePaddingX * u) }),
     ...(f.platePaddingY != null && { platePaddingY: roundPx(f.platePaddingY * u) }),
+    // Shadow offsets, blur, spread and grain size are px lengths too.
+    ...(f.effects && { effects: scaleEffects(f.effects, u) }),
     ...(f.cornerRadius && {
       cornerRadius: {
         tl: roundPx(f.cornerRadius.tl * u),
@@ -125,6 +134,20 @@ export function rescaleTemplate(
     crossSize: roundPx(g.crossSize * (g.direction === "vertical" ? sx : sy)),
   }));
 
+  // Effects are the one variation override with px lengths in it, so a
+  // colourway's shadows scale with the base's.
+  const variants = draft.variants?.map((v): TemplateVariant => {
+    const overrides: TemplateVariant["overrides"] = {};
+    for (const [key, over] of Object.entries(v.overrides ?? {})) {
+      overrides[key] = over.effects ? { ...over, effects: scaleEffects(over.effects, u) } : over;
+    }
+    return {
+      ...v,
+      overrides,
+      ...(v.canvasEffects && { canvasEffects: scaleEffects(v.canvasEffects, u) }),
+    };
+  });
+
   return {
     draft: {
       ...draft,
@@ -132,6 +155,8 @@ export function rescaleTemplate(
       canvasHeight: next.height,
       fields,
       ...(layoutGroups && { layoutGroups }),
+      ...(variants && { variants }),
+      ...(draft.canvasEffects && { canvasEffects: scaleEffects(draft.canvasEffects, u) }),
     },
     warnings,
   };

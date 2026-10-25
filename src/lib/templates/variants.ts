@@ -31,6 +31,7 @@ export const VARIANT_OVERRIDE_KEYS = [
   "opacity",
   "plateColor",
   "strokeColor",
+  "effects",
   "staticValue",
   "hidden",
 ] as const satisfies ReadonlyArray<keyof VariantFieldOverride>;
@@ -58,6 +59,8 @@ type StructuralKey =
   // the starter templates' Dark colourways); the geometry halves — stroke
   // width and plate paddings — stay structural and shared.
   | "strokeWidthPx"
+  // Where the stroke sits is geometry; its color is the variation's.
+  | "strokeAlign"
   | "platePaddingX"
   | "platePaddingY"
   // The mask is the field's SHAPE — as structural as its box.
@@ -196,6 +199,12 @@ export function applyVariant(field: TemplateField, variant?: TemplateVariant): T
     next.strokeColor = over.strokeColor;
     changed = true;
   }
+  // The whole list, not a merge: a shadow that changes on a dark ground
+  // changes as a unit (approved 2026-10-25).
+  if (over.effects !== undefined) {
+    next.effects = over.effects;
+    changed = true;
+  }
   if (over.staticValue !== undefined && field.static) {
     next.staticValue = over.staticValue;
     changed = true;
@@ -281,17 +290,19 @@ export function applyVariantToSchema(
   if (!variant) return schema;
   const fields = applyVariantToFields(schema.fields, variant);
   const bg = resolveVariantBackground(schema, variant);
+  const canvasEffects = variant.canvasEffects ?? schema.canvasEffects;
   const sameBg =
     bg.color === schema.backgroundColor &&
     bg.gradient === schema.backgroundGradient &&
     bg.url === schema.backgroundUrl;
-  if (fields === schema.fields && sameBg) return schema;
+  if (fields === schema.fields && sameBg && canvasEffects === schema.canvasEffects) return schema;
   return {
     ...schema,
     fields,
     backgroundColor: bg.color,
     backgroundGradient: bg.gradient,
     backgroundUrl: bg.url,
+    ...(canvasEffects !== undefined && { canvasEffects }),
   };
 }
 
@@ -407,6 +418,9 @@ export function cloneVariant(
       ? { backgroundGradient: structuredClone(source.backgroundGradient) }
       : {}),
     ...(source?.backgroundUrl !== undefined ? { backgroundUrl: source.backgroundUrl } : {}),
+    ...(source?.canvasEffects !== undefined
+      ? { canvasEffects: structuredClone(source.canvasEffects) }
+      : {}),
     overrides,
   };
 }

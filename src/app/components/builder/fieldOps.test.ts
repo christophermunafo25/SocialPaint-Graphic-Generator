@@ -151,6 +151,14 @@ describe("style clipboard", () => {
     expect(styled.textGradient).toBeUndefined();
   });
 
+  it("carries effects with the look, and clears them when the source has none", () => {
+    const shadow = { type: "dropShadow", x: 0, y: 8, blur: 24, color: "#00000026" } as const;
+    copyStyle({ ...headline, effects: [shadow] });
+    expect(applyClipboardStyle(plain).effects).toEqual([shadow]);
+    copyStyle(plain);
+    expect(applyClipboardStyle({ ...plain, effects: [shadow] }).effects).toBeUndefined();
+  });
+
   it("applies only the type-appropriate subset across kinds", () => {
     copyStyle(headline);
     const image: TemplateField = {

@@ -1,5 +1,6 @@
 {
   "name": "starter-launch-01",
   "kind": "starter",
-  "baseline": { "chromium": 0, "firefox": 0.77, "webkit": 1.49 }
+  "baseline": { "chromium": 0, "firefox": 0.77, "webkit": 1.49 },
+  "blurBaseline": { "chromium": 0, "firefox": 0, "webkit": 0.8 }
 }

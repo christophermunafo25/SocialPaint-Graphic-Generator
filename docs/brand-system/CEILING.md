@@ -4,6 +4,38 @@ Written by brand-system Phase 0 on 2026-10-25, against `main` at 4094a0b (PR 169
 
 Support levels: **live** means a field property draws it, **workaround** means an admin can approximate it with today's fields, and **missing** means it can't be drawn.
 
+## Since Phase 1
+
+Phase 1 (2026-10-25) added grain, drop shadows and glows, inner shadows, layer blur, center and outside strokes, and radial gradients (`docs/brand-system/PHASE-1.md`, `docs/TEMPLATE_SCHEMA.md`). The Phase 0 sections below are kept as measured, and these are the same frames rebuilt with depth. Each comparison now also reports a **blurred share**: the same threshold after a 4px blur of both images, which keeps tone and shadow and drops grain speckle. Two grain patterns never match pixel for pixel, so even a perfect grain scores high on the exact share.
+
+| Fixture                   | Chromium (exact / blurred) | Firefox       | WebKit        |
+| ------------------------- | -------------------------- | ------------- | ------------- |
+| `gtm-composer` (Phase 0)  | 22.67 / 18.97              | 26.23 / 23.70 | 26.23 / 23.70 |
+| `gtm-composer-depth`      | 11.28 / 0.45               | 11.21 / 0.69  | 6.18 / 0.69   |
+| `feature-highlight-depth` | 4.49 / 9.74                | 4.37 / 9.86   | 4.94 / 10.74  |
+| `effects-matrix`          | 0.00 / 0.00                | 0.41 / 0.40   | 2.12 / 2.05   |
+
+`gtm-composer-depth` maps Figma's values directly:
+
+- **Grain:** the frame's noise (white at 10%, density 1, size 0.5) as canvas grain.
+- **Shadow:** the card's drop shadow (8, 8, blur 32, black at 10%). Figma's shadow blur equals the CSS blur radius.
+- **Halo:** a 5px outside stroke in place of the halo shape.
+
+The blurred share fell from about 19 to 24% to under 0.7% on every engine, so the panel's tone and shadow now match Figma. What is left is grain speckle and the ingredients below. `feature-highlight-depth` replaces the white backing rect with a 12px outside stroke and scores identically on both shares. Its blurred share is higher than its exact one because the headline's condensed-width drift spreads under the blur. `effects-matrix` is the parity check: every effect on every field type, blessed from Chromium. WebKit's 2.12% sits in the soft outer tails of drop shadows and glows, whose blur falls off slightly differently.
+
+Found while building: **WebKit misplaces `box-shadow` in html-to-image exports.** html-to-image rasterizes through an SVG foreignObject. A plain div with a 20, 30 box-shadow is drawn correctly on WebKit's live page, but in the exported image the shadow is not where it should be, and an inset box-shadow does not show either. Chromium and Firefox are exact. So no effect paints as box-shadow. Drop shadows are `filter: drop-shadow()`, which exports the same in all three engines, and inner shadows are blurred frames. The cost is that a drop shadow's `spread` is stored but not painted. The same bug would affect any future use of box-shadow in exported graphics.
+
+Still not expressible after Phase 1, in the order they now cost:
+
+- **The condensed headline width:** a font catalog gap, about 2 points on `feature-highlight`.
+- **Image placement inside the box:** the photo is pre-cropped.
+- **Icons that recolor and vector paths:** Phase 3.
+- **The importer carrying effects:** Phase 4.
+- **A drop shadow's spread.**
+- **Inner shadows on text and SVG shapes.**
+- **Background blur:** `backdrop-filter` doesn't survive the export.
+- **Duo and multi noise, and mesh gradients.**
+
 ## gtm-composer
 
 Master UX-UI (`mEJRslarcQDkgPeY6AObi5`), node `200:208` ("sp-auth-panel", Sign in · Light, on page `194:2`), 688 × 1021.

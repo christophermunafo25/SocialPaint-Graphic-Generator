@@ -10,9 +10,12 @@ export type Engine = "chromium" | "firefox" | "webkit";
 /** The parts of a fixture.json the runner decides with. */
 export interface VerdictFixture {
   name: string;
-  kind: "figma" | "starter";
+  kind: "figma" | "starter" | "synthetic";
   variantId?: string | null;
   baseline?: Partial<Record<Engine, number>>;
+  /** The blurred share's baseline (brand-system Phase 1). Optional: a
+   * fixture without it is judged on the exact share alone. */
+  blurBaseline?: Partial<Record<Engine, number>>;
   tolerance?: number;
 }
 
@@ -23,6 +26,9 @@ export type RenderOutcome =
 
 export interface Comparison {
   changedPct: number;
+  /** The share that still differs after a 4px blur of both images: tone
+   * and shadow, without stochastic grain speckle. */
+  blurPct?: number;
   sizeMatches: boolean;
 }
 
@@ -31,7 +37,7 @@ export type Verdict =
 
 /** The dev render address for a fixture. A starter fixture named
  * starter-<key>-<variant> with that variantId renders blueprint <key> in
- * that colourway; a figma fixture renders its own file. */
+ * that colourway; a figma or synthetic fixture renders its own file. */
 export function routeFor(fixture: VerdictFixture): string {
   if (fixture.kind === "starter") {
     let key = fixture.name.slice("starter-".length);
@@ -62,7 +68,14 @@ export function verdictFor(
   const baseline = fixture.baseline?.[engine];
   if (baseline === undefined) return { verdict: "no baseline", failed: strict };
   const tolerance = fixture.tolerance ?? DEFAULT_TOLERANCE;
-  if (cmp.changedPct > baseline + tolerance) return { verdict: "worse", failed: true };
+  // The blurred share is judged only where it has a baseline; worse on
+  // either share is worse.
+  const blurBaseline = fixture.blurBaseline?.[engine];
+  const blurWorse =
+    blurBaseline !== undefined &&
+    cmp.blurPct !== undefined &&
+    cmp.blurPct > blurBaseline + tolerance;
+  if (cmp.changedPct > baseline + tolerance || blurWorse) return { verdict: "worse", failed: true };
   if (cmp.changedPct < baseline - tolerance) return { verdict: "better", failed: false };
   return { verdict: "pass", failed: false };
 }

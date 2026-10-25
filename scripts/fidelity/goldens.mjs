@@ -64,6 +64,11 @@ async function readFixture(name) {
   if (fixture.kind !== "figma" || !fixture.source?.fileKey || !fixture.source?.nodeId) {
     throw new Error(`${name} is not a figma fixture with a source`);
   }
+  if (fixture.goldenFrom) {
+    throw new Error(
+      `${name} compares with ${fixture.goldenFrom}'s golden; fetch that fixture instead`,
+    );
+  }
   return fixture;
 }
 

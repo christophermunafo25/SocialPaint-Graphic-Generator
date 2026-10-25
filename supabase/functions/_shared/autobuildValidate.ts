@@ -65,7 +65,15 @@ export interface ValidatedField {
    * never proposes them). */
   shape?: "rect" | "ellipse" | "triangle" | "star";
   cornerRadius?: { tl: number; tr: number; br: number; bl: number };
-  textGradient?: { angle: number; stops: Array<{ position: number; color: string }> };
+  /** Passed through whole, so a radial gradient keeps its kind, centre and
+   * radii (brand-system Phase 1). */
+  textGradient?: {
+    angle: number;
+    stops: Array<{ position: number; color: string }>;
+    kind?: "linear" | "radial";
+    center?: { x: number; y: number };
+    radius?: { x: number; y: number };
+  };
   sourceNodeId?: string;
   x: number;
   y: number;

@@ -22,10 +22,11 @@ export interface FixtureFont {
 /** test/fidelity/fixtures/<name>/fixture.json. A "figma" fixture carries
  * its schema and compares with a golden exported from `source`; a
  * "starter" fixture is materialized here from a blueprint and compares
- * with a blessed Chromium render. */
+ * with a blessed Chromium render; a "synthetic" fixture carries a schema
+ * built in code and compares with a blessed Chromium render too. */
 export interface FidelityFixture {
   name: string;
-  kind: "figma" | "starter";
+  kind: "figma" | "starter" | "synthetic";
   source?: { fileKey: string; nodeId: string };
   schema?: TemplateSchema;
   values?: FieldValues;
@@ -37,6 +38,12 @@ export interface FidelityFixture {
   unsupported?: string[];
   /** Changed share in percent per engine, recorded with CJ's approval. */
   baseline?: Partial<Record<FidelityEngine, number>>;
+  /** The same after a 4px blur of both images (tone and shadow, without
+   * grain speckle), recorded with CJ's approval. */
+  blurBaseline?: Partial<Record<FidelityEngine, number>>;
+  /** Compare with another fixture's golden.png (the same Figma frame
+   * rebuilt a second way). */
+  goldenFrom?: string;
   /** Points a run may exceed its baseline by (default 0.25). */
   tolerance?: number;
 }

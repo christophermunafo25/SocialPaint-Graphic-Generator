@@ -13,6 +13,8 @@ exists anywhere. Source of truth: `src/lib/types.ts` (`TemplateSchema`,
 | `backgroundUrl` | Storage URL of the uploaded/imported PNG. Converted to a data URL before render/export. |
 | `fields` | Ordered `TemplateField[]`. **Array order is the member FORM order** (the sequence fields appear in the end-user's form — reordered by dragging in the builder's field list). Canvas paint order is the separate per-field `zIndex`. |
 | `captionTemplate` | Merge string with `{field_key}` placeholders, e.g. `"{name} celebrated {years} incredible years!"`. Members see the merged result, can edit it, and copy it. Image fields have no caption value. |
+| `backgroundColor` / `backgroundGradient` | Canvas base fill for blank-built templates: background image, then gradient, then color, then white. The gradient is the shared `TextGradient` shape (see **Gradients**). |
+| `canvasEffects` | Optional `FieldEffect[]` on the whole canvas (migration 0048, `templates.canvas_effects`). `noise` paints over every field, as a Figma frame effect does; `innerShadow` insets the canvas edge; other types are ignored here. See **Effects**. |
 | `variants` | Optional `TemplateVariant[]` — the template's colourways, sharing these fields and this geometry. See **Variations** below. Absent or a single entry means single-variant: no picker, no filmstrip, the pre-feature path byte for byte. |
 | `status` | `draft` \| `published`. Only published templates appear in the member portal. |
 
@@ -77,6 +79,50 @@ defines the property):
   text-fill gradient (angle + stops). Precedence: type style → colorHex;
   gradient wins over solid when set. `fontWeight` is a free 100–900 value.
 
+Shape, plate and mask (migrations 0034 to 0036):
+
+- `strokeColor` + `strokeWidthPx` — a shape's outline (`#RRGGBB`, px, at
+  least 1 when a color is set).
+- `strokeAlign` — where that outline sits (migration 0048): `inside`
+  (default, the painted size never exceeds the box), `center` or `outside`
+  (painted beyond the box without moving it, the radius growing with it).
+- `plateColor` + `platePaddingX` / `platePaddingY` — text fields only: a
+  plate behind the text, sized to the rendered text plus padding and sharing
+  the field's `cornerRadius` (unset radius renders a pill).
+- `maskUrl` — image fields only: an alpha mask image stretched over the
+  field's box.
+
+Gradients: `textGradient` (and `backgroundGradient` on the canvas) is
+`{ angle, stops[{ position 0..1, color }], kind?, center?, radius? }`.
+Absent `kind` is linear along `angle`. `kind: "radial"` ignores the angle
+and spreads from `center` (fractions of the box, default 0.5, 0.5) out to
+`radius` (fractions of the box's width and height, default 0.5, 0.5). No
+column is needed: the shape lives in the existing jsonb.
+
+Effects (`effects`, migration 0048, `template_fields.effects`): depth,
+painted in list order (Figma's order, bottom to top). Effects never change
+layout; stacks still space by the box. Colors are `#RRGGBBAA`, lengths canvas
+px. A malformed entry is skipped at render time (`src/lib/render/effects.ts`).
+
+- `dropShadow` `{ x, y, blur, spread?, color }` — a glow is a drop shadow at
+  0, 0 in a brand color. Painted as a CSS `drop-shadow()` filter on every
+  field type, following the painted alpha (a rect's corners, a shape, the
+  glyphs and plate, a masked photo's shape). `spread` is stored but not
+  painted: filters have no spread, and `box-shadow`, which has one, is
+  misplaced by WebKit when html-to-image exports through an SVG
+  foreignObject.
+- `innerShadow` `{ x, y, blur, spread?, color }` — rect shapes, images and
+  the canvas only; ignored elsewhere. Painted as a blurred frame inside the
+  box's clip (a ring of the color around a hole the size of the box, moved
+  by the offset and shrunk by the spread). On a masked photo it follows the
+  photo's box under the mask, not the mask's own edge.
+- `layerBlur` `{ radius }` — blurs the element (CSS `blur()` at half the
+  radius, as Figma exports it).
+- `noise` `{ color, size, density, seed? }` — Figma's monotone grain: grains
+  of `color` (its alpha is the strongest grain) covering `density` (0..1),
+  each `size` px. Seeded, so every export of a template paints the same
+  grain.
+
 Guardrails:
 
 - `maxLength` — hard char limit enforced by the input.
@@ -134,8 +180,10 @@ or a pin to a deleted variation renders), canvas overrides
 set; `backgroundUrl`), and `overrides: Record<fieldKey, VariantFieldOverride>`.
 
 `VariantFieldOverride` is a **closed** set and the whitelist is the product:
-`colorHex`, `textGradient`, `typeStyleKey`, `opacity`, `staticValue` (fixed
-elements only), `hidden`. Everything else on a field — position, size,
+`colorHex`, `textGradient`, `typeStyleKey`, `opacity`, `plateColor`,
+`strokeColor`, `effects` (the field's whole list, replaced as a unit),
+`staticValue` (fixed elements only), `hidden`. A variation may also replace
+the canvas's `canvasEffects`. Everything else on a field — position, size,
 rotation, z, font, size, tracking, alignment, guardrails, type, identity,
 layout groups — is shared and cannot diverge. `src/lib/templates/variants.ts`
 proves that at compile time and ignores any other key found in stored JSON.

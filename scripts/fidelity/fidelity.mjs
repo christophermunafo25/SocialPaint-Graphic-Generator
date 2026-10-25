@@ -20,10 +20,17 @@
  * either can't turn a regression green. The decisions live in
  * src/app/dev/fidelityVerdict.ts, which has tests.
  *
- * bless records today's Chromium render as a starter fixture's golden. It
- * refuses to replace an existing golden without --approved.
+ * bless records today's Chromium render as a starter or synthetic
+ * fixture's golden. It refuses to replace an existing golden without
+ * --approved.
  *
- * baseline records the current changed shares as the fixture's baseline.
+ * Each comparison also reports a blurred share: the same threshold after a
+ * 4px blur of both images, which keeps tone and shadow and drops grain
+ * speckle (two grain patterns never match pixel for pixel). A fixture with
+ * a blurBaseline fails when either share gets worse.
+ *
+ * baseline records the current changed and blurred shares as the
+ * fixture's baseline and blurBaseline.
  * Only CJ approves a baseline, so it runs only with --approved.
  *
  * The harness starts its own Vite dev server on the local backend (the
@@ -50,6 +57,8 @@ const VIEWPORT = { width: 2000, height: 2000 };
 const FIXTURE_TIMEOUT_MS = 60_000;
 /** The shots.mjs compare threshold: per channel, out of 255. */
 const CHANNEL_THRESHOLD = 6;
+/** The blurred share's blur (a canvas `blur()`, in px). */
+const BLUR_PX = 4;
 
 // ------------------------------------------------------------------ args
 const [mode, ...rest] = process.argv.slice(2);
@@ -104,7 +113,10 @@ async function loadFixtures(only) {
 }
 
 const fixtureFile = (name) => path.join(fixturesDir, name, "fixture.json");
-const goldenFile = (name) => path.join(fixturesDir, name, "golden.png");
+/** A fixture's golden: its own, or the one `goldenFrom` names (the same
+ * Figma frame rebuilt a second way). */
+const goldenFile = (fixture) =>
+  path.join(fixturesDir, fixture.goldenFrom ?? fixture.name, "golden.png");
 
 async function writeFixture(name, fixture) {
   const file = fixtureFile(name);
@@ -218,7 +230,7 @@ async function openComparer() {
   return {
     async compare(golden, render, heatmap) {
       const result = await page.evaluate(
-        async ({ golden, render, threshold }) => {
+        async ({ golden, render, threshold, blurPx }) => {
           const load = (src) =>
             new Promise((resolve, reject) => {
               const img = new Image();
@@ -232,14 +244,28 @@ async function openComparer() {
           ]);
           const w = Math.min(a.width, b.width);
           const h = Math.min(a.height, b.height);
-          const read = (img) => {
+          const read = (img, blur) => {
             const c = document.createElement("canvas");
             c.width = w;
             c.height = h;
             const ctx = c.getContext("2d");
+            if (blur) ctx.filter = `blur(${blur}px)`;
             ctx.drawImage(img, 0, 0);
             return ctx.getImageData(0, 0, w, h);
           };
+          // The blurred share: the same threshold after a blur of both
+          // images, which keeps tone and shadow and drops grain speckle.
+          const ba = read(a, blurPx).data;
+          const bb = read(b, blurPx).data;
+          let blurChanged = 0;
+          for (let i = 0; i < ba.length; i += 4) {
+            const d = Math.max(
+              Math.abs(ba[i] - bb[i]),
+              Math.abs(ba[i + 1] - bb[i + 1]),
+              Math.abs(ba[i + 2] - bb[i + 2]),
+            );
+            if (d > threshold) blurChanged++;
+          }
           const pa = read(a).data;
           const out = read(b);
           const pb = out.data;
@@ -268,17 +294,19 @@ async function openComparer() {
           c.getContext("2d").putImageData(out, 0, 0);
           return {
             changed,
+            blurChanged,
             total: w * h,
             golden: [a.width, a.height],
             render: [b.width, b.height],
             heatmap: c.toDataURL("image/png").replace(/^data:[^,]*,/, ""),
           };
         },
-        { golden, render, threshold: CHANNEL_THRESHOLD },
+        { golden, render, threshold: CHANNEL_THRESHOLD, blurPx: BLUR_PX },
       );
       await writeFile(heatmap, Buffer.from(result.heatmap, "base64"));
       return {
         changedPct: (100 * result.changed) / result.total,
+        blurPct: (100 * result.blurChanged) / result.total,
         sizeMatches: result.golden[0] === result.render[0] && result.golden[1] === result.render[1],
         golden: result.golden,
         render: result.render,
@@ -309,7 +337,7 @@ async function measure(fixtures, selectedEngines) {
     for (const fixture of fixtures) {
       for (const engine of selectedEngines) {
         const outcome = rendered[engine].get(fixture.name);
-        const golden = goldenFile(fixture.name);
+        const golden = goldenFile(fixture);
         let cmp = null;
         let note = outcome.status === "skipped" ? outcome.reason : outcome.message;
         let heatmap;
@@ -330,6 +358,8 @@ async function measure(fixtures, selectedEngines) {
           engine,
           changedPct: cmp ? Number(cmp.changedPct.toFixed(4)) : null,
           baseline: fixture.baseline?.[engine] ?? null,
+          blurPct: cmp ? Number(cmp.blurPct.toFixed(4)) : null,
+          blurBaseline: fixture.blurBaseline?.[engine] ?? null,
           tolerance: fixture.tolerance ?? DEFAULT_TOLERANCE,
           verdict,
           failed,
@@ -352,6 +382,8 @@ function printTable(rows) {
       engine: r.engine,
       changed: pct(r.changedPct),
       baseline: pct(r.baseline),
+      blurred: pct(r.blurPct),
+      "blur base": pct(r.blurBaseline),
       verdict: r.verdict,
       ...(r.note ? { note: r.note } : {}),
     })),
@@ -383,10 +415,13 @@ async function run() {
 // ----------------------------------------------------------------- bless
 async function bless(name) {
   const [fixture] = await loadFixtures([name]);
-  if (fixture.kind !== "starter") {
+  if (fixture.kind === "figma") {
     throw new Error(`${name} is a figma fixture; its golden comes from goldens.mjs fetch`);
   }
-  const golden = goldenFile(name);
+  if (fixture.goldenFrom) {
+    throw new Error(`${name} compares with ${fixture.goldenFrom}'s golden; it has none of its own`);
+  }
+  const golden = goldenFile(fixture);
   if (existsSync(golden) && !flags.approved) {
     throw new Error(`${name} already has a golden. Replacing it needs CJ's approval (--approved).`);
   }
@@ -417,9 +452,15 @@ async function baseline(name) {
     );
   }
   const next = { ...(fixture.baseline ?? {}) };
-  for (const r of rows) next[r.engine] = Number(r.changedPct.toFixed(2));
-  await writeFixture(name, { ...fixture, baseline: next });
-  console.log(`${rel(fixtureFile(name))} baseline ${JSON.stringify(next)}`);
+  const nextBlur = { ...(fixture.blurBaseline ?? {}) };
+  for (const r of rows) {
+    next[r.engine] = Number(r.changedPct.toFixed(2));
+    nextBlur[r.engine] = Number(r.blurPct.toFixed(2));
+  }
+  await writeFixture(name, { ...fixture, baseline: next, blurBaseline: nextBlur });
+  console.log(
+    `${rel(fixtureFile(name))} baseline ${JSON.stringify(next)} blurBaseline ${JSON.stringify(nextBlur)}`,
+  );
 }
 
 try {

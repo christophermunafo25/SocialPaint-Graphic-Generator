@@ -2,5 +2,6 @@
   "name": "starter-milestone-03-dark",
   "kind": "starter",
   "variantId": "dark",
-  "baseline": { "chromium": 0, "firefox": 0.37, "webkit": 0.99 }
+  "baseline": { "chromium": 0, "firefox": 0.37, "webkit": 0.99 },
+  "blurBaseline": { "chromium": 0, "firefox": 0, "webkit": 0.51 }
 }
