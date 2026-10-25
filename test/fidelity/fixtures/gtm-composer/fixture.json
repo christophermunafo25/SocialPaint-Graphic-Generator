@@ -4,7 +4,7 @@
   "source": { "fileKey": "mEJRslarcQDkgPeY6AObi5", "nodeId": "200:208" },
   "unsupported": [
     "Composer drop shadow (Elevation/Floating: 8,8 offset, 32 blur, 10% black): no shadow property on fields; left out.",
-    "Grain/Coarse noise effect (NOISE, radius 4): no grain or noise; left out. A texture image could stand in once the golden shows how strong it is.",
+    "Grain/Coarse noise on the panel frame (NOISE, MONOTONE, white at 10%, density 1, size 0.5): no grain or noise; left out. It sits on the frame, so it also lightens the composer's children; averaged, it is a white lift of about 0.1 x 0.5 x (255 - channel), which accounts for most of this fixture's changed share, not only the speckle.",
     "Panel gradient and fluted stripes: a raster image fill in Figma, so it is an image field here and can't be recolored or regenerated.",
     "Icons (plus, chevron, minus, arrow-up): uploaded SVG images with baked stroke colors; there is no icon element that recolors by role.",
     "Canvas corners: the 20 radius is on the panel image; the canvas itself is a transparent rectangle (backgroundColor #00000000).",
