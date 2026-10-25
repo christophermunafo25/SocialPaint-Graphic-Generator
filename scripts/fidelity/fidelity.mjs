@@ -120,7 +120,11 @@ function routeFor(fixture) {
 async function writeFixture(name, fixture) {
   const file = fixtureFile(name);
   const { name: _name, ...body } = fixture;
-  const json = await prettier.format(JSON.stringify({ name, ...body }), { filepath: file });
+  const config = (await prettier.resolveConfig(file)) ?? {};
+  const json = await prettier.format(JSON.stringify({ name, ...body }), {
+    ...config,
+    filepath: file,
+  });
   await writeFile(file, json);
 }
 

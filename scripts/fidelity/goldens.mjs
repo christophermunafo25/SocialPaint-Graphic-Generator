@@ -92,7 +92,8 @@ async function fetchGolden(name) {
     tok,
   );
   const nodeFile = path.join(dir, "figma-node.json");
-  const json = await prettier.format(JSON.stringify(nodes), { filepath: nodeFile });
+  const config = (await prettier.resolveConfig(nodeFile)) ?? {};
+  const json = await prettier.format(JSON.stringify(nodes), { ...config, filepath: nodeFile });
   await writeFile(nodeFile, json);
   console.log(`figma-node.json ${(json.length / 1024).toFixed(0)} KB`);
 }
