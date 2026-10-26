@@ -70,6 +70,8 @@ import {
 } from "./InspectorControls";
 import { AlignControls } from "./AlignControls";
 import { fixedPatch } from "./fieldOps";
+import { ColorRow, EffectsEditor } from "./EffectsEditor";
+import { normalizeEffects } from "./effectOps";
 import { FillPicker, fillSwatchCss, getFill } from "./FillPicker";
 import { ImageSourceChooser, ImageSourceDialog, pickableAssets } from "../ImageSourceChooser";
 import { parseHex, toHex } from "@/lib/color";
@@ -1253,11 +1255,11 @@ export function FieldInspector(props: FieldInspectorProps) {
               )}
             </>
           )}
-          {/* Shape stroke — an inner outline, so width never grows the box.
-            Same row grammar as the Fill section: swatch, hex, then the
-            content-sized numeric, then remove. Base panel only (no variation
-            override channel for strokes). */}
-          {isShape && !variantMode && (
+          {/* Shape stroke. Same row grammar as the Fill section: swatch, hex,
+            then the content-sized numeric, then remove; its position on the
+            edge sits below. Shown in every template: the stroke's geometry is
+            shared, and a look changes only its color (This variation). */}
+          {isShape && (
             <PropertyRow label="Stroke" stack={Boolean(field.strokeColor)}>
               {field.strokeColor ? (
                 <>
@@ -1340,11 +1342,28 @@ export function FieldInspector(props: FieldInspectorProps) {
               )}
             </PropertyRow>
           )}
+          {isShape && field.strokeColor && (
+            <PropertyRow label="Position">
+              <SegmentedIconGroup
+                ariaLabel="Stroke position"
+                stretch
+                value={field.strokeAlign ?? "inside"}
+                options={[
+                  { key: "inside", label: "Inside", title: "Inside the edge" },
+                  { key: "center", label: "Center", title: "Centered on the edge" },
+                  { key: "outside", label: "Outside", title: "Outside the edge" },
+                ]}
+                onSelect={(align) =>
+                  onChange({ strokeAlign: align === "inside" ? undefined : align })
+                }
+              />
+            </PropertyRow>
+          )}
           {/* Text plate (pill) — same row grammar as the stroke above. The
             corner radius controls higher in this section apply to the plate
             once one is set (hasRadius widens); unset radius renders the
             fully-rounded pill default. */}
-          {isTextish && !variantMode && (
+          {isTextish && (
             <>
               <PropertyRow label="Plate" stack={Boolean(field.plateColor)}>
                 {field.plateColor ? (
@@ -1735,7 +1754,7 @@ export function FieldInspector(props: FieldInspectorProps) {
                       flex: 1,
                     }}
                   >
-                    Linear gradient
+                    {fill.gradient.kind === "radial" ? "Radial gradient" : "Linear gradient"}
                   </span>
                 )}
                 <button
@@ -1762,6 +1781,62 @@ export function FieldInspector(props: FieldInspectorProps) {
               </p>
             ))}
         </InspectorSection>
+      )}
+
+      {/* A look's own stroke and plate colors. Their geometry stays on All. */}
+      {showThis &&
+        variantMode &&
+        ((isShape && field.strokeColor) || (isTextish && field.plateColor)) && (
+          <InspectorSection id="look-strokes" title={isShape ? "Stroke" : "Plate"}>
+            {isShape && merged.strokeColor && (
+              <ColorRow
+                ariaName="Stroke"
+                value={merged.strokeColor}
+                kit={kit}
+                companyId={company?.id}
+                onChange={(c) => look({ strokeColor: c })}
+              />
+            )}
+            {isTextish && merged.plateColor && (
+              <ColorRow
+                ariaName="Plate"
+                value={merged.plateColor}
+                kit={kit}
+                companyId={company?.id}
+                onChange={(c) => look({ plateColor: c })}
+              />
+            )}
+          </InspectorSection>
+        )}
+
+      {/* Effects. On a template's All tab (or a template without looks) they
+        edit the template, which every look starts from; on This variation
+        they replace the look's whole list, an option, never a requirement. */}
+      {(variantMode ? true : showThis) && (
+        <EffectsEditor
+          id="effects"
+          effects={variantMode && tab === "this" ? merged.effects : field.effects}
+          target={{ kind: "field", field }}
+          accentHex={kit?.colors[0]?.hex}
+          kit={kit}
+          companyId={company?.id}
+          onChange={(next) => {
+            const normalized = normalizeEffects(next, { kind: "field", field });
+            if (variantMode && tab === "this") {
+              // An emptied list in a look stays an override: "none here".
+              look({ effects: normalized ?? [] });
+            } else {
+              onChange({ effects: normalized });
+            }
+          }}
+          onUseBase={
+            variantMode &&
+            tab === "this" &&
+            variantMode.variant.overrides?.[field.fieldKey]?.effects !== undefined
+              ? () => variantMode.onOverride({ effects: undefined })
+              : undefined
+          }
+        />
       )}
 
       {/* Member input — what the member sees in their form; gone on fixed

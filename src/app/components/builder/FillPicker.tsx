@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Minus, Plus, RotateCw, ArrowLeftRight } from "lucide-react";
 import type { BrandColor, BrandKit, TemplateField, TextGradient } from "@/lib/types";
 import { DEFAULT_FILL_HEX, gradientCss } from "../SchemaRenderer";
+import { radialGeometry } from "@/lib/render/gradient";
 import {
   formatColor,
   hsvToRgb,
@@ -411,8 +412,37 @@ export function FillPicker({
                 onChange={setGradient}
                 onDragEnd={() => sortedCommit(gradient)}
               />
-              <div className="flex items-center" style={{ gap: "var(--space-2xs)" }}>
-                <span style={sectionLabel}>Linear</span>
+              <div className="sp-seg" data-stretch role="group" aria-label="Gradient kind">
+                {(["linear", "radial"] as const).map((k) => (
+                  <button
+                    key={k}
+                    disabled={locked}
+                    aria-pressed={(gradient.kind ?? "linear") === k}
+                    data-active={(gradient.kind ?? "linear") === k || undefined}
+                    onClick={() =>
+                      setGradient(
+                        k === "radial"
+                          ? { ...gradient, kind: "radial" }
+                          : { angle: gradient.angle, stops: gradient.stops },
+                      )
+                    }
+                    style={{ textTransform: "capitalize" }}
+                  >
+                    {k}
+                  </button>
+                ))}
+              </div>
+              {gradient.kind === "radial" && (
+                <RadialFields gradient={gradient} disabled={locked} onChange={setGradient} />
+              )}
+              <div
+                className="flex items-center"
+                style={{
+                  gap: "var(--space-2xs)",
+                  display: gradient.kind === "radial" ? "none" : undefined,
+                }}
+              >
+                <span style={sectionLabel}>Angle</span>
                 <div style={{ flex: 1 }} />
                 <NumericField
                   suffix="°"
@@ -770,6 +800,74 @@ function FormatValueInput({
 }
 
 /** Gradient preview strip with draggable stop handles. */
+/** A radial gradient's center and size, as percentages of the box
+ * (radialGeometry fills the defaults: centered, touching the sides). */
+export function RadialFields({
+  gradient,
+  disabled = false,
+  onChange,
+}: {
+  gradient: TextGradient;
+  disabled?: boolean;
+  onChange(next: TextGradient): void;
+}) {
+  const { cx, cy, rx, ry } = radialGeometry(gradient);
+  const pct = (v: number) => Math.round(v * 100);
+  const field = (
+    label: string,
+    ariaLabel: string,
+    value: number,
+    apply: (v: number) => TextGradient,
+    min?: number,
+  ) => (
+    <NumericField
+      label={label}
+      suffix="%"
+      ariaLabel={ariaLabel}
+      precision={0}
+      min={min}
+      disabled={disabled}
+      value={pct(value)}
+      onCommit={(v) => {
+        if (v !== undefined) onChange(apply(v / 100));
+      }}
+    />
+  );
+  const labelStyle: React.CSSProperties = { ...inspectorLabelStyle, fontSize: 10, width: 44 };
+  return (
+    <>
+      <div className="flex items-center" style={{ gap: "var(--space-2xs)" }}>
+        <span style={labelStyle}>Center</span>
+        {field("X", "Gradient center X", cx, (v) => ({
+          ...gradient,
+          center: { x: v, y: cy },
+        }))}
+        {field("Y", "Gradient center Y", cy, (v) => ({
+          ...gradient,
+          center: { x: cx, y: v },
+        }))}
+      </div>
+      <div className="flex items-center" style={{ gap: "var(--space-2xs)" }}>
+        <span style={labelStyle}>Size</span>
+        {field(
+          "W",
+          "Gradient width",
+          rx,
+          (v) => ({ ...gradient, radius: { x: Math.max(0.01, v), y: ry } }),
+          1,
+        )}
+        {field(
+          "H",
+          "Gradient height",
+          ry,
+          (v) => ({ ...gradient, radius: { x: rx, y: Math.max(0.01, v) } }),
+          1,
+        )}
+      </div>
+    </>
+  );
+}
+
 function GradientBar({
   gradient,
   stopIndex,
@@ -793,9 +891,11 @@ function GradientBar({
     return Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
   };
 
-  // Preview always reads left→right; the angle field states the real angle.
+  // Preview always reads left→right, linear, whatever the gradient's kind:
+  // the bar positions stops; the fields above state the real geometry.
   const previewCss = gradientCss({
     ...gradient,
+    kind: undefined,
     angle: 90,
     stops: [...gradient.stops].sort((a, b) => a.position - b.position),
   });

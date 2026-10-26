@@ -1,6 +1,7 @@
 import type { TextGradient } from "@/lib/types";
 import { ColorControl } from "../ColorControl";
 import { NumericField } from "./InspectorControls";
+import { RadialFields } from "./FillPicker";
 
 interface GradientEditorProps {
   gradient: TextGradient | undefined;
@@ -46,6 +47,30 @@ export function GradientEditor({
       </label>
       {gradient && (
         <div className="space-y-1.5 pl-5">
+          <div className="sp-seg" data-stretch role="group" aria-label="Gradient kind">
+            {(["linear", "radial"] as const).map((k) => (
+              <button
+                key={k}
+                type="button"
+                disabled={disabled}
+                aria-pressed={(gradient.kind ?? "linear") === k}
+                data-active={(gradient.kind ?? "linear") === k || undefined}
+                onClick={() =>
+                  onChange(
+                    k === "radial"
+                      ? { ...gradient, kind: "radial" }
+                      : { angle: gradient.angle, stops: gradient.stops },
+                  )
+                }
+                style={{ textTransform: "capitalize" }}
+              >
+                {k}
+              </button>
+            ))}
+          </div>
+          {gradient.kind === "radial" && (
+            <RadialFields gradient={gradient} disabled={disabled} onChange={onChange} />
+          )}
           {gradient.stops.map((stop, i) => (
             <div key={i} className="flex items-center gap-2">
               <ColorControl
@@ -103,7 +128,11 @@ export function GradientEditor({
             </button>
             <label
               className="flex items-center gap-1.5"
-              style={{ fontSize: 11, color: "var(--text-secondary)" }}
+              style={{
+                fontSize: 11,
+                color: "var(--text-secondary)",
+                display: gradient.kind === "radial" ? "none" : undefined,
+              }}
             >
               Angle
               <div style={{ width: 74, flexShrink: 0, display: "flex" }}>

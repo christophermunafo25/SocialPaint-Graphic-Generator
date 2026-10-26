@@ -54,6 +54,8 @@ import { useChrome, useFullViewport } from "../layout/ChromeContext";
 import { InlineEdit } from "../InlineEdit";
 import { SchemaRenderer, schemaBackgroundCss } from "../SchemaRenderer";
 import { GradientEditor } from "./GradientEditor";
+import { EffectsEditor } from "./EffectsEditor";
+import { normalizeEffects } from "./effectOps";
 import { FieldOverlayEditor, type CanvasViewApi } from "./FieldOverlayEditor";
 import { FieldInspector } from "./FieldInspector";
 import { VariantFilmstrip } from "./VariantFilmstrip";
@@ -830,7 +832,7 @@ export function TemplateBuilder({
       patch: Partial<
         Pick<
           import("@/lib/types").TemplateVariant,
-          "backgroundColor" | "backgroundGradient" | "backgroundUrl"
+          "backgroundColor" | "backgroundGradient" | "backgroundUrl" | "canvasEffects"
         >
       >,
       coalesce?: string,
@@ -3990,6 +3992,46 @@ export function TemplateBuilder({
                       An image covers the gradient, which covers the color.
                     </p>
                   </div>
+                  {/* Canvas effects: grain over everything, an inner shadow at
+                    the edge. Scoped like the background: a look can replace
+                    them, the base is what every look starts from. */}
+                  {multiLook && selectedVariant && bgScope === "this" ? (
+                    <EffectsEditor
+                      id="canvas-effects"
+                      effects={selectedVariant.canvasEffects ?? draft.canvasEffects}
+                      target={{ kind: "canvas" }}
+                      kit={kit}
+                      companyId={company?.id}
+                      onChange={(next) =>
+                        setVariantBackground(
+                          { canvasEffects: normalizeEffects(next, { kind: "canvas" }) ?? [] },
+                          `vbg:effects:${selectedVariant.id}`,
+                        )
+                      }
+                      onUseBase={
+                        selectedVariant.canvasEffects !== undefined
+                          ? () => setVariantBackground({ canvasEffects: undefined })
+                          : undefined
+                      }
+                    />
+                  ) : (
+                    <EffectsEditor
+                      id="canvas-effects"
+                      effects={draft.canvasEffects}
+                      target={{ kind: "canvas" }}
+                      kit={kit}
+                      companyId={company?.id}
+                      onChange={(next) =>
+                        setDraft(
+                          (d) => ({
+                            ...d,
+                            canvasEffects: normalizeEffects(next, { kind: "canvas" }),
+                          }),
+                          "bg:effects",
+                        )
+                      }
+                    />
+                  )}
                 </div>
               )}
             </div>
