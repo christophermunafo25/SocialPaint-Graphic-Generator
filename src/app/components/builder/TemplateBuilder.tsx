@@ -202,6 +202,11 @@ const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
 export function saveErrorMessage(e: unknown): string {
   const raw = e instanceof Error ? e.message : String(e);
   const lower = raw.toLowerCase();
+  // The size family index (migration 0049): a save or a join that would put
+  // two members of one family at the same size.
+  if (lower.includes("templates_family_size_key")) {
+    return "This family already has a template at this size. Pick another size, or remove that one from the family first.";
+  }
   if (lower.includes("check constraint") || lower.includes("invalid input value for enum")) {
     return `The database rejected part of this template. It may be running behind the app (a migration is probably pending). Nothing was saved. Details: ${raw}`;
   }

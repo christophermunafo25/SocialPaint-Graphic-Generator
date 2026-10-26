@@ -67,7 +67,16 @@ export interface TemplateStore {
   /** Deep copy: new template row, new field rows, same fieldKeys so the
    *  captionTemplate stays valid. Always lands as a draft. */
   duplicate(id: string, name: string): Promise<TemplateSchema>;
+  /** Deletes the template; a size family it leaves with one member
+   *  dissolves. */
   delete(id: string): Promise<void>;
+  /** Every member of a size family in this workspace, any status, oldest first. */
+  listFamily(companyId: string, familyId: string): Promise<TemplateSchema[]>;
+  /** Join these templates to a family, or unlink them with null, in one
+   *  write. A family left with one member dissolves. Leaves updatedAt alone,
+   *  so linking doesn't reorder the library. The only writer of familyId:
+   *  create, update and duplicate never set it. */
+  setFamily(templateIds: string[], familyId: string | null): Promise<void>;
   uploadBackground(companyId: string, file: Blob, name: string): Promise<string>; // → storage reference (storageRef.ts) or data URL in local mode
 }
 

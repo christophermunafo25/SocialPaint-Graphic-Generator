@@ -159,4 +159,10 @@ describe("template row mapping (migration 0048)", () => {
     expect("canvasEffects" in toTemplate(row)).toBe(false);
     expect("canvasEffects" in toTemplate({ ...row, canvas_effects: null })).toBe(false);
   });
+
+  it("reads a size family id, and adds no familyId key without one", () => {
+    expect(toTemplate({ ...row, family_id: "fam" }).familyId).toBe("fam");
+    expect("familyId" in toTemplate(row)).toBe(false);
+    expect("familyId" in toTemplate({ ...row, family_id: null })).toBe(false);
+  });
 });

@@ -211,7 +211,7 @@ const editable = (drafts: ChatDraft[]) =>
 /** `labels` with every label that occurs more than once renamed by `rename`
  * (given the label, its index and its place among the labels it ties with,
  * counting from 1); the rest as they are. */
-function renameTies(
+export function renameTies(
   labels: string[],
   rename: (label: string, index: number, n: number) => string,
 ): string[] {

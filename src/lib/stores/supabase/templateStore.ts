@@ -87,6 +87,9 @@ export class SupabaseTemplateStore implements TemplateStore {
       row.canvas_effects = patch.canvasEffects?.length ? patch.canvasEffects : null;
     if (patch.captionTemplate !== undefined) row.caption_template = patch.captionTemplate;
     if ("autobuildMeta" in patch) row.autobuild_meta = patch.autobuildMeta ?? null;
+    // familyId is never written here, only through setFamily: a builder save
+    // carries its whole draft and must not undo a change made in the Sizes
+    // dialog. A size change can still meet templates_family_size_key.
     const { error } = await supabase().from("templates").update(row).eq("id", id);
     if (error) throw error;
     if (patch.fields) await this.replaceFields(id, patch as Pick<NewTemplateInput, "fields">);
@@ -129,7 +132,9 @@ export class SupabaseTemplateStore implements TemplateStore {
   async duplicate(id: string, name: string): Promise<TemplateSchema> {
     const source = await this.get(id);
     if (!source) throw new Error(`Template ${id} not found`);
-    const { id: _id, createdAt: _c, updatedAt: _u, ...rest } = source;
+    // familyId is dropped too: a plain duplicate never joins a family (a
+    // version joins its source's family on its first save at a new size).
+    const { id: _id, createdAt: _c, updatedAt: _u, familyId: _f, ...rest } = source;
     // create() inserts fields via fieldToRow, which omits ids — the database
     // mints new field row ids. fieldKeys stay EXACTLY as-is so caption merge
     // tags, layout groups, and variation overrides (all keyed by fieldKey)
@@ -147,8 +152,72 @@ export class SupabaseTemplateStore implements TemplateStore {
   }
 
   async delete(id: string): Promise<void> {
+    const { data: row, error: readError } = await supabase()
+      .from("templates")
+      .select("company_id, family_id")
+      .eq("id", id)
+      .maybeSingle();
+    if (readError) throw readError;
     const { error } = await supabase().from("templates").delete().eq("id", id);
     if (error) throw error;
+    const family = row as Pick<TemplateRow, "company_id" | "family_id"> | null;
+    if (family?.family_id) await this.dissolveIfAlone(family.company_id, family.family_id);
+  }
+
+  async listFamily(companyId: string, familyId: string): Promise<TemplateSchema[]> {
+    const { data, error } = await supabase()
+      .from("templates")
+      .select(SELECT)
+      .eq("company_id", companyId)
+      .eq("family_id", familyId)
+      .order("created_at", { ascending: true });
+    if (error) throw error;
+    return (data as TemplateRow[]).map(toTemplate);
+  }
+
+  async setFamily(templateIds: string[], familyId: string | null): Promise<void> {
+    if (!templateIds.length) return;
+    // The families this unlink leaves behind, read before the write.
+    let left: Array<Pick<TemplateRow, "company_id" | "family_id">> = [];
+    if (familyId === null) {
+      const { data, error } = await supabase()
+        .from("templates")
+        .select("company_id, family_id")
+        .in("id", templateIds)
+        .not("family_id", "is", null);
+      if (error) throw error;
+      left = (data ?? []) as typeof left;
+    }
+    // One statement, so a join either lands for every row or for none, and
+    // updated_at is left alone: linking is not an edit.
+    const { error } = await supabase()
+      .from("templates")
+      .update({ family_id: familyId })
+      .in("id", templateIds);
+    if (error) throw error;
+    const seen = new Set<string>();
+    for (const r of left) {
+      if (!r.family_id || seen.has(r.family_id)) continue;
+      seen.add(r.family_id);
+      await this.dissolveIfAlone(r.company_id, r.family_id);
+    }
+  }
+
+  /** A family of one is no family: clear the last member's id. */
+  private async dissolveIfAlone(companyId: string, familyId: string): Promise<void> {
+    const { data, error } = await supabase()
+      .from("templates")
+      .select("id")
+      .eq("company_id", companyId)
+      .eq("family_id", familyId);
+    if (error) throw error;
+    const ids = (data ?? []).map((r) => (r as { id: string }).id);
+    if (ids.length !== 1) return;
+    const { error: clearError } = await supabase()
+      .from("templates")
+      .update({ family_id: null })
+      .eq("id", ids[0]);
+    if (clearError) throw clearError;
   }
 
   async uploadBackground(companyId: string, file: Blob, name: string): Promise<string> {

@@ -303,6 +303,8 @@ export interface TemplateRow {
   variants?: import("../../types").TemplateVariant[] | null;
   caption_template: string;
   autobuild_meta: import("../../types").AutoBuildMeta | null;
+  /** Size family (migration 0049); absent on rows read before the column exists. */
+  family_id?: string | null;
   created_at: string;
   updated_at: string;
   template_fields?: TemplateFieldRow[];
@@ -332,6 +334,7 @@ export const toTemplate = (r: TemplateRow): TemplateSchema => ({
   variants: r.variants ?? undefined,
   captionTemplate: r.caption_template,
   autobuildMeta: r.autobuild_meta ?? undefined,
+  ...(r.family_id != null && { familyId: r.family_id }),
   createdAt: r.created_at,
   updatedAt: r.updated_at,
 });

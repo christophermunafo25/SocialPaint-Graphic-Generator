@@ -170,6 +170,33 @@ export class LocalCompanyStore implements CompanyStore {
   }
 }
 
+/** The local twin of the templates_family_size_key index (migration 0049):
+ * one member per size in a family. The message carries the index name, as
+ * the Postgres error does, so saveErrorMessage reads both the same way. */
+function assertFamilySizeFree(templates: TemplateSchema[], t: TemplateSchema): void {
+  if (!t.familyId) return;
+  const clash = templates.some(
+    (o) =>
+      o.id !== t.id &&
+      o.companyId === t.companyId &&
+      o.familyId === t.familyId &&
+      o.canvasWidth === t.canvasWidth &&
+      o.canvasHeight === t.canvasHeight,
+  );
+  if (clash) {
+    throw new Error('duplicate key value violates unique constraint "templates_family_size_key"');
+  }
+}
+
+/** A family of one is no family: clear the last member's id, in place. */
+function dissolveIfAlone(templates: TemplateSchema[], from: TemplateSchema): void {
+  const members = templates.filter(
+    (t) => t.companyId === from.companyId && t.familyId === from.familyId,
+  );
+  if (members.length !== 1) return;
+  delete members[0].familyId;
+}
+
 export class LocalTemplateStore implements TemplateStore {
   async listPublished(companyId: string): Promise<TemplateSchema[]> {
     return (await this.listAll(companyId)).filter((t) => t.status === "published");
@@ -184,7 +211,9 @@ export class LocalTemplateStore implements TemplateStore {
   }
   async create(input: NewTemplateInput): Promise<TemplateSchema> {
     const now = new Date().toISOString();
-    const template: TemplateSchema = { ...input, id: newId(), createdAt: now, updatedAt: now };
+    // familyId is written only through setFamily, as in the Supabase store.
+    const { familyId: _f, ...rest } = input;
+    const template: TemplateSchema = { ...rest, id: newId(), createdAt: now, updatedAt: now };
     mutate((db) => db.templates.push(template));
     return template;
   }
@@ -193,7 +222,11 @@ export class LocalTemplateStore implements TemplateStore {
       const templates = db.templates as TemplateSchema[];
       const i = templates.findIndex((t) => t.id === id);
       if (i < 0) throw new Error(`Template ${id} not found`);
-      templates[i] = { ...templates[i], ...patch, updatedAt: new Date().toISOString() };
+      // familyId is written only through setFamily, as in the Supabase store.
+      const { familyId: _f, ...rest } = patch;
+      const next = { ...templates[i], ...rest, updatedAt: new Date().toISOString() };
+      assertFamilySizeFree(templates, next);
+      templates[i] = next;
       return templates[i];
     });
   }
@@ -217,7 +250,32 @@ export class LocalTemplateStore implements TemplateStore {
   }
   async delete(id: string): Promise<void> {
     mutate((db) => {
+      const gone = (db.templates as TemplateSchema[]).find((t) => t.id === id);
       db.templates = (db.templates as TemplateSchema[]).filter((t) => t.id !== id);
+      if (gone?.familyId) dissolveIfAlone(db.templates as TemplateSchema[], gone);
+    });
+  }
+  async listFamily(companyId: string, familyId: string): Promise<TemplateSchema[]> {
+    return (readDb().templates as TemplateSchema[])
+      .filter((t) => t.companyId === companyId && t.familyId === familyId)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  }
+  async setFamily(templateIds: string[], familyId: string | null): Promise<void> {
+    if (!templateIds.length) return;
+    mutate((db) => {
+      const templates = db.templates as TemplateSchema[];
+      const ids = new Set(templateIds);
+      const left = templates.filter((t) => ids.has(t.id) && t.familyId);
+      // Checked as a whole before anything is written, as the one Supabase
+      // statement is: every row joins or none does.
+      const next = templates.map((t) => {
+        if (!ids.has(t.id)) return t;
+        const { familyId: _f, ...rest } = t;
+        return familyId ? { ...rest, familyId } : rest;
+      });
+      for (const t of next) if (ids.has(t.id)) assertFamilySizeFree(next, t);
+      db.templates = next;
+      if (familyId === null) for (const t of left) dissolveIfAlone(next, t);
     });
   }
   async uploadBackground(_companyId: string, file: Blob): Promise<string> {
