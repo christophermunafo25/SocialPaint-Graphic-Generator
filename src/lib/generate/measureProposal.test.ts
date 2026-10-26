@@ -341,8 +341,9 @@ describe("plates and stacks", () => {
   });
 
   it("never reports a plated Shrink field as shrinking", () => {
-    // Plates ignore Shrink and paint at the set size, so a value that fits
-    // the plate fits outright.
+    // Plates ignore Shrink and paint at the set size. In a horizontal stack
+    // a value wider than the box pushes its neighbours; read as Shrink it
+    // would have fitted at a smaller size and measured "shrinks".
     const tag = mkField({
       fieldKey: "tag",
       textSizing: "shrink",
@@ -350,10 +351,35 @@ describe("plates and stacks", () => {
       platePaddingX: 24,
       width: 400,
     });
-    const out = measureProposal(schema([tag]), { tag: "x".repeat(17) }, null, measure);
+    const row = mkGroup({ direction: "horizontal", crossSize: 64, children: ["tag"], x: 0 });
+    const out = measureProposal(schema([tag], [row]), { tag: "x".repeat(30) }, null, measure);
     expect(out.fields[0].fit).toBe("fits");
     const loose = measureProposal(schema([tag]), { tag: "x".repeat(18) }, null, measure);
     expect(loose.fields[0].fit).toBe("overflows");
+  });
+
+  it("checks each branch on the right axis only", () => {
+    const row = (key: string) =>
+      mkGroup({ direction: "horizontal", crossSize: 100, x: 0, children: [key] });
+    const column = (key: string) => mkGroup({ x: 0, children: [key] });
+    const fitIn = (field: TemplateField, group: LayoutGroup, value: string) =>
+      measureProposal(schema([field], [group]), { [field.fieldKey]: value }, null, measure)
+        .fields[0].fit;
+    const long = "x".repeat(30); // 600 wide at 40px in a 400px box
+
+    // Single lines: a row owns their width, a column doesn't.
+    const shrink = mkField({ fieldKey: "s", textSizing: "shrink" });
+    expect(fitIn(shrink, row("s"), "x".repeat(60))).not.toBe("overflows");
+    const free = mkField({ fieldKey: "f" });
+    expect(fitIn(free, row("f"), long)).toBe("fits");
+    const pill = mkField({ fieldKey: "p", plateColor: "#F2F3F0" });
+    expect(fitIn(pill, column("p"), long)).toBe("overflows");
+
+    // Plated multiline: a column owns its height, a row doesn't. Nine words
+    // wrap to three 40px lines inside 400 less 48 of padding: 120 + 24 > 100.
+    const plate = mkField({ fieldKey: "m", type: "multiline", plateColor: "#F2F3F0" });
+    expect(fitIn(plate, column("m"), words(9))).toBe("fits");
+    expect(fitIn(plate, row("m"), words(9))).toBe("overflows");
   });
 
   it("lets a Free multiline grow down a vertical stack that stays on the canvas", () => {

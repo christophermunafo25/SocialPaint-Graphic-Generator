@@ -620,6 +620,14 @@ describe("making a stack moves nothing", () => {
       "plated multiline",
       { type: "multiline", textSizing: "free", width: 300, height: 90, plateColor: "#F2F3F0" },
     ],
+    [
+      "plated shrink multiline",
+      { type: "multiline", textSizing: "shrink", width: 300, height: 90, plateColor: "#F2F3F0" },
+    ],
+    [
+      "plated fill multiline",
+      { type: "multiline", textSizing: "fill", width: 300, height: 90, plateColor: "#F2F3F0" },
+    ],
     ["image", { type: "image", width: 120, height: 80 }],
     ["shape", { type: "shape", width: 90, height: 140 }],
   ];

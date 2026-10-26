@@ -2481,7 +2481,14 @@ export function TemplateBuilder({
       const framed = groups.find((g) => g.id === selectedGroupIds([menu.fieldId!])[0]);
       return [
         ...(framed && isFreeGroup(framed)
-          ? [{ label: "Add auto layout", shortcut: "⇧A", onSelect: addAutoLayout }]
+          ? [
+              {
+                label: "Add auto layout",
+                shortcut: "⇧A",
+                // The frame right-clicked, whatever else is selected.
+                onSelect: () => setGroupMode(framed.id, "stack"),
+              },
+            ]
           : []),
         { label: "Ungroup", shortcut: isMac ? "⇧⌘G" : "Ctrl+Shift+G", onSelect: ungroupSelection },
         {
@@ -2661,6 +2668,7 @@ export function TemplateBuilder({
     deleteFields,
     groupSelection,
     addAutoLayout,
+    setGroupMode,
     ungroupSelection,
     selectAll,
     alignSelection,
