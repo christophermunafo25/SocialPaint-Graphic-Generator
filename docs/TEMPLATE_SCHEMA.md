@@ -123,6 +123,22 @@ px. A malformed entry is skipped at render time (`src/lib/render/effects.ts`).
   each `size` px. Seeded, so every export of a template paints the same
   grain.
 
+In the builder (brand-system Phase 2) every field has an Effects section and
+the empty-selection rail has one for the canvas (grain and inner shadow).
+Rows list the effects in paint order and drag to reorder. What the builder
+writes goes through `normalizeEffects` (`src/app/components/builder/effectOps.ts`):
+offsets within ±500, blur 0 to 200, spread ±200, grain size 0.5 to 16 and
+coverage 0 to 1; kinds the target can't paint (an inner shadow on text or an
+ellipse) are dropped, and an empty list is stored as no key. The stroke row's
+Position control writes `strokeAlign` (Inside writes nothing). Colourways stay
+optional: these controls always edit the template, and a template with
+colourways can change a look's effects or stroke and plate colors on the
+"This variation" tab, with "Use base" to drop the change. The edit canvas
+leaves a field unclipped when it paints beyond its box (a drop shadow, glow,
+layer blur, or a shape's center or outside stroke) and paints the canvas's
+inner shadow and grain under the selection handles. A shadow or stroke cut
+off at the canvas edge raises one non-blocking builder warning.
+
 Guardrails:
 
 - `maxLength` — hard char limit enforced by the input.
