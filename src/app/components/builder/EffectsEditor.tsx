@@ -17,11 +17,13 @@ import {
   kindOf,
   moveEffect,
   newEffect,
+  normalizeEffects,
   splitColor,
   type EffectTarget,
 } from "./effectOps";
 
 const iconStyle = { width: 13, height: 13 } as const;
+const useBaseStyle: React.CSSProperties = { color: "var(--text-secondary)", flexShrink: 0 };
 const quietButton: React.CSSProperties = {
   color: "var(--text-muted)",
   display: "flex",
@@ -54,6 +56,7 @@ export function ColorRow({
   kit,
   companyId,
   onChange,
+  onUseBase,
 }: {
   label?: string;
   /** Names the controls for assistive tech: "Shadow" gives "Shadow hex value". */
@@ -63,6 +66,8 @@ export function ColorRow({
   kit: BrandKit | null;
   companyId?: string;
   onChange(color: string): void;
+  /** Present on a look's tab when this look changes the color. */
+  onUseBase?(): void;
 }) {
   const { hex, alpha: pct } = splitColor(value);
   const [open, setOpen] = useState(false);
@@ -128,6 +133,11 @@ export function ColorRow({
           />
         </div>
       )}
+      {onUseBase && (
+        <button onClick={onUseBase} className="t-caption-s" style={useBaseStyle}>
+          Use base
+        </button>
+      )}
       {open && (
         <FillPicker
           anchorRef={swatchRef}
@@ -150,7 +160,7 @@ type Shadow = Extract<FieldEffect, { type: "dropShadow" | "innerShadow" }>;
 type Noise = Extract<FieldEffect, { type: "noise" }>;
 
 /** The settings under an open row: only the values its kind uses. A drop
- * shadow has no Spread field (spread isn't painted, see effects.ts). */
+ * shadow or glow has no Spread field (spread isn't painted, see effects.ts). */
 function EffectSettings({
   effect,
   name,
@@ -220,14 +230,8 @@ function EffectSettings({
     );
   }
   const e = effect as Shadow;
-  if (kind === "glow") {
-    return (
-      <div style={indent}>
-        <PropertyRow full>{num("Blur", e.blur, (v) => ({ ...e, blur: v }), 0)}</PropertyRow>
-        {color(e)}
-      </div>
-    );
-  }
+  // A glow is a drop shadow at 0, 0, so it keeps X and Y: a shadow edited
+  // to 0, 0 reads as a glow and can still be offset again.
   return (
     <div style={indent}>
       <PropertyRow full>
@@ -266,7 +270,9 @@ export function EffectsEditor({
   /** Present on a look's tab when this look changes the effects. */
   onUseBase?(): void;
 }) {
-  const list = effects ?? [];
+  // Read like the renderer reads: a malformed entry, or one this target
+  // can't paint, isn't listed (and isn't written back by the next edit).
+  const list = normalizeEffects(effects, target) ?? [];
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [dragFrom, setDragFrom] = useState<number | null>(null);
   // Another element, another list: nothing stays open across selections.
@@ -287,10 +293,7 @@ export function EffectsEditor({
       headerExtra={
         <div style={{ display: "flex", alignItems: "center", gap: "var(--space-xs)" }}>
           {onUseBase && (
-            <button
-              onClick={onUseBase}
-              style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}
-            >
+            <button onClick={onUseBase} className="t-caption-s" style={useBaseStyle}>
               Use base
             </button>
           )}
@@ -369,8 +372,8 @@ export function EffectsEditor({
                   {name}
                 </span>
                 <span
+                  className="t-caption-s"
                   style={{
-                    fontSize: "var(--type-caption-size)",
                     color: "var(--text-secondary)",
                     overflow: "hidden",
                     textOverflow: "ellipsis",

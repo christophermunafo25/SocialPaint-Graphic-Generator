@@ -833,7 +833,7 @@ export function RadialFields({
       }}
     />
   );
-  const labelStyle: React.CSSProperties = { ...inspectorLabelStyle, fontSize: 10, width: 44 };
+  const labelStyle: React.CSSProperties = { ...inspectorLabelStyle, width: 44 };
   return (
     <>
       <div className="flex items-center" style={{ gap: "var(--space-2xs)" }}>

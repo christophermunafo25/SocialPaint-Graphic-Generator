@@ -133,10 +133,12 @@ ellipse) are dropped, and an empty list is stored as no key. The stroke row's
 Position control writes `strokeAlign` (Inside writes nothing). Colourways stay
 optional: these controls always edit the template, and a template with
 colourways can change a look's effects or stroke and plate colors on the
-"This variation" tab, with "Use base" to drop the change. The edit canvas
+"This variation" tab, each with "Use base" to drop the change. The edit canvas
 leaves a field unclipped when it paints beyond its box (a drop shadow, glow,
 layer blur, or a shape's center or outside stroke) and paints the canvas's
-inner shadow and grain under the selection handles. A shadow or stroke cut
+inner shadow over the background and its grain over the fields, as the
+export does; the grain also lies lightly over a selected element's own
+handles, and the multi-selection box sits above it. A shadow or stroke cut
 off at the canvas edge raises one non-blocking builder warning.
 
 Guardrails:

@@ -882,6 +882,7 @@ export function TemplateBuilder({
         height: f.height,
       };
       for (const look of looks) {
+        if (look?.overrides[f.fieldKey]?.hidden) continue;
         const spill = cutOffAtCanvas(look ? applyVariant(f, look) : f, rect, {
           width: draft.canvasWidth,
           height: draft.canvasHeight,

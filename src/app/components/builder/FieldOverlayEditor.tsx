@@ -2575,7 +2575,8 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
 
           {canvasNoise && (
             // Canvas grain over every field, as the export paints it. Never
-            // hit-testable; it lightly tints a selected field's outline.
+            // hit-testable. It lies lightly over a single selection's handles
+            // (they ride inside the field box); the multi-selection box is above.
             <div
               style={{
                 width: canvasWidth,

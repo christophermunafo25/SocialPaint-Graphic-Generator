@@ -6,9 +6,9 @@ Support levels: **live** means a field property draws it, **workaround** means a
 
 ## Since Phase 2
 
-Phase 2 (2026-10-26) gave the builder controls for everything Phase 1 can paint (`docs/brand-system/PHASE-2.md`), so an admin can now add depth without the importer. The six starters carry subtle depth: soft shadows on photo panels, logo cards and calls to action, a 4% grain on Feature and Stat, and a glow on Stat's rule; Dark keeps the grain and drops the shadows. Their 12 goldens were re-blessed with CJ's approval. `builder-roundtrip` holds every property the builder writes and renders its per-look effects.
+Phase 2 (2026-10-26) gave the builder controls for everything Phase 1 can paint (`docs/brand-system/PHASE-2.md`), so an admin can now add depth without the importer. The six starters carry subtle depth: soft shadows on photo panels, logo cards and calls to action, a 4% grain on Feature and Stat, and a glow on Stat's rule; Dark keeps the grain and drops the shadows. All 12 were re-blessed with CJ's approval: 8 goldens moved, and the Dark Launch, Milestone, Partnership and Event render exactly as before, since Dark drops the shadows. `builder-roundtrip` holds every property the builder writes and renders its per-look effects.
 
-| Fixture             | Chromium (exact / blurred) | Firefox     | WebKit      |
+| Fixture (measured, baseline pending CJ) | Chromium (exact / blurred) | Firefox     | WebKit      |
 | ------------------- | -------------------------- | ----------- | ----------- |
 | `builder-roundtrip` | 0.00 / 0.00                | 0.17 / 0.00 | 0.73 / 1.99 |
 

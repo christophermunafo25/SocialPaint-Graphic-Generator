@@ -1792,18 +1792,30 @@ export function FieldInspector(props: FieldInspectorProps) {
               <ColorRow
                 ariaName="Stroke"
                 value={merged.strokeColor}
+                alpha={false}
                 kit={kit}
                 companyId={company?.id}
                 onChange={(c) => look({ strokeColor: c })}
+                onUseBase={
+                  variantMode.variant.overrides?.[field.fieldKey]?.strokeColor !== undefined
+                    ? () => variantMode.onOverride({ strokeColor: undefined })
+                    : undefined
+                }
               />
             )}
             {isTextish && merged.plateColor && (
               <ColorRow
                 ariaName="Plate"
                 value={merged.plateColor}
+                alpha={false}
                 kit={kit}
                 companyId={company?.id}
                 onChange={(c) => look({ plateColor: c })}
+                onUseBase={
+                  variantMode.variant.overrides?.[field.fieldKey]?.plateColor !== undefined
+                    ? () => variantMode.onOverride({ plateColor: undefined })
+                    : undefined
+                }
               />
             )}
           </InspectorSection>
@@ -1812,8 +1824,9 @@ export function FieldInspector(props: FieldInspectorProps) {
       {/* Effects. On a template's All tab (or a template without looks) they
         edit the template, which every look starts from; on This variation
         they replace the look's whole list, an option, never a requirement. */}
-      {(variantMode ? true : showThis) && (
+      {
         <EffectsEditor
+          key={field.id}
           id="effects"
           effects={variantMode && tab === "this" ? merged.effects : field.effects}
           target={{ kind: "field", field }}
@@ -1837,7 +1850,7 @@ export function FieldInspector(props: FieldInspectorProps) {
               : undefined
           }
         />
-      )}
+      }
 
       {/* Member input — what the member sees in their form; gone on fixed
           elements. Same write paths the old panel used. Requiredness is not a

@@ -80,10 +80,10 @@ const RAMP = {
   },
 } as const satisfies Record<string, Ramp>;
 
-/** Subtle depth (brand-system Phase 2). Shadows use the fixed "shadow"
- * tint so they stay dark on both grounds, stronger on Dark where a shadow
- * reads less; accent lifts and glows take the tenant's accent; grain uses
- * ink, dark on Light and light on Dark. */
+/** Subtle depth (brand-system Phase 2, approved by CJ at Gate B). Shadows
+ * use the fixed "shadow" tint and are off in Dark, where a shadow on the
+ * near-black ground can't be seen; accent lifts and glows take the tenant's
+ * accent; grain uses ink, dark on Light and light on Dark. */
 const DEPTH = {
   /** A photo panel lifted off the page. */
   panel: [
