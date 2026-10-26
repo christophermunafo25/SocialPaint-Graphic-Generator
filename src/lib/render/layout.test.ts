@@ -546,4 +546,15 @@ describe("text plates and layout", () => {
     const r = layout([f], undefined, { t: "aaaaaaaa aaaaaaaa aaaaaaaa" });
     expect(r.fieldRects.get(f.id)).toMatchObject({ width: 400, height: 104 });
   });
+
+  it("shrinks a plated multiline Shrink field when its stack outgrows the canvas", () => {
+    // A plate hugs, so shrinking its text frees space: six 40px lines plus
+    // padding (264) from y 1300 overflow the 140 left, and shrinkToFit has
+    // to drive the font down. Shrink alone never would (plates ignore it).
+    const f = pill({ type: "multiline", textSizing: "shrink", minFontSizePx: 10 });
+    const g = mkGroup({ children: ["t"], x: 0, y: 1300, shrinkToFit: true });
+    const r = layout([f], [g], { t: "aaaaaaaa aaaaaaaa aaaaaaaa aaaaaaaa aaaaaaaa aaaaaaaa" });
+    expect(r.fontSizes.get(f.id)).toBeLessThan(40);
+    expect(r.groupRects.get(g.id)!.overflows).toBe(false);
+  });
 });

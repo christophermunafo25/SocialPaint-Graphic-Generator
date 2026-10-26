@@ -141,7 +141,7 @@ export const PLATE_PADDING_X_DEFAULT = 24;
 export const PLATE_PADDING_Y_DEFAULT = 12;
 
 /** Total plate padding per axis (both sides), zero without a plate. */
-function platePad(f: TemplateField): { x: number; y: number } {
+export function platePad(f: TemplateField): { x: number; y: number } {
   if (!f.plateColor) return { x: 0, y: 0 };
   return {
     x: 2 * (f.platePaddingX ?? PLATE_PADDING_X_DEFAULT),
@@ -157,7 +157,7 @@ function platePad(f: TemplateField): { x: number; y: number } {
  * (left edge, center, or right edge holds still), verticalAlign for y —
  * mirroring freeTextRect. Font size is the authored one: a box derived from
  * the content leaves shrink nothing to fit into. */
-function platedRect(
+export function platedRect(
   field: TemplateField,
   style: ResolvedFieldStyle,
   text: string,
@@ -185,6 +185,30 @@ function platedRect(
         ? box.y + box.height - height
         : box.y + (box.height - height) / 2;
   return { x, y, width, height };
+}
+
+/** A text box that keeps its authored extents whatever the text: a multiline
+ * field without a plate under Shrink or Fill. Its font adapts to the box, so
+ * a stack places it as a constant and shrinking it frees no space. A plate
+ * always hugs, so a plated field is never one. */
+export function isFixedTextBox(field: TemplateField, style: ResolvedFieldStyle): boolean {
+  return (
+    field.type === "multiline" &&
+    !field.plateColor &&
+    (style.textSizing === "shrink" || style.textSizing === "fill")
+  );
+}
+
+/** The font size a plated field paints at before any stack shrinks it. A
+ * plate makes the field hug on both axes at the authored font size, so
+ * textSizing has nothing to fit into and is ignored (free semantics). */
+export function plateFontSize(
+  field: TemplateField,
+  style: ResolvedFieldStyle,
+  text: string,
+  measure: LineMeasurer,
+): number {
+  return fitFieldText(field, { ...style, textSizing: "free" }, text, measure).fontSizePx;
 }
 
 /** Authored rect normalized to top-left space. */
@@ -392,10 +416,7 @@ function sizedChildren(
     // all — the paddings ride the measured extents (and a plated multiline
     // is never a fixed box; a plate means hug).
     const pad = platePad(f);
-    const fixedBox =
-      f.type === "multiline" &&
-      !f.plateColor &&
-      (style.textSizing === "shrink" || style.textSizing === "fill");
+    const fixedBox = isFixedTextBox(f, style);
     const wrapWidth = Math.max(1, f.width - pad.x);
     if (vertical) {
       out.push({
@@ -610,15 +631,13 @@ function applyShrink(ctx: Ctx, group: LayoutGroup, anchorPos: number, vertical: 
         : 2 * Math.min(anchorPos, canvasMain - anchorPos);
   if (available <= 0) return;
 
-  // Fixed-box children (multiline Shrink) contribute constant extents —
-  // scaling their font would shrink the text without freeing any space.
+  // Fixed-box children contribute constant extents — scaling their font
+  // would shrink the text without freeing any space. A plate hugs, so a
+  // plated field always takes part.
   const textFields = groupFieldKeys(group, [...ctx.groups.values()])
     .map((k) => ctx.fields.get(k))
     .filter((f): f is TemplateField => Boolean(f && isTextual(f)))
-    .filter((f) => {
-      const mode = styleOf(ctx, f).textSizing;
-      return !(f.type === "multiline" && (mode === "shrink" || mode === "fill"));
-    });
+    .filter((f) => !isFixedTextBox(f, styleOf(ctx, f)));
 
   for (let i = 0; i < 8; i++) {
     const contentMain = contentMainSize(ctx, group, new Set());
@@ -705,14 +724,11 @@ export function computeLayout(
     }
     const style = styleOf(ctx, f);
     const text = renderedText(f, values[f.fieldKey]);
-    // A plate makes the field hug on both axes at the authored font size —
-    // textSizing has nothing to fit into when the box derives from the
-    // content, so it is ignored (free semantics).
+    // A plate makes the field hug on both axes at the authored font size.
     if (f.plateColor) {
-      const free = { ...style, textSizing: "free" as const };
-      const fit = fitFieldText(f, free, text, measure);
-      result.fontSizes.set(f.id, fit.fontSizePx);
-      result.fieldRects.set(f.id, platedRect(f, style, text, fit.fontSizePx, measure));
+      const size = plateFontSize(f, style, text, measure);
+      result.fontSizes.set(f.id, size);
+      result.fieldRects.set(f.id, platedRect(f, style, text, size, measure));
       continue;
     }
     const fit = fitFieldText(f, style, text, measure);
