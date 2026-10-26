@@ -67,3 +67,4 @@ One phase is one prompt, one branch and one pull request. Gates are where the se
 ## Migration numbers reserved
 
 - 0048: Phase 1 (`template_fields.effects`, `template_fields.stroke_align`, `templates.canvas_effects`). 0046 and 0047 are promised to new-look Phase 9; 0039 is taken in production by `admin_storage_writes`.
+- 0049: line breaks and size families, Phase 2 (`templates.family_id`; `docs/design/line-breaks-and-size-families/PROMPT.md`).

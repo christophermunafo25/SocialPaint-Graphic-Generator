@@ -513,6 +513,11 @@ export interface TemplateSchema {
   captionTemplate: string; // "{name} celebrated {years} incredible years!"
   /** Present when Claude built this template's fields (auto-build). */
   autobuildMeta?: AutoBuildMeta;
+  /** Size family (migration 0049): templates sharing this id are one design
+   * in several canvas sizes. Absent means no family, which is how every
+   * template behaves today. Written only through TemplateStore.setFamily:
+   * create, update and duplicate never set it. */
+  familyId?: string;
   createdAt: string;
   updatedAt: string;
 }

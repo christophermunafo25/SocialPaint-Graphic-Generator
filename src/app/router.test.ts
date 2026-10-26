@@ -213,3 +213,26 @@ describe("the dev-only /dev/render route", () => {
     expect(urlToRoute("/dev/render/starter-launch-01", "")).toEqual({ name: "portal" });
   });
 });
+
+describe("Builder routes (size families, Phase 2)", () => {
+  it("carries the create-a-version handoff: the reflow target and the source", () => {
+    const route: Route = {
+      name: "builder",
+      templateId: "copy",
+      reflow: "1080x1920",
+      family: "src",
+    };
+    expect(routeToUrl(route)).toBe("/template-builder/copy?reflow=1080x1920&family=src");
+    expect(parse("/template-builder/copy?reflow=1080x1920&family=src")).toEqual(route);
+  });
+
+  it("builds a plain builder address without either", () => {
+    expect(routeToUrl({ name: "builder", templateId: "t1" })).toBe("/template-builder/t1");
+    expect(parse("/template-builder/t1")).toEqual({
+      name: "builder",
+      templateId: "t1",
+      reflow: undefined,
+      family: undefined,
+    });
+  });
+});

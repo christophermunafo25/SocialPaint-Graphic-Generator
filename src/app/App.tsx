@@ -297,6 +297,7 @@ function Screen() {
             key={route.templateId ?? "new"}
             templateId={route.templateId}
             reflowParam={route.reflow ?? null}
+            familyParam={route.family ?? null}
           />
         )}
         {!gated && route.name === "brandStudio" && (

@@ -26,7 +26,7 @@ import { toCatalogTemplate } from "@/lib/templates/catalog";
 import { buildSearchIndex, searchTemplates } from "@/lib/templates/searchIndex";
 import { versionName } from "@/lib/templates/reflow";
 import type { CanvasSize } from "@/lib/templates/platforms";
-import { CanvasSizePicker } from "../builder/CanvasSizePicker";
+import { SizesDialog, familyOf } from "./SizesDialog";
 import { ErrorState } from "../ErrorState";
 import { SkeletonCard } from "../templates/TemplateSkeleton";
 import { TemplateThumbnail } from "../TemplateThumbnail";
@@ -59,6 +59,10 @@ export function AdminTemplates() {
     () => (templatesState.status === "ready" ? templatesState.data : []),
     [templatesState],
   );
+  // The last list that loaded: the Sizes dialog reads it, so a reload after
+  // a link or removal doesn't close the dialog while it runs.
+  const loadedTemplates = useRef<TemplateSchema[]>([]);
+  if (templatesState.status === "ready") loadedTemplates.current = templatesState.data;
 
   // Usage rides along so revise-or-retire decisions don't need Insights.
   // If it's slow or fails, cards render without the usage line.
@@ -184,8 +188,12 @@ export function AdminTemplates() {
     }
   };
 
-  /** Template whose "Create a version for…" picker is open. */
-  const [versionFor, setVersionFor] = useState<TemplateSchema | null>(null);
+  /** Template whose Sizes dialog is open. */
+  const [sizesForId, setSizesForId] = useState<string | null>(null);
+  /** A template's family size count (1 without a family). */
+  const sizeCount = (t: TemplateSchema) => familyOf(t, templates).length;
+  // Read from the list, so a link or removal shows once the list reloads.
+  const sizesFor = loadedTemplates.current.find((t) => t.id === sizesForId) ?? null;
   // The workspace's enabled sizes, for the version picker.
   const sizesState = useAsync<CanvasSize[]>(
     () => (company ? stores.companies.listCanvasSizes(company.id) : Promise.resolve([])),
@@ -197,7 +205,7 @@ export function AdminTemplates() {
    * builder reflows it for review. Named from what the size MEANS
    * ("Hiring announcement — Story"), deduped like plain duplicates. */
   const createVersion = async (t: TemplateSchema, target: { width: number; height: number }) => {
-    setVersionFor(null);
+    setSizesForId(null);
     const names = new Set(templates.map((x) => x.name));
     const base = versionName(t.name, target);
     let name = base;
@@ -208,6 +216,7 @@ export function AdminTemplates() {
         name: "builder",
         templateId: copy.id,
         reflow: `${target.width}x${target.height}`,
+        family: t.id,
       });
     } catch (e) {
       console.error("Version create failed", e);
@@ -270,54 +279,15 @@ export function AdminTemplates() {
         onCancel={() => setDeleting(null)}
         onConfirm={() => void confirmDelete()}
       />
-      {versionFor && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Create a version of ${versionFor.name}`}
-          style={{ background: "color-mix(in srgb, var(--text-on-accent) 55%, transparent)" }}
-          onClick={() => setVersionFor(null)}
-        >
-          <div
-            className="w-full max-w-sm p-4 space-y-3"
-            style={{
-              background: "var(--bg-surface)",
-              border: "1px solid var(--border-strong)",
-              borderRadius: "var(--radius-card)",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div>
-              <h2
-                style={{
-                  fontFamily: "var(--font-head)",
-                  fontWeight: "var(--weight-head)",
-                  fontSize: "var(--type-cardtitle-size)",
-                  letterSpacing: "var(--track-head)",
-                  color: "var(--text-primary)",
-                }}
-              >
-                Create a version for…
-              </h2>
-              <p
-                style={{
-                  fontSize: "var(--type-caption-size)",
-                  color: "var(--text-secondary)",
-                  marginTop: 2,
-                }}
-              >
-                "{versionFor.name}" stays untouched. The version lands as a reflowed draft copy you
-                review in the builder.
-              </p>
-            </div>
-            <CanvasSizePicker
-              sizes={sizesState.status === "ready" ? sizesState.data : []}
-              value={{ width: versionFor.canvasWidth, height: versionFor.canvasHeight }}
-              onPick={(next) => void createVersion(versionFor, next)}
-            />
-          </div>
-        </div>
+      {sizesFor && (
+        <SizesDialog
+          template={sizesFor}
+          templates={loadedTemplates.current}
+          sizes={sizesState.status === "ready" ? sizesState.data : []}
+          onClose={() => setSizesForId(null)}
+          onChanged={reload}
+          onAddSize={(next) => void createVersion(sizesFor, next)}
+        />
       )}
       <ConfirmDialog
         open={confirmingRestore}
@@ -512,19 +482,26 @@ export function AdminTemplates() {
                       · AI-built
                     </span>
                   )}
-                  {/* Line 3: meta */}
-                  {usageState.status === "ready" && (
+                  {/* Line 3: meta. A family member leads with its family's
+                      size count, which needs no usage to show. */}
+                  {(usageState.status === "ready" || sizeCount(t) > 1) && (
                     <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
-                      {(() => {
-                        const u = usageByTemplate.get(t.id);
-                        if (!u || u.downloads === 0) return "Not used yet";
-                        // An admin who sent a link out wants to know it is
-                        // working, and that only shows if public traffic is
-                        // counted apart from the team's own.
-                        const viaLink =
-                          u.publicDownloads > 0 ? ` · ${u.publicDownloads} via link` : "";
-                        return `${u.downloads} download${u.downloads === 1 ? "" : "s"}${viaLink} · last used ${lastUsed(u.lastUsedAt)}`;
-                      })()}
+                      {[
+                        sizeCount(t) > 1 && `${sizeCount(t)} sizes`,
+                        usageState.status === "ready" &&
+                          (() => {
+                            const u = usageByTemplate.get(t.id);
+                            if (!u || u.downloads === 0) return "Not used yet";
+                            // An admin who sent a link out wants to know it is
+                            // working, and that only shows if public traffic is
+                            // counted apart from the team's own.
+                            const viaLink =
+                              u.publicDownloads > 0 ? ` · ${u.publicDownloads} via link` : "";
+                            return `${u.downloads} download${u.downloads === 1 ? "" : "s"}${viaLink} · last used ${lastUsed(u.lastUsedAt)}`;
+                          })(),
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
                     </p>
                   )}
                   {/* Line 4: the actions, on a row of their own. Five 32px
@@ -560,11 +537,7 @@ export function AdminTemplates() {
                     >
                       <Copy style={{ width: 16, height: 16, color: "var(--text-muted)" }} />
                     </button>
-                    <button
-                      style={iconBtn}
-                      onClick={() => setVersionFor(t)}
-                      title="Create a version for another size"
-                    >
+                    <button style={iconBtn} onClick={() => setSizesForId(t.id)} title="Sizes">
                       <Proportions style={{ width: 16, height: 16, color: "var(--text-muted)" }} />
                     </button>
                     <button style={iconBtn} onClick={() => setDeleting(t)} title="Delete">

@@ -15,6 +15,15 @@ describe("saveErrorMessage", () => {
     expect(msg).toContain("template_fields_text_sizing_check");
   });
 
+  it("names a second member at a size the family already has", () => {
+    const msg = saveErrorMessage(
+      new Error('duplicate key value violates unique constraint "templates_family_size_key"'),
+    );
+    expect(msg).toBe(
+      "This family already has a template at this size. Pick another size, or remove that one from the family first.",
+    );
+  });
+
   it("treats an enum rejection the same way", () => {
     const msg = saveErrorMessage(new Error('invalid input value for enum field_type: "widget"'));
     expect(msg).toMatch(/migration is probably pending/i);

@@ -1082,3 +1082,53 @@
 .sp-links__look {
   width: 180px;
 }
+
+/* ── Sizes (size families, Phase 2): a template's family in one dialog,
+   laid out like Public links' rows. ── */
+.sp-sizes__rows,
+.sp-sizes__diff {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-sizes__rows {
+  gap: var(--space-sm);
+}
+.sp-sizes__row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xs);
+}
+.sp-sizes__rowhead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+.sp-sizes__rowname,
+.sp-sizes__rowactions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+.sp-sizes__name,
+.sp-sizes__diff {
+  margin: 0;
+  color: var(--text-secondary);
+}
+.sp-sizes__error {
+  margin: 0;
+  color: var(--state-error);
+}
+.sp-sizes__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+.sp-sizes__section > h3 {
+  margin: 0;
+}
