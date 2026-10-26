@@ -284,10 +284,18 @@ describe("line breaks", () => {
     expect(plain.fields[0].fit).toBe("fits");
   });
 
-  it("keeps a joined Free value fitting its box", () => {
-    const body = mkField({ fieldKey: "body", type: "multiline", height: 80 });
-    const m = measureProposal(schema([body]), { body: orphaning }, null, measure);
-    expect(m.fields[0].fit).toBe("fits");
+  it("hands repairs the member's own value, never the painted one", () => {
+    const head = mkField({
+      fieldKey: "head",
+      type: "multiline",
+      textSizing: "shrink",
+      height: 40,
+      minFontSizePx: 40,
+    });
+    const value = `${orphaning} ${orphaning}`;
+    const m = measureProposal(schema([head]), { head: value }, null, measure);
+    expect(m.fields[0].fit).toBe("overflows");
+    expect(m.fields[0].value).toBe(value);
   });
 
   it("never puts a no-break space in stored values or the caption", () => {

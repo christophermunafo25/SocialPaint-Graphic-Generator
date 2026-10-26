@@ -226,28 +226,38 @@ export function orphanedParagraphs(
   return out;
 }
 
-/** The last two words of a paragraph joined by a no-break space, or null
- * when it has fewer than two words to join. */
-export function lastWordPair(paragraph: string): string | null {
+/** The run of spaces before a paragraph's last word, with the text before
+ * it: the joint joinLastWords turns into no-break spaces. Null when no word
+ * comes before the run. Trailing spaces are not part of it. */
+function lastJoint(paragraph: string): { head: string; run: string; last: string } | null {
   const body = paragraph.trimEnd();
-  const last = body.lastIndexOf(" ");
-  if (last <= 0) return null;
-  const start = body.lastIndexOf(" ", last - 1) + 1;
-  return `${body.slice(start, last)}${NO_BREAK_SPACE}${body.slice(last + 1)}`;
+  const m = /^(.*[^ ])( +)([^ ]+)$/s.exec(body);
+  return m ? { head: m[1], run: m[2], last: m[3] } : null;
 }
 
-/** Replace the last space in each listed paragraph with a no-break space,
- * so its last two words wrap as one. Trailing spaces are left as typed. */
+/** The last two words of a paragraph as joinLastWords paints them, every
+ * space between them made no-break, or null when it has fewer than two
+ * words to join. */
+export function lastWordPair(paragraph: string): string | null {
+  const joint = lastJoint(paragraph);
+  if (!joint) return null;
+  const before = joint.head.slice(joint.head.lastIndexOf(" ") + 1);
+  return `${before}${NO_BREAK_SPACE.repeat(joint.run.length)}${joint.last}`;
+}
+
+/** Make the spaces before the last word of each listed paragraph no-break,
+ * so its last two words wrap as one. Every space in the run is converted,
+ * so the typed spacing paints as typed and no break point is left between
+ * the two words. Trailing spaces are left as typed. */
 export function joinLastWords(text: string, paragraphs: readonly number[]): string {
   const join = new Set(paragraphs);
   return text
     .split("\n")
     .map((paragraph, i) => {
-      if (!join.has(i)) return paragraph;
-      const end = paragraph.trimEnd().length;
-      const at = paragraph.lastIndexOf(" ", end - 1);
-      if (at <= 0) return paragraph;
-      return `${paragraph.slice(0, at)}${NO_BREAK_SPACE}${paragraph.slice(at + 1)}`;
+      const joint = join.has(i) ? lastJoint(paragraph) : null;
+      if (!joint) return paragraph;
+      const tail = paragraph.slice(paragraph.trimEnd().length);
+      return `${joint.head}${NO_BREAK_SPACE.repeat(joint.run.length)}${joint.last}${tail}`;
     })
     .join("\n");
 }

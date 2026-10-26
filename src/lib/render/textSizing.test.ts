@@ -5,6 +5,7 @@ import { resolveFieldStyle } from "../brand/resolveStyle";
 import {
   NO_BREAK_SPACE,
   fitTextWith,
+  fitsAtSize,
   joinLastWords,
   lastWordPair,
   orphanedParagraphs,
@@ -427,6 +428,20 @@ describe("line breaks", () => {
       expect(lastWordPair("aa bb cc ")).toBe(`bb${NB}cc`);
       expect(lastWordPair("single")).toBeNull();
     });
+
+    it("makes a whole run of spaces before the last word no-break", () => {
+      expect(joinLastWords("aa bb  cc ", [0])).toBe(`aa bb${NB}${NB}cc `);
+      expect(lastWordPair("aa bb  cc")).toBe(`bb${NB}${NB}cc`);
+      expect(joinLastWords("  cc", [0])).toBe("  cc");
+      expect(lastWordPair("  cc")).toBeNull();
+    });
+
+    it("measures a no-break pair as one unbreakable word", () => {
+      const input = { multiline: true, width: 600, height: 1000, fontSizePx: 48 };
+      const half = "a".repeat(14);
+      expect(fitsAtSize(measure, input, `${half} ${half}`, 48)).toBe(true);
+      expect(fitsAtSize(measure, input, `${half}${NB}${half}`, 48)).toBe(false);
+    });
   });
 
   describe("typesetFieldText", () => {
@@ -458,6 +473,32 @@ describe("line breaks", () => {
         fontSizePx: 48,
         overflows: false,
       });
+    });
+
+    it("joins across a double space without leaving a break point", () => {
+      const out = typeset(multiline({ textSizing: "free" }), "aaaa bbbb cccc dddd eeee  f");
+      expect(out.text).toBe(`aaaa bbbb cccc dddd eeee${NB}${NB}f`);
+      expect(wrapLines(out.text, 600, {}, 48, measure)).toEqual([
+        "aaaa bbbb cccc dddd",
+        `eeee${NB}${NB}f`,
+      ]);
+    });
+
+    it("joins a Fill field at the size the box chose when the 8% can't clear it", () => {
+      // Fill grows to 96px (12 chars a line, two lines in 192px), where "d"
+      // sits alone; down to 89px it still does, so the pair is joined.
+      const out = typeset(multiline({ textSizing: "fill" }), "aaaa bbbb cc d");
+      expect(out).toEqual({ text: `aaaa bbbb cc${NB}d`, fontSizePx: 96, overflows: false });
+    });
+
+    it("joins the member's own text under an uppercase transform", () => {
+      const out = typeset(multiline({ textSizing: "free", uppercase: true }), stubborn);
+      expect(out.text).toBe(`aaaa bbbb cccc dddd eeee${NB}ffffff`);
+    });
+
+    it("leaves text that overflows at its floor untouched", () => {
+      const out = typeset(multiline({ minFontSizePx: 47, height: 48 }), stubborn);
+      expect(out).toEqual({ text: stubborn, fontSizePx: 47, overflows: true });
     });
 
     it("keeps the orphan when the last pair is wider than the box", () => {
