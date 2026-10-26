@@ -14,6 +14,30 @@ import type { ShapeKind, TemplateField } from "../../types";
 export type SlotColor =
   "surface" | "surfaceAlt" | "ink" | "inkMuted" | "accent" | "onAccent" | "border";
 
+/** An effect color as a slot plus an opacity, resolved per colourway.
+ * "shadow" is a fixed near-black that stays dark on both grounds (ink turns
+ * light on Dark, which would make a white shadow). `darkAlpha` sets the
+ * Dark colourway's own opacity; 0 leaves the effect off in Dark, where a
+ * shadow on a near-black ground can't be seen (CJ, 2026-10-26). */
+export interface SlotTint {
+  slot: SlotColor | "shadow";
+  alpha: number;
+  darkAlpha?: number;
+}
+
+/** A FieldEffect whose colors are slot tints (brand-system Phase 2). */
+export type StarterEffect =
+  | {
+      type: "dropShadow" | "innerShadow";
+      x: number;
+      y: number;
+      blur: number;
+      spread?: number;
+      color: SlotTint;
+    }
+  | { type: "layerBlur"; radius: number }
+  | { type: "noise"; color: SlotTint; size: number; density: number; seed?: number };
+
 /** Symbolic font slots: display and body come from the tenant's kit; label
  * is a fixed mono default tenants restyle later in the builder. */
 export type SlotFont = "display" | "body" | "label";
@@ -74,6 +98,8 @@ export interface StarterField {
   platePaddingY?: number;
   /** Image fields. */
   objectFit?: TemplateField["objectFit"];
+  /** Depth, painted in order (brand-system Phase 2). */
+  effects?: StarterEffect[];
   required?: boolean;
 }
 
@@ -91,5 +117,7 @@ export interface StarterBlueprint {
   captionTemplate: string;
   /** Canvas base fill slot (always "surface" in v1). */
   backgroundColor: SlotColor;
+  /** Grain or an inner shadow on the whole canvas. */
+  canvasEffects?: StarterEffect[];
   fields: StarterField[];
 }

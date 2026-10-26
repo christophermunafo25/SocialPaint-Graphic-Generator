@@ -12,7 +12,7 @@ exports[`materializeStarter > materializes all six blueprints for the reference 
       "source": "starter",
       "sourceKind": "starter",
       "starterKey": "launch-01",
-      "starterVersion": 1,
+      "starterVersion": 2,
     },
     "backgroundColor": "#FFFFFF",
     "backgroundUrl": "",
@@ -122,6 +122,15 @@ exports[`materializeStarter > materializes all six blueprints for the reference 
       {
         "align": undefined,
         "colorHex": "#F1F0EC",
+        "effects": [
+          {
+            "blur": 40,
+            "color": "#0B0B0C1F",
+            "type": "dropShadow",
+            "x": 0,
+            "y": 16,
+          },
+        ],
         "fieldKey": "image_bg",
         "fontFamily": undefined,
         "fontSizePx": undefined,
@@ -282,6 +291,15 @@ exports[`materializeStarter > materializes all six blueprints for the reference 
       {
         "align": undefined,
         "colorHex": "#111112",
+        "effects": [
+          {
+            "blur": 28,
+            "color": "#A7862059",
+            "type": "dropShadow",
+            "x": 0,
+            "y": 10,
+          },
+        ],
         "fieldKey": "cta",
         "fontFamily": "Inter",
         "fontSizePx": 26,
@@ -363,6 +381,7 @@ exports[`materializeStarter > materializes all six blueprints for the reference 
         "name": "Dark",
         "overrides": {
           "cta": {
+            "effects": [],
             "plateColor": "#C9A227",
           },
           "eyebrow": {
@@ -373,6 +392,7 @@ exports[`materializeStarter > materializes all six blueprints for the reference 
           },
           "image_bg": {
             "colorHex": "#1B1B1D",
+            "effects": [],
           },
           "kicker": {
             "colorHex": "#A2A2A4",
@@ -400,10 +420,19 @@ exports[`materializeStarter > materializes all six blueprints for the reference 
       "source": "starter",
       "sourceKind": "starter",
       "starterKey": "feature-02",
-      "starterVersion": 1,
+      "starterVersion": 2,
     },
     "backgroundColor": "#FFFFFF",
     "backgroundUrl": "",
+    "canvasEffects": [
+      {
+        "color": "#1111120A",
+        "density": 1,
+        "seed": 7,
+        "size": 1,
+        "type": "noise",
+      },
+    ],
     "canvasHeight": 1080,
     "canvasWidth": 1080,
     "captionTemplate": "New in Acme Studios: less busywork.",
@@ -715,6 +744,15 @@ exports[`materializeStarter > materializes all six blueprints for the reference 
       },
       {
         "backgroundColor": "#101011",
+        "canvasEffects": [
+          {
+            "color": "#F7F6F314",
+            "density": 1,
+            "seed": 7,
+            "size": 1,
+            "type": "noise",
+          },
+        ],
         "id": "dark",
         "name": "Dark",
         "overrides": {
@@ -756,7 +794,7 @@ exports[`materializeStarter > materializes all six blueprints for the reference 
       "source": "starter",
       "sourceKind": "starter",
       "starterKey": "milestone-03",
-      "starterVersion": 1,
+      "starterVersion": 2,
     },
     "backgroundColor": "#FFFFFF",
     "backgroundUrl": "",
@@ -994,6 +1032,15 @@ exports[`materializeStarter > materializes all six blueprints for the reference 
       {
         "align": undefined,
         "colorHex": "#F1F0EC",
+        "effects": [
+          {
+            "blur": 48,
+            "color": "#0B0B0C1A",
+            "type": "dropShadow",
+            "x": -16,
+            "y": 0,
+          },
+        ],
         "fieldKey": "image_bg",
         "fontFamily": undefined,
         "fontSizePx": undefined,
@@ -1082,6 +1129,7 @@ exports[`materializeStarter > materializes all six blueprints for the reference 
           },
           "image_bg": {
             "colorHex": "#1B1B1D",
+            "effects": [],
           },
           "kicker": {
             "colorHex": "#A2A2A4",
@@ -1109,7 +1157,7 @@ exports[`materializeStarter > materializes all six blueprints for the reference 
       "source": "starter",
       "sourceKind": "starter",
       "starterKey": "partnership-04",
-      "starterVersion": 1,
+      "starterVersion": 2,
     },
     "backgroundColor": "#FFFFFF",
     "backgroundUrl": "",
@@ -1154,7 +1202,16 @@ exports[`materializeStarter > materializes all six blueprints for the reference 
       },
       {
         "align": undefined,
-        "colorHex": undefined,
+        "colorHex": "#FFFFFF",
+        "effects": [
+          {
+            "blur": 24,
+            "color": "#0B0B0C1A",
+            "type": "dropShadow",
+            "x": 0,
+            "y": 8,
+          },
+        ],
         "fieldKey": "logo_frame",
         "fontFamily": undefined,
         "fontSizePx": undefined,
@@ -1250,7 +1307,16 @@ exports[`materializeStarter > materializes all six blueprints for the reference 
       },
       {
         "align": undefined,
-        "colorHex": undefined,
+        "colorHex": "#FFFFFF",
+        "effects": [
+          {
+            "blur": 24,
+            "color": "#0B0B0C1A",
+            "type": "dropShadow",
+            "x": 0,
+            "y": 8,
+          },
+        ],
         "fieldKey": "partner_logo_frame",
         "fontFamily": undefined,
         "fontSizePx": undefined,
@@ -1433,9 +1499,13 @@ exports[`materializeStarter > materializes all six blueprints for the reference 
             "colorHex": "#F7F6F3",
           },
           "logo_frame": {
+            "colorHex": "#101011",
+            "effects": [],
             "strokeColor": "#2E2E31",
           },
           "partner_logo_frame": {
+            "colorHex": "#101011",
+            "effects": [],
             "strokeColor": "#2E2E31",
           },
           "plus": {
@@ -1461,10 +1531,19 @@ exports[`materializeStarter > materializes all six blueprints for the reference 
       "source": "starter",
       "sourceKind": "starter",
       "starterKey": "stat-05",
-      "starterVersion": 1,
+      "starterVersion": 2,
     },
     "backgroundColor": "#FFFFFF",
     "backgroundUrl": "",
+    "canvasEffects": [
+      {
+        "color": "#1111120A",
+        "density": 1,
+        "seed": 7,
+        "size": 1,
+        "type": "noise",
+      },
+    ],
     "canvasHeight": 1080,
     "canvasWidth": 1080,
     "captionTemplate": "The numbers behind Acme Studios.",
@@ -1667,6 +1746,15 @@ exports[`materializeStarter > materializes all six blueprints for the reference 
       {
         "align": undefined,
         "colorHex": "#A78620",
+        "effects": [
+          {
+            "blur": 16,
+            "color": "#A7862080",
+            "type": "dropShadow",
+            "x": 0,
+            "y": 0,
+          },
+        ],
         "fieldKey": "rule",
         "fontFamily": undefined,
         "fontSizePx": undefined,
@@ -1776,6 +1864,15 @@ exports[`materializeStarter > materializes all six blueprints for the reference 
       },
       {
         "backgroundColor": "#101011",
+        "canvasEffects": [
+          {
+            "color": "#F7F6F314",
+            "density": 1,
+            "seed": 7,
+            "size": 1,
+            "type": "noise",
+          },
+        ],
         "id": "dark",
         "name": "Dark",
         "overrides": {
@@ -1790,6 +1887,15 @@ exports[`materializeStarter > materializes all six blueprints for the reference 
           },
           "rule": {
             "colorHex": "#C9A227",
+            "effects": [
+              {
+                "blur": 16,
+                "color": "#C9A22780",
+                "type": "dropShadow",
+                "x": 0,
+                "y": 0,
+              },
+            ],
           },
           "source": {
             "colorHex": "#A2A2A4",
@@ -1817,7 +1923,7 @@ exports[`materializeStarter > materializes all six blueprints for the reference 
       "source": "starter",
       "sourceKind": "starter",
       "starterKey": "event-06",
-      "starterVersion": 1,
+      "starterVersion": 2,
     },
     "backgroundColor": "#FFFFFF",
     "backgroundUrl": "",
@@ -1895,6 +2001,15 @@ exports[`materializeStarter > materializes all six blueprints for the reference 
       {
         "align": undefined,
         "colorHex": "#F1F0EC",
+        "effects": [
+          {
+            "blur": 40,
+            "color": "#0B0B0C1F",
+            "type": "dropShadow",
+            "x": 0,
+            "y": 16,
+          },
+        ],
         "fieldKey": "image_bg",
         "fontFamily": undefined,
         "fontSizePx": undefined,
@@ -2343,6 +2458,15 @@ exports[`materializeStarter > materializes all six blueprints for the reference 
       {
         "align": "center",
         "colorHex": "#111112",
+        "effects": [
+          {
+            "blur": 28,
+            "color": "#A7862059",
+            "type": "dropShadow",
+            "x": 0,
+            "y": 10,
+          },
+        ],
         "fieldKey": "cta",
         "fontFamily": "Inter",
         "fontSizePx": 26,
@@ -2392,6 +2516,7 @@ exports[`materializeStarter > materializes all six blueprints for the reference 
         "name": "Dark",
         "overrides": {
           "cta": {
+            "effects": [],
             "plateColor": "#C9A227",
           },
           "date": {
@@ -2417,6 +2542,7 @@ exports[`materializeStarter > materializes all six blueprints for the reference 
           },
           "image_bg": {
             "colorHex": "#1B1B1D",
+            "effects": [],
           },
           "logo_frame": {
             "strokeColor": "#2E2E31",

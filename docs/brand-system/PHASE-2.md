@@ -12,6 +12,11 @@ Decided by CJ on 2026-10-25:
 2. **Starters gain subtle depth now.** CJ approves the look before the starter fixtures are re-blessed.
 3. **Colourways stay optional.** A template never needs a colourway. Stroke, plate and effects controls always show and edit the template directly. In a template that already has colourways, changing a color or an effect for one look is an option on the "This variation" tab, never a requirement.
 
+## Gates
+
+- **Gate A** (2026-10-25): CJ approved the Figma proposal, "Builder · Depth (proposal)" (`392:3892`).
+- **Gate B** (2026-10-26): CJ approved the starter depth with two changes: grain at 4% in Light, and no shadows in Dark (they can't be seen on the near-black ground). Dark keeps its 8% grain and the Stat rule's glow.
+
 ## What exists to build on
 
 - **Inspector:**

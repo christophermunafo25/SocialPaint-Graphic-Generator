@@ -1,6 +1,6 @@
 {
   "name": "starter-event-06",
   "kind": "starter",
-  "baseline": { "chromium": 0, "firefox": 0.47, "webkit": 0.91 },
+  "baseline": { "chromium": 0, "firefox": 0.46, "webkit": 0.9 },
   "blurBaseline": { "chromium": 0, "firefox": 0, "webkit": 0.23 }
 }
