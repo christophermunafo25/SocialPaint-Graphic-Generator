@@ -145,6 +145,7 @@ import { linkState } from "../admin/TemplateLinksDialog";
 import type { CanvasSize } from "@/lib/templates/platforms";
 import { rescaleTemplate, sameAspect, type RescaleWarning } from "@/lib/templates/rescale";
 import { reflowTemplate, versionName } from "@/lib/templates/reflow";
+import { joinPlanFor } from "@/lib/templates/families";
 import { CanvasSizePicker } from "./CanvasSizePicker";
 import { BuildPicker } from "./BuildPicker";
 import { CanvaImportDialog } from "./CanvaImportDialog";
@@ -258,11 +259,15 @@ const platformPrimitive = (token: string): string =>
 export function TemplateBuilder({
   templateId,
   reflowParam = null,
+  familyParam = null,
 }: {
   templateId: string | null;
   /** Create-a-version handoff from the route ("1080x1920"): reflow the
    * loaded template to this size as an unsaved change for review. */
   reflowParam?: string | null;
+  /** Create-a-version handoff: the source template's id. This template joins
+   * the source's size family on its first save at a new size. */
+  familyParam?: string | null;
 }) {
   const { company } = useAuth();
   const { kit, assets: brandAssets } = useBrand();
@@ -490,6 +495,11 @@ export function TemplateBuilder({
       return m ? { width: Number(m[1]), height: Number(m[2]) } : null;
     })(),
   );
+  /** The version's source, captured ONCE at mount like the reflow target
+   * (the param is stripped with it). Cleared once this template has joined
+   * the source's family. */
+  const familySourceRef = useRef<string | null>(familyParam);
+  const familyJoinInFlight = useRef(false);
   /** Post-reflow review: every warning the reflow raised, each selectable so
    * the admin can jump to the field. Automatic reflow is a starting point,
    * not a finished layout — this panel is how the UI says that. */
@@ -1991,6 +2001,7 @@ export function TemplateBuilder({
         ? await stores.templates.update(savedId, payload)
         : await stores.templates.create(payload);
       setSavedId(saved.id);
+      void joinSourceFamily(saved);
       setLastSavedAt(Date.now());
       setSaveFailed(false);
       setError(null);
@@ -2022,6 +2033,35 @@ export function TemplateBuilder({
     }
   };
 
+  /** A version joins its source's size family once it is saved at a size the
+   * family doesn't have yet (joinPlanFor). At the same size, or a size the
+   * family already has, it stays standalone and a later save may still join.
+   * The save itself has already landed, so a failed join costs no work. */
+  const joinSourceFamily = async (saved: TemplateSchema) => {
+    const sourceId = familySourceRef.current;
+    if (!sourceId || !company || familyJoinInFlight.current) return;
+    familyJoinInFlight.current = true;
+    try {
+      const source = await stores.templates.get(sourceId);
+      if (!source) {
+        familySourceRef.current = null;
+        return;
+      }
+      const family = source.familyId
+        ? await stores.templates.listFamily(company.id, source.familyId)
+        : [];
+      const plan = joinPlanFor(source, family, saved, () => crypto.randomUUID());
+      if (!plan) return;
+      await stores.templates.setFamily(plan.templateIds, plan.familyId);
+      familySourceRef.current = null;
+    } catch (e) {
+      console.error("Joining the size family failed", e);
+      setError(saveErrorMessage(e));
+    } finally {
+      familyJoinInFlight.current = false;
+    }
+  };
+
   const save = (status?: "draft" | "published") => doSave(status, false);
 
   /** Create a version for another platform: save (so the copy carries the
@@ -2038,6 +2078,7 @@ export function TemplateBuilder({
         name: "builder",
         templateId: copy.id,
         reflow: `${next.width}x${next.height}`,
+        family: saved.id,
       });
     } catch (e) {
       console.error("Version create failed", e);

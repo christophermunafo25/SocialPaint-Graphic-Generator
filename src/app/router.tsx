@@ -89,8 +89,11 @@ export type Route =
   /** `reflow` ("1080x1920") is the create-a-version handoff: the builder
    * loads the (freshly duplicated) template and reflows it to this size as
    * an unsaved change for review, then strips the param so a refresh after
-   * saving cannot reflow the already-reflowed copy a second time. */
-  | { name: "builder"; templateId: string | null; reflow?: string }
+   * saving cannot reflow the already-reflowed copy a second time. `family`
+   * is the source template's id: the copy joins the source's size family on
+   * its first save at a size the family doesn't have yet. Stripped with
+   * `reflow`. */
+  | { name: "builder"; templateId: string | null; reflow?: string; family?: string }
   /** Two-step Brand Studio: no category is the overview, a category is
    * that detail page. `surface` is the Logos page's filter — in the URL
    * so the view is shareable, ignored on every other category. */
@@ -179,7 +182,11 @@ export function routeToUrl(route: Route): string {
       const base = route.templateId
         ? `/template-builder/${encodeURIComponent(route.templateId)}`
         : "/template-builder/new";
-      return route.reflow ? `${base}?reflow=${encodeURIComponent(route.reflow)}` : base;
+      const query = new URLSearchParams();
+      if (route.reflow) query.set("reflow", route.reflow);
+      if (route.family) query.set("family", route.family);
+      const qs = query.toString();
+      return qs ? `${base}?${qs}` : base;
     }
     case "brandStudio": {
       if (!route.category) return "/brand-studio";
@@ -298,6 +305,7 @@ export function urlToRoute(pathname: string, search: string): Route {
         name: "builder",
         templateId: tail === "new" ? null : decodeURIComponent(tail),
         reflow: params.get("reflow") ?? undefined,
+        family: params.get("family") ?? undefined,
       };
     case "brand-studio":
       if (tail && (BRAND_CATEGORIES as readonly string[]).includes(tail)) {

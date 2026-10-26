@@ -208,6 +208,7 @@ export function AdminTemplates() {
         name: "builder",
         templateId: copy.id,
         reflow: `${target.width}x${target.height}`,
+        family: t.id,
       });
     } catch (e) {
       console.error("Version create failed", e);
