@@ -267,3 +267,119 @@ describe("the repair round", () => {
     expect(out.values.headline).toBe("x".repeat(50));
   });
 });
+
+describe("plates and stacks", () => {
+  // CJ's row (Figma 46:768) as the importer lands pills: the container's box,
+  // align center, the fill as the plate, the insets as paddings, Shrink from
+  // the import. Under the fake measurer a 32px character is 16 wide, so
+  // "Full Time" sits in a 208px plate and "Part time contractor" needs 384.
+  const pill = (over: Partial<TemplateField>) =>
+    mkField({
+      y: 107,
+      height: 54,
+      fontSizePx: 32,
+      lineHeight: 1.25,
+      minFontSizePx: undefined,
+      textSizing: "shrink",
+      align: "center",
+      plateColor: "#F2F3F0",
+      platePaddingY: 16,
+      ...over,
+    });
+  const type = pill({
+    fieldKey: "type",
+    label: "Type",
+    placeholder: "Full Time",
+    x: 123,
+    width: 208,
+    platePaddingX: 32,
+  });
+  const where = pill({
+    fieldKey: "where",
+    label: "Where",
+    placeholder: "Chicago/Remote",
+    x: 343,
+    width: 289,
+    platePaddingX: 33,
+  });
+  const row = mkGroup({
+    direction: "horizontal",
+    gap: 12,
+    x: 123,
+    y: 98,
+    crossSize: 72,
+    children: ["type", "where"],
+  });
+  const card = (layoutGroups?: LayoutGroup[]) => ({
+    fields: [type, where],
+    layoutGroups,
+    canvasWidth: 953,
+    canvasHeight: 267,
+  });
+  const fitOf = (s: ReturnType<typeof card>, value: string) =>
+    measureProposal(s, { type: value }, null, measure).fields[0];
+
+  it("lets a pill in a horizontal stack push its neighbour", () => {
+    // 123 + 384 + 12 + 290 = 809, well inside the 953 canvas.
+    expect(fitOf(card([row]), "Part time contractor").fit).toBe("fits");
+  });
+
+  it("still holds a loose pill to its own box", () => {
+    const m = fitOf(card(), "Part time contractor");
+    expect(m.fit).toBe("overflows");
+    // 208 less 64 of padding leaves 144: "Part time" is nine 16px characters,
+    // and its ten-character prefix trims to it, so the budget is 10 x 0.9.
+    expect(m.characterBudget).toBe(9);
+  });
+
+  it("calls a stacked pill too long only once the row leaves the canvas", () => {
+    const value = "Part time contractor, nights and weekends";
+    const m = fitOf(card([row]), value);
+    expect(m.fit).toBe("overflows");
+    expect(m.characterBudget).toBeGreaterThan(20);
+    expect(m.characterBudget).toBeLessThan(value.length);
+  });
+
+  it("never reports a plated Shrink field as shrinking", () => {
+    // Plates ignore Shrink and paint at the set size, so a value that fits
+    // the plate fits outright.
+    const tag = mkField({
+      fieldKey: "tag",
+      textSizing: "shrink",
+      plateColor: "#F2F3F0",
+      platePaddingX: 24,
+      width: 400,
+    });
+    const out = measureProposal(schema([tag]), { tag: "x".repeat(17) }, null, measure);
+    expect(out.fields[0].fit).toBe("fits");
+    const loose = measureProposal(schema([tag]), { tag: "x".repeat(18) }, null, measure);
+    expect(loose.fields[0].fit).toBe("overflows");
+  });
+
+  it("lets a Free multiline grow down a vertical stack that stays on the canvas", () => {
+    // Nine words wrap to three 40px lines (120) in a 100px box.
+    const story = mkField({ fieldKey: "story", type: "multiline" });
+    const stack = mkGroup({ children: ["story"], y: 100 });
+    const out = measureProposal(schema([story], [stack]), { story: words(9) }, null, measure);
+    expect(out.fields[0].fit).toBe("fits");
+    const loose = measureProposal(schema([story]), { story: words(9) }, null, measure);
+    expect(loose.fields[0].fit).toBe("overflows");
+  });
+
+  it("still holds a Free single line in a vertical stack to its width", () => {
+    const name = mkField({ fieldKey: "name" });
+    const stack = mkGroup({ children: ["name"] });
+    const out = measureProposal(schema([name], [stack]), { name: "x".repeat(30) }, null, measure);
+    expect(out.fields[0].fit).toBe("overflows");
+  });
+
+  it("measures a field in a plain group exactly as a loose one", () => {
+    const name = mkField({ fieldKey: "name" });
+    const plain = mkGroup({ mode: "free", children: ["name"] });
+    const value = "x".repeat(30);
+    const grouped = measureProposal(schema([name], [plain]), { name: value }, null, measure);
+    const loose = measureProposal(schema([name]), { name: value }, null, measure);
+    expect(grouped.fields).toEqual(loose.fields);
+    expect(grouped.fields[0].fit).toBe("overflows");
+  });
+});

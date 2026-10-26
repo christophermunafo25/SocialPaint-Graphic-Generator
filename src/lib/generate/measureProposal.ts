@@ -10,6 +10,7 @@
 // layout.test.ts.
 
 import type { BrandKit, FieldValues, TemplateField, TemplateSchema } from "../types";
+import { isFreeGroup } from "../types";
 import { resolveFieldStyle, type ResolvedFieldStyle } from "../brand/resolveStyle";
 import {
   DEFAULT_FONT_SIZE,
@@ -17,7 +18,14 @@ import {
   measuredTextWidth,
   type LineMeasurer,
 } from "../render/autoFit";
-import { computeLayout, fitFieldText, groupFieldKeys, type LayoutOptions } from "../render/layout";
+import {
+  computeLayout,
+  fitFieldText,
+  groupFieldKeys,
+  groupOfField,
+  platePad,
+  type LayoutOptions,
+} from "../render/layout";
 
 /** How one proposed value sits in its box:
  *  - "fits": nothing to do.
@@ -61,25 +69,54 @@ type MeasurableSchema = Pick<
 const SUBPIXEL_PX = 0.5;
 
 /** Overflow-only classification of one field with one candidate text,
- * ignoring groups (those are checked against the full layout). */
+ * against its own box (a containing stack's canvas check is separate).
+ *
+ * Inside a stack, growth along the stack's direction belongs to the stack:
+ * the stack pushes its siblings and the canvas check decides. Growth across
+ * the stack, and anything outside one, still has to fit the field's box. A
+ * plate paints at its set size and hugs, so it is measured that way. */
 function overflowsAlone(
+  schema: MeasurableSchema,
   field: TemplateField,
   style: ResolvedFieldStyle,
   text: string,
   measure: LineMeasurer,
 ): boolean {
+  const group = groupOfField(field.fieldKey, schema.layoutGroups);
+  const axis = group && !isFreeGroup(group) ? group.direction : undefined;
+  const singleLine = field.type !== "multiline";
+  const size = style.fontSizePx ?? DEFAULT_FONT_SIZE;
+
+  if (field.plateColor) {
+    const pad = platePad(field);
+    if (singleLine) {
+      return (
+        axis !== "horizontal" &&
+        measuredTextWidth(style, text, size, measure) + pad.x > field.width + SUBPIXEL_PX
+      );
+    }
+    const wrapWidth = Math.max(1, field.width - pad.x);
+    return (
+      axis !== "vertical" &&
+      measuredTextHeight(true, style, text, size, wrapWidth, measure) + pad.y >
+        field.height + SUBPIXEL_PX
+    );
+  }
+
   const mode = style.textSizing ?? "free";
   if (mode === "shrink" || mode === "fill") {
+    // A stack hugs a single line at whatever size it fits, floor included.
+    if (singleLine && axis === "horizontal") return false;
     return fitFieldText(field, style, text, measure).overflows;
   }
   // Free: the font size is fixed. A multiline box grows taller as lines
   // wrap — growth past the authored height is the overflow signal for
   // generated copy. A single line never wraps, so its signal is width.
-  const size = style.fontSizePx ?? DEFAULT_FONT_SIZE;
-  if (field.type !== "multiline") {
-    return measuredTextWidth(style, text, size, measure) > field.width;
+  if (singleLine) {
+    return axis !== "horizontal" && measuredTextWidth(style, text, size, measure) > field.width;
   }
   return (
+    axis !== "vertical" &&
     measuredTextHeight(true, style, text, size, field.width, measure) > field.height + SUBPIXEL_PX
   );
 }
@@ -104,7 +141,7 @@ function fitsInContext(
   text: string,
   opts: LayoutOptions,
 ): boolean {
-  if (overflowsAlone(field, style, text, measure)) return false;
+  if (overflowsAlone(schema, field, style, text, measure)) return false;
   const groups = containingGroups(schema, field.fieldKey);
   if (groups.length === 0) return true;
   const layout = computeLayout(schema, { ...values, [field.fieldKey]: text }, kit, measure, opts);
@@ -175,12 +212,17 @@ export function measureProposal(
 
     const style = resolveFieldStyle(field, kit);
     let fit: FieldFit;
-    if (overflowsAlone(field, style, value, measure) || overflowingGroupKeys.has(field.fieldKey)) {
+    if (
+      overflowsAlone(schema, field, style, value, measure) ||
+      overflowingGroupKeys.has(field.fieldKey)
+    ) {
       fit = "overflows";
     } else {
       const mode = style.textSizing ?? "free";
       const base = style.fontSizePx ?? DEFAULT_FONT_SIZE;
+      // A plate paints at its set size whatever the mode, so it never shrinks.
       fit =
+        !field.plateColor &&
         (mode === "shrink" || mode === "fill") &&
         fitFieldText(field, style, value, measure).fontSizePx < base
           ? "shrinks"
