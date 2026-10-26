@@ -1,0 +1,251 @@
+{
+  "name": "builder-roundtrip",
+  "kind": "synthetic",
+  "variantId": "night",
+  "schema": {
+    "id": "builder-roundtrip",
+    "companyId": "fidelity",
+    "name": "Builder round trip",
+    "description": "",
+    "category": "",
+    "tags": [],
+    "status": "published",
+    "canvasWidth": 1080,
+    "canvasHeight": 1080,
+    "backgroundUrl": "",
+    "backgroundGradient": {
+      "angle": 0,
+      "kind": "radial",
+      "center": {
+        "x": 0.5,
+        "y": 0.4
+      },
+      "radius": {
+        "x": 0.8,
+        "y": 0.7
+      },
+      "stops": [
+        {
+          "position": 0,
+          "color": "#FFFFFF"
+        },
+        {
+          "position": 1,
+          "color": "#DDE3EA"
+        }
+      ]
+    },
+    "canvasEffects": [
+      {
+        "type": "innerShadow",
+        "x": 0,
+        "y": 4,
+        "blur": 12,
+        "spread": 0,
+        "color": "#00000040"
+      },
+      {
+        "type": "noise",
+        "color": "#0000001A",
+        "size": 1,
+        "density": 1,
+        "seed": 1
+      }
+    ],
+    "fields": [
+      {
+        "type": "shape",
+        "shape": "rect",
+        "x": 140,
+        "y": 180,
+        "width": 800,
+        "height": 560,
+        "colorHex": "#FFFFFF",
+        "cornerRadius": {
+          "tl": 24,
+          "tr": 24,
+          "br": 24,
+          "bl": 24
+        },
+        "strokeColor": "#3D7BFF",
+        "strokeWidthPx": 4,
+        "strokeAlign": "outside",
+        "effects": [
+          {
+            "type": "dropShadow",
+            "x": 0,
+            "y": 8,
+            "blur": 24,
+            "color": "#00000026"
+          },
+          {
+            "type": "innerShadow",
+            "x": 0,
+            "y": 4,
+            "blur": 12,
+            "spread": 0,
+            "color": "#00000040"
+          }
+        ],
+        "static": true,
+        "id": "rt-card",
+        "fieldKey": "card",
+        "label": "Card",
+        "zIndex": 0,
+        "required": false
+      },
+      {
+        "type": "shape",
+        "shape": "ellipse",
+        "x": 820,
+        "y": 100,
+        "width": 160,
+        "height": 160,
+        "colorHex": "#3D7BFF",
+        "strokeColor": "#FFFFFF",
+        "strokeWidthPx": 6,
+        "strokeAlign": "center",
+        "effects": [
+          {
+            "type": "dropShadow",
+            "x": 0,
+            "y": 0,
+            "blur": 32,
+            "color": "#3D7BFF99"
+          }
+        ],
+        "static": true,
+        "id": "rt-badge",
+        "fieldKey": "badge",
+        "label": "Badge",
+        "zIndex": 1,
+        "required": false
+      },
+      {
+        "type": "text",
+        "x": 220,
+        "y": 280,
+        "width": 640,
+        "height": 120,
+        "staticValue": "Depth, saved",
+        "fontFamily": "Inter",
+        "fontWeight": 800,
+        "fontSizePx": 96,
+        "lineHeight": 1.1,
+        "colorHex": "#3D7BFF",
+        "verticalAlign": "top",
+        "textGradient": {
+          "angle": 0,
+          "kind": "radial",
+          "center": {
+            "x": 0.3,
+            "y": 0.5
+          },
+          "radius": {
+            "x": 0.8,
+            "y": 0.8
+          },
+          "stops": [
+            {
+              "position": 0,
+              "color": "#3D7BFF"
+            },
+            {
+              "position": 1,
+              "color": "#7A2EFF"
+            }
+          ]
+        },
+        "effects": [
+          {
+            "type": "dropShadow",
+            "x": 0,
+            "y": 6,
+            "blur": 16,
+            "color": "#00000033"
+          }
+        ],
+        "static": true,
+        "id": "rt-headline",
+        "fieldKey": "headline",
+        "label": "Headline",
+        "zIndex": 2,
+        "required": false
+      },
+      {
+        "type": "shape",
+        "shape": "rect",
+        "x": 220,
+        "y": 540,
+        "width": 640,
+        "height": 80,
+        "colorHex": "#3D7BFF",
+        "cornerRadius": {
+          "tl": 40,
+          "tr": 40,
+          "br": 40,
+          "bl": 40
+        },
+        "effects": [
+          {
+            "type": "layerBlur",
+            "radius": 8
+          }
+        ],
+        "static": true,
+        "id": "rt-blur",
+        "fieldKey": "blurred",
+        "label": "Blurred bar",
+        "zIndex": 3,
+        "required": false
+      }
+    ],
+    "variants": [
+      {
+        "id": "light",
+        "name": "Light",
+        "isDefault": true,
+        "overrides": {}
+      },
+      {
+        "id": "night",
+        "name": "Night",
+        "backgroundColor": "#0B0B0C",
+        "canvasEffects": [
+          {
+            "type": "innerShadow",
+            "x": 0,
+            "y": 0,
+            "blur": 60,
+            "spread": 0,
+            "color": "#3D7BFF40"
+          },
+          {
+            "type": "noise",
+            "color": "#FFFFFF14",
+            "size": 1,
+            "density": 1,
+            "seed": 1
+          }
+        ],
+        "overrides": {
+          "card": {
+            "colorHex": "#17181B",
+            "effects": [
+              {
+                "type": "dropShadow",
+                "x": 0,
+                "y": 16,
+                "blur": 40,
+                "color": "#3D7BFF66"
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "captionTemplate": "",
+    "createdAt": "2026-10-26T00:00:00.000Z",
+    "updatedAt": "2026-10-26T00:00:00.000Z"
+  }
+}
