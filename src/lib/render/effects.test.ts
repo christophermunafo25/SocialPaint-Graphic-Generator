@@ -3,6 +3,8 @@ import type { FieldEffect } from "../types";
 import {
   filterCss,
   innerShadowFrames,
+  cutOffAtCanvas,
+  paintsBeyondBox,
   noiseEffects,
   readEffects,
   readStrokeAlign,
@@ -130,5 +132,73 @@ describe("scaleEffects on stored JSON", () => {
       { ...drop, x: 16, y: 16, blur: 64 },
     ]);
     expect(scaleEffects({ not: "a list" }, 2)).toEqual([]);
+  });
+});
+
+describe("paintsBeyondBox", () => {
+  const base = { type: "shape" as const };
+
+  it("is true for a drop shadow, a glow or a layer blur, which spill past the box", () => {
+    expect(paintsBeyondBox({ ...base, effects: [drop] })).toBe(true);
+    expect(paintsBeyondBox({ ...base, effects: [blur] })).toBe(true);
+  });
+
+  it("is false for inner shadows and grain, which stay inside", () => {
+    expect(paintsBeyondBox({ ...base, effects: [inner, noise] })).toBe(false);
+    expect(paintsBeyondBox(base)).toBe(false);
+  });
+
+  it("is true for a shape's center or outside stroke, false for inside or no stroke", () => {
+    expect(paintsBeyondBox({ ...base, strokeColor: "#000000", strokeAlign: "outside" })).toBe(true);
+    expect(paintsBeyondBox({ ...base, strokeColor: "#000000", strokeAlign: "center" })).toBe(true);
+    expect(paintsBeyondBox({ ...base, strokeColor: "#000000" })).toBe(false);
+    expect(paintsBeyondBox({ ...base, strokeAlign: "outside" })).toBe(false);
+    expect(paintsBeyondBox({ type: "text", strokeColor: "#000000", strokeAlign: "outside" })).toBe(
+      false,
+    );
+  });
+});
+
+describe("cutOffAtCanvas", () => {
+  const canvas = { width: 1080, height: 1080 };
+  const card = { type: "shape" as const };
+  const box = { x: 40, y: 40, width: 400, height: 300 };
+
+  it("names a shadow whose blur reaches past the edge", () => {
+    const shadow: FieldEffect = { type: "dropShadow", x: 0, y: 8, blur: 48, color: "#00000040" };
+    expect(cutOffAtCanvas({ ...card, effects: [shadow] }, box, canvas)).toBe("shadow");
+    expect(cutOffAtCanvas({ ...card, effects: [{ ...shadow, blur: 24 }] }, box, canvas)).toBeNull();
+  });
+
+  it("calls a centered one a glow", () => {
+    const glow: FieldEffect = { type: "dropShadow", x: 0, y: 0, blur: 60, color: "#17FF7E99" };
+    expect(cutOffAtCanvas({ ...card, effects: [glow] }, box, canvas)).toBe("glow");
+  });
+
+  it("names a center or outside stroke that crosses the edge", () => {
+    const flush = { x: 0, y: 200, width: 400, height: 300 };
+    expect(
+      cutOffAtCanvas(
+        { ...card, strokeColor: "#000000", strokeWidthPx: 8, strokeAlign: "outside" },
+        flush,
+        canvas,
+      ),
+    ).toBe("stroke");
+    expect(
+      cutOffAtCanvas({ ...card, strokeColor: "#000000", strokeWidthPx: 8 }, flush, canvas),
+    ).toBeNull();
+  });
+
+  it("names a blur that spills past the edge", () => {
+    const flush = { x: 0, y: 200, width: 400, height: 300 };
+    expect(
+      cutOffAtCanvas({ ...card, effects: [{ type: "layerBlur", radius: 8 }] }, flush, canvas),
+    ).toBe("blur");
+  });
+
+  it("stays quiet for a field that already bleeds off the canvas", () => {
+    const bleed = { x: -20, y: 0, width: 1120, height: 300 };
+    const shadow: FieldEffect = { type: "dropShadow", x: 0, y: 8, blur: 48, color: "#00000040" };
+    expect(cutOffAtCanvas({ ...card, effects: [shadow] }, bleed, canvas)).toBeNull();
   });
 });

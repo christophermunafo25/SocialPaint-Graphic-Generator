@@ -2,6 +2,6 @@
   "name": "starter-feature-02-dark",
   "kind": "starter",
   "variantId": "dark",
-  "baseline": { "chromium": 0, "firefox": 0.69, "webkit": 1.52 },
-  "blurBaseline": { "chromium": 0, "firefox": 0, "webkit": 0.38 }
+  "baseline": { "chromium": 0, "firefox": 0.69, "webkit": 1.51 },
+  "blurBaseline": { "chromium": 0, "firefox": 0, "webkit": 0.34 }
 }

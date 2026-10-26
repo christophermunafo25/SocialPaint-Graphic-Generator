@@ -16,6 +16,7 @@
 
 import type {
   BrandColor,
+  FieldEffect,
   BrandKit,
   NewTemplateInput,
   TemplateField,
@@ -24,7 +25,14 @@ import type {
 } from "../../types";
 import { contrastRatio, luminance, parseHex } from "../../color";
 import { STARTER_VERSION } from "./index";
-import type { SlotColor, SlotFont, StarterBlueprint, StarterField } from "./types";
+import type {
+  SlotColor,
+  SlotFont,
+  SlotTint,
+  StarterBlueprint,
+  StarterEffect,
+  StarterField,
+} from "./types";
 import {
   ACCENT_FALLBACK,
   BODY_FONT_FALLBACK,
@@ -34,6 +42,7 @@ import {
   NEUTRALS_LIGHT,
   ON_ACCENT_DARK,
   ON_ACCENT_LIGHT,
+  SHADOW_HEX,
 } from "./neutrals";
 import { roleStyle } from "../../brand/fontRoles";
 
@@ -178,6 +187,47 @@ export function resolveSlots(colors: BrandColor[]): SlotTable {
 }
 
 // ---------------------------------------------------------------------------
+// Effects
+// ---------------------------------------------------------------------------
+
+const alphaByte = (a: number): string =>
+  Math.round(Math.min(1, Math.max(0, a)) * 255)
+    .toString(16)
+    .padStart(2, "0")
+    .toUpperCase();
+
+function tint(t: SlotTint, slots: Record<SlotColor, string>, dark: boolean): string {
+  const hex = (t.slot === "shadow" ? SHADOW_HEX : slots[t.slot]).slice(0, 7).toUpperCase();
+  return `${hex}${alphaByte(dark ? (t.darkAlpha ?? t.alpha) : t.alpha)}`;
+}
+
+/** A blueprint's effects with every tint resolved for one colourway. */
+export function resolveEffects(
+  effects: StarterEffect[] | undefined,
+  slots: Record<SlotColor, string>,
+  dark: boolean,
+): FieldEffect[] | undefined {
+  if (!effects?.length) return undefined;
+  // An empty Dark list is kept: it overrides the Light effects to none.
+  const shown = dark
+    ? effects.filter((e) => e.type === "layerBlur" || e.color.darkAlpha !== 0)
+    : effects;
+  return shown.map((e): FieldEffect => {
+    switch (e.type) {
+      case "layerBlur":
+        return e;
+      case "noise":
+        return { ...e, color: tint(e.color, slots, dark) };
+      default:
+        return { ...e, color: tint(e.color, slots, dark) };
+    }
+  });
+}
+
+const sameEffects = (a?: FieldEffect[], b?: FieldEffect[]) =>
+  JSON.stringify(a) === JSON.stringify(b);
+
+// ---------------------------------------------------------------------------
 // Text tokens
 // ---------------------------------------------------------------------------
 
@@ -266,6 +316,9 @@ function materializeField(
     platePaddingY: f.platePaddingY,
     objectFit: f.objectFit,
     required: f.required,
+    // Only when the blueprint has some, so a field without effects keeps
+    // exactly its pre-Phase 2 shape.
+    ...(f.effects?.length && { effects: resolveEffects(f.effects, slots, false) }),
   };
 }
 
@@ -282,6 +335,11 @@ function darkOverride(f: StarterField, slots: SlotTable): VariantFieldOverride |
   if (f.strokeColor && slots.dark[f.strokeColor] !== slots.light[f.strokeColor]) {
     over.strokeColor = slots.dark[f.strokeColor];
   }
+  // Effects travel as a whole list, so the Dark list replaces the Light one
+  // whenever any tint resolves differently.
+  const lightFx = resolveEffects(f.effects, slots.light, false);
+  const darkFx = resolveEffects(f.effects, slots.dark, true);
+  if (darkFx && !sameEffects(lightFx, darkFx)) over.effects = darkFx;
   return Object.keys(over).length ? over : null;
 }
 
@@ -300,12 +358,16 @@ export function materializeStarter(
     const over = darkOverride(f, slots);
     if (over) overrides[f.fieldKey] = over;
   }
+  const lightCanvasFx = resolveEffects(blueprint.canvasEffects, slots.light, false);
+  const darkCanvasFx = resolveEffects(blueprint.canvasEffects, slots.dark, true);
   const variants: TemplateVariant[] = [
     { id: "light", name: "Light", isDefault: true, overrides: {} },
     {
       id: "dark",
       name: "Dark",
       backgroundColor: slots.dark[blueprint.backgroundColor],
+      ...(darkCanvasFx &&
+        !sameEffects(lightCanvasFx, darkCanvasFx) && { canvasEffects: darkCanvasFx }),
       overrides,
     },
   ];
@@ -323,6 +385,7 @@ export function materializeStarter(
     canvasHeight: blueprint.canvasHeight,
     backgroundUrl: "",
     backgroundColor: slots.light[blueprint.backgroundColor],
+    ...(lightCanvasFx && { canvasEffects: lightCanvasFx }),
     fields: materialized,
     variants,
     captionTemplate: fillTokens(

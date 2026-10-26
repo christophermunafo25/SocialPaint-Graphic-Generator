@@ -54,6 +54,9 @@ import { useChrome, useFullViewport } from "../layout/ChromeContext";
 import { InlineEdit } from "../InlineEdit";
 import { SchemaRenderer, schemaBackgroundCss } from "../SchemaRenderer";
 import { GradientEditor } from "./GradientEditor";
+import { EffectsEditor } from "./EffectsEditor";
+import { cutOffAtCanvas } from "@/lib/render/effects";
+import { normalizeEffects } from "./effectOps";
 import { FieldOverlayEditor, type CanvasViewApi } from "./FieldOverlayEditor";
 import { FieldInspector } from "./FieldInspector";
 import { VariantFilmstrip } from "./VariantFilmstrip";
@@ -830,7 +833,7 @@ export function TemplateBuilder({
       patch: Partial<
         Pick<
           import("@/lib/types").TemplateVariant,
-          "backgroundColor" | "backgroundGradient" | "backgroundUrl"
+          "backgroundColor" | "backgroundGradient" | "backgroundUrl" | "canvasEffects"
         >
       >,
       coalesce?: string,
@@ -868,8 +871,38 @@ export function TemplateBuilder({
     // merged field the renderer paints, so a warning here is a real failure
     // on export, not a guess.
     for (const w of contrastWarnings) out.push(w.message);
+    // A shadow, glow, blur or outside stroke the canvas edge crops, judged
+    // as each look paints the element; one warning per element.
+    const looks = draft.variants?.length ? draft.variants : [undefined];
+    for (const f of draft.fields) {
+      const rect = builderLayout.fieldRects.get(f.id) ?? {
+        x: f.anchor === "center" ? f.x - f.width / 2 : f.x,
+        y: f.anchor === "center" ? f.y - f.height / 2 : f.y,
+        width: f.width,
+        height: f.height,
+      };
+      for (const look of looks) {
+        if (look?.overrides[f.fieldKey]?.hidden) continue;
+        const spill = cutOffAtCanvas(look ? applyVariant(f, look) : f, rect, {
+          width: draft.canvasWidth,
+          height: draft.canvasHeight,
+        });
+        if (spill) {
+          out.push(`${f.label}'s ${spill} is cut off at the canvas edge.`);
+          break;
+        }
+      }
+    }
     return out;
-  }, [builderLayout, groups, contrastWarnings]);
+  }, [
+    builderLayout,
+    groups,
+    contrastWarnings,
+    draft.fields,
+    draft.variants,
+    draft.canvasWidth,
+    draft.canvasHeight,
+  ]);
   const selGroupIds = selectedGroupIds(selectedIds);
   const selectedGroup =
     selGroupIds.length === 1 && selectedFields.length === 0
@@ -3455,6 +3488,7 @@ export function TemplateBuilder({
                       backgroundColor: variantBackground.color,
                       backgroundGradient: variantBackground.gradient,
                     })}
+                    canvasEffects={selectedVariant?.canvasEffects ?? draft.canvasEffects}
                     appearanceOf={appearanceOf}
                     fields={draft.fields}
                     groups={groups}
@@ -3989,6 +4023,46 @@ export function TemplateBuilder({
                       An image covers the gradient, which covers the color.
                     </p>
                   </div>
+                  {/* Canvas effects: grain over everything, an inner shadow at
+                    the edge. Scoped like the background: a look can replace
+                    them, the base is what every look starts from. */}
+                  {multiLook && selectedVariant && bgScope === "this" ? (
+                    <EffectsEditor
+                      id="canvas-effects"
+                      effects={selectedVariant.canvasEffects ?? draft.canvasEffects}
+                      target={{ kind: "canvas" }}
+                      kit={kit}
+                      companyId={company?.id}
+                      onChange={(next) =>
+                        setVariantBackground(
+                          { canvasEffects: normalizeEffects(next, { kind: "canvas" }) ?? [] },
+                          `vbg:effects:${selectedVariant.id}`,
+                        )
+                      }
+                      onUseBase={
+                        selectedVariant.canvasEffects !== undefined
+                          ? () => setVariantBackground({ canvasEffects: undefined })
+                          : undefined
+                      }
+                    />
+                  ) : (
+                    <EffectsEditor
+                      id="canvas-effects"
+                      effects={draft.canvasEffects}
+                      target={{ kind: "canvas" }}
+                      kit={kit}
+                      companyId={company?.id}
+                      onChange={(next) =>
+                        setDraft(
+                          (d) => ({
+                            ...d,
+                            canvasEffects: normalizeEffects(next, { kind: "canvas" }),
+                          }),
+                          "bg:effects",
+                        )
+                      }
+                    />
+                  )}
                 </div>
               )}
             </div>

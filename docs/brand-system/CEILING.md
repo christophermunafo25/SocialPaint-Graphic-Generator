@@ -4,6 +4,16 @@ Written by brand-system Phase 0 on 2026-10-25, against `main` at 4094a0b (PR 169
 
 Support levels: **live** means a field property draws it, **workaround** means an admin can approximate it with today's fields, and **missing** means it can't be drawn.
 
+## Since Phase 2
+
+Phase 2 (2026-10-26) gave the builder controls for everything Phase 1 can paint (`docs/brand-system/PHASE-2.md`), so an admin can now add depth without the importer. The six starters carry subtle depth: soft shadows on photo panels, logo cards and calls to action, a 4% grain on Feature and Stat, and a glow on Stat's rule; Dark keeps the grain and drops the shadows. All 12 were re-blessed with CJ's approval: 8 goldens moved, and the Dark Launch, Milestone, Partnership and Event render exactly as before, since Dark drops the shadows. `builder-roundtrip` holds every property the builder writes and renders its per-look effects.
+
+| Fixture | Chromium (exact / blurred) | Firefox     | WebKit      |
+| ------------------- | -------------------------- | ----------- | ----------- |
+| `builder-roundtrip` | 0.00 / 0.00                | 0.17 / 0.00 | 0.73 / 1.99 |
+
+WebKit's share sits in the outer tail of the badge's glow, the pattern `effects-matrix` shows. The list below is unchanged by Phase 2.
+
 ## Since Phase 1
 
 Phase 1 (2026-10-25) added grain, drop shadows and glows, inner shadows, layer blur, center and outside strokes, and radial gradients (`docs/brand-system/PHASE-1.md`, `docs/TEMPLATE_SCHEMA.md`). The Phase 0 sections below are kept as measured, and these are the same frames rebuilt with depth. Each comparison now also reports a **blurred share**: the same threshold after a 4px blur of both images, which keeps tone and shadow and drops grain speckle. Two grain patterns never match pixel for pixel, so even a perfect grain scores high on the exact share.

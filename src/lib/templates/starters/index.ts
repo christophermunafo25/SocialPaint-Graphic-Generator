@@ -5,4 +5,4 @@ export type { SlotColor, SlotFont, StarterBlueprint, StarterField } from "./type
  * Stamped into autobuildMeta.starterVersion; the restore action seeds any
  * starterKey a tenant is missing, which is how a bump reaches existing
  * tenants. */
-export const STARTER_VERSION = 1;
+export const STARTER_VERSION = 2;

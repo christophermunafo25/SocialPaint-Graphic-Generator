@@ -2,5 +2,5 @@
   "name": "starter-feature-02",
   "kind": "starter",
   "baseline": { "chromium": 0, "firefox": 0.7, "webkit": 1.53 },
-  "blurBaseline": { "chromium": 0, "firefox": 0, "webkit": 0.41 }
+  "blurBaseline": { "chromium": 0, "firefox": 0, "webkit": 0.39 }
 }
