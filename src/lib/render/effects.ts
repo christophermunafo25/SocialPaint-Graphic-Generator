@@ -176,3 +176,48 @@ export function paintsBeyondBox(
     readStrokeAlign(field.strokeAlign) !== "inside"
   );
 }
+
+/** What spills past a field's box: a drop shadow, a glow, a stroke or a
+ * blur. */
+export type Spill = "shadow" | "glow" | "stroke" | "blur";
+
+/** The first thing a field paints beyond the canvas edge, or null. Only a
+ * field whose own box sits inside the canvas is judged: one that already
+ * bleeds off the edge is cropped on purpose. A shadow reaches its blur
+ * radius past its offset box; a stroke its outer width; a blur its
+ * radius. Rotation isn't modelled. */
+export function cutOffAtCanvas(
+  field: Pick<TemplateField, "effects" | "strokeColor" | "strokeAlign" | "strokeWidthPx" | "type">,
+  box: { x: number; y: number; width: number; height: number },
+  canvas: { width: number; height: number },
+): Spill | null {
+  const inside =
+    box.x >= 0 &&
+    box.y >= 0 &&
+    box.x + box.width <= canvas.width &&
+    box.y + box.height <= canvas.height;
+  if (!inside) return null;
+  const crosses = (left: number, top: number, right: number, bottom: number) =>
+    left < -0.5 || top < -0.5 || right > canvas.width + 0.5 || bottom > canvas.height + 0.5;
+  for (const e of readEffects(field.effects)) {
+    if (e.type === "dropShadow") {
+      const left = box.x + e.x - e.blur;
+      const top = box.y + e.y - e.blur;
+      const right = box.x + box.width + e.x + e.blur;
+      const bottom = box.y + box.height + e.y + e.blur;
+      if (crosses(left, top, right, bottom)) return e.x === 0 && e.y === 0 ? "glow" : "shadow";
+    }
+    if (e.type === "layerBlur") {
+      const r = e.radius;
+      if (crosses(box.x - r, box.y - r, box.x + box.width + r, box.y + box.height + r))
+        return "blur";
+    }
+  }
+  const align = readStrokeAlign(field.strokeAlign);
+  if (field.type === "shape" && field.strokeColor && align !== "inside") {
+    const w = Math.max(1, field.strokeWidthPx ?? 1) * (align === "center" ? 0.5 : 1);
+    if (crosses(box.x - w, box.y - w, box.x + box.width + w, box.y + box.height + w))
+      return "stroke";
+  }
+  return null;
+}

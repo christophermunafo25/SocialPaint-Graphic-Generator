@@ -55,6 +55,7 @@ import { InlineEdit } from "../InlineEdit";
 import { SchemaRenderer, schemaBackgroundCss } from "../SchemaRenderer";
 import { GradientEditor } from "./GradientEditor";
 import { EffectsEditor } from "./EffectsEditor";
+import { cutOffAtCanvas } from "@/lib/render/effects";
 import { normalizeEffects } from "./effectOps";
 import { FieldOverlayEditor, type CanvasViewApi } from "./FieldOverlayEditor";
 import { FieldInspector } from "./FieldInspector";
@@ -870,8 +871,37 @@ export function TemplateBuilder({
     // merged field the renderer paints, so a warning here is a real failure
     // on export, not a guess.
     for (const w of contrastWarnings) out.push(w.message);
+    // A shadow, glow, blur or outside stroke the canvas edge crops, judged
+    // as each look paints the element; one warning per element.
+    const looks = draft.variants?.length ? draft.variants : [undefined];
+    for (const f of draft.fields) {
+      const rect = builderLayout.fieldRects.get(f.id) ?? {
+        x: f.anchor === "center" ? f.x - f.width / 2 : f.x,
+        y: f.anchor === "center" ? f.y - f.height / 2 : f.y,
+        width: f.width,
+        height: f.height,
+      };
+      for (const look of looks) {
+        const spill = cutOffAtCanvas(look ? applyVariant(f, look) : f, rect, {
+          width: draft.canvasWidth,
+          height: draft.canvasHeight,
+        });
+        if (spill) {
+          out.push(`${f.label}'s ${spill} is cut off at the canvas edge.`);
+          break;
+        }
+      }
+    }
     return out;
-  }, [builderLayout, groups, contrastWarnings]);
+  }, [
+    builderLayout,
+    groups,
+    contrastWarnings,
+    draft.fields,
+    draft.variants,
+    draft.canvasWidth,
+    draft.canvasHeight,
+  ]);
   const selGroupIds = selectedGroupIds(selectedIds);
   const selectedGroup =
     selGroupIds.length === 1 && selectedFields.length === 0
