@@ -29,7 +29,7 @@ Each stays open until CJ marks it, here or at a gate. A phase that needs an open
 | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- | ------ |
 | D1  | The line-break rule applies to text a member, the model, a bulk row or a public visitor supplied, in multiline fields only. Text an admin authored renders exactly as authored. It is on for every workspace, with no setting | Yes                   | Approved 2026-10-25 |
 | D2  | Before keeping two words together, the fit may shrink at most 8% below the size it chose, and never below the field's floor. Text whose last two lines each hold one word reads as a stack and is left alone              | Yes                   | Approved 2026-10-25 |
-| D3  | `templates.family_id uuid` (nullable), an index on `(company_id, family_id)`, a unique index on `(family_id, canvas_width, canvas_height)` where `family_id is not null`, and `TemplateSchema.familyId?: string`              | Yes                   | Approved 2026-10-26   |
+| D3  | `templates.family_id uuid` (nullable), an index on `(company_id, family_id)`, a unique index on `(company_id, family_id, canvas_width, canvas_height)` where `family_id is not null`, and `TemplateSchema.familyId?: string`              | Yes                   | Approved 2026-10-26   |
 | D4  | A family forms when "Create a version" saves its copy at a new size, or when an admin links an existing template of another size. Removing a size unlinks it and never deletes it                                          | Yes                   | Approved 2026-10-26   |
 | D5  | Generate sends the model one candidate per family: the member that matches the platform hint, else the oldest member                                                                                                       | Yes                   | Open   |
 | D6  | A public link offers the published sizes of its template's family                                                                                                                                                          | Yes, in its own phase | Open   |
@@ -44,6 +44,7 @@ Recorded at Phase 2 recon (CJ, 2026-10-26):
 
 - D3's unique index leads with `company_id`: `(company_id, family_id, canvas_width, canvas_height)`, so another workspace can never claim a family's size. The migration is 0049.
 - `familyId` is written only through `TemplateStore.setFamily`. `create`, `update` and `duplicate` never write it, so a builder save (autosave included) can never undo a change made in the Sizes dialog.
+- D4's flows: a version joins on its first save at a size the family lacks, in one `setFamily` call (a source with no family gets a new id in the same call); at a size the family has it stays standalone. Link a template joins a template of a missing size that has no family. Remove unlinks and never deletes. Any unlink, join or delete that leaves a family with one member dissolves it.
 
 ## Phases
 

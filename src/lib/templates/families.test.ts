@@ -50,6 +50,11 @@ describe("carryValues", () => {
     });
   });
 
+  it("carries text between a single-line and a multiline field", () => {
+    const to = { fields: [field({ fieldKey: "headline", type: "multiline" })] };
+    expect(carryValues({ headline: "Hi" }, from, to)).toEqual({ headline: "Hi" });
+  });
+
   it("leaves out a value the next size's field can't take", () => {
     const to = {
       fields: [

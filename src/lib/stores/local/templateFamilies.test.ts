@@ -73,6 +73,25 @@ describe("LocalTemplateStore size families", () => {
     expect((await store.get(b.id))!.canvasHeight).toBe(1920);
   });
 
+  it("dissolves a family left with one member by an unlink", async () => {
+    const a = await store.create(input(1080, 1350));
+    const b = await store.create(input(1080, 1920));
+    await store.setFamily([a.id, b.id], "fam");
+    await store.setFamily([b.id], null);
+    expect((await store.get(a.id))!.familyId).toBeUndefined();
+    expect((await store.get(b.id))!.familyId).toBeUndefined();
+  });
+
+  it("dissolves the family a join pulls a template out of", async () => {
+    const t = await store.create(input(1080, 1350));
+    const x = await store.create(input(1080, 1920));
+    const y = await store.create(input(1200, 627));
+    await store.setFamily([t.id, x.id], "f1");
+    await store.setFamily([t.id, y.id], "f2");
+    expect((await store.get(x.id))!.familyId).toBeUndefined();
+    expect((await store.listFamily("co", "f2")).map((m) => m.id)).toEqual([t.id, y.id]);
+  });
+
   it("dissolves a family left with one member, on unlink and on delete", async () => {
     const a = await store.create(input(1080, 1350));
     const b = await store.create(input(1080, 1920));

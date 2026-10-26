@@ -275,7 +275,8 @@ export class LocalTemplateStore implements TemplateStore {
       });
       for (const t of next) if (ids.has(t.id)) assertFamilySizeFree(next, t);
       db.templates = next;
-      if (familyId === null) for (const t of left) dissolveIfAlone(next, t);
+      // Every family a row left behind, by an unlink or by joining another.
+      for (const t of left) if (t.familyId !== familyId) dissolveIfAlone(next, t);
     });
   }
   async uploadBackground(_companyId: string, file: Blob): Promise<string> {

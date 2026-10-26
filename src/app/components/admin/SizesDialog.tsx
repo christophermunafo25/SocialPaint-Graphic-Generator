@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Proportions } from "lucide-react";
 import type { TemplateSchema } from "@/lib/types";
 import type { CanvasSize } from "@/lib/templates/platforms";
@@ -63,7 +63,14 @@ export function SizesDialog({
   onAddSize(target: { width: number; height: number }): void;
 }) {
   const { navigate } = useRouter();
-  const [busy, setBusy] = useState(false);
+  const [writing, setWriting] = useState(false);
+  /** The list a change was made against. The dialog stays busy until a
+   * newer list arrives, so nothing is chosen from a stale family. */
+  const [staleList, setStaleList] = useState<TemplateSchema[] | null>(null);
+  useEffect(() => {
+    if (staleList && templates !== staleList) setStaleList(null);
+  }, [templates, staleList]);
+  const busy = writing || staleList !== null;
   const [error, setError] = useState<string | null>(null);
 
   const members = useMemo(() => familyOf(template, templates), [template, templates]);
@@ -85,16 +92,17 @@ export function SizesDialog({
   const linkableLabels = useMemo(() => familySizeLabels(linkable), [linkable]);
 
   const change = async (write: () => Promise<void>) => {
-    setBusy(true);
+    setWriting(true);
     setError(null);
     try {
       await write();
+      setStaleList(templates);
       onChanged();
     } catch (e) {
       console.error("Changing sizes failed", e);
       setError(familyErrorMessage(e));
     } finally {
-      setBusy(false);
+      setWriting(false);
     }
   };
 
@@ -121,10 +129,17 @@ export function SizesDialog({
                   </Status>
                 </span>
                 <span className="sp-sizes__rowactions">
-                  <Button size="sm" onClick={() => navigate({ name: "builder", templateId: m.id })}>
+                  <Button
+                    size="sm"
+                    aria-label={`Open ${labels[i]}`}
+                    onClick={() => navigate({ name: "builder", templateId: m.id })}
+                  >
                     Open
                   </Button>
-                  {members.length > 1 && (
+                  {/* Not on the row the dialog opened from: removing it would
+                      leave this dialog showing that template alone, with
+                      the rest of its family out of reach. */}
+                  {members.length > 1 && m.id !== template.id && (
                     <Button
                       size="sm"
                       disabled={busy}
@@ -183,7 +198,18 @@ export function SizesDialog({
         <CanvasSizePicker
           sizes={missingSizes}
           value={{ width: template.canvasWidth, height: template.canvasHeight }}
-          onPick={onAddSize}
+          onPick={(next) => {
+            // Custom mode can name a size the family already has; a version
+            // there could never join, so it isn't made.
+            const taken = members.some((m) =>
+              sameSize(m, { canvasWidth: next.width, canvasHeight: next.height }),
+            );
+            if (taken) {
+              setError(familyErrorMessage(new Error("templates_family_size_key")));
+              return;
+            }
+            onAddSize(next);
+          }}
         />
       </section>
     </Modal>

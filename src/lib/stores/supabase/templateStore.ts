@@ -161,7 +161,15 @@ export class SupabaseTemplateStore implements TemplateStore {
     const { error } = await supabase().from("templates").delete().eq("id", id);
     if (error) throw error;
     const family = row as Pick<TemplateRow, "company_id" | "family_id"> | null;
-    if (family?.family_id) await this.dissolveIfAlone(family.company_id, family.family_id);
+    if (!family?.family_id) return;
+    // The template is already gone: a failed dissolve must not read as a
+    // failed delete. It leaves a family of one, which the next unlink,
+    // join or delete in that family clears.
+    try {
+      await this.dissolveIfAlone(family.company_id, family.family_id);
+    } catch (e) {
+      console.error("Dissolving a size family after a delete failed", e);
+    }
   }
 
   async listFamily(companyId: string, familyId: string): Promise<TemplateSchema[]> {
@@ -177,27 +185,30 @@ export class SupabaseTemplateStore implements TemplateStore {
 
   async setFamily(templateIds: string[], familyId: string | null): Promise<void> {
     if (!templateIds.length) return;
-    // The families this unlink leaves behind, read before the write.
-    let left: Array<Pick<TemplateRow, "company_id" | "family_id">> = [];
-    if (familyId === null) {
-      const { data, error } = await supabase()
-        .from("templates")
-        .select("company_id, family_id")
-        .in("id", templateIds)
-        .not("family_id", "is", null);
-      if (error) throw error;
-      left = (data ?? []) as typeof left;
-    }
+    // The families these rows leave, read before the write: an unlink leaves
+    // one, and so does a join that moves a row from another family.
+    const { data: before, error: readError } = await supabase()
+      .from("templates")
+      .select("company_id, family_id")
+      .in("id", templateIds)
+      .not("family_id", "is", null);
+    if (readError) throw readError;
+    const left = (before ?? []) as Array<Pick<TemplateRow, "company_id" | "family_id">>;
     // One statement, so a join either lands for every row or for none, and
-    // updated_at is left alone: linking is not an edit.
-    const { error } = await supabase()
+    // updated_at is left alone: linking is not an edit. RLS filters rows the
+    // caller can't write without an error, so a short count is a refusal.
+    const { data: written, error } = await supabase()
       .from("templates")
       .update({ family_id: familyId })
-      .in("id", templateIds);
+      .in("id", templateIds)
+      .select("id");
     if (error) throw error;
+    if ((written ?? []).length !== new Set(templateIds).size) {
+      throw new Error("Some of these templates couldn't be changed. Nothing else was.");
+    }
     const seen = new Set<string>();
     for (const r of left) {
-      if (!r.family_id || seen.has(r.family_id)) continue;
+      if (!r.family_id || r.family_id === familyId || seen.has(r.family_id)) continue;
       seen.add(r.family_id);
       await this.dissolveIfAlone(r.company_id, r.family_id);
     }

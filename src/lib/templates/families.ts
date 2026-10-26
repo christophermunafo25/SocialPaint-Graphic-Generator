@@ -37,9 +37,12 @@ const memberFields = (t: Pick<TemplateSchema, "fields">): TemplateField[] =>
 /** Does a value typed for `from` mean the same thing in `to`? A key `to`
  * doesn't have is fine (the renderer ignores it); a field whose type
  * changed, or a select whose options no longer offer the value, is not. */
+const isText = (f: TemplateField): boolean => f.type === "text" || f.type === "multiline";
+
 function carries(value: string, from?: TemplateField, to?: TemplateField): boolean {
   if (!to) return true;
-  if (from && from.type !== to.type) return false;
+  // Text reads the same in a single-line or a multiline field.
+  if (from && from.type !== to.type && !(isText(from) && isText(to))) return false;
   if (to.type === "select") return (to.options ?? []).includes(value);
   return true;
 }

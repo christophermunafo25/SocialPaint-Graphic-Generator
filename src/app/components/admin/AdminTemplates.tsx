@@ -190,6 +190,8 @@ export function AdminTemplates() {
 
   /** Template whose Sizes dialog is open. */
   const [sizesForId, setSizesForId] = useState<string | null>(null);
+  /** A template's family size count (1 without a family). */
+  const sizeCount = (t: TemplateSchema) => familyOf(t, templates).length;
   // Read from the list, so a link or removal shows once the list reloads.
   const sizesFor = loadedTemplates.current.find((t) => t.id === sizesForId) ?? null;
   // The workspace's enabled sizes, for the version picker.
@@ -482,10 +484,10 @@ export function AdminTemplates() {
                   )}
                   {/* Line 3: meta. A family member leads with its family's
                       size count, which needs no usage to show. */}
-                  {(usageState.status === "ready" || t.familyId) && (
+                  {(usageState.status === "ready" || sizeCount(t) > 1) && (
                     <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
                       {[
-                        t.familyId && `${familyOf(t, templates).length} sizes`,
+                        sizeCount(t) > 1 && `${sizeCount(t)} sizes`,
                         usageState.status === "ready" &&
                           (() => {
                             const u = usageByTemplate.get(t.id);
