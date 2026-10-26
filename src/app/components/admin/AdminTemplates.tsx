@@ -26,7 +26,7 @@ import { toCatalogTemplate } from "@/lib/templates/catalog";
 import { buildSearchIndex, searchTemplates } from "@/lib/templates/searchIndex";
 import { versionName } from "@/lib/templates/reflow";
 import type { CanvasSize } from "@/lib/templates/platforms";
-import { SizesDialog } from "./SizesDialog";
+import { SizesDialog, familyOf } from "./SizesDialog";
 import { ErrorState } from "../ErrorState";
 import { SkeletonCard } from "../templates/TemplateSkeleton";
 import { TemplateThumbnail } from "../TemplateThumbnail";
@@ -480,19 +480,26 @@ export function AdminTemplates() {
                       · AI-built
                     </span>
                   )}
-                  {/* Line 3: meta */}
-                  {usageState.status === "ready" && (
+                  {/* Line 3: meta. A family member leads with its family's
+                      size count, which needs no usage to show. */}
+                  {(usageState.status === "ready" || t.familyId) && (
                     <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
-                      {(() => {
-                        const u = usageByTemplate.get(t.id);
-                        if (!u || u.downloads === 0) return "Not used yet";
-                        // An admin who sent a link out wants to know it is
-                        // working, and that only shows if public traffic is
-                        // counted apart from the team's own.
-                        const viaLink =
-                          u.publicDownloads > 0 ? ` · ${u.publicDownloads} via link` : "";
-                        return `${u.downloads} download${u.downloads === 1 ? "" : "s"}${viaLink} · last used ${lastUsed(u.lastUsedAt)}`;
-                      })()}
+                      {[
+                        t.familyId && `${familyOf(t, templates).length} sizes`,
+                        usageState.status === "ready" &&
+                          (() => {
+                            const u = usageByTemplate.get(t.id);
+                            if (!u || u.downloads === 0) return "Not used yet";
+                            // An admin who sent a link out wants to know it is
+                            // working, and that only shows if public traffic is
+                            // counted apart from the team's own.
+                            const viaLink =
+                              u.publicDownloads > 0 ? ` · ${u.publicDownloads} via link` : "";
+                            return `${u.downloads} download${u.downloads === 1 ? "" : "s"}${viaLink} · last used ${lastUsed(u.lastUsedAt)}`;
+                          })(),
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
                     </p>
                   )}
                   {/* Line 4: the actions, on a row of their own. Five 32px
