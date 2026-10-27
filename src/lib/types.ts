@@ -860,6 +860,15 @@ export interface GenerateInput {
    * first message (no followUp) with templateIdHint, no details and no
    * documents; otherwise treated as false. */
   allowQuestion?: boolean;
+  /** A new design's follow-up (freestyle mode): the latest finished turn's
+   * designs with the member's current text values, so the new message can
+   * revise them instead of starting over. At most 3, each at most 40
+   * fields. Images inside them keep only this company's own storage
+   * references; anything else is dropped server-side. */
+  currentDesigns?: Array<{
+    design: GeneratedDesign;
+    values: Array<{ fieldKey: string; value: string }>;
+  }>;
 }
 
 /** The kinds of Generate's details (new look, Phase 5). */
@@ -889,13 +898,18 @@ export interface GenerateFollowUp {
 
 /** A freestyle proposal's design: a complete, ephemeral template the client
  * renders and fills WITHOUT persisting anything — assembled into a
- * TemplateSchema by designToSchema. Every color arrived as a brand palette
- * key and left the server as its resolved hex. */
+ * TemplateSchema by designToSchema. Every color arrived as a brand color key
+ * (or as the look of one of the team's own elements) and left the server as
+ * baked hex. */
 export interface GeneratedDesign {
   name: string;
   canvasWidth: number;
   canvasHeight: number;
   backgroundColor?: string;
+  /** The canvas fill as a gradient (wins over backgroundColor). */
+  backgroundGradient?: TextGradient;
+  /** Effects on the whole canvas, such as grain. */
+  canvasEffects?: FieldEffect[];
   /** Caption with {field_key} merge tags intact, so a design saved to the
    * library carries a caption that works for every future fill. */
   captionTemplate: string;

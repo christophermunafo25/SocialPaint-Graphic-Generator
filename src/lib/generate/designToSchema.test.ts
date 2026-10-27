@@ -46,5 +46,29 @@ describe("designToSchema", () => {
       elementCount: 2,
       editableCount: 1,
     });
+    // A design without a gradient ground or canvas effects has neither key.
+    expect("backgroundGradient" in s).toBe(false);
+    expect("canvasEffects" in s).toBe(false);
+  });
+
+  it("carries a gradient ground and canvas grain", () => {
+    const gradient = {
+      angle: 160,
+      stops: [
+        { position: 0, color: "#2bffa3" },
+        { position: 1, color: "#e6fff1" },
+      ],
+    };
+    const grain = [
+      { type: "noise" as const, color: "#ffffff1a", size: 1.5, density: 0.6, seed: 7 },
+    ];
+    const s = designToSchema(
+      { ...design, backgroundGradient: gradient, canvasEffects: grain },
+      "co-1",
+      1,
+      { model: "claude-x", generatedAt: "2026-10-27T00:00:00Z" },
+    );
+    expect(s.backgroundGradient).toEqual(gradient);
+    expect(s.canvasEffects).toEqual(grain);
   });
 });

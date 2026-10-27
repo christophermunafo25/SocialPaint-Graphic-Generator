@@ -5,7 +5,11 @@
 // it fills the one template the chat is on with the member's answers, as
 // typed, and every other text field with that field's own placeholder, which
 // the workspace's admin wrote. So it only ever answers from the workspace's
-// own templates (the sample workspace, Acme Studios, in the fixture).
+// own templates (the sample workspace, Acme Studios, in the fixture). A
+// Generate message asks for new designs, and with no model to compose one
+// the stand-in hands back a published template's own layout as the design,
+// so the freestyle path (designToSchema, the fit pass, the editor and Save
+// to library) runs end to end locally.
 //
 // Development builds only: LocalGenerateProvider imports this module behind
 // import.meta.env.DEV, so a production bundle never contains it.
@@ -13,6 +17,7 @@
 import { mergeCaption } from "../../caption";
 import type {
   FieldValues,
+  GeneratedDesign,
   GeneratedProposal,
   GenerateInput,
   GenerateRepairInput,
@@ -33,8 +38,9 @@ export const STAND_IN_QUESTION = "What should the post say?";
 
 export const STAND_IN_MODEL = "local stand-in";
 
-/** Refused for what it cannot do: new designs (freestyle) need the model,
- * which needs the Supabase backend and a key. */
+/** Refused for what it cannot do: a new design with no published template
+ * to lend its layout needs the model, which needs the Supabase backend and
+ * a key. */
 export const STAND_IN_REFUSAL =
   "New designs need the Supabase backend and an Anthropic API key (see .env.example).";
 
@@ -134,6 +140,29 @@ function proposalFor(template: TemplateSchema, input: GenerateInput): GeneratedP
   };
 }
 
+/** A published template's own layout as a new design: its fields and its
+ * ground as they are, its member text filled as standInValues fills it.
+ * A template drawn on a background image has no ground a design can carry,
+ * so it is never one of these. */
+function designFor(
+  template: TemplateSchema,
+  input: GenerateInput,
+  ordinal: number,
+): GeneratedProposal {
+  const proposal = proposalFor(template, input);
+  const design: GeneratedDesign = {
+    name: template.name,
+    canvasWidth: template.canvasWidth,
+    canvasHeight: template.canvasHeight,
+    captionTemplate: template.captionTemplate,
+    fields: template.fields.map((f) => ({ ...f, id: `${f.id}-design-${ordinal}` })),
+    ...(template.backgroundColor ? { backgroundColor: template.backgroundColor } : {}),
+    ...(template.backgroundGradient ? { backgroundGradient: template.backgroundGradient } : {}),
+    ...(template.canvasEffects?.length ? { canvasEffects: template.canvasEffects } : {}),
+  };
+  return { ...proposal, templateId: `freestyle-${ordinal}`, design };
+}
+
 /** The templates a Generate run fills: a follow-up's own, or up to `count`
  * published templates, those serving the platform hint first, then the
  * rest, each in the store's order (most recently updated first). */
@@ -162,15 +191,16 @@ function titleFrom(brief: string): string {
 }
 
 /** One build on the local backend: a template chat (`templateIdHint`
- * set) fills that template; a Generate run fills up to `count` published
- * templates. A freestyle request is refused. */
+ * set) fills that template; a Generate run (freestyle) hands back up to
+ * `count` published templates' layouts as new designs; an older library
+ * run fills them. */
 export async function standInGenerate(
   companyId: string,
   input: GenerateInput,
   loaders: StandInLoaders,
   signal?: AbortSignal,
 ): Promise<GenerateResult> {
-  if (input.mode === "freestyle") throw new Error(STAND_IN_REFUSAL);
+  if (input.mode === "freestyle") return standInCompose(companyId, input, loaders, signal);
   let templates: TemplateSchema[];
   if (input.templateIdHint) {
     const template = await loaders.get(input.templateIdHint);
@@ -209,6 +239,36 @@ export async function standInGenerate(
               : `Here are ${templates.length} drafts from your templates.`,
           title: input.followUp ? undefined : titleFrom(input.brief),
         }),
+  };
+}
+
+/** A Generate run on the local backend: up to `count` published templates
+ * drawn as live layers, each handed back as a new design. */
+async function standInCompose(
+  companyId: string,
+  input: GenerateInput,
+  loaders: StandInLoaders,
+  signal?: AbortSignal,
+): Promise<GenerateResult> {
+  const live = (await loaders.listPublished(companyId)).filter((t) => !t.backgroundUrl);
+  const templates = pickTemplates(live, { ...input, followUp: undefined });
+  if (templates.length === 0) throw new Error(STAND_IN_REFUSAL);
+  await wait(STAND_IN_DELAY_MS, signal);
+  return {
+    proposals: templates.map((t, i) => designFor(t, input, i + 1)),
+    warnings: [],
+    meta: {
+      model: STAND_IN_MODEL,
+      generatedAt: new Date().toISOString(),
+      candidateCount: live.length,
+      briefLength: input.brief.length,
+      mode: "freestyle",
+    },
+    reply:
+      templates.length === 1
+        ? `Here's a design built on your ${templates[0].name} layout.`
+        : `Here are ${templates.length} designs built on your templates' layouts.`,
+    title: input.currentDesigns ? undefined : titleFrom(input.brief),
   };
 }
 

@@ -37,7 +37,7 @@ import type { TemplateSchema } from "@/lib/types";
 import { threadWritesSettled } from "@/lib/generate/threadSaver";
 import { fromStoredThread } from "@/lib/generate/threadStorage";
 import { deriveTryNext, platformsAskedFor, type TryNextAction } from "@/lib/generate/tryNext";
-import { classifySize, type PlatformId } from "@/lib/templates/platforms";
+import type { PlatformId } from "@/lib/templates/platforms";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -185,8 +185,9 @@ type SaveState =
  *
  * The member's photo never leaves the browser: the composer hands it here
  * as a data URL, the send snapshots it onto the message, and only its flag
- * and aspect reach the server. Freestyle runs when the library is empty
- * (the mode toggle is gone, §4) or from "Try another layout".
+ * and aspect reach the server. Every Generate message composes new designs
+ * from the brand and the team's templates (pickMode); a template chat fills
+ * its template.
  *
  * The dev backend has no Edge Functions and no model key, so the Start
  * state keeps today's honest empty state under the greeting there.
@@ -227,9 +228,8 @@ export function GenerateChat({
     [company],
   );
   const published = publishedState.status === "ready" ? publishedState.data : null;
-  // With no published templates the library has nothing to fill, but
-  // freestyle still works from the brand kit: every run goes freestyle and
-  // the Start state says why.
+  // Generate composes either way; with no published templates there is no
+  // house style to learn from, and the designs come from the brand alone.
   const libraryEmpty = !template && published !== null && published.length === 0;
 
   // ── Saving (§9.8) ──────────────────────────────────────────────────────
@@ -355,18 +355,6 @@ export function GenerateChat({
   useEffect(() => {
     if (startReady && takeComposerFocus()) composerRef.current?.focus();
   });
-
-  // Platforms the published library covers, by each template's canvas size
-  // (the catalogue's classification). Uncovered ones stay pickable but dim:
-  // the hint is a preference, and the server falls back to the whole
-  // library with a warning when nothing matches.
-  const covered = useMemo(() => {
-    const set = new Set<PlatformId>();
-    for (const t of published ?? []) {
-      for (const p of classifySize(t.canvasWidth, t.canvasHeight).platforms) set.add(p);
-    }
-    return set;
-  }, [published]);
 
   // ── The thread ─────────────────────────────────────────────────────────
   const { scrollRef, columnRef, columnWidth, follow, preserve } = useThreadScroll(threadLayout);
@@ -1083,8 +1071,11 @@ export function GenerateChat({
                     platform={{
                       value: platform,
                       onChange: setPlatform,
-                      covered: published ? covered : null,
-                      dimUncovered: published !== null && !libraryEmpty,
+                      // Generate composes a new design at any platform's
+                      // size, so no platform is dimmed for having no
+                      // template of its own.
+                      covered: null,
+                      dimUncovered: false,
                     }}
                     variations={{ value: variations, onChange: setVariations }}
                     details={{ value: details, onChange: setDetails }}

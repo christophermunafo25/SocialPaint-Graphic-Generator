@@ -19,7 +19,6 @@ import {
   pickToolUse,
   resolveDetails,
   validateQuestion,
-  validateFreestyle,
   validateGeneration,
   validateRepair,
   validateReply,
@@ -27,11 +26,8 @@ import {
   validateTitle,
   type CandidateField,
   type CandidateTemplate,
-  type FreestyleContext,
   type GenerateFollowUpInput,
   type GenerateModelOutput,
-  type ProposedDesign,
-  type ProposedDesignField,
   type ProposedGeneration,
 } from "./generateValidate.ts";
 import { HttpError } from "./http.ts";
@@ -491,179 +487,7 @@ describe("repair requests", () => {
   });
 });
 
-describe("freestyle designs", () => {
-  const ctx: FreestyleContext = {
-    canvasWidth: 1200,
-    canvasHeight: 1200,
-    palette: [
-      { key: "primary", hex: "#2f3b4c" },
-      { key: "paper", hex: "#f4f1ea" },
-    ],
-    typeStyleKeys: ["heading", "body"],
-  };
-
-  const designField = (over: Partial<ProposedDesignField> = {}): ProposedDesignField => ({
-    label: "Headline",
-    fieldKey: "headline",
-    type: "text",
-    value: "Now hiring in Evanston",
-    box: { x: 100, y: 100, width: 1000, height: 200 },
-    ...over,
-  });
-
-  const design = (over: Partial<ProposedDesign> = {}): ProposedDesign => ({
-    name: "Hiring card",
-    backgroundColorKey: "paper",
-    fields: [
-      designField(),
-      designField({ label: "Details", fieldKey: "details", value: "Starts in October" }),
-    ],
-    caption: "We're hiring in Evanston.",
-    why: "A clean announcement layout.",
-    ...over,
-  });
-
-  it("resolves palette keys to hexes and pre-fills editable values", () => {
-    const out = validateFreestyle({ proposals: [design()] }, ctx, 3);
-    const d = out.designs[0];
-    expect(d.backgroundColor).toBe("#f4f1ea");
-    expect(d.canvasWidth).toBe(1200);
-    expect(d.values).toEqual({
-      headline: "Now hiring in Evanston",
-      details: "Starts in October",
-    });
-    // Text is shrink-sized so length can never escape the model's box.
-    expect(d.fields.every((f) => f.type !== "text" || f.textSizing === "shrink")).toBe(true);
-  });
-
-  it("clamps geometry to the canvas and drops unusable boxes", () => {
-    const out = validateFreestyle(
-      {
-        proposals: [
-          design({
-            fields: [
-              designField({ box: { x: 1000, y: 100, width: 900, height: 200 } }),
-              designField({
-                label: "Sliver",
-                fieldKey: "sliver",
-                box: { x: 0, y: 0, width: 4, height: 4 },
-              }),
-              designField({ label: "Details", fieldKey: "details", value: "x" }),
-            ],
-          }),
-        ],
-      },
-      ctx,
-      3,
-    );
-    const d = out.designs[0];
-    expect(d.fields.find((f) => f.fieldKey === "headline")?.width).toBe(200);
-    expect(d.fields.some((f) => f.fieldKey === "sliver")).toBe(false);
-    expect(out.warnings.some((w) => w.includes("Sliver"))).toBe(true);
-  });
-
-  it("drops shapes without a real palette color and unbinds unknown type styles", () => {
-    const out = validateFreestyle(
-      {
-        proposals: [
-          design({
-            fields: [
-              designField({ typeStyleKey: "display" }),
-              designField({ label: "Details", fieldKey: "details", value: "x" }),
-              designField({
-                label: "Block",
-                fieldKey: "block",
-                type: "shape",
-                shape: "rect",
-                colorKey: "neon",
-              }),
-            ],
-          }),
-        ],
-      },
-      ctx,
-      3,
-    );
-    const d = out.designs[0];
-    expect(d.fields.find((f) => f.fieldKey === "headline")?.typeStyleKey).toBeUndefined();
-    expect(d.fields.some((f) => f.type === "shape")).toBe(false);
-  });
-
-  it("keeps a valid shape, fixed, filled from the palette", () => {
-    const out = validateFreestyle(
-      {
-        proposals: [
-          design({
-            fields: [
-              designField({
-                label: "Block",
-                fieldKey: "block",
-                type: "shape",
-                shape: "rect",
-                colorKey: "primary",
-                box: { x: 0, y: 0, width: 1200, height: 1200 },
-              }),
-              designField(),
-              designField({ label: "Details", fieldKey: "details", value: "x" }),
-            ],
-          }),
-        ],
-      },
-      ctx,
-      3,
-    );
-    const shape = out.designs[0].fields.find((f) => f.type === "shape");
-    expect(shape).toMatchObject({ static: true, colorHex: "#2f3b4c", width: 1200 });
-  });
-
-  it("forces image slots member-editable — the model cannot supply artwork", () => {
-    const out = validateFreestyle(
-      {
-        proposals: [
-          design({
-            fields: [
-              designField(),
-              designField({ label: "Photo", fieldKey: "photo", type: "image", static: true }),
-            ],
-          }),
-        ],
-      },
-      ctx,
-      3,
-    );
-    const photo = out.designs[0].fields.find((f) => f.type === "image");
-    expect(photo?.static).toBeUndefined();
-    expect(out.designs[0].imageFieldsNeeded).toEqual([
-      { fieldKey: "photo", label: "Photo", required: true },
-    ]);
-  });
-
-  it("keeps caption tags for editable fields, strips the rest, and resolves for display", () => {
-    const out = validateFreestyle(
-      { proposals: [design({ caption: "We're hiring: {headline} {ghost}" })] },
-      ctx,
-      3,
-    );
-    const d = out.designs[0];
-    expect(d.captionTemplate).toBe("We're hiring: {headline}");
-    expect(d.caption).toBe("We're hiring: Now hiring in Evanston");
-    expect(out.warnings.some((w) => w.includes("{ghost}"))).toBe(true);
-  });
-
-  it("rejects a design with too little left after validation", () => {
-    let thrown: unknown;
-    try {
-      validateFreestyle(
-        { proposals: [design({ fields: [designField({ static: true, value: "" })] })] },
-        ctx,
-        3,
-      );
-    } catch (e) {
-      thrown = e;
-    }
-    expect(thrown).toBeInstanceOf(GenerateValidationError);
-  });
-
+describe("the canvas a new design targets", () => {
   it("picks the canvas from the platform, falling back to the neutral square", () => {
     expect(canvasForPlatform("linkedin")).toEqual({ width: 1080, height: 1350 });
     expect(canvasForPlatform(undefined)).toEqual({ width: 1440, height: 1440 });
@@ -1276,34 +1100,6 @@ describe("reply and title: bounded work on runaway output", () => {
 });
 
 describe("reply and title ride along with the proposals", () => {
-  const freestyleCtx: FreestyleContext = {
-    canvasWidth: 1200,
-    canvasHeight: 1200,
-    palette: [{ key: "primary", hex: "#2f3b4c" }],
-    typeStyleKeys: [],
-  };
-  const freestyleDesign: ProposedDesign = {
-    name: "Hiring card",
-    fields: [
-      {
-        label: "Headline",
-        fieldKey: "headline",
-        type: "text",
-        value: "Now hiring",
-        box: { x: 100, y: 100, width: 1000, height: 200 },
-      },
-      {
-        label: "Details",
-        fieldKey: "details",
-        type: "text",
-        value: "Starts in October",
-        box: { x: 100, y: 400, width: 1000, height: 200 },
-      },
-    ],
-    caption: "We're hiring.",
-    why: "A clean layout.",
-  };
-
   it("validateGeneration returns the cleaned reply and title", () => {
     const out = validateGeneration(
       {
@@ -1318,26 +1114,11 @@ describe("reply and title ride along with the proposals", () => {
     expect(out.title).toBe("Creative Director post");
   });
 
-  it("validateFreestyle returns the cleaned reply and title", () => {
-    const out = validateFreestyle(
-      { proposals: [freestyleDesign], reply: "A new layout.", title: '"Hiring card"' },
-      freestyleCtx,
-      1,
-    );
-    expect(out.reply).toBe("A new layout.");
-    expect(out.title).toBe("Hiring card");
-  });
-
   it("leaves both out of the JSON when the model sent none, as an older model does", () => {
     const out = validateGeneration(output([proposed()]), LIBRARY, 3);
     const body = JSON.parse(JSON.stringify(out)) as Record<string, unknown>;
     expect("reply" in body).toBe(false);
     expect("title" in body).toBe(false);
-    const free = validateFreestyle({ proposals: [freestyleDesign] }, freestyleCtx, 1);
-    expect(Object.keys(JSON.parse(JSON.stringify(free)) as object).sort()).toEqual([
-      "designs",
-      "warnings",
-    ]);
   });
 
   it("drops unusable ones silently: no error, no warning", () => {
@@ -1363,28 +1144,8 @@ describe("reply and title ride along with the proposals", () => {
 // ---------------------------------------------------------------------------
 
 describe("warnings reach the member without an em dash", () => {
-  const ctx: FreestyleContext = {
-    canvasWidth: 1200,
-    canvasHeight: 1200,
-    palette: [{ key: "primary", hex: "#2f3b4c" }],
-    typeStyleKeys: ["heading"],
-  };
-  const el = (over: Partial<ProposedDesignField>): ProposedDesignField => ({
-    label: "Headline",
-    fieldKey: "headline",
-    type: "text",
-    value: "Now hiring",
-    box: { x: 100, y: 100, width: 800, height: 200 },
-    ...over,
-  });
-  const good: ProposedDesign = {
-    name: "Good",
-    fields: [el({}), el({ label: "Details", fieldKey: "details", value: "Starts in October" })],
-    caption: "We're hiring.",
-    why: "Clean.",
-  };
-
-  /** Every warning path in this module, triggered once. */
+  /** Every warning path in this module, triggered once. New designs' own
+   * warnings are covered beside them, in compose.test.ts. */
   const everyWarning = (): string[] => {
     const all: string[] = [];
     // Library: too many proposals, an image value, a duplicate, a bad photo
@@ -1410,63 +1171,6 @@ describe("warnings reach the member without an em dash", () => {
     );
     // Library: the same template twice while the library has alternatives.
     all.push(...validateGeneration(output([proposed(), proposed()]), LIBRARY, 3).warnings);
-    // Freestyle: too many designs.
-    all.push(...validateFreestyle({ proposals: [good, good] }, ctx, 1).warnings);
-    // Freestyle: every element-level warning in one design (12 elements kept
-    // of 13), a bad background and caption tag, and a second design that
-    // fails outright so its error is forwarded as a warning.
-    all.push(
-      ...validateFreestyle(
-        {
-          proposals: [
-            {
-              name: "Busy",
-              backgroundColorKey: "ghostbg",
-              caption: "Hi {ghost}",
-              why: "Busy.",
-              fields: [
-                el({}),
-                el({ label: "Details", fieldKey: "details", typeStyleKey: "display" }),
-                el({ label: "", fieldKey: "nolabel" }),
-                el({ label: "Weird", fieldKey: "weird", type: "video" as never }),
-                el({ label: "Boxless", fieldKey: "boxless", box: undefined as never }),
-                el({
-                  label: "Sliver",
-                  fieldKey: "sliver",
-                  box: { x: 0, y: 0, width: 4, height: 4 },
-                }),
-                el({
-                  label: "Huge",
-                  fieldKey: "huge",
-                  box: { x: 0, y: 0, width: 1200, height: 1200 },
-                }),
-                el({
-                  label: "Blob",
-                  fieldKey: "blob",
-                  type: "shape",
-                  shape: "star" as never,
-                  colorKey: "primary",
-                }),
-                el({
-                  label: "Block",
-                  fieldKey: "block",
-                  type: "shape",
-                  shape: "rect",
-                  colorKey: "neon",
-                }),
-                el({ label: "Photo", fieldKey: "photo", type: "image", static: true }),
-                el({ label: "Tagline", fieldKey: "tagline", static: true, value: "" }),
-                el({ label: "Blank", fieldKey: "blank", value: "" }),
-                el({ label: "Thirteenth", fieldKey: "thirteenth" }),
-              ],
-            },
-            { ...good, fields: [el({ static: true, value: "" })] },
-          ],
-        },
-        ctx,
-        2,
-      ).warnings,
-    );
     // Repair: a duplicate rewrite.
     all.push(
       ...validateRepair(
@@ -1489,61 +1193,17 @@ describe("warnings reach the member without an em dash", () => {
       'Proposal 1: dropped the value for image field "photo". Images come from the member.',
       'Proposal 1: imageTargetFieldKey "ghost" is not a member image slot on "Template t1", so it was ignored.',
       "Some proposals use the same template even though the library has alternatives.",
-      "The model returned 2 designs. Keeping the first 1.",
-      "Design 1: 13 elements. Keeping the first 12.",
-      'Design 1: "Details" names type style "display", which is not in the brand kit, so it was left unbound.',
-      "Design 1: dropped an element with no label.",
-      'Design 1: dropped "Weird", unknown type "video".',
-      'Design 1: dropped "Boxless", no usable box.',
-      'Design 1: dropped "Sliver", box under 8px after clamping.',
-      'Design 1: dropped "Huge", box covers over 90% of the canvas.',
-      'Design 1: dropped shape "Blob". The kind must be rect or ellipse.',
-      'Design 1: "Block" names palette key "neon", which is not in the brand kit.',
-      'Design 1: dropped shape "Block". Shapes need a brand palette color.',
-      'Design 1: image "Photo" made member-editable. The model cannot supply artwork.',
-      'Design 1: dropped fixed text "Tagline", no content.',
-      'Design 1: editable "Blank" has no value, left for the member.',
-      'Design 1: background key "ghostbg" is not in the brand kit, so the canvas is white.',
-      "Design 1: caption tag {ghost} doesn't match any field, so it was removed.",
-      'Design 2: dropped fixed text "Headline", no content.',
-      "Design 2: too little survived validation (0 elements, 0 editable text). Propose a fuller design.",
       'Duplicate value for "headline". Keeping the first.',
     ]);
   });
 
   it("returns no warning containing U+2014", () => {
     const warnings = everyWarning();
-    expect(warnings.length).toBeGreaterThan(20);
+    expect(warnings.length).toBeGreaterThan(5);
     expect(warnings.filter((w) => w.includes("\u2014"))).toEqual([]);
   });
 
   it("rewrites an em dash in the model's text that a warning quotes", () => {
-    const free = validateFreestyle(
-      {
-        proposals: [
-          {
-            ...good,
-            backgroundColorKey: "ghost \u2014 bg",
-            fields: [
-              ...good.fields,
-              el({ label: "Hero \u2014 main", fieldKey: "hero", box: undefined as never }),
-              el({ label: "Stray\u2014thing", fieldKey: "stray", type: "bogus \u2014 x" as never }),
-              el({ label: "Kicker", fieldKey: "kicker", typeStyleKey: "display \u2014 xl" }),
-              el({ label: "Tint", fieldKey: "tint", colorKey: "neon \u2014 green" }),
-            ],
-          },
-        ],
-      },
-      ctx,
-      1,
-    );
-    expect(free.warnings).toEqual([
-      'Design 1: dropped "Hero, main", no usable box.',
-      'Design 1: dropped "Stray, thing", unknown type "bogus, x".',
-      'Design 1: "Kicker" names type style "display, xl", which is not in the brand kit, so it was left unbound.',
-      'Design 1: "Tint" names palette key "neon, green", which is not in the brand kit.',
-      'Design 1: background key "ghost, bg" is not in the brand kit, so the canvas is white.',
-    ]);
     const lib = validateGeneration(
       output([proposed({ imageTargetFieldKey: "photo \u2014 main" })]),
       [{ ...LIBRARY[0], name: "Hiring \u2014 portrait" }],
@@ -1556,23 +1216,9 @@ describe("warnings reach the member without an em dash", () => {
 
   it("stays fast on a warning that quotes a long model string", () => {
     const start = performance.now();
-    const out = validateFreestyle(
-      {
-        proposals: [
-          {
-            ...good,
-            fields: [
-              ...good.fields,
-              el({
-                label: "Kicker",
-                fieldKey: "kicker",
-                typeStyleKey: `\u2014x${" ".repeat(64000)}y`,
-              }),
-            ],
-          },
-        ],
-      },
-      ctx,
+    const out = validateGeneration(
+      output([proposed({ imageTargetFieldKey: `\u2014x${" ".repeat(64000)}y` })]),
+      LIBRARY,
       1,
     );
     expect(out.warnings).toHaveLength(1);
@@ -1587,25 +1233,8 @@ describe("warnings reach the member without an em dash", () => {
     // strings keep theirs: they go back to the model, never to the member.
     const source = readFileSync(new URL("./generateValidate.ts", import.meta.url), "utf8");
     const calls = [...source.matchAll(/warnings\.push\(([\s\S]*?)\);/g)].map((m) => m[1]);
-    expect(calls.length).toBeGreaterThan(20);
+    expect(calls.length).toBeGreaterThan(5);
     expect(calls.filter((c) => c.includes("\u2014") || c.includes("\\u2014"))).toEqual([]);
-  });
-
-  it("keeps the model-facing error for the retry turn unchanged", () => {
-    let thrown: unknown;
-    try {
-      validateFreestyle(
-        { proposals: [{ ...good, fields: [el({ static: true, value: "" })] }] },
-        ctx,
-        1,
-      );
-    } catch (e) {
-      thrown = e;
-    }
-    expect(thrown).toBeInstanceOf(GenerateValidationError);
-    expect((thrown as GenerateValidationError).errors[0]).toBe(
-      "Design 1: too little survived validation (0 elements, 0 editable text) \u2014 propose a fuller design.",
-    );
   });
 });
 

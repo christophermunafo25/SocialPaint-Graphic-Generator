@@ -22,6 +22,15 @@
 // field is legal and the client flags it. Every model response is metered
 // into ai_usage_events.
 //
+// Generate makes NEW designs (mode "freestyle" on the wire, compose.ts):
+// every published template is read into a house style and the most relevant
+// ones are shown element by element, so a new post reuses the team's exact
+// looks and layout habits, with Brand Studio's colors, type styles, fonts,
+// logos and images as its only materials. A library request with no pinned
+// template (a chat saved before Generate composed) may still find that no
+// template suits its brief; the model then says so and a new design is
+// composed instead of a template being forced to fit.
+//
 // v1 is the authenticated portal. The public-link variant would change how
 // companyId and the candidate list are resolved — which is why candidates
 // are built here and passed into the model call explicitly, never queried
@@ -53,12 +62,10 @@ import {
   followUpSection,
   modelCandidates,
   parseFollowUp,
-  validateFreestyle,
   validateGeneration,
   validateRepair,
   type CandidateTemplate,
   type FieldRowLike,
-  type FreestyleModelOutput,
   type GenerateModelOutput,
   type GeneratePlatform,
   type RepairFieldRequest,
@@ -80,14 +87,40 @@ import {
   type ModelContentBlock,
   type ResolvedDetail,
 } from "../_shared/generateValidate.ts";
+import {
+  COMPOSE_TOOL,
+  brandAssetSource,
+  buildBrand,
+  composeContext,
+  composeUserText,
+  errorsAsWarnings,
+  parseCurrentDesigns,
+  refFromStored,
+  validateCompose,
+  type AssetRowLike,
+  type ComposeValidation,
+  type KitRowLike,
+  type RefTemplate,
+  type Row,
+  type TemplateRowLike as ComposeTemplateRow,
+} from "../_shared/compose.ts";
 import { recordModelUsage, type AnthropicUsage, type UsageKind } from "../_shared/usage.ts";
-import { GENERATE_SYSTEM_PROMPT } from "./prompt.ts";
+import { COMPOSE_SYSTEM_PROMPT, GENERATE_SYSTEM_PROMPT } from "./prompt.ts";
 
 const ANTHROPIC_MODEL = Deno.env.get("ANTHROPIC_MODEL") ?? "claude-sonnet-4-6";
 
 /** Real retrieval is a later problem; this cap is where it will go. Ordered
  * by most recently updated, and the response says so when it truncates. */
 const CANDIDATE_CAP = 40;
+
+/** How many published templates a new design learns from (the house style
+ * reads all of them; the most relevant are shown element by element). */
+const COMPOSE_TEMPLATE_CAP = 40;
+
+/** A new design's answer is longer than a fill's: up to three layered
+ * designs, every element with its box and look. */
+const COMPOSE_MAX_TOKENS = 8000;
+const FILL_MAX_TOKENS = 4000;
 
 /** Rate limits. Unlike auto-build (admin-only, rare), this endpoint is
  * member-facing and every call costs money. Both buckets ride the shared
@@ -196,6 +229,35 @@ const ASK_MEMBER_TOOL = {
   },
 };
 
+/** A library follow-up's brief as one brief: the chat's first brief, a blank
+ * line, then the new message, the earlier text giving way first when the
+ * two run past the 1,500 characters a brief may have. Mirrors composeBrief
+ * in src/lib/generate/chatReducer.ts, which folds a new design's follow-ups
+ * the same way. */
+function foldBrief(previous: string, next: string): string {
+  const room = 1500 - next.length - 2;
+  if (room <= 0) return next.slice(0, 1500);
+  const head = previous.slice(0, room).trimEnd();
+  return head ? `${head}\n\n${next}` : next;
+}
+
+/** Offered beside propose_posts when the model may choose among templates
+ * (no pin): its way to say that no template suits the brief, so a new
+ * design is composed instead of a template being forced to fit. */
+const COMPOSE_NEW_TOOL = {
+  name: "compose_new_design",
+  description:
+    "Call instead of propose_posts when no candidate template's purpose suits the brief. A new design is composed from the brand and the team's templates instead.",
+  input_schema: {
+    type: "object",
+    additionalProperties: false,
+    required: ["reason"],
+    properties: {
+      reason: { type: "string", description: "One sentence: why no template fits." },
+    },
+  },
+};
+
 function buildUserText(
   brief: string,
   candidates: CandidateTemplate[],
@@ -283,7 +345,18 @@ interface ClaudeAttempt {
   raw: unknown[];
   /** Tools also called in the same response and ignored (pickToolUse). */
   dropped: string[];
+  /** The response ran into its token limit, so its tool input may be cut. */
+  truncated: boolean;
 }
+
+/** The system prompt and token limit a call runs with. */
+interface CallSetup {
+  system: string;
+  maxTokens: number;
+}
+
+const FILL_CALL: CallSetup = { system: GENERATE_SYSTEM_PROMPT, maxTokens: FILL_MAX_TOKENS };
+const COMPOSE_CALL: CallSetup = { system: COMPOSE_SYSTEM_PROMPT, maxTokens: COMPOSE_MAX_TOKENS };
 
 /** Meters one model response. Built per request, so the caller's company and
  * user ride along; never throws (recordModelUsage). */
@@ -296,6 +369,7 @@ type Meter = (kind: UsageKind, usage: AnthropicUsage | undefined) => Promise<voi
  * happens to it. */
 async function callClaude(
   apiKey: string,
+  setup: CallSetup,
   userText: string,
   tools: Tool[],
   meter: { record: Meter; kind: UsageKind },
@@ -327,10 +401,8 @@ async function callClaude(
     },
     body: JSON.stringify({
       model: ANTHROPIC_MODEL,
-      max_tokens: 4000,
-      system: [
-        { type: "text", text: GENERATE_SYSTEM_PROMPT, cache_control: { type: "ephemeral" } },
-      ],
+      max_tokens: setup.maxTokens,
+      system: [{ type: "text", text: setup.system, cache_control: { type: "ephemeral" } }],
       tools,
       tool_choice:
         tools.length === 1
@@ -347,6 +419,7 @@ async function callClaude(
   const body = (await res.json()) as {
     content: ModelContentBlock[];
     usage?: AnthropicUsage;
+    stop_reason?: string;
   };
   await meter.record(meter.kind, body.usage);
   const picked = pickToolUse(
@@ -360,6 +433,7 @@ async function callClaude(
     toolUseId: picked.id,
     raw: body.content,
     dropped: picked.dropped,
+    truncated: body.stop_reason === "max_tokens",
   };
 }
 
@@ -407,282 +481,179 @@ function tooMany(req: Request): Response {
 }
 
 // ---------------------------------------------------------------------------
-// Freestyle — a new design instead of a library fill (opt-in per request).
-// The model proposes layout for once; the palette, the type styles, and the
-// published library as reference are what keep it on brand. See the shared
-// module for the constraint set.
+// Compose: Generate's new designs (compose.ts has the constraint set). The
+// model proposes layout, and what keeps it on brand is what it builds from:
+// Brand Studio as its only materials, the team's published templates as a
+// measured house style and as references whose looks it reuses by id, and
+// the deterministic checks that place, recolor and gate the result.
 // ---------------------------------------------------------------------------
 
-const PROPOSE_DESIGNS_TOOL = {
-  name: "propose_designs",
-  description:
-    "Propose new on-brand designs: for each, a name, an optional background palette key, elements with geometry, a caption, and one sentence on the design.",
-  input_schema: {
-    type: "object",
-    additionalProperties: false,
-    required: ["proposals"],
-    properties: {
-      proposals: {
-        type: "array",
-        minItems: 1,
-        maxItems: 3,
-        items: {
-          type: "object",
-          additionalProperties: false,
-          required: ["name", "fields", "caption", "why"],
-          properties: {
-            name: { type: "string" },
-            backgroundColorKey: {
-              type: "string",
-              description: "Brand palette key for the canvas fill; omit for white.",
-            },
-            fields: {
-              type: "array",
-              items: {
-                type: "object",
-                additionalProperties: false,
-                required: ["label", "fieldKey", "type", "box"],
-                properties: {
-                  label: { type: "string" },
-                  fieldKey: { type: "string" },
-                  type: { type: "string", enum: ["text", "multiline", "image", "shape"] },
-                  shape: { type: "string", enum: ["rect", "ellipse"] },
-                  static: {
-                    type: "boolean",
-                    description: "true = part of the design; false = a per-post fact.",
-                  },
-                  value: {
-                    type: "string",
-                    description:
-                      "Fixed content for static text; the pre-filled member value otherwise. Never for images.",
-                  },
-                  box: {
-                    type: "object",
-                    additionalProperties: false,
-                    required: ["x", "y", "width", "height"],
-                    properties: {
-                      x: { type: "number" },
-                      y: { type: "number" },
-                      width: { type: "number" },
-                      height: { type: "number" },
-                    },
-                  },
-                  typeStyleKey: { type: "string" },
-                  colorKey: { type: "string" },
-                  fontSizePx: { type: "number" },
-                  align: { type: "string", enum: ["left", "center", "right"] },
-                  uppercase: { type: "boolean" },
-                },
-              },
-            },
-            caption: { type: "string" },
-            why: { type: "string" },
-          },
-        },
-      },
-      ...REPLY_AND_TITLE_PROPERTIES,
-    },
-  },
-};
-
-interface BrandKitRow {
-  colors: Array<{ key: string; name: string; hex: string }> | null;
-  type_styles: Array<{ key: string; name: string }> | null;
-  guidelines: string[] | null;
-}
-
-/** Reference digest rows: enough of each published template's anatomy for
- * the model to learn the house style — never the whole record. */
-interface ReferenceFieldRow {
-  template_id: string;
-  label: string;
-  type: string;
-  is_static: boolean | null;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  font_size_px: number | null;
-  type_style_key: string | null;
-  color_hex: string | null;
-}
-
-function buildFreestyleUserText(input: {
+interface ComposeInput {
   brief: string;
-  canvas: { width: number; height: number };
-  platform: GeneratePlatform | undefined;
-  kit: BrandKitRow;
-  references: unknown[];
+  platformHint: GeneratePlatform | undefined;
   count: number;
   image: { aspect: number | undefined } | undefined;
   documents: DocumentInput[];
   facts: FactInput[];
-}): string {
-  const parts: string[] = [];
-  parts.push(`Brief: ${input.brief}`);
-  if (input.facts.length > 0) parts.push(factsSection(input.facts));
-  if (input.documents.length > 0) parts.push(documentsSection(input.documents));
-  if (input.platform) parts.push(`The member is posting on: ${input.platform}.`);
-  if (input.image) {
-    parts.push(
-      `The member has already supplied a photo${
-        input.image.aspect !== undefined
-          ? ` (width over height about ${input.image.aspect.toFixed(2)})`
-          : ""
-      }. Give each design one member image element shaped to suit it.`,
-    );
-  }
-  parts.push(
-    `Design NEW graphics for a ${input.canvas.width}x${input.canvas.height}px canvas. Return exactly ${input.count} proposal${input.count === 1 ? "" : "s"}, each a genuinely different composition.`,
-  );
-  parts.push(
-    `Brand palette (use these KEYS, nothing else): ${JSON.stringify(input.kit.colors ?? [])}`,
-  );
-  parts.push(`Brand type styles: ${JSON.stringify(input.kit.type_styles ?? [])}`);
-  if (input.kit.guidelines?.length) {
-    parts.push(`Brand guidelines: ${JSON.stringify(input.kit.guidelines)}`);
-  }
-  parts.push(
-    input.references.length
-      ? `The team's published templates, as style reference (match their spacing, hierarchy, and voice):\n${JSON.stringify(input.references)}`
-      : "The team has no published templates to reference. Design cleanly from the palette and type styles alone.",
-  );
-  return parts.join("\n\n");
+  /** A follow-up's current drafts (D1, D2), already parsed. */
+  drafts: RefTemplate[];
 }
 
-async function handleFreestyle(
+/** What a compose call needs from the database: the brand kit, the brand
+ * assets, and every published template with its fields. */
+async function loadComposeMaterial(
+  db: ReturnType<typeof serviceClient>,
+  companyId: string,
+): Promise<{ kit: KitRowLike | null; assets: AssetRowLike[]; published: RefTemplate[] }> {
+  const [kitRes, assetRes, templateRes] = await Promise.all([
+    db
+      .from("brand_kits")
+      .select(
+        "colors, type_styles, guidelines, primary_logo_asset_id, primary_logo_dark_asset_id, primary_logo_light_asset_id, allow_off_palette, allow_style_override",
+      )
+      .eq("company_id", companyId)
+      .eq("is_active", true)
+      .maybeSingle(),
+    db
+      .from("brand_assets")
+      .select("id, kind, name, storage_path, metadata")
+      .eq("company_id", companyId)
+      .in("kind", ["logo", "image", "font"])
+      .order("created_at", { ascending: false })
+      .limit(60),
+    db
+      .from("templates")
+      .select("*")
+      .eq("company_id", companyId)
+      .eq("status", "published")
+      .order("updated_at", { ascending: false })
+      .limit(COMPOSE_TEMPLATE_CAP),
+  ]);
+  for (const res of [kitRes, assetRes, templateRes]) {
+    if (res.error) {
+      logError("template-generate", res.error);
+      throw new HttpError(500, GENERIC_ERROR);
+    }
+  }
+  const assets = (assetRes.data ?? []) as AssetRowLike[];
+  const templates = (templateRes.data ?? []) as Array<ComposeTemplateRow & Row>;
+  const fieldsByTemplate = new Map<string, Row[]>();
+  if (templates.length > 0) {
+    const { data: fieldRows, error } = await db
+      .from("template_fields")
+      .select("*")
+      .in(
+        "template_id",
+        templates.map((t) => t.id),
+      )
+      .order("sort_order", { ascending: true });
+    if (error) {
+      logError("template-generate", error);
+      throw new HttpError(500, GENERIC_ERROR);
+    }
+    for (const row of (fieldRows ?? []) as Row[]) {
+      const id = String(row.template_id);
+      const list = fieldsByTemplate.get(id) ?? [];
+      list.push(row);
+      fieldsByTemplate.set(id, list);
+    }
+  }
+  const logoSources = new Set(
+    assets.filter((a) => a.kind === "logo").map((a) => brandAssetSource(a.storage_path)),
+  );
+  const published = templates
+    .map((t, i) => refFromStored(`T${i + 1}`, t, fieldsByTemplate.get(t.id) ?? [], logoSources))
+    .filter((r): r is RefTemplate => r !== null);
+  return { kit: (kitRes.data ?? null) as KitRowLike | null, assets, published };
+}
+
+async function handleCompose(
   json: ReturnType<typeof jsonResponder>,
   db: ReturnType<typeof serviceClient>,
   apiKey: string,
   companyId: string,
   meter: Meter,
-  input: {
-    brief: string;
-    platformHint: GeneratePlatform | undefined;
-    count: number;
-    image: { aspect: number | undefined } | undefined;
-    documents: DocumentInput[];
-    facts: FactInput[];
-  },
+  input: ComposeInput,
+  carried: string[] = [],
 ): Promise<Response> {
-  const warnings: string[] = [];
-  const { data: kitRow } = await db
-    .from("brand_kits")
-    .select("colors, type_styles, guidelines")
-    .eq("company_id", companyId)
-    .eq("is_active", true)
-    .maybeSingle();
-  const kit: BrandKitRow = (kitRow as BrandKitRow | null) ?? {
-    colors: [],
-    type_styles: [],
-    guidelines: [],
-  };
-  if (!kit.colors?.length) {
+  const { kit, assets, published } = await loadComposeMaterial(db, companyId);
+  const brand = buildBrand({ kit, assets, refs: published });
+  if (!brand.colors.some((c) => c.source !== "neutral")) {
     throw new HttpError(
       400,
-      "Freestyle needs a brand palette to stay on brand. Add colors in Brand Studio first.",
+      "New designs need your brand colors. Add colors in Brand Studio first.",
     );
-  }
-
-  // Style reference: the most recent published templates, digested. Unlike
-  // library mode this is context, not a candidate set — no hint narrowing.
-  const { data: templateRows } = await db
-    .from("templates")
-    .select("id, name, category, canvas_width, canvas_height, background_color")
-    .eq("company_id", companyId)
-    .eq("status", "published")
-    .order("updated_at", { ascending: false })
-    .limit(12);
-  const refRows = (templateRows ?? []) as Array<
-    TemplateRowLike & { background_color: string | null }
-  >;
-  let references: unknown[] = [];
-  if (refRows.length > 0) {
-    const { data: fieldRows } = await db
-      .from("template_fields")
-      .select(
-        "template_id, label, type, is_static, x, y, width, height, font_size_px, type_style_key, color_hex",
-      )
-      .in(
-        "template_id",
-        refRows.map((r) => r.id),
-      )
-      .order("sort_order", { ascending: true });
-    const byTemplate = new Map<string, ReferenceFieldRow[]>();
-    for (const row of (fieldRows ?? []) as ReferenceFieldRow[]) {
-      const list = byTemplate.get(row.template_id) ?? [];
-      if (list.length < 15) list.push(row);
-      byTemplate.set(row.template_id, list);
-    }
-    references = refRows.map((r) => ({
-      name: r.name,
-      category: r.category,
-      canvasWidth: r.canvas_width,
-      canvasHeight: r.canvas_height,
-      backgroundColor: r.background_color,
-      elements: (byTemplate.get(r.id) ?? []).map((f) => ({
-        label: f.label,
-        type: f.type,
-        static: f.is_static === true || undefined,
-        x: f.x,
-        y: f.y,
-        width: f.width,
-        height: f.height,
-        fontSizePx: f.font_size_px ?? undefined,
-        typeStyleKey: f.type_style_key ?? undefined,
-        colorHex: f.color_hex ?? undefined,
-      })),
-    }));
   }
 
   const canvas = canvasForPlatform(input.platformHint);
-  const ctx = {
-    canvasWidth: canvas.width,
-    canvasHeight: canvas.height,
-    palette: (kit.colors ?? []).map(({ key, hex }) => ({ key, hex })),
-    typeStyleKeys: (kit.type_styles ?? []).map((s) => s.key),
-  };
-  const userText = buildFreestyleUserText({
-    brief: input.brief,
+  const ctx = composeContext({
     canvas,
-    platform: input.platformHint,
-    kit,
-    references,
+    brand,
+    published,
+    brief: input.brief,
+    drafts: input.drafts,
+    hasPhoto: Boolean(input.image),
+  });
+  const extraSections: string[] = [];
+  if (input.facts.length > 0) extraSections.push(factsSection(input.facts));
+  if (input.documents.length > 0) extraSections.push(documentsSection(input.documents));
+  const userText = composeUserText(ctx, {
+    brief: input.brief,
     count: input.count,
-    image: input.image,
-    documents: input.documents,
-    facts: input.facts,
+    platform: input.platformHint,
+    photoAspect: input.image ? (input.image.aspect ?? null) : undefined,
+    extraSections,
   });
 
-  const tools = [PROPOSE_DESIGNS_TOOL];
-  let attempt = await callClaude(apiKey, userText, tools, { record: meter, kind: "freestyle" });
-  let validated;
-  try {
-    validated = validateFreestyle(attempt.input as FreestyleModelOutput, ctx, input.count);
-  } catch (e) {
-    if (!(e instanceof GenerateValidationError)) throw e;
-    attempt = await callClaude(
-      apiKey,
-      userText,
-      tools,
-      { record: meter, kind: "retry" },
-      { prior: attempt, errors: e.errors },
-    );
-    try {
-      validated = validateFreestyle(attempt.input as FreestyleModelOutput, ctx, input.count);
-    } catch {
-      return json(
-        {
-          error:
-            "Freestyle couldn't produce a usable design from this brief. The library and the manual fill path are unaffected. Try again, or generate from your templates instead.",
-        },
-        502,
-      );
+  const tools = [COMPOSE_TOOL];
+  const first = await callClaude(apiKey, COMPOSE_CALL, userText, tools, {
+    record: meter,
+    kind: "freestyle",
+  });
+  let result: ComposeValidation = validateCompose(first.input, ctx, input.count);
+  if (first.truncated || result.errors.length > 0) {
+    // One retry. A response cut off at its token limit cannot be shown back
+    // to the model as a tool call, so that retry starts over with a note.
+    const second = first.truncated
+      ? await callClaude(
+          apiKey,
+          COMPOSE_CALL,
+          `${userText}\n\nYour last answer ran past the length limit. Keep each design to at most 14 elements and the copy short.`,
+          tools,
+          { record: meter, kind: "retry" },
+        )
+      : await callClaude(
+          apiKey,
+          COMPOSE_CALL,
+          userText,
+          tools,
+          { record: meter, kind: "retry" },
+          { prior: first, errors: result.errors },
+        );
+    const retried = validateCompose(second.input, ctx, input.count);
+    // The retry wins unless it saved fewer designs than the first answer.
+    if (retried.designs.length > 0 && retried.designs.length >= result.designs.length) {
+      result = {
+        ...retried,
+        reply: retried.reply ?? result.reply,
+        title: retried.title ?? result.title,
+      };
+    } else if (result.designs.length === 0) {
+      result = retried;
     }
+  }
+  if (result.designs.length === 0) {
+    return json(
+      {
+        error:
+          "Generate couldn't make a usable design from this brief. Try again, or reword the brief.",
+      },
+      502,
+    );
   }
 
   return json({
-    proposals: validated.designs.map((d, i) => ({
+    proposals: result.designs.map((d, i) => ({
       templateId: `freestyle-${i + 1}`,
       templateName: d.name,
       values: d.values,
@@ -694,20 +665,21 @@ async function handleFreestyle(
         canvasWidth: d.canvasWidth,
         canvasHeight: d.canvasHeight,
         backgroundColor: d.backgroundColor,
+        backgroundGradient: d.backgroundGradient,
+        canvasEffects: d.canvasEffects,
         captionTemplate: d.captionTemplate,
         fields: d.fields,
       },
     })),
     // The chat's reply and title: undefined unless the model gave usable
-    // ones, and JSON drops undefined keys, so without them the body is
-    // exactly what it always was.
-    reply: validated.reply,
-    title: validated.title,
-    warnings: [...warnings, ...validated.warnings],
+    // ones, and JSON drops undefined keys.
+    reply: result.reply,
+    title: result.title,
+    warnings: [...carried, ...result.warnings, ...errorsAsWarnings(result.errors)],
     meta: {
       model: ANTHROPIC_MODEL,
       generatedAt: new Date().toISOString(),
-      candidateCount: references.length,
+      candidateCount: published.length,
       briefLength: input.brief.length,
       mode: "freestyle",
     },
@@ -808,7 +780,10 @@ async function handleRepair(
 
   const userText = buildRepairUserText(repair.brief, candidate, requests);
   const tools = [REPAIR_VALUES_TOOL];
-  let attempt = await callClaude(apiKey, userText, tools, { record: meter, kind: "repair" });
+  let attempt = await callClaude(apiKey, FILL_CALL, userText, tools, {
+    record: meter,
+    kind: "repair",
+  });
   let validated;
   try {
     validated = validateRepair(attempt.input as RepairModelOutput, requests);
@@ -816,6 +791,7 @@ async function handleRepair(
     if (!(e instanceof GenerateValidationError)) throw e;
     attempt = await callClaude(
       apiKey,
+      FILL_CALL,
       userText,
       tools,
       { record: meter, kind: "retry" },
@@ -915,6 +891,10 @@ Deno.serve(async (req) => {
     // one that arrives anyway is validated and then ignored. It never
     // narrows the candidate list; it only adds a section to the user text.
     const followUp = parseFollowUp(body.followUp);
+    // A new design's follow-up carries its drafts themselves (D1, D2), so a
+    // message like "make the date Friday" revises them in place. Parsed in
+    // both modes; only compose reads it.
+    const drafts = parseCurrentDesigns(body.currentDesigns, companyId) ?? [];
 
     // Template chat fields (PROMPT §10.1). Details belong to one template, so
     // they need its hint, and a freestyle design has no fields to hold them.
@@ -947,15 +927,17 @@ Deno.serve(async (req) => {
       facts.length === 0 &&
       documents.length === 0;
 
+    const composeInput: ComposeInput = {
+      brief,
+      platformHint,
+      count,
+      image,
+      documents,
+      facts,
+      drafts,
+    };
     if (mode === "freestyle") {
-      return await handleFreestyle(json, db, apiKey, companyId, meter, {
-        brief,
-        platformHint,
-        count,
-        image,
-        documents,
-        facts,
-      });
+      return await handleCompose(json, db, apiKey, companyId, meter, composeInput);
     }
 
     // 1. The candidate list — published templates plus their field lists.
@@ -975,7 +957,14 @@ Deno.serve(async (req) => {
     }
     let rows = (templateRows ?? []) as TemplateRowLike[];
     if (rows.length === 0) {
-      throw new HttpError(400, "No published templates to generate from. Publish one first.");
+      if (templateIdHint) {
+        throw new HttpError(400, "No published templates to generate from. Publish one first.");
+      }
+      // Nothing to fill: a new design, from the brand alone.
+      return await handleCompose(json, db, apiKey, companyId, meter, {
+        ...composeInput,
+        brief: followUp ? foldBrief(followUp.previousBrief, brief) : brief,
+      });
     }
     if (rows.length > CANDIDATE_CAP) {
       rows = rows.slice(0, CANDIDATE_CAP);
@@ -1056,12 +1045,23 @@ Deno.serve(async (req) => {
       mayAsk,
       facts,
     );
-    const tools = mayAsk ? [PROPOSE_POSTS_TOOL, ASK_MEMBER_TOOL] : [PROPOSE_POSTS_TOOL];
+    // A pinned template is the member's choice; otherwise the model may say
+    // that no template suits the brief, and a new design is composed.
+    const tools = templateIdHint
+      ? mayAsk
+        ? [PROPOSE_POSTS_TOOL, ASK_MEMBER_TOOL]
+        : [PROPOSE_POSTS_TOOL]
+      : [PROPOSE_POSTS_TOOL, COMPOSE_NEW_TOOL];
     const settle = (a: ClaudeAttempt) =>
-      a.toolName === ASK_MEMBER_TOOL.name
-        ? { question: validateQuestion(a.input) }
-        : validateGeneration(a.input as GenerateModelOutput, candidates, count, details);
-    let attempt = await callClaude(apiKey, userText, tools, { record: meter, kind: "generate" });
+      a.toolName === COMPOSE_NEW_TOOL.name
+        ? { composeInstead: true as const }
+        : a.toolName === ASK_MEMBER_TOOL.name
+          ? { question: validateQuestion(a.input) }
+          : validateGeneration(a.input as GenerateModelOutput, candidates, count, details);
+    let attempt = await callClaude(apiKey, FILL_CALL, userText, tools, {
+      record: meter,
+      kind: "generate",
+    });
     let validated;
     try {
       validated = settle(attempt);
@@ -1069,6 +1069,7 @@ Deno.serve(async (req) => {
       if (!(e instanceof GenerateValidationError)) throw e;
       attempt = await callClaude(
         apiKey,
+        FILL_CALL,
         userText,
         tools,
         { record: meter, kind: "retry" },
@@ -1090,6 +1091,20 @@ Deno.serve(async (req) => {
     // off; if it does, the proposals win and the question is let go.
     if (attempt.dropped.length > 0) {
       warnings.push(`The model also called ${attempt.dropped.join(", ")}, which was ignored.`);
+    }
+
+    // No template suits the brief: a new design instead of a forced fill.
+    // The library's warnings so far (a truncated list) still apply.
+    if ("composeInstead" in validated) {
+      return await handleCompose(
+        json,
+        db,
+        apiKey,
+        companyId,
+        meter,
+        { ...composeInput, brief: followUp ? foldBrief(followUp.previousBrief, brief) : brief },
+        warnings,
+      );
     }
 
     // Provenance is the product's stated position: every generated thing
