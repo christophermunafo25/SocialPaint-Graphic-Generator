@@ -4,8 +4,10 @@ import type { FieldVector, VectorPath } from "../types";
  * else (a quote, an angle bracket, a url) never reaches the DOM. */
 const PATH_DATA = /^[MmLlHhVvCcSsQqTtAaZz0-9eE.,+\-\s]+$/;
 const HEX6 = /^#[0-9a-fA-F]{6}$/;
-/** Generous for a logo, small enough that a bad row can't stall a render. */
+/** Generous for a logo, small enough that a bad row can't stall a render:
+ * per path, and for the whole vector. */
 const MAX_PATH_CHARS = 200_000;
+const MAX_TOTAL_CHARS = 500_000;
 const MAX_PATHS = 500;
 
 const finite = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
@@ -35,9 +37,13 @@ export function readVector(raw: unknown): FieldVector | null {
   if (w <= 0 || h <= 0) return null;
   if (!Array.isArray(v.paths)) return null;
   const paths: VectorPath[] = [];
+  let total = 0;
   for (const item of v.paths.slice(0, MAX_PATHS)) {
     const path = readPath(item);
-    if (path) paths.push(path);
+    if (!path) continue;
+    total += path.d.length;
+    if (total > MAX_TOTAL_CHARS) break;
+    paths.push(path);
   }
   if (!paths.length) return null;
   const out: FieldVector = { viewBox: [minX, minY, w, h], paths };

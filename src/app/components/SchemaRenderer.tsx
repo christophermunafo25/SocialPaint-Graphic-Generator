@@ -2,6 +2,7 @@ import React, {
   forwardRef,
   useCallback,
   useEffect,
+  useId,
   useImperativeHandle,
   useMemo,
   useRef,
@@ -543,6 +544,15 @@ function BoxOverlay({ effects, radius }: { effects: FieldEffect[]; radius?: Corn
   );
 }
 
+/** An id unique to this rendered element, for the defs an inline SVG
+ * references. The same template often renders several times on one page
+ * (the builder's look strip, gallery thumbnails); a url(#id) resolves to
+ * the first match in the document, so a per-field id would paint another
+ * look's gradient, or nothing when that copy is hidden. */
+function useSvgId(): string {
+  return useId().replace(/[^\w-]/g, "");
+}
+
 /** 5-point star, unit square. */
 const STAR_POINTS = "50,0 61,35 98,35 68,57 79,91 50,70 21,91 32,57 2,35 39,35";
 
@@ -559,6 +569,7 @@ const STAR_POINTS = "50,0 61,35 98,35 68,57 79,91 50,70 21,91 32,57 2,35 39,35";
  * outside doubles it and masks the shape's interior away. Center and
  * outside paint beyond the box without moving it. */
 function ShapeFieldBox({ field }: { field: TemplateField }) {
+  const uid = useSvgId();
   const kind = field.shape ?? "rect";
   const stroke = field.strokeColor;
   const strokeW = stroke ? Math.max(1, field.strokeWidthPx ?? 1) : 0;
@@ -602,10 +613,10 @@ function ShapeFieldBox({ field }: { field: TemplateField }) {
     );
   }
 
-  const gradId = `sp-shape-grad-${field.id}`;
-  const clipId = `sp-shape-clip-${field.id}`;
-  const maskId = `sp-shape-mask-${field.id}`;
-  const noiseId = `sp-shape-noise-${field.id}`;
+  const gradId = `sp-shape-grad-${uid}`;
+  const clipId = `sp-shape-clip-${uid}`;
+  const maskId = `sp-shape-mask-${uid}`;
+  const noiseId = `sp-shape-noise-${uid}`;
   const paint = g ? `url(#${gradId})` : solid;
   const w = field.width;
   const h = field.height;
@@ -750,9 +761,11 @@ function GradientDef({
  * paths are drawn with the vector's line style; a path's own color wins
  * (multi-color art such as a logo). A gradient or grain paints a rect over
  * the whole art and is masked to the paths, so a gradient runs across the
- * icon rather than restarting in each path. Drop shadows and blur are the
- * filter, as for shapes; inner shadows don't apply. */
+ * icon rather than restarting in each path; it paints after the paths that
+ * carry their own color. Drop shadows and blur are the filter, as for
+ * shapes; inner shadows don't apply. */
 function IconFieldBox({ field }: { field: TemplateField }) {
+  const uid = useSvgId();
   const vector = readVector(field.vector);
   const effects = readEffects(field.effects);
   const filter = filterCss(effects);
@@ -763,10 +776,10 @@ function IconFieldBox({ field }: { field: TemplateField }) {
   const color = field.colorHex ?? DEFAULT_FILL_HEX;
   const g = field.textGradient?.stops.length ? field.textGradient : undefined;
   const noise = noiseEffects(effects);
-  const gradId = `sp-icon-grad-${field.id}`;
-  const ownMaskId = `sp-icon-mask-${field.id}`;
-  const artMaskId = `sp-icon-art-${field.id}`;
-  const noiseId = `sp-icon-noise-${field.id}`;
+  const gradId = `sp-icon-grad-${uid}`;
+  const ownMaskId = `sp-icon-mask-${uid}`;
+  const artMaskId = `sp-icon-art-${uid}`;
+  const noiseId = `sp-icon-noise-${uid}`;
   // Room for lines drawn on the viewBox edge.
   const pad = sw;
   const area = { x: minX - pad, y: minY - pad, width: vw + pad * 2, height: vh + pad * 2 };

@@ -1532,8 +1532,10 @@ export function TemplateBuilder({
   /** A Lucide icon picked from the palette: added at the canvas center,
    * cascading off whatever already sits there, and selected. */
   const addIconField = async (name: string) => {
-    const { loadLucideVector } = await import("@/lib/icons/catalog");
-    const vector = await loadLucideVector(name);
+    // A chunk that fails to load leaves the canvas as it was.
+    const vector = await import("@/lib/icons/catalog")
+      .then((c) => c.loadLucideVector(name))
+      .catch(() => null);
     if (!vector) return;
     const canvas = { width: draft.canvasWidth, height: draft.canvasHeight };
     const point = cascadePoint(

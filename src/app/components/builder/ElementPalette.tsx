@@ -201,7 +201,7 @@ export function ElementPalette({
           <IconTile onAddIcon={onAddIcon} />
         </div>
         <p style={{ fontSize: 10.5, color: "var(--text-muted)" }}>
-          Shapes are design-only. Members never see them as fields.
+          Shapes and icons are design-only. Members never see them as fields.
         </p>
       </div>
       {logos.length > 0 && (

@@ -2505,9 +2505,9 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
                     {(() => {
                       // "Image · image" says nothing — suppress the type when it
                       // duplicates the label. "fixed" carries information except
-                      // on shapes, which are always design-only.
+                      // on shapes and icons, which are always design-only.
                       const segment =
-                        f.type === "shape"
+                        f.type === "shape" || f.type === "icon"
                           ? null
                           : f.static
                             ? "fixed"

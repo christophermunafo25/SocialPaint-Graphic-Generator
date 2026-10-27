@@ -2004,6 +2004,7 @@ export function FieldInspector(props: FieldInspectorProps) {
             const autoLabel = oldName !== undefined && field.label === `${iconTitle(oldName)} icon`;
             void import("@/lib/icons/catalog")
               .then((c) => c.loadLucideVector(name, weight))
+              .catch(() => null)
               .then((vector) => {
                 if (!vector) return;
                 onChange(autoLabel ? { vector, label: `${iconTitle(name)} icon` } : { vector });

@@ -97,15 +97,15 @@ export function IconPicker({ anchorRef, side, selected, onPick, onClose }: IconP
     };
   }, [onClose, anchorRef]);
 
+  // The popover sizes to its grid; it opens beside the anchor, held to the
+  // viewport by the edge it opens from.
   const rect = anchorRef.current?.getBoundingClientRect();
-  const gap = 4;
-  const width = CELL * COLUMNS + gap * (COLUMNS - 1) + 2 * 8 + 2;
   const maxHeight = Math.min(440, window.innerHeight - 16);
-  const left = rect
-    ? side === "left"
-      ? Math.max(8, rect.left - width - 8)
-      : Math.min(window.innerWidth - width - 8, rect.right + 8)
-    : 8;
+  const edge: React.CSSProperties = !rect
+    ? { left: 8 }
+    : side === "left"
+      ? { right: Math.max(8, window.innerWidth - rect.left + 8) }
+      : { left: Math.min(rect.right + 8, window.innerWidth - 8) };
   const top = rect ? Math.min(Math.max(8, rect.top), window.innerHeight - maxHeight - 8) : 8;
 
   return (
@@ -115,14 +115,15 @@ export function IconPicker({ anchorRef, side, selected, onPick, onClose }: IconP
       aria-label="Icon picker"
       className="fixed flex flex-col"
       style={{
-        left,
+        ...edge,
         top,
-        width,
+        width: "max-content",
         maxHeight,
         zIndex: "var(--z-popover)" as unknown as number,
-        background: "var(--bg-surface)",
-        border: "1px solid var(--border)",
-        borderRadius: "var(--radius-card)",
+        background: "var(--surface-raised)",
+        border: "1px solid var(--border-default)",
+        borderRadius: "var(--radius-menu)",
+        boxShadow: "var(--elevation-medium)",
         padding: "var(--space-2xs)",
         gap: "var(--space-2xs)",
       }}
@@ -132,7 +133,7 @@ export function IconPicker({ anchorRef, side, selected, onPick, onClose }: IconP
           aria-hidden
           style={{
             position: "absolute",
-            left: "var(--space-2xs)",
+            left: "var(--space-3xs)",
             width: 14,
             height: 14,
             color: "var(--text-muted)",
@@ -141,7 +142,7 @@ export function IconPicker({ anchorRef, side, selected, onPick, onClose }: IconP
         <input
           autoFocus
           className="sp-input w-full"
-          style={{ paddingLeft: 28 }}
+          style={{ paddingLeft: "var(--space-md)" }}
           placeholder="Search icons"
           aria-label="Search icons"
           value={query}
@@ -156,7 +157,7 @@ export function IconPicker({ anchorRef, side, selected, onPick, onClose }: IconP
           className="grid"
           style={{
             gridTemplateColumns: `repeat(${COLUMNS}, ${CELL}px)`,
-            gap,
+            gap: "var(--space-3xs)",
             overflowY: "auto",
           }}
         >
@@ -174,7 +175,7 @@ export function IconPicker({ anchorRef, side, selected, onPick, onClose }: IconP
                 height: CELL,
                 borderRadius: "var(--radius-menu-item)",
                 color: "var(--text-primary)",
-                background: name === selected ? "var(--bg-hover)" : undefined,
+                background: name === selected ? "var(--state-selected)" : undefined,
               }}
             >
               <Glyph name={name} />
@@ -183,12 +184,8 @@ export function IconPicker({ anchorRef, side, selected, onPick, onClose }: IconP
         </div>
       ) : (
         <p
-          style={{
-            padding: "var(--space-md) 0",
-            textAlign: "center",
-            fontSize: 12,
-            color: "var(--text-muted)",
-          }}
+          className="t-caption-s"
+          style={{ padding: "var(--space-md) 0", textAlign: "center", color: "var(--text-muted)" }}
         >
           No icons match “{query.trim()}”
         </p>

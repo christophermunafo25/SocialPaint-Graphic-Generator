@@ -551,7 +551,12 @@ type StyleProp =
   | (typeof ICON_STYLE_PROPS)[number];
 
 const ALL_STYLE_PROPS = [
-  ...new Set<StyleProp>([...TEXT_STYLE_PROPS, ...IMAGE_STYLE_PROPS, ...SHAPE_STYLE_PROPS]),
+  ...new Set<StyleProp>([
+    ...TEXT_STYLE_PROPS,
+    ...IMAGE_STYLE_PROPS,
+    ...SHAPE_STYLE_PROPS,
+    ...ICON_STYLE_PROPS,
+  ]),
 ];
 
 export type FieldStyle = Partial<Pick<TemplateField, StyleProp>>;

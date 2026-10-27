@@ -29,6 +29,15 @@ describe("readVector", () => {
     expect(v?.paths).toEqual([{ d: "M1 1L2 2z" }]);
   });
 
+  it("stops drawing once the vector's path data passes its size cap", () => {
+    const d = `M0 0${"l1 1".repeat(40_000)}`;
+    const v = readVector({
+      viewBox: [0, 0, 1, 1],
+      paths: Array.from({ length: 10 }, () => ({ d })),
+    });
+    expect(v?.paths.length).toBe(3);
+  });
+
   it("drops unknown paints, rules, colors and line styles", () => {
     const v = readVector({
       viewBox: [0, 0, 16, 16],
