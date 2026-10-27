@@ -5,7 +5,7 @@ This folder carries the brand-system program into the platform, one phase at a t
 - `README.md`: setting up and running a phase.
 - `RULES.md`: the rules every phase follows.
 - `strategy/BRAND-SYSTEM.md`: the strategy this plan implements (the bar, the ceiling today, the eight pillars, references and recipes, the generation loop, the proof).
-- `PHASE-0.md` to `PHASE-3.md`: the Claude Code prompts for Phases 0 to 3. Each later phase gets its own prompt when it starts, written against the code as it stands then.
+- `PHASE-0.md` to `PHASE-4.md`: the Claude Code prompts for Phases 0 to 4. Each later phase gets its own prompt when it starts, written against the code as it stands then.
 - `CEILING.md`: written by Phase 0, the measured account of what the renderer and importer can express today.
 
 ## The bar
@@ -40,7 +40,7 @@ One phase is one prompt, one branch and one pull request. Gates are where the se
 | 1     | A     | Depth in the renderer: shadow, blur and glow, radial gradients (mesh deferred by CJ, 2026-10-25), grain, outside stroke, as field and canvas properties with export parity                                       | Phase 0, D7, property shapes at the recon gate | The GTM composer fixture rebuilt with depth matches its golden within baseline on all engines              | Done |
 | 2     | A     | Depth in the builder: inspector controls, variant override keys, validators, starters                                                                                                   | Phase 1                                        | Builder edits round-trip through save and export                                                           | Done        |
 | 3     | A     | Icons and vectors: an icon element recolorable by role, vector shapes from the paths the importer records                                                                               | Phase 1                                        | Fixtures with icons and vectors match their goldens                                                        | Done        |
-| 4     | A     | Import fidelity: offline import replay from saved node JSON, effects kept as properties, radial gradients as fields, true alpha masks, vectors                                          | Phases 1 to 3                                  | The GTM composer and Feature Highlight frames import as live layers that match their goldens               | Not started |
+| 4     | A     | Import fidelity: offline import replay from saved node JSON, effects kept as properties, radial gradients as fields, true alpha masks, vectors                                          | Phases 1 to 3                                  | The GTM composer and Feature Highlight frames import as live layers that match their goldens               | In progress |
 | 5     | B     | The system model: `brand_kits.system`, pure resolvers (roles, schemes, contrast fixes, type scale), off-palette enforcement on shapes, strokes, plates and the background               | D1, D3, D4                                     | Resolvers tested; every existing fixture renders unchanged                                                 | Not started |
 | 6     | B     | Colors (roles, neutrals, pairings, gradients), the Light & dark page, and "Add colourway" in the builder                                                                                | Phase 5, D2, D6, new-look Phase 9 merged       | Screens match their frames; generated colourway fixtures pass contrast                                     | Not started |
 | 7     | B     | Type scale, Layout, Shape & effects, and the Character control                                                                                                                          | Phase 5, D5                                    | Same                                                                                                       | Not started |
@@ -68,3 +68,4 @@ One phase is one prompt, one branch and one pull request. Gates are where the se
 
 - 0048: Phase 1 (`template_fields.effects`, `template_fields.stroke_align`, `templates.canvas_effects`). 0046 and 0047 are promised to new-look Phase 9; 0039 is taken in production by `admin_storage_writes`.
 - 0049: Phase 3 (`'icon'` on the `field_type` enum, `template_fields.vector`).
+- 0050: Phase 4 (`template_fields.image_rect`).
