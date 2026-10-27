@@ -1,0 +1,12 @@
+{
+  "name": "line-breaks-launch-dark",
+  "kind": "starter",
+  "starter": "launch-01",
+  "variantId": "dark",
+  "values": {
+    "headline": "Every member of your team can now make graphics that look designed",
+    "subhead": "Templates your admins lock and your whole team fills, so every post looks consistent"
+  },
+  "baseline": { "chromium": 0, "firefox": 1.32, "webkit": 1.81 },
+  "blurBaseline": { "chromium": 0, "firefox": 3.7, "webkit": 4.67 }
+}

@@ -332,6 +332,7 @@ export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererPro
                   templateId={schema.id}
                   rect={layout.fieldRects.get(field.id)}
                   fontSize={layout.fontSizes.get(field.id)}
+                  text={layout.texts.get(field.id)}
                 />
               );
             })}
@@ -466,6 +467,9 @@ interface FieldBoxProps {
   /** Text size from the layout pass (reflects shrinkToFit). Absent → the
    * field computes its own, renderer-identical. */
   fontSize?: number;
+  /** The string the layout pass measured (member text may keep its last two
+   * words together). Absent → renderedText, as the host has no pass. */
+  text?: string;
 }
 
 /** Positioning wrapper (boxStyle) around the field's visual content. The
@@ -480,6 +484,7 @@ export function FieldBox({
   brandKit,
   rect,
   fontSize,
+  text,
   templateId,
 }: FieldBoxProps & { templateId?: string }) {
   return (
@@ -490,7 +495,13 @@ export function FieldBox({
         resetKeys={[field, value]}
         fallback={() => <FieldCrashFallback width={field.width} height={field.height} />}
       >
-        <FieldBoxContent field={field} value={value} brandKit={brandKit} fontSize={fontSize} />
+        <FieldBoxContent
+          field={field}
+          value={value}
+          brandKit={brandKit}
+          fontSize={fontSize}
+          text={text}
+        />
       </ErrorBoundary>
     </div>
   );
@@ -500,7 +511,7 @@ export function FieldBox({
  * parent sized to field.width × field.height. The builder hosts this inside
  * its screen-space interaction boxes so content moves with the box during
  * drags — no second source of truth, no catch-up jump on release. */
-export function FieldBoxContent({ field, value, brandKit, fontSize }: FieldBoxProps) {
+export function FieldBoxContent({ field, value, brandKit, fontSize, text }: FieldBoxProps) {
   // Static elements carry their own fixed content — member values never apply.
   const effective = field.static ? field.staticValue : value;
   if (field.type === "shape") {
@@ -515,7 +526,15 @@ export function FieldBoxContent({ field, value, brandKit, fontSize }: FieldBoxPr
     // keeps an imported full-bleed photo visible after Fixed is turned off.
     return <ImageFieldBox field={field} value={effective || field.staticValue} />;
   }
-  return <TextFieldBox field={field} value={effective} brandKit={brandKit} fontSize={fontSize} />;
+  return (
+    <TextFieldBox
+      field={field}
+      value={effective}
+      brandKit={brandKit}
+      fontSize={fontSize}
+      text={text}
+    />
+  );
 }
 
 /** Above any field's zIndex: canvas noise covers the whole graphic. */
@@ -880,13 +899,21 @@ function RadialGradientDef({
   );
 }
 
-function TextFieldBox({ field, value, brandKit, fontSize: layoutFontSize }: FieldBoxProps) {
+function TextFieldBox({
+  field,
+  value,
+  brandKit,
+  fontSize: layoutFontSize,
+  text: layoutText,
+}: FieldBoxProps) {
   // Brand rules engine: properties defined by the bound type style win.
   const style = resolveFieldStyle(field, brandKit);
   // Fixed elements ARE the graphic: their content (falling back to the label)
   // always paints at full strength — the dimmed treatment is only for
   // placeholders a member has yet to fill.
-  const text = renderedText(field, value);
+  // The layout pass's string when it ran, so painting and measuring share
+  // one string (member text may keep its last two words together).
+  const text = layoutText ?? renderedText(field, value);
   const atFullStrength = Boolean(value) || Boolean(field.static);
   // The layout pass owns the size when it ran (identical math, plus
   // shrinkToFit for grouped stacks); the inline computation remains for

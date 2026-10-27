@@ -22,9 +22,13 @@ import { resolveFieldStyle, type ResolvedFieldStyle } from "../brand/resolveStyl
 import {
   DEFAULT_FONT_SIZE,
   fitTextWith,
+  fitsAtSize,
+  joinLastWords,
+  lastWordPair,
   minFontSizeFor,
   measuredTextHeight as measuredHeight,
   measuredTextWidth,
+  orphanedParagraphs,
   wrapLines,
   type LineMeasurer,
   type TextFit,
@@ -58,6 +62,10 @@ export interface LayoutResult {
    * ungrouped fields this is exactly what the renderer computed before this
    * feature existed; grouped children also reflect shrinkToFit. */
   fontSizes: Map<string, number>;
+  /** The string every text-ish field paints and measures with, by field id:
+   * renderedText, with a paragraph's last two words joined by a no-break
+   * space where member text would end on an orphan (typesetFieldText). */
+  texts: Map<string, string>;
   warnings: string[];
 }
 
@@ -97,6 +105,101 @@ export function resolvedFontSize(
   measure: LineMeasurer,
 ): number {
   return fitFieldText(field, style, text, measure).fontSizePx;
+}
+
+// ---------------------------------------------------------------------------
+// Line breaks: member text never ends a paragraph on one stray word
+// (docs/design/line-breaks-and-size-families, Phase 1, D1 and D2)
+// ---------------------------------------------------------------------------
+
+/** How far below the size it chose the fit may shrink to clear an orphan. */
+const ORPHAN_SHRINK_LIMIT = 0.08;
+
+/** Does the line-break rule apply? Member-supplied text in a multiline
+ * field only: a value that is there and isn't the placeholder. Fixed text
+ * and a painted placeholder are the admin's and paint as authored. */
+export function typesetsMemberText(field: TemplateField, value: string | undefined): boolean {
+  if (field.type !== "multiline" || field.static) return false;
+  const typed = value?.trim();
+  return Boolean(typed) && typed !== (field.placeholder ?? "").trim();
+}
+
+/** A plate means hug: the box derives from the content, so there is
+ * nothing for Shrink or Fill to fit into and the field fits as Free. */
+const fitStyleOf = (f: TemplateField, style: ResolvedFieldStyle): ResolvedFieldStyle =>
+  f.plateColor ? { ...style, textSizing: "free" } : style;
+
+/** The width a field's text wraps at: inside the plate's side paddings. */
+const wrapWidthOf = (f: TemplateField): number => Math.max(1, f.width - platePad(f).x);
+
+/** Join each paragraph that ends on an orphan at this size, when its last
+ * two words fit the wrap width together. A pair wider than that keeps its
+ * orphan: joining it would only break the pair mid-word. */
+export function joinAtSize(
+  field: TemplateField,
+  style: ResolvedFieldStyle,
+  text: string,
+  fontSizePx: number,
+  measure: LineMeasurer,
+): string {
+  const width = wrapWidthOf(field);
+  const paragraphs = text.split("\n");
+  const joinable = orphanedParagraphs(text, width, style, fontSizePx, measure).filter((i) => {
+    const pair = lastWordPair(paragraphs[i]);
+    return pair !== null && measuredTextWidth(style, pair, fontSizePx, measure) <= width;
+  });
+  return joinable.length ? joinLastWords(text, joinable) : text;
+}
+
+export interface TypesetText {
+  /** What paints and measures. */
+  text: string;
+  fontSizePx: number;
+  overflows: boolean;
+}
+
+/** A text field's painted string and size. Everything an admin authored,
+ * and any value the rule doesn't cover, comes back exactly as the fit
+ * computes it. Member text that ends a paragraph on an orphan first tries
+ * up to 8% more shrink (Shrink and Fill, never below the floor), and
+ * otherwise keeps the last two words together. The rule only picks sizes
+ * that fit and joins that keep the line count, so it never overflows. */
+export function typesetFieldText(
+  field: TemplateField,
+  style: ResolvedFieldStyle,
+  value: string | undefined,
+  measure: LineMeasurer,
+): TypesetText {
+  const text = renderedText(field, value);
+  const fitStyle = fitStyleOf(field, style);
+  const fit = fitFieldText(field, fitStyle, text, measure);
+  if (!typesetsMemberText(field, value) || fit.overflows) return { text, ...fit };
+
+  const size = fit.fontSizePx;
+  const mode = fitStyle.textSizing ?? "free";
+  if (
+    (mode === "shrink" || mode === "fill") &&
+    orphanedParagraphs(text, field.width, style, size, measure).length > 0
+  ) {
+    const input = { ...style, multiline: true, width: field.width, height: field.height };
+    const lowest = Math.max(
+      minFontSizeFor(style, style.fontSizePx ?? DEFAULT_FONT_SIZE),
+      Math.ceil(size * (1 - ORPHAN_SHRINK_LIMIT)),
+    );
+    for (let next = size - 1; next >= lowest; next--) {
+      if (
+        fitsAtSize(measure, input, text, next) &&
+        orphanedParagraphs(text, field.width, style, next, measure).length === 0
+      ) {
+        return { text, fontSizePx: next, overflows: false };
+      }
+    }
+  }
+  return {
+    text: joinAtSize(field, style, text, size, measure),
+    fontSizePx: size,
+    overflows: false,
+  };
 }
 
 /** A text field's hugged content height at the given size — the field-shaped
@@ -383,7 +486,7 @@ function sizedChildren(
       continue;
     }
     const style = styleOf(ctx, f);
-    const text = renderedText(f, ctx.values[f.fieldKey]);
+    const text = ctx.result.texts.get(f.id) ?? renderedText(f, ctx.values[f.fieldKey]);
     const size = ctx.result.fontSizes.get(f.id) ?? resolvedFontSize(f, style, text, ctx.measure);
     // A multiline field under Shrink is a FIXED box — its font adapts to its
     // authored extents, so it contributes constants to the stack. Everything
@@ -627,13 +730,23 @@ function applyShrink(ctx: Ctx, group: LayoutGroup, anchorPos: number, vertical: 
     let changed = false;
     for (const f of textFields) {
       const style = styleOf(ctx, f);
-      const text = renderedText(f, ctx.values[f.fieldKey]);
+      const value = ctx.values[f.fieldKey];
+      const text = ctx.result.texts.get(f.id) ?? renderedText(f, value);
       const current =
         ctx.result.fontSizes.get(f.id) ?? resolvedFontSize(f, style, text, ctx.measure);
       const floor = minFontSizeFor(style, style.fontSizePx ?? DEFAULT_FONT_SIZE);
       const next = Math.max(floor, Math.floor(current * scale));
       if (next < current) {
         ctx.result.fontSizes.set(f.id, next);
+        // The orphans move with the size: join again from the member's own
+        // text. The extra shrink belongs to Shrink and Fill fields, which
+        // this loop never resizes.
+        if (typesetsMemberText(f, value)) {
+          ctx.result.texts.set(
+            f.id,
+            joinAtSize(f, style, renderedText(f, value), next, ctx.measure),
+          );
+        }
         changed = true;
       }
     }
@@ -671,6 +784,7 @@ export function computeLayout(
     fieldRects: new Map(),
     groupRects: new Map(),
     fontSizes: new Map(),
+    texts: new Map(),
     warnings: [],
   };
   const hidden = new Set(opts.hiddenKeys);
@@ -704,19 +818,19 @@ export function computeLayout(
       continue;
     }
     const style = styleOf(ctx, f);
-    const text = renderedText(f, values[f.fieldKey]);
+    // typesetFieldText owns the painted string and the size: renderedText
+    // at the fitted size unless member text would end on an orphan.
+    const fit = typesetFieldText(f, style, values[f.fieldKey], measure);
+    const text = fit.text;
+    result.texts.set(f.id, text);
+    result.fontSizes.set(f.id, fit.fontSizePx);
     // A plate makes the field hug on both axes at the authored font size —
     // textSizing has nothing to fit into when the box derives from the
-    // content, so it is ignored (free semantics).
+    // content, so it is ignored (free semantics, in typesetFieldText).
     if (f.plateColor) {
-      const free = { ...style, textSizing: "free" as const };
-      const fit = fitFieldText(f, free, text, measure);
-      result.fontSizes.set(f.id, fit.fontSizePx);
       result.fieldRects.set(f.id, platedRect(f, style, text, fit.fontSizePx, measure));
       continue;
     }
-    const fit = fitFieldText(f, style, text, measure);
-    result.fontSizes.set(f.id, fit.fontSizePx);
     result.fieldRects.set(
       f.id,
       // "free" is the only mode whose box follows the text; shrink and

@@ -11,6 +11,8 @@ export type Engine = "chromium" | "firefox" | "webkit";
 export interface VerdictFixture {
   name: string;
   kind: "figma" | "starter" | "synthetic";
+  /** A starter fixture that names its blueprint here renders its own file. */
+  starter?: string;
   variantId?: string | null;
   baseline?: Partial<Record<Engine, number>>;
   /** The blurred share's baseline (brand-system Phase 1). Optional: a
@@ -37,8 +39,15 @@ export type Verdict =
 
 /** The dev render address for a fixture. A starter fixture named
  * starter-<key>-<variant> with that variantId renders blueprint <key> in
- * that colourway; a figma or synthetic fixture renders its own file. */
+ * that colourway, and one that names its blueprint with `starter` renders
+ * its own file (with its values) in its variantId; a figma or synthetic
+ * fixture renders its own file. */
 export function routeFor(fixture: VerdictFixture): string {
+  if (fixture.kind === "starter" && fixture.starter) {
+    const route = `/dev/render/${encodeURIComponent(fixture.name)}`;
+    const variant = fixture.variantId;
+    return variant ? `${route}?variant=${encodeURIComponent(variant)}` : route;
+  }
   if (fixture.kind === "starter") {
     let key = fixture.name.slice("starter-".length);
     const variant = fixture.variantId;

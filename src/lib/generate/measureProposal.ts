@@ -17,7 +17,14 @@ import {
   measuredTextWidth,
   type LineMeasurer,
 } from "../render/autoFit";
-import { computeLayout, fitFieldText, groupFieldKeys, type LayoutOptions } from "../render/layout";
+import {
+  computeLayout,
+  fitFieldText,
+  groupFieldKeys,
+  typesetFieldText,
+  type LayoutOptions,
+  type TypesetText,
+} from "../render/layout";
 
 /** How one proposed value sits in its box:
  *  - "fits": nothing to do.
@@ -60,6 +67,20 @@ type MeasurableSchema = Pick<
  * could ever fit it. Half a pixel admits rounding and never a line. */
 const SUBPIXEL_PX = 0.5;
 
+/** The member's value as it paints: typesetFieldText, so a value that ends
+ * on an orphan is measured at the size and with the string the layout
+ * chooses. A plated field keeps the fit this pass has always classified it
+ * with (its set mode), though the layout paints it as Free. */
+function typeset(
+  field: TemplateField,
+  style: ResolvedFieldStyle,
+  text: string,
+  measure: LineMeasurer,
+): TypesetText {
+  if (field.plateColor) return { text, ...fitFieldText(field, style, text, measure) };
+  return typesetFieldText(field, style, text, measure);
+}
+
 /** Overflow-only classification of one field with one candidate text,
  * ignoring groups (those are checked against the full layout). */
 function overflowsAlone(
@@ -69,9 +90,8 @@ function overflowsAlone(
   measure: LineMeasurer,
 ): boolean {
   const mode = style.textSizing ?? "free";
-  if (mode === "shrink" || mode === "fill") {
-    return fitFieldText(field, style, text, measure).overflows;
-  }
+  const set = typeset(field, style, text, measure);
+  if (mode === "shrink" || mode === "fill") return set.overflows;
   // Free: the font size is fixed. A multiline box grows taller as lines
   // wrap — growth past the authored height is the overflow signal for
   // generated copy. A single line never wraps, so its signal is width.
@@ -80,7 +100,8 @@ function overflowsAlone(
     return measuredTextWidth(style, text, size, measure) > field.width;
   }
   return (
-    measuredTextHeight(true, style, text, size, field.width, measure) > field.height + SUBPIXEL_PX
+    measuredTextHeight(true, style, set.text, size, field.width, measure) >
+    field.height + SUBPIXEL_PX
   );
 }
 
@@ -182,7 +203,7 @@ export function measureProposal(
       const base = style.fontSizePx ?? DEFAULT_FONT_SIZE;
       fit =
         (mode === "shrink" || mode === "fill") &&
-        fitFieldText(field, style, value, measure).fontSizePx < base
+        typeset(field, style, value, measure).fontSizePx < base
           ? "shrinks"
           : "fits";
     }

@@ -192,6 +192,76 @@ export function wrapLines(
   return lines;
 }
 
+// ---------------------------------------------------------------------------
+// Line breaks (docs/design/line-breaks-and-size-families, Phase 1)
+// ---------------------------------------------------------------------------
+
+/** The no-break space that keeps a paragraph's last two words together.
+ * It only ever lives in the string that is measured and painted. */
+export const NO_BREAK_SPACE = "\u00A0";
+
+const wordCount = (line: string): number => line.split(/[ \u00A0]+/).filter(Boolean).length;
+
+/** Indexes of the paragraphs (text between hard line breaks) that end on an
+ * orphan at this size and wrap width: two or more lines, a last line of
+ * exactly one word, and two or more words on the line above. A one-word
+ * paragraph is never an orphan, and neither is a stack, whose line above
+ * the last also holds a single word. */
+export function orphanedParagraphs(
+  text: string,
+  width: number,
+  style: MeasuredTextStyle,
+  fontSizePx: number,
+  measure: LineMeasurer,
+): number[] {
+  const out: number[] = [];
+  text.split("\n").forEach((paragraph, i) => {
+    if (!paragraph.includes(" ")) return;
+    const lines = wrapLines(paragraph, width, style, fontSizePx, measure);
+    if (lines.length < 2) return;
+    if (wordCount(lines[lines.length - 1]) === 1 && wordCount(lines[lines.length - 2]) >= 2) {
+      out.push(i);
+    }
+  });
+  return out;
+}
+
+/** The run of spaces before a paragraph's last word, with the text before
+ * it: the joint joinLastWords turns into no-break spaces. Null when no word
+ * comes before the run. Trailing spaces are not part of it. */
+function lastJoint(paragraph: string): { head: string; run: string; last: string } | null {
+  const body = paragraph.trimEnd();
+  const m = /^(.*[^ ])( +)([^ ]+)$/s.exec(body);
+  return m ? { head: m[1], run: m[2], last: m[3] } : null;
+}
+
+/** The last two words of a paragraph as joinLastWords paints them, every
+ * space between them made no-break, or null when it has fewer than two
+ * words to join. */
+export function lastWordPair(paragraph: string): string | null {
+  const joint = lastJoint(paragraph);
+  if (!joint) return null;
+  const before = joint.head.slice(joint.head.lastIndexOf(" ") + 1);
+  return `${before}${NO_BREAK_SPACE.repeat(joint.run.length)}${joint.last}`;
+}
+
+/** Make the spaces before the last word of each listed paragraph no-break,
+ * so its last two words wrap as one. Every space in the run is converted,
+ * so the typed spacing paints as typed and no break point is left between
+ * the two words. Trailing spaces are left as typed. */
+export function joinLastWords(text: string, paragraphs: readonly number[]): string {
+  const join = new Set(paragraphs);
+  return text
+    .split("\n")
+    .map((paragraph, i) => {
+      const joint = join.has(i) ? lastJoint(paragraph) : null;
+      if (!joint) return paragraph;
+      const tail = paragraph.slice(paragraph.trimEnd().length);
+      return `${joint.head}${NO_BREAK_SPACE.repeat(joint.run.length)}${joint.last}${tail}`;
+    })
+    .join("\n");
+}
+
 /** A text field's hugged content height at the given size: line boxes times
  * the CSS line height, the same arithmetic the browser applies to the <p>. */
 export function measuredTextHeight(
@@ -266,7 +336,7 @@ export function fitTextWith(measure: LineMeasurer, input: TextFitInput, text: st
  * Multiline: no word may be wider than the box (an unbreakable word would
  * spill however small the rest gets), and the wrapped block must fit the
  * height. */
-function fitsAtSize(
+export function fitsAtSize(
   measure: LineMeasurer,
   input: TextFitInput,
   text: string,
@@ -280,7 +350,9 @@ function fitsAtSize(
     const width = measure(sample, font) + perGap * Math.max(0, sample.length - 1);
     return width <= input.width && size * lineH <= input.height;
   }
-  const words = sample.split(/[\s\n]+/).filter(Boolean);
+  // Spaces and hard breaks only: a no-break space joins its two words into
+  // one unbreakable run, exactly as the browser wraps it.
+  const words = sample.split(/[ \n]+/).filter(Boolean);
   const widest = words.every(
     (w) => measure(w, font) + perGap * Math.max(0, w.length - 1) <= input.width,
   );
