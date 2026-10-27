@@ -217,6 +217,8 @@ describe("rescaleTemplate — completeness", () => {
     strokeWidthPx: 4,
     strokeAlign: "outside", // where the stroke sits, not a length
     effects: [{ type: "dropShadow", x: 8, y: 8, blur: 32, color: "#0000001A" }],
+    // viewBox units: the art fits the box, so nothing in it is a canvas length
+    vector: { viewBox: [0, 0, 24, 24], paths: [{ d: "M5 12h14" }], stroke: { width: 2 } },
     plateColor: "#082E17",
     platePaddingX: 24,
     platePaddingY: 12,

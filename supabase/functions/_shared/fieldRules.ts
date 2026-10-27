@@ -3,7 +3,7 @@
  * An element is either fixed (the admin owns it, the member never sees it)
  * or it is a form field. A form field is required unless the admin marked
  * it Optional; an empty optional field is left off the graphic instead of
- * leaving a hole. Shapes are design-only and never reach the member form.
+ * leaving a hole. Shapes and icons are design-only and never reach the member form.
  *
  * A non-fixed image is required like any other field: the member uploads
  * one before the graphic renders. (The generate edge function still skips
@@ -19,7 +19,7 @@ export function isRequiredField(f: {
   optional?: boolean;
 }): boolean {
   if (f.static) return false;
-  if (f.type === "shape") return false;
+  if (f.type === "shape" || f.type === "icon") return false;
   if (f.optional) return false;
   return true;
 }

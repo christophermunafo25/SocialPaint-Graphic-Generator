@@ -62,7 +62,7 @@ function wait(ms: number, signal?: AbortSignal): Promise<void> {
 export function standInValues(template: TemplateSchema, input: GenerateInput): FieldValues {
   const values: FieldValues = {};
   for (const f of template.fields) {
-    if (f.static || f.type === "image" || f.type === "shape") continue;
+    if (f.static || f.type === "image" || f.type === "shape" || f.type === "icon") continue;
     if (f.fieldKey in values) continue;
     if (f.type === "select") {
       const options = f.options ?? [];

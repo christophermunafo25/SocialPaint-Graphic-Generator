@@ -3,10 +3,11 @@
 // The fields ARRAY order is the member form order; paint order is zIndex —
 // two separate concerns, never conflated.
 
-import type { BrandKit, FieldType, ShapeKind, TemplateField } from "@/lib/types";
+import type { BrandKit, FieldType, FieldVector, ShapeKind, TemplateField } from "@/lib/types";
 import { newId } from "@/lib/stores/local/db";
 import { suggestFieldKey } from "@/lib/caption";
 import { roleFace } from "@/lib/brand/fontRoles";
+import { iconTitle } from "@/lib/icons/lucide";
 
 export interface PaletteItem {
   /** Stable id carried through drag-and-drop (shapes share type "shape"). */
@@ -284,6 +285,36 @@ export function fieldFromPalette(
   };
 }
 
+/** A new icon's side: on the 8 grid, hand-sized on any canvas. */
+export const ICON_SIZE = 64;
+
+/** Build an icon field centered at a canvas point, painted on top. Icons are
+ * design-only like shapes, and start in the brand's text color. */
+export function iconFieldFromVector(
+  vector: FieldVector,
+  at: { x: number; y: number },
+  existing: TemplateField[],
+  kit: BrandKit | null,
+  canvas: { width: number; height: number },
+): TemplateField {
+  const size = Math.min(ICON_SIZE, canvas.width, canvas.height);
+  const label = `${iconTitle(vector.source?.name ?? "icon")} icon`;
+  return {
+    id: newId(),
+    label,
+    fieldKey: suggestFieldKey(label, existing),
+    type: "icon",
+    x: Math.round(Math.max(0, Math.min(canvas.width - size, at.x - size / 2))),
+    y: Math.round(Math.max(0, Math.min(canvas.height - size, at.y - size / 2))),
+    width: size,
+    height: size,
+    zIndex: maxZ(existing) + 1,
+    static: true,
+    colorHex: kit?.colors.find((c) => c.key === "text")?.hex ?? "#111111",
+    vector,
+  };
+}
+
 /** Build a fixed image field for a brand logo dropped from the palette.
  *
  * Always `objectFit: "contain"` — a logo must never crop, whatever box it
@@ -510,20 +541,34 @@ const SHAPE_STYLE_PROPS = [
   "opacity",
   "effects",
 ] as const;
+/** An icon's look. Its artwork and line weight are content, not style. */
+const ICON_STYLE_PROPS = ["colorHex", "textGradient", "opacity", "effects"] as const;
 
 type StyleProp =
   | (typeof TEXT_STYLE_PROPS)[number]
   | (typeof IMAGE_STYLE_PROPS)[number]
-  | (typeof SHAPE_STYLE_PROPS)[number];
+  | (typeof SHAPE_STYLE_PROPS)[number]
+  | (typeof ICON_STYLE_PROPS)[number];
 
 const ALL_STYLE_PROPS = [
-  ...new Set<StyleProp>([...TEXT_STYLE_PROPS, ...IMAGE_STYLE_PROPS, ...SHAPE_STYLE_PROPS]),
+  ...new Set<StyleProp>([
+    ...TEXT_STYLE_PROPS,
+    ...IMAGE_STYLE_PROPS,
+    ...SHAPE_STYLE_PROPS,
+    ...ICON_STYLE_PROPS,
+  ]),
 ];
 
 export type FieldStyle = Partial<Pick<TemplateField, StyleProp>>;
 
 const propsForType = (type: FieldType): readonly StyleProp[] =>
-  type === "image" ? IMAGE_STYLE_PROPS : type === "shape" ? SHAPE_STYLE_PROPS : TEXT_STYLE_PROPS;
+  type === "image"
+    ? IMAGE_STYLE_PROPS
+    : type === "shape"
+      ? SHAPE_STYLE_PROPS
+      : type === "icon"
+        ? ICON_STYLE_PROPS
+        : TEXT_STYLE_PROPS;
 
 let styleClipboard: FieldStyle | null = null;
 

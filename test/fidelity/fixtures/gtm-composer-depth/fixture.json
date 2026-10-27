@@ -1,12 +1,14 @@
 {
   "name": "gtm-composer-depth",
   "kind": "figma",
-  "source": { "fileKey": "mEJRslarcQDkgPeY6AObi5", "nodeId": "200:208" },
+  "source": {
+    "fileKey": "mEJRslarcQDkgPeY6AObi5",
+    "nodeId": "200:208"
+  },
   "goldenFrom": "gtm-composer",
   "unsupported": [
     "The grain matches Figma's noise in strength, coverage and size, not in its exact pattern, which Figma doesn't publish; the blurred share measures it.",
     "Panel gradient and fluted stripes: still the frame's raster image fill.",
-    "Icons: SVG images with baked stroke colors (Phase 3).",
     "Canvas corners: the canvas has no radius, so its grain also covers the transparent corners outside the panel's 20 radius.",
     "Composer bevels (two inner shadows at 0 alpha in Light): invisible here, so left out."
   ],
@@ -35,7 +37,12 @@
         "static": true,
         "staticValue": "/test/fidelity/fixtures/gtm-composer/panel.png",
         "objectFit": "cover",
-        "cornerRadius": { "tl": 20, "tr": 20, "br": 20, "bl": 20 },
+        "cornerRadius": {
+          "tl": 20,
+          "tr": 20,
+          "br": 20,
+          "bl": 20
+        },
         "zIndex": 0
       },
       {
@@ -50,12 +57,25 @@
         "static": true,
         "shape": "rect",
         "colorHex": "#FFFFFF",
-        "cornerRadius": { "tl": 20, "tr": 20, "br": 20, "bl": 20 },
+        "cornerRadius": {
+          "tl": 20,
+          "tr": 20,
+          "br": 20,
+          "bl": 20
+        },
         "zIndex": 1,
         "strokeColor": "#FFFFFF40",
         "strokeWidthPx": 5,
         "strokeAlign": "outside",
-        "effects": [{ "type": "dropShadow", "x": 8, "y": 8, "blur": 32, "color": "#0000001A" }]
+        "effects": [
+          {
+            "type": "dropShadow",
+            "x": 8,
+            "y": 8,
+            "blur": 32,
+            "color": "#0000001A"
+          }
+        ]
       },
       {
         "id": "gtm-prompt",
@@ -89,22 +109,44 @@
         "static": true,
         "shape": "rect",
         "colorHex": "#0B0B0C",
-        "cornerRadius": { "tl": 7, "tr": 7, "br": 7, "bl": 7 },
+        "cornerRadius": {
+          "tl": 7,
+          "tr": 7,
+          "br": 7,
+          "bl": 7
+        },
         "zIndex": 3
       },
       {
         "id": "gtm-attach-icon",
         "fieldKey": "attach-icon",
         "label": "Attach icon",
-        "type": "image",
+        "type": "icon",
         "x": 91,
         "y": 528.5,
         "width": 14,
         "height": 14,
         "static": true,
-        "staticValue": "/test/fidelity/fixtures/gtm-composer/icon-attach-plus.svg",
-        "objectFit": "contain",
-        "zIndex": 4
+        "zIndex": 4,
+        "colorHex": "#FFFFFF",
+        "vector": {
+          "viewBox": [0.0, 0.0, 14.0, 14.0],
+          "paths": [
+            {
+              "d": "M2.91667 7H11.0833",
+              "paint": "stroke"
+            },
+            {
+              "d": "M7 2.91667V11.0833",
+              "paint": "stroke"
+            }
+          ],
+          "stroke": {
+            "width": 1.16667,
+            "cap": "round",
+            "join": "round"
+          }
+        }
       },
       {
         "id": "gtm-platform",
@@ -118,7 +160,12 @@
         "static": true,
         "shape": "rect",
         "colorHex": "#ECECEC",
-        "cornerRadius": { "tl": 7, "tr": 7, "br": 7, "bl": 7 },
+        "cornerRadius": {
+          "tl": 7,
+          "tr": 7,
+          "br": 7,
+          "bl": 7
+        },
         "zIndex": 5
       },
       {
@@ -145,15 +192,28 @@
         "id": "gtm-platform-chevron",
         "fieldKey": "platform-chevron",
         "label": "Platform chevron",
-        "type": "image",
+        "type": "icon",
         "x": 395,
         "y": 527.5,
         "width": 16,
         "height": 16,
         "static": true,
-        "staticValue": "/test/fidelity/fixtures/gtm-composer/icon-chevron-down.svg",
-        "objectFit": "contain",
-        "zIndex": 7
+        "zIndex": 7,
+        "colorHex": "#0B0B0C",
+        "vector": {
+          "viewBox": [0.0, 0.0, 16.0, 16.0],
+          "paths": [
+            {
+              "d": "M4 6L8 10L12 6",
+              "paint": "stroke"
+            }
+          ],
+          "stroke": {
+            "width": 1.33333,
+            "cap": "round",
+            "join": "round"
+          }
+        }
       },
       {
         "id": "gtm-variations",
@@ -167,7 +227,12 @@
         "static": true,
         "shape": "rect",
         "colorHex": "#ECECEC",
-        "cornerRadius": { "tl": 7, "tr": 7, "br": 7, "bl": 7 },
+        "cornerRadius": {
+          "tl": 7,
+          "tr": 7,
+          "br": 7,
+          "bl": 7
+        },
         "zIndex": 8
       },
       {
@@ -194,16 +259,29 @@
         "id": "gtm-variations-minus",
         "fieldKey": "variations-minus",
         "label": "Decrease",
-        "type": "image",
+        "type": "icon",
         "x": 497,
         "y": 527.5,
         "width": 16,
         "height": 16,
         "static": true,
-        "staticValue": "/test/fidelity/fixtures/gtm-composer/icon-minus.svg",
-        "objectFit": "contain",
         "opacity": 32,
-        "zIndex": 10
+        "zIndex": 10,
+        "colorHex": "#0B0B0C",
+        "vector": {
+          "viewBox": [0.0, 0.0, 16.0, 16.0],
+          "paths": [
+            {
+              "d": "M3.33333 8H12.6667",
+              "paint": "stroke"
+            }
+          ],
+          "stroke": {
+            "width": 1.33333,
+            "cap": "round",
+            "join": "round"
+          }
+        }
       },
       {
         "id": "gtm-variations-value",
@@ -230,15 +308,32 @@
         "id": "gtm-variations-plus",
         "fieldKey": "variations-plus",
         "label": "Increase",
-        "type": "image",
+        "type": "icon",
         "x": 545,
         "y": 527.5,
         "width": 16,
         "height": 16,
         "static": true,
-        "staticValue": "/test/fidelity/fixtures/gtm-composer/icon-plus.svg",
-        "objectFit": "contain",
-        "zIndex": 12
+        "zIndex": 12,
+        "colorHex": "#0B0B0C",
+        "vector": {
+          "viewBox": [0.0, 0.0, 16.0, 16.0],
+          "paths": [
+            {
+              "d": "M3.33333 8H12.6667",
+              "paint": "stroke"
+            },
+            {
+              "d": "M8 3.33333V12.6667",
+              "paint": "stroke"
+            }
+          ],
+          "stroke": {
+            "width": 1.33333,
+            "cap": "round",
+            "join": "round"
+          }
+        }
       },
       {
         "id": "gtm-send",
@@ -258,24 +353,55 @@
         "id": "gtm-send-icon",
         "fieldKey": "send-icon",
         "label": "Send icon",
-        "type": "image",
+        "type": "icon",
         "x": 586,
         "y": 527.5,
         "width": 16,
         "height": 16,
         "static": true,
-        "staticValue": "/test/fidelity/fixtures/gtm-composer/icon-send-arrow.svg",
-        "objectFit": "contain",
-        "zIndex": 14
+        "zIndex": 14,
+        "colorHex": "#082A23",
+        "vector": {
+          "viewBox": [0.0, 0.0, 16.0, 16.0],
+          "paths": [
+            {
+              "d": "M3.33333 8L8 3.33333L12.6667 8",
+              "paint": "stroke"
+            },
+            {
+              "d": "M8 12.6667V3.33333",
+              "paint": "stroke"
+            }
+          ],
+          "stroke": {
+            "width": 1.33333,
+            "cap": "round",
+            "join": "round"
+          }
+        }
       }
     ],
     "captionTemplate": "",
     "createdAt": "2026-10-08T00:00:00.000Z",
     "updatedAt": "2026-10-08T00:00:00.000Z",
     "canvasEffects": [
-      { "type": "noise", "color": "#FFFFFF1A", "size": 0.5, "density": 1, "seed": 1 }
+      {
+        "type": "noise",
+        "color": "#FFFFFF1A",
+        "size": 0.5,
+        "density": 1,
+        "seed": 1
+      }
     ]
   },
-  "baseline": { "chromium": 11.28, "firefox": 11.21, "webkit": 6.18 },
-  "blurBaseline": { "chromium": 0.45, "firefox": 0.69, "webkit": 0.69 }
+  "baseline": {
+    "chromium": 11.28,
+    "firefox": 11.21,
+    "webkit": 6.18
+  },
+  "blurBaseline": {
+    "chromium": 0.45,
+    "firefox": 0.69,
+    "webkit": 0.69
+  }
 }

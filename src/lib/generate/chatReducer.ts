@@ -515,7 +515,9 @@ function applyEdits(
 ): FieldValues {
   if (!draft.schema || edits.length === 0) return draft.values;
   const memberKeys = new Set(
-    draft.schema.fields.filter((f) => !f.static && f.type !== "shape").map((f) => f.fieldKey),
+    draft.schema.fields
+      .filter((f) => !f.static && f.type !== "shape" && f.type !== "icon")
+      .map((f) => f.fieldKey),
   );
   let values = draft.values;
   for (const { fieldKey, value } of edits) {

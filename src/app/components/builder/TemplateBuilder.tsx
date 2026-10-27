@@ -106,6 +106,8 @@ import {
   copyToClipboard,
   duplicateFields,
   fieldFromPalette,
+  ICON_SIZE,
+  iconFieldFromVector,
   fixedPatch,
   isSvgSource,
   isTypingTarget,
@@ -1527,6 +1529,29 @@ export function TemplateBuilder({
     if (item.type !== "shape") setFocusLabelFieldId(field.id);
   };
 
+  /** A Lucide icon picked from the palette: added at the canvas center,
+   * cascading off whatever already sits there, and selected. */
+  const addIconField = async (name: string) => {
+    // A chunk that fails to load leaves the canvas as it was.
+    const vector = await import("@/lib/icons/catalog")
+      .then((c) => c.loadLucideVector(name))
+      .catch(() => null);
+    if (!vector) return;
+    const canvas = { width: draft.canvasWidth, height: draft.canvasHeight };
+    const point = cascadePoint(
+      { x: canvas.width / 2, y: canvas.height / 2 },
+      draft.fields,
+      canvas,
+      {
+        width: ICON_SIZE,
+        height: ICON_SIZE,
+      },
+    );
+    const field = iconFieldFromVector(vector, point, draft.fields, kit, canvas);
+    setFields([...draft.fields, field]);
+    setSelectedIds([field.id]);
+  };
+
   // -------------------------------------------------------------------------
   // Paste & drop onto the canvas: image files (paste or drag from disk),
   // Figma layer links (element-level import), and plain text. Everything
@@ -1814,7 +1839,7 @@ export function TemplateBuilder({
     (ids: string[], fixed: boolean) => {
       const idSet = new Set(ids);
       const eligible = (f: TemplateField) =>
-        idSet.has(f.id) && f.type !== "shape" && f.type !== "select";
+        idSet.has(f.id) && f.type !== "shape" && f.type !== "icon" && f.type !== "select";
       setFields(draft.fields.map((f) => (eligible(f) ? { ...f, ...fixedPatch(f, fixed) } : f)));
     },
     [draft.fields, setFields],
@@ -2505,7 +2530,7 @@ export function TemplateBuilder({
     // so the label always says exactly what the action will do. Shapes and
     // dropdowns don't count (the inspector's checkbox excludes them too).
     const toggleable = draft.fields.filter(
-      (f) => ids.includes(f.id) && f.type !== "shape" && f.type !== "select",
+      (f) => ids.includes(f.id) && f.type !== "shape" && f.type !== "icon" && f.type !== "select",
     );
     const allFixed = toggleable.length > 0 && toggleable.every((f) => f.static);
     return [
@@ -3331,6 +3356,7 @@ export function TemplateBuilder({
               {mode === "edit" && railTab === "layers" && (
                 <ElementPalette
                   onAdd={(id) => addPaletteField(id)}
+                  onAddIcon={(name) => void addIconField(name)}
                   logos={logoAssets}
                   activeTool={tool}
                 />

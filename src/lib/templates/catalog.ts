@@ -84,7 +84,8 @@ export function toCatalogTemplate(t: TemplateSchema): CatalogTemplate {
     orientation: orientationOf(t.canvasWidth, t.canvasHeight),
     useCases: [t.category, ...t.tags].map((s) => s.trim()).filter(Boolean),
     colorMode: colorModeOf(t),
-    textSlots: editable.filter((f) => f.type !== "image" && f.type !== "shape").length,
+    textSlots: editable.filter((f) => f.type !== "image" && f.type !== "shape" && f.type !== "icon")
+      .length,
     imageSlots: editable.filter((f) => f.type === "image").length,
     createdAt: t.createdAt,
     template: t,

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { NewTemplateInput, TemplateSchema } from "../types";
 import fixture from "../../../test/fidelity/fixtures/builder-roundtrip/fixture.json";
+import iconsFixture from "../../../test/fidelity/fixtures/icons-matrix/fixture.json";
 import { normalizeEffects } from "../../app/components/builder/effectOps";
 import { LocalTemplateStore } from "./local/localStores";
 import { fieldToRow, toTemplate, type TemplateFieldRow, type TemplateRow } from "./supabase/rows";
@@ -8,7 +9,9 @@ import { fieldToRow, toTemplate, type TemplateFieldRow, type TemplateRow } from 
 // Brand-system Phase 2: every property the builder writes (effects, stroke
 // position, a radial fill, canvas effects and a per-look effect) survives a
 // save and a read back. The template is the builder-roundtrip fidelity
-// fixture, so the same schema is what the export check renders.
+// fixture, so the same schema is what the export check renders. Phase 3
+// adds the icons-matrix fixture: icon fields, their vectors and a look that
+// recolors them.
 
 const saved = fixture.schema as unknown as TemplateSchema;
 const { id: _id, createdAt: _c, updatedAt: _u, ...input } = saved;
@@ -95,5 +98,54 @@ describe("builder round trip", () => {
     expect(back.variants?.find((v) => v.id === "night")?.overrides.card.effects).toEqual([
       { type: "dropShadow", x: 0, y: 16, blur: 40, color: "#3D7BFF66" },
     ]);
+  });
+});
+
+describe("icon round trip", () => {
+  const icons = iconsFixture.schema as unknown as TemplateSchema;
+  const { id: _i, createdAt: _ic, updatedAt: _iu, ...iconInput } = icons;
+  const iconDraft = iconInput as NewTemplateInput;
+  const iconDesign = (t: TemplateSchema) => ({
+    variants: t.variants,
+    fields: t.fields.map(({ id: _fid, ...f }) => f),
+  });
+
+  beforeEach(installStorage);
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("saves and reads back icons through the local store", async () => {
+    const store = new LocalTemplateStore();
+    const created = await store.create(iconDraft);
+    const back = await store.get(created.id);
+    expect(back && iconDesign(back)).toEqual(iconDesign(icons));
+  });
+
+  it("saves and reads back icons through the Supabase rows", () => {
+    const row: TemplateRow = {
+      id: "t1",
+      company_id: iconDraft.companyId,
+      name: iconDraft.name,
+      description: iconDraft.description,
+      category: iconDraft.category,
+      tags: iconDraft.tags,
+      status: iconDraft.status,
+      canvas_width: iconDraft.canvasWidth,
+      canvas_height: iconDraft.canvasHeight,
+      background_storage_path: null,
+      background_color: iconDraft.backgroundColor ?? null,
+      background_gradient: null,
+      layout_groups: null,
+      variants: iconDraft.variants ?? null,
+      caption_template: iconDraft.captionTemplate,
+      autobuild_meta: null,
+      created_at: icons.createdAt,
+      updated_at: icons.updatedAt,
+      template_fields: iconDraft.fields.map(
+        (f, i) => ({ id: f.id, ...fieldToRow("t1", f, i) }) as TemplateFieldRow,
+      ),
+    };
+    const back = toTemplate(JSON.parse(JSON.stringify(row)) as TemplateRow);
+    expect(iconDesign(back)).toEqual(iconDesign(icons));
+    expect(back.fields.every((f) => f.type === "icon" && f.vector)).toBe(true);
   });
 });

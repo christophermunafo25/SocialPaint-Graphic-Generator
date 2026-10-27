@@ -143,6 +143,10 @@ describe("paintsBeyondBox", () => {
     expect(paintsBeyondBox({ ...base, effects: [blur] })).toBe(true);
   });
 
+  it("is true for every icon, whose lines may sit on the artwork's edge", () => {
+    expect(paintsBeyondBox({ ...base, type: "icon" })).toBe(true);
+  });
+
   it("is false for inner shadows and grain, which stay inside", () => {
     expect(paintsBeyondBox({ ...base, effects: [inner, noise] })).toBe(false);
     expect(paintsBeyondBox(base)).toBe(false);

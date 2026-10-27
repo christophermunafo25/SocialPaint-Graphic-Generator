@@ -257,7 +257,13 @@ export function fillInEntries(draft: ChatDraft, values: FieldValues): FillInEntr
   if (!schema) return [];
   const seen = new Set<string>();
   const empty = schema.fields.filter((f) => {
-    if (f.static || f.type === "shape" || values[f.fieldKey] || seen.has(f.fieldKey)) {
+    if (
+      f.static ||
+      f.type === "shape" ||
+      f.type === "icon" ||
+      values[f.fieldKey] ||
+      seen.has(f.fieldKey)
+    ) {
       return false;
     }
     seen.add(f.fieldKey);

@@ -127,6 +127,8 @@ export interface TemplateFieldRow {
    * neither key. */
   stroke_align?: import("../../types").StrokeAlign | null;
   effects?: import("../../types").FieldEffect[] | null;
+  /** Migration 0049 (icon fields). Optional for the same reason. */
+  vector?: import("../../types").FieldVector | null;
   plate_color: string | null;
   plate_padding_x: number | null;
   plate_padding_y: number | null;
@@ -194,6 +196,7 @@ export const toTemplateField = (r: TemplateFieldRow): TemplateField => ({
   strokeWidthPx: opt(r.stroke_width_px) === undefined ? undefined : Number(r.stroke_width_px),
   strokeAlign: opt(r.stroke_align),
   effects: opt(r.effects),
+  vector: opt(r.vector),
   plateColor: opt(r.plate_color),
   platePaddingX: opt(r.plate_padding_x) === undefined ? undefined : Number(r.plate_padding_x),
   platePaddingY: opt(r.plate_padding_y) === undefined ? undefined : Number(r.plate_padding_y),
@@ -253,6 +256,7 @@ export const fieldToRow = (
   // it did before migration 0048.
   ...(f.strokeAlign !== undefined && { stroke_align: f.strokeAlign }),
   ...(f.effects !== undefined && { effects: f.effects }),
+  ...(f.vector !== undefined && { vector: f.vector }),
   plate_color: f.plateColor ?? null,
   plate_padding_x: f.platePaddingX ?? null,
   plate_padding_y: f.platePaddingY ?? null,
