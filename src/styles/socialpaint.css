@@ -2154,6 +2154,14 @@ input[type="radio"] {
   color: var(--icon-btn-fg-hover);
 }
 
+/* A cell in the builder's icon picker: the icon-button hover, neutral. */
+.sp-icon-cell {
+  transition: background var(--dur-state) var(--ease);
+}
+.sp-icon-cell:hover {
+  background: var(--icon-btn-bg-hover);
+}
+
 /* THE content column. Beside the rail (>= --bp-lg) it is centred in the
    region to the rail's right; below --bp-lg the shell is the 56px top bar
    and the nav-to-content relationship is vertical — 24px of top padding

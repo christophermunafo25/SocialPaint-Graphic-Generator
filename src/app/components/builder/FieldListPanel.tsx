@@ -8,7 +8,7 @@ import {
   Image as ImageIcon,
   Pin,
   Shapes,
-  Star,
+  Smile,
   Type as TypeIcon,
 } from "lucide-react";
 import type { FieldType, LayoutGroup, TemplateField, TemplateVariant } from "@/lib/types";
@@ -23,7 +23,7 @@ const ICONS: Record<FieldType, React.ComponentType<{ style?: React.CSSProperties
   image: ImageIcon,
   select: ChevronDown,
   shape: Shapes,
-  icon: Star,
+  icon: Smile,
 };
 
 interface FieldListPanelProps {

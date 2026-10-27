@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useState } from "react";
 import {
   AlignLeft,
   ChevronDown,
@@ -6,6 +6,7 @@ import {
   Image as ImageIcon,
   Minus,
   Pill as PillIcon,
+  Smile,
   Square,
   Star,
   Triangle,
@@ -21,6 +22,7 @@ import {
   type PaletteItem,
 } from "./fieldOps";
 import { SignedImg } from "../SignedImg";
+import { IconPicker } from "./IconPicker";
 
 const ICONS: Record<string, React.ComponentType<{ style?: React.CSSProperties }>> = {
   text: TypeIcon,
@@ -38,6 +40,8 @@ const ICONS: Record<string, React.ComponentType<{ style?: React.CSSProperties }>
 interface ElementPaletteProps {
   /** Click fallback: adds the element at the canvas center. */
   onAdd(paletteId: string): void;
+  /** Adds the picked Lucide icon at the canvas center. */
+  onAddIcon(name: string): void;
   /** The company's uploaded logo assets — each becomes a draggable tile. */
   logos?: BrandAsset[];
   /** The canvas tool that is armed right now. The palette does not SET the
@@ -87,6 +91,45 @@ function Tile({
   );
 }
 
+/** The Icon tile opens the icon picker; picking one adds it. */
+function IconTile({ onAddIcon }: { onAddIcon(name: string): void }) {
+  const ref = useRef<HTMLButtonElement>(null);
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        ref={ref}
+        type="button"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className="sp-palette-tile flex flex-col items-center gap-1.5 py-3 px-2 transition-colors"
+        style={{
+          border: "1px solid var(--border-strong)",
+          borderRadius: "var(--radius-control)",
+          background: open ? "var(--bg-hover)" : "var(--bg-surface)",
+          fontSize: 11,
+          color: "var(--text-secondary)",
+        }}
+      >
+        <Smile style={{ width: 16, height: 16 }} />
+        Icon
+      </button>
+      {open && (
+        <IconPicker
+          anchorRef={ref}
+          side="right"
+          onPick={(name) => {
+            setOpen(false);
+            onAddIcon(name);
+          }}
+          onClose={() => setOpen(false)}
+        />
+      )}
+    </>
+  );
+}
+
 function LogoTile({ asset, onAdd }: { asset: BrandAsset; onAdd(id: string): void }) {
   const paletteId = `${LOGO_PALETTE_PREFIX}${asset.id}`;
   const name = asset.name.replace(/\.[^.]+$/, "");
@@ -128,7 +171,12 @@ function LogoTile({ asset, onAdd }: { asset: BrandAsset; onAdd(id: string): void
  * tile onto the canvas to drop it where it lands; clicking adds at the
  * center. A dropped logo lands as a fixed image sized to its artwork and
  * always fits inside its box ("contain") — it never crops. */
-export function ElementPalette({ onAdd, logos = [], activeTool = "move" }: ElementPaletteProps) {
+export function ElementPalette({
+  onAdd,
+  onAddIcon,
+  logos = [],
+  activeTool = "move",
+}: ElementPaletteProps) {
   const fields = PALETTE_ITEMS.filter((i) => i.group === "fields");
   const shapes = PALETTE_ITEMS.filter((i) => i.group === "shapes");
   const armedId = activeTool === "move" ? null : TOOL_PALETTE_ID[activeTool];
@@ -150,6 +198,7 @@ export function ElementPalette({ onAdd, logos = [], activeTool = "move" }: Eleme
           {shapes.map((item) => (
             <Tile key={item.id} item={item} onAdd={onAdd} armed={item.id === armedId} />
           ))}
+          <IconTile onAddIcon={onAddIcon} />
         </div>
         <p style={{ fontSize: 10.5, color: "var(--text-muted)" }}>
           Shapes are design-only. Members never see them as fields.

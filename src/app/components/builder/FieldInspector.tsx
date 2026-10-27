@@ -29,6 +29,15 @@ import type {
   VariantFieldOverride,
 } from "@/lib/types";
 import { VARIANT_OVERRIDE_KEYS } from "@/lib/templates/variants";
+import { IconGlyph, IconPicker } from "./IconPicker";
+import {
+  DEFAULT_ICON_WEIGHT,
+  MAX_ICON_WEIGHT,
+  MIN_ICON_WEIGHT,
+  iconTitle,
+  withWeight,
+} from "@/lib/icons/lucide";
+import { hasStrokePaths } from "@/lib/render/vector";
 import { RailTabs } from "./BuilderShell";
 import { stores } from "@/lib/stores";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -196,6 +205,7 @@ export function FieldInspector(props: FieldInspectorProps) {
   const hiddenHere = Boolean(variantMode?.variant.overrides?.[field.fieldKey]?.hidden);
   const isText = field.type === "text" || field.type === "multiline" || field.type === "select";
   const isShape = field.type === "shape";
+  const isIcon = field.type === "icon";
   const isStatic = Boolean(field.static);
   /** Children of an auto-layout STACK are placed by it: position is
    * computed, and a text child's main-axis size hugs its content. The
@@ -380,7 +390,7 @@ export function FieldInspector(props: FieldInspectorProps) {
 
   // --- Fill -----------------------------------------------------------------
 
-  const hasFill = isText || isShape;
+  const hasFill = isText || isShape || isIcon;
   const fill = getFill(merged);
   const fillLocked = locked.has("colorKey");
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -390,6 +400,16 @@ export function FieldInspector(props: FieldInspectorProps) {
   const [strokePickerOpen, setStrokePickerOpen] = useState(false);
   const strokeSwatchRef = useRef<HTMLButtonElement>(null);
   useEffect(() => setPickerOpen(false), [field.id]);
+  const [iconPickerOpen, setIconPickerOpen] = useState(false);
+  const iconChangeRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => setIconPickerOpen(false), [field.id]);
+  /** This look sets its own color or gradient for the field. */
+  const fillOverridden = Boolean(
+    variantMode &&
+    tab === "this" &&
+    (variantMode.variant.overrides?.[field.fieldKey]?.colorHex !== undefined ||
+      variantMode.variant.overrides?.[field.fieldKey]?.textGradient !== undefined),
+  );
 
   /** Alpha byte of a solid fill's hex (100 when opaque). */
   const fillAlpha = fill?.type === "solid" ? Math.round((parseHex(fill.hex)?.a ?? 1) * 100) : 100;
@@ -702,41 +722,45 @@ export function FieldInspector(props: FieldInspectorProps) {
         <InspectorSection id="field" title="Field">
           {/* The field type control that exists today, left in place — same
             options, same static/shape conversion patches. */}
-          <PropertyRow label="Type">
-            <select
-              className="sp-input"
-              style={compactControlStyle}
-              aria-label="Field type"
-              value={field.type}
-              onChange={(e) => {
-                const t = e.target.value as FieldType;
-                if (t === "shape") {
-                  // Shapes are always static design elements with a fill.
-                  onChange({
-                    type: t,
-                    shape: field.shape ?? "rect",
-                    static: true,
-                    colorHex: field.colorHex ?? "#d9d9d9",
-                  });
-                } else if (isShape) {
-                  onChange({
-                    type: t,
-                    shape: undefined,
-                    static: undefined,
-                    staticValue: undefined,
-                  });
-                } else {
-                  onChange({ type: t });
-                }
-              }}
-            >
-              {FIELD_TYPES.filter((t) => !isStatic || isShape || t.value !== "select").map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
-          </PropertyRow>
+          {!isIcon && (
+            <PropertyRow label="Type">
+              <select
+                className="sp-input"
+                style={compactControlStyle}
+                aria-label="Field type"
+                value={field.type}
+                onChange={(e) => {
+                  const t = e.target.value as FieldType;
+                  if (t === "shape") {
+                    // Shapes are always static design elements with a fill.
+                    onChange({
+                      type: t,
+                      shape: field.shape ?? "rect",
+                      static: true,
+                      colorHex: field.colorHex ?? "#d9d9d9",
+                    });
+                  } else if (isShape) {
+                    onChange({
+                      type: t,
+                      shape: undefined,
+                      static: undefined,
+                      staticValue: undefined,
+                    });
+                  } else {
+                    onChange({ type: t });
+                  }
+                }}
+              >
+                {FIELD_TYPES.filter((t) => !isStatic || isShape || t.value !== "select").map(
+                  (t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.label}
+                    </option>
+                  ),
+                )}
+              </select>
+            </PropertyRow>
+          )}
 
           {isShape && (
             <>
@@ -796,7 +820,7 @@ export function FieldInspector(props: FieldInspectorProps) {
             </div>
           </PropertyRow>
 
-          {field.type !== "select" && !isShape && (
+          {field.type !== "select" && !isShape && !isIcon && (
             <>
               <PropertyRow label="Fixed">
                 <Switch
@@ -831,6 +855,50 @@ export function FieldInspector(props: FieldInspectorProps) {
               is shared, so it stays here on All variations. */}
           {!variantMode && staticContentRows}
           {placeholderRow}
+        </InspectorSection>
+      )}
+
+      {/* An icon's artwork and line weight: the same in every look. */}
+      {showAll && isIcon && (
+        <InspectorSection id="icon" title="Icon">
+          <PropertyRow full>
+            <span
+              className="flex items-center flex-1"
+              style={{ gap: "var(--space-2xs)", minWidth: 0, color: "var(--text-primary)" }}
+            >
+              {field.vector?.source && <IconGlyph name={field.vector.source.name} size={16} />}
+              <span className="truncate" style={{ fontSize: "var(--type-caption-size)" }}>
+                {field.vector?.source ? iconTitle(field.vector.source.name) : "Vector"}
+              </span>
+            </span>
+            <button
+              ref={iconChangeRef}
+              type="button"
+              className="t-caption-s"
+              style={{ color: "var(--text-secondary)", flexShrink: 0 }}
+              aria-haspopup="dialog"
+              aria-expanded={iconPickerOpen}
+              onClick={() => setIconPickerOpen((o) => !o)}
+            >
+              Change
+            </button>
+          </PropertyRow>
+          {field.vector && hasStrokePaths(field.vector) && (
+            <PropertyRow label="Weight">
+              <NumericField
+                ariaLabel="Weight"
+                value={field.vector.stroke?.width ?? DEFAULT_ICON_WEIGHT}
+                precision={2}
+                step={0.25}
+                min={MIN_ICON_WEIGHT}
+                max={MAX_ICON_WEIGHT}
+                onCommit={(v) => {
+                  if (v == null || !field.vector) return;
+                  onChange({ vector: withWeight(field.vector, v) });
+                }}
+              />
+            </PropertyRow>
+          )}
         </InspectorSection>
       )}
 
@@ -1636,9 +1704,20 @@ export function FieldInspector(props: FieldInspectorProps) {
       {showThis && (
         <InspectorSection
           id="fill"
-          title="Fill"
+          title={isIcon ? "Color" : "Fill"}
           headerExtra={
-            hasFill && !fill && !fillLocked ? (
+            variantMode && fillOverridden ? (
+              <button
+                type="button"
+                className="t-caption-s"
+                style={{ color: "var(--text-secondary)" }}
+                onClick={() =>
+                  variantMode.onOverride({ colorHex: undefined, textGradient: undefined })
+                }
+              >
+                Use base
+              </button>
+            ) : hasFill && !fill && !fillLocked ? (
               <button
                 title="Add fill"
                 aria-label="Add fill"
@@ -1776,8 +1855,13 @@ export function FieldInspector(props: FieldInspectorProps) {
               </PropertyRow>
             ) : (
               <p style={hintStyle}>
-                No fill, so {isShape ? "the shape falls back to ink" : "text falls back to ink"}.
-                Add one with the plus.
+                No fill, so{" "}
+                {isShape
+                  ? "the shape falls back to ink"
+                  : isIcon
+                    ? "the icon falls back to ink"
+                    : "text falls back to ink"}
+                . Add one with the plus.
               </p>
             ))}
         </InspectorSection>
@@ -1903,6 +1987,30 @@ export function FieldInspector(props: FieldInspectorProps) {
             </PropertyRow>
           )}
         </InspectorSection>
+      )}
+
+      {iconPickerOpen && isIcon && (
+        <IconPicker
+          anchorRef={iconChangeRef}
+          side="left"
+          selected={field.vector?.source?.name}
+          onPick={(name) => {
+            setIconPickerOpen(false);
+            const weight = field.vector?.stroke?.width ?? DEFAULT_ICON_WEIGHT;
+            // A name the builder gave ("Calendar icon") follows the icon; a
+            // name the admin typed stays. The field key never changes, so a
+            // look's overrides keep pointing at it.
+            const oldName = field.vector?.source?.name;
+            const autoLabel = oldName !== undefined && field.label === `${iconTitle(oldName)} icon`;
+            void import("@/lib/icons/catalog")
+              .then((c) => c.loadLucideVector(name, weight))
+              .then((vector) => {
+                if (!vector) return;
+                onChange(autoLabel ? { vector, label: `${iconTitle(name)} icon` } : { vector });
+              });
+          }}
+          onClose={() => setIconPickerOpen(false)}
+        />
       )}
 
       {pickerOpen && hasFill && (

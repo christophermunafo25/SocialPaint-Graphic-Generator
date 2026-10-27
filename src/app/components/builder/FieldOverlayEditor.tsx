@@ -1491,7 +1491,7 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
         if (inStack(f)) {
           const stripped = new Map<string, Partial<TemplateField>>();
           for (const [id, o] of latest) {
-            const isText = f.type !== "image" && f.type !== "shape";
+            const isText = f.type !== "image" && f.type !== "shape" && f.type !== "icon";
             const vertical = directGroupOf(f.fieldKey)?.direction !== "horizontal";
             const patch: Partial<TemplateField> = { width: o.width, height: o.height };
             if (isText && vertical) delete patch.height;
@@ -2195,7 +2195,7 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
             const isSelected = selectedIds.includes(f.id);
             const isEditing = editingId === f.id;
             const showHandles = isSelected && single?.id === f.id && !isEditing && !locked;
-            const isText = f.type !== "image" && f.type !== "shape";
+            const isText = f.type !== "image" && f.type !== "shape" && f.type !== "icon";
             const stackChild = inStack(f);
             const groupVertical = stackChild
               ? directGroupOf(f.fieldKey)?.direction !== "horizontal"

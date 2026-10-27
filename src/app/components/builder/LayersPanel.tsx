@@ -10,7 +10,7 @@ import {
   Image as ImageIcon,
   Lock,
   Shapes,
-  Star,
+  Smile,
   Type as TypeIcon,
   Unlock,
 } from "lucide-react";
@@ -25,7 +25,7 @@ const ICONS: Record<FieldType, React.ComponentType<{ style?: React.CSSProperties
   image: ImageIcon,
   select: ChevronDown,
   shape: Shapes,
-  icon: Star,
+  icon: Smile,
 };
 
 interface LayersPanelProps {
