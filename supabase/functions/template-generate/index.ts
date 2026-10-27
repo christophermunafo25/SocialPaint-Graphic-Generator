@@ -88,22 +88,23 @@ import {
   type ResolvedDetail,
 } from "../_shared/generateValidate.ts";
 import {
-  COMPOSE_TOOL,
   brandAssetSource,
   buildBrand,
   composeContext,
-  composeUserText,
-  errorsAsWarnings,
   parseCurrentDesigns,
   refFromStored,
-  validateCompose,
   type AssetRowLike,
-  type ComposeValidation,
   type KitRowLike,
   type RefTemplate,
   type Row,
   type TemplateRowLike as ComposeTemplateRow,
 } from "../_shared/compose.ts";
+import { COMPOSE_TOOL, composeUserText } from "../_shared/composePrompt.ts";
+import {
+  errorsAsWarnings,
+  validateCompose,
+  type ComposeValidation,
+} from "../_shared/composeValidate.ts";
 import { recordModelUsage, type AnthropicUsage, type UsageKind } from "../_shared/usage.ts";
 import { COMPOSE_SYSTEM_PROMPT, GENERATE_SYSTEM_PROMPT } from "./prompt.ts";
 
@@ -481,7 +482,7 @@ function tooMany(req: Request): Response {
 }
 
 // ---------------------------------------------------------------------------
-// Compose: Generate's new designs (compose.ts has the constraint set). The
+// Compose: Generate's new designs (composeValidate.ts has the constraint set). The
 // model proposes layout, and what keeps it on brand is what it builds from:
 // Brand Studio as its only materials, the team's published templates as a
 // measured house style and as references whose looks it reuses by id, and

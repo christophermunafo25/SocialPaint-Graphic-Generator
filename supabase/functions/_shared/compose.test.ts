@@ -1,21 +1,17 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
-  COMPOSE_TOOL,
   brandAssetSource,
   buildBrand,
   canvasScale,
   composeContext,
-  composeUserText,
   contrastRatio,
-  errorsAsWarnings,
   fieldFromStored,
   houseStyle,
   normalizeHex,
   parseCurrentDesigns,
   refFromStored,
   selectReferences,
-  validateCompose,
   type AssetRowLike,
   type ComposeContext,
   type ComposedField,
@@ -23,6 +19,8 @@ import {
   type RefTemplate,
   type Row,
 } from "./compose.ts";
+import { COMPOSE_TOOL, composeUserText } from "./composePrompt.ts";
+import { errorsAsWarnings, validateCompose } from "./composeValidate.ts";
 import { HttpError } from "./http.ts";
 
 // ---------------------------------------------------------------------------
@@ -1515,7 +1513,7 @@ describe("validateCompose: what survives", () => {
   });
 
   it("writes no em dash into any warning in the source", () => {
-    const source = readFileSync(new URL("./compose.ts", import.meta.url), "utf8");
+    const source = readFileSync(new URL("./composeValidate.ts", import.meta.url), "utf8");
     const calls = [...source.matchAll(/warnings\.push\(([\s\S]*?)\);/g)].map((m) => m[1]);
     expect(calls.length).toBeGreaterThan(15);
     expect(calls.filter((c) => c.includes("—") || c.includes("\\u2014"))).toEqual([]);

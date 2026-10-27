@@ -847,7 +847,7 @@ export function validateTitle(raw: unknown): string | undefined {
 /** The reply and title of one model output, each validated. A field the
  * model left out, or gave nothing usable in, comes back undefined, so a
  * response built from this carries it only when it is usable (JSON drops
- * undefined). validateGeneration and validateCompose (compose.ts) both
+ * undefined). validateGeneration and validateCompose (composeValidate.ts) both
  * return these. */
 export function validateReplyAndTitle(
   output: { reply?: unknown; title?: unknown } | null | undefined,
