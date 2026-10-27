@@ -582,3 +582,28 @@ describe("image position", () => {
     });
   });
 });
+
+describe("fixedPatch on imported text", () => {
+  const imported = {
+    id: "t",
+    fieldKey: "headline",
+    label: "Headline",
+    type: "text",
+    x: 0,
+    y: 0,
+    width: 100,
+    height: 40,
+    static: true,
+    staticValue: "Launch day",
+    sourceNodeId: "1:2",
+  } as const;
+
+  it("makes imported text shrink once members fill it", () => {
+    expect(fixedPatch(imported, false).textSizing).toBe("shrink");
+  });
+
+  it("leaves a chosen sizing, and drawn text, as they are", () => {
+    expect(fixedPatch({ ...imported, textSizing: "free" }, false).textSizing).toBeUndefined();
+    expect(fixedPatch({ ...imported, sourceNodeId: undefined }, false).textSizing).toBeUndefined();
+  });
+});

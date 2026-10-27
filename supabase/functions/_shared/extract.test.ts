@@ -154,13 +154,13 @@ describe("text field extraction", () => {
     fills: [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }],
   };
 
-  it("lands text as Shrink at the default floor and carries opacity", () => {
+  it("lands fixed text at its designed size and carries opacity", () => {
     const { out } = run(headline);
+    // No sizing mode: fixed text keeps the size it was drawn at. Turning
+    // Fixed off makes it shrink (fixedPatch).
+    expect(out[0].textSizing).toBeUndefined();
     expect(out[0]).toMatchObject({
       type: "text",
-      // The designed size is the ceiling; a member's longer copy shrinks,
-      // to the 18px default floor.
-      textSizing: "shrink",
       fontSizePx: 165,
       align: "center",
       colorHex: "#FFFFFF",

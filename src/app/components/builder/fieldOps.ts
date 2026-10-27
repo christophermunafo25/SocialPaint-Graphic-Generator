@@ -701,9 +701,13 @@ export function fixedPatch(field: TemplateField, fixed: boolean): Partial<Templa
       maxLength: undefined,
     };
   }
+  const isText = field.type === "text" || field.type === "multiline";
   return {
     static: undefined,
     staticValue: field.type === "image" ? field.staticValue : undefined,
+    // Imported text lands at its designed size; as member input it shrinks,
+    // so longer copy stays in the box the design drew.
+    ...(isText && field.sourceNodeId && !field.textSizing ? { textSizing: "shrink" as const } : {}),
     ...(field.type !== "image" && !field.placeholder && field.staticValue
       ? { placeholder: field.staticValue.slice(0, 80) }
       : {}),

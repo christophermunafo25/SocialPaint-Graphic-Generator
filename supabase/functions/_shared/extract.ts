@@ -6,6 +6,8 @@
 // that common shape; the auto-build engine consumes it without knowing which
 // source produced it.
 
+import { vectorOf, type ImportedVector } from "./figmaVector.ts";
+
 export interface FigmaPaint {
   type: string;
   visible?: boolean;
@@ -19,6 +21,7 @@ export interface FigmaPaint {
   imageRef?: string;
   scaleMode?: string;
   imageTransform?: number[][];
+  blendMode?: string;
 }
 
 export interface FigmaNode {
@@ -42,6 +45,11 @@ export interface FigmaNode {
   /** Vector fill paths (geometry=paths). Presence means the artwork is
    * reconstructible from properties; absence means raster-only. */
   fillGeometry?: Array<{ path?: string; windingRule?: string }>;
+  /** Stroke outlines as fill paths (geometry=paths). */
+  strokeGeometry?: Array<{ path?: string; windingRule?: string }>;
+  /** The box the node paints into, effects and outside strokes included. */
+  absoluteRenderBounds?: { x: number; y: number; width: number; height: number } | null;
+  blendMode?: string;
   isMask?: boolean;
   /** How a mask node clips: "VECTOR" (outline), "ALPHA", or "LUMINANCE". */
   maskType?: string;
@@ -262,6 +270,9 @@ export interface SuggestedField {
   /** Drop and inner shadows, layer blur and grain, matching
    * TemplateField.effects (brand-system Phase 4). */
   effects?: ImportedEffect[];
+  /** Icon fields: the artwork rebuilt from the node's own paths, matching
+   * TemplateField.vector (brand-system Phase 4). */
+  vector?: ImportedVector;
   /** Text fields: plate behind the text (a fused pill), matching
    * TemplateField.plateColor / platePaddingX / platePaddingY. */
   plateColor?: string;
@@ -812,12 +823,12 @@ export function walk(
             ? style.lineHeightPercentFontSize / 100
             : undefined,
       placeholder: content?.slice(0, 80),
-      // The box and size come from Figma, and the designed size is the
-      // ceiling. Text shrinks (to the 18px default floor) so a member's
-      // longer copy stays in the box. Fixed text keeps its designed copy, which fits at its
-      // set size, so shrink changes nothing for it; if browser metrics make
-      // it overflow by a hair, shrinking is the better failure.
-      textSizing: "shrink",
+      // No textSizing: every element lands Fixed, and fixed text keeps its
+      // designed size, as drawn. Shrinking it can only hurt: a browser
+      // that wraps the copy one line more than Figma would shrink the
+      // design's own type (brand-system Phase 4 measured it). Turning Fixed
+      // off makes an imported text field shrink, so a member's longer copy
+      // still stays in the box (fixedPatch in the builder).
       // colorHex carries no alpha, so a translucent ink folds its alpha (and
       // the paint's opacity) into the element opacity alongside the node's.
       opacity: fill?.type === "SOLID" ? foldedOpacity(node, fill) : opacityOf(node),
@@ -949,10 +960,29 @@ export function walk(
   }
 
   // Pure vector artwork — a logo, an icon group, a decorative mark — is one
-  // visual object to a designer. Lift the WHOLE subtree as a single static
-  // image (Figma's own render, masks and effects included) so it can be
-  // moved, scaled, and layered instead of freezing into the plate.
+  // visual object to a designer, so it lifts WHOLE. Rebuilt from its own
+  // paths it becomes an icon field that recolours and stays sharp at any
+  // size; art a path list can't hold exactly lifts as a single static image
+  // (Figma's own render, masks and effects included), as before.
   if (place && !imageFill && isVectorArtwork(node) && subtreeHasVector(node)) {
+    const art = effectsRepresentable(node) ? vectorOf(node) : null;
+    if (art) {
+      out.push({
+        id: crypto.randomUUID(),
+        label: node.name,
+        fieldKey: slug(node.name, taken),
+        type: "icon",
+        sourceNodeId: node.id,
+        ...place,
+        vector: art.vector,
+        colorHex: art.colorHex,
+        textGradient: art.textGradient,
+        opacity: opacityOf(node),
+        effects: effectsOf(node, warn, { innerShadow: false }),
+        static: true,
+      });
+      return;
+    }
     out.push({
       id: crypto.randomUUID(),
       label: node.name,
