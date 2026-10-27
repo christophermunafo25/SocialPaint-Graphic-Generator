@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  imagePosition,
+  withImagePosition,
   PALETTE_ITEMS,
   applyPaintOrder,
   paintOrder,
@@ -553,6 +555,30 @@ describe("fixedPatch", () => {
     expect(fixedPatch({ ...text, placeholder: "Role" }, false)).toEqual({
       static: undefined,
       staticValue: undefined,
+    });
+  });
+});
+
+describe("image position", () => {
+  it("reads an absent rect as the plain fit", () => {
+    expect(imagePosition(undefined)).toEqual({ zoom: 100, x: 0, y: 0 });
+  });
+
+  it("zooms about the centre and keeps an imported crop's proportions", () => {
+    const rect = { x: -0.1, y: 0, width: 1.2, height: 0.8 };
+    const next = withImagePosition(rect, { zoom: 240 });
+    expect(next.width).toBeCloseTo(2.4);
+    expect(next.height).toBeCloseTo(1.6);
+    expect(next.x + next.width / 2).toBeCloseTo(rect.x + rect.width / 2);
+    expect(next.y + next.height / 2).toBeCloseTo(rect.y + rect.height / 2);
+  });
+
+  it("moves the top-left corner in percent of the box", () => {
+    expect(withImagePosition(undefined, { x: -25, y: 10 })).toEqual({
+      x: -0.25,
+      y: 0.1,
+      width: 1,
+      height: 1,
     });
   });
 });

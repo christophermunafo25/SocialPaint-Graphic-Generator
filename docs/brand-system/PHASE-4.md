@@ -29,7 +29,7 @@ Decided by CJ on 2026-10-27:
 
 ## Gates
 
-- **Gate A:** CJ approves the Figma proposal for the crop rows, "Builder · Crop (proposal)".
+- **Gate A** (2026-10-27): CJ approved the Figma proposal, "Builder · Crop (proposal)" (`436:4402`). In the app the row reads "Photo position", since the inspector's box already has a Position section, and Zoom carries a zoom icon instead of its word.
 - **Gate B:** CJ approves the `-import` and `crop-matrix` baselines.
 
 ## The shape (approved with the plan, 2026-10-27)
