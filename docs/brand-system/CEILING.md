@@ -4,6 +4,16 @@ Written by brand-system Phase 0 on 2026-10-25, against `main` at 4094a0b (PR 169
 
 Support levels: **live** means a field property draws it, **workaround** means an admin can approximate it with today's fields, and **missing** means it can't be drawn.
 
+## Since Phase 3
+
+Phase 3 (2026-10-27) added the icon field (`docs/brand-system/PHASE-3.md`): vector artwork drawn from path data that recolors like any field and per colourway. The GTM composer's five icons and the Feature Highlight logo are now icon fields in their -depth fixtures, built from their own SVG paths, and score exactly as the SVG images did. `icons-matrix` checks sizes, weights, both gradient kinds, shadow, glow, grain, flips, rotation, blur, a two-color mark and a colourway recolor.
+
+| Fixture        | Chromium (exact / blurred) | Firefox     | WebKit      |
+| -------------- | -------------------------- | ----------- | ----------- |
+| `icons-matrix` | 0.00 / 0.00                | 0.04 / 0.00 | 0.63 / 0.00 |
+
+The importer still lifts vectors as raster images; carrying them in as icon fields is Phase 4. Uploading an SVG set as recolorable icons comes later.
+
 ## Since Phase 2
 
 Phase 2 (2026-10-26) gave the builder controls for everything Phase 1 can paint (`docs/brand-system/PHASE-2.md`), so an admin can now add depth without the importer. The six starters carry subtle depth: soft shadows on photo panels, logo cards and calls to action, a 4% grain on Feature and Stat, and a glow on Stat's rule; Dark keeps the grain and drops the shadows. All 12 were re-blessed with CJ's approval: 8 goldens moved, and the Dark Launch, Milestone, Partnership and Event render exactly as before, since Dark drops the shadows. `builder-roundtrip` holds every property the builder writes and renders its per-look effects.
@@ -39,7 +49,7 @@ Still not expressible after Phase 1, in the order they now cost:
 
 - **The condensed headline width:** a font catalog gap, about 2 points on `feature-highlight`.
 - **Image placement inside the box:** the photo is pre-cropped.
-- **Icons that recolor and vector paths:** Phase 3.
+- **Icons that recolor and vector paths:** done in Phase 3.
 - **The importer carrying effects:** Phase 4.
 - **A drop shadow's spread.**
 - **Inner shadows on text and SVG shapes.**

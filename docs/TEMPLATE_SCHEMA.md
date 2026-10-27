@@ -141,6 +141,30 @@ export does; the grain also lies lightly over a selected element's own
 handles, and the multi-selection box sits above it. A shadow or stroke cut
 off at the canvas edge raises one non-blocking builder warning.
 
+Icons (brand-system Phase 3, migration 0049):
+
+- `type: "icon"` — a static, design-only field that draws vector artwork.
+  Like a shape it is never member input and never required.
+- `vector` `{ viewBox: [minX, minY, w, h], paths, stroke?, source? }` — the
+  artwork, fitted inside the box with its aspect ratio kept (contain,
+  centred). Each path is `{ d, paint?: "fill" | "stroke", fillRule?,
+  colorHex? }`; a stroke path uses `stroke` `{ width, cap?, join? }`, whose
+  width is in viewBox units, so the line scales with the icon. A path's own
+  `colorHex` wins (multi-color art such as a logo); every other path paints
+  in the field's `colorHex` or `textGradient`, and a gradient runs across
+  the whole icon. `source` `{ set: "lucide", name }` records where the art
+  came from so the builder can swap it or change its weight. The renderer
+  reads it through `readVector` (`src/lib/render/vector.ts`), which drops
+  path data outside the SVG path grammar.
+- Icons take drop shadows, glows, layer blur and grain, but not inner
+  shadows. `vector` is structural; a colourway can change the color,
+  gradient, opacity, effects and visibility.
+- In the builder the Icon tile opens a searchable picker of Lucide icons
+  (loaded only when it opens). A new icon is 64 × 64 in the brand's text
+  color with a weight of 2. The inspector shows the icon with Change, its
+  Weight (0.5 to 4, line icons only), and Color in place of Fill; changing
+  the icon keeps the size, color and weight.
+
 Guardrails:
 
 - `maxLength` — hard char limit enforced by the input.
@@ -167,7 +191,7 @@ Guardrails:
   gallery thumbnails keep painting its placeholder. Turning Fixed on clears
   it. In the caption an empty optional tag merges to nothing.
 - Requiredness is derived, never stored: a non-fixed field is required
-  unless it is `optional`; shapes never are (`isRequiredField` in
+  unless it is `optional`; shapes and icons never are (`isRequiredField` in
   `src/lib/templates/fieldRules.ts`, mirrored for the Edge Functions).
 - `required` — legacy column, never read. It stays in the table so old rows
   load; nothing sets it.
