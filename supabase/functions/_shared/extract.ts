@@ -295,6 +295,35 @@ export interface SuggestedField {
   maskNodeId?: string;
   /** Image fields: alpha-mask source, matching TemplateField.maskUrl. */
   maskUrl?: string;
+  /** Image fields: where the image sits inside the box, as fractions of
+   * the box, matching TemplateField.imageRect (brand-system Phase 4). */
+  imageRect?: ImportedRect;
+}
+
+/** An image's rect inside a box, as fractions of the box. */
+export interface ImportedRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+const r4 = (v: number) => Math.round(v * 10000) / 10000 || 0; // never -0
+
+/** Where an image fill's image sits inside its own layer, as fractions of
+ * the layer: undefined for FILL (a centred cover, the renderer's default),
+ * the crop window turned inside out for CROP and STRETCH with a transform
+ * (rows [a, c, tx] / [b, d, ty] map the layer onto the image), and null for
+ * what a rect can't say (FIT, TILE, a stretch that ignores the image's
+ * proportions, a rotated or skewed crop). */
+export function cropRectOf(fill: FigmaPaint): ImportedRect | null | undefined {
+  if (!fill.scaleMode || fill.scaleMode === "FILL") return undefined;
+  const t = fill.imageTransform;
+  if ((fill.scaleMode !== "CROP" && fill.scaleMode !== "STRETCH") || !t) return null;
+  const [a, c, tx] = t[0] ?? [];
+  const [b, d, ty] = t[1] ?? [];
+  if (!(a > 0) || !(d > 0) || Math.abs(b ?? 0) > 1e-4 || Math.abs(c ?? 0) > 1e-4) return null;
+  return { x: r4(-(tx ?? 0) / a), y: r4(-(ty ?? 0) / d), width: r4(1 / a), height: r4(1 / d) };
 }
 
 /** A node's rounded corners in the field shape, or undefined when square. */
@@ -725,6 +754,55 @@ function textCaseContent(
   }
 }
 
+/** The photo a mask group shows, when one image layer explains it: the
+ * topmost image covers the whole mask, opaque, unrotated and plain, so
+ * every layer under it is hidden. Its image ref and its image's rect inside
+ * the mask's box; undefined otherwise (the group render stays). */
+function maskedPhotoOf(
+  mask: FigmaNode,
+  layers: FigmaNode[],
+): { imageRef: string; rect: ImportedRect } | undefined {
+  const top = layers[layers.length - 1];
+  const m = mask.absoluteBoundingBox;
+  const b = top?.absoluteBoundingBox;
+  if (!top || !m || !b || m.width <= 0 || m.height <= 0) return undefined;
+  if (transformOf(top).rotation !== undefined || transformOf(mask).rotation !== undefined) {
+    return undefined;
+  }
+  if ((top.opacity ?? 1) < 1 || (top.effects ?? []).some((e) => e.visible !== false))
+    return undefined;
+  if (top.children?.length) return undefined;
+  const fills = visibleFills(top);
+  const fill = fills[0];
+  if (fills.length !== 1 || fill.type !== "IMAGE" || !fill.imageRef || (fill.opacity ?? 1) < 1) {
+    return undefined;
+  }
+  if (fill.blendMode && fill.blendMode !== "NORMAL") return undefined;
+  const covers =
+    b.x <= m.x + 0.5 &&
+    b.y <= m.y + 0.5 &&
+    b.x + b.width >= m.x + m.width - 0.5 &&
+    b.y + b.height >= m.y + m.height - 0.5;
+  if (!covers) return undefined;
+  const crop = cropRectOf(fill);
+  if (crop === null) return undefined;
+  const inner = crop ?? { x: 0, y: 0, width: 1, height: 1 };
+  // The layer's box in the mask's box, then the image's rect in the layer's.
+  const lx = (b.x - m.x) / m.width;
+  const ly = (b.y - m.y) / m.height;
+  const lw = b.width / m.width;
+  const lh = b.height / m.height;
+  return {
+    imageRef: fill.imageRef,
+    rect: {
+      x: r4(lx + inner.x * lw),
+      y: r4(ly + inner.y * lh),
+      width: r4(inner.width * lw),
+      height: r4(inner.height * lh),
+    },
+  };
+}
+
 export function walk(
   node: FigmaNode,
   frame: { x: number; y: number; width: number; height: number },
@@ -859,10 +937,13 @@ export function walk(
       static: true,
     };
     out.push(field);
-    // With effects carried as properties, the artwork must be the bare fill:
-    // a node render already has the shadow baked into its pixels, and would
-    // paint it twice and squeeze the image into the layout box.
-    if (field.effects && !liftDescends(node)) {
+    // The artwork is the bare fill whenever a node render would be wrong:
+    // with effects carried as properties (a render has the shadow baked
+    // into its pixels, and would paint it twice), and with a crop, which
+    // imageRect now carries so a member's replacement keeps it.
+    const crop = cropRectOf(imageFill);
+    if (crop) field.imageRect = crop;
+    if ((field.effects || crop) && !liftDescends(node)) {
       field.fillImageRef = visibleFills(node).find(
         (f) => f.type === "IMAGE" && f.imageRef,
       )?.imageRef;
@@ -879,7 +960,7 @@ export function walk(
       field.fillImageRef = visibleFills(node).find(
         (f) => f.type === "IMAGE" && f.imageRef,
       )?.imageRef;
-      if (imageFill.scaleMode && imageFill.scaleMode !== "FILL") {
+      if (crop === null) {
         warn("the image's crop is approximated as a centered cover fit.", "info");
       }
       for (const child of node.children ?? []) walk(child, frame, out, warnings, taken, seenIds);
@@ -1108,6 +1189,27 @@ export function walk(
       if (maskType !== "LUMINANCE") {
         const outlineRect = mask.type === "RECTANGLE" && maskType !== "ALPHA";
         const maskPlace = placementOf(mask, frame);
+        const photo = maskPlace ? maskedPhotoOf(mask, rest) : undefined;
+        if (maskPlace && photo) {
+          // The top photo covers the mask, so it is all that shows: land its
+          // own fill with its position inside the mask, and the field stays
+          // replaceable with the designer's crop.
+          out.push({
+            id: crypto.randomUUID(),
+            label: node.name,
+            fieldKey: slug(node.name, taken),
+            type: "image",
+            sourceNodeId: node.id,
+            ...maskPlace,
+            objectFit: "cover",
+            fillImageRef: photo.imageRef,
+            imageRect: photo.rect,
+            ...(outlineRect ? { cornerRadius: cornerRadiusOf(mask) } : { maskNodeId: mask.id }),
+            opacity: opacityOf(node),
+            static: true,
+          });
+          return;
+        }
         if (maskPlace) {
           out.push({
             id: crypto.randomUUID(),

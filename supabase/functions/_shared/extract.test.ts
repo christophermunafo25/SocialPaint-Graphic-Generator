@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   cornerRadiusOf,
+  cropRectOf,
   opacityOf,
   transformOf,
   walk,
@@ -900,5 +901,36 @@ describe("cap-trimmed text", () => {
     const out: SuggestedField[] = [];
     walk(trimmed(36), frame0, out, [], new Set(), new Set());
     expect(out[0]).toMatchObject({ type: "multiline", y: 94, height: 48 });
+  });
+});
+
+describe("cropRectOf", () => {
+  it("turns a crop window inside out into the image's rect in the layer", () => {
+    // The layer shows the middle half of the image, horizontally.
+    expect(
+      cropRectOf({
+        type: "IMAGE",
+        scaleMode: "CROP",
+        imageTransform: [
+          [0.5, 0, 0.25],
+          [0, 1, 0],
+        ],
+      }),
+    ).toEqual({ x: -0.5, y: 0, width: 2, height: 1 });
+  });
+
+  it("is undefined for a plain cover, null for what a rect can't say", () => {
+    expect(cropRectOf({ type: "IMAGE", scaleMode: "FILL" })).toBeUndefined();
+    expect(cropRectOf({ type: "IMAGE", scaleMode: "TILE" })).toBeNull();
+    expect(
+      cropRectOf({
+        type: "IMAGE",
+        scaleMode: "CROP",
+        imageTransform: [
+          [0.5, 0.2, 0],
+          [0, 1, 0],
+        ],
+      }),
+    ).toBeNull();
   });
 });

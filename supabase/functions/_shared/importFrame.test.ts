@@ -23,6 +23,47 @@ describe("importFrame", () => {
     expect(fields.some((f) => f.sourceNodeId === root.id)).toBe(false);
   });
 
+  it("lands a masked photo as its own fill, positioned inside the mask", () => {
+    const { fields } = importFrame(savedFrame("feature-highlight", "62:1210"));
+    const photo = fields.find((f) => f.label === "Mask group")!;
+    expect(photo).toMatchObject({
+      type: "image",
+      x: 254,
+      y: 482,
+      width: 826,
+      height: 787,
+      // image 9, the top layer, at (-47, -16) and 1234 x 820 inside the mask
+      fillImageRef: "d0a0cebeaac28c66eac802c112c13765264237a8",
+      maskNodeId: "62:1214",
+    });
+    expect(photo.imageRect!.x).toBeCloseTo(-47 / 826, 3);
+    expect(photo.imageRect!.y).toBeCloseTo(-16 / 787, 3);
+    expect(photo.imageRect!.width).toBeCloseTo(1234 / 826, 3);
+    expect(photo.imageRect!.height).toBeCloseTo(820 / 787, 3);
+  });
+
+  it("carries the frame's grain onto the canvas and the composer's depth onto its shape", () => {
+    const { fields, canvasEffects } = importFrame(savedFrame("gtm-composer", "200:208"));
+    expect(canvasEffects).toEqual([
+      { type: "noise", color: "#FFFFFF1A", size: 0.5, density: 1, seed: 1 },
+    ]);
+    expect(fields.find((f) => f.label === "Composer")).toMatchObject({
+      type: "shape",
+      strokeColor: "#FFFFFF40",
+      strokeWidthPx: 5,
+      strokeAlign: "outside",
+      effects: [{ type: "dropShadow", x: 8, y: 8, blur: 32, color: "#0000001A" }],
+    });
+    // Every icon and button is a vector now, not a render.
+    expect(fields.filter((f) => f.type === "icon").map((f) => f.label)).toEqual([
+      "Attach button",
+      "chevron",
+      "Decrease",
+      "Increase",
+      "Send button",
+    ]);
+  });
+
   it("says so when a frame has nothing to lift", () => {
     const root: FigmaNode = {
       id: "1:1",
