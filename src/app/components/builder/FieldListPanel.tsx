@@ -8,6 +8,7 @@ import {
   Image as ImageIcon,
   Pin,
   Shapes,
+  Star,
   Type as TypeIcon,
 } from "lucide-react";
 import type { FieldType, LayoutGroup, TemplateField, TemplateVariant } from "@/lib/types";
@@ -22,6 +23,7 @@ const ICONS: Record<FieldType, React.ComponentType<{ style?: React.CSSProperties
   image: ImageIcon,
   select: ChevronDown,
   shape: Shapes,
+  icon: Star,
 };
 
 interface FieldListPanelProps {
@@ -57,7 +59,7 @@ type DragSource =
 
 /** What the member actually sees a control for. Fixed elements and shapes
  * never reach the form. */
-const inForm = (f: TemplateField) => !f.static && f.type !== "shape";
+const inForm = (f: TemplateField) => !f.static && f.type !== "shape" && f.type !== "icon";
 
 /** The Form tab's list: the member-facing fields in member-form order, with
  * grouped fields nested under their stack (in STACK order — their form-step

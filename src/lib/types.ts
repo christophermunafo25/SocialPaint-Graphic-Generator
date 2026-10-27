@@ -221,7 +221,32 @@ export type FieldEffect =
 /** Where a shape's stroke sits on its edge. */
 export type StrokeAlign = "inside" | "center" | "outside";
 
-export type FieldType = "text" | "multiline" | "image" | "select" | "shape";
+export type FieldType = "text" | "multiline" | "image" | "select" | "shape" | "icon";
+
+/** Vector artwork an icon field draws (brand-system Phase 3). Coordinates are
+ * viewBox units; the art is fitted inside the field box keeping its aspect
+ * ratio (contain, centred). */
+export interface FieldVector {
+  viewBox: [number, number, number, number]; // minX, minY, width, height
+  paths: VectorPath[];
+  /** Line style for paths painted as strokes. Width is in viewBox units, so
+   * it scales with the icon. */
+  stroke?: {
+    width: number;
+    cap?: "butt" | "round" | "square";
+    join?: "miter" | "round" | "bevel";
+  };
+  /** Where the art came from, so the builder can swap or re-weight it. */
+  source?: { set: "lucide"; name: string };
+}
+
+export interface VectorPath {
+  d: string; // SVG path data
+  paint?: "fill" | "stroke"; // absent: fill
+  fillRule?: "nonzero" | "evenodd"; // absent: nonzero
+  /** #RRGGBB for multi-color art (a logo). Absent: the field's color. */
+  colorHex?: string;
+}
 
 /** Decorative shape kinds (a "line" is a thin rect). */
 export type ShapeKind = "rect" | "ellipse" | "triangle" | "star";
@@ -281,6 +306,10 @@ export interface TemplateField {
   strokeAlign?: StrokeAlign;
   /** Depth effects, painted in list order (Figma's order). Absent = none. */
   effects?: FieldEffect[];
+  /** Icon fields only: the vector the field draws, in colorHex (or
+   * textGradient). Icons are always static, like shapes. Absent: nothing
+   * is drawn. */
+  vector?: FieldVector;
   /** Text fields only: a plate painted behind the text, sized to the text's
    * rendered box plus padding, sharing the field's cornerRadius. Full radius
    * makes a pill. The plate is part of the field: one element to select,

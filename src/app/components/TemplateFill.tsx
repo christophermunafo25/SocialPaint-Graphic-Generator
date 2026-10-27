@@ -114,7 +114,11 @@ export function TemplateFill({
   const formFields = useMemo(
     () =>
       (rendered.fields ?? []).filter(
-        (f) => !f.static && f.type !== "shape" && (allowUploads || f.type !== "image"),
+        (f) =>
+          !f.static &&
+          f.type !== "shape" &&
+          f.type !== "icon" &&
+          (allowUploads || f.type !== "image"),
       ),
     [rendered, allowUploads],
   );

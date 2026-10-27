@@ -23,6 +23,10 @@ Decided by CJ on 2026-10-26:
 
 In this phase an icon recolors the way every field does: its color is baked hex, and a colourway overrides it per look. Binding to color roles waits for D1 and Phase 5.
 
+## Gates
+
+- **Gate A** (2026-10-27): CJ approved the Figma proposal, "Builder · Icons (proposal)" (`434:4312`).
+
 ## The shape (approved with the plan, 2026-10-26)
 
 ```ts

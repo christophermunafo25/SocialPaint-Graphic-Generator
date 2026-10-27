@@ -510,11 +510,14 @@ const SHAPE_STYLE_PROPS = [
   "opacity",
   "effects",
 ] as const;
+/** An icon's look. Its artwork and line weight are content, not style. */
+const ICON_STYLE_PROPS = ["colorHex", "textGradient", "opacity", "effects"] as const;
 
 type StyleProp =
   | (typeof TEXT_STYLE_PROPS)[number]
   | (typeof IMAGE_STYLE_PROPS)[number]
-  | (typeof SHAPE_STYLE_PROPS)[number];
+  | (typeof SHAPE_STYLE_PROPS)[number]
+  | (typeof ICON_STYLE_PROPS)[number];
 
 const ALL_STYLE_PROPS = [
   ...new Set<StyleProp>([...TEXT_STYLE_PROPS, ...IMAGE_STYLE_PROPS, ...SHAPE_STYLE_PROPS]),
@@ -523,7 +526,13 @@ const ALL_STYLE_PROPS = [
 export type FieldStyle = Partial<Pick<TemplateField, StyleProp>>;
 
 const propsForType = (type: FieldType): readonly StyleProp[] =>
-  type === "image" ? IMAGE_STYLE_PROPS : type === "shape" ? SHAPE_STYLE_PROPS : TEXT_STYLE_PROPS;
+  type === "image"
+    ? IMAGE_STYLE_PROPS
+    : type === "shape"
+      ? SHAPE_STYLE_PROPS
+      : type === "icon"
+        ? ICON_STYLE_PROPS
+        : TEXT_STYLE_PROPS;
 
 let styleClipboard: FieldStyle | null = null;
 
