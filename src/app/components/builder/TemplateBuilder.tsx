@@ -2167,7 +2167,10 @@ export function TemplateBuilder({
       backgroundUrl: opts.backgroundUrl,
       canvasWidth: opts.canvasWidth,
       canvasHeight: opts.canvasHeight,
-      ...(opts.canvasEffects?.length ? { canvasEffects: opts.canvasEffects } : {}),
+      // The flat Figma render has the frame's own effects baked in, so the
+      // canvas carries none of its own until the recomposed plate lands
+      // (recomposeBackground); a re-import clears the last frame's.
+      canvasEffects: undefined,
       fields: [...d.fields, ...imported],
     }));
     // A successful import IS a chosen source, even if the background render
@@ -2210,7 +2213,7 @@ export function TemplateBuilder({
         window.clearTimeout(noticeTimer.current);
         noticeTimer.current = window.setTimeout(() => setNotice(null), 8000);
       }
-      recomposeBackground(opts.sourceUrl, imported, opts.tree, missingFonts);
+      recomposeBackground(opts.sourceUrl, imported, opts.tree, missingFonts, opts.canvasEffects);
     })();
     return imported;
   };
@@ -2316,6 +2319,7 @@ export function TemplateBuilder({
     imported: TemplateField[],
     tree?: unknown,
     missingFonts: string[] = [],
+    canvasEffects?: FieldEffect[],
   ) => {
     //
     // The invariant that matters: every id excluded from the background must
@@ -2372,6 +2376,10 @@ export function TemplateBuilder({
             return {
               ...d,
               backgroundUrl: bgUrl,
+              // The stripped plate has none of the frame's effects, so they
+              // move onto the canvas now, over the plate and the fields, as
+              // Figma paints them.
+              canvasEffects: normalizeEffects(canvasEffects, { kind: "canvas" }),
               // Anchors index into the EXCLUDED fields in paint order —
               // `lifted`, not `imported` (baked missing-font text never
               // reached the decomposer).

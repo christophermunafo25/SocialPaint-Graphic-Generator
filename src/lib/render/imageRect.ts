@@ -2,7 +2,7 @@ import type { ImageRect } from "../types";
 
 /** Far enough for any real crop (an image ten times its box), small enough
  * that a bad row can't ask the browser for a gigantic layer. */
-const MAX_SPAN = 10;
+export const MAX_SPAN = 10;
 
 const finite = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
 

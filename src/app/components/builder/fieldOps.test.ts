@@ -547,12 +547,14 @@ describe("fixedPatch", () => {
 
   it("making text editable keeps its copy as the placeholder when it has none", () => {
     const text: TemplateField = { ...base, type: "text", static: true, staticValue: "Now hiring" };
+    // No sizing of its own, so it shrinks as member input.
     expect(fixedPatch(text, false)).toEqual({
       static: undefined,
       staticValue: undefined,
+      textSizing: "shrink",
       placeholder: "Now hiring",
     });
-    expect(fixedPatch({ ...text, placeholder: "Role" }, false)).toEqual({
+    expect(fixedPatch({ ...text, placeholder: "Role", textSizing: "free" }, false)).toEqual({
       static: undefined,
       staticValue: undefined,
     });
@@ -571,6 +573,13 @@ describe("image position", () => {
     expect(next.height).toBeCloseTo(1.6);
     expect(next.x + next.width / 2).toBeCloseTo(rect.x + rect.width / 2);
     expect(next.y + next.height / 2).toBeCloseTo(rect.y + rect.height / 2);
+  });
+
+  it("never zooms or moves past the span the renderer draws", () => {
+    const tall = { x: 0, y: 0, width: 1, height: 2 };
+    const zoomed = withImagePosition(tall, { zoom: 1000 });
+    expect(Math.max(zoomed.width, zoomed.height)).toBeCloseTo(10);
+    expect(withImagePosition(undefined, { x: -5000 }).x).toBe(-10);
   });
 
   it("moves the top-left corner in percent of the box", () => {
@@ -602,8 +611,12 @@ describe("fixedPatch on imported text", () => {
     expect(fixedPatch(imported, false).textSizing).toBe("shrink");
   });
 
-  it("leaves a chosen sizing, and drawn text, as they are", () => {
+  it("still shrinks after a save, which drops the import's node id", () => {
+    expect(fixedPatch({ ...imported, sourceNodeId: undefined }, false).textSizing).toBe("shrink");
+  });
+
+  it("leaves a chosen sizing, and images, as they are", () => {
     expect(fixedPatch({ ...imported, textSizing: "free" }, false).textSizing).toBeUndefined();
-    expect(fixedPatch({ ...imported, sourceNodeId: undefined }, false).textSizing).toBeUndefined();
+    expect(fixedPatch({ ...imported, type: "image" }, false).textSizing).toBeUndefined();
   });
 });

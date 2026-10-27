@@ -5,11 +5,12 @@
 // of the network. The resulting template is what an admin would get from
 // importing that frame, so the harness can measure imports against Figma.
 
-import type { FieldEffect, FigmaLayerUnit, TemplateField, TemplateSchema } from "@/lib/types";
+import type { FigmaLayerUnit, TemplateField, TemplateSchema } from "@/lib/types";
 import { suggestFieldKey } from "@/lib/caption";
 import { composeFigmaBackground } from "@/lib/figma/composeLayers";
 import { stackImported } from "@/lib/figma/importLanding";
 import { mergeOverlayFields } from "@/lib/figma/overlayFields";
+import { normalizeEffects } from "@/app/components/builder/effectOps";
 import type { FigmaNode } from "../../../supabase/functions/_shared/extract.ts";
 import {
   fillRefsOf,
@@ -108,7 +109,8 @@ export async function replayImport(spec: ImportReplaySpec): Promise<TemplateSche
     canvasWidth,
     canvasHeight,
     backgroundUrl: URL.createObjectURL(plate),
-    ...(canvasEffects?.length ? { canvasEffects: canvasEffects as FieldEffect[] } : {}),
+    // As the builder lands it once the plate is composed.
+    canvasEffects: normalizeEffects(canvasEffects, { kind: "canvas" }),
     captionTemplate: "",
     createdAt: STAMP,
     updatedAt: STAMP,

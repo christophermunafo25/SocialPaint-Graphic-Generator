@@ -15,6 +15,7 @@ import { newId } from "@/lib/stores/local/db";
 import { suggestFieldKey } from "@/lib/caption";
 import { roleFace } from "@/lib/brand/fontRoles";
 import { iconTitle } from "@/lib/icons/lucide";
+import { MAX_SPAN } from "@/lib/render/imageRect";
 
 export interface PaletteItem {
   /** Stable id carried through drag-and-drop (shapes share type "shape"). */
@@ -705,9 +706,12 @@ export function fixedPatch(field: TemplateField, fixed: boolean): Partial<Templa
   return {
     static: undefined,
     staticValue: field.type === "image" ? field.staticValue : undefined,
-    // Imported text lands at its designed size; as member input it shrinks,
-    // so longer copy stays in the box the design drew.
-    ...(isText && field.sourceNodeId && !field.textSizing ? { textSizing: "shrink" as const } : {}),
+    // Text with no sizing of its own (an import, which lands at its designed
+    // size, or an older template; the builder's own text always sets one)
+    // shrinks as member input, so longer copy stays in the box the design
+    // drew. Keyed on the sizing, not the import's node id, which a save
+    // doesn't keep.
+    ...(isText && !field.textSizing ? { textSizing: "shrink" as const } : {}),
     ...(field.type !== "image" && !field.placeholder && field.staticValue
       ? { placeholder: field.staticValue.slice(0, 80) }
       : {}),
@@ -731,7 +735,9 @@ export function withImagePosition(
 ): ImageRect {
   let r = rect ?? { x: 0, y: 0, width: 1, height: 1 };
   if (edit.zoom !== undefined && edit.zoom > 0) {
-    const k = edit.zoom / 100 / r.width;
+    // Held inside the span the renderer draws (readImageRect), so a tall
+    // crop zoomed far never snaps back to the plain fit.
+    const k = Math.min(edit.zoom / 100 / r.width, MAX_SPAN / Math.max(r.width, r.height));
     const cx = r.x + r.width / 2;
     const cy = r.y + r.height / 2;
     const width = r.width * k;
@@ -740,5 +746,6 @@ export function withImagePosition(
   }
   if (edit.x !== undefined) r = { ...r, x: edit.x / 100 };
   if (edit.y !== undefined) r = { ...r, y: edit.y / 100 };
-  return r;
+  const clamp = (v: number) => Math.max(-MAX_SPAN, Math.min(MAX_SPAN, v));
+  return { ...r, x: clamp(r.x), y: clamp(r.y) };
 }

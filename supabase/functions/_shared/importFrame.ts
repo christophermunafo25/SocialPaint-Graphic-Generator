@@ -11,6 +11,7 @@ import {
   type ImportWarning,
   type SuggestedField,
 } from "./extract.ts";
+import { logError } from "./http.ts";
 
 export interface FrameImport {
   fields: SuggestedField[];
@@ -37,11 +38,11 @@ export function importFrame(
     const roots = mode === "elements" ? [root] : (root.children ?? []);
     for (const child of roots) walk(child, frame, fields, warnings, taken, seenIds);
   } catch (e) {
-    console.error("importFrame", e);
+    logError("importFrame", e);
     warnings.push({
       layer: root.name,
       nodeId: root.id,
-      issue: "field detection stopped early — map fields manually.",
+      issue: "field detection stopped early, so map the fields by hand.",
       severity: "degraded",
     });
   }
@@ -50,17 +51,23 @@ export function importFrame(
       layer: root.name,
       nodeId: root.id,
       issue:
-        "no text, image, or shape layers detected — draw fields manually on the imported background.",
+        "no text, image or shape layers were found, so draw fields on the imported background.",
       severity: "info",
     });
   }
-  const canvasEffects =
-    mode === "template"
-      ? effectsOf(root, (issue, severity = "degraded") =>
-          warnings.push({ layer: root.name, nodeId: root.id, issue, severity }),
-        )
-      : undefined;
-  return { fields, canvasEffects, warnings };
+  // The canvas draws grain and inner shadows; a frame's drop shadow or blur
+  // has nothing around it to paint on, so it is left out, and said once.
+  const warn = (issue: string, severity: "info" | "degraded" = "degraded") =>
+    warnings.push({ layer: root.name, nodeId: root.id, issue, severity });
+  const rootEffects = mode === "template" ? effectsOf(root, warn) : undefined;
+  const canvasEffects = rootEffects?.filter((e) => e.type === "noise" || e.type === "innerShadow");
+  if (rootEffects && canvasEffects && canvasEffects.length < rootEffects.length) {
+    warn(
+      "the frame's own shadow or blur can't be drawn on the canvas, so it was left out.",
+      "info",
+    );
+  }
+  return { fields, canvasEffects: canvasEffects?.length ? canvasEffects : undefined, warnings };
 }
 
 /** Image-fill refs the import needs resolved (/v1/files/{key}/images). */
@@ -110,7 +117,8 @@ export async function landImageAssets(
         warnings.push({
           layer: f.label,
           nodeId: f.sourceNodeId,
-          issue: "the image fill couldn't be resolved — nested elements are baked into it.",
+          issue:
+            "the image fill couldn't be resolved, so the elements inside it are baked into the image.",
           severity: "degraded",
         });
       }
@@ -127,7 +135,7 @@ export async function landImageAssets(
       warnings.push({
         layer: f.label,
         nodeId: f.sourceNodeId,
-        issue: "the image couldn't be rendered — it landed as an empty field.",
+        issue: "the image couldn't be rendered, so it landed as an empty field.",
         severity: "degraded",
       });
     }
@@ -143,7 +151,7 @@ export async function landImageAssets(
       warnings.push({
         layer: f.label,
         nodeId: f.sourceNodeId,
-        issue: "the mask couldn't be rendered — the image imports unmasked (rectangular).",
+        issue: "the mask couldn't be rendered, so the image imports as a plain rectangle.",
         severity: "degraded",
       });
     }

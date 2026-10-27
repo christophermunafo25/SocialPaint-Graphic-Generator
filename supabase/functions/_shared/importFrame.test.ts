@@ -64,6 +64,32 @@ describe("importFrame", () => {
     ]);
   });
 
+  it("keeps the group render when the top photo doesn't explain the mask", () => {
+    const root = savedFrame("feature-highlight", "62:1210");
+    const group = root.children!.find((c) => c.name === "Mask group")!;
+    const top = group.children![group.children!.length - 1];
+    const variants: Array<Partial<FigmaNode>> = [
+      // Short of the mask's bottom edge, so a layer beneath shows.
+      { absoluteBoundingBox: { ...top.absoluteBoundingBox!, height: 100 } },
+      { opacity: 0.5 },
+      { fills: [{ ...top.fills![0], blendMode: "MULTIPLY" }] },
+    ];
+    for (const over of variants) {
+      const changed = {
+        ...root,
+        children: root.children!.map((c) =>
+          c === group
+            ? { ...group, children: [...group.children!.slice(0, -1), { ...top, ...over }] }
+            : c,
+        ),
+      };
+      const photo = importFrame(changed).fields.find((f) => f.label === "Mask group")!;
+      expect(photo.fillImageRef).toBeUndefined();
+      expect(photo.imageRect).toBeUndefined();
+      expect(photo.maskNodeId).toBe("62:1214");
+    }
+  });
+
   it("says so when a frame has nothing to lift", () => {
     const root: FigmaNode = {
       id: "1:1",

@@ -63,6 +63,7 @@ export interface FigmaNode {
   strokeWeight?: number;
   strokeAlign?: string;
   strokeDashes?: number[];
+  individualStrokeWeights?: { top: number; right: number; bottom: number; left: number };
   style?: {
     /** "CAP_HEIGHT": the text box is trimmed to the cap height above the
      * first line and to the baseline below the last. */
@@ -168,6 +169,10 @@ export function effectsOf(
   const out: ImportedEffect[] = [];
   let droppedInner = false;
   for (const e of visibleEffects(node)) {
+    if (!CARRIED_EFFECTS.has(e.type)) {
+      warn(`${e.type.toLowerCase().replace(/_/g, " ")} isn't reproduced on this layer.`);
+      continue;
+    }
     const alpha = e.color?.a ?? 1;
     if (e.type === "DROP_SHADOW" || e.type === "INNER_SHADOW") {
       if (!e.color || alpha <= 0) continue;
@@ -314,8 +319,9 @@ const r4 = (v: number) => Math.round(v * 10000) / 10000 || 0; // never -0
  * the layer: undefined for FILL (a centred cover, the renderer's default),
  * the crop window turned inside out for CROP and STRETCH with a transform
  * (rows [a, c, tx] / [b, d, ty] map the layer onto the image), and null for
- * what a rect can't say (FIT, TILE, a stretch that ignores the image's
- * proportions, a rotated or skewed crop). */
+ * what a rect can't say (FIT, TILE, a STRETCH with no transform, a rotated
+ * or skewed crop). The rect is drawn with cover, so a stretch that changes
+ * the image's proportions lands at its own proportions instead. */
 export function cropRectOf(fill: FigmaPaint): ImportedRect | null | undefined {
   if (!fill.scaleMode || fill.scaleMode === "FILL") return undefined;
   const t = fill.imageTransform;
@@ -401,6 +407,8 @@ export interface PredicateNode {
   fillGeometry?: unknown[];
   hasFillGeometry?: boolean;
   strokes?: Array<{ type: string; visible?: boolean }>;
+  /** Per-side stroke weights, when the sides differ. */
+  individualStrokeWeights?: { top: number; right: number; bottom: number; left: number };
   fills?: FigmaPaint[];
   cornerRadius?: number;
   rectangleCornerRadii?: number[];
@@ -443,6 +451,15 @@ export function subtreeHasVector(node: PredicateNode): boolean {
   return (node.children ?? []).some(subtreeHasVector);
 }
 
+/** True when a stroke weighs the same on every side: a shape field's
+ * stroke is one border all round, so a bottom rule stays a render. */
+export const uniformStroke = (node: {
+  individualStrokeWeights?: { top: number; right: number; bottom: number; left: number };
+}): boolean => {
+  const w = node.individualStrokeWeights;
+  return !w || (w.top === w.right && w.right === w.bottom && w.bottom === w.left);
+};
+
 /** The single representable fill of a container (FRAME/COMPONENT/INSTANCE)
  * whose own backdrop can lift as a SHAPE field — a pill, a card, a color
  * block — while its children keep lifting as their own fields. Undefined
@@ -457,6 +474,7 @@ export function shapeContainerFill(node: PredicateNode): FigmaPaint | undefined 
   // effects (brand-system Phase 4); anything richer keeps the exact render.
   const strokes = (node.strokes ?? []).filter((s) => s.visible !== false);
   if (strokes.length > 1 || (strokes[0] && strokes[0].type !== "SOLID")) return undefined;
+  if (strokes.length && !uniformStroke(node)) return undefined;
   if (!effectsRepresentable(node)) return undefined;
   const fills = (node.fills ?? []).filter((f) => f.visible !== false);
   if (fills.length !== 1) return undefined;
@@ -923,6 +941,21 @@ export function walk(
     imageFill &&
     (node.type === "RECTANGLE" || node.type === "FRAME" || node.type === "ELLIPSE")
   ) {
+    // The artwork can be the bare fill only when the fill is all the node
+    // paints: a round node, a border, a second fill (a tint) or a
+    // translucent or blended fill live in Figma's render and nowhere else.
+    const plainFill =
+      node.type !== "ELLIPSE" &&
+      !(node.strokes ?? []).some((st) => st.visible !== false) &&
+      visibleFills(node).length === 1 &&
+      (imageFill.opacity ?? 1) >= 1 &&
+      (!imageFill.blendMode || imageFill.blendMode === "NORMAL");
+    // With a plain fill, effects ride as properties and a crop as imageRect,
+    // so the artwork must be the bare fill: a render has the shadow baked
+    // into its pixels (it would paint twice) and its crop can't follow a
+    // member's replacement. Otherwise the render stays, effects included.
+    const crop = plainFill ? cropRectOf(imageFill) : undefined;
+    const effects = plainFill ? effectsOf(node, warn) : undefined;
     const field: SuggestedField = {
       id: crypto.randomUUID(),
       label: node.name,
@@ -933,20 +966,16 @@ export function walk(
       objectFit: "cover",
       opacity: opacityOf(node),
       cornerRadius: cornerRadiusOf(node),
-      effects: effectsOf(node, warn),
+      effects,
       static: true,
     };
     out.push(field);
-    // The artwork is the bare fill whenever a node render would be wrong:
-    // with effects carried as properties (a render has the shadow baked
-    // into its pixels, and would paint it twice), and with a crop, which
-    // imageRect now carries so a member's replacement keeps it.
-    const crop = cropRectOf(imageFill);
     if (crop) field.imageRect = crop;
-    if ((field.effects || crop) && !liftDescends(node)) {
+    if ((effects || crop) && !liftDescends(node)) {
       field.fillImageRef = visibleFills(node).find(
         (f) => f.type === "IMAGE" && f.imageRef,
       )?.imageRef;
+      if (crop === null) warn("the image's crop is approximated as a centered cover fit.", "info");
     }
     // Descend into the container's children so nested content (a headline
     // inside a photo card) lifts as real fields instead of baking into the
@@ -960,7 +989,11 @@ export function walk(
       field.fillImageRef = visibleFills(node).find(
         (f) => f.type === "IMAGE" && f.imageRef,
       )?.imageRef;
-      if (crop === null) {
+      // The artwork is the bare fill here whatever else the node paints, so
+      // its crop rides along too.
+      const fillCrop = cropRectOf(imageFill);
+      if (fillCrop) field.imageRect = fillCrop;
+      else if (fillCrop === null) {
         warn("the image's crop is approximated as a centered cover fit.", "info");
       }
       for (const child of node.children ?? []) walk(child, frame, out, warnings, taken, seenIds);
@@ -1002,7 +1035,8 @@ export function walk(
       const fill = fills[0];
       // Exactly one visible SOLID stroke lifts WITH the shape, keeping its
       // alignment and alpha.
-      const solidStroke = strokes.length === 1 && strokes[0].type === "SOLID";
+      const solidStroke =
+        strokes.length === 1 && strokes[0].type === "SOLID" && uniformStroke(node);
       if (fills.length === 1 && (!strokes.length || solidStroke) && !isRasterLeaf(node)) {
         const strokeProps = strokePropsOf(node, warn);
         if (fill.type === "SOLID" && fill.color) {
@@ -1204,6 +1238,9 @@ export function walk(
             objectFit: "cover",
             fillImageRef: photo.imageRef,
             imageRect: photo.rect,
+            // The group render used to carry the group's own shadow; with the
+            // bare fill it rides as an effect, following the mask's shape.
+            effects: effectsOf(node, warn),
             ...(outlineRect ? { cornerRadius: cornerRadiusOf(mask) } : { maskNodeId: mask.id }),
             opacity: opacityOf(node),
             static: true,
@@ -1271,7 +1308,13 @@ export interface ExtractedElement {
    * baked in the flat export). */
   shape?: "rect" | "ellipse" | "triangle" | "star";
   cornerRadius?: { tl: number; tr: number; br: number; bl: number };
-  textGradient?: { angle: number; stops: Array<{ position: number; color: string }> };
+  textGradient?: ImportedGradient;
+  /** The stroke and depth lifted with the node (brand-system Phase 4), so
+   * a field built from this element keeps them. */
+  strokeColor?: string;
+  strokeWidthPx?: number;
+  strokeAlign?: "center" | "outside";
+  effects?: ImportedEffect[];
   x: number;
   y: number;
   width: number;
@@ -1312,8 +1355,10 @@ export interface ExtractionResult {
 export function figmaFieldsToElements(fields: SuggestedField[]): ExtractedElement[] {
   return fields.map((f) => ({
     sourceId: f.sourceNodeId,
+    // An icon is vector art: to autobuild it is one fixed picture, as it
+    // was before the importer rebuilt it from paths, so it bakes as an image.
     kind:
-      f.type === "image"
+      f.type === "image" || f.type === "icon"
         ? ("image" as const)
         : f.type === "shape"
           ? ("shape" as const)
@@ -1322,6 +1367,10 @@ export function figmaFieldsToElements(fields: SuggestedField[]): ExtractedElemen
     shape: f.shape,
     cornerRadius: f.cornerRadius,
     textGradient: f.textGradient,
+    strokeColor: f.strokeColor,
+    strokeWidthPx: f.strokeWidthPx,
+    strokeAlign: f.strokeAlign,
+    effects: f.effects,
     x: f.x,
     y: f.y,
     width: f.width,
