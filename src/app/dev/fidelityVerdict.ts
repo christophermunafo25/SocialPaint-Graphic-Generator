@@ -10,7 +10,7 @@ export type Engine = "chromium" | "firefox" | "webkit";
 /** The parts of a fixture.json the runner decides with. */
 export interface VerdictFixture {
   name: string;
-  kind: "figma" | "starter" | "synthetic";
+  kind: "figma" | "starter" | "synthetic" | "import";
   variantId?: string | null;
   baseline?: Partial<Record<Engine, number>>;
   /** The blurred share's baseline (brand-system Phase 1). Optional: a

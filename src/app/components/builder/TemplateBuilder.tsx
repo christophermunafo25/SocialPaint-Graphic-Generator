@@ -122,6 +122,7 @@ import {
 } from "./fieldOps";
 import { composeFigmaBackground } from "@/lib/figma/composeLayers";
 import { assembleElementFields, mergeOverlayFields } from "@/lib/figma/overlayFields";
+import { stackImported } from "@/lib/figma/importLanding";
 import { isFigmaNodeUrl } from "@/lib/figma/figmaUrl";
 import { verifyMissingFamilies } from "@/lib/render/fonts";
 import { lockedProperties } from "@/lib/brand/resolveStyle";
@@ -2155,13 +2156,7 @@ export function TemplateBuilder({
     // Computed OUTSIDE the setDraft updater: updaters run at render time (and
     // twice under StrictMode), so pushing into `imported` there would leave it
     // empty for the recomposition below and duplicate every field in dev.
-    const existing = [...draft.fields];
-    let z = maxZ(existing);
-    const imported = opts.fields.map((f) => {
-      const next: TemplateField = { ...f, fieldKey: opts.fieldKeyFor(f, existing), zIndex: ++z };
-      existing.push(next);
-      return next;
-    });
+    const imported = stackImported(opts.fields, draft.fields, opts.fieldKeyFor);
     const patch = opts.patch?.(imported) ?? {};
     setDraft((d) => ({
       ...d,

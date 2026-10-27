@@ -1,0 +1,23 @@
+{
+  "name": "feature-highlight-import",
+  "kind": "import",
+  "source": {
+    "fileKey": "g9mjhQHoPVgYbBIPKR1VsT",
+    "nodeId": "62:1210"
+  },
+  "figmaNode": "/test/fidelity/fixtures/feature-highlight/figma-node.json",
+  "goldenFrom": "feature-highlight",
+  "fonts": [
+    {
+      "family": "Bricolage Grotesque Heading",
+      "file": "/test/fidelity/fixtures/feature-highlight/BricolageGrotesqueHeadline-SemiBold.ttf",
+      "weight": 600,
+      "style": "normal"
+    }
+  ],
+  "assets": {
+    "62:1213": "r-62-1213.png",
+    "62:1218": "r-62-1218.png",
+    "62:1214": "r-62-1214.png"
+  }
+}

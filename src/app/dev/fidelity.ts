@@ -23,11 +23,18 @@ export interface FixtureFont {
  * its schema and compares with a golden exported from `source`; a
  * "starter" fixture is materialized here from a blueprint and compares
  * with a blessed Chromium render; a "synthetic" fixture carries a schema
- * built in code and compares with a blessed Chromium render too. */
+ * built in code and compares with a blessed Chromium render too. An
+ * "import" fixture replays the Figma importer against a saved node tree
+ * (importReplay.ts) and compares with that frame's golden. */
 export interface FidelityFixture {
   name: string;
-  kind: "figma" | "starter" | "synthetic";
+  kind: "figma" | "starter" | "synthetic" | "import";
   source?: { fileKey: string; nodeId: string };
+  /** import: root-relative URL of the saved node tree the replay walks. */
+  figmaNode?: string;
+  /** import: each Figma render (by node id) and image fill (by image ref)
+   * the replay needs, as a file beside the fixture. */
+  assets?: Record<string, string>;
   schema?: TemplateSchema;
   values?: FieldValues;
   brandKit?: BrandKit | null;

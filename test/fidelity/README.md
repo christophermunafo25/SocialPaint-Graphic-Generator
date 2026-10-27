@@ -17,22 +17,24 @@ test/fidelity/
 
 ## fixture.json
 
-| Key            | Meaning                                                                                                                                                                                      |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`         | The folder name                                                                                                                                                                              |
-| `kind`         | `"figma"` (golden exported from Figma), `"starter"` (golden blessed from today's Chromium render) or `"synthetic"` (a schema built in code, golden blessed from Chromium, for export parity) |
-| `source`       | figma: `{ fileKey, nodeId }`, the node the golden comes from                                                                                                                                 |
-| `schema`       | figma: the `TemplateSchema`, built by hand from exact Figma values with the properties that exist today                                                                                      |
-| `values`       | Field values (default none)                                                                                                                                                                  |
-| `brandKit`     | The kit the schema renders with (default none)                                                                                                                                               |
-| `fonts`        | `[{ family, file, weight, style }]`; `file` is a name beside the fixture or a root-relative URL                                                                                              |
-| `variantId`    | The colourway to render                                                                                                                                                                      |
-| `emptyFields`  | `"placeholder"` (default), `"hideOptional"` or `"chat"`                                                                                                                                      |
-| `unsupported`  | Ingredients the schema can't express today, each with its reason                                                                                                                             |
-| `baseline`     | `{ chromium?, firefox?, webkit? }`: changed share in percent, recorded only with CJ's approval                                                                                               |
-| `blurBaseline` | The same for the blurred share (after a 4px blur of both images), recorded only with CJ's approval                                                                                           |
-| `goldenFrom`   | Compare with another fixture's `golden.png`: the same Figma frame rebuilt a second way                                                                                                       |
-| `tolerance`    | Points a run may exceed its baseline by (default 0.25)                                                                                                                                       |
+| Key            | Meaning                                                                                                                                                                                                                                                                     |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`         | The folder name                                                                                                                                                                                                                                                             |
+| `kind`         | `"figma"` (golden exported from Figma), `"starter"` (golden blessed from today's Chromium render) or `"synthetic"` (a schema built in code, golden blessed from Chromium, for export parity), or `"import"` (a saved Figma tree replayed through the real importer offline) |
+| `source`       | figma: `{ fileKey, nodeId }`, the node the golden comes from                                                                                                                                                                                                                |
+| `schema`       | figma: the `TemplateSchema`, built by hand from exact Figma values with the properties that exist today                                                                                                                                                                     |
+| `figmaNode`    | import: root-relative URL of the saved node tree the replay walks                                                                                                                                                                                                           |
+| `assets`       | import: each Figma render (by node id) and image fill (by image ref) the replay needs, as a file beside the fixture                                                                                                                                                         |
+| `values`       | Field values (default none)                                                                                                                                                                                                                                                 |
+| `brandKit`     | The kit the schema renders with (default none)                                                                                                                                                                                                                              |
+| `fonts`        | `[{ family, file, weight, style }]`; `file` is a name beside the fixture or a root-relative URL                                                                                                                                                                             |
+| `variantId`    | The colourway to render                                                                                                                                                                                                                                                     |
+| `emptyFields`  | `"placeholder"` (default), `"hideOptional"` or `"chat"`                                                                                                                                                                                                                     |
+| `unsupported`  | Ingredients the schema can't express today, each with its reason                                                                                                                                                                                                            |
+| `baseline`     | `{ chromium?, firefox?, webkit? }`: changed share in percent, recorded only with CJ's approval                                                                                                                                                                              |
+| `blurBaseline` | The same for the blurred share (after a 4px blur of both images), recorded only with CJ's approval                                                                                                                                                                          |
+| `goldenFrom`   | Compare with another fixture's `golden.png`: the same Figma frame rebuilt a second way                                                                                                                                                                                      |
+| `tolerance`    | Points a run may exceed its baseline by (default 0.25)                                                                                                                                                                                                                      |
 
 A starter fixture carries no schema. Its name is `starter-<starterKey>`, or `starter-<starterKey>-dark` with `variantId: "dark"`, and the dev render page materializes that blueprint against the sample workspace in `scripts/new-look/fixtures/dev-workspace.json`.
 
@@ -42,6 +44,7 @@ Images and fonts are referenced by root-relative URLs (`/test/fidelity/fixtures/
 
 - figma: `node scripts/fidelity/goldens.mjs fetch <name>` (needs `FIGMA_TOKEN`). `goldens.mjs asset <name> <nodeId> <file.png>` exports another node of the same file beside the fixture.
 - starter: `node scripts/fidelity/fidelity.mjs bless <name>`.
+- import: none of its own; `goldenFrom` names the figma fixture of the same frame. A replay that lacks a render or fill fails and names each one; fetch them with `goldens.mjs asset <name> <nodeId> <file.png>` and `goldens.mjs fill <name> <imageRef> <file>`, and list them under `assets`.
 
 Only CJ approves a new golden or baseline.
 

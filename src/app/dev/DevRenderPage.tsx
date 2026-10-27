@@ -61,7 +61,19 @@ async function resolveFixture(name: string, variant?: string): Promise<ResolvedF
   }
   const load = FIXTURE_FILES[`/test/fidelity/fixtures/${name}/fixture.json`];
   if (!load) throw new Error(`No fixture named ${name}`);
-  const resolved = resolveFileFixture(await load(), variant);
+  const file = await load();
+  if (file.kind === "import") {
+    if (!file.source || !file.figmaNode) throw new Error(`Fixture ${name} names no saved tree`);
+    const { replayImport } = await import("./importReplay");
+    const schema = await replayImport({
+      name,
+      source: file.source,
+      figmaNode: file.figmaNode,
+      assets: file.assets ?? {},
+    });
+    return resolveFileFixture({ ...file, schema }, variant)!;
+  }
+  const resolved = resolveFileFixture(file, variant);
   if (!resolved) throw new Error(`Fixture ${name} has no schema`);
   return resolved;
 }

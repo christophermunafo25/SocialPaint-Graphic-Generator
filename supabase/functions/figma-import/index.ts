@@ -19,13 +19,14 @@ import {
   logError,
 } from "../_shared/http.ts";
 import { optionalEnum, parseBody, requireString, requireUuid } from "../_shared/validate.ts";
+import { warningStrings, type FigmaNode } from "../_shared/extract.ts";
 import {
-  walk,
-  warningStrings,
-  type FigmaNode,
-  type ImportWarning,
-  type SuggestedField,
-} from "../_shared/extract.ts";
+  fillRefsOf,
+  importFrame,
+  landImageAssets,
+  maskIdsOf,
+  renderIdsOf,
+} from "../_shared/importFrame.ts";
 import { decomposeFrame, pruneTree, type LayerNode, type Unit } from "../_shared/figmaLayers.ts";
 
 /** Import from Figma. Two modes:
@@ -89,111 +90,33 @@ Deno.serve(async (req) => {
     const frame = root.absoluteBoundingBox;
     const stamp = Date.now();
 
-    // 2. Fields from the tree, coordinates relative to the node's own box.
-    //    Template mode walks the frame's CHILDREN (the frame itself is the
-    //    background); elements mode walks the node itself — a single pasted
-    //    text layer is its own element.
-    const suggestedFields: SuggestedField[] = [];
-    const details: ImportWarning[] = [];
-    const taken = new Set<string>();
-    const seenIds = new Set<string>();
-    try {
-      const roots = mode === "elements" ? [root] : (root.children ?? []);
-      for (const child of roots) walk(child, frame, suggestedFields, details, taken, seenIds);
-    } catch (e) {
-      logError("figma-import", e);
-      details.push({
-        layer: root.name,
-        nodeId: root.id,
-        issue: "field detection stopped early — map fields manually.",
-        severity: "degraded",
-      });
-    }
+    // 2. Fields from the tree (importFrame: the pure half the fidelity
+    //    harness replays offline).
+    const { fields: suggestedFields, warnings: details } = importFrame(root, mode ?? "template");
 
-    // 3. Fixed image elements carry their designed artwork. A field whose
-    //    children were lifted separately gets the bare image FILL (a node
-    //    render would bake the lifted children into the pixels twice);
-    //    everything else keeps the exact node render.
-    const imageFields = suggestedFields.filter((f) => f.type === "image");
-    const fillMap = imageFields.some((f) => f.fillImageRef)
-      ? await fetchFillMap(parsed.fileKey, token)
-      : {};
-    const unresolvedFillFields = imageFields.filter(
-      (f) => f.fillImageRef && !fillMap[f.fillImageRef],
-    );
-    // Node renders in one batched pass: plain image fields, plus the
-    // fallback for fills the map couldn't resolve (children bake in there,
-    // but the element staying visible beats an empty hole).
-    const fieldRenders = await renderNodes(
-      parsed.fileKey,
-      [...imageFields.filter((f) => !f.fillImageRef), ...unresolvedFillFields].map(
-        (f) => f.sourceNodeId,
-      ),
-      token,
-    );
+    // 3. Fixed image elements carry their designed artwork, and custom-shape
+    //    masks their alpha: resolve fills first, then render what is left in
+    //    one batched pass each, and re-host everything.
+    const fillRefs = fillRefsOf(suggestedFields);
+    const fills = fillRefs.length ? await fetchFillMap(parsed.fileKey, token) : {};
+    const renders = await renderNodes(parsed.fileKey, renderIdsOf(suggestedFields, fills), token);
+    const maskIds = maskIdsOf(suggestedFields);
+    const masks = maskIds.length ? await renderNodes(parsed.fileKey, maskIds, token) : {};
     let assetIndex = 0;
-    for (const f of imageFields) {
-      let renderUrl: string | null | undefined;
-      if (f.fillImageRef) {
-        renderUrl = fillMap[f.fillImageRef];
-        if (!renderUrl) {
-          renderUrl = fieldRenders[f.sourceNodeId];
-          details.push({
-            layer: f.label,
-            nodeId: f.sourceNodeId,
-            issue: "the image fill couldn't be resolved — nested elements are baked into it.",
-            severity: "degraded",
-          });
-        }
-        delete f.fillImageRef;
-      } else {
-        renderUrl = fieldRenders[f.sourceNodeId];
-      }
-      const hosted = renderUrl
-        ? await rehost(db, renderUrl, `${companyId}/elements/${stamp}-${assetIndex++}.png`)
-        : null;
-      if (hosted) f.staticValue = hosted;
-      else {
-        // Nothing to show fixed — land it as an (empty) member field so the
-        // admin sees the gap instead of an invisible element.
-        f.static = undefined;
-        details.push({
-          layer: f.label,
-          nodeId: f.sourceNodeId,
-          issue: "the image couldn't be rendered — it landed as an empty field.",
-          severity: "degraded",
-        });
-      }
-    }
-
-    // 3b. Custom-shape masks: render each mask node ALONE and re-host it;
-    //     the field clips whatever image it holds — member replacements
-    //     included — to that render's alpha channel.
-    const maskFields = suggestedFields.filter((f) => f.maskNodeId);
-    if (maskFields.length) {
-      const maskRenders = await renderNodes(
-        parsed.fileKey,
-        maskFields.map((f) => f.maskNodeId!),
-        token,
-      );
-      let maskIndex = 0;
-      for (const f of maskFields) {
-        const renderUrl = maskRenders[f.maskNodeId!];
-        const hosted = renderUrl
-          ? await rehost(db, renderUrl, `${companyId}/masks/${stamp}-${maskIndex++}.png`)
-          : null;
-        if (hosted) f.maskUrl = hosted;
-        else {
-          details.push({
-            layer: f.label,
-            nodeId: f.sourceNodeId,
-            issue: "the mask couldn't be rendered — the image imports unmasked (rectangular).",
-            severity: "degraded",
-          });
-        }
-        delete f.maskNodeId;
-      }
-    }
+    let maskIndex = 0;
+    await landImageAssets(
+      suggestedFields,
+      { fills, renders, masks },
+      (renderUrl, kind) =>
+        rehost(
+          db,
+          renderUrl,
+          kind === "mask"
+            ? `${companyId}/masks/${stamp}-${maskIndex++}.png`
+            : `${companyId}/elements/${stamp}-${assetIndex++}.png`,
+        ),
+      details,
+    );
 
     if (mode === "elements") {
       // 4a. Everything the walk didn't claim becomes paintable units in
@@ -312,16 +235,6 @@ Deno.serve(async (req) => {
     if (!renderUrl) return json({ error: "Figma could not render that frame." }, 400);
     const backgroundUrl = await rehost(db, renderUrl, `${companyId}/figma-${stamp}.png`);
     if (!backgroundUrl) return json({ error: "Storage upload failed for the background." }, 500);
-
-    if (!suggestedFields.length) {
-      details.push({
-        layer: root.name,
-        nodeId: root.id,
-        issue:
-          "no text, image, or shape layers detected — draw fields manually on the imported background.",
-        severity: "info",
-      });
-    }
 
     return json({
       backgroundUrl,
