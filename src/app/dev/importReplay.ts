@@ -5,7 +5,7 @@
 // of the network. The resulting template is what an admin would get from
 // importing that frame, so the harness can measure imports against Figma.
 
-import type { FigmaLayerUnit, TemplateField, TemplateSchema } from "@/lib/types";
+import type { FieldEffect, FigmaLayerUnit, TemplateField, TemplateSchema } from "@/lib/types";
 import { suggestFieldKey } from "@/lib/caption";
 import { composeFigmaBackground } from "@/lib/figma/composeLayers";
 import { stackImported } from "@/lib/figma/importLanding";
@@ -57,7 +57,7 @@ export async function replayImport(spec: ImportReplaySpec): Promise<TemplateSche
     Object.fromEntries(keys.map((k) => [k, asset(k, what)]));
 
   // The server half of figma-import.
-  const { fields, warnings } = importFrame(root);
+  const { fields, canvasEffects, warnings } = importFrame(root);
   const fills = lookup(fillRefsOf(fields), "fill");
   const sources = {
     fills,
@@ -108,6 +108,7 @@ export async function replayImport(spec: ImportReplaySpec): Promise<TemplateSche
     canvasWidth,
     canvasHeight,
     backgroundUrl: URL.createObjectURL(plate),
+    ...(canvasEffects?.length ? { canvasEffects: canvasEffects as FieldEffect[] } : {}),
     captionTemplate: "",
     createdAt: STAMP,
     updatedAt: STAMP,

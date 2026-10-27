@@ -3,10 +3,20 @@
 // against a saved node tree (brand-system Phase 4). The edge function fetches
 // and re-hosts; everything that decides what the import becomes lives here.
 
-import { walk, type FigmaNode, type ImportWarning, type SuggestedField } from "./extract.ts";
+import {
+  effectsOf,
+  walk,
+  type FigmaNode,
+  type ImportedEffect,
+  type ImportWarning,
+  type SuggestedField,
+} from "./extract.ts";
 
 export interface FrameImport {
   fields: SuggestedField[];
+  /** Template mode: the frame's own effects (its grain, an inner glow),
+   * which land on the canvas. */
+  canvasEffects?: ImportedEffect[];
   warnings: ImportWarning[];
 }
 
@@ -44,7 +54,13 @@ export function importFrame(
       severity: "info",
     });
   }
-  return { fields, warnings };
+  const canvasEffects =
+    mode === "template"
+      ? effectsOf(root, (issue, severity = "degraded") =>
+          warnings.push({ layer: root.name, nodeId: root.id, issue, severity }),
+        )
+      : undefined;
+  return { fields, canvasEffects, warnings };
 }
 
 /** Image-fill refs the import needs resolved (/v1/files/{key}/images). */

@@ -40,17 +40,32 @@ describe("image field extraction", () => {
     fills: [{ type: "IMAGE" }],
   };
 
-  it("imports rounded corners, opacity, and warns about baked effects", () => {
-    const { out, warnings } = run(photo);
+  it("imports rounded corners, opacity, and its shadow as an effect", () => {
+    const { out, warnings } = run({
+      ...photo,
+      effects: [
+        {
+          type: "DROP_SHADOW",
+          color: { r: 0, g: 0, b: 0, a: 0.25 },
+          offset: { x: 0, y: 4 },
+          radius: 12,
+        },
+      ],
+      fills: [{ type: "IMAGE", imageRef: "photo-ref" }],
+    });
     expect(out[0]).toMatchObject({
       type: "image",
       x: 84,
       y: 559,
       cornerRadius: { tl: 10, tr: 10, br: 10, bl: 10 },
       opacity: 80,
-      static: true, // staticValue arrives after the caller renders the node
+      effects: [{ type: "dropShadow", x: 0, y: 4, blur: 12, color: "#00000040" }],
+      // The shadow is a property now, so the artwork is the bare fill: a node
+      // render would paint the shadow twice.
+      fillImageRef: "photo-ref",
+      static: true,
     });
-    expect(warnings.some((w) => w.layer === "Portrait" && w.issue.includes("shadow"))).toBe(true);
+    expect(warnings).toHaveLength(0);
   });
 
   it("maps per-corner radii and omits the property when square", () => {
@@ -171,9 +186,10 @@ describe("text field extraction", () => {
       anchor: "center",
       width: 400,
       height: 60,
-      // Center of the AABB, frame-relative — the rotation origin.
-      x: Math.round(250 - 100 + 404.5 / 2),
-      y: Math.round(400 - 200 + 115.1 / 2),
+      // Center of the AABB, frame-relative — the rotation origin, kept to
+      // two decimals.
+      x: 352.25,
+      y: 257.55,
     });
   });
 
@@ -396,28 +412,50 @@ describe("shape field extraction", () => {
     expect(warnings).toHaveLength(0);
   });
 
-  it("grows the box by half the weight for a CENTER stroke, with an info note", () => {
-    const { out, warnings } = run({ ...stroked, strokeAlign: "CENTER" });
-    expect(out[0]).toMatchObject({
-      x: 48,
-      y: 48,
-      width: 204,
-      height: 104,
+  it("keeps a CENTER or OUTSIDE stroke's alignment, box untouched", () => {
+    const center = run({ ...stroked, strokeAlign: "CENTER" });
+    expect(center.out[0]).toMatchObject({
+      x: 50,
+      y: 50,
+      width: 200,
+      height: 100,
       strokeColor: "#FFFFFF",
       strokeWidthPx: 4,
+      strokeAlign: "center",
     });
-    expect(
-      warnings.some((w) => w.severity === "info" && w.issue.includes("center-aligned stroke")),
-    ).toBe(true);
+    expect(center.warnings).toHaveLength(0);
+    const outside = run({ ...stroked, strokeAlign: "OUTSIDE" });
+    expect(outside.out[0]).toMatchObject({ x: 50, width: 200, strokeAlign: "outside" });
   });
 
-  it("grows the box by the full weight for an OUTSIDE stroke", () => {
-    const { out } = run({ ...stroked, strokeAlign: "OUTSIDE" });
-    expect(out[0]).toMatchObject({ x: 46, y: 46, width: 208, height: 108, strokeWidthPx: 4 });
+  it("keeps a translucent stroke's alpha", () => {
+    const { out } = run({
+      ...stroked,
+      strokes: [{ type: "SOLID", opacity: 0.25, color: { r: 1, g: 1, b: 1 } }],
+    });
+    expect(out[0].strokeColor).toBe("#FFFFFF40");
   });
 
-  it("still leaves effected or multi-stroked shapes in the plate", () => {
-    expect(run({ ...stroked, effects: [{ type: "DROP_SHADOW" }] }).out).toHaveLength(0);
+  it("lifts a shape with its effects; inner shadows only on rects", () => {
+    const shadow = {
+      type: "DROP_SHADOW",
+      color: { r: 0, g: 0, b: 0, a: 0.1 },
+      offset: { x: 8, y: 8 },
+      radius: 32,
+    };
+    const inner = { type: "INNER_SHADOW", color: { r: 1, g: 1, b: 1, a: 0.5 }, radius: 2 };
+    const rect = run({ ...stroked, effects: [shadow, inner] }).out[0];
+    expect(rect.effects?.map((e) => e.type)).toEqual(["dropShadow", "innerShadow"]);
+    const ellipse = run({ ...stroked, type: "ELLIPSE", effects: [shadow, inner] });
+    expect(ellipse.out[0].effects?.map((e) => e.type)).toEqual(["dropShadow"]);
+    expect(ellipse.warnings.some((w) => w.issue.includes("inner shadows"))).toBe(true);
+    // A shadow nobody can see is no effect at all.
+    const invisible = { ...shadow, color: { r: 0, g: 0, b: 0, a: 0 } };
+    expect(run({ ...stroked, effects: [invisible] }).out[0].effects).toBeUndefined();
+  });
+
+  it("still leaves multi-stroked shapes, and effects it can't draw, in the plate", () => {
+    expect(run({ ...stroked, effects: [{ type: "TEXTURE" }] }).out).toHaveLength(0);
     expect(
       run({
         ...stroked,
@@ -427,9 +465,6 @@ describe("shape field extraction", () => {
         ],
       }).out,
     ).toHaveLength(0);
-    expect(run({ ...stroked, strokes: [], effects: [{ type: "DROP_SHADOW" }] }).out).toHaveLength(
-      0,
-    );
   });
 
   it("carries rotation on shape fields", () => {
@@ -729,7 +764,7 @@ describe("container and vector object extraction", () => {
     expect(out[0]).toMatchObject({ type: "shape", shape: "rect" });
   });
 
-  it("keeps a stroked container's backdrop in the plate but still lifts its text", () => {
+  it("lifts a stroked container's backdrop as a stroked shape, and its text", () => {
     const { out } = run({
       id: "7:3",
       name: "Outlined Pill",
@@ -749,8 +784,9 @@ describe("container and vector object extraction", () => {
         },
       ],
     });
-    expect(out).toHaveLength(1);
-    expect(out[0]).toMatchObject({ type: "text", staticValue: "MySQL" });
+    expect(out).toHaveLength(2);
+    expect(out[0]).toMatchObject({ type: "shape", strokeColor: "#FFFFFF", strokeWidthPx: 2 });
+    expect(out[1]).toMatchObject({ type: "text", staticValue: "MySQL" });
   });
 
   it("lifts an all-vector group as a single image object", () => {
@@ -840,5 +876,29 @@ describe("transformOf", () => {
       }).rotation,
     ).toBeUndefined();
     expect(transformOf({}).rotation).toBeUndefined();
+  });
+});
+
+describe("cap-trimmed text", () => {
+  const frame0 = { x: 0, y: 0, width: 1080, height: 1350 };
+  const trimmed = (height: number): FigmaNode => ({
+    id: "9:1",
+    name: "Prompt",
+    type: "TEXT",
+    characters: "Make a post",
+    absoluteBoundingBox: { x: 80, y: 100, width: 528, height },
+    style: { fontSize: 16, lineHeightPx: 24, leadingTrim: "CAP_HEIGHT" },
+  });
+
+  it("grows a one-line cap-trimmed box back to its line, split evenly", () => {
+    const out: SuggestedField[] = [];
+    walk(trimmed(12), frame0, out, [], new Set(), new Set());
+    expect(out[0]).toMatchObject({ type: "text", y: 94, height: 24 });
+  });
+
+  it("counts lines from a trimmed box as whole lines plus a cap", () => {
+    const out: SuggestedField[] = [];
+    walk(trimmed(36), frame0, out, [], new Set(), new Set());
+    expect(out[0]).toMatchObject({ type: "multiline", y: 94, height: 48 });
   });
 });

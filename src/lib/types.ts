@@ -1145,6 +1145,9 @@ export interface DesignImportResult {
   canvasWidth: number;
   canvasHeight: number;
   suggestedFields: TemplateField[];
+  /** The frame's own effects (brand-system Phase 4): they land on the
+   * canvas. */
+  canvasEffects?: FieldEffect[];
   warnings: string[];
   warningDetails?: ImportIssue[];
   /** Echo of the imported frame link — used for the layered re-render. */

@@ -28,6 +28,7 @@ import {
 import type {
   AutoBuildResult,
   DesignImportResult,
+  FieldEffect,
   FieldValues,
   ImportIssue,
   LayoutGroup,
@@ -2146,6 +2147,8 @@ export function TemplateBuilder({
      * re-render so both passes decompose one consistent snapshot. */
     tree?: unknown;
     fields: TemplateField[];
+    /** The frame's own effects, which become the canvas's. */
+    canvasEffects?: FieldEffect[];
     /** How to key each incoming field against what already exists. */
     fieldKeyFor(field: TemplateField, existing: TemplateField[]): string;
     /** Extra draft patch, computed AFTER keys are final (caption tags need
@@ -2164,6 +2167,7 @@ export function TemplateBuilder({
       backgroundUrl: opts.backgroundUrl,
       canvasWidth: opts.canvasWidth,
       canvasHeight: opts.canvasHeight,
+      ...(opts.canvasEffects?.length ? { canvasEffects: opts.canvasEffects } : {}),
       fields: [...d.fields, ...imported],
     }));
     // A successful import IS a chosen source, even if the background render
@@ -2237,6 +2241,7 @@ export function TemplateBuilder({
       sourceUrl: result.sourceUrl,
       tree: result.tree,
       fields: result.suggestedFields,
+      canvasEffects: result.canvasEffects,
       fieldKeyFor: (f, existing) => suggestFieldKey(f.label, existing),
       summary: (imported) =>
         imported.length === 0

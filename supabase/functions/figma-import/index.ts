@@ -92,7 +92,11 @@ Deno.serve(async (req) => {
 
     // 2. Fields from the tree (importFrame: the pure half the fidelity
     //    harness replays offline).
-    const { fields: suggestedFields, warnings: details } = importFrame(root, mode ?? "template");
+    const {
+      fields: suggestedFields,
+      canvasEffects,
+      warnings: details,
+    } = importFrame(root, mode ?? "template");
 
     // 3. Fixed image elements carry their designed artwork, and custom-shape
     //    masks their alpha: resolve fills first, then render what is left in
@@ -241,6 +245,7 @@ Deno.serve(async (req) => {
       canvasWidth: Math.round(frame.width),
       canvasHeight: Math.round(frame.height),
       suggestedFields,
+      canvasEffects,
       warnings: warningStrings(details),
       warningDetails: details,
       sourceUrl: url,
