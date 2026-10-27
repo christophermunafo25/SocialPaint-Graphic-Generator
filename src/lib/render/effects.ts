@@ -170,6 +170,7 @@ export function paintsBeyondBox(
   if (readEffects(field.effects).some((e) => e.type === "dropShadow" || e.type === "layerBlur")) {
     return true;
   }
+  if (field.type === "icon") return true;
   return (
     field.type === "shape" &&
     Boolean(field.strokeColor) &&
