@@ -82,6 +82,17 @@ describe("template field row mapping", () => {
     expect("vector" in fieldToRow("t1", shape, 0)).toBe(false);
   });
 
+  it("round-trips an image's rect (migration 0050)", () => {
+    const photo: TemplateField = {
+      ...shape,
+      type: "image",
+      shape: undefined,
+      imageRect: { x: -0.057, y: -0.02, width: 1.494, height: 1.042 },
+    };
+    expect(roundTrip(photo)).toMatchObject({ imageRect: photo.imageRect });
+    expect("image_rect" in fieldToRow("t1", shape, 0)).toBe(false);
+  });
+
   it("round-trips plate properties on text fields", () => {
     const plated: TemplateField = {
       ...shape,

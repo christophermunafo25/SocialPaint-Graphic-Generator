@@ -218,6 +218,16 @@ export type FieldEffect =
    * `seed` fixes the pattern so every export of a template is identical. */
   | { type: "noise"; color: string; size: number; density: number; seed?: number };
 
+/** An image's rect inside its field's box, as fractions of the box: x and y
+ * place its top-left corner (negative reaches past the left or top edge),
+ * width and height size it (above 1 is larger than the box). */
+export interface ImageRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 /** Where a shape's stroke sits on its edge. */
 export type StrokeAlign = "inside" | "center" | "outside";
 
@@ -323,6 +333,12 @@ export interface TemplateField {
    * URL). Set by the Figma importer for custom-shape mask groups;
    * cornerRadius still applies on top. */
   maskUrl?: string;
+  /** Image fields only (brand-system Phase 4): where the image sits inside
+   * the box, as fractions of the box. The image is fitted into this rect
+   * with objectFit (cover by default) and clipped by the box, its corners
+   * and its mask; a member's replacement photo lands in the same rect, as
+   * in Figma. Absent: the rect is the box itself, today's behaviour. */
+  imageRect?: ImageRect;
   /** Figma node this field was imported from (transient import provenance —
    * used to lift the element off the recomposed background). */
   sourceNodeId?: string;

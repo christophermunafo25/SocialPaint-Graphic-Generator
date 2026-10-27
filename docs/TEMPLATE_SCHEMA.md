@@ -91,6 +91,12 @@ Shape, plate and mask (migrations 0034 to 0036):
   the field's `cornerRadius` (unset radius renders a pill).
 - `maskUrl` — image fields only: an alpha mask image stretched over the
   field's box.
+- `imageRect` — image fields only (brand-system Phase 4, migration 0050):
+  `{ x, y, width, height }` as fractions of the box, where the image sits
+  inside it. The image is fitted into that rect with `objectFit` (cover by
+  default) and clipped by the box, its corners and its mask; a member's
+  replacement photo lands in the same rect. Fractions, so a resize keeps the
+  crop. Absent, the rect is the box. Structural: a colourway never moves it.
 
 Gradients: `textGradient` (and `backgroundGradient` on the canvas) is
 `{ angle, stops[{ position 0..1, color }], kind?, center?, radius? }`.
