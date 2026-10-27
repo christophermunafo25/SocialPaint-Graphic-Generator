@@ -129,6 +129,8 @@ export interface TemplateFieldRow {
   effects?: import("../../types").FieldEffect[] | null;
   /** Migration 0049 (icon fields). Optional for the same reason. */
   vector?: import("../../types").FieldVector | null;
+  /** Migration 0050 (image placement). Optional for the same reason. */
+  image_rect?: import("../../types").ImageRect | null;
   plate_color: string | null;
   plate_padding_x: number | null;
   plate_padding_y: number | null;
@@ -197,6 +199,7 @@ export const toTemplateField = (r: TemplateFieldRow): TemplateField => ({
   strokeAlign: opt(r.stroke_align),
   effects: opt(r.effects),
   vector: opt(r.vector),
+  imageRect: opt(r.image_rect),
   plateColor: opt(r.plate_color),
   platePaddingX: opt(r.plate_padding_x) === undefined ? undefined : Number(r.plate_padding_x),
   platePaddingY: opt(r.plate_padding_y) === undefined ? undefined : Number(r.plate_padding_y),
@@ -257,6 +260,7 @@ export const fieldToRow = (
   ...(f.strokeAlign !== undefined && { stroke_align: f.strokeAlign }),
   ...(f.effects !== undefined && { effects: f.effects }),
   ...(f.vector !== undefined && { vector: f.vector }),
+  ...(f.imageRect !== undefined && { image_rect: f.imageRect }),
   plate_color: f.plateColor ?? null,
   plate_padding_x: f.platePaddingX ?? null,
   plate_padding_y: f.platePaddingY ?? null,

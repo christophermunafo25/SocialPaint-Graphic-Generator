@@ -36,10 +36,35 @@ export function gradientAngle(
   return Math.round(((deg % 360) + 360) % 360);
 }
 
-const unitGradient = (u: FigmaLayerUnit): TextGradient => ({
-  angle: gradientAngle(u.handles, u.width, u.height),
-  stops: (u.stops ?? []).map((s) => ({ position: s.position, color: s.color })),
-});
+/** A radial unit's handles (its centre and the ends of its two radii,
+ * normalized to the unit's box) as a radial gradient's centre and radii,
+ * fractions of the box. Mirrors gradientOf in
+ * supabase/functions/_shared/extract.ts. */
+export function radialGeometryOf(
+  handles: Array<{ x: number; y: number }> | undefined,
+  width: number,
+  height: number,
+): Pick<TextGradient, "center" | "radius"> {
+  const [h0, h1, h2] = handles ?? [];
+  const c = h0 ?? { x: 0.5, y: 0.5 };
+  const w = Math.max(1, width);
+  const h = Math.max(1, height);
+  const ax = h1 ? { x: (h1.x - c.x) * w, y: (h1.y - c.y) * h } : { x: w / 2, y: 0 };
+  const ay = h2 ? { x: (h2.x - c.x) * w, y: (h2.y - c.y) * h } : { x: 0, y: h / 2 };
+  const r3 = (v: number) => Math.round(v * 1000) / 1000;
+  return {
+    center: { x: r3(c.x), y: r3(c.y) },
+    radius: { x: r3(Math.hypot(ax.x, ax.y) / w), y: r3(Math.hypot(ay.x, ay.y) / h) },
+  };
+}
+
+const unitGradient = (u: FigmaLayerUnit): TextGradient => {
+  const stops = (u.stops ?? []).map((s) => ({ position: s.position, color: s.color }));
+  if (u.gradientType === "radial") {
+    return { angle: 0, stops, kind: "radial", ...radialGeometryOf(u.handles, u.width, u.height) };
+  }
+  return { angle: gradientAngle(u.handles, u.width, u.height), stops };
+};
 
 /** One unit as a static field at the unit's own (frame-relative) geometry:
  * node renders and image fills become fixed images, solid and gradient
@@ -78,8 +103,8 @@ function unitField(u: FigmaLayerUnit, label: string): TemplateField | null {
     return { ...base, colorHex: hex, opacity: alpha < 1 ? Math.round(alpha * 100) : undefined };
   }
   if (u.kind === "gradient" && u.stops?.length) {
-    // Radial/angular gradients approximate as linear here — TemplateField
-    // has one gradient primitive. The plate path draws them exactly.
+    // Angular gradients approximate as linear here; linear and radial map
+    // exactly. The plate path draws all three.
     return {
       ...base,
       textGradient: unitGradient(u),

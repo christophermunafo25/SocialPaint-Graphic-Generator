@@ -68,6 +68,8 @@ type StructuralKey =
   // An icon's artwork and line weight are the same in every look; its
   // color is the variation's.
   | "vector"
+  // A crop is the image's composition, not its colour: shared by every look.
+  | "imageRect"
   | "sourceNodeId"
   | "fontFamily"
   | "fontWeight"

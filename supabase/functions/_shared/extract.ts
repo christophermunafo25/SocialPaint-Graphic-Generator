@@ -6,6 +6,8 @@
 // that common shape; the auto-build engine consumes it without knowing which
 // source produced it.
 
+import { vectorOf, type ImportedVector } from "./figmaVector.ts";
+
 export interface FigmaPaint {
   type: string;
   visible?: boolean;
@@ -19,6 +21,7 @@ export interface FigmaPaint {
   imageRef?: string;
   scaleMode?: string;
   imageTransform?: number[][];
+  blendMode?: string;
 }
 
 export interface FigmaNode {
@@ -31,7 +34,7 @@ export interface FigmaNode {
   /** Uniform corner radius, or per-corner [tl, tr, br, bl]. */
   cornerRadius?: number;
   rectangleCornerRadii?: number[];
-  effects?: Array<{ type: string; visible?: boolean }>;
+  effects?: FigmaEffect[];
   absoluteBoundingBox?: { x: number; y: number; width: number; height: number };
   /** 2×3 affine relative to the parent — the ONLY place rotation lives.
    * Present when the tree is fetched with geometry=paths. */
@@ -42,6 +45,11 @@ export interface FigmaNode {
   /** Vector fill paths (geometry=paths). Presence means the artwork is
    * reconstructible from properties; absence means raster-only. */
   fillGeometry?: Array<{ path?: string; windingRule?: string }>;
+  /** Stroke outlines as fill paths (geometry=paths). */
+  strokeGeometry?: Array<{ path?: string; windingRule?: string }>;
+  /** The box the node paints into, effects and outside strokes included. */
+  absoluteRenderBounds?: { x: number; y: number; width: number; height: number } | null;
+  blendMode?: string;
   isMask?: boolean;
   /** How a mask node clips: "VECTOR" (outline), "ALPHA", or "LUMINANCE". */
   maskType?: string;
@@ -55,7 +63,11 @@ export interface FigmaNode {
   strokeWeight?: number;
   strokeAlign?: string;
   strokeDashes?: number[];
+  individualStrokeWeights?: { top: number; right: number; bottom: number; left: number };
   style?: {
+    /** "CAP_HEIGHT": the text box is trimmed to the cap height above the
+     * first line and to the baseline below the last. */
+    leadingTrim?: string;
     fontFamily?: string;
     fontPostScriptName?: string;
     fontWeight?: number;
@@ -71,6 +83,21 @@ export interface FigmaNode {
   };
   fills?: FigmaPaint[];
   children?: FigmaNode[];
+}
+
+/** One Figma effect as the REST API sends it (only the keys the import
+ * reads). */
+export interface FigmaEffect {
+  type: string;
+  visible?: boolean;
+  color?: { r: number; g: number; b: number; a?: number };
+  offset?: { x: number; y: number };
+  radius?: number;
+  spread?: number;
+  /** NOISE only. */
+  noiseType?: string;
+  noiseSize?: number;
+  density?: number;
 }
 
 export const toHex = (c: { r: number; g: number; b: number }): string =>
@@ -89,6 +116,98 @@ export const toCssColor = (c: { r: number; g: number; b: number; a?: number }): 
   (c.a ?? 1) >= 1
     ? toHex(c)
     : `rgba(${Math.round(c.r * 255)}, ${Math.round(c.g * 255)}, ${Math.round(c.b * 255)}, ${(c.a ?? 1).toFixed(3)})`;
+
+/** #RRGGBB when opaque, #RRGGBBAA otherwise, folding a paint's opacity into
+ * the color's alpha: the shape every field color with alpha uses. */
+export const toHexAlpha = (c: { r: number; g: number; b: number; a?: number }, opacity = 1) => {
+  const a = Math.max(0, Math.min(1, (c.a ?? 1) * opacity));
+  if (a >= 1) return toHex(c);
+  return (
+    toHex(c) +
+    Math.round(a * 255)
+      .toString(16)
+      .padStart(2, "0")
+      .toUpperCase()
+  );
+};
+
+/** A field effect in the shape TemplateField.effects stores (mirrors
+ * FieldEffect in src/lib/types.ts, which Edge code can't import). */
+export type ImportedEffect =
+  | {
+      type: "dropShadow" | "innerShadow";
+      x: number;
+      y: number;
+      blur: number;
+      spread?: number;
+      color: string;
+    }
+  | { type: "layerBlur"; radius: number }
+  | { type: "noise"; color: string; size: number; density: number; seed?: number };
+
+/** Effect types a lifted node can carry as properties. Anything else (a
+ * background blur, Figma's newer texture and glass effects) can't be drawn,
+ * so a node holding one keeps its exact render instead. */
+const CARRIED_EFFECTS = new Set(["DROP_SHADOW", "INNER_SHADOW", "LAYER_BLUR", "NOISE"]);
+
+const visibleEffects = (node: { effects?: FigmaEffect[] }): FigmaEffect[] =>
+  (node.effects ?? []).filter((e) => e.visible !== false);
+
+/** True when every visible effect on the node can ride as a property. */
+export const effectsRepresentable = (node: { effects?: FigmaEffect[] }): boolean =>
+  visibleEffects(node).every((e) => CARRIED_EFFECTS.has(e.type));
+
+/** The node's visible effects as field effects, in Figma's order, or
+ * undefined when it has none. Effects that paint nothing (zero alpha, zero
+ * radius) are dropped. `innerShadow` is false for fields whose renderer
+ * ignores inner shadows (text, non-rect shapes), and those are said once. */
+export function effectsOf(
+  node: { effects?: FigmaEffect[] },
+  warn: (issue: string, severity?: "info" | "degraded") => void,
+  opts: { innerShadow: boolean } = { innerShadow: true },
+): ImportedEffect[] | undefined {
+  const out: ImportedEffect[] = [];
+  let droppedInner = false;
+  for (const e of visibleEffects(node)) {
+    if (!CARRIED_EFFECTS.has(e.type)) {
+      warn(`${e.type.toLowerCase().replace(/_/g, " ")} isn't reproduced on this layer.`);
+      continue;
+    }
+    const alpha = e.color?.a ?? 1;
+    if (e.type === "DROP_SHADOW" || e.type === "INNER_SHADOW") {
+      if (!e.color || alpha <= 0) continue;
+      if (e.type === "INNER_SHADOW" && !opts.innerShadow) {
+        droppedInner = true;
+        continue;
+      }
+      out.push({
+        type: e.type === "DROP_SHADOW" ? "dropShadow" : "innerShadow",
+        x: e.offset?.x ?? 0,
+        y: e.offset?.y ?? 0,
+        blur: e.radius ?? 0,
+        ...(e.spread ? { spread: e.spread } : {}),
+        color: toHexAlpha(e.color),
+      });
+    } else if (e.type === "LAYER_BLUR") {
+      if ((e.radius ?? 0) > 0) out.push({ type: "layerBlur", radius: e.radius! });
+    } else if (e.type === "NOISE") {
+      if (!e.color || alpha <= 0) continue;
+      if (e.noiseType && e.noiseType !== "MONOTONE") {
+        warn(`${e.noiseType.toLowerCase()} noise imported as one-color grain.`, "info");
+      }
+      out.push({
+        type: "noise",
+        color: toHexAlpha(e.color),
+        size: e.noiseSize ?? 1,
+        density: e.density ?? 1,
+        // A fixed pattern, so every export of the imported template matches.
+        seed: 1,
+      });
+    }
+  }
+  if (droppedInner) warn("inner shadows on this layer aren't reproduced.", "info");
+  return out.length ? out : undefined;
+}
 
 // ---------------------------------------------------------------------------
 // Warnings — structured so the builder can point at the layer that degraded,
@@ -109,7 +228,7 @@ export interface SuggestedField {
   id: string;
   label: string;
   fieldKey: string;
-  type: "text" | "multiline" | "image" | "shape";
+  type: "text" | "multiline" | "image" | "shape" | "icon";
   sourceNodeId: string;
   x: number;
   y: number;
@@ -128,8 +247,10 @@ export interface SuggestedField {
   fontStyle?: "normal" | "italic";
   fontSizePx?: number;
   colorHex?: string;
-  /** Linear-gradient fill (text or shape) — wins over colorHex when set. */
-  textGradient?: { angle: number; stops: Array<{ position: number; color: string }> };
+  /** Gradient fill (text or shape) — wins over colorHex when set. Matches
+   * TextGradient: linear along `angle`, or radial from `center` to `radius`
+   * (fractions of the box). */
+  textGradient?: ImportedGradient;
   align?: "left" | "center" | "right";
   verticalAlign?: "top" | "middle" | "bottom";
   uppercase?: boolean;
@@ -146,9 +267,17 @@ export interface SuggestedField {
   cornerRadius?: { tl: number; tr: number; br: number; bl: number };
   /** Shape fields: which primitive to draw. */
   shape?: "rect" | "ellipse" | "triangle" | "star";
-  /** Shape fields: inner stroke, matching TemplateField.strokeColor/-WidthPx. */
+  /** Shape fields: the stroke, matching TemplateField.strokeColor (#RRGGBB
+   * or #RRGGBBAA), strokeWidthPx and strokeAlign (absent: inside). */
   strokeColor?: string;
   strokeWidthPx?: number;
+  strokeAlign?: "center" | "outside";
+  /** Drop and inner shadows, layer blur and grain, matching
+   * TemplateField.effects (brand-system Phase 4). */
+  effects?: ImportedEffect[];
+  /** Icon fields: the artwork rebuilt from the node's own paths, matching
+   * TemplateField.vector (brand-system Phase 4). */
+  vector?: ImportedVector;
   /** Text fields: plate behind the text (a fused pill), matching
    * TemplateField.plateColor / platePaddingX / platePaddingY. */
   plateColor?: string;
@@ -171,6 +300,36 @@ export interface SuggestedField {
   maskNodeId?: string;
   /** Image fields: alpha-mask source, matching TemplateField.maskUrl. */
   maskUrl?: string;
+  /** Image fields: where the image sits inside the box, as fractions of
+   * the box, matching TemplateField.imageRect (brand-system Phase 4). */
+  imageRect?: ImportedRect;
+}
+
+/** An image's rect inside a box, as fractions of the box. */
+export interface ImportedRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+const r4 = (v: number) => Math.round(v * 10000) / 10000 || 0; // never -0
+
+/** Where an image fill's image sits inside its own layer, as fractions of
+ * the layer: undefined for FILL (a centred cover, the renderer's default),
+ * the crop window turned inside out for CROP and STRETCH with a transform
+ * (rows [a, c, tx] / [b, d, ty] map the layer onto the image), and null for
+ * what a rect can't say (FIT, TILE, a STRETCH with no transform, a rotated
+ * or skewed crop). The rect is drawn with cover, so a stretch that changes
+ * the image's proportions lands at its own proportions instead. */
+export function cropRectOf(fill: FigmaPaint): ImportedRect | null | undefined {
+  if (!fill.scaleMode || fill.scaleMode === "FILL") return undefined;
+  const t = fill.imageTransform;
+  if ((fill.scaleMode !== "CROP" && fill.scaleMode !== "STRETCH") || !t) return null;
+  const [a, c, tx] = t[0] ?? [];
+  const [b, d, ty] = t[1] ?? [];
+  if (!(a > 0) || !(d > 0) || Math.abs(b ?? 0) > 1e-4 || Math.abs(c ?? 0) > 1e-4) return null;
+  return { x: r4(-(tx ?? 0) / a), y: r4(-(ty ?? 0) / d), width: r4(1 / a), height: r4(1 / d) };
 }
 
 /** A node's rounded corners in the field shape, or undefined when square. */
@@ -248,6 +407,8 @@ export interface PredicateNode {
   fillGeometry?: unknown[];
   hasFillGeometry?: boolean;
   strokes?: Array<{ type: string; visible?: boolean }>;
+  /** Per-side stroke weights, when the sides differ. */
+  individualStrokeWeights?: { top: number; right: number; bottom: number; left: number };
   fills?: FigmaPaint[];
   cornerRadius?: number;
   rectangleCornerRadii?: number[];
@@ -290,6 +451,15 @@ export function subtreeHasVector(node: PredicateNode): boolean {
   return (node.children ?? []).some(subtreeHasVector);
 }
 
+/** True when a stroke weighs the same on every side: a shape field's
+ * stroke is one border all round, so a bottom rule stays a render. */
+export const uniformStroke = (node: {
+  individualStrokeWeights?: { top: number; right: number; bottom: number; left: number };
+}): boolean => {
+  const w = node.individualStrokeWeights;
+  return !w || (w.top === w.right && w.right === w.bottom && w.bottom === w.left);
+};
+
 /** The single representable fill of a container (FRAME/COMPONENT/INSTANCE)
  * whose own backdrop can lift as a SHAPE field — a pill, a card, a color
  * block — while its children keep lifting as their own fields. Undefined
@@ -300,13 +470,22 @@ export function shapeContainerFill(node: PredicateNode): FigmaPaint | undefined 
     return undefined;
   }
   if (isRasterLeaf(node)) return undefined;
-  if ((node.strokes ?? []).some((s) => s.visible !== false)) return undefined;
-  if ((node.effects ?? []).some((e) => e.visible !== false)) return undefined;
+  // One solid stroke rides as the shape's stroke and carried effects as its
+  // effects (brand-system Phase 4); anything richer keeps the exact render.
+  const strokes = (node.strokes ?? []).filter((s) => s.visible !== false);
+  if (strokes.length > 1 || (strokes[0] && strokes[0].type !== "SOLID")) return undefined;
+  if (strokes.length && !uniformStroke(node)) return undefined;
+  if (!effectsRepresentable(node)) return undefined;
   const fills = (node.fills ?? []).filter((f) => f.visible !== false);
   if (fills.length !== 1) return undefined;
   const fill = fills[0];
   if (fill.type === "SOLID" && fill.color) return fill;
-  if (fill.type === "GRADIENT_LINEAR" && fill.gradientStops?.length) return fill;
+  if (
+    (fill.type === "GRADIENT_LINEAR" || fill.type === "GRADIENT_RADIAL") &&
+    fill.gradientStops?.length
+  ) {
+    return fill;
+  }
   return undefined;
 }
 
@@ -318,6 +497,10 @@ export function shapeContainerFill(node: PredicateNode): FigmaPaint | undefined 
  * children, icon + text, a gradient backdrop, per-corner radii) keeps the
  * shape-plus-text split. */
 export function pillContainer(node: PredicateNode): boolean {
+  // A plate has no stroke or effects of its own: a container with either
+  // keeps the shape-plus-text split, so they survive.
+  if ((node.strokes ?? []).some((s) => s.visible !== false)) return false;
+  if ((node.effects ?? []).some((e) => e.visible !== false)) return false;
   const fill = shapeContainerFill(node);
   if (!(fill?.type === "SOLID" && fill.color)) return false;
   const r = cornerRadiusOf(node);
@@ -402,6 +585,47 @@ export function gradientAngleOf(
   return Math.round(((deg % 360) + 360) % 360);
 }
 
+export interface ImportedGradient {
+  angle: number;
+  stops: Array<{ position: number; color: string }>;
+  kind?: "radial";
+  center?: { x: number; y: number };
+  radius?: { x: number; y: number };
+}
+
+const round3 = (v: number) => Math.round(v * 1000) / 1000;
+
+/** A linear or radial Figma gradient as a field gradient, or undefined for
+ * the kinds a field can't draw (angular, diamond). A radial's handles are
+ * its centre and the ends of its two radii, normalized to the box; an
+ * ellipse tilted off the box's axes keeps its radii but loses the tilt. */
+export function gradientOf(
+  fill: FigmaPaint,
+  width: number,
+  height: number,
+  warn: (issue: string, severity?: "info" | "degraded") => void,
+): ImportedGradient | undefined {
+  if (!fill.gradientStops?.length) return undefined;
+  if (fill.type === "GRADIENT_LINEAR") return linearGradientOf(fill, width, height);
+  if (fill.type !== "GRADIENT_RADIAL") return undefined;
+  const [h0, h1, h2] = fill.gradientHandlePositions ?? [];
+  const c = h0 ?? { x: 0.5, y: 0.5 };
+  const w = Math.max(1, width);
+  const h = Math.max(1, height);
+  const ax = h1 ? { x: (h1.x - c.x) * w, y: (h1.y - c.y) * h } : { x: w / 2, y: 0 };
+  const ay = h2 ? { x: (h2.x - c.x) * w, y: (h2.y - c.y) * h } : { x: 0, y: h / 2 };
+  if (Math.abs(ax.y) > 0.5 || Math.abs(ay.x) > 0.5) {
+    warn("a rotated radial gradient imported upright.", "info");
+  }
+  return {
+    angle: 0,
+    stops: linearGradientOf(fill, width, height).stops,
+    kind: "radial",
+    center: { x: round3(c.x), y: round3(c.y) },
+    radius: { x: round3(Math.hypot(ax.x, ax.y) / w), y: round3(Math.hypot(ay.x, ay.y) / h) },
+  };
+}
+
 const linearGradientOf = (
   fill: FigmaPaint,
   width: number,
@@ -427,6 +651,11 @@ export function slug(name: string, taken: Set<string>): string {
   return key;
 }
 
+/** Canvas px kept to two decimals: Figma places layers on half pixels (a
+ * 110px card centred in a 1021px frame), and rounding them shifts edges a
+ * pixel off the design. */
+const px = (v: number) => Math.round(v * 100) / 100;
+
 /** Field placement from the node's geometry. Unrotated nodes keep the exact
  * behavior that shipped (rounded AABB, top-left anchored). A rotated node
  * lands center-anchored at the AABB center with its TRUE size — the AABB is
@@ -447,19 +676,19 @@ function placementOf(
   const { rotation, size } = transformOf(node);
   if (rotation !== undefined && size) {
     return {
-      x: Math.round(box.x - frame.x + box.width / 2),
-      y: Math.round(box.y - frame.y + box.height / 2),
-      width: Math.round(size.x),
-      height: Math.round(size.y),
+      x: px(box.x - frame.x + box.width / 2),
+      y: px(box.y - frame.y + box.height / 2),
+      width: px(size.x),
+      height: px(size.y),
       rotation,
       anchor: "center",
     };
   }
   return {
-    x: Math.round(box.x - frame.x),
-    y: Math.round(box.y - frame.y),
-    width: Math.round(box.width),
-    height: Math.round(box.height),
+    x: px(box.x - frame.x),
+    y: px(box.y - frame.y),
+    width: px(box.width),
+    height: px(box.height),
   };
 }
 
@@ -498,6 +727,31 @@ function shapeKindOf(node: FigmaNode): "rect" | "ellipse" | "triangle" | "star" 
   }
 }
 
+/** A node's one visible solid stroke as shape-field stroke properties, or
+ * none. The stroke keeps its alignment (strokeAlign) and its alpha (8-digit
+ * hex), so the box stays the node's own. */
+function strokePropsOf(
+  node: FigmaNode,
+  warn: (issue: string, severity?: "info" | "degraded") => void,
+): Pick<SuggestedField, "strokeColor" | "strokeWidthPx" | "strokeAlign"> {
+  const strokes = (node.strokes ?? []).filter((s) => s.visible !== false);
+  const stroke = strokes.length === 1 && strokes[0].type === "SOLID" ? strokes[0] : undefined;
+  const weight = node.strokeWeight ?? 1;
+  if (!stroke?.color || weight <= 0) return {};
+  if (node.strokeDashes?.length) warn("dashed border approximated as solid.", "info");
+  const align =
+    node.strokeAlign === "OUTSIDE"
+      ? "outside"
+      : node.strokeAlign === "CENTER"
+        ? "center"
+        : undefined;
+  return {
+    strokeColor: toHexAlpha(stroke.color, stroke.opacity ?? 1),
+    strokeWidthPx: Math.round(weight * 100) / 100,
+    ...(align ? { strokeAlign: align } : {}),
+  };
+}
+
 function textCaseContent(
   node: FigmaNode,
   warn: (issue: string, severity?: "info" | "degraded") => void,
@@ -516,6 +770,55 @@ function textCaseContent(
     default:
       return chars;
   }
+}
+
+/** The photo a mask group shows, when one image layer explains it: the
+ * topmost image covers the whole mask, opaque, unrotated and plain, so
+ * every layer under it is hidden. Its image ref and its image's rect inside
+ * the mask's box; undefined otherwise (the group render stays). */
+function maskedPhotoOf(
+  mask: FigmaNode,
+  layers: FigmaNode[],
+): { imageRef: string; rect: ImportedRect } | undefined {
+  const top = layers[layers.length - 1];
+  const m = mask.absoluteBoundingBox;
+  const b = top?.absoluteBoundingBox;
+  if (!top || !m || !b || m.width <= 0 || m.height <= 0) return undefined;
+  if (transformOf(top).rotation !== undefined || transformOf(mask).rotation !== undefined) {
+    return undefined;
+  }
+  if ((top.opacity ?? 1) < 1 || (top.effects ?? []).some((e) => e.visible !== false))
+    return undefined;
+  if (top.children?.length) return undefined;
+  const fills = visibleFills(top);
+  const fill = fills[0];
+  if (fills.length !== 1 || fill.type !== "IMAGE" || !fill.imageRef || (fill.opacity ?? 1) < 1) {
+    return undefined;
+  }
+  if (fill.blendMode && fill.blendMode !== "NORMAL") return undefined;
+  const covers =
+    b.x <= m.x + 0.5 &&
+    b.y <= m.y + 0.5 &&
+    b.x + b.width >= m.x + m.width - 0.5 &&
+    b.y + b.height >= m.y + m.height - 0.5;
+  if (!covers) return undefined;
+  const crop = cropRectOf(fill);
+  if (crop === null) return undefined;
+  const inner = crop ?? { x: 0, y: 0, width: 1, height: 1 };
+  // The layer's box in the mask's box, then the image's rect in the layer's.
+  const lx = (b.x - m.x) / m.width;
+  const ly = (b.y - m.y) / m.height;
+  const lw = b.width / m.width;
+  const lh = b.height / m.height;
+  return {
+    imageRef: fill.imageRef,
+    rect: {
+      x: r4(lx + inner.x * lw),
+      y: r4(ly + inner.y * lh),
+      width: r4(inner.width * lw),
+      height: r4(inner.height * lh),
+    },
+  };
 }
 
 export function walk(
@@ -549,20 +852,38 @@ export function walk(
     // Use the true unrotated size from transformOf (already computed in placementOf's
     // path) when rotation is present.
     const contentHeight = place.rotation !== undefined && node.size ? node.size.y : box.height;
-    const lineCount = Math.max(1, Math.round(contentHeight / lineHeightPx));
+    const capTrimmed = style.leadingTrim === "CAP_HEIGHT";
+    // A cap-trimmed box is (lines - 1) line heights plus one cap height.
+    const lineCount = Math.max(
+      1,
+      capTrimmed
+        ? Math.floor(contentHeight / lineHeightPx) + 1
+        : Math.round(contentHeight / lineHeightPx),
+    );
+    // The renderer places whole line boxes, so a cap-trimmed box grows back
+    // to its lines: the trim is split evenly above the cap and below the
+    // baseline (exact for faces whose ascent above the cap height equals
+    // their descent, close for the rest). Rotated text keeps its box.
+    if (capTrimmed && place.rotation === undefined) {
+      const full = lineCount * lineHeightPx;
+      const trim = Math.max(0, full - place.height);
+      place.y = px(place.y - trim / 2);
+      place.height = px(full);
+    }
     const isMultiline = (node.characters ?? "").includes("\n") || lineCount >= 2;
     const fill = visibleFills(node)[0];
     let colorHex: string | undefined;
     let textGradient: SuggestedField["textGradient"];
     if (fill?.type === "SOLID" && fill.color) {
       colorHex = toHex(fill.color);
-    } else if (fill?.type === "GRADIENT_LINEAR" && fill.gradientStops?.length) {
-      textGradient = linearGradientOf(fill, place.width, place.height);
     } else if (fill?.type === "IMAGE") {
       warn("an image fill on text can't be reproduced — imported with a solid ink.");
     } else if (fill?.type?.startsWith("GRADIENT") && fill.gradientStops?.length) {
-      textGradient = linearGradientOf(fill, place.width, place.height);
-      warn(`${fill.type} on text approximated as a linear gradient.`, "info");
+      textGradient = gradientOf(fill, place.width, place.height, warn);
+      if (!textGradient) {
+        textGradient = linearGradientOf(fill, place.width, place.height);
+        warn(`${fill.type} on text approximated as a linear gradient.`, "info");
+      }
     }
     if ((node.characterStyleOverrides ?? []).some((v) => v !== 0)) {
       warn("mixed text styling inside this layer was flattened to its base style.");
@@ -598,15 +919,16 @@ export function walk(
             ? style.lineHeightPercentFontSize / 100
             : undefined,
       placeholder: content?.slice(0, 80),
-      // The box and size come from Figma, and the designed size is the
-      // ceiling. Text shrinks (to the 18px default floor) so a member's
-      // longer copy stays in the box. Fixed text keeps its designed copy, which fits at its
-      // set size, so shrink changes nothing for it; if browser metrics make
-      // it overflow by a hair, shrinking is the better failure.
-      textSizing: "shrink",
+      // No textSizing: every element lands Fixed, and fixed text keeps its
+      // designed size, as drawn. Shrinking it can only hurt: a browser
+      // that wraps the copy one line more than Figma would shrink the
+      // design's own type (brand-system Phase 4 measured it). Turning Fixed
+      // off makes an imported text field shrink, so a member's longer copy
+      // still stays in the box (fixedPatch in the builder).
       // colorHex carries no alpha, so a translucent ink folds its alpha (and
       // the paint's opacity) into the element opacity alongside the node's.
       opacity: fill?.type === "SOLID" ? foldedOpacity(node, fill) : opacityOf(node),
+      effects: effectsOf(node, warn, { innerShadow: false }),
       static: true,
       staticValue: content,
     });
@@ -619,6 +941,21 @@ export function walk(
     imageFill &&
     (node.type === "RECTANGLE" || node.type === "FRAME" || node.type === "ELLIPSE")
   ) {
+    // The artwork can be the bare fill only when the fill is all the node
+    // paints: a round node, a border, a second fill (a tint) or a
+    // translucent or blended fill live in Figma's render and nowhere else.
+    const plainFill =
+      node.type !== "ELLIPSE" &&
+      !(node.strokes ?? []).some((st) => st.visible !== false) &&
+      visibleFills(node).length === 1 &&
+      (imageFill.opacity ?? 1) >= 1 &&
+      (!imageFill.blendMode || imageFill.blendMode === "NORMAL");
+    // With a plain fill, effects ride as properties and a crop as imageRect,
+    // so the artwork must be the bare fill: a render has the shadow baked
+    // into its pixels (it would paint twice) and its crop can't follow a
+    // member's replacement. Otherwise the render stays, effects included.
+    const crop = plainFill ? cropRectOf(imageFill) : undefined;
+    const effects = plainFill ? effectsOf(node, warn) : undefined;
     const field: SuggestedField = {
       id: crypto.randomUUID(),
       label: node.name,
@@ -629,11 +966,16 @@ export function walk(
       objectFit: "cover",
       opacity: opacityOf(node),
       cornerRadius: cornerRadiusOf(node),
+      effects,
       static: true,
     };
     out.push(field);
-    if ((node.effects ?? []).some((e) => e.visible !== false)) {
-      warn("shadows/effects on this image aren't reproduced — the field renders the image alone.");
+    if (crop) field.imageRect = crop;
+    if ((effects || crop) && !liftDescends(node)) {
+      field.fillImageRef = visibleFills(node).find(
+        (f) => f.type === "IMAGE" && f.imageRef,
+      )?.imageRef;
+      if (crop === null) warn("the image's crop is approximated as a centered cover fit.", "info");
     }
     // Descend into the container's children so nested content (a headline
     // inside a photo card) lifts as real fields instead of baking into the
@@ -647,7 +989,11 @@ export function walk(
       field.fillImageRef = visibleFills(node).find(
         (f) => f.type === "IMAGE" && f.imageRef,
       )?.imageRef;
-      if (imageFill.scaleMode && imageFill.scaleMode !== "FILL") {
+      // The artwork is the bare fill here whatever else the node paints, so
+      // its crop rides along too.
+      const fillCrop = cropRectOf(imageFill);
+      if (fillCrop) field.imageRect = fillCrop;
+      else if (fillCrop === null) {
         warn("the image's crop is approximated as a centered cover fit.", "info");
       }
       for (const child of node.children ?? []) walk(child, frame, out, warnings, taken, seenIds);
@@ -656,19 +1002,20 @@ export function walk(
   }
 
   const shape = shapeKindOf(node);
-  if (place && shape && !imageFill) {
+  if (place && shape && !imageFill && effectsRepresentable(node)) {
     const strokes = (node.strokes ?? []).filter((s) => s.visible !== false);
-    const effects = (node.effects ?? []).filter((e) => e.visible !== false);
     const base = {
       id: crypto.randomUUID(),
       label: node.name,
       sourceNodeId: node.id,
       static: true as const,
+      // Inner shadows paint on rect shapes only.
+      effects: effectsOf(node, warn, { innerShadow: shape === "rect" && node.type !== "LINE" }),
     };
     if (node.type === "LINE") {
       // A LINE's box has zero height; the stroke paints it, centered.
       const stroke = strokes[0];
-      if (stroke?.type === "SOLID" && stroke.color && !effects.length) {
+      if (stroke?.type === "SOLID" && stroke.color) {
         const weight = Math.max(1, Math.round(node.strokeWeight ?? 1));
         out.push({
           ...base,
@@ -686,53 +1033,19 @@ export function walk(
     } else {
       const fills = visibleFills(node);
       const fill = fills[0];
-      // Exactly one visible SOLID stroke lifts WITH the shape as an inner
-      // stroke. Figma INSIDE alignment maps directly; CENTER/OUTSIDE grow
-      // the box so the painted extent is preserved while the stored stroke
-      // stays inside.
+      // Exactly one visible SOLID stroke lifts WITH the shape, keeping its
+      // alignment and alpha.
       const solidStroke =
-        strokes.length === 1 && strokes[0].type === "SOLID" && strokes[0].color
-          ? strokes[0]
-          : undefined;
-      if (
-        fills.length === 1 &&
-        (!strokes.length || solidStroke) &&
-        !effects.length &&
-        !isRasterLeaf(node)
-      ) {
-        let placed = place;
-        let strokeProps: { strokeColor?: string; strokeWidthPx?: number } = {};
-        if (solidStroke) {
-          const weight = Math.max(1, Math.round(node.strokeWeight ?? 1));
-          const align = node.strokeAlign ?? "INSIDE";
-          const grow =
-            align === "OUTSIDE" ? weight : align === "CENTER" ? Math.round(weight / 2) : 0;
-          if (grow > 0) {
-            placed = {
-              ...place,
-              // Center-anchored (rotated) boxes grow about their center.
-              x: place.anchor === "center" ? place.x : place.x - grow,
-              y: place.anchor === "center" ? place.y : place.y - grow,
-              width: place.width + grow * 2,
-              height: place.height + grow * 2,
-            };
-            warn(
-              `${align.toLowerCase()}-aligned stroke imported as an inside stroke on a box grown ${grow}px per side.`,
-              "info",
-            );
-          }
-          if ((solidStroke.color!.a ?? 1) < 1 || (solidStroke.opacity ?? 1) < 1) {
-            warn("a translucent stroke imported fully opaque.", "info");
-          }
-          strokeProps = { strokeColor: toHex(solidStroke.color!), strokeWidthPx: weight };
-        }
+        strokes.length === 1 && strokes[0].type === "SOLID" && uniformStroke(node);
+      if (fills.length === 1 && (!strokes.length || solidStroke) && !isRasterLeaf(node)) {
+        const strokeProps = strokePropsOf(node, warn);
         if (fill.type === "SOLID" && fill.color) {
           out.push({
             ...base,
             fieldKey: slug(node.name, taken),
             type: "shape",
             shape,
-            ...placed,
+            ...place,
             colorHex: toHex(fill.color),
             cornerRadius: cornerRadiusOf(node),
             opacity: foldedOpacity(node, fill),
@@ -740,14 +1053,15 @@ export function walk(
           });
           return;
         }
-        if (fill.type === "GRADIENT_LINEAR" && fill.gradientStops?.length) {
+        const gradient = gradientOf(fill, place.width, place.height, warn);
+        if (gradient) {
           out.push({
             ...base,
             fieldKey: slug(node.name, taken),
             type: "shape",
             shape,
-            ...placed,
-            textGradient: linearGradientOf(fill, placed.width, placed.height),
+            ...place,
+            textGradient: gradient,
             cornerRadius: cornerRadiusOf(node),
             opacity: foldedOpacity(node, fill),
             ...strokeProps,
@@ -761,10 +1075,29 @@ export function walk(
   }
 
   // Pure vector artwork — a logo, an icon group, a decorative mark — is one
-  // visual object to a designer. Lift the WHOLE subtree as a single static
-  // image (Figma's own render, masks and effects included) so it can be
-  // moved, scaled, and layered instead of freezing into the plate.
+  // visual object to a designer, so it lifts WHOLE. Rebuilt from its own
+  // paths it becomes an icon field that recolours and stays sharp at any
+  // size; art a path list can't hold exactly lifts as a single static image
+  // (Figma's own render, masks and effects included), as before.
   if (place && !imageFill && isVectorArtwork(node) && subtreeHasVector(node)) {
+    const art = effectsRepresentable(node) ? vectorOf(node) : null;
+    if (art) {
+      out.push({
+        id: crypto.randomUUID(),
+        label: node.name,
+        fieldKey: slug(node.name, taken),
+        type: "icon",
+        sourceNodeId: node.id,
+        ...place,
+        vector: art.vector,
+        colorHex: art.colorHex,
+        textGradient: art.textGradient,
+        opacity: opacityOf(node),
+        effects: effectsOf(node, warn, { innerShadow: false }),
+        static: true,
+      });
+      return;
+    }
     out.push({
       id: crypto.randomUUID(),
       label: node.name,
@@ -839,6 +1172,8 @@ export function walk(
       sourceNodeId: node.id,
       ...place,
       cornerRadius: cornerRadiusOf(node),
+      ...strokePropsOf(node, warn),
+      effects: effectsOf(node, warn),
       static: true as const,
     };
     if (containerFill.type === "SOLID" && containerFill.color) {
@@ -850,7 +1185,7 @@ export function walk(
     } else {
       out.push({
         ...common,
-        textGradient: linearGradientOf(containerFill, place.width, place.height),
+        textGradient: gradientOf(containerFill, place.width, place.height, warn),
         opacity: foldedOpacity(node, containerFill),
       });
     }
@@ -888,6 +1223,30 @@ export function walk(
       if (maskType !== "LUMINANCE") {
         const outlineRect = mask.type === "RECTANGLE" && maskType !== "ALPHA";
         const maskPlace = placementOf(mask, frame);
+        const photo = maskPlace ? maskedPhotoOf(mask, rest) : undefined;
+        if (maskPlace && photo) {
+          // The top photo covers the mask, so it is all that shows: land its
+          // own fill with its position inside the mask, and the field stays
+          // replaceable with the designer's crop.
+          out.push({
+            id: crypto.randomUUID(),
+            label: node.name,
+            fieldKey: slug(node.name, taken),
+            type: "image",
+            sourceNodeId: node.id,
+            ...maskPlace,
+            objectFit: "cover",
+            fillImageRef: photo.imageRef,
+            imageRect: photo.rect,
+            // The group render used to carry the group's own shadow; with the
+            // bare fill it rides as an effect, following the mask's shape.
+            effects: effectsOf(node, warn),
+            ...(outlineRect ? { cornerRadius: cornerRadiusOf(mask) } : { maskNodeId: mask.id }),
+            opacity: opacityOf(node),
+            static: true,
+          });
+          return;
+        }
         if (maskPlace) {
           out.push({
             id: crypto.randomUUID(),
@@ -949,7 +1308,13 @@ export interface ExtractedElement {
    * baked in the flat export). */
   shape?: "rect" | "ellipse" | "triangle" | "star";
   cornerRadius?: { tl: number; tr: number; br: number; bl: number };
-  textGradient?: { angle: number; stops: Array<{ position: number; color: string }> };
+  textGradient?: ImportedGradient;
+  /** The stroke and depth lifted with the node (brand-system Phase 4), so
+   * a field built from this element keeps them. */
+  strokeColor?: string;
+  strokeWidthPx?: number;
+  strokeAlign?: "center" | "outside";
+  effects?: ImportedEffect[];
   x: number;
   y: number;
   width: number;
@@ -990,8 +1355,10 @@ export interface ExtractionResult {
 export function figmaFieldsToElements(fields: SuggestedField[]): ExtractedElement[] {
   return fields.map((f) => ({
     sourceId: f.sourceNodeId,
+    // An icon is vector art: to autobuild it is one fixed picture, as it
+    // was before the importer rebuilt it from paths, so it bakes as an image.
     kind:
-      f.type === "image"
+      f.type === "image" || f.type === "icon"
         ? ("image" as const)
         : f.type === "shape"
           ? ("shape" as const)
@@ -1000,6 +1367,10 @@ export function figmaFieldsToElements(fields: SuggestedField[]): ExtractedElemen
     shape: f.shape,
     cornerRadius: f.cornerRadius,
     textGradient: f.textGradient,
+    strokeColor: f.strokeColor,
+    strokeWidthPx: f.strokeWidthPx,
+    strokeAlign: f.strokeAlign,
+    effects: f.effects,
     x: f.x,
     y: f.y,
     width: f.width,
