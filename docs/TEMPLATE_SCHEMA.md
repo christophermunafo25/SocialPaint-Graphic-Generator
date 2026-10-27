@@ -98,6 +98,8 @@ Shape, plate and mask (migrations 0034 to 0036):
   replacement photo lands in the same rect. Fractions, so a resize keeps the
   crop. Absent, the rect is the box. Structural: a colourway never moves it.
 
+Figma import (brand-system Phase 4) maps onto these properties: Figma's DROP_SHADOW, INNER_SHADOW, LAYER_BLUR and MONOTONE NOISE land in `effects` (the frame's own in `canvasEffects`); a stroke keeps `strokeAlign` and its alpha; GRADIENT_RADIAL lands as `kind: "radial"`; vector artwork lands as an `icon` field with `vector`; a masked or cropped photo lands with `imageRect`. Anything else keeps a Figma render.
+
 Gradients: `textGradient` (and `backgroundGradient` on the canvas) is
 `{ angle, stops[{ position 0..1, color }], kind?, center?, radius? }`.
 Absent `kind` is linear along `angle`. `kind: "radial"` ignores the angle

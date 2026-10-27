@@ -30,7 +30,7 @@ Decided by CJ on 2026-10-27:
 ## Gates
 
 - **Gate A** (2026-10-27): CJ approved the Figma proposal, "Builder · Crop (proposal)" (`436:4402`). In the app the row reads "Photo position", since the inspector's box already has a Position section, and Zoom carries a zoom icon instead of its word.
-- **Gate B:** CJ approves the `-import` and `crop-matrix` baselines.
+- **Gate B** (2026-10-27): CJ approved the `gtm-composer-import`, `feature-highlight-import` and `crop-matrix` baselines, accepting WebKit's 6.04 exact share on Feature Highlight (1.1 points over its hand-built twin, all in photo resampling) as the cost of a replaceable photo.
 
 ## The shape (approved with the plan, 2026-10-27)
 

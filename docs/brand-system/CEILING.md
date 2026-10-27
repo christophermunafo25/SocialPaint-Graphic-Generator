@@ -4,6 +4,31 @@ Written by brand-system Phase 0 on 2026-10-25, against `main` at 4094a0b (PR 169
 
 Support levels: **live** means a field property draws it, **workaround** means an admin can approximate it with today's fields, and **missing** means it can't be drawn.
 
+## Since Phase 4
+
+Phase 4 (2026-10-27) carried the renderer's depth through the Figma importer (`docs/brand-system/PHASE-4.md`), and the harness now measures imports: an `import` fixture replays a saved node tree through the real importer offline (`src/app/dev/importReplay.ts`), the same code `figma-import`, `figma-layers` and the builder run, with Figma's renders and fills served from files.
+
+| Fixture                    | Chromium (exact / blurred) | Firefox       | WebKit        |
+| -------------------------- | -------------------------- | ------------- | ------------- |
+| `gtm-composer-import`      | 8.84 / 0.58                | 10.32 / 0.45  | 6.19 / 0.54   |
+| `feature-highlight-import` | 4.70 / 9.74                | 4.58 / 9.86   | 6.04 / 10.74  |
+| `crop-matrix`              | 0.00 / 0.00                | 7.50 / 0.00   | 11.58 / 0.09  |
+
+Before the phase the GTM import scored 27.39 / 27.55 on Chromium and Feature Highlight 4.29 / 10.75. What an import now carries:
+
+- **Effects as properties:** drop and inner shadows, layer blur and grain on lifted layers, and the root frame's effects as canvas effects. A container with one solid stroke and drawable effects lifts as a shape.
+- **Strokes keep their alignment and alpha** (`strokeAlign`, 8-digit hex) instead of growing the box.
+- **Radial gradients** land radial on fields and overlay units, and draw elliptically in the plate.
+- **Vectors as icon fields:** a pure vector subtree is rebuilt from its fill and stroke geometry in the root's space, one colour per path. Masks, clipping, inner opacity, translucent or image paints, blend modes and mixed gradients keep the raster lift.
+- **Photos with their position:** a mask group whose top image covers the mask lands as that image's fill with `imageRect` and the mask render; a cropped fill lands as its fill with `imageRect`. Members can replace both.
+- **Placement and type:** positions keep two decimals, cap-trimmed text grows back to whole lines, and fixed text keeps its designed size (it shrinks once Fixed is turned off).
+
+What is still approximated:
+
+- **Photo resampling.** A live photo is scaled by the browser, not pre-cut by Figma, so Firefox and WebKit differ on fine texture: WebKit's 6.04 on Feature Highlight is 1.1 points above the hand-built fixture, all in the photo, with the blurred share unchanged.
+- **Cap trim** assumes a face's ascent above the cap height equals its descent; for other faces the line sits a pixel or two off.
+- **The condensed headline width** (the font catalog), background blur, a drop shadow's spread, duo and multi noise, angular and diamond gradients, and a rotated radial's tilt.
+
 ## Since Phase 3
 
 Phase 3 (2026-10-27) added the icon field (`docs/brand-system/PHASE-3.md`): vector artwork drawn from path data that recolors like any field and per colourway. The GTM composer's five icons and the Feature Highlight logo are now icon fields in their -depth fixtures, built from their own SVG paths, and score exactly as the SVG images did. `icons-matrix` checks sizes, weights, both gradient kinds, shadow, glow, grain, flips, rotation, blur, a two-color mark and a colourway recolor.
