@@ -36,11 +36,10 @@ Decided by CJ on 2026-10-27:
 
 ## Gates
 
-- **Gate A (recon):** CJ approves:
-  - the shapes below;
-  - the role derivation rules;
-  - the scheme table;
-  - the type table.
+- **Gate A** (2026-10-27): CJ approved the shapes below, the role derivation rules, the scheme table and the type table, as reported:
+  - **Roles:** the admin's correction first, then use in templates, then the old labels (Accent to Accent, Primary to Deep), then lightness and saturation, with a neutral ramp for what is left.
+  - **Schemes:** Light, Dark, Brand, Accent and Tonal each return ground, card, soft, ink, muted ink, accent, ink on accent and emphasis, with body ink at 4.5:1 (3:1 for display) and accent at 3:1 on the ground.
+  - **Type:** body 36 feed, 34 square, 40 story and 34 landscape, with floors of 32 (34 landscape). Subhead is body × 1.5, CTA is body, headline is body × ratio (default 2.9, at least 2.8), display is headline × 1.33, and number is display × 1.1. Other canvases scale with width.
 - **Gate B:** CJ approves the `palette-enforcement` fixture's golden and baselines.
 
 ## The shape (proposed at Gate A)
