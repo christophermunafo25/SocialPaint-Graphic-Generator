@@ -11,6 +11,7 @@ import {
   normalizeHex,
   parseCurrentDesigns,
   refFromStored,
+  sanitizeImageRect,
   selectReferences,
   unhintedCanvas,
   type AssetRowLike,
@@ -265,6 +266,7 @@ const HIRING_FIELDS: Row[] = [
     width: 240,
     height: 240,
     rotation: 12,
+    image_rect: { x: -0.25, y: 0, width: 1.5, height: 1 },
   }),
   row({
     field_key: "brand_logo",
@@ -416,6 +418,21 @@ describe("color math", () => {
       1.193,
       3,
     );
+  });
+});
+
+describe("sanitizeImageRect", () => {
+  it("keeps a crop the renderer would draw and drops anything else", () => {
+    expect(sanitizeImageRect({ x: -0.5, y: 0.1, width: 2, height: 1.2 })).toEqual({
+      x: -0.5,
+      y: 0.1,
+      width: 2,
+      height: 1.2,
+    });
+    expect(sanitizeImageRect({ x: 0, y: 0, width: 0, height: 1 })).toBeUndefined();
+    expect(sanitizeImageRect({ x: 0, y: 0, width: 11, height: 1 })).toBeUndefined();
+    expect(sanitizeImageRect({ x: 0, y: "0", width: 1, height: 1 })).toBeUndefined();
+    expect(sanitizeImageRect(null)).toBeUndefined();
   });
 });
 
@@ -987,6 +1004,8 @@ describe("validateCompose: looks, scaled and checked", () => {
       type: "image",
       static: true,
       staticValue: `brand-assets/${CO}/art/sticker.png`,
+      // The template's crop, as fractions of the box, carries as it is.
+      imageRect: { x: -0.25, y: 0, width: 1.5, height: 1 },
     });
     expect(d.fields.some((f) => f.fieldKey === "drawn" || f.fieldKey === "invented")).toBe(false);
     expect(out.notes).toEqual([

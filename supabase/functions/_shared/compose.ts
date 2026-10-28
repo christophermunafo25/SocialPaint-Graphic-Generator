@@ -215,6 +215,9 @@ export interface ComposedField {
   platePaddingX?: number;
   platePaddingY?: number;
   maskUrl?: string;
+  /** Image fields: where the image sits inside the box, as fractions of
+   * the box (brand-system Phase 4). */
+  imageRect?: { x: number; y: number; width: number; height: number };
 }
 
 // ---------------------------------------------------------------------------
@@ -323,6 +326,23 @@ function sanitizeCorners(v: unknown): CornersLike | undefined {
   if (vals.some((x) => x === undefined)) return undefined;
   const [tl, tr, br, bl] = vals.map((x) => clamp(x!, 0, 5000));
   return tl + tr + br + bl > 0 ? { tl, tr, br, bl } : undefined;
+}
+
+/** An image field's crop as the renderer reads it (src/lib/render/
+ * imageRect.ts readImageRect): four finite fractions of the box, each within
+ * ten boxes, or undefined. */
+export function sanitizeImageRect(v: unknown): ComposedField["imageRect"] {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return undefined;
+  const r = v as Row;
+  const [x, y, width, height] = [r.x, r.y, r.width, r.height].map((n) =>
+    typeof n === "number" && Number.isFinite(n) ? n : undefined,
+  );
+  if (x === undefined || y === undefined || width === undefined || height === undefined) {
+    return undefined;
+  }
+  if (width <= 0 || height <= 0 || width > 10 || height > 10) return undefined;
+  if (Math.abs(x) > 10 || Math.abs(y) > 10) return undefined;
+  return { x, y, width, height };
 }
 
 const PATH_D_RE = /^[MmLlHhVvCcSsQqTtAaZz0-9eE.,+\-\s]*$/;
@@ -450,6 +470,7 @@ export function fieldFromStored(r: Row): ComposedField | null {
   set("platePaddingX", numOf(pick("plate_padding_x", "platePaddingX")));
   set("platePaddingY", numOf(pick("plate_padding_y", "platePaddingY")));
   set("maskUrl", strOf(pick("mask_url", "maskUrl"), 2000));
+  if (type === "image") set("imageRect", sanitizeImageRect(pick("image_rect", "imageRect")));
   return f;
 }
 

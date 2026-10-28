@@ -175,6 +175,8 @@ function copyLook(src: ComposedField, s: number): Partial<ComposedField> {
   keep("platePaddingY", scaled(src.platePaddingY));
   keep("objectFit", src.objectFit);
   keep("maskUrl", src.maskUrl);
+  // Fractions of the box, so a crop carries to any box size as it is.
+  keep("imageRect", src.imageRect ? { ...src.imageRect } : undefined);
   keep("flipX", src.flipX);
   keep("flipY", src.flipY);
   return look;
@@ -235,6 +237,7 @@ const FRAME_LOOK: Array<keyof ComposedField> = [
   "effects",
   "objectFit",
   "maskUrl",
+  "imageRect",
 ];
 const ARTWORK_LOOK: Array<keyof ComposedField> = [...FRAME_LOOK, "flipX", "flipY"];
 const LOGO_LOOK: Array<keyof ComposedField> = ["opacity", "effects"];
