@@ -825,7 +825,8 @@ corrections first, then how the templates use each colour (`paletteUsage`),
 then the old Primary / Accent labels, then lightness and saturation, then a
 neutral ramp. `resolveScheme` turns the roles into the colours of one of five
 schemes (Light, Dark, Brand, Accent, Tonal) with contrast fixes: body ink at
-4.5:1, display ink, the accent and ink on the accent at 3:1, fixed by swapping
+4.5:1 (one ink serves body and display), the accent and ink on the accent at
+3:1, fixed by swapping
 the ink or walking the tone (`contrast.ts`, shared with the starter
 materializer). `typeScale` gives each type role a size per canvas from a
 per-shape body size, its floor and the brand's headline ratio (at least 2.8).

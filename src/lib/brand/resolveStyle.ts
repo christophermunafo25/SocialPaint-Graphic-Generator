@@ -107,9 +107,22 @@ const clampGradient = (g: TextGradient | undefined, kit: BrandKit | null) =>
  * the kit allows any colour, so nothing downstream re-renders for it. */
 export function enforceFieldPalette(field: TemplateField, kit: BrandKit | null): TemplateField {
   if (!kit || kit.allowOffPalette !== false) return field;
+  // A field that sets no colour paints the renderer's default ink, which is
+  // held too. A stroke-only shape paints no fill, and text bound to a type
+  // style takes the style's colour, which a field colour could displace.
+  const paintsDefault =
+    !field.colorHex &&
+    !field.textGradient &&
+    field.type !== "image" &&
+    !field.typeStyleKey &&
+    !(field.type === "shape" && field.strokeColor);
   return {
     ...field,
-    colorHex: field.colorHex ? clampToPalette(field.colorHex, kit) : field.colorHex,
+    colorHex: field.colorHex
+      ? clampToPalette(field.colorHex, kit)
+      : paintsDefault
+        ? clampToPalette(DEFAULT_INK, kit)
+        : field.colorHex,
     textGradient: clampGradient(field.textGradient, kit),
     strokeColor: field.strokeColor ? clampToPalette(field.strokeColor, kit) : field.strokeColor,
     plateColor: field.plateColor ? clampToPalette(field.plateColor, kit) : field.plateColor,
@@ -125,16 +138,21 @@ export function enforceFieldPalette(field: TemplateField, kit: BrandKit | null):
   };
 }
 
-/** The canvas's own colour and gradient held to the palette, likewise. */
+/** The renderer's ink for a field that sets no colour, and its ground for a
+ * canvas that sets none (DEFAULT_FILL_HEX and the white base in
+ * SchemaRenderer), so enforcement can hold them too. */
+export const DEFAULT_INK = "#111111";
+export const DEFAULT_GROUND = "#FFFFFF";
+
+/** The canvas's own colour and gradient held to the palette, likewise,
+ * including the white a canvas with neither paints. */
 export function enforceBackground<
   T extends { backgroundColor?: string; backgroundGradient?: TextGradient },
 >(bg: T, kit: BrandKit | null): T {
   if (!kit || kit.allowOffPalette !== false) return bg;
   return {
     ...bg,
-    backgroundColor: bg.backgroundColor
-      ? clampToPalette(bg.backgroundColor, kit)
-      : bg.backgroundColor,
+    backgroundColor: clampToPalette(bg.backgroundColor || DEFAULT_GROUND, kit),
     backgroundGradient: clampGradient(bg.backgroundGradient, kit),
   };
 }

@@ -4,6 +4,7 @@
 
 import type { ColorRole } from "../../types";
 import { parseHex, toHex } from "../../color";
+import { ACCENT_FALLBACK } from "../../templates/starters/neutrals";
 
 export type Temperature = "cool" | "mono" | "warm";
 
@@ -17,8 +18,8 @@ export const RAMPS: Record<Temperature, Record<ColorRole, string>> = {
     deep: "#161617",
     inkOnLight: "#111112",
     inkOnDark: "#FFFFFF",
-    accent: "#E2452C",
-    emphasis: "#E2452C",
+    accent: ACCENT_FALLBACK,
+    emphasis: ACCENT_FALLBACK,
   },
   cool: {
     ground: "#FFFFFF",
@@ -27,8 +28,8 @@ export const RAMPS: Record<Temperature, Record<ColorRole, string>> = {
     deep: "#141A22",
     inkOnLight: "#0F141A",
     inkOnDark: "#F7F9FC",
-    accent: "#E2452C",
-    emphasis: "#E2452C",
+    accent: ACCENT_FALLBACK,
+    emphasis: ACCENT_FALLBACK,
   },
   warm: {
     ground: "#FFFFFF",
@@ -37,8 +38,8 @@ export const RAMPS: Record<Temperature, Record<ColorRole, string>> = {
     deep: "#1C1814",
     inkOnLight: "#17130F",
     inkOnDark: "#FBF8F3",
-    accent: "#E2452C",
-    emphasis: "#E2452C",
+    accent: ACCENT_FALLBACK,
+    emphasis: ACCENT_FALLBACK,
   },
 };
 

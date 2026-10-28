@@ -12,7 +12,14 @@ Phase 5 (2026-10-28) added the brand system's model and resolvers (`docs/brand-s
 | --------------------- | -------------------------- | ----------- | ----------- |
 | `palette-enforcement` | 0.00 / 0.00                | 0.25 / 0.17 | 0.45 / 0.52 |
 
-Effect colours (shadows, glows, grain) are not clamped: they are almost always black or white at low alpha.
+Effect colours (shadows, glows, grain) are not clamped: they are almost always black or white at low alpha. A field or canvas that sets no colour is held too: the default ink and the white ground clamp like any other colour.
+
+Left for later phases:
+
+- **Public links.** They don't enforce. `public-template` doesn't send `allow_off_palette`, so a public link renders as if off-palette colours were allowed; text was unclamped there before this phase too. Closing it needs a function change and a deploy.
+- **Contrast-fixed colours (Phase 6).** Only the derived role colours pass enforcement untouched. A scheme's contrast-fixed colours (a walked accent, muted ink, dark and tonal mixes) don't yet, so Phase 6's colourways must widen that set or a strict kit will snap their fixes back.
+- **Monochrome brands.** A strict brand with no chromatic colour lets the ramp's fallback accent through, since it is a derived role colour.
+- **Builder contrast warnings** (`variantContrast.ts`) judge the authored colours, not the clamped ones a strict kit paints.
 
 ## Since Phase 4
 

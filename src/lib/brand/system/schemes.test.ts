@@ -36,6 +36,18 @@ describe("resolveScheme", () => {
     for (const id of SCHEMES) expect(resolveScheme(SAMPLE, id).passes).toBe(true);
   });
 
+  it("swaps an ink that can't read for one that can", () => {
+    // The admin set a pale grey as ink on light; the light scheme can't use
+    // it on white, so it swaps to (or walks toward) a legible ink.
+    const pale = {
+      ...SAMPLE,
+      system: { version: 1 as const, color: { roles: { inkOnLight: "secondary" } } },
+    };
+    const s = resolveScheme(pale, "light");
+    expect(s.fixed).toContain("ink");
+    expect(ratio(s.colors.ink, s.colors.ground)).toBeGreaterThanOrEqual(INK_MIN);
+  });
+
   it("leaves a palette that already reads alone", () => {
     expect(resolveScheme(SAMPLE, "dark").fixed).toEqual([]);
   });

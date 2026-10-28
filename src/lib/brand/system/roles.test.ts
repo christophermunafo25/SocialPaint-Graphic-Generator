@@ -112,6 +112,15 @@ describe("deriveColorRoles", () => {
 });
 
 describe("paletteUsage", () => {
+  it("counts ink that arrives through a type style's colour", () => {
+    const usage = paletteUsage(
+      [template([field({ type: "text", colorHex: undefined, typeStyleKey: "body" })])],
+      SAMPLE.colors,
+      [{ key: "body", name: "Body", colorKey: "primary" }],
+    );
+    expect(usage.primary).toEqual({ inkOnLight: 1 });
+  });
+
   it("classifies grounds, panels, chips, plates and ink by size and surface", () => {
     const usage = paletteUsage(
       [

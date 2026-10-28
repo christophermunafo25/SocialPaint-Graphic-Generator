@@ -1,9 +1,9 @@
 // Schemes (brand-system Phase 5): one brand rendered on several grounds.
 // Pure. Each scheme maps the brand's colour roles onto the colours a graphic
-// paints with, then fixes what can't be read: ink must clear 4.5:1 on its
-// ground (3:1 at display sizes), the accent 3:1, and ink on the accent
-// 3:1, since what sits on an accent plate (a call to action, a chip label) is
-// large text. A failing ink is swapped for the other ink, then walked; a failing
+// paints with, then fixes what can't be read: the scheme's one ink must
+// clear 4.5:1 on its ground, so it serves body copy and display sizes alike;
+// the accent and emphasis 3:1; and ink on the accent 3:1, since what sits on
+// an accent plate (a call to action, a chip label) is large text. A failing ink is swapped for the other ink, then walked; a failing
 // accent is walked. What still fails marks the scheme unsupported.
 
 import type { BrandKit, SchemeId } from "../../types";

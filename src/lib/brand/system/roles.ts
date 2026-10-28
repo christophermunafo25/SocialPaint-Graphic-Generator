@@ -6,7 +6,7 @@
 // ramp. Each resolved role says where it came from, so Brand Studio (Phase 6)
 // can show what it inferred and what the admin set.
 
-import type { BrandColor, BrandKit, ColorRole, TemplateSchema } from "../../types";
+import type { BrandColor, BrandKit, BrandTypeStyle, ColorRole, TemplateSchema } from "../../types";
 import { luminance, parseHex } from "../../color";
 import { hexToHsl, ratio } from "./contrast";
 import { mixHex, RAMPS } from "./neutrals";
@@ -58,8 +58,20 @@ const CHIP_SHARE = 0.03;
  * when tinted), a chromatic chip or plate is the accent, and text is ink on
  * the light or dark ground under it (emphasis when it's chromatic). Colours
  * off the palette count for nothing. */
-export function paletteUsage(templates: TemplateSchema[], colors: BrandColor[]): PaletteUsage {
+export function paletteUsage(
+  templates: TemplateSchema[],
+  colors: BrandColor[],
+  typeStyles: BrandTypeStyle[] = [],
+): PaletteUsage {
   const keyOf = new Map(colors.filter((c) => parseHex(c.hex)).map((c) => [norm(c.hex), c.key]));
+  // Most template ink arrives through a type style's colour, the one live
+  // brand channel, so a bound style's colour counts as the field's ink.
+  const styleInk = new Map(
+    typeStyles.flatMap((st) => {
+      const hex = colors.find((c) => c.key === st.colorKey)?.hex;
+      return hex ? [[st.key, hex] as const] : [];
+    }),
+  );
   const usage: PaletteUsage = {};
   const count = (hex: string | undefined, role: ColorRole) => {
     if (!hex || !parseHex(hex)) return;
@@ -87,14 +99,11 @@ export function paletteUsage(templates: TemplateSchema[], colors: BrandColor[]):
         if (f.plateColor) count(f.plateColor, isChromatic(f.plateColor) ? "accent" : "card");
         const surface = f.plateColor ?? ground;
         const onLight = surface ? isLight(surface) : groundIsLight;
-        if (f.colorHex) {
+        const ink = f.colorHex ?? (f.typeStyleKey ? styleInk.get(f.typeStyleKey) : undefined);
+        if (ink) {
           count(
-            f.colorHex,
-            isChromatic(f.colorHex) && !f.plateColor
-              ? "emphasis"
-              : onLight
-                ? "inkOnLight"
-                : "inkOnDark",
+            ink,
+            isChromatic(ink) && !f.plateColor ? "emphasis" : onLight ? "inkOnLight" : "inkOnDark",
           );
         }
       }

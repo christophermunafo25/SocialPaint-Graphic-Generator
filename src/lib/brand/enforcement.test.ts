@@ -156,6 +156,33 @@ describe("off-palette enforcement on every surface (brand-system Phase 5)", () =
     ]);
   });
 
+  it("holds the default ink and ground a field or canvas falls back on", () => {
+    const palette: BrandKit = {
+      ...strict,
+      colors: [
+        { key: "navy", name: "Navy", hex: "#1D2B4F" },
+        { key: "paper", name: "Paper", hex: "#F7F3EA" },
+      ],
+    };
+    const bare: TemplateField = {
+      ...field,
+      type: "shape",
+      colorHex: undefined,
+      typeStyleKey: undefined,
+    };
+    expect(enforceFieldPalette(bare, palette).colorHex).toBe("#1D2B4F");
+    // A stroke-only shape keeps its empty fill; styled text keeps its style's colour.
+    expect(
+      enforceFieldPalette({ ...bare, strokeColor: "#1D2B4F" }, palette).colorHex,
+    ).toBeUndefined();
+    expect(
+      enforceFieldPalette({ ...field, colorHex: undefined }, palette).colorHex,
+    ).toBeUndefined();
+    expect(enforceBackground<{ backgroundColor?: string }>({}, palette).backgroundColor).toBe(
+      "#F7F3EA",
+    );
+  });
+
   it("clamps the canvas colour and gradient", () => {
     const bg = enforceBackground(
       {
