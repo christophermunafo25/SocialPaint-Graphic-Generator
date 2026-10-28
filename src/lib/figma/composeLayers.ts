@@ -6,14 +6,36 @@ import { resolveImageUrl } from "../stores/supabase/signedUrls";
  * we draw at 2× to match the quality of the flat frame render. */
 const SCALE = 2;
 
-async function loadBitmap(url: string): Promise<ImageBitmap | null> {
+/** A decoded layer image: an ImageBitmap, or an <img> where the engine
+ * couldn't make one. Both draw onto a canvas and know their size. */
+type LayerImage = ImageBitmap | HTMLImageElement;
+
+/** Decode through an <img>, the path every engine supports. */
+function decodeImage(blob: Blob): Promise<HTMLImageElement> {
+  const src = URL.createObjectURL(blob);
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("the image could not be decoded"));
+    img.src = src;
+  }).finally(() => URL.revokeObjectURL(src)) as Promise<HTMLImageElement>;
+}
+
+async function loadBitmap(url: string): Promise<LayerImage | null> {
   try {
     // Unit urls are storage references since the buckets went private —
     // sign before fetching. External URLs pass through.
     const fetchable = await resolveImageUrl(url);
     if (!fetchable) throw new Error("could not sign the storage reference");
     const blob = await (await fetch(fetchable)).blob();
-    return await createImageBitmap(blob);
+    // createImageBitmap is the fast path, but WebKit can refuse a large
+    // image (the fidelity harness's WebKit drops a 1376 x 2042 panel), and a
+    // refused layer would leave a hole in the plate: fall back to an <img>.
+    try {
+      return await createImageBitmap(blob);
+    } catch {
+      return await decodeImage(blob);
+    }
   } catch (e) {
     console.error("Layer image load failed", url, e);
     return null;
@@ -131,7 +153,7 @@ function drawGradient(ctx: CanvasRenderingContext2D, u: FigmaLayerUnit): void {
   ctx.globalAlpha = 1;
 }
 
-function drawCover(ctx: CanvasRenderingContext2D, bmp: ImageBitmap, u: FigmaLayerUnit): void {
+function drawCover(ctx: CanvasRenderingContext2D, bmp: LayerImage, u: FigmaLayerUnit): void {
   const dw = u.width * SCALE;
   const dh = u.height * SCALE;
   // A cropped fill (Figma scaleMode STRETCH) carries the exact source
@@ -180,7 +202,7 @@ export async function composeFigmaBackground(result: LayerRenderResult): Promise
         .map((u) => u.url!),
     ),
   ];
-  const bitmaps = new Map<string, ImageBitmap | null>(
+  const bitmaps = new Map<string, LayerImage | null>(
     await Promise.all(urls.map(async (u) => [u, await loadBitmap(u)] as const)),
   );
 
@@ -230,7 +252,7 @@ export async function composeFigmaBackground(result: LayerRenderResult): Promise
     }
   }
   // A url can back several units — close bitmaps only once every unit drew.
-  for (const bmp of bitmaps.values()) bmp?.close();
+  for (const bmp of bitmaps.values()) if (bmp && "close" in bmp) bmp.close();
 
   return await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Canvas export failed"))), "image/png");

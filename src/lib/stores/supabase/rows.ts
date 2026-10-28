@@ -60,6 +60,9 @@ export interface BrandKitRow {
   primary_logo_light_asset_id: string | null;
   allow_style_override: boolean | null;
   allow_off_palette: boolean | null;
+  /** Migration 0052. Optional: a row read before the column exists has no
+   * key. */
+  system?: import("../../types").BrandSystem | null;
 }
 
 /** A kit row as the app reads it, with its font roles in place (PHASE-6 §9
@@ -79,6 +82,7 @@ const toBrandKitRow = (r: BrandKitRow): BrandKit => ({
   primaryLogoLightAssetId: r.primary_logo_light_asset_id ?? undefined,
   allowStyleOverride: r.allow_style_override ?? false,
   allowOffPalette: r.allow_off_palette ?? true,
+  system: r.system ?? undefined,
 });
 
 export interface BrandAssetRow {

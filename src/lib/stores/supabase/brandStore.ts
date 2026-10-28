@@ -33,6 +33,9 @@ export class SupabaseBrandKitStore implements BrandKitStore {
       primary_logo_light_asset_id: kit.primaryLogoLightAssetId ?? null,
       allow_style_override: kit.allowStyleOverride ?? false,
       allow_off_palette: kit.allowOffPalette ?? true,
+      // Written only when set, so saves keep working if the app ships before
+      // migration 0052.
+      ...(kit.system !== undefined && { system: kit.system }),
       is_active: true,
       updated_at: new Date().toISOString(),
     };

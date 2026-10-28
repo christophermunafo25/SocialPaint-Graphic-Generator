@@ -101,6 +101,42 @@ export interface BrandTypeStyle {
    * Heading and one for Body. Null holds none; absent means the kit predates
    * roles, and `withFontRoles` (lib/brand/fontRoles) gives it its roles. */
   useFor?: "heading" | "body" | null;
+  /** The style's colour as a role (brand-system Phase 5, D3), resolved per
+   * scheme once a template states its scheme (Phase 6). Absent: colorKey,
+   * as today. */
+  colorRole?: ColorRole;
+}
+
+/** A colour's job in a graphic (brand-system Phase 5, D1). Replaces the
+ * Primary / Secondary / Accent labels, which stay readable as a hint. */
+export type ColorRole =
+  "ground" | "soft" | "deep" | "accent" | "card" | "inkOnLight" | "inkOnDark" | "emphasis";
+
+/** The grounds one brand renders on (brand-system Phase 5). */
+export type SchemeId = "light" | "dark" | "brand" | "accent" | "tonal";
+
+/** A text block's job in a graphic, which sets its size per canvas. */
+export type TypeRole = "display" | "headline" | "subhead" | "body" | "label" | "cta" | "number";
+
+/** The brand's design system (brand-system Phase 5, D4). It stores only
+ * what the admin decided: every unset value is derived by the resolvers in
+ * src/lib/brand/system/ at read time, so an empty or absent system renders
+ * exactly as before. */
+export interface BrandSystem {
+  version: 1;
+  color?: {
+    /** The admin's corrections: role to palette key. */
+    roles?: Partial<Record<ColorRole, string>>;
+    /** The derived neutral ramp's temperature (default mono). */
+    neutrals?: "cool" | "mono" | "warm";
+  };
+  schemes?: { enabled?: SchemeId[]; preferred?: SchemeId };
+  type?: {
+    /** Headline size over body size, never under 2.8 (default 2.9). */
+    ratio?: number;
+    /** Role to type style key. */
+    roles?: Partial<Record<TypeRole, string>>;
+  };
 }
 
 export interface BrandKit {
@@ -129,6 +165,8 @@ export interface BrandKit {
    * renders as the nearest palette color. Absent = true: any hex renders
    * as authored. */
   allowOffPalette?: boolean;
+  /** The design system (migration 0052). Absent: nothing decided yet. */
+  system?: BrandSystem;
 }
 
 export type AssetKind = "logo" | "font" | "image";

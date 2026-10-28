@@ -4,6 +4,23 @@ Written by brand-system Phase 0 on 2026-10-25, against `main` at 4094a0b (PR 169
 
 Support levels: **live** means a field property draws it, **workaround** means an admin can approximate it with today's fields, and **missing** means it can't be drawn.
 
+## Since Phase 5
+
+Phase 5 (2026-10-28) added the brand system's model and resolvers (`docs/brand-system/PHASE-5.md`): colour roles, five schemes with contrast fixes and a per-canvas type scale, all pure and not yet read by the builder or Generate (Phases 6, 7 and 13). The one visible change is enforcement: with off-palette colours off, shapes, strokes, plates, icon paths and the canvas background now clamp to the palette, as text and gradients already did. Every fixture rendered before is unchanged.
+
+| Fixture               | Chromium (exact / blurred) | Firefox     | WebKit      |
+| --------------------- | -------------------------- | ----------- | ----------- |
+| `palette-enforcement` | 0.00 / 0.00                | 0.25 / 0.17 | 0.45 / 0.52 |
+
+Effect colours (shadows, glows, grain) are not clamped: they are almost always black or white at low alpha. A field or canvas that sets no colour is held too: the default ink and the white ground clamp like any other colour.
+
+Left for later phases:
+
+- **Public links.** They don't enforce. `public-template` doesn't send `allow_off_palette`, so a public link renders as if off-palette colours were allowed; text was unclamped there before this phase too. Closing it needs a function change and a deploy.
+- **Contrast-fixed colours (Phase 6).** Only the derived role colours pass enforcement untouched. A scheme's contrast-fixed colours (a walked accent, muted ink, dark and tonal mixes) don't yet, so Phase 6's colourways must widen that set or a strict kit will snap their fixes back.
+- **Monochrome brands.** A strict brand with no chromatic colour lets the ramp's fallback accent through, since it is a derived role colour.
+- **Builder contrast warnings** (`variantContrast.ts`) judge the authored colours, not the clamped ones a strict kit paints.
+
 ## Since Phase 4
 
 Phase 4 (2026-10-27) carried the renderer's depth through the Figma importer (`docs/brand-system/PHASE-4.md`), and the harness now measures imports: an `import` fixture replays a saved node tree through the real importer offline (`src/app/dev/importReplay.ts`), the same code `figma-import`, `figma-layers` and the builder run, with Figma's renders and fills served from files.

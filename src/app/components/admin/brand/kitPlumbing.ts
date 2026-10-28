@@ -39,6 +39,9 @@ export function kitShape(kit: BrandKit | null): KitShape {
     // write the whole kit, so dropping these here would silently reset them.
     allowStyleOverride: kit?.allowStyleOverride ?? false,
     allowOffPalette: kit?.allowOffPalette ?? true,
+    // The design system rides every save too: dropping it here would reset
+    // the admin's role corrections on the next autosave.
+    ...(kit?.system ? { system: kit.system } : {}),
   };
 }
 

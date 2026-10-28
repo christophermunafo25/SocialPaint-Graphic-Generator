@@ -255,6 +255,13 @@ frame at once.
 
 ## Rendering contract
 
+Brand enforcement: when the kit's `allowOffPalette` is false, every colour a
+field paints (`colorHex`, `textGradient` stops, `strokeColor`, `plateColor`,
+an icon's per-path `colorHex`) and the canvas's `backgroundColor` and
+`backgroundGradient` render as the nearest palette colour, keeping any alpha
+(brand-system Phase 5). Colours the brand system derives for the kit pass
+untouched. The schema itself is never rewritten.
+
 `SchemaRenderer` renders any schema into a live-scaled canvas
 (`scale = min(containerW/canvasW, containerH/canvasH, 1)`), places each field
 absolutely in canvas space, and exposes `exportPng()` (dimensions from the
