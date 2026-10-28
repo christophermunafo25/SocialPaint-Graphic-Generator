@@ -31,7 +31,14 @@
 // the answer and builds the designs.
 
 import { HttpError } from "./http.ts";
-import { fontAssetFamily, parseStorageRef, refInCompany, refKey } from "./publicLink.ts";
+import {
+  fontAssetFamily,
+  parseStorageRef,
+  refInCompany,
+  refKey,
+  refWithImpliedBucket,
+  type PublicBucket,
+} from "./publicLink.ts";
 
 export type Row = Record<string, unknown>;
 
@@ -632,28 +639,44 @@ function roleOf(f: ComposedField, logoSources: Set<string>): RefRole {
   return "text";
 }
 
-/** Elements a reference shows, at most this many, in paint order. */
+/** Elements a template shows as a reference, at most this many. */
 const REF_ELEMENT_CAP = 24;
+
+/** The elements a reference keeps when it has more than `cap`: every one
+ * that carries copy or the brand (text, the logo, photos, icons) first, then
+ * the largest shapes and artwork, so a template with many small decorative
+ * layers still shows its headline and logo. Paint order is kept. */
+function keepWithin<T extends { f: ComposedField; role: RefRole }>(items: T[], cap: number): T[] {
+  if (items.length <= cap) return items;
+  const area = (x: T) => Math.abs(x.f.width * x.f.height);
+  const core = items.filter((x) => x.role !== "shape" && x.role !== "artwork");
+  const rest = items
+    .filter((x) => x.role === "shape" || x.role === "artwork")
+    .sort((a, b) => area(b) - area(a));
+  const kept = new Set([...core.slice(-cap), ...rest].slice(0, cap));
+  return items.filter((x) => kept.has(x));
+}
 
 /** A published template (or a member's draft) as a reference. Elements are
  * ordered by paint order (zIndex, then list order), invisible ones are left
- * out, and each gets its id. */
+ * out, at most `cap` are kept (keepWithin), and each gets its id. */
 export function refFromStored(
   id: string,
   template: TemplateRowLike,
   fieldRows: Row[],
   logoSources: Set<string>,
+  cap = REF_ELEMENT_CAP,
 ): RefTemplate | null {
   const W = numOf(template.canvas_width);
   const H = numOf(template.canvas_height);
   if (!W || !H) return null;
-  const fields = fieldRows
+  const painted = fieldRows
     .map((r, i) => ({ f: fieldFromStored(r), i }))
     .filter((x): x is { f: ComposedField; i: number } => x.f !== null)
     .filter(({ f }) => (f.opacity ?? 100) > 0)
     .sort((a, b) => (a.f.zIndex ?? 0) - (b.f.zIndex ?? 0) || a.i - b.i)
-    .slice(0, REF_ELEMENT_CAP)
-    .map(({ f }) => f);
+    .map(({ f }) => ({ f, role: roleOf(f, logoSources) }));
+  const kept = keepWithin(painted, cap);
   const tags = Array.isArray(template.tags)
     ? template.tags.filter((t): t is string => typeof t === "string").slice(0, 12)
     : [];
@@ -674,11 +697,7 @@ export function refFromStored(
         typeof template.background_storage_path === "string" &&
         template.background_storage_path.length > 0,
     },
-    elements: fields.map((f, i) => ({
-      id: `${id}.${i + 1}`,
-      role: roleOf(f, logoSources),
-      field: f,
-    })),
+    elements: kept.map(({ f, role }, i) => ({ id: `${id}.${i + 1}`, role, field: f })),
     captionTemplate: strOf(template.caption_template, 600) ?? "",
   };
 }
@@ -1374,17 +1393,22 @@ export function parseCurrentDesigns(raw: unknown, companyId: string): RefTemplat
     if (!W || !H || W > 10_000 || H > 10_000) {
       throw new HttpError(400, `${at}.design needs a canvasWidth and canvasHeight.`);
     }
-    const ownSource = (v: string | undefined): boolean => {
+    // A fixed image and a mask must sit in this company's own storage folder,
+    // read the way the renderer reads them (a bare path implies its bucket).
+    // The check runs on the parsed field, so either spelling of a property is
+    // covered, and fixed text is only text.
+    const ownSource = (v: string | undefined, bucket: PublicBucket): boolean => {
       if (!v) return true;
-      const ref = parseStorageRef(v);
+      const ref = refWithImpliedBucket(bucket, v);
       return ref !== null && refInCompany(ref, companyId);
     };
     const fieldRows = (design.fields as unknown[]).filter((f): f is Row => {
       if (!f || typeof f !== "object" || Array.isArray(f)) return false;
-      const row = f as Row;
+      const field = fieldFromStored(f as Row);
       return (
-        ownSource(typeof row.staticValue === "string" ? row.staticValue : undefined) &&
-        ownSource(typeof row.maskUrl === "string" ? row.maskUrl : undefined)
+        field !== null &&
+        (field.type !== "image" || ownSource(field.staticValue, "brand-assets")) &&
+        ownSource(field.maskUrl, "template-backgrounds")
       );
     });
     const ref = refFromStored(
@@ -1401,6 +1425,7 @@ export function parseCurrentDesigns(raw: unknown, companyId: string): RefTemplat
       },
       fieldRows,
       new Set(),
+      CURRENT_FIELDS_CAP,
     );
     if (!ref) throw new HttpError(400, `${at}.design is not a usable design.`);
     const values: Record<string, string> = {};
@@ -1442,10 +1467,48 @@ export interface ComposeContext {
   /** The story safe band: text and the logo stay between these. */
   safeTop: number;
   safeBottom: number;
-  /** The team puts a logo on most posts and Brand Studio has one. */
+  /** The team puts a logo on most posts, and there is one to place: Brand
+   * Studio's files or the team's vector logo. */
   expectLogo: boolean;
+  /** The logo the team's templates draw as vector art (an imported lockup),
+   * from the most relevant template that has one. A logo element draws it
+   * when Brand Studio has no logo file. */
+  teamLogo?: ComposedField;
   hasPhoto: boolean;
   elementCap: number;
+}
+
+/** The first vector logo in these templates, in order. */
+function vectorLogoIn(refs: RefTemplate[]): ComposedField | undefined {
+  for (const ref of refs) {
+    const el = ref.elements.find(
+      (e) => e.role === "logo" && e.field.type === "icon" && e.field.vector,
+    );
+    if (el) return el.field;
+  }
+  return undefined;
+}
+
+/** The canvas a new design takes when the member names no platform: the
+ * size of the draft being revised, else the size the team's published
+ * templates use most (the newest on a tie), the way a filled template kept
+ * its own size. Undefined when there is neither. */
+export function unhintedCanvas(
+  published: RefTemplate[],
+  drafts: RefTemplate[] = [],
+): { width: number; height: number } | undefined {
+  if (drafts[0]) return { width: drafts[0].canvasWidth, height: drafts[0].canvasHeight };
+  const counts = new Map<string, { width: number; height: number; n: number }>();
+  for (const r of published) {
+    const key = `${r.canvasWidth}x${r.canvasHeight}`;
+    const hit = counts.get(key);
+    if (hit) hit.n++;
+    else counts.set(key, { width: r.canvasWidth, height: r.canvasHeight, n: 1 });
+  }
+  let best: { width: number; height: number; n: number } | undefined;
+  // Newest first, so a strict comparison keeps the newest on a tie.
+  for (const c of counts.values()) if (!best || c.n > best.n) best = c;
+  return best ? { width: best.width, height: best.height } : undefined;
 }
 
 /** Story and reel canvases: the platform's own controls cover the top 250px
@@ -1478,6 +1541,9 @@ export function composeContext(input: {
     input.referenceCap,
   );
   const maxRef = Math.max(0, ...references.map((r) => r.elements.length), house.elements.max);
+  // Every published template, not only the references, so the logo the
+  // prompt promises and the one the validator places are the same.
+  const teamLogo = vectorLogoIn([...references, ...input.published]);
   return {
     canvasWidth: W,
     canvasHeight: H,
@@ -1489,23 +1555,11 @@ export function composeContext(input: {
     safeTop: story ? Math.max(margin, Math.round((250 * H) / 1920)) : margin,
     safeBottom: story ? Math.max(margin, Math.round((450 * H) / 1920)) : margin,
     expectLogo:
-      (Boolean(input.brand.logos.light || input.brand.logos.dark) ||
-        input.published.some((r) => r.elements.some((e) => e.role === "logo" && e.field.vector))) &&
+      (Boolean(input.brand.logos.light || input.brand.logos.dark) || teamLogo !== undefined) &&
       house.logo !== undefined &&
       house.logo.count >= Math.max(1, Math.ceil(house.templateCount / 2)),
+    ...(teamLogo ? { teamLogo } : {}),
     hasPhoto: input.hasPhoto,
     elementCap: clamp(maxRef + 4, 12, 30),
   };
-}
-
-/** The logo the team's templates draw as vector art, most relevant template
- * first, when there is one. */
-export function teamLogoVector(ctx: ComposeContext): ComposedField | undefined {
-  for (const ref of ctx.references) {
-    const el = ref.elements.find(
-      (e) => e.role === "logo" && e.field.type === "icon" && e.field.vector,
-    );
-    if (el) return el.field;
-  }
-  return undefined;
 }

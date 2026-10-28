@@ -341,8 +341,8 @@ describe("runChat", () => {
 
   it("lets a new design's overflowing text shrink to the type floor before dropping it", async () => {
     // Shrink text whose usual floor (0.75 of 40px) still runs over its 400px
-    // box: 30 characters at 30px are 450 wide. At the floor (14px on a 1080
-    // canvas, 0.35 of 40) they are 210.
+    // box: 30 characters at 30px are 450 wide. At the floor (16px on a 1080
+    // canvas, 0.4 of 40) they are 240.
     const tight = { ...HEADLINE, textSizing: "shrink" as const, minFontScale: 0.75 };
     const base = designProposal("Tight", OVERFLOWS);
     const proposal: GeneratedProposal = { ...base, design: { ...base.design!, fields: [tight] } };
@@ -350,10 +350,10 @@ describe("runChat", () => {
     await h.start();
     const [draft] = h.turn().drafts;
     expect(h.turn().warnings).toEqual([]);
-    expect(draft.schema?.fields[0].minFontScale).toBe(0.35);
+    expect(draft.schema?.fields[0].minFontScale).toBe(0.4);
     // The stored design carries the relaxed floor, so a reopened chat
     // rebuilds it as it fit.
-    expect(draft.proposal.design?.fields[0].minFontScale).toBe(0.35);
+    expect(draft.proposal.design?.fields[0].minFontScale).toBe(0.4);
   });
 
   it("still drops a new design whose text overflows even at the type floor", async () => {

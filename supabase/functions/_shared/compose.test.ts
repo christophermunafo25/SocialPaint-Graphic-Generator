@@ -12,6 +12,7 @@ import {
   parseCurrentDesigns,
   refFromStored,
   selectReferences,
+  unhintedCanvas,
   type AssetRowLike,
   type ComposeContext,
   type ComposedField,
@@ -20,7 +21,13 @@ import {
   type Row,
 } from "./compose.ts";
 import { COMPOSE_TOOL, composeUserText } from "./composePrompt.ts";
-import { errorsAsWarnings, validateCompose } from "./composeValidate.ts";
+import {
+  chooseComposeResult,
+  leftOutWarnings,
+  validateCompose,
+  type ComposeValidation,
+  type ValidatedComposeDesign,
+} from "./composeValidate.ts";
 import { HttpError } from "./http.ts";
 
 // ---------------------------------------------------------------------------
@@ -541,6 +548,55 @@ describe("refFromStored", () => {
     )!;
     expect(hidden.elements.some((e) => e.field.fieldKey === "ghost")).toBe(false);
   });
+
+  it("keeps the copy and the logo of a template with many decorative layers", () => {
+    const specks = Array.from({ length: 28 }, (_, i) =>
+      row({
+        field_key: `speck_${i}`,
+        type: "shape",
+        shape: "ellipse",
+        x: 30 * i,
+        y: 10,
+        width: 8 + i,
+        height: 8 + i,
+        color_hex: "#2BFFA3",
+        is_static: true,
+      }),
+    );
+    const top = [
+      row({
+        field_key: "headline",
+        type: "multiline",
+        x: 80,
+        y: 600,
+        width: 900,
+        height: 200,
+        font_size_px: 80,
+      }),
+      row({
+        field_key: "logo",
+        label: "Logo",
+        type: "image",
+        is_static: true,
+        static_value: LIGHT_LOGO,
+        x: 80,
+        y: 72,
+        width: 180,
+        height: 48,
+      }),
+    ];
+    const ref = refFromStored("T1", FEATURE, [...specks, ...top], LOGO_SOURCES)!;
+    expect(ref.elements).toHaveLength(24);
+    expect(ref.elements.slice(-2).map((e) => [e.id, e.role, e.field.fieldKey])).toEqual([
+      ["T1.23", "text", "headline"],
+      ["T1.24", "logo", "logo"],
+    ]);
+    // The largest decorative layers stay, in paint order; the smallest go.
+    const kept = ref.elements.slice(0, -2).map((e) => e.field.fieldKey);
+    expect(kept[0]).toBe("speck_6");
+    expect(kept.at(-1)).toBe("speck_27");
+    expect(kept).not.toContain("speck_5");
+  });
 });
 
 describe("selectReferences", () => {
@@ -706,6 +762,22 @@ describe("composeContext", () => {
       hasPhoto: false,
     });
     expect(ctx.expectLogo).toBe(false);
+  });
+});
+
+describe("unhintedCanvas", () => {
+  it("keeps a draft's size, else takes the size the team uses most, the newest on a tie", () => {
+    const refs = published();
+    expect(unhintedCanvas(refs)).toEqual({ width: 1080, height: 1350 });
+    expect(unhintedCanvas([refs[1], refs[0]])).toEqual({ width: 1080, height: 1080 });
+    const draft = refFromStored(
+      "D1",
+      { id: "D1", canvas_width: 1200, canvas_height: 630 },
+      [],
+      new Set(),
+    )!;
+    expect(unhintedCanvas(refs, [draft])).toEqual({ width: 1200, height: 630 });
+    expect(unhintedCanvas([])).toBeUndefined();
   });
 });
 
@@ -885,7 +957,7 @@ describe("validateCompose: looks, scaled and checked", () => {
       staticValue: `brand-assets/${CO}/art/sticker.png`,
     });
     expect(d.fields.some((f) => f.fieldKey === "drawn" || f.fieldKey === "invented")).toBe(false);
-    expect(out.warnings).toEqual([
+    expect(out.notes).toEqual([
       'Design 1: dropped icon "Drawn". Icons can only be reused from a template.',
       'Design 1: dropped artwork "Invented". Artwork can only be reused from a template.',
     ]);
@@ -943,9 +1015,7 @@ describe("validateCompose: looks, scaled and checked", () => {
       contextFor(),
       1,
     );
-    expect(out.warnings).toContain(
-      'Design 1: "Block": R1.5 is a text, so its look was not reused.',
-    );
+    expect(out.notes).toContain('Design 1: "Block": R1.5 is a text, so its look was not reused.');
     expect(fieldOf(out.designs[0].fields, "block")).toMatchObject({
       colorHex: "#0c3b31",
       shape: "rect",
@@ -978,7 +1048,7 @@ describe("validateCompose: looks, scaled and checked", () => {
       contextFor(),
       1,
     );
-    expect(out.warnings).toEqual([
+    expect(out.notes).toEqual([
       'Design 1: the ground names "neon", which is not a brand color.',
       'Design 1: "Tag": "hotpink" is not a brand color.',
       'Design 1: "Tag": type style "display" is not in the brand.',
@@ -1064,7 +1134,7 @@ describe("validateCompose: looks, scaled and checked", () => {
       platePaddingY: 10,
     });
     expect(fieldOf(d.fields, "pill").effects).toBeUndefined();
-    expect(out.warnings).toEqual(['Design 1: "Pill": a blur only goes on shapes and images.']);
+    expect(out.notes).toEqual(['Design 1: "Pill": a blur only goes on shapes and images.']);
   });
 
   it("snaps every reused color into the palette when the brand forbids off-palette color", () => {
@@ -1191,7 +1261,7 @@ describe("validateCompose: placement and legibility", () => {
     expect(contrastRatio(headline.colorHex!, "#111d1b")).toBeGreaterThanOrEqual(3);
     // Mint: the team's own text color on dark grounds (the hiring post).
     expect(headline.colorHex).toBe("#e6fff1");
-    expect(out.warnings).toContain(
+    expect(out.notes).toContain(
       'Design 1: "Headline" now uses Mint so it reads on its background.',
     );
   });
@@ -1403,7 +1473,7 @@ describe("validateCompose: what survives", () => {
     );
     expect(out.designs).toHaveLength(1);
     expect(out.designs[0].fields).toHaveLength(12);
-    expect(out.warnings.slice(0, 2)).toEqual([
+    expect(out.notes.slice(0, 2)).toEqual([
       "The model returned 2 designs. Keeping the first 1.",
       "Design 1: 21 elements. Keeping the first 12.",
     ]);
@@ -1426,7 +1496,7 @@ describe("validateCompose: what survives", () => {
       1,
     );
     expect(fieldOf(out.designs[0].fields, "rule")).toMatchObject({ width: 920, height: 1 });
-    expect(out.warnings).toEqual(['Design 1: dropped "Speck", box under 8px after clamping.']);
+    expect(out.notes).toEqual(['Design 1: dropped "Speck", box under 8px after clamping.']);
   });
 
   it("drops what cannot be drawn and says why", () => {
@@ -1450,7 +1520,7 @@ describe("validateCompose: what survives", () => {
       contextFor(),
       1,
     );
-    expect(out.warnings).toEqual([
+    expect(out.notes).toEqual([
       'Design 1: dropped "Weird", unknown type "video".',
       'Design 1: dropped "Boxless", no usable box.',
       'Design 1: dropped "Sliver", box under 8px after clamping.',
@@ -1476,8 +1546,8 @@ describe("validateCompose: what survives", () => {
     expect(out.errors).toEqual([
       "Design 1: too little survived validation (1 elements, 0 editable text) — propose a fuller design.",
     ]);
-    expect(errorsAsWarnings(out.errors)).toEqual([
-      "Design 1: too little survived validation (1 elements, 0 editable text). Propose a fuller design.",
+    expect(leftOutWarnings(out.errors)).toEqual([
+      "One design didn't pass the brand checks, so it was left out.",
     ]);
   });
 
@@ -1490,7 +1560,7 @@ describe("validateCompose: what survives", () => {
     ]);
   });
 
-  it("rewrites an em dash in the model's text that a warning quotes", () => {
+  it("keeps what the checks corrected out of what the member reads", () => {
     const out = validateCompose(
       {
         proposals: [
@@ -1506,17 +1576,164 @@ describe("validateCompose: what survives", () => {
       contextFor(),
       1,
     );
-    expect(out.warnings).toEqual([
-      'Design 1: the ground names "ghost, bg", which is not a brand color.',
-      'Design 1: dropped "Stray, thing", unknown type "bogus, x".',
+    expect(out.warnings).toEqual([]);
+    expect(out.notes).toEqual([
+      'Design 1: the ground names "ghost — bg", which is not a brand color.',
+      'Design 1: dropped "Stray—thing", unknown type "bogus — x".',
     ]);
   });
 
-  it("writes no em dash into any warning in the source", () => {
+  it("writes no em dash into any warning or note in the source", () => {
     const source = readFileSync(new URL("./composeValidate.ts", import.meta.url), "utf8");
-    const calls = [...source.matchAll(/warnings\.push\(([\s\S]*?)\);/g)].map((m) => m[1]);
+    const calls = [...source.matchAll(/(?:warnings|notes)\.push\(([\s\S]*?)\);/g)].map((m) => m[1]);
     expect(calls.length).toBeGreaterThan(15);
     expect(calls.filter((c) => c.includes("—") || c.includes("\\u2014"))).toEqual([]);
+  });
+});
+
+describe("validateCompose: photos, contrast and odd input", () => {
+  const withPhoto = () =>
+    goodDesign({
+      elements: [
+        ...(goodDesign().elements as Row[]),
+        { key: "photo", type: "image", from: "R1.2", box: [140, 160, 800, 400] },
+      ],
+    });
+
+  it("makes a photo slot optional when the member sent no photo", () => {
+    const none = validateCompose({ proposals: [withPhoto()] }, contextFor(), 1);
+    expect(none.errors).toEqual([]);
+    expect(fieldOf(none.designs[0].fields, "photo").optional).toBe(true);
+    expect(none.designs[0].imageFieldsNeeded).toEqual([
+      { fieldKey: "photo", label: "Photo", required: false },
+    ]);
+    const sent = validateCompose({ proposals: [withPhoto()] }, contextFor({ hasPhoto: true }), 1);
+    expect(fieldOf(sent.designs[0].fields, "photo").optional).toBeUndefined();
+    expect(sent.designs[0].imageFieldsNeeded[0].required).toBe(true);
+  });
+
+  it("sends a design back when no brand color reads on its ground", () => {
+    const steel: KitRowLike = {
+      colors: [
+        { key: "steel", name: "Steel", hex: "#5A7D9A", role: "primary" },
+        { key: "ink", name: "Ink", hex: "#262A33" },
+        { key: "paper", name: "Paper", hex: "#F4F6F8" },
+      ],
+      type_styles: [],
+      guidelines: [],
+    };
+    const ctx = composeContext({
+      canvas: { width: 1080, height: 1350 },
+      brand: buildBrand({ kit: steel, assets: [], refs: [] }),
+      published: [],
+      brief: "Quarterly update",
+      hasPhoto: false,
+    });
+    const design = (bodySize: number) => ({
+      proposals: [
+        {
+          name: "Steel",
+          background: { color: "steel" },
+          elements: [
+            {
+              key: "headline",
+              type: "multiline",
+              color: "paper",
+              value: "Quarterly update",
+              size: 96,
+              box: [80, 300, 920, 240],
+            },
+            {
+              key: "body",
+              label: "Body",
+              type: "multiline",
+              color: "paper",
+              value: "What changed this quarter, and why it matters to you.",
+              size: bodySize,
+              box: [80, 600, 900, 160],
+            },
+          ],
+          caption: "",
+          why: "",
+        },
+      ],
+    });
+    // Paper on steel is 4:1: enough for a 96px headline, not for body copy.
+    const body = validateCompose(design(30), ctx, 1);
+    expect(body.designs).toEqual([]);
+    expect(body.errors).toEqual([
+      'Design 1: no brand color reads on the ground under "Body" (the best reaches 4:1 and it needs 4.5:1). Put it on another ground, a panel or a plate.',
+    ]);
+    expect(validateCompose(design(60), ctx, 1).errors).toEqual([]);
+  });
+
+  it("drops an element whose type is a built-in property name instead of throwing", () => {
+    const out = validateCompose(
+      {
+        proposals: [
+          goodDesign({
+            elements: [
+              ...(goodDesign().elements as Row[]),
+              { key: "odd", type: "constructor", from: "R1.1", box: [0, 0, 100, 100] },
+            ],
+          }),
+        ],
+      },
+      contextFor(),
+      1,
+    );
+    expect(out.errors).toEqual([]);
+    expect(out.notes).toContain('Design 1: dropped "Odd", unknown type "constructor".');
+  });
+});
+
+describe("the answer a compose request keeps", () => {
+  const answer = (designs: number, over: Partial<ComposeValidation> = {}): ComposeValidation => ({
+    designs: Array.from(
+      { length: designs },
+      (_, i) => ({ name: `Design ${i + 1}` }) as ValidatedComposeDesign,
+    ),
+    warnings: [],
+    notes: [],
+    errors: [],
+    ...over,
+  });
+
+  it("takes the retry unless it saved fewer designs, and keeps both answers' notes", () => {
+    const first = answer(1, {
+      errors: ["Design 2: overlap."],
+      notes: ["first"],
+      reply: "First reply.",
+      title: "First",
+    });
+    const better = chooseComposeResult(first, answer(2, { notes: ["second"], title: "Second" }));
+    expect(better.designs).toHaveLength(2);
+    expect(better.errors).toEqual([]);
+    expect(better.notes).toEqual(["first", "second"]);
+    expect([better.reply, better.title]).toEqual(["First reply.", "Second"]);
+
+    const worse = chooseComposeResult(answer(2), answer(1, { errors: ["Design 2: overlap."] }));
+    expect(worse.designs).toHaveLength(2);
+    expect(worse.errors).toEqual([]);
+  });
+
+  it("gives way to the retry when the first answer saved nothing", () => {
+    const out = chooseComposeResult(
+      answer(0, { errors: ["Design 1: a."] }),
+      answer(0, { errors: ["Design 1: b."] }),
+    );
+    expect(out.errors).toEqual(["Design 1: b."]);
+  });
+
+  it("tells the member how many designs were left out, in plain words", () => {
+    expect(leftOutWarnings([])).toEqual([]);
+    expect(leftOutWarnings(["No usable designs survived validation."])).toEqual([]);
+    expect(leftOutWarnings(["Design 2: overlap.", "Design 2: the logo is missing."])).toEqual([
+      "One design didn't pass the brand checks, so it was left out.",
+    ]);
+    expect(leftOutWarnings(["Design 1: overlap.", "Design 3: overlap."])).toEqual([
+      "2 designs didn't pass the brand checks, so they were left out.",
+    ]);
   });
 });
 
@@ -1607,6 +1824,56 @@ describe("a logo drawn as vector art in the team's templates", () => {
     expect(logo.vector?.paths[0].d).toBe("M0 0h267v47H0z");
     expect(contrastRatio(logo.colorHex!, "#111d1b")).toBeGreaterThanOrEqual(3);
   });
+
+  it("uses that logo even when the brief picks a template without it", () => {
+    const as = (id: string, name: string, fields: Row[]) =>
+      refFromStored(id, { ...GTM, id: `tpl-${id}`, name }, fields, new Set())!;
+    const all = [
+      refs[0],
+      as("T2", "Product update", GTM_FIELDS),
+      as("T3", "We're hiring", [GTM_FIELDS[1]]),
+    ];
+    const hiring = composeContext({
+      canvas: { width: 1080, height: 1350 },
+      brand: buildBrand({ kit: KIT, assets: [], refs: all }),
+      published: all,
+      brief: "We're hiring a senior designer",
+      hasPhoto: false,
+      referenceCap: 1,
+    });
+    expect(hiring.references.map((r) => r.name)).toEqual(["We're hiring"]);
+    expect(hiring.expectLogo).toBe(true);
+    expect(composeUserText(hiring, { brief: "x", count: 1 })).toContain(
+      "The team's own logo art is used",
+    );
+    const out = validateCompose(
+      {
+        proposals: [
+          {
+            name: "Hiring",
+            background: { color: "mint" },
+            elements: [
+              { key: "logo", type: "logo", box: [80, 96, 267, 47] },
+              {
+                key: "headline",
+                type: "multiline",
+                color: "midnight",
+                value: "We're hiring",
+                size: 96,
+                box: [80, 400, 920, 240],
+              },
+            ],
+            caption: "",
+            why: "",
+          },
+        ],
+      },
+      hiring,
+      1,
+    );
+    expect(out.errors).toEqual([]);
+    expect(fieldOf(out.designs[0].fields, "logo").type).toBe("icon");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -1690,6 +1957,63 @@ describe("parseCurrentDesigns", () => {
       ["D1.2", "text", "headline"],
     ]);
     expect(d.values).toEqual({ headline: "Scheduled posts" });
+  });
+
+  it("keeps fixed text and drops another company's image or mask in either spelling", () => {
+    const box = { x: 80, y: 80, width: 300, height: 40 };
+    const [d] = parseCurrentDesigns(
+      [
+        {
+          design: {
+            ...design,
+            fields: [
+              {
+                ...box,
+                id: "e",
+                fieldKey: "eyebrow",
+                label: "Eyebrow",
+                type: "text",
+                static: true,
+                staticValue: "NEW FEATURE",
+              },
+              {
+                ...box,
+                id: "f",
+                field_key: "art",
+                label: "Art",
+                type: "image",
+                is_static: true,
+                static_value: `brand-assets/${OTHER_CO}/x.png`,
+              },
+              {
+                ...box,
+                id: "g",
+                fieldKey: "masked",
+                label: "Photo",
+                type: "image",
+                mask_url: `template-backgrounds/${OTHER_CO}/mask.png`,
+              },
+              {
+                ...box,
+                id: "h",
+                fieldKey: "texture",
+                label: "Texture",
+                type: "image",
+                static: true,
+                staticValue: `${CO}/textures/grain.png`,
+              },
+            ],
+          },
+          values: [],
+        },
+      ],
+      CO,
+    )!;
+    expect(d.elements.map((e) => [e.role, e.field.label])).toEqual([
+      ["text", "Eyebrow"],
+      ["artwork", "Texture"],
+    ]);
+    expect(d.elements[0].field.staticValue).toBe("NEW FEATURE");
   });
 
   it("refuses the wrong shape with a 400 that names it", () => {

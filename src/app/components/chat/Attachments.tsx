@@ -67,19 +67,15 @@ export function FileTile({
 }
 
 /** The composer's platform hint on the Compact select (99:568): "Any
- * platform" with the globe, then every platform with its mark. Platforms
- * the published library does not cover stay pickable but dim, and the
- * menu says why (the hint is a preference). */
+ * platform" with the globe, then every platform with its mark. Generate
+ * composes a new design at any platform's size, so every platform is
+ * offered alike. */
 export function PlatformSelect({
   value,
   onChange,
-  covered,
-  dimUncovered,
 }: {
   value: PlatformId | null;
   onChange(next: PlatformId | null): void;
-  covered: ReadonlySet<PlatformId> | null;
-  dimUncovered: boolean;
 }) {
   const options: Array<SelectOption<string>> = [
     { value: "", label: "Any platform", icon: <Globe size={16} className="ui-icon" aria-hidden /> },
@@ -87,7 +83,6 @@ export function PlatformSelect({
       value: p.id as string,
       label: p.label,
       icon: <p.Icon width={16} height={16} className="ui-icon" aria-hidden />,
-      dimmed: dimUncovered && covered !== null && !covered.has(p.id),
     })),
   ];
   return (
@@ -97,11 +92,6 @@ export function PlatformSelect({
       options={options}
       onSelect={(v) => onChange((v || null) as PlatformId | null)}
       menuMinWidth={220}
-      menuCaption={
-        options.some((o) => o.dimmed)
-          ? "Dimmed platforms have no published templates yet. Picking one is a preference, and the whole library is still considered."
-          : undefined
-      }
     />
   );
 }

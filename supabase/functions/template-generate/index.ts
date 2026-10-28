@@ -93,6 +93,7 @@ import {
   composeContext,
   parseCurrentDesigns,
   refFromStored,
+  unhintedCanvas,
   type AssetRowLike,
   type KitRowLike,
   type RefTemplate,
@@ -101,7 +102,8 @@ import {
 } from "../_shared/compose.ts";
 import { COMPOSE_TOOL, composeUserText } from "../_shared/composePrompt.ts";
 import {
-  errorsAsWarnings,
+  chooseComposeResult,
+  leftOutWarnings,
   validateCompose,
   type ComposeValidation,
 } from "../_shared/composeValidate.ts";
@@ -118,10 +120,18 @@ const CANDIDATE_CAP = 40;
  * reads all of them; the most relevant are shown element by element). */
 const COMPOSE_TEMPLATE_CAP = 40;
 
-/** A new design's answer is longer than a fill's: up to three layered
- * designs, every element with its box and look. */
-const COMPOSE_MAX_TOKENS = 8000;
+/** A new design's answer is longer than a fill's: every element with its
+ * box and look, so the ceiling grows with the number of designs asked for,
+ * and it bounds how long the call runs. */
+const composeMaxTokens = (count: number) => Math.min(8000, 1600 + 2200 * count);
 const FILL_MAX_TOKENS = 4000;
+
+/** The platform answers 504 to a request still running at 150 seconds, so
+ * every compose call ends inside this budget, counted from the request's
+ * start, and a retry that would have under RETRY_FLOOR_MS of it left is
+ * skipped in favor of what the first answer saved. */
+const REQUEST_BUDGET_MS = 140_000;
+const RETRY_FLOOR_MS = 30_000;
 
 /** Rate limits. Unlike auto-build (admin-only, rare), this endpoint is
  * member-facing and every call costs money. Both buckets ride the shared
@@ -354,10 +364,15 @@ interface ClaudeAttempt {
 interface CallSetup {
   system: string;
   maxTokens: number;
+  /** Ends the call when the request's time budget runs out. */
+  signal?: AbortSignal;
 }
 
 const FILL_CALL: CallSetup = { system: GENERATE_SYSTEM_PROMPT, maxTokens: FILL_MAX_TOKENS };
-const COMPOSE_CALL: CallSetup = { system: COMPOSE_SYSTEM_PROMPT, maxTokens: COMPOSE_MAX_TOKENS };
+
+/** A call ended by its time budget (setup.signal), not by the model. */
+const isTimeout = (e: unknown): boolean =>
+  e instanceof DOMException && (e.name === "TimeoutError" || e.name === "AbortError");
 
 /** Meters one model response. Built per request, so the caller's company and
  * user ride along; never throws (recordModelUsage). */
@@ -411,6 +426,7 @@ async function callClaude(
           : { type: "any", disable_parallel_tool_use: true },
       messages,
     }),
+    signal: setup.signal,
   });
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
@@ -498,6 +514,8 @@ interface ComposeInput {
   facts: FactInput[];
   /** A follow-up's current drafts (D1, D2), already parsed. */
   drafts: RefTemplate[];
+  /** When the request arrived (Date.now()), for REQUEST_BUDGET_MS. */
+  startedAt: number;
 }
 
 /** What a compose call needs from the database: the brand kit, the brand
@@ -506,7 +524,17 @@ async function loadComposeMaterial(
   db: ReturnType<typeof serviceClient>,
   companyId: string,
 ): Promise<{ kit: KitRowLike | null; assets: AssetRowLike[]; published: RefTemplate[] }> {
-  const [kitRes, assetRes, templateRes] = await Promise.all([
+  // Each asset kind has its own limit, so a large media library never
+  // pushes the logos or the fonts out.
+  const assetsOf = (kind: "logo" | "image" | "font", limit: number) =>
+    db
+      .from("brand_assets")
+      .select("id, kind, name, storage_path, metadata")
+      .eq("company_id", companyId)
+      .eq("kind", kind)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+  const [kitRes, logoRes, fontRes, imageRes, templateRes] = await Promise.all([
     db
       .from("brand_kits")
       .select(
@@ -515,13 +543,9 @@ async function loadComposeMaterial(
       .eq("company_id", companyId)
       .eq("is_active", true)
       .maybeSingle(),
-    db
-      .from("brand_assets")
-      .select("id, kind, name, storage_path, metadata")
-      .eq("company_id", companyId)
-      .in("kind", ["logo", "image", "font"])
-      .order("created_at", { ascending: false })
-      .limit(60),
+    assetsOf("logo", 30),
+    assetsOf("font", 30),
+    assetsOf("image", 40),
     db
       .from("templates")
       .select("*")
@@ -530,16 +554,19 @@ async function loadComposeMaterial(
       .order("updated_at", { ascending: false })
       .limit(COMPOSE_TEMPLATE_CAP),
   ]);
-  for (const res of [kitRes, assetRes, templateRes]) {
+  for (const res of [kitRes, logoRes, fontRes, imageRes, templateRes]) {
     if (res.error) {
       logError("template-generate", res.error);
       throw new HttpError(500, GENERIC_ERROR);
     }
   }
-  const assets = (assetRes.data ?? []) as AssetRowLike[];
+  const assets = [logoRes, fontRes, imageRes].flatMap((res) => (res.data ?? []) as AssetRowLike[]);
   const templates = (templateRes.data ?? []) as Array<ComposeTemplateRow & Row>;
   const fieldsByTemplate = new Map<string, Row[]>();
-  if (templates.length > 0) {
+  // Paged: forty templates of imported layers can pass the API's 1,000 row
+  // cap, and a cut page would lose each template's top layers.
+  const FIELD_PAGE = 1000;
+  for (let from = 0; templates.length > 0 && from < 5 * FIELD_PAGE; from += FIELD_PAGE) {
     const { data: fieldRows, error } = await db
       .from("template_fields")
       .select("*")
@@ -547,7 +574,10 @@ async function loadComposeMaterial(
         "template_id",
         templates.map((t) => t.id),
       )
-      .order("sort_order", { ascending: true });
+      .order("template_id", { ascending: true })
+      .order("sort_order", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, from + FIELD_PAGE - 1);
     if (error) {
       logError("template-generate", error);
       throw new HttpError(500, GENERIC_ERROR);
@@ -558,6 +588,7 @@ async function loadComposeMaterial(
       list.push(row);
       fieldsByTemplate.set(id, list);
     }
+    if ((fieldRows ?? []).length < FIELD_PAGE) break;
   }
   const logoSources = new Set(
     assets.filter((a) => a.kind === "logo").map((a) => brandAssetSource(a.storage_path)),
@@ -586,7 +617,9 @@ async function handleCompose(
     );
   }
 
-  const canvas = canvasForPlatform(input.platformHint);
+  const canvas = input.platformHint
+    ? canvasForPlatform(input.platformHint)
+    : (unhintedCanvas(published, input.drafts) ?? canvasForPlatform(undefined));
   const ctx = composeContext({
     canvas,
     brand,
@@ -607,41 +640,57 @@ async function handleCompose(
   });
 
   const tools = [COMPOSE_TOOL];
-  const first = await callClaude(apiKey, COMPOSE_CALL, userText, tools, {
-    record: meter,
-    kind: "freestyle",
+  const remaining = () => REQUEST_BUDGET_MS - (Date.now() - input.startedAt);
+  const setup = (): CallSetup => ({
+    system: COMPOSE_SYSTEM_PROMPT,
+    maxTokens: composeMaxTokens(input.count),
+    signal: AbortSignal.timeout(Math.max(1_000, remaining())),
   });
+  let first: ClaudeAttempt;
+  try {
+    first = await callClaude(apiKey, setup(), userText, tools, {
+      record: meter,
+      kind: "freestyle",
+    });
+  } catch (e) {
+    if (!isTimeout(e)) throw e;
+    logError("template-generate", "compose call ran out of time");
+    return json({ error: "Generate ran out of time on this brief. Try again." }, 504);
+  }
   let result: ComposeValidation = validateCompose(first.input, ctx, input.count);
   if (first.truncated || result.errors.length > 0) {
-    // One retry. A response cut off at its token limit cannot be shown back
-    // to the model as a tool call, so that retry starts over with a note.
-    const second = first.truncated
-      ? await callClaude(
-          apiKey,
-          COMPOSE_CALL,
-          `${userText}\n\nYour last answer ran past the length limit. Keep each design to at most 14 elements and the copy short.`,
-          tools,
-          { record: meter, kind: "retry" },
-        )
-      : await callClaude(
-          apiKey,
-          COMPOSE_CALL,
-          userText,
-          tools,
-          { record: meter, kind: "retry" },
-          { prior: first, errors: result.errors },
-        );
-    const retried = validateCompose(second.input, ctx, input.count);
-    // The retry wins unless it saved fewer designs than the first answer.
-    if (retried.designs.length > 0 && retried.designs.length >= result.designs.length) {
-      result = {
-        ...retried,
-        reply: retried.reply ?? result.reply,
-        title: retried.title ?? result.title,
-      };
-    } else if (result.designs.length === 0) {
-      result = retried;
+    if (remaining() < RETRY_FLOOR_MS) {
+      logError("template-generate", "compose retry skipped, out of time");
+    } else {
+      // One retry. A response cut off at its token limit cannot be shown
+      // back to the model as a tool call, so that retry starts over with a
+      // note. A retry that fails (a model error, an empty answer, the time
+      // budget) keeps what the first answer saved.
+      try {
+        const second = first.truncated
+          ? await callClaude(
+              apiKey,
+              setup(),
+              `${userText}\n\nYour last answer ran past the length limit. Keep each design to at most ${Math.min(ctx.elementCap, 14)} elements and the copy short.`,
+              tools,
+              { record: meter, kind: "retry" },
+            )
+          : await callClaude(
+              apiKey,
+              setup(),
+              userText,
+              tools,
+              { record: meter, kind: "retry" },
+              { prior: first, errors: result.errors },
+            );
+        result = chooseComposeResult(result, validateCompose(second.input, ctx, input.count));
+      } catch (e) {
+        logError("template-generate", e);
+      }
     }
+  }
+  if (result.notes.length > 0) {
+    console.info("[template-generate] compose notes", result.notes.slice(0, 40));
   }
   if (result.designs.length === 0) {
     return json(
@@ -676,7 +725,7 @@ async function handleCompose(
     // ones, and JSON drops undefined keys.
     reply: result.reply,
     title: result.title,
-    warnings: [...carried, ...result.warnings, ...errorsAsWarnings(result.errors)],
+    warnings: [...carried, ...result.warnings, ...leftOutWarnings(result.errors)],
     meta: {
       model: ANTHROPIC_MODEL,
       generatedAt: new Date().toISOString(),
@@ -818,6 +867,7 @@ async function handleRepair(
 // ---------------------------------------------------------------------------
 
 Deno.serve(async (req) => {
+  const startedAt = Date.now();
   const options = handleOptions(req);
   if (options) return options;
   const json = jsonResponder(req);
@@ -936,6 +986,7 @@ Deno.serve(async (req) => {
       documents,
       facts,
       drafts,
+      startedAt,
     };
     if (mode === "freestyle") {
       return await handleCompose(json, db, apiKey, companyId, meter, composeInput);

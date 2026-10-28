@@ -12,7 +12,6 @@ import {
   normalizeHex,
   round1,
   round2,
-  teamLogoVector,
   type ComposeBrand,
   type ComposeContext,
   type CornersLike,
@@ -315,7 +314,7 @@ function brandText(ctx: ComposeContext): string {
     lines.push(
       'Logo: place it with a "logo" element. The version that reads on the ground under it (light or dark) is used for you.',
     );
-  } else if (teamLogoVector(ctx)) {
+  } else if (ctx.teamLogo) {
     lines.push(
       'Logo: place it with a "logo" element. The team\'s own logo art is used, colored to read on the ground under it.',
     );

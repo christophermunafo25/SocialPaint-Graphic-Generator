@@ -7,8 +7,10 @@
 // Overlapping text, text straight on a photo and a missing logo are errors
 // that go back to the model for one retry.
 //
-// Warnings reach the member, so none carries an em dash; errors go back to
-// the model for its retry.
+// Three outputs besides the designs. Warnings reach the member, in plain
+// words with no em dash. Notes say what the checks corrected or dropped, in
+// the validator's own terms, and are logged, never shown. Errors go back to
+// the model for its retry, and a design with any is left out.
 
 import {
   alphaOf,
@@ -28,7 +30,6 @@ import {
   rgbOf,
   round1,
   round2,
-  teamLogoVector,
   withAlpha,
   type BrandImage,
   type Box,
@@ -45,7 +46,6 @@ import {
 } from "./compose.ts";
 import { isRequiredField } from "./fieldRules.ts";
 import {
-  emDashesToSentences,
   replaceEmDashes,
   validateReplyAndTitle,
   type ImageFieldNeeded,
@@ -76,8 +76,12 @@ export interface ValidatedComposeDesign {
 
 export interface ComposeValidation {
   designs: ValidatedComposeDesign[];
-  /** Member-facing, no em dash. */
+  /** What the member reads under the drafts: outcomes in plain words, no
+   * em dash. */
   warnings: string[];
+  /** What the checks corrected or dropped on the way, in the validator's
+   * own terms (element ids, color keys). Logged for the team, never shown. */
+  notes: string[];
   /** Model-facing, for the retry turn. Every design that has any is left
    * out of `designs`. */
   errors: string[];
@@ -520,6 +524,7 @@ export function validateCompose(
   count: number,
 ): ComposeValidation {
   const warnings: string[] = [];
+  const notes: string[] = [];
   const errors: string[] = [];
   const designs: ValidatedComposeDesign[] = [];
   const look = lookupsFor(ctx);
@@ -530,7 +535,7 @@ export function validateCompose(
   const out = (output ?? {}) as Row;
   let list = Array.isArray(out.proposals) ? out.proposals : [];
   if (list.length > count) {
-    warnings.push(`The model returned ${list.length} designs. Keeping the first ${count}.`);
+    notes.push(`The model returned ${list.length} designs. Keeping the first ${count}.`);
     list = list.slice(0, count);
   }
 
@@ -565,9 +570,7 @@ export function validateCompose(
           fx.type === "noise" ? { ...fx, size: round1(Math.max(0.5, fx.size * s)) } : fx,
         );
       } else {
-        warnings.push(
-          `${label}: the ground names "${bg.from}", which is not one of the references.`,
-        );
+        notes.push(`${label}: the ground names "${bg.from}", which is not one of the references.`);
       }
     }
     if (typeof bg.color === "string") {
@@ -575,11 +578,11 @@ export function validateCompose(
       if (hex) {
         backgroundColor = hex;
         backgroundGradient = undefined;
-      } else warnings.push(`${label}: the ground names "${bg.color}", which is not a brand color.`);
+      } else notes.push(`${label}: the ground names "${bg.color}", which is not a brand color.`);
     }
     if (bg.fill !== undefined) {
       const g = readGradient(bg.fill, look.colorByKey, (m) =>
-        warnings.push(`${label}: the ground's ${m}.`),
+        notes.push(`${label}: the ground's ${m}.`),
       );
       if (g) backgroundGradient = g;
     }
@@ -589,7 +592,7 @@ export function validateCompose(
         look.colorByKey,
         sCanvas,
         false,
-        (m) => warnings.push(`${label}: the ground's ${m}.`),
+        (m) => notes.push(`${label}: the ground's ${m}.`),
       );
       if (fx) canvasEffects = [...(canvasEffects ?? []).filter((e) => e.type !== "noise"), ...fx];
     }
@@ -600,7 +603,7 @@ export function validateCompose(
 
     let elements = Array.isArray(p.elements) ? p.elements : [];
     if (elements.length > ctx.elementCap) {
-      warnings.push(`${label}: ${elements.length} elements. Keeping the first ${ctx.elementCap}.`);
+      notes.push(`${label}: ${elements.length} elements. Keeping the first ${ctx.elementCap}.`);
       elements = elements.slice(0, ctx.elementCap);
     }
 
@@ -614,13 +617,13 @@ export function validateCompose(
           ? e.label.trim()
           : humanize(String(keyHint || "element"))
       ).slice(0, 60);
-      if (!(type in LOOK_KEYS)) {
-        warnings.push(`${label}: dropped "${name}", unknown type "${type}".`);
+      if (!Object.prototype.hasOwnProperty.call(LOOK_KEYS, type)) {
+        notes.push(`${label}: dropped "${name}", unknown type "${type}".`);
         continue;
       }
       const raw = readBox(e.box);
       if (!raw) {
-        warnings.push(`${label}: dropped "${name}", no usable box.`);
+        notes.push(`${label}: dropped "${name}", no usable box.`);
         continue;
       }
       // Geometry is clamped: shapes, panels and pictures may bleed off the
@@ -637,7 +640,7 @@ export function validateCompose(
         width = Math.min(width, 3 * W);
         height = Math.min(height, 3 * H);
         if (x + width <= 0 || y + height <= 0 || x >= W || y >= H) {
-          warnings.push(`${label}: dropped "${name}", it lies off the canvas.`);
+          notes.push(`${label}: dropped "${name}", it lies off the canvas.`);
           continue;
         }
       } else {
@@ -653,15 +656,15 @@ export function validateCompose(
           ? width < 1 || height < 1 || (width < 8 && height < 8)
           : width < 8 || height < 8;
       if (tooSmall) {
-        warnings.push(`${label}: dropped "${name}", box under 8px after clamping.`);
+        notes.push(`${label}: dropped "${name}", box under 8px after clamping.`);
         continue;
       }
       if (!bleeds && type !== "shape" && width * height > 0.9 * W * H) {
-        warnings.push(`${label}: dropped "${name}", box covers over 90% of the canvas.`);
+        notes.push(`${label}: dropped "${name}", box covers over 90% of the canvas.`);
         continue;
       }
 
-      const note = (m: string) => warnings.push(`${label}: "${name}": ${m}.`);
+      const note = (m: string) => notes.push(`${label}: "${name}": ${m}.`);
       let field: ComposedField = {
         id: crypto.randomUUID(),
         label: name,
@@ -811,7 +814,7 @@ export function validateCompose(
             : "";
         if (e.static === true) {
           if (!value) {
-            warnings.push(`${label}: dropped fixed text "${name}", no content.`);
+            notes.push(`${label}: dropped fixed text "${name}", no content.`);
             continue;
           }
           field.static = true;
@@ -820,7 +823,7 @@ export function validateCompose(
         } else {
           field.placeholder = value || name;
           if (value) values[field.fieldKey] = value;
-          else warnings.push(`${label}: editable "${name}" has no value, left for the member.`);
+          else notes.push(`${label}: editable "${name}" has no value, left for the member.`);
         }
       } else if (type === "shape") {
         const kind = oneOf(e.shape, ["rect", "ellipse", "triangle", "star"] as const);
@@ -838,7 +841,7 @@ export function validateCompose(
         }
         if (field.shape !== "rect") delete field.cornerRadius;
         if (!field.colorHex && !field.textGradient && !field.strokeColor) {
-          warnings.push(`${label}: dropped shape "${name}". Shapes need a brand color.`);
+          notes.push(`${label}: dropped shape "${name}". Shapes need a brand color.`);
           continue;
         }
         field.static = true;
@@ -847,9 +850,15 @@ export function validateCompose(
         delete field.staticValue;
         field.objectFit = "cover";
         if (field.label === humanize(field.fieldKey) && !e.label) field.label = "Photo";
+        // Without a photo in this message the slot is optional: it paints
+        // nothing until the member adds one, and never holds the draft back.
+        if (!ctx.hasPhoto) {
+          field.optional = true;
+          notes.push(`${label}: photo slot "${name}" is optional, the member sent no photo.`);
+        }
       } else if (type === "artwork") {
         if (!source?.el.field.staticValue) {
-          warnings.push(
+          notes.push(
             `${label}: dropped artwork "${name}". Artwork can only be reused from a template.`,
           );
           continue;
@@ -860,7 +869,7 @@ export function validateCompose(
       } else if (type === "brandImage") {
         const img = typeof e.asset === "string" ? look.imageById.get(e.asset) : undefined;
         if (!img) {
-          warnings.push(`${label}: dropped "${name}". "${String(e.asset)}" is not a brand image.`);
+          notes.push(`${label}: dropped "${name}". "${String(e.asset)}" is not a brand image.`);
           continue;
         }
         field.static = true;
@@ -868,9 +877,7 @@ export function validateCompose(
         field.objectFit = field.objectFit ?? "cover";
       } else if (type === "icon") {
         if (!field.vector) {
-          warnings.push(
-            `${label}: dropped icon "${name}". Icons can only be reused from a template.`,
-          );
+          notes.push(`${label}: dropped icon "${name}". Icons can only be reused from a template.`);
           continue;
         }
         field.static = true;
@@ -885,7 +892,7 @@ export function validateCompose(
           source?.el.field.type === "icon"
             ? source.el.field
             : !brandFile
-              ? teamLogoVector(ctx)
+              ? ctx.teamLogo
               : undefined;
         if (vector?.vector) {
           field.type = "icon";
@@ -1003,9 +1010,15 @@ export function validateCompose(
       const textUse = new Set(ctx.house.textColors.map((t) => t.hex));
       const pick =
         ranked.find((r) => r.ratio >= need && textUse.has(r.c.hex)) ??
-        ranked.find((r) => r.ratio >= need) ??
-        ranked[0];
-      if (!pick) continue;
+        ranked.find((r) => r.ratio >= need);
+      if (!pick) {
+        // No brand color reads on this ground, so the ground has to change,
+        // and that is the model's call.
+        designErrors.push(
+          `${label}: no brand color reads on the ground under "${f.label}" (the best reaches ${round1(ranked[0]?.ratio ?? 1)}:1 and it needs ${need}:1). Put it on another ground, a panel or a plate.`,
+        );
+        continue;
+      }
       if (locked && f.typeStyleKey) {
         // A sibling style that reads here keeps the live channel: the same
         // role or face, in a color that passes.
@@ -1037,9 +1050,7 @@ export function validateCompose(
       }
       f.colorHex = pick.c.hex;
       delete f.textGradient;
-      warnings.push(
-        `${label}: "${f.label}" now uses ${pick.c.name} so it reads on its background.`,
-      );
+      notes.push(`${label}: "${f.label}" now uses ${pick.c.name} so it reads on its background.`);
     }
 
     // Text never overlaps text or the logo.
@@ -1084,7 +1095,7 @@ export function validateCompose(
     const captionTemplate = (typeof p.caption === "string" ? p.caption.trim().slice(0, 600) : "")
       .replace(/\{([a-z][a-z0-9_]*)\}/g, (tag, key: string) => {
         if (editableKeys.has(key)) return tag;
-        warnings.push(`${label}: caption tag {${key}} doesn't match any field, so it was removed.`);
+        notes.push(`${label}: caption tag {${key}} doesn't match any field, so it was removed.`);
         return "";
       })
       .replace(/[ \t]{2,}/g, " ")
@@ -1122,13 +1133,43 @@ export function validateCompose(
   return {
     designs,
     warnings: warnings.map(replaceEmDashes),
+    notes,
     errors,
     ...validateReplyAndTitle(out),
   };
 }
 
-/** The errors of a final validation, as the member reads them under the
- * drafts that survived. */
-export function errorsAsWarnings(errors: string[]): string[] {
-  return errors.map(emDashesToSentences).map(replaceEmDashes);
+/** What the member reads about designs a final validation left out. The
+ * errors themselves are written for the model ("add a logo element"), so
+ * the member gets one plain line with the count instead. */
+export function leftOutWarnings(errors: string[]): string[] {
+  const left = new Set(
+    errors.map((e) => /^Design (\d+):/.exec(e)?.[1]).filter((n): n is string => Boolean(n)),
+  ).size;
+  if (left === 0) return [];
+  return [
+    left === 1
+      ? "One design didn't pass the brand checks, so it was left out."
+      : `${left} designs didn't pass the brand checks, so they were left out.`,
+  ];
+}
+
+/** The answer a compose request keeps after its one retry. The retry wins
+ * unless it saved fewer designs than the first answer; a first answer with
+ * nothing usable gives way to the retry whatever it holds. The reply and
+ * title fall back to the first answer's. */
+export function chooseComposeResult(
+  first: ComposeValidation,
+  retried: ComposeValidation,
+): ComposeValidation {
+  if (retried.designs.length > 0 && retried.designs.length >= first.designs.length) {
+    return {
+      ...retried,
+      notes: [...first.notes, ...retried.notes],
+      reply: retried.reply ?? first.reply,
+      title: retried.title ?? first.title,
+    };
+  }
+  if (first.designs.length === 0) return { ...retried, notes: [...first.notes, ...retried.notes] };
+  return { ...first, notes: [...first.notes, ...retried.notes] };
 }

@@ -1068,15 +1068,7 @@ export function GenerateChat({
                     onSubmit={submit}
                     onStop={stop}
                     placeholder={START_PLACEHOLDER}
-                    platform={{
-                      value: platform,
-                      onChange: setPlatform,
-                      // Generate composes a new design at any platform's
-                      // size, so no platform is dimmed for having no
-                      // template of its own.
-                      covered: null,
-                      dimUncovered: false,
-                    }}
+                    platform={{ value: platform, onChange: setPlatform }}
                     variations={{ value: variations, onChange: setVariations }}
                     details={{ value: details, onChange: setDetails }}
                     onMenuOpenChange={setMenuOpen}

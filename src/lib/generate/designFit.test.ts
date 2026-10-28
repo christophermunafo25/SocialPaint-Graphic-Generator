@@ -35,22 +35,30 @@ const schema = (fields: TemplateField[], canvasWidth = 1080): TemplateSchema => 
 });
 
 describe("designTypeFloor", () => {
-  it("is 14px at 1080 wide and scales with the canvas", () => {
-    expect(designTypeFloor(1080)).toBe(14);
-    expect(designTypeFloor(1440)).toBeCloseTo(18.67, 2);
+  it("is 16px at 1080 wide, scales with the canvas, and never goes under 12px", () => {
+    expect(designTypeFloor(1080)).toBe(16);
+    expect(designTypeFloor(1440)).toBeCloseTo(21.33, 2);
+    expect(designTypeFloor(600)).toBe(12);
   });
 });
 
 describe("relaxDesignFit", () => {
   it("lowers an overflowing shrink field's floor to the type floor", () => {
     const out = relaxDesignFit(schema([field({})]), ["headline"], null);
-    // 14 / 96 is under the lowest relaxed floor, so it stops at 0.3.
+    // 16 / 96 is under the lowest relaxed floor, so it stops at 0.3.
     expect(out?.fields[0].minFontScale).toBe(0.3);
   });
 
   it("keeps small text at the type floor, never under it", () => {
     const out = relaxDesignFit(schema([field({ fontSizePx: 28 })]), ["headline"], null);
-    expect(out?.fields[0].minFontScale).toBe(0.5);
+    expect(out?.fields[0].minFontScale).toBe(0.57);
+  });
+
+  it("never lets a headline shrink under the body copy beneath it", () => {
+    const body = field({ id: "f2", fieldKey: "body", label: "Body", fontSizePx: 40 });
+    const out = relaxDesignFit(schema([field({}), body]), ["headline"], null);
+    expect(out?.fields[0].minFontScale).toBe(0.42);
+    expect(out?.fields[1]).toBe(body);
   });
 
   it("leaves fields that fit, fields that do not shrink, and floors already low", () => {
@@ -74,7 +82,7 @@ describe("relaxDesignFit", () => {
       ...kit,
       typeStyles: [{ key: "display", name: "Display", fontSizePx: 28 }],
     };
-    expect(relaxDesignFit(schema([bound]), ["headline"], sized)?.fields[0].minFontScale).toBe(0.5);
+    expect(relaxDesignFit(schema([bound]), ["headline"], sized)?.fields[0].minFontScale).toBe(0.57);
   });
 });
 
