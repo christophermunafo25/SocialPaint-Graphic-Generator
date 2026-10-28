@@ -549,6 +549,38 @@ describe("refFromStored", () => {
     expect(hidden.elements.some((e) => e.field.fieldKey === "ghost")).toBe(false);
   });
 
+  it("keeps the largest panels when copy alone would fill the cap", () => {
+    const labels = Array.from({ length: 26 }, (_, i) =>
+      row({
+        field_key: `label_${i}`,
+        type: "text",
+        x: 80,
+        y: 40 * i,
+        width: 300,
+        height: 30,
+        font_size_px: 20,
+      }),
+    );
+    const panels = Array.from({ length: 6 }, (_, i) =>
+      row({
+        field_key: `panel_${i}`,
+        type: "shape",
+        x: 0,
+        y: 0,
+        width: 100 * (i + 1),
+        height: 100 * (i + 1),
+        color_hex: "#2BFFA3",
+        is_static: true,
+      }),
+    );
+    const ref = refFromStored("T1", FEATURE, [...panels, ...labels], LOGO_SOURCES)!;
+    const keys = ref.elements.map((e) => e.field.fieldKey);
+    expect(keys).toHaveLength(24);
+    // The four largest panels, under the twenty topmost labels.
+    expect(keys.slice(0, 4)).toEqual(["panel_2", "panel_3", "panel_4", "panel_5"]);
+    expect(keys.slice(4)).toEqual(Array.from({ length: 20 }, (_, i) => `label_${i + 6}`));
+  });
+
   it("keeps the copy and the logo of a template with many decorative layers", () => {
     const specks = Array.from({ length: 28 }, (_, i) =>
       row({
@@ -1445,11 +1477,12 @@ describe("validateCompose: placement and legibility", () => {
       brief: "x",
       hasPhoto: false,
     });
-    const out = validateCompose({ proposals: [goodDesign()] }, ctx, 1);
+    const out = validateCompose({ proposals: [goodDesign(), goodDesign()] }, ctx, 2);
     expect(out.errors).toEqual([]);
-    expect(out.warnings).toContain(
-      "Design 1: left out the logo. Add one in Brand Studio to place it.",
-    );
+    // Once, about the brand, however many designs wanted the logo.
+    expect(out.warnings).toEqual([
+      "Your brand has no logo file yet, so these designs leave it out.",
+    ]);
   });
 });
 
@@ -1599,6 +1632,22 @@ describe("validateCompose: photos, contrast and odd input", () => {
         { key: "photo", type: "image", from: "R1.2", box: [140, 160, 800, 400] },
       ],
     });
+
+  it("keeps one required slot for the member's photo and makes any other optional", () => {
+    const two = goodDesign({
+      elements: [
+        ...(goodDesign().elements as Row[]),
+        { key: "photo", type: "image", from: "R1.2", box: [140, 160, 380, 400] },
+        { key: "second", type: "image", box: [560, 160, 380, 400] },
+      ],
+    });
+    const out = validateCompose({ proposals: [two] }, contextFor({ hasPhoto: true }), 1);
+    expect(out.errors).toEqual([]);
+    expect(out.designs[0].imageFieldsNeeded.map((f) => [f.fieldKey, f.required])).toEqual([
+      ["photo", true],
+      ["second", false],
+    ]);
+  });
 
   it("makes a photo slot optional when the member sent no photo", () => {
     const none = validateCompose({ proposals: [withPhoto()] }, contextFor(), 1);

@@ -128,8 +128,10 @@ const FILL_MAX_TOKENS = 4000;
 
 /** The platform answers 504 to a request still running at 150 seconds, so
  * every compose call ends inside this budget, counted from the request's
- * start, and a retry that would have under RETRY_FLOOR_MS of it left is
- * skipped in favor of what the first answer saved. */
+ * start. A retry starts only when the budget left covers a call as long as
+ * the first one took (and never under RETRY_FLOOR_MS); otherwise the first
+ * answer's designs stand. An aborted call is paid for but has no usage to
+ * meter, which is what this avoids. */
 const REQUEST_BUDGET_MS = 140_000;
 const RETRY_FLOOR_MS = 30_000;
 
@@ -564,9 +566,15 @@ async function loadComposeMaterial(
   const templates = (templateRes.data ?? []) as Array<ComposeTemplateRow & Row>;
   const fieldsByTemplate = new Map<string, Row[]>();
   // Paged: forty templates of imported layers can pass the API's 1,000 row
-  // cap, and a cut page would lose each template's top layers.
+  // cap, and a cut page would lose each template's top layers. Past five
+  // pages the rest is let go: the template the last page ends inside, and
+  // every template after it, so none is shown with only its bottom layers.
   const FIELD_PAGE = 1000;
-  for (let from = 0; templates.length > 0 && from < 5 * FIELD_PAGE; from += FIELD_PAGE) {
+  const FIELD_PAGES = 5;
+  let lastTemplateId: string | undefined;
+  let complete = templates.length === 0;
+  for (let page = 0; page < FIELD_PAGES && !complete; page++) {
+    const from = page * FIELD_PAGE;
     const { data: fieldRows, error } = await db
       .from("template_fields")
       .select("*")
@@ -587,13 +595,19 @@ async function loadComposeMaterial(
       const list = fieldsByTemplate.get(id) ?? [];
       list.push(row);
       fieldsByTemplate.set(id, list);
+      lastTemplateId = id;
     }
-    if ((fieldRows ?? []).length < FIELD_PAGE) break;
+    complete = (fieldRows ?? []).length < FIELD_PAGE;
   }
+  if (!complete) {
+    logError("template-generate", "template fields passed the page cap; later templates left out");
+    if (lastTemplateId) fieldsByTemplate.delete(lastTemplateId);
+  }
+  const loaded = complete ? templates : templates.filter((t) => fieldsByTemplate.has(t.id));
   const logoSources = new Set(
     assets.filter((a) => a.kind === "logo").map((a) => brandAssetSource(a.storage_path)),
   );
-  const published = templates
+  const published = loaded
     .map((t, i) => refFromStored(`T${i + 1}`, t, fieldsByTemplate.get(t.id) ?? [], logoSources))
     .filter((r): r is RefTemplate => r !== null);
   return { kit: (kitRes.data ?? null) as KitRowLike | null, assets, published };
@@ -647,6 +661,7 @@ async function handleCompose(
     signal: AbortSignal.timeout(Math.max(1_000, remaining())),
   });
   let first: ClaudeAttempt;
+  const firstStarted = Date.now();
   try {
     first = await callClaude(apiKey, setup(), userText, tools, {
       record: meter,
@@ -657,9 +672,10 @@ async function handleCompose(
     logError("template-generate", "compose call ran out of time");
     return json({ error: "Generate ran out of time on this brief. Try again." }, 504);
   }
+  const firstMs = Date.now() - firstStarted;
   let result: ComposeValidation = validateCompose(first.input, ctx, input.count);
   if (first.truncated || result.errors.length > 0) {
-    if (remaining() < RETRY_FLOOR_MS) {
+    if (remaining() < Math.max(RETRY_FLOOR_MS, 1.2 * firstMs)) {
       logError("template-generate", "compose retry skipped, out of time");
     } else {
       // One retry. A response cut off at its token limit cannot be shown
@@ -685,7 +701,10 @@ async function handleCompose(
             );
         result = chooseComposeResult(result, validateCompose(second.input, ctx, input.count));
       } catch (e) {
-        logError("template-generate", e);
+        logError(
+          "template-generate",
+          isTimeout(e) ? "compose retry ran out of time, its usage unmetered" : e,
+        );
       }
     }
   }

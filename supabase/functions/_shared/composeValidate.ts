@@ -527,6 +527,8 @@ export function validateCompose(
   const notes: string[] = [];
   const errors: string[] = [];
   const designs: ValidatedComposeDesign[] = [];
+  /** A design that kept wanted a logo the brand has no file for. */
+  let logoLeftOut = false;
   const look = lookupsFor(ctx);
   const W = ctx.canvasWidth;
   const H = ctx.canvasHeight;
@@ -547,6 +549,8 @@ export function validateCompose(
     const fields: ComposedField[] = [];
     const values: Record<string, string> = {};
     const logoSlots: Array<{ field: ComposedField; surface?: "light" | "dark" }> = [];
+    let wantedLogo = false;
+    let photoSlots = 0;
     /** Every logo element, image or vector. */
     const logoFields: ComposedField[] = [];
 
@@ -850,12 +854,17 @@ export function validateCompose(
         delete field.staticValue;
         field.objectFit = "cover";
         if (field.label === humanize(field.fieldKey) && !e.label) field.label = "Photo";
-        // Without a photo in this message the slot is optional: it paints
-        // nothing until the member adds one, and never holds the draft back.
-        if (!ctx.hasPhoto) {
+        // The member's photo fills the first slot. Any slot it cannot fill
+        // (every slot when the message has no photo) is optional: it paints
+        // nothing until the member adds a picture, and never holds the draft
+        // back.
+        if (!ctx.hasPhoto || photoSlots > 0) {
           field.optional = true;
-          notes.push(`${label}: photo slot "${name}" is optional, the member sent no photo.`);
+          notes.push(
+            `${label}: photo slot "${name}" is optional, ${ctx.hasPhoto ? "the member's photo fills the first" : "the member sent no photo"}.`,
+          );
         }
+        photoSlots++;
       } else if (type === "artwork") {
         if (!source?.el.field.staticValue) {
           notes.push(
@@ -907,7 +916,8 @@ export function validateCompose(
           logoSlots.push({ field, surface });
           logoFields.push(field);
         } else {
-          warnings.push(`${label}: left out the logo. Add one in Brand Studio to place it.`);
+          notes.push(`${label}: left out the logo, the brand has no logo file.`);
+          wantedLogo = true;
           continue;
         }
       }
@@ -1121,6 +1131,7 @@ export function validateCompose(
         .filter((f) => !f.static && f.type === "image")
         .map((f) => ({ fieldKey: f.fieldKey, label: f.label, required: isRequiredField(f) })),
     };
+    if (wantedLogo) logoLeftOut = true;
     if (canvasFill.backgroundColor) design.backgroundColor = canvasFill.backgroundColor;
     if (canvasFill.backgroundGradient) design.backgroundGradient = canvasFill.backgroundGradient;
     if (canvasEffects?.length) design.canvasEffects = canvasEffects;
@@ -1130,6 +1141,9 @@ export function validateCompose(
   if (designs.length === 0 && errors.length === 0) {
     errors.push("No usable designs survived validation.");
   }
+  // Said once, about the brand, so it never names a design by a number the
+  // cards no longer show.
+  if (logoLeftOut) warnings.push("Your brand has no logo file yet, so these designs leave it out.");
   return {
     designs,
     warnings: warnings.map(replaceEmDashes),

@@ -643,9 +643,11 @@ function roleOf(f: ComposedField, logoSources: Set<string>): RefRole {
 const REF_ELEMENT_CAP = 24;
 
 /** The elements a reference keeps when it has more than `cap`: every one
- * that carries copy or the brand (text, the logo, photos, icons) first, then
- * the largest shapes and artwork, so a template with many small decorative
- * layers still shows its headline and logo. Paint order is kept. */
+ * that carries copy or the brand (text, the logo, photos, icons), then the
+ * largest shapes and artwork, so a template with many small decorative
+ * layers still shows its headline and logo. When copy alone would fill the
+ * cap, its topmost elements stay and the four largest shapes keep their
+ * places, so the grounds and panels still show. Paint order is kept. */
 function keepWithin<T extends { f: ComposedField; role: RefRole }>(items: T[], cap: number): T[] {
   if (items.length <= cap) return items;
   const area = (x: T) => Math.abs(x.f.width * x.f.height);
@@ -653,7 +655,9 @@ function keepWithin<T extends { f: ComposedField; role: RefRole }>(items: T[], c
   const rest = items
     .filter((x) => x.role === "shape" || x.role === "artwork")
     .sort((a, b) => area(b) - area(a));
-  const kept = new Set([...core.slice(-cap), ...rest].slice(0, cap));
+  const shapes =
+    core.length >= cap ? Math.min(4, rest.length) : Math.min(rest.length, cap - core.length);
+  const kept = new Set([...core.slice(core.length - (cap - shapes)), ...rest.slice(0, shapes)]);
   return items.filter((x) => kept.has(x));
 }
 
