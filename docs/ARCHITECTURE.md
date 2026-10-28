@@ -515,6 +515,11 @@ fits it. A run with facts never asks a question first. The template chat's
 **Measure and repair in the browser.** Deno has no font stack, so the
 function can only count characters. `measureProposal` lays every value out
 against real glyphs through the same autofit and layout code that paints.
+A plated field is measured the way it paints, at its set size with its
+paddings, and never counts as shrinking. Inside a stack, growth along the
+stack's direction belongs to the stack, so a value is too long there only
+when the stack leaves the canvas; growth across the stack still has to fit
+the field's own box.
 A library proposal that overflows gets one repair round (`repairProposal`:
 the overflowing fields go back with character budgets derived from that
 measurement, the server rewrites only those, and the result is measured

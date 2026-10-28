@@ -489,3 +489,184 @@ describe("groupMoveTargets", () => {
     expect(groupMoveTargets(["gone"], []).frameIds.size).toBe(0);
   });
 });
+
+describe("making a stack moves nothing", () => {
+  const derive = (fields: TemplateField[], layout: ReturnType<typeof layoutOf>) =>
+    deriveGroup({
+      fields,
+      groups: [],
+      fieldIds: fields.map((f) => f.id),
+      groupIds: [],
+      layout,
+      kit: null,
+      measure,
+    })!;
+  const viaFree = (fields: TemplateField[], layout: ReturnType<typeof layoutOf>) => {
+    const free = deriveFreeGroup({
+      fields,
+      groups: [],
+      fieldIds: fields.map((f) => f.id),
+      groupIds: [],
+      layout,
+      kit: null,
+      measure,
+    })!;
+    const freeLayout = layoutOf(fields, [free]);
+    return toStackGroup(free, fields, [free], freeLayout, null, measure);
+  };
+
+  // What the admin sees of a field: a single line without a plate paints its
+  // glyph run inside the rect (align and verticalAlign place it); everything
+  // else paints its whole rect.
+  const painted = (f: TemplateField, layout: ReturnType<typeof layoutOf>) => {
+    const r = layout.fieldRects.get(f.id)!;
+    if ((f.type !== "text" && f.type !== "select") || f.plateColor) return r;
+    const size = layout.fontSizes.get(f.id)!;
+    const w = (f.placeholder ?? f.label).length * size * 0.5;
+    const h = size * (f.lineHeight ?? 1.1);
+    const dx = f.align === "center" ? (r.width - w) / 2 : f.align === "right" ? r.width - w : 0;
+    const dy =
+      f.verticalAlign === "top"
+        ? 0
+        : f.verticalAlign === "bottom"
+          ? r.height - h
+          : (r.height - h) / 2;
+    return { x: r.x + dx, y: r.y + dy, width: w, height: h };
+  };
+
+  const expectUnmoved = (fields: TemplateField[], g: LayoutGroup) => {
+    const before = layoutOf(fields);
+    const after = layoutOf(fields, [g]);
+    for (const f of fields) {
+      const a = painted(f, before);
+      const b = painted(f, after);
+      expect(Math.abs(a.x - b.x), `${f.label} x`).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(a.y - b.y), `${f.label} y`).toBeLessThanOrEqual(0.5);
+    }
+    expect(conversionShift(g, fields, before, after, null, measure)).toBeLessThanOrEqual(0.5);
+  };
+
+  // CJ's row (Figma 46:768) as the importer lands pills: the container's box,
+  // align center, the fill as the plate, the insets as paddings. Under the
+  // fake measurer "Full Time" is 144 wide at 32px and "Chicago/Remote" 224,
+  // so the plates are 208 and 290 wide and 72 tall (40 line + 2 x 16), 12px
+  // apart once the second plate's half pixel rounds.
+  const pill = (over: Partial<TemplateField>) =>
+    mkField({
+      y: 107,
+      height: 54,
+      fontSizePx: 32,
+      lineHeight: 1.25,
+      textSizing: "shrink",
+      align: "center",
+      verticalAlign: undefined,
+      plateColor: "#F2F3F0",
+      platePaddingY: 16,
+      ...over,
+    });
+  const fullTime = pill({
+    fieldKey: "type",
+    label: "Type",
+    placeholder: "Full Time",
+    x: 123,
+    width: 208,
+    platePaddingX: 32,
+  });
+  const where = pill({
+    fieldKey: "where",
+    label: "Where",
+    placeholder: "Chicago/Remote",
+    x: 343,
+    width: 289,
+    platePaddingX: 33,
+  });
+
+  it("stacks CJ's two pills 12px apart, where they paint", () => {
+    const fields = [fullTime, where];
+    const layout = layoutOf(fields);
+    for (const g of [derive(fields, layout), viaFree(fields, layout)]) {
+      expect(g.direction).toBe("horizontal");
+      expect(g.children).toEqual(["type", "where"]);
+      expect(g.gap).toBe(12);
+      expect(g.x).toBe(123);
+      expect(g.y).toBe(98);
+      expectUnmoved(fields, g);
+    }
+  });
+
+  // Three of each kind, as a row and as a column lined up on one edge.
+  const kinds: Array<[string, Partial<TemplateField>]> = [
+    ["free single left", { textSizing: "free", align: "left" }],
+    ["free single center", { textSizing: "free", align: "center" }],
+    ["free single right", { textSizing: "free", align: "right" }],
+    [
+      "free multiline",
+      { type: "multiline", textSizing: "free", width: 200, height: 200, verticalAlign: "middle" },
+    ],
+    ["shrink single", { textSizing: "shrink" }],
+    [
+      "shrink multiline",
+      { type: "multiline", textSizing: "shrink", width: 200, height: 120, verticalAlign: "middle" },
+    ],
+    [
+      "fill multiline",
+      { type: "multiline", textSizing: "fill", width: 200, height: 120, verticalAlign: "bottom" },
+    ],
+    [
+      "plated single",
+      { textSizing: "shrink", align: "center", plateColor: "#F2F3F0", verticalAlign: "middle" },
+    ],
+    [
+      "plated multiline",
+      { type: "multiline", textSizing: "free", width: 300, height: 90, plateColor: "#F2F3F0" },
+    ],
+    [
+      "plated shrink multiline",
+      { type: "multiline", textSizing: "shrink", width: 300, height: 90, plateColor: "#F2F3F0" },
+    ],
+    [
+      "plated fill multiline",
+      { type: "multiline", textSizing: "fill", width: 300, height: 90, plateColor: "#F2F3F0" },
+    ],
+    ["image", { type: "image", width: 120, height: 80 }],
+    ["shape", { type: "shape", width: 90, height: 140 }],
+  ];
+  const texts = ["aa bb cc dd", "eeee ff", "gg hhh iiii jj kk"];
+
+  // Translate each field so the extent the stack reproduces lands in a clean
+  // row or column: a row lines up what it paints, a column lines up a single
+  // line's box column (that is the column a vertical stack places).
+  const arrange = (base: Partial<TemplateField>, direction: "horizontal" | "vertical") => {
+    const fields = texts.map((t, i) =>
+      mkField({ label: `${i}`, placeholder: t, width: 400 - 60 * i, ...base }),
+    );
+    const at = layoutOf(fields);
+    let cursor = 100;
+    return fields.map((f) => {
+      const p = painted(f, at);
+      const r = at.fieldRects.get(f.id)!;
+      const singleLine = (f.type === "text" || f.type === "select") && !f.plateColor;
+      const ext = direction === "vertical" && singleLine ? { ...p, x: r.x, width: r.width } : p;
+      const moved =
+        direction === "horizontal"
+          ? { ...f, x: f.x + cursor - ext.x, y: f.y + 200 - ext.y }
+          : { ...f, x: f.x + 200 - ext.x, y: f.y + cursor - ext.y };
+      cursor += (direction === "horizontal" ? ext.width : ext.height) + 20;
+      return moved;
+    });
+  };
+
+  for (const [name, base] of kinds) {
+    for (const direction of ["horizontal", "vertical"] as const) {
+      it(`${name}, ${direction}: grouping moves nothing`, () => {
+        const fields = arrange(base, direction);
+        const layout = layoutOf(fields);
+        for (const g of [derive(fields, layout), viaFree(fields, layout)]) {
+          expect(g.direction).toBe(direction);
+          expect(g.gap).toBe(20);
+          expectUnmoved(fields, g);
+        }
+      });
+    }
+  }
+});

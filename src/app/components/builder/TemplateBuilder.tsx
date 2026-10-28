@@ -133,6 +133,7 @@ import { computeLayout, outermostGroupOf, parentGroupOf } from "@/lib/render/lay
 import {
   conversionShift,
   deriveFreeGroup,
+  deriveGroup,
   fieldIdsInGroups,
   groupIdsWithin,
   groupMoveTargets,
@@ -928,6 +929,27 @@ export function TemplateBuilder({
     [setDraft],
   );
 
+  /** Grouping says why nothing happened, for five seconds. */
+  const groupNotice = useCallback((message: string) => {
+    setNotice(message);
+    window.clearTimeout(noticeTimer.current);
+    noticeTimer.current = window.setTimeout(() => setNotice(null), 5000);
+  }, []);
+
+  /** Three confirmations, because grouping is otherwise invisible: the
+   * frame flashes on the canvas, the group is selected (so the inspector
+   * shows it), and a toast names what just happened. */
+  const announceGroup = useCallback(
+    (g: LayoutGroup) => {
+      setSelectedIds([groupChildRef(g.id)]);
+      setFlashGroupId(g.id);
+      window.clearTimeout(flashTimer.current);
+      flashTimer.current = window.setTimeout(() => setFlashGroupId(null), 1600);
+      groupNotice(`Grouped ${g.children.length} elements as “${g.name}”`);
+    },
+    [groupNotice],
+  );
+
   /** ⌘G: one history entry. Creates a PLAIN group — pure membership, nothing
    * moves — with auto layout available as a toggle in the inspector.
    * Selecting a group + fields nests the group as a child. */
@@ -946,27 +968,27 @@ export function TemplateBuilder({
       const alreadyGrouped = draft.fields.some(
         (f) => selectedIds.includes(f.id) && outermostGroupOf(f.fieldKey, groups),
       );
-      setNotice(
+      groupNotice(
         alreadyGrouped
           ? "Those elements are already in a group. Ungroup them first."
           : "Select at least two elements to group them.",
       );
-      window.clearTimeout(noticeTimer.current);
-      noticeTimer.current = window.setTimeout(() => setNotice(null), 5000);
       return;
     }
     setDraft((d) => ({ ...d, layoutGroups: [...(d.layoutGroups ?? []), g] }));
-    setSelectedIds([groupChildRef(g.id)]);
-    // Three confirmations, because grouping is otherwise invisible: the
-    // frame flashes on the canvas, the group is selected (so the inspector
-    // shows it), and a toast names what just happened.
-    setFlashGroupId(g.id);
-    window.clearTimeout(flashTimer.current);
-    flashTimer.current = window.setTimeout(() => setFlashGroupId(null), 1600);
-    setNotice(`Grouped ${g.children.length} elements as “${g.name}”`);
-    window.clearTimeout(noticeTimer.current);
-    noticeTimer.current = window.setTimeout(() => setNotice(null), 5000);
-  }, [draft.fields, groups, selectedIds, selGroupIds, builderLayout, kit, measurer, setDraft]);
+    announceGroup(g);
+  }, [
+    draft.fields,
+    groups,
+    selectedIds,
+    selGroupIds,
+    builderLayout,
+    kit,
+    measurer,
+    setDraft,
+    groupNotice,
+    announceGroup,
+  ]);
 
   /** Commit a whole-group drag. A stack owns its children's positions, so
    * one anchor patch moves everything; a plain group's children own theirs,
@@ -1282,6 +1304,58 @@ export function TemplateBuilder({
     },
     [groups, draft, builderLayout, kit, measurer, setDraft, applyStackConversion],
   );
+
+  /** ⇧A: auto layout in one step. One plain group alone turns its auto
+   * layout on (with the usual confirm when that would move anything);
+   * anything else becomes a stack derived from where it sits, so nothing
+   * moves, in one history entry. */
+  const addAutoLayout = useCallback(() => {
+    const onlyGroup =
+      selectedIds.length === 1 && selGroupIds.length === 1
+        ? groups.find((g) => g.id === selGroupIds[0])
+        : undefined;
+    if (onlyGroup) {
+      if (isFreeGroup(onlyGroup)) setGroupMode(onlyGroup.id, "stack");
+      return;
+    }
+    const g = deriveGroup({
+      fields: draft.fields,
+      groups,
+      fieldIds: selectedFieldIds(selectedIds),
+      groupIds: selGroupIds,
+      layout: builderLayout,
+      kit,
+      measure: measurer,
+    });
+    if (!g) {
+      const alreadyGrouped = draft.fields.some(
+        (f) => selectedIds.includes(f.id) && outermostGroupOf(f.fieldKey, groups),
+      );
+      const plainGroup = groups.some((x) => selGroupIds.includes(x.id) && isFreeGroup(x));
+      groupNotice(
+        alreadyGrouped
+          ? "Those elements are already in a group. Ungroup them first."
+          : plainGroup
+            ? "A plain group can't sit inside an auto layout. Ungroup it first."
+            : "Select at least two elements to add auto layout.",
+      );
+      return;
+    }
+    setDraft((d) => ({ ...d, layoutGroups: [...(d.layoutGroups ?? []), g] }));
+    announceGroup(g);
+  }, [
+    draft.fields,
+    groups,
+    selectedIds,
+    selGroupIds,
+    builderLayout,
+    kit,
+    measurer,
+    setDraft,
+    setGroupMode,
+    groupNotice,
+    announceGroup,
+  ]);
 
   /** ⇧⌘G: children freeze at their computed rects — also lossless. */
   const ungroupSelection = useCallback(() => {
@@ -1922,6 +1996,9 @@ export function TemplateBuilder({
       } else if (!mod && e.key === "?") {
         e.preventDefault();
         setShortcutsOpen((open) => !open);
+      } else if (!mod && !e.altKey && e.shiftKey && e.code === "KeyA" && selectedIds.length) {
+        e.preventDefault();
+        addAutoLayout();
       } else if (!mod && !e.altKey && TOOL_KEYS[e.code]) {
         // Shift LOCKS the tool for repeated draws; plain is one draw and
         // back to Move. Every other modifier belongs to another shortcut.
@@ -1947,6 +2024,7 @@ export function TemplateBuilder({
     doUndo,
     doRedo,
     groupSelection,
+    addAutoLayout,
     ungroupSelection,
     selectAll,
     draft.fields.length,
@@ -2433,7 +2511,18 @@ export function TemplateBuilder({
     }
     // Right-click on a group frame: the overlay passes the group ref.
     if (selectedGroupIds([menu.fieldId]).length) {
+      const framed = groups.find((g) => g.id === selectedGroupIds([menu.fieldId!])[0]);
       return [
+        ...(framed && isFreeGroup(framed)
+          ? [
+              {
+                label: "Add auto layout",
+                shortcut: "⇧A",
+                // The frame right-clicked, whatever else is selected.
+                onSelect: () => setGroupMode(framed.id, "stack"),
+              },
+            ]
+          : []),
         { label: "Ungroup", shortcut: isMac ? "⇧⌘G" : "Ctrl+Shift+G", onSelect: ungroupSelection },
         {
           label: "Center on canvas",
@@ -2558,6 +2647,7 @@ export function TemplateBuilder({
               shortcut: isMac ? "⌘G" : "Ctrl+G",
               onSelect: groupSelection,
             },
+            { label: "Add auto layout", shortcut: "⇧A", onSelect: addAutoLayout },
           ]
         : []),
       {
@@ -2610,6 +2700,8 @@ export function TemplateBuilder({
     reorderLayer,
     deleteFields,
     groupSelection,
+    addAutoLayout,
+    setGroupMode,
     ungroupSelection,
     selectAll,
     alignSelection,

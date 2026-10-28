@@ -152,11 +152,6 @@ export function GroupInspector({
             onChange={(next) => onModeChange(next ? "stack" : "free")}
           />
         </PropertyRow>
-        <p style={{ fontSize: 10.5, color: "var(--text-muted)" }}>
-          {free
-            ? "Children keep the positions you gave them. The group just moves them together."
-            : "Children are placed along one axis with a fixed gap; growing content pushes the rest."}
-        </p>
         {!free && (
           <>
             <PropertyRow label="Direction">
@@ -267,9 +262,9 @@ export function GroupInspector({
         )}
       </InspectorSection>
 
-      <InspectorSection id="group-overflow" title="Overflow">
-        {!free && (
-          <>
+      {(!free || computedRect?.overflows) && (
+        <InspectorSection id="group-overflow" title="Overflow">
+          {!free && (
             <PropertyRow label="Shrink to fit">
               <Switch
                 checked={Boolean(group.shrinkToFit)}
@@ -277,25 +272,14 @@ export function GroupInspector({
                 onChange={(next) => onChange({ shrinkToFit: next || undefined })}
               />
             </PropertyRow>
-            <p style={{ fontSize: 10.5, color: "var(--text-muted)" }}>
-              {group.shrinkToFit
-                ? "Text in this stack shrinks (never below its minimum size) so the stack stays inside the canvas."
-                : "Content that outgrows the canvas stays visible and is flagged here in the builder. Members never see a warning."}
+          )}
+          {computedRect?.overflows && (
+            <p style={{ fontSize: 10.5, color: "var(--text-secondary)" }}>
+              This {free ? "group" : "stack"} currently extends beyond the canvas.
             </p>
-          </>
-        )}
-        {computedRect?.overflows && (
-          <p style={{ fontSize: 10.5, color: "var(--text-secondary)" }}>
-            This {free ? "group" : "stack"} currently extends beyond the canvas.
-          </p>
-        )}
-        {free && !computedRect?.overflows && (
-          <p style={{ fontSize: 10.5, color: "var(--text-muted)" }}>
-            A group that outgrows the canvas is flagged here in the builder. Members never see a
-            warning.
-          </p>
-        )}
-      </InspectorSection>
+          )}
+        </InspectorSection>
+      )}
 
       <div className="flex gap-2 pt-2">
         <button className="sp-btn sp-btn-ghost flex-1" onClick={onUngroup}>
