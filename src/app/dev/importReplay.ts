@@ -37,6 +37,14 @@ export interface ImportReplaySpec {
 
 const STAMP = "2026-10-08T00:00:00.000Z";
 
+const blobToDataUrl = (blob: Blob): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error ?? new Error("Could not read the composed plate"));
+    reader.readAsDataURL(blob);
+  });
+
 /** The template an import of the saved frame lands as. Throws, naming every
  * render and fill the replay needs but the fixture doesn't carry, so they
  * can be fetched once with goldens.mjs. */
@@ -108,7 +116,10 @@ export async function replayImport(spec: ImportReplaySpec): Promise<TemplateSche
     status: "published",
     canvasWidth,
     canvasHeight,
-    backgroundUrl: URL.createObjectURL(plate),
+    // A data URL, not a blob: URL. The renderer fetches its background to
+    // embed it, and WebKit under CI intermittently failed that fetch for a
+    // blob: URL, exporting the graphic without its plate.
+    backgroundUrl: await blobToDataUrl(plate),
     // As the builder lands it once the plate is composed.
     canvasEffects: normalizeEffects(canvasEffects, { kind: "canvas" }),
     captionTemplate: "",
