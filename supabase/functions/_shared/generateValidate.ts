@@ -489,122 +489,14 @@ export function buildRepairRequests(
 }
 
 // ---------------------------------------------------------------------------
-// Freestyle — a NEW design instead of a library fill
+// New designs live in compose.ts
 // ---------------------------------------------------------------------------
-// The member opted out of the library's layouts, so the model proposes
-// geometry — the one thing library mode never lets it do. The brand boundary
-// moves rather than disappears: every color is a brand palette KEY resolved
-// to its hex here, every type binding must name a real brand type style, all
-// text is shrink-sized so length can't break the box, and the published
-// library rides along as style reference. On-brand by constraint instead of
-// by construction, and the surface says so.
+// The Generate page composes new posts from the team's templates and Brand
+// Studio (compose.ts). The one piece of the old freestyle path still shared
+// is the canvas a platform asks for.
 
-export interface FreestyleContext {
-  canvasWidth: number;
-  canvasHeight: number;
-  palette: Array<{ key: string; hex: string }>;
-  typeStyleKeys: string[];
-}
-
-/** What the model proposes per freestyle element. `value` is the static
- * content for a fixed element, or the pre-filled member value for an
- * editable one. */
-export interface ProposedDesignField {
-  label: string;
-  fieldKey: string;
-  type: "text" | "multiline" | "image" | "shape";
-  shape?: "rect" | "ellipse";
-  static?: boolean;
-  value?: string;
-  box: { x: number; y: number; width: number; height: number };
-  typeStyleKey?: string;
-  colorKey?: string;
-  fontSizePx?: number;
-  align?: "left" | "center" | "right";
-  uppercase?: boolean;
-}
-
-export interface ProposedDesign {
-  name: string;
-  backgroundColorKey?: string;
-  fields: ProposedDesignField[];
-  caption: string;
-  why: string;
-}
-
-export interface FreestyleModelOutput {
-  proposals: ProposedDesign[];
-  /** Optional prose for the chat, as on GenerateModelOutput. */
-  reply?: unknown;
-  title?: unknown;
-}
-
-/** Structural subset of the app's TemplateField, same policy as autobuild's
- * ValidatedField: the Edge bundle never imports from src/, shapes must stay
- * assignable. */
-export interface FreestyleField {
-  id: string;
-  label: string;
-  fieldKey: string;
-  type: "text" | "multiline" | "image" | "shape";
-  shape?: "rect" | "ellipse";
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  zIndex?: number;
-  static?: boolean;
-  staticValue?: string;
-  placeholder?: string;
-  required?: boolean;
-  typeStyleKey?: string;
-  colorHex?: string;
-  fontSizePx?: number;
-  align?: "left" | "center" | "right";
-  uppercase?: boolean;
-  textSizing?: "shrink";
-  objectFit?: "cover";
-}
-
-export interface ValidatedDesign {
-  name: string;
-  canvasWidth: number;
-  canvasHeight: number;
-  backgroundColor?: string;
-  fields: FreestyleField[];
-  /** Pre-filled member values for the editable text fields. */
-  values: Record<string, string>;
-  /** The caption with its {field_key} merge tags resolved — display copy. */
-  caption: string;
-  /** The caption as authored, tags intact — this is what makes a saved
-   * design a REAL template: future fills merge their own values in. */
-  captionTemplate: string;
-  why: string;
-  imageFieldsNeeded: ImageFieldNeeded[];
-}
-
-const FREESTYLE_FIELD_CAP = 12;
-const FREESTYLE_VALUE_CAP = 500;
-const FIELD_KEY_RE = /^[a-z][a-z0-9_]{0,39}$/;
-
-/** Slug a string into a valid, unique fieldKey (autobuild's policy). */
-function reslug(raw: string, taken: Set<string>): string {
-  const base =
-    raw
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "_")
-      .replace(/^_+|_+$/g, "")
-      .slice(0, 32) || "field";
-  const rooted = /^[a-z]/.test(base) ? base : `f_${base}`;
-  let key = rooted;
-  let n = 2;
-  while (taken.has(key)) key = `${rooted}_${n++}`;
-  taken.add(key);
-  return key;
-}
-
-/** The canvas a freestyle design targets for a platform: the first known
- * size that serves it, else the platform-neutral square. */
+/** The canvas a new design targets for a platform: the first known size
+ * that serves it, else the platform-neutral square. */
 export function canvasForPlatform(platform: GeneratePlatform | undefined): {
   width: number;
   height: number;
@@ -615,286 +507,6 @@ export function canvasForPlatform(platform: GeneratePlatform | undefined): {
   }
   return { width: 1440, height: 1440 };
 }
-
-export function validateFreestyle(
-  output: FreestyleModelOutput,
-  ctx: FreestyleContext,
-  count: number,
-): { designs: ValidatedDesign[]; warnings: string[]; reply?: string; title?: string } {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-  const hexByKey = new Map(ctx.palette.map((c) => [c.key, c.hex]));
-  const typeStyles = new Set(ctx.typeStyleKeys);
-
-  const raw = Array.isArray(output?.proposals) ? output.proposals : [];
-  let list = raw;
-  if (list.length > count) {
-    warnings.push(`The model returned ${list.length} designs. Keeping the first ${count}.`);
-    list = list.slice(0, count);
-  }
-
-  const designs: ValidatedDesign[] = [];
-
-  list.forEach((p, i) => {
-    const label = `Design ${i + 1}`;
-    const taken = new Set<string>();
-    const values: Record<string, string> = {};
-    const fields: FreestyleField[] = [];
-
-    let proposals = Array.isArray(p?.fields) ? p.fields : [];
-    if (proposals.length > FREESTYLE_FIELD_CAP) {
-      warnings.push(
-        `${label}: ${proposals.length} elements. Keeping the first ${FREESTYLE_FIELD_CAP}.`,
-      );
-      proposals = proposals.slice(0, FREESTYLE_FIELD_CAP);
-    }
-
-    for (const f of proposals) {
-      const name = typeof f?.label === "string" ? f.label.trim().slice(0, 60) : "";
-      if (!name) {
-        warnings.push(`${label}: dropped an element with no label.`);
-        continue;
-      }
-      if (!["text", "multiline", "image", "shape"].includes(f.type)) {
-        warnings.push(`${label}: dropped "${name}", unknown type "${String(f.type)}".`);
-        continue;
-      }
-      // Geometry is clamped hard, autobuild's flat-image policy: the model
-      // proposes, the canvas decides. Shapes may bleed full canvas (a color
-      // block is legitimate design); text and images may not swallow it.
-      const b = f.box;
-      if (
-        !b ||
-        ![b.x, b.y, b.width, b.height].every((v) => typeof v === "number" && Number.isFinite(v))
-      ) {
-        warnings.push(`${label}: dropped "${name}", no usable box.`);
-        continue;
-      }
-      const W = ctx.canvasWidth;
-      const H = ctx.canvasHeight;
-      const x = Math.min(Math.max(0, Math.round(b.x)), W);
-      const y = Math.min(Math.max(0, Math.round(b.y)), H);
-      const width = Math.min(Math.round(b.width), W - x);
-      const height = Math.min(Math.round(b.height), H - y);
-      if (width < 8 || height < 8) {
-        warnings.push(`${label}: dropped "${name}", box under 8px after clamping.`);
-        continue;
-      }
-      if (f.type !== "shape" && width * height > 0.9 * W * H) {
-        warnings.push(`${label}: dropped "${name}", box covers over 90% of the canvas.`);
-        continue;
-      }
-
-      const key =
-        typeof f.fieldKey === "string" && FIELD_KEY_RE.test(f.fieldKey) && !taken.has(f.fieldKey)
-          ? (taken.add(f.fieldKey), f.fieldKey)
-          : reslug(typeof f.fieldKey === "string" && f.fieldKey ? f.fieldKey : name, taken);
-
-      let typeStyleKey = f.typeStyleKey;
-      if (typeStyleKey !== undefined && !typeStyles.has(typeStyleKey)) {
-        warnings.push(
-          `${label}: "${name}" names type style "${typeStyleKey}", which is not in the brand kit, so it was left unbound.`,
-        );
-        typeStyleKey = undefined;
-      }
-      // The palette is the ONLY color channel. An unknown key on text falls
-      // back to the renderer's default ink; a shape without a real palette
-      // color has nothing to paint and is dropped.
-      let colorHex: string | undefined;
-      if (f.colorKey !== undefined) {
-        colorHex = hexByKey.get(f.colorKey);
-        if (colorHex === undefined) {
-          warnings.push(
-            `${label}: "${name}" names palette key "${f.colorKey}", which is not in the brand kit.`,
-          );
-        }
-      }
-
-      const value = typeof f.value === "string" ? f.value.trim().slice(0, FREESTYLE_VALUE_CAP) : "";
-      const zIndex = fields.length;
-
-      if (f.type === "shape") {
-        const kind = f.shape === "ellipse" ? "ellipse" : f.shape === "rect" ? "rect" : undefined;
-        if (!kind) {
-          warnings.push(`${label}: dropped shape "${name}". The kind must be rect or ellipse.`);
-          continue;
-        }
-        if (!colorHex) {
-          warnings.push(`${label}: dropped shape "${name}". Shapes need a brand palette color.`);
-          continue;
-        }
-        fields.push({
-          id: crypto.randomUUID(),
-          label: name,
-          fieldKey: key,
-          type: "shape",
-          shape: kind,
-          x,
-          y,
-          width,
-          height,
-          zIndex,
-          static: true,
-          colorHex,
-        });
-        continue;
-      }
-
-      if (f.type === "image") {
-        // The model cannot produce artwork: a fixed image would be an empty
-        // hole forever, so images are always member slots.
-        if (f.static === true) {
-          warnings.push(
-            `${label}: image "${name}" made member-editable. The model cannot supply artwork.`,
-          );
-        }
-        fields.push({
-          id: crypto.randomUUID(),
-          label: name,
-          fieldKey: key,
-          type: "image",
-          x,
-          y,
-          width,
-          height,
-          zIndex,
-          objectFit: "cover",
-        });
-        continue;
-      }
-
-      // Text. Fixed text needs content or it is nothing; editable text gets
-      // the proposed value as the member value, and shrink sizing so length
-      // can never escape the box the model drew.
-      if (f.static === true) {
-        if (!value) {
-          warnings.push(`${label}: dropped fixed text "${name}", no content.`);
-          continue;
-        }
-        fields.push({
-          id: crypto.randomUUID(),
-          label: name,
-          fieldKey: key,
-          type: f.type,
-          x,
-          y,
-          width,
-          height,
-          zIndex,
-          static: true,
-          staticValue: value,
-          typeStyleKey,
-          colorHex,
-          fontSizePx: clampFont(f.fontSizePx),
-          align: cleanAlign(f.align),
-          uppercase: f.uppercase === true || undefined,
-          textSizing: "shrink",
-        });
-        continue;
-      }
-      fields.push({
-        id: crypto.randomUUID(),
-        label: name,
-        fieldKey: key,
-        type: f.type,
-        x,
-        y,
-        width,
-        height,
-        zIndex,
-        placeholder: value || name,
-        typeStyleKey,
-        colorHex,
-        fontSizePx: clampFont(f.fontSizePx),
-        align: cleanAlign(f.align),
-        uppercase: f.uppercase === true || undefined,
-        textSizing: "shrink",
-      });
-      if (value) values[key] = value;
-      else warnings.push(`${label}: editable "${name}" has no value, left for the member.`);
-    }
-
-    const editableText = fields.filter(
-      (x) => !x.static && (x.type === "text" || x.type === "multiline"),
-    );
-    if (fields.length < 2 || editableText.length < 1) {
-      errors.push(
-        `${label}: too little survived validation (${fields.length} elements, ${editableText.length} editable text) — propose a fuller design.`,
-      );
-      return;
-    }
-
-    let backgroundColor: string | undefined;
-    if (p.backgroundColorKey !== undefined) {
-      backgroundColor = hexByKey.get(p.backgroundColorKey);
-      if (backgroundColor === undefined) {
-        warnings.push(
-          `${label}: background key "${p.backgroundColorKey}" is not in the brand kit, so the canvas is white.`,
-        );
-      }
-    }
-
-    // The caption is a TEMPLATE: {field_key} tags referencing editable
-    // fields survive (autobuild's policy), anything else is stripped — so a
-    // design saved to the library carries a caption future fills can merge
-    // their own values into. The resolved form is what today's card shows.
-    const editableKeys = new Set(fields.filter((x) => !x.static).map((x) => x.fieldKey));
-    const captionTemplate = (typeof p.caption === "string" ? p.caption.trim().slice(0, 600) : "")
-      .replace(/\{([a-z][a-z0-9_]*)\}/g, (tag, key: string) => {
-        if (editableKeys.has(key)) return tag;
-        warnings.push(`${label}: caption tag {${key}} doesn't match any field, so it was removed.`);
-        return "";
-      })
-      .replace(/[ \t]{2,}/g, " ")
-      .trim();
-    const caption = captionTemplate
-      .replace(/\{([a-z][a-z0-9_]*)\}/g, (_tag, key: string) => values[key] ?? "")
-      .replace(/[ \t]{2,}/g, " ")
-      .trim();
-
-    designs.push({
-      name: (typeof p.name === "string" && p.name.trim() ? p.name.trim() : "New design").slice(
-        0,
-        80,
-      ),
-      canvasWidth: ctx.canvasWidth,
-      canvasHeight: ctx.canvasHeight,
-      backgroundColor,
-      fields,
-      values,
-      caption,
-      captionTemplate,
-      why: typeof p.why === "string" ? p.why.trim().slice(0, 200) : "",
-      imageFieldsNeeded: fields
-        .filter((x) => !x.static && x.type === "image")
-        .map((x) => ({ fieldKey: x.fieldKey, label: x.label, required: isRequiredField(x) })),
-    });
-  });
-
-  if (designs.length === 0) {
-    errors.push("No usable designs survived validation.");
-    throw new GenerateValidationError(errors);
-  }
-  // Partial success stands: some designs made it, the failures are noted.
-  // Those errors are written for the model's retry turn and keep their em
-  // dash there; this copy goes to the member, so the dash becomes a sentence
-  // break. Element warnings quote the model's own labels and keys, which may
-  // carry a dash of their own, so every warning is rewritten on the way out.
-  warnings.push(...errors.map(emDashesToSentences));
-  return {
-    designs,
-    warnings: warnings.map(replaceEmDashes),
-    ...validateReplyAndTitle(output),
-  };
-}
-
-const clampFont = (v: number | undefined): number | undefined =>
-  typeof v === "number" && Number.isFinite(v)
-    ? Math.min(400, Math.max(10, Math.round(v)))
-    : undefined;
-
-const cleanAlign = (v: string | undefined): "left" | "center" | "right" | undefined =>
-  v === "left" || v === "center" || v === "right" ? v : undefined;
 
 /** Validate a repair round: every requested field rewritten, nothing else
  * touched, every rewrite inside its budget. Throws GenerateValidationError
@@ -1125,7 +737,7 @@ const SENTENCE_MARKS = ".,;:!?";
  * model's other punctuation ("e.g., this") is left alone. It splits on the
  * dash instead of matching the spaces around it with a regex, so it stays
  * linear on any input, including a warning that quotes a long model string. */
-function replaceEmDashes(text: string): string {
+export function replaceEmDashes(text: string): string {
   if (!text.includes("\u2014")) return text;
   const pieces = text.split("\u2014");
   let out = pieces[0].trimEnd();
@@ -1149,7 +761,7 @@ function replaceEmDashes(text: string): string {
  * sentence break, so "... (0 elements, 0 editable text) — propose a fuller
  * design." reads "... (0 elements, 0 editable text). Propose a fuller
  * design." The model's copy keeps its dash for the retry turn. */
-function emDashesToSentences(text: string): string {
+export function emDashesToSentences(text: string): string {
   const pieces = text
     .split("\u2014")
     .map((piece) => piece.trim())
@@ -1235,7 +847,8 @@ export function validateTitle(raw: unknown): string | undefined {
 /** The reply and title of one model output, each validated. A field the
  * model left out, or gave nothing usable in, comes back undefined, so a
  * response built from this carries it only when it is usable (JSON drops
- * undefined). validateGeneration and validateFreestyle both return these. */
+ * undefined). validateGeneration and validateCompose (composeValidate.ts) both
+ * return these. */
 export function validateReplyAndTitle(
   output: { reply?: unknown; title?: unknown } | null | undefined,
 ): { reply?: string; title?: string } {

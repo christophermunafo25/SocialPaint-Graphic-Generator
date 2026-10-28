@@ -331,9 +331,13 @@ export function useChatController(opts: ChatControllerOptions): ChatController {
           });
           return;
         case "layout": {
-          // A new layout at the size of the latest drafts' first one.
+          // A new layout at the size of the latest drafts' first one. A new
+          // design travels with the request (currentDesigns) and the server
+          // keeps its exact size, so it sends no hint; a template draft's
+          // size travels as its platform.
           const first = latestDoneTurn(threadRef.current.turns)?.drafts[0];
-          const platformHint = first ? primaryPlatformOf(first.canvas) : undefined;
+          const platformHint =
+            first && !first.proposal.design ? primaryPlatformOf(first.canvas) : undefined;
           start({
             text: action.label,
             photo: null,

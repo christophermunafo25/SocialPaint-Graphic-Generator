@@ -629,22 +629,25 @@ export function fillSendGaps(
   };
 }
 
-/** Which kind of run a send makes (PROMPT §4, §9.3, §9.4):
- *  - freestyle when the library is empty (nothing to fill), and for "Try
- *    another layout";
- *  - library when a Start from chip pins a template, and for a chat's first
- *    message;
- *  - otherwise a follow-up follows the latest finished turn: freestyle
- *    drafts are revised as freestyle, library drafts as library. */
+/** Which kind of run a send makes. Generate makes new posts: every
+ * message composes a new design ("freestyle" on the wire) from the brand and
+ * the team's templates, whether or not a template fits the brief. Filling a
+ * template as it stands belongs to the template chat:
+ *  - library when a template is pinned (the template chat);
+ *  - freestyle for a chat's first message, for "Try another layout", and
+ *    when the library is empty;
+ *  - otherwise a follow-up follows the latest finished turn, so a chat saved
+ *    while Generate still filled templates keeps revising its fills; with no
+ *    finished turn to follow, it composes. */
 export function pickMode(
   prior: readonly ChatTurn[],
   send: { intent: UserTurn["intent"]; templateIdHint?: string },
   libraryEmpty: boolean,
 ): RunMode {
-  if (libraryEmpty || send.intent === "freestyle") return "freestyle";
-  if (send.templateIdHint || send.intent === "brief") return "library";
+  if (send.templateIdHint) return "library";
+  if (libraryEmpty || send.intent === "freestyle" || send.intent === "brief") return "freestyle";
   const done = latestDoneTurn(prior);
-  return done && turnMode(done) === "freestyle" ? "freestyle" : "library";
+  return done && turnMode(done) === "library" ? "library" : "freestyle";
 }
 
 /** Everything the member has asked of the chat so far, as one brief: the
@@ -729,14 +732,36 @@ function textValues(draft: ChatDraft): Array<{ fieldKey: string; value: string }
   return out;
 }
 
+/** Designs a follow-up carries per draft at most (template-generate,
+ * parseCurrentDesigns). */
+const CURRENT_DESIGNS_MAX = 3;
+const CURRENT_DESIGN_FIELDS_MAX = 40;
+
+/** A new design's follow-up context: the latest finished turn's designs, each
+ * with the member's current text values (never a data URL, so a photo never
+ * leaves the browser), so "make the date Friday" revises them in place.
+ * Undefined when that turn has no designs. */
+export function currentDesignsFrom(
+  prior: readonly ChatTurn[],
+): GenerateInput["currentDesigns"] | undefined {
+  const done = latestDoneTurn(prior);
+  const designs = (done?.drafts ?? [])
+    .filter(
+      (d) => d.proposal.design && d.proposal.design.fields.length <= CURRENT_DESIGN_FIELDS_MAX,
+    )
+    .slice(0, CURRENT_DESIGNS_MAX)
+    .map((d) => ({ design: d.proposal.design!, values: textValues(d) }));
+  return designs.length > 0 ? designs : undefined;
+}
+
 /** The generate request for a message, built as the page this chat replaces
  * built it (brief, hints, count, mode, and only the photo's flag and
  * aspect), plus the follow-up context (PROMPT §9.2, §9.3):
  *  - a chat's first message sends its text as the brief;
  *  - a library follow-up sends the new text as the brief with `followUp`;
  *  - a freestyle follow-up folds the brief so far (briefSoFar) into
- *    `brief` instead, with no `followUp` (the server revises library
- *    drafts only).
+ *    `brief` instead, with the latest finished turn's designs as
+ *    `currentDesigns` (currentDesignsFrom) and no `followUp`.
  * `prior` is the thread before this message. */
 export function buildGenerateInput(
   prior: readonly ChatTurn[],
@@ -763,6 +788,12 @@ export function buildGenerateInput(
     input.imageAspect = Math.min(10, Math.max(0.1, user.photo.aspect));
   }
   if (followUp && mode === "library") input.followUp = followUpFrom(prior);
+  // A new design's follow-up carries its drafts, so a message revises them
+  // (or re-flows them for "Make a Facebook version") instead of starting over.
+  if (followUp && mode === "freestyle") {
+    const designs = currentDesignsFrom(prior);
+    if (designs) input.currentDesigns = designs;
+  }
   // Detail tags travel structured, never folded into the text, and are
   // applied verbatim (template-generate §10.1). Only a template chat has
   // them, and they need its pinned template.

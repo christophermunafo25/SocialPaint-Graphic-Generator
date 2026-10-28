@@ -339,6 +339,33 @@ describe("runChat", () => {
     expect(h.turn().drafts.map((d) => d.proposal.templateId)).toEqual(["tpl-1"]);
   });
 
+  it("lets a new design's overflowing text shrink to the type floor before dropping it", async () => {
+    // Shrink text whose usual floor (0.75 of 40px) still runs over its 400px
+    // box: 30 characters at 30px are 450 wide. At the floor (16px on a 1080
+    // canvas, 0.4 of 40) they are 240.
+    const tight = { ...HEADLINE, textSizing: "shrink" as const, minFontScale: 0.75 };
+    const base = designProposal("Tight", OVERFLOWS);
+    const proposal: GeneratedProposal = { ...base, design: { ...base.design!, fields: [tight] } };
+    const h = harness({ generate: vi.fn(() => Promise.resolve(result([proposal]))) });
+    await h.start();
+    const [draft] = h.turn().drafts;
+    expect(h.turn().warnings).toEqual([]);
+    expect(draft.schema?.fields[0].minFontScale).toBe(0.4);
+    // The stored design carries the relaxed floor, so a reopened chat
+    // rebuilds it as it fit.
+    expect(draft.proposal.design?.fields[0].minFontScale).toBe(0.4);
+  });
+
+  it("still drops a new design whose text overflows even at the type floor", async () => {
+    const tight = { ...HEADLINE, textSizing: "shrink" as const, minFontScale: 0.75 };
+    const base = designProposal("Far too long", "x".repeat(80));
+    const proposal: GeneratedProposal = { ...base, design: { ...base.design!, fields: [tight] } };
+    const h = harness({ generate: vi.fn(() => Promise.resolve(result([proposal]))) });
+    await h.start();
+    expect(h.turn().drafts).toEqual([]);
+    expect(h.turn().warnings).toEqual([overflowingDesignWarning("Far too long")]);
+  });
+
   it("builds a freestyle design's template, numbered in proposal order", async () => {
     const h = harness(
       {

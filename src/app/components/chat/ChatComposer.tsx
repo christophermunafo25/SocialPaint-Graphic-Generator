@@ -14,8 +14,6 @@ export interface ChatComposerProps extends ComposerProps {
   platform?: {
     value: PlatformId | null;
     onChange(next: PlatformId | null): void;
-    covered: ReadonlySet<PlatformId> | null;
-    dimUncovered: boolean;
   };
   /** The Start state's Variations (Generate only): the Stepper. */
   variations?: { value: number; onChange(next: number): void };
@@ -130,14 +128,7 @@ export function ChatComposer(props: ChatComposerProps) {
           )}
         </div>
         <div className="ui-composer__output">
-          {platform && (
-            <PlatformSelect
-              value={platform.value}
-              onChange={platform.onChange}
-              covered={platform.covered}
-              dimUncovered={platform.dimUncovered}
-            />
-          )}
+          {platform && <PlatformSelect value={platform.value} onChange={platform.onChange} />}
           {variations && (
             <Stepper
               label="Variations"
