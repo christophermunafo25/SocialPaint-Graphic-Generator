@@ -60,8 +60,8 @@ from the platform in migration 0009.)
 - `brand_kits` (palette jsonb, `type_styles` jsonb — the brand rules engine's
   named roles, `guidelines` jsonb — accepted free-text rules, heading/body
   font refs (unread since migration 0042; the font roles live on the type
-  styles), primary logo) — one active per company. Unlimited colors, type
-  styles, and rules.
+  styles), primary logo, `system` jsonb — the brand's design system, migration
+  0052) — one active per company. Unlimited colors, type styles, and rules.
 - `brand_assets` (logo | font | image; Storage-backed)
 - `company_canvas_presets` — per-workspace canvas-size opt-outs, keyed by
   `SIZE_CATALOG` ids. No longer read or written: since the new look's Phase 3
@@ -814,6 +814,25 @@ strip's fonts check is ready when both roles are held. Kits stored before the
 migration are given roles as they load (`withFontRoles`), by the same rule
 the SQL runs. `brand_kits.heading_font` / `body_font` stay in the table,
 unread, until Phase 9 of the new look.
+
+**The brand system** (brand-system Phase 5, migration 0052,
+`src/lib/brand/system/`): `brand_kits.system` stores only what the admin
+decided (colour roles, the neutral temperature, enabled schemes, the type
+ratio and type roles); pure resolvers derive the rest at read time.
+`deriveColorRoles` maps the palette onto eight graphic roles (Ground, Soft,
+Deep, Accent, Card, Ink on light, Ink on dark, Emphasis): the admin's
+corrections first, then how the templates use each colour (`paletteUsage`),
+then the old Primary / Accent labels, then lightness and saturation, then a
+neutral ramp. `resolveScheme` turns the roles into the colours of one of five
+schemes (Light, Dark, Brand, Accent, Tonal) with contrast fixes: body ink at
+4.5:1, display ink, the accent and ink on the accent at 3:1, fixed by swapping
+the ink or walking the tone (`contrast.ts`, shared with the starter
+materializer). `typeScale` gives each type role a size per canvas from a
+per-shape body size, its floor and the brand's headline ratio (at least 2.8).
+With off-palette colours turned off, `enforceFieldPalette` and
+`enforceBackground` (`resolveStyle.ts`) hold every colour a graphic paints
+(fills, gradients, strokes, plates, icon paths, the canvas) to the palette;
+the derived role colours pass untouched, and alpha is kept.
 
 **Design-system import** (file-based, not a live connector): a design-tokens
 JSON (e.g. a Claude Design `tokens.json` export — W3C or flat formats) fills

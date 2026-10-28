@@ -8,26 +8,10 @@
     "typeStyles": [],
     "allowOffPalette": false,
     "colors": [
-      {
-        "key": "navy",
-        "name": "Navy",
-        "hex": "#1D2B4F"
-      },
-      {
-        "key": "gold",
-        "name": "Gold",
-        "hex": "#E0A526"
-      },
-      {
-        "key": "paper",
-        "name": "Paper",
-        "hex": "#F7F3EA"
-      },
-      {
-        "key": "coral",
-        "name": "Coral",
-        "hex": "#E2574C"
-      }
+      { "key": "navy", "name": "Navy", "hex": "#1D2B4F" },
+      { "key": "gold", "name": "Gold", "hex": "#E0A526" },
+      { "key": "paper", "name": "Paper", "hex": "#F7F3EA" },
+      { "key": "coral", "name": "Coral", "hex": "#E2574C" }
     ]
   },
   "schema": {
@@ -60,12 +44,7 @@
         "width": 440,
         "height": 300,
         "colorHex": "#C2185B",
-        "cornerRadius": {
-          "tl": 24,
-          "tr": 24,
-          "br": 24,
-          "bl": 24
-        }
+        "cornerRadius": { "tl": 24, "tr": 24, "br": 24, "bl": 24 }
       },
       {
         "static": true,
@@ -83,14 +62,8 @@
         "textGradient": {
           "angle": 90,
           "stops": [
-            {
-              "position": 0,
-              "color": "#3949AB"
-            },
-            {
-              "position": 1,
-              "color": "#FFB300"
-            }
+            { "position": 0, "color": "#3949AB" },
+            { "position": 1, "color": "#FFB300" }
           ]
         }
       },
@@ -163,11 +136,7 @@
         "colorHex": "#00695C",
         "vector": {
           "viewBox": [0, 0, 24, 24],
-          "paths": [
-            {
-              "d": "M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"
-            }
-          ]
+          "paths": [{ "d": "M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z" }]
         }
       },
       {
@@ -185,14 +154,8 @@
         "vector": {
           "viewBox": [0, 0, 20, 20],
           "paths": [
-            {
-              "d": "M0 0h10v20H0z",
-              "colorHex": "#8E24AA"
-            },
-            {
-              "d": "M10 0h10v20H10z",
-              "colorHex": "#FDD835"
-            }
+            { "d": "M0 0h10v20H0z", "colorHex": "#8E24AA" },
+            { "d": "M10 0h10v20H10z", "colorHex": "#FDD835" }
           ]
         }
       },
@@ -215,5 +178,7 @@
         "staticValue": "On brand"
       }
     ]
-  }
+  },
+  "baseline": { "chromium": 0, "firefox": 0.25, "webkit": 0.45 },
+  "blurBaseline": { "chromium": 0, "firefox": 0.17, "webkit": 0.52 }
 }
