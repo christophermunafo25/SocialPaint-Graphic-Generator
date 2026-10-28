@@ -1,0 +1,219 @@
+{
+  "name": "palette-enforcement",
+  "kind": "synthetic",
+  "brandKit": {
+    "id": "pe-kit",
+    "companyId": "fixture",
+    "guidelines": [],
+    "typeStyles": [],
+    "allowOffPalette": false,
+    "colors": [
+      {
+        "key": "navy",
+        "name": "Navy",
+        "hex": "#1D2B4F"
+      },
+      {
+        "key": "gold",
+        "name": "Gold",
+        "hex": "#E0A526"
+      },
+      {
+        "key": "paper",
+        "name": "Paper",
+        "hex": "#F7F3EA"
+      },
+      {
+        "key": "coral",
+        "name": "Coral",
+        "hex": "#E2574C"
+      }
+    ]
+  },
+  "schema": {
+    "id": "palette-enforcement",
+    "companyId": "fixture",
+    "name": "Palette enforcement",
+    "description": "",
+    "category": "fixture",
+    "tags": [],
+    "status": "published",
+    "canvasWidth": 1080,
+    "canvasHeight": 1080,
+    "backgroundColor": "#FFF3D6",
+    "backgroundUrl": "",
+    "captionTemplate": "",
+    "createdAt": "2026-10-27T00:00:00.000Z",
+    "updatedAt": "2026-10-27T00:00:00.000Z",
+    "fields": [
+      {
+        "static": true,
+        "required": false,
+        "zIndex": 1,
+        "id": "pe-panel",
+        "fieldKey": "panel",
+        "label": "Off-palette panel",
+        "type": "shape",
+        "shape": "rect",
+        "x": 60,
+        "y": 60,
+        "width": 440,
+        "height": 300,
+        "colorHex": "#C2185B",
+        "cornerRadius": {
+          "tl": 24,
+          "tr": 24,
+          "br": 24,
+          "bl": 24
+        }
+      },
+      {
+        "static": true,
+        "required": false,
+        "zIndex": 2,
+        "id": "pe-gradient",
+        "fieldKey": "gradient",
+        "label": "Off-palette gradient",
+        "type": "shape",
+        "shape": "rect",
+        "x": 580,
+        "y": 60,
+        "width": 440,
+        "height": 300,
+        "textGradient": {
+          "angle": 90,
+          "stops": [
+            {
+              "position": 0,
+              "color": "#3949AB"
+            },
+            {
+              "position": 1,
+              "color": "#FFB300"
+            }
+          ]
+        }
+      },
+      {
+        "static": true,
+        "required": false,
+        "zIndex": 3,
+        "id": "pe-ring",
+        "fieldKey": "ring",
+        "label": "Off-palette stroke",
+        "type": "shape",
+        "shape": "ellipse",
+        "x": 60,
+        "y": 420,
+        "width": 300,
+        "height": 300,
+        "colorHex": "#F7F3EA",
+        "strokeColor": "#00897B",
+        "strokeWidthPx": 16
+      },
+      {
+        "static": true,
+        "required": false,
+        "zIndex": 4,
+        "id": "pe-translucent",
+        "fieldKey": "translucent",
+        "label": "Translucent off-palette",
+        "type": "shape",
+        "shape": "rect",
+        "x": 420,
+        "y": 420,
+        "width": 300,
+        "height": 300,
+        "colorHex": "#7B1FA280"
+      },
+      {
+        "static": true,
+        "required": false,
+        "zIndex": 5,
+        "id": "pe-chip",
+        "fieldKey": "chip",
+        "label": "Off-palette plate",
+        "type": "text",
+        "x": 780,
+        "y": 520,
+        "width": 240,
+        "height": 100,
+        "fontFamily": "Inter",
+        "fontWeight": 700,
+        "fontSizePx": 40,
+        "colorHex": "#FFFFFF",
+        "plateColor": "#43A047",
+        "platePaddingX": 28,
+        "platePaddingY": 16,
+        "staticValue": "Join us",
+        "align": "center"
+      },
+      {
+        "static": true,
+        "required": false,
+        "zIndex": 6,
+        "id": "pe-icon",
+        "fieldKey": "icon",
+        "label": "Off-palette icon",
+        "type": "icon",
+        "x": 60,
+        "y": 800,
+        "width": 160,
+        "height": 160,
+        "colorHex": "#00695C",
+        "vector": {
+          "viewBox": [0, 0, 24, 24],
+          "paths": [
+            {
+              "d": "M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"
+            }
+          ]
+        }
+      },
+      {
+        "static": true,
+        "required": false,
+        "zIndex": 7,
+        "id": "pe-mark",
+        "fieldKey": "mark",
+        "label": "Two-colour mark",
+        "type": "icon",
+        "x": 280,
+        "y": 800,
+        "width": 160,
+        "height": 160,
+        "vector": {
+          "viewBox": [0, 0, 20, 20],
+          "paths": [
+            {
+              "d": "M0 0h10v20H0z",
+              "colorHex": "#8E24AA"
+            },
+            {
+              "d": "M10 0h10v20H10z",
+              "colorHex": "#FDD835"
+            }
+          ]
+        }
+      },
+      {
+        "static": true,
+        "required": false,
+        "zIndex": 8,
+        "id": "pe-ink",
+        "fieldKey": "ink",
+        "label": "Off-palette ink",
+        "type": "text",
+        "x": 500,
+        "y": 820,
+        "width": 520,
+        "height": 120,
+        "fontFamily": "Inter",
+        "fontWeight": 800,
+        "fontSizePx": 72,
+        "colorHex": "#D84315",
+        "staticValue": "On brand"
+      }
+    ]
+  }
+}

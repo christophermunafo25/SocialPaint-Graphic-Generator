@@ -3518,10 +3518,13 @@ export function TemplateBuilder({
                     canvasWidth={draft.canvasWidth}
                     canvasHeight={draft.canvasHeight}
                     backgroundUrl={variantBackground.url}
-                    backgroundCss={schemaBackgroundCss({
-                      backgroundColor: variantBackground.color,
-                      backgroundGradient: variantBackground.gradient,
-                    })}
+                    backgroundCss={schemaBackgroundCss(
+                      {
+                        backgroundColor: variantBackground.color,
+                        backgroundGradient: variantBackground.gradient,
+                      },
+                      kit,
+                    )}
                     canvasEffects={selectedVariant?.canvasEffects ?? draft.canvasEffects}
                     appearanceOf={appearanceOf}
                     fields={draft.fields}

@@ -1,4 +1,5 @@
-import type { BrandKit, BrandTypeStyle, TemplateField } from "../types";
+import type { BrandKit, BrandTypeStyle, TemplateField, TextGradient } from "../types";
+import { deriveColorRoles } from "./system/roles";
 import { familyStyles, nearestStyle, styleName, toFontStyle } from "../render/fontCatalog";
 
 /** The styling a field actually renders with after the brand rules engine
@@ -48,29 +49,94 @@ const hexToRgb = (hex: string): [number, number, number] | null => {
   return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
 };
 
+/** What enforcement reads for a kit: the palette, which off-palette colours
+ * snap to, and the colours that pass untouched, which add the role colours
+ * the brand system derives (a neutral from the ramp), so a colour the system
+ * itself chose is never snapped away. Cached per kit object. */
+const allowedCache = new WeakMap<BrandKit, { palette: string[]; passes: Set<string> }>();
+function allowedColors(kit: BrandKit): { palette: string[]; passes: Set<string> } {
+  let allowed = allowedCache.get(kit);
+  if (!allowed) {
+    const palette = [
+      ...new Set(kit.colors.map((c) => c.hex.toUpperCase()).filter((h) => hexToRgb(h))),
+    ];
+    const roles = palette.length ? Object.values(deriveColorRoles(kit)).map((r) => r.hex) : [];
+    allowed = { palette, passes: new Set([...palette, ...roles]) };
+    allowedCache.set(kit, allowed);
+  }
+  return allowed;
+}
+
 /** Brand enforcement (Settings → Workspace): when the kit forbids off-palette
  * fills, a hex that is not in the palette renders as the NEAREST palette
  * color — deterministic and never blank, where dropping the fill would
- * re-color the field to the browser default. Exact palette members (any
- * case) and unparsable values pass through untouched. */
+ * re-color the field to the browser default. Allowed colors (any case) and
+ * unparsable values pass through untouched; an 8-digit hex keeps its alpha
+ * and snaps only its color. */
 export function clampToPalette(hex: string, kit: BrandKit | null): string {
   if (!kit || kit.allowOffPalette !== false) return hex;
-  const palette = kit.colors.filter((c) => hexToRgb(c.hex));
+  const { palette, passes } = allowedColors(kit);
   if (palette.length === 0) return hex;
-  if (palette.some((c) => c.hex.toLowerCase() === hex.toLowerCase())) return hex;
-  const rgb = hexToRgb(hex);
+  const alpha = /^#[0-9a-f]{8}$/i.test(hex.trim()) ? hex.trim().slice(7) : "";
+  const color = alpha ? hex.trim().slice(0, 7) : hex;
+  if (passes.has(color.toUpperCase())) return hex;
+  const rgb = hexToRgb(color);
   if (!rgb) return hex;
-  let best = palette[0].hex;
+  let best = palette[0];
   let bestDist = Infinity;
   for (const c of palette) {
-    const [r, g, b] = hexToRgb(c.hex)!;
+    const [r, g, b] = hexToRgb(c)!;
     const dist = (r - rgb[0]) ** 2 + (g - rgb[1]) ** 2 + (b - rgb[2]) ** 2;
     if (dist < bestDist) {
       bestDist = dist;
-      best = c.hex;
+      best = c;
     }
   }
-  return best;
+  return best + alpha;
+}
+
+const clampGradient = (g: TextGradient | undefined, kit: BrandKit | null) =>
+  g && kit?.allowOffPalette === false
+    ? { ...g, stops: g.stops.map((st) => ({ ...st, color: clampToPalette(st.color, kit) })) }
+    : g;
+
+/** A field with every colour it paints held to the palette: its fill or
+ * ink, gradient stops, stroke, text plate and an icon's per-path colours
+ * (brand-system Phase 5; text
+ * ink and gradients were the only ones before). The same object back when
+ * the kit allows any colour, so nothing downstream re-renders for it. */
+export function enforceFieldPalette(field: TemplateField, kit: BrandKit | null): TemplateField {
+  if (!kit || kit.allowOffPalette !== false) return field;
+  return {
+    ...field,
+    colorHex: field.colorHex ? clampToPalette(field.colorHex, kit) : field.colorHex,
+    textGradient: clampGradient(field.textGradient, kit),
+    strokeColor: field.strokeColor ? clampToPalette(field.strokeColor, kit) : field.strokeColor,
+    plateColor: field.plateColor ? clampToPalette(field.plateColor, kit) : field.plateColor,
+    // A multi-colour icon or logo carries a colour per path.
+    vector: field.vector?.paths.some((p) => p.colorHex)
+      ? {
+          ...field.vector,
+          paths: field.vector.paths.map((p) =>
+            p.colorHex ? { ...p, colorHex: clampToPalette(p.colorHex, kit) } : p,
+          ),
+        }
+      : field.vector,
+  };
+}
+
+/** The canvas's own colour and gradient held to the palette, likewise. */
+export function enforceBackground<
+  T extends { backgroundColor?: string; backgroundGradient?: TextGradient },
+>(bg: T, kit: BrandKit | null): T {
+  if (!kit || kit.allowOffPalette !== false) return bg;
+  return {
+    ...bg,
+    backgroundColor: bg.backgroundColor
+      ? clampToPalette(bg.backgroundColor, kit)
+      : bg.backgroundColor,
+    backgroundGradient: clampGradient(bg.backgroundGradient, kit),
+  };
 }
 
 export function resolveFieldStyle(field: TemplateField, kit: BrandKit | null): ResolvedFieldStyle {
@@ -116,16 +182,7 @@ export function resolveFieldStyle(field: TemplateField, kit: BrandKit | null): R
     // Enforcement switch #2 applies to gradients too — every stop snaps, so
     // "no off-palette colors" cannot be routed around with a two-stop
     // gradient of the same hex.
-    textGradient:
-      field.textGradient && kit?.allowOffPalette === false
-        ? {
-            ...field.textGradient,
-            stops: field.textGradient.stops.map((s) => ({
-              ...s,
-              color: clampToPalette(s.color, kit),
-            })),
-          }
-        : field.textGradient,
+    textGradient: clampGradient(field.textGradient, kit),
     maxLength: pick(style?.maxLength, field.maxLength),
     textSizing: pick(style?.textSizing, field.textSizing),
     boundStyle: style,

@@ -19,7 +19,11 @@ import {
   renderedText,
   type Rect,
 } from "@/lib/render/layout";
-import { resolveFieldStyle } from "@/lib/brand/resolveStyle";
+import {
+  enforceBackground,
+  enforceFieldPalette,
+  resolveFieldStyle,
+} from "@/lib/brand/resolveStyle";
 import {
   ensureSchemaFontsLoaded,
   fontUsageLoaded,
@@ -281,7 +285,7 @@ export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererPro
               // Its own stacking context, so canvas noise (and any field's
               // zIndex) stays under the builder and Generate overlays.
               isolation: "isolate",
-              background: schemaBackgroundCss(schema),
+              background: schemaBackgroundCss(schema, brandKit),
             }}
           >
             {schema.backgroundUrl && !backgroundDataUrl && (
@@ -425,8 +429,10 @@ export { gradientCss };
  * as an <img> above this) still wins visually. Shared with the builder's
  * edit canvas so every surface paints the same base. */
 export function schemaBackgroundCss(
-  schema: Pick<TemplateSchema, "backgroundColor" | "backgroundGradient">,
+  source: Pick<TemplateSchema, "backgroundColor" | "backgroundGradient">,
+  brandKit: BrandKit | null = null,
 ): string {
+  const schema = enforceBackground(source, brandKit);
   const g = schema.backgroundGradient;
   if (g?.stops.length) return gradientCss(g);
   return schema.backgroundColor || "#ffffff";
@@ -501,7 +507,10 @@ export function FieldBox({
  * parent sized to field.width × field.height. The builder hosts this inside
  * its screen-space interaction boxes so content moves with the box during
  * drags — no second source of truth, no catch-up jump on release. */
-export function FieldBoxContent({ field, value, brandKit, fontSize }: FieldBoxProps) {
+export function FieldBoxContent({ field: authored, value, brandKit, fontSize }: FieldBoxProps) {
+  // Every colour the field paints held to the palette when the brand forbids
+  // off-palette colour; the field itself otherwise.
+  const field = useMemo(() => enforceFieldPalette(authored, brandKit), [authored, brandKit]);
   // Static elements carry their own fixed content — member values never apply.
   const effective = field.static ? field.staticValue : value;
   if (field.type === "shape") {
