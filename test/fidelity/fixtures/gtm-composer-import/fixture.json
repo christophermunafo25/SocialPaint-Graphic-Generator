@@ -1,0 +1,13 @@
+{
+  "name": "gtm-composer-import",
+  "kind": "import",
+  "source": { "fileKey": "mEJRslarcQDkgPeY6AObi5", "nodeId": "200:208" },
+  "figmaNode": "/test/fidelity/fixtures/gtm-composer/figma-node.json",
+  "goldenFrom": "gtm-composer",
+  "assets": {
+    "c3eb9c9e4690dfb561924be953c09aa0910d934f": "fill-c3eb9c9e4690.png",
+    "I200:209;61:476": "r-I200-209_61-476.png"
+  },
+  "baseline": { "chromium": 8.84, "firefox": 10.32, "webkit": 6.19 },
+  "blurBaseline": { "chromium": 0.58, "firefox": 0.45, "webkit": 0.54 }
+}

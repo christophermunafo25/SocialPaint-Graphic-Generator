@@ -9,7 +9,7 @@
 // The one exception is the flat-image path, where no geometry exists and the
 // model's proposed boxes are clamped hard.
 
-import type { ExtractedElement, ExtractionResult } from "./extract.ts";
+import type { ExtractedElement, ExtractionResult, ImportedEffect } from "./extract.ts";
 
 export type AutobuildSourceKind = "figma" | "canva" | "image";
 
@@ -74,6 +74,12 @@ export interface ValidatedField {
     center?: { x: number; y: number };
     radius?: { x: number; y: number };
   };
+  /** Shape fields: the stroke and depth the importer lifted with the node
+   * (brand-system Phase 4), copied from the extraction. */
+  strokeColor?: string;
+  strokeWidthPx?: number;
+  strokeAlign?: "center" | "outside";
+  effects?: ImportedEffect[];
   sourceNodeId?: string;
   x: number;
   y: number;
@@ -165,6 +171,10 @@ function geometryFrom(
     shape: el.shape,
     cornerRadius: el.cornerRadius,
     textGradient: el.textGradient,
+    strokeColor: el.strokeColor,
+    strokeWidthPx: el.strokeWidthPx,
+    strokeAlign: el.strokeAlign,
+    effects: el.effects,
     fontFamily: el.fontFamily,
     fontWeight: el.fontWeight,
     fontSizePx: el.fontSizePx,

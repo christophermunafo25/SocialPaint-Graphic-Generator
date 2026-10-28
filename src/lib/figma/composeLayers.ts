@@ -75,7 +75,9 @@ function buildGradient(ctx: CanvasRenderingContext2D, u: FigmaLayerUnit): Canvas
   }));
   let g: CanvasGradient;
   if (u.gradientType === "radial") {
-    // Handle 0 is the center, handle 1 the radius endpoint.
+    // Handle 0 is the center, handles 1 and 2 the ends of the two radii. A
+    // canvas radial gradient is a circle, so draw it at the first radius and
+    // let drawGradient squash it into the ellipse.
     g = ctx.createRadialGradient(x0, y0, 0, x0, y0, Math.max(1, Math.hypot(x1 - x0, y1 - y0)));
   } else if (u.gradientType === "angular") {
     if (typeof ctx.createConicGradient !== "function") {
@@ -89,11 +91,43 @@ function buildGradient(ctx: CanvasRenderingContext2D, u: FigmaLayerUnit): Canvas
   return g;
 }
 
+/** The squash that turns a radial unit's circle into its ellipse: the
+ * second radius over the first, applied along the second radius's axis.
+ * Identity for every other unit. */
+function radialSquash(u: FigmaLayerUnit): DOMMatrix | null {
+  const [h0, h1, h2] = u.handles ?? [];
+  if (u.gradientType !== "radial" || !h0 || !h1 || !h2) return null;
+  const ax = { x: (h1.x - h0.x) * u.width, y: (h1.y - h0.y) * u.height };
+  const ay = { x: (h2.x - h0.x) * u.width, y: (h2.y - h0.y) * u.height };
+  const r1 = Math.hypot(ax.x, ax.y);
+  const r2 = Math.hypot(ay.x, ay.y);
+  if (r1 < 1e-6 || r2 < 1e-6 || Math.abs(r2 - r1) < 1e-3) return null;
+  const cx = (u.x + h0.x * u.width) * SCALE;
+  const cy = (u.y + h0.y * u.height) * SCALE;
+  const angle = Math.atan2(ay.y, ay.x);
+  return new DOMMatrix()
+    .translate(cx, cy)
+    .rotate((angle * 180) / Math.PI)
+    .scale(r2 / r1, 1)
+    .rotate((-angle * 180) / Math.PI)
+    .translate(-cx, -cy);
+}
+
 function drawGradient(ctx: CanvasRenderingContext2D, u: FigmaLayerUnit): void {
   ctx.globalAlpha = u.opacity ?? 1;
   ctx.fillStyle = buildGradient(ctx, u);
+  // The path is fixed when traced; the gradient is read in the transform at
+  // fill time. So trace the box first, then squash only the paint.
   boxPath(ctx, u);
-  ctx.fill();
+  const squash = radialSquash(u);
+  if (squash) {
+    ctx.save();
+    ctx.transform(squash.a, squash.b, squash.c, squash.d, squash.e, squash.f);
+    ctx.fill();
+    ctx.restore();
+  } else {
+    ctx.fill();
+  }
   ctx.globalAlpha = 1;
 }
 

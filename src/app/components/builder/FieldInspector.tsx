@@ -17,6 +17,7 @@ import {
   Plus,
   RefreshCw,
   RotateCw,
+  ZoomIn,
   Trash2,
   Unlink,
   Upload,
@@ -78,7 +79,7 @@ import {
   compactControlStyle,
 } from "./InspectorControls";
 import { AlignControls } from "./AlignControls";
-import { fixedPatch } from "./fieldOps";
+import { fixedPatch, imagePosition, withImagePosition } from "./fieldOps";
 import { ColorRow, EffectsEditor } from "./EffectsEditor";
 import { normalizeEffects } from "./effectOps";
 import { FillPicker, fillSwatchCss, getFill } from "./FillPicker";
@@ -1296,6 +1297,52 @@ export function FieldInspector(props: FieldInspectorProps) {
                   />
                 </PropertyRow>
               )}
+              {/* Where the photo sits inside its box. Imports land with the
+                designer's position; Reset returns to the plain fit. Shared
+                by every look, so it lives on All only. */}
+              <PropertyRow
+                stack
+                label={
+                  <span className="flex items-center" style={{ gap: "var(--space-2xs)" }}>
+                    <span style={{ flex: 1 }}>Photo position</span>
+                    {field.imageRect && (
+                      <button
+                        type="button"
+                        className="t-caption-s"
+                        style={{ color: "var(--text-secondary)" }}
+                        onClick={() => onChange({ imageRect: undefined })}
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </span>
+                }
+              >
+                {(
+                  [
+                    ["zoom", "Zoom", "Photo zoom"],
+                    ["x", "X", "Photo position X"],
+                    ["y", "Y", "Photo position Y"],
+                  ] as const
+                ).map(([key, label, ariaLabel]) => (
+                  <NumericField
+                    key={key}
+                    {...(key === "zoom"
+                      ? { icon: <ZoomIn style={{ width: 12, height: 12 }} strokeWidth={1.5} /> }
+                      : { label })}
+                    suffix="%"
+                    ariaLabel={ariaLabel}
+                    precision={0}
+                    min={key === "zoom" ? 10 : -1000}
+                    max={1000}
+                    value={Math.round(imagePosition(field.imageRect)[key])}
+                    onCommit={(v) =>
+                      v !== undefined &&
+                      onChange({ imageRect: withImagePosition(field.imageRect, { [key]: v }) })
+                    }
+                  />
+                ))}
+              </PropertyRow>
               {/* An imported custom-shape mask. Masks can't be authored
                 in-app (yet — they arrive from the Figma importer), so the
                 row only says one is applied and offers removal. */}

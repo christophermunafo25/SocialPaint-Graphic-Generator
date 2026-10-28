@@ -223,6 +223,7 @@ describe("rescaleTemplate — completeness", () => {
     platePaddingX: 24,
     platePaddingY: 12,
     maskUrl: "template-backgrounds/c1/masks/1.png", // stretches with the box — nothing to scale
+    imageRect: { x: -0.1, y: 0, width: 1.2, height: 1 }, // box fractions, so it scales with the box
     sourceNodeId: "1:2",
     typeStyleKey: "heading",
     fontFamily: "Inter",

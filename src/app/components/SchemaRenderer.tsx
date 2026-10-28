@@ -40,6 +40,7 @@ import {
 } from "@/lib/render/effects";
 import { NOISE_TILE_CELLS, noiseLayerCss, noiseTileDataUrl } from "@/lib/render/noise";
 import { readVector } from "@/lib/render/vector";
+import { imageRectStyle, readImageRect } from "@/lib/render/imageRect";
 import type { CornerRadius, FieldEffect } from "@/lib/types";
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
@@ -1039,6 +1040,9 @@ function ImageFieldBox({ field, value }: { field: TemplateField; value: string |
   // shape instead of being cut off by it; inner shadows and noise overlay
   // the photo inside the mask. Without effects the markup is today's.
   const effects = readEffects(field.effects);
+  // A crop places the image at its own rect inside the box; the box still
+  // clips it, with its corners and mask.
+  const rect = readImageRect(field.imageRect);
   const box = (
     <div
       data-image-status={status}
@@ -1055,13 +1059,19 @@ function ImageFieldBox({ field, value }: { field: TemplateField; value: string |
         background: value ? undefined : "rgba(0,0,0,0.06)",
         border: value ? undefined : "1.5px dashed rgba(0,0,0,0.25)",
         ...maskStyle,
+        ...(rect ? { position: "relative" } : {}),
       }}
     >
       {image.dataUrl ? (
         <img
           src={image.dataUrl}
           alt={field.label}
-          style={{ width: "100%", height: "100%", objectFit: field.objectFit ?? "cover" }}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: field.objectFit ?? "cover",
+            ...(rect ? imageRectStyle(rect) : {}),
+          }}
         />
       ) : value ? null : ( // the export gate above will wait or refuse on the marker. // In flight, or gone. Either way there is nothing to paint yet, and
         <span

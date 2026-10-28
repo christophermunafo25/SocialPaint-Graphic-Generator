@@ -1,0 +1,21 @@
+{
+  "name": "feature-highlight-import",
+  "kind": "import",
+  "source": { "fileKey": "g9mjhQHoPVgYbBIPKR1VsT", "nodeId": "62:1210" },
+  "figmaNode": "/test/fidelity/fixtures/feature-highlight/figma-node.json",
+  "goldenFrom": "feature-highlight",
+  "fonts": [
+    {
+      "family": "Bricolage Grotesque Heading",
+      "file": "/test/fidelity/fixtures/feature-highlight/BricolageGrotesqueHeadline-SemiBold.ttf",
+      "weight": 600,
+      "style": "normal"
+    }
+  ],
+  "assets": {
+    "d0a0cebeaac28c66eac802c112c13765264237a8": "fill-d0a0cebeaac2.png",
+    "62:1214": "r-62-1214.png"
+  },
+  "baseline": { "chromium": 4.7, "firefox": 4.58, "webkit": 6.04 },
+  "blurBaseline": { "chromium": 9.74, "firefox": 9.86, "webkit": 10.74 }
+}

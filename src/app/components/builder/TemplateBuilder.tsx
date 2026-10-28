@@ -28,6 +28,7 @@ import {
 import type {
   AutoBuildResult,
   DesignImportResult,
+  FieldEffect,
   FieldValues,
   ImportIssue,
   LayoutGroup,
@@ -122,6 +123,7 @@ import {
 } from "./fieldOps";
 import { composeFigmaBackground } from "@/lib/figma/composeLayers";
 import { assembleElementFields, mergeOverlayFields } from "@/lib/figma/overlayFields";
+import { stackImported } from "@/lib/figma/importLanding";
 import { isFigmaNodeUrl } from "@/lib/figma/figmaUrl";
 import { verifyMissingFamilies } from "@/lib/render/fonts";
 import { lockedProperties } from "@/lib/brand/resolveStyle";
@@ -2145,6 +2147,8 @@ export function TemplateBuilder({
      * re-render so both passes decompose one consistent snapshot. */
     tree?: unknown;
     fields: TemplateField[];
+    /** The frame's own effects, which become the canvas's. */
+    canvasEffects?: FieldEffect[];
     /** How to key each incoming field against what already exists. */
     fieldKeyFor(field: TemplateField, existing: TemplateField[]): string;
     /** Extra draft patch, computed AFTER keys are final (caption tags need
@@ -2155,13 +2159,7 @@ export function TemplateBuilder({
     // Computed OUTSIDE the setDraft updater: updaters run at render time (and
     // twice under StrictMode), so pushing into `imported` there would leave it
     // empty for the recomposition below and duplicate every field in dev.
-    const existing = [...draft.fields];
-    let z = maxZ(existing);
-    const imported = opts.fields.map((f) => {
-      const next: TemplateField = { ...f, fieldKey: opts.fieldKeyFor(f, existing), zIndex: ++z };
-      existing.push(next);
-      return next;
-    });
+    const imported = stackImported(opts.fields, draft.fields, opts.fieldKeyFor);
     const patch = opts.patch?.(imported) ?? {};
     setDraft((d) => ({
       ...d,
@@ -2169,6 +2167,10 @@ export function TemplateBuilder({
       backgroundUrl: opts.backgroundUrl,
       canvasWidth: opts.canvasWidth,
       canvasHeight: opts.canvasHeight,
+      // The flat Figma render has the frame's own effects baked in, so the
+      // canvas carries none of its own until the recomposed plate lands
+      // (recomposeBackground); a re-import clears the last frame's.
+      canvasEffects: undefined,
       fields: [...d.fields, ...imported],
     }));
     // A successful import IS a chosen source, even if the background render
@@ -2211,7 +2213,7 @@ export function TemplateBuilder({
         window.clearTimeout(noticeTimer.current);
         noticeTimer.current = window.setTimeout(() => setNotice(null), 8000);
       }
-      recomposeBackground(opts.sourceUrl, imported, opts.tree, missingFonts);
+      recomposeBackground(opts.sourceUrl, imported, opts.tree, missingFonts, opts.canvasEffects);
     })();
     return imported;
   };
@@ -2242,6 +2244,7 @@ export function TemplateBuilder({
       sourceUrl: result.sourceUrl,
       tree: result.tree,
       fields: result.suggestedFields,
+      canvasEffects: result.canvasEffects,
       fieldKeyFor: (f, existing) => suggestFieldKey(f.label, existing),
       summary: (imported) =>
         imported.length === 0
@@ -2316,6 +2319,7 @@ export function TemplateBuilder({
     imported: TemplateField[],
     tree?: unknown,
     missingFonts: string[] = [],
+    canvasEffects?: FieldEffect[],
   ) => {
     //
     // The invariant that matters: every id excluded from the background must
@@ -2372,6 +2376,10 @@ export function TemplateBuilder({
             return {
               ...d,
               backgroundUrl: bgUrl,
+              // The stripped plate has none of the frame's effects, so they
+              // move onto the canvas now, over the plate and the fields, as
+              // Figma paints them.
+              canvasEffects: normalizeEffects(canvasEffects, { kind: "canvas" }),
               // Anchors index into the EXCLUDED fields in paint order —
               // `lifted`, not `imported` (baked missing-font text never
               // reached the decomposer).
