@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* Screenshot loop for the new look. See docs/design/new-look/README.md.
  *
- *   node scripts/new-look/shots.mjs capture <dir> [--only a,b] [--themes light,dark] [--base URL] [--width 1440]
+ *   node scripts/new-look/shots.mjs capture <dir> [--only a,b] [--themes light,dark] [--widths 1440,1024,390] [--no-popups] [--base URL]
  *   node scripts/new-look/shots.mjs compare <beforeDir> <afterDir> [outDir]
  *   node scripts/new-look/shots.mjs compare-image <a.png> <b.png> <out.png>
  *   node scripts/new-look/shots.mjs props <file.json> [--names earlier.json] [--base URL]
@@ -10,10 +10,21 @@
  * capture and props start their own Vite dev server on the local backend
  * (Supabase env blanked, so .env is ignored) unless --base points at one,
  * seed it with fixtures/dev-workspace.json (its clock pinned), and drive Chromium through
- * Playwright. Every route is saved at 1440 wide (or --width), full page, in
- * both themes; "onboarding" is the first screen of a browser with no
- * workspace, and "dev-ui" is the primitives sheet, whose Interaction states
- * table is 3172 wide (capture it with --width 3172).
+ * Playwright. Every route is saved full page at 1440, 1024 and 390 wide (or
+ * --widths) in both themes, as <name>-<theme>-<width>.png (PHASE-9 §9 D9).
+ * "onboarding" is the first screen of a browser with no workspace, and
+ * "dev-ui" is the primitives sheet, whose Interaction states table is 3172
+ * wide (capture it with --widths 3172).
+ *
+ * A route's options hold a page in a state: `stall` freezes local store
+ * calls in loading ("hang") or error ("fail") through src/lib/stores/local/
+ * devStall.ts, `seed` edits the fixture's database first (the empty states),
+ * `publicLink` answers the public page's Edge Function (a payload built from
+ * the fixture, or a 404 for the unavailable state), `widths` limits the
+ * route, and `act` opens a dialog before the shot. At the widest width each
+ * route also opens every menu, select and popover trigger it renders
+ * ([aria-haspopup]) one at a time and saves <name>--popup-<n>-<theme>-<width>.png
+ * (skip with --no-popups).
  *
  * compare writes a heatmap per changed screen (changed pixels in magenta over
  * the dimmed new screen) and prints the share of pixels that moved. Both
@@ -96,6 +107,59 @@ const ROUTES = [
   ["settings-sharing", "/settings/sharing"],
   ["settings-account", "/settings/account"],
   ["settings-advanced", "/settings/advanced"],
+  // Loading, empty and error (PHASE-9 §9 D9): the stores held, or the
+  // fixture emptied.
+  ["brand-templates-loading", "/templates", { stall: { "templates.*": "hang" } }],
+  ["brand-templates-error", "/templates", { stall: { "templates.*": "fail" } }],
+  ["brand-templates-empty", "/templates", { seed: (db) => (db.templates = []) }],
+  ["template-fill-error", `/templates/${firstTemplate}`, { stall: { "templates.*": "fail" } }],
+  ["generate-history-loading", "/generate/history", { stall: { "generateThreads.*": "hang" } }],
+  ["generate-history-error", "/generate/history", { stall: { "generateThreads.*": "fail" } }],
+  ["generate-history-empty", "/generate/history", { seed: (db) => (db.generateThreads = []) }],
+  ["insights-loading", "/insights", { stall: { "usage.*": "hang" } }],
+  ["insights-error", "/insights", { stall: { "usage.*": "fail" } }],
+  ["insights-empty", "/insights", { seed: (db) => (db.usageEvents = []) }],
+  ["brand-studio-loading", "/brand-studio", { stall: { "brandAssets.*": "hang" } }],
+  ["settings-people-loading", "/settings/people", { stall: { "people.*": "hang" } }],
+  ["settings-people-error", "/settings/people", { stall: { "people.*": "fail" } }],
+  ["settings-usage-loading", "/settings/usage", { stall: { "usage.*": "hang" } }],
+  ["settings-usage-error", "/settings/usage", { stall: { "usage.*": "fail" } }],
+  ["settings-sharing-error", "/settings/sharing", { stall: { "publicLinks.*": "fail" } }],
+  // The surfaces with no frames, which still render here (PHASE-9 §4.1).
+  ["template-builder-loading", "/template-builder", { stall: { "templates.*": "hang" } }],
+  ["template-builder-error", "/template-builder", { stall: { "templates.*": "fail" } }],
+  ["template-builder-empty", "/template-builder", { seed: (db) => (db.templates = []) }],
+  [
+    "template-builder-delete",
+    "/template-builder",
+    { act: (page) => page.locator("button[title=Delete]").first().click() },
+  ],
+  ["builder-editor", `/template-builder/${firstTemplate}`],
+  ["builder-picker", "/template-builder/new"],
+  [
+    "builder-size-gallery",
+    "/template-builder/new",
+    {
+      act: (page) =>
+        page
+          .getByRole("button", { name: /^Start blank/ })
+          .first()
+          .click(),
+    },
+  ],
+  ["bulk-fill", `/templates/${firstTemplate}/bulk`],
+  ["bulk-fill-error", `/templates/${firstTemplate}/bulk`, { stall: { "templates.*": "fail" } }],
+  ["public-link", "/l/shots-link", { publicLink: "template" }],
+  ["public-link-unavailable", "/l/shots-missing", { publicLink: "missing" }],
+  // The narrow layout's navigation drawer.
+  [
+    "nav-drawer",
+    "/templates",
+    {
+      widths: [390],
+      act: (page) => page.getByRole("button", { name: "Open navigation" }).click(),
+    },
+  ],
   ["onboarding", "/templates", { fresh: true }],
   // Onboarding's steps on stand-in services (PHASE-8B §9 D8).
   ["onboarding-01-about-you", "/dev/onboarding?step=about"],
@@ -115,7 +179,7 @@ const ROUTES = [
 const [mode, ...rest] = process.argv.slice(2);
 const flags = {};
 const positional = [];
-const BOOLEAN_FLAGS = new Set(["all"]);
+const BOOLEAN_FLAGS = new Set(["all", "no-popups"]);
 for (let i = 0; i < rest.length; i++) {
   const name = rest[i].startsWith("--") ? rest[i].slice(2) : null;
   if (name && BOOLEAN_FLAGS.has(name)) flags[name] = true;
@@ -162,20 +226,62 @@ async function withServer(fn) {
 const launch = () =>
   chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 
-async function newContext(browser, theme, { fresh = false } = {}) {
-  const width = Number(flags.width ?? 1440);
-  const context = await browser.newContext({ viewport: { width, height: 900 } });
+// The public page's Edge Function answer: the fixture's first template and
+// kit as the database rows the function returns, as one look (a link pinned
+// to a colourway).
+const snake = (o) =>
+  Object.fromEntries(
+    Object.entries(o).map(([k, v]) => [k.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`), v]),
+  );
+function publicPayload() {
+  const { fields, ...template } = devDb.templates[0];
+  return {
+    template: {
+      ...snake(template),
+      background_storage_path: null,
+      variants: null,
+      template_fields: fields.map((f, i) => ({ ...snake(f), sort_order: i })),
+    },
+    brandKit: snake(devDb.brandKits[0]),
+    fontAssets: [],
+    allowUploads: true,
+    assetTtlSeconds: 300,
+  };
+}
+
+async function newContext(
+  browser,
+  theme,
+  { fresh = false, stall, seed: edit, publicLink } = {},
+  width = 1440,
+) {
+  const context = await browser.newContext({
+    viewport: { width, height: width < 768 ? 844 : 900 },
+  });
+  if (publicLink) {
+    await context.route("**/functions/v1/**", (route) =>
+      publicLink === "template" && route.request().url().endsWith("/public-template")
+        ? route.fulfill({ contentType: "application/json", body: JSON.stringify(publicPayload()) })
+        : route.fulfill({ status: publicLink === "template" ? 204 : 404, body: "" }),
+    );
+  }
   // The fixture's pinned "now" (seed-insights.mjs): Date stands still at it,
   // timers keep running, so Insights' rolling windows match between runs.
   if (fixture.pinnedClock) await context.clock.setFixedTime(new Date(fixture.pinnedClock));
-  const seed = fresh ? {} : fixture.localStorage;
+  let seed = fresh ? {} : fixture.localStorage;
+  if (edit) {
+    const db = structuredClone(devDb);
+    edit(db);
+    seed = { ...seed, "brand-portal-dev-db": db };
+  }
   const entries = Object.entries(seed).map(([k, v]) => [
     k,
     typeof v === "string" ? v : JSON.stringify(v),
   ]);
   await context.addInitScript(
-    ({ entries, theme }) => {
+    ({ entries, theme, stall }) => {
       try {
+        if (stall) sessionStorage.setItem("sp-dev-stall", JSON.stringify(stall));
         if (sessionStorage.getItem("shots-seeded")) return;
         sessionStorage.setItem("shots-seeded", "1");
         for (const [k, v] of entries) localStorage.setItem(k, v);
@@ -184,7 +290,7 @@ async function newContext(browser, theme, { fresh = false } = {}) {
         /* a frame without storage */
       }
     },
-    { entries, theme },
+    { entries, theme, stall: stall ?? null },
   );
   return context;
 }
@@ -207,29 +313,74 @@ async function settle(page) {
 async function capture(dir) {
   const only = flags.only ? flags.only.split(",") : null;
   const themes = (flags.themes ?? "light,dark").split(",");
+  const widths = (flags.widths ?? flags.width ?? "1440,1024,390").split(",").map(Number);
+  const popups = !("no-popups" in flags);
   await mkdir(dir, { recursive: true });
+  const shoot = (page, file) =>
+    page.screenshot({
+      path: path.join(dir, file),
+      fullPage: true,
+      animations: "disabled",
+      caret: "hide",
+    });
   await withServer(async (base) => {
     const browser = await launch();
     for (const theme of themes) {
-      for (const [name, route, opts] of ROUTES) {
+      for (const [name, route, opts = {}] of ROUTES) {
         if (only && !only.includes(name)) continue;
-        const context = await newContext(browser, theme, opts);
-        const page = await context.newPage();
-        await page.goto(base + route, { waitUntil: "domcontentloaded" });
-        await settle(page);
-        const file = path.join(dir, `${name}-${theme}.png`);
-        await page.screenshot({
-          path: file,
-          fullPage: true,
-          animations: "disabled",
-          caret: "hide",
-        });
-        console.log(`${name}-${theme}  ${new URL(page.url()).pathname}`);
-        await context.close();
+        const routeWidths = opts.widths ? widths.filter((w) => opts.widths.includes(w)) : widths;
+        for (const width of routeWidths) {
+          const context = await newContext(browser, theme, opts, width);
+          const page = await context.newPage();
+          await page.goto(base + route, { waitUntil: "domcontentloaded" });
+          await settle(page);
+          if (opts.act) {
+            // A layout that doesn't offer the control (the builder below
+            // desktop width) keeps its plain shot, with a note.
+            page.setDefaultTimeout(5000);
+            await opts.act(page).catch(() => console.log(`  ${name}: nothing to open at ${width}`));
+            await settle(page);
+          }
+          await shoot(page, `${name}-${theme}-${width}.png`);
+          console.log(`${name}-${theme}-${width}  ${new URL(page.url()).pathname}`);
+          if (popups && !opts.act && width === Math.max(...widths)) {
+            await capturePopups(page, (n) =>
+              shoot(page, `${name}--popup-${n}-${theme}-${width}.png`),
+            );
+          }
+          await context.close();
+        }
       }
     }
     await browser.close();
   });
+}
+
+/** Opens each visible [aria-haspopup] trigger in turn, shoots it open, and
+ * closes it with Escape. A trigger that leaves the page (or can't be clicked)
+ * is skipped, and the page is reloaded so the next one starts clean. */
+async function capturePopups(page, shoot) {
+  const url = page.url();
+  const count = await page.locator("[aria-haspopup]:visible").count();
+  let n = 0;
+  for (let i = 0; i < count; i++) {
+    const trigger = page.locator("[aria-haspopup]:visible").nth(i);
+    try {
+      await trigger.click({ timeout: 2000 });
+    } catch {
+      continue;
+    }
+    await page.waitForTimeout(400);
+    if (page.url() !== url) {
+      await page.goto(url, { waitUntil: "domcontentloaded" });
+      await settle(page);
+      continue;
+    }
+    await shoot(++n);
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(250);
+  }
+  if (n) console.log(`  ${n} popups`);
 }
 
 // ---------------------------------------------------------------- compare
