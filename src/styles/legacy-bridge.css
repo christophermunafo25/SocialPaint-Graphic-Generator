@@ -36,5 +36,4 @@
   /* Cards and the sidebar use Elevation/Small. The legacy bevel
      (--card-highlight) already matches Figma's, so only the drop changes. */
   --shadow-card: 2px 2px 8px 0 var(--shadow-raised);
-  --shadow-rail: 2px 2px 8px 0 var(--shadow-raised);
 }

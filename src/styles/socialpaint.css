@@ -175,7 +175,6 @@ html {
      per hue. */
   --text-on-brand-deep: #0b0b0c;
   --white: #ffffff;
-  --gray: #f1f1f1;
   --ink: #272727;
 
   /* Typography — Inter Tight carries headings, body, and UI (2026-10-19,
@@ -236,18 +235,9 @@ html {
      they are steps of the ramp, not component tokens, so the scale stays
      whole for the next display title. A component token with no reader is
      deleted instead (the old composer's --type-composer-lh went that way). */
-  --type-display-size: 67px;
-  --type-display-lh: 0.92;
-  --type-display-track: var(--track-head);
-  --type-h1-size: 42px;
-  --type-h1-lh: 0.95;
-  --type-h1-track: var(--track-head);
   --type-h2-size: 33px;
   --type-h2-lh: 1;
   --type-h2-track: var(--track-head);
-  --type-h3-size: 33px;
-  --type-h3-lh: 1.1;
-  --type-h3-track: var(--track-head);
   /* The page title on every route. The Jakarta rescale landed it at 36
      (the Bricolage era's 45 through ×0.8); stepped down to 32 the same
      day, at CJ's direction — "a little smaller" — which merged it with
@@ -263,17 +253,10 @@ html {
   --type-body-lh: 1.5;
   --type-body-track: 0; /* no added squeeze at body size */
   --type-label-size: 13px;
-  --type-label-lh: 1.25;
   --type-label-track: 0.01em; /* a hair of air at 13px */
   --type-caption-size: 12px;
   --type-caption-lh: 1.4;
-  --type-caption-track: 0;
-  --type-button-size: 15px;
-  --type-button-lh: 1.1;
   --type-button-track: 0.01em;
-  --type-data-size: 13px;
-  --type-data-lh: 1.4;
-  --type-data-track: 0;
   --type-composer-size: 16px; /* the Generate brief — one step above body, per Figma 72:27 */
 
   /* Shape — hold the gap between soft containers and crisp controls. */
@@ -314,58 +297,19 @@ html {
   --page-max: 1720px; /* THE content column cap — one knob, see .sp-page */
   --page-pad: var(--space-xl); /* column gutter (48px desktop); tiers step down below --bp-xl */
   --chrome-top: 0px; /* height of fixed app chrome above the page: 0 beside the rail; 56px (the mobile header) below --bp-lg. Sticky page chrome offsets from this, never from top: 0. */
-  --bp-sm: 480px;
   --bp-md: 768px;
   --bp-lg: 1024px;
   --bp-xl: 1280px;
-  --bp-2xl: 1600px;
-  --container-sm: 640px;
-  --container-md: 768px;
-  --container-lg: 1024px;
-  --container-xl: 1180px;
-  --container-full: 100%;
-  --grid-cols: 4;
-  --grid-gutter: var(--space-sm);
-  --grid-margin: var(--space-sm);
-  --z-base: 0;
-  --z-raised: 10;
   --z-sticky: 100;
   --z-drawer: 200;
-  --z-overlay: 300;
-  --z-modal: 400;
   --z-popover: 500;
-  --z-toast: 600;
   --z-tooltip: 700;
-  --density-control: var(--control-md);
-  --density-row-y: var(--space-sm);
-  --density-cell-x: var(--space-md);
 
   /* Motion — one easing, three durations. */
   --ease: cubic-bezier(0.2, 0, 0, 1);
   --dur-state: 140ms;
   --dur-panel: 220ms;
   --dur-reveal: 400ms;
-}
-
-@media (min-width: 768px) {
-  :root {
-    --grid-cols: 8;
-    --grid-gutter: var(--space-md);
-    --grid-margin: var(--space-lg);
-  }
-}
-@media (min-width: 1024px) {
-  :root {
-    --grid-cols: 12;
-    --grid-gutter: var(--space-md);
-    --grid-margin: var(--space-xl);
-  }
-}
-
-[data-density="compact"] {
-  --density-control: var(--control-sm);
-  --density-row-y: var(--space-2xs);
-  --density-cell-x: var(--space-xs);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -431,7 +375,6 @@ html {
      20%, D7 two-step frames), the rail 35%, chips and the search trigger
      25% at rest and 35% on hover. */
   --edge-alpha-card: 0.15;
-  --edge-alpha-rail: 0.35;
   --edge-alpha-chip: 0.25;
   --edge-alpha-chip-hover: 0.35;
   /* The card's inner highlight (2026-09-25): two more 1px inset lines, top
@@ -447,11 +390,7 @@ html {
   --text-on-accent: #272727;
 
   --text-on-surface: #f1f1f1;
-  --text-on-surface-secondary: #c6c6c6;
-  --text-on-surface-muted: #949494;
-  --border-on-surface: #323232;
   --bg-surface-raised: #202020;
-  --bg-surface-hover: #2a2a2a;
 
   --border-control: #f1f1f1; /* the edge of a pressable outlined control */
 
@@ -465,18 +404,14 @@ html {
      (Ink, both themes), never --text-on-action. The inverted
      --text-on-action pairs exclusively with the neutral --fill-action;
      on a brand fill it reads ~1.2:1 in light mode. */
-  --state-primary-on-surface: var(--slime);
   --state-attention-on-surface: var(--slime);
   --state-primary: var(--slime);
   --fill-primary: var(--slime);
-  --state-info: var(--aqua);
   --fill-info: var(--aqua);
   --state-attention: var(--slime);
   --fill-attention: var(--slime);
 
   /* Functional signals, outside the brand palette. */
-  --state-warning-on-surface: #ffd900;
-  --fill-danger: #e57373;
   --state-warning: #ffd900;
   --fill-warning: #ffd900;
 
@@ -490,11 +425,7 @@ html {
      only the field would strip the mock's separation. Neutrals only; the
      covers' artwork palette is baked into the assets, never tokenised. */
   --cover-ground: #f9f9f8;
-  --cover-card: #171819;
-  --cover-back: #2f3133;
-  --cover-chrome-1: #ececec;
   --cover-chrome-2: #2f3133;
-  --cover-chrome-3: #0b0b0c;
 
   /* Brand-templates platform chip (Figma 141:329; states from the
      "Navigation" hover sheet 255:3, 2026-09-25). #252627 is the one value
@@ -535,10 +466,6 @@ html {
 
   /* Template card go button: filled at rest, inverts to white with an ink
      arrow while the card is hovered or focused. */
-  --card-go-bg: var(--ink-700);
-  --card-go-fg: var(--text-primary);
-  --card-go-bg-hover: var(--white);
-  --card-go-fg-hover: var(--ink-900);
 
   /* Elevation (2026-09-25, the Figma "Navigation" page; reverses the
      no-shadow rule for these surfaces only). A mode that draws no shadow
@@ -549,9 +476,6 @@ html {
   --shadow-rest: 0 0 0 0 transparent;
   --shadow-rest-hover: 0 0 0 0 transparent;
   --shadow-card-hover: 6px 6px 25px 0 rgb(0 0 0 / 0.3);
-
-  --shadow-sm: none;
-  --shadow-md: none;
 
   /* The chats' scroll fade ground. */
   --gen-fade: var(--bg-canvas);
@@ -595,7 +519,6 @@ html {
   --edge-alpha-card: 0.15;
   /* The per-surface rungs mirror today's light values; light never draws
      these edges (see the assembly beside .sp-card). */
-  --edge-alpha-rail: 0.15;
   --edge-alpha-chip: 0.15;
   --edge-alpha-chip-hover: 0.25;
   --card-highlight: 0 0 0 0 transparent; /* dark only */
@@ -606,11 +529,7 @@ html {
   --text-on-accent: #272727;
 
   --text-on-surface: #272727;
-  --text-on-surface-secondary: #4a4a4a;
-  --text-on-surface-muted: #6e6e6e;
-  --border-on-surface: #e2e2e2;
   --bg-surface-raised: #f0f0f0;
-  --bg-surface-hover: #e7e7e7;
 
   --border-control: #272727;
 
@@ -618,18 +537,14 @@ html {
      clears 3:1 on this canvas, so text and information-bearing borders
      stay ink while the fill tier carries Slime (ink glyphs on it read
      at 11.13:1) and Aqua for info. */
-  --state-primary-on-surface: #272727;
   --state-attention-on-surface: #272727;
   --state-primary: #272727;
   --fill-primary: var(--slime);
-  --state-info: #272727;
   --fill-info: var(--aqua);
   --state-attention: #272727;
   --fill-attention: var(--slime);
 
   /* Functional signals, outside the brand palette. */
-  --state-warning-on-surface: #756200;
-  --fill-danger: #c94040;
   --state-warning: #756200;
   --fill-warning: #ffd900;
 
@@ -641,11 +556,7 @@ html {
      the page, so light mode gets the near-black plate with a white app mock
      inside it. Same six neutrals, roles swapped. */
   --cover-ground: #0b0b0c;
-  --cover-card: #ffffff;
-  --cover-back: #2f3133;
-  --cover-chrome-1: #2f3133;
   --cover-chrome-2: #ececec;
-  --cover-chrome-3: #f9f9f8;
 
   /* Platform chip, light (Figma 141:858; states from the "Navigation"
      hover sheet 253:3, 2026-09-25). Rest: a white chip on a soft shadow,
@@ -680,19 +591,12 @@ html {
 
   /* Go button: sunken at rest; Deep Moss with a Slime arrow on card hover
      (11.45:1). */
-  --card-go-bg: var(--paper-100);
-  --card-go-fg: var(--text-primary);
-  --card-go-bg-hover: var(--deep-moss);
-  --card-go-fg-hover: var(--slime);
 
   /* Elevation — see the dark block. Light draws no edges on these
      surfaces, so the shadow alone lifts them. */
   --shadow-rest: 6px 6px 25px 0 rgb(53 53 53 / 0.05);
   --shadow-rest-hover: 6px 6px 25px 0 rgb(53 53 53 / 0.07);
   --shadow-card-hover: 6px 6px 25px 0 rgb(53 53 53 / 0.1);
-
-  --shadow-sm: none;
-  --shadow-md: none;
 
   /* The chats' scroll fade ground. */
   --gen-fade: var(--bg-canvas);
@@ -729,19 +633,8 @@ html {
   --brand-surface: var(--slime);
   --brand-surface-fg: var(--text-on-brand);
 
-  /* Charts label categories, so distinct hues are legitimate here — they
-     carry no severity, and no series colour may ever be read as one.
-     Decoupled from the state tokens, which are neutral and would render
-     every series identically. */
-  --viz-series-1: var(--slime);
-  --viz-series-2: var(--lapis);
-  --viz-series-3: var(--purple-kara);
-  --viz-series-4: var(--fire);
-  --viz-series-5: var(--christina);
-
-  /* The narrow layout's top bar and drawer (and theme.css's --sidebar
-     aliases) read these; the desktop sidebar is in shell.css (new look,
-     Phase 3). */
+  /* The narrow layout's top bar and drawer read these; the desktop sidebar
+     is in shell.css (new look, Phase 3). */
   --sb-bg: var(--bg-surface);
   --sb-border: var(--border);
   --sb-fg-active: var(--text-primary);
@@ -827,16 +720,6 @@ optgroup {
   letter-spacing: var(--type-h2-track);
 }
 
-/* Section and dialog headings. */
-.sp-section-title {
-  font-family: var(--font-head);
-  font-size: var(--type-cardtitle-size);
-  line-height: var(--type-cardtitle-lh);
-  font-weight: var(--weight-head);
-  letter-spacing: var(--type-cardtitle-track);
-  color: var(--text-primary);
-}
-
 .sp-panel-title {
   font-family: var(--font-ui);
   font-size: 14px;
@@ -873,17 +756,6 @@ optgroup {
   opacity: 0.4;
   cursor: default;
 }
-/* The large step — the pre-app submit (Figma 148:1421). 54 tall is
-   --control-lg exactly; the frame's 10px radius has no rung and 12 (the
-   large-control radius) stands in rather than a token for a 2px difference.
-   Type is the 16px large-control step, one under the frame's 18, which has
-   no rung on the scale either. */
-.sp-btn-lg {
-  min-height: var(--control-lg);
-  padding: 0 var(--space-md);
-  font-size: var(--type-composer-size);
-  border-radius: var(--radius-control-lg);
-}
 .sp-btn-primary {
   background: var(--btn-primary-bg);
   color: var(--btn-primary-fg);
@@ -899,15 +771,6 @@ optgroup {
 .sp-btn-ghost:hover:not(:disabled) {
   background: var(--bg-hover);
   color: var(--text-primary);
-}
-/* Solar — the loud variant. Decorative volume, not meaning: Slime leads
-   the artwork, so it leads here. Ink carries every glyph on it. */
-.sp-btn-solar {
-  background: var(--slime);
-  color: var(--text-on-brand);
-}
-.sp-btn-solar:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--slime) 86%, #fff);
 }
 
 .sp-input {
@@ -930,18 +793,6 @@ optgroup {
 .sp-input::placeholder {
   color: var(--text-disabled);
 }
-/* The large step of the same box — the pre-app forms (Figma 148:1421).
-   The frame draws it 48 tall at 16px type on a 12px radius; 48 sits between
-   --control-md (46) and --control-lg (54) and takes the nearer rung rather
-   than a token of its own. Type is the 16px step the composer already
-   established (one above body); the radius is the large-control rung. */
-.sp-input-lg {
-  min-height: var(--control-md);
-  padding: 0 var(--space-sm);
-  font-size: var(--type-composer-size);
-  letter-spacing: var(--type-label-track);
-  border-radius: var(--radius-control-lg);
-}
 /* Native selects: the browser's own arrow sat jammed against the right
    edge, ignored the control's padding, and differed per browser. One
    chevron instead, inset like the text. The compound selector outranks
@@ -960,10 +811,6 @@ select.sp-input {
   padding-right: 26px !important;
   text-overflow: ellipsis;
   cursor: pointer;
-}
-select.sp-input.sp-input-lg {
-  background-position: right var(--space-sm) center;
-  padding-right: 40px !important;
 }
 select.sp-input:disabled {
   cursor: default;
@@ -1211,8 +1058,7 @@ select.sp-input:disabled {
 .sp-card,
 .sp-emptystate,
 .sp-start-card,
-.sp-platform-chip,
-.sp-filterbar .sp-searchfield {
+.sp-platform-chip {
   --edge-w-top: 0.75;
   --edge-w-side: 0.25;
   --edge-w-bottom: 0.55;
@@ -1243,8 +1089,7 @@ select.sp-input:disabled {
 .sp-card {
   border-radius: var(--radius-card);
 }
-.sp-platform-chip,
-.sp-filterbar .sp-searchfield {
+.sp-platform-chip {
   --edge-alpha: var(--edge-alpha-chip);
   --surface-shadow-now: var(--shadow-rest);
 }
@@ -1258,8 +1103,7 @@ select.sp-input:disabled {
 [data-theme="light"] .sp-card,
 [data-theme="light"] .sp-emptystate,
 [data-theme="light"] .sp-start-card,
-[data-theme="light"] .sp-platform-chip,
-[data-theme="light"] .sp-filterbar .sp-searchfield {
+[data-theme="light"] .sp-platform-chip {
   --edge-lit: 0 0 0 0 transparent;
   border-color: transparent;
 }
@@ -1301,11 +1145,6 @@ select.sp-input:disabled {
   --pinned-edge-border: 0.15;
   --edge-lit: 0 0 0 0 transparent;
   border-color: rgb(var(--edge-rgb) / var(--pinned-edge-border));
-}
-[data-theme="light"] .sp-card-link {
-  transition:
-    border-color var(--dur-state) var(--ease),
-    box-shadow var(--dur-state) var(--ease);
 }
 
 /* ── Colour control (ColorControl.tsx: the swatch, its popover and the
@@ -1431,102 +1270,6 @@ select.sp-input:disabled {
   }
 }
 
-/* ── Segmented control ──────────────────────────────────────────────────────
-   THE segmented radiogroup (2026-09-15) — extracted from the Logos surface
-   filter so Insights' date range and any future segment row share one
-   control. Identical rules to the toolbar it came from, minus that
-   toolbar's own bottom margin, which stays on .sp-logo-toolbar below.
-   The checked option is the sidebar nav's --nav-active-* pill
-   and hover its neutral wash (2026-09-25; the action fill before, and no
-   hover). */
-.sp-segmented {
-  display: inline-flex;
-  padding: 2px;
-  border: 1px solid var(--border-strong);
-  border-radius: calc(var(--radius-control) + 2px);
-}
-.sp-segmented__option {
-  display: inline-flex;
-  align-items: center;
-  height: 32px;
-  padding: 0 var(--space-xs);
-  border-radius: var(--radius-control);
-  font-family: var(--font-ui);
-  font-weight: var(--weight-ui);
-  font-size: var(--type-label-size);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition:
-    background var(--dur-state) var(--ease),
-    color var(--dur-state) var(--ease);
-}
-.sp-segmented__option:hover:not([aria-checked="true"]) {
-  background: var(--nav-hover-bg);
-  color: var(--nav-hover-fg);
-}
-.sp-segmented__option[aria-checked="true"] {
-  background: var(--nav-active-bg);
-  color: var(--nav-active-fg);
-}
-.sp-segmented__option:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring-tight);
-}
-
-/* ── Logos detail ───────────────────────────────────────────────────────────
-   Surface filter (an .sp-segmented), then four columns of logo cards; 3
-   under --bp-lg, 2 under --bp-md. */
-.sp-logo-toolbar {
-  margin-bottom: var(--space-sm);
-}
-
-/* The same card, editing in place. */
-.sp-logo-editing {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2xs);
-  padding: var(--space-2xs) var(--space-2xs) var(--space-xs);
-  border-radius: var(--radius-media);
-  background: var(--bg-surface);
-}
-.sp-style-value-input {
-  width: 64px;
-  height: 26px;
-  padding: 0 var(--space-3xs);
-  font-family: var(--font-mono);
-  font-size: var(--type-label-size);
-}
-
-/* The inline face picker ("Change face…"): a searchable combobox that
-   expands under the row. */
-.sp-face-picker {
-  width: 100%;
-  padding: var(--space-2xs) 0 var(--space-sm);
-}
-.sp-face-picker__list {
-  max-height: 240px;
-  overflow-y: auto;
-  margin-top: var(--space-2xs);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-control);
-}
-.sp-face-picker__option {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
-  width: 100%;
-  min-height: 32px;
-  padding: 0 var(--space-xs);
-  text-align: left;
-  font-family: var(--font-ui);
-  font-weight: var(--weight-ui);
-  font-size: var(--type-label-size);
-  color: var(--text-primary);
-}
-.sp-face-picker__option[data-active="true"] {
-  background: var(--bg-hover);
-}
 /* A vertical rail of choices (the size gallery's category rail, in the
    Template Builder): a neutral hover wash and the active pill at the 9px
    radius; geometry stays with the caller. The Settings rail moved to the
@@ -1551,17 +1294,6 @@ select.sp-input:disabled {
 .sp-railitem:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring-tight);
-}
-
-/* Brand-moment surface (hero headers, identity chips). Flat logo green —
-   everything ON it is Ink, no exceptions, both themes (Ink is the only
-   legible glyph on any brand fill; white never clears contrast here). */
-.sp-mesh {
-  background: var(--brand-surface);
-  color: var(--brand-surface-fg);
-}
-.sp-mesh .sp-eyebrow {
-  color: var(--brand-surface-fg);
 }
 
 /* Toast — floating card with the DS's 3px semantic top bar. */
@@ -1631,38 +1363,6 @@ body[data-sp-gesture] * {
 .sp-canvas-viewport {
   background: var(--editor-pasteboard);
   overscroll-behavior: none;
-}
-
-/* Scoped to the builder canvas so a future Moveable elsewhere keeps its own
-   look. Figma-grade: 1px lines, small square handles filled white with a
-   thin accent border; the rotation handle stays circular so it reads as a
-   different affordance. */
-[data-overlay-root] .moveable-control-box {
-  --moveable-color: var(--editor-accent);
-}
-[data-overlay-root] .moveable-line.moveable-line {
-  width: var(--editor-line);
-  height: var(--editor-line);
-}
-[data-overlay-root] .moveable-control.moveable-control {
-  width: var(--editor-handle);
-  height: var(--editor-handle);
-  margin-top: calc(var(--editor-handle) / -2);
-  margin-left: calc(var(--editor-handle) / -2);
-  border-radius: 0;
-  background: #fff;
-  border: 1px solid var(--editor-accent);
-}
-/* The painted square is small; the hit target is not. */
-[data-overlay-root] .moveable-control.moveable-control::before {
-  content: "";
-  position: absolute;
-  inset: -6px;
-}
-[data-overlay-root] .moveable-rotation-control.moveable-rotation-control {
-  border-radius: 50%;
-  background: #fff;
-  border-color: var(--editor-accent);
 }
 
 /* --- Full-viewport surfaces ------------------------------------------------
@@ -2043,18 +1743,11 @@ input[type="radio"] {
     transform: translateY(0) scale(1);
   }
 }
-.sp-chip-out {
-  animation: sp-chip-out 0.28s cubic-bezier(0.4, 0, 1, 1) forwards;
-}
 @keyframes sp-chip-out {
   to {
     opacity: 0;
     transform: translateX(-8px) scale(0.96);
   }
-}
-/* Done row slide-in */
-.sp-done-in {
-  animation: sp-done-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 @keyframes sp-done-in {
   from {
@@ -2078,13 +1771,8 @@ input[type="radio"] {
     animation: none;
     transform: translateY(-4px);
   }
-  .sp-chip-in,
-  .sp-chip-out,
-  .sp-done-in {
+  .sp-chip-in {
     animation: none;
-  }
-  .sp-chip-out {
-    opacity: 0;
   }
 }
 
@@ -2108,15 +1796,6 @@ input[type="radio"] {
 .sp-template-card__text {
   flex: 1;
   min-width: 0;
-}
-.sp-template-card__desc {
-  font-size: var(--type-caption-size);
-  line-height: var(--type-caption-lh);
-  color: var(--text-muted);
-  margin-top: var(--space-3xs);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* ── Row menu (D9) ──────────────────────────────────────────────────────────
@@ -2240,24 +1919,6 @@ input[type="radio"] {
 @media (min-width: 1440px) {
   .sp-grid-media {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-/* Content-panel grid: 12 columns, same --space-md gap. */
-.sp-grid-12 {
-  display: grid;
-  gap: var(--space-md);
-  grid-template-columns: repeat(12, 1fr);
-  align-items: stretch;
-}
-.sp-span-6 {
-  grid-column: span 6;
-}
-.sp-span-12 {
-  grid-column: span 12;
-}
-@media (max-width: 900px) {
-  .sp-span-6 {
-    grid-column: span 12;
   }
 }
 
@@ -2723,94 +2384,6 @@ input[type="radio"] {
   --sp-searchfield-h: var(--control-sm);
 }
 
-/* In the catalogue's filter bar the control wears the UNSELECTED chip's
-   garb — fill, lit edge, glyph on the label colour — so it reads as a chip
-   that has not been opened (2026-09 frames). The .sp-input border goes
-   (the chips' --edge-lit is the stroke, assembled beside .sp-card) and the
-   trigger square grows back to the full --chip-h the border used to eat.
-   Focus composes the ring over the edge and the rest shadow, as on the
-   chips themselves. */
-.sp-filterbar .sp-searchfield {
-  --sp-searchfield-h: var(--chip-h);
-  flex-shrink: 0;
-  border: 0;
-  border-radius: var(--radius-media);
-  background: var(--chip-bg);
-  box-shadow: var(--edge-lit), var(--surface-shadow-now);
-  transition:
-    width var(--dur-panel) var(--ease),
-    background var(--dur-state) var(--ease),
-    box-shadow var(--dur-state) var(--ease);
-}
-/* Hover mirrors the chip's: fill, edge, and shadow. */
-.sp-filterbar .sp-searchfield:not([data-open]):hover {
-  --edge-alpha: var(--edge-alpha-chip-hover);
-  --surface-shadow-now: var(--shadow-rest-hover);
-  background: var(--chip-bg-hover);
-}
-.sp-filterbar .sp-searchfield:focus-within {
-  box-shadow: var(--focus-ring-tight), var(--edge-lit), var(--surface-shadow-now);
-}
-.sp-filterbar .sp-searchfield__trigger {
-  width: var(--chip-h);
-  color: var(--chip-fg);
-}
-.sp-filterbar .sp-searchfield__icon {
-  width: 20px;
-  height: 20px;
-}
-
-/* Sticky region: search + chips pin below the app chrome — the viewport top
-   beside the rail, the 56px mobile header below --bp-lg (--chrome-top).
-   Flat until pinned, then a hairline does the separating. */
-.sp-filterbar {
-  position: sticky;
-  top: var(--chrome-top);
-  z-index: var(--z-sticky);
-  /* The bar belongs to the page HEADING, not to the templates below
-     (2026-09-15, at CJ's direction): it pulls up against the header's
-     32px margin so the gap above the chips reads tighter than the run
-     down to the first shelf. The Figma "Navigation" page (2026-09-25)
-     draws 31 from the description to the chips: 32 header margin + 1
-     sentinel − 16 here + 12 block padding + 2 ring room (23 at −24). */
-  margin-top: calc(-1 * var(--space-sm));
-  /* 12px of block air, CONSTANT rather than pinned-only (2026-09-15, at
-     CJ's direction — the chips read crammed against the viewport edge
-     once the bar pins): a sticky bar that changes height mid-scroll
-     moves the document under the reader's thumb. */
-  padding: var(--space-xs) 0;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2xs);
-}
-/* The pinned ground is a frosted fade, not a solid slab (2026-09-15, at
-   CJ's direction): canvas at full strength behind the chips, dissolving
-   to nothing 28px past the bar's bottom edge, with the backdrop blur
-   masked along the same ramp so scrolled content melts under the bar
-   instead of hitting an edge. It lives on a pseudo so the fade can run
-   PAST the bar without adding height, and it fades in only when pinned
-   — at rest nothing scrolls under the bar, and the old hairline is
-   retired: the gradient does the separating now. The solid portion of
-   the ramp (62%) covers the chip rail, so the rail-fade masks — solid
-   canvas gradients — never sit on a translucent ground. */
-.sp-filterbar::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 -28px;
-  z-index: -1;
-  pointer-events: none;
-  background: linear-gradient(to bottom, var(--bg-canvas) 62%, transparent);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  -webkit-mask-image: linear-gradient(to bottom, black 62%, transparent);
-  mask-image: linear-gradient(to bottom, black 62%, transparent);
-  opacity: 0;
-  transition: opacity var(--dur-state) var(--ease);
-}
-.sp-filterbar[data-pinned]::before {
-  opacity: 1;
-}
-
 /* The mobile app header wears the same frosted fade (2026-09-15, at CJ's
    direction). Constant rather than scroll-gated: at rest the fade sits on
    bare canvas and is invisible, so there is nothing to switch. The ramp is
@@ -2841,34 +2414,6 @@ input[type="radio"] {
 }
 .sp-mobilebar[data-menu-open]::before {
   content: none;
-}
-/* ONE row at every width (2026-09 frames): the search control rests as a
-   square on the chips' own height and radius, and opening it pushes the
-   rail right. The open cap is a px value under max-width: 100%, so the
-   width transition never chases a percentage. The rail lays out 52 tall
-   with the 48px chips centred — 2px of breathing room each side, exactly
-   the focus ring's width, so a ring never clips vertically in the
-   scroller. A horizontal scroller clips vertically too, so the chips' rest
-   shadow (2026-09-25; 6px offset, 25px blur) gets a further --space-md of
-   padding below, cancelled by a negative margin: the chips do not move and
-   the sticky bar keeps its height. The inline ends get the same guard:
-   the track insets the chips by the ring's width and the rail steps out
-   by as much, so the chips do not move, and the first and last chips
-   show their whole ring at the rail's ends (the selected chip, where a
-   roving tabindex puts focus, is often the first). The rail rather than
-   the track takes the negative margin so its edge fades still cover the
-   scroller's whole box, and scroll-padding leaves the ring that room when
-   a chip is scrolled only as far as its edge (a "nearest" scroll). */
-.sp-filterbar .sp-railfade {
-  flex: 1;
-  margin-inline: calc(-1 * var(--focus-width));
-}
-.sp-filterbar .sp-railfade__track {
-  align-items: center;
-  padding-block: 2px calc(2px + var(--space-md));
-  padding-inline: var(--focus-width);
-  margin-bottom: calc(-1 * var(--space-md));
-  scroll-padding-inline: var(--focus-width);
 }
 
 /* Horizontal rail with edge fades. Shared by the chip bar and the shelves:
@@ -3351,15 +2896,6 @@ input[type="radio"] {
   .sp-page--bleed .sp-emptystate {
     margin-inline: var(--space-sm);
   }
-  .sp-page--bleed .sp-filterbar {
-    padding: var(--space-xs) 0 var(--space-xs) var(--space-sm);
-  }
-  /* The rail's end is the screen's edge here, so it does not step past it
-     for the ring's room (the track's end padding is the room): stepping
-     out would put the last chip's ring off screen at the rail's end. */
-  .sp-page--bleed .sp-filterbar .sp-railfade {
-    margin-inline-end: 0;
-  }
 
   /* iOS Safari zooms the whole page when a focused field's font-size sits
      under 16px (2026-09-15, at CJ's direction — stop the zoom). Every
@@ -3390,9 +2926,7 @@ input[type="radio"] {
     transform: none;
   }
   .sp-dropzone[data-active="true"] .sp-dropzone__icon,
-  .sp-chip-in,
-  .sp-chip-out,
-  .sp-done-in {
+  .sp-chip-in {
     animation: none;
   }
 }
@@ -3862,28 +3396,6 @@ input[type="radio"] {
   max-width: 560px;
 }
 
-/* The Brand Templates filter bar, as drawn here: 56 tall, the 48px chips
-   centred on its 52px rail, 24 under the description. On Brand Templates
-   the bar pulls up against the page header's margin and keeps 12 of block
-   air for pinning; this page's document never scrolls (the grid does), so
-   the bar never pins and takes only the 2px the rail needs around it. */
-.sp-chat-page[data-state="history"] .sp-filterbar {
-  flex-shrink: 0;
-  margin-top: var(--space-md);
-  padding-block: 2px;
-}
-/* The rail's edge fades reach down over the track's shadow room (the
-   track clips --space-md below the rail so the chips' rest shadow shows),
-   so a half-hidden chip's shadow fades out with it instead of ending in a
-   hard line under the rail. Nothing scrolls under this bar, so below the
-   rail the fades only ever lie on the canvas. (Brand Templates shares the
-   artifact, but its bar pins over scrolling content, where the longer
-   fades would lie on the cards; it is left as it was.) */
-.sp-chat-page[data-state="history"] .sp-filterbar .sp-railfade::before,
-.sp-chat-page[data-state="history"] .sp-filterbar .sp-railfade::after {
-  bottom: calc(-1 * var(--space-md));
-}
-
 /* The grid's scroller runs the full width of the page region: it steps
    out of the page gutters and hands them back as its own inline padding,
    so the cards' shadows are never cut at its sides. 24 of padding above
@@ -3946,41 +3458,13 @@ input[type="radio"] {
   color: var(--text-primary);
 }
 
-/* Tertiary — the borderless text button (Button/Tertiary, Figma 41:2).
-   Below ghost: no edge, secondary ink, for the quiet third action on a
-   surface (Dismiss, Remove, Undo import). */
-.sp-btn-tertiary {
-  background: none;
-  border-color: transparent;
-  color: var(--text-secondary);
-}
-.sp-btn-tertiary:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
-  color: var(--text-primary);
-}
-
-/* Solar — the loud variant, restated here so it survives the cascade. It
-   carries no meaning. Slime is near-white in luminance, so the fill
-   cannot bound itself on a light canvas and takes the neutral strong
-   border as a decorative edge. */
-.sp-btn-solar {
-  background: var(--slime);
-  color: var(--text-on-brand);
-  border-color: var(--border-strong);
-}
-.sp-btn-solar:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--slime) 86%, #fff);
-}
-
 /* Destructive is outlined, never filled: a red fill outranks the primary action
    and reads as the recommended path, which is the opposite of the intent. */
-.sp-btn-danger,
 .sp-btn[data-tone="danger"] {
   background: transparent;
   color: var(--state-danger-on-surface);
   border-color: var(--state-danger-on-surface);
 }
-.sp-btn-danger:hover:not(:disabled),
 .sp-btn[data-tone="danger"]:hover:not(:disabled) {
   background: color-mix(in srgb, var(--state-danger-on-surface) 8%, transparent);
 }
