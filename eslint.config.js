@@ -10,7 +10,6 @@ export default tseslint.config(
       "dist",
       "node_modules",
       "src/imports",
-      "src/app/components/ui",
       "supabase",
       "scripts",
       // Claude Code config and the worktrees other sessions keep under it.

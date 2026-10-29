@@ -24,7 +24,7 @@ import { useRouter } from "../../router";
 import { ErrorState } from "../ErrorState";
 import { Page, PageHeader } from "../layout/Page";
 import { Bone, SkeletonLines } from "../Skeleton";
-import { Select } from "../ui/Select";
+import { Select } from "../primitives";
 import { Switch } from "../Switch";
 import { TemplateThumbnail } from "../TemplateThumbnail";
 import { BulkExportStage, type BulkExportStageHandle } from "./BulkExportStage";

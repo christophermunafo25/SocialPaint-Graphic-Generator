@@ -1,6 +1,7 @@
 import React from "react";
 import { RefreshCw } from "lucide-react";
 import type { PublicLinkFailure } from "@/lib/publicLink/client";
+import { Button } from "../components/primitives";
 
 /** What a visitor sees when a link doesn't open.
  *
@@ -41,14 +42,14 @@ export function PublicLinkUnavailable({
         </p>
       </div>
       {copy.retryable && onRetry && (
-        <button
+        <Button
+          kind="primary"
+          icon={RefreshCw}
           onClick={onRetry}
-          className="sp-btn sp-btn-primary"
           style={{ marginTop: "var(--space-2xs)" }}
         >
-          <RefreshCw style={{ width: 14, height: 14 }} />
           Try again
-        </button>
+        </Button>
       )}
     </div>
   );

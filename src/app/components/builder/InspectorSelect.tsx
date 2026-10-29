@@ -1,40 +1,16 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, Lock } from "lucide-react";
+import { step, useDismiss, useScrollActiveIntoView } from "../primitives/Select";
 
 // ---------------------------------------------------------------------------
-// The platform's Select — the accessible combobox extracted from the builder's
-// font pickers (FieldInspector), where it was born as Figma's two-step family
-// and style menus. One implementation of the machinery: outside-pointerdown
-// and Escape dismissal with focus returned to the trigger, combobox/listbox
-// roles, arrow-key traversal with wrap-around, an optional search field, and
-// per-option preview styles for callers whose rows render in their own face.
-//
-// Two ways in:
-//  - <Select> for a straightforward option list (icons, groups, search).
-//  - The primitives (TriggerButton, MenuSurface, MenuRow, useDismiss,
-//    useScrollActiveIntoView, step) for callers whose trigger or rows need
-//    logic <Select> should not grow.
-//
-// A native <select> renders the OS menu, which ignores every token in the
-// design system and cannot carry icons — that is why this exists.
+// The inspector's select: the accessible combobox the builder's font pickers
+// grew, with what the Select primitive doesn't carry: a search field in the
+// menu, a lock on a value a bound style owns, a trigger label of its own, and
+// rows previewed in their own face. It stays in the builder's folder with the
+// builder's other legacy controls until the builder's own phase designs them
+// (new look, PHASE-9 §9 D10). The machinery (useDismiss, step,
+// useScrollActiveIntoView) lives in primitives/Select.
 // ---------------------------------------------------------------------------
-
-/** Close on outside pointerdown or Escape, and hand focus back to the trigger
- * so Escape leaves the keyboard exactly where it started. */
-export function useDismiss(
-  open: boolean,
-  refs: Array<React.RefObject<HTMLElement | null>>,
-  onClose: () => void,
-) {
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: PointerEvent) => {
-      if (!refs.some((r) => r.current?.contains(e.target as Node))) onClose();
-    };
-    window.addEventListener("pointerdown", onDown, true);
-    return () => window.removeEventListener("pointerdown", onDown, true);
-  }, [open, onClose, refs]);
-}
 
 /** The dropdown surface. Fixed-positioned off the trigger's rect rather than
  * absolutely positioned inside its container, which may scroll and would clip
@@ -231,10 +207,7 @@ export const TriggerButton = React.forwardRef<
       }}
     >
       <span className="flex items-center gap-2 min-w-0">
-        <span
-          className="truncate"
-          style={value ? previewStyle : { color: "var(--text-disabled)" }}
-        >
+        <span className="truncate" style={value ? previewStyle : { color: "var(--text-disabled)" }}>
           {value || placeholder}
         </span>
       </span>
@@ -250,23 +223,6 @@ export const TriggerButton = React.forwardRef<
     </button>
   );
 });
-
-/** Move an index through a list with wrap-around. */
-export const step = (index: number, delta: number, length: number): number =>
-  length === 0 ? -1 : (index + delta + length) % length;
-
-/** Keep the arrow-key cursor visible in a scrolling menu. */
-export function useScrollActiveIntoView(
-  open: boolean,
-  active: number,
-  surfaceRef: React.RefObject<HTMLDivElement | null>,
-) {
-  useEffect(() => {
-    if (!open) return;
-    const rows = surfaceRef.current?.querySelectorAll("[role=option]");
-    rows?.[active]?.scrollIntoView({ block: "nearest" });
-  }, [open, active, surfaceRef]);
-}
 
 export interface SelectOption<T extends string> {
   value: T;

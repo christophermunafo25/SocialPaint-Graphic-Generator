@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from "react";
-import Cropper from "react-easy-crop";
+import Cropper, { type Area } from "react-easy-crop";
+import { Button } from "./primitives";
 
 // Helper to create the cropped image
 const createImage = (url: string): Promise<HTMLImageElement> =>
@@ -91,7 +92,7 @@ export function ImageCropper({
 }: ImageCropperProps) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
 
   const onCropChange = (crop: { x: number; y: number }) => {
     setCrop(crop);
@@ -101,11 +102,12 @@ export function ImageCropper({
     setZoom(zoom);
   };
 
-  const onCropCompleteCallback = useCallback((croppedArea: any, croppedAreaPixels: any) => {
+  const onCropCompleteCallback = useCallback((_croppedArea: Area, croppedAreaPixels: Area) => {
     setCroppedAreaPixels(croppedAreaPixels);
   }, []);
 
   const showCroppedImage = useCallback(async () => {
+    if (!croppedAreaPixels) return;
     try {
       const croppedImage = await getCroppedImg(imageSrc, croppedAreaPixels);
       onCropComplete(croppedImage);
@@ -152,12 +154,12 @@ export function ImageCropper({
         </div>
 
         <div className="flex justify-end gap-3">
-          <button onClick={onCancel} autoFocus className="sp-btn sp-btn-ghost px-6">
+          <Button kind="neutral" size="lg" onClick={onCancel} autoFocus>
             Cancel
-          </button>
-          <button onClick={() => void showCroppedImage()} className="sp-btn sp-btn-primary px-6">
-            Apply Crop
-          </button>
+          </Button>
+          <Button kind="primary" size="lg" onClick={() => void showCroppedImage()}>
+            Apply crop
+          </Button>
         </div>
       </div>
     </div>

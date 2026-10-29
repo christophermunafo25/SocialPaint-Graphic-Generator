@@ -92,6 +92,9 @@ interface ModalBodyProps {
 export interface ModalProps extends ModalBodyProps {
   open: boolean;
   onOpenChange(open: boolean): void;
+  /** Where focus lands when it opens (a confirmation's Cancel): call
+   * preventDefault and focus it. Absent, the first control in the dialog. */
+  onOpenAutoFocus?(event: Event): void;
 }
 
 /** Modal (Figma 58:484) on Radix dialog: over overlay/scrim (the component
@@ -104,6 +107,7 @@ export function Modal({
   icon: Icon,
   children,
   closeLabel = "Close",
+  onOpenAutoFocus,
 }: ModalProps) {
   // Radix returns focus only to a Dialog.Trigger. A modal opened from
   // anywhere else hands focus back to whatever had it when it opened.
@@ -118,6 +122,7 @@ export function Modal({
         <Dialog.Content
           className="ui-modal"
           aria-describedby={undefined}
+          onOpenAutoFocus={onOpenAutoFocus}
           onCloseAutoFocus={(e) => {
             if (!returnTo.current?.isConnected) return;
             e.preventDefault();

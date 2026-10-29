@@ -2,13 +2,7 @@ import React, { useRef, useState } from "react";
 import { ArrowLeft, Check, Images, Upload } from "lucide-react";
 import type { BrandAsset } from "@/lib/types";
 import { SignedImg } from "./SignedImg";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "./ui/alert-dialog";
+import { Button, Modal, OptionTile } from "./primitives";
 
 /** The brand assets a picture can come from: logos and any uploaded images. */
 export const pickableAssets = (assets: BrandAsset[]): BrandAsset[] =>
@@ -221,139 +215,84 @@ export function ImageSourceDialog({
     setShowingBrand(opensOnBrand);
     onClose();
   };
-  const optionStyle: React.CSSProperties = {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    padding: "18px 12px",
-    border: "1px solid var(--border-strong)",
-    borderRadius: "var(--radius-control)",
-    background: "var(--bg-surface)",
-    color: "var(--text-primary)",
-    fontSize: "var(--type-label-size)",
-    fontWeight: 500,
-    cursor: "pointer",
-    textAlign: "center",
-  };
-
   return (
-    <AlertDialog open={open} onOpenChange={(next) => !next && close()}>
-      <AlertDialogContent
-        onOverlayClick={close}
-        onEscapeKeyDown={close}
-        // An AlertDialog opens on its AlertDialogCancel, and this dialog's
-        // Cancel is a plain button (it closes through `close`, not through
-        // Radix), so by default nothing inside takes focus: focus stays on
-        // the control behind the overlay and the focus trap never arms.
-        // Open on the choice instead: the picked asset (or the first) on the
-        // grid, the first option card on the question.
-        onOpenAutoFocus={(e) => {
-          e.preventDefault();
-          const content = e.currentTarget as HTMLElement;
-          const target =
-            content.querySelector<HTMLElement>('[role="option"][aria-selected="true"]') ??
-            content.querySelector<HTMLElement>('[role="option"], button');
-          target?.focus({ preventScroll: true });
-        }}
-        style={{
-          background: "var(--bg-surface)",
-          border: "1px solid var(--border)",
-          borderRadius: "var(--radius-card)",
-          maxWidth: 440,
-        }}
-      >
-        <AlertDialogHeader>
-          <AlertDialogTitle
-            style={{
-              fontSize: "var(--type-cardtitle-size)",
-              fontWeight: "var(--weight-ui)",
-              color: "var(--text-primary)",
+    <Modal
+      open={open}
+      onOpenChange={(next) => !next && close()}
+      title={title}
+      // Open on the choice: the picked asset (or the first) on the grid, the
+      // first option on the question.
+      onOpenAutoFocus={(e) => {
+        e.preventDefault();
+        const content = e.currentTarget as HTMLElement;
+        const target =
+          content.querySelector<HTMLElement>('[role="option"][aria-selected="true"]') ??
+          content.querySelector<HTMLElement>('[role="option"], .ui-option-tile');
+        target?.focus({ preventScroll: true });
+      }}
+    >
+      <p className="t-body-s sp-st-confirm__body">
+        {showingBrand
+          ? "Pick one of your brand's logos or images."
+          : "Where should the new image come from?"}
+      </p>
+
+      {showingBrand ? (
+        <BrandAssetGrid
+          assets={assets}
+          selectedUrl={selectedUrl}
+          onPick={(asset) => {
+            onPickAsset(asset);
+            close();
+          }}
+        />
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-2xs)" }}>
+          {assets.length > 0 && (
+            <OptionTile
+              label="Your brand"
+              description={`${assets.length} ${assets.length === 1 ? "image" : "images"}`}
+              icon={Images}
+              selected={false}
+              onClick={() => setShowingBrand(true)}
+            />
+          )}
+          <OptionTile
+            label="This device"
+            description="Choose a file"
+            icon={Upload}
+            selected={false}
+            onClick={() => fileRef.current?.click()}
+          />
+          <input
+            ref={fileRef}
+            type="file"
+            accept={accept}
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = "";
+              if (!f) return;
+              onPickFile(f);
+              close();
             }}
-          >
-            {title}
-          </AlertDialogTitle>
-          <AlertDialogDescription
-            style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}
-          >
-            {showingBrand
-              ? "Pick one of your brand's logos or images."
-              : "Where should the new image come from?"}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-
-        {showingBrand ? (
-          <div className="space-y-3">
-            <BrandAssetGrid
-              assets={assets}
-              selectedUrl={selectedUrl}
-              onPick={(asset) => {
-                onPickAsset(asset);
-                close();
-              }}
-            />
-            <button
-              type="button"
-              className="sp-btn sp-btn-ghost"
-              onClick={() => setShowingBrand(false)}
-            >
-              <ArrowLeft style={{ width: 14, height: 14 }} />
-              Back
-            </button>
-          </div>
-        ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-2xs)" }}>
-            {assets.length > 0 && (
-              <button type="button" style={optionStyle} onClick={() => setShowingBrand(true)}>
-                <Images style={{ width: 20, height: 20, color: "var(--state-primary)" }} />
-                Your brand
-                <span
-                  style={{
-                    fontSize: "var(--type-caption-size)",
-                    fontWeight: 400,
-                    color: "var(--text-muted)",
-                  }}
-                >
-                  {assets.length} {assets.length === 1 ? "image" : "images"}
-                </span>
-              </button>
-            )}
-            <button type="button" style={optionStyle} onClick={() => fileRef.current?.click()}>
-              <Upload style={{ width: 20, height: 20, color: "var(--state-primary)" }} />
-              This device
-              <span
-                style={{
-                  fontSize: "var(--type-caption-size)",
-                  fontWeight: 400,
-                  color: "var(--text-muted)",
-                }}
-              >
-                Choose a file
-              </span>
-            </button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept={accept}
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                e.target.value = "";
-                if (!f) return;
-                onPickFile(f);
-                close();
-              }}
-            />
-          </div>
-        )}
-
-        <div className="flex justify-end">
-          <button type="button" className="sp-btn sp-btn-ghost" onClick={close}>
-            Cancel
-          </button>
+          />
         </div>
-      </AlertDialogContent>
-    </AlertDialog>
+      )}
+
+      <div
+        className="sp-st-confirm__actions"
+        style={showingBrand ? { justifyContent: "space-between" } : undefined}
+      >
+        {showingBrand && (
+          <Button kind="neutral" size="lg" icon={ArrowLeft} onClick={() => setShowingBrand(false)}>
+            Back
+          </Button>
+        )}
+        <Button kind="neutral" size="lg" onClick={close}>
+          Cancel
+        </Button>
+      </div>
+    </Modal>
   );
 }
