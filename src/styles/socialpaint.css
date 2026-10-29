@@ -300,6 +300,10 @@ html {
   --bp-md: 768px;
   --bp-lg: 1024px;
   --bp-xl: 1280px;
+  /* Tailwind reads these as its max-w-md and max-w-lg (the empty states and
+     the dialogs), so they are live though no stylesheet reads them. */
+  --container-md: 768px;
+  --container-lg: 1024px;
   --z-sticky: 100;
   --z-drawer: 200;
   --z-popover: 500;
@@ -425,7 +429,11 @@ html {
      only the field would strip the mock's separation. Neutrals only; the
      covers' artwork palette is baked into the assets, never tokenised. */
   --cover-ground: #f9f9f8;
+  --cover-card: #171819;
+  --cover-back: #2f3133;
+  --cover-chrome-1: #ececec;
   --cover-chrome-2: #2f3133;
+  --cover-chrome-3: #0b0b0c;
 
   /* Brand-templates platform chip (Figma 141:329; states from the
      "Navigation" hover sheet 255:3, 2026-09-25). #252627 is the one value
@@ -556,7 +564,11 @@ html {
      the page, so light mode gets the near-black plate with a white app mock
      inside it. Same six neutrals, roles swapped. */
   --cover-ground: #0b0b0c;
+  --cover-card: #ffffff;
+  --cover-back: #2f3133;
+  --cover-chrome-1: #2f3133;
   --cover-chrome-2: #ececec;
+  --cover-chrome-3: #f9f9f8;
 
   /* Platform chip, light (Figma 141:858; states from the "Navigation"
      hover sheet 253:3, 2026-09-25). Rest: a white chip on a soft shadow,
