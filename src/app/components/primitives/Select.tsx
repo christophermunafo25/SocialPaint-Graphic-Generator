@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown } from "lucide-react";
-import { step, useDismiss, useScrollActiveIntoView } from "../ui/Select";
 import { cx, type DemoStateAttr } from "./cx";
 
 export interface SelectOption<T extends string> {
@@ -35,9 +34,44 @@ export interface SelectProps<T extends string> {
   "data-demo-state"?: DemoStateAttr;
 }
 
+/** Close on outside pointerdown or Escape, and hand focus back to the trigger
+ * so Escape leaves the keyboard exactly where it started. */
+export function useDismiss(
+  open: boolean,
+  refs: Array<React.RefObject<HTMLElement | null>>,
+  onClose: () => void,
+) {
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => {
+      if (!refs.some((r) => r.current?.contains(e.target as Node))) onClose();
+    };
+    window.addEventListener("pointerdown", onDown, true);
+    return () => window.removeEventListener("pointerdown", onDown, true);
+  }, [open, onClose, refs]);
+}
+
+/** Move an index through a list with wrap-around. */
+export const step = (index: number, delta: number, length: number): number =>
+  length === 0 ? -1 : (index + delta + length) % length;
+
+/** Keep the arrow-key cursor visible in a scrolling menu. */
+export function useScrollActiveIntoView(
+  open: boolean,
+  active: number,
+  surfaceRef: React.RefObject<HTMLDivElement | null>,
+) {
+  useEffect(() => {
+    if (!open) return;
+    const rows = surfaceRef.current?.querySelectorAll("[role=option]");
+    rows?.[active]?.scrollIntoView({ block: "nearest" });
+  }, [open, active, surfaceRef]);
+}
+
 type Variant = "field" | "compact";
 
-/** The listbox machinery both selects share, carried over from ui/Select:
+/** The listbox machinery both selects share (and the builder's
+ * InspectorSelect):
  * ArrowDown, Enter or Space open it; the arrows move with wrap-around;
  * Enter or Space commit; Escape and an outside press close it and hand
  * focus back to the trigger. */

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Button, Field, Input, Modal } from "../../primitives";
 
 interface ConfirmProps {
@@ -11,6 +11,9 @@ interface ConfirmProps {
   destructive?: boolean;
   /** Disables the action while it runs; it then reads "Working…". */
   busy?: boolean;
+  /** Focus lands on Cancel when it opens, so a reflexive Enter cancels
+   * (ConfirmDialog's default). */
+  focusCancel?: boolean;
   onCancel(): void;
   onConfirm(): void;
 }
@@ -25,14 +28,28 @@ export function ConfirmModal({
   confirmLabel,
   destructive = true,
   busy = false,
+  focusCancel = false,
   onCancel,
   onConfirm,
 }: ConfirmProps) {
+  const cancel = useRef<HTMLButtonElement>(null);
   return (
-    <Modal open={open} onOpenChange={(next) => !next && onCancel()} title={title}>
+    <Modal
+      open={open}
+      onOpenChange={(next) => !next && onCancel()}
+      title={title}
+      onOpenAutoFocus={
+        focusCancel
+          ? (e) => {
+              e.preventDefault();
+              cancel.current?.focus();
+            }
+          : undefined
+      }
+    >
       {body && <ConfirmBody>{body}</ConfirmBody>}
       <div className="sp-st-confirm__actions">
-        <Button kind="neutral" size="lg" onClick={onCancel}>
+        <Button ref={cancel} kind="neutral" size="lg" onClick={onCancel}>
           Cancel
         </Button>
         <Button

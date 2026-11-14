@@ -1,15 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import {
-  CheckCircle2,
-  Copy,
-  Eye,
-  EyeOff,
-  Pencil,
-  Plus,
-  Proportions,
-  RotateCcw,
-  Trash2,
-} from "lucide-react";
+import { Copy, Eye, EyeOff, Pencil, Plus, Proportions, RotateCcw, Trash2 } from "lucide-react";
 import type { TemplateSchema, UsageSummary } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
@@ -30,6 +20,7 @@ import { CanvasSizePicker } from "../builder/CanvasSizePicker";
 import { ErrorState } from "../ErrorState";
 import { SkeletonCard } from "../templates/TemplateSkeleton";
 import { TemplateThumbnail } from "../TemplateThumbnail";
+import { Button, IconButton, Modal, SegmentedControl, Select, Status, Toast } from "../primitives";
 
 type StatusFilter = "all" | "published" | "draft";
 type SortKey = "recent" | "name" | "downloads";
@@ -241,25 +232,9 @@ export function AdminTemplates() {
   return (
     <Page>
       {toast && (
-        <div className="sp-toast" role="status" aria-live="polite">
-          <CheckCircle2
-            style={{
-              width: 16,
-              height: 16,
-              color: "var(--state-primary)",
-              flexShrink: 0,
-              marginTop: 1,
-            }}
-          />
-          <span
-            style={{
-              fontSize: "var(--type-label-size)",
-              fontWeight: 500,
-              color: "var(--text-primary)",
-            }}
-          >
-            {toast}
-          </span>
+        // The fill page's toast position: centred at the foot of the page.
+        <div className="sp-fill-toast" aria-live="polite">
+          <Toast message={toast} />
         </div>
       )}
       <ConfirmDialog
@@ -270,55 +245,25 @@ export function AdminTemplates() {
         onCancel={() => setDeleting(null)}
         onConfirm={() => void confirmDelete()}
       />
-      {versionFor && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Create a version of ${versionFor.name}`}
-          style={{ background: "color-mix(in srgb, var(--text-on-accent) 55%, transparent)" }}
-          onClick={() => setVersionFor(null)}
-        >
-          <div
-            className="w-full max-w-sm p-4 space-y-3"
-            style={{
-              background: "var(--bg-surface)",
-              border: "1px solid var(--border-strong)",
-              borderRadius: "var(--radius-card)",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div>
-              <h2
-                style={{
-                  fontFamily: "var(--font-head)",
-                  fontWeight: "var(--weight-head)",
-                  fontSize: "var(--type-cardtitle-size)",
-                  letterSpacing: "var(--track-head)",
-                  color: "var(--text-primary)",
-                }}
-              >
-                Create a version for…
-              </h2>
-              <p
-                style={{
-                  fontSize: "var(--type-caption-size)",
-                  color: "var(--text-secondary)",
-                  marginTop: 2,
-                }}
-              >
-                "{versionFor.name}" stays untouched. The version lands as a reflowed draft copy you
-                review in the builder.
-              </p>
-            </div>
+      <Modal
+        open={versionFor !== null}
+        onOpenChange={(next) => !next && setVersionFor(null)}
+        title="Create a version for…"
+      >
+        {versionFor && (
+          <>
+            <p className="t-body-s sp-st-confirm__body">
+              "{versionFor.name}" stays untouched. The version lands as a reflowed draft copy you
+              review in the builder.
+            </p>
             <CanvasSizePicker
               sizes={sizesState.status === "ready" ? sizesState.data : []}
               value={{ width: versionFor.canvasWidth, height: versionFor.canvasHeight }}
               onPick={(next) => void createVersion(versionFor, next)}
             />
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Modal>
       <ConfirmDialog
         open={confirmingRestore}
         title="Restore starter templates?"
@@ -332,22 +277,22 @@ export function AdminTemplates() {
         title="Template Builder"
         actions={
           <div className="flex items-center" style={{ gap: "var(--space-2xs)" }}>
-            <button
-              className="sp-btn"
+            <Button
+              kind="neutralOnPage"
+              icon={RotateCcw}
               onClick={() => setConfirmingRestore(true)}
               disabled={restoring || !kit}
               title="Recreate deleted starter templates"
             >
-              <RotateCcw style={{ width: 13, height: 13 }} />
               {restoring ? "Restoring…" : "Restore starters"}
-            </button>
-            <button
-              className="sp-btn sp-btn-primary"
+            </Button>
+            <Button
+              kind="primary"
+              icon={Plus}
               onClick={() => navigate({ name: "builder", templateId: null })}
             >
-              <Plus style={{ width: 13, height: 13 }} />
               New template
-            </button>
+            </Button>
           </div>
         }
       />
@@ -358,46 +303,29 @@ export function AdminTemplates() {
           style={{ gap: "var(--space-xs)" }}
         >
           <TemplateSearchField value={query} onChange={setQuery} />
-          <div
-            className="sp-tabstrip"
-            role="group"
+          <SegmentedControl
             aria-label="Filter by status"
-            style={{ height: 40 }}
-          >
-            {(
-              [
-                ["all", `All ${templates.length}`],
-                ["published", `Published ${publishedCount}`],
-                ["draft", `Drafts ${draftCount}`],
-              ] as [StatusFilter, string][]
-            ).map(([key, label]) => (
-              <button
-                key={key}
-                onClick={() => setStatusFilter(key)}
-                aria-pressed={statusFilter === key}
-                className="sp-tabstrip__tab px-3"
-                style={{ fontSize: "var(--type-caption-size)", fontWeight: 500 }}
-              >
-                {label}
-              </button>
-            ))}
+            options={[
+              { id: "all", label: `All ${templates.length}` },
+              { id: "published", label: `Published ${publishedCount}` },
+              { id: "draft", label: `Drafts ${draftCount}` },
+            ]}
+            selectedId={statusFilter}
+            onSelect={(id) => setStatusFilter(id as StatusFilter)}
+          />
+          <div style={{ width: 200 }}>
+            <Select<SortKey>
+              ariaLabel="Sort templates"
+              size="lg"
+              value={sort}
+              options={[
+                { value: "recent", label: "Recently edited" },
+                { value: "name", label: "Name" },
+                { value: "downloads", label: "Most downloaded" },
+              ]}
+              onSelect={setSort}
+            />
           </div>
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortKey)}
-            aria-label="Sort templates"
-            className="sp-input"
-            style={{
-              width: "auto",
-              height: 40,
-              padding: "0 10px",
-              fontSize: "var(--type-caption-size)",
-            }}
-          >
-            <option value="recent">Recently edited</option>
-            <option value="name">Name</option>
-            <option value="downloads">Most downloaded</option>
-          </select>
         </div>
       )}
 
@@ -421,28 +349,16 @@ export function AdminTemplates() {
             borderRadius: "var(--radius-card)",
           }}
         >
-          <p
-            style={{
-              fontFamily: "var(--font-head)",
-              fontWeight: "var(--weight-head)",
-              fontSize: "var(--type-cardtitle-size)",
-              letterSpacing: "var(--track-head)",
-              color: "var(--text-primary)",
-              marginBottom: 6,
-            }}
-          >
+          <p className="t-title-card" style={{ color: "var(--text-primary)", marginBottom: 6 }}>
             Create your first template
           </p>
-          <p
-            className="max-w-md mx-auto"
-            style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}
-          >
+          <p className="t-body-xs max-w-md mx-auto" style={{ color: "var(--text-secondary)" }}>
             Upload a PNG or import a Figma frame, map the editable fields, and publish it for your
             team.
           </p>
         </div>
       ) : visible.length === 0 ? (
-        <p className="text-center py-20" style={{ fontSize: 14, color: "var(--text-secondary)" }}>
+        <p className="t-body-s text-center py-20" style={{ color: "var(--text-secondary)" }}>
           {query.trim()
             ? "No templates match that search."
             : statusFilter === "draft"
@@ -452,14 +368,6 @@ export function AdminTemplates() {
       ) : (
         <div className="sp-grid-media">
           {visible.map((t) => {
-            const iconBtn: React.CSSProperties = {
-              width: 32,
-              height: 32,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            };
             return (
               <div key={t.id} className="sp-card sp-media-card flex flex-col">
                 <button
@@ -485,21 +393,18 @@ export function AdminTemplates() {
                       the rename field ~18px wide at four columns; the name
                       and its input now own the whole line. */}
                   <InlineEdit
-                    className="min-w-0"
+                    className="t-label-m min-w-0"
                     value={t.name}
                     ariaLabel={`Rename ${t.name}`}
                     inputAriaLabel="Template name"
                     placeholder="Untitled template"
-                    valueStyle={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}
+                    valueStyle={{ color: "var(--text-primary)" }}
                     onSave={(name) => renameTemplate(t, name)}
                   />
                   {/* Line 2: status (+ provenance when a model built the fields) */}
-                  <span
-                    className="sp-eyebrow inline-block"
-                    style={t.status === "published" ? { color: "var(--state-primary)" } : undefined}
-                  >
-                    {t.status}
-                  </span>
+                  <Status tone={t.status === "published" ? "active" : "neutral"} size="sm">
+                    {t.status === "published" ? "Published" : "Draft"}
+                  </Status>
                   {/* Starter templates carry autobuildMeta for provenance
                       and idempotency but are seeded designs, not model
                       output — labeling them AI-built would be wrong. */}
@@ -514,7 +419,10 @@ export function AdminTemplates() {
                   )}
                   {/* Line 3: meta */}
                   {usageState.status === "ready" && (
-                    <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
+                    <p
+                      className="t-caption-xs"
+                      style={{ color: "var(--text-muted)", marginTop: 2 }}
+                    >
                       {(() => {
                         const u = usageByTemplate.get(t.id);
                         if (!u || u.downloads === 0) return "Not used yet";
@@ -535,41 +443,41 @@ export function AdminTemplates() {
                     className="flex items-center"
                     style={{ gap: "var(--space-2xs)", marginTop: "var(--space-2xs)" }}
                   >
-                    <button
-                      style={iconBtn}
-                      onClick={() => void toggleStatus(t)}
+                    <IconButton
+                      variant="ghost"
+                      icon={t.status === "published" ? EyeOff : Eye}
+                      label={t.status === "published" ? "Unpublish" : "Publish"}
                       title={t.status === "published" ? "Unpublish" : "Publish"}
-                    >
-                      {t.status === "published" ? (
-                        <EyeOff style={{ width: 16, height: 16, color: "var(--text-muted)" }} />
-                      ) : (
-                        <Eye style={{ width: 16, height: 16, color: "var(--state-primary)" }} />
-                      )}
-                    </button>
-                    <button
-                      style={iconBtn}
-                      onClick={() => navigate({ name: "builder", templateId: t.id })}
+                      onClick={() => void toggleStatus(t)}
+                    />
+                    <IconButton
+                      variant="ghost"
+                      icon={Pencil}
+                      label="Edit"
                       title="Edit"
-                    >
-                      <Pencil style={{ width: 16, height: 16, color: "var(--text-muted)" }} />
-                    </button>
-                    <button
-                      style={iconBtn}
-                      onClick={() => void duplicateTemplate(t)}
+                      onClick={() => navigate({ name: "builder", templateId: t.id })}
+                    />
+                    <IconButton
+                      variant="ghost"
+                      icon={Copy}
+                      label="Duplicate"
                       title="Duplicate"
-                    >
-                      <Copy style={{ width: 16, height: 16, color: "var(--text-muted)" }} />
-                    </button>
-                    <button
-                      style={iconBtn}
-                      onClick={() => setVersionFor(t)}
+                      onClick={() => void duplicateTemplate(t)}
+                    />
+                    <IconButton
+                      variant="ghost"
+                      icon={Proportions}
+                      label="Create a version for another size"
                       title="Create a version for another size"
-                    >
-                      <Proportions style={{ width: 16, height: 16, color: "var(--text-muted)" }} />
-                    </button>
-                    <button style={iconBtn} onClick={() => setDeleting(t)} title="Delete">
-                      <Trash2 style={{ width: 16, height: 16, color: "var(--state-danger)" }} />
-                    </button>
+                      onClick={() => setVersionFor(t)}
+                    />
+                    <IconButton
+                      variant="ghost"
+                      icon={Trash2}
+                      label="Delete"
+                      title="Delete"
+                      onClick={() => setDeleting(t)}
+                    />
                   </div>
                 </div>
               </div>

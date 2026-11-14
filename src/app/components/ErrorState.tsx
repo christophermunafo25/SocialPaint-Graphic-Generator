@@ -1,4 +1,5 @@
 import React from "react";
+import { Button } from "./primitives";
 
 /** Failure state for data loads — the counterpart to the empty states, in the
  * same visual language (centered, generous padding, quiet type). Copy stays
@@ -18,9 +19,9 @@ export function ErrorState({
       {detail && (
         <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>{detail}</p>
       )}
-      <button className="sp-btn sp-btn-primary" onClick={onRetry}>
+      <Button kind="primary" onClick={onRetry}>
         Try again
-      </button>
+      </Button>
     </div>
   );
 }

@@ -69,7 +69,7 @@ import {
   PLATE_PADDING_Y_DEFAULT,
   gradientCss,
 } from "../SchemaRenderer";
-import { Select, type SelectOption } from "../ui/Select";
+import { Select, type SelectOption } from "./InspectorSelect";
 import { Switch } from "../Switch";
 import {
   InspectorSection,

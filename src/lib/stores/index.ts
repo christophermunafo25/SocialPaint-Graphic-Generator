@@ -35,6 +35,7 @@ import {
   LocalTemplateStore,
   LocalUsageStore,
 } from "./local/localStores";
+import { withDevStall } from "./local/devStall";
 
 function createStores(): Stores {
   if (isSupabaseConfigured) {
@@ -67,18 +68,18 @@ function createStores(): Stores {
     );
   }
   return {
-    companies: new LocalCompanyStore(),
-    account: new LocalAccountStore(),
-    templates: new LocalTemplateStore(),
-    brandKits: new LocalBrandKitStore(),
-    brandAssets: new LocalBrandAssetStore(),
-    usage: new LocalUsageStore(),
-    people: new LocalPeopleStore(),
-    publicLinks: new LocalPublicLinkStore(),
-    designImport: new LocalDesignImportProvider(),
-    generate: new LocalGenerateProvider(),
-    generateThreads: new LocalGenerateThreadStore(),
-    memberHints: new LocalMemberHintStore(),
+    companies: withDevStall(new LocalCompanyStore(), "companies"),
+    account: withDevStall(new LocalAccountStore(), "account"),
+    templates: withDevStall(new LocalTemplateStore(), "templates"),
+    brandKits: withDevStall(new LocalBrandKitStore(), "brandKits"),
+    brandAssets: withDevStall(new LocalBrandAssetStore(), "brandAssets"),
+    usage: withDevStall(new LocalUsageStore(), "usage"),
+    people: withDevStall(new LocalPeopleStore(), "people"),
+    publicLinks: withDevStall(new LocalPublicLinkStore(), "publicLinks"),
+    designImport: withDevStall(new LocalDesignImportProvider(), "designImport"),
+    generate: withDevStall(new LocalGenerateProvider(), "generate"),
+    generateThreads: withDevStall(new LocalGenerateThreadStore(), "generateThreads"),
+    memberHints: withDevStall(new LocalMemberHintStore(), "memberHints"),
     backend: "local",
   };
 }
