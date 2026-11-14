@@ -10,7 +10,7 @@ The Figma file "Master UX UI New Brand (Copy)" (`1dYWgFH2V8i9Jez2ylI3ky`) is the
 
 It replaces the file "Master UX-UI" as the source of truth. It does not replace `docs/design/new-look/`: that program built the structure this one restyles, and its decisions stand unless one below changes them.
 
-Phase 0 was written against `main` at `0febeba` on 2026-11-14.
+Phase 0 was written against `main` at `0febeba` on 2026-11-14, and its counts were re-run at `ab8a9f5` after pull request #182 merged the same day.
 
 ## Decisions (CJ)
 
@@ -51,40 +51,36 @@ Decided on best judgement at CJ's request. Built as written unless he overturns 
 
 Phase 0 added four of its own, in the same spirit. They are listed in the gate report so CJ can overturn any of them.
 
-7. **Existing text keeps its box until its screen is rebuilt.** The twenty text classes trim to cap height, as the file has them. Call sites that exist today move to an untrimmed twin (`.tu-*`) in Phase 1, and take the trimmed class when their phase rebuilds the layout around them (`BRIDGE.md` section 5). Turning trim on under 320 call sites at once would move every layout in the app in a token phase.
+7. **Existing text keeps its box until its screen is rebuilt.** The twenty text classes trim to cap height, as the file has them. Call sites that exist today move to an untrimmed twin (`.tu-*`) in Phase 1, and take the trimmed class when their phase rebuilds the layout around them (`BRIDGE.md` section 5). Turning trim on under 355 call sites at once would move every layout in the app in a token phase.
 8. **Every template chat address redirects, threads included.** `/templates/:id/chat/:threadId` goes to `/templates/:id` like the bare address. A saved template chat in Generate History opens its template's fill page.
 9. **What the code already builds from the three proposal sections stays.** Depth, icons and crop are in the builder today, built by `docs/brand-system/` Phases 1 to 4 and merged. Phase 6 keeps them working on the new components and draws them from the tokens and the Effect Row component (`392:8266`). It builds nothing further from the proposal frames.
-10. **Bulk fill follows without frames.** It is not drawn in the new file. It takes the shell, the header row and the primitives, and keeps its layout.
+10. **Bulk fill follows without frames.** It is not drawn in the new file. It is on the primitives since #182, takes the shell and the header row, and keeps its layout.
 
 ## What Phase 0 found
 
 ### The earlier program is one phase short
 
-New look Phases 1 to 8b are merged (#152 to #169). Its Phase 9, cleanup, is not: nine commits sit on `feat/new-look-phase-9`, 31 files and about 1,700 lines removed, including 522 from `socialpaint.css`. That branch moves `AdminTemplates.tsx` and bulk fill onto the primitives, deletes dead code and adds a contrast script. It is already rebased onto `main` at `0febeba`.
+New look Phases 1 to 8b are merged (#152 to #169). Its Phase 9, cleanup, got as far as step 4 of eleven. Those four steps merged as #182 on 2026-11-14 (CJ's call at the Phase 0 gate): the prompt and inventory, dead code (about 500 lines of `socialpaint.css`), the shared pieces on the primitives (`ConfirmDialog` on `Modal`, `src/app/components/ui/` deleted) and bulk fill and `AdminTemplates.tsx` on the primitives. Steps 5 to 11 were never built, because step 5 was waiting on token requests to the earlier Figma file.
 
-What that phase still owes, and where this program picks each up:
+What that phase still owes after #182, and where this program picks each up:
 
 | Owed | Here |
 |---|---|
 | Delete `legacy-bridge.css` and the dead tokens | Phase 10 |
-| Delete the earlier control classes. Still read: `.sp-btn` in 20 files (104 uses), `.sp-input` in 14, `.sp-icon-btn` in 5, `.sp-seg` in 3, `.sp-chip` in 1, `.sp-tabstrip` in 2. The `.sp-chat-*` control set is already gone | The builder's (10 files) in Phase 6, bulk fill's and the shared dialogs' in Phase 4, the rest in Phase 10 |
-| Bulk fill and `AdminTemplates.tsx` on the primitives | On the branch. See the first question at the gate |
-| Drop the unread `company_canvas_presets` table (migrations 0046 and 0047 are promised to it) | Phase 10, unless the branch lands first |
+| Delete the earlier control classes. Still read, all in `builder/` apart from one `.sp-tabstrip` in `ImageSourceChooser.tsx`: `.sp-btn` in 10 files (59 uses), `.sp-input` in 11, `.sp-icon-btn` in 5, `.sp-seg` in 3, `.sp-chip` in 1, `.sp-tabstrip` in 6. The `.sp-chat-*` control set is gone | Phases 6a and 6b, with whatever is left in Phase 10 |
+| Drop the unread `company_canvas_presets` table and the unread `brand_kits` font columns (migrations 0046 and 0047 are promised to them) | Phase 10 |
+| Remove the never-imported packages | Phase 10 |
 | Lint rules against raw colors and inline type. There is no automated check today: the rule is prose in `CLAUDE.md` and a line in the phase reviewer's checklist | Phase 10 |
 | A contrast and keyboard pass, `ARCHITECTURE.md`, the stylesheet header | Phase 10 |
 
-**Decided (CJ, 2026-11-14): the branch merges first.** It is pull request #182. It holds steps 1 to 4 of that phase's eleven: the prompt and inventory, dead code, the shared pieces on the primitives (`ConfirmDialog` on `Modal`, `src/app/components/ui/` deleted, the older `ui/Select.tsx` now `builder/InspectorSelect.tsx`) and bulk fill and `AdminTemplates.tsx` on the primitives. Steps 5 to 11 were never built, because step 5 was waiting on token requests to the earlier Figma file. The table above is what remains, and Phase 10 here takes it.
-
-The counts in this file and in `BRIDGE.md` were taken before #182. Once it merges they are re-run, and the component findings below that it resolves (the older Select, `ConfirmDialog`, the `.sp-btn` readers outside the builder) are corrected.
-
-`docs/brand-system/` Phase 6 is gated on "new-look Phase 9 merged". Until CJ says what happens to that branch, that program's Track B cannot start.
+`docs/brand-system/` Phase 6 is gated on "new-look Phase 9 merged". That phase will not finish as written, so CJ decides whether #182 satisfies the gate or Track B waits for this program's Phase 7, which rebuilds the same Brand Studio screens.
 
 ### Tokens
 
 - The prompt's token tables match the file. Every Light value in section 4.3 was read back from the Color board (`4012:1197`).
 - The pipeline needs more than new collection names. The exporter reads four collections and has no path for string values, the generator has role-named radius and spacing groups and a family map built for the old styles, and the file may still hold the earlier collections and its 46 text styles beside the new ones (its Docs page says the old ones are retired "on approval"). `PHASE-1.md` has the exporter pick the three collections and the twenty styles by name.
 - Ten rows of the prompt's old-to-new map are wrong or incomplete once read against the code. `BRIDGE.md` section 1 lists them. The two that matter most: four new token names are already declared by `socialpaint.css` with different meanings, and same-named text classes are a size apart (`.t-body-s` is 14 today and 13 in the new file).
-- Every `var()` read was counted. The heaviest earlier names: `--text-secondary` 210 reads, `--space-2xs` 174, `--space-sm` 129, `--text-strong` 112, `--radius-control` 100, `--text-muted` 96.
+- Every `var()` read was counted. The heaviest earlier names: `--text-secondary` 201 reads, `--space-2xs` 167, `--space-sm` 119, `--text-strong` 112, `--radius-control` 94, `--text-muted` 89.
 
 ### Trim
 
@@ -100,14 +96,14 @@ Section 6's "code today" column is mostly right. What is wrong or missing:
 |---|---|
 | Search (`2207:455`, always open) | No component plays this role. `primitives/SearchField.tsx` is the collapsing Search Field (`50:62`), wrapped by `templates/LibrarySearch.tsx`. `templates/TemplateSearchField.tsx` is a separate older implementation used by the builder list and the size gallery |
 | Icon Button | Five components fold into one: `IconButton`, `RowMenuTrigger`, `ThemeToggle`, `StepperButton`, `AttachButton`. All are 32 or 28 today and none is 36. The fold has to keep three behaviors as props, not variants: the theme toggle's glyph swap by nearest `[data-theme]`, the stepper button staying focusable while disabled, and the row menu trigger holding Selected while its menu is open. Attach's inverse fill goes |
-| Select | `Select` and `CompactSelect` already share `SelectBase`, so the fold is a size prop (28, 36, 44). `Filter` is a button that opens a `Menu`, used once (`admin/insights/FilterMenu.tsx`), and becomes a Select there. A fourth, older `ui/Select.tsx` has two callers and exports three helpers the primitive imports |
+| Select | `Select` and `CompactSelect` already share `SelectBase`, so the fold is a size prop (28, 36, 44). `Filter` is a button that opens a `Menu`, used once (`admin/insights/FilterMenu.tsx`), and becomes a Select there. The older select is now `builder/InspectorSelect.tsx`, used only by the inspector, and goes in Phase 6b |
 | Tabs | Today a pill on a track. The new Tabs (`4015:673`) is text on a hairline with an underline. One call site (`admin/insights/TrendCard.tsx`). The file's Docs page still says Tabs became Segmented Control, but the component is on the Navigation board, so it is built |
 | Tooltip | `Overlays.tsx` `Tooltip` is the chart tooltip only. The hint on controls is `components/Tooltip.tsx`, on Radix with `.sp-tooltip`. One component now covers both, with the value optional |
-| Switch | A second, older `components/Switch.tsx` has three callers in the builder and bulk fill |
+| Switch | A second, older `components/Switch.tsx` is still used in the builder |
 | Card | `Containers.tsx` `Card` has no call site outside `/dev/ui`. Real cards are `.sp-in-card` (Insights) and `.sp-card` |
 | Metric | `Metric` is a bare stack with one caller. The Insights KPI is `admin/insights/InsightKpi.tsx` |
 | Checkbox, Radio, Table Row, Alert, Empty State | No shared component. Two native checkboxes, three hand-built tables, about twenty per-area alert blocks, `.sp-emptystate` as CSS in four files, and `ErrorState.tsx` (15 callers) for load failures |
-| Dialog | `Modal` has two callers. Ten dialogs are hand-rolled, most of them in the builder. `ConfirmDialog.tsx` sits on shadcn's alert dialog with `.sp-btn` |
+| Dialog | `Modal` has two callers. About ten dialogs are hand-rolled, most of them in the builder. `ConfirmDialog.tsx` is on `Modal` since #182 |
 | Skeleton | Three vocabularies: `Skeleton.tsx`, `.sp-bs-bone`, `.sp-st-bone` |
 | Brand Studio cards and rows | `admin/brand/primitives/` holds only `AddSlot` and `useInPlaceEdit`. The cards and rows are local to `BrandOverview.tsx` and each `*Detail.tsx` |
 | Builder rows and tiles, Member Row, Link Row, Builder Template Card | Inline JSX today, not components |
@@ -208,7 +204,7 @@ One pull request per phase into `main`. Phase 0 changed the prompt's order in tw
 | 1 | Foundation | The exporter, JSON, generator and check on the new collections. `tokens.css` regenerated from the new file. `legacy-bridge.css` rewritten so every older name still read points at a new token. The 2 px focus ring, on fields too. The 20 text styles, with existing call sites renamed onto untrimmed twins | Every changed value is on the expected list. No layout moves | Not started |
 | 2 | Primitives | Every component in `PROMPT.md` section 6.1 on the new tokens with its states, tested. The folds (Icon Button, Select, Tooltip, Switch). The new ones (Checkbox, Radio, Table Row, Alert, Empty State, Search, Tabs). `/dev/ui` redrawn to show each one in Light and Dark the way the Components page does | `/dev/ui` matches the boards in both themes | Not started |
 | 3 | Shell | The app frame: viewport padding, the 320 sidebar, Main as a frame whose content scrolls, the one Page Header row on every page, Breadcrumb, one Footer Links slot. The new logo, mark and favicon | Every route still reachable in both themes. Titles sit at one height | Not started |
-| 4 | Brand Templates | The library, filter, search, the form-only fill page on the Details panel, the public link page's form, the public links dialog, bulk fill onto the primitives. The template chat behind its redirect | Screens match their frames in both themes. No shadow cut off on the shelves, the chip rail or the grids | Not started |
+| 4 | Brand Templates | The library, filter, search, the form-only fill page on the Details panel, the public link page's form, the public links dialog, bulk fill in the new shell. The template chat behind its redirect | Screens match their frames in both themes. No shadow cut off on the shelves, the chip rail or the grids | Not started |
 | 5 | Generate | Every state in the screen map, the new chat box, the Result Card with size tabs, History with skeletons | Same | Not started |
 | 6a | Template Builder: list and start | The list with its row menu, New template, Choose a size with the new covers, the Figma import and auto build dialogs | Light matches the frames. Dark reviewed by screenshot | Not started |
 | 6b | Template Builder: editor | The editor chrome: top bar, carded workspace, the Layers and Form rail, the inspector with its Design and Field tabs, the stage controls, Publish | Same. Rendering and gestures untouched, and the fidelity checker passes | Not started |
@@ -253,7 +249,7 @@ Paths are under `src/app/components/` unless they start with `src/`. Entry point
 
 Phase 0 stops here. The questions for CJ, with what was found and what is recommended, are in the Phase 0 report. In short:
 
-1. What happens to `feat/new-look-phase-9`.
+1. What happens to `feat/new-look-phase-9`. Answered: it merged first, as #182.
 2. Whether judgement calls 7 to 10 above stand.
 3. The differences between the Brand Studio frames and what `docs/brand-system/` has decided or built.
 4. No frame read in Phase 0 needs a change to a frozen type or a table column. Each phase checks its own frames again at its recon gate.

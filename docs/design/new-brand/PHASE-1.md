@@ -168,7 +168,7 @@ Then check what moved. Text may change size only on the rows of `BRIDGE.md` sect
 - Any layout change, including shadow room. Phases 3 to 9.
 - Renaming "look" anywhere.
 - Deleting unread legacy tokens or control classes beyond what the token check forces. Phase 10.
-- `feat/new-look-phase-9`. If CJ has it merged before this phase starts, re-run the reader counts in `BRIDGE.md` before step 3, because that branch deletes about 520 lines of `socialpaint.css`.
+- The rest of new-look Phase 9 (its steps 5 to 11). Steps 1 to 4 merged as #182, and `BRIDGE.md` was counted after it.
 
 ## 7. Expected changes
 
