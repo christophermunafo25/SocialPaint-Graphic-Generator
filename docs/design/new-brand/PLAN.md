@@ -73,6 +73,10 @@ What that phase still owes, and where this program picks each up:
 | Lint rules against raw colors and inline type. There is no automated check today: the rule is prose in `CLAUDE.md` and a line in the phase reviewer's checklist | Phase 10 |
 | A contrast and keyboard pass, `ARCHITECTURE.md`, the stylesheet header | Phase 10 |
 
+**Decided (CJ, 2026-11-14): the branch merges first.** It is pull request #182. It holds steps 1 to 4 of that phase's eleven: the prompt and inventory, dead code, the shared pieces on the primitives (`ConfirmDialog` on `Modal`, `src/app/components/ui/` deleted, the older `ui/Select.tsx` now `builder/InspectorSelect.tsx`) and bulk fill and `AdminTemplates.tsx` on the primitives. Steps 5 to 11 were never built, because step 5 was waiting on token requests to the earlier Figma file. The table above is what remains, and Phase 10 here takes it.
+
+The counts in this file and in `BRIDGE.md` were taken before #182. Once it merges they are re-run, and the component findings below that it resolves (the older Select, `ConfirmDialog`, the `.sp-btn` readers outside the builder) are corrected.
+
 `docs/brand-system/` Phase 6 is gated on "new-look Phase 9 merged". Until CJ says what happens to that branch, that program's Track B cannot start.
 
 ### Tokens
