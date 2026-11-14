@@ -49,7 +49,7 @@ Decided on best judgement at CJ's request. Built as written unless he overturns 
 5. **"Variations" reaches the code as components are rebuilt.** Data types and columns keep their names.
 6. **Every page uses one header row**, 36 tall, 16 below the top of Main.
 
-Phase 0 added four of its own, in the same spirit. They are listed in the gate report so CJ can overturn any of them.
+Phase 0 added four of its own, in the same spirit. CJ confirmed all four at the gate (2026-11-14), so they are settled.
 
 7. **Existing text keeps its box until its screen is rebuilt.** The twenty text classes trim to cap height, as the file has them. Call sites that exist today move to an untrimmed twin (`.tu-*`) in Phase 1, and take the trimmed class when their phase rebuilds the layout around them (`BRIDGE.md` section 5). Turning trim on under 355 call sites at once would move every layout in the app in a token phase.
 8. **Every template chat address redirects, threads included.** `/templates/:id/chat/:threadId` goes to `/templates/:id` like the bare address. A saved template chat in Generate History opens its template's fill page.
@@ -250,6 +250,6 @@ Paths are under `src/app/components/` unless they start with `src/`. Entry point
 Phase 0 stops here. The questions for CJ, with what was found and what is recommended, are in the Phase 0 report. In short:
 
 1. What happens to `feat/new-look-phase-9`. Answered: it merged first, as #182.
-2. Whether judgement calls 7 to 10 above stand.
+2. Whether judgement calls 7 to 10 above stand. Answered: they stand.
 3. The differences between the Brand Studio frames and what `docs/brand-system/` has decided or built.
 4. No frame read in Phase 0 needs a change to a frozen type or a table column. Each phase checks its own frames again at its recon gate.
