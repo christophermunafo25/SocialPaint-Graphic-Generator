@@ -1,6 +1,6 @@
 # Import intent, Phase 1: read the frame, then build it
 
-Status (2026-11-14): Steps 1 to 3 done, Gate 1 passed with I1 to I7 approved, at Gate 2. `RECON-1.md` holds the recon. The P15 fixture is `portrait-plate-import`, a neutral copy of the frame in the GTM Graphics file (`g9mjhQHoPVgYbBIPKR1VsT`, node `432:3`), with no baseline until CJ approves one. I8 is open.
+Status (2026-11-14): Steps 1 to 3 done, Gate 1 passed with I1 to I7 approved, at Gate 2. `RECON-1.md` holds the recon. The P15 fixture is `portrait-plate-import`, a neutral copy of the frame in the GTM Graphics file (`g9mjhQHoPVgYbBIPKR1VsT`, node `432:3`), with no baseline until CJ approves one. I8 is pull request 184, and I9 adds a cap-trim correction to Step 5.
 
 You are working in the SocialPaint repo. An admin who imports a Figma frame should get the template the designer made, with its member form already set up, whichever way they import it. Today the two Figma routes disagree, and both leave work behind:
 
@@ -85,7 +85,8 @@ Each stays open until CJ marks it. Step 1 stops at Gate 1 while any is open.
 | I5  | A logo keyed `variant=primary · surface=light` swaps to the kit's light primary logo (`BrandKit.primaryLogoLightAssetId`, dark for `surface=dark`) | Yes, with `objectFit: "contain"` so a different aspect never crops it, keeping the Figma render when the kit has none | Yes (CJ, 2026-11-14) |
 | I6  | The repo is public and Adler Platt is a client, so its photo, logo and file stay out of it | A neutral P15 fixture (an owned or CC0 stand-in photo, a placeholder logo, a neutral name), or its assets gitignored like `test/fidelity/fonts-private/`. The eval corpus stays local | Yes, a neutral copy of P15 in the GTM Graphics file (CJ, 2026-11-14) |
 | I7  | The auto build Figma entry stays in the dialogs until new-brand 6a folds the two entries into one | Yes | Yes (CJ, 2026-11-14) |
-| I8  | Newsreader's optical size: the app loads the default cut (16) where Figma draws the display cut (72) at 88 px, about 5.5% wider (`RECON-1.md`) | Request the `opsz` axis for Google families that have one, in its own pull request before Gate 2's baseline | Open |
+| I8  | Newsreader's optical size: the app loads the default cut (16) where Figma draws the display cut (72) at 88 px, about 5.5% wider (`RECON-1.md`) | Request the `opsz` axis for Google families that have one, in its own pull request before Gate 2's baseline | Yes (CJ, 2026-11-14): pull request 184 |
+| I9  | With I8 fixed, the fixture's headline still draws 8 to 9 px higher than Figma. The importer grows a cap-trimmed text box back to full lines by assuming the space above the capitals equals the descent, which is wrong for Newsreader | Correct the box from the loaded font's own metrics when the import lands in the browser (Step 5). The server importer and the renderer stay as they are | Yes (CJ, 2026-11-14) |
 
 ## What not to touch
 
@@ -153,6 +154,8 @@ After the import lands, in the browser, each member text field's `maxLength` com
 - A keyed `max` that can't fit is lowered and reported, for example "max=32 doesn't fit 3 lines here; 27 does".
 - This replaces the 0.55-per-character estimate in the auto build prompt (`template-autobuild/prompt.ts:23`) on every route, Canva and image included.
 
+In the same pass (I9), a text field whose layer is cap-trimmed gets its box re-placed from the loaded font's ascent and cap height, so its first line's capitals sit where Figma drew them. The server keeps its estimate for the case where the font can't be measured.
+
 ### 6. One pipeline
 
 - `template-autobuild`'s Figma path stops using its own extraction. It runs `importFrame`, the renders and `landImageAssets` the way `figma-import` does (share the code, don't copy it), then the model pass. Import from Figma and auto build with a Figma link return the same result.
@@ -178,7 +181,7 @@ Commit after each step with `npm run verify` green, and stop at each gate.
 3. **Layout intent and pill padding**, with the P15 import fixture under I6. Every existing fixture stays unchanged; `feature-highlight-import` and `gtm-composer-import` keep their baselines.
    - **Gate 2.** CJ approves the P15 numbers.
 4. **One pipeline and the model pass**, server side, with the validator rules and the fallback.
-5. **Landing in the builder.** One `setDraft`, measured limits, elements mode and the notice.
+5. **Landing in the builder.** One `setDraft`, measured limits, the cap-trim correction (I9), elements mode and the notice.
 6. **Eval.**
    - A local script runs the whole pipeline on the Adler Platt frames twice: keyed, and with every layer renamed to Figma's defaults, so the model's guesses are scored against answers the keys already give. Add Feature Highlight and the GTM composer with expectations written by hand.
    - Report edits per frame and route, and calls, tokens and seconds per import.
