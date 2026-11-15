@@ -26,6 +26,30 @@ describe("stackImported", () => {
     expect(out.map((f) => f.fieldKey)).toEqual(["c", "d"]);
   });
 
+  it("reorders the array for the form without moving anything on the canvas", () => {
+    const keep = (f: TemplateField) => f.fieldKey;
+    // Paint order: photo, plate, headline, cta. Form order: headline, cta, photo.
+    const out = stackImported(
+      [field("photo"), field("plate"), field("headline"), field("cta")],
+      [field("a", 3)],
+      keep,
+      ["headline", "cta", "photo", "gone"],
+    );
+    expect(out.map((f) => f.id)).toEqual(["headline", "cta", "photo", "plate"]);
+    // Each field keeps the layer it arrived on.
+    expect(Object.fromEntries(out.map((f) => [f.id, f.zIndex]))).toEqual({
+      photo: 4,
+      plate: 5,
+      headline: 6,
+      cta: 7,
+    });
+    // No form order, no reordering.
+    expect(stackImported([field("x"), field("y")], [], keep, []).map((f) => f.id)).toEqual([
+      "x",
+      "y",
+    ]);
+  });
+
   it("re-keys a clash with the draft or with an earlier import", () => {
     const keyFor = (f: TemplateField, taken: TemplateField[]) =>
       taken.some((t) => t.fieldKey === f.fieldKey) ? `${f.fieldKey}_2` : f.fieldKey;

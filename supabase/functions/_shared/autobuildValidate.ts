@@ -5,7 +5,7 @@
 // The dividing line it enforces (Rule 1): Claude decides SEMANTICS, the
 // extractor owns GEOMETRY. Every x/y/width/height/rotation/fontSize/color/
 // align on a geometry path is copied verbatim from the extraction after the
-// model responds; the model contributes only the twelve semantic properties.
+// model responds; the model contributes only the semantic properties. Character limits are not among them: the browser measures those from real glyphs (import intent, Phase 1).
 // The one exception is the flat-image path, where no geometry exists and the
 // model's proposed boxes are clamped hard.
 
@@ -23,7 +23,6 @@ export interface ProposedField {
   type: "text" | "multiline" | "image" | "select";
   options?: string[];
   static?: boolean;
-  maxLength?: number;
   placeholder?: string;
   typeStyleKey?: string;
   colorKey?: string;
@@ -342,11 +341,6 @@ export function validateProposal(
       }
     }
 
-    let maxLength =
-      typeof p.maxLength === "number" && Number.isFinite(p.maxLength)
-        ? Math.min(2000, Math.max(1, Math.round(p.maxLength)))
-        : undefined;
-
     const isStatic = p.static === true;
 
     // ---- geometry ----------------------------------------------------------
@@ -430,7 +424,6 @@ export function validateProposal(
         : undefined,
       // No required flag: requiredness is derived (see fieldRules.ts), so
       // the draft carries nothing for the legacy column to store.
-      maxLength: !isStatic && type !== "image" ? maxLength : undefined,
       typeStyleKey,
       ...(brandHex !== undefined ? { colorHex: brandHex } : {}),
       textSizing: type === "text" || type === "multiline" ? ("shrink" as const) : undefined,

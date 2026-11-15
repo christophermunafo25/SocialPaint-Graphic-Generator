@@ -476,6 +476,7 @@ describe("the report", () => {
       fields: frame.fields,
       intents: frame.intents,
       parse: frame.parse,
+      capTrim: frame.capTrim,
       filledBy: "keys",
       cost: NO_MODEL_COST,
     });
@@ -499,6 +500,9 @@ describe("the report", () => {
       { fieldId: id("Headline"), max: 32, lines: 3 },
       { fieldId: id("Call to action"), max: 24 },
     ]);
+    // The headline's layer is cap-trimmed and took its band downward. The
+    // pill's text is trimmed too, but a pill is placed from its container.
+    expect(report.capTrim).toEqual([{ fieldId: id("Headline"), capHeight: 58.6, band: "down" }]);
     // Paint order when no form order was given.
     expect(report.formOrder).toEqual([id("Photo"), id("Headline"), id("Call to action")]);
   });

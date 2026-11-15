@@ -55,6 +55,7 @@ Deno.serve(async (req) => {
           fields: run.fields,
           intents: run.intents,
           parse: run.parse,
+          capTrim: run.capTrim,
           filledBy: "keys",
           cost: NO_MODEL_COST,
         }),

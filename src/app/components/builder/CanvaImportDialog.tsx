@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { RefreshCw } from "lucide-react";
-import type { AutoBuildResult } from "@/lib/types";
+import type { AutoBuildResult, DesignImportResult } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { ImportLinkPopup } from "./ImportLinkPopup";
 
 interface CanvaImportDialogProps {
   onClose(): void;
-  onBuilt(result: AutoBuildResult): void;
+  onBuilt(result: AutoBuildResult | DesignImportResult): void | Promise<void>;
 }
 
 /** Paste a Canva design link → auto-built template. Canva hands over a flat
@@ -30,7 +30,7 @@ export function CanvaImportDialog({ onClose, onBuilt }: CanvaImportDialogProps) 
         kind: "canva",
         url: url.trim(),
       });
-      onBuilt(result);
+      await onBuilt(result);
     } catch (e) {
       setError(
         `${e instanceof Error ? e.message : "Import failed."} The blank canvas and the Figma import are unaffected.`,

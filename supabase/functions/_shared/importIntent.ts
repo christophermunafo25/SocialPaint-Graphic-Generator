@@ -7,7 +7,7 @@
 
 import { sanitizeRationale, sanitizeTemplate, type ProposedTemplate } from "./autobuildValidate.ts";
 import { slug, type ImportWarning, type SuggestedField } from "./extract.ts";
-import { makeMemberField, type FieldIntent } from "./frameIntent.ts";
+import { makeMemberField, type CapTrim, type FieldIntent } from "./frameIntent.ts";
 import type { ParseReport } from "./recipe.ts";
 
 /** A field after the model pass. The walk never makes a select or binds a
@@ -459,6 +459,8 @@ export interface ImportIntentReport {
   /** Text fields and the `max` and `lines` their layers declare, for the
    * measured limits. */
   limits: Array<{ fieldId: string; max?: number; lines?: number }>;
+  /** Text boxes for the browser to re-place from real font metrics. */
+  capTrim: CapTrim[];
   /** Member field ids in form order. */
   formOrder: string[];
   calls: number;
@@ -481,6 +483,7 @@ export function intentReport(opts: {
   fields: SuggestedField[];
   intents: FieldIntent[];
   parse: ParseReport;
+  capTrim: CapTrim[];
   filledBy: "model" | "keys";
   formOrder?: string[];
   cost: ModelCost;
@@ -510,6 +513,7 @@ export function intentReport(opts: {
         ...(i.declared.max !== undefined ? { max: i.declared.max } : {}),
         ...(i.declared.lines !== undefined ? { lines: i.declared.lines } : {}),
       })),
+    capTrim: opts.capTrim.filter((c) => fieldById.has(c.fieldId)),
     formOrder: opts.formOrder ?? members,
     ...opts.cost,
   };

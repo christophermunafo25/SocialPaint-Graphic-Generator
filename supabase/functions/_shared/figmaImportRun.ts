@@ -20,7 +20,7 @@ import { HttpError, logError } from "./http.ts";
 import type { FigmaNode, ImportWarning, ImportedEffect, SuggestedField } from "./extract.ts";
 import { fillRefsOf, importFrame, landImageAssets, maskIdsOf, renderIdsOf } from "./importFrame.ts";
 import { decomposeFrame, pruneTree, type LayerNode, type Unit } from "./figmaLayers.ts";
-import type { FieldIntent } from "./frameIntent.ts";
+import type { CapTrim, FieldIntent } from "./frameIntent.ts";
 import { applyKitLogos } from "./importIntent.ts";
 import type { ParseReport } from "./recipe.ts";
 
@@ -36,6 +36,7 @@ export interface FigmaImportRun {
   fields: SuggestedField[];
   intents: FieldIntent[];
   parse: ParseReport;
+  capTrim: CapTrim[];
   /** Every issue so far. The caller adds its own, then responds. */
   details: ImportWarning[];
   sourceUrl: string;
@@ -145,7 +146,14 @@ export async function runFigmaImport(opts: {
   // 2. Fields from the tree, with the keys in the layer names and the auto
   //    layout around them applied (importFrame: the pure half the fidelity
   //    harness replays offline).
-  const { fields, canvasEffects, warnings: details, intents, parse } = importFrame(root, mode);
+  const {
+    fields,
+    canvasEffects,
+    warnings: details,
+    intents,
+    parse,
+    capTrim,
+  } = importFrame(root, mode);
 
   // 3. Image elements carry their designed artwork, and custom-shape masks
   //    their alpha: resolve fills first, then render what is left in one
@@ -188,6 +196,7 @@ export async function runFigmaImport(opts: {
     fields,
     intents,
     parse,
+    capTrim,
     details,
     sourceUrl: url,
   };

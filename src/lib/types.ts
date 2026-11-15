@@ -1192,6 +1192,33 @@ export interface ImportIssue {
   severity: "info" | "degraded";
 }
 
+/** What a Figma import read from the frame and what its model pass cost
+ * (import intent, Phase 1). Mirrors ImportIntentReport in
+ * supabase/functions/_shared/importIntent.ts. */
+export interface ImportIntentReport {
+  /** "model": keys and the model pass. "keys": the call failed or was
+   * skipped, and the fields stand on their layer names' keys. */
+  filledBy: "model" | "keys";
+  layers: number;
+  keyed: number;
+  /** Kinds and keys kept but not understood. */
+  unknown: string[];
+  /** Colour roles as written (reported, not stored). */
+  roles: Array<{ fieldKey: string; fill?: string; text?: string; color?: string }>;
+  /** The `max` and `lines` a text field's layer declares, by field id. */
+  limits: Array<{ fieldId: string; max?: number; lines?: number }>;
+  /** Text boxes the import grew back from a cap trim, to re-place from the
+   * face's real metrics. `capHeight` is the cap height Figma trimmed to,
+   * in px, and `band` is the way the box was then extended. */
+  capTrim: Array<{ fieldId: string; capHeight: number; band?: "down" | "up" }>;
+  /** Member field ids in the order the form should read. */
+  formOrder: string[];
+  calls: number;
+  inputTokens: number;
+  outputTokens: number;
+  modelMs: number;
+}
+
 export interface DesignImportResult {
   backgroundUrl: string;
   canvasWidth: number;
@@ -1208,6 +1235,13 @@ export interface DesignImportResult {
    * re-render so both passes decompose one consistent snapshot instead of
    * re-fetching a tree that may have drifted. */
   tree?: unknown;
+  /** The frame's name: the template's when nothing better is known. */
+  frameName?: string;
+  /** From the model pass, when it ran. */
+  template?: AutoBuildResult["template"];
+  rationale?: Array<{ fieldKey: string; why: string }>;
+  meta?: AutoBuildMeta;
+  intent?: ImportIntentReport;
 }
 
 /** Element-level import: a single Figma layer (pasted as a link) becomes
@@ -1222,6 +1256,7 @@ export interface ElementImportResult {
   warnings: string[];
   warningDetails?: ImportIssue[];
   sourceUrl?: string;
+  intent?: ImportIntentReport;
 }
 
 /** One paintable unit of a decomposed Figma frame (frame-relative, scale 1). */

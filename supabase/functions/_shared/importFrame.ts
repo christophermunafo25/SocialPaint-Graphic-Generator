@@ -11,7 +11,7 @@ import {
   type ImportWarning,
   type SuggestedField,
 } from "./extract.ts";
-import { applyFrameIntent, type FieldIntent } from "./frameIntent.ts";
+import { applyFrameIntent, type CapTrim, type FieldIntent } from "./frameIntent.ts";
 import { logError } from "./http.ts";
 import type { ParseReport } from "./recipe.ts";
 
@@ -26,6 +26,9 @@ export interface FrameImport {
   intents: FieldIntent[];
   /** How much of the frame is keyed, and what the grammar didn't know. */
   parse: ParseReport;
+  /** Text boxes grown back from a cap trim, for the browser to re-place
+   * from real font metrics. */
+  capTrim: CapTrim[];
 }
 
 /** Fields from the tree, coordinates relative to the node's own box.
@@ -54,7 +57,7 @@ export function importFrame(
     });
   }
   // The keys in the layer names, applied to the fields they describe.
-  const { intents, parse } = applyFrameIntent(root, fields, warnings);
+  const { intents, parse, capTrim } = applyFrameIntent(root, fields, warnings);
   if (mode === "template" && !fields.length) {
     warnings.push({
       layer: root.name,
@@ -82,6 +85,7 @@ export function importFrame(
     warnings,
     intents,
     parse,
+    capTrim,
   };
 }
 

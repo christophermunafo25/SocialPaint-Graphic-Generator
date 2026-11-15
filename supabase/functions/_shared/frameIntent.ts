@@ -28,9 +28,22 @@ export interface FieldIntent {
   ignored?: string[];
 }
 
+/** A text field whose layer is trimmed to its cap height. The walk grows
+ * its box back to whole lines from an estimate; the browser re-places it
+ * from the face's real metrics once the font is loaded. `band` says which
+ * way the box was then extended, so the far edge of the band stays put. */
+export interface CapTrim {
+  fieldId: string;
+  /** The cap height Figma trimmed to, in px: the font's own metric, which
+   * is what the box was cut at (a glyph can stand taller or shorter). */
+  capHeight: number;
+  band?: "down" | "up";
+}
+
 export interface FrameIntent {
   intents: FieldIntent[];
   parse: ParseReport;
+  capTrim: CapTrim[];
 }
 
 interface Indexed {
@@ -293,7 +306,8 @@ const round2 = (v: number) => Math.round(v * 100) / 100;
 export function applyLayoutIntent(
   fields: SuggestedField[],
   byId: Map<string, { node: FigmaNode; parent?: FigmaNode }>,
-): void {
+): Map<string, "down" | "up"> {
+  const bands = new Map<string, "down" | "up">();
   for (const field of fields) {
     const entry = byId.get(field.sourceNodeId);
     if (!entry || field.rotation !== undefined) continue;
@@ -322,8 +336,10 @@ export function applyLayoutIntent(
       } else {
         field.verticalAlign = "top";
       }
+      bands.set(field.id, room.grows);
     }
   }
+  return bands;
 }
 
 /** Read the frame's keys and apply them to the walk's fields, in place. */
@@ -352,7 +368,30 @@ export function applyFrameIntent(
     });
   }
   labelByRole(fields, declaredById);
-  applyLayoutIntent(fields, byId);
+  const bands = applyLayoutIntent(fields, byId);
+
+  // Unrotated, unplated text on a cap-trimmed layer: the boxes the walk
+  // grew back. A pill is placed from its container, so it isn't one.
+  const capTrim: CapTrim[] = [];
+  for (const field of fields) {
+    const node = byId.get(field.sourceNodeId)?.node;
+    if (!node || node.type !== "TEXT" || !isText(field)) continue;
+    if (field.plateColor || field.rotation !== undefined) continue;
+    if (node.style?.leadingTrim !== "CAP_HEIGHT") continue;
+    const box = node.absoluteBoundingBox;
+    const fontSize = node.style.fontSize ?? 16;
+    const lineHeightPx =
+      node.style.lineHeightPx ??
+      (node.style.lineHeightPercentFontSize
+        ? (node.style.lineHeightPercentFontSize / 100) * fontSize
+        : fontSize * 1.2);
+    if (!box || !(lineHeightPx > 0)) continue;
+    // A trimmed box is whole lines above its last, plus one cap height.
+    const capHeight = round2(box.height - Math.floor(box.height / lineHeightPx) * lineHeightPx);
+    if (!(capHeight > 0)) continue;
+    const band = bands.get(field.id);
+    capTrim.push({ fieldId: field.id, capHeight, ...(band ? { band } : {}) });
+  }
 
   const parse = parseTree(root);
   for (const entry of parse.unknownKeys) {
@@ -365,5 +404,5 @@ export function applyFrameIntent(
       severity: "info",
     });
   }
-  return { intents, parse };
+  return { intents, parse, capTrim };
 }
