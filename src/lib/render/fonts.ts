@@ -7,6 +7,7 @@ import type {
 } from "../types";
 import { resolveFieldStyle } from "../brand/resolveStyle";
 import {
+  GOOGLE_OPTICAL_SIZE,
   STRETCH_PERCENT,
   familyStyles,
   nearestStyle,
@@ -94,11 +95,25 @@ const faceShorthand = (family: string, style: FontStyle, sizePx = 16): string =>
  * css2 is strict in three ways, each a 400 rather than a fallback: axes must
  * be named in alphabetical order, every tuple must carry a value for every
  * named axis, and the tuples must be sorted ascending. Width goes out as the
- * percentage the API expects even though the app stores keywords. */
-export function googleAxisQuery(styles: FontStyle[]): string {
+ * percentage the API expects even though the app stores keywords.
+ *
+ * `opticalSize` is the family's optical size range (GOOGLE_OPTICAL_SIZE).
+ * It goes out as the whole range, `opsz,wght@6..72,500`, so the browser
+ * picks the cut from the font size, as Figma does. */
+export function googleAxisQuery(
+  styles: FontStyle[],
+  opticalSize?: readonly [min: number, max: number],
+): string {
   const useItal = styles.some((s) => s.italic);
   const useWdth = styles.some((s) => s.stretch !== "normal");
-  const axes = [...(useItal ? ["ital"] : []), ...(useWdth ? ["wdth"] : []), "wght"];
+  const axes = [
+    ...(useItal ? ["ital"] : []),
+    ...(opticalSize ? ["opsz"] : []),
+    ...(useWdth ? ["wdth"] : []),
+    "wght",
+  ];
+  // The numbers a tuple sorts by. The optical size is the same range in
+  // every tuple, so it takes no part in the order.
   const tuples = styles.map((s) => [
     ...(useItal ? [s.italic ? 1 : 0] : []),
     ...(useWdth ? [STRETCH_PERCENT[s.stretch]] : []),
@@ -109,7 +124,14 @@ export function googleAxisQuery(styles: FontStyle[]): string {
     for (let i = 0; i < x.length; i += 1) if (x[i] !== y[i]) return x[i] - y[i];
     return 0;
   });
-  return `${axes.join(",")}@${sorted.join(";")}`;
+  const range = opticalSize ? `${opticalSize[0]}..${opticalSize[1]}` : undefined;
+  const written = sorted.map((t) => {
+    if (!range) return t;
+    const parts = t.split(",");
+    parts.splice(useItal ? 1 : 0, 0, range);
+    return parts.join(",");
+  });
+  return `${axes.join(",")}@${written.join(";")}`;
 }
 
 /** Map requested faces onto ones the family actually has.
@@ -166,7 +188,7 @@ export function loadGoogleFonts(request: string[] | FontUsage): void {
     link.rel = "stylesheet";
     link.href =
       "https://fonts.googleapis.com/css2?family=" +
-      `${familyParam(family)}:${googleAxisQuery(fresh)}` +
+      `${familyParam(family)}:${googleAxisQuery(fresh, GOOGLE_OPTICAL_SIZE[family])}` +
       "&display=swap";
     const sheet = new Promise<void>((resolve) => {
       link.onload = () => resolve();
@@ -350,7 +372,7 @@ async function buildGoogleEmbedCss(family: string, styles: FontStyle[]): Promise
   try {
     const cssUrl =
       "https://fonts.googleapis.com/css2?family=" +
-      `${familyParam(family)}:${googleAxisQuery(usable)}` +
+      `${familyParam(family)}:${googleAxisQuery(usable, GOOGLE_OPTICAL_SIZE[family])}` +
       "&display=swap";
     const res = await fetch(cssUrl);
     if (!res.ok) throw new Error(`css2 ${res.status}`);
