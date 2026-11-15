@@ -170,7 +170,7 @@ export function WorkspacePreview({ state }: { state: PreviewState }) {
       <PreviewRow eyebrow="You">
         {person ? (
           <Lead
-            lead={<Avatar initials={initials(person.name)} size="lg" />}
+            lead={<Avatar initials={initials(person.name)} />}
             name={person.name}
             detail={person.detail}
           />

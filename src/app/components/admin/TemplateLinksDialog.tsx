@@ -13,7 +13,7 @@ import { stores } from "@/lib/stores";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { publicLinkUrl } from "@/lib/publicLink/route";
 import { ErrorState } from "../ErrorState";
-import { Button, Field, Input, Modal, Select, Stat, Status, Switch } from "../primitives";
+import { Badge, Button, Field, Input, Modal, Select, Stat, Switch } from "../primitives";
 
 /** What a link-creating form sends. */
 export interface NewLinkInput {
@@ -494,7 +494,7 @@ function LinkRow({
       <div className="sp-links__rowhead">
         <span className="sp-links__rowname">
           <span className="tu-label-m">{name}</span>
-          <Status tone={state.live ? "active" : "neutral"}>{state.label}</Status>
+          <Badge tone={state.live ? "active" : "neutral"}>{state.label}</Badge>
         </span>
         <span className="sp-links__rowactions">
           <Button kind="neutral" size="sm" onClick={onRegenerate} disabled={busy}>

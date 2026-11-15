@@ -20,7 +20,7 @@ import { CanvasSizePicker } from "../builder/CanvasSizePicker";
 import { ErrorState } from "../ErrorState";
 import { SkeletonCard } from "../templates/TemplateSkeleton";
 import { TemplateThumbnail } from "../TemplateThumbnail";
-import { Button, IconButton, Modal, SegmentedControl, Select, Status, Toast } from "../primitives";
+import { Badge, Button, IconButton, Modal, SegmentedControl, Select, Toast } from "../primitives";
 
 type StatusFilter = "all" | "published" | "draft";
 type SortKey = "recent" | "name" | "downloads";
@@ -401,9 +401,9 @@ export function AdminTemplates() {
                     onSave={(name) => renameTemplate(t, name)}
                   />
                   {/* Line 2: status (+ provenance when a model built the fields) */}
-                  <Status tone={t.status === "published" ? "active" : "neutral"} size="sm">
+                  <Badge tone={t.status === "published" ? "active" : "neutral"}>
                     {t.status === "published" ? "Published" : "Draft"}
-                  </Status>
+                  </Badge>
                   {/* Starter templates carry autobuildMeta for provenance
                       and idempotency but are seeded designs, not model
                       output — labeling them AI-built would be wrong. */}

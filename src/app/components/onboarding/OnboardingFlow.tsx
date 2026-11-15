@@ -58,6 +58,7 @@ import { PreAppShell } from "../PreAppShell";
 import { ColorControl } from "../ColorControl";
 import { TemplateThumbnail } from "../TemplateThumbnail";
 import {
+  Badge,
   Button,
   IconButton,
   Input,
@@ -65,7 +66,6 @@ import {
   OptionRadioGroup,
   PlatformLogo,
   Select,
-  Status,
   Upload,
   type OptionTileOption,
 } from "../primitives";
@@ -1048,7 +1048,7 @@ function PullRow({ label, status }: { label: string; status: PullStatus }) {
   return (
     <li className="sp-onb-pull__row" data-status={status}>
       <span className="tu-label-m sp-onb-pull__label">{label}</span>
-      <Status tone={tone}>{word}</Status>
+      <Badge tone={tone}>{word}</Badge>
     </li>
   );
 }

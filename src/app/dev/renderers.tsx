@@ -15,7 +15,6 @@ import {
 import {
   Button,
   Chip,
-  ChoiceChip,
   DetailTag,
   PlatformChip,
   ResultCard,
@@ -166,9 +165,9 @@ export const RENDERERS: Record<string, (state: DemoState) => React.ReactNode> = 
   ),
   Chip: (s) => <Chip data-demo-state={demo(s)}>Add a location</Chip>,
   "Choice chip": (s) => (
-    <ChoiceChip selected={s === "selected"} data-demo-state={demo(s)}>
+    <Chip selected={s === "selected"} data-demo-state={demo(s)}>
       Primary
-    </ChoiceChip>
+    </Chip>
   ),
   "Platform chip": (s) => (
     <PlatformChip platform="all" selected={s === "selected"} data-demo-state={demo(s)}>
@@ -176,7 +175,7 @@ export const RENDERERS: Record<string, (state: DemoState) => React.ReactNode> = 
     </PlatformChip>
   ),
   "Tag · Filter": (s) => (
-    <Tag kind="filter" data-demo-state={demo(s)}>
+    <Tag kind="outline" onClick={() => {}} data-demo-state={demo(s)}>
       Hiring
     </Tag>
   ),

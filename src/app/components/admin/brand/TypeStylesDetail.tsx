@@ -14,7 +14,7 @@ import { ruleSentences } from "@/lib/brand/resolveStyle";
 import { assignFontRole, type FontRole } from "@/lib/brand/fontRoles";
 import {
   Button,
-  ChoiceChip,
+  Chip,
   Field,
   Input,
   RowContextMenu,
@@ -548,32 +548,32 @@ function StyleEditor({
           Use for
         </span>
         <div role="group" aria-labelledby={useForId} className="sp-bs-chips">
-          <ChoiceChip selected={!s.useFor} onClick={() => s.useFor && setRole(null)}>
+          <Chip selected={!s.useFor} onClick={() => s.useFor && setRole(null)}>
             None
-          </ChoiceChip>
+          </Chip>
           {(["heading", "body"] as const).map((role) => (
-            <ChoiceChip
+            <Chip
               key={role}
               selected={s.useFor === role}
               onClick={() => s.useFor !== role && setRole(role)}
             >
               {ROLE_LABELS[role]}
-            </ChoiceChip>
+            </Chip>
           ))}
         </div>
         <span className="sp-bs-style__toggle-gap" aria-hidden />
-        <ChoiceChip
+        <Chip
           selected={!!s.uppercase}
           onClick={() => update({ uppercase: s.uppercase ? undefined : true })}
         >
           Always uppercase
-        </ChoiceChip>
-        <ChoiceChip
+        </Chip>
+        <Chip
           selected={s.textSizing === "shrink"}
           onClick={() => update({ textSizing: s.textSizing === "shrink" ? undefined : "shrink" })}
         >
           Shrink to fit the box
-        </ChoiceChip>
+        </Chip>
       </div>
 
       {rules.length > 0 && (

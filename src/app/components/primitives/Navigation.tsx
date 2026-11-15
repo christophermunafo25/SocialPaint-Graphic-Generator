@@ -83,8 +83,9 @@ export const SettingsRailItem = React.forwardRef<HTMLElement, SettingsRailItemPr
 export interface AvatarProps {
   /** One or two letters. */
   initials: string;
-  /** Large (38, with a hairline) is the sidebar account; Default is 32. */
-  size?: "lg" | "default";
+  /** Small 28, Medium 36, Large 44. Every avatar the screens place is
+   * Medium. */
+  size?: "sm" | "md" | "lg";
   /** Square is the workspace tile. */
   shape?: "circle" | "square";
   /** The name it stands for, when nothing beside it says so. Without it the
@@ -93,22 +94,19 @@ export interface AvatarProps {
   className?: string;
 }
 
-/** Avatar (Figma 54:62): initials on surface/sunken. */
-export function Avatar({
-  initials,
-  size = "default",
-  shape = "circle",
-  label,
-  className,
-}: AvatarProps) {
+const AVATAR_TEXT = { sm: "t-label-xs", md: "t-label-s", lg: "t-label-m" } as const;
+
+/** Avatar (Figma 2212:214): initials on surface/sunken with a hairline
+ * edge, in Label/XS, Label/S or Label/M by size. */
+export function Avatar({ initials, size = "md", shape = "circle", label, className }: AvatarProps) {
   return (
     <span
-      className={cx("ui-avatar tu-label-xs", className)}
+      className={cx("ui-avatar", className)}
       data-size={size}
       data-shape={shape}
       {...(label ? { role: "img", "aria-label": label } : { "aria-hidden": true })}
     >
-      {initials}
+      <span className={AVATAR_TEXT[size]}>{initials}</span>
     </span>
   );
 }

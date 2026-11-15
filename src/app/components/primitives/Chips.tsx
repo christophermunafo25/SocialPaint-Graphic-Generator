@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronRight, LayoutGrid, Plus, X } from "lucide-react";
+import { ChevronRight, LayoutGrid, X } from "lucide-react";
 import { platformById, type PlatformId } from "@/lib/templates/platforms";
 import { cx, type DemoStateAttr, type IconComponent } from "./cx";
 
@@ -7,32 +7,21 @@ type ButtonAttrs = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   "data-demo-state"?: DemoStateAttr;
 };
 
-/** Chip (Figma 98:515): a suggestion under a result, on the page. */
-export const Chip = React.forwardRef<HTMLButtonElement, ButtonAttrs>(function Chip(
-  { className, children, type = "button", ...rest },
-  ref,
-) {
-  return (
-    <button
-      ref={ref}
-      type={type}
-      className={cx("ui-reset ui-tint ui-ring-tight ui-chip", className)}
-      {...rest}
-    >
-      <span className="t-label-s">{children}</span>
-    </button>
-  );
-});
-
-export interface ChoiceChipProps extends ButtonAttrs {
-  /** Chosen: ink, with the label inverse. Sets aria-pressed. */
-  selected: boolean;
+export interface ChipProps extends ButtonAttrs {
+  /** Chosen: the inverse fill. Pass it, true or false, on a chip that
+   * toggles, and it sets aria-pressed. Leave it off a chip that only acts
+   * (a suggestion). */
+  selected?: boolean;
+  /** A leading icon, drawn at 16. */
+  icon?: IconComponent;
 }
 
-/** Choice chip (Figma 98:532): one option in a set of choices, a toggle
- * button (aria-pressed). Its focus ring sits 2px out, as drawn. */
-export const ChoiceChip = React.forwardRef<HTMLButtonElement, ChoiceChipProps>(function ChoiceChip(
-  { selected, className, children, type = "button", ...rest },
+/** Chip (Figma 2212:187): a 28 pill on action/neutral with a hairline
+ * edge, for a suggestion or one option in a set of choices. Selected takes
+ * the inverse fill. The file's chip with a remove button is DetailTag,
+ * which holds two controls and so cannot be one button. */
+export const Chip = React.forwardRef<HTMLButtonElement, ChipProps>(function Chip(
+  { selected, icon: Icon, className, children, type = "button", ...rest },
   ref,
 ) {
   return (
@@ -40,11 +29,12 @@ export const ChoiceChip = React.forwardRef<HTMLButtonElement, ChoiceChipProps>(f
       ref={ref}
       type={type}
       aria-pressed={selected}
-      className={cx("ui-reset ui-tint ui-ring ui-choice-chip", className)}
+      className={cx("ui-reset ui-fill ui-ring ui-chip", className)}
       data-selected={selected || undefined}
       {...rest}
     >
-      <span className="tu-label-xs">{children}</span>
+      {Icon && <Icon size={16} className="ui-icon" aria-hidden />}
+      <span className="t-label-s">{children}</span>
     </button>
   );
 });
@@ -103,25 +93,33 @@ export const PlatformChip = React.forwardRef<HTMLButtonElement, PlatformChipProp
   },
 );
 
-export type TagKind = "default" | "overlay" | "filter" | "missing";
+export type TagKind = "default" | "overlay" | "outline";
 
 export interface TagProps extends ButtonAttrs {
-  /** Default labels logos and fonts; Overlay sits on a colour or an image.
-   * Both are text, not controls. Filter (a search suggestion) and Missing
-   * (a field the template still needs) are buttons. */
+  /** Default labels a thing (a logo's surface, a type style's role).
+   * Overlay sits on a colour or an image. Outline is the quiet one. */
   kind?: TagKind;
+  /** A leading icon, drawn at 16. */
+  icon?: IconComponent;
 }
 
-/** Tag (Figma 52:63). */
+/** Tag (Figma 2212:143): a 24 pill in Label/XS. A tag is text, not a
+ * control. With onClick it is a button (a field the template still needs,
+ * in Outline with a plus), which hovers and takes the ring. */
 export const Tag = React.forwardRef<HTMLButtonElement, TagProps>(function Tag(
-  { kind = "default", className, children, type = "button", ...rest },
+  { kind = "default", icon: Icon, className, children, type = "button", ...rest },
   ref,
 ) {
-  const textClass = kind === "overlay" ? "tu-caption-s" : "tu-caption-m";
-  if (kind === "default" || kind === "overlay") {
+  const content = (
+    <>
+      {Icon && <Icon size={16} className="ui-icon" aria-hidden />}
+      <span className="t-label-xs">{children}</span>
+    </>
+  );
+  if (!rest.onClick) {
     return (
       <span className={cx("ui-tag", className)} data-kind={kind}>
-        <span className={textClass}>{children}</span>
+        {content}
       </span>
     );
   }
@@ -129,12 +127,11 @@ export const Tag = React.forwardRef<HTMLButtonElement, TagProps>(function Tag(
     <button
       ref={ref}
       type={type}
-      className={cx("ui-reset ui-tint ui-ring-tight ui-tag", className)}
+      className={cx("ui-reset ui-fill ui-ring ui-tag", className)}
       data-kind={kind}
       {...rest}
     >
-      {kind === "missing" && <Plus size={10} className="ui-icon" aria-hidden />}
-      <span className={textClass}>{children}</span>
+      {content}
     </button>
   );
 });
@@ -144,13 +141,13 @@ export interface DetailTagProps {
    * reads inside a sent message. */
   state?: "editable" | "sent";
   children: React.ReactNode;
-  /** A leading icon, drawn at 15 as the frame draws it. */
+  /** A leading icon, drawn at 16. */
   icon?: IconComponent;
   onRemove?(): void;
   /** The remove button's name, e.g. "Remove socialpaint.ai/careers". */
   removeLabel?: string;
   /** Editable only: the value becomes a button that edits the detail
-   * (Generate, PHASE-5 §9 D4). */
+   * (Generate, PHASE-5 section 9 D4). */
   onEdit?(event: React.MouseEvent<HTMLButtonElement>): void;
   /** The value button's name, e.g. "Edit Link: socialpaint.ai/careers". */
   editLabel?: string;
@@ -158,9 +155,11 @@ export interface DetailTagProps {
   "data-demo-state"?: DemoStateAttr;
 }
 
-/** Detail tag (Figma 61:464). Keyboard focus lands on the remove button,
- * whose ring sits 2px out around its 14 glyph; the hit area reaches 24.
- * With onEdit, the value is a button too and takes focus first. */
+/** A detail on a message. Editable, in the composer, it is the file's Chip
+ * with its remove button (2212:187): the chip's look around two controls,
+ * the value (a button when it can be edited) and the remove button, whose
+ * 16 glyph has a 24 hit area. Sent, inside a message, it is a Default Tag
+ * (2212:143). */
 export function DetailTag({
   state = "editable",
   children,
@@ -172,54 +171,66 @@ export function DetailTag({
   className,
   "data-demo-state": demoState,
 }: DetailTagProps) {
-  const editable = state === "editable" && onEdit;
+  if (state === "sent") {
+    return (
+      <span className={cx("ui-tag ui-detail-tag", className)} data-kind="default" data-state="sent">
+        {Icon && <Icon size={16} className="ui-icon" aria-hidden />}
+        <span className="t-label-xs">{children}</span>
+      </span>
+    );
+  }
   return (
     <span
-      className={cx("ui-tint ui-detail-tag", className)}
-      data-state={state}
+      className={cx("ui-fill ui-chip ui-detail-tag", className)}
+      data-state="editable"
       data-demo-state={demoState}
     >
-      {Icon && <Icon size={15} className="ui-icon" aria-hidden />}
-      {editable ? (
+      {Icon && <Icon size={16} className="ui-icon" aria-hidden />}
+      {onEdit ? (
         <button
           type="button"
           aria-label={editLabel}
           onClick={onEdit}
-          className="ui-reset ui-ring ui-detail-tag__value t-caption-m"
+          className="ui-reset ui-ring ui-detail-tag__value t-label-s"
         >
           {children}
         </button>
       ) : (
-        <span className="t-caption-m">{children}</span>
+        <span className="ui-detail-tag__value t-label-s">{children}</span>
       )}
-      {state === "editable" && (
-        <button
-          type="button"
-          aria-label={removeLabel}
-          onClick={onRemove}
-          className="ui-reset ui-ring ui-detail-tag__remove"
-        >
-          <X size={14} className="ui-icon" aria-hidden />
-        </button>
-      )}
+      <button
+        type="button"
+        aria-label={removeLabel}
+        onClick={onRemove}
+        className="ui-reset ui-ring ui-detail-tag__remove"
+      >
+        <X size={16} className="ui-icon" aria-hidden />
+      </button>
     </span>
   );
 }
 
-export interface StatusProps {
-  /** Positive for connected integrations, Active for live links, Neutral for
-   * everything else. */
-  tone: "positive" | "active" | "neutral";
-  size?: "default" | "sm";
+export type BadgeTone =
+  "positive" | "active" | "neutral" | "error" | "warning" | "blue" | "purple" | "pink" | "warm";
+
+export interface BadgeProps {
+  /** Positive for connected integrations, Active for live links, Neutral
+   * for everything else that names a state, Error and Warning for a
+   * problem. Blue, Purple, Pink and Warm stand for a chart series. */
+  tone: BadgeTone;
+  /** A leading icon, drawn at 16. */
+  icon?: IconComponent;
   children: React.ReactNode;
   className?: string;
 }
 
-/** Status (Figma 52:51): a pill naming a state. Text, not a control. */
-export function Status({ tone, size = "default", children, className }: StatusProps) {
+/** Badge (Figma 2212:130): a 24 pill in Label/XS naming a state. Text, not
+ * a control. */
+export function Badge({ tone, icon: Icon, children, className }: BadgeProps) {
   return (
-    <span className={cx("ui-status", className)} data-tone={tone} data-size={size}>
-      <span className={size === "sm" ? "t-label-xs" : "tu-label-xs"}>{children}</span>
+    <span className={cx("ui-badge", className)} data-tone={tone}>
+      {Icon && <Icon size={16} className="ui-icon" aria-hidden />}
+      <span className="t-label-xs">{children}</span>
     </span>
   );
 }

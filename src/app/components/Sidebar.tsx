@@ -147,14 +147,14 @@ function SidebarAccount({
   if (collapsed) {
     return (
       <div className="sp-shell-account" data-collapsed>
-        <Avatar initials={initials} size="lg" label={name} />
+        <Avatar initials={initials} label={name} />
         {gear}
       </div>
     );
   }
   return (
     <div className="sp-shell-account">
-      <Avatar initials={initials} size="lg" />
+      <Avatar initials={initials} />
       <div className="sp-shell-account__text">
         <span className="tu-label-s" title={name}>
           {name}

@@ -1039,31 +1039,28 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   color: var(--text-disabled);
 }
 
-/* ── Chip (98:515) ── */
+/* ── Chip (2212:187): a 28 pill on action/neutral with a hairline edge.
+   Selected takes the inverse fill and drops the edge. ── */
 .ui-chip {
   display: inline-flex;
   align-items: center;
-  height: 28px;
-  padding: 0 10px; /* off the scale, as drawn (52:37) */
-  border-radius: var(--radius-control);
-  --_fill: var(--control-fill);
-  color: var(--text-strong);
+  height: var(--size-control-sm);
+  padding: 0 var(--space-12);
+  gap: var(--space-6);
+  border: var(--stroke-hairline) solid var(--border-strong);
+  border-radius: var(--radius-full);
+  --_fill: var(--action-neutral);
+  --_hover: var(--action-neutral-hover);
+  --_pressed: var(--action-neutral-pressed);
+  --_selected: var(--surface-inverse);
+  --_fg: var(--text-primary);
+  --_fg-selected: var(--text-inverse);
 }
-
-/* ── Choice chip (98:532) ── */
-.ui-choice-chip {
-  display: inline-flex;
-  align-items: center;
-  height: 24px;
-  padding: 0 10px; /* off the scale, as drawn (98:526) */
-  border-radius: var(--radius-pill);
-  --_fill: var(--surface-sunken);
-  color: var(--text-strong);
-}
-.ui-choice-chip[data-selected],
-.ui-choice-chip[data-demo-state="selected"] {
-  --_fill: var(--surface-inverse);
-  color: var(--text-inverse);
+.ui-chip[data-selected],
+.ui-chip[data-demo-state="selected"],
+.ui-chip:disabled,
+.ui-chip[aria-disabled="true"] {
+  border-color: transparent;
 }
 
 /* ── Platform chip (53:96) ── */
@@ -1121,62 +1118,43 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   color: var(--_platform-chip-selected-chevron, var(--text-on-fill));
 }
 
-/* ── Tag (52:63) ── */
+/* ── Tag (2212:143): a 24 pill in Label/XS. A tag is text and paints its
+   own fill. Given something to do it is a button, and the shared state rules
+   paint it: an Outline one hovers like a ghost control. ── */
 .ui-tag {
   display: inline-flex;
   align-items: center;
-  gap: 6px; /* off the scale, as drawn (52:52) */
-  border-radius: var(--radius-pill);
+  height: var(--size-control-xs);
+  padding: 0 var(--space-8);
+  gap: var(--space-4);
+  border-radius: var(--radius-full);
+  --_fill: initial;
+  --_fg: initial;
   white-space: nowrap;
 }
 .ui-tag[data-kind="default"] {
-  height: 22px;
-  padding: 0 var(--space-2xs);
-  background: var(--surface-sunken);
-  color: var(--text-strong);
+  --_fill: var(--status-neutral-surface);
+  --_fg: var(--text-primary);
 }
 .ui-tag[data-kind="overlay"] {
-  height: 21px;
-  padding: 0 var(--space-2xs);
-  background: var(--tag-overlay-bg);
-  color: var(--text-on-fill);
+  --_fill: var(--surface-overlay);
+  --_fg: var(--text-on-color);
 }
-.ui-tag[data-kind="filter"] {
-  height: 28px;
-  padding: 0 10px; /* off the scale, as drawn (52:56) */
-  --_fill: var(--surface-sunken);
-  color: var(--text-secondary);
+.ui-tag[data-kind="outline"] {
+  border: var(--stroke-hairline) solid var(--border-control);
+  --_disabled: transparent;
+  --_fg: var(--text-secondary);
 }
-.ui-tag[data-kind="missing"] {
-  height: 28px;
-  padding: 0 var(--space-xs) 0 10px; /* 10 as drawn (52:58) */
-  /* The 1px border, drawn as a shadow so the tight focus ring composes
-     with it (.ui-ring-tight reads --_shadow). */
-  --_shadow: inset 0 0 0 1px var(--text-secondary);
-  color: var(--text-secondary);
+.ui-tag:not(.ui-fill) {
+  background: var(--_fill, transparent);
+  color: var(--_fg, inherit);
 }
 
-/* ── Detail tag (61:464) ── */
+/* ── A detail on a message. Editable (the composer) it is the Chip with its
+   remove button; sent (inside a message) it is a Default Tag. ── */
 .ui-detail-tag {
   box-sizing: border-box;
-  display: inline-flex;
-  align-items: center;
-  height: 28px;
-  gap: 6px; /* off the scale, as drawn (52:64) */
-  border-radius: var(--radius-pill);
   white-space: nowrap;
-}
-.ui-detail-tag[data-state="editable"] {
-  padding: 0 6px 0 9px; /* off the scale, as drawn (52:64) */
-  --_fill: var(--surface-page);
-  color: var(--tag-detail-fg);
-}
-.ui-detail-tag[data-state="sent"] {
-  padding: 0 9px;
-  background: var(--tag-sent-bg);
-  /* 0.75, as drawn (61:455). */
-  box-shadow: inset 0 0 0 0.75px var(--tag-sent-border);
-  color: var(--tag-sent-fg);
 }
 .ui-detail-tag__value {
   max-width: 220px;
@@ -1186,53 +1164,75 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
      the line, as the menu item's label does. */
   padding-block: 0.3em;
   margin-block: -0.3em;
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-xs);
   color: inherit;
+}
+button.ui-detail-tag__value {
   cursor: pointer;
 }
+/* The remove glyph is 16; its hit area reaches 24. */
 .ui-detail-tag__remove {
   position: relative;
   display: inline-flex;
-  width: 14px;
-  height: 14px;
-  border-radius: var(--radius-pill);
+  flex: none;
+  border-radius: var(--radius-full);
   color: inherit;
 }
 .ui-detail-tag__remove::after {
   content: "";
   position: absolute;
-  inset: -5px;
+  inset: calc(-1 * var(--space-4));
 }
 .ui-detail-tag[data-demo-state="focus"] .ui-detail-tag__remove {
-  outline: var(--focus-width) solid var(--ring);
+  outline: var(--stroke-focus) solid var(--border-focus);
   outline-offset: var(--focus-offset);
 }
 
-/* ── Status (52:51) ── */
-.ui-status {
+/* ── Badge (2212:130): a 24 pill in Label/XS naming a state. ── */
+.ui-badge {
   display: inline-flex;
   align-items: center;
-  padding: 0 var(--space-2xs);
-  border-radius: var(--radius-pill);
+  height: var(--size-control-xs);
+  padding: 0 var(--space-8);
+  gap: var(--space-4);
+  border-radius: var(--radius-full);
   white-space: nowrap;
 }
-.ui-status[data-size="default"] {
-  height: 21px;
+.ui-badge[data-tone="positive"] {
+  background: var(--status-positive-surface);
+  color: var(--status-positive-text);
 }
-.ui-status[data-size="sm"] {
-  height: 17px;
+.ui-badge[data-tone="active"] {
+  background: var(--status-active-surface);
+  color: var(--status-active-text);
 }
-.ui-status[data-tone="positive"] {
-  background: var(--status-positive-bg);
-  color: var(--accent-green);
-}
-.ui-status[data-tone="active"] {
-  background: var(--status-active-bg);
-  color: var(--status-active-fg);
-}
-.ui-status[data-tone="neutral"] {
-  background: var(--surface-sunken);
+.ui-badge[data-tone="neutral"] {
+  background: var(--status-neutral-surface);
   color: var(--text-secondary);
+}
+.ui-badge[data-tone="error"] {
+  background: var(--feedback-error-surface);
+  color: var(--feedback-error-text);
+}
+.ui-badge[data-tone="warning"] {
+  background: var(--feedback-warning-surface);
+  color: var(--feedback-warning-text);
+}
+.ui-badge[data-tone="blue"] {
+  background: var(--deep-blue);
+  color: var(--accent-blue);
+}
+.ui-badge[data-tone="purple"] {
+  background: var(--deep-purple);
+  color: var(--tint-purple);
+}
+.ui-badge[data-tone="pink"] {
+  background: var(--deep-pink);
+  color: var(--accent-pink);
+}
+.ui-badge[data-tone="warm"] {
+  background: var(--deep-warm);
+  color: var(--accent-warm);
 }
 .ui-menu--popover {
   z-index: 500; /* the popover layer; z-index is not a Figma token */
@@ -1265,28 +1265,34 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   --_fill: var(--control-fill);
 }
 
-/* ── Avatar (54:62) ── */
+/* ── Avatar (2212:214): initials on surface/sunken, 28, 36 or 44. The
+   component draws its edge at no width, and every screen that places one
+   gives it a hairline on border/subtle, so the hairline is built. ── */
 .ui-avatar {
   box-sizing: border-box;
   display: inline-flex;
   flex: none;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--border-default); /* every size, as drawn (54:62, 13:14708) */
-  border-radius: var(--radius-pill);
+  border: var(--stroke-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-full);
   background: var(--surface-sunken);
-  color: var(--text-strong);
+  color: var(--text-primary);
 }
-.ui-avatar[data-size="default"] {
-  width: 32px;
-  height: 32px;
+.ui-avatar[data-size="sm"] {
+  width: var(--size-control-sm);
+  height: var(--size-control-sm);
+}
+.ui-avatar[data-size="md"] {
+  width: var(--size-control-md);
+  height: var(--size-control-md);
 }
 .ui-avatar[data-size="lg"] {
-  width: 38px;
-  height: 38px;
+  width: var(--size-control-lg);
+  height: var(--size-control-lg);
 }
 .ui-avatar[data-shape="square"] {
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-sm);
 }
 
 /* ── Tooltip (58:434), the chart tooltip ── */

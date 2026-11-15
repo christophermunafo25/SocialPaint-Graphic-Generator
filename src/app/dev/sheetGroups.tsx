@@ -33,11 +33,11 @@ import {
 } from "lucide-react";
 import {
   Avatar,
+  Badge,
   Button,
   Card,
   Checkbox,
   Chip,
-  ChoiceChip,
   DetailTag,
   Field,
   IconButton,
@@ -66,7 +66,6 @@ import {
   SettingsCard,
   SettingsRailItem,
   Stat,
-  Status,
   Stepper,
   Switch,
   Tabs,
@@ -480,9 +479,9 @@ function ChipsGroup() {
       </div>
       <div className="dev-ui-sheet__panel">
         {["primary", "secondary", "accent"].map((r) => (
-          <ChoiceChip key={r} selected={role === r} onClick={() => setRole(r)}>
+          <Chip key={r} selected={role === r} onClick={() => setRole(r)}>
             {r[0].toUpperCase() + r.slice(1)}
-          </ChoiceChip>
+          </Chip>
         ))}
         <Tag>Primary</Tag>
         <Tag kind="overlay">On media</Tag>
@@ -490,12 +489,15 @@ function ChipsGroup() {
           socialpaint.ai/careers
         </DetailTag>
         <DetailTag state="sent">Remote</DetailTag>
-        <Status tone="positive">Connected</Status>
-        <Status tone="active">Active</Status>
-        <Status tone="neutral">Expired</Status>
-        <Status tone="positive" size="sm">
-          Connected
-        </Status>
+        <Badge tone="positive">Connected</Badge>
+        <Badge tone="active">Active</Badge>
+        <Badge tone="neutral">Expired</Badge>
+        <Badge tone="error">Failed</Badge>
+        <Badge tone="warning">Expiring</Badge>
+        <Badge tone="blue">Opens</Badge>
+        <Badge tone="purple">Posted</Badge>
+        <Badge tone="pink">New</Badge>
+        <Badge tone="warm">Hot</Badge>
       </div>
       <div className="dev-ui-sheet__line" role="radiogroup" aria-label="Platform">
         {(["all", "instagram", "linkedin"] as const).map((p) => (
@@ -510,8 +512,10 @@ function ChipsGroup() {
             {p === "all" ? "All" : p === "instagram" ? "Instagram" : "LinkedIn"}
           </PlatformChip>
         ))}
-        <Tag kind="filter">Hiring</Tag>
-        <Tag kind="missing">Location</Tag>
+        <Tag kind="outline">Draft</Tag>
+        <Tag kind="outline" icon={Plus} onClick={() => {}}>
+          Location
+        </Tag>
       </div>
     </>
   );
@@ -550,6 +554,7 @@ function NavigationGroup() {
         <div className="dev-ui-sheet__stack">
           <Avatar initials="AS" size="lg" label="Acme Studios" />
           <Avatar initials="AS" />
+          <Avatar initials="AS" size="sm" />
           <Avatar initials="AS" shape="square" />
         </div>
         <Menu
