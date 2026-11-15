@@ -683,9 +683,10 @@ optgroup {
   letter-spacing: var(--type-body-track);
 }
 
-/* Focus: a --focus-width ring at --focus-offset on every interactive element, both modes. */
+/* Focus: a 2 px ring, 2 px outside the element, on every interactive
+   control in both modes, text fields included. */
 :focus-visible {
-  outline: var(--focus-width) solid var(--ring);
+  outline: var(--stroke-focus) solid var(--border-focus);
   outline-offset: var(--focus-offset);
 }
 
@@ -787,7 +788,6 @@ optgroup {
   background: var(--input-bg);
   border: 1px solid var(--border);
   color: var(--text-primary);
-  outline: none;
   transition:
     box-shadow var(--dur-state) var(--ease),
     border-color var(--dur-state) var(--ease);
@@ -818,27 +818,14 @@ select.sp-input:disabled {
   cursor: default;
   opacity: 0.5;
 }
-/* A focused text box shows a 1px ring-coloured BORDER — the control's own
-   1px edge changing colour, never a thicker halo or a second outline. Two
-   rules because a <select> or button-styled control only ever fires
-   :focus-visible; both override the global 2px outline. */
+/* A focused text box takes the global focus ring (2 px, 2 px out), like
+   every other control. Its own edge does not change colour. */
 .sp-input:focus {
-  border-color: var(--ring);
   box-shadow: none;
-  outline: none;
-}
-.sp-input:focus-visible {
-  border-color: var(--ring);
-  box-shadow: none;
-  outline: none;
 }
 
-/* Inspector numeric field — a composite control (scrub label + input + unit
-   suffix) that focuses as one box: same ring-coloured border treatment as
-   .sp-input, driven by the inner input's focus. */
-.sp-numfield:focus-within {
-  border-color: var(--ring);
-}
+/* Inspector numeric field: a composite control (scrub label + input + unit
+   suffix). Its inner input takes the global focus ring. */
 .sp-numfield[data-disabled] {
   color: var(--text-disabled);
 }

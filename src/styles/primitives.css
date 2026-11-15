@@ -48,8 +48,8 @@
    --focus-width of --ring at --focus-offset. .ui-ring repeats it for the
    demo state. .ui-ring-tight draws it against the edge, composed with any
    shadow the component carries (--_shadow); the transparent outline is the
-   forced-colors fallback. .ui-ring-none is for text fields, whose focus is
-   the caret alone. */
+   forced-colors fallback. Text fields take the global ring too:
+   .ui-ring-none is still on their markup and no longer removes it. */
 .ui-ring[data-demo-state="focus"] {
   outline: var(--focus-width) solid var(--ring);
   outline-offset: var(--focus-offset);
@@ -64,9 +64,6 @@
   box-shadow:
     0 0 0 var(--focus-width) var(--ring),
     var(--_shadow, 0 0 0 0 transparent);
-}
-.ui-ring-none:focus-visible {
-  outline: none;
 }
 
 /* Every primitive: no inherited box model surprises, and labels never wrap
