@@ -206,7 +206,7 @@ function SelectBase<T extends string>({
         data-placeholder={selected ? undefined : true}
         data-demo-state={demoState}
       >
-        <span className={cx("ui-select__value", variant === "field" ? "t-body-s" : "t-button-s")}>
+        <span className={cx("ui-select__value", variant === "field" ? "tu-body-m" : "tu-label-s")}>
           {selected?.label ?? placeholder}
         </span>
         <ChevronDown size={16} className="ui-icon ui-select__chevron" aria-hidden />
@@ -233,7 +233,7 @@ function SelectBase<T extends string>({
             lastGroup = group;
             return (
               <React.Fragment key={o.value}>
-                {header && <div className="ui-menu-label t-label-xs t-trim">{group}</div>}
+                {header && <div className="ui-menu-label t-label-xs">{group}</div>}
                 <div
                   id={`${id}-opt-${i}`}
                   role="option"
@@ -250,7 +250,7 @@ function SelectBase<T extends string>({
                   onPointerEnter={() => setActive(i)}
                 >
                   {o.icon}
-                  <span className="ui-menu-item__label t-body-s t-trim">{o.label}</span>
+                  <span className="ui-menu-item__label t-body-m">{o.label}</span>
                   {o.value === value && (
                     <Check size={16} className="ui-icon ui-menu-item__check" aria-hidden />
                   )}
@@ -258,7 +258,7 @@ function SelectBase<T extends string>({
               </React.Fragment>
             );
           })}
-          {menuCaption && <p className="ui-menu__caption t-caption-s">{menuCaption}</p>}
+          {menuCaption && <p className="ui-menu__caption tu-caption-m">{menuCaption}</p>}
         </div>
       )}
     </>

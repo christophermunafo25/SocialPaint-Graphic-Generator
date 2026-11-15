@@ -70,7 +70,7 @@ export const Segment = React.forwardRef<HTMLButtonElement, SegmentProps>(functio
       data-selected={selected || undefined}
       {...rest}
     >
-      <span className="t-control-s">{children}</span>
+      <span className="tu-label-s">{children}</span>
     </button>
   );
 });
@@ -158,7 +158,7 @@ export const Tab = React.forwardRef<HTMLButtonElement, TabProps>(function Tab(
       {...rest}
     >
       {dot && <span className="ui-tab__dot" data-dot={dot} aria-hidden />}
-      <span className="t-control-m">{children}</span>
+      <span className="tu-label-m">{children}</span>
     </button>
   );
 });

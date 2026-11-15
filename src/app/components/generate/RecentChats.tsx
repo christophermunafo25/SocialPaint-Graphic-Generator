@@ -113,12 +113,12 @@ export function RecentChats({
       aria-labelledby={headingId}
     >
       <div className="sp-gen-recent__head">
-        <h2 id={headingId} className="t-title-panel">
+        <h2 id={headingId} className="tu-title-card">
           Recent
         </h2>
         <button
           type="button"
-          className="ui-reset ui-ring t-label-m sp-lib-link"
+          className="ui-reset ui-ring tu-label-m sp-lib-link"
           onClick={onViewAll}
         >
           View all

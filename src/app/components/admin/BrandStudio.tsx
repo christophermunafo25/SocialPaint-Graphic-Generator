@@ -52,7 +52,7 @@ export function BrandStudio({
         )}
       </div>
 
-      <p className="t-caption-s sp-bs-legal">
+      <p className="tu-caption-m sp-bs-legal">
         <LegalLinks />
       </p>
     </Page>

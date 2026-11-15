@@ -16,7 +16,7 @@ export function SwitchRow({
 }) {
   return (
     <div className="sp-st-switch-row">
-      <span className="t-body-s">{label}</span>
+      <span className="tu-body-m">{label}</span>
       <Switch checked={checked} disabled={disabled} onChange={onChange} ariaLabel={label} />
     </div>
   );
@@ -26,5 +26,5 @@ export function SwitchRow({
  * backend says so, in one quiet line, instead of rendering a button that
  * fails (PHASE-7 §9 D11). */
 export function DevBackendNotice({ children }: { children: React.ReactNode }) {
-  return <p className="t-body-s sp-st-notice">{children}</p>;
+  return <p className="tu-body-m sp-st-notice">{children}</p>;
 }

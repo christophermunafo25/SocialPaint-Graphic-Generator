@@ -79,8 +79,8 @@ export function ColorsDetail({ brand, bindings }: { brand: BrandDraft; bindings:
                   )}
                 </PreviewOverlay>
                 <span className="sp-bs-color__meta">
-                  <span className="t-label-l sp-bs-color__name">{c.name}</span>
-                  <span className="t-label-xs sp-bs-color__hex">{c.hex}</span>
+                  <span className="tu-label-l sp-bs-color__name">{c.name}</span>
+                  <span className="tu-label-xs sp-bs-color__hex">{c.hex}</span>
                 </span>
               </button>
               {open && (
@@ -114,8 +114,8 @@ function RolesSummary({ colors }: { colors: BrandColor[] }) {
     <div className="sp-bs-roles">
       {held.map(({ role, color }) => (
         <span key={role} className="sp-bs-roles__item">
-          <span className="t-body-xs sp-bs-roles__role">{ROLE_LABELS[role]}</span>
-          <span className="t-button-m">{color.name}</span>
+          <span className="tu-body-s sp-bs-roles__role">{ROLE_LABELS[role]}</span>
+          <span className="tu-label-m">{color.name}</span>
         </span>
       ))}
     </div>
@@ -320,24 +320,24 @@ function ColorPopover({ color, colors, edit, setColors, noteFor }: EditingProps)
         />
       </div>
       {valueError && (
-        <p className="t-caption-s sp-bs-error-line" role="alert">
+        <p className="tu-caption-m sp-bs-error-line" role="alert">
           {valueError}
         </p>
       )}
 
       {readout && (
         <div className="sp-bs-color-popover__contrast">
-          <p className="t-caption-s">
+          <p className="tu-caption-m">
             Ink {readout.ink}:1 {readout.ink >= CONTRAST_PASS ? "passes" : "fails"}
           </p>
-          <p className="t-caption-s">
+          <p className="tu-caption-m">
             White {readout.white}:1 {readout.white >= CONTRAST_PASS ? "passes" : "fails"}
           </p>
         </div>
       )}
 
       <div className="sp-bs-color-popover__role">
-        <span id={titleId} className="t-label-xs sp-bs-color-popover__label">
+        <span id={titleId} className="tu-label-xs sp-bs-color-popover__label">
           Role
         </span>
         <div role="group" aria-labelledby={titleId} className="sp-bs-chips">
@@ -356,7 +356,7 @@ function ColorPopover({ color, colors, edit, setColors, noteFor }: EditingProps)
         {!isDefault ? (
           <button
             type="button"
-            className="ui-reset ui-ring t-label-xs sp-bs-quiet-action"
+            className="ui-reset ui-ring tu-label-xs sp-bs-quiet-action"
             onClick={() => {
               setColors(
                 colors.filter((c) => c.key !== color.key),

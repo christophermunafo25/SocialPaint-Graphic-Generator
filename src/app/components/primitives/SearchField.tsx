@@ -77,7 +77,7 @@ export function SearchField({
             onOpenChange(false);
           }
         }}
-        className="ui-reset ui-ring-none ui-search__input t-body-s"
+        className="ui-reset ui-ring-none ui-search__input tu-body-m"
       />
       {value !== "" && (
         <button

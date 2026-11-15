@@ -65,7 +65,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
   }
   if (!template) {
     return (
-      <p className="t-body-s text-center py-24" style={{ color: "var(--text-secondary)" }}>
+      <p className="tu-body-m text-center py-24" style={{ color: "var(--text-secondary)" }}>
         Template not found.
       </p>
     );

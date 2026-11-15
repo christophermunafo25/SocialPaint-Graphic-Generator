@@ -117,7 +117,9 @@ export function PeopleSection() {
       <SettingsCard
         title="People"
         action={
-          members.length > 0 && <span className="t-label-xs sp-st-meta">{peopleMeta(members)}</span>
+          members.length > 0 && (
+            <span className="tu-label-xs sp-st-meta">{peopleMeta(members)}</span>
+          )
         }
       >
         {isDevAuth && (
@@ -165,7 +167,7 @@ export function PeopleSection() {
             onRetry={membersState.retry}
           />
         ) : members.length === 0 ? (
-          <p className="t-body-s sp-st-empty">No members yet.</p>
+          <p className="tu-body-m sp-st-empty">No members yet.</p>
         ) : (
           <ul className="sp-st-list">
             {shown.map((m) => {
@@ -176,10 +178,10 @@ export function PeopleSection() {
                   <Avatar initials={memberInitials(m)} />
                   <span className="sp-st-member__text">
                     <span className="sp-st-member__name">
-                      <span className="t-label-m">{name}</span>
-                      {you && <span className="t-label-m sp-st-meta">(you)</span>}
+                      <span className="tu-label-m">{name}</span>
+                      {you && <span className="tu-label-m sp-st-meta">(you)</span>}
                     </span>
-                    {m.name && <span className="t-label-xs sp-st-meta">{m.email}</span>}
+                    {m.name && <span className="tu-label-xs sp-st-meta">{m.email}</span>}
                   </span>
                   <Select
                     ariaLabel={`Role for ${name}`}
@@ -213,7 +215,7 @@ export function PeopleSection() {
         {members.length > CAP && (
           <button
             type="button"
-            className="ui-reset ui-ring t-label-m sp-st-show-all"
+            className="ui-reset ui-ring tu-label-m sp-st-show-all"
             aria-expanded={showAll}
             onClick={() => setShowAll((v) => !v)}
           >

@@ -21,11 +21,11 @@ export function TopTemplatesCard({
   return (
     <section className="sp-in-card sp-in-top" aria-labelledby="sp-in-top-title">
       <div className="sp-in-card__head">
-        <h2 id="sp-in-top-title" className="t-title-panel">
+        <h2 id="sp-in-top-title" className="tu-title-card">
           Top templates
         </h2>
         <a
-          className="ui-ring t-label-m sp-in-link"
+          className="ui-ring tu-label-m sp-in-link"
           href={routeToUrl({ name: "adminTemplates" })}
           onClick={linkTo({ name: "adminTemplates" })}
         >
@@ -34,13 +34,13 @@ export function TopTemplatesCard({
       </div>
       {error ? (
         <div className="sp-in-empty">
-          <p className="t-body-s sp-in-muted">We couldn't load this.</p>
+          <p className="tu-body-m sp-in-muted">We couldn't load this.</p>
           <Button kind="neutral" size="sm" onClick={error.retry}>
             Try again
           </Button>
         </div>
       ) : templates.length === 0 ? (
-        <p className="t-body-s sp-in-muted">No exports in this range.</p>
+        <p className="tu-body-m sp-in-muted">No exports in this range.</p>
       ) : (
         <ul className="sp-in-top__rows">
           {templates.map((t) => (
@@ -51,8 +51,8 @@ export function TopTemplatesCard({
                 onClick={linkTo({ name: "builder", templateId: t.templateId })}
               >
                 <span className="sp-in-top__line">
-                  <span className="t-caption-m">{t.name}</span>
-                  <span className="t-label-s">{t.exports.toLocaleString("en-US")}</span>
+                  <span className="tu-body-s">{t.name}</span>
+                  <span className="tu-label-s">{t.exports.toLocaleString("en-US")}</span>
                 </span>
                 <BarTrack value={t.exports} max={max} />
               </a>

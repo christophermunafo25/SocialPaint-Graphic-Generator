@@ -131,3 +131,74 @@
   --elevation-floating: var(--elevation-3-floating);
   --shadow-card: 0 2px 8px 0 var(--shadow-raised);
 }
+
+/* Untrimmed twins of the text style classes (BRIDGE.md section 5). The
+   twenty .t-* classes in tokens.css trim to cap height. Text that was on
+   screen before the new brand keeps its full line box through these until
+   its screen is rebuilt, so no layout moves. One per style a call site
+   still needs, in the order tokens.css declares the styles. */
+.tu-title-metric {
+  font: var(--type-title-metric);
+  letter-spacing: var(--type-title-metric-tracking);
+}
+.tu-title-page {
+  font: var(--type-title-page);
+  letter-spacing: var(--type-title-page-tracking);
+}
+.tu-title-section {
+  font: var(--type-title-section);
+  letter-spacing: var(--type-title-section-tracking);
+}
+.tu-title-group {
+  font: var(--type-title-group);
+  letter-spacing: var(--type-title-group-tracking);
+}
+.tu-title-card {
+  font: var(--type-title-card);
+  letter-spacing: var(--type-title-card-tracking);
+}
+.tu-body-l {
+  font: var(--type-body-l);
+  letter-spacing: var(--type-body-l-tracking);
+}
+.tu-body-m {
+  font: var(--type-body-m);
+  letter-spacing: var(--type-body-m-tracking);
+}
+.tu-body-s {
+  font: var(--type-body-s);
+  letter-spacing: var(--type-body-s-tracking);
+}
+.tu-label-l {
+  font: var(--type-label-l);
+  letter-spacing: var(--type-label-l-tracking);
+}
+.tu-label-m {
+  font: var(--type-label-m);
+  letter-spacing: var(--type-label-m-tracking);
+}
+.tu-label-s {
+  font: var(--type-label-s);
+  letter-spacing: var(--type-label-s-tracking);
+}
+.tu-label-xs {
+  font: var(--type-label-xs);
+  letter-spacing: var(--type-label-xs-tracking);
+}
+.tu-caption-m {
+  font: var(--type-caption-m);
+  letter-spacing: var(--type-caption-m-tracking);
+}
+.tu-caption-s {
+  font: var(--type-caption-s);
+  letter-spacing: var(--type-caption-s-tracking);
+}
+.tu-mono-s {
+  font: var(--type-mono-s);
+  letter-spacing: var(--type-mono-s-tracking);
+}
+.tu-mono-eyebrow {
+  font: var(--type-mono-eyebrow);
+  letter-spacing: var(--type-mono-eyebrow-tracking);
+  text-transform: uppercase;
+}

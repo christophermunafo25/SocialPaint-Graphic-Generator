@@ -51,7 +51,7 @@
 .sp-gen-start__unavailable > p {
   margin: 0;
 }
-.sp-gen-start__unavailable > .t-body-s {
+.sp-gen-start__unavailable > .tu-body-m {
   color: var(--text-secondary);
 }
 /* Terms and Privacy, not underlined until hovered (13:1598). */

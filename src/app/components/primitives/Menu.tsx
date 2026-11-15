@@ -67,8 +67,8 @@ function MenuItemContent({ icon: Icon, children, meta, chevron, selected }: Menu
   return (
     <>
       {Icon && <Icon size={18} className="ui-icon" aria-hidden />}
-      <span className="ui-menu-item__label t-body-s t-trim">{children}</span>
-      {meta && <span className="ui-menu-item__meta t-caption-s t-trim">{meta}</span>}
+      <span className="ui-menu-item__label t-body-m">{children}</span>
+      {meta && <span className="ui-menu-item__meta t-caption-m">{meta}</span>}
       {chevron && <ChevronRight size={16} className="ui-icon ui-menu-item__chevron" aria-hidden />}
       {selected && <Check size={16} className="ui-icon" aria-hidden />}
     </>
@@ -98,9 +98,7 @@ export function MenuItem({ onSelect, disabled, className, ...content }: MenuItem
 
 /** Menu label (Figma 57:419): a group's heading inside a menu. */
 export function MenuLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <DropdownMenu.Label className="ui-menu-label t-label-xs t-trim">{children}</DropdownMenu.Label>
-  );
+  return <DropdownMenu.Label className="ui-menu-label t-label-xs">{children}</DropdownMenu.Label>;
 }
 
 /** Menu divider (Figma 57:421). */
@@ -135,7 +133,7 @@ export function MenuItemStatic({
   );
 }
 export function MenuLabelStatic({ children }: { children: React.ReactNode }) {
-  return <div className="ui-menu-label t-label-xs t-trim">{children}</div>;
+  return <div className="ui-menu-label t-label-xs">{children}</div>;
 }
 
 /** One action in a row's menu. `checked` present (true or false) makes it a
@@ -182,7 +180,7 @@ function RowMenuItems({
       {groups.map((g, gi) => (
         <React.Fragment key={gi}>
           {gi > 0 && <kit.Separator className="ui-menu-divider" />}
-          {g.label && <kit.Label className="ui-menu-label t-label-xs t-trim">{g.label}</kit.Label>}
+          {g.label && <kit.Label className="ui-menu-label t-label-xs">{g.label}</kit.Label>}
           {g.items.map((item) => (
             <kit.Item
               key={item.label}

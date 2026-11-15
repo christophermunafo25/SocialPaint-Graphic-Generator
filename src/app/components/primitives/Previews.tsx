@@ -155,8 +155,8 @@ export function ResultCard({
       )}
       <div className="ui-result-card__meta">
         <div className="ui-result-card__text">
-          <span className="t-label-l">{title}</span>
-          <span className="t-label-xs ui-result-card__size">{meta}</span>
+          <span className="tu-label-m">{title}</span>
+          <span className="tu-label-xs ui-result-card__size">{meta}</span>
         </div>
         {onDownload && (
           <IconButton
@@ -202,7 +202,7 @@ export const LookTile = React.forwardRef<HTMLButtonElement, LookTileProps>(funct
       <span className="ui-look-tile__ring">
         <span className="ui-look-tile__thumb">{thumbnail}</span>
       </span>
-      <span className="t-control-s">{name}</span>
+      <span className="tu-label-s">{name}</span>
     </button>
   );
 });

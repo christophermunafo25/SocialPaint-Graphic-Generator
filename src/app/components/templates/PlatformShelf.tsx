@@ -27,12 +27,12 @@ export function PlatformShelf({
   return (
     <section className="sp-lib-shelf" aria-labelledby={`shelf-${group.id}`}>
       <div className="sp-lib-shelf__header">
-        <h2 className="t-title-panel" id={`shelf-${group.id}`}>
+        <h2 className="tu-title-card" id={`shelf-${group.id}`}>
           {group.label}
         </h2>
         <button
           type="button"
-          className="ui-reset ui-ring t-label-m sp-lib-link"
+          className="ui-reset ui-ring tu-label-m sp-lib-link"
           onClick={onViewAll}
         >
           View all

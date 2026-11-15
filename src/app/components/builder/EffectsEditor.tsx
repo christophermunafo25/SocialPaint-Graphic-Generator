@@ -134,7 +134,7 @@ export function ColorRow({
         </div>
       )}
       {onUseBase && (
-        <button onClick={onUseBase} className="t-caption-s" style={useBaseStyle}>
+        <button onClick={onUseBase} className="tu-caption-m" style={useBaseStyle}>
           Use base
         </button>
       )}
@@ -293,7 +293,7 @@ export function EffectsEditor({
       headerExtra={
         <div style={{ display: "flex", alignItems: "center", gap: "var(--space-xs)" }}>
           {onUseBase && (
-            <button onClick={onUseBase} className="t-caption-s" style={useBaseStyle}>
+            <button onClick={onUseBase} className="tu-caption-m" style={useBaseStyle}>
               Use base
             </button>
           )}
@@ -372,7 +372,7 @@ export function EffectsEditor({
                   {name}
                 </span>
                 <span
-                  className="t-caption-s"
+                  className="tu-caption-m"
                   style={{
                     color: "var(--text-secondary)",
                     overflow: "hidden",

@@ -127,7 +127,7 @@ export function DetailsPanel({
       className={["sp-details", className].filter(Boolean).join(" ")}
     >
       <div className="sp-details__head">
-        <h2 id={titleId} className="t-title-card">
+        <h2 id={titleId} className="tu-title-card">
           {title}
         </h2>
         {onClose && <IconButton ref={closeRef} icon={X} label={closeLabel} onClick={onClose} />}
@@ -153,7 +153,7 @@ export function DetailsPanel({
         {look && look.options.length > 1 && (
           <div className="ui-field">
             <div className="ui-field__row">
-              <span id={lookLabelId} className="t-label-xs ui-field__label">
+              <span id={lookLabelId} className="tu-label-xs ui-field__label">
                 Look
               </span>
             </div>

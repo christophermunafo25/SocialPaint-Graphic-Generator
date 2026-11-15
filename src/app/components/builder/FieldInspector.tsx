@@ -875,7 +875,7 @@ export function FieldInspector(props: FieldInspectorProps) {
             <button
               ref={iconChangeRef}
               type="button"
-              className="t-caption-s"
+              className="tu-caption-m"
               style={{ color: "var(--text-secondary)", flexShrink: 0 }}
               aria-haspopup="dialog"
               aria-expanded={iconPickerOpen}
@@ -1308,7 +1308,7 @@ export function FieldInspector(props: FieldInspectorProps) {
                     {field.imageRect && (
                       <button
                         type="button"
-                        className="t-caption-s"
+                        className="tu-caption-m"
                         style={{ color: "var(--text-secondary)" }}
                         onClick={() => onChange({ imageRect: undefined })}
                       >
@@ -1756,7 +1756,7 @@ export function FieldInspector(props: FieldInspectorProps) {
             variantMode && fillOverridden ? (
               <button
                 type="button"
-                className="t-caption-s"
+                className="tu-caption-m"
                 style={{ color: "var(--text-secondary)" }}
                 onClick={() =>
                   variantMode.onOverride({ colorHex: undefined, textGradient: undefined })

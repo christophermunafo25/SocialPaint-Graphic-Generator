@@ -20,8 +20,8 @@ export function Card({
   return (
     <section className={cx("ui-card", className)}>
       <header className="ui-card__header">
-        <h2 className="t-title-panel">{title}</h2>
-        {subtitle && <p className="t-caption-m ui-card__subtitle">{subtitle}</p>}
+        <h2 className="tu-title-card">{title}</h2>
+        {subtitle && <p className="tu-body-s ui-card__subtitle">{subtitle}</p>}
       </header>
       {children}
     </section>
@@ -44,7 +44,7 @@ export function SettingsCard({
   return (
     <section className={cx("ui-card ui-settings-card", className)}>
       <header className="ui-settings-card__header">
-        <h2 className="t-title-panel">{title}</h2>
+        <h2 className="tu-title-card">{title}</h2>
         {action}
       </header>
       {children}
@@ -56,8 +56,8 @@ export function SettingsCard({
 export function Stat({ label, value }: { label: React.ReactNode; value: React.ReactNode }) {
   return (
     <div className="ui-stat">
-      <span className="t-label-xs ui-stat__label">{label}</span>
-      <span className="t-body-s">{value}</span>
+      <span className="tu-label-xs ui-stat__label">{label}</span>
+      <span className="tu-body-m">{value}</span>
     </div>
   );
 }
@@ -75,9 +75,9 @@ export function Metric({
 }) {
   return (
     <div className="ui-metric">
-      <span className="t-label-l">{label}</span>
-      <span className="t-title-metric">{value}</span>
-      {sub && <span className="t-caption-m ui-metric__sub">{sub}</span>}
+      <span className="tu-label-m">{label}</span>
+      <span className="tu-title-metric">{value}</span>
+      {sub && <span className="tu-body-s ui-metric__sub">{sub}</span>}
     </div>
   );
 }
@@ -132,7 +132,7 @@ export function Modal({
           <div className="ui-modal__header">
             <div className="ui-modal__title">
               {Icon && <Icon size={18} className="ui-icon" aria-hidden />}
-              <Dialog.Title className="t-title-card">{title}</Dialog.Title>
+              <Dialog.Title className="tu-title-card">{title}</Dialog.Title>
             </div>
             <Dialog.Close asChild>
               <IconButton icon={X} label={closeLabel} />
@@ -153,7 +153,7 @@ export function ModalPanel({ title, icon: Icon, children, closeLabel = "Close" }
       <div className="ui-modal__header">
         <div className="ui-modal__title">
           {Icon && <Icon size={18} className="ui-icon" aria-hidden />}
-          <span className="t-title-card">{title}</span>
+          <span className="tu-title-card">{title}</span>
         </div>
         <IconButton icon={X} label={closeLabel} />
       </div>
@@ -189,7 +189,7 @@ export function Progress({
       <span className="ui-progress__track">
         <span className="ui-progress__fill" style={{ width: `${percent}%` }} />
       </span>
-      <span className="t-label-xs ui-progress__label" aria-hidden={steps ? true : undefined}>
+      <span className="tu-label-xs ui-progress__label" aria-hidden={steps ? true : undefined}>
         {label}
       </span>
     </div>

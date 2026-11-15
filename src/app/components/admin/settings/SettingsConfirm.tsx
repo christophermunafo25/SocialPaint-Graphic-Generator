@@ -113,8 +113,8 @@ export function TypedConfirmModal({
 
 function ConfirmBody({ children }: { children: React.ReactNode }) {
   return typeof children === "string" ? (
-    <p className="t-body-s sp-st-confirm__body">{children}</p>
+    <p className="tu-body-m sp-st-confirm__body">{children}</p>
   ) : (
-    <div className="t-body-s sp-st-confirm__body">{children}</div>
+    <div className="tu-body-m sp-st-confirm__body">{children}</div>
   );
 }

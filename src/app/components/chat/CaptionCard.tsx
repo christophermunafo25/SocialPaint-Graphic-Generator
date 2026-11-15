@@ -56,7 +56,7 @@ export function CaptionCard({
       <div className="sp-tchat-caption__head">
         {showSwitch ? (
           <div className="sp-tchat-caption__lead">
-            <span id={titleId} className="t-label-m">
+            <span id={titleId} className="tu-label-m">
               Caption
             </span>
             <SegmentedControl
@@ -71,7 +71,7 @@ export function CaptionCard({
             />
           </div>
         ) : (
-          <span className="t-label-m">Caption</span>
+          <span className="tu-label-m">Caption</span>
         )}
         <IconButton
           icon={shown ? Check : Copy}
@@ -80,7 +80,7 @@ export function CaptionCard({
           onClick={() => void copy()}
         />
       </div>
-      <p className="t-body-m sp-tchat-caption__text">{caption}</p>
+      <p className="tu-body-m sp-tchat-caption__text">{caption}</p>
       <span className="sr-only" role="status">
         {shown ? "Caption copied" : ""}
       </span>

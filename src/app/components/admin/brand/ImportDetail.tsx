@@ -126,7 +126,7 @@ export function ImportDetail({ brand }: { brand: BrandDraft }) {
       <div className="sp-bs-import">
         {figmaConfigured && (
           <section className="sp-bs-import__leg" aria-labelledby="sp-bs-import-figma">
-            <p id="sp-bs-import-figma" className="t-label-s">
+            <p id="sp-bs-import-figma" className="tu-label-s">
               From a Figma file
             </p>
             {figmaConnected ? (
@@ -158,13 +158,13 @@ export function ImportDetail({ brand }: { brand: BrandDraft }) {
                   </Button>
                 </div>
                 {figmaError && (
-                  <p className="t-caption-s sp-bs-error-line" role="alert">
+                  <p className="tu-caption-m sp-bs-error-line" role="alert">
                     {figmaError}
                   </p>
                 )}
               </>
             ) : (
-              <p className="t-body-s sp-bs-import__note">
+              <p className="tu-body-m sp-bs-import__note">
                 <a
                   href={routeToUrl(settingsRoute)}
                   onClick={linkClick(settingsRoute)}
@@ -179,7 +179,7 @@ export function ImportDetail({ brand }: { brand: BrandDraft }) {
         )}
 
         <section className="sp-bs-import__leg" aria-labelledby="sp-bs-import-tokens">
-          <p id="sp-bs-import-tokens" className="t-label-s">
+          <p id="sp-bs-import-tokens" className="tu-label-s">
             From a tokens file
           </p>
           <label
@@ -187,7 +187,7 @@ export function ImportDetail({ brand }: { brand: BrandDraft }) {
             data-active={tokensDrop.active}
             className="ui-tint sp-bs-import__choose"
           >
-            <span className="t-button-m">Choose tokens.json</span>
+            <span className="tu-label-m">Choose tokens.json</span>
             <input
               type="file"
               accept=".json,application/json"
@@ -203,14 +203,14 @@ export function ImportDetail({ brand }: { brand: BrandDraft }) {
       </div>
 
       {error && (
-        <p className="t-caption-s sp-bs-error-line" role="alert">
+        <p className="tu-caption-m sp-bs-error-line" role="alert">
           {error}
         </p>
       )}
 
       {importing && phase.visible && (
         <section className="sp-bs-import__status" role="status" aria-live="polite">
-          <p className="t-body-s">{phase.step}…</p>
+          <p className="tu-body-m">{phase.step}…</p>
           {/* The request can't be aborted, so there is no Cancel; the bar is
               indeterminate, as the step count is unknown. */}
           <ProgressBar label={phase.step} />
@@ -219,12 +219,12 @@ export function ImportDetail({ brand }: { brand: BrandDraft }) {
 
       {phase.state === "done" && (
         <section className="sp-bs-import__status sp-bs-import__status--done" role="status">
-          <p className="t-label-s">
+          <p className="tu-label-s">
             Added {phase.addedColors} color{phase.addedColors === 1 ? "" : "s"} and{" "}
             {phase.addedStyles} type style{phase.addedStyles === 1 ? "" : "s"}
           </p>
           {phase.matched > 0 && (
-            <p className="t-body-s sp-bs-import__matched">
+            <p className="tu-body-m sp-bs-import__matched">
               {phase.matched} matched what you already had, so those stayed as they were.
             </p>
           )}
@@ -236,11 +236,11 @@ export function ImportDetail({ brand }: { brand: BrandDraft }) {
               data-kind="neutral"
               data-size="md"
             >
-              <span className="t-button-m">View colors</span>
+              <span className="tu-label-m">View colors</span>
             </a>
             <button
               type="button"
-              className="ui-reset ui-ring t-label-m sp-bs-link sp-bs-link--quiet"
+              className="ui-reset ui-ring tu-label-m sp-bs-link sp-bs-link--quiet"
               onClick={() => {
                 undo(phase.snapshot);
                 setPhase({ state: "idle" });

@@ -56,10 +56,10 @@ export function FileTile({
         <FileText size={20} className="ui-icon" />
       </span>
       <span className="sp-chat-tile__text">
-        <span className="t-label-xs t-trim sp-chat-tile__name" title={name}>
+        <span className="t-label-xs sp-chat-tile__name" title={name}>
           {fileTitle(name)}
         </span>
-        <span className="t-caption-xxs t-trim sp-chat-tile__kind">{kind.toUpperCase()}</span>
+        <span className="t-caption-s sp-chat-tile__kind">{kind.toUpperCase()}</span>
       </span>
       {onRemove && <RemoveButton label={`Remove ${name}`} onClick={onRemove} />}
     </span>
