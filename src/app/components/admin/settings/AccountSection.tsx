@@ -69,7 +69,7 @@ export function AccountSection() {
       {/* The way out, here since the sidebar lost its button (13:15828). */}
       {signOut && (
         <span>
-          <Button kind="neutralOnPage" icon={LogOut} onClick={() => void signOut()}>
+          <Button kind="neutral" icon={LogOut} onClick={() => void signOut()}>
             Sign out
           </Button>
         </span>

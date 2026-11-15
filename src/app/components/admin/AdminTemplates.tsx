@@ -278,7 +278,7 @@ export function AdminTemplates() {
         actions={
           <div className="flex items-center" style={{ gap: "var(--space-2xs)" }}>
             <Button
-              kind="neutralOnPage"
+              kind="neutral"
               icon={RotateCcw}
               onClick={() => setConfirmingRestore(true)}
               disabled={restoring || !kit}
@@ -445,6 +445,7 @@ export function AdminTemplates() {
                   >
                     <IconButton
                       variant="ghost"
+                      size="sm"
                       icon={t.status === "published" ? EyeOff : Eye}
                       label={t.status === "published" ? "Unpublish" : "Publish"}
                       title={t.status === "published" ? "Unpublish" : "Publish"}
@@ -452,6 +453,7 @@ export function AdminTemplates() {
                     />
                     <IconButton
                       variant="ghost"
+                      size="sm"
                       icon={Pencil}
                       label="Edit"
                       title="Edit"
@@ -459,6 +461,7 @@ export function AdminTemplates() {
                     />
                     <IconButton
                       variant="ghost"
+                      size="sm"
                       icon={Copy}
                       label="Duplicate"
                       title="Duplicate"
@@ -466,6 +469,7 @@ export function AdminTemplates() {
                     />
                     <IconButton
                       variant="ghost"
+                      size="sm"
                       icon={Proportions}
                       label="Create a version for another size"
                       title="Create a version for another size"
@@ -473,6 +477,7 @@ export function AdminTemplates() {
                     />
                     <IconButton
                       variant="ghost"
+                      size="sm"
                       icon={Trash2}
                       label="Delete"
                       title="Delete"

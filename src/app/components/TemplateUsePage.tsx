@@ -100,7 +100,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
             <>
               {canAssist && (
                 <Button
-                  kind="neutralOnPage"
+                  kind="neutral"
                   icon={Sparkles}
                   onClick={() => navigate({ name: "templateChat", templateId: template.id })}
                 >
@@ -109,7 +109,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
               )}
               {canBulkFill && (
                 <Button
-                  kind="neutralOnPage"
+                  kind="neutral"
                   icon={LayoutGrid}
                   onClick={() => navigate({ name: "bulk", templateId: template.id })}
                 >
@@ -117,7 +117,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
                 </Button>
               )}
               {canShare && (
-                <Button kind="neutralOnPage" icon={Link} onClick={() => setSharing(true)}>
+                <Button kind="neutral" icon={Link} onClick={() => setSharing(true)}>
                   Public link
                 </Button>
               )}

@@ -115,7 +115,7 @@ export function BulkFillPage({ templateId }: { templateId: string }) {
 
 function BackLink({ onClick }: { onClick(): void }) {
   return (
-    <Button kind="neutralOnPage" size="sm" icon={ArrowLeft} onClick={onClick} className="mb-5">
+    <Button kind="neutral" size="sm" icon={ArrowLeft} onClick={onClick} className="mb-5">
       Back to the template
     </Button>
   );

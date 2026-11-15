@@ -232,11 +232,11 @@ export function ImportDetail({ brand }: { brand: BrandDraft }) {
             <a
               href={routeToUrl({ name: "brandStudio", category: "colors" })}
               onClick={linkClick({ name: "brandStudio", category: "colors" })}
-              className="ui-reset ui-tint ui-ring ui-btn"
+              className="ui-reset ui-fill ui-ring ui-btn"
               data-kind="neutral"
               data-size="md"
             >
-              <span className="tu-label-m">View colors</span>
+              <span className="t-label-m">View colors</span>
             </a>
             <button
               type="button"

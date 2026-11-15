@@ -13,22 +13,25 @@ import {
   BarChart3,
   Building,
   Download,
+  Ellipsis,
   FileText,
   Globe,
   Image,
   Link,
   Loader2,
   Minus,
+  Moon,
   Paintbrush,
   Pencil,
+  Plus,
   Settings,
   Sparkles,
+  Sun,
   Trash2,
   Users,
   X,
 } from "lucide-react";
 import {
-  AttachButton,
   Avatar,
   Button,
   Card,
@@ -56,7 +59,6 @@ import {
   Progress,
   ProgressBar,
   ResultCard,
-  RowMenuTrigger,
   SearchField,
   SegmentedControl,
   Select,
@@ -66,13 +68,11 @@ import {
   Stat,
   Status,
   Stepper,
-  StepperButton,
   Switch,
   Tabs,
   Tag,
   TextArea,
   Upload,
-  ThemeToggle,
   Toast,
   Tooltip,
   OptionTile,
@@ -87,8 +87,8 @@ export interface SheetGroup {
   render(): React.ReactNode;
 }
 
-const KINDS: ButtonKind[] = ["primary", "neutral", "neutralOnPage", "destructive"];
-const SIZES: ButtonSize[] = ["lg", "md", "default", "sm"];
+const KINDS: ButtonKind[] = ["primary", "neutral", "ghost", "destructive"];
+const SIZES: ButtonSize[] = ["lg", "md", "sm"];
 
 /** The component sheet's groups, one per family, in build order. */
 export const SHEET_GROUPS: SheetGroup[] = [
@@ -117,7 +117,7 @@ export const SHEET_GROUPS: SheetGroup[] = [
         <div className="dev-ui-sheet__line">
           <SendButton label="Send" />
           <SendButton label="Stop" action="stop" />
-          <AttachButton label="Attach" />
+          <IconButton icon={Plus} label="Attach" />
         </div>
       </>
     ),
@@ -243,10 +243,35 @@ function IconButtonsGroup() {
       <IconButton variant="ghost" icon={Settings} label="Settings" />
       <IconButton variant="ghost" icon={Settings} label="Settings (selected)" selected />
       <IconButton variant="ghost" icon={Settings} label="Settings (disabled)" disabled />
-      <RowMenuTrigger label="More actions" aria-haspopup="menu" aria-expanded={false} />
-      <RowMenuTrigger label="More actions (disabled)" disabled />
-      <ThemeToggle label="Switch theme" />
-      <StepperButton icon={Minus} label="Decrease (disabled)" disabled />
+      <IconButton
+        variant="ghost"
+        size="sm"
+        icon={Ellipsis}
+        label="More actions"
+        aria-haspopup="menu"
+        aria-expanded={false}
+      />
+      <IconButton
+        variant="ghost"
+        size="sm"
+        icon={Ellipsis}
+        label="More actions (disabled)"
+        disabled
+      />
+      <IconButton
+        variant="ghost"
+        size="sm"
+        icon={{ light: Sun, dark: Moon }}
+        label="Switch theme"
+      />
+      <IconButton
+        variant="ghost"
+        size="sm"
+        icon={Minus}
+        label="Decrease (disabled)"
+        focusableWhenDisabled
+        disabled
+      />
       <Stepper label="Variations" value={value} min={1} max={3} onChange={setValue} />
     </div>
   );
@@ -487,7 +512,10 @@ function NavigationGroup() {
           <Avatar initials="AS" />
           <Avatar initials="AS" shape="square" />
         </div>
-        <Menu trigger={<RowMenuTrigger label="More actions" />} align="end">
+        <Menu
+          trigger={<IconButton variant="ghost" size="sm" icon={Ellipsis} label="More actions" />}
+          align="end"
+        >
           <MenuLabel>Template</MenuLabel>
           <MenuItem icon={Pencil}>Rename</MenuItem>
           <MenuItem icon={FileText} meta="Optional">

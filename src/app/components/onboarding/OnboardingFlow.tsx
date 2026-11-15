@@ -914,7 +914,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
               </div>
               {invites.length < MAX_INVITES && (
                 <Button
-                  kind="neutralOnPage"
+                  kind="neutral"
                   size="sm"
                   icon={Plus}
                   className="sp-onb-add-invite"

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Plus } from "lucide-react";
 import authPanel from "@/assets/socialpaint/auth-panel.webp";
-import { AttachButton, CompactSelect, SendButton, Stepper } from "../primitives";
+import { CompactSelect, IconButton, SendButton, Stepper } from "../primitives";
 
 /** The right-hand panel of the gate and onboarding (`sp-auth-panel`, Figma
  * 221:3321): the gradient art, and a card centred on it. Decorative: hidden
@@ -32,7 +33,7 @@ export function ComposerIllustration() {
         Make a hiring post for our creative director role
       </p>
       <div className="sp-auth-composer__toolbar">
-        <AttachButton label="Attach" tabIndex={-1} />
+        <IconButton icon={Plus} label="Attach" tabIndex={-1} />
         <span className="sp-auth-composer__spacer" />
         <CompactSelect
           ariaLabel="Platform"

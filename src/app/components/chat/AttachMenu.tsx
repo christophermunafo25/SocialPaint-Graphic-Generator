@@ -9,7 +9,7 @@ import React, {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { Calendar, ChevronLeft, ChevronRight, Link2, MapPin, Type } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, Link2, MapPin, Plus, Type } from "lucide-react";
 import type { BrandAsset } from "@/lib/types";
 import { useBrand } from "@/lib/brand/BrandContext";
 import { DOCUMENT_ACCEPT } from "@/lib/generate/documentText";
@@ -21,7 +21,7 @@ import {
 } from "@/lib/generate/details";
 import { ImageSourceDialog, pickableAssets } from "../ImageSourceChooser";
 import { BrandStudioGlyph, FileGlyph, PhotoGlyph } from "../generate/icons";
-import { AttachButton, Button, Input } from "../primitives";
+import { Button, IconButton, Input } from "../primitives";
 import { Tooltip } from "../Tooltip";
 
 /** The native picker's list for Photo: the three formats the upload
@@ -449,9 +449,10 @@ export const AttachMenu = React.forwardRef<
   return (
     <>
       <Tooltip content={ATTACH_TOOLTIP} placement="right" gap={4} suppressed={open}>
-        <AttachButton
+        <IconButton
           ref={buttonRef}
           id={buttonId}
+          icon={Plus}
           label={ATTACH_TOOLTIP}
           aria-haspopup="menu"
           aria-expanded={open}

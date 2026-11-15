@@ -204,7 +204,7 @@ export function Dashboard(route: Omit<DashboardRoute, "name">) {
 
   const exportCsv = (
     <Button
-      kind="neutralOnPage"
+      kind="neutral"
       disabled={!insights}
       onClick={() => {
         if (!insights || !loaded || !company) return;
@@ -243,13 +243,13 @@ export function Dashboard(route: Omit<DashboardRoute, "name">) {
             No usage yet
           </h2>
           <a
-            className="ui-reset ui-tint ui-ring ui-btn"
+            className="ui-reset ui-fill ui-ring ui-btn"
             data-kind="primary"
-            data-size="default"
+            data-size="md"
             href={routeToUrl({ name: "portal" })}
             onClick={linkTo({ name: "portal" })}
           >
-            <span className="tu-label-m">Open Brand Templates</span>
+            <span className="t-label-m">Open Brand Templates</span>
           </a>
         </section>
       </Page>

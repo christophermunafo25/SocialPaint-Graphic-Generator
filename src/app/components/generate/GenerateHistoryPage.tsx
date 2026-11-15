@@ -328,11 +328,7 @@ export function GenerateHistoryPage() {
       <div className="sp-emptystate">
         <p className="sp-emptystate__title">{noMatch(query)}</p>
         <div className="sp-emptystate__actions">
-          <Button
-            kind="neutralOnPage"
-            size="sm"
-            onClick={() => setFilter({ platform: null, q: "" })}
-          >
+          <Button kind="neutral" size="sm" onClick={() => setFilter({ platform: null, q: "" })}>
             Clear
           </Button>
         </div>

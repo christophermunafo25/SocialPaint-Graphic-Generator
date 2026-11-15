@@ -130,7 +130,16 @@ export function DetailsPanel({
         <h2 id={titleId} className="tu-title-card">
           {title}
         </h2>
-        {onClose && <IconButton ref={closeRef} icon={X} label={closeLabel} onClick={onClose} />}
+        {onClose && (
+          <IconButton
+            ref={closeRef}
+            variant="ghost"
+            size="sm"
+            icon={X}
+            label={closeLabel}
+            onClick={onClose}
+          />
+        )}
       </div>
 
       {sizeSwitch && sizeSwitch.options.length > 1 && (

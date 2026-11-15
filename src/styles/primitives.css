@@ -153,203 +153,156 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
     var(--_shadow, 0 0 0 0 transparent);
 }
 
-/* ── Button (43:123) ───────────────────────────────────────────────────────
-   Large and Medium sit at the field radius, Default and Small at the control
-   radius, as drawn. */
+/* ── Button (2206:542) ─────────────────────────────────────────────────────
+   Small 28, Medium 36, Large 44, all at radius/sm. Neutral carries a
+   hairline edge, which sits inside the box and takes its own room, as the
+   file draws it. */
 .ui-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: var(--_h);
-  padding: 0 var(--_px);
-  gap: var(--_gap);
-  border-radius: var(--_r);
-  color: var(--_fg);
-}
-.ui-btn[data-size="lg"],
-.ui-btn[data-size="md"] {
-  --_h: 44px;
-  --_px: 18px; /* off the scale, as drawn (43:3) */
-  --_gap: var(--space-2xs);
-  --_r: var(--radius-control-md);
-}
-.ui-btn[data-size="md"] {
-  --_h: 40px;
-}
-.ui-btn[data-size="default"] {
-  --_h: 36px;
-  --_px: var(--space-sm);
-  --_gap: 6px; /* off the scale, as drawn (43:13) */
-  --_r: var(--radius-control);
+  border-radius: var(--radius-sm);
 }
 .ui-btn[data-size="sm"] {
-  --_h: 28px;
-  --_px: 10px; /* off the scale, as drawn (43:18) */
-  --_gap: 6px;
-  --_r: var(--radius-control);
+  height: var(--size-control-sm);
+  padding: 0 var(--space-12);
+  gap: var(--space-4);
+}
+.ui-btn[data-size="md"] {
+  height: var(--size-control-md);
+  padding: 0 var(--space-16);
+  gap: var(--space-6);
+}
+.ui-btn[data-size="lg"] {
+  height: var(--size-control-lg);
+  padding: 0 var(--space-20);
+  gap: var(--space-8);
 }
 .ui-btn[data-kind="primary"] {
-  --_fill: var(--btn-primary-bg);
-  --_fg: var(--btn-primary-fg);
-  --_hover: var(--state-hover-inverse);
-  --_pressed: var(--state-pressed-inverse);
+  --_fill: var(--action-primary);
+  --_hover: var(--action-primary-hover);
+  --_pressed: var(--action-primary-pressed);
+  --_selected: var(--action-primary-pressed);
+  --_fg: var(--action-on-primary);
 }
 .ui-btn[data-kind="neutral"] {
-  --_fill: var(--surface-sunken);
-  --_fg: var(--text-strong);
+  border: var(--stroke-hairline) solid var(--border-strong);
+  --_fill: var(--action-neutral);
+  --_hover: var(--action-neutral-hover);
+  --_pressed: var(--action-neutral-pressed);
+  --_selected: var(--action-neutral-pressed);
+  --_fg: var(--text-primary);
 }
-.ui-btn[data-kind="neutralOnPage"] {
-  --_fill: var(--control-fill);
-  --_fg: var(--text-strong);
+/* Disabled drops the edge. It keeps its room, so the button does not change
+   width as it turns off. */
+.ui-btn[data-kind="neutral"]:disabled,
+.ui-btn[data-kind="neutral"][aria-disabled="true"] {
+  border-color: transparent;
+}
+.ui-btn[data-kind="ghost"] {
+  --_disabled: transparent;
+  --_fg: var(--text-primary);
 }
 .ui-btn[data-kind="destructive"] {
-  --_fill: var(--state-error);
-  --_fg: var(--text-inverse);
-  --_hover: var(--state-hover-on-color);
-  --_pressed: var(--state-pressed-on-color);
+  --_fill: var(--action-danger);
+  --_hover: var(--action-danger-hover);
+  --_pressed: var(--action-danger-pressed);
+  --_selected: var(--action-danger-pressed);
+  --_fg: var(--action-on-danger);
 }
 
-/* ── Send button (44:9) ── */
+/* ── Send button (2206:754) ── */
 .ui-send {
   display: inline-flex;
+  flex: none;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-pill);
-  --_fill: var(--accent-green);
-  --_hover: var(--state-hover-on-color);
-  --_pressed: var(--state-pressed-on-color);
-  color: var(--field-green);
-}
-.ui-send__stop {
-  width: 12px;
-  height: 12px;
-  border-radius: var(--radius-xs);
-  background: currentColor;
+  width: var(--size-control-md);
+  height: var(--size-control-md);
+  border-radius: var(--radius-full);
+  --_fill: var(--action-accent);
+  --_hover: var(--action-accent-hover);
+  --_pressed: var(--action-accent-pressed);
+  --_fg: var(--action-on-accent);
 }
 
-/* ── Attach button (102:569) ── */
-.ui-attach {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-control);
-  --_fill: var(--surface-inverse);
-  --_hover: var(--state-hover-inverse);
-  --_pressed: var(--state-pressed-inverse);
-  /* The glyph takes the raised surface's colour, as drawn: white on ink in
-     Light, ink on white in Dark. */
-  color: var(--surface-raised);
-}
-
-/* ── Icon button (95:516) ── */
+/* ── Icon button (2206:686) ────────────────────────────────────────────────
+   Filled is a circle on action/neutral with a hairline edge; Selected holds
+   its pressed fill. Ghost has no fill and the control radius; Selected is
+   state/selected. */
 .ui-iconbtn {
   display: inline-flex;
+  flex: none;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  --_fg: var(--text-primary);
+}
+.ui-iconbtn[data-size="sm"] {
+  width: var(--size-control-sm);
+  height: var(--size-control-sm);
+}
+.ui-iconbtn[data-size="md"] {
+  width: var(--size-control-md);
+  height: var(--size-control-md);
 }
 .ui-iconbtn[data-variant="filled"] {
-  border-radius: var(--radius-pill);
-  --_fill: var(--surface-sunken);
-  color: var(--text-strong);
+  border: var(--stroke-hairline) solid var(--border-strong);
+  border-radius: var(--radius-full);
+  --_fill: var(--action-neutral);
+  --_hover: var(--action-neutral-hover);
+  --_pressed: var(--action-neutral-pressed);
+  --_selected: var(--action-neutral-pressed);
+}
+.ui-iconbtn[data-variant="filled"]:disabled,
+.ui-iconbtn[data-variant="filled"][aria-disabled="true"] {
+  border-color: transparent;
 }
 .ui-iconbtn[data-variant="ghost"] {
-  border-radius: var(--radius-control);
-  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  --_disabled: transparent;
 }
-.ui-iconbtn[data-variant="ghost"][data-selected],
-.ui-iconbtn[data-variant="ghost"][data-demo-state="selected"] {
-  --_fill: var(--state-selected);
-  color: var(--text-strong);
-}
-
-/* ── Row menu trigger (44:29): surface/sunken while its menu is open, in
-   place of the pressed tint other menus hold. ── */
-.ui-rowmenu {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-control);
-  color: var(--text-secondary);
-}
-.ui-rowmenu[aria-expanded="true"],
-.ui-rowmenu[data-demo-state="open"] {
-  --_fill: var(--surface-sunken);
-  --_tint: transparent;
-}
-
-/* ── Theme toggle (102:574): the sun in Light, the moon in Dark, by the
-   nearest [data-theme]. Each deeper level of nesting wins by specificity;
-   three levels cover the app's html, a themed panel and a theme inside it
-   (/dev/ui's Dark column inside its Light table). ── */
-.ui-theme-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-pill);
-  --_fill: var(--surface-sunken);
-  color: var(--text-secondary);
-}
-[data-theme="light"] .ui-theme-toggle__moon,
-[data-theme="dark"] .ui-theme-toggle__sun,
-[data-theme="dark"] [data-theme="light"] .ui-theme-toggle__moon,
-[data-theme="light"] [data-theme="dark"] .ui-theme-toggle__sun {
+/* A themed pair (the theme toggle): the light glyph in Light and the dark
+   one in Dark, by the nearest [data-theme]. Each deeper level of nesting
+   wins by specificity; three levels cover the app's html, a themed panel
+   and a theme inside it (/dev/ui's Dark column inside its Light table). */
+[data-theme="light"] .ui-iconbtn__dark,
+[data-theme="dark"] .ui-iconbtn__light,
+[data-theme="dark"] [data-theme="light"] .ui-iconbtn__dark,
+[data-theme="light"] [data-theme="dark"] .ui-iconbtn__light {
   display: none;
 }
-[data-theme="dark"] [data-theme="light"] .ui-theme-toggle__sun,
-[data-theme="light"] [data-theme="dark"] .ui-theme-toggle__moon {
+[data-theme="dark"] [data-theme="light"] .ui-iconbtn__light,
+[data-theme="light"] [data-theme="dark"] .ui-iconbtn__dark {
   display: block;
 }
-[data-theme="dark"] [data-theme="light"] [data-theme="dark"] .ui-theme-toggle__sun,
-[data-theme="light"] [data-theme="dark"] [data-theme="light"] .ui-theme-toggle__moon {
+[data-theme="dark"] [data-theme="light"] [data-theme="dark"] .ui-iconbtn__light,
+[data-theme="light"] [data-theme="dark"] [data-theme="light"] .ui-iconbtn__dark {
   display: none;
 }
-[data-theme="dark"] [data-theme="light"] [data-theme="dark"] .ui-theme-toggle__moon,
-[data-theme="light"] [data-theme="dark"] [data-theme="light"] .ui-theme-toggle__sun {
+[data-theme="dark"] [data-theme="light"] [data-theme="dark"] .ui-iconbtn__dark,
+[data-theme="light"] [data-theme="dark"] [data-theme="light"] .ui-iconbtn__light {
   display: block;
 }
 
-/* ── Stepper button (100:544) and Stepper (100:545) ── */
-.ui-stepbtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-pill);
-  color: var(--text-strong);
-  --_disabled-opacity: 0.32;
-}
+/* ── Stepper (2211:227): two ghost Small icon buttons around the value, in
+   a capsule on surface/field. ── */
 .ui-stepper {
   display: inline-flex;
+  flex: none;
   align-items: center;
-  height: 28px;
-  padding: 0 3px 0 9px; /* off the scale, as drawn (100:545) */
-  gap: 6px;
-  border-radius: var(--radius-control);
-  background: var(--surface-sunken);
-  color: var(--text-strong);
+  height: var(--size-control-md);
+  padding: var(--space-4);
+  border-radius: var(--radius-full);
+  background: var(--surface-field);
+  color: var(--text-primary);
   white-space: nowrap;
-}
-.ui-stepper__controls {
-  display: inline-flex;
-  align-items: center;
 }
 .ui-stepper__value {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 28px;
+  width: 20px; /* as drawn (2211:227): the value's own box, not a spacing step */
+  height: var(--size-control-sm);
   overflow: hidden; /* the roll leaves and arrives out of sight */
 }
 .ui-stepper__num {

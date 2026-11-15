@@ -476,7 +476,7 @@ export function TemplateFill({
               </div>
               {finishStep > 0 && (
                 <div>
-                  <Button kind="neutralOnPage" icon={ArrowLeft} onClick={() => go(finishStep - 1)}>
+                  <Button kind="neutral" icon={ArrowLeft} onClick={() => go(finishStep - 1)}>
                     {formFields.length > 0 ? "Back to fields" : "Back to looks"}
                   </Button>
                 </div>

@@ -1,9 +1,9 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { Building, Image, Pencil, Sparkles, Trash2 } from "lucide-react";
+import { Building, Ellipsis, Image, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
 import React from "react";
 import { describe, expect, it, vi } from "vitest";
-import { RowMenuTrigger } from "./IconButton";
+import { IconButton } from "./IconButton";
 import { Menu, MenuDivider, MenuItem, MenuLabel } from "./Menu";
 import { Avatar, NavItem, SettingsRailItem } from "./Navigation";
 import { Toast, Tooltip } from "./Overlays";
@@ -54,7 +54,7 @@ describe("Menu", () => {
     const onRename = vi.fn();
     const onDelete = vi.fn();
     render(
-      <Menu trigger={<RowMenuTrigger label="More actions" />}>
+      <Menu trigger={<IconButton variant="ghost" size="sm" icon={Ellipsis} label="More actions" />}>
         <MenuLabel>Template</MenuLabel>
         <MenuItem icon={Pencil} onSelect={onRename}>
           Rename
@@ -81,7 +81,7 @@ describe("Menu", () => {
 
   it("marks the selected item", async () => {
     render(
-      <Menu trigger={<RowMenuTrigger label="Attach" />}>
+      <Menu trigger={<IconButton icon={Plus} label="Attach" />}>
         <MenuItem icon={Image} selected>
           Photo
         </MenuItem>

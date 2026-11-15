@@ -1,118 +1,96 @@
-import React, { useId } from "react";
-import { Ellipsis, Minus, Moon, Plus, Sun } from "lucide-react";
+import React from "react";
+import { Minus, Plus } from "lucide-react";
 import { cx, type DemoStateAttr, type IconComponent } from "./cx";
 import { useRoll } from "./useRoll";
 
-interface IconOnlyProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "children"> {
+/** A glyph for each theme: `light` shows in Light and `dark` in Dark. */
+export interface ThemedIcon {
+  light: IconComponent;
+  dark: IconComponent;
+}
+
+export interface IconButtonProps extends Omit<
+  React.ButtonHTMLAttributes<HTMLButtonElement>,
+  "children"
+> {
   /** The accessible name. Icon-only controls have no visible label. */
   label: string;
+  /** Filled is a circle on action/neutral with an edge. Ghost has no fill
+   * until it is hovered, and the control radius. */
+  variant?: "filled" | "ghost";
+  /** Small 28, Medium 36. */
+  size?: "sm" | "md";
+  /** The glyph, drawn at 16. A pair draws both and CSS shows the one for
+   * the nearest [data-theme], so a button inside a nested theme shows that
+   * theme's glyph (the theme toggle's sun and moon). */
+  icon: IconComponent | ThemedIcon;
+  /** The button stands for something showing (Settings while it is open).
+   * The caller sets aria-pressed or aria-current to match. A button that
+   * opens a menu needs no prop: it holds this look while aria-expanded is
+   * true (a row's menu trigger). */
+  selected?: boolean;
+  /** Disabled, and still focusable: the button takes aria-disabled and
+   * ignores clicks, so a control that turns itself off under the keyboard
+   * (a stepper at the end of its range) never drops focus onto the page. */
+  focusableWhenDisabled?: boolean;
   "data-demo-state"?: DemoStateAttr;
 }
 
-export interface IconButtonProps extends IconOnlyProps {
-  /** Filled is a sunken circle; Ghost has no fill until hovered. */
-  variant?: "filled" | "ghost";
-  icon: IconComponent;
-  /** Ghost only: the button stands for something showing (Settings open).
-   * Use it on raised surfaces, where state/selected reads. The caller sets
-   * aria-pressed or aria-current to match. */
-  selected?: boolean;
-}
+const isThemed = (icon: IconComponent | ThemedIcon): icon is ThemedIcon =>
+  typeof icon === "object" && icon !== null && "light" in icon && "dark" in icon;
 
-/** Icon button (Figma 95:516), 32 square with a 16 icon. */
+/** Icon button (Figma 2206:686), 28 or 36 square with a 16 glyph. One
+ * component covers the plain icon button, a row's menu trigger, the theme
+ * toggle, a stepper's buttons and the composer's plus. */
 export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton(
-  { variant = "filled", icon: Icon, label, selected, className, type = "button", ...rest },
+  {
+    variant = "filled",
+    size = "md",
+    icon,
+    label,
+    selected,
+    focusableWhenDisabled = false,
+    disabled,
+    onClick,
+    className,
+    type = "button",
+    ...rest
+  },
   ref,
 ) {
+  const soft = focusableWhenDisabled && disabled;
   return (
     <button
       ref={ref}
       type={type}
       aria-label={label}
-      className={cx("ui-reset ui-tint ui-ring ui-iconbtn", className)}
+      disabled={focusableWhenDisabled ? undefined : disabled}
+      aria-disabled={soft || undefined}
+      onClick={(e) => {
+        if (soft) return;
+        onClick?.(e);
+      }}
+      className={cx("ui-reset ui-fill ui-ring ui-iconbtn", className)}
       data-variant={variant}
+      data-size={size}
       data-selected={selected || undefined}
       {...rest}
     >
-      <Icon size={16} className="ui-icon" aria-hidden />
+      {isThemed(icon) ? (
+        <>
+          <icon.light size={16} className="ui-icon ui-iconbtn__light" aria-hidden />
+          <icon.dark size={16} className="ui-icon ui-iconbtn__dark" aria-hidden />
+        </>
+      ) : (
+        React.createElement(icon, { size: 16, className: "ui-icon", "aria-hidden": true })
+      )}
     </button>
   );
 });
-
-/** Row menu trigger (Figma 44:29): the ellipsis that opens a row's menu.
- * The caller passes aria-haspopup and aria-expanded; while open it holds
- * surface/sunken. */
-export const RowMenuTrigger = React.forwardRef<HTMLButtonElement, IconOnlyProps>(
-  function RowMenuTrigger({ label, className, type = "button", ...rest }, ref) {
-    return (
-      <button
-        ref={ref}
-        type={type}
-        aria-label={label}
-        className={cx("ui-reset ui-tint ui-ring ui-rowmenu", className)}
-        {...rest}
-      >
-        <Ellipsis size={16} className="ui-icon" aria-hidden />
-      </button>
-    );
-  },
-);
-
-/** Theme toggle (Figma 102:574): a sunken circle showing the sun in Light
- * and the moon in Dark. The glyph follows the nearest [data-theme] in CSS,
- * so a toggle inside a nested theme shows that theme's glyph. The glyphs
- * are the sidebar's own (lucide at 15, stroke 1.5). */
-export const ThemeToggle = React.forwardRef<HTMLButtonElement, IconOnlyProps>(function ThemeToggle(
-  { label, className, type = "button", ...rest },
-  ref,
-) {
-  return (
-    <button
-      ref={ref}
-      type={type}
-      aria-label={label}
-      className={cx("ui-reset ui-tint ui-ring ui-theme-toggle", className)}
-      {...rest}
-    >
-      <Sun size={15} strokeWidth={1.5} className="ui-icon ui-theme-toggle__sun" aria-hidden />
-      <Moon size={15} strokeWidth={1.5} className="ui-icon ui-theme-toggle__moon" aria-hidden />
-    </button>
-  );
-});
-
-export interface StepperButtonProps extends IconOnlyProps {
-  icon: IconComponent;
-}
-
-/** Stepper button (Figma 100:544). Disabled stays focusable (aria-disabled)
- * and ignores clicks, so stepping to the end of the range never drops
- * keyboard focus onto the page. It dims to 32%, as drawn. */
-export const StepperButton = React.forwardRef<HTMLButtonElement, StepperButtonProps>(
-  function StepperButton(
-    { icon: Icon, label, disabled, onClick, className, type = "button", ...rest },
-    ref,
-  ) {
-    return (
-      <button
-        ref={ref}
-        type={type}
-        aria-label={label}
-        aria-disabled={disabled || undefined}
-        onClick={(e) => {
-          if (disabled) return;
-          onClick?.(e);
-        }}
-        className={cx("ui-reset ui-tint ui-ring ui-stepbtn", className)}
-        {...rest}
-      >
-        <Icon size={16} className="ui-icon" aria-hidden />
-      </button>
-    );
-  },
-);
 
 export interface StepperProps {
-  /** The visible label ("Variations"); it also names the group. */
+  /** Names the group ("Variations"). The file draws no word beside the
+   * control, so this is its accessible name only. */
   label: string;
   value: number;
   min: number;
@@ -124,10 +102,10 @@ export interface StepperProps {
   className?: string;
 }
 
-/** Stepper (Figma 100:545): a label, Decrease, the value and Increase on a
- * sunken track. The value is a polite live region, so each step is read
- * out, and it rolls to each new value. At a limit the end button stays
- * focusable (aria-disabled), so focus never drops out of the group. */
+/** Stepper (Figma 2211:227): Decrease, the value and Increase in a 36
+ * capsule on surface/field. The value is a polite live region, so each step
+ * is read out, and it rolls to each new value. At a limit the end button
+ * stays focusable (aria-disabled), so focus never drops out of the group. */
 export function Stepper({
   label,
   value,
@@ -139,33 +117,33 @@ export function Stepper({
   increaseLabel = "Increase",
   className,
 }: StepperProps) {
-  const labelId = useId();
   // The number rolls to each new value (Variations' familiar roll).
   const roll = useRoll(value);
   return (
-    <div role="group" aria-labelledby={labelId} className={cx("ui-stepper", className)}>
-      <span id={labelId} className="t-label-s">
-        {label}
-      </span>
-      <span className="ui-stepper__controls">
-        <StepperButton
-          icon={Minus}
-          label={decreaseLabel}
-          disabled={disabled || value <= min}
-          onClick={() => onChange(Math.max(min, value - 1))}
-        />
-        <span className="ui-stepper__value t-label-s">
-          <span ref={roll.ref} className="ui-stepper__num" aria-live="polite">
-            {roll.shown}
-          </span>
+    <div role="group" aria-label={label} className={cx("ui-stepper", className)}>
+      <IconButton
+        variant="ghost"
+        size="sm"
+        icon={Minus}
+        label={decreaseLabel}
+        focusableWhenDisabled
+        disabled={disabled || value <= min}
+        onClick={() => onChange(Math.max(min, value - 1))}
+      />
+      <span className="ui-stepper__value t-label-s">
+        <span ref={roll.ref} className="ui-stepper__num" aria-live="polite">
+          {roll.shown}
         </span>
-        <StepperButton
-          icon={Plus}
-          label={increaseLabel}
-          disabled={disabled || value >= max}
-          onClick={() => onChange(Math.min(max, value + 1))}
-        />
       </span>
+      <IconButton
+        variant="ghost"
+        size="sm"
+        icon={Plus}
+        label={increaseLabel}
+        focusableWhenDisabled
+        disabled={disabled || value >= max}
+        onClick={() => onChange(Math.min(max, value + 1))}
+      />
     </div>
   );
 }

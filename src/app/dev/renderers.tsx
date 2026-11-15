@@ -1,7 +1,18 @@
 import type React from "react";
-import { Building, Globe, Image, Minus, Settings, Sparkles, X } from "lucide-react";
 import {
-  AttachButton,
+  Building,
+  Ellipsis,
+  Globe,
+  Image,
+  Minus,
+  Moon,
+  Plus,
+  Settings,
+  Sparkles,
+  Sun,
+  X,
+} from "lucide-react";
+import {
   Button,
   Chip,
   ChoiceChip,
@@ -21,10 +32,7 @@ import {
   LookTile,
   MenuItemStatic,
   NavItem,
-  RowMenuTrigger,
   SendButton,
-  StepperButton,
-  ThemeToggle,
 } from "@/app/components/primitives";
 import { demo } from "./demo";
 import type { DemoState } from "./statesTable";
@@ -44,7 +52,7 @@ export const RENDERERS: Record<string, (state: DemoState) => React.ReactNode> = 
     </Button>
   ),
   "Button · Neutral on page": (s) => (
-    <Button kind="neutralOnPage" data-demo-state={demo(s)}>
+    <Button kind="neutral" data-demo-state={demo(s)}>
       Export CSV
     </Button>
   ),
@@ -54,7 +62,7 @@ export const RENDERERS: Record<string, (state: DemoState) => React.ReactNode> = 
     </Button>
   ),
   "Send button": (s) => <SendButton label="Send" data-demo-state={demo(s)} />,
-  "Attach button": (s) => <AttachButton label="Attach" data-demo-state={demo(s)} />,
+  "Attach button": (s) => <IconButton icon={Plus} label="Attach" data-demo-state={demo(s)} />,
   "Icon button · Filled": (s) => <IconButton icon={X} label="Close" data-demo-state={demo(s)} />,
   "Icon button · Ghost": (s) => (
     <IconButton
@@ -65,10 +73,26 @@ export const RENDERERS: Record<string, (state: DemoState) => React.ReactNode> = 
       data-demo-state={demo(s)}
     />
   ),
-  "Row menu trigger": (s) => <RowMenuTrigger label="More actions" data-demo-state={demo(s)} />,
-  "Theme toggle": (s) => <ThemeToggle label="Switch theme" data-demo-state={demo(s)} />,
+  "Row menu trigger": (s) => (
+    <IconButton
+      variant="ghost"
+      size="sm"
+      icon={Ellipsis}
+      label="More actions"
+      data-demo-state={demo(s)}
+    />
+  ),
+  "Theme toggle": (s) => (
+    <IconButton
+      variant="ghost"
+      size="sm"
+      icon={{ light: Sun, dark: Moon }}
+      label="Switch theme"
+      data-demo-state={demo(s)}
+    />
+  ),
   "Stepper button": (s) => (
-    <StepperButton icon={Minus} label="Decrease" data-demo-state={demo(s)} />
+    <IconButton variant="ghost" size="sm" icon={Minus} label="Decrease" data-demo-state={demo(s)} />
   ),
   Input: (s) => (
     <div

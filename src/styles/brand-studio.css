@@ -886,11 +886,6 @@ label.sp-bs-add:focus-within {
   flex: 1;
   min-width: 0;
 }
-/* Disabled Import is drawn neutral at 40%, not primary at 40%. */
-.sp-bs-import__row > .ui-btn[data-kind="primary"]:disabled {
-  background: var(--surface-sunken);
-  color: var(--text-strong);
-}
 /* Choose tokens.json: a neutral md button that is also the file picker and
    a drop target, so it stays a label around the input. */
 .sp-bs-import__choose {

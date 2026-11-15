@@ -1,13 +1,14 @@
 import React, { useRef } from "react";
 import * as ContextMenu from "@radix-ui/react-context-menu";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { Check, ChevronRight } from "lucide-react";
+import { Check, ChevronRight, Ellipsis } from "lucide-react";
 import { cx, type DemoStateAttr, type IconComponent } from "./cx";
-import { RowMenuTrigger } from "./IconButton";
+import { IconButton } from "./IconButton";
 
 export interface MenuProps {
-  /** The control that opens it (a RowMenuTrigger, an AttachButton, a
-   * Filter). It gets aria-haspopup and aria-expanded from Radix. */
+  /** The control that opens it (an IconButton, a Button). It gets
+   * aria-haspopup and aria-expanded from Radix, and holds its selected look
+   * while the menu is open. */
   trigger: React.ReactElement;
   children: React.ReactNode;
   align?: "start" | "center" | "end";
@@ -207,9 +208,10 @@ function RowMenuItems({
   );
 }
 
-/** A row's "More actions" menu (Row menu trigger 44:29 and Menu 57:423):
- * the ellipsis trigger, shown at rest, and its menu, aligned to the
- * trigger's end. Wrap the row in `RowContextMenu` with the same groups so
+/** A row's "More actions" menu: a ghost Small icon button with the
+ * ellipsis, shown at rest, and its menu, aligned to the trigger's end. The
+ * trigger holds its selected look while the menu is open, and keeps the
+ * .ui-rowmenu class as a hook for the rows that place or refocus it. Wrap the row in `RowContextMenu` with the same groups so
  * a right-click opens the same menu at the pointer (PHASE-6 §9 D7). */
 export function RowMenu({
   groups,
@@ -221,14 +223,21 @@ export function RowMenu({
   /** Names the trigger and the menu: "More actions for Montserrat". */
   label: string;
   className?: string;
-  /** The trigger at 40%, with no menu (the viewer's own row in People). */
+  /** The trigger disabled, with no menu (the viewer's own row in People). */
   disabled?: boolean;
 }) {
   const chosen = useRef<RowMenuAction | null>(null);
   return (
     <DropdownMenu.Root modal={false}>
       <DropdownMenu.Trigger asChild>
-        <RowMenuTrigger label={label} className={className} disabled={disabled} />
+        <IconButton
+          variant="ghost"
+          size="sm"
+          icon={Ellipsis}
+          label={label}
+          className={cx("ui-rowmenu", className)}
+          disabled={disabled}
+        />
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content

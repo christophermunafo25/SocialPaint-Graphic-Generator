@@ -376,12 +376,7 @@ export const GenerateTurn = memo(function GenerateTurn({
 
       {turn.phase === "error" && (
         <div>
-          <Button
-            kind="neutralOnPage"
-            size="sm"
-            disabled={!canRetry}
-            onClick={() => onRetry(turn.id)}
-          >
+          <Button kind="neutral" size="sm" disabled={!canRetry} onClick={() => onRetry(turn.id)}>
             Try again
           </Button>
         </div>

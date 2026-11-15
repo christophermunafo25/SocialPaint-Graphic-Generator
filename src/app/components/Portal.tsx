@@ -219,11 +219,7 @@ export function Portal() {
           <>
             <div className="sp-lib-resultline">
               <p className="sp-lib-eyebrow">{announcement}</p>
-              <Button
-                kind="neutralOnPage"
-                size="sm"
-                onClick={() => setState({ platform: null, q: "" })}
-              >
+              <Button kind="neutral" size="sm" onClick={() => setState({ platform: null, q: "" })}>
                 Clear
               </Button>
             </div>
@@ -240,7 +236,7 @@ export function Portal() {
                     </Button>
                   )}
                   {query && platform && (
-                    <Button kind="neutralOnPage" onClick={() => setState({ platform: null })}>
+                    <Button kind="neutral" onClick={() => setState({ platform: null })}>
                       Search all platforms
                     </Button>
                   )}

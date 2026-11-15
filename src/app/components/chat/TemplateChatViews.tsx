@@ -445,7 +445,7 @@ export const TemplateTurn = memo(function TemplateTurn({
       {turn.phase === "error" && (
         <div>
           <Button
-            kind="neutralOnPage"
+            kind="neutral"
             size="sm"
             disabled={!canRetry}
             onClick={() => handlers.onRetry(turn.id)}
