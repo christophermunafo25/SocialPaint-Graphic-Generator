@@ -83,6 +83,24 @@ export interface FigmaNode {
   };
   fills?: FigmaPaint[];
   children?: FigmaNode[];
+  /** Auto layout, as the REST API sends it (import intent, Phase 1): read
+   * for the edge a hugging pill holds and the room a text box is given,
+   * never to build a stack. Absent on a node without auto layout. */
+  layoutMode?: string;
+  primaryAxisAlignItems?: string;
+  counterAxisAlignItems?: string;
+  primaryAxisSizingMode?: string;
+  counterAxisSizingMode?: string;
+  paddingTop?: number;
+  paddingBottom?: number;
+  paddingLeft?: number;
+  paddingRight?: number;
+  itemSpacing?: number;
+  /** How this node sizes inside its auto layout parent: FIXED, HUG, FILL. */
+  layoutSizingHorizontal?: string;
+  layoutSizingVertical?: string;
+  /** "ABSOLUTE": placed by hand inside an auto layout parent. */
+  layoutPositioning?: string;
 }
 
 /** One Figma effect as the REST API sends it (only the keys the import
@@ -1155,7 +1173,11 @@ export function walk(
         verticalAlign: undefined,
         plateColor: toHex(containerFill.color!),
         platePaddingX: Math.max(0, Math.round(childBox.x - box.x)),
-        platePaddingY: Math.max(0, Math.round(childBox.y - box.y)),
+        // The plate hugs whole line boxes, so its padding is what is left
+        // of the container around them: a cap-trimmed text box is shorter
+        // than the lines the renderer paints, and padding measured from it
+        // drew the pill taller than designed (93 for a 76 pill).
+        platePaddingY: Math.max(0, px((place.height - t.height) / 2)),
         // An UNSET radius on a plated field renders the pill default, so a
         // square container must store explicit zeros to stay square.
         cornerRadius: cornerRadiusOf(node) ?? { tl: 0, tr: 0, br: 0, bl: 0 },

@@ -193,6 +193,139 @@ function labelByRole(fields: SuggestedField[], declaredById: Map<string, Declare
   }
 }
 
+// ---------------------------------------------------------------------------
+// Layout intent: what the auto layout around a layer says about how it
+// should behave once a member's copy replaces the designer's. Read into
+// properties fields already have; nothing here builds a stack.
+// ---------------------------------------------------------------------------
+
+/** Children an auto layout parent actually lays out. */
+const flowKids = (node: FigmaNode): FigmaNode[] =>
+  visibleKids(node).filter((c) => c.layoutPositioning !== "ABSOLUTE");
+
+const hugsWidth = (node: FigmaNode): boolean =>
+  node.layoutSizingHorizontal
+    ? node.layoutSizingHorizontal === "HUG"
+    : node.layoutMode === "HORIZONTAL"
+      ? node.primaryAxisSizingMode !== "FIXED"
+      : node.layoutMode === "VERTICAL" && node.counterAxisSizingMode !== "FIXED";
+
+/** The edge a hug-width child holds while its content grows, from the auto
+ * layout parent that places it. Undefined when the parent has no auto
+ * layout, so today's anchor stands. */
+export function growthAnchorOf(
+  child: FigmaNode,
+  parent: FigmaNode | undefined,
+): "left" | "center" | "right" | undefined {
+  if (!parent?.layoutMode || parent.layoutMode === "NONE") return undefined;
+  if (child.layoutPositioning === "ABSOLUTE") return undefined;
+  if (parent.layoutMode === "VERTICAL") {
+    const cross = parent.counterAxisAlignItems ?? "MIN";
+    return cross === "CENTER" ? "center" : cross === "MAX" ? "right" : "left";
+  }
+  const main = parent.primaryAxisAlignItems ?? "MIN";
+  if (main === "CENTER") return "center";
+  if (main === "MAX") return "right";
+  if (main === "SPACE_BETWEEN") {
+    const kids = flowKids(parent);
+    const i = kids.indexOf(child);
+    if (kids.length < 2 || i === 0) return "left";
+    return i === kids.length - 1 ? "right" : "center";
+  }
+  return "left";
+}
+
+/** A group or bare frame that only wraps one layer, like the "Group 8"
+ * Figma leaves around a headline: it adds nothing of its own. */
+const isWrapper = (node: FigmaNode): boolean =>
+  (node.type === "GROUP" || (node.type === "FRAME" && !node.layoutMode)) &&
+  visibleKids(node).length === 1 &&
+  !(node.fills ?? []).some((f) => f.visible !== false) &&
+  !(node.strokes ?? []).some((s) => s.visible !== false);
+
+const fixedHeight = (node: FigmaNode): boolean =>
+  node.layoutSizingVertical
+    ? node.layoutSizingVertical === "FIXED"
+    : node.primaryAxisSizingMode === "FIXED";
+
+/** The free room a fixed-height vertical auto layout leaves beside one of
+ * its children, on the side that child would grow into: below the first
+ * child of a top-packed or space-between column, above the last child of a
+ * bottom-packed or space-between one. Zero anywhere else, where growing
+ * would run into a sibling. */
+export function bandRoomOf(
+  child: FigmaNode,
+  parent: FigmaNode | undefined,
+): { extra: number; grows: "down" | "up" } | undefined {
+  if (!parent || parent.layoutMode !== "VERTICAL" || !fixedHeight(parent)) return undefined;
+  const kids = flowKids(parent);
+  const i = kids.indexOf(child);
+  const box = child.absoluteBoundingBox;
+  const outer = parent.absoluteBoundingBox;
+  if (i < 0 || !box || !outer) return undefined;
+  const main = parent.primaryAxisAlignItems ?? "MIN";
+  const gap = parent.itemSpacing ?? 0;
+  const first = i === 0;
+  const last = i === kids.length - 1;
+  const down = (main === "MIN" && last) || (main === "SPACE_BETWEEN" && first && kids.length > 1);
+  const up = (main === "MAX" && first) || (main === "SPACE_BETWEEN" && last && kids.length > 1);
+  if (down) {
+    const next = kids[i + 1]?.absoluteBoundingBox;
+    const limit = next ? next.y - gap : outer.y + outer.height - (parent.paddingBottom ?? 0);
+    return { extra: limit - (box.y + box.height), grows: "down" };
+  }
+  if (up) {
+    const prev = kids[i - 1]?.absoluteBoundingBox;
+    const limit = prev ? prev.y + prev.height + gap : outer.y + (parent.paddingTop ?? 0);
+    return { extra: box.y - limit, grows: "up" };
+  }
+  return undefined;
+}
+
+const round2 = (v: number) => Math.round(v * 100) / 100;
+
+/** Apply the layout around each field, in place.
+ *
+ * - A hug-width pill holds the edge its row holds, so a longer or shorter
+ *   call to action never drifts off the headline's left edge.
+ * - A member text box takes the room its fixed-height column leaves it, so
+ *   shrink has the space the design gives the copy. */
+export function applyLayoutIntent(
+  fields: SuggestedField[],
+  byId: Map<string, { node: FigmaNode; parent?: FigmaNode }>,
+): void {
+  for (const field of fields) {
+    const entry = byId.get(field.sourceNodeId);
+    if (!entry || field.rotation !== undefined) continue;
+    const { node, parent } = entry;
+
+    if (field.type === "text" && field.plateColor && node.type !== "TEXT") {
+      if (!hugsWidth(node)) continue;
+      const anchor = growthAnchorOf(node, parent);
+      if (anchor) field.align = anchor;
+      continue;
+    }
+
+    if (isText(field) && !field.static && !field.plateColor && node.type === "TEXT") {
+      let child = node;
+      let holder = parent;
+      while (holder && isWrapper(holder)) {
+        child = holder;
+        holder = byId.get(holder.id)?.parent;
+      }
+      const room = bandRoomOf(child, holder);
+      if (!room || room.extra < 1) continue;
+      field.height = round2(field.height + room.extra);
+      if (room.grows === "up") {
+        field.y = round2(field.y - room.extra);
+        field.verticalAlign = "bottom";
+      } else {
+        field.verticalAlign = "top";
+      }
+    }
+  }
+}
+
 /** Read the frame's keys and apply them to the walk's fields, in place. */
 export function applyFrameIntent(
   root: FigmaNode,
@@ -219,6 +352,7 @@ export function applyFrameIntent(
     });
   }
   labelByRole(fields, declaredById);
+  applyLayoutIntent(fields, byId);
 
   const parse = parseTree(root);
   for (const entry of parse.unknownKeys) {

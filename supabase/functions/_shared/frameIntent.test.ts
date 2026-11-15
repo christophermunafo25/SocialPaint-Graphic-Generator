@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { FigmaNode } from "./extract.ts";
+import { bandRoomOf, growthAnchorOf } from "./frameIntent.ts";
 import { importFrame } from "./importFrame.ts";
 import { portraitWithPlate, UNKEYED_NAMES } from "./intentFixtures.ts";
 
@@ -163,5 +164,132 @@ describe("an unkeyed frame", () => {
     ]);
     expect(fields.every((f) => f.static === true)).toBe(true);
     expect(fields.every((f) => f.maxLength === undefined && f.textSizing === undefined)).toBe(true);
+  });
+});
+
+describe("layout intent", () => {
+  it("draws a pill at its designed height when its text is cap-trimmed", () => {
+    const { field } = byLabel(portraitWithPlate());
+    const cta = field("Call to action");
+    // 76 tall around one 39px line box: (76 - 39) / 2, not the 27 between
+    // the container's top and the trimmed text box.
+    expect(cta.platePaddingY).toBe(18.5);
+    expect(cta.platePaddingX).toBe(44);
+    expect(cta).toMatchObject({ x: 133, y: 1119, width: 359, height: 76 });
+  });
+
+  it("holds the left edge of a hug pill that leads a space-between row", () => {
+    expect(byLabel(portraitWithPlate()).field("Call to action").align).toBe("left");
+  });
+
+  it("holds the right edge of a hug pill that ends a space-between row", () => {
+    const { field } = byLabel(portraitWithPlate({ pillLast: true }));
+    expect(field("Call to action").align).toBe("right");
+  });
+
+  it("follows the row's own packing", () => {
+    const anchor = (rowAlign: "MIN" | "CENTER" | "MAX", pillLast = false) =>
+      byLabel(portraitWithPlate({ rowAlign, pillLast })).field("Call to action").align;
+    expect(anchor("MIN")).toBe("left");
+    expect(anchor("MIN", true)).toBe("left");
+    expect(anchor("CENTER")).toBe("center");
+    expect(anchor("MAX")).toBe("right");
+  });
+
+  it("anchors an unkeyed pill too, since the layout says so either way", () => {
+    const { fields } = importFrame(portraitWithPlate({ names: UNKEYED_NAMES }));
+    const pill = fields.find((f) => f.plateColor)!;
+    expect(pill.align).toBe("left");
+    expect(pill.platePaddingY).toBe(18.5);
+    expect(pill.static).toBe(true);
+  });
+
+  it("gives a member headline the band its plate leaves it", () => {
+    const headline = byLabel(portraitWithPlate()).field("Headline");
+    // Two lines grown back from the cap trim are 184.8 from 855.1. The
+    // plate's inner top is 872 and the row below starts at 1119 less the 40
+    // gap, so the band adds 56 below the drawn box.
+    expect(headline).toMatchObject({
+      x: 133,
+      y: 855.1,
+      width: 709,
+      height: 240.8,
+      verticalAlign: "top",
+    });
+  });
+
+  it("leaves a fixed headline in the box it was drawn in", () => {
+    const { fields } = importFrame(portraitWithPlate({ names: UNKEYED_NAMES }));
+    const headline = fields.find((f) => f.sourceNodeId === "33:18")!;
+    expect(headline).toMatchObject({ y: 855.1, height: 184.8, static: true });
+  });
+
+  it("adds no field for a wrapper group", () => {
+    const { fields } = importFrame(portraitWithPlate());
+    expect(fields.some((f) => f.sourceNodeId === "40:6" || f.sourceNodeId === "40:5")).toBe(false);
+  });
+});
+
+describe("bandRoomOf and growthAnchorOf", () => {
+  const node = (id: string, y: number, height: number, extra: object = {}) =>
+    ({
+      id,
+      name: id,
+      type: "FRAME",
+      absoluteBoundingBox: { x: 0, y, width: 100, height },
+      ...extra,
+    }) as unknown as FigmaNode;
+  const column = (align: string, kids: FigmaNode[], extra: object = {}) =>
+    node("col", 0, 400, {
+      layoutMode: "VERTICAL",
+      primaryAxisSizingMode: "FIXED",
+      primaryAxisAlignItems: align,
+      paddingTop: 20,
+      paddingBottom: 30,
+      itemSpacing: 10,
+      children: kids,
+      ...extra,
+    });
+
+  it("gives the last child of a top-packed column the room beneath it", () => {
+    const a = node("a", 20, 50);
+    const b = node("b", 80, 100);
+    const col = column("MIN", [a, b]);
+    expect(bandRoomOf(b, col)).toEqual({ extra: 190, grows: "down" });
+    // The first child has a sibling right under it: no room.
+    expect(bandRoomOf(a, col)).toBeUndefined();
+  });
+
+  it("gives the first child of a bottom-packed column the room above it", () => {
+    const a = node("a", 220, 50);
+    const b = node("b", 280, 90);
+    expect(bandRoomOf(a, column("MAX", [a, b]))).toEqual({ extra: 200, grows: "up" });
+  });
+
+  it("splits a space-between column at the gap", () => {
+    const a = node("a", 20, 50);
+    const b = node("b", 280, 90);
+    const col = column("SPACE_BETWEEN", [a, b]);
+    expect(bandRoomOf(a, col)).toEqual({ extra: 200, grows: "down" });
+    expect(bandRoomOf(b, col)).toEqual({ extra: 200, grows: "up" });
+  });
+
+  it("gives nothing in a column that hugs, a row, or to a hand-placed child", () => {
+    const a = node("a", 20, 50);
+    expect(bandRoomOf(a, column("MIN", [a], { layoutSizingVertical: "HUG" }))).toBeUndefined();
+    expect(bandRoomOf(a, column("MIN", [a], { layoutMode: "HORIZONTAL" }))).toBeUndefined();
+    const placed = node("p", 20, 50, { layoutPositioning: "ABSOLUTE" });
+    expect(bandRoomOf(placed, column("MIN", [placed]))).toBeUndefined();
+    expect(growthAnchorOf(placed, column("MIN", [placed]))).toBeUndefined();
+  });
+
+  it("anchors by the cross axis in a column and not at all without auto layout", () => {
+    const a = node("a", 20, 50);
+    expect(growthAnchorOf(a, column("MIN", [a]))).toBe("left");
+    expect(growthAnchorOf(a, column("MIN", [a], { counterAxisAlignItems: "CENTER" }))).toBe(
+      "center",
+    );
+    expect(growthAnchorOf(a, column("MIN", [a], { counterAxisAlignItems: "MAX" }))).toBe("right");
+    expect(growthAnchorOf(a, node("plain", 0, 400, { children: [a] }))).toBeUndefined();
   });
 });
