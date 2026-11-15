@@ -1,5 +1,5 @@
 import React from "react";
-import { Filter, Menu, MenuItem } from "../../primitives";
+import { Select } from "../../primitives";
 
 export interface FilterOption {
   /** null is "all" (the filter's first entry). */
@@ -7,8 +7,11 @@ export interface FilterOption {
   label: string;
 }
 
-/** One of Insights' filters (13:911): the Filter primitive opening a menu
- * of choices, the current one checked. Choosing one replaces the filter in
+/** The select's value for "all": its options are strings. */
+const ALL = "";
+
+/** One of Insights' filters (13:911): a Select as wide as its value, the
+ * current choice checked in its list. Choosing one replaces the filter in
  * the URL. */
 export function FilterMenu({
   name,
@@ -24,20 +27,13 @@ export function FilterMenu({
 }) {
   const current = options.find((o) => o.value === value) ?? options[0];
   return (
-    <Menu
-      aria-label={name}
-      minWidth={200}
-      trigger={<Filter aria-label={`${name}: ${current.label}`}>{current.label}</Filter>}
-    >
-      {options.map((o) => (
-        <MenuItem
-          key={o.value ?? "all"}
-          selected={o.value === current.value}
-          onSelect={() => onChange(o.value)}
-        >
-          {o.label}
-        </MenuItem>
-      ))}
-    </Menu>
+    <Select
+      hug
+      ariaLabel={name}
+      value={current.value ?? ALL}
+      options={options.map((o) => ({ value: o.value ?? ALL, label: o.label }))}
+      onSelect={(next) => onChange(next === ALL ? null : next)}
+      menuMinWidth={200}
+    />
   );
 }

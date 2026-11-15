@@ -90,6 +90,7 @@ export function AuthScreen({
   const emailField = (
     <Field label="Email" error={errors.email}>
       <Input
+        size="lg"
         type="email"
         value={email}
         autoComplete="email"
@@ -102,6 +103,7 @@ export function AuthScreen({
   const passwordField = (
     <Field label={view === "setPassword" ? "New password" : "Password"} error={errors.password}>
       <Input
+        size="lg"
         type="password"
         value={password}
         autoComplete={view === "signin" ? "current-password" : "new-password"}

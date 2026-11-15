@@ -37,10 +37,8 @@ import {
   Card,
   Chip,
   ChoiceChip,
-  CompactSelect,
   DetailTag,
   Field,
-  Filter,
   IconButton,
   Input,
   LookTile,
@@ -367,7 +365,9 @@ function FieldsGroup() {
           disabled
         />
         <div className="dev-ui-sheet__line">
-          <CompactSelect
+          <Select
+            size="sm"
+            hug
             ariaLabel="Platform"
             value={platform}
             options={[
@@ -377,9 +377,13 @@ function FieldsGroup() {
             ]}
             onSelect={setPlatform}
           />
-          <Filter aria-haspopup="menu" aria-expanded={false}>
-            Last 30 days
-          </Filter>
+          <Select
+            hug
+            ariaLabel="Date range"
+            value="30"
+            options={[{ value: "30", label: "Last 30 days" }]}
+            onSelect={() => {}}
+          />
         </div>
         <SearchField
           open={open}

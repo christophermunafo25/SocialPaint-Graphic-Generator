@@ -138,7 +138,6 @@ function TransferCard({ onError }: { onError: OnError }) {
         <div className="sp-st-transfer">
           <Select
             ariaLabel="Transfer ownership to"
-            size="lg"
             placeholder="Choose a member…"
             value={targetId || undefined}
             options={others.map((m) => ({ value: m.userId, label: who(m) }))}

@@ -679,10 +679,10 @@
   overflow-y: auto;
 }
 /* Multiline fields and the caption hug their text (156:820): no resize
-   grip, and no 100 floor. */
+   grip, and no floor above a Medium input's height. */
 .sp-details .ui-input[data-size="multiline"] {
   field-sizing: content;
-  min-height: 40px;
+  min-height: var(--size-control-md);
   resize: none;
 }
 /* Look's segments share the panel's width (156:792). */

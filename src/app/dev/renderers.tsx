@@ -20,8 +20,6 @@ import {
   PlatformChip,
   ResultCard,
   Tag,
-  CompactSelect,
-  Filter,
   SearchField,
   Segment,
   Select,
@@ -96,7 +94,8 @@ export const RENDERERS: Record<string, (state: DemoState) => React.ReactNode> = 
   ),
   Input: (s) => (
     <div
-      className="ui-reset ui-tint ui-input tu-body-m dev-ui-input-demo dev-ui-w-288"
+      className="ui-reset ui-fill ui-input t-body-m dev-ui-input-demo dev-ui-w-288"
+      data-size="md"
       data-demo-state={s === "hover" ? "hover" : undefined}
     >
       {s === "focus" && <span className="dev-ui-input-demo__caret" aria-hidden />}
@@ -114,7 +113,9 @@ export const RENDERERS: Record<string, (state: DemoState) => React.ReactNode> = 
     />
   ),
   "Compact select": (s) => (
-    <CompactSelect
+    <Select
+      size="sm"
+      hug
       ariaLabel="Platform"
       value=""
       options={[{ value: "", label: "Any platform" }]}
@@ -122,7 +123,16 @@ export const RENDERERS: Record<string, (state: DemoState) => React.ReactNode> = 
       data-demo-state={demo(s)}
     />
   ),
-  Filter: (s) => <Filter data-demo-state={demo(s)}>Last 30 days</Filter>,
+  Filter: (s) => (
+    <Select
+      hug
+      ariaLabel="Date range"
+      value="30"
+      options={[{ value: "30", label: "Last 30 days" }]}
+      onSelect={() => {}}
+      data-demo-state={demo(s)}
+    />
+  ),
   "Search field": (s) => (
     <SearchField
       open={s === "open"}

@@ -316,7 +316,6 @@ export function AdminTemplates() {
           <div style={{ width: 200 }}>
             <Select<SortKey>
               ariaLabel="Sort templates"
-              size="lg"
               value={sort}
               options={[
                 { value: "recent", label: "Recently edited" },

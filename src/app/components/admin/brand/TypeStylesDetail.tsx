@@ -459,7 +459,6 @@ function StyleEditor({
         <Field label="Font">
           <Select
             ariaLabel="Font"
-            size="lg"
             value={s.font ? `${s.font.source}:${s.font.family}` : NONE}
             options={fontOptions}
             onSelect={(v) => {
@@ -484,7 +483,6 @@ function StyleEditor({
         <Field label="Weight">
           <Select
             ariaLabel="Weight"
-            size="lg"
             value={s.weight === undefined ? NONE : styleKey(current)}
             options={weightOptions}
             onSelect={(v) => {
@@ -504,7 +502,6 @@ function StyleEditor({
         <Field label="Color">
           <Select
             ariaLabel="Color"
-            size="lg"
             value={s.colorKey ?? NONE}
             options={colorOptions}
             onSelect={(v) => update({ colorKey: v || undefined })}

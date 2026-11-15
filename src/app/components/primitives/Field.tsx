@@ -1,30 +1,56 @@
 import React, { useId } from "react";
-import { cx, type DemoStateAttr } from "./cx";
+import { cx, type DemoStateAttr, type IconComponent } from "./cx";
+
+export type FieldSize = "sm" | "md" | "lg";
+
+/** Body/S at Small, Body/M at Medium and Large, for a field's text outside
+ * an input (a select's value). */
+export const fieldTextClass = (size: FieldSize): string =>
+  size === "sm" ? "t-body-s" : "t-body-m";
 
 export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size"> {
-  /** Default 40, Small 32. */
-  size?: "default" | "sm";
+  /** Small 28, Medium 36, Large 44. */
+  size?: FieldSize;
+  /** A leading icon, drawn at 16 on text/secondary. */
+  icon?: IconComponent;
   "data-demo-state"?: DemoStateAttr;
 }
 
-/** Input (Figma 48:37). No border; hover tints the fill; focus shows the
- * caret and nothing else. */
+/** Input (Figma 2207:263) on surface/field. Hover adds a hairline edge,
+ * focus is the 2 px ring, an invalid value takes the error edge, and
+ * disabled is action/disabled under text/disabled. With an icon the input
+ * sits in a box that carries those states; `className` and the demo state
+ * go to the box, and everything else to the input.
+ *
+ * The input takes no text style class. The classes trim to cap height, and
+ * Chromium applies the trim to an input's inner box and clips accents and
+ * descenders. primitives.css sets Body/S or Body/M from the style's
+ * variables instead. */
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(function Input(
-  { size = "default", className, type = "text", ...rest },
+  { size = "md", icon: Icon, className, type = "text", "data-demo-state": demoState, ...rest },
   ref,
 ) {
+  if (!Icon) {
+    return (
+      <input
+        ref={ref}
+        type={type}
+        className={cx("ui-reset ui-fill ui-ring ui-input", className)}
+        data-size={size}
+        data-demo-state={demoState}
+        {...rest}
+      />
+    );
+  }
   return (
-    <input
-      ref={ref}
-      type={type}
-      className={cx(
-        "ui-reset ui-tint ui-ring-none ui-input",
-        size === "sm" ? "tu-body-s" : "tu-body-m",
-        className,
-      )}
+    <span
+      className={cx("ui-fill ui-ring ui-input ui-input--box", className)}
       data-size={size}
-      {...rest}
-    />
+      data-demo-state={demoState}
+    >
+      <Icon size={16} className="ui-icon ui-input__icon" aria-hidden />
+      <input ref={ref} type={type} className="ui-reset ui-input__control" {...rest} />
+    </span>
   );
 });
 
@@ -32,7 +58,8 @@ export interface TextAreaProps extends React.TextareaHTMLAttributes<HTMLTextArea
   "data-demo-state"?: DemoStateAttr;
 }
 
-/** Input, Size=Multiline (Figma 48:30): 100 tall, top-aligned text. */
+/** Text area (Figma 2207:298): 96 tall with 12 around the text, and the
+ * Input's states. */
 export const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(function TextArea(
   { className, ...rest },
   ref,
@@ -40,7 +67,7 @@ export const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(fun
   return (
     <textarea
       ref={ref}
-      className={cx("ui-reset ui-tint ui-ring-none ui-input tu-body-m", className)}
+      className={cx("ui-reset ui-fill ui-ring ui-input t-body-m", className)}
       data-size="multiline"
       {...rest}
     />
@@ -64,10 +91,10 @@ export interface FieldProps {
   label: React.ReactNode;
   /** The message under the control while the value is invalid, too long or
    * a required value is missing. Fields have no hint or helper text
-   * (RULES §9). */
+   * (RULES section 9): the component's help text property stays off. */
   error?: string | null;
-  /** Edited: the value differs from when the panel opened (a state/selection
-   * dot and the word, after the label). */
+  /** Edited: the value differs from when the panel opened (a dot on
+   * editor/selection and the word, after the label). */
   edited?: boolean;
   /** Optional: right-aligned on the label row, on a field that can stay
    * empty. */
@@ -79,10 +106,10 @@ export interface FieldProps {
   className?: string;
 }
 
-/** Field (Figma 48:38): a label row over one control, and the error 6 under
- * it when there is one (182:1965). The label row carries markers, never
- * hint text (217:2271): Edited after the label, Optional and an Action at
- * the right. The control keeps its look; it gets aria-invalid, and its
+/** Field (Figma 4015:628): a label row in Label/XS, 6 over one control, and
+ * the error 6 under it when there is one. The label row carries markers,
+ * never hint text: Edited after the label, Optional and an action at the
+ * right. The control gets aria-invalid, which draws its error edge, and its
  * aria-describedby points at the message. */
 export function Field({
   label,
@@ -103,11 +130,11 @@ export function Field({
     <div className={cx("ui-field", className)}>
       <div className="ui-field__row">
         <span className="ui-field__lead">
-          <label htmlFor={controlId} className="tu-label-xs ui-field__label">
+          <label htmlFor={controlId} className="t-label-xs ui-field__label">
             {label}
           </label>
           {edited && (
-            <span className="tu-caption-m ui-field__marker ui-field__edited">
+            <span className="t-caption-m ui-field__marker ui-field__edited">
               <span className="ui-field__dot" aria-hidden />
               Edited
             </span>
@@ -115,12 +142,12 @@ export function Field({
         </span>
         {(optional || action) && (
           <span className="ui-field__end">
-            {optional && <span className="tu-caption-m ui-field__marker">Optional</span>}
+            {optional && <span className="t-caption-m ui-field__marker">Optional</span>}
             {action && (
               <button
                 type="button"
                 onClick={action.onClick}
-                className="ui-reset ui-ring tu-label-xs ui-field__action"
+                className="ui-reset ui-ring t-label-xs ui-field__action"
               >
                 {action.label}
               </button>
@@ -134,7 +161,7 @@ export function Field({
         "aria-describedby": describedBy,
       })}
       {error && (
-        <p id={errorId} className="tu-caption-m ui-field__error">
+        <p id={errorId} className="t-caption-m ui-field__error">
           {error}
         </p>
       )}

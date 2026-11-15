@@ -284,7 +284,6 @@ function TimezoneField({ onError }: { onError(msg: string | null): void }) {
     <Field label="Timezone">
       <Select
         ariaLabel="Timezone"
-        size="lg"
         value={zones.includes(current) ? current : "UTC"}
         options={zones.map((z) => ({ value: z, label: z }))}
         onSelect={(z) => void save(z)}

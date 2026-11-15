@@ -265,7 +265,6 @@ export function DetailField({
         <Select
           id={controlId}
           ariaLabel={field.label}
-          size="lg"
           value={value || undefined}
           placeholder={field.placeholder || "Select…"}
           options={(field.options ?? []).map((o) => ({ value: o, label: o }))}

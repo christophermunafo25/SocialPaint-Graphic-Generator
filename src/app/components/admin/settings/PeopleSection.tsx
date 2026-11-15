@@ -141,7 +141,6 @@ export function PeopleSection() {
           />
           <Select
             ariaLabel="Invite as"
-            size="lg"
             className="sp-st-invite__role"
             value={role}
             options={ROLE_OPTIONS}

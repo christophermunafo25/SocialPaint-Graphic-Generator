@@ -438,7 +438,6 @@ function CreateLinkForm({
           <span className="tu-label-xs ui-field__label">Look</span>
           <Select
             ariaLabel="Which look this link opens"
-            size="lg"
             value={pinned}
             options={lookOptions(variants)}
             onSelect={setPinned}

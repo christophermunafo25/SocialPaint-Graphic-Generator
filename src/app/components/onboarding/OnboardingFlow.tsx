@@ -550,6 +550,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
               errorId={`${ids.name}-e`}
             >
               <Input
+                size="lg"
                 id={ids.name}
                 value={answers.name}
                 autoComplete="name"
@@ -634,6 +635,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
               errorId={`${ids.company}-e`}
             >
               <Input
+                size="lg"
                 id={ids.company}
                 value={answers.companyName}
                 autoComplete="organization"
@@ -731,6 +733,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
               errorId={`${ids.website}-e`}
             >
               <Input
+                size="lg"
                 id={ids.website}
                 value={answers.website}
                 autoComplete="url"
@@ -865,6 +868,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
                   <div key={row.id} className="sp-onb-invite">
                     <div className="sp-onb-invite__row">
                       <Input
+                        size="lg"
                         type="email"
                         value={row.email}
                         aria-label={`Email ${i + 1}`}

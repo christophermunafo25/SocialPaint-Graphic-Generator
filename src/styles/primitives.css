@@ -309,53 +309,144 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   display: inline-block;
 }
 
-/* ── Input (48:37) ─────────────────────────────────────────────────────────
-   No border. Focus is the global 2 px ring. Small sits at the control
-   radius, as drawn (48:23). */
+/* ── Input (2207:263) and Text area (2207:298) ───────────────────────────────
+   On surface/field at radius/sm, with no edge at rest. Hover adds a hairline
+   edge and an invalid value the error edge; both are drawn inside the box, so
+   the text never shifts. Focus is the global ring. Small is 28 with Body/S;
+   Medium 36 and Large 44 with Body/M.
+
+   An input's type is set here from the style's variables, not with a .t-*
+   class: the classes trim to cap height, and Chromium applies the trim to an
+   input's inner box and clips accents and descenders. A text area takes the
+   class, where the trim is safe. */
 .ui-input {
   display: block;
   width: 100%;
-  height: 40px;
-  padding: 0 var(--space-xs);
-  border-radius: var(--radius-control-md);
-  --_fill: var(--input-bg);
-  color: var(--text-strong);
-  caret-color: var(--text-strong);
+  border-radius: var(--radius-sm);
+  --_fill: var(--surface-field);
+  --_hover: var(--surface-field);
+  --_pressed: var(--surface-field);
+  --_fg: var(--text-primary);
+  caret-color: var(--text-primary);
   white-space: normal;
 }
-.ui-input::placeholder {
-  color: var(--text-secondary);
-  opacity: 1;
-}
 .ui-input[data-size="sm"] {
-  height: 32px;
-  padding: 0 10px; /* off the scale, as drawn (48:23) */
-  border-radius: var(--radius-control);
+  height: var(--size-control-sm);
+  padding: 0 var(--space-8);
+}
+.ui-input[data-size="md"] {
+  height: var(--size-control-md);
+  padding: 0 var(--space-12);
+}
+.ui-input[data-size="lg"] {
+  height: var(--size-control-lg);
+  padding: 0 var(--space-12);
+}
+/* The type has no specificity, so a caller's class on the input (a mono
+   value) still wins. It follows the reset's `font: inherit` in this file. */
+:where(.ui-input[data-size="sm"]) {
+  font: var(--type-body-s);
+  letter-spacing: var(--type-body-s-tracking);
+}
+:where(.ui-input[data-size="md"], .ui-input[data-size="lg"]) {
+  font: var(--type-body-m);
+  letter-spacing: var(--type-body-m-tracking);
 }
 .ui-input[data-size="multiline"] {
   height: auto;
-  min-height: 100px;
-  padding: 10px var(--space-xs); /* 10 is off the scale, as drawn (48:30) */
+  min-height: 96px; /* as drawn (2207:298) */
+  padding: var(--space-12);
   resize: vertical;
 }
+.ui-input::placeholder,
+.ui-input__control::placeholder {
+  color: var(--text-secondary);
+  opacity: 1;
+}
+.ui-input:disabled::placeholder,
+.ui-input__control:disabled::placeholder {
+  color: var(--text-disabled);
+}
+.ui-input:not(:disabled):hover,
+.ui-input[data-demo-state="hover"] {
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-strong);
+}
+.ui-input[aria-invalid="true"]:not(:disabled),
+.ui-input--box:has(.ui-input__control[aria-invalid="true"]) {
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--feedback-error);
+}
+/* With a leading icon (and Search, 2207:455) the input sits in a box that
+   carries the field's look and states. The ring is the box's, drawn while
+   the input inside has keyboard focus. */
+.ui-input--box {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  cursor: text;
+}
+.ui-input__icon {
+  color: var(--text-secondary);
+}
+.ui-input__control {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  background: transparent;
+  color: inherit;
+  letter-spacing: inherit;
+  caret-color: var(--text-primary);
+}
+.ui-input__control:focus-visible {
+  outline: none;
+}
+.ui-input--box:has(.ui-input__control:focus-visible) {
+  outline: var(--stroke-focus) solid var(--border-focus);
+  outline-offset: var(--focus-offset);
+}
+.ui-input--box:has(.ui-input__control:disabled) {
+  background: var(--action-disabled);
+  box-shadow: none;
+  color: var(--text-disabled);
+  cursor: default;
+}
+.ui-input--box:has(.ui-input__control:disabled) .ui-input__icon {
+  color: var(--text-disabled);
+}
+.ui-input__control::-webkit-search-cancel-button {
+  display: none;
+}
+/* Search's clear button: a 16 glyph whose hit area reaches 24. */
+.ui-input__clear {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  border-radius: var(--radius-xs);
+  color: var(--text-secondary);
+}
+.ui-input__clear::after {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--space-4));
+}
 
-/* ── Field (48:38): label, control, and the error 6 under it ── */
+/* ── Field (4015:628): the label row, 6 over one control, and the error 6
+   under it. The row's text is trimmed, so the row is as tall as its capitals. ── */
 .ui-field {
   display: flex;
   flex-direction: column;
-  gap: 6px; /* off the scale, as drawn (48:38) */
+  gap: var(--space-6);
 }
 .ui-field__row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-xs);
+  gap: var(--space-8);
   min-width: 0;
 }
 .ui-field__lead {
   display: flex;
   align-items: center;
-  gap: var(--space-2xs);
+  gap: var(--space-8);
   min-width: 0;
 }
 .ui-field__label {
@@ -364,69 +455,93 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 .ui-field__end {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: var(--space-12);
   flex: none;
 }
 .ui-field__marker {
   color: var(--text-secondary);
   white-space: nowrap;
 }
-/* Edited: a 6 dot on state/selection, 5 before the word (217:2271). */
+/* Edited: a 6 dot on editor/selection before the word. */
 .ui-field__edited {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--space-4);
 }
 .ui-field__dot {
   width: 6px;
   height: 6px;
-  border-radius: var(--radius-pill);
-  background: var(--state-selection);
+  border-radius: var(--radius-full);
+  background: var(--editor-selection);
 }
+/* A text action. Its box is its capitals, so it is padded out and pulled
+   back by the same amount: the ring clears the letters, the hit area
+   reaches 24, and the row does not grow. */
 .ui-field__action {
-  border-radius: var(--radius-control);
-  color: var(--text-strong);
+  position: relative;
+  margin: calc(-1 * var(--space-4));
+  padding: var(--space-4);
+  border-radius: var(--radius-xs);
+  color: var(--text-primary);
   white-space: nowrap;
+}
+.ui-field__action::after {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--space-4)) 0;
 }
 .ui-field__error {
   margin: 0;
-  color: var(--state-error);
+  color: var(--feedback-error-text);
 }
 
-/* ── Upload (216:2291): the photo field's control. One button, 56 tall on
-   input/fill; the keyboard ring sits around the row. ── */
+/* ── Upload (2211:278): the photo field's control. One button, 56 tall on
+   surface/field at radius/md; hover and a file dragged over it add the
+   hairline edge, and the keyboard ring sits around the row. ── */
 .ui-upload {
-  box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: 10px; /* off the scale, as drawn (216:2265) */
+  gap: var(--space-12);
   width: 100%;
-  height: 56px;
-  padding: var(--space-2xs) var(--space-xs) var(--space-2xs) var(--space-2xs);
-  border-radius: var(--radius-control-md);
-  --_fill: var(--input-bg);
-  color: var(--text-strong);
+  height: 56px; /* as drawn (2211:278) */
+  padding: var(--space-8);
+  border-radius: var(--radius-md);
+  --_fill: var(--surface-field);
+  --_hover: var(--surface-field);
+  --_pressed: var(--surface-field);
+  --_fg: var(--text-primary);
   text-align: left;
-  cursor: pointer;
+}
+.ui-upload[data-value="filled"] {
+  padding-right: var(--space-12);
+}
+.ui-upload:not(:disabled):hover,
+.ui-upload[data-demo-state="hover"] {
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-strong);
+}
+.ui-upload[aria-invalid="true"]:not(:disabled) {
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--feedback-error);
 }
 .ui-upload__tile {
   flex: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
+  width: 40px; /* as drawn (2211:278) */
   height: 40px;
-  border-radius: var(--radius-control);
-  background: var(--surface-raised);
-  color: var(--text-strong);
+  border-radius: var(--radius-xs);
+  color: var(--text-secondary);
 }
 .ui-upload__thumb {
   flex: none;
   width: 40px;
   height: 40px;
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-xs);
+  background: var(--surface-raised);
   object-fit: cover;
 }
+/* One line each. The text is trimmed to its capitals, so the clip box is
+   widened past the descenders without moving the line. */
 .ui-upload__placeholder,
 .ui-upload__name {
   flex: 1;
@@ -434,99 +549,126 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding-block: 0.3em;
+  margin-block: -0.3em;
 }
 .ui-upload__placeholder {
   color: var(--text-secondary);
+}
+.ui-upload:disabled .ui-upload__tile,
+.ui-upload:disabled .ui-upload__placeholder {
+  color: inherit;
 }
 .ui-upload__replace {
   flex: none;
 }
 
-/* ── Select (49:40) and Compact select (99:568) ── */
-.ui-select,
-.ui-compact-select {
+/* ── Select (2207:410): the Input's box at each size, with the chevron on
+   text/secondary. Hover adds the hairline edge. Open keeps it and shows the
+   ring, as drawn, while focus is in the list. ── */
+.ui-select {
   display: inline-flex;
   align-items: center;
-  color: var(--text-strong);
-}
-.ui-select {
+  gap: var(--space-8);
   width: 100%;
-  height: 36px;
-  padding: 0 var(--space-xs);
-  gap: 2px; /* as drawn (49:16) */
-  border-radius: var(--radius-control-md);
-  --_fill: var(--input-bg);
+  border-radius: var(--radius-sm);
+  --_fill: var(--surface-field);
+  --_hover: var(--surface-field);
+  --_pressed: var(--surface-field);
+  --_selected: var(--surface-field);
+  --_fg: var(--text-primary);
+}
+.ui-select[data-size="sm"] {
+  height: var(--size-control-sm);
+  padding: 0 var(--space-8);
+}
+.ui-select[data-size="md"] {
+  height: var(--size-control-md);
+  padding: 0 var(--space-12);
 }
 .ui-select[data-size="lg"] {
-  height: 40px;
+  height: var(--size-control-lg);
+  padding: 0 var(--space-12);
 }
+/* In a toolbar the select is as wide as its value. */
+.ui-select[data-hug] {
+  width: auto;
+}
+.ui-select:not(:disabled):hover,
+.ui-select[data-demo-state="hover"],
+.ui-select[aria-expanded="true"],
+.ui-select[data-demo-state="open"] {
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-strong);
+}
+.ui-select[aria-expanded="true"],
+.ui-select[data-demo-state="open"] {
+  outline: var(--stroke-focus) solid var(--border-focus);
+  outline-offset: var(--focus-offset);
+}
+.ui-select[aria-invalid="true"]:not(:disabled) {
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--feedback-error);
+}
+/* One line. The value is trimmed to its capitals, so the clip box is
+   widened past the descenders without moving the line. */
 .ui-select__value {
   flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   text-align: left;
+  padding-block: 0.3em;
+  margin-block: -0.3em;
 }
-.ui-select[data-placeholder] .ui-select__value {
+.ui-select[data-placeholder]:not(:disabled) .ui-select__value {
   color: var(--text-secondary);
 }
-.ui-select .ui-select__chevron {
+.ui-select:not(:disabled) .ui-select__chevron {
   color: var(--text-secondary);
 }
-/* The compact value is trimmed Button/S, whose descenders sit outside its
-   box; the field select's ellipsis clip would cut them off. */
-.ui-compact-select .ui-select__value {
-  overflow: visible;
-}
-.ui-compact-select {
-  height: 28px;
-  padding: 0 6px 0 9px; /* off the scale, as drawn (99:556) */
-  gap: 6px;
-  border-radius: var(--radius-control);
-  --_fill: var(--surface-sunken);
-}
 
-/* ── Filter (99:547) ── */
-.ui-filter {
-  display: inline-flex;
-  align-items: center;
-  height: 36px;
-  padding: 0 12px 0 14px; /* off the scale, as drawn (50:42) */
-  gap: 10px;
-  border-radius: var(--radius-control-md);
-  --_fill: var(--control-fill);
-  color: var(--text-strong);
-}
-
-/* ── Search field (50:62). Open, the field takes the global focus ring
-   and no tint. ── */
+/* ── Search field (50:62): a 50 square button that opens into a field. The
+   file still draws it with its own measures and a hover laid over the fill;
+   it is built as drawn. ── */
 .ui-search {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 50px;
   height: 50px;
-  padding: 8px 6px; /* off the scale, as drawn (50:60) */
-  border-radius: var(--radius-control-md);
-  --_fill: var(--control-fill);
-  color: var(--text-strong);
+  padding: 8px 6px; /* off the scale, as drawn (50:62) */
+  border: var(--stroke-hairline) solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  --_fill: var(--action-neutral);
+  --_hover: linear-gradient(var(--state-hover), var(--state-hover)), var(--action-neutral);
+  --_pressed: linear-gradient(var(--state-pressed), var(--state-pressed)), var(--action-neutral);
+  --_fg: var(--text-primary);
 }
 .ui-search--open {
   box-sizing: border-box;
   justify-content: flex-start;
   width: 440px;
   max-width: 100%;
-  padding: 8px 13px 8px 15px; /* off the scale, as drawn (50:61) */
+  padding: 8px 15px; /* off the scale, as drawn (50:62) */
   gap: 10px;
-  background: var(--control-fill);
+  background: var(--action-neutral);
+  color: var(--text-primary);
+}
+.ui-search--open:has(.ui-search__input:focus-visible) {
+  outline: var(--stroke-focus) solid var(--border-focus);
+  outline-offset: var(--focus-offset);
 }
 .ui-search__input {
   flex: 1;
   min-width: 0;
   height: 100%;
+  font: var(--type-body-m);
+  letter-spacing: var(--type-body-m-tracking);
   background: transparent;
-  color: var(--text-strong);
-  caret-color: var(--text-strong);
+  color: var(--text-primary);
+  caret-color: var(--text-primary);
+}
+.ui-search__input:focus-visible {
+  outline: none;
 }
 .ui-search__input::placeholder {
   color: var(--text-secondary);
@@ -541,7 +683,7 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   display: inline-flex;
   width: 14px;
   height: 14px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-full);
   color: var(--text-secondary);
 }
 .ui-search__clear::after {
