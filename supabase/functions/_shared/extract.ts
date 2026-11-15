@@ -260,7 +260,10 @@ export interface SuggestedField {
   textSizing?: "free" | "shrink";
   /** Relative shrink floor, matching TemplateField.minFontScale. */
   minFontScale?: number;
-  objectFit?: "cover";
+  objectFit?: "cover" | "contain";
+  /** Member text: the character limit a keyed layer declares (`max`),
+   * matching TemplateField.maxLength (import intent, Phase 1). */
+  maxLength?: number;
   /** Element opacity 0–100, only when the node is not fully opaque. */
   opacity?: number;
   /** Per-corner radius, matching TemplateField.cornerRadius. */

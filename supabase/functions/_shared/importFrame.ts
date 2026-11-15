@@ -11,7 +11,9 @@ import {
   type ImportWarning,
   type SuggestedField,
 } from "./extract.ts";
+import { applyFrameIntent, type FieldIntent } from "./frameIntent.ts";
 import { logError } from "./http.ts";
+import type { ParseReport } from "./recipe.ts";
 
 export interface FrameImport {
   fields: SuggestedField[];
@@ -19,6 +21,11 @@ export interface FrameImport {
    * which land on the canvas. */
   canvasEffects?: ImportedEffect[];
   warnings: ImportWarning[];
+  /** What the layer names declare, per field that came from a keyed layer
+   * (import intent, Phase 1). Already applied to `fields`. */
+  intents: FieldIntent[];
+  /** How much of the frame is keyed, and what the grammar didn't know. */
+  parse: ParseReport;
 }
 
 /** Fields from the tree, coordinates relative to the node's own box.
@@ -46,6 +53,8 @@ export function importFrame(
       severity: "degraded",
     });
   }
+  // The keys in the layer names, applied to the fields they describe.
+  const { intents, parse } = applyFrameIntent(root, fields, warnings);
   if (mode === "template" && !fields.length) {
     warnings.push({
       layer: root.name,
@@ -67,7 +76,13 @@ export function importFrame(
       "info",
     );
   }
-  return { fields, canvasEffects: canvasEffects?.length ? canvasEffects : undefined, warnings };
+  return {
+    fields,
+    canvasEffects: canvasEffects?.length ? canvasEffects : undefined,
+    warnings,
+    intents,
+    parse,
+  };
 }
 
 /** Image-fill refs the import needs resolved (/v1/files/{key}/images). */
