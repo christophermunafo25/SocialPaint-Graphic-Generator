@@ -1,74 +1,30 @@
 /* ==========================================================================
-   Primitives: one component per Master component in the Figma file "Master
-   UX-UI" (page Master UI Elements, 24:674), with their interaction states.
-   The React side is src/app/components/primitives/. Values come from
-   docs/design/new-look/PHASE-2-COMPONENTS.md; states from RULES.md §6 and
-   the Interaction states table (105:641).
+   Primitives: one component per component on the Components page
+   (4012:1193) of the Figma file "Master UX UI New Brand (Copy)", with its
+   states. The React side is src/app/components/primitives/. Values were read
+   from the file for docs/design/new-brand/PHASE-2.md, and states follow
+   docs/design/new-brand/RULES.md section 6.
 
-   Every rule here reads semantic tokens, radius and spacing tokens, the
+   The rules for those components read semantic tokens, the Scale tokens, the
    elevation composites and the .t-* classes from tokens.css. Nothing here
    declares a token, so tokens:check stays green; component-local custom
    properties start with --_ so they can never collide with one.
+
+   The Product components that also live in primitives/ (the platform chip,
+   the result card, the look tile, the composer, the message bubble, the
+   settings card, the stat and the option tile) keep their earlier rules,
+   and the earlier names those rules read, until their own phase.
 
    [data-demo-state] pairs every state selector so /dev/ui can show a state
    without a pointer or keyboard. Only /dev/ui sets it.
    ========================================================================== */
 
-/* ── Shared state mechanics ─────────────────────────────────────────────────
-   Fill and tint: a component sets --_fill (its base) and, where they differ
-   from the neutral pair, --_hover and --_pressed. Hover and pressed lay the
-   tint over the fill and change nothing else. An open menu (a control with
-   aria-haspopup, expanded) holds the pressed tint; a disclosure such as
-   the sidebar's collapse button does not. A selected item ([data-selected]) keeps its look on hover. */
-.ui-tint {
-  --_fill: transparent;
-  --_tint: transparent;
-  background: linear-gradient(var(--_tint), var(--_tint)), var(--_fill);
-}
-.ui-tint:not(:disabled, [aria-disabled="true"], [data-selected]):hover,
-.ui-tint[data-demo-state="hover"] {
-  --_tint: var(--_hover, var(--state-hover));
-}
-.ui-tint:not(:disabled, [aria-disabled="true"], [data-selected]):active,
-.ui-tint[data-demo-state="pressed"],
-.ui-tint[aria-haspopup]:not([aria-haspopup="false"])[aria-expanded="true"],
-.ui-tint[data-demo-state="open"] {
-  --_tint: var(--_pressed, var(--state-pressed));
-}
-
-/* Disabled is 40% with no hover (the Stepper button sets 0.32). */
-.ui-tint:disabled,
-.ui-tint[aria-disabled="true"],
-.ui-disabled {
-  opacity: var(--_disabled-opacity, 0.4);
-  cursor: default;
-}
-
-/* Focus. The default is the global ring (socialpaint.css :focus-visible):
-   --focus-width of --ring at --focus-offset. .ui-ring repeats it for the
-   demo state. .ui-ring-tight draws it against the edge, composed with any
-   shadow the component carries (--_shadow); the transparent outline is the
-   forced-colors fallback. Text fields take the global ring too:
-   .ui-ring-none is still on their markup and no longer removes it. */
-.ui-ring[data-demo-state="focus"] {
-  outline: var(--focus-width) solid var(--ring);
-  outline-offset: var(--focus-offset);
-}
-.ui-ring-tight {
-  box-shadow: var(--_shadow, 0 0 0 0 transparent);
-}
-.ui-ring-tight:focus-visible,
-.ui-ring-tight[data-demo-state="focus"] {
-  outline: 2px solid transparent;
-  outline-offset: 0;
-  box-shadow:
-    0 0 0 var(--focus-width) var(--ring),
-    var(--_shadow, 0 0 0 0 transparent);
-}
-
-/* Every primitive: no inherited box model surprises, and labels never wrap
+/* ── Reset ──────────────────────────────────────────────────────────────────
+   Every primitive: no inherited box model surprises, and labels never wrap
    (house rule: one-line button text). The font reset has no specificity,
-   so a .t-* class on the same element (an input's) always wins over it. */
+   so a .t-* class on the same element (an input's) always wins over it.
+   It comes before the state rules: both are one class deep, and the state
+   rules' color has to win over the reset's. */
 :where(.ui-reset) {
   font: inherit;
 }
@@ -93,6 +49,108 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 .ui-icon {
   flex: none;
   display: block;
+}
+
+/* ── Shared state mechanics ─────────────────────────────────────────────────
+   Fill by state. A component names the token each of its states reads, and
+   these rules alone set background and color, so the order of the component
+   rules below never decides a state:
+
+     --_fill      at rest (none when unset)
+     --_hover     hover (state/hover when unset)
+     --_pressed   pressed (state/pressed when unset)
+     --_selected  chosen, or holding an open menu (state/selected when unset)
+     --_disabled  disabled (action/disabled when unset)
+     --_fg, --_fg-hover, --_fg-selected   the label and icon color
+
+   Each state is a color of its own. Nothing is laid over a fill. A control
+   with a fill sets all of its states; one without (a ghost button, a row, a
+   nav or menu item) leaves them unset. A chosen item ([data-selected]) keeps
+   its look on hover, and so does a control whose menu is open (aria-haspopup
+   and expanded): an open menu counts as selected for the control that opened
+   it. Disabled takes its own colors and never dims.
+
+   The names are reset on every .ui-fill element, so a control inside
+   another (a stepper's buttons in its capsule) never inherits its parent's
+   states. Component rules come after this one and set what they need. */
+.ui-fill {
+  --_fill: initial;
+  --_hover: initial;
+  --_pressed: initial;
+  --_selected: initial;
+  --_disabled: initial;
+  --_fg: initial;
+  --_fg-hover: initial;
+  --_fg-selected: initial;
+  background: var(--_fill, transparent);
+  color: var(--_fg, inherit);
+}
+.ui-fill:not(:disabled, [aria-disabled="true"], [data-selected]):hover,
+.ui-fill[data-demo-state="hover"] {
+  background: var(--_hover, var(--state-hover));
+  color: var(--_fg-hover, var(--_fg, inherit));
+}
+.ui-fill:not(:disabled, [aria-disabled="true"], [data-selected]):active,
+.ui-fill[data-demo-state="pressed"] {
+  background: var(--_pressed, var(--state-pressed));
+  color: var(--_fg-hover, var(--_fg, inherit));
+}
+.ui-fill[data-selected],
+.ui-fill[data-demo-state="selected"],
+.ui-fill[aria-haspopup]:not([aria-haspopup="false"])[aria-expanded="true"],
+.ui-fill[data-demo-state="open"] {
+  background: var(--_selected, var(--state-selected));
+  color: var(--_fg-selected, var(--_fg-hover, var(--_fg, inherit)));
+}
+.ui-fill:disabled,
+.ui-fill[aria-disabled="true"] {
+  background: var(--_disabled, var(--action-disabled));
+  color: var(--text-disabled);
+  cursor: default;
+}
+
+/* The earlier mechanics, for what has not been rebuilt (the Product
+   components above, and a few page-level controls): a tint laid over the
+   fill, and disabled at 40%. */
+.ui-tint {
+  --_fill: transparent;
+  --_tint: transparent;
+  background: linear-gradient(var(--_tint), var(--_tint)), var(--_fill);
+}
+.ui-tint:not(:disabled, [aria-disabled="true"], [data-selected]):hover,
+.ui-tint[data-demo-state="hover"] {
+  --_tint: var(--_hover, var(--state-hover));
+}
+.ui-tint:not(:disabled, [aria-disabled="true"], [data-selected]):active,
+.ui-tint[data-demo-state="pressed"],
+.ui-tint[aria-haspopup]:not([aria-haspopup="false"])[aria-expanded="true"],
+.ui-tint[data-demo-state="open"] {
+  --_tint: var(--_pressed, var(--state-pressed));
+}
+.ui-tint:disabled,
+.ui-tint[aria-disabled="true"] {
+  opacity: var(--_disabled-opacity, 0.4);
+  cursor: default;
+}
+
+/* Focus. Every control takes the global ring (socialpaint.css
+   :focus-visible): stroke/focus of border/focus, focus/offset outside the
+   element. .ui-ring repeats it for the demo state. .ui-ring-tight is the
+   earlier ring drawn against the edge, for what has not been rebuilt. */
+.ui-ring[data-demo-state="focus"] {
+  outline: var(--stroke-focus) solid var(--border-focus);
+  outline-offset: var(--focus-offset);
+}
+.ui-ring-tight {
+  box-shadow: var(--_shadow, 0 0 0 0 transparent);
+}
+.ui-ring-tight:focus-visible,
+.ui-ring-tight[data-demo-state="focus"] {
+  outline: 2px solid transparent;
+  outline-offset: 0;
+  box-shadow:
+    0 0 0 var(--focus-width) var(--ring),
+    var(--_shadow, 0 0 0 0 transparent);
 }
 
 /* ── Button (43:123) ───────────────────────────────────────────────────────
