@@ -71,7 +71,13 @@ async function ensureImagesReady(node: HTMLElement): Promise<void> {
  * later returns the same picture with the text missing. A timer set once
  * the image has loaded, and no shorter than Firefox's, fires after it
  * however busy the page is. An animation frame does not, and one frame is
- * all html-to-image's own toPng waits. */
+ * all html-to-image's own toPng waits.
+ *
+ * The fidelity harness launches Firefox with that window held open for
+ * 40 ms (FIREFOX_PAINT_DELAY_MS in scripts/fidelity/fidelity.mjs), so a
+ * first draw that comes too early fails every run there, not only on a
+ * slow machine. Keep this wait longer than that value, or every Firefox
+ * run of the harness loses its text-clipped fills. */
 const SNAPSHOT_SETTLE_MS = 50;
 
 /** The pause between the two draws (Safari image-decode warm-up). */

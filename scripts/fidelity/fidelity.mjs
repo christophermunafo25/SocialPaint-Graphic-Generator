@@ -59,6 +59,11 @@ const FIXTURE_TIMEOUT_MS = 60_000;
 const CHANNEL_THRESHOLD = 6;
 /** The blurred share's blur (a canvas `blur()`, in px). */
 const BLUR_PX = 4;
+/** How long the harness's Firefox suppresses painting in a new document:
+ * the pref nglayout.initialpaint.delay, in ms. Stock Firefox uses 5. Keep
+ * it below SNAPSHOT_SETTLE_MS in src/lib/render/exportPng.ts (50); the
+ * launch in renderEngine says why. */
+const FIREFOX_PAINT_DELAY_MS = 40;
 
 // ------------------------------------------------------------------ args
 const [mode, ...rest] = process.argv.slice(2);
@@ -167,7 +172,22 @@ async function withServer(fn) {
  * { status: "error", message }. */
 async function renderEngine(base, engine, fixtures, dir) {
   await mkdir(dir, { recursive: true });
-  const browser = await ENGINES[engine].launch();
+  // Firefox is the one engine launched off stock settings, by one pref.
+  // It suppresses painting for the first moments of every document's
+  // life, the export snapshot's own document included, and a snapshot
+  // drawn in that window loses everything clipped to text (a text
+  // gradient, grain on glyphs). Stock Firefox ends the window after 5 ms,
+  // so an export that draws too early loses the race only on a busy
+  // machine, which reads as an occasional flake. Held open for
+  // FIREFOX_PAINT_DELAY_MS, longer than a frame, that export loses on
+  // every run. The real export passes because it waits SNAPSHOT_SETTLE_MS
+  // on a timer set after the snapshot loads, which fires after Firefox's
+  // for as long as its wait is the longer of the two.
+  const browser = await ENGINES[engine].launch(
+    engine === "firefox"
+      ? { firefoxUserPrefs: { "nglayout.initialpaint.delay": FIREFOX_PAINT_DELAY_MS } }
+      : {},
+  );
   const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 1 });
   const outcomes = new Map();
   try {
