@@ -224,6 +224,56 @@ export const GOOGLE_FAMILY_AXES: Record<string, GoogleFamilyAxes> = {
   "Work Sans": { weights: [100, 200, 300, 400, 500, 600, 700, 800, 900], italic: true },
 };
 
+/** Google families whose optical size axis the app requests, with the
+ * axis range (https://fonts.google.com/metadata/fonts, fetched 2026-11-14).
+ *
+ * Asked for the axis, css2 serves the variable font, and every browser then
+ * sets the optical size from the font size (`font-optical-sizing: auto`, in
+ * the page, in canvas measurement and in the export alike). That is what
+ * Figma does with these families, so a headline is drawn in the display cut
+ * its designer saw. Without the axis css2 serves the default cut at every
+ * size: Newsreader at 88px came out 5% narrower than in Figma, DM Sans 10%
+ * wider.
+ *
+ * Each row was checked against Figma on 2026-11-14 by setting one line at
+ * 12px and 88px there and in Chromium: the widths agree within half a
+ * percent with the axis and not without it. Three families with the axis
+ * are left out on purpose:
+ * - Inter: Figma ships its own Inter, which has no optical sizing. Its 88px
+ *   line is 945 wide there, 940 here without the axis and 870 with it.
+ * - Google Sans Flex: matches Figma neither way.
+ * - Google Sans: not offered in Figma, so there was nothing to check.
+ * Nunito Sans is listed although its 6 to 12 range draws the same either way
+ * at these sizes. */
+export const GOOGLE_OPTICAL_SIZE: Record<string, readonly [min: number, max: number]> = {
+  Ballet: [16, 72],
+  "Big Shoulders": [10, 72],
+  "Big Shoulders Inline": [10, 72],
+  "Big Shoulders Stencil": [10, 72],
+  "Bodoni Moda": [6, 96],
+  "Bodoni Moda SC": [6, 96],
+  "Bricolage Grotesque": [12, 96],
+  "DM Sans": [9, 40],
+  Fraunces: [9, 144],
+  "Hedvig Letters Serif": [12, 24],
+  Imbue: [10, 100],
+  Jaro: [6, 72],
+  Literata: [7, 72],
+  Merriweather: [18, 144],
+  "Montagu Slab": [16, 144],
+  Newsreader: [6, 72],
+  "Nunito Sans": [6, 12],
+  "Pathway Extreme": [8, 144],
+  Piazzolla: [8, 30],
+  Playfair: [5, 1200],
+  "Roboto Flex": [8, 144],
+  "Roboto Serif": [8, 144],
+  "Source Serif 4": [8, 60],
+  Texturina: [12, 72],
+  "TikTok Sans": [12, 36],
+  Truculenta: [12, 72],
+};
+
 function expandGoogle(axes: GoogleFamilyAxes): FontStyle[] {
   const stretches = axes.stretches ?? (["normal"] as FontStretch[]);
   const styles: FontStyle[] = [];
