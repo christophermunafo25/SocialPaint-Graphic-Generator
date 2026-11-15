@@ -6,11 +6,15 @@ import {
   NO_MODEL_COST,
   applyIntentProposal,
   applyKitLogos,
+  INTENT_MAX_TOKENS,
   intentAsk,
   intentReport,
+  intentRequest,
   intentTool,
   intentUserText,
+  readIntentAnswer,
   styleMismatch,
+  tokensOf,
   type KitTypeStyle,
 } from "./importIntent.ts";
 import { portraitWithPlate, UNKEYED_NAMES } from "./intentFixtures.ts";
@@ -132,6 +136,102 @@ describe("what the model is asked", () => {
     expect(text).toContain('"sourceId":"e1"');
     expect(text).toContain("no template details");
     expect(text).toContain("Admin's note: For the clinic");
+  });
+});
+
+describe("the request and its answer", () => {
+  const request = (imageBase64: string | null) =>
+    intentRequest({
+      model: "a-model",
+      system: "The system prompt.",
+      mode: "template",
+      imageBase64,
+      userText: "The request.",
+    }) as {
+      model: string;
+      max_tokens: number;
+      system: Array<{ text: string; cache_control?: unknown }>;
+      tools: Array<{ name: string }>;
+      tool_choice: unknown;
+      messages: Array<{ role: string; content: Array<{ type: string }> }>;
+    };
+
+  it("forces the one tool and caches the static prompt", () => {
+    const body = request("aGVsbG8=");
+    expect(body.model).toBe("a-model");
+    expect(body.max_tokens).toBe(INTENT_MAX_TOKENS);
+    expect(body.tools).toHaveLength(1);
+    expect(body.tool_choice).toEqual({ type: "tool", name: body.tools[0].name });
+    expect(body.system).toEqual([
+      { type: "text", text: "The system prompt.", cache_control: { type: "ephemeral" } },
+    ]);
+    // The picture comes before the words about it.
+    expect(body.messages).toHaveLength(1);
+    expect(body.messages[0].content.map((c) => c.type)).toEqual(["image", "text"]);
+  });
+
+  it("asks with the list alone when there is no picture", () => {
+    expect(request(null).messages[0].content.map((c) => c.type)).toEqual(["text"]);
+  });
+
+  const usage = { input_tokens: 10, output_tokens: 5 };
+  const toolUse = { type: "tool_use", name: "propose_template", input: { fields: [] } };
+
+  it("reads the forced tool's input and the usage", () => {
+    expect(
+      readIntentAnswer({
+        stop_reason: "tool_use",
+        usage,
+        content: [{ type: "text", text: "Here you go." }, toolUse],
+      }),
+    ).toEqual({ input: { fields: [] }, usage, stopReason: "tool_use" });
+  });
+
+  it("reads nothing from a turn that was cut off or declined, but still meters it", () => {
+    // A truncated tool input usually parses as a valid partial object, so
+    // the stop reason is the only thing that catches it.
+    for (const stop_reason of ["max_tokens", "refusal"]) {
+      expect(readIntentAnswer({ stop_reason, usage, content: [toolUse] })).toEqual({
+        input: undefined,
+        usage,
+        stopReason: stop_reason,
+      });
+    }
+  });
+
+  it("reads nothing when the tool wasn't called or the body isn't a response", () => {
+    expect(readIntentAnswer({ stop_reason: "end_turn", content: [{ type: "text" }] }).input).toBe(
+      undefined,
+    );
+    expect(
+      readIntentAnswer({ content: [{ type: "tool_use", name: "another", input: {} }] }).input,
+    ).toBe(undefined);
+    expect(
+      readIntentAnswer({ content: [{ type: "tool_use", name: "propose_template", input: "x" }] })
+        .input,
+    ).toBe(undefined);
+    expect(readIntentAnswer(null)).toEqual({
+      input: undefined,
+      usage: undefined,
+      stopReason: undefined,
+    });
+    expect(readIntentAnswer({ content: "nope" }).input).toBe(undefined);
+  });
+
+  it("counts cached input as input, and nothing it can't trust", () => {
+    expect(
+      tokensOf({
+        input_tokens: 100,
+        cache_read_input_tokens: 900,
+        cache_creation_input_tokens: 50,
+        output_tokens: 300,
+      }),
+    ).toEqual({ inputTokens: 1050, outputTokens: 300 });
+    expect(tokensOf(undefined)).toEqual({ inputTokens: 0, outputTokens: 0 });
+    expect(tokensOf({ input_tokens: "many", output_tokens: -4 })).toEqual({
+      inputTokens: 0,
+      outputTokens: 0,
+    });
   });
 });
 

@@ -9,6 +9,7 @@ import { sanitizeRationale, sanitizeTemplate, type ProposedTemplate } from "./au
 import { slug, type ImportWarning, type SuggestedField } from "./extract.ts";
 import { makeMemberField, type CapTrim, type FieldIntent } from "./frameIntent.ts";
 import type { ParseReport } from "./recipe.ts";
+import type { AnthropicUsage } from "./usage.ts";
 
 /** A field after the model pass. The walk never makes a select or binds a
  * type style; the pass can. Assignable to the app's TemplateField. */
@@ -165,6 +166,105 @@ export function intentTool(mode: "template" | "elements") {
         },
       },
     },
+  };
+}
+
+/** Room for forty entries, their reasons and the template's details. A
+ * ceiling costs nothing unless the answer needs it, and an answer cut off
+ * at it is thrown away whole. */
+export const INTENT_MAX_TOKENS = 8000;
+
+/** The Messages API request for the pass: the picture when there is one,
+ * the request, and one forced tool call. Built here so the function and the
+ * eval (scripts/import-intent/eval.mjs) send exactly the same thing. */
+export function intentRequest(opts: {
+  model: string;
+  system: string;
+  mode: "template" | "elements";
+  imageBase64: string | null;
+  userText: string;
+}): Record<string, unknown> {
+  const tool = intentTool(opts.mode);
+  return {
+    model: opts.model,
+    max_tokens: INTENT_MAX_TOKENS,
+    system: [{ type: "text", text: opts.system, cache_control: { type: "ephemeral" } }],
+    tools: [tool],
+    tool_choice: { type: "tool", name: tool.name },
+    messages: [
+      {
+        role: "user",
+        content: [
+          ...(opts.imageBase64
+            ? [
+                {
+                  type: "image",
+                  source: { type: "base64", media_type: "image/png", data: opts.imageBase64 },
+                },
+              ]
+            : []),
+          { type: "text", text: opts.userText },
+        ],
+      },
+    ],
+  };
+}
+
+export interface IntentAnswer {
+  /** The forced tool's input, or undefined when there is nothing to trust:
+   * the tool wasn't called, or the turn didn't finish. */
+  input: unknown;
+  usage: AnthropicUsage | undefined;
+  stopReason: string | undefined;
+}
+
+/** Read a Messages API response. A turn cut off at the token limit usually
+ * still parses, as a valid but partial object, and a declined turn can stop
+ * mid-input, so neither one's input is read: the import lands on its keys
+ * instead of on half an answer. The usage is returned either way, since the
+ * call was made and is metered. */
+export function readIntentAnswer(body: unknown, toolName = "propose_template"): IntentAnswer {
+  const response = (body ?? {}) as {
+    content?: unknown;
+    usage?: AnthropicUsage;
+    stop_reason?: unknown;
+  };
+  const stopReason = typeof response.stop_reason === "string" ? response.stop_reason : undefined;
+  const usage = response.usage;
+  if (stopReason === "max_tokens" || stopReason === "refusal") {
+    return { input: undefined, usage, stopReason };
+  }
+  const blocks = Array.isArray(response.content) ? response.content : [];
+  const toolUse = blocks.find(
+    (b): b is { type: string; name: string; input?: unknown } =>
+      Boolean(b) &&
+      typeof b === "object" &&
+      (b as { type?: unknown }).type === "tool_use" &&
+      (b as { name?: unknown }).name === toolName,
+  );
+  const input = toolUse?.input;
+  return {
+    input: input && typeof input === "object" ? input : undefined,
+    usage,
+    stopReason,
+  };
+}
+
+const tokenCount = (v: unknown): number =>
+  typeof v === "number" && Number.isFinite(v) && v > 0 ? Math.floor(v) : 0;
+
+/** Tokens in and out for one response. Input read from or written to the
+ * cache is input all the same. */
+export function tokensOf(usage: AnthropicUsage | undefined): {
+  inputTokens: number;
+  outputTokens: number;
+} {
+  return {
+    inputTokens:
+      tokenCount(usage?.input_tokens) +
+      tokenCount(usage?.cache_read_input_tokens) +
+      tokenCount(usage?.cache_creation_input_tokens),
+    outputTokens: tokenCount(usage?.output_tokens),
   };
 }
 

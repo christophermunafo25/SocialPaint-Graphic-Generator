@@ -1,0 +1,17 @@
+{
+  "note": "Expectations written by hand for frames with no keys (docs/import-intent/PHASE-1.md, Step 6). `members` lists the layers a member should fill in, by Figma node id. Every other text or image the import lands is expected to stay fixed. Run eval.mjs --list to see a frame's layers.",
+  "frames": [
+    {
+      "fixture": "feature-highlight",
+      "nodeId": "62:1210",
+      "members": ["62:1212", "62:1213", "62:1222", "62:1223"],
+      "why": "The headline, the photo, the subheading and the subcopy change with every post. The web address is the same on all of them, and the logo is artwork."
+    },
+    {
+      "fixture": "gtm-composer",
+      "nodeId": "200:208",
+      "members": ["I200:209;61:470"],
+      "why": "The prompt typed into the composer is the one line a post would change. The platform, the variations label and its count are the product's own interface."
+    }
+  ]
+}

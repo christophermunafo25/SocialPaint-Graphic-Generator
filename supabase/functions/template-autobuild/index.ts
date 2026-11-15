@@ -35,10 +35,13 @@ import {
   applyIntentProposal,
   intentAsk,
   intentReport,
-  intentTool,
+  intentRequest,
   intentUserText,
+  readIntentAnswer,
   skippedIssue,
+  tokensOf,
   unfilledIssue,
+  type IntentAnswer,
   type IntentOutcome,
   type KitTypeStyle,
   type ModelCost,
@@ -49,7 +52,7 @@ import {
   type AutobuildSourceKind,
   type ModelProposal,
 } from "../_shared/autobuildValidate.ts";
-import { AUTOBUILD_SYSTEM_PROMPT } from "./prompt.ts";
+import { AUTOBUILD_DEFAULT_MODEL, AUTOBUILD_SYSTEM_PROMPT } from "./prompt.ts";
 import { recordModelUsage, type AnthropicUsage, type UsageKind } from "../_shared/usage.ts";
 import { canvaEnabled, getCanvaToken } from "../_shared/canva.ts";
 import {
@@ -66,7 +69,7 @@ type DesignSource =
   | { kind: "canva"; url: string }
   | { kind: "image"; backgroundUrl: string; canvasWidth: number; canvasHeight: number };
 
-const ANTHROPIC_MODEL = Deno.env.get("ANTHROPIC_MODEL") ?? "claude-sonnet-4-6";
+const ANTHROPIC_MODEL = Deno.env.get("ANTHROPIC_MODEL") ?? AUTOBUILD_DEFAULT_MODEL;
 
 // ---------------------------------------------------------------------------
 // Extractors
@@ -399,21 +402,21 @@ async function callClaude(
 // The Figma route: one forced tool call over the imported fields.
 // ---------------------------------------------------------------------------
 
-/** How long the import waits for the model before landing on its keys. */
-const INTENT_TIMEOUT_MS = 60_000;
+/** How long the import waits for the model before landing on its keys.
+ * The Figma work comes first, and the two together have to end inside the
+ * platform's limit on a request. */
+const INTENT_TIMEOUT_MS = 90_000;
 
-const count = (v: unknown): number => (typeof v === "number" && Number.isFinite(v) ? v : 0);
-
-/** One model call for a Figma import. The response is metered before it is
- * read. Throws on any failure; the caller lands the import without it. */
+/** One model call for a Figma import. A response that comes back is metered
+ * before it is read. Throws when no response comes back; the caller lands
+ * the import without it. */
 async function callIntentModel(
   apiKey: string,
   imageBase64: string | null,
   userText: string,
   mode: "template" | "elements",
   record: (usage: AnthropicUsage | undefined) => Promise<void>,
-): Promise<{ input: unknown; usage: AnthropicUsage | undefined }> {
-  const tool = intentTool(mode);
+): Promise<IntentAnswer> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     signal: AbortSignal.timeout(INTENT_TIMEOUT_MS),
@@ -422,44 +425,23 @@ async function callIntentModel(
       "anthropic-version": "2023-06-01",
       "content-type": "application/json",
     },
-    body: JSON.stringify({
-      model: ANTHROPIC_MODEL,
-      max_tokens: 4000,
-      system: [
-        { type: "text", text: AUTOBUILD_SYSTEM_PROMPT, cache_control: { type: "ephemeral" } },
-      ],
-      tools: [tool],
-      tool_choice: { type: "tool", name: tool.name },
-      messages: [
-        {
-          role: "user",
-          content: [
-            ...(imageBase64
-              ? [
-                  {
-                    type: "image",
-                    source: { type: "base64", media_type: "image/png", data: imageBase64 },
-                  },
-                ]
-              : []),
-            { type: "text", text: userText },
-          ],
-        },
-      ],
-    }),
+    body: JSON.stringify(
+      intentRequest({
+        model: ANTHROPIC_MODEL,
+        system: AUTOBUILD_SYSTEM_PROMPT,
+        mode,
+        imageBase64,
+        userText,
+      }),
+    ),
   });
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
     throw new Error(`model request failed (${res.status}): ${detail.slice(0, 500)}`);
   }
-  const body = (await res.json()) as {
-    content: Array<{ type: string; name?: string; input?: unknown }>;
-    usage?: AnthropicUsage;
-  };
-  await record(body.usage);
-  const toolUse = body.content.find((b) => b.type === "tool_use" && b.name === tool.name);
-  if (!toolUse?.input) throw new Error("the model returned no proposal");
-  return { input: toolUse.input, usage: body.usage };
+  const answer = readIntentAnswer(await res.json());
+  await record(answer.usage);
+  return answer;
 }
 
 // ---------------------------------------------------------------------------
@@ -577,11 +559,12 @@ Deno.serve(async (req) => {
               record("autobuild", usage),
             );
             cost.calls = 1;
-            cost.inputTokens =
-              count(answer.usage?.input_tokens) +
-              count(answer.usage?.cache_read_input_tokens) +
-              count(answer.usage?.cache_creation_input_tokens);
-            cost.outputTokens = count(answer.usage?.output_tokens);
+            Object.assign(cost, tokensOf(answer.usage));
+            if (answer.input === undefined) {
+              throw new Error(
+                `the model returned no usable proposal (${answer.stopReason ?? "no tool call"})`,
+              );
+            }
             outcome = applyIntentProposal(answer.input, {
               mode,
               fields: run.fields,
