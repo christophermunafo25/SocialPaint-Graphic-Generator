@@ -996,15 +996,6 @@
   margin: 0;
   color: var(--state-error);
 }
-.sp-links__confirm {
-  margin: 0;
-  color: var(--text-secondary);
-}
-.sp-links__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-2xs);
-}
 .sp-links__fresh,
 .sp-links__form {
   display: flex;

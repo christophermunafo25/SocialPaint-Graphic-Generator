@@ -22,7 +22,7 @@ import { PLATFORMS, type PlatformId } from "@/lib/templates/platforms";
 import { routeToUrl, useRouter, type Route } from "../../router";
 import { Page, PageHeader } from "../layout/Page";
 import { ErrorState } from "../ErrorState";
-import { Button } from "../primitives";
+import { Button, Skeleton } from "../primitives";
 import { useLinkClick } from "./brand/useLinkClick";
 import { changeCopy, InsightKpi } from "./insights/InsightKpi";
 import { TrendCard } from "./insights/TrendCard";
@@ -355,9 +355,7 @@ export function Dashboard(route: Omit<DashboardRoute, "name">) {
 
 /** The first load: each part's shape, so nothing jumps when data lands. */
 function InsightsSkeleton() {
-  const bone = (w: number | string, h: number) => (
-    <span className="sp-st-bone" style={{ width: w, height: h }} />
-  );
+  const bone = (w: number | string, h: number) => <Skeleton width={w} height={h} />;
   return (
     <Page layout={{ className: "sp-in-page" }}>
       <PageHeader title="Insights & Analytics" />

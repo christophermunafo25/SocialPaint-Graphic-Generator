@@ -6,8 +6,16 @@ import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { publicLinkUrl } from "@/lib/publicLink/route";
 import { ErrorState } from "../../ErrorState";
-import { SkeletonRows } from "../../Skeleton";
-import { Badge, Button, Field, Input, RowMenu, SettingsCard, Switch } from "../../primitives";
+import {
+  Badge,
+  Button,
+  Field,
+  Input,
+  RowMenu,
+  SettingsCard,
+  SkeletonRows,
+  Switch,
+} from "../../primitives";
 import { TemplateLinksDialog } from "../TemplateLinksDialog";
 import { ConfirmModal, TypedConfirmModal } from "./SettingsConfirm";
 import { DevBackendNotice, SwitchRow } from "./settingsShared";

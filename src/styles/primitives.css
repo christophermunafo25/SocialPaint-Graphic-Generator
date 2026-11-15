@@ -1583,17 +1583,20 @@ button.ui-detail-tag__value {
   box-shadow: 0 0 0 var(--focus-width) var(--ring);
 }
 
-/* ── Card (58:476) and Settings card (58:460) ── */
+/* ── Card (2215:141): a raised surface at radius/xl with a hairline edge, 24
+   around its content and 16 between its parts. The header holds the title
+   and, on the right, an optional ghost Small action. ── */
 .ui-card {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
-  padding: var(--space-md) 28px; /* 28 is off the scale, as drawn (58:476) */
-  border-radius: var(--radius-card);
+  gap: var(--space-16);
+  padding: var(--space-24);
+  border: var(--stroke-hairline) solid var(--border-raised);
+  border-radius: var(--radius-xl);
   background: var(--surface-raised);
-  box-shadow: var(--elevation-small);
-  color: var(--text-strong);
+  box-shadow: var(--elevation-1-raised);
+  color: var(--text-primary);
 }
 .ui-card h2,
 .ui-card p {
@@ -1601,15 +1604,30 @@ button.ui-detail-tag__value {
 }
 .ui-card__header {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-3xs);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
 }
-.ui-card__subtitle {
+.ui-card__description {
   color: var(--text-secondary);
 }
+
+/* ── Settings card (58:460), a Product component: its earlier look, until
+   Settings is rebuilt. ── */
 .ui-settings-card {
-  gap: 20px; /* off the scale, as drawn (58:460) */
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* as drawn (58:460) */
   padding: var(--space-md);
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+  color: var(--text-strong);
+}
+.ui-settings-card h2,
+.ui-settings-card p {
+  margin: 0;
 }
 .ui-settings-card__header {
   display: flex;
@@ -1618,53 +1636,86 @@ button.ui-detail-tag__value {
   gap: var(--space-sm);
 }
 
-/* ── Stat (59:449) and Metric (59:452) ── */
-.ui-stat,
-.ui-metric {
+/* ── Stat (59:449), which belongs to Settings: its earlier look, until that
+   page is rebuilt. Large is a figure on the Plan and usage card
+   (13:15351). ── */
+.ui-stat {
   display: flex;
   flex-direction: column;
+  gap: var(--space-3xs);
   color: var(--text-strong);
 }
-.ui-stat {
-  gap: var(--space-3xs);
-}
-.ui-stat__label {
-  color: var(--text-secondary);
-}
-.ui-metric {
+.ui-stat[data-size="lg"] {
   gap: var(--space-xs);
 }
-.ui-metric__sub {
+.ui-stat__label,
+.ui-stat__sub {
   color: var(--text-secondary);
 }
 
-/* ── Modal (58:484) ── */
+/* ── Metric (2215:223): one number on a raised card at radius/xl, 20 around
+   and 20 between the label, the value and the change. ── */
+.ui-metric {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-20);
+  padding: var(--space-20);
+  border: var(--stroke-hairline) solid var(--border-raised);
+  border-radius: var(--radius-xl);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-1-raised);
+  color: var(--text-primary);
+}
+.ui-metric__change {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+}
+.ui-metric__caption {
+  color: var(--text-secondary);
+}
+
+/* ── Dialog (2215:203): a raised panel at radius/xl under Elevation/3
+   Floating, over surface/scrim. 24 around, and 24 between the title, the
+   body and the actions. The close button sits in the top right corner, 12
+   from the panel's edges. A dialog that holds a form or a picker keeps the
+   wider panel until its own screen is rebuilt. ── */
 .ui-modal-scrim {
   position: fixed;
   inset: 0;
   z-index: 400; /* the modal layer; z-index is not a Figma token */
-  background: var(--overlay-scrim);
+  background: var(--surface-scrim);
 }
 .ui-modal {
   box-sizing: border-box;
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 20px; /* off the scale, as drawn (58:484) */
-  width: 560px;
-  max-width: calc(100vw - 2 * var(--space-sm));
-  padding: var(--space-md);
-  border-radius: var(--radius-card);
+  gap: var(--space-24);
+  width: 480px; /* as drawn (2215:203) */
+  max-width: calc(100vw - 2 * var(--space-16));
+  padding: var(--space-24);
+  border: var(--stroke-hairline) solid var(--border-raised);
+  border-radius: var(--radius-xl);
   background: var(--surface-raised);
-  box-shadow: var(--elevation-medium);
-  color: var(--text-strong);
+  box-shadow: var(--elevation-3-floating);
+  color: var(--text-primary);
 }
+.ui-modal[data-wide] {
+  width: 560px;
+}
+/* A dialog taller than the window scrolls. Its 24 of padding is the room a
+   raised child's shadow and a focus ring need at the sides. */
 .ui-modal:not(.ui-modal--static) {
   position: fixed;
   z-index: 401;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  max-height: calc(100vh - 2 * var(--space-lg));
+  max-height: calc(100vh - 2 * var(--space-32));
   overflow-y: auto;
 }
 .ui-modal:focus-visible {
@@ -1673,57 +1724,146 @@ button.ui-detail-tag__value {
 .ui-modal__header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
+  gap: var(--space-8);
+  /* The close button's room beside the title. */
+  padding-right: var(--space-24);
 }
 .ui-modal__title {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2xs);
-}
-.ui-modal__title h2 {
+  flex: 1;
+  min-width: 0;
   margin: 0;
 }
+.ui-modal__close {
+  position: absolute;
+  top: calc(var(--space-12) - var(--stroke-hairline));
+  right: calc(var(--space-12) - var(--stroke-hairline));
+}
+.ui-modal__body {
+  margin: 0;
+  color: var(--text-secondary);
+}
+/* Its parts are 12 apart, whatever margin a part's own class sets. The body
+   stays a block, so its Body/M trims the first and the last line. */
+.ui-modal .ui-modal__body > * {
+  margin-block: 0;
+}
+.ui-modal .ui-modal__body > * + * {
+  margin-top: var(--space-12);
+}
+.ui-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-8);
+}
 
-/* ── Progress (58:450) and Progress bar (58:451) ── */
-.ui-progress {
-  display: inline-flex;
+/* ── Table row (2215:270): 52 tall at radius/sm, 12 around and 24 between
+   cells. The primary cell takes the room, value cells are 64 wide and set
+   right, and the action hugs. ── */
+.ui-table {
+  display: flex;
+  flex-direction: column;
+}
+.ui-table-row {
+  box-sizing: border-box;
+  display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: var(--space-24);
+  min-height: calc(var(--size-control-sm) + 2 * var(--space-12));
+  padding: var(--space-12);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
 }
-.ui-progress__track {
-  display: block;
-  width: 120px;
-  height: 4px;
+.ui-table-row:not([data-loading]):hover,
+.ui-table-row[data-demo-state="hover"] {
+  background: var(--state-hover);
+}
+.ui-table-row[data-interactive] {
+  cursor: pointer;
+}
+.ui-table-row__primary {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-8);
+  min-width: 0;
+}
+/* One line each. The text is trimmed to its capitals, so the clip box is
+   widened past the descenders without moving the line. */
+.ui-table-row__title,
+.ui-table-row__subtitle {
+  max-width: 100%;
   overflow: hidden;
-  border-radius: var(--radius-xs);
-  background: var(--surface-sunken);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-block: 0.3em;
+  margin-block: -0.3em;
 }
-.ui-progress__fill {
-  display: block;
-  height: 100%;
-  border-radius: var(--radius-xs);
-  background: var(--surface-inverse);
+.ui-table-row__subtitle {
+  color: var(--text-secondary);
+}
+/* A block, so its Mono/M trims to the capitals like the rest of the row. */
+.ui-table-row__value {
+  flex: none;
+  width: 64px; /* as drawn */
+  text-align: right;
+}
+.ui-table-row__value > .ui-skeleton {
+  margin-left: auto;
+}
+.ui-table-row__value[data-quiet] {
+  color: var(--text-secondary);
+}
+.ui-table-row__action {
+  flex: none;
+  display: flex;
+}
+
+/* ── Progress steps (2221:1105): a bar a step, 4 apart, over the step's
+   name in Caption/M. ── */
+.ui-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  width: 240px; /* as drawn */
+  max-width: 100%;
+}
+.ui-progress__bars {
+  display: flex;
+  gap: var(--space-4);
+}
+.ui-progress__bar {
+  flex: 1;
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: var(--surface-field);
+}
+.ui-progress__bar[data-done] {
+  background: var(--text-primary);
 }
 .ui-progress__label {
   color: var(--text-secondary);
+  white-space: nowrap;
 }
+
+/* ── Progress bar (2215:272): a 4 tall track on surface/field, filled in
+   text/primary. Indeterminate, a part of the fill slides along it. ── */
 .ui-progress-bar {
   width: 100%;
   height: 4px;
   overflow: hidden;
-  border-radius: var(--radius-pill);
-  background: var(--surface-sunken);
+  border-radius: var(--radius-full);
+  background: var(--surface-field);
 }
 .ui-progress-bar__fill {
   display: block;
   height: 100%;
-  border-radius: var(--radius-pill);
-  background: var(--accent-green);
+  border-radius: var(--radius-full);
+  background: var(--text-primary);
 }
 .ui-progress-bar[data-indeterminate] .ui-progress-bar__fill {
   width: 40%;
-  animation: ui-progress-slide 1.2s ease-in-out infinite;
+  animation: ui-progress-slide var(--motion-duration-pulse) var(--motion-easing-standard) infinite;
 }
 @keyframes ui-progress-slide {
   from {
@@ -1733,10 +1873,142 @@ button.ui-detail-tag__value {
     transform: translateX(250%);
   }
 }
+
+/* ── Skeleton (2215:286): the shape of what is loading, on
+   surface/skeleton. Line is 12 tall at radius/xs, Block 96 at radius/md and
+   Circle 36 across. The fill fades to half and back over
+   motion/duration/pulse; the file names the duration and nothing else about
+   the pulse. A skeleton that stands in for a control takes that control's
+   corner. ── */
+.ui-skeleton {
+  display: block;
+  max-width: 100%;
+  height: 12px;
+  border-radius: var(--radius-xs);
+  background-color: var(--surface-skeleton);
+  animation: ui-skeleton-pulse var(--motion-duration-pulse) var(--motion-easing-standard) infinite;
+}
+.ui-skeleton[data-shape="block"] {
+  height: 96px;
+  border-radius: var(--radius-md);
+}
+.ui-skeleton[data-shape="circle"] {
+  flex: none;
+  width: var(--size-control-md);
+  height: var(--size-control-md);
+  border-radius: var(--radius-full);
+}
+.ui-skeleton[data-radius="xs"] {
+  border-radius: var(--radius-xs);
+}
+.ui-skeleton[data-radius="sm"] {
+  border-radius: var(--radius-sm);
+}
+.ui-skeleton[data-radius="md"] {
+  border-radius: var(--radius-md);
+}
+.ui-skeleton[data-radius="full"] {
+  border-radius: var(--radius-full);
+}
+@keyframes ui-skeleton-pulse {
+  0%,
+  100% {
+    background-color: var(--surface-skeleton);
+  }
+  50% {
+    background-color: color-mix(in srgb, var(--surface-skeleton) 50%, transparent);
+  }
+}
+/* Lines of text that are loading, and list rows: a round mark and two
+   lines a row, divided like the rows they stand in for. */
+.ui-skeleton-lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+.ui-skeleton-row {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  min-height: 56px; /* the row it stands in for */
+}
+.ui-skeleton-row + .ui-skeleton-row {
+  border-top: var(--stroke-hairline) solid var(--border-subtle);
+}
+.ui-skeleton-row__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-6);
+  min-width: 0;
+}
 @media (prefers-reduced-motion: reduce) {
+  /* The shape still says what is coming. It does not move. */
+  .ui-skeleton,
   .ui-progress-bar[data-indeterminate] .ui-progress-bar__fill {
     animation: none;
   }
+}
+
+/* ── Alert (2215:302): a message set into the page at radius/md, 16 around
+   and 12 between the title and its line. The tone colors the ground and
+   the title. ── */
+.ui-alert {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  padding: var(--space-16);
+  border-radius: var(--radius-md);
+  background: var(--status-neutral-surface);
+  color: var(--text-primary);
+}
+.ui-alert p {
+  margin: 0;
+}
+.ui-alert[data-tone="error"] {
+  background: var(--feedback-error-surface);
+}
+.ui-alert[data-tone="error"] .ui-alert__title {
+  color: var(--feedback-error-text);
+}
+.ui-alert[data-tone="warning"] {
+  background: var(--feedback-warning-surface);
+}
+.ui-alert[data-tone="warning"] .ui-alert__title {
+  color: var(--feedback-warning-text);
+}
+
+/* ── Empty state (2215:304): an icon tile, a title, a line and one action,
+   centered and 20 apart with 32 around them. ── */
+.ui-empty {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-20);
+  padding: var(--space-32);
+  color: var(--text-primary);
+  text-align: center;
+}
+.ui-empty p {
+  margin: 0;
+}
+.ui-empty__tile {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-control-lg);
+  height: var(--size-control-lg);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
+}
+.ui-empty__body {
+  max-width: 320px; /* as drawn */
+  color: var(--text-secondary);
 }
 
 /* ── Composer (61:504): the chat box on surface/raised with Elevation/Small.

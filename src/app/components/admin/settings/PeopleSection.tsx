@@ -5,8 +5,15 @@ import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { ErrorState } from "../../ErrorState";
-import { SkeletonRows } from "../../Skeleton";
-import { Avatar, Button, Input, RowMenu, Select, SettingsCard } from "../../primitives";
+import {
+  Avatar,
+  Button,
+  Input,
+  RowMenu,
+  Select,
+  SettingsCard,
+  SkeletonRows,
+} from "../../primitives";
 import { ConfirmModal } from "./SettingsConfirm";
 import { DevBackendNotice } from "./settingsShared";
 import { useSettingsToast } from "./settingsToast";

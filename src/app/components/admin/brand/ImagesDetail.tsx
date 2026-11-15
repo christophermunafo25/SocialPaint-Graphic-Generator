@@ -16,6 +16,7 @@ import {
   RowContextMenu,
   RowMenu,
   type RowMenuGroup,
+  Skeleton,
 } from "../../primitives";
 import { AddSlot } from "./primitives/AddSlot";
 import { useLinkClick } from "./useLinkClick";
@@ -138,7 +139,7 @@ export function ImagesDetail({ brand }: { brand: BrandDraft }) {
         ))}
         {pending.map((p) => (
           <div key={p.key} className="sp-bs-image" data-uploading>
-            <span className="sp-bs-image__plate sp-bs-bone" />
+            <Skeleton className="sp-bs-image__plate" />
             <span className="sp-bs-image__meta">
               <span className="sp-bs-image__row">
                 <span className="tu-label-s sp-bs-image__name">{p.name}</span>

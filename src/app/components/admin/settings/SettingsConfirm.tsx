@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Button, Field, Input, Modal } from "../../primitives";
+import { Button, Field, Input, Modal, ModalActions, ModalBody } from "../../primitives";
 
 interface ConfirmProps {
   open: boolean;
@@ -47,20 +47,15 @@ export function ConfirmModal({
           : undefined
       }
     >
-      {body && <ConfirmBody>{body}</ConfirmBody>}
-      <div className="sp-st-confirm__actions">
-        <Button ref={cancel} kind="neutral" size="lg" onClick={onCancel}>
+      {body && <ModalBody>{body}</ModalBody>}
+      <ModalActions>
+        <Button ref={cancel} kind="neutral" onClick={onCancel}>
           Cancel
         </Button>
-        <Button
-          kind={destructive ? "destructive" : "primary"}
-          size="lg"
-          disabled={busy}
-          onClick={onConfirm}
-        >
+        <Button kind={destructive ? "destructive" : "primary"} disabled={busy} onClick={onConfirm}>
           {busy ? "Working…" : confirmLabel}
         </Button>
-      </div>
+      </ModalActions>
     </Modal>
   );
 }
@@ -84,7 +79,7 @@ export function TypedConfirmModal({
 
   return (
     <Modal open={props.open} onOpenChange={(next) => !next && props.onCancel()} title={props.title}>
-      {props.body && <ConfirmBody>{props.body}</ConfirmBody>}
+      {props.body && <ModalBody>{props.body}</ModalBody>}
       <Field label={`Type ${expected} to confirm`}>
         <Input
           value={typed}
@@ -94,27 +89,14 @@ export function TypedConfirmModal({
           spellCheck={false}
         />
       </Field>
-      <div className="sp-st-confirm__actions">
-        <Button kind="neutral" size="lg" onClick={props.onCancel}>
+      <ModalActions>
+        <Button kind="neutral" onClick={props.onCancel}>
           Cancel
         </Button>
-        <Button
-          kind="destructive"
-          size="lg"
-          disabled={!match || props.busy}
-          onClick={props.onConfirm}
-        >
+        <Button kind="destructive" disabled={!match || props.busy} onClick={props.onConfirm}>
           {props.busy ? "Working…" : props.confirmLabel}
         </Button>
-      </div>
+      </ModalActions>
     </Modal>
-  );
-}
-
-function ConfirmBody({ children }: { children: React.ReactNode }) {
-  return typeof children === "string" ? (
-    <p className="tu-body-m sp-st-confirm__body">{children}</p>
-  ) : (
-    <div className="tu-body-m sp-st-confirm__body">{children}</div>
   );
 }

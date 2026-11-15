@@ -68,12 +68,6 @@
   background: color-mix(in srgb, var(--state-error) 10%, transparent);
   color: var(--state-error);
 }
-/* A loading stand-in: a sunken bar. */
-.sp-bs-bone {
-  display: block;
-  border-radius: var(--radius-xs);
-  background: var(--surface-sunken);
-}
 
 /* ── Overview (13:9043) ── */
 .sp-bs-overview {

@@ -249,6 +249,7 @@ export function AdminTemplates() {
         open={versionFor !== null}
         onOpenChange={(next) => !next && setVersionFor(null)}
         title="Create a version for…"
+        wide
       >
         {versionFor && (
           <>

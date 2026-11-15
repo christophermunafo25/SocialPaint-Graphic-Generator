@@ -10,8 +10,10 @@ import {
   WorkspacePreview,
 } from "../components/onboarding/pieces";
 import {
+  ArrowUp,
   BarChart3,
   Building,
+  Copy,
   Download,
   Ellipsis,
   FileText,
@@ -32,6 +34,7 @@ import {
   X,
 } from "lucide-react";
 import {
+  Alert,
   Avatar,
   Badge,
   Button,
@@ -39,6 +42,7 @@ import {
   Checkbox,
   Chip,
   DetailTag,
+  EmptyState,
   Field,
   FooterLinks,
   IconButton,
@@ -53,6 +57,8 @@ import {
   MenuPanel,
   Metric,
   Modal,
+  ModalActions,
+  ModalBody,
   ModalPanel,
   NavItem,
   PlatformChip,
@@ -66,9 +72,13 @@ import {
   SendButton,
   SettingsCard,
   SettingsRailItem,
+  Skeleton,
   Stat,
   Stepper,
   Switch,
+  Table,
+  TableCell,
+  TableRow,
   Tabs,
   Tag,
   TextArea,
@@ -655,9 +665,108 @@ function ContainersGroup() {
           ))}
         </div>
       </div>
-      <Card title="Your month in brief" subtitle="Aug 17 to Sep 15">
-        <Metric label="Exports" value="1,046" />
-      </Card>
+      <div className="dev-ui-sheet__line">
+        <Card
+          className="dev-ui-w-360"
+          title="Top templates"
+          description="The five templates your team exported most in the last 30 days."
+          action={
+            <Button kind="ghost" size="sm">
+              View all
+            </Button>
+          }
+        />
+        <Card className="dev-ui-w-360" title="Top templates" loading />
+      </div>
+      <div className="dev-ui-sheet__line">
+        <Metric
+          className="dev-ui-w-240"
+          label="Exports"
+          value="1,128"
+          delta={
+            <Badge tone="positive" icon={ArrowUp}>
+              18%
+            </Badge>
+          }
+          caption="vs previous 30 days"
+        />
+        <Metric className="dev-ui-w-240" label="Exports" value="" loading />
+      </div>
+      <div className="dev-ui-sheet__line">
+        <ModalPanel title="Publish template">
+          <ModalBody>
+            Your team will see Now hiring in Brand Templates and can start making graphics from it.
+          </ModalBody>
+          <ModalActions>
+            <Button kind="neutral">Cancel</Button>
+            <Button kind="primary">Publish</Button>
+          </ModalActions>
+        </ModalPanel>
+        <ModalPanel title="Delete this template?">
+          <ModalBody>
+            Now hiring and its three variations will be removed for everyone. This cannot be undone.
+          </ModalBody>
+          <ModalActions>
+            <Button kind="neutral">Cancel</Button>
+            <Button kind="destructive">Delete template</Button>
+          </ModalActions>
+        </ModalPanel>
+      </div>
+      <Table className="dev-ui-w-720" aria-label="Public links">
+        <TableRow
+          title="Newsletter readers"
+          subtitle="Webinar invite"
+          action={
+            <Button kind="neutral" size="sm" icon={Copy}>
+              Copy
+            </Button>
+          }
+        >
+          <TableCell quiet>58</TableCell>
+          <TableCell>31</TableCell>
+        </TableRow>
+        <TableRow
+          title="Newsletter readers"
+          subtitle="Webinar invite"
+          data-demo-state="hover"
+          action={
+            <Button kind="neutral" size="sm" icon={Copy}>
+              Copy
+            </Button>
+          }
+        >
+          <TableCell quiet>58</TableCell>
+          <TableCell>31</TableCell>
+        </TableRow>
+        <TableRow loading />
+      </Table>
+      <div className="dev-ui-sheet__line">
+        <Skeleton width={200} />
+        <Skeleton shape="block" width={200} />
+        <Skeleton shape="circle" />
+      </div>
+      <div className="dev-ui-sheet__line">
+        <Alert className="dev-ui-w-400" title="This template has unpublished changes">
+          Publish to update the version your team sees.
+        </Alert>
+        <Alert className="dev-ui-w-400" tone="error" title="We could not publish this template">
+          Check your connection and try again. Your changes are saved.
+        </Alert>
+        <Alert className="dev-ui-w-400" tone="warning" title="This public link expires in 3 days">
+          Extend it in the link settings to keep it working.
+        </Alert>
+      </div>
+      <EmptyState
+        icon={Paintbrush}
+        title="No templates yet"
+        action={
+          <Button kind="primary" icon={Plus}>
+            New template
+          </Button>
+        }
+      >
+        Build your first template and your team can start making graphics from it.
+      </EmptyState>
       <SettingsCard
         title="Workspaces"
         action={
@@ -673,7 +782,7 @@ function ContainersGroup() {
         <ProgressBar value={0.4} label="Importing" />
         <ProgressBar label="Uploading" />
       </SettingsCard>
-      <ModalPanel title="Public links" icon={Link}>
+      <ModalPanel title="Public links" icon={Link} wide>
         <PublicLinksBody
           state="ready"
           variants={SAMPLE_LOOKS}
@@ -692,7 +801,7 @@ function ContainersGroup() {
           onToggleUploads={() => {}}
         />
       </ModalPanel>
-      <Modal open={open} onOpenChange={setOpen} title="Public links" icon={Link}>
+      <Modal open={open} onOpenChange={setOpen} title="Public links" icon={Link} wide>
         <Field label="Headline">
           <Input placeholder="Creative Director" />
         </Field>

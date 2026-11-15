@@ -220,6 +220,7 @@ export function ImageSourceDialog({
       open={open}
       onOpenChange={(next) => !next && close()}
       title={title}
+      wide
       // Open on the choice: the picked asset (or the first) on the grid, the
       // first option on the question.
       onOpenAutoFocus={(e) => {

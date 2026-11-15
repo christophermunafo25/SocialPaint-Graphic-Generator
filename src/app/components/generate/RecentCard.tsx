@@ -1,18 +1,15 @@
 import React, { useId } from "react";
 import type { FieldValues, TemplateSchema } from "@/lib/types";
 import type { ChatMeta } from "@/lib/generate/relativeDate";
-import { Bone } from "../Skeleton";
+import { Skeleton } from "../primitives";
 import { TemplateThumbnail } from "../TemplateThumbnail";
-
-const SUNKEN = "var(--surface-sunken)";
-const RADIUS = "var(--radius-control)";
 
 /** The title and meta lines under a chat's preview, shared by the Recent and
  * History cards (Figma sp-recent-card / sp-history-card, "meta"): 14 Medium
  * over 12 Regular in the secondary ink, both truncating (each card sets its
  * own leading and tracking in CSS). The meta line is "<platforms> · <date>"
  * and only the platforms truncate, so the date always shows. `bones` swaps
- * each line for a pulsing sunken Bone inside the same line box, so a
+ * each line for a Skeleton inside the same line box, so a
  * loading card keeps the loaded card's height to the pixel. */
 export function ChatCardMeta({
   title,
@@ -31,10 +28,10 @@ export function ChatCardMeta({
     return (
       <span className="sp-gen-card__meta" data-bones aria-hidden>
         <span className="tu-label-m sp-gen-card__title">
-          <Bone tone={SUNKEN} w={128} h={10} r={RADIUS} />
+          <Skeleton width={128} height={10} />
         </span>
         <span className="tu-caption-m sp-gen-card__line">
-          <Bone tone={SUNKEN} w={84} h={8} r={RADIUS} />
+          <Skeleton width={84} height={8} />
         </span>
       </span>
     );

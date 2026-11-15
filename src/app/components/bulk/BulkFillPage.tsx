@@ -23,8 +23,7 @@ import { overCapLine, readyLine, rowStatus } from "@/lib/bulk/copy";
 import { useRouter } from "../../router";
 import { ErrorState } from "../ErrorState";
 import { Page, PageHeader } from "../layout/Page";
-import { Bone, SkeletonLines } from "../Skeleton";
-import { Button, ProgressBar, Select, Switch } from "../primitives";
+import { Button, ProgressBar, Select, Skeleton, SkeletonLines, Switch } from "../primitives";
 import { TemplateThumbnail } from "../TemplateThumbnail";
 import { BulkExportStage, type BulkExportStageHandle } from "./BulkExportStage";
 
@@ -76,7 +75,7 @@ export function BulkFillPage({ templateId }: { templateId: string }) {
     return (
       <Page>
         <div aria-busy="true" aria-label="Loading template">
-          <Bone w={148} h={13} style={{ marginBottom: 20 }} />
+          <Skeleton width={148} height={13} style={{ marginBottom: 20 }} />
           <div className="sp-card p-5">
             <SkeletonLines lines={4} />
           </div>

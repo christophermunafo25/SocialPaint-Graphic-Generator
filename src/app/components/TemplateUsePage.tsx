@@ -7,12 +7,11 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { useBrand } from "@/lib/brand/BrandContext";
 import { useRouter } from "../router";
 import { ErrorState } from "./ErrorState";
-import { Bone } from "./Skeleton";
 import { TemplateFill } from "./TemplateFill";
 import { TemplateLinksDialog } from "./admin/TemplateLinksDialog";
 import { BreadcrumbHeader } from "./layout/Breadcrumb";
 import { Page } from "./layout/Page";
-import { Button } from "./primitives";
+import { Button, Skeleton } from "./primitives";
 
 /** Member self-service flow. Loads the template through the authenticated
  * store, then hands it to the shared fill surface — the same component the
@@ -33,20 +32,20 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
       <Page layout={{ className: "sp-fill-page" }}>
         <div aria-busy="true" aria-label="Loading template">
           <div className="sp-shell-pagehead">
-            <Bone w={220} h={14} tone="var(--surface-sunken)" />
+            <Skeleton width={220} height={14} />
           </div>
           <div className="sp-fill">
             <div className="sp-fill__form">
-              <Bone w={220} h={28} r="var(--radius-pill)" tone="var(--surface-sunken)" />
+              <Skeleton width={220} height={28} radius="full" />
               <div className="sp-fill__step">
-                <Bone w={96} h={10} tone="var(--surface-sunken)" />
-                <Bone w="100%" h={40} r="var(--radius-control-md)" tone="var(--surface-sunken)" />
+                <Skeleton width={96} height={10} />
+                <Skeleton width="100%" height={40} radius="sm" />
               </div>
             </div>
             <div className="sp-fill__preview">
               <div className="sp-fill__previewcard">
-                <Bone w={80} h={17} tone="var(--surface-sunken)" />
-                <Bone w="100%" h={480} r="var(--radius-media-plate)" tone="var(--surface-sunken)" />
+                <Skeleton width={80} height={17} />
+                <Skeleton shape="block" width="100%" height={480} />
               </div>
             </div>
           </div>

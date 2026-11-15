@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useBrand } from "@/lib/brand/BrandContext";
 import { routeToUrl, useRouter, type BrandCategory } from "../../../router";
 import { PageHeader } from "../../layout/Page";
-import { Button, PreviewOverlay } from "../../primitives";
+import { Button, PreviewOverlay, Skeleton } from "../../primitives";
 import { roleStyle } from "@/lib/brand/fontRoles";
 import { requestAddFlow } from "./addFlow";
 import { CATEGORY_ORDER, CATEGORY_TITLES, categoryCount } from "./categories";
@@ -164,8 +164,8 @@ export function BrandOverview({ brand, companyId }: { brand: BrandDraft; company
               <div key={category} className="sp-bs-cat" aria-hidden>
                 <span className="sp-bs-cat__cover" />
                 <span className="sp-bs-cat__meta">
-                  <span className="sp-bs-bone" style={{ width: 64, height: 10 }} />
-                  <span className="sp-bs-bone" style={{ width: 48, height: 8 }} />
+                  <Skeleton width={64} height={10} />
+                  <Skeleton width={48} height={8} />
                 </span>
               </div>
             ))}

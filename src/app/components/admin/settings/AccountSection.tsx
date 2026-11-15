@@ -5,8 +5,14 @@ import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useColorScheme, type ColorScheme } from "@/lib/colorScheme";
-import { SkeletonLines } from "../../Skeleton";
-import { Button, Input, SegmentedControl, SettingsCard, Stat } from "../../primitives";
+import {
+  Button,
+  Input,
+  SegmentedControl,
+  SettingsCard,
+  SkeletonLines,
+  Stat,
+} from "../../primitives";
 import { DevBackendNotice, SwitchRow } from "./settingsShared";
 import { useSettingsToast } from "./settingsToast";
 

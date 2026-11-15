@@ -2717,8 +2717,9 @@ input[type="radio"] {
 }
 
 /* --- Skeletons -----------------------------------------------------------
-   Card geometry, so nothing jumps when the data lands. A pulse rather than a
-   sweeping highlight: the DS bans gradients as a surface treatment. */
+   The builder's own (its list cards and its start screen), until the
+   builder is rebuilt. Everything else uses the Skeleton primitive
+   (.ui-skeleton in primitives.css). */
 @keyframes sp-skeleton-pulse {
   0%,
   100% {
@@ -2731,26 +2732,6 @@ input[type="radio"] {
 .sp-skeleton__block {
   background-color: var(--bg-raised);
   animation: sp-skeleton-pulse 1.4s var(--ease) infinite;
-}
-/* A toned bone (Bone's `tone` prop; the Generate chat's skeleton shapes)
-   paints the colour it is given and pulses by fading a fifth of the way
-   toward the ground beneath it, instead of stepping from --bg-raised to
-   --bg-hover: a sunken shape on a deep well would otherwise flash lighter
-   than its own ground. Shallow on purpose: the sunken shapes sit only a
-   rung off the stage, so a deeper trough would drain them. The reduced-
-   motion opt-out below holds the full tone, as drawn. */
-.sp-skeleton__block--tone {
-  background-color: var(--bone-tone);
-  animation-name: sp-skeleton-pulse-tone;
-}
-@keyframes sp-skeleton-pulse-tone {
-  0%,
-  100% {
-    background-color: var(--bone-tone);
-  }
-  50% {
-    background-color: color-mix(in srgb, var(--bone-tone) 80%, transparent);
-  }
 }
 .sp-skeleton__line {
   display: block;
