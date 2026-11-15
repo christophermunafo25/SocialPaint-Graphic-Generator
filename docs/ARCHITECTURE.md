@@ -28,7 +28,7 @@ src/lib/stores/             Data layer — components import ONLY these interfac
   index.ts                    Factory: picks backend from env
 src/lib/auth/AuthContext.tsx  Auth boundary (dev switcher now, Supabase Auth later)
 src/lib/brand/BrandContext.tsx Active company's kit/assets/locations + theming
-src/lib/render/              Canvas math: data-URL pipeline, autofit, fonts, toPng export
+src/lib/render/              Canvas math: data-URL pipeline, autofit, fonts, PNG export
 src/lib/bulk/                Bulk fill: CSV parser, column mapping, row checks, run loop
                               (pure; the render step is injected)
 src/app/components/bulk/     Bulk fill page + the off-screen render stage
@@ -358,10 +358,19 @@ since PostgREST caps an unpaged read without saying so.
 the single export (`exportSchemaPng`, which adds delivery) and bulk fill both
 call it. It ports the proven technique from the original generators: dimensions from the schema (never hardcoded),
 all raster assets pre-converted to data URLs (html-to-image drops
-cross-origin images silently), a double `toPng` with 150 ms pause (Safari
-decode warm-up), `navigator.share` on mobile with download fallback. Custom
+cross-origin images silently), one html-to-image snapshot (`toSvg`) that the
+export loads and draws itself, twice with a 150 ms pause (Safari decode
+warm-up), `navigator.share` on mobile with download fallback. Custom
 uploaded fonts are embedded via `fontEmbedCSS`; Google fonts render from the
 document font cache.
+
+The first draw waits 50 ms after the snapshot image loads. Firefox suppresses
+painting for the first 5 ms of a new document's life, the snapshot image's
+included, and a draw made in that window leaves out everything clipped to
+text (a text gradient, grain on glyphs). Firefox then reuses that raster, so
+a later draw cannot repair it. html-to-image's own `toPng` draws one
+animation frame after the load, which on a busy page falls inside the
+window; that is why the export does not use it.
 
 ## The way in: the gate and onboarding
 
