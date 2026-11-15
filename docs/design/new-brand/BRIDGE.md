@@ -21,7 +21,9 @@ These are the rows of `PROMPT.md` section 5 that the code or the file changes. P
    |---|---|---|---|
    | `--text-disabled` | Ink or paper at 25% alpha (lines 446, 605) | 19 in 10 files | Delete the old declarations. Readers take the new solid grey (`#A0A0A0` Light, `#636363` Dark), which is the role they already play |
    | `--border-control` | A solid ink or paper edge for outlined controls (lines 456, 615) | 2 in 1 file | Rename the old one to `--border-control-legacy` and repoint its two readers. The new token is ink at 45% for checkbox, radio and switch edges, a different role |
-   | `--purple-kara` | `#9F60FF`, a bright purple (line 169) | 2 CSS reads and `celebrate.ts` | Rename the old one to `--purple-legacy` and repoint. The new primitive is the deep `#4B3383` |
+   | `--purple-kara` | `#9F60FF`, a bright purple (line 169) | 1 CSS read and `celebrate.ts` | Rename the old one to `--purple-legacy` and repoint. The new primitive is the deep `#4B3383` |
+
+   Phase 1 built this as written. `--border-control-legacy` and `--purple-legacy` are declared in `socialpaint.css` and are not bridged: they keep their old values until Phase 6 removes their readers.
    | `--font-mono` | The Geist Mono stack (line 198) | 24 in 15 files | Same role. Delete the old declaration and let `tokens.css` own it with the same stack |
 
 2. **`--state-selected` keeps its name but not its job.** Today it is a solid fill (`#F9F9F8` Light, `#2F3133` Dark) for 4 reads. The new value is ink at 8% in Light and white at 10% in Dark. It still reads correctly on a raised surface, which is where all four readers sit, so it is owned by `tokens.css` with the new value and listed as an expected change.
@@ -224,7 +226,8 @@ The earlier file had 31 classes and the new one has 20. Phase 1 renames call sit
 | `.t-caption-xxs` | 1 in 1 | Caption/S | 9 → 11 |
 | `.t-mono-display`, `.t-mono-m`, `.t-mono-code` | 0 | The same names | Same |
 | `.t-mono-s` | 4 in 3 | Mono/S | 12, same |
-| `.t-mono-xs`, `.t-mono-xxs` | 0 | Mono/S or Mono/Eyebrow | No call sites |
+| `.t-mono-xs` | 1 in 1 | Mono/S | 10 → 12. The hex field in `ColorControl.tsx` (Phase 1 found this call site) |
+| `.t-mono-xxs` | 0 | Mono/S or Mono/Eyebrow | No call sites |
 | `.t-mono-eyebrow` | 1 in 1, plus 2 CSS reads of its variable | Mono/Eyebrow | 10 → 11 |
 | `.t-trim` | 17 in 6 | Nothing. Every style trims | Removed as each call site is rebuilt |
 
@@ -235,7 +238,16 @@ How Phase 1 lands this without moving layouts (finding 5):
 - The codemod renames every existing `.t-*` use to the `.tu-*` twin of its new style from the table. A call site that already pairs with `.t-trim` goes straight to the final trimmed class and drops `.t-trim`.
 - From Phase 2 on, a rebuilt component or screen uses the final `.t-*` classes. Phase 10 deletes the `.tu-*` twins, and a grep for `tu-` is that phase's check that no text was left untrimmed.
 
-The only type that changes size in Phase 1 is on the rows above that say so: panel titles 17 → 18, the five `.t-body-m` and fourteen `.t-label-l` and `.t-caption-m` sites as read, small buttons 12 → 13, and the three sites under 11.
+The only type that changes size in Phase 1 is on the rows above that say so: panel titles 17 → 18, the five `.t-body-m` and fourteen `.t-label-l` and `.t-caption-m` sites as read, small buttons 12 → 13, and the four sites under 11.
+
+What Phase 1 found while building this:
+
+- The motion durations are zeroed under reduced motion by `tokens.css` itself (the generator writes the rule). The bridge cannot hold it: the token check fails when the bridge declares a name `tokens.css` owns. `--dur-state` and `--dur-panel` follow through their `var()`.
+- One stylesheet rule names a text class in a selector (`.sp-gen-start__unavailable > .tu-body-m` in `generate.css`), so the rename covered it.
+- The rule in `brand-templates.css` that reads `--type-label-l` keeps the name, so its text goes from 15 to 16.
+- Sixteen `.tu-*` twins exist. Title/Display, Mono/Display, Mono/M and Mono/Code have no call site and no twin.
+- The template card title is Label/S (13) in the Brand Templates frame. Phase 1 holds it at Label/M, the nearer of the two targets this table allows, and Phase 4 takes the frame's style.
+- The Glow/Accent composite is `--glow-accent-shadow`, because `--glow-accent` is the Color token for the glow's color.
 
 ## 6. Control classes
 

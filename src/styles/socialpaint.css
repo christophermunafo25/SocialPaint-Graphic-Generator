@@ -1,10 +1,11 @@
 /* ==========================================================================
-   NEW LOOK (2026-10): token values come from the Figma file "Master
-   UX-UI" (mEJRslarcQDkgPeY6AObi5) through src/styles/tokens.css, which
-   is generated (npm run tokens) and never edited by hand. Old names that
-   map one to one to a Figma token are set in legacy-bridge.css. Where
-   this header disagrees with docs/design/new-look/RULES.md, RULES.md
-   wins; Phase 9 rewrites this header.
+   NEW BRAND (2026-11): token values come from the Figma file "Master UX
+   UI New Brand (Copy)" (1dYWgFH2V8i9Jez2ylI3ky) through
+   src/styles/tokens.css, which is generated (npm run tokens) and never
+   edited by hand. Older names that are still read point at those tokens
+   in legacy-bridge.css. Where this header disagrees with
+   docs/design/new-brand/RULES.md, RULES.md wins; that program's Phase 10
+   rewrites this header.
 
    SocialPaint Design System — platform UI tokens.
    Ported from the "SocialPaint Design System" Claude Design project
