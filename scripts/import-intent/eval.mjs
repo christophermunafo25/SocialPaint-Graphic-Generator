@@ -5,7 +5,7 @@
  *   npx vite-node scripts/import-intent/eval.mjs [options]
  *
  *   --trees <file>  A saved /v1/files/:key/nodes response holding keyed
- *                   frames. Default: import-intent.local/adler/all-frames.json
+ *                   frames. Default: import-intent.local/corpus/all-frames.json
  *                   when that file exists.
  *   --file <key>    The Figma file those frames come from, so --model can
  *                   fetch each frame's picture (FIGMA_TOKEN). Without it the
@@ -90,7 +90,7 @@ function parseArgs(argv) {
 }
 
 const flags = parseArgs(process.argv.slice(2));
-const defaultTrees = path.join(localDir, "adler/all-frames.json");
+const defaultTrees = path.join(localDir, "corpus/all-frames.json");
 const treesFile = flags.trees
   ? path.resolve(flags.trees)
   : existsSync(defaultTrees)
