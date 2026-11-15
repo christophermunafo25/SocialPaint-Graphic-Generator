@@ -2,19 +2,20 @@ import React, { useEffect, useState } from "react";
 import {
   BarChart3,
   Frame,
+  Moon,
   Paintbrush,
   PanelLeft,
   PencilRuler,
   Settings,
   Sparkles,
+  Sun,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useColorScheme } from "@/lib/colorScheme";
 import { useRouter, type Route } from "../router";
 import { useChrome } from "./layout/ChromeContext";
 import { BrandLockup, BrandMark } from "./BrandMark";
-import { Tooltip } from "./Tooltip";
-import { Avatar, IconButton, NavItem, ThemeToggle } from "./primitives";
+import { Avatar, IconButton, NavItem, Tooltip } from "./primitives";
 
 // Re-exported so existing `import { BrandMark } from "../Sidebar"` call sites
 // keep working; the components themselves live in BrandMark.tsx.
@@ -75,13 +76,27 @@ export function navFor(role: "admin" | "member"): NavDef[] {
   return NAV.filter((item) => role === "admin" || !item.adminOnly);
 }
 
-/** The light and dark quick toggle (Figma 102:574). It writes the same
- * colour scheme Settings' System / Light / Dark control does, so the two
- * always agree. The glyph follows the theme in CSS. */
+/** The sun in Light and the moon in Dark. The icon button shows the one
+ * for the nearest theme. */
+const THEME_GLYPHS = { light: Sun, dark: Moon };
+
+/** The light and dark quick toggle. It writes the same colour scheme
+ * Settings' System / Light / Dark control does, so the two always agree.
+ * The glyph follows the theme in CSS. The new file draws no toggle in the
+ * sidebar, so it takes the look of the Collapse button beside it (a ghost
+ * Small icon button) until Phase 3 places it. */
 function SidebarThemeToggle() {
   const { resolved, setScheme } = useColorScheme();
   const next = resolved === "dark" ? "light" : "dark";
-  return <ThemeToggle label={`Switch to ${next} mode`} onClick={() => setScheme(next)} />;
+  return (
+    <IconButton
+      variant="ghost"
+      size="sm"
+      icon={THEME_GLYPHS}
+      label={`Switch to ${next} mode`}
+      onClick={() => setScheme(next)}
+    />
+  );
 }
 
 function useAccount() {
@@ -120,6 +135,7 @@ function SidebarAccount({
   const gear = (
     <IconButton
       variant="ghost"
+      size="sm"
       icon={Settings}
       label="Settings"
       selected={inSettings}
@@ -130,14 +146,14 @@ function SidebarAccount({
   if (collapsed) {
     return (
       <div className="sp-shell-account" data-collapsed>
-        <Avatar initials={initials} size="lg" label={name} />
+        <Avatar initials={initials} label={name} />
         {gear}
       </div>
     );
   }
   return (
     <div className="sp-shell-account">
-      <Avatar initials={initials} size="lg" />
+      <Avatar initials={initials} />
       <div className="sp-shell-account__text">
         <span className="tu-label-s" title={name}>
           {name}
@@ -306,6 +322,7 @@ export function Sidebar() {
   const collapseButton = (
     <IconButton
       variant="ghost"
+      size={collapsed ? "md" : "sm"}
       icon={PanelLeft}
       label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       aria-expanded={!collapsed}
@@ -357,7 +374,7 @@ export function Sidebar() {
               </NavItem>
             );
             return collapsed ? (
-              <Tooltip key={label} content={label} placement="right">
+              <Tooltip key={label} label={label} placement="right">
                 {item}
               </Tooltip>
             ) : (

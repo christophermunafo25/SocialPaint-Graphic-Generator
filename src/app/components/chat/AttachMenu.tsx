@@ -9,7 +9,7 @@ import React, {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { Calendar, ChevronLeft, ChevronRight, Link2, MapPin, Type } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, Link2, MapPin, Plus, Type } from "lucide-react";
 import type { BrandAsset } from "@/lib/types";
 import { useBrand } from "@/lib/brand/BrandContext";
 import { DOCUMENT_ACCEPT } from "@/lib/generate/documentText";
@@ -21,8 +21,7 @@ import {
 } from "@/lib/generate/details";
 import { ImageSourceDialog, pickableAssets } from "../ImageSourceChooser";
 import { BrandStudioGlyph, FileGlyph, PhotoGlyph } from "../generate/icons";
-import { AttachButton, Button, Input } from "../primitives";
-import { Tooltip } from "../Tooltip";
+import { Button, IconButton, Input, Tooltip } from "../primitives";
 
 /** The native picker's list for Photo: the three formats the upload
  * pipeline takes. The composer still checks the type and the size cap on
@@ -374,7 +373,7 @@ export const AttachMenu = React.forwardRef<
         onKeyDown={onPanelKeyDown}
       >
         <div role="group" aria-labelledby={uploadLabelId} className="sp-attach__section">
-          <div id={uploadLabelId} className="ui-menu-label t-label-xs sp-attach__label">
+          <div id={uploadLabelId} className="ui-menu-label t-mono-eyebrow sp-attach__label">
             Upload
           </div>
           {row("photo", "Photo", PhotoGlyph, () => chooseUpload("photo"))}
@@ -386,7 +385,7 @@ export const AttachMenu = React.forwardRef<
           <>
             <div role="separator" className="ui-menu-divider" />
             <div role="group" aria-labelledby={detailsLabelId} className="sp-attach__section">
-              <div id={detailsLabelId} className="ui-menu-label t-label-xs sp-attach__label">
+              <div id={detailsLabelId} className="ui-menu-label t-mono-eyebrow sp-attach__label">
                 Details
               </div>
               {GENERATE_DETAILS.map((d) =>
@@ -448,10 +447,11 @@ export const AttachMenu = React.forwardRef<
 
   return (
     <>
-      <Tooltip content={ATTACH_TOOLTIP} placement="right" gap={4} suppressed={open}>
-        <AttachButton
+      <Tooltip label={ATTACH_TOOLTIP} placement="right" gap={4} suppressed={open}>
+        <IconButton
           ref={buttonRef}
           id={buttonId}
+          icon={Plus}
           label={ATTACH_TOOLTIP}
           aria-haspopup="menu"
           aria-expanded={open}

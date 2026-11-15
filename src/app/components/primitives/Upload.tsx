@@ -18,11 +18,11 @@ export interface UploadProps extends Omit<
   "data-demo-state"?: DemoStateAttr;
 }
 
-/** Upload (Figma 216:2291): the photo field's control. The whole row is one
+/** Upload (Figma 2211:278): the photo field's control. The whole row is one
  * button that opens the picker (the caller's onClick), and a file dropped
  * on it goes to onDropFile. Empty, a 40 tile with the image icon and the
  * placeholder; filled, the thumbnail, the name (one line) and Replace.
- * Hover and a file dragged over the row lay state/hover over it; keyboard
+ * Hover and a file dragged over the row add the hairline edge; keyboard
  * focus rings the row. */
 export const Upload = React.forwardRef<HTMLButtonElement, UploadProps>(function Upload(
   {
@@ -44,7 +44,7 @@ export const Upload = React.forwardRef<HTMLButtonElement, UploadProps>(function 
     <button
       ref={ref}
       type={type}
-      className={cx("ui-reset ui-tint ui-ring ui-upload", className)}
+      className={cx("ui-reset ui-fill ui-ring ui-upload", className)}
       data-value={filled ? "filled" : "empty"}
       data-demo-state={dragging ? "hover" : demoState}
       onDragOver={(e) => {
@@ -65,15 +65,15 @@ export const Upload = React.forwardRef<HTMLButtonElement, UploadProps>(function 
       {filled ? (
         <>
           <img src={thumbnail ?? undefined} alt="" className="ui-upload__thumb" />
-          <span className="tu-body-m ui-upload__name">{fileName}</span>
-          <span className="tu-label-s ui-upload__replace">{replaceLabel}</span>
+          <span className="t-body-m ui-upload__name">{fileName}</span>
+          <span className="t-label-s ui-upload__replace">{replaceLabel}</span>
         </>
       ) : (
         <>
           <span className="ui-upload__tile" aria-hidden>
             <Image size={16} className="ui-icon" />
           </span>
-          <span className="tu-body-m ui-upload__placeholder">{placeholder}</span>
+          <span className="t-body-m ui-upload__placeholder">{placeholder}</span>
         </>
       )}
     </button>

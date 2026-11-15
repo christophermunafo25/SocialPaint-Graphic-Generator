@@ -176,7 +176,7 @@ Scroll containers that hold raised children:
 | `.sp-chat-thread` (`socialpaint.css:3749`) | y | Result cards, the variations well | 16 top, the page gutter at the sides, 32 below | 5 |
 | `.sp-chat-history-scroll` (`socialpaint.css:3912`) | y | History cards | 24 top, the gutter at the sides, none below | 5 |
 | The builder's source-pick region (`TemplateBuilder.tsx:3198`, inline) | y | Start cards | Not measured | 6 |
-| `.ui-modal` (`primitives.css:1281`) | y, when tall | Option tiles and cards inside a dialog | 24 | 2 |
+| `.ui-modal` (`primitives.css`) | y, when tall | Option tiles and cards inside a dialog | 24, which is the room (Phase 2 kept the Dialog's 24 of padding on every side) | Done in 2 |
 
 Containers that clip without scrolling:
 
@@ -187,6 +187,43 @@ Containers that clip without scrolling:
 | `.sp-auth__panel` (`auth.css:74`) | The floating card over the art, 24 from the edge against a shadow that reaches further. The clip also crops the art | 9 |
 
 Scroll containers with no raised children keep their 4 of focus-ring room, which a 2 px ring 2 px out exactly fills: the sidebar nav, the chip rail on Brand Templates, the Details panel's fields, the composer's tag list, menus, the Sharing table and the builder rail body. About 50 other rules clip only their own content (an image crop, a truncated line) and are fine.
+
+## What Phase 2 found
+
+Phase 2 rebuilt the primitives against the Components page. Where the file and the prompt disagreed the file won. These are the points a later phase needs.
+
+### The file against the prompt and the rules
+
+- **Icon Button.** Only the Filled style is round. Ghost is `--radius-sm`. Placed instances are Ghost Small (28) in the sidebar header, the account row, row menus, the Dialog's close and the Edit panel's close, Ghost Medium for the collapsed sidebar's Expand, and Filled Medium for the template card's arrow and the composer's attach. The file's sidebar has no theme toggle.
+- **Switch, Checkbox and Radio.** An off switch is a track filled with `--border-control`. All three hover with a halo, and on a checkbox and a radio the halo lies over the box and under the mark.
+- **Edges.** Neutral buttons, Filled icon buttons and Chips carry a `--border-strong` hairline. Card, Metric, Menu, Dialog and Toast carry `--border-raised`, and the Tooltip `--border-subtle`. Input and Select gain a `--border-strong` hairline on hover. The Outline Tag's edge is dashed.
+- **Two edges the code keeps where the file drops them.** A disabled Neutral button, Filled icon button or Chip keeps its hairline at no color, so it does not change width when it disables (the file's are 2 narrower). An Avatar carries a `--border-subtle` hairline: the component draws it at weight 0, and every screen that places one draws it at 1.
+- **Menu.** Items are Body/M and the menu's label is Mono/Eyebrow. A keyboard-focused item shows the ring.
+- **Chip.** One component. Selected is `--surface-inverse` under `--text-inverse`.
+- **Tabs.** Text on a hairline, 20 apart, sharing the width of their row with centered labels. The selected tab's underline is `--text-primary`. The Insights trend card is a Segmented Control with series dots in its frame, so Tabs has no call site until the builder's inspector (Phase 6b).
+- **Stepper.** A capsule on `--surface-field` around two Ghost Small buttons, with no word beside it. The label is its accessible name. `PLAN.md` had this under Phase 5; it landed with the component.
+- **Dialog.** 480 wide as a component, with Medium actions. The file also places dialogs at 520 (public links, with an icon and a Title/Card title), 560 (the Themes board) and 1040 (Choose a size). `Modal` takes `wide` (560, the width from before this phase) for the three dialogs that hold a form or a picker.
+- **Metric.** The Components page's Metric is the Insights card. Settings' monthly figures are plain stats inside a settings card in their frame, so they are `Stat` at Large and wait for Phase 8.
+- **Text in form controls.** An input and a text area take no trimmed class (`RULES.md` section 5).
+- **Off a token in the file.** The Dialog's destructive confirm label is bound to `control/on-mark` (built as `--action-on-danger`), Upload's filled thumbnail has a raw 6 radius (built as `--radius-xs`), and the Search Field (`50:62`) keeps raw paddings, a 20 glyph and a hover laid over its fill.
+
+### Built and waiting for a screen
+
+`Tabs`, `Checkbox`, `Radio`, `Search`, `Table` with `TableRow` and `TableCell`, `Alert`, `EmptyState`, `Card`, `Metric`, `Breadcrumb`, `PageHeader` and `FooterLinks` have no call site outside `/dev/ui`. Each screen's phase moves its own markup onto them.
+
+| For | What |
+|---|---|
+| Phase 3 | Pages still use `layout/Page.tsx`, `layout/Breadcrumb.tsx` and `generate/LegalLinks.tsx`. The primitives `PageHeader`, `Breadcrumb` and `FooterLinks` are their replacements |
+| Phase 4 | The Platform chip and its bridge lines. The public links dialog's own header and its 520 width. The bulk fill page's native checkbox. The fill page's text areas already grow with their text, as the primitive now does |
+| Phase 5 | `ResultCard`, `LookTile`, `PreviewOverlay`, the composer and the message bubbles, with the word "look" in code names. Generate's progress is now a bar a step, 240 wide |
+| Phase 6a and 6b | The builder's own skeleton classes (`.sp-skeleton__block`, `.sp-skeleton__line`), its `GradientEditor` checkbox, its hand-rolled dialogs and the "Create a version" dialog's body. Most readers of `--danger-wash` and `--accent-wash` |
+| Phase 8 | `SettingsCard`, `Stat` and the list skeleton's row geometry (`SkeletonRows`). The Insights KPI cards onto `Metric`, and the three hand-built tables onto `Table` |
+| Phase 9 | `OptionTile` and the onboarding pieces |
+| Any screen with a load failure | `ErrorState` reads the Alert's Error tone but keeps its own centered layout. Its 21 uses move onto `Alert` with their screens |
+
+### The component sheet
+
+`/dev/ui` draws the eight boards from `src/app/dev/boards.json`, which is data read from the file: every set's variants at the file's coordinates. `npm run shots -- boards <dir>` saves each board as an image, and `compare-image` sets it against its export in `docs/design/new-brand/reference/`. What is left in those comparisons is glyph antialiasing, label widths (the file rounds a text box to whole pixels), the phase of the dashed boxes and shadow blur. The Themes board is shorter than the file's because it leaves out the Composer and the help text on its first Field.
 
 ## Scope
 
@@ -202,7 +239,7 @@ One pull request per phase into `main`. Phase 0 changed the prompt's order in tw
 |---|---|---|---|---|
 | 0 | Recon and plan | This folder. No product code | CJ approves the plan and answers the questions | At the gate |
 | 1 | Foundation | The exporter, JSON, generator and check on the new collections. `tokens.css` regenerated from the new file. `legacy-bridge.css` rewritten so every older name still read points at a new token. The 2 px focus ring, on fields too. The 20 text styles, with existing call sites renamed onto untrimmed twins | Every changed value is on the expected list. No layout moves | Merged 2026-11-14 (#185) |
-| 2 | Primitives | Every component in `PROMPT.md` section 6.1 on the new tokens with its states, tested. The folds (Icon Button, Select, Tooltip, Switch). The new ones (Checkbox, Radio, Table Row, Alert, Empty State, Search, Tabs). `/dev/ui` redrawn to show each one in Light and Dark the way the Components page does | `/dev/ui` matches the boards in both themes | Prompt written (`PHASE-2.md`) |
+| 2 | Primitives | Every component in `PROMPT.md` section 6.1 on the new tokens with its states, tested. The folds (Icon Button, Select, Tooltip, Switch). The new ones (Checkbox, Radio, Table Row, Alert, Empty State, Search, Tabs). `/dev/ui` redrawn to show each one in Light and Dark the way the Components page does | `/dev/ui` matches the boards in both themes | Built 2026-11-15, in review |
 | 3 | Shell | The app frame: viewport padding, the 320 sidebar, Main as a frame whose content scrolls, the one Page Header row on every page, Breadcrumb, one Footer Links slot. The new logo, mark and favicon | Every route still reachable in both themes. Titles sit at one height | Not started |
 | 4 | Brand Templates | The library, filter, search, the form-only fill page on the Details panel, the public link page's form, the public links dialog, bulk fill in the new shell. The template chat behind its redirect | Screens match their frames in both themes. No shadow cut off on the shelves, the chip rail or the grids | Not started |
 | 5 | Generate | Every state in the screen map, the new chat box, the Result Card with size tabs, History with skeletons | Same | Not started |

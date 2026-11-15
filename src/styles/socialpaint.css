@@ -955,64 +955,6 @@ select.sp-input:disabled {
   white-space: nowrap;
 }
 
-/* Switch — the DS core Switch pattern (40×24 pill, sliding knob) on platform
-   tokens: the track fills with the inverting neutral action fill to show it
-   is on (the --fill-action rule), the knob carries the on-action color, and
-   the off state leans on the existing switch-background alias. */
-.sp-switch {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2xs);
-  cursor: pointer;
-}
-.sp-switch[data-disabled] {
-  cursor: default;
-  opacity: 0.5;
-}
-.sp-switch input {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-.sp-switch__track {
-  width: 40px;
-  height: 24px;
-  border-radius: var(--radius-pill);
-  background: var(--switch-background);
-  position: relative;
-  flex-shrink: 0;
-  transition: background var(--dur-state) var(--ease);
-}
-.sp-switch input:checked + .sp-switch__track {
-  background: var(--fill-attention); /* Slime — a fill, legal in both themes */
-}
-.sp-switch input:focus-visible + .sp-switch__track {
-  box-shadow: var(--focus-ring-tight);
-}
-.sp-switch__knob {
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--text-primary);
-  transition:
-    left var(--dur-state) var(--ease),
-    background var(--dur-state) var(--ease);
-}
-.sp-switch input:checked + .sp-switch__track .sp-switch__knob {
-  left: 19px;
-  background: var(--text-on-brand); /* Ink — a display-size glyph on Slime, 11.13:1 */
-}
-@media (prefers-reduced-motion: reduce) {
-  .sp-switch__track,
-  .sp-switch__knob {
-    transition: none;
-  }
-}
-
 /* THE surface recipe: lifted fill, the lit edge, a soft shadow, soft
    radius. The 1px frame stays in the box for layout and for the states that
    still colour it (the composer's focus-within), but at rest it is
@@ -2775,8 +2717,9 @@ input[type="radio"] {
 }
 
 /* --- Skeletons -----------------------------------------------------------
-   Card geometry, so nothing jumps when the data lands. A pulse rather than a
-   sweeping highlight: the DS bans gradients as a surface treatment. */
+   The builder's own (its list cards and its start screen), until the
+   builder is rebuilt. Everything else uses the Skeleton primitive
+   (.ui-skeleton in primitives.css). */
 @keyframes sp-skeleton-pulse {
   0%,
   100% {
@@ -2789,26 +2732,6 @@ input[type="radio"] {
 .sp-skeleton__block {
   background-color: var(--bg-raised);
   animation: sp-skeleton-pulse 1.4s var(--ease) infinite;
-}
-/* A toned bone (Bone's `tone` prop; the Generate chat's skeleton shapes)
-   paints the colour it is given and pulses by fading a fifth of the way
-   toward the ground beneath it, instead of stepping from --bg-raised to
-   --bg-hover: a sunken shape on a deep well would otherwise flash lighter
-   than its own ground. Shallow on purpose: the sunken shapes sit only a
-   rung off the stage, so a deeper trough would drain them. The reduced-
-   motion opt-out below holds the full tone, as drawn. */
-.sp-skeleton__block--tone {
-  background-color: var(--bone-tone);
-  animation-name: sp-skeleton-pulse-tone;
-}
-@keyframes sp-skeleton-pulse-tone {
-  0%,
-  100% {
-    background-color: var(--bone-tone);
-  }
-  50% {
-    background-color: color-mix(in srgb, var(--bone-tone) 80%, transparent);
-  }
 }
 .sp-skeleton__line {
   display: block;
@@ -2934,34 +2857,6 @@ input[type="radio"] {
   border-radius: var(--radius-control);
 }
 
-/* ── Tooltip (Figma sp-tooltip 558:958) ───────────────────────────────────
-   12/125% Medium in --gen-on-inverse on --gen-inverse at --radius-tag,
-   7/10 padding, the soft --shadow-rest (none in dark). The caret is Radix's
-   5 × 10 arrow in the bubble's fill, flush against it. No motion. */
-.sp-tooltip {
-  z-index: var(--z-tooltip);
-  padding: 7px 10px;
-  border-radius: var(--radius-tag);
-  background: var(--gen-inverse);
-  color: var(--gen-on-inverse);
-  box-shadow: var(--shadow-rest);
-  font-family: var(--font-ui);
-  font-size: 12px;
-  font-weight: var(--weight-ui);
-  line-height: 1.25;
-  letter-spacing: 0;
-  white-space: nowrap;
-  pointer-events: none;
-  user-select: none;
-}
-.sp-tooltip__caret {
-  fill: var(--gen-inverse);
-}
-@media (forced-colors: active) {
-  .sp-tooltip {
-    border: 1px solid CanvasText;
-  }
-}
 .sp-chat-editor-host {
   display: contents;
 }

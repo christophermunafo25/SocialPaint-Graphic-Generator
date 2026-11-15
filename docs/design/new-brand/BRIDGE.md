@@ -40,7 +40,7 @@ These are the rows of `PROMPT.md` section 5 that the code or the file changes. P
 
 8. **`--elevation-small` and the others change shape, not only name.** The earlier drops were offset 2 right and 2 down. The new ones are offset 0 and 2, 4 or 8 down. Every card shadow moves on screen.
 
-9. **`--switch-background`** is the earlier file's off-track token (`switch/track-off`, 3 reads). Section 5 names `--switch-track-off`, which never existed in code. The off state now comes from the Switch component: a `--border-control` edge on `--control-track`.
+9. **`--switch-background`** is the earlier file's off-track token (`switch/track-off`, 3 reads). Section 5 names `--switch-track-off`, which never existed in code. The off state now comes from the Switch component: its track filled with `--border-control` (Phase 2 read this from the file; an earlier version of this line said an edge on `--control-track`).
 
 10. **Tailwind names.** `theme.css` declares `--radius-sm`, `--radius-md`, `--radius-lg` and `--radius-xl` inside `@theme inline` as steps off the old `--radius`, and Tailwind's own theme defines `--font-sans` and `--font-mono`. The new tokens use all six names. Tailwind's are emitted inside a cascade layer and `tokens.css` is unlayered, so the tokens win, and `@theme inline` utilities carry their value inline. Phase 1 confirms that with `shots props` instead of trusting it, and removes the four radius lines from `theme.css` (no TSX uses a `rounded-sm` to `rounded-xl` utility).
 
@@ -82,8 +82,8 @@ These are the rows of `PROMPT.md` section 5 that the code or the file changes. P
 | `--text-on-fill` | 5 in 1 | `--text-on-color` | None |
 | `--border-default` | 27 in 10 | `--border-subtle` | Ink tone only |
 | `--input-bg` | 7 in 4 | `--surface-field` | Dark paper 8% → white 10% |
-| `--overlay-scrim` | 1 in 1 | `--surface-scrim` | None |
-| `--tag-overlay-bg` | 1 in 1 | `--surface-overlay` | None |
+| ~~`--overlay-scrim`~~ | 0 | Removed in Phase 2 | The Dialog reads `--surface-scrim` |
+| ~~`--tag-overlay-bg`~~ | 0 | Removed in Phase 2 | The Overlay Tag reads `--surface-overlay` |
 | `--overlay-hover` | 1 in 1 | `--state-pressed` | Deep Moss 35% dim → the pressed tint. The preview hover is rebuilt in Phases 4 and 5 |
 | `--overlay-control`, `--overlay-control-fg` | 1, 1 | `--surface-raised`, `--text-primary` | The Edit button on a preview follows the theme in Dark |
 | `--overlay-edge` | 1 in 1 | `--border-strong` | Holding value. No component uses the role in the new file |
@@ -91,21 +91,21 @@ These are the rows of `PROMPT.md` section 5 that the code or the file changes. P
 | `--focus-width` | 15 in 4 | `--stroke-focus` | 1 → 2 on every ring |
 | `--btn-primary-bg`, `--btn-primary-fg` | 5 in 4, 4 in 3 | `--action-primary`, `--action-on-primary` | Light: Deep Moss under Slime → Slime under black. Dark: label Deep Moss → black |
 | `--btn-primary-bg-hover` | 2 in 1 | `--action-primary-hover` | A color in place of a tint layer. Its two readers set `background`, so a plain color works |
-| `--state-error` | 19 in 6 | `--feedback-error` | `#D43535` and `#EC5656` → `#FA3030` in both themes. Phase 2 splits its readers: fills to `--action-danger`, text to `--feedback-error-text`, grounds to `--feedback-error-surface` |
+| `--state-error` | 14 in 5 | `--feedback-error` | `#D43535` and `#EC5656` → `#FA3030` in both themes. Phase 2 moved the primitives onto the split roles: fills to `--action-danger`, text to `--feedback-error-text`, a field's edge to `--feedback-error`, grounds to `--feedback-error-surface`. The readers left are page rules and the Composer, which move with their screens |
 | `--state-danger`, `--state-danger-on-surface` | 4 in 1, 4 in 2 | `--feedback-error` | The same |
-| `--state-hover-inverse`, `--state-pressed-inverse` | 5 in 2, 2 in 1 | `--state-hover`, `--state-pressed` | Holding value. Their readers are the primary button, Attach and the on switch, which Phase 2 moves to `--action-*-hover` and `-pressed` |
-| `--state-hover-on-color`, `--state-pressed-on-color` | 2 in 1, 2 in 1 | `--state-hover`, `--state-pressed` | Holding value. Send and Destructive take their own tokens in Phase 2 |
+| ~~`--state-hover-inverse`, `--state-pressed-inverse`~~ | 0 | Removed in Phase 2 | The primary button reads `--action-primary-hover` and `-pressed`. Attach is a Filled icon button and the switch has no fill state |
+| ~~`--state-hover-on-color`, `--state-pressed-on-color`~~ | 0 | Removed in Phase 2 | Send reads `--action-accent-hover` and `-pressed`, Destructive `--action-danger-hover` and `-pressed` |
 | `--state-selection` | 2 in 1 | `--editor-selection` | None (`#0D99FF`) |
-| `--control-fill` | 9 in 2 | `--surface-sunken` | Dark `#171819` → `#232425`. The Docs map names `action/neutral` for buttons; the nine readers are rail and filter grounds, where sunken is the nearer role until Phase 2 |
-| `--switch-track-on` | 1 in 1 | `--control-on` | Dark `#F1F1F1` → `#F1F1EF` |
-| `--switch-background` | 3 in 3 | `--border-control` | Off track gets darker (finding 9) |
-| `--status-active-bg`, `--status-active-fg` | 1, 1 | `--status-active-surface`, `--status-active-text` | Light: Slime ground → Lime tint |
-| `--status-positive-bg` | 1 in 1 | `--status-positive-surface` | New Deep Moss |
-| `--chip-selected-bg` | 2 in 1 | `--surface-inverse` | Dark `#2F3133` → white. Platform chips are rebuilt in Phase 2 |
+| `--control-fill` | 3 in 2 | `--surface-sunken` | Dark `#171819` → `#232425`. Phase 2 moved the buttons, selects and the settings rail off it. The readers left are the Platform chip and one Brand Templates rule (Phase 4) |
+| ~~`--switch-track-on`~~ | 0 | Removed in Phase 2 | The Switch reads `--control-on` |
+| `--switch-background` | 1 in 1 | `--border-control` | The shadcn theme's switch token in `theme.css`. The Switch itself fills its off track with `--border-control` (finding 9, corrected in section 6) |
+| ~~`--status-active-bg`, `--status-active-fg`~~ | 0 | Removed in Phase 2 | The Badge reads `--status-active-surface` and `--status-active-text` |
+| ~~`--status-positive-bg`~~ | 0 | Removed in Phase 2 | The Badge reads `--status-positive-surface` |
+| `--chip-selected-bg` | 2 in 1 | `--surface-inverse` | Dark `#2F3133` → white. The Platform chip is a Product component and is rebuilt in Phase 4 (decided at the Phase 2 gate) |
 | `--chip-selected-tile` | 1 in 1 | `--state-selected` | Holding value |
 | `--chip-tile` | 2 in 2 | `--action-neutral` | Dark `#0B0B0C` → white 10% |
-| `--tag-detail-fg` | 1 in 1 | `--text-secondary` | Holding value |
-| `--tag-sent-bg`, `--tag-sent-fg`, `--tag-sent-border` | 1, 1, 1 | `--status-neutral-surface`, `--text-primary`, `--border-subtle` | A sent detail becomes a Tag in Phase 2 |
+| ~~`--tag-detail-fg`~~ | 0 | Removed in Phase 2 | An editable detail is a Chip |
+| ~~`--tag-sent-bg`, `--tag-sent-fg`, `--tag-sent-border`~~ | 0 | Removed in Phase 2 | A sent detail is a Default Tag |
 | `--field-green`, `-blue`, `-pink`, `-warm`, `-purple` | 3, 1, 1, 0, 1 | `--deep-green` and the other four | New palette |
 | `--accent-green-subtle`, `--accent-green-glow` | 0, 0 | Not bridged | Deleted. `--glow-hint` has no readers either |
 | `--elevation-small` | 29 in 7 | `--elevation-1-raised` | Drop 2/2 blur 8 → 0/2 blur 8 |
@@ -138,7 +138,8 @@ Every other earlier primitive has no reader outside `tokens.css` and is not brid
 | `--bg-surface`, `--bg-card` | 46 in 20, 5 in 1 | `--surface-raised` |
 | `--text-heading` | 1 in 1 | `--text-primary` |
 | `--border` | 48 in 18 | `--border-subtle` |
-| `--gen-sunken`, `--gen-inverse`, `--gen-on-inverse` | 2, 2, 1 | `--surface-sunken`, `--surface-inverse`, `--text-inverse` |
+| `--gen-sunken` | 1 in 1 | `--surface-sunken` |
+| ~~`--gen-inverse`, `--gen-on-inverse`~~ | 0 | Removed in Phase 2. Progress reads `--text-primary` on `--surface-field` |
 | `--fill-action`, `--text-on-action` | 4 in 3, 7 in 5 | `--surface-inverse`, `--text-inverse` |
 | `--shadow-card` | 2 in 1 | The drop of Elevation/1 Raised: `0 2px 8px 0 var(--shadow-raised)` |
 
@@ -156,7 +157,7 @@ These play several roles or belong to one screen, exactly as `docs/design/new-lo
 | `--start-*` | 10 names, 1 each | 6 |
 | `--gen-fade`, `--gen-fade-h`, `--gen-marker-*`, `--gen-h-tag` | 1 to 3 each | 5 |
 | `--sb-*`, `--chrome-top`, `--page-pad`, `--page-max` | 2 to 8 each | 3 |
-| `--state-warning`, `--fill-warning`, `--fill-attention`, `--danger-wash`, `--accent-wash` | 1 to 7 each | 2, onto `--feedback-warning-*` and `--feedback-error-surface` |
+| `--state-warning`, `--fill-warning`, `--fill-attention`, `--danger-wash`, `--accent-wash` | 1 to 6 each | With each screen that moves its alert blocks onto the Alert, which reads `--feedback-warning-*` and `--feedback-error-surface`. Phase 2 built the Alert and moved no page onto it. Most readers are in the builder (Phase 6) |
 | `--ease`, `--dur-state`, `--dur-panel` | 54 in 6, 58 in 6, 8 in 4 | Bridged in Phase 1 to `--motion-easing-standard`, `--motion-duration-fast` (140 → 120 ms) and `--motion-duration-base` (220 → 200 ms). The reduced-motion override that zeroes them stays |
 | `--type-caption-size`, `--type-label-size`, `--type-cardtitle-size` and the rest of the stylesheet's type variables | 67 in 21, 43 in 20, 14 in 8 | Per area, 4 to 9. Their values (12, 13, 17) are untouched in Phase 1 |
 | `--font-ui`, `--font-head`, `--font-body`, `--weight-ui`, `--weight-head`, `--track-head` | 25, 15, 2, 15, 15, 16 | `--font-ui` is bridged to `--font-sans`. The rest go in Phase 10 |
@@ -245,10 +246,30 @@ What Phase 1 found while building this:
 - The motion durations are zeroed under reduced motion by `tokens.css` itself (the generator writes the rule). The bridge cannot hold it: the token check fails when the bridge declares a name `tokens.css` owns. `--dur-state` and `--dur-panel` follow through their `var()`.
 - One stylesheet rule names a text class in a selector (`.sp-gen-start__unavailable > .tu-body-m` in `generate.css`), so the rename covered it.
 - The rule in `brand-templates.css` that reads `--type-label-l` keeps the name, so its text goes from 15 to 16.
-- Sixteen `.tu-*` twins exist. Title/Display, Mono/Display, Mono/M and Mono/Code have no call site and no twin.
+- Sixteen `.tu-*` twins existed after Phase 1. Title/Display, Mono/Display, Mono/M and Mono/Code have no call site and no twin. Phase 2 removed the Title/Section and Title/Group twins, so fourteen are left.
 - The template card title is Label/S (13) in the Brand Templates frame. Phase 1 holds it at Label/M, the nearer of the two targets this table allows, and Phase 4 takes the frame's style.
 - The Glow/Accent composite is `--glow-accent-shadow`, because `--glow-accent` is the Color token for the glow's color.
 
-## 6. Control classes
+## 6. What Phase 2 removed and found
+
+Phase 2 rebuilt the primitives on the new tokens. The rules in `primitives.css` for the components on the Components page read no bridged name. The rules that still do belong to the Product components that live beside them (the Platform chip, the result card, the look tile, the preview overlay, the composer, the message bubbles, the settings card, the stat and the option tile) and to the two earlier mechanics those components use (`.ui-tint`, `.ui-ring-tight`).
+
+Removed from `legacy-bridge.css`, each with no reader left in `src/`:
+
+- `--overlay-scrim`, `--tag-overlay-bg`
+- `--state-hover-inverse`, `--state-pressed-inverse`, `--state-hover-on-color`, `--state-pressed-on-color`
+- `--switch-track-on`, `--status-active-bg`, `--status-active-fg`, `--status-positive-bg`
+- `--tag-detail-fg`, `--tag-sent-bg`, `--tag-sent-fg`, `--tag-sent-border`
+- `--gen-inverse`, `--gen-on-inverse`
+- The `.tu-title-section` and `.tu-title-group` twins
+
+Corrections to this file:
+
+- Finding 9 described an off Switch as a `--border-control` edge on `--control-track`. The file draws the off track filled with `--border-control`, and that is what was built.
+- The `--chip-*` row said platform chips are rebuilt in Phase 2. The Platform chip is on the Product components page, and the Phase 2 gate left it to Phase 4 with its bridge lines.
+- The warning and wash names were listed for Phase 2. They are page names with no reader in the primitives, so they go with their screens.
+- A text style class on an `<input>` or a `<textarea>` is wrong in practice: the trim clips an input's accents and descenders in Chromium, and in a text area it moves the value and not the placeholder. Both take their type from the style's variables in `primitives.css`, with no class. `RULES.md` section 5 says so.
+
+## 7. Control classes
 
 Not tokens, but the same kind of debt. These are the earlier control families that `docs/design/new-look/PLAN.md` Phase 9 was to delete. `PLAN.md` in this folder says which phase removes each, with the count of files still reading them.

@@ -4,8 +4,7 @@ import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { ErrorState } from "../../ErrorState";
-import { SkeletonLines } from "../../Skeleton";
-import { Button, SettingsCard, Status } from "../../primitives";
+import { Badge, Button, SettingsCard, SkeletonLines } from "../../primitives";
 import { FigmaConnectForm } from "./FigmaConnectForm";
 import { ConfirmModal } from "./SettingsConfirm";
 import { DevBackendNotice } from "./settingsShared";
@@ -104,11 +103,11 @@ export function IntegrationsSection() {
         state.data.map((row) => {
           const name = PROVIDER_LABELS[row.provider];
           const status = !row.enabled ? (
-            <Status tone="neutral">Not available</Status>
+            <Badge tone="neutral">Not available</Badge>
           ) : row.connected ? (
-            <Status tone="positive">Connected</Status>
+            <Badge tone="positive">Connected</Badge>
           ) : (
-            <Status tone="neutral">Not connected</Status>
+            <Badge tone="neutral">Not connected</Badge>
           );
           const connect = () =>
             row.provider === "canva"

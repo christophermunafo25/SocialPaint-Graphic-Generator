@@ -11,6 +11,7 @@ import { LogosDetail } from "./LogosDetail";
 import { TypeStylesDetail } from "./TypeStylesDetail";
 import type { BrandDraft, useBrandBindings } from "./kitPlumbing";
 import type { LogoSurface } from "./kitOps";
+import { Skeleton } from "../../primitives";
 
 interface BrandDetailProps {
   category: BrandCategory;
@@ -57,10 +58,10 @@ function DetailSkeleton({ category }: { category: BrandCategory }) {
       <div className="sp-bs-colors" aria-busy="true" aria-label={label}>
         {Array.from({ length: 6 }, (_, i) => (
           <div key={i} className="sp-bs-color" aria-hidden>
-            <span className="sp-bs-color__swatch sp-bs-bone" />
+            <Skeleton className="sp-bs-color__swatch" />
             <span className="sp-bs-color__meta">
-              <span className="sp-bs-bone" style={{ width: 56, height: 10 }} />
-              <span className="sp-bs-bone" style={{ width: 44, height: 8 }} />
+              <Skeleton width={56} height={10} />
+              <Skeleton width={44} height={8} />
             </span>
           </div>
         ))}
@@ -72,10 +73,10 @@ function DetailSkeleton({ category }: { category: BrandCategory }) {
       <div className="sp-bs-logos" aria-busy="true" aria-label={label}>
         {Array.from({ length: 4 }, (_, i) => (
           <div key={i} className="sp-bs-logo" aria-hidden>
-            <span className="sp-bs-logo__plate sp-bs-bone" />
+            <Skeleton className="sp-bs-logo__plate" />
             <span className="sp-bs-logo__meta">
-              <span className="sp-bs-bone" style={{ width: 96, height: 10 }} />
-              <span className="sp-bs-bone" style={{ width: 64, height: 8 }} />
+              <Skeleton width={96} height={10} />
+              <Skeleton width={64} height={8} />
             </span>
           </div>
         ))}
@@ -87,10 +88,10 @@ function DetailSkeleton({ category }: { category: BrandCategory }) {
       <div className="sp-bs-images" aria-busy="true" aria-label={label}>
         {Array.from({ length: 4 }, (_, i) => (
           <div key={i} className="sp-bs-image" aria-hidden>
-            <span className="sp-bs-image__plate sp-bs-bone" />
+            <Skeleton className="sp-bs-image__plate" />
             <span className="sp-bs-image__meta">
-              <span className="sp-bs-bone" style={{ width: 96, height: 10 }} />
-              <span className="sp-bs-bone" style={{ width: 64, height: 8 }} />
+              <Skeleton width={96} height={10} />
+              <Skeleton width={64} height={8} />
             </span>
           </div>
         ))}
@@ -102,8 +103,8 @@ function DetailSkeleton({ category }: { category: BrandCategory }) {
       <div className="sp-bs-import" aria-busy="true" aria-label={label}>
         {Array.from({ length: 2 }, (_, i) => (
           <div key={i} className="sp-bs-import__leg" aria-hidden>
-            <span className="sp-bs-bone" style={{ width: 120, height: 10 }} />
-            <span className="sp-bs-bone" style={{ width: 160, height: 40 }} />
+            <Skeleton width={120} height={10} />
+            <Skeleton width={160} height={40} />
           </div>
         ))}
       </div>
@@ -115,13 +116,13 @@ function DetailSkeleton({ category }: { category: BrandCategory }) {
       <div className="sp-bs-list__rows">
         {Array.from({ length: 3 }, (_, i) => (
           <div key={i} className="sp-bs-font" aria-hidden>
-            <span className="sp-bs-bone" style={{ width: 40, height: 32 }} />
+            <Skeleton width={40} height={32} />
             <span className="sp-bs-font__id">
-              <span className="sp-bs-bone" style={{ width: 120, height: 10 }} />
-              <span className="sp-bs-bone" style={{ width: 64, height: 8 }} />
+              <Skeleton width={120} height={10} />
+              <Skeleton width={64} height={8} />
             </span>
             <span className="sp-bs-font__specimen">
-              <span className="sp-bs-bone" style={{ width: "60%", height: 12 }} />
+              <Skeleton width="60%" height={12} />
             </span>
           </div>
         ))}

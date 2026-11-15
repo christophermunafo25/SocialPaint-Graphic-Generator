@@ -14,7 +14,7 @@ import { ruleSentences } from "@/lib/brand/resolveStyle";
 import { assignFontRole, type FontRole } from "@/lib/brand/fontRoles";
 import {
   Button,
-  ChoiceChip,
+  Chip,
   Field,
   Input,
   RowContextMenu,
@@ -357,7 +357,7 @@ function cutLabel(style: FontStyle): string {
  * Every property of one style (13:11314): Name, Font, Weight (the cuts the
  * family ships, §9 D10), Color, Fixed size, Max characters, Letter spacing
  * and Line height on the Field primitive, then Use for (§9 D3), Always
- * uppercase and Shrink to fit the box as ChoiceChips, the rules the style
+ * uppercase and Shrink to fit the box as Chips, the rules the style
  * enforces, and Delete style (quiet: Undo brings it back) and Done.
  * "Not enforced" leaves a property for each template to set.
  */
@@ -459,7 +459,6 @@ function StyleEditor({
         <Field label="Font">
           <Select
             ariaLabel="Font"
-            size="lg"
             value={s.font ? `${s.font.source}:${s.font.family}` : NONE}
             options={fontOptions}
             onSelect={(v) => {
@@ -484,7 +483,6 @@ function StyleEditor({
         <Field label="Weight">
           <Select
             ariaLabel="Weight"
-            size="lg"
             value={s.weight === undefined ? NONE : styleKey(current)}
             options={weightOptions}
             onSelect={(v) => {
@@ -504,7 +502,6 @@ function StyleEditor({
         <Field label="Color">
           <Select
             ariaLabel="Color"
-            size="lg"
             value={s.colorKey ?? NONE}
             options={colorOptions}
             onSelect={(v) => update({ colorKey: v || undefined })}
@@ -551,32 +548,32 @@ function StyleEditor({
           Use for
         </span>
         <div role="group" aria-labelledby={useForId} className="sp-bs-chips">
-          <ChoiceChip selected={!s.useFor} onClick={() => s.useFor && setRole(null)}>
+          <Chip selected={!s.useFor} onClick={() => s.useFor && setRole(null)}>
             None
-          </ChoiceChip>
+          </Chip>
           {(["heading", "body"] as const).map((role) => (
-            <ChoiceChip
+            <Chip
               key={role}
               selected={s.useFor === role}
               onClick={() => s.useFor !== role && setRole(role)}
             >
               {ROLE_LABELS[role]}
-            </ChoiceChip>
+            </Chip>
           ))}
         </div>
         <span className="sp-bs-style__toggle-gap" aria-hidden />
-        <ChoiceChip
+        <Chip
           selected={!!s.uppercase}
           onClick={() => update({ uppercase: s.uppercase ? undefined : true })}
         >
           Always uppercase
-        </ChoiceChip>
-        <ChoiceChip
+        </Chip>
+        <Chip
           selected={s.textSizing === "shrink"}
           onClick={() => update({ textSizing: s.textSizing === "shrink" ? undefined : "shrink" })}
         >
           Shrink to fit the box
-        </ChoiceChip>
+        </Chip>
       </div>
 
       {rules.length > 0 && (

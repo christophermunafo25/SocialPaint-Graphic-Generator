@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown } from "lucide-react";
 import { cx, type DemoStateAttr } from "./cx";
+import { fieldTextClass, type FieldSize } from "./Field";
+import { trackInputModality } from "./inputModality";
 
 export interface SelectOption<T extends string> {
   value: T;
@@ -24,8 +26,14 @@ export interface SelectProps<T extends string> {
   onSelect(value: T): void;
   placeholder?: string;
   disabled?: boolean;
-  /** Default 36, Large 40 (the one that sits beside inputs in forms). */
-  size?: "default" | "lg";
+  /** Small 28, Medium 36, Large 44: the Input's heights, so the two line
+   * up side by side. */
+  size?: FieldSize;
+  /** As wide as its value, for a toolbar. Otherwise it fills its row. */
+  hug?: boolean;
+  /** The value is invalid: the select takes the error edge. */
+  "aria-invalid"?: React.AriaAttributes["aria-invalid"];
+  "aria-describedby"?: string;
   /** Floor on the open menu's width. */
   menuMinWidth?: number;
   /** One line pinned under the options (what dimming means). */
@@ -68,15 +76,12 @@ export function useScrollActiveIntoView(
   }, [open, active, surfaceRef]);
 }
 
-type Variant = "field" | "compact";
-
-/** The listbox machinery both selects share (and the builder's
- * InspectorSelect):
- * ArrowDown, Enter or Space open it; the arrows move with wrap-around;
- * Enter or Space commit; Escape and an outside press close it and hand
- * focus back to the trigger. */
-function SelectBase<T extends string>({
-  variant,
+/** Select (Figma 2207:410): the Input's box with a chevron, opening a
+ * listbox. ArrowDown, Enter or Space open it; the arrows move with
+ * wrap-around; Enter or Space commit; Escape and an outside press close it
+ * and hand focus back to the trigger. Typing jumps to a match. The builder's
+ * InspectorSelect shares the helpers above. */
+export function Select<T extends string>({
   id: idProp,
   ariaLabel,
   value,
@@ -84,18 +89,22 @@ function SelectBase<T extends string>({
   onSelect,
   placeholder,
   disabled,
-  size = "default",
+  size = "md",
+  hug = false,
+  "aria-invalid": ariaInvalid,
+  "aria-describedby": ariaDescribedBy,
   menuMinWidth,
   menuCaption,
   className,
   "data-demo-state": demoState,
-}: SelectProps<T> & { variant: Variant }) {
+}: SelectProps<T>) {
   const fallbackId = useId();
   const id = idProp ?? `ui-select${fallbackId}`;
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const surfaceRef = useRef<HTMLDivElement>(null);
+  useEffect(trackInputModality, []);
 
   const close = useCallback(() => {
     setOpen(false);
@@ -179,6 +188,8 @@ function SelectBase<T extends string>({
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? `${id}-list` : undefined}
+        aria-invalid={ariaInvalid}
+        aria-describedby={ariaDescribedBy}
         disabled={disabled}
         onClick={() => setOpen((o) => !o)}
         onKeyDown={(e) => {
@@ -197,16 +208,13 @@ function SelectBase<T extends string>({
             setOpen(true);
           }
         }}
-        className={cx(
-          "ui-reset ui-tint ui-ring",
-          variant === "field" ? "ui-select" : "ui-compact-select",
-          className,
-        )}
-        data-size={variant === "field" ? size : undefined}
+        className={cx("ui-reset ui-fill ui-ring ui-select", className)}
+        data-size={size}
+        data-hug={hug || undefined}
         data-placeholder={selected ? undefined : true}
         data-demo-state={demoState}
       >
-        <span className={cx("ui-select__value", variant === "field" ? "tu-body-m" : "t-label-s")}>
+        <span className={cx("ui-select__value", fieldTextClass(size))}>
           {selected?.label ?? placeholder}
         </span>
         <ChevronDown size={16} className="ui-icon ui-select__chevron" aria-hidden />
@@ -233,7 +241,7 @@ function SelectBase<T extends string>({
             lastGroup = group;
             return (
               <React.Fragment key={o.value}>
-                {header && <div className="ui-menu-label t-label-xs">{group}</div>}
+                {header && <div className="ui-menu-label t-mono-eyebrow">{group}</div>}
                 <div
                   id={`${id}-opt-${i}`}
                   role="option"
@@ -258,20 +266,9 @@ function SelectBase<T extends string>({
               </React.Fragment>
             );
           })}
-          {menuCaption && <p className="ui-menu__caption tu-caption-m">{menuCaption}</p>}
+          {menuCaption && <p className="ui-menu__caption t-caption-m">{menuCaption}</p>}
         </div>
       )}
     </>
   );
-}
-
-/** Select (Figma 49:40): input/fill, the pressed tint while open. */
-export function Select<T extends string>(props: SelectProps<T>) {
-  return <SelectBase variant="field" {...props} />;
-}
-
-/** Compact select (Figma 99:568): 28 tall on surface/sunken, for toolbars
- * (the composer's platform). */
-export function CompactSelect<T extends string>(props: Omit<SelectProps<T>, "size">) {
-  return <SelectBase variant="compact" {...props} />;
 }

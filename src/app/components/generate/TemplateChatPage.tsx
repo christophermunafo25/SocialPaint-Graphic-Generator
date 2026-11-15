@@ -140,7 +140,7 @@ export function TemplateChatPage({
         <div className="sp-chat-start">
           <div className="sp-emptystate sp-tchat-gone" role="status">
             <p className="sp-emptystate__title">This template isn't available any more.</p>
-            <Button kind="neutralOnPage" size="sm" onClick={brandTemplates}>
+            <Button kind="neutral" size="sm" onClick={brandTemplates}>
               Back to Brand Templates
             </Button>
           </div>

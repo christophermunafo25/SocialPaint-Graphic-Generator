@@ -1,74 +1,30 @@
 /* ==========================================================================
-   Primitives: one component per Master component in the Figma file "Master
-   UX-UI" (page Master UI Elements, 24:674), with their interaction states.
-   The React side is src/app/components/primitives/. Values come from
-   docs/design/new-look/PHASE-2-COMPONENTS.md; states from RULES.md §6 and
-   the Interaction states table (105:641).
+   Primitives: one component per component on the Components page
+   (4012:1193) of the Figma file "Master UX UI New Brand (Copy)", with its
+   states. The React side is src/app/components/primitives/. Values were read
+   from the file for docs/design/new-brand/PHASE-2.md, and states follow
+   docs/design/new-brand/RULES.md section 6.
 
-   Every rule here reads semantic tokens, radius and spacing tokens, the
+   The rules for those components read semantic tokens, the Scale tokens, the
    elevation composites and the .t-* classes from tokens.css. Nothing here
    declares a token, so tokens:check stays green; component-local custom
    properties start with --_ so they can never collide with one.
+
+   The Product components that also live in primitives/ (the platform chip,
+   the result card, the look tile, the composer, the message bubble, the
+   settings card, the stat and the option tile) keep their earlier rules,
+   and the earlier names those rules read, until their own phase.
 
    [data-demo-state] pairs every state selector so /dev/ui can show a state
    without a pointer or keyboard. Only /dev/ui sets it.
    ========================================================================== */
 
-/* ── Shared state mechanics ─────────────────────────────────────────────────
-   Fill and tint: a component sets --_fill (its base) and, where they differ
-   from the neutral pair, --_hover and --_pressed. Hover and pressed lay the
-   tint over the fill and change nothing else. An open menu (a control with
-   aria-haspopup, expanded) holds the pressed tint; a disclosure such as
-   the sidebar's collapse button does not. A selected item ([data-selected]) keeps its look on hover. */
-.ui-tint {
-  --_fill: transparent;
-  --_tint: transparent;
-  background: linear-gradient(var(--_tint), var(--_tint)), var(--_fill);
-}
-.ui-tint:not(:disabled, [aria-disabled="true"], [data-selected]):hover,
-.ui-tint[data-demo-state="hover"] {
-  --_tint: var(--_hover, var(--state-hover));
-}
-.ui-tint:not(:disabled, [aria-disabled="true"], [data-selected]):active,
-.ui-tint[data-demo-state="pressed"],
-.ui-tint[aria-haspopup]:not([aria-haspopup="false"])[aria-expanded="true"],
-.ui-tint[data-demo-state="open"] {
-  --_tint: var(--_pressed, var(--state-pressed));
-}
-
-/* Disabled is 40% with no hover (the Stepper button sets 0.32). */
-.ui-tint:disabled,
-.ui-tint[aria-disabled="true"],
-.ui-disabled {
-  opacity: var(--_disabled-opacity, 0.4);
-  cursor: default;
-}
-
-/* Focus. The default is the global ring (socialpaint.css :focus-visible):
-   --focus-width of --ring at --focus-offset. .ui-ring repeats it for the
-   demo state. .ui-ring-tight draws it against the edge, composed with any
-   shadow the component carries (--_shadow); the transparent outline is the
-   forced-colors fallback. Text fields take the global ring too:
-   .ui-ring-none is still on their markup and no longer removes it. */
-.ui-ring[data-demo-state="focus"] {
-  outline: var(--focus-width) solid var(--ring);
-  outline-offset: var(--focus-offset);
-}
-.ui-ring-tight {
-  box-shadow: var(--_shadow, 0 0 0 0 transparent);
-}
-.ui-ring-tight:focus-visible,
-.ui-ring-tight[data-demo-state="focus"] {
-  outline: 2px solid transparent;
-  outline-offset: 0;
-  box-shadow:
-    0 0 0 var(--focus-width) var(--ring),
-    var(--_shadow, 0 0 0 0 transparent);
-}
-
-/* Every primitive: no inherited box model surprises, and labels never wrap
+/* ── Reset ──────────────────────────────────────────────────────────────────
+   Every primitive: no inherited box model surprises, and labels never wrap
    (house rule: one-line button text). The font reset has no specificity,
-   so a .t-* class on the same element (an input's) always wins over it. */
+   so a .t-* class on the same element (an input's) always wins over it.
+   It comes before the state rules: both are one class deep, and the state
+   rules' color has to win over the reset's. */
 :where(.ui-reset) {
   font: inherit;
 }
@@ -95,256 +51,413 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   display: block;
 }
 
-/* ── Button (43:123) ───────────────────────────────────────────────────────
-   Large and Medium sit at the field radius, Default and Small at the control
-   radius, as drawn. */
+/* ── Shared state mechanics ─────────────────────────────────────────────────
+   Fill by state. A component names the token each of its states reads, and
+   these rules alone set background and color, so the order of the component
+   rules below never decides a state:
+
+     --_fill      at rest (none when unset)
+     --_hover     hover (state/hover when unset)
+     --_pressed   pressed (state/pressed when unset)
+     --_selected  chosen, or holding an open menu (state/selected when unset)
+     --_disabled  disabled (action/disabled when unset)
+     --_fg, --_fg-hover, --_fg-selected   the label and icon color
+
+   Each state is a color of its own. Nothing is laid over a fill. A control
+   with a fill sets all of its states; one without (a ghost button, a row, a
+   nav or menu item) leaves them unset. A chosen item ([data-selected]) keeps
+   its look on hover, and so does a control whose menu is open (aria-haspopup
+   and expanded): an open menu counts as selected for the control that opened
+   it. Disabled takes its own colors and never dims.
+
+   The names are reset on every .ui-fill element, so a control inside
+   another (a stepper's buttons in its capsule) never inherits its parent's
+   states. Component rules come after this one and set what they need. */
+.ui-fill {
+  --_fill: initial;
+  --_hover: initial;
+  --_pressed: initial;
+  --_selected: initial;
+  --_disabled: initial;
+  --_fg: initial;
+  --_fg-hover: initial;
+  --_fg-selected: initial;
+  background: var(--_fill, transparent);
+  color: var(--_fg, inherit);
+}
+.ui-fill:not(:disabled, [aria-disabled="true"], [data-selected]):hover,
+.ui-fill[data-demo-state="hover"] {
+  background: var(--_hover, var(--state-hover));
+  color: var(--_fg-hover, var(--_fg, inherit));
+}
+.ui-fill:not(:disabled, [aria-disabled="true"], [data-selected]):active,
+.ui-fill[data-demo-state="pressed"] {
+  background: var(--_pressed, var(--state-pressed));
+  color: var(--_fg-hover, var(--_fg, inherit));
+}
+.ui-fill[data-selected],
+.ui-fill[data-demo-state="selected"],
+.ui-fill[aria-haspopup]:not([aria-haspopup="false"])[aria-expanded="true"],
+.ui-fill[data-demo-state="open"] {
+  background: var(--_selected, var(--state-selected));
+  color: var(--_fg-selected, var(--_fg-hover, var(--_fg, inherit)));
+}
+.ui-fill:disabled,
+.ui-fill[aria-disabled="true"] {
+  background: var(--_disabled, var(--action-disabled));
+  color: var(--text-disabled);
+  cursor: default;
+}
+
+/* The earlier mechanics, for what has not been rebuilt (the Product
+   components above, and a few page-level controls): a tint laid over the
+   fill, and disabled at 40%. */
+.ui-tint {
+  --_fill: transparent;
+  --_tint: transparent;
+  background: linear-gradient(var(--_tint), var(--_tint)), var(--_fill);
+}
+.ui-tint:not(:disabled, [aria-disabled="true"], [data-selected]):hover,
+.ui-tint[data-demo-state="hover"] {
+  --_tint: var(--_hover, var(--state-hover));
+}
+.ui-tint:not(:disabled, [aria-disabled="true"], [data-selected]):active,
+.ui-tint[data-demo-state="pressed"],
+.ui-tint[aria-haspopup]:not([aria-haspopup="false"])[aria-expanded="true"],
+.ui-tint[data-demo-state="open"] {
+  --_tint: var(--_pressed, var(--state-pressed));
+}
+.ui-tint:disabled,
+.ui-tint[aria-disabled="true"] {
+  opacity: var(--_disabled-opacity, 0.4);
+  cursor: default;
+}
+
+/* Focus. Every control takes the global ring (socialpaint.css
+   :focus-visible): stroke/focus of border/focus, focus/offset outside the
+   element. .ui-ring repeats it for the demo state. .ui-ring-tight is the
+   earlier ring drawn against the edge, for what has not been rebuilt. */
+.ui-ring[data-demo-state="focus"] {
+  outline: var(--stroke-focus) solid var(--border-focus);
+  outline-offset: var(--focus-offset);
+}
+.ui-ring-tight {
+  box-shadow: var(--_shadow, 0 0 0 0 transparent);
+}
+.ui-ring-tight:focus-visible,
+.ui-ring-tight[data-demo-state="focus"] {
+  outline: 2px solid transparent;
+  outline-offset: 0;
+  box-shadow:
+    0 0 0 var(--focus-width) var(--ring),
+    var(--_shadow, 0 0 0 0 transparent);
+}
+
+/* ── Button (2206:542) ─────────────────────────────────────────────────────
+   Small 28, Medium 36, Large 44, all at radius/sm. Neutral carries a
+   hairline edge, which sits inside the box and takes its own room, as the
+   file draws it. */
 .ui-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: var(--_h);
-  padding: 0 var(--_px);
-  gap: var(--_gap);
-  border-radius: var(--_r);
-  color: var(--_fg);
-}
-.ui-btn[data-size="lg"],
-.ui-btn[data-size="md"] {
-  --_h: 44px;
-  --_px: 18px; /* off the scale, as drawn (43:3) */
-  --_gap: var(--space-2xs);
-  --_r: var(--radius-control-md);
-}
-.ui-btn[data-size="md"] {
-  --_h: 40px;
-}
-.ui-btn[data-size="default"] {
-  --_h: 36px;
-  --_px: var(--space-sm);
-  --_gap: 6px; /* off the scale, as drawn (43:13) */
-  --_r: var(--radius-control);
+  border-radius: var(--radius-sm);
 }
 .ui-btn[data-size="sm"] {
-  --_h: 28px;
-  --_px: 10px; /* off the scale, as drawn (43:18) */
-  --_gap: 6px;
-  --_r: var(--radius-control);
+  height: var(--size-control-sm);
+  padding: 0 var(--space-12);
+  gap: var(--space-4);
+}
+.ui-btn[data-size="md"] {
+  height: var(--size-control-md);
+  padding: 0 var(--space-16);
+  gap: var(--space-6);
+}
+.ui-btn[data-size="lg"] {
+  height: var(--size-control-lg);
+  padding: 0 var(--space-20);
+  gap: var(--space-8);
 }
 .ui-btn[data-kind="primary"] {
-  --_fill: var(--btn-primary-bg);
-  --_fg: var(--btn-primary-fg);
-  --_hover: var(--state-hover-inverse);
-  --_pressed: var(--state-pressed-inverse);
+  --_fill: var(--action-primary);
+  --_hover: var(--action-primary-hover);
+  --_pressed: var(--action-primary-pressed);
+  --_selected: var(--action-primary-pressed);
+  --_fg: var(--action-on-primary);
 }
 .ui-btn[data-kind="neutral"] {
-  --_fill: var(--surface-sunken);
-  --_fg: var(--text-strong);
+  border: var(--stroke-hairline) solid var(--border-strong);
+  --_fill: var(--action-neutral);
+  --_hover: var(--action-neutral-hover);
+  --_pressed: var(--action-neutral-pressed);
+  --_selected: var(--action-neutral-pressed);
+  --_fg: var(--text-primary);
 }
-.ui-btn[data-kind="neutralOnPage"] {
-  --_fill: var(--control-fill);
-  --_fg: var(--text-strong);
+/* Disabled drops the edge. It keeps its room, so the button does not change
+   width as it turns off. */
+.ui-btn[data-kind="neutral"]:disabled,
+.ui-btn[data-kind="neutral"][aria-disabled="true"] {
+  border-color: transparent;
+}
+.ui-btn[data-kind="ghost"] {
+  --_disabled: transparent;
+  --_fg: var(--text-primary);
 }
 .ui-btn[data-kind="destructive"] {
-  --_fill: var(--state-error);
-  --_fg: var(--text-inverse);
-  --_hover: var(--state-hover-on-color);
-  --_pressed: var(--state-pressed-on-color);
+  --_fill: var(--action-danger);
+  --_hover: var(--action-danger-hover);
+  --_pressed: var(--action-danger-pressed);
+  --_selected: var(--action-danger-pressed);
+  --_fg: var(--action-on-danger);
 }
 
-/* ── Send button (44:9) ── */
+/* ── Send button (2206:754) ── */
 .ui-send {
   display: inline-flex;
+  flex: none;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-pill);
-  --_fill: var(--accent-green);
-  --_hover: var(--state-hover-on-color);
-  --_pressed: var(--state-pressed-on-color);
-  color: var(--field-green);
-}
-.ui-send__stop {
-  width: 12px;
-  height: 12px;
-  border-radius: var(--radius-xs);
-  background: currentColor;
+  width: var(--size-control-md);
+  height: var(--size-control-md);
+  border-radius: var(--radius-full);
+  --_fill: var(--action-accent);
+  --_hover: var(--action-accent-hover);
+  --_pressed: var(--action-accent-pressed);
+  --_fg: var(--action-on-accent);
 }
 
-/* ── Attach button (102:569) ── */
-.ui-attach {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-control);
-  --_fill: var(--surface-inverse);
-  --_hover: var(--state-hover-inverse);
-  --_pressed: var(--state-pressed-inverse);
-  /* The glyph takes the raised surface's colour, as drawn: white on ink in
-     Light, ink on white in Dark. */
-  color: var(--surface-raised);
-}
-
-/* ── Icon button (95:516) ── */
+/* ── Icon button (2206:686) ────────────────────────────────────────────────
+   Filled is a circle on action/neutral with a hairline edge; Selected holds
+   its pressed fill. Ghost has no fill and the control radius; Selected is
+   state/selected. */
 .ui-iconbtn {
   display: inline-flex;
+  flex: none;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  --_fg: var(--text-primary);
+}
+.ui-iconbtn[data-size="sm"] {
+  width: var(--size-control-sm);
+  height: var(--size-control-sm);
+}
+.ui-iconbtn[data-size="md"] {
+  width: var(--size-control-md);
+  height: var(--size-control-md);
 }
 .ui-iconbtn[data-variant="filled"] {
-  border-radius: var(--radius-pill);
-  --_fill: var(--surface-sunken);
-  color: var(--text-strong);
+  border: var(--stroke-hairline) solid var(--border-strong);
+  border-radius: var(--radius-full);
+  --_fill: var(--action-neutral);
+  --_hover: var(--action-neutral-hover);
+  --_pressed: var(--action-neutral-pressed);
+  --_selected: var(--action-neutral-pressed);
+}
+.ui-iconbtn[data-variant="filled"]:disabled,
+.ui-iconbtn[data-variant="filled"][aria-disabled="true"] {
+  border-color: transparent;
 }
 .ui-iconbtn[data-variant="ghost"] {
-  border-radius: var(--radius-control);
-  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  --_disabled: transparent;
 }
-.ui-iconbtn[data-variant="ghost"][data-selected],
-.ui-iconbtn[data-variant="ghost"][data-demo-state="selected"] {
-  --_fill: var(--state-selected);
-  color: var(--text-strong);
-}
-
-/* ── Row menu trigger (44:29): surface/sunken while its menu is open, in
-   place of the pressed tint other menus hold. ── */
-.ui-rowmenu {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-control);
-  color: var(--text-secondary);
-}
-.ui-rowmenu[aria-expanded="true"],
-.ui-rowmenu[data-demo-state="open"] {
-  --_fill: var(--surface-sunken);
-  --_tint: transparent;
-}
-
-/* ── Theme toggle (102:574): the sun in Light, the moon in Dark, by the
-   nearest [data-theme]. Each deeper level of nesting wins by specificity;
-   three levels cover the app's html, a themed panel and a theme inside it
-   (/dev/ui's Dark column inside its Light table). ── */
-.ui-theme-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-pill);
-  --_fill: var(--surface-sunken);
-  color: var(--text-secondary);
-}
-[data-theme="light"] .ui-theme-toggle__moon,
-[data-theme="dark"] .ui-theme-toggle__sun,
-[data-theme="dark"] [data-theme="light"] .ui-theme-toggle__moon,
-[data-theme="light"] [data-theme="dark"] .ui-theme-toggle__sun {
+/* A themed pair (the theme toggle): the light glyph in Light and the dark
+   one in Dark, by the nearest [data-theme]. Each deeper level of nesting
+   wins by specificity; three levels cover the app's html, a themed panel
+   and a theme inside it (/dev/ui's Dark column inside its Light table). */
+[data-theme="light"] .ui-iconbtn__dark,
+[data-theme="dark"] .ui-iconbtn__light,
+[data-theme="dark"] [data-theme="light"] .ui-iconbtn__dark,
+[data-theme="light"] [data-theme="dark"] .ui-iconbtn__light {
   display: none;
 }
-[data-theme="dark"] [data-theme="light"] .ui-theme-toggle__sun,
-[data-theme="light"] [data-theme="dark"] .ui-theme-toggle__moon {
+[data-theme="dark"] [data-theme="light"] .ui-iconbtn__light,
+[data-theme="light"] [data-theme="dark"] .ui-iconbtn__dark {
   display: block;
 }
-[data-theme="dark"] [data-theme="light"] [data-theme="dark"] .ui-theme-toggle__sun,
-[data-theme="light"] [data-theme="dark"] [data-theme="light"] .ui-theme-toggle__moon {
+[data-theme="dark"] [data-theme="light"] [data-theme="dark"] .ui-iconbtn__light,
+[data-theme="light"] [data-theme="dark"] [data-theme="light"] .ui-iconbtn__dark {
   display: none;
 }
-[data-theme="dark"] [data-theme="light"] [data-theme="dark"] .ui-theme-toggle__moon,
-[data-theme="light"] [data-theme="dark"] [data-theme="light"] .ui-theme-toggle__sun {
+[data-theme="dark"] [data-theme="light"] [data-theme="dark"] .ui-iconbtn__dark,
+[data-theme="light"] [data-theme="dark"] [data-theme="light"] .ui-iconbtn__light {
   display: block;
 }
 
-/* ── Stepper button (100:544) and Stepper (100:545) ── */
-.ui-stepbtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-pill);
-  color: var(--text-strong);
-  --_disabled-opacity: 0.32;
-}
+/* ── Stepper (2211:227): two ghost Small icon buttons around the value, in
+   a capsule on surface/field. ── */
 .ui-stepper {
   display: inline-flex;
+  flex: none;
   align-items: center;
-  height: 28px;
-  padding: 0 3px 0 9px; /* off the scale, as drawn (100:545) */
-  gap: 6px;
-  border-radius: var(--radius-control);
-  background: var(--surface-sunken);
-  color: var(--text-strong);
+  height: var(--size-control-md);
+  padding: var(--space-4);
+  border-radius: var(--radius-full);
+  background: var(--surface-field);
+  color: var(--text-primary);
   white-space: nowrap;
-}
-.ui-stepper__controls {
-  display: inline-flex;
-  align-items: center;
 }
 .ui-stepper__value {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 28px;
+  width: 20px; /* as drawn (2211:227): the value's own box, not a spacing step */
+  height: var(--size-control-sm);
   overflow: hidden; /* the roll leaves and arrives out of sight */
 }
 .ui-stepper__num {
   display: inline-block;
 }
 
-/* ── Input (48:37) ─────────────────────────────────────────────────────────
-   No border. Focus is the global 2 px ring. Small sits at the control
-   radius, as drawn (48:23). */
+/* ── Input (2207:263) and Text area (2207:298) ───────────────────────────────
+   On surface/field at radius/sm, with no edge at rest. Hover adds a hairline
+   edge and an invalid value the error edge; both are drawn inside the box, so
+   the text never shifts. Focus is the global ring. Small is 28 with Body/S;
+   Medium 36 and Large 44 with Body/M.
+
+   An input's and a text area's type is set here from the style's variables,
+   not with a .t-* class. The classes trim to cap height: Chromium applies
+   the trim to an input's inner box and clips accents and descenders, and in
+   a text area it moves the value but not the placeholder. */
 .ui-input {
   display: block;
   width: 100%;
-  height: 40px;
-  padding: 0 var(--space-xs);
-  border-radius: var(--radius-control-md);
-  --_fill: var(--input-bg);
-  color: var(--text-strong);
-  caret-color: var(--text-strong);
+  border-radius: var(--radius-sm);
+  --_fill: var(--surface-field);
+  --_hover: var(--surface-field);
+  --_pressed: var(--surface-field);
+  --_fg: var(--text-primary);
+  caret-color: var(--text-primary);
   white-space: normal;
 }
-.ui-input::placeholder {
+.ui-input[data-size="sm"] {
+  height: var(--size-control-sm);
+  padding: 0 var(--space-8);
+}
+.ui-input[data-size="md"] {
+  height: var(--size-control-md);
+  padding: 0 var(--space-12);
+}
+.ui-input[data-size="lg"] {
+  height: var(--size-control-lg);
+  padding: 0 var(--space-12);
+}
+/* The type has no specificity, so a caller's class on the input (a mono
+   value) still wins. It follows the reset's `font: inherit` in this file. */
+:where(.ui-input[data-size="sm"]) {
+  font: var(--type-body-s);
+  letter-spacing: var(--type-body-s-tracking);
+}
+:where(.ui-input[data-size="md"], .ui-input[data-size="lg"], .ui-input[data-size="multiline"]) {
+  font: var(--type-body-m);
+  letter-spacing: var(--type-body-m-tracking);
+}
+/* A text area is 96 tall and grows with its text, with no grip. The file
+   puts 12 between the box and the capitals of the first and the last line.
+   The lines keep their boxes here, so the padding gives the half-leading
+   back, and the placeholder and the value sit on the same line. */
+.ui-input[data-size="multiline"] {
+  height: auto;
+  min-height: 96px; /* as drawn (2207:298) */
+  padding: calc(var(--space-12) - (1lh - 1cap) / 2) var(--space-12);
+  field-sizing: content;
+  resize: none;
+}
+/* Where a text area cannot grow on its own, it keeps the grip. */
+@supports not (field-sizing: content) {
+  .ui-input[data-size="multiline"] {
+    resize: vertical;
+  }
+}
+.ui-input::placeholder,
+.ui-input__control::placeholder {
   color: var(--text-secondary);
   opacity: 1;
 }
-.ui-input[data-size="sm"] {
-  height: 32px;
-  padding: 0 10px; /* off the scale, as drawn (48:23) */
-  border-radius: var(--radius-control);
+.ui-input:disabled::placeholder,
+.ui-input__control:disabled::placeholder {
+  color: var(--text-disabled);
 }
-.ui-input[data-size="multiline"] {
-  height: auto;
-  min-height: 100px;
-  padding: 10px var(--space-xs); /* 10 is off the scale, as drawn (48:30) */
-  resize: vertical;
+.ui-input:not(:disabled):hover,
+.ui-input[data-demo-state="hover"] {
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-strong);
+}
+.ui-input[aria-invalid="true"]:not(:disabled),
+.ui-input--box:has(.ui-input__control[aria-invalid="true"]) {
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--feedback-error);
+}
+/* With a leading icon (and Search, 2207:455) the input sits in a box that
+   carries the field's look and states. The ring is the box's, drawn while
+   the input inside has keyboard focus. */
+.ui-input--box {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  cursor: text;
+}
+.ui-input__icon {
+  color: var(--text-secondary);
+}
+.ui-input__control {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  background: transparent;
+  color: inherit;
+  letter-spacing: inherit;
+  caret-color: var(--text-primary);
+}
+.ui-input__control:focus-visible {
+  outline: none;
+}
+.ui-input--box:has(.ui-input__control:focus-visible) {
+  outline: var(--stroke-focus) solid var(--border-focus);
+  outline-offset: var(--focus-offset);
+}
+.ui-input--box:has(.ui-input__control:disabled) {
+  background: var(--action-disabled);
+  box-shadow: none;
+  color: var(--text-disabled);
+  cursor: default;
+}
+.ui-input--box:has(.ui-input__control:disabled) .ui-input__icon {
+  color: var(--text-disabled);
+}
+.ui-input__control::-webkit-search-cancel-button {
+  display: none;
+}
+/* Search's clear button: a 16 glyph whose hit area reaches 24. */
+.ui-input__clear {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  border-radius: var(--radius-xs);
+  color: var(--text-secondary);
+}
+.ui-input__clear::after {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--space-4));
 }
 
-/* ── Field (48:38): label, control, and the error 6 under it ── */
+/* ── Field (4015:628): the label row, 6 over one control, and the error 6
+   under it. The row's text is trimmed, so the row is as tall as its capitals. ── */
 .ui-field {
   display: flex;
   flex-direction: column;
-  gap: 6px; /* off the scale, as drawn (48:38) */
+  gap: var(--space-6);
 }
 .ui-field__row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-xs);
+  gap: var(--space-8);
   min-width: 0;
 }
 .ui-field__lead {
   display: flex;
   align-items: center;
-  gap: var(--space-2xs);
+  gap: var(--space-8);
   min-width: 0;
 }
 .ui-field__label {
@@ -353,69 +466,93 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 .ui-field__end {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: var(--space-12);
   flex: none;
 }
 .ui-field__marker {
   color: var(--text-secondary);
   white-space: nowrap;
 }
-/* Edited: a 6 dot on state/selection, 5 before the word (217:2271). */
+/* Edited: a 6 dot on editor/selection before the word. */
 .ui-field__edited {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--space-4);
 }
 .ui-field__dot {
   width: 6px;
   height: 6px;
-  border-radius: var(--radius-pill);
-  background: var(--state-selection);
+  border-radius: var(--radius-full);
+  background: var(--editor-selection);
 }
+/* A text action. Its box is its capitals, so it is padded out and pulled
+   back by the same amount: the ring clears the letters, the hit area
+   reaches 24, and the row does not grow. */
 .ui-field__action {
-  border-radius: var(--radius-control);
-  color: var(--text-strong);
+  position: relative;
+  margin: calc(-1 * var(--space-4));
+  padding: var(--space-4);
+  border-radius: var(--radius-xs);
+  color: var(--text-primary);
   white-space: nowrap;
+}
+.ui-field__action::after {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--space-4)) 0;
 }
 .ui-field__error {
   margin: 0;
-  color: var(--state-error);
+  color: var(--feedback-error-text);
 }
 
-/* ── Upload (216:2291): the photo field's control. One button, 56 tall on
-   input/fill; the keyboard ring sits around the row. ── */
+/* ── Upload (2211:278): the photo field's control. One button, 56 tall on
+   surface/field at radius/md; hover and a file dragged over it add the
+   hairline edge, and the keyboard ring sits around the row. ── */
 .ui-upload {
-  box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: 10px; /* off the scale, as drawn (216:2265) */
+  gap: var(--space-12);
   width: 100%;
-  height: 56px;
-  padding: var(--space-2xs) var(--space-xs) var(--space-2xs) var(--space-2xs);
-  border-radius: var(--radius-control-md);
-  --_fill: var(--input-bg);
-  color: var(--text-strong);
+  height: 56px; /* as drawn (2211:278) */
+  padding: var(--space-8);
+  border-radius: var(--radius-md);
+  --_fill: var(--surface-field);
+  --_hover: var(--surface-field);
+  --_pressed: var(--surface-field);
+  --_fg: var(--text-primary);
   text-align: left;
-  cursor: pointer;
+}
+.ui-upload[data-value="filled"] {
+  padding-right: var(--space-12);
+}
+.ui-upload:not(:disabled):hover,
+.ui-upload[data-demo-state="hover"] {
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-strong);
+}
+.ui-upload[aria-invalid="true"]:not(:disabled) {
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--feedback-error);
 }
 .ui-upload__tile {
   flex: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
+  width: 40px; /* as drawn (2211:278) */
   height: 40px;
-  border-radius: var(--radius-control);
-  background: var(--surface-raised);
-  color: var(--text-strong);
+  border-radius: var(--radius-xs);
+  color: var(--text-secondary);
 }
 .ui-upload__thumb {
   flex: none;
   width: 40px;
   height: 40px;
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-xs);
+  background: var(--surface-raised);
   object-fit: cover;
 }
+/* One line each. The text is trimmed to its capitals, so the clip box is
+   widened past the descenders without moving the line. */
 .ui-upload__placeholder,
 .ui-upload__name {
   flex: 1;
@@ -423,99 +560,128 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding-block: 0.3em;
+  margin-block: -0.3em;
 }
 .ui-upload__placeholder {
   color: var(--text-secondary);
+}
+.ui-upload:disabled .ui-upload__tile,
+.ui-upload:disabled .ui-upload__placeholder {
+  color: inherit;
 }
 .ui-upload__replace {
   flex: none;
 }
 
-/* ── Select (49:40) and Compact select (99:568) ── */
-.ui-select,
-.ui-compact-select {
+/* ── Select (2207:410): the Input's box at each size, with the chevron on
+   text/secondary. Hover adds the hairline edge. Open keeps it and shows the
+   ring, as drawn, while focus is in the list. ── */
+.ui-select {
   display: inline-flex;
   align-items: center;
-  color: var(--text-strong);
-}
-.ui-select {
+  gap: var(--space-8);
   width: 100%;
-  height: 36px;
-  padding: 0 var(--space-xs);
-  gap: 2px; /* as drawn (49:16) */
-  border-radius: var(--radius-control-md);
-  --_fill: var(--input-bg);
+  border-radius: var(--radius-sm);
+  --_fill: var(--surface-field);
+  --_hover: var(--surface-field);
+  --_pressed: var(--surface-field);
+  --_selected: var(--surface-field);
+  --_fg: var(--text-primary);
+}
+.ui-select[data-size="sm"] {
+  height: var(--size-control-sm);
+  padding: 0 var(--space-8);
+}
+.ui-select[data-size="md"] {
+  height: var(--size-control-md);
+  padding: 0 var(--space-12);
 }
 .ui-select[data-size="lg"] {
-  height: 40px;
+  height: var(--size-control-lg);
+  padding: 0 var(--space-12);
 }
+/* In a toolbar the select is as wide as its value. */
+.ui-select[data-hug] {
+  width: auto;
+}
+.ui-select:not(:disabled):hover,
+.ui-select[data-demo-state="hover"],
+.ui-select[aria-expanded="true"],
+.ui-select[data-demo-state="open"] {
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-strong);
+}
+.ui-select[aria-expanded="true"],
+.ui-select[data-demo-state="open"] {
+  outline: var(--stroke-focus) solid var(--border-focus);
+  outline-offset: var(--focus-offset);
+}
+.ui-select[aria-invalid="true"]:not(:disabled) {
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--feedback-error);
+}
+/* One line. The value is trimmed to its capitals, so the clip box is
+   widened past the descenders without moving the line. */
 .ui-select__value {
   flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   text-align: left;
+  padding-block: 0.3em;
+  margin-block: -0.3em;
 }
-.ui-select[data-placeholder] .ui-select__value {
+.ui-select[data-placeholder]:not(:disabled) .ui-select__value {
   color: var(--text-secondary);
 }
-.ui-select .ui-select__chevron {
+.ui-select:not(:disabled) .ui-select__chevron {
   color: var(--text-secondary);
 }
-/* The compact value is trimmed Button/S, whose descenders sit outside its
-   box; the field select's ellipsis clip would cut them off. */
-.ui-compact-select .ui-select__value {
-  overflow: visible;
-}
-.ui-compact-select {
-  height: 28px;
-  padding: 0 6px 0 9px; /* off the scale, as drawn (99:556) */
-  gap: 6px;
-  border-radius: var(--radius-control);
-  --_fill: var(--surface-sunken);
-}
 
-/* ── Filter (99:547) ── */
-.ui-filter {
-  display: inline-flex;
-  align-items: center;
-  height: 36px;
-  padding: 0 12px 0 14px; /* off the scale, as drawn (50:42) */
-  gap: 10px;
-  border-radius: var(--radius-control-md);
-  --_fill: var(--control-fill);
-  color: var(--text-strong);
-}
-
-/* ── Search field (50:62). Open, the field takes the global focus ring
-   and no tint. ── */
+/* ── Search field (50:62): a 50 square button that opens into a field. The
+   file still draws it with its own measures and a hover laid over the fill;
+   it is built as drawn. ── */
 .ui-search {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 50px;
   height: 50px;
-  padding: 8px 6px; /* off the scale, as drawn (50:60) */
-  border-radius: var(--radius-control-md);
-  --_fill: var(--control-fill);
-  color: var(--text-strong);
+  padding: 8px 6px; /* off the scale, as drawn (50:62) */
+  border: var(--stroke-hairline) solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  --_fill: var(--action-neutral);
+  --_hover: linear-gradient(var(--state-hover), var(--state-hover)), var(--action-neutral);
+  --_pressed: linear-gradient(var(--state-pressed), var(--state-pressed)), var(--action-neutral);
+  --_fg: var(--text-primary);
 }
 .ui-search--open {
   box-sizing: border-box;
   justify-content: flex-start;
   width: 440px;
   max-width: 100%;
-  padding: 8px 13px 8px 15px; /* off the scale, as drawn (50:61) */
+  /* 8 and 15 from the field's outer edge, off the scale, as drawn (50:62).
+     The hairline is 1 of each. */
+  padding: calc(8px - var(--stroke-hairline)) calc(15px - var(--stroke-hairline));
   gap: 10px;
-  background: var(--control-fill);
+  background: var(--action-neutral);
+  color: var(--text-primary);
+}
+.ui-search--open:has(.ui-search__input:focus-visible) {
+  outline: var(--stroke-focus) solid var(--border-focus);
+  outline-offset: var(--focus-offset);
 }
 .ui-search__input {
   flex: 1;
   min-width: 0;
   height: 100%;
+  font: var(--type-body-m);
+  letter-spacing: var(--type-body-m-tracking);
   background: transparent;
-  color: var(--text-strong);
-  caret-color: var(--text-strong);
+  color: var(--text-primary);
+  caret-color: var(--text-primary);
+}
+.ui-search__input:focus-visible {
+  outline: none;
 }
 .ui-search__input::placeholder {
   color: var(--text-secondary);
@@ -530,7 +696,7 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   display: inline-flex;
   width: 14px;
   height: 14px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-full);
   color: var(--text-secondary);
 }
 .ui-search__clear::after {
@@ -539,20 +705,21 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   inset: -5px;
 }
 
-/* ── Menu (57:423), Menu item (96:507), Menu label (57:419), Menu divider
-   (57:421). Shared by Menu, Select and Compact select. Focus in a menu is
-   its hover look. ── */
+/* ── Menu (2213:159) and Menu item (2213:157). Shared by Menu and the
+   Select's list. The item under the pointer or the keyboard takes
+   state/hover; the keyboard's also takes the ring. ── */
 .ui-menu {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 2px; /* as drawn (57:423) */
+  gap: var(--space-2);
   min-width: 200px;
-  padding: 6px; /* off the scale, as drawn (57:423) */
-  border-radius: var(--radius-menu);
+  padding: var(--space-8);
+  border: var(--stroke-hairline) solid var(--border-raised);
+  border-radius: var(--radius-lg);
   background: var(--surface-raised);
-  box-shadow: var(--elevation-medium);
-  color: var(--text-strong);
+  box-shadow: var(--elevation-2-overlay);
+  color: var(--text-primary);
   outline: none;
 }
 .ui-menu--floating {
@@ -561,30 +728,29 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   max-height: 320px;
   overflow-y: auto;
 }
+.ui-menu--popover {
+  z-index: 500; /* the popover layer; z-index is not a Figma token */
+}
 .ui-menu__caption {
   margin: 0;
-  padding: var(--space-2xs) 10px var(--space-3xs);
+  padding: var(--space-8) var(--space-12) var(--space-4);
   color: var(--text-secondary);
   white-space: normal;
 }
 .ui-menu-item {
   box-sizing: border-box;
   display: flex;
+  flex: none;
   align-items: center;
-  height: 34px;
-  padding: var(--space-2xs) var(--space-2xs) var(--space-2xs) 10px; /* 10 as drawn (57:410) */
-  gap: 10px;
-  border-radius: var(--radius-control);
-  color: var(--text-strong);
+  height: var(--size-control-md);
+  padding: 0 var(--space-12);
+  gap: var(--space-8);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
   cursor: pointer;
   outline: none;
   user-select: none;
   white-space: nowrap;
-}
-/* Focus in a menu is the hover look (Radix marks it data-highlighted), not
-   the ring. */
-.ui-menu-item:focus-visible {
-  outline: none;
 }
 .ui-menu-item[data-highlighted],
 .ui-menu-item[data-demo-state="hover"] {
@@ -594,15 +760,28 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 .ui-menu-item[data-demo-state="selected"] {
   background: var(--state-selected);
 }
-/* An action Undo can't bring back (removing a file): the error red. */
+/* The keyboard's item: a Radix item has focus itself; a Select's option is
+   the list's active descendant, so the ring follows the list's focus. A
+   menu also moves focus to the item under the pointer, and :focus-visible
+   cannot tell that apart, so the ring waits for a key (inputModality.ts
+   marks the root). Under the pointer an item takes the hover fill alone. */
+:root[data-input="keyboard"] .ui-menu-item:focus-visible,
+:root[data-input="keyboard"] .ui-menu:focus-visible .ui-menu-item[data-highlighted],
+.ui-menu-item[data-demo-state="focus"] {
+  position: relative;
+  z-index: 1;
+  outline: var(--stroke-focus) solid var(--border-focus);
+  outline-offset: var(--focus-offset);
+}
+/* An action Undo can't bring back (removing a file). */
 .ui-menu-item[data-destructive] {
-  color: var(--state-error);
+  color: var(--feedback-error-text);
 }
 .ui-menu-item[data-dimmed] .ui-menu-item__label {
   color: var(--text-secondary);
 }
 .ui-menu-item[data-disabled] {
-  opacity: 0.4;
+  color: var(--text-disabled);
   cursor: default;
 }
 .ui-menu-item__label {
@@ -615,177 +794,309 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   padding-block: 0.3em;
   margin-block: -0.3em;
 }
-.ui-menu-item__meta {
-  color: var(--text-secondary);
-}
-.ui-menu-item__chevron {
+.ui-menu-item:not([data-disabled]) .ui-menu-item__meta,
+.ui-menu-item:not([data-disabled]) .ui-menu-item__chevron {
   color: var(--text-secondary);
 }
 .ui-menu-label {
-  padding: 10px 0 6px 10px; /* off the scale, as drawn (57:419) */
+  flex: none;
+  padding: var(--space-8) var(--space-12);
   color: var(--text-secondary);
-  letter-spacing: 0.08em; /* as drawn (13:1746; PHASE-5 §8) */
 }
 .ui-menu-divider {
-  padding: var(--space-3xs);
+  flex: none;
+  padding: var(--space-4) 0;
 }
 .ui-menu-divider::before {
   content: "";
   display: block;
-  height: 1px;
-  background: var(--border-default);
+  height: var(--stroke-hairline);
+  background: var(--border-subtle);
 }
 
-/* ── Switch (49:45): a native checkbox over the track. Off is
-   switch/track-off under state/hover; on is switch/track-on under
-   state/hover-inverse. ── */
+/* ── Switch (2211:90): a native checkbox over a 36 by 20 track. On is
+   control/on; off is a track filled with border/control. The thumb is
+   control/on-mark either way. Hover draws a halo 4 larger than the track,
+   behind it. ── */
 .ui-switch {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2xs);
+  gap: var(--space-8);
+  isolation: isolate; /* keeps the halo above what the switch sits on */
   cursor: pointer;
 }
+/* The input covers the switch and its label, and 2 above and below the
+   track, so the hit area is 24 tall. */
 .ui-switch__input {
   position: absolute;
-  inset: 0;
+  inset: calc(-1 * var(--space-2)) 0;
   width: 100%;
-  height: 100%;
+  height: calc(100% + var(--space-4));
   margin: 0;
   opacity: 0;
   cursor: inherit;
 }
 .ui-switch__track {
+  position: relative;
   box-sizing: border-box;
   flex: none;
   display: inline-flex;
-  width: 36px;
+  width: 36px; /* as drawn (2211:90) */
   height: 20px;
-  padding: 2px; /* as drawn (49:41) */
-  border-radius: var(--radius-pill);
-  --_fill: var(--switch-background);
-  --_tint: transparent;
-  background: linear-gradient(var(--_tint), var(--_tint)), var(--_fill);
+  padding: var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--border-control);
+  transition: background-color var(--motion-duration-fast) var(--motion-easing-standard);
+}
+.ui-switch__track::before {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--space-4));
+  z-index: -1;
+  border-radius: var(--radius-full);
+}
+.ui-switch:not([data-disabled]):hover .ui-switch__track::before,
+.ui-switch[data-demo-state="hover"] .ui-switch__track::before {
+  background: var(--state-pressed);
 }
 .ui-switch[data-checked] .ui-switch__track {
-  --_fill: var(--switch-track-on);
-}
-.ui-switch:not([data-disabled]):hover .ui-switch__track,
-.ui-switch[data-demo-state="hover"] .ui-switch__track {
-  --_tint: var(--state-hover);
-}
-.ui-switch[data-checked]:not([data-disabled]):hover .ui-switch__track,
-.ui-switch[data-checked][data-demo-state="hover"] .ui-switch__track {
-  --_tint: var(--state-hover-inverse);
+  background: var(--control-on);
 }
 .ui-switch__knob {
   width: 16px;
   height: 16px;
-  border-radius: var(--radius-pill);
-  background: var(--surface-raised);
+  border-radius: var(--radius-full);
+  background: var(--control-on-mark);
+  transition: transform var(--motion-duration-fast) var(--motion-easing-standard);
 }
 .ui-switch[data-checked] .ui-switch__knob {
   transform: translateX(16px);
 }
 .ui-switch__input:focus-visible + .ui-switch__track,
 .ui-switch[data-demo-state="focus"] .ui-switch__track {
-  outline: var(--focus-width) solid var(--ring);
+  outline: var(--stroke-focus) solid var(--border-focus);
   outline-offset: var(--focus-offset);
 }
 .ui-switch[data-disabled] {
   cursor: default;
 }
 .ui-switch[data-disabled] .ui-switch__track {
-  opacity: 0.4;
+  background: var(--surface-field);
+}
+.ui-switch[data-disabled][data-checked] .ui-switch__track {
+  background: var(--text-disabled);
+}
+.ui-switch[data-disabled] .ui-switch__knob {
+  background: var(--surface-raised);
 }
 
-/* ── Segment (49:50) and Segmented control (49:51) ── */
-.ui-segmented,
-.ui-tabs {
+/* ── Checkbox (2211:148) and Radio (2211:187): a 16 mark with a Body/M
+   label, 8 apart, over a native input. Off is surface/raised with a
+   border/control edge; on is control/on with the mark on control/on-mark.
+   Hover lays a halo 4 larger than the box over it and under its mark, as
+   the file layers it, so an empty box takes the halo's tint. The box keeps
+   a hairline of room in every state, so the halo and the ring never
+   move. ── */
+.ui-check {
+  position: relative;
   display: inline-flex;
-  border-radius: var(--radius-control-md);
-  background: var(--control-track);
+  align-items: center;
+  gap: var(--space-8);
+  color: var(--text-primary);
+  cursor: pointer;
 }
-.ui-segmented {
-  padding: var(--space-3xs);
-  gap: var(--space-3xs);
+/* 4 above and below the mark, so the hit area is 24 tall. */
+.ui-check__input {
+  position: absolute;
+  inset: calc(-1 * var(--space-4)) 0;
+  width: 100%;
+  height: calc(100% + var(--space-8));
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
 }
-.ui-segment,
-.ui-tab {
+.ui-check__box {
+  position: relative;
+  box-sizing: border-box;
+  flex: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-control);
-  color: var(--text-secondary);
+  width: 16px; /* as drawn (2211:148) */
+  height: 16px;
+  border: var(--stroke-hairline) solid var(--border-control);
+  border-radius: var(--radius-xs);
+  background: var(--surface-raised);
+  color: var(--control-on-mark);
 }
-.ui-segment {
-  height: 32px;
-  padding: 0 14px; /* off the scale, as drawn (49:47) */
+.ui-check[data-kind="radio"] .ui-check__box {
+  border-radius: var(--radius-full);
 }
-.ui-segment[data-selected],
-.ui-segment[data-demo-state="selected"],
-.ui-tab[data-selected],
-.ui-tab[data-demo-state="selected"] {
-  --_fill: var(--control-thumb);
-  --_shadow: var(--elevation-thumb);
-  color: var(--text-strong);
+.ui-check__box::before {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * (var(--space-4) + var(--stroke-hairline)));
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+}
+.ui-check[data-kind="radio"] .ui-check__box::before {
+  border-radius: var(--radius-full);
+}
+.ui-check:not([data-disabled]):hover .ui-check__box::before,
+.ui-check[data-demo-state="hover"] .ui-check__box::before {
+  background: var(--state-pressed);
+}
+.ui-check__box[data-on] {
+  border-color: transparent;
+  background: var(--control-on);
+}
+/* The mark is drawn on the whole box; the hairline of room is given back.
+   It is positioned so that it paints over the halo. */
+.ui-check__mark {
+  position: relative;
+  flex: none;
+  margin: calc(-1 * var(--stroke-hairline));
+}
+.ui-check__dot {
+  position: relative;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: currentColor;
+}
+.ui-check__input:focus-visible + .ui-check__box,
+.ui-check[data-demo-state="focus"] .ui-check__box {
+  outline: var(--stroke-focus) solid var(--border-focus);
+  outline-offset: var(--focus-offset);
+}
+.ui-check[data-disabled] {
+  color: var(--text-disabled);
+  cursor: default;
+}
+.ui-check[data-disabled] .ui-check__box {
+  border-color: var(--border-strong);
+  background: var(--action-disabled);
+}
+.ui-check[data-disabled] .ui-check__box[data-on] {
+  border-color: transparent;
+  background: var(--text-disabled);
+  color: var(--surface-raised);
 }
 
-/* ── Tab (49:62) and Tabs (49:63) ── */
-.ui-tabs {
-  padding: 3px; /* off the scale, as drawn (49:63) */
-  gap: 2px;
+/* ── Segment (2211:211) and Segmented control (2211:213): 28 segments at
+   radius/xs, 2 apart, on a 36 track at radius/sm. The selected one rides
+   control/thumb under Elevation/Thumb. ── */
+.ui-segmented {
+  display: inline-flex;
+  padding: var(--space-4);
+  gap: var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--control-track);
 }
-.ui-tab {
-  padding: 6px var(--space-xs); /* 6 is off the scale, as drawn (49:58) */
-  gap: 7px;
+.ui-segment {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--size-control-sm);
+  padding: 0 var(--space-12);
+  gap: var(--space-6);
+  border-radius: var(--radius-xs);
+  --_selected: var(--control-thumb);
+  --_disabled: transparent;
+  --_fg: var(--text-secondary);
+  --_fg-hover: var(--text-primary);
 }
-.ui-tab__dot {
-  width: 10px;
-  height: 10px;
-  border-radius: var(--radius-pill);
+.ui-segment[data-selected],
+.ui-segment[data-demo-state="selected"] {
+  box-shadow: var(--elevation-thumb);
 }
-.ui-tab__dot[data-dot="green"] {
+/* The ring reaches past the 2 between segments, so the focused one sits
+   above its neighbours. */
+.ui-segment:focus-visible,
+.ui-tab:focus-visible {
+  position: relative;
+  z-index: 1;
+}
+.ui-segment__dot {
+  flex: none;
+  width: 6px; /* as drawn (2211:211) */
+  height: 6px;
+  border-radius: var(--radius-full);
+}
+.ui-segment__dot[data-dot="green"] {
   background: var(--accent-green);
 }
-.ui-tab__dot[data-dot="blue"] {
+.ui-segment__dot[data-dot="blue"] {
   background: var(--accent-blue);
 }
-.ui-tab__dot[data-dot="purple"] {
+.ui-segment__dot[data-dot="purple"] {
   background: var(--accent-purple);
 }
-.ui-tab__dot[data-dot="pink"] {
+.ui-segment__dot[data-dot="pink"] {
   background: var(--accent-pink);
 }
-.ui-tab__dot[data-dot="warm"] {
+.ui-segment__dot[data-dot="warm"] {
   background: var(--accent-warm);
 }
 
-/* ── Chip (98:515) ── */
+/* ── Tab (4015:635) and Tabs (4015:673): text tabs 20 apart on a hairline.
+   The tabs share the width of their row equally, each label centered. Every
+   tab keeps the underline's 2 of room; the selected one fills it. The file
+   draws no hover, so a hovered tab only takes the selected ink. ── */
+.ui-tabs {
+  display: flex;
+  gap: var(--space-20);
+  border-bottom: var(--stroke-hairline) solid var(--border-subtle);
+}
+.ui-tab {
+  display: inline-flex;
+  flex: 1 1 0;
+  /* 28 tall with the label 12 above the underline, as drawn. The height is
+     the tab's own, not padding around the label. */
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 0;
+  height: var(--size-control-sm);
+  padding: 0 0 var(--space-12);
+  border-bottom: 2px solid transparent; /* the underline, as drawn (4015:635) */
+  color: var(--text-secondary);
+}
+.ui-tab:not(:disabled):hover,
+.ui-tab[data-demo-state="hover"] {
+  color: var(--text-primary);
+}
+.ui-tab[data-selected],
+.ui-tab[data-demo-state="selected"] {
+  border-bottom-color: var(--text-primary);
+  color: var(--text-primary);
+}
+.ui-tab:disabled {
+  color: var(--text-disabled);
+}
+
+/* ── Chip (2212:187): a 28 pill on action/neutral with a hairline edge.
+   Selected takes the inverse fill and drops the edge. ── */
 .ui-chip {
   display: inline-flex;
   align-items: center;
-  height: 28px;
-  padding: 0 10px; /* off the scale, as drawn (52:37) */
-  border-radius: var(--radius-control);
-  --_fill: var(--control-fill);
-  color: var(--text-strong);
+  height: var(--size-control-sm);
+  padding: 0 var(--space-12);
+  gap: var(--space-6);
+  border: var(--stroke-hairline) solid var(--border-strong);
+  border-radius: var(--radius-full);
+  --_fill: var(--action-neutral);
+  --_hover: var(--action-neutral-hover);
+  --_pressed: var(--action-neutral-pressed);
+  --_selected: var(--surface-inverse);
+  --_fg: var(--text-primary);
+  --_fg-selected: var(--text-inverse);
 }
-
-/* ── Choice chip (98:532) ── */
-.ui-choice-chip {
-  display: inline-flex;
-  align-items: center;
-  height: 24px;
-  padding: 0 10px; /* off the scale, as drawn (98:526) */
-  border-radius: var(--radius-pill);
-  --_fill: var(--surface-sunken);
-  color: var(--text-strong);
-}
-.ui-choice-chip[data-selected],
-.ui-choice-chip[data-demo-state="selected"] {
-  --_fill: var(--surface-inverse);
-  color: var(--text-inverse);
+.ui-chip[data-selected],
+.ui-chip[data-demo-state="selected"],
+.ui-chip:disabled,
+.ui-chip[aria-disabled="true"] {
+  border-color: transparent;
 }
 
 /* ── Platform chip (53:96) ── */
@@ -843,62 +1154,44 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   color: var(--_platform-chip-selected-chevron, var(--text-on-fill));
 }
 
-/* ── Tag (52:63) ── */
+/* ── Tag (2212:143): a 24 pill in Label/XS. A tag is text and paints its
+   own fill. Given something to do it is a button, and the shared state rules
+   paint it: an Outline one hovers like a ghost control. ── */
 .ui-tag {
   display: inline-flex;
   align-items: center;
-  gap: 6px; /* off the scale, as drawn (52:52) */
-  border-radius: var(--radius-pill);
+  height: var(--size-control-xs);
+  padding: 0 var(--space-8);
+  gap: var(--space-4);
+  border-radius: var(--radius-full);
+  --_fill: initial;
+  --_fg: initial;
   white-space: nowrap;
 }
 .ui-tag[data-kind="default"] {
-  height: 22px;
-  padding: 0 var(--space-2xs);
-  background: var(--surface-sunken);
-  color: var(--text-strong);
+  --_fill: var(--status-neutral-surface);
+  --_fg: var(--text-primary);
 }
 .ui-tag[data-kind="overlay"] {
-  height: 21px;
-  padding: 0 var(--space-2xs);
-  background: var(--tag-overlay-bg);
-  color: var(--text-on-fill);
+  --_fill: var(--surface-overlay);
+  --_fg: var(--text-on-color);
 }
-.ui-tag[data-kind="filter"] {
-  height: 28px;
-  padding: 0 10px; /* off the scale, as drawn (52:56) */
-  --_fill: var(--surface-sunken);
-  color: var(--text-secondary);
+/* The Outline tag's edge is dashed, 3 on and 3 off, as drawn. */
+.ui-tag[data-kind="outline"] {
+  border: var(--stroke-hairline) dashed var(--border-control);
+  --_disabled: transparent;
+  --_fg: var(--text-secondary);
 }
-.ui-tag[data-kind="missing"] {
-  height: 28px;
-  padding: 0 var(--space-xs) 0 10px; /* 10 as drawn (52:58) */
-  /* The 1px border, drawn as a shadow so the tight focus ring composes
-     with it (.ui-ring-tight reads --_shadow). */
-  --_shadow: inset 0 0 0 1px var(--text-secondary);
-  color: var(--text-secondary);
+.ui-tag:not(.ui-fill) {
+  background: var(--_fill, transparent);
+  color: var(--_fg, inherit);
 }
 
-/* ── Detail tag (61:464) ── */
+/* ── A detail on a message. Editable (the composer) it is the Chip with its
+   remove button; sent (inside a message) it is a Default Tag. ── */
 .ui-detail-tag {
   box-sizing: border-box;
-  display: inline-flex;
-  align-items: center;
-  height: 28px;
-  gap: 6px; /* off the scale, as drawn (52:64) */
-  border-radius: var(--radius-pill);
   white-space: nowrap;
-}
-.ui-detail-tag[data-state="editable"] {
-  padding: 0 6px 0 9px; /* off the scale, as drawn (52:64) */
-  --_fill: var(--surface-page);
-  color: var(--tag-detail-fg);
-}
-.ui-detail-tag[data-state="sent"] {
-  padding: 0 9px;
-  background: var(--tag-sent-bg);
-  /* 0.75, as drawn (61:455). */
-  box-shadow: inset 0 0 0 0.75px var(--tag-sent-border);
-  color: var(--tag-sent-fg);
 }
 .ui-detail-tag__value {
   max-width: 220px;
@@ -908,141 +1201,280 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
      the line, as the menu item's label does. */
   padding-block: 0.3em;
   margin-block: -0.3em;
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-xs);
   color: inherit;
+}
+button.ui-detail-tag__value {
   cursor: pointer;
 }
+/* The remove glyph is 16; its hit area reaches 24. */
 .ui-detail-tag__remove {
   position: relative;
   display: inline-flex;
-  width: 14px;
-  height: 14px;
-  border-radius: var(--radius-pill);
+  flex: none;
+  border-radius: var(--radius-full);
   color: inherit;
 }
 .ui-detail-tag__remove::after {
   content: "";
   position: absolute;
-  inset: -5px;
+  inset: calc(-1 * var(--space-4));
 }
 .ui-detail-tag[data-demo-state="focus"] .ui-detail-tag__remove {
-  outline: var(--focus-width) solid var(--ring);
+  outline: var(--stroke-focus) solid var(--border-focus);
   outline-offset: var(--focus-offset);
 }
 
-/* ── Status (52:51) ── */
-.ui-status {
+/* ── Badge (2212:130): a 24 pill in Label/XS naming a state. ── */
+.ui-badge {
   display: inline-flex;
   align-items: center;
-  padding: 0 var(--space-2xs);
-  border-radius: var(--radius-pill);
+  height: var(--size-control-xs);
+  padding: 0 var(--space-8);
+  gap: var(--space-4);
+  border-radius: var(--radius-full);
   white-space: nowrap;
 }
-.ui-status[data-size="default"] {
-  height: 21px;
+.ui-badge[data-tone="positive"] {
+  background: var(--status-positive-surface);
+  color: var(--status-positive-text);
 }
-.ui-status[data-size="sm"] {
-  height: 17px;
+.ui-badge[data-tone="active"] {
+  background: var(--status-active-surface);
+  color: var(--status-active-text);
 }
-.ui-status[data-tone="positive"] {
-  background: var(--status-positive-bg);
-  color: var(--accent-green);
-}
-.ui-status[data-tone="active"] {
-  background: var(--status-active-bg);
-  color: var(--status-active-fg);
-}
-.ui-status[data-tone="neutral"] {
-  background: var(--surface-sunken);
+.ui-badge[data-tone="neutral"] {
+  background: var(--status-neutral-surface);
   color: var(--text-secondary);
 }
-.ui-menu--popover {
-  z-index: 500; /* the popover layer; z-index is not a Figma token */
+.ui-badge[data-tone="error"] {
+  background: var(--feedback-error-surface);
+  color: var(--feedback-error-text);
+}
+.ui-badge[data-tone="warning"] {
+  background: var(--feedback-warning-surface);
+  color: var(--feedback-warning-text);
+}
+.ui-badge[data-tone="blue"] {
+  background: var(--deep-blue);
+  color: var(--accent-blue);
+}
+.ui-badge[data-tone="purple"] {
+  background: var(--deep-purple);
+  color: var(--tint-purple);
+}
+.ui-badge[data-tone="pink"] {
+  background: var(--deep-pink);
+  color: var(--accent-pink);
+}
+.ui-badge[data-tone="warm"] {
+  background: var(--deep-warm);
+  color: var(--accent-warm);
 }
 
-/* ── Nav item (54:83) and Settings rail item (54:100) ── */
+/* ── Nav item (2213:109): a 36 row at radius/sm, the icon and label on
+   text/secondary. Hover lifts them to text/primary over state/hover, and
+   Selected holds them there over state/selected. The Settings rail uses the
+   same item. ── */
 .ui-nav-item {
   display: flex;
   align-items: center;
   width: 100%;
-  height: 36px;
-  padding: 0 10px; /* off the scale, as drawn (54:75) */
-  gap: var(--space-xs);
-  border-radius: var(--radius-control);
-  color: var(--text-secondary);
+  height: var(--size-control-md);
+  padding: 0 var(--space-12);
+  gap: var(--space-12);
+  border-radius: var(--radius-sm);
+  --_disabled: transparent;
+  --_fg: var(--text-secondary);
+  --_fg-hover: var(--text-primary);
   text-align: left;
 }
-/* Icon only (the collapsed rail): 38 x 36, as drawn (189:2424). */
+/* Icon only (the collapsed rail). */
 .ui-nav-item[data-icon-only] {
-  width: 38px;
+  width: var(--size-control-md);
+  padding: 0;
   justify-content: center;
 }
-.ui-nav-item[data-selected],
-.ui-nav-item[data-demo-state="selected"] {
-  --_fill: var(--state-selected);
-  color: var(--text-strong);
-}
-.ui-rail-item[data-selected],
-.ui-rail-item[data-demo-state="selected"] {
-  --_fill: var(--control-fill);
-}
 
-/* ── Avatar (54:62) ── */
+/* ── Avatar (2212:214): initials on surface/sunken, 28, 36 or 44. The
+   component draws its edge at no width, and every screen that places one
+   gives it a hairline on border/subtle, so the hairline is built. ── */
 .ui-avatar {
   box-sizing: border-box;
   display: inline-flex;
   flex: none;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--border-default); /* every size, as drawn (54:62, 13:14708) */
-  border-radius: var(--radius-pill);
+  border: var(--stroke-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-full);
   background: var(--surface-sunken);
-  color: var(--text-strong);
+  color: var(--text-primary);
 }
-.ui-avatar[data-size="default"] {
-  width: 32px;
-  height: 32px;
+.ui-avatar[data-size="sm"] {
+  width: var(--size-control-sm);
+  height: var(--size-control-sm);
+}
+.ui-avatar[data-size="md"] {
+  width: var(--size-control-md);
+  height: var(--size-control-md);
 }
 .ui-avatar[data-size="lg"] {
-  width: 38px;
-  height: 38px;
+  width: var(--size-control-lg);
+  height: var(--size-control-lg);
 }
 .ui-avatar[data-shape="square"] {
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-sm);
 }
 
-/* ── Tooltip (58:434), the chart tooltip ── */
+/* ── Tooltip (2213:206): a raised bubble at radius/sm with a hairline edge,
+   under Elevation/2 Overlay. As a control's hint it floats on the tooltip
+   layer and takes no pointer. ── */
 .ui-tooltip {
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
-  padding: 7px 10px; /* off the scale, as drawn (58:434) */
-  gap: var(--space-2xs);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-control-md);
+  padding: var(--space-8) var(--space-12);
+  gap: var(--space-8);
+  border: var(--stroke-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-sm);
   background: var(--surface-raised);
-  box-shadow: var(--elevation-medium);
-  color: var(--text-strong);
+  box-shadow: var(--elevation-2-overlay);
+  color: var(--text-primary);
   white-space: nowrap;
 }
 .ui-tooltip__label {
   color: var(--text-secondary);
 }
+.ui-tooltip--hint {
+  z-index: 700; /* the tooltip layer; z-index is not a Figma token */
+  pointer-events: none;
+  user-select: none;
+}
 
-/* ── Toast (58:431) ── */
+/* ── Toast (2213:213): raised at radius/lg under Elevation/2 Overlay, 16
+   before the message and 8 around its action, a ghost Small button. The
+   file draws it only with the action, 46 tall. Without one it keeps that
+   height and takes 16 after the message too. ── */
 .ui-toast {
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
-  padding: var(--space-xs) var(--space-sm);
-  gap: var(--space-sm);
-  border: 1px solid var(--border-raised);
-  border-radius: var(--radius-menu);
+  min-height: 46px; /* as drawn (2213:213) */
+  padding: var(--space-8) var(--space-16);
+  gap: var(--space-16);
+  border: var(--stroke-hairline) solid var(--border-raised);
+  border-radius: var(--radius-lg);
   background: var(--surface-raised);
-  box-shadow: var(--elevation-medium);
-  color: var(--text-strong);
+  box-shadow: var(--elevation-2-overlay);
+  color: var(--text-primary);
 }
-.ui-toast__action {
-  border-radius: var(--radius-control);
-  color: var(--text-strong);
+.ui-toast[data-action] {
+  padding-right: var(--space-8);
+}
+
+/* ── Breadcrumb (2213:111): the trail in Label/M, 8 apart. Earlier crumbs
+   and the slashes are on text/secondary; the last, the page's heading, on
+   text/primary. ── */
+.ui-breadcrumb {
+  min-width: 0;
+}
+.ui-breadcrumb > ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ui-breadcrumb li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+}
+.ui-breadcrumb__divider,
+.ui-breadcrumb__link {
+  color: var(--text-secondary);
+}
+/* A text link's box is its capitals, so it is padded out and pulled back by
+   the same amount: the ring clears the letters, the hit area reaches 24,
+   and nothing around it moves. */
+.ui-breadcrumb__link,
+.ui-footer-links__link {
+  position: relative;
+  margin: calc(-1 * var(--space-4));
+  padding: var(--space-4);
+  border-radius: var(--radius-xs);
+}
+.ui-breadcrumb__link::after,
+.ui-footer-links__link::after {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--space-4)) 0;
+}
+.ui-breadcrumb__link {
+  cursor: pointer;
+}
+.ui-breadcrumb__link:hover {
+  color: var(--text-primary);
+}
+.ui-breadcrumb__current {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  /* Cap-trimmed: widen the clip box past the descenders without moving
+     the line. */
+  padding-block: 0.3em;
+  margin-block: -0.3em;
+  color: var(--text-primary);
+}
+
+/* ── Page header (4015:764): one row 36 tall. The title (Title/Page) or the
+   breadcrumb on the left; on the right a quiet status line, then the
+   page's actions 8 apart. ── */
+.ui-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-16);
+  min-height: var(--size-control-md);
+  color: var(--text-primary);
+}
+.ui-page-header__title {
+  margin: 0;
+  min-width: 0;
+}
+.ui-page-header__end {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-16);
+}
+.ui-page-header__status {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.ui-page-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+/* ── Footer links (4015:750): Caption/M on text/secondary, 16 apart and
+   centered. ── */
+.ui-footer-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-16);
+}
+.ui-footer-links__link {
+  color: var(--text-secondary);
+}
+.ui-footer-links__link:hover {
+  color: var(--text-primary);
 }
 
 /* ── Preview overlay (104:584): overlay/hover over the preview with the
@@ -1193,17 +1625,20 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   box-shadow: 0 0 0 var(--focus-width) var(--ring);
 }
 
-/* ── Card (58:476) and Settings card (58:460) ── */
+/* ── Card (2215:141): a raised surface at radius/xl with a hairline edge, 24
+   around its content and 16 between its parts. The header holds the title
+   and, on the right, an optional ghost Small action. ── */
 .ui-card {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
-  padding: var(--space-md) 28px; /* 28 is off the scale, as drawn (58:476) */
-  border-radius: var(--radius-card);
+  gap: var(--space-16);
+  padding: var(--space-24);
+  border: var(--stroke-hairline) solid var(--border-raised);
+  border-radius: var(--radius-xl);
   background: var(--surface-raised);
-  box-shadow: var(--elevation-small);
-  color: var(--text-strong);
+  box-shadow: var(--elevation-1-raised);
+  color: var(--text-primary);
 }
 .ui-card h2,
 .ui-card p {
@@ -1211,15 +1646,30 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 }
 .ui-card__header {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-3xs);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
 }
-.ui-card__subtitle {
+.ui-card__description {
   color: var(--text-secondary);
 }
+
+/* ── Settings card (58:460), a Product component: its earlier look, until
+   Settings is rebuilt. ── */
 .ui-settings-card {
-  gap: 20px; /* off the scale, as drawn (58:460) */
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* as drawn (58:460) */
   padding: var(--space-md);
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-small);
+  color: var(--text-strong);
+}
+.ui-settings-card h2,
+.ui-settings-card p {
+  margin: 0;
 }
 .ui-settings-card__header {
   display: flex;
@@ -1228,53 +1678,86 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   gap: var(--space-sm);
 }
 
-/* ── Stat (59:449) and Metric (59:452) ── */
-.ui-stat,
-.ui-metric {
+/* ── Stat (59:449), which belongs to Settings: its earlier look, until that
+   page is rebuilt. Large is a figure on the Plan and usage card
+   (13:15351). ── */
+.ui-stat {
   display: flex;
   flex-direction: column;
+  gap: var(--space-3xs);
   color: var(--text-strong);
 }
-.ui-stat {
-  gap: var(--space-3xs);
-}
-.ui-stat__label {
-  color: var(--text-secondary);
-}
-.ui-metric {
+.ui-stat[data-size="lg"] {
   gap: var(--space-xs);
 }
-.ui-metric__sub {
+.ui-stat__label,
+.ui-stat__sub {
   color: var(--text-secondary);
 }
 
-/* ── Modal (58:484) ── */
+/* ── Metric (2215:223): one number on a raised card at radius/xl, 20 around
+   and 20 between the label, the value and the change. ── */
+.ui-metric {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-20);
+  padding: var(--space-20);
+  border: var(--stroke-hairline) solid var(--border-raised);
+  border-radius: var(--radius-xl);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-1-raised);
+  color: var(--text-primary);
+}
+.ui-metric__change {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+}
+.ui-metric__caption {
+  color: var(--text-secondary);
+}
+
+/* ── Dialog (2215:203): a raised panel at radius/xl under Elevation/3
+   Floating, over surface/scrim. 24 around, and 24 between the title, the
+   body and the actions. The close button sits in the top right corner, 12
+   from the panel's edges. A dialog that holds a form or a picker keeps the
+   wider panel until its own screen is rebuilt. ── */
 .ui-modal-scrim {
   position: fixed;
   inset: 0;
   z-index: 400; /* the modal layer; z-index is not a Figma token */
-  background: var(--overlay-scrim);
+  background: var(--surface-scrim);
 }
 .ui-modal {
   box-sizing: border-box;
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 20px; /* off the scale, as drawn (58:484) */
-  width: 560px;
-  max-width: calc(100vw - 2 * var(--space-sm));
-  padding: var(--space-md);
-  border-radius: var(--radius-card);
+  gap: var(--space-24);
+  width: 480px; /* as drawn (2215:203) */
+  max-width: calc(100vw - 2 * var(--space-16));
+  padding: var(--space-24);
+  border: var(--stroke-hairline) solid var(--border-raised);
+  border-radius: var(--radius-xl);
   background: var(--surface-raised);
-  box-shadow: var(--elevation-medium);
-  color: var(--text-strong);
+  box-shadow: var(--elevation-3-floating);
+  color: var(--text-primary);
 }
+.ui-modal[data-wide] {
+  width: 560px;
+}
+/* A dialog taller than the window scrolls. Its 24 of padding is the room a
+   raised child's shadow and a focus ring need at the sides. */
 .ui-modal:not(.ui-modal--static) {
   position: fixed;
   z-index: 401;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  max-height: calc(100vh - 2 * var(--space-lg));
+  max-height: calc(100vh - 2 * var(--space-32));
   overflow-y: auto;
 }
 .ui-modal:focus-visible {
@@ -1283,57 +1766,147 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 .ui-modal__header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
+  gap: var(--space-8);
+  /* The close button's room beside the title. */
+  padding-right: var(--space-24);
 }
 .ui-modal__title {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2xs);
-}
-.ui-modal__title h2 {
+  flex: 1;
+  min-width: 0;
   margin: 0;
 }
+.ui-modal__close {
+  position: absolute;
+  top: calc(var(--space-12) - var(--stroke-hairline));
+  right: calc(var(--space-12) - var(--stroke-hairline));
+}
+.ui-modal__body {
+  margin: 0;
+  color: var(--text-secondary);
+}
+/* Its parts are 12 apart, whatever margin a part's own class sets. The body
+   stays a block, so its Body/M trims the first and the last line. */
+.ui-modal .ui-modal__body > * {
+  margin-block: 0;
+}
+.ui-modal .ui-modal__body > * + * {
+  margin-top: var(--space-12);
+}
+.ui-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-8);
+}
 
-/* ── Progress (58:450) and Progress bar (58:451) ── */
-.ui-progress {
-  display: inline-flex;
+/* ── Table row (2215:270): 52 tall at radius/sm, 12 around and 24 between
+   cells. The primary cell takes the room, value cells are 64 wide and set
+   right, and the action hugs. ── */
+.ui-table {
+  display: flex;
+  flex-direction: column;
+}
+.ui-table-row {
+  box-sizing: border-box;
+  display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: var(--space-24);
+  min-height: calc(var(--size-control-sm) + 2 * var(--space-12));
+  padding: var(--space-12);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
 }
-.ui-progress__track {
-  display: block;
-  width: 120px;
-  height: 4px;
+.ui-table-row:not([data-loading]):hover,
+.ui-table-row[data-demo-state="hover"] {
+  background: var(--state-hover);
+}
+.ui-table-row[data-interactive] {
+  cursor: pointer;
+}
+.ui-table-row__primary {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-8);
+  min-width: 0;
+}
+/* One line each. The text is trimmed to its capitals, so the clip box is
+   widened past the descenders without moving the line. */
+.ui-table-row__title,
+.ui-table-row__subtitle {
+  max-width: 100%;
   overflow: hidden;
-  border-radius: var(--radius-xs);
-  background: var(--surface-sunken);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-block: 0.3em;
+  margin-block: -0.3em;
 }
-.ui-progress__fill {
-  display: block;
-  height: 100%;
-  border-radius: var(--radius-xs);
-  background: var(--surface-inverse);
+.ui-table-row__subtitle {
+  color: var(--text-secondary);
+}
+/* A block, so its Mono/M trims to the capitals like the rest of the row. */
+.ui-table-row__value {
+  flex: none;
+  width: 64px; /* as drawn */
+  text-align: right;
+}
+/* Loading, a value cell is as wide as its shape, as drawn. */
+.ui-table-row[data-loading] .ui-table-row__value {
+  width: auto;
+}
+.ui-table-row__value[data-quiet] {
+  color: var(--text-secondary);
+}
+.ui-table-row__action {
+  flex: none;
+  display: flex;
+}
+
+/* ── Progress steps (2221:1105): a bar a step, 4 apart, over the step's
+   name in Caption/M. ── */
+.ui-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  width: 240px; /* as drawn */
+  max-width: 100%;
+}
+.ui-progress__bars {
+  display: flex;
+  gap: var(--space-4);
+}
+.ui-progress__bar {
+  flex: 1;
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: var(--surface-field);
+}
+.ui-progress__bar[data-done] {
+  background: var(--text-primary);
 }
 .ui-progress__label {
   color: var(--text-secondary);
+  white-space: nowrap;
 }
+
+/* ── Progress bar (2215:272): a 4 tall track on surface/field, filled in
+   text/primary. Indeterminate, a part of the fill slides along it. ── */
 .ui-progress-bar {
   width: 100%;
   height: 4px;
   overflow: hidden;
-  border-radius: var(--radius-pill);
-  background: var(--surface-sunken);
+  border-radius: var(--radius-full);
+  background: var(--surface-field);
 }
 .ui-progress-bar__fill {
   display: block;
   height: 100%;
-  border-radius: var(--radius-pill);
-  background: var(--accent-green);
+  border-radius: var(--radius-full);
+  background: var(--text-primary);
 }
 .ui-progress-bar[data-indeterminate] .ui-progress-bar__fill {
   width: 40%;
-  animation: ui-progress-slide 1.2s ease-in-out infinite;
+  animation: ui-progress-slide var(--motion-duration-pulse) var(--motion-easing-standard) infinite;
 }
 @keyframes ui-progress-slide {
   from {
@@ -1343,10 +1916,142 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
     transform: translateX(250%);
   }
 }
+
+/* ── Skeleton (2215:286): the shape of what is loading, on
+   surface/skeleton. Line is 12 tall at radius/xs, Block 96 at radius/md and
+   Circle 36 across. The fill fades to half and back over
+   motion/duration/pulse; the file names the duration and nothing else about
+   the pulse. A skeleton that stands in for a control takes that control's
+   corner. ── */
+.ui-skeleton {
+  display: block;
+  max-width: 100%;
+  height: 12px;
+  border-radius: var(--radius-xs);
+  background-color: var(--surface-skeleton);
+  animation: ui-skeleton-pulse var(--motion-duration-pulse) var(--motion-easing-standard) infinite;
+}
+.ui-skeleton[data-shape="block"] {
+  height: 96px;
+  border-radius: var(--radius-md);
+}
+.ui-skeleton[data-shape="circle"] {
+  flex: none;
+  width: var(--size-control-md);
+  height: var(--size-control-md);
+  border-radius: var(--radius-full);
+}
+.ui-skeleton[data-radius="xs"] {
+  border-radius: var(--radius-xs);
+}
+.ui-skeleton[data-radius="sm"] {
+  border-radius: var(--radius-sm);
+}
+.ui-skeleton[data-radius="md"] {
+  border-radius: var(--radius-md);
+}
+.ui-skeleton[data-radius="full"] {
+  border-radius: var(--radius-full);
+}
+@keyframes ui-skeleton-pulse {
+  0%,
+  100% {
+    background-color: var(--surface-skeleton);
+  }
+  50% {
+    background-color: color-mix(in srgb, var(--surface-skeleton) 50%, transparent);
+  }
+}
+/* Lines of text that are loading, and list rows: a round mark and two
+   lines a row, divided like the rows they stand in for. */
+.ui-skeleton-lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+.ui-skeleton-row {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  min-height: 56px; /* the row it stands in for */
+}
+.ui-skeleton-row + .ui-skeleton-row {
+  border-top: var(--stroke-hairline) solid var(--border-subtle);
+}
+.ui-skeleton-row__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-6);
+  min-width: 0;
+}
 @media (prefers-reduced-motion: reduce) {
+  /* The shape still says what is coming. It does not move. */
+  .ui-skeleton,
   .ui-progress-bar[data-indeterminate] .ui-progress-bar__fill {
     animation: none;
   }
+}
+
+/* ── Alert (2215:302): a message set into the page at radius/md, 16 around
+   and 12 between the title and its line. The tone colors the ground and
+   the title. ── */
+.ui-alert {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  padding: var(--space-16);
+  border-radius: var(--radius-md);
+  background: var(--status-neutral-surface);
+  color: var(--text-primary);
+}
+.ui-alert p {
+  margin: 0;
+}
+.ui-alert[data-tone="error"] {
+  background: var(--feedback-error-surface);
+}
+.ui-alert[data-tone="error"] .ui-alert__title {
+  color: var(--feedback-error-text);
+}
+.ui-alert[data-tone="warning"] {
+  background: var(--feedback-warning-surface);
+}
+.ui-alert[data-tone="warning"] .ui-alert__title {
+  color: var(--feedback-warning-text);
+}
+
+/* ── Empty state (2215:304): an icon tile, a title, a line and one action,
+   centered and 20 apart with 32 around them. ── */
+.ui-empty {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-20);
+  padding: var(--space-32);
+  color: var(--text-primary);
+  text-align: center;
+}
+.ui-empty p {
+  margin: 0;
+}
+.ui-empty__tile {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-control-lg);
+  height: var(--size-control-lg);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
+}
+.ui-empty__body {
+  max-width: 320px; /* as drawn */
+  color: var(--text-secondary);
 }
 
 /* ── Composer (61:504): the chat box on surface/raised with Elevation/Small.
@@ -1400,13 +2105,14 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   align-items: flex-end;
   gap: var(--space-xs);
 }
+/* The plus is a Medium icon button, as tall as the controls at the other
+   end of the row, and the tags center on it. */
 .ui-composer__inputs {
   flex: 1;
   min-width: 0;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 6px; /* as drawn (61:472) */
-  padding: var(--space-3xs) 0;
 }
 /* The Tags row beside the plus (61:476): detail tags, scrolling sideways
    behind a fade to the composer's fill (Phase 5). */

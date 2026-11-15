@@ -140,7 +140,12 @@ export function TemplateCard({
             </span>
           )}
         </span>
-        <span className="ui-tint ui-iconbtn sp-tcard__go" data-variant="filled" aria-hidden>
+        <span
+          className="ui-fill ui-iconbtn sp-tcard__go"
+          data-variant="filled"
+          data-size="md"
+          aria-hidden
+        >
           <ArrowRight size={16} className="ui-icon" />
         </span>
       </span>

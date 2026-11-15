@@ -2,7 +2,7 @@ import React from "react";
 import { FileText, Globe, X } from "lucide-react";
 import type { ChatDocumentKind } from "@/lib/types";
 import { PLATFORMS, type PlatformId } from "@/lib/templates/platforms";
-import { CompactSelect, type SelectOption } from "../primitives";
+import { Select, type SelectOption } from "../primitives";
 
 /** The round x on an attachment tile (13:2384): 16 on surface/inverse in
  * Light and the page's ink in Dark, 4 in from the tile's top right. Its
@@ -86,7 +86,9 @@ export function PlatformSelect({
     })),
   ];
   return (
-    <CompactSelect
+    <Select
+      size="sm"
+      hug
       ariaLabel="Platform"
       value={value ?? ""}
       options={options}

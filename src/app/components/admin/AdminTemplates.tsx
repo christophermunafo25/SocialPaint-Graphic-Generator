@@ -20,7 +20,7 @@ import { CanvasSizePicker } from "../builder/CanvasSizePicker";
 import { ErrorState } from "../ErrorState";
 import { SkeletonCard } from "../templates/TemplateSkeleton";
 import { TemplateThumbnail } from "../TemplateThumbnail";
-import { Button, IconButton, Modal, SegmentedControl, Select, Status, Toast } from "../primitives";
+import { Badge, Button, IconButton, Modal, SegmentedControl, Select, Toast } from "../primitives";
 
 type StatusFilter = "all" | "published" | "draft";
 type SortKey = "recent" | "name" | "downloads";
@@ -249,6 +249,7 @@ export function AdminTemplates() {
         open={versionFor !== null}
         onOpenChange={(next) => !next && setVersionFor(null)}
         title="Create a version for…"
+        wide
       >
         {versionFor && (
           <>
@@ -278,7 +279,7 @@ export function AdminTemplates() {
         actions={
           <div className="flex items-center" style={{ gap: "var(--space-2xs)" }}>
             <Button
-              kind="neutralOnPage"
+              kind="neutral"
               icon={RotateCcw}
               onClick={() => setConfirmingRestore(true)}
               disabled={restoring || !kit}
@@ -316,7 +317,6 @@ export function AdminTemplates() {
           <div style={{ width: 200 }}>
             <Select<SortKey>
               ariaLabel="Sort templates"
-              size="lg"
               value={sort}
               options={[
                 { value: "recent", label: "Recently edited" },
@@ -402,9 +402,9 @@ export function AdminTemplates() {
                     onSave={(name) => renameTemplate(t, name)}
                   />
                   {/* Line 2: status (+ provenance when a model built the fields) */}
-                  <Status tone={t.status === "published" ? "active" : "neutral"} size="sm">
+                  <Badge tone={t.status === "published" ? "active" : "neutral"}>
                     {t.status === "published" ? "Published" : "Draft"}
-                  </Status>
+                  </Badge>
                   {/* Starter templates carry autobuildMeta for provenance
                       and idempotency but are seeded designs, not model
                       output — labeling them AI-built would be wrong. */}
@@ -445,6 +445,7 @@ export function AdminTemplates() {
                   >
                     <IconButton
                       variant="ghost"
+                      size="sm"
                       icon={t.status === "published" ? EyeOff : Eye}
                       label={t.status === "published" ? "Unpublish" : "Publish"}
                       title={t.status === "published" ? "Unpublish" : "Publish"}
@@ -452,6 +453,7 @@ export function AdminTemplates() {
                     />
                     <IconButton
                       variant="ghost"
+                      size="sm"
                       icon={Pencil}
                       label="Edit"
                       title="Edit"
@@ -459,6 +461,7 @@ export function AdminTemplates() {
                     />
                     <IconButton
                       variant="ghost"
+                      size="sm"
                       icon={Copy}
                       label="Duplicate"
                       title="Duplicate"
@@ -466,6 +469,7 @@ export function AdminTemplates() {
                     />
                     <IconButton
                       variant="ghost"
+                      size="sm"
                       icon={Proportions}
                       label="Create a version for another size"
                       title="Create a version for another size"
@@ -473,6 +477,7 @@ export function AdminTemplates() {
                     />
                     <IconButton
                       variant="ghost"
+                      size="sm"
                       icon={Trash2}
                       label="Delete"
                       title="Delete"

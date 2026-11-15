@@ -1,8 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React, { useState } from "react";
-import { describe, expect, it } from "vitest";
-import { SegmentedControl, Switch, Tabs, type TabItem } from "./Toggles";
+import { describe, expect, it, vi } from "vitest";
+import { Checkbox, Radio, SegmentedControl, Switch, Tabs, type TabItem } from "./Toggles";
 
 describe("Switch", () => {
   function Controlled({ disabled = false }: { disabled?: boolean }) {
@@ -25,6 +25,73 @@ describe("Switch", () => {
     const toggle = screen.getByRole("switch", { name: "Allow uploads" });
     await userEvent.click(toggle);
     expect((toggle as HTMLInputElement).checked).toBe(false);
+  });
+});
+
+describe("Checkbox", () => {
+  function Controlled({ disabled = false }: { disabled?: boolean }) {
+    const [on, setOn] = useState<boolean | "mixed">(false);
+    return <Checkbox checked={on} onChange={setOn} label="Include drafts" disabled={disabled} />;
+  }
+
+  it("is a checkbox named by its label that Space and a label click toggle", async () => {
+    render(<Controlled />);
+    const box = screen.getByRole("checkbox", { name: "Include drafts" }) as HTMLInputElement;
+    box.focus();
+    await userEvent.keyboard(" ");
+    expect(box.checked).toBe(true);
+    await userEvent.click(screen.getByText("Include drafts"));
+    expect(box.checked).toBe(false);
+  });
+
+  it("shows Mixed as the native indeterminate state, and turns on from it", async () => {
+    const onChange = vi.fn();
+    render(<Checkbox checked="mixed" onChange={onChange} ariaLabel="All rows" />);
+    const box = screen.getByRole("checkbox", { name: "All rows" }) as HTMLInputElement;
+    expect(box.indeterminate).toBe(true);
+    expect(box.checked).toBe(false);
+    await userEvent.click(box);
+    expect(onChange).toHaveBeenCalledWith(true);
+  });
+
+  it("ignores input while disabled", async () => {
+    render(<Controlled disabled />);
+    const box = screen.getByRole("checkbox", { name: "Include drafts" }) as HTMLInputElement;
+    await userEvent.click(box);
+    expect(box.checked).toBe(false);
+  });
+});
+
+describe("Radio", () => {
+  function Group() {
+    const [value, setValue] = useState("all");
+    return (
+      <div role="radiogroup" aria-label="Rows">
+        {["all", "problems"].map((v) => (
+          <Radio
+            key={v}
+            name="rows"
+            value={v}
+            checked={value === v}
+            onChange={() => setValue(v)}
+            label={v === "all" ? "All rows" : "Rows with problems"}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  it("is a native radio group: one choice, moved by a click or the arrows", async () => {
+    render(<Group />);
+    const all = screen.getByRole("radio", { name: "All rows" }) as HTMLInputElement;
+    const problems = screen.getByRole("radio", { name: "Rows with problems" }) as HTMLInputElement;
+    expect(all.checked).toBe(true);
+    await userEvent.click(problems);
+    expect(problems.checked).toBe(true);
+    expect(all.checked).toBe(false);
+    problems.focus();
+    await userEvent.keyboard("{ArrowUp}");
+    expect(all.checked).toBe(true);
   });
 });
 
@@ -56,6 +123,27 @@ describe("SegmentedControl", () => {
     expect(radios[0].getAttribute("aria-checked")).toBe("true");
     expect(group.querySelectorAll("[data-selected]")).toHaveLength(1);
   });
+
+  it("draws a segment's dot, hidden from assistive tech", () => {
+    render(
+      <SegmentedControl
+        aria-label="Metric"
+        options={[
+          { id: "exports", label: "Exports", dot: "green" },
+          { id: "opens", label: "Opens" },
+        ]}
+        selectedId="exports"
+        onSelect={() => {}}
+      />,
+    );
+    const exports = screen.getByRole("radio", { name: "Exports" });
+    const dot = exports.querySelector(".ui-segment__dot") as HTMLElement;
+    expect(dot.dataset.dot).toBe("green");
+    expect(dot.getAttribute("aria-hidden")).toBe("true");
+    expect(
+      screen.getByRole("radio", { name: "Opens" }).querySelector(".ui-segment__dot"),
+    ).toBeNull();
+  });
 });
 
 describe("Tabs", () => {
@@ -68,8 +156,8 @@ describe("Tabs", () => {
     render(
       <Controlled
         items={[
-          { id: "exports", label: "Exports", dot: "green" },
-          { id: "opens", label: "Opens", dot: "blue" },
+          { id: "exports", label: "Exports" },
+          { id: "opens", label: "Opens" },
         ]}
       />,
     );

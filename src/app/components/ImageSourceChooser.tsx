@@ -220,6 +220,7 @@ export function ImageSourceDialog({
       open={open}
       onOpenChange={(next) => !next && close()}
       title={title}
+      wide
       // Open on the choice: the picked asset (or the first) on the grid, the
       // first option on the question.
       onOpenAutoFocus={(e) => {
@@ -285,11 +286,11 @@ export function ImageSourceDialog({
         style={showingBrand ? { justifyContent: "space-between" } : undefined}
       >
         {showingBrand && (
-          <Button kind="neutral" size="lg" icon={ArrowLeft} onClick={() => setShowingBrand(false)}>
+          <Button kind="neutral" icon={ArrowLeft} onClick={() => setShowingBrand(false)}>
             Back
           </Button>
         )}
-        <Button kind="neutral" size="lg" onClick={close}>
+        <Button kind="neutral" onClick={close}>
           Cancel
         </Button>
       </div>

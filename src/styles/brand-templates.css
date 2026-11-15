@@ -679,10 +679,10 @@
   overflow-y: auto;
 }
 /* Multiline fields and the caption hug their text (156:820): no resize
-   grip, and no 100 floor. */
+   grip, and no floor above a Medium input's height. */
 .sp-details .ui-input[data-size="multiline"] {
   field-sizing: content;
-  min-height: 40px;
+  min-height: var(--size-control-md);
   resize: none;
 }
 /* Look's segments share the panel's width (156:792). */
@@ -995,15 +995,6 @@
 .sp-links__error {
   margin: 0;
   color: var(--state-error);
-}
-.sp-links__confirm {
-  margin: 0;
-  color: var(--text-secondary);
-}
-.sp-links__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-2xs);
 }
 .sp-links__fresh,
 .sp-links__form {

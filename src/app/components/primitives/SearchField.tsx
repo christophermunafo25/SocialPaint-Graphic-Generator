@@ -19,9 +19,11 @@ export interface SearchFieldProps {
   "data-demo-state"?: DemoStateAttr;
 }
 
-/** Search field (Figma 50:62). Collapsed it is a 50 square button; open it
- * is the field, with a clear button while it holds a query. Escape on an
- * empty field collapses it and hands focus back to the button. */
+/** Search field (Figma 50:62), for a filter bar. Collapsed it is a 50
+ * square button; open it is the field, with a clear button while it holds a
+ * query, and the ring sits around the whole field. Escape on an empty field
+ * collapses it and hands focus back to the button. The file draws this one
+ * with a 20 glyph and its own measures, so it keeps them. */
 export function SearchField({
   open,
   onOpenChange,
@@ -54,7 +56,7 @@ export function SearchField({
         aria-label={label}
         aria-expanded={false}
         onClick={() => onOpenChange(true)}
-        className={cx("ui-reset ui-tint ui-ring ui-search", className)}
+        className={cx("ui-reset ui-fill ui-ring ui-search", className)}
         data-demo-state={demoState}
       >
         <Search size={20} className="ui-icon" aria-hidden />
@@ -77,7 +79,7 @@ export function SearchField({
             onOpenChange(false);
           }
         }}
-        className="ui-reset ui-ring-none ui-search__input tu-body-m"
+        className="ui-reset ui-search__input"
       />
       {value !== "" && (
         <button

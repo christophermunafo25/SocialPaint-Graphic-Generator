@@ -1,4 +1,5 @@
 import React, { memo, useCallback, useId, useMemo } from "react";
+import { Plus } from "lucide-react";
 import type { AssistantTurn, ChatDraft, ChatPhoto } from "@/lib/generate/chat";
 import { isRunningTurn } from "@/lib/generate/chatReducer";
 import {
@@ -311,7 +312,8 @@ export const GenerateTurn = memo(function GenerateTurn({
             {gaps.map((g) => (
               <li key={g.id}>
                 <Tag
-                  kind="missing"
+                  kind="outline"
+                  icon={Plus}
                   aria-label={`Add ${g.label}${g.optional ? " (optional)" : ""}`}
                   onClick={() => onFillIn(turn.id, g.draftId, g.fieldKey)}
                 >
@@ -376,12 +378,7 @@ export const GenerateTurn = memo(function GenerateTurn({
 
       {turn.phase === "error" && (
         <div>
-          <Button
-            kind="neutralOnPage"
-            size="sm"
-            disabled={!canRetry}
-            onClick={() => onRetry(turn.id)}
-          >
+          <Button kind="neutral" size="sm" disabled={!canRetry} onClick={() => onRetry(turn.id)}>
             Try again
           </Button>
         </div>

@@ -1,4 +1,5 @@
 import React, { memo, useCallback, useId, useMemo, useRef } from "react";
+import { Plus } from "lucide-react";
 import type { TemplateSchema } from "@/lib/types";
 import type { AssistantTurn, ChatDraft, ChatPhoto } from "@/lib/generate/chat";
 import { isRunningTurn } from "@/lib/generate/chatReducer";
@@ -377,7 +378,8 @@ export const TemplateTurn = memo(function TemplateTurn({
             {entries.map((e) => (
               <li key={e.fieldKey}>
                 <Tag
-                  kind="missing"
+                  kind="outline"
+                  icon={Plus}
                   aria-label={`Add ${e.label}${e.optional ? " (optional)" : ""}`}
                   onClick={() => handlers.onFillIn(turn.id, draft.id, e.fieldKey)}
                 >
@@ -445,7 +447,7 @@ export const TemplateTurn = memo(function TemplateTurn({
       {turn.phase === "error" && (
         <div>
           <Button
-            kind="neutralOnPage"
+            kind="neutral"
             size="sm"
             disabled={!canRetry}
             onClick={() => handlers.onRetry(turn.id)}

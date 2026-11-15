@@ -58,6 +58,7 @@ import { PreAppShell } from "../PreAppShell";
 import { ColorControl } from "../ColorControl";
 import { TemplateThumbnail } from "../TemplateThumbnail";
 import {
+  Badge,
   Button,
   IconButton,
   Input,
@@ -65,7 +66,6 @@ import {
   OptionRadioGroup,
   PlatformLogo,
   Select,
-  Status,
   Upload,
   type OptionTileOption,
 } from "../primitives";
@@ -550,6 +550,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
               errorId={`${ids.name}-e`}
             >
               <Input
+                size="lg"
                 id={ids.name}
                 value={answers.name}
                 autoComplete="name"
@@ -634,6 +635,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
               errorId={`${ids.company}-e`}
             >
               <Input
+                size="lg"
                 id={ids.company}
                 value={answers.companyName}
                 autoComplete="organization"
@@ -731,6 +733,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
               errorId={`${ids.website}-e`}
             >
               <Input
+                size="lg"
                 id={ids.website}
                 value={answers.website}
                 autoComplete="url"
@@ -865,6 +868,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
                   <div key={row.id} className="sp-onb-invite">
                     <div className="sp-onb-invite__row">
                       <Input
+                        size="lg"
                         type="email"
                         value={row.email}
                         aria-label={`Email ${i + 1}`}
@@ -914,7 +918,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
               </div>
               {invites.length < MAX_INVITES && (
                 <Button
-                  kind="neutralOnPage"
+                  kind="neutral"
                   size="sm"
                   icon={Plus}
                   className="sp-onb-add-invite"
@@ -1044,7 +1048,7 @@ function PullRow({ label, status }: { label: string; status: PullStatus }) {
   return (
     <li className="sp-onb-pull__row" data-status={status}>
       <span className="tu-label-m sp-onb-pull__label">{label}</span>
-      <Status tone={tone}>{word}</Status>
+      <Badge tone={tone}>{word}</Badge>
     </li>
   );
 }

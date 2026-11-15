@@ -35,11 +35,11 @@ Radius is a step, and each component names its step. Do not pick a step by neare
 | Token | Value | Use |
 |---|---|---|
 | `--radius-xs` | 4 | Segments inside a track, small swatches |
-| `--radius-sm` | 8 | Buttons, inputs, selects, search, nav and menu items, table rows, the segmented track, the tooltip |
+| `--radius-sm` | 8 | Buttons, ghost icon buttons, inputs, selects, search, nav and menu items, table rows, the segmented track, the tooltip |
 | `--radius-md` | 12 | Wells and plates set inside a card, Upload, Alert |
 | `--radius-lg` | 16 | Menus, popovers, the toast |
 | `--radius-xl` | 20 | Cards, dialogs, metrics, the sidebar, panels |
-| `--radius-full` | 999 | Icon buttons, Send, the stepper, badges, tags, chips, avatars, switches |
+| `--radius-full` | 999 | Filled icon buttons, Send, the stepper's capsule, badges, tags, chips, avatars, switches |
 
 Figma smooths some corners. CSS has no equivalent, so use the plain radius.
 
@@ -83,6 +83,8 @@ No card, chip or panel loses part of its shadow to a container edge. Elevation/1
 - All twenty trim to cap height (`text-box: trim-both cap alphabetic`). Trim is the default and there is no opt-in class. A trimmed line of Label/M is 10 tall, not 20, so spacing is measured from the letters, the way the frames measure it.
 - Because of the trim, a control's height comes from `--size-control-*` and its label is centered. A box sized by padding around a trimmed label would grow by the trimmed amount in a browser without `text-box` (Chrome before 133, Safari before 18.2). The three engines the fidelity harness pins (Chromium 153, Firefox 155, WebKit 26.6) all apply it.
 - No inline font sizes, weights or tracking, and no Tailwind text-size utilities in chrome.
+- An `<input>` and a `<textarea>` take no text style class. The trim clips an input's accents and descenders in Chromium, and in a text area it moves the value and leaves the placeholder where it was. `primitives.css` sets their type from the style's variables (`--type-body-m`), and a text area's padding gives the half-leading back so its first line sits where the file draws it.
+- A trim needs a block. A text style class on a flex or grid container does not trim, so put it on the text's own element.
 - Inter Tight Regular (400) sets reading text and Medium (500) sets controls and titles. Nothing in chrome is heavier. Geist Mono Regular sets the mono styles. Nothing is set below 11.
 - Chrome faces are self-hosted under private " Platform" names (`"Inter Tight Platform"`), never the public family name, so a tenant's font cannot collide with them. Figma's `--font-sans` maps to that private family in code.
 - Text and icons use `--text-primary`. Supporting text uses `--text-secondary`. `--text-disabled` is for disabled controls and nothing else.
@@ -91,11 +93,11 @@ No card, chip or panel loses part of its shadow to a container edge. Elevation/1
 
 Each component is drawn on the Components page with its states in Light and in Dark. That page is the spec.
 
-- **Hover and pressed** change color and nothing else. Each action has its own tokens: `--action-primary-hover` and `-pressed`, `--action-neutral-hover` and `-pressed`, `--action-accent-hover` and `-pressed`, `--action-danger-hover` and `-pressed`. Rows, ghost controls, menu items and nav items use `--state-hover` and `--state-pressed`. Do not lay a tint over a fill.
-- **Selected** is for things that stay chosen: `--state-selected` on rows, nav items, menu items and ghost icon buttons, and `--control-thumb` with `--elevation-thumb` for a segment in its track. A switch, checkbox or radio that is on uses `--control-on` with `--control-on-mark`. Off, its edge is `--border-control`, which reads 3:1 or better.
+- **Hover and pressed** change color and nothing else. Each action has its own tokens: `--action-primary-hover` and `-pressed`, `--action-neutral-hover` and `-pressed`, `--action-accent-hover` and `-pressed`, `--action-danger-hover` and `-pressed`. Rows, ghost controls, menu items and nav items use `--state-hover` and `--state-pressed`. Do not lay a tint over a fill. Three exceptions are drawn in the file and built as drawn: a Switch, Checkbox or Radio hovers with a halo, a `--state-pressed` shape 4 larger than the control (on a checkbox and a radio it lies over the box and under the mark, so an empty box takes its tint); an Input or Select hovers by gaining a `--border-strong` hairline; and the Search Field (`50:62`), which the file still draws the earlier way, lays `--state-hover` over its fill.
+- **Selected** is for things that stay chosen: `--state-selected` on rows, nav items, menu items and ghost icon buttons, `--action-neutral-pressed` on a Filled icon button, `--surface-inverse` under `--text-inverse` on a Chip, and `--control-thumb` with `--elevation-thumb` for a segment in its track. A switch, checkbox or radio that is on uses `--control-on` with `--control-on-mark`. Off, a checkbox or radio is `--surface-raised` with a `--border-control` edge, and a switch's track is filled with `--border-control`. Both read 3:1 or better.
 - **Open** menus count as selected for the control that opened them.
 - **Disabled** controls take their own colors: `--action-disabled` under `--text-disabled`, with no hover. Never dim a control with opacity.
-- **Focus** is the keyboard ring on `:focus-visible`: `var(--stroke-focus)` (2 px) of `--border-focus`, `var(--focus-offset)` (2 px) outside the element, on every interactive control. Text fields take it too. Never remove a focus style without its replacement.
+- **Focus** is the keyboard ring on `:focus-visible`: `var(--stroke-focus)` (2 px) of `--border-focus`, `var(--focus-offset)` (2 px) outside the element, on every interactive control. Text fields take it too. Never remove a focus style without its replacement. In a menu the ring shows on the keyboard's item only: a menu moves focus to the item under the pointer as well, and that one takes the hover fill alone.
 - **Error**: a filled destructive action is `--action-danger` under `--action-on-danger`. Error text is `--feedback-error-text`, a field's error edge is `--feedback-error`, and an alert's ground is `--feedback-error-surface`. Warning has the same three roles under `--feedback-warning-*`.
 - **Loading** keeps its shape. Lists and cards load as skeletons: use the component's Loading state or a Skeleton the size of what is coming, filled with `--surface-skeleton` and pulsing on `--motion-duration-pulse`.
 - **Motion** is for things that open, close or move. Use `--motion-duration-fast`, `-base` or `-slow` with `--motion-easing-standard`, `-enter` or `-exit`. With reduced motion on, durations are zero.
@@ -107,7 +109,7 @@ Slime fills the primary action (`--action-primary` under `--action-on-primary`, 
 
 ## 8. Icons and hit areas
 
-- Use the icon the component uses. The set is 62 lucide icons on the Icons board of the Foundations page, each at 16 and 18. Controls use `--size-icon-sm` (16) and navigation uses `--size-icon-md` (18). The 10, 14, 15 and 20 sizes are retired. Custom glyphs that already exist in the code stay.
+- Use the icon the component uses. The set is 62 lucide icons on the Icons board of the Foundations page, each at 16 and 18. Controls use `--size-icon-sm` (16) at lucide's own stroke (the file's 1.33) and navigation uses `--size-icon-md` (18) at a 1.5 stroke (the file's 1.125). The 10, 14, 15 and 20 sizes are retired, except in the Search Field (`50:62`), which the file still draws with a 20 glyph and a 14 clear glyph. Custom glyphs that already exist in the code stay.
 - A hit area is at least 24 by 24 even when its glyph is smaller.
 - Every icon-only control has an accessible name.
 

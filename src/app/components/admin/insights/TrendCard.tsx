@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import type { InsightsMetric, InsightsRange, TrendPoint } from "@/lib/insights/buildInsights";
-import { Tabs, Tooltip } from "../../primitives";
+import { SegmentedControl, Tooltip } from "../../primitives";
 
 const METRIC_TAB: Record<InsightsMetric, string> = {
   exports: "Exports",
@@ -8,7 +8,7 @@ const METRIC_TAB: Record<InsightsMetric, string> = {
   posted: "Posted",
 };
 
-/** Each metric's series colour (D6): its tab's dot and the highlighted
+/** Each metric's series colour (D6): its segment's dot and the highlighted
  * bar. The same families as the headline chips. */
 const METRIC_DOT = { exports: "green", opens: "blue", posted: "purple" } as const;
 const METRIC_COLOUR: Record<InsightsMetric, string> = {
@@ -104,9 +104,9 @@ export function TrendCard({
   return (
     <section className="sp-in-card sp-in-trend" aria-label="Trend">
       <div className="sp-in-trend__head">
-        <Tabs
+        <SegmentedControl
           aria-label="Trend metric"
-          items={(["exports", "opens", "posted"] as const).map((m) => ({
+          options={(["exports", "opens", "posted"] as const).map((m) => ({
             id: m,
             label: METRIC_TAB[m],
             dot: METRIC_DOT[m],

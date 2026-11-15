@@ -68,12 +68,6 @@
   background: color-mix(in srgb, var(--state-error) 10%, transparent);
   color: var(--state-error);
 }
-/* A loading stand-in: a sunken bar. */
-.sp-bs-bone {
-  display: block;
-  border-radius: var(--radius-xs);
-  background: var(--surface-sunken);
-}
 
 /* ── Overview (13:9043) ── */
 .sp-bs-overview {
@@ -885,11 +879,6 @@ label.sp-bs-add:focus-within {
 .sp-bs-import__row > :first-child {
   flex: 1;
   min-width: 0;
-}
-/* Disabled Import is drawn neutral at 40%, not primary at 40%. */
-.sp-bs-import__row > .ui-btn[data-kind="primary"]:disabled {
-  background: var(--surface-sunken);
-  color: var(--text-strong);
 }
 /* Choose tokens.json: a neutral md button that is also the file picker and
    a drop target, so it stays a label around the input. */

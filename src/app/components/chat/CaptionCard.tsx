@@ -74,6 +74,7 @@ export function CaptionCard({
           <span className="tu-label-m">Caption</span>
         )}
         <IconButton
+          size="sm"
           icon={shown ? Check : Copy}
           label={shown ? "Caption copied" : "Copy caption"}
           disabled={!caption.trim()}

@@ -13,31 +13,33 @@ import {
   BarChart3,
   Building,
   Download,
+  Ellipsis,
   FileText,
   Globe,
   Image,
   Link,
   Loader2,
   Minus,
+  Moon,
   Paintbrush,
   Pencil,
+  Plus,
   Settings,
   Sparkles,
+  Sun,
   Trash2,
   Users,
   X,
 } from "lucide-react";
 import {
-  AttachButton,
   Avatar,
+  Badge,
   Button,
-  Card,
+  Checkbox,
   Chip,
-  ChoiceChip,
-  CompactSelect,
   DetailTag,
   Field,
-  Filter,
+  FooterLinks,
   IconButton,
   Input,
   LookTile,
@@ -48,36 +50,39 @@ import {
   MenuLabel,
   MenuLabelStatic,
   MenuPanel,
-  Metric,
   Modal,
   ModalPanel,
   NavItem,
   PlatformChip,
   Progress,
   ProgressBar,
+  Radio,
   ResultCard,
-  RowMenuTrigger,
+  Search,
   SearchField,
+  Segment,
   SegmentedControl,
   Select,
   SendButton,
   SettingsCard,
   SettingsRailItem,
   Stat,
-  Status,
   Stepper,
-  StepperButton,
   Switch,
+  Tab,
+  Table,
+  TableCell,
+  TableRow,
   Tabs,
   Tag,
   TextArea,
   Upload,
-  ThemeToggle,
   Toast,
   Tooltip,
   OptionTile,
   OptionRadioGroup,
   OptionCheckboxGroup,
+  PageHeader,
   type ButtonKind,
   type ButtonSize,
 } from "@/app/components/primitives";
@@ -87,11 +92,17 @@ export interface SheetGroup {
   render(): React.ReactNode;
 }
 
-const KINDS: ButtonKind[] = ["primary", "neutral", "neutralOnPage", "destructive"];
-const SIZES: ButtonSize[] = ["lg", "md", "default", "sm"];
+const KINDS: ButtonKind[] = ["primary", "neutral", "ghost", "destructive"];
+const SIZES: ButtonSize[] = ["lg", "md", "sm"];
 
-/** The component sheet's groups, one per family, in build order. */
+/** The working sheet's groups: the keyboard ring on every control, then
+ * live controls to click and Tab through, and the Product components that
+ * are rebuilt in later phases. */
 export const SHEET_GROUPS: SheetGroup[] = [
+  {
+    title: "Focus",
+    render: () => <FocusGroup />,
+  },
   {
     title: "Buttons",
     render: () => (
@@ -117,7 +128,7 @@ export const SHEET_GROUPS: SheetGroup[] = [
         <div className="dev-ui-sheet__line">
           <SendButton label="Send" />
           <SendButton label="Stop" action="stop" />
-          <AttachButton label="Attach" />
+          <IconButton icon={Plus} label="Attach" />
         </div>
       </>
     ),
@@ -234,6 +245,91 @@ function OnboardingGroup() {
   );
 }
 
+/** Every control with its keyboard ring held on: stroke/focus of
+ * border/focus, focus/offset outside the control. The boards draw Focus
+ * only for the fields. */
+function FocusGroup() {
+  const noop = () => {};
+  return (
+    <>
+      <div className="dev-ui-sheet__line dev-ui-sheet__line--focus">
+        {KINDS.map((kind) => (
+          <Button key={kind} kind={kind} data-demo-state="focus">
+            Button
+          </Button>
+        ))}
+        <IconButton icon={X} label="Close" data-demo-state="focus" />
+        <IconButton variant="ghost" icon={Settings} label="Settings" data-demo-state="focus" />
+        <SendButton label="Send" data-demo-state="focus" />
+        <Chip data-demo-state="focus">Instagram</Chip>
+        <Chip selected data-demo-state="focus">
+          LinkedIn
+        </Chip>
+        <Switch checked onChange={noop} ariaLabel="Allow photo uploads" data-demo-state="focus" />
+        <Checkbox checked onChange={noop} label="Allow photo uploads" data-demo-state="focus" />
+        <Radio checked onChange={noop} label="Team fills in" data-demo-state="focus" />
+        <Segment data-demo-state="focus">Instagram</Segment>
+        <Tab style={{ flex: "none" }} data-demo-state="focus">
+          Design
+        </Tab>
+      </div>
+      <div className="dev-ui-sheet__line dev-ui-sheet__line--focus">
+        <Input
+          className="dev-ui-w-200"
+          aria-label="Headline"
+          placeholder="Creative Director"
+          readOnly
+          data-demo-state="focus"
+        />
+        <Select
+          className="dev-ui-w-200"
+          ariaLabel="Variation"
+          value="moss"
+          options={LOOKS}
+          onSelect={noop}
+          data-demo-state="focus"
+        />
+        <Search
+          className="dev-ui-w-200"
+          label="Search templates"
+          placeholder="Search templates"
+          value=""
+          onChange={noop}
+          data-demo-state="focus"
+        />
+        <SearchField
+          open={false}
+          onOpenChange={noop}
+          value=""
+          onChange={noop}
+          onClear={noop}
+          label="Search templates"
+          focusOnOpen={false}
+          data-demo-state="focus"
+        />
+        <div className="dev-ui-w-288">
+          <Upload placeholder="Add a photo" data-demo-state="focus" />
+        </div>
+      </div>
+      <div className="dev-ui-sheet__line dev-ui-sheet__line--focus">
+        <NavItem icon={Sparkles} className="dev-ui-w-200" data-demo-state="focus">
+          Generate
+        </NavItem>
+        <MenuPanel>
+          <MenuItemStatic icon={Image} data-demo-state="focus">
+            Photo
+          </MenuItemStatic>
+        </MenuPanel>
+        <Table className="dev-ui-w-400" aria-label="Public links">
+          <TableRow title="Newsletter readers" subtitle="Webinar invite" data-demo-state="focus">
+            <TableCell>31</TableCell>
+          </TableRow>
+        </Table>
+      </div>
+    </>
+  );
+}
+
 function IconButtonsGroup() {
   const [value, setValue] = React.useState(1);
   return (
@@ -243,10 +339,35 @@ function IconButtonsGroup() {
       <IconButton variant="ghost" icon={Settings} label="Settings" />
       <IconButton variant="ghost" icon={Settings} label="Settings (selected)" selected />
       <IconButton variant="ghost" icon={Settings} label="Settings (disabled)" disabled />
-      <RowMenuTrigger label="More actions" aria-haspopup="menu" aria-expanded={false} />
-      <RowMenuTrigger label="More actions (disabled)" disabled />
-      <ThemeToggle label="Switch theme" />
-      <StepperButton icon={Minus} label="Decrease (disabled)" disabled />
+      <IconButton
+        variant="ghost"
+        size="sm"
+        icon={Ellipsis}
+        label="More actions"
+        aria-haspopup="menu"
+        aria-expanded={false}
+      />
+      <IconButton
+        variant="ghost"
+        size="sm"
+        icon={Ellipsis}
+        label="More actions (disabled)"
+        disabled
+      />
+      <IconButton
+        variant="ghost"
+        size="sm"
+        icon={{ light: Sun, dark: Moon }}
+        label="Switch theme"
+      />
+      <IconButton
+        variant="ghost"
+        size="sm"
+        icon={Minus}
+        label="Decrease (disabled)"
+        focusableWhenDisabled
+        disabled
+      />
       <Stepper label="Variations" value={value} min={1} max={3} onChange={setValue} />
     </div>
   );
@@ -342,7 +463,9 @@ function FieldsGroup() {
           disabled
         />
         <div className="dev-ui-sheet__line">
-          <CompactSelect
+          <Select
+            size="sm"
+            hug
             ariaLabel="Platform"
             value={platform}
             options={[
@@ -352,9 +475,13 @@ function FieldsGroup() {
             ]}
             onSelect={setPlatform}
           />
-          <Filter aria-haspopup="menu" aria-expanded={false}>
-            Last 30 days
-          </Filter>
+          <Select
+            hug
+            ariaLabel="Date range"
+            value="30"
+            options={[{ value: "30", label: "Last 30 days" }]}
+            onSelect={() => {}}
+          />
         </div>
         <SearchField
           open={open}
@@ -375,11 +502,35 @@ function TogglesGroup() {
   const [off, setOff] = React.useState(false);
   const [platform, setPlatform] = React.useState("instagram");
   const [metric, setMetric] = React.useState("exports");
+  const [check, setCheck] = React.useState<boolean | "mixed">("mixed");
+  const [rows, setRows] = React.useState("all");
   return (
     <div className="dev-ui-sheet__panel">
       <Switch checked={on} onChange={setOn} ariaLabel="Allow photo uploads" />
       <Switch checked={off} onChange={setOff} ariaLabel="Fields may override type styles" />
       <Switch checked={false} onChange={() => {}} ariaLabel="Disabled switch" disabled />
+      <Switch checked onChange={() => {}} ariaLabel="Disabled switch, on" disabled />
+      <Checkbox checked={check} onChange={setCheck} label="Include drafts" />
+      <Checkbox checked={false} onChange={() => {}} label="Off" />
+      <Checkbox checked onChange={() => {}} label="On" />
+      <Checkbox checked={false} onChange={() => {}} label="Disabled" disabled />
+      <Checkbox checked onChange={() => {}} label="Disabled, on" disabled />
+      <Radio
+        name="dev-rows"
+        value="all"
+        checked={rows === "all"}
+        onChange={() => setRows("all")}
+        label="All rows"
+      />
+      <Radio
+        name="dev-rows"
+        value="problems"
+        checked={rows === "problems"}
+        onChange={() => setRows("problems")}
+        label="Rows with problems"
+      />
+      <Radio checked={false} onChange={() => {}} label="Disabled" disabled />
+      <Radio checked onChange={() => {}} label="Disabled, on" disabled />
       <SegmentedControl
         aria-label="Platform"
         options={[
@@ -389,12 +540,22 @@ function TogglesGroup() {
         selectedId={platform}
         onSelect={setPlatform}
       />
+      <SegmentedControl
+        aria-label="Trend metric"
+        options={[
+          { id: "exports", label: "Exports", dot: "green" },
+          { id: "opens", label: "Opens", dot: "blue" },
+          { id: "posted", label: "Posted", dot: "purple" },
+        ]}
+        selectedId={metric}
+        onSelect={setMetric}
+      />
       <Tabs
         aria-label="Metric"
         items={[
-          { id: "exports", label: "Exports", dot: "green" },
-          { id: "opens", label: "Opens", dot: "blue" },
-          { id: "links", label: "Links", dot: "purple" },
+          { id: "exports", label: "Exports" },
+          { id: "opens", label: "Opens" },
+          { id: "links", label: "Links" },
         ]}
         selectedId={metric}
         onSelect={setMetric}
@@ -415,9 +576,9 @@ function ChipsGroup() {
       </div>
       <div className="dev-ui-sheet__panel">
         {["primary", "secondary", "accent"].map((r) => (
-          <ChoiceChip key={r} selected={role === r} onClick={() => setRole(r)}>
+          <Chip key={r} selected={role === r} onClick={() => setRole(r)}>
             {r[0].toUpperCase() + r.slice(1)}
-          </ChoiceChip>
+          </Chip>
         ))}
         <Tag>Primary</Tag>
         <Tag kind="overlay">On media</Tag>
@@ -425,12 +586,15 @@ function ChipsGroup() {
           socialpaint.ai/careers
         </DetailTag>
         <DetailTag state="sent">Remote</DetailTag>
-        <Status tone="positive">Connected</Status>
-        <Status tone="active">Active</Status>
-        <Status tone="neutral">Expired</Status>
-        <Status tone="positive" size="sm">
-          Connected
-        </Status>
+        <Badge tone="positive">Connected</Badge>
+        <Badge tone="active">Active</Badge>
+        <Badge tone="neutral">Expired</Badge>
+        <Badge tone="error">Failed</Badge>
+        <Badge tone="warning">Expiring</Badge>
+        <Badge tone="blue">Opens</Badge>
+        <Badge tone="purple">Posted</Badge>
+        <Badge tone="pink">New</Badge>
+        <Badge tone="warm">Hot</Badge>
       </div>
       <div className="dev-ui-sheet__line" role="radiogroup" aria-label="Platform">
         {(["all", "instagram", "linkedin"] as const).map((p) => (
@@ -445,8 +609,10 @@ function ChipsGroup() {
             {p === "all" ? "All" : p === "instagram" ? "Instagram" : "LinkedIn"}
           </PlatformChip>
         ))}
-        <Tag kind="filter">Hiring</Tag>
-        <Tag kind="missing">Location</Tag>
+        <Tag kind="outline">Draft</Tag>
+        <Tag kind="outline" icon={Plus} onClick={() => {}}>
+          Location
+        </Tag>
       </div>
     </>
   );
@@ -485,9 +651,13 @@ function NavigationGroup() {
         <div className="dev-ui-sheet__stack">
           <Avatar initials="AS" size="lg" label="Acme Studios" />
           <Avatar initials="AS" />
+          <Avatar initials="AS" size="sm" />
           <Avatar initials="AS" shape="square" />
         </div>
-        <Menu trigger={<RowMenuTrigger label="More actions" />} align="end">
+        <Menu
+          trigger={<IconButton variant="ghost" size="sm" icon={Ellipsis} label="More actions" />}
+          align="end"
+        >
           <MenuLabel>Template</MenuLabel>
           <MenuItem icon={Pencil}>Rename</MenuItem>
           <MenuItem icon={FileText} meta="Optional">
@@ -523,11 +693,28 @@ function NavigationGroup() {
           ))}
         </div>
         <Tooltip label="Tue, Sep 8" value="56 exports" />
+        <Tooltip label="Attach" />
+        <Tooltip label="Switch theme" placement="top">
+          <IconButton variant="ghost" size="sm" icon={Settings} label="Hover or Tab to me" />
+        </Tooltip>
         <Toast
           message={"Added \u201cCustom 1\u201d"}
           actionLabel="Undo"
           onAction={() => setAttach("photo")}
         />
+        <Toast message="Link copied" />
+      </div>
+      <div className="dev-ui-sheet__stack" style={{ width: 640 }}>
+        <PageHeader
+          title="Insights & Analytics"
+          actions={<Button kind="neutral">Export CSV</Button>}
+        />
+        <PageHeader
+          crumbs={[{ label: "Brand Studio", onClick: () => {} }, { label: "Colors" }]}
+          status="All changes saved"
+          actions={<Button kind="neutral">Undo</Button>}
+        />
+        <FooterLinks />
       </div>
     </>
   );
@@ -563,9 +750,6 @@ function ContainersGroup() {
           ))}
         </div>
       </div>
-      <Card title="Your month in brief" subtitle="Aug 17 to Sep 15">
-        <Metric label="Exports" value="1,046" />
-      </Card>
       <SettingsCard
         title="Workspaces"
         action={
@@ -581,7 +765,7 @@ function ContainersGroup() {
         <ProgressBar value={0.4} label="Importing" />
         <ProgressBar label="Uploading" />
       </SettingsCard>
-      <ModalPanel title="Public links" icon={Link}>
+      <ModalPanel title="Public links" icon={Link} wide>
         <PublicLinksBody
           state="ready"
           variants={SAMPLE_LOOKS}
@@ -600,7 +784,7 @@ function ContainersGroup() {
           onToggleUploads={() => {}}
         />
       </ModalPanel>
-      <Modal open={open} onOpenChange={setOpen} title="Public links" icon={Link}>
+      <Modal open={open} onOpenChange={setOpen} title="Public links" icon={Link} wide>
         <Field label="Headline">
           <Input placeholder="Creative Director" />
         </Field>

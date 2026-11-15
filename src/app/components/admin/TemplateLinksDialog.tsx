@@ -13,7 +13,18 @@ import { stores } from "@/lib/stores";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { publicLinkUrl } from "@/lib/publicLink/route";
 import { ErrorState } from "../ErrorState";
-import { Button, Field, Input, Modal, Select, Stat, Status, Switch } from "../primitives";
+import {
+  Badge,
+  Button,
+  Field,
+  Input,
+  Modal,
+  ModalActions,
+  ModalBody,
+  Select,
+  Stat,
+  Switch,
+} from "../primitives";
 
 /** What a link-creating form sends. */
 export interface NewLinkInput {
@@ -102,7 +113,7 @@ export function TemplateLinksDialog({
   };
 
   return (
-    <Modal open onOpenChange={(open) => !open && onClose()} title="Public links" icon={Link}>
+    <Modal open onOpenChange={(open) => !open && onClose()} title="Public links" icon={Link} wide>
       <PublicLinksBody
         state={!available ? "unavailable" : template.status !== "published" ? "draft" : "ready"}
         variants={hasVariants(template) ? template.variants : undefined}
@@ -309,15 +320,15 @@ function Confirm({
 }) {
   return (
     <Modal open={open} onOpenChange={(next) => !next && onCancel()} title={title}>
-      <p className="tu-body-m sp-links__confirm">{body}</p>
-      <div className="sp-links__actions">
-        <Button kind="neutral" size="lg" onClick={onCancel}>
+      <ModalBody>{body}</ModalBody>
+      <ModalActions>
+        <Button kind="neutral" onClick={onCancel}>
           Cancel
         </Button>
-        <Button kind={destructive ? "destructive" : "primary"} size="lg" onClick={onConfirm}>
+        <Button kind={destructive ? "destructive" : "primary"} onClick={onConfirm}>
           {confirmLabel}
         </Button>
-      </div>
+      </ModalActions>
     </Modal>
   );
 }
@@ -435,10 +446,9 @@ function CreateLinkForm({
       </div>
       {variants && (
         <div className="ui-field">
-          <span className="tu-label-xs ui-field__label">Look</span>
+          <span className="t-label-xs ui-field__label">Look</span>
           <Select
             ariaLabel="Which look this link opens"
-            size="lg"
             value={pinned}
             options={lookOptions(variants)}
             onSelect={setPinned}
@@ -495,7 +505,7 @@ function LinkRow({
       <div className="sp-links__rowhead">
         <span className="sp-links__rowname">
           <span className="tu-label-m">{name}</span>
-          <Status tone={state.live ? "active" : "neutral"}>{state.label}</Status>
+          <Badge tone={state.live ? "active" : "neutral"}>{state.label}</Badge>
         </span>
         <span className="sp-links__rowactions">
           <Button kind="neutral" size="sm" onClick={onRegenerate} disabled={busy}>

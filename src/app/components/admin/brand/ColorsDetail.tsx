@@ -7,7 +7,7 @@ import { CONTRAST_PASS, contrastReadout } from "./contrast";
 import { assignColorRole, newCustomColor, type ColorRole } from "./kitOps";
 import { propagationNote, type BrandDraft, type useBrandBindings } from "./kitPlumbing";
 import { ColorControl } from "../../ColorControl";
-import { Button, ChoiceChip, Input, PreviewOverlay, Tag } from "../../primitives";
+import { Button, Chip, Input, PreviewOverlay, Tag } from "../../primitives";
 import { AddSlot } from "./primitives/AddSlot";
 import { useInPlaceEdit, type InPlaceEdit } from "./primitives/useInPlaceEdit";
 
@@ -341,13 +341,13 @@ function ColorPopover({ color, colors, edit, setColors, noteFor }: EditingProps)
           Role
         </span>
         <div role="group" aria-labelledby={titleId} className="sp-bs-chips">
-          <ChoiceChip selected={!color.role} onClick={() => setRole(null)}>
+          <Chip selected={!color.role} onClick={() => setRole(null)}>
             None
-          </ChoiceChip>
+          </Chip>
           {ROLES.map((role) => (
-            <ChoiceChip key={role} selected={color.role === role} onClick={() => setRole(role)}>
+            <Chip key={role} selected={color.role === role} onClick={() => setRole(role)}>
               {ROLE_LABELS[role]}
-            </ChoiceChip>
+            </Chip>
           ))}
         </div>
       </div>

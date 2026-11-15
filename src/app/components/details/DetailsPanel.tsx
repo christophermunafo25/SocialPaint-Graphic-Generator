@@ -130,7 +130,16 @@ export function DetailsPanel({
         <h2 id={titleId} className="tu-title-card">
           {title}
         </h2>
-        {onClose && <IconButton ref={closeRef} icon={X} label={closeLabel} onClick={onClose} />}
+        {onClose && (
+          <IconButton
+            ref={closeRef}
+            variant="ghost"
+            size="sm"
+            icon={X}
+            label={closeLabel}
+            onClick={onClose}
+          />
+        )}
       </div>
 
       {sizeSwitch && sizeSwitch.options.length > 1 && (
@@ -153,7 +162,7 @@ export function DetailsPanel({
         {look && look.options.length > 1 && (
           <div className="ui-field">
             <div className="ui-field__row">
-              <span id={lookLabelId} className="tu-label-xs ui-field__label">
+              <span id={lookLabelId} className="t-label-xs ui-field__label">
                 Look
               </span>
             </div>
@@ -256,7 +265,6 @@ export function DetailField({
         <Select
           id={controlId}
           ariaLabel={field.label}
-          size="lg"
           value={value || undefined}
           placeholder={field.placeholder || "Select…"}
           options={(field.options ?? []).map((o) => ({ value: o, label: o }))}

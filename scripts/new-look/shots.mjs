@@ -4,6 +4,7 @@
  *   node scripts/new-look/shots.mjs capture <dir> [--only a,b] [--themes light,dark] [--widths 1440,1024,390] [--no-popups] [--base URL]
  *   node scripts/new-look/shots.mjs compare <beforeDir> <afterDir> [outDir]
  *   node scripts/new-look/shots.mjs compare-image <a.png> <b.png> <out.png>
+ *   node scripts/new-look/shots.mjs boards <dir> [--base URL]
  *   node scripts/new-look/shots.mjs props <file.json> [--names earlier.json] [--base URL]
  *   node scripts/new-look/shots.mjs props-compare <a.json> <b.json>
  *
@@ -13,8 +14,8 @@
  * Playwright. Every route is saved full page at 1440, 1024 and 390 wide (or
  * --widths) in both themes, as <name>-<theme>-<width>.png (PHASE-9 §9 D9).
  * "onboarding" is the first screen of a browser with no workspace, and
- * "dev-ui" is the primitives sheet, whose Interaction states table is 3172
- * wide (capture it with --widths 3172).
+ * "dev-ui" is the primitives sheet: the boards of the Components page, each
+ * 1600 wide, then the working sheet.
  *
  * A route's options hold a page in a state: `stall` freezes local store
  * calls in loading ("hang") or error ("fail") through src/lib/stores/local/
@@ -29,10 +30,11 @@
  * compare writes a heatmap per changed screen (changed pixels in magenta over
  * the dimmed new screen) and prints the share of pixels that moved. Both
  * compare the overlap of two images of different sizes, from the top left.
- * compare-image does it for any two images: the /dev/ui gate compares the
- * Interaction states table with docs/design/new-look/reference/
- * interaction-states.png, the Figma export (the reference is 4532 tall, so
- * the overlap is the table).
+ * compare-image does it for any two images. boards saves each board of
+ * /dev/ui as its own image, <board>.png, so the /dev/ui gate can compare
+ * every board with its Figma export in docs/design/new-brand/reference/
+ * (buttons, fields, selection, labels, avatars, navigation, containers and
+ * themes).
  * props snapshots every custom property at the root in both themes, so a
  * refactor can prove it changed no value.
  *
@@ -361,10 +363,13 @@ async function capture(dir) {
  * is skipped, and the page is reloaded so the next one starts clean. */
 async function capturePopups(page, shoot) {
   const url = page.url();
-  const count = await page.locator("[aria-haspopup]:visible").count();
+  // The boards of /dev/ui draw each control once per state. Their triggers
+  // are pictures of states; the working sheet under them has the live ones.
+  const triggers = () => page.locator("[aria-haspopup]:visible:not(.dev-board *)");
+  const count = await triggers().count();
   let n = 0;
   for (let i = 0; i < count; i++) {
-    const trigger = page.locator("[aria-haspopup]:visible").nth(i);
+    const trigger = triggers().nth(i);
     try {
       await trigger.click({ timeout: 2000 });
     } catch {
@@ -481,6 +486,31 @@ async function compare(beforeDir, afterDir, outDir = path.join(afterDir, "diff")
   await writeFile(path.join(outDir, "report.json"), JSON.stringify(rows, null, 2));
 }
 
+// ----------------------------------------------------------------- boards
+/** Saves each board of /dev/ui as <board>.png. A board pins its own themes
+ * (Light, with a Dark preview under each component), so one pass covers
+ * both. */
+async function boards(dir) {
+  await mkdir(dir, { recursive: true });
+  await withServer(async (base) => {
+    const browser = await launch();
+    const context = await newContext(browser, "light", {}, 1680);
+    const page = await context.newPage();
+    await page.goto(base + "/dev/ui", { waitUntil: "domcontentloaded" });
+    await settle(page);
+    for (const board of await page.locator(".dev-board").all()) {
+      const name = await board.getAttribute("data-board");
+      await board.screenshot({
+        path: path.join(dir, `${name}.png`),
+        animations: "disabled",
+        caret: "hide",
+      });
+      console.log(name);
+    }
+    await browser.close();
+  });
+}
+
 // ---------------------------------------------------------- compare-image
 async function compareImage(a, b, out) {
   const tmp = await mkdtemp(path.join(os.tmpdir(), "shots-"));
@@ -576,6 +606,7 @@ async function propsCompare(fileA, fileB) {
 if (mode === "capture" && positional[0]) await capture(positional[0]);
 else if (mode === "compare" && positional[1]) await compare(...positional);
 else if (mode === "compare-image" && positional[2]) await compareImage(...positional);
+else if (mode === "boards" && positional[0]) await boards(positional[0]);
 else if (mode === "props" && positional[0]) await props(positional[0]);
 else if (mode === "props-compare" && positional[1]) await propsCompare(...positional);
 else usage();
