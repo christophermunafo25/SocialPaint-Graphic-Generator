@@ -35,6 +35,7 @@ import {
   Avatar,
   Button,
   Card,
+  Checkbox,
   Chip,
   ChoiceChip,
   DetailTag,
@@ -56,6 +57,7 @@ import {
   PlatformChip,
   Progress,
   ProgressBar,
+  Radio,
   ResultCard,
   SearchField,
   SegmentedControl,
@@ -404,11 +406,35 @@ function TogglesGroup() {
   const [off, setOff] = React.useState(false);
   const [platform, setPlatform] = React.useState("instagram");
   const [metric, setMetric] = React.useState("exports");
+  const [check, setCheck] = React.useState<boolean | "mixed">("mixed");
+  const [rows, setRows] = React.useState("all");
   return (
     <div className="dev-ui-sheet__panel">
       <Switch checked={on} onChange={setOn} ariaLabel="Allow photo uploads" />
       <Switch checked={off} onChange={setOff} ariaLabel="Fields may override type styles" />
       <Switch checked={false} onChange={() => {}} ariaLabel="Disabled switch" disabled />
+      <Switch checked onChange={() => {}} ariaLabel="Disabled switch, on" disabled />
+      <Checkbox checked={check} onChange={setCheck} label="Include drafts" />
+      <Checkbox checked={false} onChange={() => {}} label="Off" />
+      <Checkbox checked onChange={() => {}} label="On" />
+      <Checkbox checked={false} onChange={() => {}} label="Disabled" disabled />
+      <Checkbox checked onChange={() => {}} label="Disabled, on" disabled />
+      <Radio
+        name="dev-rows"
+        value="all"
+        checked={rows === "all"}
+        onChange={() => setRows("all")}
+        label="All rows"
+      />
+      <Radio
+        name="dev-rows"
+        value="problems"
+        checked={rows === "problems"}
+        onChange={() => setRows("problems")}
+        label="Rows with problems"
+      />
+      <Radio checked={false} onChange={() => {}} label="Disabled" disabled />
+      <Radio checked onChange={() => {}} label="Disabled, on" disabled />
       <SegmentedControl
         aria-label="Platform"
         options={[
@@ -418,12 +444,22 @@ function TogglesGroup() {
         selectedId={platform}
         onSelect={setPlatform}
       />
+      <SegmentedControl
+        aria-label="Trend metric"
+        options={[
+          { id: "exports", label: "Exports", dot: "green" },
+          { id: "opens", label: "Opens", dot: "blue" },
+          { id: "posted", label: "Posted", dot: "purple" },
+        ]}
+        selectedId={metric}
+        onSelect={setMetric}
+      />
       <Tabs
         aria-label="Metric"
         items={[
-          { id: "exports", label: "Exports", dot: "green" },
-          { id: "opens", label: "Opens", dot: "blue" },
-          { id: "links", label: "Links", dot: "purple" },
+          { id: "exports", label: "Exports" },
+          { id: "opens", label: "Opens" },
+          { id: "links", label: "Links" },
         ]}
         selectedId={metric}
         onSelect={setMetric}

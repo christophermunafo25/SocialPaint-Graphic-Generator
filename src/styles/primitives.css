@@ -789,129 +789,254 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   background: var(--border-default);
 }
 
-/* ── Switch (49:45): a native checkbox over the track. Off is
-   switch/track-off under state/hover; on is switch/track-on under
-   state/hover-inverse. ── */
+/* ── Switch (2211:90): a native checkbox over a 36 by 20 track. On is
+   control/on; off is a track filled with border/control. The thumb is
+   control/on-mark either way. Hover draws a halo 4 larger than the track,
+   behind it. ── */
 .ui-switch {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2xs);
+  gap: var(--space-8);
+  isolation: isolate; /* keeps the halo above what the switch sits on */
   cursor: pointer;
 }
+/* The input covers the switch and its label, and 2 above and below the
+   track, so the hit area is 24 tall. */
 .ui-switch__input {
   position: absolute;
-  inset: 0;
+  inset: calc(-1 * var(--space-2)) 0;
   width: 100%;
-  height: 100%;
+  height: calc(100% + var(--space-4));
   margin: 0;
   opacity: 0;
   cursor: inherit;
 }
 .ui-switch__track {
+  position: relative;
   box-sizing: border-box;
   flex: none;
   display: inline-flex;
-  width: 36px;
+  width: 36px; /* as drawn (2211:90) */
   height: 20px;
-  padding: 2px; /* as drawn (49:41) */
-  border-radius: var(--radius-pill);
-  --_fill: var(--switch-background);
-  --_tint: transparent;
-  background: linear-gradient(var(--_tint), var(--_tint)), var(--_fill);
+  padding: var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--border-control);
+  transition: background-color var(--motion-duration-fast) var(--motion-easing-standard);
+}
+.ui-switch__track::before {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--space-4));
+  z-index: -1;
+  border-radius: var(--radius-full);
+}
+.ui-switch:not([data-disabled]):hover .ui-switch__track::before,
+.ui-switch[data-demo-state="hover"] .ui-switch__track::before {
+  background: var(--state-pressed);
 }
 .ui-switch[data-checked] .ui-switch__track {
-  --_fill: var(--switch-track-on);
-}
-.ui-switch:not([data-disabled]):hover .ui-switch__track,
-.ui-switch[data-demo-state="hover"] .ui-switch__track {
-  --_tint: var(--state-hover);
-}
-.ui-switch[data-checked]:not([data-disabled]):hover .ui-switch__track,
-.ui-switch[data-checked][data-demo-state="hover"] .ui-switch__track {
-  --_tint: var(--state-hover-inverse);
+  background: var(--control-on);
 }
 .ui-switch__knob {
   width: 16px;
   height: 16px;
-  border-radius: var(--radius-pill);
-  background: var(--surface-raised);
+  border-radius: var(--radius-full);
+  background: var(--control-on-mark);
+  transition: transform var(--motion-duration-fast) var(--motion-easing-standard);
 }
 .ui-switch[data-checked] .ui-switch__knob {
   transform: translateX(16px);
 }
 .ui-switch__input:focus-visible + .ui-switch__track,
 .ui-switch[data-demo-state="focus"] .ui-switch__track {
-  outline: var(--focus-width) solid var(--ring);
+  outline: var(--stroke-focus) solid var(--border-focus);
   outline-offset: var(--focus-offset);
 }
 .ui-switch[data-disabled] {
   cursor: default;
 }
 .ui-switch[data-disabled] .ui-switch__track {
-  opacity: 0.4;
+  background: var(--surface-field);
+}
+.ui-switch[data-disabled][data-checked] .ui-switch__track {
+  background: var(--text-disabled);
+}
+.ui-switch[data-disabled] .ui-switch__knob {
+  background: var(--surface-raised);
 }
 
-/* ── Segment (49:50) and Segmented control (49:51) ── */
-.ui-segmented,
-.ui-tabs {
+/* ── Checkbox (2211:148) and Radio (2211:187): a 16 mark with a Body/M
+   label, 8 apart, over a native input. Off is surface/raised with a
+   border/control edge; on is control/on with the mark on control/on-mark.
+   Hover draws a halo 4 larger than the mark, behind it. The box keeps a
+   hairline of room in every state, so the halo and the ring never move. ── */
+.ui-check {
+  position: relative;
   display: inline-flex;
-  border-radius: var(--radius-control-md);
-  background: var(--control-track);
+  align-items: center;
+  gap: var(--space-8);
+  isolation: isolate;
+  color: var(--text-primary);
+  cursor: pointer;
 }
-.ui-segmented {
-  padding: var(--space-3xs);
-  gap: var(--space-3xs);
+/* 4 above and below the mark, so the hit area is 24 tall. */
+.ui-check__input {
+  position: absolute;
+  inset: calc(-1 * var(--space-4)) 0;
+  width: 100%;
+  height: calc(100% + var(--space-8));
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
 }
-.ui-segment,
-.ui-tab {
+.ui-check__box {
+  position: relative;
+  box-sizing: border-box;
+  flex: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-control);
-  color: var(--text-secondary);
+  width: 16px; /* as drawn (2211:148) */
+  height: 16px;
+  border: var(--stroke-hairline) solid var(--border-control);
+  border-radius: var(--radius-xs);
+  background: var(--surface-raised);
+  color: var(--control-on-mark);
 }
-.ui-segment {
-  height: 32px;
-  padding: 0 14px; /* off the scale, as drawn (49:47) */
+.ui-check[data-kind="radio"] .ui-check__box {
+  border-radius: var(--radius-full);
 }
-.ui-segment[data-selected],
-.ui-segment[data-demo-state="selected"],
-.ui-tab[data-selected],
-.ui-tab[data-demo-state="selected"] {
-  --_fill: var(--control-thumb);
-  --_shadow: var(--elevation-thumb);
-  color: var(--text-strong);
+.ui-check__box::before {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * (var(--space-4) + var(--stroke-hairline)));
+  z-index: -1;
+  border-radius: var(--radius-sm);
+}
+.ui-check[data-kind="radio"] .ui-check__box::before {
+  border-radius: var(--radius-full);
+}
+.ui-check:not([data-disabled]):hover .ui-check__box::before,
+.ui-check[data-demo-state="hover"] .ui-check__box::before {
+  background: var(--state-pressed);
+}
+.ui-check__box[data-on] {
+  border-color: transparent;
+  background: var(--control-on);
+}
+/* The mark is drawn on the whole box; the hairline of room is given back. */
+.ui-check__mark {
+  flex: none;
+  margin: calc(-1 * var(--stroke-hairline));
+}
+.ui-check__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: currentColor;
+}
+.ui-check__input:focus-visible + .ui-check__box,
+.ui-check[data-demo-state="focus"] .ui-check__box {
+  outline: var(--stroke-focus) solid var(--border-focus);
+  outline-offset: var(--focus-offset);
+}
+.ui-check[data-disabled] {
+  color: var(--text-disabled);
+  cursor: default;
+}
+.ui-check[data-disabled] .ui-check__box {
+  border-color: var(--border-strong);
+  background: var(--action-disabled);
+}
+.ui-check[data-disabled] .ui-check__box[data-on] {
+  border-color: transparent;
+  background: var(--text-disabled);
+  color: var(--surface-raised);
 }
 
-/* ── Tab (49:62) and Tabs (49:63) ── */
-.ui-tabs {
-  padding: 3px; /* off the scale, as drawn (49:63) */
-  gap: 2px;
+/* ── Segment (2211:211) and Segmented control (2211:213): 28 segments at
+   radius/xs, 2 apart, on a 36 track at radius/sm. The selected one rides
+   control/thumb under Elevation/Thumb. ── */
+.ui-segmented {
+  display: inline-flex;
+  padding: var(--space-4);
+  gap: var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--control-track);
 }
-.ui-tab {
-  padding: 6px var(--space-xs); /* 6 is off the scale, as drawn (49:58) */
-  gap: 7px;
+.ui-segment {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--size-control-sm);
+  padding: 0 var(--space-12);
+  gap: var(--space-6);
+  border-radius: var(--radius-xs);
+  --_selected: var(--control-thumb);
+  --_disabled: transparent;
+  --_fg: var(--text-secondary);
+  --_fg-hover: var(--text-primary);
 }
-.ui-tab__dot {
-  width: 10px;
-  height: 10px;
-  border-radius: var(--radius-pill);
+.ui-segment[data-selected],
+.ui-segment[data-demo-state="selected"] {
+  box-shadow: var(--elevation-thumb);
 }
-.ui-tab__dot[data-dot="green"] {
+/* The ring reaches past the 2 between segments, so the focused one sits
+   above its neighbours. */
+.ui-segment:focus-visible,
+.ui-tab:focus-visible {
+  position: relative;
+  z-index: 1;
+}
+.ui-segment__dot {
+  flex: none;
+  width: 6px; /* as drawn (2211:211) */
+  height: 6px;
+  border-radius: var(--radius-full);
+}
+.ui-segment__dot[data-dot="green"] {
   background: var(--accent-green);
 }
-.ui-tab__dot[data-dot="blue"] {
+.ui-segment__dot[data-dot="blue"] {
   background: var(--accent-blue);
 }
-.ui-tab__dot[data-dot="purple"] {
+.ui-segment__dot[data-dot="purple"] {
   background: var(--accent-purple);
 }
-.ui-tab__dot[data-dot="pink"] {
+.ui-segment__dot[data-dot="pink"] {
   background: var(--accent-pink);
 }
-.ui-tab__dot[data-dot="warm"] {
+.ui-segment__dot[data-dot="warm"] {
   background: var(--accent-warm);
+}
+
+/* ── Tab (4015:635) and Tabs (4015:673): text tabs 20 apart on a hairline.
+   Every tab keeps the underline's 2 of room; the selected one fills it. The
+   file draws no hover, so a hovered tab only takes the selected ink. ── */
+.ui-tabs {
+  display: flex;
+  gap: var(--space-20);
+  border-bottom: var(--stroke-hairline) solid var(--border-subtle);
+}
+.ui-tab {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-4) 0 var(--space-12);
+  border-bottom: 2px solid transparent; /* the underline, as drawn (4015:635) */
+  color: var(--text-secondary);
+}
+.ui-tab:not(:disabled):hover,
+.ui-tab[data-demo-state="hover"] {
+  color: var(--text-primary);
+}
+.ui-tab[data-selected],
+.ui-tab[data-demo-state="selected"] {
+  border-bottom-color: var(--text-primary);
+  color: var(--text-primary);
+}
+.ui-tab:disabled {
+  color: var(--text-disabled);
 }
 
 /* ── Chip (98:515) ── */

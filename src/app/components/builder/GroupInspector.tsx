@@ -3,7 +3,7 @@ import { Ungroup as UngroupIcon } from "lucide-react";
 import type { GroupAxisPoint, LayoutGroup } from "@/lib/types";
 import { isFreeGroup } from "@/lib/types";
 import type { GroupRect } from "@/lib/render/layout";
-import { Switch } from "../Switch";
+import { Switch } from "../primitives";
 import { InlineEdit } from "../InlineEdit";
 import {
   InspectorSection,

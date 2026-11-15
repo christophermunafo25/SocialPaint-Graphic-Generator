@@ -70,7 +70,7 @@ import {
   gradientCss,
 } from "../SchemaRenderer";
 import { Select, type SelectOption } from "./InspectorSelect";
-import { Switch } from "../Switch";
+import { Switch } from "../primitives";
 import {
   InspectorSection,
   NumericField,

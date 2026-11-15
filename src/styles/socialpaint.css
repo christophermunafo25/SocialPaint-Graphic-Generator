@@ -955,64 +955,6 @@ select.sp-input:disabled {
   white-space: nowrap;
 }
 
-/* Switch — the DS core Switch pattern (40×24 pill, sliding knob) on platform
-   tokens: the track fills with the inverting neutral action fill to show it
-   is on (the --fill-action rule), the knob carries the on-action color, and
-   the off state leans on the existing switch-background alias. */
-.sp-switch {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2xs);
-  cursor: pointer;
-}
-.sp-switch[data-disabled] {
-  cursor: default;
-  opacity: 0.5;
-}
-.sp-switch input {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-.sp-switch__track {
-  width: 40px;
-  height: 24px;
-  border-radius: var(--radius-pill);
-  background: var(--switch-background);
-  position: relative;
-  flex-shrink: 0;
-  transition: background var(--dur-state) var(--ease);
-}
-.sp-switch input:checked + .sp-switch__track {
-  background: var(--fill-attention); /* Slime — a fill, legal in both themes */
-}
-.sp-switch input:focus-visible + .sp-switch__track {
-  box-shadow: var(--focus-ring-tight);
-}
-.sp-switch__knob {
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--text-primary);
-  transition:
-    left var(--dur-state) var(--ease),
-    background var(--dur-state) var(--ease);
-}
-.sp-switch input:checked + .sp-switch__track .sp-switch__knob {
-  left: 19px;
-  background: var(--text-on-brand); /* Ink — a display-size glyph on Slime, 11.13:1 */
-}
-@media (prefers-reduced-motion: reduce) {
-  .sp-switch__track,
-  .sp-switch__knob {
-    transition: none;
-  }
-}
-
 /* THE surface recipe: lifted fill, the lit edge, a soft shadow, soft
    radius. The 1px frame stays in the box for layout and for the states that
    still colour it (the composer's focus-within), but at rest it is

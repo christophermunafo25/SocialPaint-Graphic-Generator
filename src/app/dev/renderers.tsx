@@ -160,7 +160,7 @@ export const RENDERERS: Record<string, (state: DemoState) => React.ReactNode> = 
     </Segment>
   ),
   Tab: (s) => (
-    <Tab dot="green" selected={s === "selected"} data-demo-state={demo(s)}>
+    <Tab selected={s === "selected"} data-demo-state={demo(s)}>
       Exports
     </Tab>
   ),
