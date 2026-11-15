@@ -6,7 +6,7 @@ The Figma file "Master UX UI New Brand (Copy)" (`1dYWgFH2V8i9Jez2ylI3ky`) is the
 - `PLAN.md` (this file) is the program: decisions, what Phase 0 found, phases and the screen map.
 - `RULES.md` holds the rules every phase follows.
 - `BRIDGE.md` maps every older token name and text class to the new ones while screens move.
-- `PHASE-1.md` and `PHASE-2.md` are the prompts for Phases 1 and 2. Each later phase gets its own prompt when it starts, written from the frames it builds.
+- `PHASE-1.md`, `PHASE-2.md` and `PHASE-3.md` are the prompts for Phases 1 to 3. Each later phase gets its own prompt when it starts, written from the frames it builds.
 
 It replaces the file "Master UX-UI" as the source of truth. It does not replace `docs/design/new-look/`: that program built the structure this one restyles, and its decisions stand unless one below changes them.
 
@@ -237,9 +237,9 @@ One pull request per phase into `main`. Phase 0 changed the prompt's order in tw
 
 | # | Phase | What lands | Gate highlights | Status |
 |---|---|---|---|---|
-| 0 | Recon and plan | This folder. No product code | CJ approves the plan and answers the questions | At the gate |
+| 0 | Recon and plan | This folder. No product code | CJ approves the plan and answers the questions | Merged 2026-11-14 (#183) |
 | 1 | Foundation | The exporter, JSON, generator and check on the new collections. `tokens.css` regenerated from the new file. `legacy-bridge.css` rewritten so every older name still read points at a new token. The 2 px focus ring, on fields too. The 20 text styles, with existing call sites renamed onto untrimmed twins | Every changed value is on the expected list. No layout moves | Merged 2026-11-14 (#185) |
-| 2 | Primitives | Every component in `PROMPT.md` section 6.1 on the new tokens with its states, tested. The folds (Icon Button, Select, Tooltip, Switch). The new ones (Checkbox, Radio, Table Row, Alert, Empty State, Search, Tabs). `/dev/ui` redrawn to show each one in Light and Dark the way the Components page does | `/dev/ui` matches the boards in both themes | Built 2026-11-15, in review |
+| 2 | Primitives | Every component in `PROMPT.md` section 6.1 on the new tokens with its states, tested. The folds (Icon Button, Select, Tooltip, Switch). The new ones (Checkbox, Radio, Table Row, Alert, Empty State, Search, Tabs). `/dev/ui` redrawn to show each one in Light and Dark the way the Components page does | `/dev/ui` matches the boards in both themes | Merged 2026-11-15 (#189) |
 | 3 | Shell | The app frame: viewport padding, the 320 sidebar, Main as a frame whose content scrolls, the one Page Header row on every page, Breadcrumb, one Footer Links slot. The new logo, mark and favicon | Every route still reachable in both themes. Titles sit at one height | Not started |
 | 4 | Brand Templates | The library, filter, search, the form-only fill page on the Details panel, the public link page's form, the public links dialog, bulk fill in the new shell. The template chat behind its redirect | Screens match their frames in both themes. No shadow cut off on the shelves, the chip rail or the grids | Not started |
 | 5 | Generate | Every state in the screen map, the new chat box, the Result Card with size tabs, History with skeletons | Same | Not started |
@@ -280,7 +280,7 @@ Paths are under `src/app/components/` unless they start with `src/`. Entry point
 | Shell | Sidebar `2218:679`, the Generate pattern `2218:685` for the frame | all | `layout/AppShell.tsx`, `Sidebar.tsx`, `layout/Page.tsx`, `layout/Breadcrumb.tsx`, `layout/ChromeContext.tsx`, `generate/LegalLinks.tsx`, `BrandMark.tsx`, `src/styles/shell.css` |
 | System | Foundations `4012:1192`, Components `4012:1193`, Product components `4012:1194`, Patterns `4012:1195` | `/dev/ui` | `src/styles/*`, `primitives/*`, `src/app/dev/*` |
 
-`npm run shots` captures 44 routes today. It does not capture bulk fill, the public link page or any builder state past its start screen. Phase 3 adds the first two and Phase 6a adds builder states to the fixture.
+`npm run shots` captures 76 routes (counted at `4bd5d1a`), bulk fill, the public link page and the builder editor among them. Phase 6a adds the builder states its frames draw that the fixture lacks.
 
 ## The gate
 
