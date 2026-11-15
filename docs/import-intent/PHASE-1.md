@@ -1,6 +1,6 @@
 # Import intent, Phase 1: read the frame, then build it
 
-Status (2026-11-14): Step 1 done, Gate 1 passed with I1 to I7 approved. `RECON-1.md` holds the recon. I8 is open.
+Status (2026-11-14): Steps 1 to 3 done, Gate 1 passed with I1 to I7 approved, at Gate 2. `RECON-1.md` holds the recon. The P15 fixture is `portrait-plate-import`, a neutral copy of the frame in the GTM Graphics file (`g9mjhQHoPVgYbBIPKR1VsT`, node `432:3`), with no baseline until CJ approves one. I8 is open.
 
 You are working in the SocialPaint repo. An admin who imports a Figma frame should get the template the designer made, with its member form already set up, whichever way they import it. Today the two Figma routes disagree, and both leave work behind:
 
