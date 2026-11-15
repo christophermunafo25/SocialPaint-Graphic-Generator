@@ -20,9 +20,10 @@ export interface MenuProps {
   "aria-label"?: string;
 }
 
-/** Menu (Figma 57:423) on Radix dropdown-menu: Enter, Space or ArrowDown
- * open it, the arrows move (focus is the hover look), Escape closes it and
- * hands focus back to the trigger. */
+/** Menu (Figma 2213:159) on Radix dropdown-menu: Enter, Space or ArrowDown
+ * open it, the arrows move, Escape closes it and hands focus back to the
+ * trigger. The item under the pointer or the keyboard takes state/hover,
+ * and the keyboard's also takes the ring. */
 export function Menu({
   trigger,
   children,
@@ -67,7 +68,7 @@ export interface MenuItemContentProps {
 function MenuItemContent({ icon: Icon, children, meta, chevron, selected }: MenuItemContentProps) {
   return (
     <>
-      {Icon && <Icon size={18} className="ui-icon" aria-hidden />}
+      {Icon && <Icon size={16} className="ui-icon" aria-hidden />}
       <span className="ui-menu-item__label t-body-m">{children}</span>
       {meta && <span className="ui-menu-item__meta t-caption-m">{meta}</span>}
       {chevron && <ChevronRight size={16} className="ui-icon ui-menu-item__chevron" aria-hidden />}
@@ -82,8 +83,9 @@ export interface MenuItemProps extends MenuItemContentProps {
   className?: string;
 }
 
-/** Menu item (Figma 96:507): 34 tall, hover and keyboard focus take
- * state/hover, the current choice state/selected with a check. */
+/** Menu item (Figma 2213:157): 36 tall in Body/M with a 16 icon. Hover
+ * and keyboard focus take state/hover, and the current choice
+ * state/selected with a check. */
 export function MenuItem({ onSelect, disabled, className, ...content }: MenuItemProps) {
   return (
     <DropdownMenu.Item
@@ -97,12 +99,14 @@ export function MenuItem({ onSelect, disabled, className, ...content }: MenuItem
   );
 }
 
-/** Menu label (Figma 57:419): a group's heading inside a menu. */
+/** A group's heading inside a menu, in Mono/Eyebrow. */
 export function MenuLabel({ children }: { children: React.ReactNode }) {
-  return <DropdownMenu.Label className="ui-menu-label t-label-xs">{children}</DropdownMenu.Label>;
+  return (
+    <DropdownMenu.Label className="ui-menu-label t-mono-eyebrow">{children}</DropdownMenu.Label>
+  );
 }
 
-/** Menu divider (Figma 57:421). */
+/** The hairline between a menu's groups. */
 export function MenuDivider() {
   return <DropdownMenu.Separator className="ui-menu-divider" />;
 }
@@ -134,12 +138,12 @@ export function MenuItemStatic({
   );
 }
 export function MenuLabelStatic({ children }: { children: React.ReactNode }) {
-  return <div className="ui-menu-label t-label-xs">{children}</div>;
+  return <div className="ui-menu-label t-mono-eyebrow">{children}</div>;
 }
 
 /** One action in a row's menu. `checked` present (true or false) makes it a
- * radio item with a check on the current one; `destructive` draws it in the
- * error red (an action Undo can't bring back, PHASE-6 §9 D6). */
+ * radio item with a check on the current one; `destructive` draws it in
+ * feedback/error-text (an action Undo can't bring back, PHASE-6 §9 D6). */
 export interface RowMenuAction {
   label: string;
   onSelect(): void;
@@ -181,7 +185,7 @@ function RowMenuItems({
       {groups.map((g, gi) => (
         <React.Fragment key={gi}>
           {gi > 0 && <kit.Separator className="ui-menu-divider" />}
-          {g.label && <kit.Label className="ui-menu-label t-label-xs">{g.label}</kit.Label>}
+          {g.label && <kit.Label className="ui-menu-label t-mono-eyebrow">{g.label}</kit.Label>}
           {g.items.map((item) => (
             <kit.Item
               key={item.label}

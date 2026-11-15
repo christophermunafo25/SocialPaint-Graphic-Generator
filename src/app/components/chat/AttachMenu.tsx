@@ -21,8 +21,7 @@ import {
 } from "@/lib/generate/details";
 import { ImageSourceDialog, pickableAssets } from "../ImageSourceChooser";
 import { BrandStudioGlyph, FileGlyph, PhotoGlyph } from "../generate/icons";
-import { Button, IconButton, Input } from "../primitives";
-import { Tooltip } from "../Tooltip";
+import { Button, IconButton, Input, Tooltip } from "../primitives";
 
 /** The native picker's list for Photo: the three formats the upload
  * pipeline takes. The composer still checks the type and the size cap on
@@ -448,7 +447,7 @@ export const AttachMenu = React.forwardRef<
 
   return (
     <>
-      <Tooltip content={ATTACH_TOOLTIP} placement="right" gap={4} suppressed={open}>
+      <Tooltip label={ATTACH_TOOLTIP} placement="right" gap={4} suppressed={open}>
         <IconButton
           ref={buttonRef}
           id={buttonId}

@@ -12,6 +12,7 @@ export * from "./SearchField";
 export * from "./Toggles";
 export * from "./Chips";
 export * from "./Navigation";
+export * from "./PageHeader";
 export * from "./Menu";
 export * from "./Overlays";
 export * from "./Previews";

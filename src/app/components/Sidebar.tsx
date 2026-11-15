@@ -15,8 +15,7 @@ import { useColorScheme } from "@/lib/colorScheme";
 import { useRouter, type Route } from "../router";
 import { useChrome } from "./layout/ChromeContext";
 import { BrandLockup, BrandMark } from "./BrandMark";
-import { Tooltip } from "./Tooltip";
-import { Avatar, IconButton, NavItem } from "./primitives";
+import { Avatar, IconButton, NavItem, Tooltip } from "./primitives";
 
 // Re-exported so existing `import { BrandMark } from "../Sidebar"` call sites
 // keep working; the components themselves live in BrandMark.tsx.
@@ -375,7 +374,7 @@ export function Sidebar() {
               </NavItem>
             );
             return collapsed ? (
-              <Tooltip key={label} content={label} placement="right">
+              <Tooltip key={label} label={label} placement="right">
                 {item}
               </Tooltip>
             ) : (

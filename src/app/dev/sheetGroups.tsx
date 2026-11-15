@@ -40,6 +40,7 @@ import {
   Chip,
   DetailTag,
   Field,
+  FooterLinks,
   IconButton,
   Input,
   LookTile,
@@ -77,6 +78,7 @@ import {
   OptionTile,
   OptionRadioGroup,
   OptionCheckboxGroup,
+  PageHeader,
   type ButtonKind,
   type ButtonSize,
 } from "@/app/components/primitives";
@@ -596,11 +598,28 @@ function NavigationGroup() {
           ))}
         </div>
         <Tooltip label="Tue, Sep 8" value="56 exports" />
+        <Tooltip label="Attach" />
+        <Tooltip label="Switch theme" placement="top">
+          <IconButton variant="ghost" size="sm" icon={Settings} label="Hover or Tab to me" />
+        </Tooltip>
         <Toast
           message={"Added \u201cCustom 1\u201d"}
           actionLabel="Undo"
           onAction={() => setAttach("photo")}
         />
+        <Toast message="Link copied" />
+      </div>
+      <div className="dev-ui-sheet__stack" style={{ width: 640 }}>
+        <PageHeader
+          title="Insights & Analytics"
+          actions={<Button kind="neutral">Export CSV</Button>}
+        />
+        <PageHeader
+          crumbs={[{ label: "Brand Studio", onClick: () => {} }, { label: "Colors" }]}
+          status="All changes saved"
+          actions={<Button kind="neutral">Undo</Button>}
+        />
+        <FooterLinks />
       </div>
     </>
   );

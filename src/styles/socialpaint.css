@@ -2876,34 +2876,6 @@ input[type="radio"] {
   border-radius: var(--radius-control);
 }
 
-/* ── Tooltip (Figma sp-tooltip 558:958) ───────────────────────────────────
-   12/125% Medium in --gen-on-inverse on --gen-inverse at --radius-tag,
-   7/10 padding, the soft --shadow-rest (none in dark). The caret is Radix's
-   5 × 10 arrow in the bubble's fill, flush against it. No motion. */
-.sp-tooltip {
-  z-index: var(--z-tooltip);
-  padding: 7px 10px;
-  border-radius: var(--radius-tag);
-  background: var(--gen-inverse);
-  color: var(--gen-on-inverse);
-  box-shadow: var(--shadow-rest);
-  font-family: var(--font-ui);
-  font-size: 12px;
-  font-weight: var(--weight-ui);
-  line-height: 1.25;
-  letter-spacing: 0;
-  white-space: nowrap;
-  pointer-events: none;
-  user-select: none;
-}
-.sp-tooltip__caret {
-  fill: var(--gen-inverse);
-}
-@media (forced-colors: active) {
-  .sp-tooltip {
-    border: 1px solid CanvasText;
-  }
-}
 .sp-chat-editor-host {
   display: contents;
 }

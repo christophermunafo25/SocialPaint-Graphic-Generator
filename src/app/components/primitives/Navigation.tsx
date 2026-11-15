@@ -6,16 +6,36 @@ export interface NavItemProps extends React.ButtonHTMLAttributes<HTMLButtonEleme
   /** The page showing; sets aria-current="page". */
   selected?: boolean;
   /** Off in the collapsed rail (the component's Show label boolean): the
-   * row is the icon alone, 38 wide, and the label becomes its accessible
-   * name. The caller adds the tooltip. */
+   * row is the icon alone, and the label becomes its accessible name. The
+   * caller adds the tooltip. */
   showLabel?: boolean;
   "data-demo-state"?: DemoStateAttr;
 }
 
-/** Nav item (Figma 54:83): a sidebar row. Selected takes state/selected,
- * label and icon in full ink; focus is the 2px-out ring. */
+/** The icon and label a nav item draws: an 18 icon at the navigation
+ * stroke, then Label/M. */
+function NavContent({
+  icon: Icon,
+  showLabel = true,
+  children,
+}: {
+  icon: IconComponent;
+  showLabel?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <>
+      <Icon size={18} strokeWidth={1.5} className="ui-icon" aria-hidden />
+      {showLabel && <span className="t-label-m">{children}</span>}
+    </>
+  );
+}
+
+/** Nav item (Figma 2213:109): a 36 row with an icon and a label on
+ * text/secondary. Hover lifts both to text/primary over state/hover;
+ * Selected holds text/primary over state/selected. */
 export const NavItem = React.forwardRef<HTMLButtonElement, NavItemProps>(function NavItem(
-  { icon: Icon, selected = false, showLabel = true, className, children, type = "button", ...rest },
+  { icon, selected = false, showLabel = true, className, children, type = "button", ...rest },
   ref,
 ) {
   return (
@@ -24,20 +44,21 @@ export const NavItem = React.forwardRef<HTMLButtonElement, NavItemProps>(functio
       type={type}
       aria-current={selected ? "page" : undefined}
       aria-label={!showLabel && typeof children === "string" ? children : undefined}
-      className={cx("ui-reset ui-tint ui-ring ui-nav-item", className)}
+      className={cx("ui-reset ui-fill ui-ring ui-nav-item", className)}
       data-selected={selected || undefined}
       data-icon-only={!showLabel || undefined}
       {...rest}
     >
-      <Icon size={18} className="ui-icon" aria-hidden />
-      {showLabel && <span className="tu-label-m">{children}</span>}
+      <NavContent icon={icon} showLabel={showLabel}>
+        {children}
+      </NavContent>
     </button>
   );
 });
 
-/** Settings rail item (Figma 54:100): a Nav item on the page, so Selected
- * takes control/fill, and its focus ring sits against the edge. */
-export interface SettingsRailItemProps extends Omit<NavItemProps, "onClick"> {
+/** A Nav item in the Settings rail. It is the same component: with `href`
+ * it is a real link, so cmd-click opens the section in a new tab. */
+export interface SettingsRailItemProps extends Omit<NavItemProps, "onClick" | "showLabel"> {
   onClick?: React.MouseEventHandler<HTMLElement>;
   /** A real link (cmd-click opens the section in a new tab); the caller's
    * onClick handles the in-app click. Without it the item is a button. */
@@ -46,20 +67,15 @@ export interface SettingsRailItemProps extends Omit<NavItemProps, "onClick"> {
 
 export const SettingsRailItem = React.forwardRef<HTMLElement, SettingsRailItemProps>(
   function SettingsRailItem(
-    { icon: Icon, selected = false, className, children, type = "button", href, ...rest },
+    { icon, selected = false, className, children, type = "button", href, ...rest },
     ref,
   ) {
     const shared = {
       "aria-current": selected ? ("page" as const) : undefined,
-      className: cx("ui-reset ui-tint ui-ring-tight ui-nav-item ui-rail-item", className),
+      className: cx("ui-reset ui-fill ui-ring ui-nav-item", className),
       "data-selected": selected || undefined,
     };
-    const content = (
-      <>
-        <Icon size={18} className="ui-icon" aria-hidden />
-        <span className="tu-label-m">{children}</span>
-      </>
-    );
+    const content = <NavContent icon={icon}>{children}</NavContent>;
     if (href !== undefined) {
       return (
         <a

@@ -239,7 +239,7 @@ export function Select<T extends string>({
             lastGroup = group;
             return (
               <React.Fragment key={o.value}>
-                {header && <div className="ui-menu-label t-label-xs">{group}</div>}
+                {header && <div className="ui-menu-label t-mono-eyebrow">{group}</div>}
                 <div
                   id={`${id}-opt-${i}`}
                   role="option"
@@ -264,7 +264,7 @@ export function Select<T extends string>({
               </React.Fragment>
             );
           })}
-          {menuCaption && <p className="ui-menu__caption tu-caption-m">{menuCaption}</p>}
+          {menuCaption && <p className="ui-menu__caption t-caption-m">{menuCaption}</p>}
         </div>
       )}
     </>

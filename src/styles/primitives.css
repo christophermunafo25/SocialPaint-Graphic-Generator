@@ -692,20 +692,21 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   inset: -5px;
 }
 
-/* ── Menu (57:423), Menu item (96:507), Menu label (57:419), Menu divider
-   (57:421). Shared by Menu, Select and Compact select. Focus in a menu is
-   its hover look. ── */
+/* ── Menu (2213:159) and Menu item (2213:157). Shared by Menu and the
+   Select's list. The item under the pointer or the keyboard takes
+   state/hover; the keyboard's also takes the ring. ── */
 .ui-menu {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 2px; /* as drawn (57:423) */
+  gap: var(--space-2);
   min-width: 200px;
-  padding: 6px; /* off the scale, as drawn (57:423) */
-  border-radius: var(--radius-menu);
+  padding: var(--space-8);
+  border: var(--stroke-hairline) solid var(--border-raised);
+  border-radius: var(--radius-lg);
   background: var(--surface-raised);
-  box-shadow: var(--elevation-medium);
-  color: var(--text-strong);
+  box-shadow: var(--elevation-2-overlay);
+  color: var(--text-primary);
   outline: none;
 }
 .ui-menu--floating {
@@ -714,30 +715,29 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   max-height: 320px;
   overflow-y: auto;
 }
+.ui-menu--popover {
+  z-index: 500; /* the popover layer; z-index is not a Figma token */
+}
 .ui-menu__caption {
   margin: 0;
-  padding: var(--space-2xs) 10px var(--space-3xs);
+  padding: var(--space-8) var(--space-12) var(--space-4);
   color: var(--text-secondary);
   white-space: normal;
 }
 .ui-menu-item {
   box-sizing: border-box;
   display: flex;
+  flex: none;
   align-items: center;
-  height: 34px;
-  padding: var(--space-2xs) var(--space-2xs) var(--space-2xs) 10px; /* 10 as drawn (57:410) */
-  gap: 10px;
-  border-radius: var(--radius-control);
-  color: var(--text-strong);
+  height: var(--size-control-md);
+  padding: 0 var(--space-12);
+  gap: var(--space-8);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
   cursor: pointer;
   outline: none;
   user-select: none;
   white-space: nowrap;
-}
-/* Focus in a menu is the hover look (Radix marks it data-highlighted), not
-   the ring. */
-.ui-menu-item:focus-visible {
-  outline: none;
 }
 .ui-menu-item[data-highlighted],
 .ui-menu-item[data-demo-state="hover"] {
@@ -747,15 +747,25 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 .ui-menu-item[data-demo-state="selected"] {
   background: var(--state-selected);
 }
-/* An action Undo can't bring back (removing a file): the error red. */
+/* The keyboard's item: a Radix item has focus itself; a Select's option is
+   the list's active descendant, so the ring follows the list's focus. */
+.ui-menu-item:focus-visible,
+.ui-menu:focus-visible .ui-menu-item[data-highlighted],
+.ui-menu-item[data-demo-state="focus"] {
+  position: relative;
+  z-index: 1;
+  outline: var(--stroke-focus) solid var(--border-focus);
+  outline-offset: var(--focus-offset);
+}
+/* An action Undo can't bring back (removing a file). */
 .ui-menu-item[data-destructive] {
-  color: var(--state-error);
+  color: var(--feedback-error-text);
 }
 .ui-menu-item[data-dimmed] .ui-menu-item__label {
   color: var(--text-secondary);
 }
 .ui-menu-item[data-disabled] {
-  opacity: 0.4;
+  color: var(--text-disabled);
   cursor: default;
 }
 .ui-menu-item__label {
@@ -768,25 +778,24 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   padding-block: 0.3em;
   margin-block: -0.3em;
 }
-.ui-menu-item__meta {
-  color: var(--text-secondary);
-}
-.ui-menu-item__chevron {
+.ui-menu-item:not([data-disabled]) .ui-menu-item__meta,
+.ui-menu-item:not([data-disabled]) .ui-menu-item__chevron {
   color: var(--text-secondary);
 }
 .ui-menu-label {
-  padding: 10px 0 6px 10px; /* off the scale, as drawn (57:419) */
+  flex: none;
+  padding: var(--space-8) var(--space-12);
   color: var(--text-secondary);
-  letter-spacing: 0.08em; /* as drawn (13:1746; PHASE-5 §8) */
 }
 .ui-menu-divider {
-  padding: var(--space-3xs);
+  flex: none;
+  padding: var(--space-4) 0;
 }
 .ui-menu-divider::before {
   content: "";
   display: block;
-  height: 1px;
-  background: var(--border-default);
+  height: var(--stroke-hairline);
+  background: var(--border-subtle);
 }
 
 /* ── Switch (2211:90): a native checkbox over a 36 by 20 track. On is
@@ -1234,35 +1243,29 @@ button.ui-detail-tag__value {
   background: var(--deep-warm);
   color: var(--accent-warm);
 }
-.ui-menu--popover {
-  z-index: 500; /* the popover layer; z-index is not a Figma token */
-}
 
-/* ── Nav item (54:83) and Settings rail item (54:100) ── */
+/* ── Nav item (2213:109): a 36 row at radius/sm, the icon and label on
+   text/secondary. Hover lifts them to text/primary over state/hover, and
+   Selected holds them there over state/selected. The Settings rail uses the
+   same item. ── */
 .ui-nav-item {
   display: flex;
   align-items: center;
   width: 100%;
-  height: 36px;
-  padding: 0 10px; /* off the scale, as drawn (54:75) */
-  gap: var(--space-xs);
-  border-radius: var(--radius-control);
-  color: var(--text-secondary);
+  height: var(--size-control-md);
+  padding: 0 var(--space-12);
+  gap: var(--space-12);
+  border-radius: var(--radius-sm);
+  --_disabled: transparent;
+  --_fg: var(--text-secondary);
+  --_fg-hover: var(--text-primary);
   text-align: left;
 }
-/* Icon only (the collapsed rail): 38 x 36, as drawn (189:2424). */
+/* Icon only (the collapsed rail). */
 .ui-nav-item[data-icon-only] {
-  width: 38px;
+  width: var(--size-control-md);
+  padding: 0;
   justify-content: center;
-}
-.ui-nav-item[data-selected],
-.ui-nav-item[data-demo-state="selected"] {
-  --_fill: var(--state-selected);
-  color: var(--text-strong);
-}
-.ui-rail-item[data-selected],
-.ui-rail-item[data-demo-state="selected"] {
-  --_fill: var(--control-fill);
 }
 
 /* ── Avatar (2212:214): initials on surface/sunken, 28, 36 or 44. The
@@ -1295,38 +1298,141 @@ button.ui-detail-tag__value {
   border-radius: var(--radius-sm);
 }
 
-/* ── Tooltip (58:434), the chart tooltip ── */
+/* ── Tooltip (2213:206): a raised bubble at radius/sm with a hairline edge,
+   under Elevation/2 Overlay. As a control's hint it floats on the tooltip
+   layer and takes no pointer. ── */
 .ui-tooltip {
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
-  padding: 7px 10px; /* off the scale, as drawn (58:434) */
-  gap: var(--space-2xs);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-control-md);
+  padding: var(--space-8) var(--space-12);
+  gap: var(--space-8);
+  border: var(--stroke-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-sm);
   background: var(--surface-raised);
-  box-shadow: var(--elevation-medium);
-  color: var(--text-strong);
+  box-shadow: var(--elevation-2-overlay);
+  color: var(--text-primary);
   white-space: nowrap;
 }
 .ui-tooltip__label {
   color: var(--text-secondary);
 }
+.ui-tooltip--hint {
+  z-index: 700; /* the tooltip layer; z-index is not a Figma token */
+  pointer-events: none;
+  user-select: none;
+}
 
-/* ── Toast (58:431) ── */
+/* ── Toast (2213:213): raised at radius/lg under Elevation/2 Overlay, 16
+   before the message and 8 around its action, a ghost Small button. The
+   file draws it only with the action, 46 tall. Without one it keeps that
+   height and takes 16 after the message too. ── */
 .ui-toast {
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
-  padding: var(--space-xs) var(--space-sm);
-  gap: var(--space-sm);
-  border: 1px solid var(--border-raised);
-  border-radius: var(--radius-menu);
+  min-height: 46px; /* as drawn (2213:213) */
+  padding: var(--space-8) var(--space-16);
+  gap: var(--space-16);
+  border: var(--stroke-hairline) solid var(--border-raised);
+  border-radius: var(--radius-lg);
   background: var(--surface-raised);
-  box-shadow: var(--elevation-medium);
-  color: var(--text-strong);
+  box-shadow: var(--elevation-2-overlay);
+  color: var(--text-primary);
 }
-.ui-toast__action {
-  border-radius: var(--radius-control);
-  color: var(--text-strong);
+.ui-toast[data-action] {
+  padding-right: var(--space-8);
+}
+
+/* ── Breadcrumb (2213:111): the trail in Label/M, 8 apart. Earlier crumbs
+   and the slashes are on text/secondary; the last, the page's heading, on
+   text/primary. ── */
+.ui-breadcrumb {
+  min-width: 0;
+}
+.ui-breadcrumb > ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ui-breadcrumb li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+}
+.ui-breadcrumb__divider,
+.ui-breadcrumb__link {
+  color: var(--text-secondary);
+}
+.ui-breadcrumb__link {
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+}
+.ui-breadcrumb__link:hover {
+  color: var(--text-primary);
+}
+.ui-breadcrumb__current {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  /* Cap-trimmed: widen the clip box past the descenders without moving
+     the line. */
+  padding-block: 0.3em;
+  margin-block: -0.3em;
+  color: var(--text-primary);
+}
+
+/* ── Page header (4015:764): one row 36 tall. The title (Title/Page) or the
+   breadcrumb on the left; on the right a quiet status line, then the
+   page's actions 8 apart. ── */
+.ui-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-16);
+  min-height: var(--size-control-md);
+  color: var(--text-primary);
+}
+.ui-page-header__title {
+  margin: 0;
+  min-width: 0;
+}
+.ui-page-header__end {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-16);
+}
+.ui-page-header__status {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.ui-page-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+/* ── Footer links (4015:750): Caption/M on text/secondary, 16 apart and
+   centered. ── */
+.ui-footer-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-16);
+}
+.ui-footer-links__link {
+  border-radius: var(--radius-xs);
+  color: var(--text-secondary);
+}
+.ui-footer-links__link:hover {
+  color: var(--text-primary);
 }
 
 /* ── Preview overlay (104:584): overlay/hover over the preview with the
