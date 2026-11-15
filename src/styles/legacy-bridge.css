@@ -69,15 +69,11 @@
   --border-default: var(--border-subtle);
   --input-bg: var(--surface-field);
   --gen-sunken: var(--surface-sunken);
-  --gen-inverse: var(--surface-inverse);
-  --gen-on-inverse: var(--text-inverse);
   --fill-action: var(--surface-inverse);
   --text-on-action: var(--text-inverse);
   --control-fill: var(--surface-sunken);
 
   /* Overlays */
-  --overlay-scrim: var(--surface-scrim);
-  --tag-overlay-bg: var(--surface-overlay);
   --overlay-hover: var(--state-pressed);
   --overlay-control: var(--surface-raised);
   --overlay-control-fg: var(--text-primary);
@@ -91,32 +87,20 @@
   --btn-primary-fg: var(--action-on-primary);
   --btn-primary-bg-hover: var(--action-primary-hover);
 
-  /* Error red. Phase 2 splits the readers into fills, text and grounds. */
+  /* Error red. The primitives read the split roles (a danger fill, error
+     text, an error edge and ground); these serve the pages. */
   --state-error: var(--feedback-error);
   --state-danger: var(--feedback-error);
   --state-danger-on-surface: var(--feedback-error);
 
-  /* States. Holding values until Phase 2 gives each action its own hover
-     and pressed tokens. */
-  --state-hover-inverse: var(--state-hover);
-  --state-pressed-inverse: var(--state-pressed);
-  --state-hover-on-color: var(--state-hover);
-  --state-pressed-on-color: var(--state-pressed);
+  /* States */
   --state-selection: var(--editor-selection);
 
-  /* Controls, status, chips and tags */
-  --switch-track-on: var(--control-on);
+  /* Controls and chips */
   --switch-background: var(--border-control);
-  --status-active-bg: var(--status-active-surface);
-  --status-active-fg: var(--status-active-text);
-  --status-positive-bg: var(--status-positive-surface);
   --chip-selected-bg: var(--surface-inverse);
   --chip-selected-tile: var(--state-selected);
   --chip-tile: var(--action-neutral);
-  --tag-detail-fg: var(--text-secondary);
-  --tag-sent-bg: var(--status-neutral-surface);
-  --tag-sent-fg: var(--text-primary);
-  --tag-sent-border: var(--border-subtle);
 
   /* Chart and field hues */
   --field-green: var(--deep-green);
@@ -144,14 +128,6 @@
 .tu-title-page {
   font: var(--type-title-page);
   letter-spacing: var(--type-title-page-tracking);
-}
-.tu-title-section {
-  font: var(--type-title-section);
-  letter-spacing: var(--type-title-section-tracking);
-}
-.tu-title-group {
-  font: var(--type-title-group);
-  letter-spacing: var(--type-title-group-tracking);
 }
 .tu-title-card {
   font: var(--type-title-card);

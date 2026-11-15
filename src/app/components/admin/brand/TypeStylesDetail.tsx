@@ -357,7 +357,7 @@ function cutLabel(style: FontStyle): string {
  * Every property of one style (13:11314): Name, Font, Weight (the cuts the
  * family ships, §9 D10), Color, Fixed size, Max characters, Letter spacing
  * and Line height on the Field primitive, then Use for (§9 D3), Always
- * uppercase and Shrink to fit the box as ChoiceChips, the rules the style
+ * uppercase and Shrink to fit the box as Chips, the rules the style
  * enforces, and Delete style (quiet: Undo brings it back) and Done.
  * "Not enforced" leaves a property for each template to set.
  */

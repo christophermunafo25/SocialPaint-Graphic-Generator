@@ -13,7 +13,7 @@ export interface MotionTokens {
   ease: [number, number, number, number];
 }
 
-const FALLBACK: MotionTokens = { state: 0.14, panel: 0.22, reveal: 0.4, ease: [0.2, 0, 0, 1] };
+const FALLBACK: MotionTokens = { state: 0.12, panel: 0.2, reveal: 0.4, ease: [0.2, 0, 0, 1] };
 
 const seconds = (raw: string, fallback: number) => {
   const v = raw.trim();
