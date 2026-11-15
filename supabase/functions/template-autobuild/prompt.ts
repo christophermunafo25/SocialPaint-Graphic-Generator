@@ -11,7 +11,7 @@ Fixed (static: true) — always: logos, brand marks, decorative shapes, legal te
 
 Editable — the specific facts that change per post: names, dates, event titles, quotes, headshot and photo slots, milestone numbers, locations. A text layer the designer wrote as an example of per-post content ("Jane Smith", "June 14", "25 years") is editable; a text layer that IS the design ("CONGRATULATIONS" as the headline treatment) is usually Fixed.
 
-When the source declares intent, it outranks your inference: sourceLocked true with no replaceable flag means Fixed; unlocked text is an editable candidate; an image fill with sourceReplaceable true is an image-field candidate.
+When the source declares intent, it outranks your inference: sourceLocked true with no replaceable flag means Fixed; unlocked text is an editable candidate; an image fill with sourceReplaceable true is an image-field candidate. An element that carries declared.edit was decided by the designer in the layer's name: \"member\" is editable and \"fixed\" is Fixed, whatever you would have inferred. declared.role names the element's job.
 
 Cover every element in the list with exactly one field proposal. Anything you skip is imported as Fixed anyway, so skipping is never a way to remove something.
 
