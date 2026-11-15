@@ -1,6 +1,6 @@
 # Import intent, Phase 1: read the frame, then build it
 
-Status (2026-11-14): Steps 1 to 5 done, Gates 1 and 2 passed. Step 6's script (`scripts/import-intent/eval.mjs`) and its offline half are done; the model half needs an Anthropic key in the environment, and Gate 3 waits on it. `RECON-1.md` holds the recon. The P15 fixture is `portrait-plate-import`, a neutral copy of the frame in the GTM Graphics file (`g9mjhQHoPVgYbBIPKR1VsT`, node `432:3`), with no baseline until CJ approves one: it scores about 0.7% to 0.9% once pull request 184 (I8) is merged in, with the cap-trim correction (I9) already here.
+Status (2026-11-15): Steps 1 to 5 and 7 done, Gates 1 and 2 passed. Step 6's script (`scripts/import-intent/eval.mjs`) ran its offline half; CJ skipped the model half (I10), so the bar Gate 3 sets for unkeyed frames, and the calls, tokens and seconds per import, are still open and are to be read from live imports. `RECON-1.md` holds the recon, and "As built" at the end of this file lists where the build departs from the prompt. The P15 fixture is `portrait-plate-import`, a neutral copy of the frame in the GTM Graphics file (`g9mjhQHoPVgYbBIPKR1VsT`, node `432:3`), with no baseline until CJ approves one: it measures about 0.7% to 0.9% once pull request 184 (I8) is merged in.
 
 You are working in the SocialPaint repo. An admin who imports a Figma frame should get the template the designer made, with its member form already set up, whichever way they import it. Today the two Figma routes disagree, and both leave work behind:
 
@@ -87,6 +87,7 @@ Each stays open until CJ marks it. Step 1 stops at Gate 1 while any is open.
 | I7  | The auto build Figma entry stays in the dialogs until new-brand 6a folds the two entries into one | Yes | Yes (CJ, 2026-11-14) |
 | I8  | Newsreader's optical size: the app loads the default cut (16) where Figma draws the display cut (72) at 88 px, about 5.5% wider (`RECON-1.md`) | Request the `opsz` axis for Google families that have one, in its own pull request before Gate 2's baseline | Yes (CJ, 2026-11-14): pull request 184 |
 | I9  | With I8 fixed, the fixture's headline still draws 8 to 9 px higher than Figma. The importer grows a cap-trimmed text box back to full lines by assuming the space above the capitals equals the descent, which is wrong for Newsreader | Correct the box from the loaded font's own metrics when the import lands in the browser (Step 5). The server importer and the renderer stay as they are | Yes (CJ, 2026-11-14) |
+| I10 | The eval's model half (Step 6) needs an Anthropic key on the machine that runs it | Run it, about 58 calls | Skipped (CJ, 2026-11-15). Open: the bar for unkeyed frames (Gate 3) and the calls, tokens and seconds per import |
 
 ## What not to touch
 
@@ -207,6 +208,22 @@ After merge: deploy `figma-import` and `template-autobuild`, then import P15 onc
 - Its import fixture scores within its approved baseline on all three engines, and every other fixture is unchanged.
 - The keyed Adler Platt frames need no edits beyond labels CJ accepts, and unkeyed frames meet the bar set at Gate 3.
 - Calls, tokens and added seconds per import are reported.
+
+## As built
+
+Where the build departs from the prompt above. Each was reported to CJ on 2026-11-14 and is his to confirm or reverse at review.
+
+- **The off-palette report runs in the browser**, not in the validator. A kit that holds fills to its palette also lets its derived role colors through, and only the browser computes those (`clampToPalette`), so a server list would name colors that are never repainted.
+- **Single or multiple lines stay as the walk read them from the node.** The model may only turn a member's single line into a select. Flipping a wrapped headline to one line, or a hug-width label to several, would redraw the design.
+- **The designer's copy stays the sample.** The model's placeholder is used only when a layer has none.
+- **No `colorKey` on the Figma route.** An exact palette match changes nothing, since fields carry baked hex, so the tool doesn't ask for it.
+- **Without the model the form reads copy from the top down, then pictures.** Paint order would put a full-bleed photo first.
+- **The notice says "Labels come from the layer names." when the model pass didn't run.** Info issues have no surface in the builder, so the approved issue string alone would never be seen. This sentence was not among the strings approved at Gate 1.
+- **An answer that is cut off or declined is discarded whole.** The call allows 8,000 output tokens and 90 seconds, and the import then lands on its keys.
+- **The model is asked about 40 text and image fields at most**, text first, each in reading order. Every field the walk found still lands.
+- **The kit's logo is swapped on the server**, in the run both functions share, and is contained and centred in the Figma logo's box.
+- **The flat routes** (Canva and image) no longer propose `maxLength`; the browser measures it. Their retry now validates with the same source kind and plate option as the first call.
+- **The builder calls `template-autobuild` for every Figma import and falls back to `figma-import`** when that function is missing, fails, can't be reached or answers in the older shape. A refusal (a bad link, Figma not connected) is final.
 
 ## Later phases
 

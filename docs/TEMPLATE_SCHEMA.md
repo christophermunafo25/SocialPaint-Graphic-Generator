@@ -100,6 +100,15 @@ Shape, plate and mask (migrations 0034 to 0036):
 
 Figma import (brand-system Phase 4) maps onto these properties: Figma's DROP_SHADOW, INNER_SHADOW, LAYER_BLUR and MONOTONE NOISE land in `effects` (the frame's own in `canvasEffects`); a stroke keeps `strokeAlign` and its alpha; GRADIENT_RADIAL lands as `kind: "radial"`; vector artwork lands as an `icon` field with `vector`; a masked or cropped photo lands with `imageRect`. Anything else keeps a Figma render.
 
+Import intent (Phase 1, `docs/import-intent/PHASE-1.md`) adds no property. It decides what an imported field starts as, from the frame itself:
+
+- **Keys in a layer's name** (`role · kind · key=value`): `edit` sets `static`, `max` sets `maxLength`, `fit` sets `objectFit`, `align` sets `align`, and the role gives the label.
+- **The auto layout around a layer:** a hug-width pill's `align` is the edge its row holds, its `platePaddingY` comes from its container's height, and a member text box takes the height its fixed-height parent leaves it.
+- **One model pass** for what the names leave open: `label`, `static` on unkeyed layers, `type: "select"` with `options` on a member's single line, and `typeStyleKey` only when the layer is drawn in that style exactly. It never sets geometry, color or a limit.
+- **In the browser, as the import lands:** `maxLength` is measured from real glyphs, and text on a cap-trimmed layer is re-placed from the loaded face's metrics (`src/lib/figma/importPrepare.ts`).
+
+The fields array is the form's order, and `zIndex` keeps the frame's paint order.
+
 Gradients: `textGradient` (and `backgroundGradient` on the canvas) is
 `{ angle, stops[{ position 0..1, color }], kind?, center?, radius? }`.
 Absent `kind` is linear along `angle`. `kind: "radial"` ignores the angle
@@ -175,7 +184,7 @@ Icons (brand-system Phase 3, migration 0049):
 
 Guardrails:
 
-- `maxLength` — hard char limit enforced by the input.
+- `maxLength` — hard char limit enforced by the input. An import measures it at the field's shrink floor, and a designer's keyed `max` wins when it is lower.
 - `textSizing` — how text responds to its content, always measured against
   real glyphs (`src/lib/render/autoFit.ts`):
   - `free` (or absent): the font size is fixed and the box grows taller as

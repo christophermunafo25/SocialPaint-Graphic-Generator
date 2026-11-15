@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { BrandKit, TemplateField } from "../types";
+import type { ImportIntentReport as ServerIntentReport } from "../../../supabase/functions/_shared/importIntent.ts";
+import type { BrandKit, ImportIntentReport, TemplateField } from "../types";
 import type { LineMeasurer } from "../render/autoFit";
 import {
   correctCapTrim,
@@ -300,5 +301,15 @@ describe("importSummary", () => {
         "imported",
       ),
     ).toBe("6 elements imported. Members fill in 6: A, B, C, D and 2 more.");
+  });
+});
+
+describe("the intent report", () => {
+  it("is declared the same on both sides of the function boundary", () => {
+    // The functions can't import from src, so the report's shape is written
+    // twice. These two assignments stop the typecheck when they drift apart.
+    const fromServer = (report: ServerIntentReport): ImportIntentReport => report;
+    const toServer = (report: ImportIntentReport): ServerIntentReport => report;
+    expect([fromServer, toServer]).toHaveLength(2);
   });
 });

@@ -4,6 +4,46 @@ Written by brand-system Phase 0 on 2026-10-25, against `main` at 4094a0b (PR 169
 
 Support levels: **live** means a field property draws it, **workaround** means an admin can approximate it with today's fields, and **missing** means it can't be drawn.
 
+## Since import intent
+
+Import intent, Phase 1 (2026-11-15) made the Figma importer read how a frame is made before it builds anything (`docs/import-intent/PHASE-1.md`): the keys a designer writes into layer names (`role · kind · key=value`), the auto layout around each element, and one model pass for what the names leave open. Import from Figma, auto build with a Figma link and a pasted layer now run one pipeline (`supabase/functions/_shared/figmaImportRun.ts`) and land the same result, with the member form filled in. No property was added: everything lands in fields as they already were, and every fixture recorded before is unchanged.
+
+| Fixture                 | Chromium (exact / blurred) | Firefox     | WebKit      |
+| ----------------------- | -------------------------- | ----------- | ----------- |
+| `portrait-plate-import` | 2.23 / 4.28                | 2.25 / 4.28 | 2.27 / 4.33 |
+
+These are measurements, not a baseline: the fixture has none until CJ approves one. Most of what is left is the headline's face. Newsreader has an optical size axis; the app loads its default cut where Figma draws the display cut, about 5.5% narrower at 88 px. With pull request 184 applied as well (the axis requested for the Google families that have one), the fixture measures 0.72 / 0.69, 0.87 / 1.46 and 0.86 / 1.78.
+
+What an import now carries:
+
+- **What members fill in.** A layer keyed `edit=member` lands as a member field by the rules the builder's Fixed switch follows: text gives up its fixed copy, keeps it as the sample and shrinks to stay in its box, and an image keeps its artwork, crop and mask as the sample. `max` becomes the character limit, `fit` the image fit and `align` the text alignment. A mask group reads the keys of the photo inside it. A pill reads its role from its container and its member keys from its text.
+- **Labels from roles.** `photo-fill` reads "Photo", and a role used several times is numbered in reading order.
+- **Growth anchors.** A hug-width pill holds the edge its row holds, so a longer call to action grows away from the headline's left edge instead of off it. A two-child space-between row lands as fixed positions with those anchors, not as a stack.
+- **A pill at its designed height.** Its vertical padding comes from the container's height, so a cap-trimmed label no longer makes the pill taller than it was drawn.
+- **Member text takes its band.** Inside a fixed-height auto layout parent, a member text box takes the height the layout leaves it, anchored as drawn, so `shrink` has the room the design gives it.
+- **Cap trim from the face's own metrics.** When the import lands in the browser, text on a cap-trimmed layer is re-placed from the loaded face's ascent and descent and the cap height Figma trimmed to (`src/lib/figma/importPrepare.ts`). The fixture's Newsreader headline moves 8.6 px. A face whose rise above its capitals equals its descent, as Inter's does, stays where it was.
+- **Measured limits.** Each member text field's `maxLength` is measured in the browser from the designer's own copy at the field's shrink floor, inside `lines` when the layer names them. A keyed `max` that is lower wins, and one that can't fit is lowered. Canva and image imports are measured the same way, in place of the estimate of 0.55 of the font size per character.
+- **The model pass.** One forced tool call per import, in `template-autobuild`, validated before use: labels, Fixed on unkeyed layers, a select, a type style only when the layer is drawn in it exactly, and the template's name, description, category, tags and caption. It never moves, resizes or recolors anything, and a declared `edit` or `max` is never overturned. If the call fails, times out, is declined or is cut off, the import lands on its keys.
+- **The kit's logo.** A logo keyed `variant=primary` with a `surface` takes the kit's primary logo for that surface.
+- **Form order apart from paint order.** The fields array is the order the form reads in; paint order stays the frame's, in `zIndex`.
+
+What it took to publish, counted as edits (Fixed the wrong way round on a field, a member field still carrying its layer's default name, or a caption to write) by `scripts/import-intent/eval.mjs` without the model pass:
+
+| Frames                                    | Before, at least | Keyed | Renamed to Figma's defaults |
+| ----------------------------------------- | ---------------- | ----- | --------------------------- |
+| 28 keyed frames from one client's library | 401              | 28    | 290                         |
+| Feature Highlight and the GTM composer    | 14               | n/a   | 12                          |
+
+A keyed frame needs one edit without the model: its caption. "Before" is a floor: Fixed off, a label and any limit per member field, then a name and a caption, with the repairs to a pill's height and anchor left out.
+
+What is still approximated or open:
+
+- **The model pass is unmeasured.** The eval's model half was not run (CJ, 2026-11-15). Edits on unkeyed frames with the model, and calls, tokens and seconds per import, are still to be read from live imports. Every import's response carries them in `intent`.
+- **Stacks and containers that hug.** A plate doesn't grow with its headline, and a row is not a stack. Both need new properties.
+- **Colour roles** (`fill=accent`, `text=on-card`) are parsed and reported, not stored. That waits for Phase 6.
+- **A swapped logo** is contained and centred in the Figma logo's box, so one narrower than the Figma logo doesn't sit on the edge its row holds.
+- **Character limits** aren't scored by the eval, which runs without a browser.
+
 ## Since Phase 5
 
 Phase 5 (2026-10-28) added the brand system's model and resolvers (`docs/brand-system/PHASE-5.md`): colour roles, five schemes with contrast fixes and a per-canvas type scale, all pure and not yet read by the builder or Generate (Phases 6, 7 and 13). The one visible change is enforcement: with off-palette colours off, shapes, strokes, plates, icon paths and the canvas background now clamp to the palette, as text and gradients already did. Every fixture rendered before is unchanged.
