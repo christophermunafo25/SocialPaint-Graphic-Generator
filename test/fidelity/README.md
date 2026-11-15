@@ -55,3 +55,11 @@ The changed share counts pixels where any channel differs by more than 6. The bl
 ## What the compare can't see
 
 The compare is the shots.mjs one: RGB only, a channel off by more than 6. It ignores alpha, so a transparent pixel and an opaque black one compare equal. `gtm-composer`'s transparent corners are therefore not measured; a render that painted them black would score the same.
+
+## Firefox's one changed setting
+
+The harness launches Firefox with `nglayout.initialpaint.delay` set to 40 (stock is 5), so the Firefox numbers come from a Firefox that is not on stock settings. Chromium and WebKit run as shipped. The pref does not change what a correct export renders: the baselines recorded before it was set still hold.
+
+Firefox suppresses painting for that many milliseconds at the start of every document's life, the export snapshot's own document included. A snapshot drawn inside the window comes out without anything clipped to text (a text gradient, grain on glyphs), and Firefox keeps that raster, so a later draw cannot repair it. At 5 ms an export that draws too early loses the race only on a slow machine, which showed as an occasional `builder-roundtrip` failure on CI. At 40 ms, longer than a frame, it loses on every run.
+
+The export waits `SNAPSHOT_SETTLE_MS` (50 ms, `src/lib/render/exportPng.ts`) before its first draw. The harness value (`FIREFOX_PAINT_DELAY_MS` in `scripts/fidelity/fidelity.mjs`) must stay below that wait, or every Firefox run loses its text-clipped fills.
