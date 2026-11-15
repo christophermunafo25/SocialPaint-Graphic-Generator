@@ -582,8 +582,10 @@ Deno.serve(async (req) => {
           outcome = undefined;
         }
       }
-      if (!outcome) run.details.push(unfilledIssue(run.frameName, mode));
-      if (ask.skipped) run.details.push(skippedIssue(run.frameName, ask.skipped));
+      // A frame with no text or image has no form to fill in, so there is
+      // nothing to say about it.
+      if (!outcome && ask.elements.length) run.details.push(unfilledIssue(run.frameName, mode));
+      if (outcome && ask.skipped) run.details.push(skippedIssue(run.frameName, ask.skipped));
 
       const intent = intentReport({
         fields: run.fields,

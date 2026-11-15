@@ -9,7 +9,7 @@ import {
 import { optionalEnum, parseBody, requireString, requireUuid } from "../_shared/validate.ts";
 import { warningStrings } from "../_shared/extract.ts";
 import { importResponse, runFigmaImport } from "../_shared/figmaImportRun.ts";
-import { NO_MODEL_COST, intentReport, unfilledIssue } from "../_shared/importIntent.ts";
+import { NO_MODEL_COST, intentAsk, intentReport, unfilledIssue } from "../_shared/importIntent.ts";
 
 /** Import from Figma without the model pass. Two modes:
  *
@@ -47,7 +47,10 @@ Deno.serve(async (req) => {
     if ("error" in caller) return json({ error: caller.error }, caller.status);
 
     const run = await runFigmaImport({ db: serviceClient(), companyId, url, mode });
-    run.details.push(unfilledIssue(run.frameName, mode));
+    // A frame with no text or image has no form to fill in.
+    if (intentAsk(run.fields, run.intents).elements.length) {
+      run.details.push(unfilledIssue(run.frameName, mode));
+    }
     return json(
       importResponse(run, warningStrings, {
         frameName: run.frameName,

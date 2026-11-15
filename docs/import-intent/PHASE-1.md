@@ -1,6 +1,6 @@
 # Import intent, Phase 1: read the frame, then build it
 
-Status (2026-11-14): Steps 1 to 3 done, Gate 1 passed with I1 to I7 approved, at Gate 2. `RECON-1.md` holds the recon. The P15 fixture is `portrait-plate-import`, a neutral copy of the frame in the GTM Graphics file (`g9mjhQHoPVgYbBIPKR1VsT`, node `432:3`), with no baseline until CJ approves one. I8 is pull request 184, and I9 adds a cap-trim correction to Step 5.
+Status (2026-11-14): Steps 1 to 5 done, Gates 1 and 2 passed. Step 6's script (`scripts/import-intent/eval.mjs`) and its offline half are done; the model half needs an Anthropic key in the environment, and Gate 3 waits on it. `RECON-1.md` holds the recon. The P15 fixture is `portrait-plate-import`, a neutral copy of the frame in the GTM Graphics file (`g9mjhQHoPVgYbBIPKR1VsT`, node `432:3`), with no baseline until CJ approves one: it scores about 0.7% to 0.9% once pull request 184 (I8) is merged in, with the cap-trim correction (I9) already here.
 
 You are working in the SocialPaint repo. An admin who imports a Figma frame should get the template the designer made, with its member form already set up, whichever way they import it. Today the two Figma routes disagree, and both leave work behind:
 
