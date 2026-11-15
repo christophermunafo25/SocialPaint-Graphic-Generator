@@ -1,0 +1,946 @@
+[
+  {
+    "name": "Buttons",
+    "node": "4012:1206",
+    "height": 1922,
+    "eyebrow": "Buttons",
+    "title": "One button, four kinds, three sizes.",
+    "description": "The old Medium and Default sizes sat 4px apart, and Neutral needed a second kind for use on the page. Neutral is now white with a hairline edge, so it reads on the page and on cards, and disabled swaps colors instead of fading the whole control.",
+    "blocks": [
+      {
+        "name": "Button",
+        "note": "Primary for the one main action in a view, Neutral for everything else, Ghost inside toolbars and rows, Destructive only at the moment of deleting.",
+        "parts": [
+          {
+            "kind": "set",
+            "node": "2206:542",
+            "name": "Button",
+            "w": 1368,
+            "h": 264,
+            "keys": ["Kind", "Size", "State"],
+            "items": [
+              ["Primary|Small|Default", 24, 24, 63, 28, "Button"],
+              ["Primary|Small|Hover", 136, 24, 63, 28, "Button"],
+              ["Primary|Small|Pressed", 248, 24, 63, 28, "Button"],
+              ["Primary|Small|Disabled", 360, 24, 63, 28, "Button"],
+              ["Primary|Medium|Default", 472, 24, 74, 36, "Button"],
+              ["Primary|Medium|Hover", 584, 24, 74, 36, "Button"],
+              ["Primary|Medium|Pressed", 696, 24, 74, 36, "Button"],
+              ["Primary|Medium|Disabled", 808, 24, 74, 36, "Button"],
+              ["Primary|Large|Default", 920, 24, 82, 44, "Button"],
+              ["Primary|Large|Hover", 1032, 24, 82, 44, "Button"],
+              ["Primary|Large|Pressed", 1144, 24, 82, 44, "Button"],
+              ["Primary|Large|Disabled", 1256, 24, 82, 44, "Button"],
+              ["Neutral|Small|Default", 24, 84, 65, 28, "Button"],
+              ["Neutral|Small|Hover", 136, 84, 65, 28, "Button"],
+              ["Neutral|Small|Pressed", 248, 84, 65, 28, "Button"],
+              ["Neutral|Small|Disabled", 360, 84, 63, 28, "Button"],
+              ["Neutral|Medium|Default", 472, 84, 76, 36, "Button"],
+              ["Neutral|Medium|Hover", 584, 84, 76, 36, "Button"],
+              ["Neutral|Medium|Pressed", 696, 84, 76, 36, "Button"],
+              ["Neutral|Medium|Disabled", 808, 84, 74, 36, "Button"],
+              ["Neutral|Large|Default", 920, 84, 84, 44, "Button"],
+              ["Neutral|Large|Hover", 1032, 84, 84, 44, "Button"],
+              ["Neutral|Large|Pressed", 1144, 84, 84, 44, "Button"],
+              ["Neutral|Large|Disabled", 1256, 84, 82, 44, "Button"],
+              ["Ghost|Small|Default", 24, 144, 63, 28, "Button"],
+              ["Ghost|Small|Hover", 136, 144, 63, 28, "Button"],
+              ["Ghost|Small|Pressed", 248, 144, 63, 28, "Button"],
+              ["Ghost|Small|Disabled", 360, 144, 63, 28, "Button"],
+              ["Ghost|Medium|Default", 472, 144, 74, 36, "Button"],
+              ["Ghost|Medium|Hover", 584, 144, 74, 36, "Button"],
+              ["Ghost|Medium|Pressed", 696, 144, 74, 36, "Button"],
+              ["Ghost|Medium|Disabled", 808, 144, 74, 36, "Button"],
+              ["Ghost|Large|Default", 920, 144, 82, 44, "Button"],
+              ["Ghost|Large|Hover", 1032, 144, 82, 44, "Button"],
+              ["Ghost|Large|Pressed", 1144, 144, 82, 44, "Button"],
+              ["Ghost|Large|Disabled", 1256, 144, 82, 44, "Button"],
+              ["Destructive|Small|Default", 24, 204, 63, 28, "Button"],
+              ["Destructive|Small|Hover", 136, 204, 63, 28, "Button"],
+              ["Destructive|Small|Pressed", 248, 204, 63, 28, "Button"],
+              ["Destructive|Small|Disabled", 360, 204, 63, 28, "Button"],
+              ["Destructive|Medium|Default", 472, 204, 74, 36, "Button"],
+              ["Destructive|Medium|Hover", 584, 204, 74, 36, "Button"],
+              ["Destructive|Medium|Pressed", 696, 204, 74, 36, "Button"],
+              ["Destructive|Medium|Disabled", 808, 204, 74, 36, "Button"],
+              ["Destructive|Large|Default", 920, 204, 82, 44, "Button"],
+              ["Destructive|Large|Hover", 1032, 204, 82, 44, "Button"],
+              ["Destructive|Large|Pressed", 1144, 204, 82, 44, "Button"],
+              ["Destructive|Large|Disabled", 1256, 204, 82, 44, "Button"]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Icon Button",
+        "note": "One component now covers the row menu trigger, attach, theme toggle, stepper and close buttons. Always give it an accessible name.",
+        "parts": [
+          {
+            "kind": "set",
+            "node": "2206:686",
+            "name": "Icon Button",
+            "w": 624,
+            "h": 144,
+            "keys": ["Style", "Size", "State"],
+            "items": [
+              ["Filled|Small|Default", 24, 24, 28, 28, ""],
+              ["Filled|Small|Hover", 84, 24, 28, 28, ""],
+              ["Filled|Small|Pressed", 144, 24, 28, 28, ""],
+              ["Filled|Small|Selected", 204, 24, 28, 28, ""],
+              ["Filled|Small|Disabled", 264, 24, 28, 28, ""],
+              ["Filled|Medium|Default", 324, 24, 36, 36, ""],
+              ["Filled|Medium|Hover", 384, 24, 36, 36, ""],
+              ["Filled|Medium|Pressed", 444, 24, 36, 36, ""],
+              ["Filled|Medium|Selected", 504, 24, 36, 36, ""],
+              ["Filled|Medium|Disabled", 564, 24, 36, 36, ""],
+              ["Ghost|Small|Default", 24, 84, 28, 28, ""],
+              ["Ghost|Small|Hover", 84, 84, 28, 28, ""],
+              ["Ghost|Small|Pressed", 144, 84, 28, 28, ""],
+              ["Ghost|Small|Selected", 204, 84, 28, 28, ""],
+              ["Ghost|Small|Disabled", 264, 84, 28, 28, ""],
+              ["Ghost|Medium|Default", 324, 84, 36, 36, ""],
+              ["Ghost|Medium|Hover", 384, 84, 36, 36, ""],
+              ["Ghost|Medium|Pressed", 444, 84, 36, 36, ""],
+              ["Ghost|Medium|Selected", 504, 84, 36, 36, ""],
+              ["Ghost|Medium|Disabled", 564, 84, 36, 36, ""]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Send Button",
+        "note": "Sends a prompt and turns into Stop while a graphic is generating. It shares the Primary green and stays disabled until there is something to send.",
+        "parts": [
+          {
+            "kind": "set",
+            "node": "2206:754",
+            "name": "Send Button",
+            "w": 264,
+            "h": 144,
+            "keys": ["Action", "State"],
+            "items": [
+              ["Send|Default", 24, 24, 36, 36, ""],
+              ["Send|Hover", 84, 24, 36, 36, ""],
+              ["Send|Pressed", 144, 24, 36, 36, ""],
+              ["Send|Disabled", 204, 24, 36, 36, ""],
+              ["Stop|Default", 24, 84, 36, 36, ""],
+              ["Stop|Hover", 84, 84, 36, 36, ""],
+              ["Stop|Pressed", 144, 84, 36, 36, ""],
+              ["Stop|Disabled", 204, 84, 36, 36, ""]
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Fields",
+    "node": "4012:1207",
+    "height": 3411,
+    "eyebrow": "Fields",
+    "title": "Fields share the button heights and show focus.",
+    "description": "Input was 40 tall beside a 36 select and a 50 search. All three now use the same three sizes. Hover darkens the edge, focus adds the ring, and an error is an outline plus a message, never color alone.",
+    "blocks": [
+      {
+        "name": "Input",
+        "note": "A single line of text. Default shows the placeholder, Filled shows a value.",
+        "parts": [
+          {
+            "kind": "set",
+            "node": "2207:263",
+            "name": "Input",
+            "w": 1368,
+            "h": 228,
+            "keys": ["Size", "State"],
+            "items": [
+              ["Small|Default", 24, 24, 200, 28, "Creative Director"],
+              ["Small|Hover", 248, 24, 200, 28, "Creative Director"],
+              ["Small|Focus", 472, 24, 200, 28, "Creative Director"],
+              ["Small|Filled", 696, 24, 200, 28, "Creative Director"],
+              ["Small|Error", 920, 24, 200, 28, "Creative Director"],
+              ["Small|Disabled", 1144, 24, 200, 28, "Creative Director"],
+              ["Medium|Default", 24, 92, 200, 36, "Creative Director"],
+              ["Medium|Hover", 248, 92, 200, 36, "Creative Director"],
+              ["Medium|Focus", 472, 92, 200, 36, "Creative Director"],
+              ["Medium|Filled", 696, 92, 200, 36, "Creative Director"],
+              ["Medium|Error", 920, 92, 200, 36, "Creative Director"],
+              ["Medium|Disabled", 1144, 92, 200, 36, "Creative Director"],
+              ["Large|Default", 24, 160, 200, 44, "Creative Director"],
+              ["Large|Hover", 248, 160, 200, 44, "Creative Director"],
+              ["Large|Focus", 472, 160, 200, 44, "Creative Director"],
+              ["Large|Filled", 696, 160, 200, 44, "Creative Director"],
+              ["Large|Error", 920, 160, 200, 44, "Creative Director"],
+              ["Large|Disabled", 1144, 160, 200, 44, "Creative Director"]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Text Area",
+        "note": "For captions and other text that runs past one line. It grows with its content.",
+        "parts": [
+          {
+            "kind": "set",
+            "node": "2207:298",
+            "name": "Text Area",
+            "w": 936,
+            "h": 264,
+            "keys": ["State"],
+            "items": [
+              ["Default", 24, 24, 280, 96, "Write a caption"],
+              ["Hover", 328, 24, 280, 96, "Write a caption"],
+              ["Focus", 632, 24, 280, 96, "Write a caption"],
+              [
+                "Filled",
+                24,
+                144,
+                280,
+                96,
+                "We’re hiring a Creative Director. If you’d love giving a brand its best look, come paint with us."
+              ],
+              [
+                "Error",
+                328,
+                144,
+                280,
+                96,
+                "We’re hiring a Creative Director. If you’d love giving a brand its best look, come paint with us."
+              ],
+              ["Disabled", 632, 144, 280, 96, "Write a caption"]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Select",
+        "note": "Opens a Menu. Filter and Compact select are now the Medium and Small sizes of this one component.",
+        "parts": [
+          {
+            "kind": "set",
+            "node": "2207:410",
+            "name": "Select",
+            "w": 1368,
+            "h": 228,
+            "keys": ["Size", "State"],
+            "items": [
+              ["Small|Placeholder", 24, 24, 200, 28, "Choose a variation"],
+              ["Small|Default", 248, 24, 200, 28, "Moss"],
+              ["Small|Hover", 472, 24, 200, 28, "Moss"],
+              ["Small|Open", 696, 24, 200, 28, "Moss"],
+              ["Small|Error", 920, 24, 200, 28, "Moss"],
+              ["Small|Disabled", 1144, 24, 200, 28, "Moss"],
+              ["Medium|Placeholder", 24, 92, 200, 36, "Choose a variation"],
+              ["Medium|Default", 248, 92, 200, 36, "Moss"],
+              ["Medium|Hover", 472, 92, 200, 36, "Moss"],
+              ["Medium|Open", 696, 92, 200, 36, "Moss"],
+              ["Medium|Error", 920, 92, 200, 36, "Moss"],
+              ["Medium|Disabled", 1144, 92, 200, 36, "Moss"],
+              ["Large|Placeholder", 24, 160, 200, 44, "Choose a variation"],
+              ["Large|Default", 248, 160, 200, 44, "Moss"],
+              ["Large|Hover", 472, 160, 200, 44, "Moss"],
+              ["Large|Open", 696, 160, 200, 44, "Moss"],
+              ["Large|Error", 920, 160, 200, 44, "Moss"],
+              ["Large|Disabled", 1144, 160, 200, 44, "Moss"]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Search",
+        "note": "A Medium input with a search icon and a clear button once it has a query. Use an Icon Button where the search starts collapsed.",
+        "parts": [
+          {
+            "kind": "set",
+            "node": "2207:455",
+            "name": "Search",
+            "w": 1240,
+            "h": 92,
+            "keys": ["State"],
+            "items": [
+              ["Default", 24, 24, 280, 36, "Search templates"],
+              ["Hover", 328, 24, 280, 36, "Search templates"],
+              ["Focus", 632, 24, 280, 36, "Search templates"],
+              ["Filled", 936, 24, 280, 36, "hiring"]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Field",
+        "note": "Wraps any control with its label, an optional marker, help text and an error message. The label sits 6 above the control.",
+        "parts": [
+          {
+            "kind": "set",
+            "node": "4015:628",
+            "name": "Field",
+            "w": 938,
+            "h": 161,
+            "keys": ["Kind"],
+            "items": [
+              ["Single line", 25, 25, 280, 43, "Headline ¦ Creative Director"],
+              ["Text area", 329, 25, 280, 111, "Headline ¦ Write a caption"],
+              ["Upload", 633, 25, 280, 71, "Headline ¦ Add a photo"]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Search Field",
+        "note": "The collapsed search button that opens into a field. Used in the gallery filter bars.",
+        "parts": [
+          {
+            "kind": "set",
+            "node": "50:62",
+            "name": "Search Field",
+            "w": 652,
+            "h": 114,
+            "keys": ["State"],
+            "items": [
+              ["Collapsed", 32, 32, 50, 50, ""],
+              ["Open", 180, 32, 440, 50, "hiring"],
+              ["Hover", 106, 32, 50, 50, ""]
+            ],
+            "plain": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Selection",
+    "node": "4012:1208",
+    "height": 2821,
+    "eyebrow": "Selection",
+    "title": "On, off and one of many.",
+    "description": "An off switch was 1.4:1 against a white card, which is close to invisible. Off states now use a 3:1 edge. Checkbox and Radio are new, and Tabs merged into Segmented Control because they were the same control at two sizes.",
+    "blocks": [
+      {
+        "name": "Switch",
+        "note": "For a setting that takes effect right away. The label sits beside it in the row, not inside the component.",
+        "parts": [
+          {
+            "kind": "set",
+            "node": "2211:90",
+            "name": "Switch",
+            "w": 228,
+            "h": 128,
+            "keys": ["Checked", "State"],
+            "items": [
+              ["On|Default", 24, 24, 36, 20, ""],
+              ["On|Hover", 92, 24, 36, 20, ""],
+              ["On|Disabled", 160, 24, 36, 20, ""],
+              ["Off|Default", 24, 76, 36, 20, ""],
+              ["Off|Hover", 92, 76, 36, 20, ""],
+              ["Off|Disabled", 160, 76, 36, 20, ""]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Checkbox",
+        "note": "New. For choices that wait for a save, and for picking several rows in a list.",
+        "parts": [
+          {
+            "kind": "set",
+            "node": "2211:148",
+            "name": "Checkbox",
+            "w": 624,
+            "h": 156,
+            "keys": ["Checked", "State"],
+            "items": [
+              ["Off|Default", 24, 24, 146, 16, "Allow photo uploads"],
+              ["Off|Hover", 224, 24, 146, 16, "Allow photo uploads"],
+              ["Off|Disabled", 424, 24, 146, 16, "Allow photo uploads"],
+              ["On|Default", 24, 68, 146, 16, "Allow photo uploads"],
+              ["On|Hover", 224, 68, 146, 16, "Allow photo uploads"],
+              ["On|Disabled", 424, 68, 146, 16, "Allow photo uploads"],
+              ["Mixed|Default", 24, 112, 146, 16, "Allow photo uploads"],
+              ["Mixed|Hover", 224, 112, 146, 16, "Allow photo uploads"],
+              ["Mixed|Disabled", 424, 112, 146, 16, "Allow photo uploads"]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Radio",
+        "note": "New. For one choice from a short list where every option should stay visible.",
+        "parts": [
+          {
+            "kind": "set",
+            "node": "2211:187",
+            "name": "Radio",
+            "w": 624,
+            "h": 112,
+            "keys": ["Checked", "State"],
+            "items": [
+              ["Off|Default", 24, 24, 94, 16, "Team fills in"],
+              ["Off|Hover", 224, 24, 94, 16, "Team fills in"],
+              ["Off|Disabled", 424, 24, 94, 16, "Team fills in"],
+              ["On|Default", 24, 68, 94, 16, "Team fills in"],
+              ["On|Hover", 224, 68, 94, 16, "Team fills in"],
+              ["On|Disabled", 424, 68, 94, 16, "Team fills in"]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Segmented Control",
+        "note": "Switches between a few views of the same thing. Tabs is now this component, and the optional dot marks a data series.",
+        "parts": [
+          {
+            "kind": "set",
+            "node": "2211:211",
+            "name": "Segment",
+            "w": 472,
+            "h": 76,
+            "keys": ["State"],
+            "items": [
+              ["Selected", 24, 24, 82, 28, "Instagram"],
+              ["Default", 136, 24, 82, 28, "Instagram"],
+              ["Hover", 248, 24, 82, 28, "Instagram"],
+              ["Disabled", 360, 24, 82, 28, "Instagram"]
+            ]
+          },
+          {
+            "kind": "comp",
+            "node": "2211:213",
+            "name": "Segmented Control",
+            "w": 247,
+            "h": 36,
+            "text": "Instagram ¦ LinkedIn ¦ Facebook"
+          }
+        ]
+      },
+      {
+        "name": "Stepper",
+        "note": "A small number that only moves in steps, like how many variations to make.",
+        "parts": [
+          {
+            "kind": "comp",
+            "node": "2211:227",
+            "name": "Stepper",
+            "w": 84,
+            "h": 36,
+            "text": "1"
+          }
+        ]
+      },
+      {
+        "name": "Upload",
+        "note": "A field for one image or file. Filled shows a thumbnail, the file name and a way to replace it.",
+        "parts": [
+          {
+            "kind": "set",
+            "node": "2211:278",
+            "name": "Upload",
+            "w": 632,
+            "h": 184,
+            "keys": ["Value", "State"],
+            "items": [
+              ["Empty|Default", 24, 24, 280, 56, "Add a photo"],
+              ["Empty|Hover", 328, 24, 280, 56, "Add a photo"],
+              ["Filled|Default", 24, 104, 280, 56, "portrait.jpg ¦ Replace"],
+              ["Filled|Hover", 328, 104, 280, 56, "portrait.jpg ¦ Replace"]
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Labels",
+    "node": "4012:1209",
+    "height": 1238,
+    "eyebrow": "Chips, tags and badges",
+    "title": "Six overlapping components became three.",
+    "description": "Status, Tag, Platform chip, Detail tag, Chip and Choice chip mixed two shapes and seven heights. Badge shows a status, Tag labels something, and Chip is the one you can click.",
+    "blocks": [
+      {
+        "name": "Badge",
+        "note": "Shows a status and cannot be clicked. Positive and Active use the product green pairing, the four brand tones mark data series, and Error and Warning are the only tones that carry meaning.",
+        "parts": [
+          {
+            "kind": "set",
+            "node": "2212:130",
+            "name": "Badge",
+            "w": 960,
+            "h": 72,
+            "keys": ["Tone"],
+            "items": [
+              ["Positive", 24, 24, 69, 24, "Published"],
+              ["Active", 128, 24, 69, 24, "Published"],
+              ["Neutral", 232, 24, 69, 24, "Published"],
+              ["Error", 336, 24, 69, 24, "Published"],
+              ["Warning", 440, 24, 69, 24, "Published"],
+              ["Blue", 544, 24, 69, 24, "Published"],
+              ["Purple", 648, 24, 69, 24, "Published"],
+              ["Pink", 752, 24, 69, 24, "Published"],
+              ["Warm", 856, 24, 69, 24, "Published"]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Tag",
+        "note": "Labels a thing and cannot be clicked. Overlay sits on top of a graphic, and Outline marks something that still needs filling in.",
+        "parts": [
+          {
+            "kind": "set",
+            "node": "2212:143",
+            "name": "Tag",
+            "w": 384,
+            "h": 72,
+            "keys": ["Kind"],
+            "items": [
+              ["Default", 24, 24, 48, 24, "Hiring"],
+              ["Overlay", 144, 24, 48, 24, "Hiring"],
+              ["Outline", 264, 24, 50, 24, "Hiring"]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Chip",
+        "note": "A small pill you can click. Use it for filters, platform choices, suggestions and details added to a prompt. Selected inverts.",
+        "parts": [
+          {
+            "kind": "set",
+            "node": "2212:187",
+            "name": "Chip",
+            "w": 664,
+            "h": 76,
+            "keys": ["State"],
+            "items": [
+              ["Default", 24, 24, 84, 28, "Instagram"],
+              ["Hover", 152, 24, 84, 28, "Instagram"],
+              ["Pressed", 280, 24, 84, 28, "Instagram"],
+              ["Selected", 408, 24, 82, 28, "Instagram"],
+              ["Disabled", 536, 24, 82, 28, "Instagram"]
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Avatars",
+    "node": "4012:1210",
+    "height": 596,
+    "eyebrow": "Avatars",
+    "title": "Three sizes on the control scale.",
+    "description": "32 and 38 became 28, 36 and 44, so an avatar lines up with the controls in its row.",
+    "blocks": [
+      {
+        "name": "Avatar",
+        "note": "Circle for people, Square for workspaces and brands.",
+        "parts": [
+          {
+            "kind": "set",
+            "node": "2212:214",
+            "name": "Avatar",
+            "w": 432,
+            "h": 92,
+            "keys": ["Size", "Shape"],
+            "items": [
+              ["Small|Circle", 24, 24, 28, 28, "CM"],
+              ["Small|Square", 92, 24, 28, 28, "CM"],
+              ["Medium|Circle", 160, 24, 36, 36, "CM"],
+              ["Medium|Square", 228, 24, 36, 36, "CM"],
+              ["Large|Circle", 296, 24, 44, 44, "CM"],
+              ["Large|Square", 364, 24, 44, 44, "CM"]
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Navigation",
+    "node": "4012:1211",
+    "height": 3422,
+    "eyebrow": "Navigation and menus",
+    "title": "Rows that share one height and one radius.",
+    "description": "Nav items were 36 tall and menu items 34, with different padding on each side. Both are now 36 with 12 either side, and Settings rail item folded into Nav Item.",
+    "blocks": [
+      {
+        "name": "Nav Item",
+        "note": "One destination in the sidebar or the settings rail. Turn the label off when the sidebar is collapsed.",
+        "parts": [
+          {
+            "kind": "set",
+            "node": "2213:109",
+            "name": "Nav Item",
+            "w": 1080,
+            "h": 84,
+            "keys": ["State"],
+            "items": [
+              ["Selected", 24, 24, 240, 36, "Brand Templates"],
+              ["Default", 288, 24, 240, 36, "Brand Templates"],
+              ["Hover", 552, 24, 240, 36, "Brand Templates"],
+              ["Disabled", 816, 24, 240, 36, "Brand Templates"]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Breadcrumb",
+        "note": "Shows where a page sits, one level up. The current page is the darker one.",
+        "parts": [
+          {
+            "kind": "comp",
+            "node": "2213:111",
+            "name": "Breadcrumb",
+            "w": 214,
+            "h": 10,
+            "text": "Generate ¦ Creative Director post"
+          }
+        ]
+      },
+      {
+        "name": "Menu Item",
+        "note": "One action or option in a Menu. Selected adds a check so the choice does not rely on the fill alone.",
+        "parts": [
+          {
+            "kind": "set",
+            "node": "2213:157",
+            "name": "Menu Item",
+            "w": 1016,
+            "h": 84,
+            "keys": ["State"],
+            "items": [
+              ["Default", 24, 24, 224, 36, "Duplicate"],
+              ["Hover", 272, 24, 224, 36, "Duplicate"],
+              ["Selected", 520, 24, 224, 36, "Duplicate"],
+              ["Disabled", 768, 24, 224, 36, "Duplicate"]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Menu",
+        "note": "The surface that Selects, row menus and the attach button open. 8 of padding around 8-radius items inside a 16-radius surface, so the corners stay concentric.",
+        "parts": [
+          {
+            "kind": "comp",
+            "node": "2213:159",
+            "name": "Menu",
+            "w": 240,
+            "h": 205,
+            "text": "Template ¦ Duplicate ¦ Rename ¦ Copy link ¦ Delete"
+          }
+        ]
+      },
+      {
+        "name": "Tooltip",
+        "note": "Names an icon-only control or shows a value on a chart. Never put anything in it that people need in order to act.",
+        "parts": [
+          {
+            "kind": "comp",
+            "node": "2213:206",
+            "name": "Tooltip",
+            "w": 147,
+            "h": 27,
+            "text": "Tue, Sep 8 ¦ 56 exports"
+          }
+        ]
+      },
+      {
+        "name": "Toast",
+        "note": "Confirms something that just happened and goes away on its own. Give it an Undo when the action can be reversed.",
+        "parts": [
+          {
+            "kind": "comp",
+            "node": "2213:213",
+            "name": "Toast",
+            "w": 167,
+            "h": 46,
+            "text": "Link copied ¦ Undo"
+          }
+        ]
+      },
+      {
+        "name": "Tabs",
+        "note": "Text tabs switch views inside a panel. They sit under a hairline, and the selected tab carries the underline.",
+        "parts": [
+          {
+            "kind": "row",
+            "gap": 32,
+            "parts": [
+              {
+                "kind": "set",
+                "node": "4015:635",
+                "name": "Tab",
+                "w": 288,
+                "h": 78,
+                "keys": ["State"],
+                "items": [
+                  ["Selected", 25, 25, 107, 28, "Design"],
+                  ["Default", 156, 25, 107, 26, "Design"]
+                ]
+              },
+              {
+                "kind": "comp",
+                "node": "4015:673",
+                "name": "Tabs",
+                "w": 288,
+                "h": 29,
+                "text": "Design ¦ Field"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Footer Links",
+        "note": "Terms of Service and Privacy Policy, centered at the bottom of every page. Set it to fill the width of the page.",
+        "parts": [
+          {
+            "kind": "comp",
+            "node": "4015:750",
+            "name": "Footer Links",
+            "w": 174,
+            "h": 9,
+            "text": ""
+          }
+        ]
+      },
+      {
+        "name": "Page Header",
+        "note": "Title on the left and the page action on the right. Pages one level down use the Breadcrumb kind with the save status and Undo.",
+        "parts": [
+          {
+            "kind": "set",
+            "node": "4015:764",
+            "name": "Page Header",
+            "w": 1070,
+            "h": 146,
+            "keys": ["Kind"],
+            "items": [
+              ["Title", 25, 25, 1020, 36, "Insights & Analytics ¦ Export CSV"],
+              ["Breadcrumb", 25, 85, 1020, 36, "Brand Studio ¦ Colors ¦ All changes saved ¦ Undo"]
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Containers",
+    "node": "4012:1212",
+    "height": 4810,
+    "eyebrow": "Containers and feedback",
+    "title": "Surfaces, data and the states around them.",
+    "description": "Card, Settings card and Modal used three paddings and two shadows. Every surface now takes 24 of padding, a 20 radius and one of three elevations, and anything that loads has a skeleton the same size as its content.",
+    "blocks": [
+      {
+        "name": "Card",
+        "note": "The base surface for a group of content. Replace Description with any content, and use Loading while it arrives.",
+        "parts": [
+          {
+            "kind": "set",
+            "node": "2215:141",
+            "name": "Card",
+            "w": 792,
+            "h": 184,
+            "keys": ["State"],
+            "items": [
+              [
+                "Default",
+                24,
+                24,
+                360,
+                124,
+                "Top templates ¦ View all ¦ The five templates your team exported most in the last 30 days."
+              ],
+              ["Loading", 408, 24, 360, 116, "Top templates"]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Dialog",
+        "note": "Interrupts for one decision. The confirm button names the action, and Destructive says what will be lost.",
+        "parts": [
+          {
+            "kind": "set",
+            "node": "2215:203",
+            "name": "Dialog",
+            "w": 1032,
+            "h": 227,
+            "keys": ["Kind"],
+            "items": [
+              [
+                "Default",
+                24,
+                24,
+                480,
+                179,
+                "Publish template ¦ Your team will see Now hiring in Brand Templates and can start making graphics from it. ¦ Cancel ¦ Publish"
+              ],
+              [
+                "Destructive",
+                528,
+                24,
+                480,
+                179,
+                "Delete this template? ¦ Now hiring and its three variations will be removed for everyone on your team. Public links to it will stop working. ¦ Cancel ¦ Delete template"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Metric",
+        "note": "One number with its label and how it changed. Stat merged into this.",
+        "parts": [
+          {
+            "kind": "set",
+            "node": "2215:223",
+            "name": "Metric",
+            "w": 552,
+            "h": 204,
+            "keys": ["State"],
+            "items": [
+              ["Default", 24, 24, 240, 145, "Exports ¦ 1,128 ¦ 18% ¦ vs previous 30 days"],
+              ["Loading", 288, 24, 240, 145, "Exports"]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Table Row",
+        "note": "A row of data with one action. Rows are separated by space and a hover fill, and numbers use the mono face so they line up.",
+        "parts": [
+          {
+            "kind": "set",
+            "node": "2215:270",
+            "name": "Table Row",
+            "w": 768,
+            "h": 252,
+            "keys": ["State"],
+            "items": [
+              ["Default", 24, 24, 720, 52, "Newsletter readers ¦ Webinar invite ¦ 58 ¦ 31 ¦ Copy"],
+              ["Hover", 24, 100, 720, 52, "Newsletter readers ¦ Webinar invite ¦ 58 ¦ 31 ¦ Copy"],
+              ["Loading", 24, 176, 720, 52, ""]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Progress Bar",
+        "note": "For progress with a known end, like a template building.",
+        "parts": [
+          {
+            "kind": "comp",
+            "node": "2215:272",
+            "name": "Progress Bar",
+            "w": 240,
+            "h": 4,
+            "text": ""
+          }
+        ]
+      },
+      {
+        "name": "Progress Steps",
+        "note": "For work that moves through a few named stages, like generating a graphic. The label says the step in words.",
+        "parts": [
+          {
+            "kind": "set",
+            "node": "2221:1105",
+            "name": "Progress Steps",
+            "w": 816,
+            "h": 73,
+            "keys": ["Step"],
+            "items": [
+              ["1", 24, 24, 240, 25, "1 of 3 · Reading your brand"],
+              ["2", 288, 24, 240, 25, "2 of 3 · Choosing a layout"],
+              ["3", 552, 24, 240, 25, "3 of 3 · Writing the caption"]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Skeleton",
+        "note": "Stands in for content that is loading, at the same size, so nothing shifts when it arrives. It pulses on motion/duration/pulse.",
+        "parts": [
+          {
+            "kind": "set",
+            "node": "2215:286",
+            "name": "Skeleton",
+            "w": 696,
+            "h": 144,
+            "keys": ["Shape"],
+            "items": [
+              ["Line", 24, 24, 200, 12, ""],
+              ["Block", 248, 24, 200, 96, ""],
+              ["Circle", 472, 24, 36, 36, ""]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Alert",
+        "note": "A message that stays on the page until it is dealt with. The title says what happened and the message says what to do, so the color is never the only signal.",
+        "parts": [
+          {
+            "kind": "set",
+            "node": "2215:302",
+            "name": "Alert",
+            "w": 1296,
+            "h": 134,
+            "keys": ["Tone"],
+            "items": [
+              [
+                "Neutral",
+                24,
+                24,
+                400,
+                64,
+                "This template has unpublished changes ¦ Publish to update the version your team sees."
+              ],
+              [
+                "Error",
+                448,
+                24,
+                400,
+                84,
+                "We could not publish this template ¦ Check your connection and try again. Your changes are saved."
+              ],
+              [
+                "Warning",
+                872,
+                24,
+                400,
+                64,
+                "This public link expires in 3 days ¦ Extend it in the link settings to keep it working."
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Empty State",
+        "note": "What a list shows before it has anything in it. Say what goes here and offer the one action that fills it.",
+        "parts": [
+          {
+            "kind": "comp",
+            "node": "2215:304",
+            "name": "Empty State",
+            "w": 384,
+            "h": 247,
+            "text": "No templates yet ¦ Build your first template and your team can start making graphics from it. ¦ New template"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Themes",
+    "node": "4012:1214",
+    "height": 1739,
+    "eyebrow": "Themes",
+    "title": "The same components in Light and Dark.",
+    "description": "Nothing is redrawn for Dark. Each panel below holds the same instances, and only the mode of the color collection changes.",
+    "blocks": []
+  }
+]

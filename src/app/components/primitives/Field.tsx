@@ -58,8 +58,10 @@ export interface TextAreaProps extends React.TextareaHTMLAttributes<HTMLTextArea
   "data-demo-state"?: DemoStateAttr;
 }
 
-/** Text area (Figma 2207:298): 96 tall with 12 around the text, and the
- * Input's states. */
+/** Text area (Figma 2207:298): 96 tall with 12 around the text, growing
+ * with what is typed, and the Input's states. Like the Input it takes no
+ * text style class: a trim would move the value and leave the placeholder
+ * where it was. primitives.css sets Body/M. */
 export const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(function TextArea(
   { className, ...rest },
   ref,
@@ -67,7 +69,7 @@ export const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(fun
   return (
     <textarea
       ref={ref}
-      className={cx("ui-reset ui-fill ui-ring ui-input t-body-m", className)}
+      className={cx("ui-reset ui-fill ui-ring ui-input", className)}
       data-size="multiline"
       {...rest}
     />

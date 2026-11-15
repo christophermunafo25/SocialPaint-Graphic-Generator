@@ -1,134 +1,181 @@
-/* /dev/ui only (development builds). Lays out the Interaction states table
-   to the frame's measurements (Figma 105:641; PHASE-2-COMPONENTS.md Part C,
-   "Page layout") and the component sheet under it. Tokens only. */
+/* /dev/ui only (development builds). Lays out the boards of the Components
+   page (Figma 4012:1193) to the file's measurements, and the working sheet
+   under them. Tokens only. */
 
 .dev-ui {
   min-height: 100vh;
   background: var(--surface-page);
-  color: var(--text-strong);
+  color: var(--text-primary);
 }
 
-/* ── The table (3172 wide, like the frame) ── */
-.dev-ui-states {
+/* ── A board: 1600 wide with 96 around one column, as the file draws it ── */
+.dev-board {
   box-sizing: border-box;
-  width: 3172px;
-  /* The frame's padding is 64, a raw value (105:641). */
-  padding: 64px;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xl);
+  width: 1600px;
+  padding: var(--space-96);
   background: var(--surface-page);
-  color: var(--text-strong);
+  color: var(--text-primary);
 }
-.dev-ui-states h1,
-.dev-ui-states h2,
-.dev-ui-states p {
+.dev-board h2,
+.dev-board h3,
+.dev-board p {
   margin: 0;
 }
-.dev-ui-states__header {
-  width: 1100px;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
+/* The file rounds a trimmed line to whole pixels (Mono/Eyebrow 8,
+   Title/Section 17, Title/Card 13, a line of Body/M 10). The browser keeps
+   the fraction, which would push every set off the file's pixel grid, so
+   the board's own text takes the file's heights. The specimens are left
+   alone. */
+.dev-board__inner > .dev-board__header > .t-mono-eyebrow,
+.dev-board__block > .t-mono-eyebrow {
+  height: 8px;
 }
-.dev-ui-states__rules {
+.dev-board__header > .t-title-section {
+  height: 17px;
+}
+.dev-board__block > .t-title-card {
+  height: 13px;
+}
+.dev-board__header > .t-body-m,
+.dev-board__block > .t-body-m {
+  margin-bottom: calc(10px - 1cap);
+}
+.dev-board__inner {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2xs);
+  align-items: flex-start;
+  gap: var(--space-32);
+}
+.dev-board__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  width: 640px;
+}
+.dev-board__quiet,
+.dev-board__note {
   color: var(--text-secondary);
 }
-.dev-ui-table {
+.dev-board__block {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-16);
 }
-.dev-ui-row {
-  display: flex;
-  gap: var(--space-md);
-}
-.dev-ui-row__label {
-  box-sizing: border-box;
-  flex: none;
-  width: 300px;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3xs);
-  padding: var(--space-sm) 0;
-}
-.dev-ui-row__label--head {
-  padding: 0 0 var(--space-xs);
-  color: var(--text-secondary);
-}
-.dev-ui-row__label--family {
-  /* 40 above the family title, as drawn. */
-  padding: 40px 0 var(--space-sm);
-}
-.dev-ui-row__caption {
-  width: 284px;
-  color: var(--text-secondary);
-  white-space: normal;
-}
-.dev-ui-row__mode {
-  box-sizing: border-box;
-  flex: none;
-  width: 1348px;
-  display: flex;
-  gap: var(--space-xs);
-  padding: var(--space-2xs) var(--space-sm);
-  background: var(--surface-page);
-  color: var(--text-strong);
-}
-.dev-ui-row__mode--head {
-  flex-direction: column;
-  gap: var(--space-2xs);
-  padding: var(--space-sm) var(--space-sm) var(--space-xs);
-}
-.dev-ui-row__states {
-  display: flex;
-  gap: var(--space-xs);
-  color: var(--text-secondary);
-}
-.dev-ui-row__states > * {
-  width: 320px;
+.dev-board__note {
+  width: 640px;
 }
 
-.dev-ui-cell {
-  box-sizing: border-box;
+/* A component set: its variants at the places the file gives them. In
+   Light it sits in the file's dashed box, drawn over the set so the
+   variants keep their coordinates. */
+.dev-board__set {
+  position: relative;
   flex: none;
-  width: 320px;
+}
+.dev-board__set[data-boxed]::after,
+.dev-board__dark::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: var(--stroke-hairline) dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  pointer-events: none;
+}
+.dev-board__cell,
+.dev-board__comp {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  /* The cell's gap is 10, a raw value (105:672). */
-  gap: 10px;
-  padding: var(--space-sm) var(--space-sm) var(--space-xs);
-  border-radius: var(--radius-media-plate);
+  align-items: flex-start;
 }
-.dev-ui-cell[data-surface="raised"] {
-  background: var(--surface-raised);
+.dev-board__cell {
+  position: absolute;
 }
-.dev-ui-cell[data-surface="page"] {
-  background: var(--surface-page);
+.dev-board__cell[data-fill],
+.dev-board__comp[data-fill] {
+  align-items: stretch;
 }
-.dev-ui-cell[data-surface="sunken"] {
-  background: var(--surface-sunken);
+.dev-board__comp {
+  flex: none;
 }
-.dev-ui-cell[data-surface="track"] {
-  background: var(--control-track);
-}
-.dev-ui-cell--empty {
-  justify-content: center;
-}
-.dev-ui-cell__element {
+.dev-board__row {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  max-width: 100%;
-}
-.dev-ui-cell__caption {
-  color: var(--text-secondary);
+  align-items: flex-start;
 }
 
-/* ── The component sheet ── */
+/* The Dark preview: the same drawing on the Dark page ground, in a frame
+   with a solid hairline. One set fills its frame; anything else sits 24
+   inside it, 16 apart. */
+.dev-board__dark {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-16);
+  padding: var(--stroke-hairline);
+  border-radius: var(--radius-lg);
+  background: var(--surface-page);
+  color: var(--text-primary);
+}
+.dev-board__dark::after {
+  border-style: solid;
+}
+.dev-board__dark[data-padded] {
+  padding: calc(var(--space-24) + var(--stroke-hairline));
+}
+
+/* ── The Themes board's panels: 688 wide, 32 around and between ── */
+.dev-theme {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-32);
+}
+.dev-theme__panel {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-32);
+  width: 688px;
+  padding: var(--space-32);
+  border: var(--stroke-hairline) solid var(--border-strong);
+  border-radius: var(--radius-xl);
+  background: var(--surface-page);
+  color: var(--text-primary);
+}
+.dev-theme__row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-12);
+}
+.dev-theme__row[data-align="center"] {
+  align-items: center;
+}
+.dev-theme__fields {
+  flex-wrap: wrap;
+}
+.dev-theme__fields > .ui-field {
+  width: 200px;
+}
+.dev-theme__navigation {
+  flex-wrap: wrap;
+  column-gap: var(--space-32);
+  row-gap: var(--space-24);
+}
+.dev-theme__tabs {
+  width: 288px;
+}
+.dev-theme__header {
+  width: 100%;
+}
+.dev-theme__menu,
+.dev-theme__metric {
+  width: 240px;
+}
+.dev-theme__alert {
+  width: 360px;
+}
+
+/* ── The working sheet ── */
 .dev-ui-sheet {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -137,15 +184,15 @@
 .dev-ui-sheet__mode {
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
-  padding: var(--space-xl);
+  gap: var(--space-32);
+  padding: var(--space-48);
   background: var(--surface-page);
-  color: var(--text-strong);
+  color: var(--text-primary);
 }
 .dev-ui-sheet__group {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: var(--space-16);
 }
 .dev-ui-sheet h2,
 .dev-ui-sheet h3 {
@@ -155,51 +202,47 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-sm);
+  gap: var(--space-16);
+}
+/* Room for the rings: 2 wide, 2 outside each control. */
+.dev-ui-sheet__line--focus {
+  gap: var(--space-20);
+  padding: var(--space-4);
 }
 .dev-ui-sheet__panel {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
-  gap: var(--space-sm);
-  padding: var(--space-md);
-  border-radius: var(--radius-card);
+  gap: var(--space-16);
+  padding: var(--space-24);
+  border-radius: var(--radius-xl);
   background: var(--surface-raised);
-}
-
-/* Fixed widths the frame gives some cells' elements. */
-.dev-ui-w-200 {
-  width: 200px;
-}
-.dev-ui-w-288 {
-  width: 288px;
-}
-/* The Input row's Focused look, drawn the way the frame draws it: a 2 × 18
-   caret before the placeholder (48:20). A real input shows the browser's
-   caret; this only stands in for it in a static cell. */
-.dev-ui-input-demo {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  color: var(--text-secondary);
-}
-.dev-ui-input-demo__caret {
-  width: 2px;
-  height: 18px;
-  background: var(--text-strong);
 }
 .dev-ui-sheet__stack {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: var(--space-16);
+}
+
+/* Fixed widths for specimens that fill their container. */
+.dev-ui-w-200 {
+  width: 200px;
+}
+.dev-ui-w-227 {
+  width: 227px;
 }
 .dev-ui-w-285 {
   width: 285px;
 }
-/* Flat stand-ins for the frame's sample artwork (the template art is
-   sample content, not platform imagery). Artwork does not invert with the
-   theme, so they use the artwork palette's fixed values: the light green
-   post and the Deep Moss look. */
+.dev-ui-w-288 {
+  width: 288px;
+}
+.dev-ui-w-400 {
+  width: 400px;
+}
+/* Flat stand-ins for sample artwork (the template art is sample content,
+   not platform imagery). Artwork does not invert with the theme, so they
+   use fixed values: the light green post and the Deep Moss variation. */
 .dev-ui-sample-preview {
   display: block;
   width: 211px;
@@ -210,20 +253,5 @@
   display: block;
   width: 100%;
   height: 100%;
-  background: var(--field-green);
-}
-.dev-ui-w-227 {
-  width: 227px;
-}
-.dev-ui-w-240 {
-  width: 240px;
-}
-.dev-ui-w-360 {
-  width: 360px;
-}
-.dev-ui-w-400 {
-  width: 400px;
-}
-.dev-ui-w-720 {
-  width: 720px;
+  background: var(--deep-green);
 }

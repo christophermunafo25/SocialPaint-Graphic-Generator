@@ -320,9 +320,10 @@ export interface TabsProps {
   className?: string;
 }
 
-/** Tabs (Figma 4015:673): text tabs on a hairline. With panels (each item
- * names its panelId) it is a tablist; without, it filters in place and is a
- * radio group. Either way: one tab stop, arrows select and wrap. */
+/** Tabs (Figma 4015:673): text tabs on a hairline, sharing the width of
+ * their row equally. With panels (each item names its panelId) it is a
+ * tablist; without, it filters in place and is a radio group. Either way:
+ * one tab stop, arrows select and wrap. */
 export function Tabs({
   items,
   selectedId,

@@ -315,10 +315,10 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
    the text never shifts. Focus is the global ring. Small is 28 with Body/S;
    Medium 36 and Large 44 with Body/M.
 
-   An input's type is set here from the style's variables, not with a .t-*
-   class: the classes trim to cap height, and Chromium applies the trim to an
-   input's inner box and clips accents and descenders. A text area takes the
-   class, where the trim is safe. */
+   An input's and a text area's type is set here from the style's variables,
+   not with a .t-* class. The classes trim to cap height: Chromium applies
+   the trim to an input's inner box and clips accents and descenders, and in
+   a text area it moves the value but not the placeholder. */
 .ui-input {
   display: block;
   width: 100%;
@@ -348,15 +348,26 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   font: var(--type-body-s);
   letter-spacing: var(--type-body-s-tracking);
 }
-:where(.ui-input[data-size="md"], .ui-input[data-size="lg"]) {
+:where(.ui-input[data-size="md"], .ui-input[data-size="lg"], .ui-input[data-size="multiline"]) {
   font: var(--type-body-m);
   letter-spacing: var(--type-body-m-tracking);
 }
+/* A text area is 96 tall and grows with its text, with no grip. The file
+   puts 12 between the box and the capitals of the first and the last line.
+   The lines keep their boxes here, so the padding gives the half-leading
+   back, and the placeholder and the value sit on the same line. */
 .ui-input[data-size="multiline"] {
   height: auto;
   min-height: 96px; /* as drawn (2207:298) */
-  padding: var(--space-12);
-  resize: vertical;
+  padding: calc(var(--space-12) - (1lh - 1cap) / 2) var(--space-12);
+  field-sizing: content;
+  resize: none;
+}
+/* Where a text area cannot grow on its own, it keeps the grip. */
+@supports not (field-sizing: content) {
+  .ui-input[data-size="multiline"] {
+    resize: vertical;
+  }
 }
 .ui-input::placeholder,
 .ui-input__control::placeholder {
@@ -648,7 +659,9 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   justify-content: flex-start;
   width: 440px;
   max-width: 100%;
-  padding: 8px 15px; /* off the scale, as drawn (50:62) */
+  /* 8 and 15 from the field's outer edge, off the scale, as drawn (50:62).
+     The hairline is 1 of each. */
+  padding: calc(8px - var(--stroke-hairline)) calc(15px - var(--stroke-hairline));
   gap: 10px;
   background: var(--action-neutral);
   color: var(--text-primary);
@@ -878,14 +891,15 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 /* ── Checkbox (2211:148) and Radio (2211:187): a 16 mark with a Body/M
    label, 8 apart, over a native input. Off is surface/raised with a
    border/control edge; on is control/on with the mark on control/on-mark.
-   Hover draws a halo 4 larger than the mark, behind it. The box keeps a
-   hairline of room in every state, so the halo and the ring never move. ── */
+   Hover lays a halo 4 larger than the box over it and under its mark, as
+   the file layers it, so an empty box takes the halo's tint. The box keeps
+   a hairline of room in every state, so the halo and the ring never
+   move. ── */
 .ui-check {
   position: relative;
   display: inline-flex;
   align-items: center;
   gap: var(--space-8);
-  isolation: isolate;
   color: var(--text-primary);
   cursor: pointer;
 }
@@ -920,8 +934,8 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   content: "";
   position: absolute;
   inset: calc(-1 * (var(--space-4) + var(--stroke-hairline)));
-  z-index: -1;
   border-radius: var(--radius-sm);
+  pointer-events: none;
 }
 .ui-check[data-kind="radio"] .ui-check__box::before {
   border-radius: var(--radius-full);
@@ -934,12 +948,15 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   border-color: transparent;
   background: var(--control-on);
 }
-/* The mark is drawn on the whole box; the hairline of room is given back. */
+/* The mark is drawn on the whole box; the hairline of room is given back.
+   It is positioned so that it paints over the halo. */
 .ui-check__mark {
+  position: relative;
   flex: none;
   margin: calc(-1 * var(--stroke-hairline));
 }
 .ui-check__dot {
+  position: relative;
   width: 6px;
   height: 6px;
   border-radius: var(--radius-full);
@@ -1021,8 +1038,9 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 }
 
 /* ── Tab (4015:635) and Tabs (4015:673): text tabs 20 apart on a hairline.
-   Every tab keeps the underline's 2 of room; the selected one fills it. The
-   file draws no hover, so a hovered tab only takes the selected ink. ── */
+   The tabs share the width of their row equally, each label centered. Every
+   tab keeps the underline's 2 of room; the selected one fills it. The file
+   draws no hover, so a hovered tab only takes the selected ink. ── */
 .ui-tabs {
   display: flex;
   gap: var(--space-20);
@@ -1030,7 +1048,10 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 }
 .ui-tab {
   display: inline-flex;
+  flex: 1 1 0;
   align-items: center;
+  justify-content: center;
+  min-width: 0;
   padding: var(--space-4) 0 var(--space-12);
   border-bottom: 2px solid transparent; /* the underline, as drawn (4015:635) */
   color: var(--text-secondary);
@@ -1149,8 +1170,9 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   --_fill: var(--surface-overlay);
   --_fg: var(--text-on-color);
 }
+/* The Outline tag's edge is dashed, 3 on and 3 off, as drawn. */
 .ui-tag[data-kind="outline"] {
-  border: var(--stroke-hairline) solid var(--border-control);
+  border: var(--stroke-hairline) dashed var(--border-control);
   --_disabled: transparent;
   --_fg: var(--text-secondary);
 }
@@ -1808,8 +1830,9 @@ button.ui-detail-tag__value {
   width: 64px; /* as drawn */
   text-align: right;
 }
-.ui-table-row__value > .ui-skeleton {
-  margin-left: auto;
+/* Loading, a value cell is as wide as its shape, as drawn. */
+.ui-table-row[data-loading] .ui-table-row__value {
+  width: auto;
 }
 .ui-table-row__value[data-quiet] {
   color: var(--text-secondary);

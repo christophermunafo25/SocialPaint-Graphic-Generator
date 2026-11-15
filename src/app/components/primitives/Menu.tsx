@@ -124,13 +124,19 @@ export function MenuPanel({
 }
 export function MenuItemStatic({
   className,
+  disabled = false,
   "data-demo-state": demoState,
   ...content
-}: MenuItemContentProps & { className?: string; "data-demo-state"?: DemoStateAttr }) {
+}: MenuItemContentProps & {
+  className?: string;
+  disabled?: boolean;
+  "data-demo-state"?: DemoStateAttr;
+}) {
   return (
     <div
       className={cx("ui-menu-item", className)}
       data-selected={content.selected || undefined}
+      data-disabled={disabled ? "" : undefined}
       data-demo-state={demoState}
     >
       <MenuItemContent {...content} />
@@ -139,6 +145,9 @@ export function MenuItemStatic({
 }
 export function MenuLabelStatic({ children }: { children: React.ReactNode }) {
   return <div className="ui-menu-label t-mono-eyebrow">{children}</div>;
+}
+export function MenuDividerStatic() {
+  return <div className="ui-menu-divider" />;
 }
 
 /** One action in a row's menu. `checked` present (true or false) makes it a

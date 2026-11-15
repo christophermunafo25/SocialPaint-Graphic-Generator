@@ -10,10 +10,8 @@ import {
   WorkspacePreview,
 } from "../components/onboarding/pieces";
 import {
-  ArrowUp,
   BarChart3,
   Building,
-  Copy,
   Download,
   Ellipsis,
   FileText,
@@ -34,15 +32,12 @@ import {
   X,
 } from "lucide-react";
 import {
-  Alert,
   Avatar,
   Badge,
   Button,
-  Card,
   Checkbox,
   Chip,
   DetailTag,
-  EmptyState,
   Field,
   FooterLinks,
   IconButton,
@@ -55,10 +50,7 @@ import {
   MenuLabel,
   MenuLabelStatic,
   MenuPanel,
-  Metric,
   Modal,
-  ModalActions,
-  ModalBody,
   ModalPanel,
   NavItem,
   PlatformChip,
@@ -66,16 +58,18 @@ import {
   ProgressBar,
   Radio,
   ResultCard,
+  Search,
   SearchField,
+  Segment,
   SegmentedControl,
   Select,
   SendButton,
   SettingsCard,
   SettingsRailItem,
-  Skeleton,
   Stat,
   Stepper,
   Switch,
+  Tab,
   Table,
   TableCell,
   TableRow,
@@ -101,8 +95,14 @@ export interface SheetGroup {
 const KINDS: ButtonKind[] = ["primary", "neutral", "ghost", "destructive"];
 const SIZES: ButtonSize[] = ["lg", "md", "sm"];
 
-/** The component sheet's groups, one per family, in build order. */
+/** The working sheet's groups: the keyboard ring on every control, then
+ * live controls to click and Tab through, and the Product components that
+ * are rebuilt in later phases. */
 export const SHEET_GROUPS: SheetGroup[] = [
+  {
+    title: "Focus",
+    render: () => <FocusGroup />,
+  },
   {
     title: "Buttons",
     render: () => (
@@ -240,6 +240,91 @@ function OnboardingGroup() {
             brand: { colors: ["#0F4C5C", "#2EC4B6", "#FFBF69", "#F7F4EC"], font: "Manrope" },
           }}
         />
+      </div>
+    </>
+  );
+}
+
+/** Every control with its keyboard ring held on: stroke/focus of
+ * border/focus, focus/offset outside the control. The boards draw Focus
+ * only for the fields. */
+function FocusGroup() {
+  const noop = () => {};
+  return (
+    <>
+      <div className="dev-ui-sheet__line dev-ui-sheet__line--focus">
+        {KINDS.map((kind) => (
+          <Button key={kind} kind={kind} data-demo-state="focus">
+            Button
+          </Button>
+        ))}
+        <IconButton icon={X} label="Close" data-demo-state="focus" />
+        <IconButton variant="ghost" icon={Settings} label="Settings" data-demo-state="focus" />
+        <SendButton label="Send" data-demo-state="focus" />
+        <Chip data-demo-state="focus">Instagram</Chip>
+        <Chip selected data-demo-state="focus">
+          LinkedIn
+        </Chip>
+        <Switch checked onChange={noop} ariaLabel="Allow photo uploads" data-demo-state="focus" />
+        <Checkbox checked onChange={noop} label="Allow photo uploads" data-demo-state="focus" />
+        <Radio checked onChange={noop} label="Team fills in" data-demo-state="focus" />
+        <Segment data-demo-state="focus">Instagram</Segment>
+        <Tab style={{ flex: "none" }} data-demo-state="focus">
+          Design
+        </Tab>
+      </div>
+      <div className="dev-ui-sheet__line dev-ui-sheet__line--focus">
+        <Input
+          className="dev-ui-w-200"
+          aria-label="Headline"
+          placeholder="Creative Director"
+          readOnly
+          data-demo-state="focus"
+        />
+        <Select
+          className="dev-ui-w-200"
+          ariaLabel="Variation"
+          value="moss"
+          options={LOOKS}
+          onSelect={noop}
+          data-demo-state="focus"
+        />
+        <Search
+          className="dev-ui-w-200"
+          label="Search templates"
+          placeholder="Search templates"
+          value=""
+          onChange={noop}
+          data-demo-state="focus"
+        />
+        <SearchField
+          open={false}
+          onOpenChange={noop}
+          value=""
+          onChange={noop}
+          onClear={noop}
+          label="Search templates"
+          focusOnOpen={false}
+          data-demo-state="focus"
+        />
+        <div className="dev-ui-w-288">
+          <Upload placeholder="Add a photo" data-demo-state="focus" />
+        </div>
+      </div>
+      <div className="dev-ui-sheet__line dev-ui-sheet__line--focus">
+        <NavItem icon={Sparkles} className="dev-ui-w-200" data-demo-state="focus">
+          Generate
+        </NavItem>
+        <MenuPanel>
+          <MenuItemStatic icon={Image} data-demo-state="focus">
+            Photo
+          </MenuItemStatic>
+        </MenuPanel>
+        <Table className="dev-ui-w-400" aria-label="Public links">
+          <TableRow title="Newsletter readers" subtitle="Webinar invite" data-demo-state="focus">
+            <TableCell>31</TableCell>
+          </TableRow>
+        </Table>
       </div>
     </>
   );
@@ -665,108 +750,6 @@ function ContainersGroup() {
           ))}
         </div>
       </div>
-      <div className="dev-ui-sheet__line">
-        <Card
-          className="dev-ui-w-360"
-          title="Top templates"
-          description="The five templates your team exported most in the last 30 days."
-          action={
-            <Button kind="ghost" size="sm">
-              View all
-            </Button>
-          }
-        />
-        <Card className="dev-ui-w-360" title="Top templates" loading />
-      </div>
-      <div className="dev-ui-sheet__line">
-        <Metric
-          className="dev-ui-w-240"
-          label="Exports"
-          value="1,128"
-          delta={
-            <Badge tone="positive" icon={ArrowUp}>
-              18%
-            </Badge>
-          }
-          caption="vs previous 30 days"
-        />
-        <Metric className="dev-ui-w-240" label="Exports" value="" loading />
-      </div>
-      <div className="dev-ui-sheet__line">
-        <ModalPanel title="Publish template">
-          <ModalBody>
-            Your team will see Now hiring in Brand Templates and can start making graphics from it.
-          </ModalBody>
-          <ModalActions>
-            <Button kind="neutral">Cancel</Button>
-            <Button kind="primary">Publish</Button>
-          </ModalActions>
-        </ModalPanel>
-        <ModalPanel title="Delete this template?">
-          <ModalBody>
-            Now hiring and its three variations will be removed for everyone. This cannot be undone.
-          </ModalBody>
-          <ModalActions>
-            <Button kind="neutral">Cancel</Button>
-            <Button kind="destructive">Delete template</Button>
-          </ModalActions>
-        </ModalPanel>
-      </div>
-      <Table className="dev-ui-w-720" aria-label="Public links">
-        <TableRow
-          title="Newsletter readers"
-          subtitle="Webinar invite"
-          action={
-            <Button kind="neutral" size="sm" icon={Copy}>
-              Copy
-            </Button>
-          }
-        >
-          <TableCell quiet>58</TableCell>
-          <TableCell>31</TableCell>
-        </TableRow>
-        <TableRow
-          title="Newsletter readers"
-          subtitle="Webinar invite"
-          data-demo-state="hover"
-          action={
-            <Button kind="neutral" size="sm" icon={Copy}>
-              Copy
-            </Button>
-          }
-        >
-          <TableCell quiet>58</TableCell>
-          <TableCell>31</TableCell>
-        </TableRow>
-        <TableRow loading />
-      </Table>
-      <div className="dev-ui-sheet__line">
-        <Skeleton width={200} />
-        <Skeleton shape="block" width={200} />
-        <Skeleton shape="circle" />
-      </div>
-      <div className="dev-ui-sheet__line">
-        <Alert className="dev-ui-w-400" title="This template has unpublished changes">
-          Publish to update the version your team sees.
-        </Alert>
-        <Alert className="dev-ui-w-400" tone="error" title="We could not publish this template">
-          Check your connection and try again. Your changes are saved.
-        </Alert>
-        <Alert className="dev-ui-w-400" tone="warning" title="This public link expires in 3 days">
-          Extend it in the link settings to keep it working.
-        </Alert>
-      </div>
-      <EmptyState
-        icon={Paintbrush}
-        title="No templates yet"
-        action={
-          <Button kind="primary" icon={Plus}>
-            New template
-          </Button>
-        }
-      >
-        Build your first template and your team can start making graphics from it.
-      </EmptyState>
       <SettingsCard
         title="Workspaces"
         action={
