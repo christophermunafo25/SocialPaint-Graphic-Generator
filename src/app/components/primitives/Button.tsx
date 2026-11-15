@@ -33,7 +33,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function 
       {...rest}
     >
       {Icon && <Icon size={size === "sm" ? 14 : 16} className="ui-icon" aria-hidden />}
-      <span className={size === "sm" ? "tu-label-s" : "tu-label-m"}>{children}</span>
+      <span className={size === "sm" ? "t-label-s" : "tu-label-m"}>{children}</span>
     </button>
   );
 });

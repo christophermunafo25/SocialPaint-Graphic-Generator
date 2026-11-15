@@ -299,8 +299,8 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 }
 
 /* ── Input (48:37) ─────────────────────────────────────────────────────────
-   No border. Focus shows the caret and nothing else. Small sits at the
-   control radius, as drawn (48:23). */
+   No border. Focus is the global 2 px ring. Small sits at the control
+   radius, as drawn (48:23). */
 .ui-input {
   display: block;
   width: 100%;
@@ -487,8 +487,8 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   color: var(--text-strong);
 }
 
-/* ── Search field (50:62). Open, the field shows the caret; it takes no
-   tint. ── */
+/* ── Search field (50:62). Open, the field takes the global focus ring
+   and no tint. ── */
 .ui-search {
   display: inline-flex;
   align-items: center;

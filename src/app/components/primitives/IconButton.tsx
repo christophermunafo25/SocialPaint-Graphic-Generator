@@ -144,7 +144,7 @@ export function Stepper({
   const roll = useRoll(value);
   return (
     <div role="group" aria-labelledby={labelId} className={cx("ui-stepper", className)}>
-      <span id={labelId} className="tu-label-s">
+      <span id={labelId} className="t-label-s">
         {label}
       </span>
       <span className="ui-stepper__controls">
@@ -154,7 +154,7 @@ export function Stepper({
           disabled={disabled || value <= min}
           onClick={() => onChange(Math.max(min, value - 1))}
         />
-        <span className="ui-stepper__value tu-label-s">
+        <span className="ui-stepper__value t-label-s">
           <span ref={roll.ref} className="ui-stepper__num" aria-live="polite">
             {roll.shown}
           </span>

@@ -206,7 +206,7 @@ function SelectBase<T extends string>({
         data-placeholder={selected ? undefined : true}
         data-demo-state={demoState}
       >
-        <span className={cx("ui-select__value", variant === "field" ? "tu-body-m" : "tu-label-s")}>
+        <span className={cx("ui-select__value", variant === "field" ? "tu-body-m" : "t-label-s")}>
           {selected?.label ?? placeholder}
         </span>
         <ChevronDown size={16} className="ui-icon ui-select__chevron" aria-hidden />

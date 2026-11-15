@@ -235,7 +235,7 @@ How Phase 1 lands this without moving layouts (finding 5):
 
 - `tokens.css` defines the twenty classes under their final names, trimmed.
 - `legacy-bridge.css` defines one untrimmed twin per new style a current call site needs, named `.tu-*` (`.tu-body-m`, `.tu-label-m`, `.tu-caption-m` and so on): the same font shorthand and tracking variables, no `text-box`.
-- The codemod renames every existing `.t-*` use to the `.tu-*` twin of its new style from the table. A call site that already pairs with `.t-trim` goes straight to the final trimmed class and drops `.t-trim`.
+- The codemod renames every existing `.t-*` use to the `.tu-*` twin of its new style from the table. A call site that already pairs with `.t-trim` goes straight to the final trimmed class and drops `.t-trim`. So do the six sites on `.t-button-s` and `.t-label-xxs`, which trimmed on their own in the earlier file.
 - From Phase 2 on, a rebuilt component or screen uses the final `.t-*` classes. Phase 10 deletes the `.tu-*` twins, and a grep for `tu-` is that phase's check that no text was left untrimmed.
 
 The only type that changes size in Phase 1 is on the rows above that say so: panel titles 17 → 18, the five `.t-body-m` and fourteen `.t-label-l` and `.t-caption-m` sites as read, small buttons 12 → 13, and the four sites under 11.

@@ -19,7 +19,7 @@ export const Chip = React.forwardRef<HTMLButtonElement, ButtonAttrs>(function Ch
       className={cx("ui-reset ui-tint ui-ring-tight ui-chip", className)}
       {...rest}
     >
-      <span className="tu-label-s">{children}</span>
+      <span className="t-label-s">{children}</span>
     </button>
   );
 });
@@ -219,7 +219,7 @@ export interface StatusProps {
 export function Status({ tone, size = "default", children, className }: StatusProps) {
   return (
     <span className={cx("ui-status", className)} data-tone={tone} data-size={size}>
-      <span className={size === "sm" ? "tu-label-xs" : "tu-label-xs"}>{children}</span>
+      <span className={size === "sm" ? "t-label-xs" : "tu-label-xs"}>{children}</span>
     </span>
   );
 }

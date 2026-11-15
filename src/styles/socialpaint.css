@@ -2154,8 +2154,8 @@ input[type="radio"] {
     box-shadow 0.15s ease;
 }
 
-/* Same construction as .sp-input: the control's own 1px edge takes the ring
-   colour, never a halo on top of it. */
+/* The control's own 1px edge takes the ring colour, as .sp-input did before
+   the new brand. Kept until Phase 6 rebuilds the builder's inline edit. */
 .sp-inline-edit__input:focus {
   border-color: var(--ring);
   box-shadow: none;
@@ -2287,8 +2287,9 @@ input[type="radio"] {
 .sp-searchfield:not([data-open]):hover {
   border-color: var(--border-strong);
 }
-/* Focus rides the container's own 1px edge, mirroring .sp-input:focus —
-   never a thicker halo. Covers the input and the trigger alike. */
+/* Focus rides the container's own 1px edge, as .sp-input did before the
+   new brand. Covers the input and the trigger alike. Kept until Phase 6
+   rebuilds the builder's search. */
 .sp-searchfield:focus-within {
   border-color: var(--ring);
 }
