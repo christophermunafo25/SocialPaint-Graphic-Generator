@@ -603,7 +603,8 @@ describe("the report", () => {
     // The headline's layer is cap-trimmed and took its band downward. The
     // pill's text is trimmed too, but a pill is placed from its container.
     expect(report.capTrim).toEqual([{ fieldId: id("Headline"), capHeight: 58.6, band: "down" }]);
-    // Paint order when no form order was given.
-    expect(report.formOrder).toEqual([id("Photo"), id("Headline"), id("Call to action")]);
+    // No form order was given: the copy from the top down, then the
+    // pictures. Paint order (the photo first) is not how a form reads.
+    expect(report.formOrder).toEqual([id("Headline"), id("Call to action"), id("Photo")]);
   });
 });

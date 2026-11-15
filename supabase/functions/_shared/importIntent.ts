@@ -590,9 +590,14 @@ export function intentReport(opts: {
 }): ImportIntentReport {
   const fieldById = new Map(opts.fields.map((f) => [f.id, f]));
   const landed = opts.intents.filter((i) => fieldById.has(i.fieldId));
-  const members = opts.fields
-    .filter((f) => !f.static && f.type !== "shape" && f.type !== "icon")
-    .map((f) => f.id);
+  // Without the model's order, the form reads as a designer would lay it
+  // out: the copy from the top down, then the pictures.
+  const reading = (a: SuggestedField, b: SuggestedField) => a.y - b.y || a.x - b.x;
+  const fillable = opts.fields.filter((f) => !f.static && f.type !== "shape" && f.type !== "icon");
+  const members = [
+    ...fillable.filter((f) => f.type !== "image").sort(reading),
+    ...fillable.filter((f) => f.type === "image").sort(reading),
+  ].map((f) => f.id);
   return {
     filledBy: opts.filledBy,
     layers: opts.parse.layers,
