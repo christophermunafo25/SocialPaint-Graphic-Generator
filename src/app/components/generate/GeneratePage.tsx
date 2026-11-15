@@ -1055,7 +1055,7 @@ export function GenerateChat({
           <div className="sp-gen-start">
             <div className="sp-gen-start__column" data-pending={startReady ? undefined : true}>
               <div className="sp-gen-start__lead">
-                <h1 className="t-title-metric sp-gen-start__title">What are we painting today?</h1>
+                <h1 className="tu-title-metric sp-gen-start__title">What are we painting today?</h1>
                 {configured ? (
                   <ChatComposer
                     value={text}
@@ -1076,8 +1076,8 @@ export function GenerateChat({
                   />
                 ) : (
                   <div className="sp-gen-start__unavailable">
-                    <p className="t-title-panel">Generate isn't available on this backend</p>
-                    <p className="t-body-s">
+                    <p className="tu-title-card">Generate isn't available on this backend</p>
+                    <p className="tu-body-m">
                       It needs the Supabase backend and an Anthropic API key (see .env.example). The
                       template library and manual fill work as usual.
                     </p>
@@ -1095,7 +1095,7 @@ export function GenerateChat({
               )}
             </div>
           </div>
-          <p className="t-caption-s sp-gen-legal">
+          <p className="tu-caption-m sp-gen-legal">
             <LegalLinks />
           </p>
         </Page>
@@ -1333,7 +1333,7 @@ export function GenerateChat({
                 {unsaved && <p className="sp-chat-dock__note">{NOT_SAVED_YET}</p>}
               </div>
               {/* The footnote is the legal links alone (13:2821, 13:7195). */}
-              <p className="t-caption-s sp-tchat-legal">
+              <p className="tu-caption-m sp-tchat-legal">
                 <LegalLinks />
               </p>
             </div>

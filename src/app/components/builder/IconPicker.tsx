@@ -184,7 +184,7 @@ export function IconPicker({ anchorRef, side, selected, onPick, onClose }: IconP
         </div>
       ) : (
         <p
-          className="t-caption-s"
+          className="tu-caption-m"
           style={{ padding: "var(--space-md) 0", textAlign: "center", color: "var(--text-muted)" }}
         >
           No icons match “{query.trim()}”

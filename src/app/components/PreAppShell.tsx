@@ -29,7 +29,7 @@ export function PreAppShell({
           <BrandLockup height={26} scheme="light" />
         </header>
         <main className="sp-auth__form">{children}</main>
-        <footer className="sp-auth__footer t-caption-s">
+        <footer className="sp-auth__footer tu-caption-m">
           <a className="sp-auth__legal" href={TERMS.href}>
             {TERMS.label}
           </a>

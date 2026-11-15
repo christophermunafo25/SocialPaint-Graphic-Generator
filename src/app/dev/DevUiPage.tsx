@@ -22,20 +22,20 @@ function Row({ row }: { row: StateRow }) {
   return (
     <div className="dev-ui-row">
       <div className="dev-ui-row__label">
-        <span className="t-label-l">{row.name}</span>
-        <span className="t-caption-m dev-ui-row__caption">{row.caption}</span>
+        <span className="tu-label-m">{row.name}</span>
+        <span className="tu-body-s dev-ui-row__caption">{row.caption}</span>
       </div>
       {MODES.map((mode) => (
         <div key={mode} className="dev-ui-row__mode" data-theme={mode}>
           {row.cells.map((cell, i) =>
             isEmptyCell(cell) ? (
               <div key={i} className="dev-ui-cell dev-ui-cell--empty" data-surface={row.surface}>
-                <span className="t-caption-s dev-ui-cell__caption">{cell.empty}</span>
+                <span className="tu-caption-m dev-ui-cell__caption">{cell.empty}</span>
               </div>
             ) : (
               <div key={i} className="dev-ui-cell" data-surface={row.surface}>
                 <div className="dev-ui-cell__element">{render?.(cell.state)}</div>
-                <span className="t-caption-s dev-ui-cell__caption">{cell.caption}</span>
+                <span className="tu-caption-m dev-ui-cell__caption">{cell.caption}</span>
               </div>
             ),
           )}
@@ -54,10 +54,10 @@ export function DevUiPage() {
     <div className="dev-ui">
       <section className="dev-ui-states" data-theme="light" aria-label="Interaction states">
         <header className="dev-ui-states__header">
-          <h1 className="t-title-page">Interaction states</h1>
+          <h1 className="tu-title-page">Interaction states</h1>
           <div className="dev-ui-states__rules">
             {RULES.map((rule) => (
-              <p key={rule} className="t-body-m">
+              <p key={rule} className="tu-body-m">
                 {rule}
               </p>
             ))}
@@ -66,14 +66,14 @@ export function DevUiPage() {
         <div className="dev-ui-table">
           <div className="dev-ui-row dev-ui-row--head">
             <div className="dev-ui-row__label dev-ui-row__label--head">
-              <span className="t-label-m">Element</span>
+              <span className="tu-label-m">Element</span>
             </div>
             {MODES.map((mode) => (
               <div key={mode} className="dev-ui-row__mode dev-ui-row__mode--head" data-theme={mode}>
-                <span className="t-label-l">{mode === "light" ? "Light" : "Dark"}</span>
+                <span className="tu-label-m">{mode === "light" ? "Light" : "Dark"}</span>
                 <div className="dev-ui-row__states">
                   {STATE_HEADS.map((s) => (
-                    <span key={s} className="t-caption-m">
+                    <span key={s} className="tu-body-s">
                       {s}
                     </span>
                   ))}
@@ -85,7 +85,7 @@ export function DevUiPage() {
             isFamily(row) ? (
               <div key={row.family} className="dev-ui-row dev-ui-row--family">
                 <div className="dev-ui-row__label dev-ui-row__label--family">
-                  <h2 className="t-title-card">{row.family}</h2>
+                  <h2 className="tu-title-card">{row.family}</h2>
                 </div>
                 {MODES.map((mode) => (
                   <div key={mode} className="dev-ui-row__mode" data-theme={mode} />

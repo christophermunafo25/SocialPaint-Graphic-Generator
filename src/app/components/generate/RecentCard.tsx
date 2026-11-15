@@ -30,10 +30,10 @@ export function ChatCardMeta({
   if (bones) {
     return (
       <span className="sp-gen-card__meta" data-bones aria-hidden>
-        <span className="t-label-m sp-gen-card__title">
+        <span className="tu-label-m sp-gen-card__title">
           <Bone tone={SUNKEN} w={128} h={10} r={RADIUS} />
         </span>
-        <span className="t-caption-s sp-gen-card__line">
+        <span className="tu-caption-m sp-gen-card__line">
           <Bone tone={SUNKEN} w={84} h={8} r={RADIUS} />
         </span>
       </span>
@@ -41,8 +41,8 @@ export function ChatCardMeta({
   }
   return (
     <span className="sp-gen-card__meta">
-      <span className="t-label-m sp-gen-card__title">{title}</span>
-      <span className="t-caption-s sp-gen-card__line" id={metaId}>
+      <span className="tu-label-m sp-gen-card__title">{title}</span>
+      <span className="tu-caption-m sp-gen-card__line" id={metaId}>
         {meta?.platforms && <span className="sp-gen-card__platforms">{meta.platforms}</span>}
         {meta?.date && (
           <span className="sp-gen-card__date">

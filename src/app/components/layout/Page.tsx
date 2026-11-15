@@ -61,7 +61,7 @@ export function PageHeader({
 }) {
   return (
     <header className="sp-shell-pagehead">
-      <h1 className="t-title-page">{title}</h1>
+      <h1 className="tu-title-page">{title}</h1>
       {actions && <div className="sp-shell-pagehead__actions">{actions}</div>}
     </header>
   );

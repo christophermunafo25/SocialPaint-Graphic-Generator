@@ -15,8 +15,8 @@ export interface TooltipProps {
 export function Tooltip({ label, value, className }: TooltipProps) {
   return (
     <div className={cx("ui-tooltip", className)} role="tooltip">
-      <span className="t-caption-s ui-tooltip__label">{label}</span>
-      <span className="t-label-s">{value}</span>
+      <span className="tu-caption-m ui-tooltip__label">{label}</span>
+      <span className="tu-label-s">{value}</span>
     </div>
   );
 }
@@ -36,14 +36,14 @@ export interface ToastProps {
 export function Toast({ message, actionLabel, onAction, className }: ToastProps) {
   return (
     <div className={cx("ui-toast", className)} role="status">
-      <span className="t-body-s">{message}</span>
+      <span className="tu-body-m">{message}</span>
       {actionLabel && (
         <button
           type="button"
           onClick={onAction}
           className="ui-reset ui-tint ui-ring ui-toast__action"
         >
-          <span className="t-button-m">{actionLabel}</span>
+          <span className="tu-label-m">{actionLabel}</span>
         </button>
       )}
     </div>

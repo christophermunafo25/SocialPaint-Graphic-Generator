@@ -28,7 +28,7 @@ export function ComposerIllustration() {
   const [count, setCount] = useState(1);
   return (
     <div className="sp-auth__card sp-auth-composer">
-      <p className="t-body-l t-trim sp-auth-composer__prompt">
+      <p className="t-body-l sp-auth-composer__prompt">
         Make a hiring post for our creative director role
       </p>
       <div className="sp-auth-composer__toolbar">

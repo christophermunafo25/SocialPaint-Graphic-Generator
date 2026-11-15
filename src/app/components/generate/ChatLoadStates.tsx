@@ -84,7 +84,7 @@ export function ChatLoading({ onNewChat, onHistory }: ChatPageActions) {
                 disabled
               />
             </div>
-            <p className="t-caption-s sp-tchat-legal">
+            <p className="tu-caption-m sp-tchat-legal">
               <LegalLinks />
             </p>
           </div>

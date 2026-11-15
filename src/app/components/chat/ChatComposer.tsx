@@ -73,7 +73,7 @@ export function ChatComposer(props: ChatComposerProps) {
       )}
       <textarea
         ref={c.setTextarea}
-        className="ui-reset ui-ring-none t-body-l ui-composer__input"
+        className="ui-reset ui-ring-none tu-body-l ui-composer__input"
         rows={1}
         value={value}
         maxLength={MAX_BRIEF}
@@ -84,7 +84,7 @@ export function ChatComposer(props: ChatComposerProps) {
         onKeyDown={c.onKeyDown}
       />
       {c.photoError && (
-        <p role="alert" className="t-caption-s ui-composer__error">
+        <p role="alert" className="tu-caption-m ui-composer__error">
           {c.photoError}
         </p>
       )}

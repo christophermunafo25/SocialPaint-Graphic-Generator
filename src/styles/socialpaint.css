@@ -1,10 +1,11 @@
 /* ==========================================================================
-   NEW LOOK (2026-10): token values come from the Figma file "Master
-   UX-UI" (mEJRslarcQDkgPeY6AObi5) through src/styles/tokens.css, which
-   is generated (npm run tokens) and never edited by hand. Old names that
-   map one to one to a Figma token are set in legacy-bridge.css. Where
-   this header disagrees with docs/design/new-look/RULES.md, RULES.md
-   wins; Phase 9 rewrites this header.
+   NEW BRAND (2026-11): token values come from the Figma file "Master UX
+   UI New Brand (Copy)" (1dYWgFH2V8i9Jez2ylI3ky) through
+   src/styles/tokens.css, which is generated (npm run tokens) and never
+   edited by hand. Older names that are still read point at those tokens
+   in legacy-bridge.css. Where this header disagrees with
+   docs/design/new-brand/RULES.md, RULES.md wins; that program's Phase 10
+   rewrites this header.
 
    SocialPaint Design System — platform UI tokens.
    Ported from the "SocialPaint Design System" Claude Design project
@@ -166,7 +167,7 @@ html {
    "-logo" cuts any more. */
 :root {
   --aqua: var(--lapis); /* --aqua is the legacy name for Lapis — new code uses --lapis */
-  --purple-kara: #9f60ff;
+  --purple-legacy: #9f60ff; /* the earlier bright purple; --purple-kara is the new deep primitive */
   --text-on-brand: #272727; /* Ink carries display-size glyphs on any of the four */
   /* The deep cut for SMALL mono glyphs on a brand fill (2026-09-05, at
      Chris's direction). Ink lands under 4.5:1 on Purple Kara and Fire;
@@ -193,8 +194,6 @@ html {
      titles, 2026-10-19). The Figma text styles follow the same rule. */
   --track-head: -0.01em;
   --font-body: "Inter Tight Platform", system-ui, -apple-system, sans-serif;
-  --font-ui: "Inter Tight Platform", system-ui, -apple-system, sans-serif;
-  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
   --weight-ui: 500; /* controls and titles — Inter Tight Medium */
 
   /* Display steps, kept as they are for Inter Tight (2026-10-19). Inter
@@ -309,17 +308,13 @@ html {
   --z-popover: 500;
   --z-tooltip: 700;
 
-  /* Motion — one easing, three durations. */
-  --ease: cubic-bezier(0.2, 0, 0, 1);
-  --dur-state: 140ms;
-  --dur-panel: 220ms;
+  /* Motion. The easing and the state and panel durations are tokens now
+     (legacy-bridge.css points --ease, --dur-state and --dur-panel at them). */
   --dur-reveal: 400ms;
 }
 
 @media (prefers-reduced-motion: reduce) {
   :root {
-    --dur-state: 0ms;
-    --dur-panel: 0ms;
     --dur-reveal: 0ms;
   }
 }
@@ -388,15 +383,12 @@ html {
   /* The native <select> chevron, drawn in --text-secondary. A background
      image can't read a custom property, so the ink is baked per theme. */
   --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a0a0a0' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  /* Truly disabled controls use --text-disabled, which is AA-exempt and
-     must never style readable text. */
-  --text-disabled: rgba(241, 241, 241, 0.25);
   --text-on-accent: #272727;
 
   --text-on-surface: #f1f1f1;
   --bg-surface-raised: #202020;
 
-  --border-control: #f1f1f1; /* the edge of a pressable outlined control */
+  --border-control-legacy: #f1f1f1; /* the edge of a pressable outlined control */
 
   /* Interactive emphasis carries the brand (amended 2026-08-14, at
      Chris's direction): Slime is the working accent, and on this canvas
@@ -533,13 +525,12 @@ html {
 
   /* See the dark block: the select chevron in this theme's --text-secondary. */
   --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23636363' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  --text-disabled: rgba(39, 39, 39, 0.25);
   --text-on-accent: #272727;
 
   --text-on-surface: #272727;
   --bg-surface-raised: #f0f0f0;
 
-  --border-control: #272727;
+  --border-control-legacy: #272727;
 
   /* On light the brand rides FILLS and washes only: no brand colour
      clears 3:1 on this canvas, so text and information-bearing borders
@@ -693,9 +684,10 @@ optgroup {
   letter-spacing: var(--type-body-track);
 }
 
-/* Focus: a --focus-width ring at --focus-offset on every interactive element, both modes. */
+/* Focus: a 2 px ring, 2 px outside the element, on every interactive
+   control in both modes, text fields included. */
 :focus-visible {
-  outline: var(--focus-width) solid var(--ring);
+  outline: var(--stroke-focus) solid var(--border-focus);
   outline-offset: var(--focus-offset);
 }
 
@@ -797,7 +789,6 @@ optgroup {
   background: var(--input-bg);
   border: 1px solid var(--border);
   color: var(--text-primary);
-  outline: none;
   transition:
     box-shadow var(--dur-state) var(--ease),
     border-color var(--dur-state) var(--ease);
@@ -828,27 +819,14 @@ select.sp-input:disabled {
   cursor: default;
   opacity: 0.5;
 }
-/* A focused text box shows a 1px ring-coloured BORDER — the control's own
-   1px edge changing colour, never a thicker halo or a second outline. Two
-   rules because a <select> or button-styled control only ever fires
-   :focus-visible; both override the global 2px outline. */
+/* A focused text box takes the global focus ring (2 px, 2 px out), like
+   every other control. Its own edge does not change colour. */
 .sp-input:focus {
-  border-color: var(--ring);
   box-shadow: none;
-  outline: none;
-}
-.sp-input:focus-visible {
-  border-color: var(--ring);
-  box-shadow: none;
-  outline: none;
 }
 
-/* Inspector numeric field — a composite control (scrub label + input + unit
-   suffix) that focuses as one box: same ring-coloured border treatment as
-   .sp-input, driven by the inner input's focus. */
-.sp-numfield:focus-within {
-  border-color: var(--ring);
-}
+/* Inspector numeric field: a composite control (scrub label + input + unit
+   suffix). Its inner input takes the global focus ring. */
 .sp-numfield[data-disabled] {
   color: var(--text-disabled);
 }
@@ -1594,7 +1572,7 @@ html[data-sp-fullscreen] .sp-appshell > main {
   --hover-hue: var(--aqua);
 }
 .sp-palette-tile:nth-of-type(4n + 3) {
-  --hover-hue: var(--purple-kara);
+  --hover-hue: var(--purple-legacy);
 }
 .sp-palette-tile:nth-of-type(4n + 4) {
   --hover-hue: var(--fire);
@@ -1972,13 +1950,13 @@ input[type="radio"] {
 }
 /* The chosen size. The frame is the whole signal — no fill, no check: the
    pressed card and the header's dimension line agree, and that is enough.
-   Since 2026-09-25 it is the card's own 1px frame in --border-control, in
+   Since 2026-09-25 it is the card's own 1px frame in --border-control-legacy, in
    both themes: light cards draw no edge any more, so the old signal (a
    brighter edge alpha) would have vanished there. The shadow still
    composes underneath. Doubled class so it outranks the light dialog-card
    border (the gallery is a dialog). */
 .sp-card.sp-sizecard[aria-pressed="true"] {
-  border-color: var(--border-control);
+  border-color: var(--border-control-legacy);
 }
 
 /* A uniform 4:3 well, NOT the size's own ratio — a true-ratio story tile
@@ -2176,8 +2154,8 @@ input[type="radio"] {
     box-shadow 0.15s ease;
 }
 
-/* Same construction as .sp-input: the control's own 1px edge takes the ring
-   colour, never a halo on top of it. */
+/* The control's own 1px edge takes the ring colour, as .sp-input did before
+   the new brand. Kept until Phase 6 rebuilds the builder's inline edit. */
 .sp-inline-edit__input:focus {
   border-color: var(--ring);
   box-shadow: none;
@@ -2309,8 +2287,9 @@ input[type="radio"] {
 .sp-searchfield:not([data-open]):hover {
   border-color: var(--border-strong);
 }
-/* Focus rides the container's own 1px edge, mirroring .sp-input:focus —
-   never a thicker halo. Covers the input and the trigger alike. */
+/* Focus rides the container's own 1px edge, as .sp-input did before the
+   new brand. Covers the input and the trigger alike. Kept until Phase 6
+   rebuilds the builder's search. */
 .sp-searchfield:focus-within {
   border-color: var(--ring);
 }
@@ -3463,7 +3442,7 @@ input[type="radio"] {
    user is meant to press reads as a deliberate edge, not as a divider. */
 .sp-btn-ghost {
   color: var(--text-primary);
-  border-color: var(--border-control);
+  border-color: var(--border-control-legacy);
 }
 .sp-btn-ghost:hover:not(:disabled) {
   background: color-mix(in srgb, var(--text-primary) 8%, transparent);

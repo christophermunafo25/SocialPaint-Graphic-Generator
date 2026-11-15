@@ -390,24 +390,24 @@ export function GenerateHistoryPage() {
             <li>
               <button
                 type="button"
-                className="ui-reset ui-ring t-label-m sp-shell-crumbs__link"
+                className="ui-reset ui-ring tu-label-m sp-shell-crumbs__link"
                 onClick={newChat}
               >
                 Generate
               </button>
             </li>
             <li>
-              <span className="t-body-s sp-shell-crumbs__sep" aria-hidden>
+              <span className="tu-body-m sp-shell-crumbs__sep" aria-hidden>
                 /
               </span>
-              <span className="t-label-m sp-shell-crumbs__current" aria-current="page">
+              <span className="tu-label-m sp-shell-crumbs__current" aria-current="page">
                 History
               </span>
             </li>
           </ol>
         </nav>
         <div className="sp-gen-history-head__title">
-          <h1 ref={titleRef} tabIndex={-1} className="t-title-page">
+          <h1 ref={titleRef} tabIndex={-1} className="tu-title-page">
             History
           </h1>
           <Button kind="primary" icon={MessageSquarePlus} onClick={newChat}>

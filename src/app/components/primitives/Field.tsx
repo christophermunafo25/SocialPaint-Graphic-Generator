@@ -19,7 +19,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(function Inp
       type={type}
       className={cx(
         "ui-reset ui-tint ui-ring-none ui-input",
-        size === "sm" ? "t-body-xs" : "t-body-s",
+        size === "sm" ? "tu-body-s" : "tu-body-m",
         className,
       )}
       data-size={size}
@@ -40,7 +40,7 @@ export const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(fun
   return (
     <textarea
       ref={ref}
-      className={cx("ui-reset ui-tint ui-ring-none ui-input t-body-s", className)}
+      className={cx("ui-reset ui-tint ui-ring-none ui-input tu-body-m", className)}
       data-size="multiline"
       {...rest}
     />
@@ -103,11 +103,11 @@ export function Field({
     <div className={cx("ui-field", className)}>
       <div className="ui-field__row">
         <span className="ui-field__lead">
-          <label htmlFor={controlId} className="t-label-xs ui-field__label">
+          <label htmlFor={controlId} className="tu-label-xs ui-field__label">
             {label}
           </label>
           {edited && (
-            <span className="t-caption-s ui-field__marker ui-field__edited">
+            <span className="tu-caption-m ui-field__marker ui-field__edited">
               <span className="ui-field__dot" aria-hidden />
               Edited
             </span>
@@ -115,12 +115,12 @@ export function Field({
         </span>
         {(optional || action) && (
           <span className="ui-field__end">
-            {optional && <span className="t-caption-s ui-field__marker">Optional</span>}
+            {optional && <span className="tu-caption-m ui-field__marker">Optional</span>}
             {action && (
               <button
                 type="button"
                 onClick={action.onClick}
-                className="ui-reset ui-ring t-label-xs ui-field__action"
+                className="ui-reset ui-ring tu-label-xs ui-field__action"
               >
                 {action.label}
               </button>
@@ -134,7 +134,7 @@ export function Field({
         "aria-describedby": describedBy,
       })}
       {error && (
-        <p id={errorId} className="t-caption-s ui-field__error">
+        <p id={errorId} className="tu-caption-m ui-field__error">
           {error}
         </p>
       )}

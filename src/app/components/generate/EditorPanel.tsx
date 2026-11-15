@@ -487,7 +487,7 @@ export function EditorPanel({
           <>
             <div className="sp-details__stage">{stage}</div>
             {selected && warnings.length > 0 && (
-              <p role="status" className="t-caption-s sp-details__warning">
+              <p role="status" className="tu-caption-m sp-details__warning">
                 {warnings[0]}
               </p>
             )}
@@ -751,7 +751,7 @@ export function SaveToLibrary({ state, error, onSave, onOpenBuilder }: EditorSav
   if (state === "saved") {
     return (
       <>
-        <p className="t-caption-s sp-details__note" role="status">
+        <p className="tu-caption-m sp-details__note" role="status">
           Saved to Brand Templates.
         </p>
         <Button ref={builderRef} kind="neutral" size="lg" onClick={onOpenBuilder}>
@@ -765,7 +765,7 @@ export function SaveToLibrary({ state, error, onSave, onOpenBuilder }: EditorSav
   return (
     <>
       {state === "error" && error && (
-        <p className="t-caption-s sp-details__note" role="alert">
+        <p className="tu-caption-m sp-details__note" role="alert">
           {error}
         </p>
       )}

@@ -72,7 +72,7 @@ export const RENDERERS: Record<string, (state: DemoState) => React.ReactNode> = 
   ),
   Input: (s) => (
     <div
-      className="ui-reset ui-tint ui-input t-body-s dev-ui-input-demo dev-ui-w-288"
+      className="ui-reset ui-tint ui-input tu-body-m dev-ui-input-demo dev-ui-w-288"
       data-demo-state={s === "hover" ? "hover" : undefined}
     >
       {s === "focus" && <span className="dev-ui-input-demo__caret" aria-hidden />}

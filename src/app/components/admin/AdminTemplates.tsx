@@ -252,7 +252,7 @@ export function AdminTemplates() {
       >
         {versionFor && (
           <>
-            <p className="t-body-s sp-st-confirm__body">
+            <p className="tu-body-m sp-st-confirm__body">
               "{versionFor.name}" stays untouched. The version lands as a reflowed draft copy you
               review in the builder.
             </p>
@@ -349,16 +349,16 @@ export function AdminTemplates() {
             borderRadius: "var(--radius-card)",
           }}
         >
-          <p className="t-title-card" style={{ color: "var(--text-primary)", marginBottom: 6 }}>
+          <p className="tu-title-card" style={{ color: "var(--text-primary)", marginBottom: 6 }}>
             Create your first template
           </p>
-          <p className="t-body-xs max-w-md mx-auto" style={{ color: "var(--text-secondary)" }}>
+          <p className="tu-body-s max-w-md mx-auto" style={{ color: "var(--text-secondary)" }}>
             Upload a PNG or import a Figma frame, map the editable fields, and publish it for your
             team.
           </p>
         </div>
       ) : visible.length === 0 ? (
-        <p className="t-body-s text-center py-20" style={{ color: "var(--text-secondary)" }}>
+        <p className="tu-body-m text-center py-20" style={{ color: "var(--text-secondary)" }}>
           {query.trim()
             ? "No templates match that search."
             : statusFilter === "draft"
@@ -393,7 +393,7 @@ export function AdminTemplates() {
                       the rename field ~18px wide at four columns; the name
                       and its input now own the whole line. */}
                   <InlineEdit
-                    className="t-label-m min-w-0"
+                    className="tu-label-m min-w-0"
                     value={t.name}
                     ariaLabel={`Rename ${t.name}`}
                     inputAriaLabel="Template name"
@@ -420,7 +420,7 @@ export function AdminTemplates() {
                   {/* Line 3: meta */}
                   {usageState.status === "ready" && (
                     <p
-                      className="t-caption-xs"
+                      className="tu-caption-s"
                       style={{ color: "var(--text-muted)", marginTop: 2 }}
                     >
                       {(() => {

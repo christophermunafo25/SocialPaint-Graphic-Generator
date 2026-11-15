@@ -66,9 +66,9 @@ export function WorkspacesCard() {
             <li key={c.id} className="sp-workspaces__row">
               <Avatar initials={workspaceInitials(c.name)} shape="square" />
               <div className="sp-workspaces__text">
-                <span className="t-label-m">{c.name}</span>
+                <span className="tu-label-m">{c.name}</span>
                 {role && (
-                  <span className="t-label-xs sp-workspaces__meta">
+                  <span className="tu-label-xs sp-workspaces__meta">
                     {workspaceMeta(ROLE_LABEL[role], countFor(c.id))}
                   </span>
                 )}

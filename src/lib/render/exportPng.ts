@@ -1,4 +1,4 @@
-import { toPng } from "html-to-image";
+import { toSvg } from "html-to-image";
 import type { BrandKit, TemplateSchema } from "../types";
 import { buildExportFontEmbedCss, ensureSchemaFontsLoaded } from "./fonts";
 
@@ -8,7 +8,8 @@ export type ExportOutcome = "downloaded" | "shared" | "canceled";
  *
  * Ported from the reference Generator's handleDownload:
  *  - dimensions come from the SCHEMA, never a literal
- *  - toPng runs twice with a short pause (Safari image-decode warm-up)
+ *  - the snapshot is drawn twice with a short pause (Safari image-decode
+ *    warm-up)
  *  - mobile tries navigator.share with a File, falling back to a download
  * EVERY font the schema renders with (uploaded AND Google, type-style-bound
  * included) is embedded via fontEmbedCSS — the snapshot SVG rasterizes in an
@@ -60,6 +61,58 @@ async function ensureImagesReady(node: HTMLElement): Promise<void> {
   }
 }
 
+/** How long a loaded snapshot waits before its first draw.
+ *
+ * Firefox suppresses painting for the first moments of every document's
+ * life, the snapshot image's own document included (5 ms by default, ended
+ * by a timer). A draw made in that window paints everything except what is
+ * clipped to text, which is how a text gradient and grain on glyphs are
+ * drawn. Firefox then keeps that raster for the image, so drawing it again
+ * later returns the same picture with the text missing. A timer set once
+ * the image has loaded, and no shorter than Firefox's, fires after it
+ * however busy the page is. An animation frame does not, and one frame is
+ * all html-to-image's own toPng waits.
+ *
+ * The fidelity harness launches Firefox with that window held open for
+ * 40 ms (FIREFOX_PAINT_DELAY_MS in scripts/fidelity/fidelity.mjs), so a
+ * first draw that comes too early fails every run there, not only on a
+ * slow machine. Keep this wait longer than that value, or every Firefox
+ * run of the harness loses its text-clipped fills. */
+const SNAPSHOT_SETTLE_MS = 50;
+
+/** The pause between the two draws (Safari image-decode warm-up). */
+const WARM_UP_PAUSE_MS = 150;
+
+const pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/** The snapshot as an image element: loaded and decoded, not yet drawn. */
+function loadSnapshot(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      // A loaded image that refuses decode() can still be drawn.
+      image.decode().then(
+        () => resolve(image),
+        () => resolve(image),
+      );
+    };
+    image.onerror = () => reject(new Error("The export snapshot did not load"));
+    image.crossOrigin = "anonymous";
+    image.decoding = "async";
+    image.src = url;
+  });
+}
+
+function drawSnapshot(image: HTMLImageElement, width: number, height: number): HTMLCanvasElement {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("No 2D canvas to draw the export on");
+  context.drawImage(image, 0, 0, width, height);
+  return canvas;
+}
+
 /** Rasterize a mounted canvas node to PNG bytes. Throws ExportAssetError
  * when an image in the canvas did not load. This is THE rasterization path:
  * the single export and the bulk export both come through here, which is
@@ -72,21 +125,25 @@ export async function renderSchemaBlob(
   await ensureImagesReady(node);
   await ensureSchemaFontsLoaded(schema, brandKit);
   const fontEmbedCss = await buildExportFontEmbedCss(schema, brandKit);
-  const options = {
-    width: schema.canvasWidth,
-    height: schema.canvasHeight,
-    pixelRatio: 1,
-    canvasWidth: schema.canvasWidth,
-    canvasHeight: schema.canvasHeight,
+  const { canvasWidth: width, canvasHeight: height } = schema;
+  // The canvas as one SVG image: html-to-image's clone of the node with
+  // its fonts and images inlined.
+  const snapshot = await toSvg(node, {
+    width,
+    height,
     // We embed fonts ourselves; never let html-to-image walk the document's
     // stylesheets (slow, and it would inline the app shell fonts too).
     skipFonts: !fontEmbedCss,
     ...(fontEmbedCss ? { fontEmbedCSS: fontEmbedCss } : {}),
-  };
+  });
 
-  await toPng(node, options);
-  await new Promise((resolve) => setTimeout(resolve, 150));
-  const dataUrl = await toPng(node, options);
+  // Loaded and drawn here rather than by html-to-image's toPng, so the
+  // first draw waits for the snapshot to settle (SNAPSHOT_SETTLE_MS).
+  const image = await loadSnapshot(snapshot);
+  await pause(SNAPSHOT_SETTLE_MS);
+  drawSnapshot(image, width, height);
+  await pause(WARM_UP_PAUSE_MS);
+  const dataUrl = drawSnapshot(image, width, height).toDataURL();
 
   // One Blob serves both branches; browsers handle multi-megabyte base64
   // hrefs inconsistently, so the data URL is dropped as early as possible.

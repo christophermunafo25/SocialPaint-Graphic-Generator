@@ -6,7 +6,7 @@ The Figma file "Master UX UI New Brand (Copy)" (`1dYWgFH2V8i9Jez2ylI3ky`) is the
 - `PLAN.md` (this file) is the program: decisions, what Phase 0 found, phases and the screen map.
 - `RULES.md` holds the rules every phase follows.
 - `BRIDGE.md` maps every older token name and text class to the new ones while screens move.
-- `PHASE-1.md` is the prompt for Phase 1. Each later phase gets its own prompt when it starts, written from the frames it builds.
+- `PHASE-1.md` and `PHASE-2.md` are the prompts for Phases 1 and 2. Each later phase gets its own prompt when it starts, written from the frames it builds.
 
 It replaces the file "Master UX-UI" as the source of truth. It does not replace `docs/design/new-look/`: that program built the structure this one restyles, and its decisions stand unless one below changes them.
 
@@ -201,8 +201,8 @@ One pull request per phase into `main`. Phase 0 changed the prompt's order in tw
 | # | Phase | What lands | Gate highlights | Status |
 |---|---|---|---|---|
 | 0 | Recon and plan | This folder. No product code | CJ approves the plan and answers the questions | At the gate |
-| 1 | Foundation | The exporter, JSON, generator and check on the new collections. `tokens.css` regenerated from the new file. `legacy-bridge.css` rewritten so every older name still read points at a new token. The 2 px focus ring, on fields too. The 20 text styles, with existing call sites renamed onto untrimmed twins | Every changed value is on the expected list. No layout moves | Not started |
-| 2 | Primitives | Every component in `PROMPT.md` section 6.1 on the new tokens with its states, tested. The folds (Icon Button, Select, Tooltip, Switch). The new ones (Checkbox, Radio, Table Row, Alert, Empty State, Search, Tabs). `/dev/ui` redrawn to show each one in Light and Dark the way the Components page does | `/dev/ui` matches the boards in both themes | Not started |
+| 1 | Foundation | The exporter, JSON, generator and check on the new collections. `tokens.css` regenerated from the new file. `legacy-bridge.css` rewritten so every older name still read points at a new token. The 2 px focus ring, on fields too. The 20 text styles, with existing call sites renamed onto untrimmed twins | Every changed value is on the expected list. No layout moves | Merged 2026-11-14 (#185) |
+| 2 | Primitives | Every component in `PROMPT.md` section 6.1 on the new tokens with its states, tested. The folds (Icon Button, Select, Tooltip, Switch). The new ones (Checkbox, Radio, Table Row, Alert, Empty State, Search, Tabs). `/dev/ui` redrawn to show each one in Light and Dark the way the Components page does | `/dev/ui` matches the boards in both themes | Prompt written (`PHASE-2.md`) |
 | 3 | Shell | The app frame: viewport padding, the 320 sidebar, Main as a frame whose content scrolls, the one Page Header row on every page, Breadcrumb, one Footer Links slot. The new logo, mark and favicon | Every route still reachable in both themes. Titles sit at one height | Not started |
 | 4 | Brand Templates | The library, filter, search, the form-only fill page on the Details panel, the public link page's form, the public links dialog, bulk fill in the new shell. The template chat behind its redirect | Screens match their frames in both themes. No shadow cut off on the shelves, the chip rail or the grids | Not started |
 | 5 | Generate | Every state in the screen map, the new chat box, the Result Card with size tabs, History with skeletons | Same | Not started |

@@ -123,7 +123,7 @@ function ResumeNote({ resumable, resumed }: { resumable: boolean; resumed: boole
   return (
     <div className="sp-fill__resume">
       <Info size={14} className="ui-icon" aria-hidden />
-      <p className="t-caption-s">
+      <p className="tu-caption-m">
         {resumed
           ? "We brought back what you'd typed. It's saved on this device only: a photo needs adding again, and another browser or phone will start fresh."
           : "What you type is saved on this device, so you can close the tab and come back. A photo isn't saved, and another browser or phone will start fresh."}

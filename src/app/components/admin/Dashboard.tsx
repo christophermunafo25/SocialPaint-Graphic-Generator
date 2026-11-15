@@ -239,7 +239,7 @@ export function Dashboard(route: Omit<DashboardRoute, "name">) {
       <Page layout={{ className: "sp-in-page" }}>
         <PageHeader title="Insights & Analytics" />
         <section className="sp-in-card sp-in-empty" aria-labelledby="sp-in-empty-title">
-          <h2 id="sp-in-empty-title" className="t-title-panel">
+          <h2 id="sp-in-empty-title" className="tu-title-card">
             No usage yet
           </h2>
           <a
@@ -249,7 +249,7 @@ export function Dashboard(route: Omit<DashboardRoute, "name">) {
             href={routeToUrl({ name: "portal" })}
             onClick={linkTo({ name: "portal" })}
           >
-            <span className="t-button-m">Open Brand Templates</span>
+            <span className="tu-label-m">Open Brand Templates</span>
           </a>
         </section>
       </Page>
@@ -278,10 +278,10 @@ export function Dashboard(route: Omit<DashboardRoute, "name">) {
                 <ChartColumn size={24} className="ui-icon" />
               </span>
               <span className="sp-in-digest__titles">
-                <h2 id="sp-in-digest-title" className="t-title-panel">
+                <h2 id="sp-in-digest-title" className="tu-title-card">
                   {digestHeading(loaded.range)}
                 </h2>
-                <span className="t-caption-m sp-in-muted">
+                <span className="tu-body-s sp-in-muted">
                   {windowDates(insights.window, loaded.range)}
                 </span>
               </span>

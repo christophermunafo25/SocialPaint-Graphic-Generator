@@ -35,14 +35,14 @@ export const BreadcrumbHeader = React.forwardRef<
           {crumbs.map((crumb, i) => (
             <li key={`${i}-${crumb.label}`}>
               {i > 0 && (
-                <span className="t-body-s sp-shell-crumbs__sep" aria-hidden>
+                <span className="tu-body-m sp-shell-crumbs__sep" aria-hidden>
                   /
                 </span>
               )}
               {i === last ? (
                 <h1
                   id={currentId}
-                  className="t-label-m sp-shell-crumbs__current"
+                  className="tu-label-m sp-shell-crumbs__current"
                   aria-current="page"
                 >
                   {crumb.label}
@@ -50,7 +50,7 @@ export const BreadcrumbHeader = React.forwardRef<
               ) : crumb.href ? (
                 <a
                   href={crumb.href}
-                  className="ui-reset ui-ring t-label-m sp-shell-crumbs__link"
+                  className="ui-reset ui-ring tu-label-m sp-shell-crumbs__link"
                   onClick={(e) => {
                     if (!isPlainClick(e)) return;
                     e.preventDefault();
@@ -62,7 +62,7 @@ export const BreadcrumbHeader = React.forwardRef<
               ) : (
                 <button
                   type="button"
-                  className="ui-reset ui-ring t-label-m sp-shell-crumbs__link"
+                  className="ui-reset ui-ring tu-label-m sp-shell-crumbs__link"
                   onClick={crumb.onClick}
                 >
                   {crumb.label}

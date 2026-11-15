@@ -115,7 +115,7 @@ export function ColorControl({
       onChange={(e) => setDraft(e.target.value)}
       onBlur={commitDraft}
       onKeyDown={(e) => e.key === "Enter" && commitDraft()}
-      className="t-mono-xs"
+      className="tu-mono-s"
       style={{ width: 88 }}
       aria-label={`${label} hex value`}
     />

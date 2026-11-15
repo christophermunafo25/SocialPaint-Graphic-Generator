@@ -96,7 +96,7 @@ export function SettingsAdmin({ section }: { section?: SettingsSection }) {
           <div className="sp-shell-settings__section">{RENDER[active.key]()}</div>
         </div>
       </SettingsToastProvider>
-      <p className="t-caption-s sp-st-legal">
+      <p className="tu-caption-m sp-st-legal">
         <LegalLinks />
       </p>
     </Page>

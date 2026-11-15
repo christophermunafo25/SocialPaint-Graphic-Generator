@@ -32,8 +32,8 @@ export function AddSlot({
 
   const body = (
     <>
-      <span className="t-button-m sp-bs-add__label">+ {label}</span>
-      {detail && <span className="t-label-xs sp-bs-add__detail">{detail}</span>}
+      <span className="tu-label-m sp-bs-add__label">+ {label}</span>
+      {detail && <span className="tu-label-xs sp-bs-add__detail">{detail}</span>}
     </>
   );
 
