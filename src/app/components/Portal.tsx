@@ -198,8 +198,8 @@ export function Portal() {
           </>
         ) : catalog.length === 0 ? (
           <div className="sp-lib-empty">
-            <p className="t-title-panel">Publish your first template</p>
-            <p className="t-body-s sp-lib-empty__body">
+            <p className="tu-title-card">Publish your first template</p>
+            <p className="tu-body-m sp-lib-empty__body">
               Published templates appear here for everyone on your team.
             </p>
           </div>
@@ -230,7 +230,7 @@ export function Portal() {
 
             {results.length === 0 ? (
               <div className="sp-lib-empty">
-                <p className="t-title-panel">
+                <p className="tu-title-card">
                   {query ? `No templates match “${query}”.` : "That set is empty."}
                 </p>
                 <div className="sp-lib-empty__actions">
@@ -260,7 +260,7 @@ export function Portal() {
         )}
       </div>
 
-      <p className="sp-lib-legal t-caption-s">
+      <p className="sp-lib-legal tu-caption-m">
         <a href={TERMS_URL} target="_blank" rel="noopener noreferrer">
           Terms of Service
         </a>
@@ -286,10 +286,10 @@ function ResultGroup({
   return (
     <section className="sp-lib-group" aria-labelledby={`group-${group.id}`}>
       <div className="sp-lib-group__header">
-        <h2 className="t-title-panel" id={`group-${group.id}`}>
+        <h2 className="tu-title-card" id={`group-${group.id}`}>
           {group.label}
         </h2>
-        <span className="t-body-s sp-lib-group__count">
+        <span className="tu-body-m sp-lib-group__count">
           {plural(group.templates.length, "template")}
         </span>
       </div>

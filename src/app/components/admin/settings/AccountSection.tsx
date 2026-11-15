@@ -183,7 +183,7 @@ function NotificationRows({
   }
   if (state.status === "error") {
     return (
-      <p className="t-body-s sp-st-empty">
+      <p className="tu-body-m sp-st-empty">
         We couldn't load your preferences.{" "}
         <button type="button" onClick={state.retry} className="ui-reset ui-ring sp-st-show-all">
           Try again

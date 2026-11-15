@@ -35,11 +35,11 @@ The kit also adds files outside this folder:
 
 ## Updating tokens later
 
-The Figma file stays the source of truth. To change a color, radius, spacing value, text style or shadow:
+Since the new-brand program's Phase 1 the source of truth is the Figma file "Master UX UI New Brand (Copy)" (`1dYWgFH2V8i9Jez2ylI3ky`), which replaced "Master UX-UI". The export reads its three variable collections by name (Primitives, Color with Light and Dark modes, and Scale), its twenty text styles and its six effect styles. To change a color, radius, spacing value, size, text style, motion value or shadow:
 
 1. Change the variable or style in the Figma file.
 2. In Figma, run the export plugin. The first time: Plugins › Development › Import plugin from manifest…, and pick `design/tokens/figma-export/manifest.json`. After that it is under Plugins › Development › "SocialPaint token export".
-3. Save the file it offers over `design/tokens/master.tokens.json`.
+3. Check the counts the plugin shows: 193 variables (65, 76, 52), 20 text styles, 6 effect styles. Save the file it offers over `design/tokens/master.tokens.json`.
 4. Run `npm run tokens` and commit both files.
 
 `npm run tokens:check` (part of `npm run verify` and CI from Phase 1 on) fails when `tokens.css` and the JSON disagree, or when a stylesheet redeclares a token. A Claude session with the Figma connector can also run the plugin's `exportTokens()` through `use_figma`; that tool truncates long results, so it returns one section at a time.

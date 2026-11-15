@@ -47,17 +47,17 @@ export function Question({
     <div className="sp-onb-question">
       {label &&
         (htmlFor ? (
-          <label id={labelId} htmlFor={htmlFor} className="t-label-l">
+          <label id={labelId} htmlFor={htmlFor} className="tu-label-m">
             {label}
           </label>
         ) : (
-          <p id={labelId} className="t-label-l">
+          <p id={labelId} className="tu-label-m">
             {label}
           </p>
         ))}
       {children}
       {error && (
-        <p id={errorId} className="t-caption-s sp-onb-question__error">
+        <p id={errorId} className="tu-caption-m sp-onb-question__error">
           {error}
         </p>
       )}
@@ -106,7 +106,7 @@ export function ColorCard({
   return (
     <span className="sp-onb-color-card" style={{ "--_swatch": hex } as React.CSSProperties}>
       <span className="sp-onb-color-card__chip" role="img" aria-label={name} />
-      <span className="t-mono-s sp-onb-muted">{hex.toUpperCase()}</span>
+      <span className="tu-mono-s sp-onb-muted">{hex.toUpperCase()}</span>
       {onRemove && (
         <button
           type="button"
@@ -220,7 +220,7 @@ export function WorkspacePreview({ state }: { state: PreviewState }) {
               ),
           )}
           {brand?.font && (
-            <span className="t-caption-s sp-onb-muted sp-onb-preview__font">{brand.font}</span>
+            <span className="tu-caption-m sp-onb-muted sp-onb-preview__font">{brand.font}</span>
           )}
         </div>
       </PreviewRow>
@@ -244,7 +244,7 @@ export function WorkspacePreview({ state }: { state: PreviewState }) {
 function PreviewRow({ eyebrow, children }: { eyebrow: string; children: React.ReactNode }) {
   return (
     <div className="sp-onb-preview__row">
-      <p className="t-mono-eyebrow sp-onb-muted">{eyebrow}</p>
+      <p className="tu-mono-eyebrow sp-onb-muted">{eyebrow}</p>
       {children}
     </div>
   );
@@ -255,8 +255,8 @@ function Lead({ lead, name, detail }: { lead: React.ReactNode; name: string; det
     <div className="sp-onb-preview__lead">
       {lead}
       <span className="sp-onb-preview__lead-text">
-        <span className="t-label-m">{name}</span>
-        {detail && <span className="t-caption-s sp-onb-muted">{detail}</span>}
+        <span className="tu-label-m">{name}</span>
+        {detail && <span className="tu-caption-m sp-onb-muted">{detail}</span>}
       </span>
     </div>
   );

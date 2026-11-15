@@ -22,7 +22,7 @@ export const Filter = React.forwardRef<HTMLButtonElement, FilterProps>(function 
       className={cx("ui-reset ui-tint ui-ring ui-filter", className)}
       {...rest}
     >
-      <span className="t-control-m">{children}</span>
+      <span className="tu-label-m">{children}</span>
       <ChevronDown size={16} className="ui-icon" aria-hidden />
     </button>
   );

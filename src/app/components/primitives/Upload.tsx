@@ -65,15 +65,15 @@ export const Upload = React.forwardRef<HTMLButtonElement, UploadProps>(function 
       {filled ? (
         <>
           <img src={thumbnail ?? undefined} alt="" className="ui-upload__thumb" />
-          <span className="t-body-s ui-upload__name">{fileName}</span>
-          <span className="t-label-s ui-upload__replace">{replaceLabel}</span>
+          <span className="tu-body-m ui-upload__name">{fileName}</span>
+          <span className="tu-label-s ui-upload__replace">{replaceLabel}</span>
         </>
       ) : (
         <>
           <span className="ui-upload__tile" aria-hidden>
             <Image size={16} className="ui-icon" />
           </span>
-          <span className="t-body-s ui-upload__placeholder">{placeholder}</span>
+          <span className="tu-body-m ui-upload__placeholder">{placeholder}</span>
         </>
       )}
     </button>

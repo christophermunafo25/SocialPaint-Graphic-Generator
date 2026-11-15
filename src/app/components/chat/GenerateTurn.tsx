@@ -180,7 +180,7 @@ const GenerateDraft = memo(function GenerateDraft({
               />
             </span>
           ) : (
-            <span className="t-caption-s sp-gen-result__gone">{name} is no longer available.</span>
+            <span className="tu-caption-m sp-gen-result__gone">{name} is no longer available.</span>
           )}
         </span>
       }
@@ -306,7 +306,7 @@ export const GenerateTurn = memo(function GenerateTurn({
 
       {gaps.length > 0 && (
         <div className="sp-tchat-fillin">
-          <span className="t-caption-m sp-tchat-fillin__label">Fill in</span>
+          <span className="tu-body-s sp-tchat-fillin__label">Fill in</span>
           <ul className="sp-tchat-fillin__tags" aria-label="Fill in">
             {gaps.map((g) => (
               <li key={g.id}>
@@ -354,7 +354,7 @@ export const GenerateTurn = memo(function GenerateTurn({
       {!running && turn.warnings.length > 0 && (
         <div className="sp-tchat-warnings">
           {turn.warnings.map((w, i) => (
-            <p key={i} className="t-caption-s">
+            <p key={i} className="tu-caption-m">
               {w}
             </p>
           ))}
@@ -389,7 +389,7 @@ export const GenerateTurn = memo(function GenerateTurn({
 
       {tryNext.length > 0 && (
         <div className="sp-gen-trynext" role="group" aria-labelledby={tryNextId}>
-          <span id={tryNextId} className="t-caption-m sp-gen-trynext__label">
+          <span id={tryNextId} className="tu-caption-m sp-gen-trynext__label">
             Try next
           </span>
           {tryNext.map((action) => (

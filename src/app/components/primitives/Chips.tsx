@@ -19,7 +19,7 @@ export const Chip = React.forwardRef<HTMLButtonElement, ButtonAttrs>(function Ch
       className={cx("ui-reset ui-tint ui-ring-tight ui-chip", className)}
       {...rest}
     >
-      <span className="t-button-s">{children}</span>
+      <span className="t-label-s">{children}</span>
     </button>
   );
 });
@@ -44,7 +44,7 @@ export const ChoiceChip = React.forwardRef<HTMLButtonElement, ChoiceChipProps>(f
       data-selected={selected || undefined}
       {...rest}
     >
-      <span className="t-label-xs">{children}</span>
+      <span className="tu-label-xs">{children}</span>
     </button>
   );
 });
@@ -96,7 +96,7 @@ export const PlatformChip = React.forwardRef<HTMLButtonElement, PlatformChipProp
         <span className="ui-platform-chip__tile">
           <PlatformLogo platform={platform} />
         </span>
-        <span className="t-button-m t-trim">{children}</span>
+        <span className="t-label-m">{children}</span>
         <ChevronRight size={14} className="ui-icon ui-platform-chip__chevron" aria-hidden />
       </button>
     );
@@ -117,7 +117,7 @@ export const Tag = React.forwardRef<HTMLButtonElement, TagProps>(function Tag(
   { kind = "default", className, children, type = "button", ...rest },
   ref,
 ) {
-  const textClass = kind === "overlay" ? "t-caption-xs" : "t-caption-s";
+  const textClass = kind === "overlay" ? "tu-caption-s" : "tu-caption-m";
   if (kind === "default" || kind === "overlay") {
     return (
       <span className={cx("ui-tag", className)} data-kind={kind}>
@@ -185,12 +185,12 @@ export function DetailTag({
           type="button"
           aria-label={editLabel}
           onClick={onEdit}
-          className="ui-reset ui-ring ui-detail-tag__value t-caption-s t-trim"
+          className="ui-reset ui-ring ui-detail-tag__value t-caption-m"
         >
           {children}
         </button>
       ) : (
-        <span className="t-caption-s t-trim">{children}</span>
+        <span className="t-caption-m">{children}</span>
       )}
       {state === "editable" && (
         <button
@@ -219,7 +219,7 @@ export interface StatusProps {
 export function Status({ tone, size = "default", children, className }: StatusProps) {
   return (
     <span className={cx("ui-status", className)} data-tone={tone} data-size={size}>
-      <span className={size === "sm" ? "t-label-xxs" : "t-label-xs"}>{children}</span>
+      <span className={size === "sm" ? "t-label-xs" : "tu-label-xs"}>{children}</span>
     </span>
   );
 }

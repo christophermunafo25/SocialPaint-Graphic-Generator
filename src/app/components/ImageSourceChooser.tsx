@@ -231,7 +231,7 @@ export function ImageSourceDialog({
         target?.focus({ preventScroll: true });
       }}
     >
-      <p className="t-body-s sp-st-confirm__body">
+      <p className="tu-body-m sp-st-confirm__body">
         {showingBrand
           ? "Pick one of your brand's logos or images."
           : "Where should the new image come from?"}

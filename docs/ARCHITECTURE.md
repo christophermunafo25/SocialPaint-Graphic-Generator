@@ -268,12 +268,15 @@ expression lives in the template graphics. Fonts load via the Google Fonts css2 
 runtime `@font-face` with data URLs for uploads (export-safe — see
 `src/lib/render/fonts.ts`).
 
-Token values come from the Figma file "Master UX-UI". `design/tokens/master.tokens.json`
-is its export (made with the development plugin in `design/tokens/figma-export/`), and
+Token values come from the Figma file "Master UX UI New Brand (Copy)"
+(`1dYWgFH2V8i9Jez2ylI3ky`), which replaced "Master UX-UI" in the new-brand program's
+Phase 1 (`docs/design/new-brand/`). `design/tokens/master.tokens.json` is its export
+(made with the development plugin in `design/tokens/figma-export/`), and
 `npm run tokens` generates `src/styles/tokens.css` from it with `scripts/build-tokens.mjs`.
-Nobody edits either file by hand. While the new look moves page by page
-(`docs/design/new-look/`), `src/styles/legacy-bridge.css` points old token names at the
-Figma ones. `npm run tokens:check`, part of `npm run verify` and CI, fails when
+Nobody edits either file by hand. `src/styles/legacy-bridge.css` points older token
+names at the new ones while screens move phase by phase. It carries two generations of
+older names (the first stylesheet's and the earlier Figma file's) and the untrimmed
+`.tu-*` text classes, until that program's Phase 10 deletes it. `npm run tokens:check`, part of `npm run verify` and CI, fails when
 `tokens.css` is out of date or when a stylesheet redeclares a token it owns.
 
 Interface controls are the primitives in `src/app/components/primitives/`, one per

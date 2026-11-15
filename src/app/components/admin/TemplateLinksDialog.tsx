@@ -188,7 +188,7 @@ export function PublicLinksBody({
 
   if (state === "unavailable") {
     return (
-      <p className="t-body-s sp-links__note">
+      <p className="tu-body-m sp-links__note">
         Public links need the Supabase backend. This session is running on the local development
         store, which has no way to issue or check a link.
       </p>
@@ -196,7 +196,7 @@ export function PublicLinksBody({
   }
   if (state === "draft") {
     return (
-      <p className="t-body-s sp-links__note">
+      <p className="tu-body-m sp-links__note">
         Publish this template first. A link to a draft would refuse the moment someone opened it.
       </p>
     );
@@ -232,7 +232,7 @@ export function PublicLinksBody({
       {freshUrl && <FreshLink url={freshUrl} />}
 
       {missingAssets && missingAssets.length > 0 && (
-        <p role="alert" className="t-body-s sp-links__alert">
+        <p role="alert" className="tu-body-m sp-links__alert">
           Links to this template won't open right now.{" "}
           {missingAssets.length === 1
             ? `“${missingAssets[0]}” points at an image that no longer exists.`
@@ -243,7 +243,7 @@ export function PublicLinksBody({
       )}
 
       {error && (
-        <p role="alert" className="t-caption-s sp-links__error">
+        <p role="alert" className="tu-caption-m sp-links__error">
           {error}
         </p>
       )}
@@ -253,7 +253,7 @@ export function PublicLinksBody({
       <hr className="sp-links__divider" />
 
       <section className="sp-links__list" aria-labelledby="sp-links-title">
-        <h3 id="sp-links-title" className="t-label-m">
+        <h3 id="sp-links-title" className="tu-label-m">
           Links
         </h3>
         {loadError ? (
@@ -263,9 +263,9 @@ export function PublicLinksBody({
             onRetry={onRetryLoad}
           />
         ) : links === null ? (
-          <p className="t-body-s sp-links__note">Loading…</p>
+          <p className="tu-body-m sp-links__note">Loading…</p>
         ) : links.length === 0 ? (
-          <p className="t-body-s sp-links__note">No links yet.</p>
+          <p className="tu-body-m sp-links__note">No links yet.</p>
         ) : (
           <ul className="sp-links__rows">
             {links.map((link) => (
@@ -309,7 +309,7 @@ function Confirm({
 }) {
   return (
     <Modal open={open} onOpenChange={(next) => !next && onCancel()} title={title}>
-      <p className="t-body-s sp-links__confirm">{body}</p>
+      <p className="tu-body-m sp-links__confirm">{body}</p>
       <div className="sp-links__actions">
         <Button kind="neutral" size="lg" onClick={onCancel}>
           Cancel
@@ -402,7 +402,7 @@ function CreateLinkForm({
 
   return (
     <section className="sp-links__form" aria-labelledby="sp-links-new">
-      <h3 id="sp-links-new" className="t-label-m">
+      <h3 id="sp-links-new" className="tu-label-m">
         New link
       </h3>
       <Field label="Name">
@@ -435,7 +435,7 @@ function CreateLinkForm({
       </div>
       {variants && (
         <div className="ui-field">
-          <span className="t-label-xs ui-field__label">Look</span>
+          <span className="tu-label-xs ui-field__label">Look</span>
           <Select
             ariaLabel="Which look this link opens"
             size="lg"
@@ -446,7 +446,7 @@ function CreateLinkForm({
         </div>
       )}
       <div className="sp-links__toggle">
-        <span className="t-body-s">Allow photo uploads</span>
+        <span className="tu-body-m">Allow photo uploads</span>
         <Switch
           checked={allowUploads}
           onChange={setAllowUploads}
@@ -494,7 +494,7 @@ function LinkRow({
     <div className="sp-links__row">
       <div className="sp-links__rowhead">
         <span className="sp-links__rowname">
-          <span className="t-label-m">{name}</span>
+          <span className="tu-label-m">{name}</span>
           <Status tone={state.live ? "active" : "neutral"}>{state.label}</Status>
         </span>
         <span className="sp-links__rowactions">
@@ -519,7 +519,7 @@ function LinkRow({
       </div>
       {variants && (
         <div className="sp-links__toggle">
-          <span className="t-body-s">Look</span>
+          <span className="tu-body-m">Look</span>
           <Select
             ariaLabel={`Which look ${name} opens`}
             value={link.pinnedVariantId ?? ""}
@@ -531,7 +531,7 @@ function LinkRow({
         </div>
       )}
       <div className="sp-links__toggle">
-        <span className="t-body-s">Photo uploads</span>
+        <span className="tu-body-m">Photo uploads</span>
         <Switch
           checked={link.allowUploads}
           onChange={onToggleUploads}

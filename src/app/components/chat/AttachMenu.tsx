@@ -350,7 +350,7 @@ export const AttachMenu = React.forwardRef<
       onClick={onChoose}
     >
       <Icon size={18} className="ui-icon" aria-hidden />
-      <span className="ui-menu-item__label t-body-s t-trim">{label}</span>
+      <span className="ui-menu-item__label t-body-m">{label}</span>
       {chevron && <ChevronRight size={16} className="ui-icon ui-menu-item__chevron" aria-hidden />}
     </button>
   );
@@ -374,7 +374,7 @@ export const AttachMenu = React.forwardRef<
         onKeyDown={onPanelKeyDown}
       >
         <div role="group" aria-labelledby={uploadLabelId} className="sp-attach__section">
-          <div id={uploadLabelId} className="ui-menu-label t-label-xs t-trim sp-attach__label">
+          <div id={uploadLabelId} className="ui-menu-label t-label-xs sp-attach__label">
             Upload
           </div>
           {row("photo", "Photo", PhotoGlyph, () => chooseUpload("photo"))}
@@ -386,7 +386,7 @@ export const AttachMenu = React.forwardRef<
           <>
             <div role="separator" className="ui-menu-divider" />
             <div role="group" aria-labelledby={detailsLabelId} className="sp-attach__section">
-              <div id={detailsLabelId} className="ui-menu-label t-label-xs t-trim sp-attach__label">
+              <div id={detailsLabelId} className="ui-menu-label t-label-xs sp-attach__label">
                 Details
               </div>
               {GENERATE_DETAILS.map((d) =>
@@ -417,7 +417,7 @@ export const AttachMenu = React.forwardRef<
           >
             <ChevronLeft size={18} className="ui-icon" aria-hidden />
           </button>
-          <h2 id={titleId} className="t-label-m t-trim sp-attach__title">
+          <h2 id={titleId} className="t-label-m sp-attach__title">
             {detail.label}
           </h2>
         </div>

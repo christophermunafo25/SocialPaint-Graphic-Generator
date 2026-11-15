@@ -124,7 +124,7 @@ export function BrandOverview({ brand, companyId }: { brand: BrandDraft; company
 
       <div className="sp-bs-overview">
         {brand.error && (
-          <p className="t-body-s sp-bs-error" role="alert">
+          <p className="tu-body-m sp-bs-error" role="alert">
             {brand.error}
           </p>
         )}
@@ -133,11 +133,11 @@ export function BrandOverview({ brand, companyId }: { brand: BrandDraft; company
           <section className="sp-bs-strip" aria-label="Setup">
             <div className="sp-bs-strip__progress">
               <p className="sp-bs-strip__status">
-                <span className="t-button-m">
+                <span className="tu-label-m">
                   {allReady ? "All 5 sections ready" : `${readyCount} of 5 sections ready`}
                 </span>
                 {!allReady && (
-                  <span className="t-label-xs sp-bs-strip__reason">{firstUnfinished.reason}</span>
+                  <span className="tu-label-xs sp-bs-strip__reason">{firstUnfinished.reason}</span>
                 )}
               </p>
               <div className="sp-bs-strip__bars" aria-hidden>
@@ -186,8 +186,8 @@ export function BrandOverview({ brand, companyId }: { brand: BrandDraft; company
                     <img src={COVERS[category]} alt="" />
                   </PreviewOverlay>
                   <span className="sp-bs-cat__meta">
-                    <span className="t-label-l sp-bs-cat__title">{CATEGORY_TITLES[category]}</span>
-                    <span className="t-label-xs sp-bs-cat__count">
+                    <span className="tu-label-l sp-bs-cat__title">{CATEGORY_TITLES[category]}</span>
+                    <span className="tu-label-xs sp-bs-cat__count">
                       {categoryCount(category, draft, assets)}
                     </span>
                   </span>

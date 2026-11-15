@@ -24,7 +24,7 @@ function Answer({ children, note }: { children: React.ReactNode; note?: React.Re
   return (
     <div className="sp-tchat-user">
       <MessageBubble>{children}</MessageBubble>
-      {note && <p className="t-caption-s sp-tchat-user__note">{note}</p>}
+      {note && <p className="tu-caption-m sp-tchat-user__note">{note}</p>}
     </div>
   );
 }
@@ -36,7 +36,7 @@ function PhotoAnswer({ photo, note }: { photo?: string | null; note?: React.Reac
   return (
     <div className="sp-tchat-user">
       <img src={photo} alt="Attached photo" className="sp-tchat-user__photo" />
-      {note && <p className="t-caption-s sp-tchat-user__note">{note}</p>}
+      {note && <p className="tu-caption-m sp-tchat-user__note">{note}</p>}
     </div>
   );
 }
@@ -157,7 +157,7 @@ export function TemplateInterviewLive({
       <div className="sp-tchat-ask" aria-live="polite">
         {question && <AssistantMessage mark={false} message={question} />}
         {error && (
-          <p className="t-caption-s sp-tchat-ask__error" role="alert">
+          <p className="tu-caption-m sp-tchat-ask__error" role="alert">
             {error}
           </p>
         )}
@@ -274,10 +274,10 @@ function LookCard({
         })}
       </div>
       <div className="sp-tchat-looks__meta">
-        <span id={titleId} className="t-label-l">
+        <span id={titleId} className="tu-label-m">
           Look
         </span>
-        <span className="t-caption-s sp-tchat-looks__name">{name}</span>
+        <span className="tu-caption-m sp-tchat-looks__name">{name}</span>
       </div>
     </div>
   );
@@ -372,7 +372,7 @@ export const TemplateTurn = memo(function TemplateTurn({
 
       {draft && entries.length > 0 && (
         <div className="sp-tchat-fillin">
-          <span className="t-caption-m sp-tchat-fillin__label">Fill in</span>
+          <span className="tu-body-s sp-tchat-fillin__label">Fill in</span>
           <ul className="sp-tchat-fillin__tags" aria-label="Fill in">
             {entries.map((e) => (
               <li key={e.fieldKey}>
@@ -407,7 +407,7 @@ export const TemplateTurn = memo(function TemplateTurn({
                     emptyFields="chat"
                   />
                 ) : (
-                  <span className="t-caption-s">{draftName(draft)} is no longer available.</span>
+                  <span className="tu-caption-m">{draftName(draft)} is no longer available.</span>
                 )}
               </span>
             }
@@ -433,7 +433,7 @@ export const TemplateTurn = memo(function TemplateTurn({
       {!running && turn.warnings.length > 0 && (
         <div className="sp-tchat-warnings">
           {turn.warnings.map((w, i) => (
-            <p key={i} className="t-caption-s">
+            <p key={i} className="tu-caption-m">
               {w}
             </p>
           ))}

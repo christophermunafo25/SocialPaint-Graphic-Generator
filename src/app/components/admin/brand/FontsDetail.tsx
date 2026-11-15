@@ -79,9 +79,9 @@ export function FontsDetail({ brand }: { brand: BrandDraft }) {
                 Aa
               </span>
               <span className="sp-bs-font__id sp-bs-font__id--pending">
-                <span className="t-label-s sp-bs-font__family">{p.family}</span>
+                <span className="tu-label-s sp-bs-font__family">{p.family}</span>
                 {p.done ? (
-                  <span className="t-label-xs sp-bs-font__added" role="status">
+                  <span className="tu-label-xs sp-bs-font__added" role="status">
                     <Check size={12} className="ui-icon" aria-hidden />
                     Added
                   </span>
@@ -209,7 +209,7 @@ function FontRow({ asset, brand }: { asset: BrandAsset; brand: BrandDraft }) {
             Aa
           </span>
           <span className="sp-bs-font__id">
-            <span className="t-label-s sp-bs-font__family">{family}</span>
+            <span className="tu-label-s sp-bs-font__family">{family}</span>
             {renaming ? (
               <Input
                 size="sm"
@@ -230,7 +230,7 @@ function FontRow({ asset, brand }: { asset: BrandAsset; brand: BrandDraft }) {
                 }}
               />
             ) : (
-              <span className="t-label-xs sp-bs-font__file">{asset.name}</span>
+              <span className="tu-label-xs sp-bs-font__file">{asset.name}</span>
             )}
           </span>
           <span className="sp-bs-font__specimen" style={face}>
@@ -253,7 +253,7 @@ function FontRow({ asset, brand }: { asset: BrandAsset; brand: BrandDraft }) {
         }}
       />
       {blocked && (
-        <p className="t-caption-s sp-bs-error-line sp-bs-font__blocked" role="alert">
+        <p className="tu-caption-m sp-bs-error-line sp-bs-font__blocked" role="alert">
           {blocked}
         </p>
       )}

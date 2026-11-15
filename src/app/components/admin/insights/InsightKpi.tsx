@@ -40,7 +40,7 @@ export type KpiFamily = "green" | "blue" | "purple" | "pink";
 export function ChangeChip({ change, family }: { change: InsightChange; family: KpiFamily }) {
   return (
     <span className="sp-in-chip" data-family={family}>
-      <span className="t-label-xs" aria-hidden>
+      <span className="tu-label-xs" aria-hidden>
         {chipText(change)}
       </span>
       <span className="sr-only">{changeCopy(change)}</span>
@@ -66,11 +66,11 @@ export function InsightKpi({
 }) {
   return (
     <section className="sp-in-card sp-in-kpi" aria-label={label}>
-      <h2 className="t-label-l">{label}</h2>
-      <p className="t-title-metric">{value.toLocaleString("en-US")}</p>
+      <h2 className="tu-label-m">{label}</h2>
+      <p className="tu-title-metric">{value.toLocaleString("en-US")}</p>
       <p className="sp-in-kpi__change">
         <ChangeChip change={change} family={family} />
-        <span className="t-caption-m sp-in-muted">vs previous {rangeLabel}</span>
+        <span className="tu-body-s sp-in-muted">vs previous {rangeLabel}</span>
       </p>
     </section>
   );

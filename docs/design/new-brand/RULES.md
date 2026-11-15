@@ -53,7 +53,7 @@ Controls share four heights: `--size-control-xs` 24 (badges, tags), `--size-cont
 | `--elevation-2-overlay` | Elevation/2 Overlay: the same insets, drop 0 4 16 `--shadow-floating` | Menus, tooltips, toasts |
 | `--elevation-3-floating` | Elevation/3 Floating: inset 0 1 0 and 0 -1 0, drop 0 8 32 `--shadow-floating` | Dialogs |
 | `--elevation-thumb` | Elevation/Thumb: drop 0 1 3 `--shadow-thumb` | The selected segment on its track |
-| `--glow-accent` | Glow/Accent: drop 0 0 12 `--glow-accent` | Only where a frame draws it |
+| `--glow-accent-shadow` | Glow/Accent: drop 0 0 12 `--glow-accent` (the Color token keeps that name, so the composite takes a suffix) | Only where a frame draws it |
 
 The composites carry the Dark bevel. Do not add a separate edge or highlight layer. Grain/Coarse has no CSS equivalent and is not built.
 

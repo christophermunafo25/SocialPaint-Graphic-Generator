@@ -30,7 +30,7 @@ export const NavItem = React.forwardRef<HTMLButtonElement, NavItemProps>(functio
       {...rest}
     >
       <Icon size={18} className="ui-icon" aria-hidden />
-      {showLabel && <span className="t-label-m">{children}</span>}
+      {showLabel && <span className="tu-label-m">{children}</span>}
     </button>
   );
 });
@@ -57,7 +57,7 @@ export const SettingsRailItem = React.forwardRef<HTMLElement, SettingsRailItemPr
     const content = (
       <>
         <Icon size={18} className="ui-icon" aria-hidden />
-        <span className="t-label-m">{children}</span>
+        <span className="tu-label-m">{children}</span>
       </>
     );
     if (href !== undefined) {
@@ -103,7 +103,7 @@ export function Avatar({
 }: AvatarProps) {
   return (
     <span
-      className={cx("ui-avatar t-label-xs", className)}
+      className={cx("ui-avatar tu-label-xs", className)}
       data-size={size}
       data-shape={shape}
       {...(label ? { role: "img", "aria-label": label } : { "aria-hidden": true })}

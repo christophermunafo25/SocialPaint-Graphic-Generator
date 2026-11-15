@@ -267,7 +267,7 @@ export function TemplateFill({
         {/* Left: the steps. */}
         <div className="sp-fill__form">
           {template.description && (
-            <p className="t-body-s sp-fill__description">{template.description}</p>
+            <p className="tu-body-m sp-fill__description">{template.description}</p>
           )}
 
           {/* The step rail: every step one click away, forward or back. A
@@ -278,7 +278,7 @@ export function TemplateFill({
               {multiLook && (
                 <button
                   type="button"
-                  className="ui-reset ui-ring-tight sp-fill__stepchip t-label-xs"
+                  className="ui-reset ui-ring-tight sp-fill__stepchip tu-label-xs"
                   data-current={current === 0 || undefined}
                   aria-current={current === 0 ? "step" : undefined}
                   aria-label={`Step 1: Choose a look${look ? ` (${look.name})` : ""}`}
@@ -294,7 +294,7 @@ export function TemplateFill({
                   <button
                     key={f.id}
                     type="button"
-                    className="ui-reset ui-ring-tight sp-fill__stepdot t-label-xs"
+                    className="ui-reset ui-ring-tight sp-fill__stepdot tu-label-xs"
                     data-current={here || undefined}
                     data-filled={(filled && !here) || undefined}
                     data-error={(!filled && Boolean(errorOf(f.fieldKey))) || undefined}
@@ -309,7 +309,7 @@ export function TemplateFill({
               })}
               <button
                 type="button"
-                className="ui-reset ui-ring-tight sp-fill__stepchip t-label-xs"
+                className="ui-reset ui-ring-tight sp-fill__stepchip tu-label-xs"
                 data-current={onFinish || undefined}
                 aria-current={onFinish ? "step" : undefined}
                 aria-label="Finish: caption and download"
@@ -326,7 +326,7 @@ export function TemplateFill({
             <div ref={stepRef} className="sp-fill__step">
               <div className="sp-fill__stephead">
                 <span className="sp-fill__eyebrow">{stepLabel}</span>
-                <h2 className="t-label-l">Choose a look</h2>
+                <h2 className="tu-label-m">Choose a look</h2>
               </div>
               <LookChoice
                 template={template}
@@ -491,8 +491,8 @@ export function TemplateFill({
         <div className="sp-fill__preview">
           <div className="sp-fill__previewcard">
             <div className="sp-fill__previewhead">
-              <h2 className="t-title-panel">Preview</h2>
-              <span className="t-caption-s sp-fill__size">
+              <h2 className="tu-title-card">Preview</h2>
+              <span className="tu-caption-m sp-fill__size">
                 {template.canvasWidth} × {template.canvasHeight}
               </span>
             </div>
@@ -531,12 +531,12 @@ export function TemplateFill({
               </ErrorBoundary>
             </div>
             {layoutWarnings.length > 0 && (
-              <p role="status" className="t-caption-s sp-fill__note">
+              <p role="status" className="tu-caption-m sp-fill__note">
                 {layoutWarnings[0]}
               </p>
             )}
           </div>
-          <p className="t-caption-s sp-fill__legal">
+          <p className="tu-caption-m sp-fill__legal">
             <a href={TERMS_URL} target="_blank" rel="noopener noreferrer">
               Terms of Service
             </a>

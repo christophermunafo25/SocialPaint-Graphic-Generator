@@ -103,7 +103,7 @@ export function SharingSection() {
 
   const filter = (
     <label className="sp-st-filter">
-      <span className="t-label-xs">Show revoked and expired</span>
+      <span className="tu-label-xs">Show revoked and expired</span>
       <Switch
         checked={showInactive}
         onChange={setShowInactive}
@@ -204,7 +204,7 @@ export function SharingSection() {
             onRetry={state.retry}
           />
         ) : shown.length === 0 ? (
-          <p className="t-body-s sp-st-empty">
+          <p className="tu-body-m sp-st-empty">
             {links.length === 0
               ? "Nothing is publicly reachable. Links are created from a template's Public links dialog."
               : "No active links. Turn on Show revoked and expired to see the others."}
@@ -213,7 +213,7 @@ export function SharingSection() {
           <div className="sp-st-table-wrap">
             <table className="sp-st-table">
               <thead>
-                <tr className="t-label-xs">
+                <tr className="tu-label-xs">
                   <th scope="col">Link</th>
                   <th scope="col">Opens</th>
                   <th scope="col">Last used</th>
@@ -232,21 +232,21 @@ export function SharingSection() {
                       <td>
                         <span className="sp-st-link">
                           <span className="sp-st-link__name">
-                            <span className="t-label-m">{name}</span>
+                            <span className="tu-label-m">{name}</span>
                             <Status tone={st.live ? "active" : "neutral"} size="sm">
                               {st.label}
                             </Status>
                           </span>
-                          <span className="t-label-xs sp-st-meta">{link.templateName}</span>
+                          <span className="tu-label-xs sp-st-meta">{link.templateName}</span>
                         </span>
                       </td>
-                      <td className="t-body-s">
+                      <td className="tu-body-m">
                         {link.useCap ? `${link.useCount} of ${link.useCap}` : link.useCount}
                       </td>
-                      <td className="t-body-s">
+                      <td className="tu-body-m">
                         {link.lastUsedAt ? shortDate(link.lastUsedAt) : "Never"}
                       </td>
-                      <td className="t-body-s">
+                      <td className="tu-body-m">
                         {link.expiresAt ? shortDate(link.expiresAt) : "Never"}
                       </td>
                       <td>

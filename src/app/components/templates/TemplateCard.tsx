@@ -128,10 +128,10 @@ export function TemplateCard({
 
       <span className="sp-tcard__meta">
         <span className="sp-tcard__text">
-          <span className="t-label-l sp-tcard__title" title={template.name}>
+          <span className="tu-label-m sp-tcard__title" title={template.name}>
             {template.name}
           </span>
-          <span className="t-caption-s sp-tcard__size">{cardMeta(template)}</span>
+          <span className="tu-caption-m sp-tcard__size">{cardMeta(template)}</span>
           {showTags && tags.length > 0 && (
             <span className="sp-tcard__tags">
               {tags.map((tag) => (

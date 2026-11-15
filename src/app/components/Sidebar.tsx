@@ -139,10 +139,10 @@ function SidebarAccount({
     <div className="sp-shell-account">
       <Avatar initials={initials} size="lg" />
       <div className="sp-shell-account__text">
-        <span className="t-label-s" title={name}>
+        <span className="tu-label-s" title={name}>
           {name}
         </span>
-        <span className="t-caption-xs sp-shell-account__detail" title={detail}>
+        <span className="tu-caption-s sp-shell-account__detail" title={detail}>
           {detail}
         </span>
       </div>

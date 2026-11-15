@@ -29,7 +29,7 @@ export function BrandDetailHeader({ title, brand }: { title: string; brand: Bran
       ]}
       actions={
         <div className="sp-bs-head__actions">
-          <span className="t-body-xs sp-bs-head__status" role="status" aria-live="polite">
+          <span className="tu-body-s sp-bs-head__status" role="status" aria-live="polite">
             {saving ? "Saving…" : savedAt ? `Saved ${clockTime(savedAt)}` : "All changes saved"}
           </span>
           <Button kind="neutralOnPage" icon={Undo2} disabled={!canUndo} onClick={() => undo()}>

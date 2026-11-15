@@ -29,11 +29,21 @@ describe("platform fonts", () => {
     }
   });
 
-  it("leads the head, body and UI stacks with a Platform family", () => {
-    const css = sheets.find((s) => s.file === "socialpaint.css")!.css;
-    for (const name of ["--font-head", "--font-body", "--font-ui"]) {
-      const stack = new RegExp(`${name}:\\s*([^;]+);`).exec(css)?.[1] ?? "";
-      expect(/^["']([^"']+)["']/.exec(stack.trim())?.[1], name).toMatch(/ Platform$/);
+  it("leads the head, body and sans stacks with a Platform family", () => {
+    const sheet = (file: string) => sheets.find((s) => s.file === file)!.css;
+    const declared = (css: string, name: string) =>
+      new RegExp(`${name}:\\s*([^;]+);`).exec(css)?.[1].trim() ?? "";
+    const stacks = [
+      ["--font-head", declared(sheet("socialpaint.css"), "--font-head")],
+      ["--font-body", declared(sheet("socialpaint.css"), "--font-body")],
+      // The generated token. Figma holds the public family name and the
+      // generator writes the private stack (scripts/build-tokens.mjs).
+      ["--font-sans", declared(sheet("tokens.css"), "--font-sans")],
+    ];
+    for (const [name, stack] of stacks) {
+      expect(/^["']([^"']+)["']/.exec(stack)?.[1], name).toMatch(/ Platform$/);
     }
+    // The older name follows the token through the bridge.
+    expect(declared(sheet("legacy-bridge.css"), "--font-ui")).toBe("var(--font-sans)");
   });
 });
