@@ -117,8 +117,18 @@ export const Tag = React.forwardRef<HTMLButtonElement, TagProps>(function Tag(
     </>
   );
   if (!rest.onClick) {
+    // A text tag is a span: it keeps what describes it, not a button's props.
     return (
-      <span className={cx("ui-tag", className)} data-kind={kind}>
+      <span
+        className={cx("ui-tag", className)}
+        data-kind={kind}
+        id={rest.id}
+        title={rest.title}
+        style={rest.style}
+        role={rest.role}
+        aria-hidden={rest["aria-hidden"]}
+        aria-label={rest["aria-label"]}
+      >
         {content}
       </span>
     );

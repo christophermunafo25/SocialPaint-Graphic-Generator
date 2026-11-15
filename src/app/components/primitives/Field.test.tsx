@@ -101,6 +101,10 @@ describe("Input", () => {
     const box = container.querySelector(".ui-input--box") as HTMLElement;
     expect(box.contains(input)).toBe(true);
     expect(box.classList.contains("mine")).toBe(true);
+    // The box is a label, so a click on its icon or padding reaches the
+    // input, and it adds nothing to the input's name.
+    expect(box.tagName).toBe("LABEL");
+    expect(box.textContent).toBe("");
     expect(box.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
   });
 });

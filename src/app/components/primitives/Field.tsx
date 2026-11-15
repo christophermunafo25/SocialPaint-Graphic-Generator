@@ -42,15 +42,17 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(function Inp
       />
     );
   }
+  // The box is a label, so a click on the icon or the padding lands in the
+  // input. It holds no text, so it adds nothing to the input's name.
   return (
-    <span
+    <label
       className={cx("ui-fill ui-ring ui-input ui-input--box", className)}
       data-size={size}
       data-demo-state={demoState}
     >
       <Icon size={16} className="ui-icon ui-input__icon" aria-hidden />
       <input ref={ref} type={type} className="ui-reset ui-input__control" {...rest} />
-    </span>
+    </label>
   );
 });
 

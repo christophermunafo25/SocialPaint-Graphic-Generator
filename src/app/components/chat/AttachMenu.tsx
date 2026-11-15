@@ -373,7 +373,7 @@ export const AttachMenu = React.forwardRef<
         onKeyDown={onPanelKeyDown}
       >
         <div role="group" aria-labelledby={uploadLabelId} className="sp-attach__section">
-          <div id={uploadLabelId} className="ui-menu-label t-label-xs sp-attach__label">
+          <div id={uploadLabelId} className="ui-menu-label t-mono-eyebrow sp-attach__label">
             Upload
           </div>
           {row("photo", "Photo", PhotoGlyph, () => chooseUpload("photo"))}
@@ -385,7 +385,7 @@ export const AttachMenu = React.forwardRef<
           <>
             <div role="separator" className="ui-menu-divider" />
             <div role="group" aria-labelledby={detailsLabelId} className="sp-attach__section">
-              <div id={detailsLabelId} className="ui-menu-label t-label-xs sp-attach__label">
+              <div id={detailsLabelId} className="ui-menu-label t-mono-eyebrow sp-attach__label">
                 Details
               </div>
               {GENERATE_DETAILS.map((d) =>

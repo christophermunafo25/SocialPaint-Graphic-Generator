@@ -761,9 +761,12 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   background: var(--state-selected);
 }
 /* The keyboard's item: a Radix item has focus itself; a Select's option is
-   the list's active descendant, so the ring follows the list's focus. */
-.ui-menu-item:focus-visible,
-.ui-menu:focus-visible .ui-menu-item[data-highlighted],
+   the list's active descendant, so the ring follows the list's focus. A
+   menu also moves focus to the item under the pointer, and :focus-visible
+   cannot tell that apart, so the ring waits for a key (inputModality.ts
+   marks the root). Under the pointer an item takes the hover fill alone. */
+:root[data-input="keyboard"] .ui-menu-item:focus-visible,
+:root[data-input="keyboard"] .ui-menu:focus-visible .ui-menu-item[data-highlighted],
 .ui-menu-item[data-demo-state="focus"] {
   position: relative;
   z-index: 1;
@@ -1049,10 +1052,13 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 .ui-tab {
   display: inline-flex;
   flex: 1 1 0;
-  align-items: center;
+  /* 28 tall with the label 12 above the underline, as drawn. The height is
+     the tab's own, not padding around the label. */
+  align-items: flex-end;
   justify-content: center;
   min-width: 0;
-  padding: var(--space-4) 0 var(--space-12);
+  height: var(--size-control-sm);
+  padding: 0 0 var(--space-12);
   border-bottom: 2px solid transparent; /* the underline, as drawn (4015:635) */
   color: var(--text-secondary);
 }
@@ -1391,8 +1397,23 @@ button.ui-detail-tag__value {
 .ui-breadcrumb__link {
   color: var(--text-secondary);
 }
-.ui-breadcrumb__link {
+/* A text link's box is its capitals, so it is padded out and pulled back by
+   the same amount: the ring clears the letters, the hit area reaches 24,
+   and nothing around it moves. */
+.ui-breadcrumb__link,
+.ui-footer-links__link {
+  position: relative;
+  margin: calc(-1 * var(--space-4));
+  padding: var(--space-4);
   border-radius: var(--radius-xs);
+}
+.ui-breadcrumb__link::after,
+.ui-footer-links__link::after {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--space-4)) 0;
+}
+.ui-breadcrumb__link {
   cursor: pointer;
 }
 .ui-breadcrumb__link:hover {
@@ -1450,7 +1471,6 @@ button.ui-detail-tag__value {
   gap: var(--space-16);
 }
 .ui-footer-links__link {
-  border-radius: var(--radius-xs);
   color: var(--text-secondary);
 }
 .ui-footer-links__link:hover {
@@ -2085,13 +2105,14 @@ button.ui-detail-tag__value {
   align-items: flex-end;
   gap: var(--space-xs);
 }
+/* The plus is a Medium icon button, as tall as the controls at the other
+   end of the row, and the tags center on it. */
 .ui-composer__inputs {
   flex: 1;
   min-width: 0;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 6px; /* as drawn (61:472) */
-  padding: var(--space-3xs) 0;
 }
 /* The Tags row beside the plus (61:476): detail tags, scrolling sideways
    behind a fade to the composer's fill (Phase 5). */

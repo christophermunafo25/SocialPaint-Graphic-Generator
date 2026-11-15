@@ -392,7 +392,12 @@ export const SPECIMENS: Record<string, Specimen> = {
   },
   Tab: {
     fill: true,
-    render: ({ values, texts }) => <Tab selected={values.State === "Selected"}>{texts[0]}</Tab>,
+    // A tab shares the width of a row, so it is drawn in one.
+    render: ({ values, texts }) => (
+      <div className="dev-board__row">
+        <Tab selected={values.State === "Selected"}>{texts[0]}</Tab>
+      </div>
+    ),
   },
   Tabs: {
     fill: true,

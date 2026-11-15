@@ -280,12 +280,13 @@ older names (the first stylesheet's and the earlier Figma file's) and the untrim
 `tokens.css` is out of date or when a stylesheet redeclares a token it owns.
 
 Interface controls are the primitives in `src/app/components/primitives/`, one per
-component on the Figma file's Master UI Elements page, styled in
-`src/styles/primitives.css` with their interaction states built in and tested in the
-happy-dom Vitest project. In development, `/dev/ui` renders every primitive and the
-file's Interaction states table. Screens move onto the primitives in the phase that
-rebuilds them (`docs/design/new-look/PLAN.md`); the `.sp-btn`, `.sp-input` and
-`.sp-chat-*` classes stay until nothing uses them.
+component on the Components page of the Figma file "Master UX UI New Brand (Copy)",
+styled in `src/styles/primitives.css` with their interaction states built in and tested
+in the happy-dom Vitest project. In development, `/dev/ui` draws that page board by
+board from `src/app/dev/boards.json` (every component in every variant and state, in
+Light with a Dark preview), then a working sheet of live controls. Screens move onto the
+primitives in the phase that rebuilds them (`docs/design/new-brand/PLAN.md`); the
+`.sp-btn`, `.sp-input` and `.sp-chat-*` classes stay until nothing uses them.
 
 The shell is the sidebar (`src/app/components/Sidebar.tsx`: the Figma Sidebar component,
 expanded or collapsed, built on the primitives and styled in `src/styles/shell.css`) and

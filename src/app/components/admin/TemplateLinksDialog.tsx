@@ -446,7 +446,7 @@ function CreateLinkForm({
       </div>
       {variants && (
         <div className="ui-field">
-          <span className="tu-label-xs ui-field__label">Look</span>
+          <span className="t-label-xs ui-field__label">Look</span>
           <Select
             ariaLabel="Which look this link opens"
             value={pinned}

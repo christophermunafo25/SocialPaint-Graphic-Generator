@@ -36,8 +36,10 @@ export const Search = React.forwardRef<HTMLInputElement, SearchProps>(function S
   ref,
 ) {
   const inner = useRef<HTMLInputElement | null>(null);
+  // The box is a label, so a click on the icon or the padding lands in the
+  // input. The clear button inside it keeps its own click.
   return (
-    <span
+    <label
       className={cx("ui-fill ui-ring ui-input ui-input--box", className)}
       data-size="md"
       data-demo-state={demoState}
@@ -70,6 +72,6 @@ export const Search = React.forwardRef<HTMLInputElement, SearchProps>(function S
           <X size={16} className="ui-icon" aria-hidden />
         </button>
       )}
-    </span>
+    </label>
   );
 });

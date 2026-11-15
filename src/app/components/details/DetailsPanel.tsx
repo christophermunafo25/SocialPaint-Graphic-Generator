@@ -162,7 +162,7 @@ export function DetailsPanel({
         {look && look.options.length > 1 && (
           <div className="ui-field">
             <div className="ui-field__row">
-              <span id={lookLabelId} className="tu-label-xs ui-field__label">
+              <span id={lookLabelId} className="t-label-xs ui-field__label">
                 Look
               </span>
             </div>

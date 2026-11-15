@@ -1,9 +1,10 @@
-import React, { useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import * as ContextMenu from "@radix-ui/react-context-menu";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Check, ChevronRight, Ellipsis } from "lucide-react";
 import { cx, type DemoStateAttr, type IconComponent } from "./cx";
 import { IconButton } from "./IconButton";
+import { trackInputModality } from "./inputModality";
 
 export interface MenuProps {
   /** The control that opens it (an IconButton, a Button). It gets
@@ -34,6 +35,7 @@ export function Menu({
   minWidth,
   "aria-label": ariaLabel,
 }: MenuProps) {
+  useEffect(trackInputModality, []);
   return (
     <DropdownMenu.Root open={open} onOpenChange={onOpenChange} modal={false}>
       <DropdownMenu.Trigger asChild>{trigger}</DropdownMenu.Trigger>
@@ -84,8 +86,8 @@ export interface MenuItemProps extends MenuItemContentProps {
 }
 
 /** Menu item (Figma 2213:157): 36 tall in Body/M with a 16 icon. Hover
- * and keyboard focus take state/hover, and the current choice
- * state/selected with a check. */
+ * and keyboard focus take state/hover, the keyboard's item also takes the
+ * ring, and the current choice state/selected with a check. */
 export function MenuItem({ onSelect, disabled, className, ...content }: MenuItemProps) {
   return (
     <DropdownMenu.Item
@@ -240,6 +242,7 @@ export function RowMenu({
   disabled?: boolean;
 }) {
   const chosen = useRef<RowMenuAction | null>(null);
+  useEffect(trackInputModality, []);
   return (
     <DropdownMenu.Root modal={false}>
       <DropdownMenu.Trigger asChild>
@@ -287,6 +290,7 @@ export function RowContextMenu({
   disabled?: boolean;
 }) {
   const chosen = useRef<RowMenuAction | null>(null);
+  useEffect(trackInputModality, []);
   return (
     <ContextMenu.Root modal={false}>
       <ContextMenu.Trigger asChild disabled={disabled}>

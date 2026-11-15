@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 
 import { Check, ChevronDown } from "lucide-react";
 import { cx, type DemoStateAttr } from "./cx";
 import { fieldTextClass, type FieldSize } from "./Field";
+import { trackInputModality } from "./inputModality";
 
 export interface SelectOption<T extends string> {
   value: T;
@@ -103,6 +104,7 @@ export function Select<T extends string>({
   const [active, setActive] = useState(0);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const surfaceRef = useRef<HTMLDivElement>(null);
+  useEffect(trackInputModality, []);
 
   const close = useCallback(() => {
     setOpen(false);

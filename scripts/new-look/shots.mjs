@@ -363,10 +363,13 @@ async function capture(dir) {
  * is skipped, and the page is reloaded so the next one starts clean. */
 async function capturePopups(page, shoot) {
   const url = page.url();
-  const count = await page.locator("[aria-haspopup]:visible").count();
+  // The boards of /dev/ui draw each control once per state. Their triggers
+  // are pictures of states; the working sheet under them has the live ones.
+  const triggers = () => page.locator("[aria-haspopup]:visible:not(.dev-board *)");
+  const count = await triggers().count();
   let n = 0;
   for (let i = 0; i < count; i++) {
-    const trigger = page.locator("[aria-haspopup]:visible").nth(i);
+    const trigger = triggers().nth(i);
     try {
       await trigger.click({ timeout: 2000 });
     } catch {

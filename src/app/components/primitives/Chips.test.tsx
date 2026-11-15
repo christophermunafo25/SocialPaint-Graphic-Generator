@@ -73,6 +73,18 @@ describe("tags", () => {
     expect(onClick).toHaveBeenCalled();
   });
 
+  it("a text tag keeps what describes it", () => {
+    const { container } = render(
+      <Tag kind="overlay" className="mine" aria-hidden>
+        Moss
+      </Tag>,
+    );
+    const tag = container.querySelector(".ui-tag") as HTMLElement;
+    expect(tag.tagName).toBe("SPAN");
+    expect(tag.classList.contains("mine")).toBe(true);
+    expect(tag.getAttribute("aria-hidden")).toBe("true");
+  });
+
   it("DetailTag's remove button is named and removes; Sent has none", async () => {
     const onRemove = vi.fn();
     render(
