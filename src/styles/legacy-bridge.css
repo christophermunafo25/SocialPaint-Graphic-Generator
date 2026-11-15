@@ -1,39 +1,133 @@
-/* TEMPORARY BRIDGE for the new look (Phase 1). Delete in Phase 9.
+/* TEMPORARY BRIDGE for the new brand (Phase 1). Delete in Phase 10.
 
-   Points legacy token names at the generated Figma tokens in tokens.css, so
-   CSS that has not moved to the new primitives still reads Figma values. A
-   name is bridged only when every rule that reads it plays the same role in
-   Figma. Names used in more than one role stay on their legacy values until
-   the phase that rebuilds their components (see docs/design/new-look/BRIDGE.md):
-   --nav-active-bg, --nav-active-fg, --media-overlay, --shadow-rest,
-   --radius-control-lg.
+   Points every older token name that is still read at the generated tokens
+   in tokens.css, which come from the Figma file "Master UX UI New Brand
+   (Copy)". It carries two generations of names: the earlier Figma file's
+   (--text-strong, --radius-control, --space-sm) and the first stylesheet's
+   (--bg-surface, --border). docs/design/new-brand/BRIDGE.md is the map, and
+   says which names stay on their old values in socialpaint.css until their
+   screens move.
 
-   Remove a line here when its last reader moves to the Figma token. */
+   New code reads the new names only. Remove a line here when its last
+   reader moves, and a .tu-* class when its last call site takes the
+   trimmed .t-* class. */
+
+:root {
+  /* Spacing, by value. */
+  --space-3xs: var(--space-4);
+  --space-2xs: var(--space-8);
+  --space-xs: var(--space-12);
+  --space-sm: var(--space-16);
+  --space-md: var(--space-24);
+  --space-lg: var(--space-32);
+  --space-xl: var(--space-48);
+  --space-2xl: var(--space-64);
+  --space-3xl: var(--space-96);
+
+  /* Radius, by the role each older name played. Holding values: a rebuilt
+     component takes the step its own row names. */
+  --radius-control: var(--radius-sm);
+  --radius-menu-item: var(--radius-sm);
+  --radius-control-md: var(--radius-sm);
+  --radius-media-plate: var(--radius-md);
+  --radius-menu: var(--radius-lg);
+  --radius-card: var(--radius-xl);
+  --radius-pill: var(--radius-full);
+
+  /* Motion and type. tokens.css zeroes the durations under reduced motion,
+     so these follow. */
+  --ease: var(--motion-easing-standard);
+  --dur-state: var(--motion-duration-fast);
+  --dur-panel: var(--motion-duration-base);
+  --font-ui: var(--font-sans);
+
+  /* Focus */
+  --focus-width: var(--stroke-focus);
+
+  /* Earlier primitives still read by name. */
+  --slime: var(--green-slime);
+  --deep-moss: var(--green-deep-moss);
+  --lapis: var(--blue-lapis);
+  --fire: var(--warm-fire);
+  --ink-900: var(--neutral-900);
+  --ink-800: var(--neutral-800);
+  --ink-700: var(--neutral-700);
+  --paper-050: var(--neutral-50);
+  --paper-100: var(--neutral-200);
+}
 
 [data-theme] {
   /* Surfaces and text */
   --bg-canvas: var(--surface-page);
   --bg-surface: var(--surface-raised);
   --bg-card: var(--surface-raised);
-  --text-heading: var(--text-strong);
-  --border: var(--border-default);
+  --text-heading: var(--text-primary);
+  --text-strong: var(--text-primary);
+  --text-muted: var(--text-secondary);
+  --text-on-fill: var(--text-on-color);
+  --border: var(--border-subtle);
+  --border-default: var(--border-subtle);
+  --input-bg: var(--surface-field);
   --gen-sunken: var(--surface-sunken);
   --gen-inverse: var(--surface-inverse);
   --gen-on-inverse: var(--text-inverse);
   --fill-action: var(--surface-inverse);
   --text-on-action: var(--text-inverse);
+  --control-fill: var(--surface-sunken);
 
-  /* Error red (#D43535 Light, #EC5656 Dark) */
-  --state-danger: var(--state-error);
-  --state-danger-on-surface: var(--state-error);
+  /* Overlays */
+  --overlay-scrim: var(--surface-scrim);
+  --tag-overlay-bg: var(--surface-overlay);
+  --overlay-hover: var(--state-pressed);
+  --overlay-control: var(--surface-raised);
+  --overlay-control-fg: var(--text-primary);
+  --overlay-edge: var(--border-strong);
 
-  /* Primary action. tokens.css already sets --btn-primary-bg/fg to Figma's
-     Deep Moss and Slime pair. Figma's hover lays state/hover-inverse over the
-     fill; the legacy hover mixed toward --fill-action, which would flash ink. */
-  --btn-primary-bg-hover:
-    linear-gradient(var(--state-hover-inverse), var(--state-hover-inverse)), var(--btn-primary-bg);
+  /* Focus */
+  --ring: var(--border-focus);
 
-  /* Cards and the sidebar use Elevation/Small. The legacy bevel
-     (--card-highlight) already matches Figma's, so only the drop changes. */
-  --shadow-card: 2px 2px 8px 0 var(--shadow-raised);
+  /* Primary action */
+  --btn-primary-bg: var(--action-primary);
+  --btn-primary-fg: var(--action-on-primary);
+  --btn-primary-bg-hover: var(--action-primary-hover);
+
+  /* Error red. Phase 2 splits the readers into fills, text and grounds. */
+  --state-error: var(--feedback-error);
+  --state-danger: var(--feedback-error);
+  --state-danger-on-surface: var(--feedback-error);
+
+  /* States. Holding values until Phase 2 gives each action its own hover
+     and pressed tokens. */
+  --state-hover-inverse: var(--state-hover);
+  --state-pressed-inverse: var(--state-pressed);
+  --state-hover-on-color: var(--state-hover);
+  --state-pressed-on-color: var(--state-pressed);
+  --state-selection: var(--editor-selection);
+
+  /* Controls, status, chips and tags */
+  --switch-track-on: var(--control-on);
+  --switch-background: var(--border-control);
+  --status-active-bg: var(--status-active-surface);
+  --status-active-fg: var(--status-active-text);
+  --status-positive-bg: var(--status-positive-surface);
+  --chip-selected-bg: var(--surface-inverse);
+  --chip-selected-tile: var(--state-selected);
+  --chip-tile: var(--action-neutral);
+  --tag-detail-fg: var(--text-secondary);
+  --tag-sent-bg: var(--status-neutral-surface);
+  --tag-sent-fg: var(--text-primary);
+  --tag-sent-border: var(--border-subtle);
+
+  /* Chart and field hues */
+  --field-green: var(--deep-green);
+  --field-blue: var(--deep-blue);
+  --field-pink: var(--deep-pink);
+  --field-purple: var(--deep-purple);
+
+  /* Elevation */
+  --elevation-small: var(--elevation-1-raised);
+  --elevation-medium: var(--elevation-2-overlay);
+  --elevation-large: var(--elevation-2-overlay);
+  --elevation-floating: var(--elevation-3-floating);
+  --shadow-card: 0 2px 8px 0 var(--shadow-raised);
 }
