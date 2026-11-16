@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { LayoutGrid, Link, Sparkles } from "lucide-react";
+import { LayoutGrid, Link } from "lucide-react";
 import type { FieldValues } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
@@ -90,11 +90,9 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
   /** Bulk fill follows the same rule: admin-only, and only once there is a
    * published template to fill. A draft has nothing to run forty times. */
   const canBulkFill = role === "admin" && template.status === "published";
-  /** The template chat asks for each field and builds the graphic; it needs
-   * a published template and somewhere for the chat to run
-   * (stores.generate.isConfigured()), and is for everyone. */
-  const canAssist = template.status === "published" && stores.generate.isConfigured();
 
+  // The page is form only (new brand, PLAN.md decision 9): no way into the
+  // template chat from here.
   const header = (
     <PageHeader
       crumbs={[
@@ -102,17 +100,8 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
         { label: template.name },
       ]}
       actions={
-        (canAssist || canBulkFill || canShare) && (
+        (canBulkFill || canShare) && (
           <>
-            {canAssist && (
-              <Button
-                kind="neutral"
-                icon={Sparkles}
-                onClick={() => navigate({ name: "templateChat", templateId: template.id })}
-              >
-                Use AI to assist
-              </Button>
-            )}
             {canBulkFill && (
               <Button
                 kind="neutral"

@@ -276,14 +276,15 @@ export function GenerateHistoryPage() {
     navigate({ name: "generate" });
   }, [navigate]);
 
-  // A template chat opens on its template's page (template-chat §12.1).
+  // A saved template chat opens its template's fill page, where the
+  // template is filled in by hand (new brand, PLAN.md judgement call 8).
   const openChat = (id: string, templateId: string | null) => {
+    if (templateId) {
+      navigate({ name: "template", templateId });
+      return;
+    }
     requestComposerFocus();
-    navigate(
-      templateId
-        ? { name: "templateChat", templateId, threadId: id }
-        : { name: "generate", threadId: id },
-    );
+    navigate({ name: "generate", threadId: id });
   };
 
   const retry = () => {

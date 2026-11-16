@@ -1421,9 +1421,9 @@ function SavedChat({ threadId }: { threadId: string }) {
     await threadWritesSettled();
     const record = await stores.generateThreads.get(companyId, threadId);
     if (!record) return null;
-    // A template chat whose template is still published belongs on its
-    // template's page (template-chat §12.1); one whose template has gone
-    // stays here, an ordinary Generate chat.
+    // A template chat whose template is still published goes to that
+    // template's fill page (below); one whose template has gone stays here,
+    // an ordinary Generate chat.
     if (record.templateId) {
       const t = await stores.templates.get(record.templateId);
       if (t && t.status === "published" && t.companyId === companyId) {
@@ -1439,9 +1439,11 @@ function SavedChat({ threadId }: { threadId: string }) {
     load.status === "ready" && load.data && "templateId" in load.data && !("turns" in load.data)
       ? load.data.templateId
       : null;
+  // The template chat is hidden (PLAN.md judgement call 8): a saved one
+  // opened at a Generate address goes to its template's fill page.
   useEffect(() => {
-    if (moveTo) navigate({ name: "templateChat", templateId: moveTo, threadId }, { replace: true });
-  }, [moveTo, navigate, threadId]);
+    if (moveTo) navigate({ name: "template", templateId: moveTo }, { replace: true });
+  }, [moveTo, navigate]);
 
   const newChat = useCallback(() => {
     requestComposerFocus();

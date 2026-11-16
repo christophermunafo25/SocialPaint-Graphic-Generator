@@ -124,11 +124,8 @@ export function Portal() {
 
   const browsing = !query && !platform;
 
-  /** The generation entry point: TemplateUsePage fills the template in and
-   *  downloads the graphic. */
-  // A card opens the fill page: filling in by hand is the default, and the
-  // page offers "Use AI to assist", the template chat, where Generate is
-  // configured.
+  /** A card opens the fill page (TemplateUsePage), which is form only: the
+   *  template filled in by hand, then downloaded (new brand decision 9). */
   const openTemplate = (t: CatalogTemplate) => navigate({ name: "template", templateId: t.id });
 
   // ── Sticky pin ──────────────────────────────────────────────────────────
