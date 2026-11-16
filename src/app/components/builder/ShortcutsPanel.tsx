@@ -80,6 +80,7 @@ function sections(isMac: boolean): Section[] {
         { keys: `${mod} D`, what: "Duplicate" },
         { keys: `${mod} G`, what: "Group" },
         { keys: isMac ? "⇧⌘ G" : "Ctrl Shift G", what: "Ungroup" },
+        { keys: "⇧ A", what: "Add auto layout" },
         { keys: "Delete", what: "Delete the selection" },
         { keys: "?", what: "Open and close this list" },
       ],

@@ -10,9 +10,12 @@ import type { LineMeasurer } from "@/lib/render/autoFit";
 import {
   authoredRect,
   groupFieldKeys,
+  isFixedTextBox,
   measuredTextHeight,
   measuredTextWidth,
   outermostGroupOf,
+  platedRect,
+  plateFontSize,
   renderedText,
   resolvedFontSize,
   type LayoutResult,
@@ -30,13 +33,18 @@ export const selectedFieldIds = (selection: string[]): string[] =>
   selection.filter((id) => parseGroupChildRef(id) === null);
 
 /** The VISUAL extents of a field as painted today, one per stack axis —
- * because the two stack directions place different rects. A vertical stack
- * writes {cross: the authored box's x/width, main: the hugged content
- * block's y/height}; a horizontal one places the painted glyph run itself
- * (align applied, measured width, line-box height). Grouping and conversion
- * anchor to what the admin SEES, which is what makes those moments
- * lossless. Multiline has no content-driven width, so its horizontal extent
- * is the authored box; images and shapes are their box on both axes. */
+ * because the two stack directions place different rects. Each is exactly
+ * the rect a stack in that direction would place for the field (what
+ * sizedChildren sizes), positioned where the baseline pass paints it, so
+ * grouping and conversion anchor to what the admin SEES and move nothing:
+ *  - a plate hugs on both axes, so both are the plated rect;
+ *  - a fixed text box (multiline Shrink or Fill, no plate) is its authored
+ *    box on both axes;
+ *  - Free multiline is its hugged block on both axes (authored width,
+ *    wrapped height, placed by verticalAlign);
+ *  - a single line is the authored box's column for a vertical stack and
+ *    the painted glyph run for a horizontal one;
+ *  - images and shapes are their box on both axes. */
 interface MemberExtents {
   /** Extent a VERTICAL stack reproduces. */
   v: Rect;
@@ -52,10 +60,12 @@ function memberExtents(
   const box = authoredRect(f);
   if (f.type !== "text" && f.type !== "multiline" && f.type !== "select") return { v: box, h: box };
   const style = resolveFieldStyle(f, kit);
-  // A multiline Shrink field IS its fixed box on both axes — the stack
-  // reproduces the box, not a hugged block, so grouping stays lossless.
-  if (f.type === "multiline" && style.textSizing === "shrink") return { v: box, h: box };
+  if (isFixedTextBox(f, style)) return { v: box, h: box };
   const text = renderedText(f, undefined);
+  if (f.plateColor) {
+    const plate = platedRect(f, style, text, plateFontSize(f, style, text, measure), measure);
+    return { v: plate, h: plate };
+  }
   const size = resolvedFontSize(f, style, text, measure);
   const contentH = measuredTextHeight(f, style, text, size, f.width, measure);
   const offsetY =
@@ -65,7 +75,7 @@ function memberExtents(
         ? box.height - contentH
         : (box.height - contentH) / 2;
   const v: Rect = { x: box.x, y: box.y + offsetY, width: box.width, height: contentH };
-  if (f.type === "multiline") return { v, h: box };
+  if (f.type === "multiline") return { v, h: v };
   const textW = measuredTextWidth(style, text, size, measure);
   const offsetX =
     f.align === "center" ? (box.width - textW) / 2 : f.align === "right" ? box.width - textW : 0;

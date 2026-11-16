@@ -1,0 +1,97 @@
+{
+  "name": "pill-row-long",
+  "kind": "figma",
+  "source": { "fileKey": "XacDaJAXtWMd15TbAKPpSw", "nodeId": "46:782" },
+  "schema": {
+    "id": "pill-row-long",
+    "companyId": "fidelity",
+    "name": "Pill row / longer first value",
+    "description": "",
+    "category": "",
+    "tags": [],
+    "status": "published",
+    "canvasWidth": 953,
+    "canvasHeight": 267,
+    "backgroundUrl": "",
+    "backgroundColor": "#FFFFFF",
+    "captionTemplate": "",
+    "createdAt": "2026-10-26T00:00:00.000Z",
+    "updatedAt": "2026-10-26T00:00:00.000Z",
+    "fields": [
+      {
+        "id": "pill-row-long-type",
+        "fieldKey": "type",
+        "label": "Type",
+        "type": "text",
+        "x": 113,
+        "y": 107,
+        "width": 336,
+        "height": 54,
+        "fontFamily": "Inter Tight",
+        "fontWeight": 400,
+        "fontSizePx": 32,
+        "lineHeight": 1.25,
+        "colorHex": "#111D1B",
+        "align": "center",
+        "textSizing": "shrink",
+        "plateColor": "#F2F3F0",
+        "platePaddingX": 32,
+        "platePaddingY": 15.5,
+        "cornerRadius": { "tl": 100, "tr": 100, "br": 100, "bl": 100 },
+        "zIndex": 1
+      },
+      {
+        "id": "pill-row-long-where",
+        "fieldKey": "where",
+        "label": "Where",
+        "type": "text",
+        "x": 461,
+        "y": 107,
+        "width": 296,
+        "height": 54,
+        "fontFamily": "Inter Tight",
+        "fontWeight": 400,
+        "fontSizePx": 32,
+        "lineHeight": 1.25,
+        "colorHex": "#111D1B",
+        "align": "center",
+        "textSizing": "shrink",
+        "plateColor": "#F2F3F0",
+        "platePaddingX": 32.5,
+        "platePaddingY": 15.5,
+        "cornerRadius": { "tl": 100, "tr": 100, "br": 100, "bl": 100 },
+        "zIndex": 1
+      }
+    ],
+    "layoutGroups": [
+      {
+        "id": "row",
+        "name": "Row",
+        "mode": "stack",
+        "direction": "horizontal",
+        "gap": 12,
+        "anchor": "start",
+        "align": "center",
+        "x": 113,
+        "y": 107,
+        "crossSize": 54,
+        "children": ["type", "where"]
+      }
+    ]
+  },
+  "values": { "type": "Part time contractor", "where": "Chicago/Remote" },
+  "fonts": [
+    {
+      "family": "Inter Tight",
+      "file": "/src/assets/fonts/inter-tight/InterTight-wght400-600-latin.woff2",
+      "weight": 400,
+      "style": "normal"
+    }
+  ],
+  "unsupported": [
+    "Vertical trim: the text uses leadingTrim CAP_HEIGHT (a 23px cap box in a 54px pill), which no field property expresses. The plate pads the full 40px line box by Figma's 15.5px inset, so each plate paints 71px tall where Figma's is 54, centered on the same line.",
+    "Fixed pill widths: Figma's pills are fixed-width frames that center their text, while a plate hugs its text plus the template's side paddings (32 and 32.5). Where the browser's text width or the frame's own inset differs from those, a plate's width differs and the pill after it moves by the same amount. In 46:782 the first pill's inset is 30.5, so its plate paints 2px wider than Figma's on all three engines and the second pill sits 2px right."
+  ],
+  "baseline": { "chromium": 6.25, "firefox": 6.3, "webkit": 6.14 },
+  "blurBaseline": { "chromium": 5.79, "firefox": 5.88, "webkit": 5.61 }
+}

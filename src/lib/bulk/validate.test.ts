@@ -228,3 +228,62 @@ describe("checkRows — the look column", () => {
     expect(out[0].values).toEqual({ name: "Ada" });
   });
 });
+
+describe("checkRows — stacks", () => {
+  it("accepts a longer first pill that pushes its neighbour along a row", () => {
+    // CJ's row: two plated pills in a horizontal stack, 12px apart. "Part
+    // time contractor" outgrows its 208px pill, and the stack pushes the
+    // second one along instead.
+    const pill = (over: Partial<TemplateField>) =>
+      mkField({
+        y: 107,
+        height: 54,
+        fontSizePx: 32,
+        lineHeight: 1.25,
+        textSizing: "shrink",
+        align: "center",
+        plateColor: "#F2F3F0",
+        platePaddingY: 16,
+        ...over,
+      });
+    const type = pill({ fieldKey: "type", label: "Type", x: 123, width: 208, platePaddingX: 32 });
+    const where = pill({
+      fieldKey: "where",
+      label: "Where",
+      x: 343,
+      width: 290,
+      platePaddingX: 33,
+    });
+    const stacked = {
+      fields: [type, where],
+      layoutGroups: [
+        {
+          id: "row",
+          name: "Row",
+          mode: "stack" as const,
+          direction: "horizontal" as const,
+          gap: 12,
+          anchor: "start" as const,
+          align: "start" as const,
+          x: 123,
+          y: 98,
+          crossSize: 72,
+          children: ["type", "where"],
+        },
+      ],
+      canvasWidth: 953,
+      canvasHeight: 267,
+    };
+    const rows = [["Part time contractor", "Chicago/Remote"]];
+    const out = checkRows(stacked, null, rows, ["type", "where"], measure);
+    expect(out[0].problems).toEqual([]);
+    const loose = checkRows(
+      { ...stacked, layoutGroups: undefined },
+      null,
+      rows,
+      ["type", "where"],
+      measure,
+    );
+    expect(loose[0].problems.map((p) => p.kind)).toEqual(["overflows"]);
+  });
+});
