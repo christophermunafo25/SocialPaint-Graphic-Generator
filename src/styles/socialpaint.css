@@ -3090,7 +3090,12 @@ input[type="radio"] {
   min-height: 0;
   margin-inline: calc(-1 * var(--page-pad));
 }
+/* Positioned, so screen-reader-only text in the thread is held by the
+   scroller, clipped and scrolled with it. Held by the frame around it, it
+   sat at its place in the thread and stretched the page past the window at
+   1024 and wider, where Main no longer clips. */
 .sp-chat-thread {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
