@@ -313,9 +313,6 @@ export function GenerateHistoryPage() {
     body = (
       <div className="sp-emptystate">
         <p className="sp-emptystate__title">{NO_CHATS}</p>
-        <p className="sp-emptystate__body">
-          Chats you start in Generate show up here, newest first.
-        </p>
         <div className="sp-emptystate__actions">
           <Button kind="primary" size="sm" icon={Plus} onClick={newChat}>
             New chat
