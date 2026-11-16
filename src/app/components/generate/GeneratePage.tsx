@@ -1088,7 +1088,7 @@ export function GenerateChat({
           <div className="sp-gen-start">
             <div className="sp-gen-start__column" data-pending={startReady ? undefined : true}>
               <div className="sp-gen-start__lead">
-                <h1 className="tu-title-metric sp-gen-start__title">What are we painting today?</h1>
+                <h1 className="t-title-display sp-gen-start__title">What are we painting today?</h1>
                 {configured ? (
                   <ChatComposer
                     value={text}

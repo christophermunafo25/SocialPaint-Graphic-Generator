@@ -5,22 +5,21 @@
    nothing here declares a token.
    ========================================================================== */
 
-/* ── Start (13:1453) ───────────────────────────────────────────────────────
-   The greeting 35 over the Composer, Recent 75 under it, the column centred
-   and settling to the bottom of the room, the legal links at the foot. */
+/* ── Start (new brand, 13:1453) ──────────────────────────────────────────
+   The greeting in Title/Display 32 over the Composer, Recent 48 under it,
+   the column centred in the room above the footer links. */
 .sp-gen-start {
   flex: 1 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding-bottom: 80px; /* as drawn (13:1527) */
 }
 .sp-gen-start__column {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 75px; /* as drawn (13:1529) */
+  gap: var(--space-48);
   width: 100%;
   max-width: 720px; /* the chat column (new brand, 13:1453) */
 }
@@ -33,12 +32,12 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 35px; /* as drawn */
+  gap: var(--space-32);
 }
 .sp-gen-start__title {
   margin: 0;
   text-align: center;
-  color: var(--text-strong);
+  color: var(--text-primary);
 }
 .sp-gen-start__unavailable {
   display: flex;
@@ -55,19 +54,19 @@
   color: var(--text-secondary);
 }
 
-/* ── Recent (13:1560): one row of three cards ── */
+/* ── Recent (13:1453): the header row, then one row of three cards 16
+   under it ── */
 .sp-gen-recent {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: var(--space-16);
 }
 .sp-gen-recent__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 32px;
-  padding-left: var(--space-3xs);
-  color: var(--text-strong);
+  min-height: var(--size-control-sm);
+  color: var(--text-primary);
 }
 .sp-gen-recent__head > h2 {
   margin: 0;
@@ -83,25 +82,23 @@
   }
 }
 
-/* ── A chat's card, on Recent and in History: one button on the card
-   recipe, its preview in a sunken well, then the title and meta. Hover
-   deepens the shadow, as the library's cards do (no dim). ── */
+/* ── A chat's card, on Recent and in History (sp-recent-card,
+   sp-history-card): one button, 8 around its preview, on surface/raised at
+   radius/xl under Elevation/1, which hover keeps (RULES.md section 6, as
+   the library's cards). The preview sits in a sunken well at radius/lg,
+   then the title and meta. ── */
 .sp-gen-card {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   width: 100%;
-  padding: var(--space-2xs);
-  border-radius: var(--radius-card);
+  padding: var(--space-8);
+  border-radius: var(--radius-xl);
   background: var(--surface-raised);
-  box-shadow: var(--elevation-small);
-  color: var(--text-strong);
+  box-shadow: var(--elevation-1-raised);
+  color: var(--text-primary);
   text-align: left;
   cursor: pointer;
-  transition: box-shadow var(--dur-state) var(--ease);
-}
-.sp-gen-card:hover {
-  box-shadow: var(--elevation-large);
 }
 .sp-gen-card__well {
   display: flex;
@@ -109,7 +106,7 @@
   justify-content: center;
   height: 104px;
   overflow: hidden;
-  border-radius: var(--radius-media-plate);
+  border-radius: var(--radius-lg);
   background: var(--surface-sunken);
 }
 .sp-gen-card__art {
@@ -117,18 +114,27 @@
   aspect-ratio: var(--fit-ratio, 1);
   max-width: 100%;
 }
+/* 12 over the title, 8 at the sides and under the meta, 8 between. */
 .sp-gen-card__meta {
   display: flex;
   flex-direction: column;
-  gap: 2px; /* as drawn */
+  gap: var(--space-8);
   min-width: 0;
-  padding: 10px 6px var(--space-3xs);
+  padding: var(--space-12) var(--space-8) var(--space-8);
 }
 .sp-gen-card__title,
 .sp-gen-card__line {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+/* The text is cap-trimmed: each clip box reaches past the descenders
+   without moving the line, as the Menu's labels do. */
+.sp-gen-card__title,
+.sp-gen-card__line,
+.sp-gen-card__platforms {
+  padding-block: 0.3em;
+  margin-block: -0.3em;
 }
 .sp-gen-card__line {
   display: flex;
@@ -314,17 +320,14 @@
 .sp-gen-card--history[data-state="loading"] {
   cursor: default;
 }
-.sp-gen-card--history[data-state="loading"]:hover {
-  box-shadow: var(--elevation-small);
-}
 .sp-gen-card__stage {
   flex: 1 0 0;
   min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-sm);
-  border-radius: var(--radius-media-plate);
+  padding: var(--space-16);
+  border-radius: var(--radius-lg);
   background: var(--surface-sunken);
   container-type: size;
 }

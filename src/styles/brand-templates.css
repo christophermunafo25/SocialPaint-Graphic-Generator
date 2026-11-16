@@ -138,20 +138,6 @@
   min-width: 0;
   margin: 0;
 }
-/* The earlier "View all", a text link 32 tall, underlined (13:5921). The
-   shelves now use a Ghost button; Generate's Recent (RecentChats.tsx) keeps
-   this until Phase 5 rebuilds it. */
-.sp-lib-link {
-  display: inline-flex;
-  align-items: center;
-  height: 32px;
-  padding: 0 var(--space-2xs);
-  border-radius: var(--radius-control);
-  color: var(--text-strong);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  white-space: nowrap;
-}
 /* The rail: cards 302 wide and 16 apart, the next one cut off at the
    content's edge under the fade (2308:4). The track keeps 12 for the
    cards' Elevation/1 and the focus ring above, below and at both ends (a

@@ -5,12 +5,11 @@ import { Skeleton } from "../primitives";
 import { TemplateThumbnail } from "../TemplateThumbnail";
 
 /** The title and meta lines under a chat's preview, shared by the Recent and
- * History cards (Figma sp-recent-card / sp-history-card, "meta"): 14 Medium
- * over 12 Regular in the secondary ink, both truncating (each card sets its
- * own leading and tracking in CSS). The meta line is "<platforms> · <date>"
- * and only the platforms truncate, so the date always shows. `bones` swaps
- * each line for a Skeleton inside the same line box, so a
- * loading card keeps the loaded card's height to the pixel. */
+ * History cards (new brand sp-recent-card / sp-history-card, "meta"):
+ * Label/M over Caption/M in the secondary ink, 8 apart, both truncating.
+ * The meta line is "<platforms> · <date>" and only the platforms truncate,
+ * so the date always shows. `bones` swaps each line for a Skeleton as tall
+ * as its trimmed text, so a loading card keeps the loaded card's height. */
 export function ChatCardMeta({
   title,
   meta,
@@ -27,22 +26,21 @@ export function ChatCardMeta({
   if (bones) {
     return (
       <span className="sp-gen-card__meta" data-bones aria-hidden>
-        <span className="tu-label-m sp-gen-card__title">
-          <Skeleton width={128} height={10} />
-        </span>
-        <span className="tu-caption-m sp-gen-card__line">
-          <Skeleton width={84} height={8} />
-        </span>
+        <Skeleton width={128} height={10} />
+        <Skeleton width={84} height={9} />
       </span>
     );
   }
   return (
     <span className="sp-gen-card__meta">
-      <span className="tu-label-m sp-gen-card__title">{title}</span>
-      <span className="tu-caption-m sp-gen-card__line" id={metaId}>
-        {meta?.platforms && <span className="sp-gen-card__platforms">{meta.platforms}</span>}
+      <span className="t-label-m sp-gen-card__title">{title}</span>
+      {/* The line is a flex row, so each part carries the trimmed style. */}
+      <span className="sp-gen-card__line" id={metaId}>
+        {meta?.platforms && (
+          <span className="t-caption-m sp-gen-card__platforms">{meta.platforms}</span>
+        )}
         {meta?.date && (
-          <span className="sp-gen-card__date">
+          <span className="t-caption-m sp-gen-card__date">
             {/* A no-break space: a flex item drops a leading ordinary one. */}
             {meta.platforms ? `\u00a0· ${meta.date}` : meta.date}
           </span>
@@ -55,8 +53,9 @@ export function ChatCardMeta({
 /** A chat on the Start state's Recent row (13:1560, sp-recent-card). One
  * button on the card recipe with an 8 frame: a 104 tall well showing the
  * chat's first draft letterboxed with contain, then the title and meta.
- * Hover deepens its shadow, as the library's cards do (no dim; CJ,
- * 2026-10-04). The accessible name is "Open <title>"
+ * Its hover changes nothing but the pointer: the card keeps Elevation/1, as
+ * the library's cards do (RULES.md section 6). The accessible name is
+ * "Open <title>"
  * with the meta as its description; the preview is decoration (a rendered
  * template carries its own text, which would otherwise read as the name).
  * `preview` null leaves the bare well, as the frame draws it. */

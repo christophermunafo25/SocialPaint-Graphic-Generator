@@ -5,6 +5,7 @@ import { chatMeta } from "@/lib/generate/relativeDate";
 import { NEW_CHAT_TITLE } from "@/lib/generate/runCopy";
 import { threadWritesSettled } from "@/lib/generate/threadSaver";
 import { stores } from "@/lib/stores";
+import { Button } from "../primitives";
 import { RecentCard } from "./RecentCard";
 import { useThreadPreviews } from "./useThreadPreviews";
 
@@ -23,10 +24,10 @@ const lastShown = new Map<string, GenerateThreadSummary[]>();
 const NO_CHATS: readonly GenerateThreadSummary[] = [];
 
 /**
- * Recent on the Start state (13:1560; PHASE-5.md §9 D1): the member's three
- * most recently updated chats, 75 under the composer. A header row
- * ("Recent", and View all, which opens History), 12, then up to three
- * RecentCards in one row of three columns: the
+ * Recent on the Start state (new brand, 13:1453): the member's three most
+ * recently updated chats, 48 under the composer. A header row 28 tall
+ * ("Recent" in Title/Card, and View all, Ghost Small, which opens History),
+ * 16, then up to three RecentCards in one row of three columns: the
  * chat's first draft letterboxed in the well, its title, and its platforms
  * and date ("Instagram, LinkedIn · Today", §9.9). A card opens its chat.
  *
@@ -113,16 +114,12 @@ export function RecentChats({
       aria-labelledby={headingId}
     >
       <div className="sp-gen-recent__head">
-        <h2 id={headingId} className="tu-title-card">
+        <h2 id={headingId} className="t-title-card">
           Recent
         </h2>
-        <button
-          type="button"
-          className="ui-reset ui-ring tu-label-m sp-lib-link"
-          onClick={onViewAll}
-        >
+        <Button kind="ghost" size="sm" onClick={onViewAll}>
           View all
-        </button>
+        </Button>
       </div>
       <div className="sp-gen-recent__grid">
         {chats.map((chat) => (
