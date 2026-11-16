@@ -189,7 +189,7 @@ export function GenerateHistoryPage() {
 
   const facets = useMemo<PlatformFacet[]>(() => {
     const ids = inUse ?? (inUseUnknown ? [...listed.ids, ...(platform ? [platform] : [])] : []);
-    // GroupChips draws no counts; the facet's count is the catalogue's.
+    // The chips draw no counts; the facet's count is the catalogue's.
     return PLATFORMS.filter((p) => ids.includes(p.id)).map((p) => ({ platform: p, count: 0 }));
   }, [inUse, inUseUnknown, listed, platform]);
 

@@ -37,9 +37,17 @@ src/lib/generate/            Generate chat: thread model and reducer, the run,
                               stores and measurer injected)
 src/app/components/generate/ Generate chat page, History page, editor panel
 src/app/components/SchemaRenderer.tsx  THE renderer — every template goes through it
-src/app/components/builder/  Admin Template Builder — a guided wizard:
-                              source (PNG/Figma) → Name → Fields → Caption →
-                              Tags & details → Publish. The Fields step is an
+src/app/components/builder/  Admin Template Builder. A template starts on the
+                              list (admin/AdminTemplates.tsx): New template,
+                              then Choose a size (SizeGallery) or an import's
+                              dialog (Figma, Auto build, Canva). The list hands
+                              the result over (startHandoff.ts, held in the
+                              module, never the URL) and the builder takes it
+                              as it opens on /template-builder/new; with
+                              nothing handed over it goes back to the list
+                              with New template open. Then a guided wizard:
+                              Name → Fields → Caption → Tags & details →
+                              Publish. The Fields step is an
                               element palette (drag onto canvas) + canvas
                               (multi-select, ⌘C/X/V/D + context menu) + field
                               list (drag = member form order) + inspector
@@ -896,7 +904,8 @@ manually.
 
 ## Canva integration
 
-Auto-build only (there is no plain Canva import); off unless `CANVA_ENABLED`
+Auto-build only: New template's Import from Canva runs the auto build on a
+Canva link and shows Auto build's steps. Off unless `CANVA_ENABLED`
 and a Connect API client id are set. Client code talks ONLY to our Edge
 Functions:
 

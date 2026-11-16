@@ -49,6 +49,21 @@ describe("chips", () => {
     expect(chip.getAttribute("aria-checked")).toBe("true");
     expect(chip.dataset.selected).toBe("true");
   });
+
+  it("PlatformChip draws its chevron unless told not to", () => {
+    render(
+      <>
+        <PlatformChip platform="linkedin">LinkedIn</PlatformChip>
+        <PlatformChip platform="facebook" chevron={false}>
+          Facebook
+        </PlatformChip>
+      </>,
+    );
+    const chevron = (name: string) =>
+      screen.getByRole("button", { name }).querySelector(".ui-platform-chip__chevron");
+    expect(chevron("LinkedIn")).not.toBeNull();
+    expect(chevron("Facebook")).toBeNull();
+  });
 });
 
 describe("tags", () => {

@@ -10,6 +10,7 @@ export function ConfirmDialog({
   description,
   confirmLabel,
   tone = "danger",
+  returnFocus,
   onCancel,
   onConfirm,
 }: {
@@ -20,6 +21,9 @@ export function ConfirmDialog({
   /** danger = destructive red; primary = a consequential-but-constructive
    * confirm (e.g. applying brand changes). */
   tone?: "danger" | "primary";
+  /** Where focus goes when it closes, when what opened it is gone by then
+   * (a row menu's item). */
+  returnFocus?: React.RefObject<HTMLElement | null>;
   onCancel(): void;
   onConfirm(): void;
 }) {
@@ -31,6 +35,7 @@ export function ConfirmDialog({
       confirmLabel={confirmLabel}
       destructive={tone === "danger"}
       focusCancel
+      returnFocus={returnFocus}
       onCancel={onCancel}
       onConfirm={onConfirm}
     />

@@ -261,7 +261,6 @@ html {
   --type-composer-size: 16px; /* the Generate brief — one step above body, per Figma 72:27 */
 
   /* Shape — hold the gap between soft containers and crisp controls. */
-  --radius-control-lg: 12px; /* larger controls (-lg buttons and inputs) */
   /* The Option D chat box (Figma "Brand Templates · Chat", 2026-09-28):
      the plus, tags, the tooltip bubble and the template ref thumb. */
   --radius-tag: 8px;
@@ -281,14 +280,11 @@ html {
   --gen-marker-bg: rgb(11 11 12 / 0.56);
   --gen-marker-edge: rgb(255 255 255 / 0.6);
   --gen-marker-fg: #ffffff;
-  --control-sm: 38px;
-  --control-md: 46px;
   --control-lg: 54px;
   /* Inspector density — the builder's property rows run tighter than the
      38px form floor: label + control on a 32px line, Figma-inspector style.
      Builder chrome only; member-facing forms keep the --control-* heights. */
   --row-h-compact: 32px;
-  --border-width: 1px;
 
   /* Layout. The page gutter (--page-pad) and the mobile bar's height
      (--chrome-top) are the shell's own measures, defined in shell.css. */
@@ -327,21 +323,6 @@ html {
    this mode). One ladder: #0B0B0C canvas → #171819
    card/surface/raised → #2a2a2a hover → #323232 border-on-surface. */
 [data-theme="dark"] {
-  /* Build-picker tiles (Figma 221:321). Four icon tiles, each a flat
-     colour with the glyph knocked out in its deep tint; light mode swaps
-     the pair. The blank tile is Fire exactly, so it binds to the
-     primitive (2026-09-05). The violet, the cyan, and the four deep glyph
-     tints sit outside the four-colour palette — they are the frame's
-     artwork, not state, and stay literal. */
-  --start-tile-blank: var(--fire);
-  --start-glyph-blank: #220905;
-  --start-tile-figma: #a66bff;
-  --start-glyph-figma: #1b0b35;
-  --start-tile-auto: var(--slime);
-  --start-glyph-auto: #082a16;
-  --start-tile-canva: #00ebff;
-  --start-glyph-canva: #071b25;
-  --start-input-bg: var(--chip-raised);
   /* The two-step Brand Studio frames flattened chrome onto the lifted fill
      (2026-09-15): the rail, inputs, and menus no longer read lighter than
      the cards beside them — surface, raised, and card are one rung, and
@@ -361,7 +342,6 @@ html {
      follows. The gate panel and colour popover pin the old pair. */
   --edge-rgb: 255 255 255;
   --edge-alpha: 0.2;
-  --edge-alpha-hover: 0.25;
   /* Per-surface rest alphas. Each surface assigns its own to --edge-alpha
      (.sp-card does it with the card rung), so a surface's edge can move
      without dragging the others. The bare --edge-alpha / --edge-alpha-hover
@@ -412,17 +392,6 @@ html {
      color-mix()'d colour inside a keyframe. Neutral, like every wash. */
   --flash-rgb: 23, 255, 126; /* the confirm flash is a Slime wash */
 
-  /* Size-gallery cover plates. The field runs OPPOSITE the page — a light
-     plate on this dark canvas holding a dark app mock — because inverting
-     only the field would strip the mock's separation. Neutrals only; the
-     covers' artwork palette is baked into the assets, never tokenised. */
-  --cover-ground: #f9f9f8;
-  --cover-card: #171819;
-  --cover-back: #2f3133;
-  --cover-chrome-1: #ececec;
-  --cover-chrome-2: #2f3133;
-  --cover-chrome-3: #0b0b0c;
-
   /* Brand-templates platform chip (Figma 141:329; states from the
      "Navigation" hover sheet 255:3, 2026-09-25). #252627 is the one value
      with no rung — five units off both --bg-surface-raised and --bg-hover —
@@ -471,7 +440,6 @@ html {
      trigger keep their edges only. */
   --shadow-rest: 0 0 0 0 transparent;
   --shadow-rest-hover: 0 0 0 0 transparent;
-  --shadow-card-hover: 6px 6px 25px 0 rgb(0 0 0 / 0.3);
 
   color-scheme: dark;
 }
@@ -481,15 +449,6 @@ html {
    field was #F1F1F1 until 2026-09-25; the Figma "Navigation" page moved it
    to #F9F9F8 (--paper-050). */
 [data-theme="light"] {
-  --start-tile-blank: #220905;
-  --start-glyph-blank: var(--fire);
-  --start-tile-figma: #1b0b35;
-  --start-glyph-figma: #a66bff;
-  --start-tile-auto: #082a16;
-  --start-glyph-auto: var(--slime);
-  --start-tile-canva: #071b25;
-  --start-glyph-canva: #00ebff;
-  --start-input-bg: var(--bg-raised);
   --accent-wash: color-mix(in srgb, var(--slime) 30%, transparent);
   --accent-wash-strong: color-mix(in srgb, var(--slime) 48%, transparent);
   --bg-raised: #e8e8e8;
@@ -503,7 +462,6 @@ html {
      and other cards, and the import field. */
   --edge-rgb: 39 39 39;
   --edge-alpha: 0.15;
-  --edge-alpha-hover: 0.25;
   /* Light cards keep the shared edge exactly — the card rung is a dark
      idea (see the dark block). A literal, not var(--edge-alpha): .sp-card
      assigns --edge-alpha FROM this token, and a var() back at it on the
@@ -544,16 +502,6 @@ html {
      a wash — fill-tier, so Slime is legal on light. */
   --flash-rgb: 23, 255, 126;
 
-  /* Size-gallery cover plates — see the dark block: the field runs opposite
-     the page, so light mode gets the near-black plate with a white app mock
-     inside it. Same six neutrals, roles swapped. */
-  --cover-ground: #0b0b0c;
-  --cover-card: #ffffff;
-  --cover-back: #2f3133;
-  --cover-chrome-1: #2f3133;
-  --cover-chrome-2: #ececec;
-  --cover-chrome-3: #f9f9f8;
-
   /* Platform chip, light (Figma 141:858; states from the "Navigation"
      hover sheet 253:3, 2026-09-25). Rest: a white chip on a soft shadow,
      canvas tile, mono mark at 85%. Hover: the chip drops to the canvas
@@ -592,7 +540,6 @@ html {
      surfaces, so the shadow alone lifts them. */
   --shadow-rest: 6px 6px 25px 0 rgb(53 53 53 / 0.05);
   --shadow-rest-hover: 6px 6px 25px 0 rgb(53 53 53 / 0.07);
-  --shadow-card-hover: 6px 6px 25px 0 rgb(53 53 53 / 0.1);
 
   color-scheme: light;
 }
@@ -696,16 +643,6 @@ optgroup {
   font-weight: var(--weight-head);
   letter-spacing: var(--type-h4-track);
   color: var(--text-heading);
-}
-
-/* Brand moments — the onboarding and sign-in front doors, the only places
-   in the app that reach the H2 step. */
-.sp-hero-title {
-  font-family: var(--font-head);
-  font-size: var(--type-h2-size);
-  line-height: var(--type-h2-lh);
-  font-weight: var(--weight-head);
-  letter-spacing: var(--type-h2-track);
 }
 
 .sp-panel-title {
@@ -973,7 +910,6 @@ select.sp-input:disabled {
    reach an edge assembled on the surface. */
 .sp-card,
 .sp-emptystate,
-.sp-start-card,
 .sp-platform-chip {
   --edge-w-top: 0.75;
   --edge-w-side: 0.25;
@@ -990,11 +926,10 @@ select.sp-input:disabled {
    chrome — the rail, inputs, menus, modals, drawers, builder bars — sits
    on the SAME fill rung (--bg-card resolves to --bg-surface in light); the
    edge and the shadow separate a card from the ground and from the chrome
-   beside it. .sp-emptystate and .sp-start-card are content cards outside
-   the .sp-card class and take the same recipe. */
+   beside it. .sp-emptystate is a content card outside the .sp-card class
+   and takes the same recipe. */
 .sp-card,
-.sp-emptystate,
-.sp-start-card {
+.sp-emptystate {
   --edge-alpha: var(--edge-alpha-card);
   --edge-w-top: 0.65;
   --card-shadow-now: var(--shadow-card);
@@ -1018,7 +953,6 @@ select.sp-input:disabled {
    both.) */
 [data-theme="light"] .sp-card,
 [data-theme="light"] .sp-emptystate,
-[data-theme="light"] .sp-start-card,
 [data-theme="light"] .sp-platform-chip {
   --edge-lit: 0 0 0 0 transparent;
   border-color: transparent;
@@ -1184,32 +1118,6 @@ select.sp-input:disabled {
   .sp-color-pop .react-colorful {
     height: 200px;
   }
-}
-
-/* A vertical rail of choices (the size gallery's category rail, in the
-   Template Builder): a neutral hover wash and the active pill at the 9px
-   radius; geometry stays with the caller. The Settings rail moved to the
-   SettingsRailItem primitive (new look, Phase 3); this stays for the
-   builder until it is designed. */
-.sp-railitem {
-  border-radius: var(--radius-media-inner);
-  color: var(--text-secondary);
-  transition:
-    background var(--dur-state) var(--ease),
-    color var(--dur-state) var(--ease);
-}
-.sp-railitem:hover {
-  background: var(--nav-hover-bg);
-  color: var(--nav-hover-fg);
-}
-.sp-railitem[aria-checked="true"],
-.sp-railitem[aria-selected="true"] {
-  background: var(--nav-active-bg);
-  color: var(--nav-active-fg);
-}
-.sp-railitem:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring-tight);
 }
 
 /* Toast — floating card with the DS's 3px semantic top bar. */
@@ -1710,28 +1618,6 @@ input[type="radio"] {
   }
 }
 
-/* Title block — the second tier of a deliberate two-tier inset. The plate
-   sits --media-pad (8px) from the card edge; the text block sits a further
-   8px in, 16px from the edge, with 16px of air above it and 16px of card
-   below it (8px here + the frame). Every media-card call site shares this
-   one rule — the offset is the design, so it must never differ per card. */
-.sp-template-card__meta {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-  padding: var(--space-sm) var(--space-2xs) var(--space-2xs);
-}
-/* Same inset, stacked flow: the admin card's title row and status line and
-   the size card's caption are vertical stacks rather than a text + arrow
-   row. Only the direction differs — the spacing is the rule above. */
-.sp-template-card__meta--stack {
-  display: block;
-}
-.sp-template-card__text {
-  flex: 1;
-  min-width: 0;
-}
-
 /* ── Row menu (D9) ──────────────────────────────────────────────────────────
    The 32px "More actions" trigger on rows without a thumbnail, and its
    floating menu. The trigger shows on the ROW's hover (hover-capable
@@ -1788,139 +1674,6 @@ input[type="radio"] {
 /* Content-panel card padding (Insights, Brand Studio, Settings, People). */
 .sp-card--content {
   padding: 24px;
-}
-
-/* Media card: an 8px frame on every side; the preview is its own inset
-   surface. The frame is square — most templates are 1:1 social posts, so a
-   square well crops the least and keeps the grid rows even. Both call sites
-   compare a template's own ratio against 1 to decide which axis to pin. */
-.sp-media-card {
-  --media-pad: var(--space-2xs);
-  padding: var(--media-pad);
-  border-radius: var(--radius-card);
-}
-.sp-media-card__preview {
-  /* The card's 20px and the well's 15px are a matched pair, both set
-     explicitly (see --radius-media-plate; 12 and 9 until 2026-09-25). The
-     Figma draws 15 rather than the 12 that 20 minus the 8px inset gives. */
-  border-radius: var(--radius-media-plate);
-  /* Anchors the looks indicator a multi-look card paints in its corner. */
-  position: relative;
-  /* Square unless a caller sets the group's own ratio. Grouping the gallery
-     by platform AND shape means every card in a rail shares one ratio, so
-     the frame can simply BE that ratio and nothing letterboxes. */
-  aspect-ratio: var(--frame-ratio, 1 / 1);
-  /* The card's own fill, NOT --bg-hover (2026-09-15, at CJ's direction):
-     the contained artwork rounds sub-pixel short of the well, and a
-     lighter ground showed through the hairline gap as an inner border
-     around every preview. On the card's fill the sliver is invisible;
-     letterboxed odd-ratio artwork now sits on card rather than a lifted
-     well, which is the cleaner read. */
-  background: var(--bg-card);
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-}
-
-/* Media card grid: --space-md gap; 4 / 3 / 2 / 1 columns. minmax(0, 1fr),
-   not 1fr — a plain 1fr track can't go below its card's min-content, so one
-   card with a wide title row steals width from the rest of the row. */
-.sp-grid-media {
-  display: grid;
-  gap: var(--space-md);
-  grid-template-columns: minmax(0, 1fr);
-  align-items: stretch;
-}
-@media (min-width: 768px) {
-  .sp-grid-media {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-@media (min-width: 1100px) {
-  .sp-grid-media {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-@media (min-width: 1440px) {
-  .sp-grid-media {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-/* --- Size gallery ----------------------------------------------------------
-   The builder start screen's size cards. Same construction as the media
-   card — soft card, concentric inner plate, border-borne elevation — but
-   the plate holds cover ART, not a template preview, so it carries the
-   --cover-ground field the inlined SVGs are drawn against. */
-.sp-sizegrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
-  gap: var(--space-md);
-  align-items: stretch;
-}
-
-.sp-sizecard {
-  display: block;
-  width: 100%;
-  height: 100%;
-  text-align: left;
-  cursor: pointer;
-  transition: box-shadow var(--dur-state) var(--ease);
-}
-/* Hover matches the template card: the shadow deepens (2026-09-25). */
-.sp-sizecard:hover {
-  --card-shadow-now: var(--shadow-card-hover);
-}
-.sp-sizecard:focus-visible {
-  outline: none;
-  box-shadow:
-    var(--focus-ring-tight), var(--edge-lit), var(--card-highlight), var(--card-shadow-now);
-}
-/* Inside a dialog (the size gallery is one) a card never shadows, so its
-   hover brightens the edge instead (15% → 25%) — in light that edge is
-   the dialog card's 1px border. Outranks the hover rules above. */
-[role="dialog"] .sp-sizecard:hover {
-  --card-shadow-now: 0 0 0 0 transparent;
-  --edge-alpha: var(--edge-alpha-hover);
-}
-/* The chosen size. The frame is the whole signal — no fill, no check: the
-   pressed card and the header's dimension line agree, and that is enough.
-   Since 2026-09-25 it is the card's own 1px frame in --border-control-legacy, in
-   both themes: light cards draw no edge any more, so the old signal (a
-   brighter edge alpha) would have vanished there. The shadow still
-   composes underneath. Doubled class so it outranks the light dialog-card
-   border (the gallery is a dialog). */
-.sp-card.sp-sizecard[aria-pressed="true"] {
-  border-color: var(--border-control-legacy);
-}
-
-/* A uniform 4:3 well, NOT the size's own ratio — a true-ratio story tile
-   would run three times the height of a link preview and shred the rows.
-   The mock inside the cover carries the real proportions; the well just
-   keeps the grid even, exactly like .sp-media-card__preview. The covers
-   paint no background of their own, so this field is the one rule both
-   themes share. */
-.sp-sizecard__plate {
-  border-radius: var(--radius-media-inner);
-  aspect-ratio: 4 / 3;
-  background: var(--cover-ground);
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-}
-.sp-sizecard__plate svg {
-  /* The template previews' 2px overscan (2026-09-15, at CJ's direction):
-     the cover bleeds 1px past every plate edge and the plate clips it, so
-     the cover's antialiased boundary can never read as a hairline seam.
-     Under the default xMidYMid-meet scaling both axes still exceed the
-     plate, so the bleed holds on all four sides. */
-  width: calc(100% + 2px);
-  height: calc(100% + 2px);
-  flex-shrink: 0;
 }
 
 /* --- Brand swatch ---------------------------------------------------------
@@ -2193,228 +1946,6 @@ input[type="radio"] {
    light (2026-09-25); the pinned filter bar itself casts none and
    separates with a hairline rather than lifting. */
 
-/* Search control — collapsed, an icon-only square in line with the filters;
-   open, the same box grown rightward into the field. The CONTAINER is the
-   visual control (fill, border, focus ring — the .sp-input recipe moved up a
-   level) and the input inside is transparent, so the glyph holds its physical
-   position while only the box's width animates. The open cap stays 440px: a
-   query is a few words, and an input stretched across the whole content
-   column reads as a form, not a filter. Contexts size it through the two
-   local variables; both width endpoints are px so the transition stays
-   interpolable. */
-.sp-searchfield {
-  --sp-searchfield-h: var(--control-md);
-  --sp-searchfield-w: 440px;
-  display: flex;
-  align-items: center;
-  height: var(--sp-searchfield-h);
-  width: var(--sp-searchfield-h);
-  max-width: 100%;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-control);
-  background: var(--input-bg);
-  overflow: hidden;
-  transition:
-    width var(--dur-panel) var(--ease),
-    border-color var(--dur-state) var(--ease);
-}
-.sp-searchfield[data-open] {
-  width: var(--sp-searchfield-w);
-}
-.sp-searchfield:not([data-open]):hover {
-  border-color: var(--border-strong);
-}
-/* Focus rides the container's own 1px edge, as .sp-input did before the
-   new brand. Covers the input and the trigger alike. Kept until Phase 6
-   rebuilds the builder's search. */
-.sp-searchfield:focus-within {
-  border-color: var(--ring);
-}
-/* The glyph's square. Sized to the box's inner height so the collapsed
-   state is exactly this button and the glyph is centred at every height;
-   first flex item, so it never moves as the box grows. */
-.sp-searchfield__trigger {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: calc(var(--sp-searchfield-h) - 2 * var(--border-width));
-  height: 100%;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-}
-.sp-searchfield__trigger:focus-visible {
-  outline: none; /* the container's :focus-within border is the indicator */
-}
-.sp-searchfield__icon {
-  width: 16px;
-  height: 16px;
-}
-.sp-searchfield__input {
-  flex: 1;
-  min-width: 0;
-  height: 100%;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  outline: none;
-  color: var(--text-primary);
-  font-family: var(--font-ui);
-  font-size: var(--type-body-size);
-  letter-spacing: var(--type-body-track);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--dur-state) var(--ease);
-}
-/* Text fades in after the box has most of its width; closing fades at once. */
-.sp-searchfield[data-open] .sp-searchfield__input {
-  opacity: 1;
-  pointer-events: auto;
-  transition-delay: var(--dur-state);
-}
-.sp-searchfield__input::placeholder {
-  color: var(--text-disabled);
-}
-/* The type=search UA affordances duplicate our own clear button. */
-.sp-searchfield__input::-webkit-search-cancel-button {
-  display: none;
-}
-.sp-searchfield__clear {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 100%;
-  border: none;
-  border-radius: var(--radius-pill);
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition:
-    background var(--dur-state) var(--ease),
-    color var(--dur-state) var(--ease);
-}
-.sp-searchfield__clear:hover {
-  background: var(--bg-hover);
-  color: var(--text-primary);
-}
-.sp-searchfield__clear:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring-tight);
-}
-/* Admin templates toolbar: the collapsed square drops to the small control
-   step so it sits level with the 40px segmented status filter beside it. */
-.sp-admin-filterrow .sp-searchfield {
-  --sp-searchfield-h: var(--control-sm);
-}
-
-/* Horizontal rail with edge fades. Shared by the chip bar and the shelves:
-   the mask hides at whichever end has nothing left to reveal. */
-.sp-railfade {
-  position: relative;
-  min-width: 0;
-}
-.sp-railfade::before,
-.sp-railfade::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 80px;
-  pointer-events: none;
-  z-index: 1;
-  opacity: 1;
-  transition: opacity var(--dur-state) var(--ease);
-}
-.sp-railfade::before {
-  left: 0;
-  background: linear-gradient(to right, var(--bg-canvas), transparent);
-}
-.sp-railfade::after {
-  right: 0;
-  background: linear-gradient(to left, var(--bg-canvas), transparent);
-}
-.sp-railfade[data-at-start]::before {
-  opacity: 0;
-}
-.sp-railfade[data-at-end]::after {
-  opacity: 0;
-}
-
-.sp-railfade__track {
-  display: flex;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.sp-railfade__track::-webkit-scrollbar {
-  display: none;
-}
-
-/* Platform chips (the size gallery's compact pills). Crisp control
-   radius. Hover is the sidebar nav's neutral wash and the selected chip
-   its --nav-active-* pill, border and all (2026-09-25; the
-   primary button construction before). */
-.sp-chipbar {
-  gap: var(--space-2xs);
-  padding: 2px;
-}
-.sp-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2xs);
-  flex-shrink: 0;
-  min-height: 44px; /* hit target */
-  padding: 0 var(--space-xs);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-control);
-  background: var(--bg-surface);
-  color: var(--text-primary);
-  font-family: var(--font-ui);
-  font-size: var(--type-label-size);
-  font-weight: var(--weight-ui);
-  letter-spacing: var(--type-label-track);
-  cursor: pointer;
-  white-space: nowrap;
-  transition:
-    border-color var(--dur-state) var(--ease),
-    background var(--dur-state) var(--ease),
-    color var(--dur-state) var(--ease);
-}
-.sp-chip:hover:not([data-selected]) {
-  border-color: var(--border-strong);
-  background: var(--nav-hover-bg);
-  color: var(--nav-hover-fg);
-}
-.sp-chip:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring-tight);
-}
-.sp-chip[data-selected] {
-  background: var(--nav-active-bg);
-  border-color: var(--nav-active-bg);
-  color: var(--nav-active-fg);
-}
-.sp-chip__icon {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-}
-.sp-chip__count {
-  font-family: var(--font-mono);
-  font-size: var(--type-caption-size);
-  letter-spacing: 0.04em;
-  color: var(--text-muted);
-}
-.sp-chip[data-selected] .sp-chip__count {
-  color: var(--nav-active-fg);
-  opacity: 0.8;
-}
-
 /* Brand-templates platform chips (Figma oMzk60i8cTNIedZrwH125n 141:329
    dark, 141:858 light). A tile-and-text card, not a pill: the mark sits
    on a 45px tile that lights to near-black on hover and stays lit once
@@ -2431,8 +1962,7 @@ input[type="radio"] {
    side-by-side). Tile 36, mark 20, chevron 14; the label moved to the
    13px label step on 2026-09-25 (the Figma "Navigation" page). 152 is a
    floor in both breakpoints, not a fixed width: a chip whose label needs
-   more grows by exactly that much (see min-width below). `.sp-chip`
-   above is the size gallery's compact pill, a different control. */
+   more grows by exactly that much (see min-width below). */
 :root {
   /* Chip geometry (2026-09 frames, adjusted to the 4px scale — see the C1
      mapping in the redesign brief). One knob per dimension; the filter
@@ -2641,13 +2171,6 @@ input[type="radio"] {
   white-space: nowrap;
 }
 
-@media (max-width: 767px) {
-  .sp-railfade::before,
-  .sp-railfade::after {
-    width: 40px;
-  }
-}
-
 /* Empty state — the DS pattern: a headline naming the way out, one line of
    body, and the actions. No illustration. */
 .sp-emptystate {
@@ -2696,26 +2219,6 @@ input[type="radio"] {
   background-color: var(--bg-raised);
   animation: sp-skeleton-pulse 1.4s var(--ease) infinite;
 }
-.sp-skeleton__line {
-  display: block;
-  height: 13px;
-  border-radius: var(--radius-control);
-}
-.sp-skeleton-card {
-  pointer-events: none;
-}
-/* The skeleton card's text block holds the real card's line boxes — a
-   15 × 1.25 title, 4px, a 12 × 1.4 metaline — so the row keeps its height
-   when the data lands; the bars sit centred in it. */
-.sp-skeleton-card .sp-template-card__text {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 6px;
-  min-height: calc(
-    var(--type-body-size) * 1.25 + var(--space-3xs) + var(--type-caption-size) * 1.4
-  );
-}
 
 @media (prefers-reduced-motion: reduce) {
   /* State still changes; it just doesn't pulse. */
@@ -2762,7 +2265,6 @@ input[type="radio"] {
      inline are caught by the viewport meta's maximum-scale=1 instead
      (see index.html). */
   .sp-input,
-  .sp-searchfield__input,
   select,
   textarea {
     font-size: var(--type-composer-size);
@@ -3293,191 +2795,6 @@ input[type="radio"] {
 }
 .sp-toast[data-tone="success"] {
   border-top-color: var(--fill-attention);
-}
-
-/* ── Build picker ───────────────────────────────────────────────────────────
-   The builder's first screen (Figma 221:321 dark / 221:439 light): the H2
-   step centred over a row of 300×183 source cards, three across with the
-   fourth wrapping left. Each card is a flat surface with a 31px colour tile,
-   a heading-face title, and a two-line body. The frame's 23px gutter and
-   12px radius take the nearest rungs (--space-md, --radius-control-lg). */
-.sp-start {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 52px;
-  padding: var(--space-3xl) var(--space-md) var(--space-2xl);
-}
-.sp-start__title {
-  color: var(--text-primary);
-  text-align: center;
-  text-wrap: balance;
-}
-.sp-start__grid {
-  display: grid;
-  grid-template-columns: repeat(3, 300px);
-  gap: var(--space-md);
-  justify-content: center;
-}
-@media (max-width: 1080px) {
-  .sp-start__grid {
-    grid-template-columns: repeat(2, 300px);
-  }
-}
-@media (max-width: 720px) {
-  .sp-start__grid {
-    grid-template-columns: minmax(0, 300px);
-  }
-}
-.sp-start-card {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-sm);
-  width: 300px;
-  height: 183px;
-  padding: 22px 18px 16px 22px;
-  text-align: left;
-  /* Classified in the 2026-09 card split: a content card (the template
-     builder's start picker), not chrome — it moves with the card tier.
-     Fill, edge, and shadow come from the card recipe (2026-09-25; a 1px
-     --border raised to --border-strong on hover before). */
-  border-radius: var(--radius-control-lg);
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: box-shadow var(--dur-state) var(--ease);
-}
-.sp-start-card:hover:not(:disabled) {
-  --card-shadow-now: var(--shadow-card-hover);
-}
-.sp-start-card:disabled {
-  opacity: 0.55;
-  cursor: default;
-}
-.sp-start-card--blank,
-.sp-import-pop--blank {
-  --start-tile: var(--start-tile-blank);
-  --start-glyph: var(--start-glyph-blank);
-}
-.sp-start-card--figma,
-.sp-import-pop--figma {
-  --start-tile: var(--start-tile-figma);
-  --start-glyph: var(--start-glyph-figma);
-}
-.sp-start-card--auto,
-.sp-import-pop--auto {
-  --start-tile: var(--start-tile-auto);
-  --start-glyph: var(--start-glyph-auto);
-}
-.sp-start-card--canva,
-.sp-import-pop--canva {
-  --start-tile: var(--start-tile-canva);
-  --start-glyph: var(--start-glyph-canva);
-}
-.sp-start-tile {
-  display: grid;
-  place-items: center;
-  width: 31px;
-  height: 31px;
-  flex-shrink: 0;
-  border-radius: 8px;
-  background: var(--start-tile);
-  color: var(--start-glyph);
-}
-.sp-start-card__title {
-  font-family: var(--font-head);
-  font-weight: var(--weight-head);
-  /* FLAGGED (2026-09 type sweep): 16.5/1.18/−0.02em sits off the scale
-     with no step nearby — cardtitle (20) would visibly jump. Left as
-     shipped pending a ramp decision; do not quietly rescale. */
-  font-size: 16.5px;
-  line-height: 1.18;
-  letter-spacing: var(--track-head);
-  color: var(--text-primary);
-}
-.sp-start-card__desc {
-  margin-top: 5px;
-  max-width: 250px;
-  font-family: var(--font-body);
-  font-size: 12.5px;
-  line-height: 1.3;
-  letter-spacing: 0;
-  color: var(--text-secondary);
-}
-
-/* The "selected" popups (Figma 228:203 / 228:245): the same card recipe,
-   560 wide, with a tile-and-title header row, a quiet close, and one
-   50px link field on the raised chip surface with the lit-edge stroke
-   (1px top and bottom, 0.25px sides). */
-.sp-import-pop {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-  width: 100%;
-  max-width: 560px;
-  padding: 22px 18px 16px 22px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-control-lg);
-}
-.sp-import-pop__head {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-}
-.sp-import-pop__title {
-  flex: 1 1 0;
-  min-width: 0;
-  font-family: var(--font-head);
-  font-weight: var(--weight-head);
-  /* Onto the cardtitle step (2026-09 sweep): the literal 20px already WAS
-     the step's size; 1.18/-0.02em normalise to the step's 1.3/-0.03em. */
-  font-size: var(--type-cardtitle-size);
-  line-height: var(--type-cardtitle-lh);
-  letter-spacing: var(--type-cardtitle-track);
-  color: var(--text-primary);
-}
-.sp-import-pop__close {
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  flex-shrink: 0;
-  color: var(--text-muted);
-  border-radius: var(--radius-control);
-  transition: color var(--dur-state) var(--ease);
-}
-.sp-import-pop__close:hover {
-  color: var(--text-primary);
-}
-.sp-import-pop__input {
-  width: 100%;
-  height: 50px;
-  padding: 0 13px;
-  font-family: var(--font-body);
-  font-size: 16px;
-  letter-spacing: 0.01em;
-  color: var(--text-primary);
-  background: var(--start-input-bg);
-  border: 0;
-  border-left: 0.25px solid rgb(var(--edge-rgb) / var(--edge-alpha));
-  border-right: 0.25px solid rgb(var(--edge-rgb) / var(--edge-alpha));
-  border-radius: var(--radius-control-lg);
-  box-shadow:
-    inset 0 1px 0 rgb(var(--edge-rgb) / var(--edge-alpha)),
-    inset 0 -1px 0 rgb(var(--edge-rgb) / var(--edge-alpha));
-}
-.sp-import-pop__input::placeholder {
-  color: var(--text-muted);
-}
-.sp-import-pop__note {
-  font-size: var(--type-label-size);
-  line-height: 1.4;
-  color: var(--text-secondary);
-}
-.sp-import-pop__actions {
-  display: flex;
-  justify-content: flex-end;
 }
 
 /* ── Template chat (Figma "Brand Templates · Chat"; template-chat PROMPT

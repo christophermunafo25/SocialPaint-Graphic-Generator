@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { SearchField } from "../primitives";
+import { cx } from "../primitives/cx";
 
 const DEBOUNCE_MS = 150;
 
@@ -20,12 +21,15 @@ export function LibrarySearch({
   onChange,
   label = "Search templates",
   placeholder = "Search templates, platforms, sizes, or use cases",
+  className,
 }: {
   value: string;
   onChange(next: string): void;
   /** The field's name; History's is "Search chats". */
   label?: string;
   placeholder?: string;
+  /** The Template Builder's bar draws it as the 40 square. */
+  className?: string;
 }) {
   const [draft, setDraft] = useState(value);
   const [open, setOpen] = useState(value !== "");
@@ -44,7 +48,7 @@ export function LibrarySearch({
 
   return (
     <div
-      className="sp-lib-search"
+      className={cx("sp-lib-search", className)}
       onBlur={(e) => {
         const next = e.relatedTarget as Node | null;
         if (next && e.currentTarget.contains(next)) return;

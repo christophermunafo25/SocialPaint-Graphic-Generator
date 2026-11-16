@@ -161,6 +161,11 @@ interface ModalBodyProps {
   title: React.ReactNode;
   /** An icon before the title (the public links dialog). */
   icon?: IconComponent;
+  /** The title's style: Title/Group, or Title/Card as a dialog with an icon
+   * draws it. The Template Builder's dialogs draw Title/Card with or
+   * without an icon (329:2660, 329:2970). Absent, Card with an icon and
+   * Group without. */
+  titleStyle?: "group" | "card";
   children?: React.ReactNode;
   closeLabel?: string;
   /** A dialog that holds a form or a picker instead of a question takes
@@ -177,7 +182,14 @@ export interface ModalProps extends ModalBodyProps {
   /** Where focus lands when it opens (a confirmation's Cancel): call
    * preventDefault and focus it. Absent, the first control in the dialog. */
   onOpenAutoFocus?(event: Event): void;
+  /** Where focus goes when it closes, for a dialog opened from another
+   * dialog (New template, then Choose a size): its opener is gone by then.
+   * Absent, whatever had focus when it opened. */
+  returnFocus?: React.RefObject<HTMLElement | null>;
 }
+
+const titleClass = (icon: IconComponent | undefined, style: "group" | "card" | undefined) =>
+  (style ?? (icon ? "card" : "group")) === "card" ? "t-title-card" : "t-title-group";
 
 /** The inside of a dialog: the title in Title/Group, the close button in
  * the top right corner, then what the dialog holds. The close button
@@ -216,11 +228,13 @@ export function Modal({
   onOpenChange,
   title,
   icon,
+  titleStyle,
   children,
   closeLabel = "Close",
   wide = false,
   className,
   onOpenAutoFocus,
+  returnFocus,
 }: ModalProps) {
   // Radix returns focus only to a Dialog.Trigger. A modal opened from
   // anywhere else hands focus back to whatever had it when it opened.
@@ -238,18 +252,17 @@ export function Modal({
           aria-describedby={undefined}
           onOpenAutoFocus={onOpenAutoFocus}
           onCloseAutoFocus={(e) => {
-            if (!returnTo.current?.isConnected) return;
+            const target = returnFocus?.current ?? returnTo.current;
+            if (!target?.isConnected) return;
             e.preventDefault();
-            returnTo.current.focus();
+            target.focus();
           }}
         >
           <ModalInside
             title={title}
             icon={icon}
             heading={(t) => (
-              <Dialog.Title
-                className={cx(icon ? "t-title-card" : "t-title-group", "ui-modal__title")}
-              >
+              <Dialog.Title className={cx(titleClass(icon, titleStyle), "ui-modal__title")}>
                 {t}
               </Dialog.Title>
             )}
@@ -278,6 +291,7 @@ export function Modal({
 export function ModalPanel({
   title,
   icon,
+  titleStyle,
   children,
   closeLabel = "Close",
   wide = false,
@@ -289,9 +303,7 @@ export function ModalPanel({
         title={title}
         icon={icon}
         heading={(t) => (
-          <span className={cx(icon ? "t-title-card" : "t-title-group", "ui-modal__title")}>
-            {t}
-          </span>
+          <span className={cx(titleClass(icon, titleStyle), "ui-modal__title")}>{t}</span>
         )}
         close={
           <IconButton

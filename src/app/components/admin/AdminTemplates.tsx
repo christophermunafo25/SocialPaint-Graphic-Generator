@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Copy, Eye, EyeOff, Pencil, Plus, Proportions, RotateCcw, Trash2 } from "lucide-react";
+import { Copy, Eye, EyeOff, Frame, Pencil, Plus, Search, Trash2, Undo2 } from "lucide-react";
 import type { TemplateSchema, UsageSummary } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
@@ -10,41 +10,45 @@ import { consumeSeedNotice } from "@/lib/templates/starters/seedNotice";
 import { useRouter } from "../../router";
 import { Page } from "../layout/Page";
 import { ConfirmDialog } from "../ConfirmDialog";
-import { InlineEdit } from "../InlineEdit";
-import { TemplateSearchField } from "../templates/TemplateSearchField";
+import { LibrarySearch } from "../templates/LibrarySearch";
 import { toCatalogTemplate } from "@/lib/templates/catalog";
+import { builderUsageLine } from "@/lib/templates/builderMeta";
 import { buildSearchIndex, searchTemplates } from "@/lib/templates/searchIndex";
 import { versionName } from "@/lib/templates/reflow";
 import type { CanvasSize } from "@/lib/templates/platforms";
-import { CanvasSizePicker } from "../builder/CanvasSizePicker";
+import type { AutoBuildResult, DesignImportResult } from "@/lib/types";
 import { ErrorState } from "../ErrorState";
-import { SkeletonCard } from "../templates/TemplateSkeleton";
-import { TemplateThumbnail } from "../TemplateThumbnail";
+import { AutoBuildDialog } from "../builder/AutoBuildDialog";
+import { CanvaImportDialog } from "../builder/CanvaImportDialog";
+import { FigmaImportDialog } from "../builder/FigmaImportDialog";
+import { NewTemplateDialog, type StartPath } from "../builder/NewTemplateDialog";
+import { ChooseSizeDialog, type SizesState } from "../builder/SizeGallery";
+import { handOffStart, takeNewTemplateRequest, type BuilderStart } from "../builder/startHandoff";
+import { BUILDER_MIN_VIEWPORT_PX, useViewportAtLeast } from "../builder/useViewportAtLeast";
+import { BuilderTemplateCard, BuilderTemplateCardSkeleton } from "./BuilderTemplateCard";
 import {
-  Badge,
   Button,
-  IconButton,
-  Modal,
+  EmptyState,
   PageHeader,
   SegmentedControl,
   Select,
   Toast,
+  type RowMenuGroup,
 } from "../primitives";
 
 type StatusFilter = "all" | "published" | "draft";
 type SortKey = "recent" | "name" | "downloads";
 
-const lastUsed = (iso: string | null): string => {
-  if (!iso) return "";
-  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
-  if (days <= 0) return "today";
-  if (days === 1) return "yesterday";
-  if (days < 30) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString();
-};
+/** Where New template has got to: its own dialog, then Choose a size or
+ * one import's dialog. */
+type StartStep = "new" | "size" | "figma" | "build" | "canva";
 
-/** Admin template list: drafts + published, search/filter/sort, usage on the
- * card, publish toggle, edit, duplicate, delete. */
+/** The Template Builder list (new brand, 328:1944): drafts and published
+ * templates under the status switch, the sort and the search, each card
+ * with its usage line and its row menu (329:2206): Edit, Duplicate, Make
+ * another size, then Publish or Unpublish, and Delete. New template starts
+ * here (329:2660 and the dialogs after it) and hands its result to the
+ * builder (startHandoff). */
 export function AdminTemplates() {
   const { company } = useAuth();
   const { navigate } = useRouter();
@@ -108,14 +112,6 @@ export function AdminTemplates() {
 
   /** Template pending delete confirmation. */
   const [deleting, setDeleting] = useState<TemplateSchema | null>(null);
-  /** Template whose name is open for inline rename. */
-
-  const confirmDelete = async () => {
-    if (!deleting) return;
-    await stores.templates.delete(deleting.id);
-    setDeleting(null);
-    reload();
-  };
 
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
@@ -171,26 +167,75 @@ export function AdminTemplates() {
     }
   };
 
-  /** Rename from the card. Throws on failure so the inline editor rolls the
-   *  name back instead of showing a change that never landed. */
-  const renameTemplate = async (t: TemplateSchema, name: string) => {
-    try {
-      await stores.templates.update(t.id, { name });
-      reload();
-    } catch (e) {
-      setToast("Couldn't rename. Try again.");
-      toastTimer.current = window.setTimeout(() => setToast(null), 4000);
-      throw e;
-    }
-  };
-
-  /** Template whose "Create a version for…" picker is open. */
+  /** Template whose Make another size is open (Choose a size). */
   const [versionFor, setVersionFor] = useState<TemplateSchema | null>(null);
-  // The workspace's enabled sizes, for the version picker.
+  // The workspace's enabled sizes, for Choose a size.
   const sizesState = useAsync<CanvasSize[]>(
     () => (company ? stores.companies.listCanvasSizes(company.id) : Promise.resolve([])),
     [company],
   );
+  const sizes: SizesState =
+    sizesState.status === "ready"
+      ? { status: "ready", sizes: sizesState.data }
+      : sizesState.status === "error"
+        ? { status: "error", retry: sizesState.retry }
+        : { status: "loading" };
+
+  // New template (329:2660). The builder works from 1024 wide; narrower,
+  // New template goes straight to it, which says so, rather than through
+  // dialogs whose result it couldn't open.
+  const viewportOk = useViewportAtLeast(BUILDER_MIN_VIEWPORT_PX);
+  const [startStep, setStartStep] = useState<StartStep | null>(null);
+  const newButton = useRef<HTMLButtonElement>(null);
+  const openNewTemplate = () =>
+    viewportOk ? setStartStep("new") : navigate({ name: "builder", templateId: null });
+  // The builder, opened on /template-builder/new with nothing to start
+  // from, sends New template back here.
+  useEffect(() => {
+    if (takeNewTemplateRequest()) setStartStep("new");
+  }, []);
+  // The imports need the Supabase backend. Import from Canva shows once
+  // the workspace has Canva; whether it's connected is its dialog's to say.
+  const importReady = stores.designImport.isConfigured();
+  const [canvaEnabled, setCanvaEnabled] = useState(false);
+  useEffect(() => {
+    if (!company || !importReady) return;
+    let cancelled = false;
+    stores.designImport
+      .canvaStatus(company.id)
+      .then((s) => !cancelled && setCanvaEnabled(s.enabled))
+      .catch(() => !cancelled && setCanvaEnabled(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [company, importReady]);
+  /** Where Choose a size and Delete hand focus back as they close: New
+   * template, or the row menu they came from (its item is gone by then). */
+  const dialogReturn = useRef<HTMLElement | null>(null);
+  const fromOpenRowMenu = () => {
+    dialogReturn.current = document.querySelector<HTMLElement>(
+      '.sp-tbcard .ui-rowmenu[aria-expanded="true"]',
+    );
+  };
+  const choosePath = (path: StartPath) => {
+    dialogReturn.current = newButton.current;
+    setStartStep(path === "blank" ? "size" : path);
+  };
+  /** Hand the start to the builder and open it. */
+  const startWith = (start: BuilderStart) => {
+    handOffStart(start);
+    navigate({ name: "builder", templateId: null });
+  };
+  const closeStart = () => setStartStep(null);
+
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    await stores.templates.delete(deleting.id);
+    // The card's menu goes with the card, so focus goes to New template.
+    dialogReturn.current = newButton.current;
+    setDeleting(null);
+    reload();
+  };
 
   /** Create a version for another platform: duplicate — the original is
    * never touched — then open the copy with the reflow handoff so the
@@ -238,6 +283,61 @@ export function AdminTemplates() {
     }
   };
 
+  // The bar pins to the content's top edge as the grid scrolls, as the
+  // library's does; the sentinel above it says when it has.
+  const showBar = templatesState.status === "ready" && templates.length > 0;
+  const sentinel = useRef<HTMLDivElement>(null);
+  const [pinned, setPinned] = useState(false);
+  useEffect(() => {
+    const el = sentinel.current;
+    if (!showBar || !el) return;
+    const io = new IntersectionObserver(([entry]) => setPinned(!entry.isIntersecting), {
+      threshold: 1,
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [showBar]);
+
+  /** A card's row menu (329:2206). */
+  const menuFor = (t: TemplateSchema): RowMenuGroup[] => [
+    {
+      items: [
+        {
+          label: "Edit",
+          icon: Pencil,
+          movesFocus: true,
+          onSelect: () => navigate({ name: "builder", templateId: t.id }),
+        },
+        { label: "Duplicate", icon: Copy, onSelect: () => void duplicateTemplate(t) },
+        {
+          label: "Make another size",
+          icon: Frame,
+          movesFocus: true,
+          onSelect: () => {
+            fromOpenRowMenu();
+            setVersionFor(t);
+          },
+        },
+      ],
+    },
+    {
+      items: [
+        t.status === "published"
+          ? { label: "Unpublish", icon: EyeOff, onSelect: () => void toggleStatus(t) }
+          : { label: "Publish", icon: Eye, onSelect: () => void toggleStatus(t) },
+        {
+          label: "Delete",
+          icon: Trash2,
+          movesFocus: true,
+          onSelect: () => {
+            fromOpenRowMenu();
+            setDeleting(t);
+          },
+        },
+      ],
+    },
+  ];
+
   const header = (
     <PageHeader
       title="Template Builder"
@@ -245,18 +345,14 @@ export function AdminTemplates() {
         <>
           <Button
             kind="neutral"
-            icon={RotateCcw}
+            icon={Undo2}
             onClick={() => setConfirmingRestore(true)}
             disabled={restoring || !kit}
             title="Recreate deleted starter templates"
           >
             {restoring ? "Restoring…" : "Restore starters"}
           </Button>
-          <Button
-            kind="primary"
-            icon={Plus}
-            onClick={() => navigate({ name: "builder", templateId: null })}
-          >
+          <Button ref={newButton} kind="primary" icon={Plus} onClick={openNewTemplate}>
             New template
           </Button>
         </>
@@ -277,29 +373,58 @@ export function AdminTemplates() {
         title={`Delete template "${deleting?.name ?? ""}"?`}
         description="This cannot be undone."
         confirmLabel="Delete template"
+        returnFocus={dialogReturn}
         onCancel={() => setDeleting(null)}
         onConfirm={() => void confirmDelete()}
       />
-      <Modal
-        open={versionFor !== null}
-        onOpenChange={(next) => !next && setVersionFor(null)}
-        title="Create a version for…"
-        wide
-      >
-        {versionFor && (
-          <>
-            <p className="tu-body-m sp-st-confirm__body">
-              "{versionFor.name}" stays untouched. The version lands as a reflowed draft copy you
-              review in the builder.
-            </p>
-            <CanvasSizePicker
-              sizes={sizesState.status === "ready" ? sizesState.data : []}
-              value={{ width: versionFor.canvasWidth, height: versionFor.canvasHeight }}
-              onPick={(next) => void createVersion(versionFor, next)}
-            />
-          </>
-        )}
-      </Modal>
+      <NewTemplateDialog
+        open={startStep === "new"}
+        onOpenChange={(next) => !next && closeStart()}
+        importReady={importReady}
+        canvaEnabled={canvaEnabled}
+        onChoose={choosePath}
+      />
+      {/* Choose a size: a blank template's size, or a template's other
+          size (Make another size), which marks its own. */}
+      <ChooseSizeDialog
+        open={startStep === "size" || versionFor !== null}
+        onOpenChange={(next) => {
+          if (next) return;
+          closeStart();
+          setVersionFor(null);
+        }}
+        state={sizes}
+        current={
+          versionFor ? { width: versionFor.canvasWidth, height: versionFor.canvasHeight } : null
+        }
+        onPick={(size) =>
+          versionFor ? void createVersion(versionFor, size) : startWith({ kind: "blank", size })
+        }
+        returnFocus={dialogReturn}
+      />
+      {startStep === "figma" && (
+        <FigmaImportDialog
+          onClose={closeStart}
+          onImported={(result: DesignImportResult) => startWith({ kind: "import", result })}
+          returnFocus={newButton}
+        />
+      )}
+      {startStep === "build" && (
+        <AutoBuildDialog
+          onClose={closeStart}
+          onBuilt={(result: AutoBuildResult | DesignImportResult) =>
+            startWith({ kind: "build", result })
+          }
+          returnFocus={newButton}
+        />
+      )}
+      {startStep === "canva" && (
+        <CanvaImportDialog
+          onClose={closeStart}
+          onBuilt={(result) => startWith({ kind: "build", result })}
+          returnFocus={newButton}
+        />
+      )}
       <ConfirmDialog
         open={confirmingRestore}
         title="Restore starter templates?"
@@ -310,41 +435,48 @@ export function AdminTemplates() {
         onConfirm={() => void restoreStarters()}
       />
 
-      {templatesState.status === "ready" && templates.length > 0 && (
-        <div
-          className="sp-admin-filterrow flex flex-wrap items-center mb-6"
-          style={{ gap: "var(--space-xs)" }}
-        >
-          <TemplateSearchField value={query} onChange={setQuery} />
-          <SegmentedControl
-            aria-label="Filter by status"
-            options={[
-              { id: "all", label: `All ${templates.length}` },
-              { id: "published", label: `Published ${publishedCount}` },
-              { id: "draft", label: `Drafts ${draftCount}` },
-            ]}
-            selectedId={statusFilter}
-            onSelect={(id) => setStatusFilter(id as StatusFilter)}
-          />
-          <div style={{ width: 200 }}>
-            <Select<SortKey>
-              ariaLabel="Sort templates"
-              value={sort}
+      {showBar && (
+        <>
+          <div ref={sentinel} aria-hidden className="sp-tb-sentinel" />
+          <div className="sp-tb-filterbar" data-pinned={pinned || undefined}>
+            <SegmentedControl
+              aria-label="Filter by status"
               options={[
-                { value: "recent", label: "Recently edited" },
-                { value: "name", label: "Name" },
-                { value: "downloads", label: "Most downloaded" },
+                { id: "all", label: `All ${templates.length}` },
+                { id: "published", label: `Published ${publishedCount}` },
+                { id: "draft", label: `Drafts ${draftCount}` },
               ]}
-              onSelect={setSort}
+              selectedId={statusFilter}
+              onSelect={(id) => setStatusFilter(id as StatusFilter)}
             />
+            <div className="sp-tb-filterbar__end">
+              <Select<SortKey>
+                ariaLabel="Sort templates"
+                hug
+                value={sort}
+                options={[
+                  { value: "recent", label: "Recently edited" },
+                  { value: "name", label: "Name" },
+                  { value: "downloads", label: "Most downloaded" },
+                ]}
+                onSelect={setSort}
+              />
+              <LibrarySearch
+                className="sp-tb-search"
+                value={query}
+                onChange={setQuery}
+                label="Search templates"
+                placeholder="Search templates, platforms, or sizes"
+              />
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       {templatesState.status === "loading" ? (
-        <div className="sp-grid-media" aria-busy="true" aria-label="Loading templates">
+        <div className="sp-tb-grid" aria-busy="true" aria-label="Loading templates">
           {Array.from({ length: 8 }, (_, i) => (
-            <SkeletonCard key={i} />
+            <BuilderTemplateCardSkeleton key={i} />
           ))}
         </div>
       ) : templatesState.status === "error" ? (
@@ -354,152 +486,33 @@ export function AdminTemplates() {
           onRetry={templatesState.retry}
         />
       ) : templates.length === 0 ? (
-        <div
-          className="text-center py-24"
-          style={{
-            border: "1.5px dashed var(--border-strong)",
-            borderRadius: "var(--radius-card)",
-          }}
-        >
-          <p className="tu-title-card" style={{ color: "var(--text-primary)", marginBottom: 6 }}>
-            Create your first template
-          </p>
-          <p className="tu-body-s max-w-md mx-auto" style={{ color: "var(--text-secondary)" }}>
-            Upload a PNG or import a Figma frame, map the editable fields, and publish it for your
-            team.
-          </p>
-        </div>
+        <EmptyState icon={Frame} title="Create your first template" className="sp-tb-empty" />
       ) : visible.length === 0 ? (
-        <p className="tu-body-m text-center py-20" style={{ color: "var(--text-secondary)" }}>
-          {query.trim()
-            ? "No templates match that search."
-            : statusFilter === "draft"
-              ? "No drafts."
-              : "Nothing published yet."}
-        </p>
+        <EmptyState
+          icon={query.trim() ? Search : Frame}
+          title={
+            query.trim()
+              ? "No templates match that search."
+              : statusFilter === "draft"
+                ? "No drafts."
+                : "Nothing published yet."
+          }
+          className="sp-tb-empty"
+        />
       ) : (
-        <div className="sp-grid-media">
-          {visible.map((t) => {
-            return (
-              <div key={t.id} className="sp-card sp-media-card flex flex-col">
-                <button
-                  onClick={() => navigate({ name: "builder", templateId: t.id })}
-                  className="sp-media-card__preview"
-                  aria-label={`Edit ${t.name}`}
-                >
-                  <div
-                    style={{
-                      aspectRatio: `${t.canvasWidth} / ${t.canvasHeight}`,
-                      // Contain, unlike the member gallery: an admin needs to see
-                      // the whole artwork, so pin the LONG axis and letterbox.
-                      ...(t.canvasWidth / t.canvasHeight >= 1
-                        ? { width: "100%" }
-                        : { height: "100%" }),
-                    }}
-                  >
-                    <TemplateThumbnail template={t} />
-                  </div>
-                </button>
-                <div className="sp-template-card__meta sp-template-card__meta--stack">
-                  {/* Line 1: the title, alone. Five 32px icons beside it left
-                      the rename field ~18px wide at four columns; the name
-                      and its input now own the whole line. */}
-                  <InlineEdit
-                    className="tu-label-m min-w-0"
-                    value={t.name}
-                    ariaLabel={`Rename ${t.name}`}
-                    inputAriaLabel="Template name"
-                    placeholder="Untitled template"
-                    valueStyle={{ color: "var(--text-primary)" }}
-                    onSave={(name) => renameTemplate(t, name)}
-                  />
-                  {/* Line 2: status (+ provenance when a model built the fields) */}
-                  <Badge tone={t.status === "published" ? "active" : "neutral"}>
-                    {t.status === "published" ? "Published" : "Draft"}
-                  </Badge>
-                  {/* Starter templates carry autobuildMeta for provenance
-                      and idempotency but are seeded designs, not model
-                      output — labeling them AI-built would be wrong. */}
-                  {t.autobuildMeta && t.autobuildMeta.source !== "starter" && (
-                    <span
-                      className="sp-eyebrow inline-block ml-2"
-                      title={`Built by ${t.autobuildMeta.model} from ${t.autobuildMeta.sourceKind}`}
-                      style={{ color: "var(--text-muted)" }}
-                    >
-                      · AI-built
-                    </span>
-                  )}
-                  {/* Line 3: meta */}
-                  {usageState.status === "ready" && (
-                    <p
-                      className="tu-caption-s"
-                      style={{ color: "var(--text-muted)", marginTop: 2 }}
-                    >
-                      {(() => {
-                        const u = usageByTemplate.get(t.id);
-                        if (!u || u.downloads === 0) return "Not used yet";
-                        // An admin who sent a link out wants to know it is
-                        // working, and that only shows if public traffic is
-                        // counted apart from the team's own.
-                        const viaLink =
-                          u.publicDownloads > 0 ? ` · ${u.publicDownloads} via link` : "";
-                        return `${u.downloads} download${u.downloads === 1 ? "" : "s"}${viaLink} · last used ${lastUsed(u.lastUsedAt)}`;
-                      })()}
-                    </p>
-                  )}
-                  {/* Line 4: the actions, on a row of their own. Five 32px
-                      icons are 192px wide; at four columns the card offers 218,
-                      so they share a line with nothing — not the title (which
-                      they squeezed to ~18px) and not the status. */}
-                  <div
-                    className="flex items-center"
-                    style={{ gap: "var(--space-2xs)", marginTop: "var(--space-2xs)" }}
-                  >
-                    <IconButton
-                      variant="ghost"
-                      size="sm"
-                      icon={t.status === "published" ? EyeOff : Eye}
-                      label={t.status === "published" ? "Unpublish" : "Publish"}
-                      title={t.status === "published" ? "Unpublish" : "Publish"}
-                      onClick={() => void toggleStatus(t)}
-                    />
-                    <IconButton
-                      variant="ghost"
-                      size="sm"
-                      icon={Pencil}
-                      label="Edit"
-                      title="Edit"
-                      onClick={() => navigate({ name: "builder", templateId: t.id })}
-                    />
-                    <IconButton
-                      variant="ghost"
-                      size="sm"
-                      icon={Copy}
-                      label="Duplicate"
-                      title="Duplicate"
-                      onClick={() => void duplicateTemplate(t)}
-                    />
-                    <IconButton
-                      variant="ghost"
-                      size="sm"
-                      icon={Proportions}
-                      label="Create a version for another size"
-                      title="Create a version for another size"
-                      onClick={() => setVersionFor(t)}
-                    />
-                    <IconButton
-                      variant="ghost"
-                      size="sm"
-                      icon={Trash2}
-                      label="Delete"
-                      title="Delete"
-                      onClick={() => setDeleting(t)}
-                    />
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+        <div className="sp-tb-grid">
+          {visible.map((t) => (
+            <BuilderTemplateCard
+              key={t.id}
+              template={t}
+              usage={builderUsageLine(
+                t,
+                usageState.status === "ready" ? (usageByTemplate.get(t.id)?.downloads ?? 0) : null,
+              )}
+              menu={menuFor(t)}
+              onOpen={() => navigate({ name: "builder", templateId: t.id })}
+            />
+          ))}
         </div>
       )}
     </Page>

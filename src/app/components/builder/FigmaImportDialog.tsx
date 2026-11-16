@@ -1,34 +1,49 @@
-import { useEffect, useState } from "react";
-import { RefreshCw } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { Frame } from "lucide-react";
 import type { DesignImportResult } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAuth } from "@/lib/auth/AuthContext";
-import { useRouter } from "../../router";
-import { ImportLinkPopup } from "./ImportLinkPopup";
+import { Button, Field, Input, Modal, ModalActions } from "../primitives";
+import { NotConnected } from "./NotConnected";
+import { useStillOpen } from "./useStillOpen";
 
 interface FigmaImportDialogProps {
   onClose(): void;
   onImported(result: DesignImportResult): void | Promise<void>;
+  /** Where focus goes when it closes (New template's opener). */
+  returnFocus?: React.RefObject<HTMLElement | null>;
 }
 
-/** Paste a Figma frame link → rendered background + suggested fields.
- * Additive convenience only: any failure leaves the manual PNG path intact.
- * All Figma API traffic goes through Supabase Edge Functions — no tokens in
- * the client. */
-export function FigmaImportDialog({ onClose, onImported }: FigmaImportDialogProps) {
+/** Import from Figma (329:3710): a 520 dialog with the frame link, then
+ * Cancel and Import. The frame lands as the template's background with
+ * every layer as a field. All Figma traffic goes through the Edge
+ * Functions, so no token reaches the browser. Cancel while it imports
+ * abandons the result. */
+export function FigmaImportDialog({ onClose, onImported, returnFocus }: FigmaImportDialogProps) {
   const { company } = useAuth();
-  const { navigate } = useRouter();
   const [connected, setConnected] = useState<boolean | null>(null);
   const [url, setUrl] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const input = useRef<HTMLInputElement>(null);
+  const stillOpen = useStillOpen();
+
+  // A failure puts the error under the link and the focus on it, so the
+  // error is read with it.
+  useEffect(() => {
+    if (error) input.current?.focus();
+  }, [error]);
 
   useEffect(() => {
     if (!company) return;
+    let cancelled = false;
     stores.designImport
       .isConnected(company.id)
-      .then(setConnected)
-      .catch(() => setConnected(false));
+      .then((c) => !cancelled && setConnected(c))
+      .catch(() => !cancelled && setConnected(false));
+    return () => {
+      cancelled = true;
+    };
   }, [company]);
 
   const runImport = async () => {
@@ -37,81 +52,75 @@ export function FigmaImportDialog({ onClose, onImported }: FigmaImportDialogProp
     setError(null);
     try {
       const result = await stores.designImport.importFromUrl(company.id, url.trim());
+      if (!stillOpen.current) return;
       await onImported(result);
     } catch (e) {
-      setError(
-        (e instanceof Error ? e.message : "Import failed.") +
-          " You can always upload a PNG and map fields manually.",
-      );
+      if (stillOpen.current)
+        setError(e instanceof Error ? e.message : "That frame didn't import. Try again.");
     } finally {
-      setBusy(false);
+      if (stillOpen.current) setBusy(false);
     }
   };
 
   return (
-    <ImportLinkPopup kind="figma" title="Import from Figma" onClose={onClose}>
-      {connected === null ? (
-        <p className="sp-import-pop__note">Checking connection…</p>
-      ) : !connected ? (
-        // Credential entry lives in Settings → Integrations, not inside a
-        // popup about importing a frame — this keeps the short path only.
-        <>
-          <p className="sp-import-pop__note">
-            Figma isn't connected for this workspace. An admin connects it once, in Settings, and
-            imports work for everyone from then on.
-          </p>
-          <div className="sp-import-pop__actions">
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                navigate({ name: "settings", section: "integrations" });
-              }}
-              className="sp-btn sp-btn-primary"
-            >
-              Open integration settings
-            </button>
-          </div>
-        </>
+    <Modal
+      open
+      onOpenChange={(next) => !next && onClose()}
+      title="Import from Figma"
+      icon={Frame}
+      className="sp-tb-dialog"
+      returnFocus={returnFocus}
+      onOpenAutoFocus={(e) => {
+        e.preventDefault();
+        input.current?.focus();
+      }}
+    >
+      {connected === false ? (
+        <NotConnected service="Figma" onClose={onClose} />
       ) : (
         <form
-          className="flex flex-col"
-          style={{ gap: "var(--space-xs)" }}
+          className="sp-tb-dialog__form"
           onSubmit={(e) => {
             e.preventDefault();
             void runImport();
           }}
         >
-          <input
-            type="url"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            placeholder="Paste the design link from Figma frame"
-            aria-label="Figma frame link"
-            className="sp-import-pop__input"
-            autoFocus
-            disabled={busy}
-          />
-          {(url.trim() || busy) && (
-            <div className="sp-import-pop__actions">
-              <button type="submit" disabled={busy} className="sp-btn sp-btn-primary">
-                {busy && <RefreshCw className="w-4 h-4 animate-spin" />}
-                {busy ? "Importing…" : "Import frame"}
-              </button>
-            </div>
-          )}
+          <Field label="Frame link" error={error}>
+            <Input
+              ref={input}
+              type="url"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="figma.com/design/…"
+              autoComplete="off"
+              spellCheck={false}
+              // Read-only, not disabled, while it imports: a disabled field
+              // drops the focus it holds.
+              readOnly={busy}
+            />
+          </Field>
+          {/* The error is read out when it appears, wherever the focus is
+              (Enter in the field leaves it there). */}
+          <p className="sp-live" role="alert">
+            {error ?? ""}
+          </p>
+          <ModalActions>
+            <Button kind="neutral" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              kind="primary"
+              type="submit"
+              disabled={!busy && (connected === null || !url.trim())}
+              // Busy, it keeps its focus and does nothing (runImport waits).
+              aria-disabled={busy || undefined}
+              aria-busy={busy || undefined}
+            >
+              {busy ? "Importing…" : "Import"}
+            </Button>
+          </ModalActions>
         </form>
       )}
-
-      {error && (
-        <p
-          className="text-sm px-4 py-3"
-          data-radius-card
-          style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}
-        >
-          {error}
-        </p>
-      )}
-    </ImportLinkPopup>
+    </Modal>
   );
 }

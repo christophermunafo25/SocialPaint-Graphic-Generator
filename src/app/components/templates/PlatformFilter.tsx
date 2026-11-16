@@ -2,6 +2,7 @@ import React, { useRef } from "react";
 import type { PlatformFacet } from "@/lib/templates/groups";
 import type { PlatformId } from "@/lib/templates/platforms";
 import { PlatformChip } from "../primitives";
+import { cx } from "../primitives/cx";
 import { useEdgeFade } from "./useEdgeFade";
 
 /**
@@ -20,6 +21,8 @@ export function PlatformFilter({
   selected,
   onSelect,
   allLabel = "All",
+  chevron = true,
+  className,
 }: {
   facets: PlatformFacet[];
   /** The first chip's label; History's is "All chats". */
@@ -27,6 +30,10 @@ export function PlatformFilter({
   /** null is the "All" chip. */
   selected: PlatformId | null;
   onSelect(next: PlatformId | null): void;
+  /** Choose a size draws its chips without the chevron (329:2970). */
+  chevron?: boolean;
+  /** Choose a size's rail fades to the dialog's surface. */
+  className?: string;
 }) {
   const { ref, atStart, atEnd } = useEdgeFade<HTMLDivElement>([facets.length]);
   const chipRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -62,7 +69,7 @@ export function PlatformFilter({
 
   return (
     <div
-      className="sp-lib-rail sp-lib-chips"
+      className={cx("sp-lib-rail sp-lib-chips", className)}
       data-at-start={atStart || undefined}
       data-at-end={atEnd || undefined}
     >
@@ -83,6 +90,7 @@ export function PlatformFilter({
               }}
               platform={id ?? "all"}
               selected={isSelected}
+              chevron={chevron}
               role="radio"
               aria-checked={isSelected}
               tabIndex={i === activeIndex ? 0 : -1}

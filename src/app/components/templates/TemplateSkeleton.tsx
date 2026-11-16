@@ -1,26 +1,6 @@
 import React from "react";
 import { Skeleton } from "../primitives";
 
-/** Skeleton geometry matches a real card — square frame, title line, meta
- *  line — so the layout doesn't jump when the data lands. A shelf of these
- *  rather than a spinner: the shape of what's coming is itself information. */
-export function SkeletonCard() {
-  return (
-    <div className="sp-card sp-media-card sp-skeleton-card" aria-hidden>
-      <div className="sp-media-card__preview sp-skeleton__block" />
-      <div className="sp-template-card__meta">
-        <span className="sp-template-card__text">
-          <span className="sp-skeleton__line sp-skeleton__block" style={{ width: "70%" }} />
-          <span
-            className="sp-skeleton__line sp-skeleton__block"
-            style={{ width: "45%", height: 10 }}
-          />
-        </span>
-      </div>
-    </div>
-  );
-}
-
 /** The library's loading state (new look): a shelf of cards in the new
  *  card's shape, its preview and lines as sunken bones. Not drawn in the
  *  file; built from the card itself so nothing jumps when the data lands. */

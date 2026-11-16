@@ -64,6 +64,9 @@ export interface PlatformChipProps extends ButtonAttrs {
   selected?: boolean;
   /** Its menu is open; the chevron points down. */
   expanded?: boolean;
+  /** Off where the chip is drawn without it (Choose a size, 329:2970): the
+   * tile and the label, 16 from the end. */
+  chevron?: boolean;
 }
 
 /** Platform chip (Figma 53:96): a 50 pill that hugs its label, with the
@@ -71,7 +74,16 @@ export interface PlatformChipProps extends ButtonAttrs {
  * gives it its role (radio in a filter group) and its aria state. */
 export const PlatformChip = React.forwardRef<HTMLButtonElement, PlatformChipProps>(
   function PlatformChip(
-    { platform, selected = false, expanded = false, className, children, type = "button", ...rest },
+    {
+      platform,
+      selected = false,
+      expanded = false,
+      chevron = true,
+      className,
+      children,
+      type = "button",
+      ...rest
+    },
     ref,
   ) {
     return (
@@ -87,7 +99,9 @@ export const PlatformChip = React.forwardRef<HTMLButtonElement, PlatformChipProp
           <PlatformLogo platform={platform} />
         </span>
         <span className="t-label-m">{children}</span>
-        <ChevronRight size={16} className="ui-icon ui-platform-chip__chevron" aria-hidden />
+        {chevron && (
+          <ChevronRight size={16} className="ui-icon ui-platform-chip__chevron" aria-hidden />
+        )}
       </button>
     );
   },

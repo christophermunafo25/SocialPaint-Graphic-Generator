@@ -67,7 +67,7 @@ What that phase still owes after #182, and where this program picks each up:
 | Owed | Here |
 |---|---|
 | Delete `legacy-bridge.css` and the dead tokens | Phase 10 |
-| Delete the earlier control classes. Still read, all in `builder/` apart from one `.sp-tabstrip` in `ImageSourceChooser.tsx`: `.sp-btn` in 10 files (59 uses), `.sp-input` in 11, `.sp-icon-btn` in 5, `.sp-seg` in 3, `.sp-chip` in 1, `.sp-tabstrip` in 6. The `.sp-chat-*` control set is gone | Phases 6a and 6b, with whatever is left in Phase 10 |
+| Delete the earlier control classes. Still read, all in `builder/` apart from one `.sp-tabstrip` in `ImageSourceChooser.tsx`: `.sp-btn` in 6 files (44 uses), `.sp-input` in 10, `.sp-icon-btn` in 4, `.sp-seg` in 3, `.sp-tabstrip` in 5, counted after Phase 6a. The `.sp-chat-*` control set and `.sp-chip` are gone | Phases 6a and 6b, with whatever is left in Phase 10 |
 | Drop the unread `company_canvas_presets` table and the unread `brand_kits` font columns (migrations 0046 and 0047 are promised to them) | Phase 10 |
 | Remove the never-imported packages | Phase 10 |
 | Lint rules against raw colors and inline type. There is no automated check today: the rule is prose in `CLAUDE.md` and a line in the phase reviewer's checklist | Phase 10 |
@@ -156,7 +156,7 @@ Open items for the builder, to settle at Phase 6's recon gate from the frames: w
 | `src/assets/socialpaint/mark.svg`, `logo-on-light.svg`, `logo-on-dark.svg`, `favicon.svg` | Old Slime `#17FF7E` | 3 |
 | `src/assets/socialpaint/auth-panel.webp` | The sign-in art, in the old greens | 9 |
 | `src/assets/socialpaint/brand-studio-cover-*.webp` (6) | The covers. The Colors cover has "#17FF7E" drawn into it | 7 |
-| `src/assets/sizes/*.svg` (11) | Neutrals follow `--cover-*`. Accents are baked per family (cyan, green, pink) and are not token values | 6 |
+| `src/assets/sizes/*.svg` (11) | Neutrals follow `--cover-*`. Accents are baked per family (cyan, green, pink) and are not token values | 6a replaced them with the file's twelve covers as WebP |
 | `admin/brand/ColorsDetail.tsx:204` | An error message that names `#17FF7E` as its example | 7 |
 | Hex in chrome TSX | `builder/FieldOverlayEditor.tsx`, `builder/VariantFilmstrip.tsx`, `ColorControl.tsx`, `FieldInput.tsx` | 6 |
 | `design/tokens/figma-export/ui.html` | The plugin's panel | 1 |
@@ -172,10 +172,10 @@ Scroll containers that hold raised children:
 | Container | Scrolls | Holds | Room today | Phase |
 |---|---|---|---|---|
 | `.sp-lib-shelf__track` (`brand-templates.css:69`) | x | Template cards | 4 sides, 16 below | 4 |
-| `.sp-railfade__track` (`socialpaint.css:2909`, `templates/GroupChips.tsx`) | x | The older platform chips | None | 6 |
+| ~~`.sp-railfade__track`~~ (`socialpaint.css:2909`, `templates/GroupChips.tsx`) | x | The older platform chips | Removed in 6a with its last readers | 6a |
 | `.sp-chat-thread` (`socialpaint.css`) | y | The Result Card | Done in 5. The page gutter at the sides (12 beside the inline editor) and 12 below, which holds Elevation/1. None on top, where the first row is always the member's message |
 | `.sp-chat-history-scroll` (`socialpaint.css`) | y | History cards | Done in 5. 24 top, the gutter at the sides, and 24 below in the list's foot (`.sp-chat-history-end`) |
-| The builder's source-pick region (`TemplateBuilder.tsx:3198`, inline) | y | Start cards | Not measured | 6 |
+| ~~The builder's source-pick region~~ (`TemplateBuilder.tsx:3198`, inline) | y | Start cards | Removed in 6a: a template starts in dialogs on the list, inside `.ui-modal`'s 24 | 6a |
 | `.ui-modal` (`primitives.css`) | y, when tall | Option tiles and cards inside a dialog | 24, which is the room (Phase 2 kept the Dialog's 24 of padding on every side) | Done in 2 |
 
 Containers that clip without scrolling:
@@ -303,6 +303,28 @@ Phase 5 moved Generate onto its frames: Start, the chat box and its plus menu, t
 | Cleanup | `LookTile`, the Looks card, the template chat's turn and its stage's Missing markers (`--gen-marker-*`, `--gen-h-tag`, the tight ring on the marker tag), which only the hidden template chat draws. The older `ErrorState` and empty-state markup that Phases 4 and 5 kept (Brand Templates, the fill page, History, a saved chat that can't open): moving them onto `Alert` and `EmptyState` needs an Alert that carries Try again |
 | Not a screen | The plus menu's Web page, Past post and Connectors rows (`13:1601`, `13:1850`) have no backend, and two platforms in one message need `template-generate` to make a canvas for each |
 
+## What Phase 6a found
+
+Phase 6a moved the Template Builder's list and how a template starts onto their frames: the list with its filter bar and row menu, New template, Choose a size with the file's covers, Import from Figma, Auto build and its steps, and Import from Canva. It was built from this plan and the frames directly. Its pull request lists the calls made along the way.
+
+### Built and how it works
+
+- **The list** (`admin/AdminTemplates.tsx`, `admin/BuilderTemplateCard.tsx`) is the frame's grid of 242 cards: a square sunken well with the template fitted at its own ratio, then the name over its status Badge and usage line ("128 downloads", "Not used yet", "Edited 2 hours ago", from `builderMeta.ts`), and the row menu. The well is the Edit button. The filter bar pins under the header as the library's does. The card's inline rename, its AI-built label and its icon buttons are gone: the builder's Name step renames, and the row menu holds the rest.
+- **A template starts on the list.** New template opens its four paths; Start blank opens Choose a size, and each import opens its own dialog. The result goes to the builder through `builder/startHandoff.ts`, held in the module because an import's result is too large for an address and means nothing after a reload, and the builder takes it as it opens: a blank canvas at the chosen size, or the import landed the way the editor lands its own. The builder's start screen, its hand-rolled size dialog and its default size are gone: a new template always arrives with its size. `/template-builder/new` with nothing handed over (a reload, an old link) goes back to the list with New template open.
+- **Below 1024** New template goes straight to the builder, which says it needs a bigger screen, rather than through dialogs whose result it couldn't open.
+- **Choose a size** (`builder/SizeGallery.tsx`) holds one height, three rows of covers (Social media's ten sizes, the most a category fills), so it doesn't jump between categories; the frame draws two rows of eight. The categories are Nav items in a radio group, the platforms are the library's chips without the chevron (`PlatformChip`'s `chevron`), and the search is the library's round one. Make another size opens it too, with the template's own size marked and not offered.
+- **The covers** are the file's twelve Size Cover components exported at 1x as WebP, photographs on their own grounds and the same in both themes. A size without its own takes the fallback cover.
+- **The import dialogs** are on the Modal at 520, with Fields, Cancel and the action. Cancel while an import or a build runs closes the dialog, and the result is dropped when it lands. Auto build's steps move on a timer and are named for what the engine does, in order ("Reading the design", "Choosing what to edit", "Writing labels and the caption"); the call reports nothing until it ends. Import from Canva runs the same build and shows the same steps. A workspace that hasn't connected Figma or Canva gets one line ("Your workspace hasn't connected Figma.") and Open settings, which takes the focus. A workspace whose plan has no Canva is offered no Canva, in New template or in Auto build. While a build runs, Cancel has the focus; a failure puts the error under the link and the focus on it.
+- **The Modal** takes `titleStyle` (Title/Card without an icon, as the builder's dialogs draw it) and `returnFocus`, for a dialog whose opener is gone when it closes: the import dialogs after New template, and Choose a size and Delete after a row menu. `ConfirmDialog` passes it through.
+
+### Left for each phase
+
+| For | What |
+|---|---|
+| Phase 6b | The editor's Import more fields from Figma and Auto-build with Claude open the rebuilt dialogs over the old chrome. `CanvasSizePicker` still serves the editor's resize popover, and the editor's loading pulse keeps `.sp-skeleton__block` |
+| Phase 9 | Onboarding's Option Tile (`primitives/OptionTile.tsx`) is the earlier drawing (Elevation/Small, no hairline, the check). New template draws the file's current one locally (`.sp-new-path`), so the primitive can move when onboarding does |
+| Not a screen | The dialogs draw Elevation/2 Overlay where the Modal primitive (`2215:203`) takes Elevation/3 Floating; every dialog keeps the primitive's |
+
 ## Scope
 
 In scope: every frame in the screen map, the shell around them, and the system pages they draw from.
@@ -320,8 +342,8 @@ One pull request per phase into `main`. Phase 0 changed the prompt's order in tw
 | 2 | Primitives | Every component in `PROMPT.md` section 6.1 on the new tokens with its states, tested. The folds (Icon Button, Select, Tooltip, Switch). The new ones (Checkbox, Radio, Table Row, Alert, Empty State, Search, Tabs). `/dev/ui` redrawn to show each one in Light and Dark the way the Components page does | `/dev/ui` matches the boards in both themes | Merged 2026-11-15 (#189) |
 | 3 | Shell | The app frame: viewport padding, the 320 sidebar, Main as a frame whose content scrolls, the one Page Header row on every page, Breadcrumb, one Footer Links slot. The new logo, mark and favicon | Every route still reachable in both themes. Titles sit at one height | Merged 2026-11-16 (#191) |
 | 4 | Brand Templates | The library, filter, search, the form-only fill page on the Details panel, the public link page's form, the public links dialog, bulk fill in the new shell. The template chat behind its redirect | Screens match their frames in both themes. No shadow cut off on the shelves, the chip rail or the grids | Merged 2026-11-16 (#194) |
-| 5 | Generate | Every state in the screen map, the new chat box, the Result Card with size tabs, History with skeletons | Same | Built 2026-11-16, in review |
-| 6a | Template Builder: list and start | The list with its row menu, New template, Choose a size with the new covers, the Figma import and auto build dialogs | Light matches the frames. Dark reviewed by screenshot | Not started |
+| 5 | Generate | Every state in the screen map, the new chat box, the Result Card with size tabs, History with skeletons | Same | Merged 2026-11-16 (#195) |
+| 6a | Template Builder: list and start | The list with its row menu, New template, Choose a size with the new covers, the Figma import and auto build dialogs | Light matches the frames. Dark reviewed by screenshot | Built 2026-11-16, in review |
 | 6b | Template Builder: editor | The editor chrome: top bar, carded workspace, the Layers and Form rail, the inspector with its Design and Field tabs, the stage controls, Publish | Same. Rendering and gestures untouched, and the fidelity checker passes | Not started |
 | 7 | Brand Studio | Overview with the new covers, and the six detail pages | Same as 4. Differences with `docs/brand-system/` listed | Not started |
 | 8 | Settings and Insights | All seven sections and the dashboard | Same | Not started |
@@ -348,7 +370,7 @@ Paths are under `src/app/components/` unless they start with `src/`. Entry point
 | Template chat (hidden) | None | `/templates/:id/chat[/:threadId]` redirects | `src/app/router.tsx`, `src/app/App.tsx`. Links to remove: `TemplateUsePage.tsx:105`, `generate/GenerateHistoryPage.tsx:284`, `generate/GeneratePage.tsx` (four) |
 | Bulk fill | None | `/templates/:id/bulk` | `bulk/BulkFillPage.tsx` |
 | Generate | Start `13:1453` / `2357:3255`, Attach menu `13:1601` / `2357:3328`, Connectors `13:1850` / `2357:3427`, Add a detail `13:2140` / `2357:3519`, Photo attached `13:2301` / `2357:3582`, Details added `13:2454` / `2357:3656`, Sent `13:2639` / `2344:2754`, Generating `13:2824` / `2344:2885`, Result `13:2985` / `2344:3001`, Edit `13:3150` / `2344:3158`, History `13:3359` / `2344:3394`, page `8:674` | `/generate`, `/generate/c/:id`, `/generate/history` | `generate/GeneratePage.tsx`, `GenerateHistoryPage.tsx`, `EditorPanel.tsx`, `RecentCard.tsx`, `HistoryCard.tsx`, `ScrollFade.tsx`; `chat/ChatComposer.tsx`, `AttachMenu.tsx`, `Attachments.tsx`, `GenerateTurn.tsx`, `GenerateHeader.tsx`, `Messages.tsx` |
-| Template Builder list | List `328:1944`, row menu `329:2206`, New template `329:2660`, Choose a size `329:2970`, Import from Figma `329:3710`, Auto build `329:3981`, building `329:4286`, page `8:675`. Light only | `/template-builder`, `/template-builder/new` | `admin/AdminTemplates.tsx`, `builder/BuildPicker.tsx`, `SizeGallery.tsx`, `CanvasSizePicker.tsx`, `FigmaImportDialog.tsx`, `CanvaImportDialog.tsx`, `AutoBuildDialog.tsx`, `ImportLinkPopup.tsx`, `src/lib/templates/sizeCovers.ts` |
+| Template Builder list | List `328:1944`, row menu `329:2206`, New template `329:2660`, Choose a size `329:2970`, Import from Figma `329:3710`, Auto build `329:3981`, building `329:4286`, page `8:675`. Light only | `/template-builder`, `/template-builder/new` | `admin/AdminTemplates.tsx`, `admin/BuilderTemplateCard.tsx` (added), `builder/NewTemplateDialog.tsx` (added), `SizeGallery.tsx`, `FigmaImportDialog.tsx`, `CanvaImportDialog.tsx`, `AutoBuildDialog.tsx`, `NotConnected.tsx` (added), `startHandoff.ts` (added), `src/lib/templates/sizeCovers.ts`, `src/lib/templates/builderMeta.ts` (added). Phase 6a deleted `BuildPicker.tsx`, `ImportLinkPopup.tsx` and `StartGlyphs.tsx`; `CanvasSizePicker.tsx` stays for the editor (6b) |
 | Template Builder editor | Blank `325:484`, text field `322:36`, its Field tab `2289:4772`, image field `325:871`, its Field tab `2289:5676`, preview `326:924`, Publish `326:1233`, Published `326:1742`. Light only | `/template-builder/:id` | `builder/TemplateBuilder.tsx`, `BuilderShell.tsx`, `LayersPanel.tsx`, `FieldListPanel.tsx`, `ElementPalette.tsx`, `FieldInspector.tsx`, `GroupInspector.tsx`, `InspectorControls.tsx`, `EffectsEditor.tsx`, `VariantFilmstrip.tsx`, `FieldOverlayEditor.tsx` (chrome only) |
 | Brand Studio | Overview `13:9043` / `2366:2169` and the 18 detail states in `PROMPT.md` section 8, page `8:676` | `/brand-studio/:category` | `admin/BrandStudio.tsx` (added), `admin/brand/BrandOverview.tsx`, `BrandDetail.tsx`, `BrandDetailHeader.tsx`, `ColorsDetail.tsx`, `LogosDetail.tsx`, `FontsDetail.tsx`, `TypeStylesDetail.tsx`, `ImagesDetail.tsx`, `ImportDetail.tsx` |
 | Insights | `13:832` / `2406:251`, page `8:677` | `/insights` | `admin/Dashboard.tsx`, `admin/insights/*` |
@@ -358,7 +380,7 @@ Paths are under `src/app/components/` unless they start with `src/`. Entry point
 | Shell | Sidebar `2218:679`, the Generate pattern `2218:685` for the frame | all | `AppShell.tsx` (corrected), `Sidebar.tsx`, `layout/Page.tsx`, `layout/useFrameKeys.ts`, `layout/ChromeContext.tsx`, `BrandMark.tsx`, `brandArt.ts`, `primitives/PageHeader.tsx`, `src/styles/shell.css`. Phase 3 deleted `layout/Breadcrumb.tsx` and `generate/LegalLinks.tsx` |
 | System | Foundations `4012:1192`, Components `4012:1193`, Product components `4012:1194`, Patterns `4012:1195` | `/dev/ui` | `src/styles/*`, `primitives/*`, `src/app/dev/*` |
 
-`npm run shots` captures 76 routes (counted at `4bd5d1a`), bulk fill, the public link page and the builder editor among them. Phase 6a adds the builder states its frames draw that the fixture lacks.
+`npm run shots` captures 76 routes (counted at `4bd5d1a`), bulk fill, the public link page and the builder editor among them. Phase 6a added the builder states its frames draw that the fixture lacks: Make another size, and New template with each dialog after it (Choose a size, Import from Figma, Import from Canva, Auto build and its steps), on a dev backend that stands in for connected imports (`devImport`).
 
 ## The gate
 
