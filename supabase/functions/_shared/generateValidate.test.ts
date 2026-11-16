@@ -1263,6 +1263,25 @@ const expect400 = (fn: () => unknown, needle: string) => {
   expect((thrown as HttpError).message).toContain(needle);
 };
 
+describe("the caption", () => {
+  it("keeps to the house copy rules", () => {
+    // Emoji and the dash are escapes: the repository holds no emoji.
+    const out = validateGeneration(
+      output([
+        {
+          templateId: "job",
+          values: [{ fieldKey: "role", value: "Creative Director" }],
+          caption: "We are hiring! \u{1F680} Apply today \u{2014} the team",
+          why: "It is the hiring template.",
+        },
+      ]),
+      [JOB],
+      1,
+    );
+    expect(out.proposals[0].caption).toBe("We are hiring. Apply today, the team");
+  });
+});
+
 describe("an empty field is legal and flagged by the client, not retried", () => {
   it("returns a brief with no apply link as a proposal without that field", () => {
     const out = validateGeneration(

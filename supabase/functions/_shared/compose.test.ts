@@ -1584,6 +1584,21 @@ describe("validateCompose: what survives", () => {
     expect(out.designs[0].caption).toBe("Hi");
   });
 
+  it("holds the caption to the house copy rules", () => {
+    // Emoji and the dash are escapes: the repository holds no emoji.
+    const out = validateCompose(
+      {
+        proposals: [goodDesign({ caption: "{headline}! \u{1F680} Mark the date \u{2014} {date}" })],
+      },
+      contextFor(),
+      1,
+    );
+    expect(out.designs[0].captionTemplate).toBe("{headline}. Mark the date, {date}");
+    expect(out.designs[0].caption).toBe(
+      "Scheduled posts are here. Mark the date, Launching March 3",
+    );
+  });
+
   it("refuses a design with too little left, keeping the model-facing dash for the retry", () => {
     const out = validateCompose(
       {

@@ -35,6 +35,6 @@ Cover every element in the list with exactly one field proposal. Anything you sk
 ## Template metadata
 
 - name/description/category/tags: reuse the existing catalog's category and tag vocabulary wherever a match exists, so the catalog stays coherent. Name the template for what it is used for, not what it looks like.
-- captionTemplate: warm, plain social copy using {field_key} merge tags that resolve to your editable fields. One or two sentences a member would actually post.
+- captionTemplate: warm, plain social copy using {field_key} merge tags that resolve to your editable fields. One or two sentences a member would actually post. No emoji, no exclamation points and no em dashes.
 - Field order in your proposal is the FORM order members fill it in: headline first, supporting details, photo last. This is separate from visual stacking, which the system handles.
 - rationale: one short sentence per field saying why it is editable or Fixed.`;
