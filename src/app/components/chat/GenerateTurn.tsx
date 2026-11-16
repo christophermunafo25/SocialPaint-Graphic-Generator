@@ -2,8 +2,8 @@ import React, { memo, useCallback, useId, useMemo } from "react";
 import { Plus } from "lucide-react";
 import type { AssistantTurn, ChatDraft, ChatPhoto } from "@/lib/generate/chat";
 import { isRunningTurn } from "@/lib/generate/chatReducer";
-import { captionFor, captionTabs, draftName, previewValues } from "@/lib/generate/draftView";
-import { linkedFillIn, photoTargetsFor } from "@/lib/generate/linkedFields";
+import { captionFor, draftName, previewValues } from "@/lib/generate/draftView";
+import { linkedFillIn, photoTargetsFor, sizeNames, sizeTitle } from "@/lib/generate/linkedFields";
 import { useBrand } from "@/lib/brand/BrandContext";
 import { progressLabel, provenanceSentence } from "@/lib/generate/runCopy";
 import type { TryNextAction } from "@/lib/generate/tryNext";
@@ -31,14 +31,6 @@ export function expectedDrafts(turn: AssistantTurn): number {
   if (turn.phase === "asking") return turn.expected;
   if (turn.phase === "measuring") return turn.drafts.length + turn.pendingSlots;
   return turn.drafts.length;
-}
-
-/** A draft's size, from its canvas or, for an older draft, its schema. */
-function sizeOf(draft: ChatDraft): { width: number; height: number } | null {
-  if (draft.canvas) return draft.canvas;
-  return draft.schema
-    ? { width: draft.schema.canvasWidth, height: draft.schema.canvasHeight }
-    : null;
 }
 
 /** The shown draft on the card's stage: its values with the turn's photo
@@ -138,7 +130,12 @@ export const GenerateTurn = memo(function GenerateTurn({
   const tryNextId = useId();
   const running = isRunningTurn(turn);
   const description = turn.meta ? provenanceSentence(turn.meta) : undefined;
-  const tabs = useMemo(() => captionTabs(turn.drafts), [turn.drafts]);
+  // The switch names each draft as the editor's does: its platform, with
+  // the ratio where two share one (linkedFields' sizeNames).
+  const tabs = useMemo(() => {
+    const names = sizeNames(turn.drafts, { ratio: "onTie" });
+    return turn.drafts.map((d, i) => ({ id: d.id, label: names[i], title: sizeTitle(d) }));
+  }, [turn.drafts]);
   const shown =
     turn.drafts.find((d) => d.id === (selectedDraftId ?? pickedDraftId)) ??
     (turn.drafts[0] as ChatDraft | undefined);
@@ -164,7 +161,6 @@ export const GenerateTurn = memo(function GenerateTurn({
     [registerPreview, draftIds],
   );
   const exportable = turn.drafts.filter((d) => d.schema).length;
-  const size = shown ? sizeOf(shown) : null;
   const name = shown ? draftName(shown) : "";
 
   return (
@@ -206,7 +202,7 @@ export const GenerateTurn = memo(function GenerateTurn({
             selectedId={shown.id}
             onSelect={(id) => onPickDraft(turn.id, id)}
             sizesLabel="Variations"
-            meta={size ? `${size.width} × ${size.height}` : null}
+            meta={`${shown.canvas.width} × ${shown.canvas.height}`}
             art={<DraftArt draft={shown} photo={photo} />}
             onEdit={shown.schema ? () => onEditDraft(turn.id, shown.id) : undefined}
             editLabel={`Edit ${name}`}

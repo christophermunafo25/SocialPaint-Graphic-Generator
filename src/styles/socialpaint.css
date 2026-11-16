@@ -3091,7 +3091,10 @@ input[type="radio"] {
   flex-direction: column;
   height: 100%;
   box-sizing: border-box;
-  padding: var(--space-sm) max(0px, var(--page-pad) - var(--thread-scrollbar, 0px)) var(--space-lg);
+  /* The first row (always the member's message) starts at the content's
+     24 under the header; 12 under the last row holds a card's Elevation/1,
+     and with the dock's 12 the composer sits 24 under it (13:2985). */
+  padding: 0 max(0px, var(--page-pad) - var(--thread-scrollbar, 0px)) var(--space-12);
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable both-edges;
@@ -3117,7 +3120,7 @@ input[type="radio"] {
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
-  padding-top: var(--space-sm);
+  padding-top: var(--space-12);
 }
 .sp-chat-dock__composer {
   display: flex;
@@ -3162,31 +3165,26 @@ input[type="radio"] {
   min-height: 0;
 }
 
-/* Inline (1180px and wider): the frame's Split. 24 under the header, the
-   chat column (flex 1) and the 380 panel 24 apart, both running to the
-   page's foot (the panel stretches to the row). The chat column keeps its
-   thread and dock, but narrowed: the thread is exactly the column (it no
-   longer runs into the gutters; the panel is on its right), its padding
-   becomes 0 32 32 32, and the thread's column and the dock's composer fill
-   the width instead of stopping at 760. The top scroll fade spans the
-   column, as drawn.
-
-   The sides are the frame's 32 less 3: the frame's page gutter is 45 and
-   the app's is 48 (--page-pad; the thread states already map the frame's
-   45 to the page's 48, §8.1), so the chat column comes out 7 narrower than
-   the frame's 611. Giving the 3 back on each side puts the thread column
-   where the frame draws it (77 from the page's edge) at nearly the frame's
-   width (546 of 547 at 1440), which is what keeps the frame's two compact
-   cards on one row (163 + 12 + 366 = 541); at 32 they wrap by a pixel. */
+/* Inline (1180px and wider): the frame's Split (new brand, 13:3150). The
+   chat column fills and the 380 panel sits 24 to its right, both running
+   to the page's foot (the panel stretches to the row). The thread and the
+   dock's composer fill the chat column (616 at 1440), and the thread's
+   scroller reaches 12 past it on each side, as drawn, which holds the
+   cards' shadows and keeps 12 from the panel. */
 .sp-chat-split[data-editor="inline"] {
-  gap: var(--space-md);
-  padding-top: var(--space-md);
+  gap: var(--space-24);
 }
 .sp-chat-split[data-editor="inline"] .sp-chat-thread-frame {
-  margin-inline: 0;
+  margin-inline: calc(-1 * var(--space-12));
 }
 .sp-chat-split[data-editor="inline"] .sp-chat-thread {
-  padding: 0 max(0px, 29px - var(--thread-scrollbar, 0px)) var(--space-lg);
+  padding: 0 max(0px, var(--space-12) - var(--thread-scrollbar, 0px)) var(--space-12);
+}
+/* The links under the chat column, 24 under the composer, as the page's
+   own footer sits. */
+.sp-chat-split__foot {
+  flex: none;
+  margin-top: var(--space-24);
 }
 .sp-chat-split[data-editor="inline"] .sp-chat-thread__column,
 .sp-chat-split[data-editor="inline"] .sp-chat-dock__composer {

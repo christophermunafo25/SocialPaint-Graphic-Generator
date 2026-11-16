@@ -1539,9 +1539,10 @@ button.ui-detail-tag__value {
   color: var(--text-primary);
 }
 /* The switch on the left; the size, Edit and Download 8 apart on the
-   right. */
+   right. On a narrow card they take a line of their own, still right. */
 .ui-result-card__top {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-12);
@@ -1552,6 +1553,7 @@ button.ui-detail-tag__value {
   flex: none;
   align-items: center;
   gap: var(--space-8);
+  margin-left: auto;
 }
 .ui-result-card__meta {
   color: var(--text-secondary);

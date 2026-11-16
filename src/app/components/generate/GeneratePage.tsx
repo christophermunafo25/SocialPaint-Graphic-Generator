@@ -45,7 +45,7 @@ import { useBrand } from "@/lib/brand/BrandContext";
 import { useRouter } from "../../router";
 import { useFullViewport } from "../layout/ChromeContext";
 import { Page } from "../layout/Page";
-import { Button, PageHeader, Toast } from "../primitives";
+import { Button, FooterLinks, PageHeader, Toast } from "../primitives";
 import { ChatComposer } from "../chat/ChatComposer";
 import {
   TemplateInterviewLive,
@@ -1208,6 +1208,9 @@ export function GenerateChat({
         kind="self"
         layout={{ className: "sp-chat-page", state: "thread" }}
         header={threadHeader}
+        // Beside the inline editor the links sit under the chat column and
+        // the panel runs to Main's foot (13:3150).
+        footer={editorPresentation !== "inline"}
       >
         <div
           className="sp-chat-split"
@@ -1369,6 +1372,7 @@ export function GenerateChat({
                 {unsaved && <p className="sp-chat-dock__note">{NOT_SAVED_YET}</p>}
               </div>
             </div>
+            {editorPresentation === "inline" && <FooterLinks className="sp-chat-split__foot" />}
           </div>
           {editor && editorTurn && selectedDraft && editorPresentation && (
             <EditorPanel
