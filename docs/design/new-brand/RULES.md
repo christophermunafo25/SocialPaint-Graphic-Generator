@@ -162,12 +162,15 @@ A dialog's close button sits in its top right corner.
 
 | Part | Measure |
 |---|---|
-| Start | One column 720 wide, centered in Main both ways. The chat box, then Recent 48 below it: a header 28 tall and a list with 12 between cards |
-| Chat box | 720 wide, 16 padding, 24 between the text and the controls row |
-| Thread | Breadcrumb header with History and New chat. Below it one column 720 wide, centered: the thread fills and scrolls, the chat box sits under it, the legal links under that. 24 between messages |
-| Messages | A sent message sits right, up to 440 wide, with attachments above it. An assistant message and a Result Card run the full 720. Result Card has 12 padding |
+| Start | One column 720 wide, centered in Main both ways. The greeting in Title/Display, the chat box 32 below it, then Recent 48 below that: a header 28 tall (Title/Card, and a Ghost Small View all) and, 16 under it, three cards 12 apart |
+| Chat box | 720 wide, 16 padding, 24 between its rows: the attachments, the text, the Details row (the platform, then the details, as tags 8 apart) and the controls row (Attach on the left; the Variations stepper and Send 8 apart on the right) |
+| Plus menu | 240 wide, 8 under the plus: Output (Platform), Upload (Photo, File), Details and Context (Brand Studio). The platform list and Add a detail (a 280 popover, 12 padding) open in its place |
+| Thread | Breadcrumb header with History and New chat (Neutral). Below it one column 720 wide, centered: the thread fills and scrolls, the chat box sits 24 under its last row, the legal links under that. 24 between messages |
+| Messages | A sent message sits right: its bubble up to 440 wide, 8 under its attachments. The assistant message is the mark, then the message in Body/L 16 under it, then what it brings (progress, the Result Card, Try next) 24 apart |
+| Result Card | One a turn, the full 720, 12 padding, 16 between its rows: the switch between the turn's drafts, with the size, Edit and Download on the right; the 340 stage (16 padding on surface/field); the caption in Body/M; Copy caption, and the card's Download ("Download both") on the right, Primary on the latest finished turn while the editor is closed and Neutral otherwise |
 | Try next | A row of chips under the result, 8 apart |
-| History | Breadcrumb header, the page title, a filter row (Search Field then platform chips, 8 apart), then a grid: four cards across, 245 square, 12 between them |
+| Edit | Beside the inline editor (1180 and wider) the chat column fills, and the 380 panel sits 24 to its right, running to Main's foot. The legal links sit under the chat column |
+| History | Breadcrumb header with New chat (Neutral), the page title, a filter row (Search Field then platform chips, 8 apart), then a grid: four cards across, 245 square, 12 between them, under a 120 fade |
 
 ### Template Builder
 

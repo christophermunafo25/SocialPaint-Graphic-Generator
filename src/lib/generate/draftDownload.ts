@@ -73,6 +73,20 @@ export function missingFields(draft: ChatDraft, values: FieldValues): TemplateFi
   });
 }
 
+/** What a Result card's own Download does with its turn's drafts: export
+ * every one whose template is still there, in order, or, when one of them
+ * has a required field still empty (missingFields over the values it would
+ * be painted with), open the editor on that draft and export nothing, as a
+ * draft's own Download does. */
+export function turnDownloadPlan(
+  drafts: readonly ChatDraft[],
+  valuesOf: (draft: ChatDraft) => FieldValues,
+): { kind: "export"; drafts: ChatDraft[] } | { kind: "fill"; draftId: string } {
+  const ready = drafts.filter((d) => d.schema);
+  const blocked = ready.find((d) => missingFields(d, valuesOf(d)).length > 0);
+  return blocked ? { kind: "fill", draftId: blocked.id } : { kind: "export", drafts: ready };
+}
+
 /** A queued export: a unique id per request (it keys the stage's mount, so
  * each request renders on a fresh canvas) and the draft it exports. */
 export interface DownloadJob {

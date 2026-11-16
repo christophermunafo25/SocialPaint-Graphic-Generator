@@ -58,6 +58,8 @@ import {
   ProgressBar,
   Radio,
   ResultCard,
+  ResultCardArt,
+  ResultCardSkeleton,
   Search,
   SearchField,
   Segment,
@@ -722,20 +724,33 @@ function NavigationGroup() {
 
 function ContainersGroup() {
   const [look, setLook] = React.useState("moss");
+  const [size, setSize] = React.useState("instagram");
   const [open, setOpen] = React.useState(false);
   return (
     <>
       <div className="dev-ui-sheet__line">
         <ResultCard
-          title="Now hiring"
-          meta="1080 × 1350"
-          preview={<span className="dev-ui-sample-preview" />}
+          sizes={[
+            { id: "instagram", label: "Instagram" },
+            { id: "linkedin", label: "LinkedIn" },
+          ]}
+          selectedId={size}
+          onSelect={setSize}
+          meta={size === "instagram" ? "1080 × 1350" : "1200 × 628"}
+          art={
+            <ResultCardArt ratio={size === "instagram" ? 0.8 : 1.91}>
+              <span className="dev-ui-sample-preview" />
+            </ResultCardArt>
+          }
           onEdit={() => {}}
           editLabel="Edit Now hiring"
           onDownload={() => {}}
           downloadLabel="Download Now hiring"
-          className="dev-ui-w-227"
+          caption="We're hiring a Creative Director. The link to apply is in our bio."
+          downloadAll={{ label: "Download both", onClick: () => {} }}
+          className="dev-ui-w-720"
         />
+        <ResultCardSkeleton />
         <div className="dev-ui-sheet__line" role="radiogroup" aria-label="Look">
           {["moss", "lime"].map((id) => (
             <LookTile

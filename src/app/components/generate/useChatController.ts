@@ -44,8 +44,8 @@ export interface ChatSendInput {
    * only and is never saved (PROMPT §12.3). */
   document?: ChatDocument | null;
   /** `null` is an explicit "Any platform"; left out, a follow-up reuses the
-   * thread's last composer send (the compact composer has no platform
-   * select; a Try next chip's platform was for its own run). */
+   * thread's last composer send (a Try next chip's platform was for its own
+   * run). */
   platformHint?: PlatformId | null;
   /** Left out, a follow-up reuses the thread's last composer send; a first
    * message gets the stepper's default. */

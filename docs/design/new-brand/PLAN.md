@@ -173,8 +173,8 @@ Scroll containers that hold raised children:
 |---|---|---|---|---|
 | `.sp-lib-shelf__track` (`brand-templates.css:69`) | x | Template cards | 4 sides, 16 below | 4 |
 | `.sp-railfade__track` (`socialpaint.css:2909`, `templates/GroupChips.tsx`) | x | The older platform chips | None | 6 |
-| `.sp-chat-thread` (`socialpaint.css:3749`) | y | Result cards, the variations well | 16 top, the page gutter at the sides, 32 below | 5 |
-| `.sp-chat-history-scroll` (`socialpaint.css:3912`) | y | History cards | 24 top, the gutter at the sides, none below | 5 |
+| `.sp-chat-thread` (`socialpaint.css`) | y | The Result Card | Done in 5. The page gutter at the sides (12 beside the inline editor) and 12 below, which holds Elevation/1. None on top, where the first row is always the member's message |
+| `.sp-chat-history-scroll` (`socialpaint.css`) | y | History cards | Done in 5. 24 top, the gutter at the sides, and 24 below in the list's foot (`.sp-chat-history-end`) |
 | The builder's source-pick region (`TemplateBuilder.tsx:3198`, inline) | y | Start cards | Not measured | 6 |
 | `.ui-modal` (`primitives.css`) | y, when tall | Option tiles and cards inside a dialog | 24, which is the room (Phase 2 kept the Dialog's 24 of padding on every side) | Done in 2 |
 
@@ -278,6 +278,30 @@ Phase 4 moved Brand Templates onto its frames: the library, the fill page, the p
 | Phase 5 | Generate's editor already wears the Details panel's new measures; check them against `13:3150`. History's filter bar wears the new Platform chip and round search. |
 | Phase 9 or cleanup | `generate/TemplateChatPage.tsx`, the `templateChat` route and the code inside `GeneratePage.tsx` that serves only a template chat. Bulk fill keeps its layout, its preview capped at `100vh - 180px`, and its inline styles; it has no frames. |
 
+## What Phase 5 found
+
+Phase 5 moved Generate onto its frames: Start, the chat box and its plus menu, the thread with its Result Card, the editor beside it, and History. It was built from this plan and the frames directly. Its pull request lists the calls made along the way.
+
+### Built and how it works
+
+- **The chat box** (`chat/ChatComposer.tsx`) is the attachments, the text, the Details row and the controls row, 24 apart. The text area sets Body/L from its variables and gives the half-leading back in its margins, so the box is 110 tall as drawn. Its focus rings the whole box, as a field's does.
+- **Platform is in the plus menu** (`chat/AttachMenu.tsx`, Output). It opens a list of every platform in the menu's place. A platform picked for the next message is a tag at the head of the Details row, which opens the list again; its x takes the pick back. A message asks for one platform: the server makes one canvas a run (`canvasForPlatform` in `template-generate`), so the two platforms the Details added frame draws need an Edge Function change.
+- **The thread's chat box has the stepper too.** Left alone, the platform and the count are the last composer send's (`lastComposerTurn`), which a message reuses as before (`fillSendGaps`); the menu's Platform row and the stepper show them, with no tag (the Result frame's chat box has none). A change applies to the next message only.
+- **One Result Card a turn** (`primitives/Previews.tsx`): the switch between the turn's drafts, named as the editor names them (`linkedFields`' `sizeNames`), the stage fitted in CSS, the caption, Copy caption and the card's Download, which exports every draft through the one export path, one at a time, or opens the editor on the first gap (`turnDownloadPlan`). Its Loading state shows while the turn builds. The card and the editor always show the same draft, and the card stays on the one the editor last showed.
+- **One Primary a view.** The latest finished turn's card leads with its Download while the editor is closed; every other card's Download is Neutral, and the editor's Download PNG leads while it is open.
+- **The fades and the focus line agree.** Each chat scroller sets its fade heights (`--chat-fade-top`, `--chat-fade-bottom`: Generate's thread 68 at the top, History 120 at the foot), which the fade and the scroller's `scroll-padding` both read, so a control focus scrolls into view stops clear of the fade.
+- **The editor beside the thread** takes the frame's split: the chat column fills, and the 380 panel sits 24 to its right and runs to Main's foot. While it is open the legal links sit under the chat column (`Page`'s footer is off).
+- **The thread's top fade stays 68.** The Result frame washes the whole thread from the top (`2343:1521`, 770 tall), which would put the card's switch, Edit and Download under 4.5:1.
+- **Recent and History's cards** keep Elevation/1 on hover, as the library's cards do.
+
+### Left for each phase
+
+| For | What |
+|---|---|
+| Phase 7 | `PreviewOverlay`, which Brand Studio's covers, swatches and logo plates use, and the dead `ui-ring-none` class on Type styles' rename field |
+| Cleanup | `LookTile`, the Looks card, the template chat's turn and its stage's Missing markers (`--gen-marker-*`, `--gen-h-tag`, the tight ring on the marker tag), which only the hidden template chat draws. The older `ErrorState` and empty-state markup that Phases 4 and 5 kept (Brand Templates, the fill page, History, a saved chat that can't open): moving them onto `Alert` and `EmptyState` needs an Alert that carries Try again |
+| Not a screen | The plus menu's Web page, Past post and Connectors rows (`13:1601`, `13:1850`) have no backend, and two platforms in one message need `template-generate` to make a canvas for each |
+
 ## Scope
 
 In scope: every frame in the screen map, the shell around them, and the system pages they draw from.
@@ -294,8 +318,8 @@ One pull request per phase into `main`. Phase 0 changed the prompt's order in tw
 | 1 | Foundation | The exporter, JSON, generator and check on the new collections. `tokens.css` regenerated from the new file. `legacy-bridge.css` rewritten so every older name still read points at a new token. The 2 px focus ring, on fields too. The 20 text styles, with existing call sites renamed onto untrimmed twins | Every changed value is on the expected list. No layout moves | Merged 2026-11-14 (#185) |
 | 2 | Primitives | Every component in `PROMPT.md` section 6.1 on the new tokens with its states, tested. The folds (Icon Button, Select, Tooltip, Switch). The new ones (Checkbox, Radio, Table Row, Alert, Empty State, Search, Tabs). `/dev/ui` redrawn to show each one in Light and Dark the way the Components page does | `/dev/ui` matches the boards in both themes | Merged 2026-11-15 (#189) |
 | 3 | Shell | The app frame: viewport padding, the 320 sidebar, Main as a frame whose content scrolls, the one Page Header row on every page, Breadcrumb, one Footer Links slot. The new logo, mark and favicon | Every route still reachable in both themes. Titles sit at one height | Merged 2026-11-16 (#191) |
-| 4 | Brand Templates | The library, filter, search, the form-only fill page on the Details panel, the public link page's form, the public links dialog, bulk fill in the new shell. The template chat behind its redirect | Screens match their frames in both themes. No shadow cut off on the shelves, the chip rail or the grids | Built 2026-11-16, in review |
-| 5 | Generate | Every state in the screen map, the new chat box, the Result Card with size tabs, History with skeletons | Same | Not started |
+| 4 | Brand Templates | The library, filter, search, the form-only fill page on the Details panel, the public link page's form, the public links dialog, bulk fill in the new shell. The template chat behind its redirect | Screens match their frames in both themes. No shadow cut off on the shelves, the chip rail or the grids | Merged 2026-11-16 (#194) |
+| 5 | Generate | Every state in the screen map, the new chat box, the Result Card with size tabs, History with skeletons | Same | Built 2026-11-16, in review |
 | 6a | Template Builder: list and start | The list with its row menu, New template, Choose a size with the new covers, the Figma import and auto build dialogs | Light matches the frames. Dark reviewed by screenshot | Not started |
 | 6b | Template Builder: editor | The editor chrome: top bar, carded workspace, the Layers and Form rail, the inspector with its Design and Field tabs, the stage controls, Publish | Same. Rendering and gestures untouched, and the fidelity checker passes | Not started |
 | 7 | Brand Studio | Overview with the new covers, and the six detail pages | Same as 4. Differences with `docs/brand-system/` listed | Not started |

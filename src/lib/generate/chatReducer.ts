@@ -613,10 +613,10 @@ export function clampVariations(n: number | undefined): number {
   return Math.min(MAX_VARIATIONS, Math.max(MIN_VARIATIONS, Math.round(n)));
 }
 
-/** A send's platform and variation count. The compact composer has neither
- * control, so a follow-up reuses the thread's last composer send (`last`,
- * from lastComposerTurn): `undefined` means "not given, reuse", while
- * `null` is an explicit "Any platform". */
+/** A send's platform and variation count. Left alone, a message reuses the
+ * thread's last composer send's (`last`, from lastComposerTurn): `undefined`
+ * means "not given, reuse", while `null` is an explicit "Any platform". The
+ * chat box shows the same result for the next message. */
 export function fillSendGaps(
   input: { platformHint?: PlatformId | null; variations?: number },
   last: UserTurn | null,

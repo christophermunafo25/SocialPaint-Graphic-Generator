@@ -23,15 +23,16 @@ type HistoryCardProps =
  * draft at its own ratio, as large as fits, then the title and meta. The
  * fit is CSS (the stage is a size container), so nothing measures in JS.
  *
- * Default is one button named "Open <title>", the meta its description,
- * with the library card's hover: the shadow deepens, no dim (PHASE-5 §9
- * D11). Its graphic's box takes its shape from `preview`, or from `aspect`
+ * Default is one button named "Open <title>", the meta its description.
+ * Hover keeps the card's Elevation/1, as the library's cards do (RULES.md
+ * section 6). Its graphic's box takes its shape from `preview`, or from `aspect`
  * while the template loads or once it is gone; with neither (a chat that
  * made no drafts) the stage stays bare.
  *
  * Loading is decoration (aria-hidden; the page announces the load): the
- * bare stage and two bars in the meta's own line boxes, as plain sunken
- * wells (§9 D12), so the card does not move when the chat lands. */
+ * bare sunken stage, as the frame's loading cards draw it, and two
+ * Skeletons as tall as the meta's trimmed lines, so the card does not move
+ * when the chat lands. */
 export function HistoryCard(props: HistoryCardProps) {
   const metaId = useId();
 

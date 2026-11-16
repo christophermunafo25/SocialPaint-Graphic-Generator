@@ -3,7 +3,6 @@ import type { GeneratedProposal, TemplateField, TemplateSchema } from "../types"
 import type { AssistantTurn, ChatDraft, ChatPhoto, ChatThread, UserTurn } from "./chat";
 import {
   captionFor,
-  captionTabs,
   draftName,
   fallbackTitle,
   imageTargetFor,
@@ -217,68 +216,6 @@ describe("platformLabelFor", () => {
   it("agrees with primaryPlatformOf", () => {
     expect(primaryPlatformOf({ width: 1080, height: 1350 })).toBe("instagram");
     expect(primaryPlatformOf({ width: 999, height: 999 })).toBe("general");
-  });
-});
-
-describe("captionTabs", () => {
-  const sized = (id: string, name: string, width: number, height: number) =>
-    draft({
-      id,
-      schema: schema({ id: `t-${id}`, name, canvasWidth: width, canvasHeight: height }),
-      canvas: { width, height },
-    });
-
-  it("labels each draft with its platform, in order (frame 05)", () => {
-    expect(
-      captionTabs([sized("a", "Now hiring", 1080, 1350), sized("b", "Open role", 1200, 627)]),
-    ).toEqual([
-      { id: "a", label: "Instagram" },
-      { id: "b", label: "LinkedIn" },
-    ]);
-  });
-
-  it("uses template names for drafts that share a platform, and only for them", () => {
-    expect(
-      captionTabs([
-        sized("a", "Now hiring", 1080, 1350),
-        sized("b", "Open role", 1200, 627),
-        sized("c", "Team photo", 1080, 1080),
-      ]),
-    ).toEqual([
-      { id: "a", label: "Now hiring" },
-      { id: "b", label: "LinkedIn" },
-      { id: "c", label: "Team photo" },
-    ]);
-  });
-
-  it("numbers labels that still tie", () => {
-    expect(
-      captionTabs([sized("a", "Now hiring", 1080, 1350), sized("b", "Now hiring", 1080, 1350)]),
-    ).toEqual([
-      { id: "a", label: "Now hiring 1" },
-      { id: "b", label: "Now hiring 2" },
-    ]);
-    // A template named like another draft's platform.
-    expect(
-      captionTabs([
-        sized("a", "LinkedIn", 1080, 1350),
-        sized("b", "Other", 1080, 1080),
-        sized("c", "Open role", 1200, 627),
-      ]),
-    ).toEqual([
-      { id: "a", label: "LinkedIn 1" },
-      { id: "b", label: "Other" },
-      { id: "c", label: "LinkedIn 2" },
-    ]);
-  });
-
-  it("reads General for a size with no platform, and uses the stored canvas", () => {
-    const gone = draft({ id: "g", schema: null, canvas: { width: 1200, height: 627 } });
-    expect(captionTabs([sized("a", "Square", 1440, 1440), gone])).toEqual([
-      { id: "a", label: "General" },
-      { id: "g", label: "LinkedIn" },
-    ]);
-    expect(captionTabs([])).toEqual([]);
   });
 });
 

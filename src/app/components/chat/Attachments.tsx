@@ -1,12 +1,11 @@
 import React from "react";
-import { FileText, Globe, X } from "lucide-react";
+import { FileText, X } from "lucide-react";
 import type { ChatDocumentKind } from "@/lib/types";
-import { PLATFORMS, type PlatformId } from "@/lib/templates/platforms";
-import { Select, type SelectOption } from "../primitives";
+import { IconButton } from "../primitives";
 
-/** The round x on an attachment tile (13:2384): 16 on surface/inverse in
- * Light and the page's ink in Dark, 4 in from the tile's top right. Its
- * hit area reaches 24. */
+/** The round x on the photo (13:2384): 16 on surface/inverse in Light and
+ * the page's ink in Dark, 4 in from the photo's top right. Its hit area
+ * reaches 24. */
 function RemoveButton({ label, onClick }: { label: string; onClick(): void }) {
   return (
     <button
@@ -20,8 +19,8 @@ function RemoveButton({ label, onClick }: { label: string; onClick(): void }) {
   );
 }
 
-/** A photo on a message (13:2383, 13:2739): 64 square, radius 9, cropped
- * to cover. In the composer it carries its remove button. */
+/** The photo waiting in the composer (new brand, 13:2301): 56 square at
+ * radius/md, cropped to cover, with its remove button. */
 export function PhotoTile({ src, onRemove }: { src: string; onRemove?(): void }) {
   return (
     <span className="sp-chat-tile sp-chat-tile--photo">
@@ -37,10 +36,12 @@ export function fileTitle(name: string): string {
   return dot > 0 ? name.slice(0, dot) : name;
 }
 
-/** A document on a message (13:2540): a 50 type tile, the file's name
- * without its extension, and its type (PDF, TXT or MD) under it (CJ,
- * 2026-10-04: the type, until connectors bring a source). Its text was
- * read in the browser; only the name and type are kept. */
+/** A document in the composer or on a sent message (new brand, 13:2454):
+ * 256 wide on surface/raised with a border/subtle hairline at radius/md, a
+ * 40 type well, the file's name without its extension in Label/S over its
+ * type (PDF, TXT or MD) in Caption/S (CJ, 2026-10-04: the type, until
+ * connectors bring a source), then Remove (Ghost Small) in the composer.
+ * Its text was read in the browser; only the name and type are kept. */
 export function FileTile({
   name,
   kind,
@@ -51,49 +52,25 @@ export function FileTile({
   onRemove?(): void;
 }) {
   return (
-    <span className="sp-chat-tile sp-chat-tile--file" data-removable={onRemove ? true : undefined}>
+    <span className="sp-chat-tile sp-chat-tile--file">
       <span className="sp-chat-tile__type" aria-hidden>
-        <FileText size={20} className="ui-icon" />
+        <FileText size={16} className="ui-icon" />
       </span>
       <span className="sp-chat-tile__text">
-        <span className="t-label-xs sp-chat-tile__name" title={name}>
+        <span className="t-label-s sp-chat-tile__name" title={name}>
           {fileTitle(name)}
         </span>
         <span className="t-caption-s sp-chat-tile__kind">{kind.toUpperCase()}</span>
       </span>
-      {onRemove && <RemoveButton label={`Remove ${name}`} onClick={onRemove} />}
+      {onRemove && (
+        <IconButton
+          variant="ghost"
+          size="sm"
+          icon={X}
+          label={`Remove ${name}`}
+          onClick={onRemove}
+        />
+      )}
     </span>
-  );
-}
-
-/** The composer's platform hint on the Compact select (99:568): "Any
- * platform" with the globe, then every platform with its mark. Generate
- * composes a new design at any platform's size, so every platform is
- * offered alike. */
-export function PlatformSelect({
-  value,
-  onChange,
-}: {
-  value: PlatformId | null;
-  onChange(next: PlatformId | null): void;
-}) {
-  const options: Array<SelectOption<string>> = [
-    { value: "", label: "Any platform", icon: <Globe size={16} className="ui-icon" aria-hidden /> },
-    ...PLATFORMS.map((p) => ({
-      value: p.id as string,
-      label: p.label,
-      icon: <p.Icon width={16} height={16} className="ui-icon" aria-hidden />,
-    })),
-  ];
-  return (
-    <Select
-      size="sm"
-      hug
-      ariaLabel="Platform"
-      value={value ?? ""}
-      options={options}
-      onSelect={(v) => onChange((v || null) as PlatformId | null)}
-      menuMinWidth={220}
-    />
   );
 }
