@@ -1,5 +1,10 @@
 {
   "chromium": {
+    "GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque+Heading:wght@600&display=swap": {
+      "status": 400,
+      "contentType": "text/html; charset=utf-8",
+      "file": "03d079c04dc69ab9.bin"
+    },
     "GET https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap": {
       "status": 200,
       "contentType": "text/css; charset=utf-8",
@@ -25,6 +30,11 @@
       "contentType": "text/css; charset=utf-8",
       "file": "aee6c1a4821da552.css"
     },
+    "GET https://fonts.googleapis.com/css2?family=Inter:wght@500&display=swap": {
+      "status": 200,
+      "contentType": "text/css; charset=utf-8",
+      "file": "71f149a89db047e1.css"
+    },
     "GET https://fonts.googleapis.com/css2?family=Inter:wght@700;800&display=swap": {
       "status": 200,
       "contentType": "text/css; charset=utf-8",
@@ -39,6 +49,11 @@
       "status": 200,
       "contentType": "text/css; charset=utf-8",
       "file": "8d5018d8e7d22e6e.css"
+    },
+    "GET https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500&display=swap": {
+      "status": 200,
+      "contentType": "text/css; charset=utf-8",
+      "file": "05195300a9a66293.css"
     },
     "GET https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700&display=swap": {
       "status": 200,
@@ -145,6 +160,41 @@
       "contentType": "font/woff2",
       "file": "56acf06dd351c757.woff2"
     },
+    "GET https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fAZ9hiJ-Ek-_EeA.woff2": {
+      "status": 200,
+      "contentType": "font/woff2",
+      "file": "a1eab7f4970e8a2f.woff2"
+    },
+    "GET https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fAZBhiJ-Ek-_EeAmM.woff2": {
+      "status": 200,
+      "contentType": "font/woff2",
+      "file": "83021b238712e1f9.woff2"
+    },
+    "GET https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fAZFhiJ-Ek-_EeAmM.woff2": {
+      "status": 200,
+      "contentType": "font/woff2",
+      "file": "d73a8a42bdc37110.woff2"
+    },
+    "GET https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fAZJhiJ-Ek-_EeAmM.woff2": {
+      "status": 200,
+      "contentType": "font/woff2",
+      "file": "46b34b71181aecad.woff2"
+    },
+    "GET https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fAZNhiJ-Ek-_EeAmM.woff2": {
+      "status": 200,
+      "contentType": "font/woff2",
+      "file": "ed68c10557a1940f.woff2"
+    },
+    "GET https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fAZthiJ-Ek-_EeAmM.woff2": {
+      "status": 200,
+      "contentType": "font/woff2",
+      "file": "ddddc9086f13f2a5.woff2"
+    },
+    "GET https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fAZxhiJ-Ek-_EeAmM.woff2": {
+      "status": 200,
+      "contentType": "font/woff2",
+      "file": "b0a6550a90b17c7d.woff2"
+    },
     "GET https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfAZ9hiJ-Ek-_EeA.woff2": {
       "status": 200,
       "contentType": "font/woff2",
@@ -240,6 +290,21 @@
       "contentType": "font/woff2",
       "file": "670d7f606b704365.woff2"
     },
+    "GET https://fonts.gstatic.com/s/newsreader/v26/cY9VfjOCX1hbuyalUrK49dLafXjalZCsZBsSBgbCJYQ5ayZCzn4.woff2": {
+      "status": 200,
+      "contentType": "font/woff2",
+      "file": "79e10669c3c33e7e.woff2"
+    },
+    "GET https://fonts.gstatic.com/s/newsreader/v26/cY9VfjOCX1hbuyalUrK49dLafXjalZCsZBsSBgbDJYQ5ayZCzn4.woff2": {
+      "status": 200,
+      "contentType": "font/woff2",
+      "file": "8463ef7321e786cc.woff2"
+    },
+    "GET https://fonts.gstatic.com/s/newsreader/v26/cY9VfjOCX1hbuyalUrK49dLafXjalZCsZBsSBgbNJYQ5ayZC.woff2": {
+      "status": 200,
+      "contentType": "font/woff2",
+      "file": "6cc4617232ce0e6b.woff2"
+    },
     "GET https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko20yygg_vb.woff2": {
       "status": 200,
       "contentType": "font/woff2",
@@ -262,6 +327,11 @@
     }
   },
   "firefox": {
+    "GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque+Heading:wght@600&display=swap": {
+      "status": 400,
+      "contentType": "text/html; charset=utf-8",
+      "file": "03d079c04dc69ab9.bin"
+    },
     "GET https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap": {
       "status": 200,
       "contentType": "text/css; charset=utf-8",
@@ -287,6 +357,11 @@
       "contentType": "text/css; charset=utf-8",
       "file": "aee6c1a4821da552.css"
     },
+    "GET https://fonts.googleapis.com/css2?family=Inter:wght@500&display=swap": {
+      "status": 200,
+      "contentType": "text/css; charset=utf-8",
+      "file": "67b21631ab921f5a.css"
+    },
     "GET https://fonts.googleapis.com/css2?family=Inter:wght@700;800&display=swap": {
       "status": 200,
       "contentType": "text/css; charset=utf-8",
@@ -301,6 +376,11 @@
       "status": 200,
       "contentType": "text/css; charset=utf-8",
       "file": "a51d0dc5f777cd61.css"
+    },
+    "GET https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500&display=swap": {
+      "status": 200,
+      "contentType": "text/css; charset=utf-8",
+      "file": "05195300a9a66293.css"
     },
     "GET https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700&display=swap": {
       "status": 200,
@@ -407,6 +487,41 @@
       "contentType": "font/woff",
       "file": "ab083337b98e6a56.woff"
     },
+    "GET https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fAZ9hjp-Ek-_EeA.woff": {
+      "status": 200,
+      "contentType": "font/woff",
+      "file": "6783ac460e546399.woff"
+    },
+    "GET https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fAZBhjp-Ek-_EeAmM.woff": {
+      "status": 200,
+      "contentType": "font/woff",
+      "file": "272d2163d6c867de.woff"
+    },
+    "GET https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fAZFhjp-Ek-_EeAmM.woff": {
+      "status": 200,
+      "contentType": "font/woff",
+      "file": "d6a317412459080b.woff"
+    },
+    "GET https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fAZJhjp-Ek-_EeAmM.woff": {
+      "status": 200,
+      "contentType": "font/woff",
+      "file": "020d353d9bfaed51.woff"
+    },
+    "GET https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fAZNhjp-Ek-_EeAmM.woff": {
+      "status": 200,
+      "contentType": "font/woff",
+      "file": "a7cede33771d2b9e.woff"
+    },
+    "GET https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fAZthjp-Ek-_EeAmM.woff": {
+      "status": 200,
+      "contentType": "font/woff",
+      "file": "07eb83d4443174f2.woff"
+    },
+    "GET https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fAZxhjp-Ek-_EeAmM.woff": {
+      "status": 200,
+      "contentType": "font/woff",
+      "file": "d2a75b94b5693d61.woff"
+    },
     "GET https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfAZ9hjp-Ek-_EeA.woff": {
       "status": 200,
       "contentType": "font/woff",
@@ -501,6 +616,21 @@
       "status": 200,
       "contentType": "font/woff",
       "file": "1393a9c6a90fd552.woff"
+    },
+    "GET https://fonts.gstatic.com/s/newsreader/v26/cY9VfjOCX1hbuyalUrK49dLafXjalZCsZBsSBgbCJYQ5ayZCzn4.woff2": {
+      "status": 200,
+      "contentType": "font/woff2",
+      "file": "79e10669c3c33e7e.woff2"
+    },
+    "GET https://fonts.gstatic.com/s/newsreader/v26/cY9VfjOCX1hbuyalUrK49dLafXjalZCsZBsSBgbDJYQ5ayZCzn4.woff2": {
+      "status": 200,
+      "contentType": "font/woff2",
+      "file": "8463ef7321e786cc.woff2"
+    },
+    "GET https://fonts.gstatic.com/s/newsreader/v26/cY9VfjOCX1hbuyalUrK49dLafXjalZCsZBsSBgbNJYQ5ayZC.woff2": {
+      "status": 200,
+      "contentType": "font/woff2",
+      "file": "6cc4617232ce0e6b.woff2"
     },
     "GET https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko20yygg_vb.woff2": {
       "status": 200,
@@ -524,6 +654,11 @@
     }
   },
   "webkit": {
+    "GET https://fonts.googleapis.com/css2?family=Bricolage+Grotesque+Heading:wght@600&display=swap": {
+      "status": 400,
+      "contentType": "text/html; charset=utf-8",
+      "file": "03d079c04dc69ab9.bin"
+    },
     "GET https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap": {
       "status": 200,
       "contentType": "text/css; charset=utf-8",
@@ -549,6 +684,11 @@
       "contentType": "text/css; charset=utf-8",
       "file": "aee6c1a4821da552.css"
     },
+    "GET https://fonts.googleapis.com/css2?family=Inter:wght@500&display=swap": {
+      "status": 200,
+      "contentType": "text/css; charset=utf-8",
+      "file": "67b21631ab921f5a.css"
+    },
     "GET https://fonts.googleapis.com/css2?family=Inter:wght@700;800&display=swap": {
       "status": 200,
       "contentType": "text/css; charset=utf-8",
@@ -563,6 +703,11 @@
       "status": 200,
       "contentType": "text/css; charset=utf-8",
       "file": "a51d0dc5f777cd61.css"
+    },
+    "GET https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500&display=swap": {
+      "status": 200,
+      "contentType": "text/css; charset=utf-8",
+      "file": "05195300a9a66293.css"
     },
     "GET https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700&display=swap": {
       "status": 200,
@@ -669,6 +814,41 @@
       "contentType": "font/woff",
       "file": "ab083337b98e6a56.woff"
     },
+    "GET https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fAZ9hjp-Ek-_EeA.woff": {
+      "status": 200,
+      "contentType": "font/woff",
+      "file": "6783ac460e546399.woff"
+    },
+    "GET https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fAZBhjp-Ek-_EeAmM.woff": {
+      "status": 200,
+      "contentType": "font/woff",
+      "file": "272d2163d6c867de.woff"
+    },
+    "GET https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fAZFhjp-Ek-_EeAmM.woff": {
+      "status": 200,
+      "contentType": "font/woff",
+      "file": "d6a317412459080b.woff"
+    },
+    "GET https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fAZJhjp-Ek-_EeAmM.woff": {
+      "status": 200,
+      "contentType": "font/woff",
+      "file": "020d353d9bfaed51.woff"
+    },
+    "GET https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fAZNhjp-Ek-_EeAmM.woff": {
+      "status": 200,
+      "contentType": "font/woff",
+      "file": "a7cede33771d2b9e.woff"
+    },
+    "GET https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fAZthjp-Ek-_EeAmM.woff": {
+      "status": 200,
+      "contentType": "font/woff",
+      "file": "07eb83d4443174f2.woff"
+    },
+    "GET https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fAZxhjp-Ek-_EeAmM.woff": {
+      "status": 200,
+      "contentType": "font/woff",
+      "file": "d2a75b94b5693d61.woff"
+    },
     "GET https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfAZ9hjp-Ek-_EeA.woff": {
       "status": 200,
       "contentType": "font/woff",
@@ -763,6 +943,21 @@
       "status": 200,
       "contentType": "font/woff",
       "file": "1393a9c6a90fd552.woff"
+    },
+    "GET https://fonts.gstatic.com/s/newsreader/v26/cY9VfjOCX1hbuyalUrK49dLafXjalZCsZBsSBgbCJYQ5ayZCzn4.woff2": {
+      "status": 200,
+      "contentType": "font/woff2",
+      "file": "79e10669c3c33e7e.woff2"
+    },
+    "GET https://fonts.gstatic.com/s/newsreader/v26/cY9VfjOCX1hbuyalUrK49dLafXjalZCsZBsSBgbDJYQ5ayZCzn4.woff2": {
+      "status": 200,
+      "contentType": "font/woff2",
+      "file": "8463ef7321e786cc.woff2"
+    },
+    "GET https://fonts.gstatic.com/s/newsreader/v26/cY9VfjOCX1hbuyalUrK49dLafXjalZCsZBsSBgbNJYQ5ayZC.woff2": {
+      "status": 200,
+      "contentType": "font/woff2",
+      "file": "6cc4617232ce0e6b.woff2"
     },
     "GET https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko20yygg_vb.woff2": {
       "status": 200,
