@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -141,6 +141,17 @@ export function LayersPanel({
 }: LayersPanelProps) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [renaming, setRenaming] = useState<string | null>(null);
+  /** A rename ended from the keyboard hands focus back to its row. */
+  const listRef = useRef<HTMLDivElement>(null);
+  const refocus = useRef<string | null>(null);
+  useEffect(() => {
+    if (renaming || !refocus.current) return;
+    const key = refocus.current;
+    refocus.current = null;
+    listRef.current
+      ?.querySelector<HTMLButtonElement>(`[data-key="${CSS.escape(key)}"] .sp-layer__main`)
+      ?.focus();
+  }, [renaming]);
   const dragKey = useRef<string | null>(null);
   const [overKey, setOverKey] = useState<string | null>(null);
 
@@ -219,7 +230,7 @@ export function LayersPanel({
     });
 
   return (
-    <div className="sp-layers" role="list" aria-label="Layers">
+    <div ref={listRef} className="sp-layers" role="list" aria-label="Layers">
       {rows.map((n) => {
         const f = n.field;
         const g = n.group;
@@ -235,6 +246,7 @@ export function LayersPanel({
           <div
             key={n.key}
             role="listitem"
+            data-key={n.key}
             className="sp-layer"
             data-selected={isSelected || undefined}
             data-over={isOver || undefined}
@@ -294,8 +306,12 @@ export function LayersPanel({
                   }}
                   onKeyDown={(e) => {
                     e.stopPropagation();
-                    if (e.key === "Enter") e.currentTarget.blur();
+                    if (e.key === "Enter") {
+                      refocus.current = n.key;
+                      e.currentTarget.blur();
+                    }
                     if (e.key === "Escape") {
+                      refocus.current = n.key;
                       e.currentTarget.value = f.label;
                       e.currentTarget.blur();
                     }

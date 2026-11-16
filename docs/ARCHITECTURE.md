@@ -45,13 +45,18 @@ src/app/components/builder/  Admin Template Builder. A template starts on the
                               module, never the URL) and the builder takes it
                               as it opens on /template-builder/new; with
                               nothing handed over it goes back to the list
-                              with New template open. Then a guided wizard:
-                              Name → Fields → Caption → Tags & details →
-                              Publish. The Fields step is an
-                              element palette (drag onto canvas) + canvas
-                              (multi-select, ⌘C/X/V/D + context menu) + field
-                              list (drag = member form order) + inspector
-                              (z-order via To front/back; image corner radius)
+                              with New template open. The editor
+                              (TemplateBuilder) is a top bar (the trail, whose
+                              last crumb renames, the status and save state,
+                              Edit or Preview, Publish) over three cards: the
+                              Layers and Form rail (Add tiles, Layer Rows,
+                              Form Rows), the stage (the canvas with
+                              multi-select, ⌘C/X/V/D and a context menu; the
+                              variation capsule, the tools, size, zoom and the
+                              checks pill) and the inspector (Design and
+                              Field). Publish holds the name, caption and
+                              details; Preview is the fill page's Details
+                              panel beside the stage.
 src/app/components/onboarding/ Create account (OnboardingFlow) and its pieces
 supabase/migrations/         Schema + RLS (dev-active, real-ready)
 supabase/functions/          figma-status / figma-connect / figma-import /

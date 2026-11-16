@@ -836,7 +836,10 @@
 }
 /* Hide and Pin show on the row's hover or keyboard focus, and stay while
    on. A click leaves focus in the row, so plain focus would keep them up
-   on the selected row, which the frame draws without them. */
+   on the selected row, which the frame draws without them. Hidden, they
+   are zero wide rather than not rendered: Tab from the name blurs it
+   before it focuses Hide, and a button that stops rendering in between
+   drops the focus to the page. */
 .sp-layer__aids {
   display: flex;
   flex: none;
@@ -844,12 +847,16 @@
   gap: var(--space-2);
 }
 .sp-layer__aids > .ui-iconbtn {
-  display: none;
+  width: 0;
+  overflow: hidden;
+  opacity: 0;
 }
 .sp-layer:hover .sp-layer__aids > .ui-iconbtn,
 .sp-layer:has(:focus-visible) .sp-layer__aids > .ui-iconbtn,
 .sp-layer__aids > .ui-iconbtn[aria-pressed="true"] {
-  display: inline-flex;
+  width: var(--size-control-sm);
+  overflow: visible;
+  opacity: 1;
 }
 .sp-layer__fixed {
   color: var(--text-primary);

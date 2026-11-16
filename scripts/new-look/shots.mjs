@@ -71,6 +71,12 @@ async function openRowMenuItem(page, item) {
   await page.getByRole("menuitem", { name: item }).click();
 }
 
+/** The editor is open on the fixture's first template: select a layer by
+ * its name in the Layers list. */
+async function selectLayer(page, name) {
+  await page.getByRole("button", { name, exact: true }).first().click();
+}
+
 /** New template is open (the list, from /template-builder/new): choose a
  * way to start. */
 async function chooseStartPath(page, label) {
@@ -165,6 +171,53 @@ const ROUTES = [
     { act: (page) => openRowMenuItem(page, "Make another size") },
   ],
   ["builder-editor", `/template-builder/${firstTemplate}`],
+  // The editor's states (new brand, Phase 6b): an element selected, on
+  // Design and on Field, an image, Preview, then Publish and Template
+  // published.
+  [
+    "builder-editor-text",
+    `/template-builder/${firstTemplate}`,
+    { act: (page) => selectLayer(page, "Headline") },
+  ],
+  [
+    "builder-editor-field",
+    `/template-builder/${firstTemplate}`,
+    {
+      act: async (page) => {
+        await selectLayer(page, "Headline");
+        await page.getByRole("tab", { name: "Field" }).click();
+      },
+    },
+  ],
+  [
+    "builder-editor-image",
+    `/template-builder/${firstTemplate}`,
+    { act: (page) => selectLayer(page, "Product image") },
+  ],
+  [
+    "builder-editor-preview",
+    `/template-builder/${firstTemplate}`,
+    { act: (page) => page.getByRole("radio", { name: "Preview" }).click() },
+  ],
+  [
+    "builder-editor-publish",
+    `/template-builder/${firstTemplate}`,
+    { act: (page) => page.getByRole("button", { name: "Publish", exact: true }).click() },
+  ],
+  [
+    "builder-editor-published",
+    `/template-builder/${firstTemplate}`,
+    {
+      act: async (page) => {
+        await page.getByRole("button", { name: "Publish", exact: true }).click();
+        await page
+          .getByRole("dialog", { name: "Publish template" })
+          .getByRole("button", { name: /^Publish/ })
+          .click();
+        await page.getByRole("dialog", { name: "Template published" }).waitFor();
+      },
+    },
+  ],
   // New template and the dialogs after it (new brand, Phase 6a). The dev
   // backend stands in for a workspace with Figma and Canva connected, so
   // the dialogs draw what their frames show. /template-builder/new with
