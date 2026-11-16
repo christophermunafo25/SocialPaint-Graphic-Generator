@@ -359,15 +359,15 @@ export function GenerateChat({
   });
 
   // ── The thread ─────────────────────────────────────────────────────────
-  const { scrollRef, columnRef, columnWidth, follow, preserve } = useThreadScroll(threadLayout);
+  const { scrollRef, columnRef, follow, preserve } = useThreadScroll(threadLayout);
   const fades = useScrollFades(scrollRef);
   // The thread as of the last render, for callbacks that stay stable (the
   // turns are memoized on them) but act on the current drafts.
   const threadRef = useRef(thread);
   threadRef.current = thread;
   const titleId = useId();
-  // Which draft's caption each turn shows, by turn id.
-  const [captionPicks, setCaptionPicks] = useState<Record<string, string>>({});
+  // Which draft each turn's Result card shows, by turn id.
+  const [draftPicks, setDraftPicks] = useState<Record<string, string>>({});
   // The editor panel, while it is open.
   const [editor, setEditor] = useState<EditorState | null>(null);
   // A template chat's Public link dialog (admins), as the fill page has it.
@@ -557,7 +557,7 @@ export function GenerateChat({
     autoBuilt.current = null;
     setPlatform(undefined);
     setVariations(undefined);
-    setCaptionPicks({});
+    setDraftPicks({});
     setEditor(null);
     requestComposerFocus();
   }, [reset]);
@@ -613,10 +613,14 @@ export function GenerateChat({
     [navigate],
   );
 
-  const onCaptionSelect = useCallback(
-    (turnId: string, draftId: string) => setCaptionPicks((p) => ({ ...p, [turnId]: draftId })),
-    [],
-  );
+  /** A draft picked on a turn's Result card, or in the editor open on that
+   * turn: the card and the editor show the same one. */
+  const pickDraft = useCallback((turnId: string, draftId: string) => {
+    setDraftPicks((p) => ({ ...p, [turnId]: draftId }));
+    setEditor((current) =>
+      current && current.turnId === turnId ? { ...current, draftId } : current,
+    );
+  }, []);
 
   // ── The editor (frame 06, §8.5, §9.5) ──────────────────────────────────
   // It opens on a draft from its preview's Edit overlay, and on one field
@@ -860,9 +864,13 @@ export function GenerateChat({
     };
   }, [sheet]);
 
+  // The editor's switch moves the card's with it.
+  const editorTurnKey = editor?.turnId ?? null;
   const selectDraft = useCallback(
-    (draftId: string) => setEditor((current) => current && { ...current, draftId }),
-    [],
+    (draftId: string) => {
+      if (editorTurnKey) pickDraft(editorTurnKey, draftId);
+    },
+    [editorTurnKey, pickDraft],
   );
   const editorTurnId = editorTurn?.id ?? null;
   const editDrafts = useCallback(
@@ -954,6 +962,25 @@ export function GenerateChat({
       });
     },
     [download, openEditor, templateRef, kit, measure],
+  );
+  // A Result card's own Download: every draft the turn made, one export at
+  // a time. A draft with a gap opens the editor on it instead, as its own
+  // Download would, and nothing exports until it is filled.
+  const downloadTurn = useCallback(
+    (turnId: string) => {
+      const current = threadRef.current;
+      const turn = current.turns.find((t) => t.id === turnId);
+      if (!turn || !isAssistantTurn(turn)) return;
+      const photo = turnPhoto(current, turn);
+      const drafts = turn.drafts.filter((d) => d.schema);
+      const blocked = drafts.find((d) => missingFields(d, previewValues(d, photo)).length > 0);
+      if (blocked) {
+        downloadDraft(turnId, blocked.id);
+        return;
+      }
+      for (const d of drafts) void download(d, previewValues(d, photo));
+    },
+    [download, downloadDraft],
   );
   useEffect(() => {
     if (!downloadError) return;
@@ -1276,19 +1303,18 @@ export function GenerateChat({
                         canRetry={
                           turn.phase === "error" && !running && (turn === lastTurn || !full)
                         }
-                        cardSize={editorOpen ? "compact" : "regular"}
                         selectedDraftId={
                           turn === editorTurn && selectedDraft ? selectedDraft.id : null
                         }
                         busyDraftId={
                           busyId && turn.drafts.some((d) => d.id === busyId) ? busyId : null
                         }
-                        maxWidth={columnWidth}
-                        captionDraftId={captionPicks[turn.id]}
-                        onCaptionSelect={onCaptionSelect}
+                        pickedDraftId={draftPicks[turn.id]}
+                        onPickDraft={pickDraft}
                         registerPreview={registerPreview}
                         onEditDraft={openDraftEditor}
                         onDownloadDraft={downloadDraft}
+                        onDownloadAll={downloadTurn}
                         onTryNext={onTryNext}
                         onRetry={onRetry}
                         onFillIn={onFillIn}

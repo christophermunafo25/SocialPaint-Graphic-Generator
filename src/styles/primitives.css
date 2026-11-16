@@ -1522,55 +1522,85 @@ button.ui-detail-tag__value {
   outline: 2px solid transparent;
 }
 
-/* ── Result card (104:602) ── */
+/* ── Result card (2216:287): 12 in and 16 between its rows, on
+   surface/raised with a border/raised hairline at radius/xl, under
+   Elevation/1. ── */
 .ui-result-card {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  padding: var(--space-2xs);
-  border-radius: var(--radius-card);
+  gap: var(--space-16);
+  width: 100%;
+  padding: var(--space-12);
+  border: var(--stroke-hairline) solid var(--border-raised);
+  border-radius: var(--radius-xl);
   background: var(--surface-raised);
-  box-shadow: var(--elevation-small);
-  color: var(--text-strong);
+  box-shadow: var(--elevation-1-raised);
+  color: var(--text-primary);
 }
-.ui-result-card > .ui-preview {
-  border-radius: var(--radius-media-plate);
-}
-/* The whole preview opens the editor, not only the Edit circle: the
-   button's hit area covers the well (the overlay still draws on hover and
-   focus). */
-.ui-result-card .ui-preview__edit::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-}
-/* The card the editor is open on (Generate · Edit 13:3150): a 0.75
-   outline in text/strong on the card's edge. */
-.ui-result-card[data-selected] {
-  box-shadow:
-    var(--elevation-small),
-    inset 0 0 0 0.75px var(--text-strong);
-}
-.ui-result-card__meta {
+/* The switch on the left; the size, Edit and Download 8 apart on the
+   right. */
+.ui-result-card__top {
   display: flex;
   align-items: center;
-  gap: var(--space-2xs);
-  padding: var(--space-sm) var(--space-2xs) var(--space-2xs);
+  justify-content: space-between;
+  gap: var(--space-12);
+  min-height: var(--size-control-md);
 }
-.ui-result-card__text {
-  flex: 1;
-  min-width: 0;
+.ui-result-card__tools {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-8);
+}
+.ui-result-card__meta {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+/* The stage: 340 tall, 16 in, radius/md on surface/field. A size container,
+   so the artwork fits it in CSS. */
+.ui-result-card__stage {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 340px; /* as drawn */
+  padding: var(--space-16);
+  border-radius: var(--radius-md);
+  background: var(--surface-field);
+  container-type: size;
+}
+.ui-result-card__art {
+  position: relative;
+  flex-shrink: 0;
+  aspect-ratio: var(--fit-ratio);
+  width: min(100cqw, 100cqh * var(--fit-ratio));
+  overflow: hidden;
+}
+.ui-result-card__overscan {
+  position: absolute;
+  inset: -1px;
+}
+.ui-result-card__caption {
+  margin: 0;
+  white-space: pre-wrap;
+}
+/* Copy caption on the left, the card's Download on the right. */
+.ui-result-card__foot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+.ui-result-card__download,
+.ui-result-card__foot[data-spread] > :last-child {
+  margin-left: auto;
+}
+/* Two lines 8 apart in a 30 box, as tall as two lines of Body/M. */
+.ui-result-card__lines {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3xs);
-}
-.ui-result-card__size {
-  color: var(--text-secondary);
-}
-.ui-result-card__text > span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  gap: var(--space-8);
+  padding-block: 1px; /* as drawn */
 }
 
 /* ── Look tile (104:996) ── */
@@ -2207,14 +2237,16 @@ button.ui-detail-tag__value {
   list-style: none;
 }
 
-/* ── Assistant message (61:532) ── */
+/* ── Assistant message (new brand, 13:2985): the mark, then the message
+   16 under it in Body/L; what the message brings (progress, the Result
+   card, Try next) follows 24 apart, as the thread spaces its rows. ── */
 .ui-assistant {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--space-sm);
+  gap: var(--space-16);
   min-width: 0;
-  color: var(--text-strong);
+  color: var(--text-primary);
 }
 .ui-assistant__message {
   margin: 0;
@@ -2223,9 +2255,10 @@ button.ui-detail-tag__value {
 .ui-assistant__content {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: var(--space-24);
   width: 100%;
   min-width: 0;
+  margin-top: var(--space-8);
 }
 
 /* ── Option tile (257:4145) and its groups ───────────────────────────────────

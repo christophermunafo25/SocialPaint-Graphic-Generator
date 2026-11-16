@@ -19,7 +19,7 @@ export function MessageBubble({
 }) {
   return (
     <div className="ui-bubble">
-      {children ? <p className="tu-body-l ui-bubble__text">{children}</p> : null}
+      {children ? <p className="t-body-l ui-bubble__text">{children}</p> : null}
       {tags && <div className="ui-bubble__tags">{tags}</div>}
     </div>
   );
@@ -47,7 +47,7 @@ export function AssistantMessage({
     <div className="ui-assistant">
       {mark && <BrandMark width={20} />}
       {message !== undefined && (
-        <p id={messageId} className="tu-body-l ui-assistant__message" role={role}>
+        <p id={messageId} className="t-body-l ui-assistant__message" role={role}>
           {message}
         </p>
       )}
@@ -105,7 +105,7 @@ export function UserMessage({
           {text}
         </MessageBubble>
       )}
-      {note && <p className="tu-caption-m sp-tchat-user__note">{note}</p>}
+      {note && <p className="t-caption-m sp-tchat-user__note">{note}</p>}
     </div>
   );
 }

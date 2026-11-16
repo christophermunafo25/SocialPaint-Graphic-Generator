@@ -4,29 +4,97 @@ import { Link } from "lucide-react";
 import React, { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { Modal, Progress, ProgressBar } from "./Containers";
-import { LookTile, PreviewOverlay, ResultCard } from "./Previews";
+import {
+  LookTile,
+  PreviewOverlay,
+  ResultCard,
+  ResultCardArt,
+  ResultCardSkeleton,
+} from "./Previews";
 
-describe("PreviewOverlay and ResultCard", () => {
-  it("names the Edit and Download buttons and runs them", async () => {
+describe("ResultCard", () => {
+  const sizes = [
+    { id: "ig", label: "Instagram" },
+    { id: "li", label: "LinkedIn" },
+  ];
+
+  it("switches between its drafts and runs Edit, Download and its own Download", async () => {
+    const onSelect = vi.fn();
     const onEdit = vi.fn();
     const onDownload = vi.fn();
+    const onDownloadAll = vi.fn();
     render(
       <ResultCard
-        title="Now hiring"
+        sizes={sizes}
+        selectedId="ig"
+        onSelect={onSelect}
+        sizesLabel="Variations"
         meta="1080 × 1350"
-        preview={<div />}
+        art={<ResultCardArt ratio={0.8}>art</ResultCardArt>}
         onEdit={onEdit}
         editLabel="Edit Now hiring"
+        selected
         onDownload={onDownload}
         downloadLabel="Download Now hiring"
+        caption="Come paint with us"
+        downloadAll={{ label: "Download both", onClick: onDownloadAll }}
       />,
     );
-    await userEvent.click(screen.getByRole("button", { name: "Edit Now hiring" }));
+    const group = screen.getByRole("radiogroup", { name: "Variations" });
+    expect(group).toBeTruthy();
+    await userEvent.click(screen.getByRole("radio", { name: "LinkedIn" }));
+    expect(onSelect).toHaveBeenCalledWith("li");
+    const edit = screen.getByRole("button", { name: "Edit Now hiring" });
+    expect(edit.getAttribute("aria-current")).toBe("true");
+    await userEvent.click(edit);
     await userEvent.click(screen.getByRole("button", { name: "Download Now hiring" }));
+    await userEvent.click(screen.getByRole("button", { name: "Download both" }));
     expect(onEdit).toHaveBeenCalled();
     expect(onDownload).toHaveBeenCalled();
+    expect(onDownloadAll).toHaveBeenCalled();
+    expect(screen.getByText("1080 × 1350")).toBeTruthy();
+    expect(screen.getByText("Come paint with us")).toBeTruthy();
   });
 
+  it("shows no switch for one draft, and a busy Download takes no click", async () => {
+    const onDownloadAll = vi.fn();
+    render(
+      <ResultCard
+        sizes={[sizes[0]]}
+        selectedId="ig"
+        onSelect={() => {}}
+        meta="1080 × 1350"
+        art={null}
+        downloadAll={{ label: "Download", onClick: onDownloadAll, busy: true }}
+      />,
+    );
+    expect(screen.queryByRole("radiogroup")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Copy caption" })).toBeNull();
+    const download = screen.getByRole("button", { name: "Download" });
+    expect(download.getAttribute("aria-busy")).toBe("true");
+    await userEvent.click(download);
+    expect(onDownloadAll).not.toHaveBeenCalled();
+  });
+
+  it("copies the caption and says so", async () => {
+    const user = userEvent.setup();
+    const writeText = vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue();
+    render(<ResultCard meta="1080 × 1350" art={null} caption="Come paint with us" />);
+    await user.click(screen.getByRole("button", { name: "Copy caption" }));
+    expect(writeText).toHaveBeenCalledWith("Come paint with us");
+    expect(screen.getByRole("status").textContent).toBe("Caption copied");
+    writeText.mockRestore();
+  });
+
+  it("draws its Loading state as decoration", () => {
+    const { container } = render(<ResultCardSkeleton />);
+    const card = container.firstElementChild as HTMLElement;
+    expect(card.getAttribute("aria-hidden")).toBe("true");
+    expect(card.dataset.state).toBe("loading");
+  });
+});
+
+describe("PreviewOverlay", () => {
   it("has no Edit button without onEdit", () => {
     render(<PreviewOverlay>preview</PreviewOverlay>);
     expect(screen.queryByRole("button")).toBeNull();
