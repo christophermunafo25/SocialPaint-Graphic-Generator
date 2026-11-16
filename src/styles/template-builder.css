@@ -155,3 +155,248 @@
   padding-block: 0.3em;
   margin-block: -0.3em;
 }
+
+/* ── Starting a template (New template 329:2660 and the dialogs after it:
+   Choose a size 329:2970, Import from Figma 329:3710, Auto build 329:3981
+   and its steps 329:4286) ────────────────────────────────────────────── */
+
+/* The 520 dialogs: 24 around and 20 under the header, where the
+   primitive's 24 is the confirmations'. */
+.ui-modal.sp-tb-dialog {
+  width: 520px; /* as drawn */
+  gap: var(--space-20);
+}
+/* What a dialog holds, its actions last: 12 apart. */
+.sp-tb-dialog__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+/* Auto build's source: the segments share the dialog's width. */
+.sp-tb-dialog__source {
+  display: flex;
+  width: 100%;
+}
+.sp-tb-dialog__source > * {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.sp-tb-dialog__note {
+  margin: 0;
+  color: var(--text-secondary);
+}
+/* A build's steps run the dialog's width (329:4286). */
+.sp-tb-dialog .ui-progress {
+  width: 100%;
+}
+/* The note is the one thing in its field's place; Auto build's text area
+   takes the primitive's 96 and grows with what is typed. */
+.sp-tb-dialog .ui-input[data-size="multiline"] {
+  field-sizing: content;
+  min-height: 96px; /* as drawn */
+  resize: none;
+}
+
+/* New template's four paths: Option Tiles (257:4145) drawn as actions, 12
+   apart. Raised on a hairline at radius/md, 12 by 16 inside; hover lays
+   state/hover over the surface, as the component draws it. */
+.sp-new-paths {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+.sp-new-path {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  width: 100%;
+  padding: var(--space-12) var(--space-16);
+  border: var(--stroke-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  --_fill: var(--surface-raised);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+.sp-new-path:disabled {
+  cursor: default;
+}
+.sp-new-path__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+}
+.sp-new-path__description {
+  color: var(--text-secondary);
+}
+
+/* ── Choose a size (329:2970): 1040 wide. The categories, 200, and the
+   sizes, 24 apart; over the covers the platform chips and the round
+   search, 16 above them. It holds one height, three rows of covers (the
+   most a category fills), so it never jumps between categories. ── */
+.ui-modal.sp-size-dialog {
+  width: 1040px; /* as drawn */
+  height: min(686px, calc(100vh - 2 * var(--space-32)));
+  gap: var(--space-20);
+  overflow: hidden;
+}
+.sp-size {
+  display: flex;
+  flex: 1;
+  gap: var(--space-24);
+  min-height: 0;
+}
+.sp-size__categories {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 200px; /* as drawn */
+}
+.sp-size__main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+  min-height: 0;
+}
+/* The chips, then the search at the end, 8 apart. The chips' rail fades to
+   the dialog's surface. */
+.sp-size__filters {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+.sp-size__chips {
+  flex: 1;
+}
+.sp-size__chips::after {
+  background: linear-gradient(to right, transparent, var(--surface-raised));
+}
+/* The covers scroll under the filters, with room inside for the focus ring
+   that a scroller would clip. */
+.sp-size__scroll {
+  flex: 1;
+  min-height: 0;
+  margin: calc(-1 * var(--space-4));
+  padding: var(--space-4);
+  overflow-y: auto;
+}
+.sp-size__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--space-16);
+}
+.sp-size__empty,
+.sp-size__error {
+  margin: auto;
+}
+
+/* A size (329:3372): its cover on a 4:3 plate, then the name over the
+   dimensions, 8 apart. */
+.sp-size-cover {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+.sp-size-cover:disabled {
+  cursor: default;
+}
+.sp-size-cover__plate {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+}
+.sp-size-cover__plate > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* Hover lays state/hover over the cover. */
+.sp-size-cover__plate::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.sp-size-cover:not(:disabled):hover .sp-size-cover__plate::after {
+  background: var(--state-hover);
+}
+.sp-size-cover:not(:disabled):active .sp-size-cover__plate::after {
+  background: var(--state-pressed);
+}
+.sp-size-cover__text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+}
+.sp-size-cover__name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+}
+.sp-size-cover__dims {
+  color: var(--text-secondary);
+}
+.sp-size-cover__label,
+.sp-size-cover__dims {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-block: 0.3em;
+  margin-block: -0.3em;
+}
+
+/* Custom size: the two sides with the aspect link between them, what they
+   make, and the button, 12 apart. */
+.sp-size-custom {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  max-width: 400px;
+}
+.sp-size-custom__sides {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-8);
+}
+.sp-size-custom__sides > .ui-field {
+  flex: 1;
+  min-width: 0;
+}
+.sp-size-custom__verdict {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+/* Narrower than the dialog's two columns: the categories run across the
+   top as a row that scrolls. */
+@media (max-width: 767px) {
+  .sp-size {
+    flex-direction: column;
+    gap: var(--space-16);
+  }
+  .sp-size__categories {
+    flex-direction: row;
+    width: auto;
+    overflow-x: auto;
+  }
+  .sp-size__categories > .ui-nav-item {
+    width: auto;
+    flex: none;
+  }
+}

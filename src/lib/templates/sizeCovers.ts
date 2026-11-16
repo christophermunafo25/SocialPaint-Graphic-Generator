@@ -1,28 +1,36 @@
-/** Cover art for the size gallery. Files in src/assets/sizes/ are named by
- *  SIZE_CATALOG id, so a dropped file wires itself up with zero code changes
- *  — and the colocated test fails CI on a filename that matches no catalogue
- *  id, rather than letting a misspelling silently never render.
+import fallbackCover from "@/assets/sizes/fallback.webp";
+
+/** Cover art for Choose a size (new brand, the Size Cover components beside
+ *  327:1985). Files in src/assets/sizes/ are named by SIZE_CATALOG id, so a
+ *  dropped file wires itself up with no code change, and the colocated test
+ *  fails CI on a filename that matches no catalogue id rather than letting a
+ *  misspelling silently never render. fallback.webp, the file's twelfth
+ *  cover, stands in for every size without its own.
  *
- *  Inlined (?raw), never <img>: an SVG in its own document can only see
- *  prefers-color-scheme, so a manual light/dark override in the app
- *  (colorScheme.tsx) would leave the mock inverted. Inline, the app's
- *  --cover-* tokens win over each file's own fallbacks. */
-const covers = import.meta.glob("/src/assets/sizes/*.svg", {
+ *  The covers are photographs on their own grounds, the same in both
+ *  themes, so they load as images (WebP, exported from the file at 1x). */
+const covers = import.meta.glob(["/src/assets/sizes/*.webp", "!/src/assets/sizes/fallback.webp"], {
   eager: true,
-  query: "?raw",
+  query: "?url",
   import: "default",
 }) as Record<string, string>;
 
 const byId = new Map(
-  Object.entries(covers).map(([path, svg]) => {
+  Object.entries(covers).map(([path, url]) => {
     const file = path.split("/").pop() ?? path;
-    return [file.replace(/\.svg$/, ""), svg];
+    return [file.replace(/\.webp$/, ""), url];
   }),
 );
 
 /** Every size id that shipped with cover art, sorted for stable assertions. */
 export const coverIds = (): string[] => [...byId.keys()].sort();
 
-/** The raw SVG markup for one size's cover, or undefined — the gallery then
- *  draws its proportional outline fallback on the same plate. */
-export const coverFor = (sizeId: string): string | undefined => byId.get(sizeId);
+/** Whether a size has a cover of its own. */
+export const hasCover = (sizeId: string): boolean => byId.has(sizeId);
+
+/** The cover's URL for one size, or the fallback cover for a size without
+ *  its own. */
+export const coverFor = (sizeId: string): string => byId.get(sizeId) ?? fallbackCover;
+
+/** The fallback cover's URL. */
+export const FALLBACK_COVER: string = fallbackCover;

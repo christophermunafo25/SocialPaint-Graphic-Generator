@@ -708,13 +708,27 @@ export class LocalGenerateProvider implements GenerateProvider {
   }
 }
 
+/** The screenshot run's stand-in for a workspace with Figma and Canva
+ * connected (new brand, Phase 6a): sessionStorage "sp-dev-design-import"
+ * set to "connected" makes the dev backend say so, so New template and the
+ * import dialogs draw what their frames show. The imports themselves still
+ * need the Supabase backend; a dev stall holds one in progress. */
+function devImportConnected(): boolean {
+  if (!import.meta.env.DEV) return false;
+  try {
+    return sessionStorage.getItem("sp-dev-design-import") === "connected";
+  } catch {
+    return false;
+  }
+}
+
 export class LocalDesignImportProvider implements DesignImportProvider {
   readonly providers: import("../../types").DesignSourceKind[] = [];
   isConfigured(): boolean {
-    return false;
+    return devImportConnected();
   }
   async isConnected(): Promise<boolean> {
-    return false;
+    return devImportConnected();
   }
   async connect(): Promise<void> {
     throw new Error("Figma integration requires the Supabase backend (see .env.example).");
@@ -732,7 +746,8 @@ export class LocalDesignImportProvider implements DesignImportProvider {
     throw new Error("Figma integration requires the Supabase backend (see .env.example).");
   }
   async canvaStatus(): Promise<{ enabled: boolean; connected: boolean }> {
-    return { enabled: false, connected: false };
+    const connected = devImportConnected();
+    return { enabled: connected, connected };
   }
   /** Nothing to report: the Integrations section checks isConfigured() first
    * and explains the dev backend instead of rendering these rows. */

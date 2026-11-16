@@ -16,13 +16,19 @@ import { builderUsageLine } from "@/lib/templates/builderMeta";
 import { buildSearchIndex, searchTemplates } from "@/lib/templates/searchIndex";
 import { versionName } from "@/lib/templates/reflow";
 import type { CanvasSize } from "@/lib/templates/platforms";
-import { CanvasSizePicker } from "../builder/CanvasSizePicker";
+import type { AutoBuildResult, DesignImportResult } from "@/lib/types";
 import { ErrorState } from "../ErrorState";
+import { AutoBuildDialog } from "../builder/AutoBuildDialog";
+import { CanvaImportDialog } from "../builder/CanvaImportDialog";
+import { FigmaImportDialog } from "../builder/FigmaImportDialog";
+import { NewTemplateDialog, type StartPath } from "../builder/NewTemplateDialog";
+import { ChooseSizeDialog, type SizesState } from "../builder/SizeGallery";
+import { handOffStart, takeNewTemplateRequest, type BuilderStart } from "../builder/startHandoff";
+import { BUILDER_MIN_VIEWPORT_PX, useViewportAtLeast } from "../builder/useViewportAtLeast";
 import { BuilderTemplateCard, BuilderTemplateCardSkeleton } from "./BuilderTemplateCard";
 import {
   Button,
   EmptyState,
-  Modal,
   PageHeader,
   SegmentedControl,
   Select,
@@ -33,10 +39,16 @@ import {
 type StatusFilter = "all" | "published" | "draft";
 type SortKey = "recent" | "name" | "downloads";
 
+/** Where New template has got to: its own dialog, then Choose a size or
+ * one import's dialog. */
+type StartStep = "new" | "size" | "figma" | "build" | "canva";
+
 /** The Template Builder list (new brand, 328:1944): drafts and published
  * templates under the status switch, the sort and the search, each card
  * with its usage line and its row menu (329:2206): Edit, Duplicate, Make
- * another size, then Publish or Unpublish, and Delete. */
+ * another size, then Publish or Unpublish, and Delete. New template starts
+ * here (329:2660 and the dialogs after it) and hands its result to the
+ * builder (startHandoff). */
 export function AdminTemplates() {
   const { company } = useAuth();
   const { navigate } = useRouter();
@@ -163,13 +175,66 @@ export function AdminTemplates() {
     }
   };
 
-  /** Template whose "Create a version for…" picker is open. */
+  /** Template whose Make another size is open (Choose a size). */
   const [versionFor, setVersionFor] = useState<TemplateSchema | null>(null);
-  // The workspace's enabled sizes, for the version picker.
+  // The workspace's enabled sizes, for Choose a size.
   const sizesState = useAsync<CanvasSize[]>(
     () => (company ? stores.companies.listCanvasSizes(company.id) : Promise.resolve([])),
     [company],
   );
+  const sizes: SizesState =
+    sizesState.status === "ready"
+      ? { status: "ready", sizes: sizesState.data }
+      : sizesState.status === "error"
+        ? { status: "error", retry: sizesState.retry }
+        : { status: "loading" };
+
+  // New template (329:2660). The builder works from 1024 wide; narrower,
+  // New template goes straight to it, which says so, rather than through
+  // dialogs whose result it couldn't open.
+  const viewportOk = useViewportAtLeast(BUILDER_MIN_VIEWPORT_PX);
+  const [startStep, setStartStep] = useState<StartStep | null>(null);
+  const newButton = useRef<HTMLButtonElement>(null);
+  const openNewTemplate = () =>
+    viewportOk ? setStartStep("new") : navigate({ name: "builder", templateId: null });
+  // The builder, opened on /template-builder/new with nothing to start
+  // from, sends New template back here.
+  useEffect(() => {
+    if (takeNewTemplateRequest()) setStartStep("new");
+  }, []);
+  // The imports need the Supabase backend. Import from Canva shows once
+  // the workspace has Canva; whether it's connected is its dialog's to say.
+  const importReady = stores.designImport.isConfigured();
+  const [canvaEnabled, setCanvaEnabled] = useState(false);
+  useEffect(() => {
+    if (!company || !importReady) return;
+    let cancelled = false;
+    stores.designImport
+      .canvaStatus(company.id)
+      .then((s) => !cancelled && setCanvaEnabled(s.enabled))
+      .catch(() => !cancelled && setCanvaEnabled(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [company, importReady]);
+  /** Where Choose a size and Delete hand focus back as they close: New
+   * template, or the row menu they came from (its item is gone by then). */
+  const dialogReturn = useRef<HTMLElement | null>(null);
+  const fromOpenRowMenu = () => {
+    dialogReturn.current = document.querySelector<HTMLElement>(
+      '.sp-tbcard .ui-rowmenu[aria-expanded="true"]',
+    );
+  };
+  const choosePath = (path: StartPath) => {
+    dialogReturn.current = newButton.current;
+    setStartStep(path === "blank" ? "size" : path);
+  };
+  /** Hand the start to the builder and open it. */
+  const startWith = (start: BuilderStart) => {
+    handOffStart(start);
+    navigate({ name: "builder", templateId: null });
+  };
+  const closeStart = () => setStartStep(null);
 
   /** Create a version for another platform: duplicate — the original is
    * never touched — then open the copy with the reflow handoff so the
@@ -247,7 +312,10 @@ export function AdminTemplates() {
           label: "Make another size",
           icon: Frame,
           movesFocus: true,
-          onSelect: () => setVersionFor(t),
+          onSelect: () => {
+            fromOpenRowMenu();
+            setVersionFor(t);
+          },
         },
       ],
     },
@@ -256,7 +324,15 @@ export function AdminTemplates() {
         t.status === "published"
           ? { label: "Unpublish", icon: EyeOff, onSelect: () => void toggleStatus(t) }
           : { label: "Publish", icon: Eye, onSelect: () => void toggleStatus(t) },
-        { label: "Delete", icon: Trash2, movesFocus: true, onSelect: () => setDeleting(t) },
+        {
+          label: "Delete",
+          icon: Trash2,
+          movesFocus: true,
+          onSelect: () => {
+            fromOpenRowMenu();
+            setDeleting(t);
+          },
+        },
       ],
     },
   ];
@@ -275,11 +351,7 @@ export function AdminTemplates() {
           >
             {restoring ? "Restoring…" : "Restore starters"}
           </Button>
-          <Button
-            kind="primary"
-            icon={Plus}
-            onClick={() => navigate({ name: "builder", templateId: null })}
-          >
+          <Button ref={newButton} kind="primary" icon={Plus} onClick={openNewTemplate}>
             New template
           </Button>
         </>
@@ -300,29 +372,58 @@ export function AdminTemplates() {
         title={`Delete template "${deleting?.name ?? ""}"?`}
         description="This cannot be undone."
         confirmLabel="Delete template"
+        returnFocus={dialogReturn}
         onCancel={() => setDeleting(null)}
         onConfirm={() => void confirmDelete()}
       />
-      <Modal
-        open={versionFor !== null}
-        onOpenChange={(next) => !next && setVersionFor(null)}
-        title="Create a version for…"
-        wide
-      >
-        {versionFor && (
-          <>
-            <p className="tu-body-m sp-st-confirm__body">
-              "{versionFor.name}" stays untouched. The version lands as a reflowed draft copy you
-              review in the builder.
-            </p>
-            <CanvasSizePicker
-              sizes={sizesState.status === "ready" ? sizesState.data : []}
-              value={{ width: versionFor.canvasWidth, height: versionFor.canvasHeight }}
-              onPick={(next) => void createVersion(versionFor, next)}
-            />
-          </>
-        )}
-      </Modal>
+      <NewTemplateDialog
+        open={startStep === "new"}
+        onOpenChange={(next) => !next && closeStart()}
+        importReady={importReady}
+        canvaEnabled={canvaEnabled}
+        onChoose={choosePath}
+      />
+      {/* Choose a size: a blank template's size, or a template's other
+          size (Make another size), which marks its own. */}
+      <ChooseSizeDialog
+        open={startStep === "size" || versionFor !== null}
+        onOpenChange={(next) => {
+          if (next) return;
+          closeStart();
+          setVersionFor(null);
+        }}
+        state={sizes}
+        current={
+          versionFor ? { width: versionFor.canvasWidth, height: versionFor.canvasHeight } : null
+        }
+        onPick={(size) =>
+          versionFor ? void createVersion(versionFor, size) : startWith({ kind: "blank", size })
+        }
+        returnFocus={dialogReturn}
+      />
+      {startStep === "figma" && (
+        <FigmaImportDialog
+          onClose={closeStart}
+          onImported={(result: DesignImportResult) => startWith({ kind: "import", result })}
+          returnFocus={newButton}
+        />
+      )}
+      {startStep === "build" && (
+        <AutoBuildDialog
+          onClose={closeStart}
+          onBuilt={(result: AutoBuildResult | DesignImportResult) =>
+            startWith({ kind: "build", result })
+          }
+          returnFocus={newButton}
+        />
+      )}
+      {startStep === "canva" && (
+        <CanvaImportDialog
+          onClose={closeStart}
+          onBuilt={(result) => startWith({ kind: "build", result })}
+          returnFocus={newButton}
+        />
+      )}
       <ConfirmDialog
         open={confirmingRestore}
         title="Restore starter templates?"
@@ -384,7 +485,16 @@ export function AdminTemplates() {
           onRetry={templatesState.retry}
         />
       ) : templates.length === 0 ? (
-        <EmptyState icon={Frame} title="Create your first template" className="sp-tb-empty" />
+        <EmptyState
+          icon={Frame}
+          title="Create your first template"
+          action={
+            <Button kind="primary" icon={Plus} onClick={openNewTemplate}>
+              New template
+            </Button>
+          }
+          className="sp-tb-empty"
+        />
       ) : visible.length === 0 ? (
         <EmptyState
           icon={query.trim() ? Search : Frame}

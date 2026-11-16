@@ -14,6 +14,9 @@ interface ConfirmProps {
   /** Focus lands on Cancel when it opens, so a reflexive Enter cancels
    * (ConfirmDialog's default). */
   focusCancel?: boolean;
+  /** Where focus goes when it closes, when what opened it is gone by then
+   * (a row menu's item). */
+  returnFocus?: React.RefObject<HTMLElement | null>;
   onCancel(): void;
   onConfirm(): void;
 }
@@ -29,6 +32,7 @@ export function ConfirmModal({
   destructive = true,
   busy = false,
   focusCancel = false,
+  returnFocus,
   onCancel,
   onConfirm,
 }: ConfirmProps) {
@@ -38,6 +42,7 @@ export function ConfirmModal({
       open={open}
       onOpenChange={(next) => !next && onCancel()}
       title={title}
+      returnFocus={returnFocus}
       onOpenAutoFocus={
         focusCancel
           ? (e) => {

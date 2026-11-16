@@ -23,7 +23,6 @@ import {
   Type,
   Undo2,
   Upload,
-  X,
 } from "lucide-react";
 import type {
   AutoBuildMeta,
@@ -164,9 +163,8 @@ import type { CanvasSize } from "@/lib/templates/platforms";
 import { rescaleTemplate, sameAspect, type RescaleWarning } from "@/lib/templates/rescale";
 import { reflowTemplate, versionName } from "@/lib/templates/reflow";
 import { CanvasSizePicker } from "./CanvasSizePicker";
-import { BuildPicker } from "./BuildPicker";
-import { CanvaImportDialog } from "./CanvaImportDialog";
-import { SizeGallery } from "./SizeGallery";
+import { clearStart, peekStart, requestNewTemplate, type BuilderStart } from "./startHandoff";
+import { BUILDER_MIN_VIEWPORT_PX, useViewportAtLeast } from "./useViewportAtLeast";
 import { BackgroundReflowDialog } from "./BackgroundReflowDialog";
 import { ShortcutsPanel } from "./ShortcutsPanel";
 import { AlignControls } from "./AlignControls";
@@ -181,11 +179,6 @@ import {
 } from "./alignOps";
 import { GroupInspector } from "./GroupInspector";
 import { roleFace } from "@/lib/brand/fontRoles";
-
-/** The builder is a desktop tool: below this width the canvas + inspector
- * layout breaks, so we explain rather than attempt a responsive builder.
- * The member path (Portal / TemplateUsePage) stays fully responsive. */
-const BUILDER_MIN_VIEWPORT_PX = 1024;
 
 /** Rail bounds. The minimums are the narrowest width at which each rail's
  * own content still reads (the palette's two-across tiles; the inspector's
@@ -239,17 +232,6 @@ function savedAgo(savedAt: number, _nowTick: number): string {
   if (mins === 1) return "Saved 1 minute ago";
   if (mins < 60) return `Saved ${mins} minutes ago`;
   return "Saved over an hour ago";
-}
-
-function useViewportAtLeast(px: number): boolean {
-  const [matches, setMatches] = useState(() => window.matchMedia(`(min-width: ${px}px)`).matches);
-  useEffect(() => {
-    const mq = window.matchMedia(`(min-width: ${px}px)`);
-    const onChange = () => setMatches(mq.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, [px]);
-  return matches;
 }
 
 /** A gradient stop persists as #RRGGBB (TextGradient), so a platform
@@ -355,6 +337,10 @@ export function TemplateBuilder({
     histNavRef.current = true;
     redo();
   }, [redo]);
+  /** How a new template starts, chosen on the list and handed over
+   * (startHandoff): read once as the builder opens, taken in the effect
+   * after applyAutoBuild below. */
+  const [handedStart] = useState<BuilderStart | null>(() => (templateId ? null : peekStart()));
   /** True once a creation path was chosen — "Start blank" needs no
    * background, so backgroundUrl alone can't gate the wizard anymore. */
   const [started, setStarted] = useState<boolean>(Boolean(templateId));
@@ -426,41 +412,10 @@ export function TemplateBuilder({
   }, [viewportOk, overrideSidebarCollapsed]);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  /** The editor's own imports: more fields from a Figma frame, and an auto
+   * build over the open template. A new template starts from the list. */
   const [figmaOpen, setFigmaOpen] = useState(false);
-  const [canvaOpen, setCanvaOpen] = useState(false);
   const [autoBuildOpen, setAutoBuildOpen] = useState(false);
-  /** Canva is a start-screen path only once the workspace has connected it;
-   * before that the card would open a dialog that points back at Settings. */
-  const [canvaReady, setCanvaReady] = useState(false);
-  useEffect(() => {
-    if (!company || !stores.designImport.isConfigured()) return;
-    let cancelled = false;
-    stores.designImport
-      .canvaStatus(company.id)
-      .then((s) => {
-        if (!cancelled) setCanvaReady(s.enabled && s.connected);
-      })
-      .catch(() => {
-        if (!cancelled) setCanvaReady(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [company]);
-  /** The blank path's size chooser. Imports never see it — a Figma or Canva
-   * frame imposes its own size. */
-  const [sizeDialogOpen, setSizeDialogOpen] = useState(false);
-  useEffect(() => {
-    if (!sizeDialogOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        setSizeDialogOpen(false);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [sizeDialogOpen]);
   /** Snapshot of the last loaded/saved draft — anything else is unsaved. */
   const savedSnapshotRef = useRef<string>("");
   const [recomposing, setRecomposing] = useState(false);
@@ -515,18 +470,20 @@ export function TemplateBuilder({
   } | null>(null);
 
   useEffect(() => {
-    // A new template defaults to the company's first enabled size; the start
-    // screen's picker changes it from there. Dimensions always flow
-    // size → schema → renderer/export.
-    if (sizesState.status !== "ready" || templateId) return;
+    // A new template with nothing handed over defaults to the company's
+    // first enabled size. A start from the list brings its own size (Choose
+    // a size, or the imported frame's), which this must never overwrite
+    // when the sizes land after it. Dimensions always flow size → schema →
+    // renderer/export.
+    if (sizesState.status !== "ready" || templateId || handedStart) return;
     const first = sizesState.data[0];
     // Baseline, not an edit: establishing the canvas must not be undoable.
     if (first)
       resetHistory((d) => ({ ...d, canvasWidth: first.width, canvasHeight: first.height }));
-  }, [sizesState, templateId, resetHistory]);
+  }, [sizesState, templateId, handedStart, resetHistory]);
 
-  /** Start-screen size pick. Same baseline rule as the default above —
-   * establishing the canvas is not an undoable edit. */
+  /** A blank start's size, from Choose a size. Same baseline rule as the
+   * default above — establishing the canvas is not an undoable edit. */
   const pickCreationSize = useCallback(
     (next: { width: number; height: number }) =>
       resetHistory((d) => ({ ...d, canvasWidth: next.width, canvasHeight: next.height })),
@@ -2433,6 +2390,41 @@ export function TemplateBuilder({
     if (notes.length) setError(notes.join(" "));
   };
 
+  /** Take the start the list handed over, once, as the builder opens at a
+   * width it works at: a blank canvas at the chosen size, or the import or
+   * auto build's result, landed as the editor lands its own. Opened on
+   * /template-builder/new with nothing handed over (a reload, an old
+   * link), it goes back to the list with New template open. */
+  const startTaken = useRef(false);
+  useEffect(() => {
+    if (templateId || startTaken.current || !viewportOk) return;
+    startTaken.current = true;
+    clearStart();
+    if (!handedStart) {
+      requestNewTemplate();
+      navigate({ name: "adminTemplates" }, { replace: true });
+      return;
+    }
+    if (handedStart.kind === "blank") {
+      pickCreationSize(handedStart.size);
+      setStarted(true);
+      goTo("fields");
+      return;
+    }
+    const landing =
+      handedStart.kind === "import"
+        ? applyImport(handedStart.result)
+        : applyAutoBuild(handedStart.result);
+    landing.catch((e) => {
+      console.error("Landing the design failed", e);
+      setError("That design didn't open. Try again from New template.");
+      setStarted(true);
+    });
+    // Once, when the builder first opens wide enough: the handlers close
+    // over this render's draft, which is the empty one a start lands on.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewportOk]);
+
   /** Lift the imported elements OFF the background: re-render the frame
    * without them and swap in the recomposed PNG. On any failure the flat
    * render stays (fields overlay their baked twins).
@@ -2830,6 +2822,8 @@ export function TemplateBuilder({
       </div>
     );
   }
+  // Nothing handed over: the start effect is taking this back to the list.
+  if (!templateId && !handedStart) return null;
   if (templateId && templateState.status === "loading") {
     // An artboard-shaped pulse where the canvas is about to be, so the
     // builder doesn't flash a bare void while the template loads.
@@ -2947,16 +2941,6 @@ export function TemplateBuilder({
 
       {autoBuildOpen && (
         <AutoBuildDialog onClose={() => setAutoBuildOpen(false)} onBuilt={applyAutoBuild} />
-      )}
-
-      {canvaOpen && (
-        <CanvaImportDialog
-          onClose={() => setCanvaOpen(false)}
-          onBuilt={async (result) => {
-            await applyAutoBuild(result);
-            setCanvaOpen(false);
-          }}
-        />
       )}
 
       {figmaOpen && (
@@ -3318,124 +3302,24 @@ export function TemplateBuilder({
       )}
 
       {!sourceChosen ? (
-        /* Source pick: two co-equal creation paths. Spans BOTH grid rows —
-           with no bar above it, staying in the auto row would collapse the
-           region to content height inside the overflow-hidden builder. */
-        <div style={{ gridColumn: "1 / -1", gridRow: "1 / -1", minHeight: 0, overflowY: "auto" }}>
-          {/* The quiet way back, in place of the bar's back button. */}
-          <div style={{ padding: "var(--space-sm) var(--space-md) 0" }}>
-            <button
-              onClick={() => navigate({ name: "adminTemplates" })}
-              className="flex items-center gap-1.5"
-              style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              Templates
-            </button>
-          </div>
-          <div className="mx-auto px-6" style={{ maxWidth: 1040 }}>
-            {error && (
-              <p
-                role="alert"
-                className="px-4 py-3 text-center"
-                data-radius-card
-                style={{
-                  marginTop: "var(--space-md)",
-                  fontSize: "var(--type-caption-size)",
-                  background: "var(--danger-wash)",
-                  color: "var(--destructive)",
-                }}
-              >
-                {error}
-              </p>
-            )}
-            {/* Path A opens the size gallery (imports skip it: the frame
-                imposes its own size); B and C open their link popups; the
-                auto-build dialog keeps its three source tabs. */}
-            <BuildPicker
-              importReady={stores.designImport.isConfigured()}
-              canvaReady={canvaReady}
-              onBlank={() => setSizeDialogOpen(true)}
-              onFigma={() => setFigmaOpen(true)}
-              onAuto={() => setAutoBuildOpen(true)}
-              onCanva={() => setCanvaOpen(true)}
-            />
-          </div>
-
-          {sizeDialogOpen && (
-            <div
-              className="fixed inset-0 z-50 flex items-center justify-center p-6"
-              role="dialog"
-              aria-modal="true"
-              aria-label="Choose a canvas size"
-              style={{ background: "color-mix(in srgb, var(--text-on-accent) 45%, transparent)" }}
-              onClick={() => setSizeDialogOpen(false)}
-            >
-              <div
-                onClick={(e) => e.stopPropagation()}
-                className="w-full overflow-y-auto"
-                style={{
-                  maxWidth: 1040,
-                  maxHeight: "85dvh",
-                  background: "var(--bg-surface)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "var(--radius-card)",
-                  // The headline-card padding token, not the default — this
-                  // is a full-screen decision surface, not a dense card.
-                  padding: "var(--space-lg)",
-                }}
-              >
-                <header
-                  className="flex items-start justify-between gap-4"
-                  style={{ marginBottom: "var(--space-md)" }}
-                >
-                  <div>
-                    <h2
-                      style={{
-                        fontFamily: "var(--font-head)",
-                        fontWeight: "var(--weight-head)",
-                        fontSize: "var(--type-cardtitle-size)",
-                        letterSpacing: "var(--track-head)",
-                        color: "var(--text-primary)",
-                      }}
-                    >
-                      Choose a canvas size
-                    </h2>
-                    <p
-                      style={{
-                        fontSize: "var(--type-label-size)",
-                        color: "var(--text-secondary)",
-                        marginTop: "var(--space-3xs)",
-                      }}
-                    >
-                      Your blank canvas opens at this size. You can resize it later from the
-                      toolbar.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    className="sp-icon-btn flex-shrink-0"
-                    onClick={() => setSizeDialogOpen(false)}
-                    aria-label="Close"
-                  >
-                    <X style={{ width: 16, height: 16 }} />
-                  </button>
-                </header>
-                <SizeGallery
-                  sizes={sizes}
-                  value={{ width: draft.canvasWidth, height: draft.canvasHeight }}
-                  onPick={(next) => {
-                    // Picking IS starting: baseline the canvas, then straight
-                    // to Fields — Step 1, same as the old Start blank click.
-                    pickCreationSize(next);
-                    setSizeDialogOpen(false);
-                    setStarted(true);
-                    goTo("fields");
-                  }}
-                />
-              </div>
-            </div>
-          )}
+        /* A design handed over from the list is landing (its fonts load and
+           its limits are measured): the loading pulse, spanning both grid
+           rows as the editor will. */
+        <div
+          className="flex items-center justify-center"
+          style={{ gridColumn: "1 / -1", gridRow: "1 / -1", background: "var(--bg-canvas)" }}
+          aria-busy="true"
+          aria-label="Opening your design"
+        >
+          <span
+            aria-hidden
+            className="sp-skeleton__block"
+            style={{
+              width: "min(420px, 70vw)",
+              aspectRatio: "1 / 1",
+              borderRadius: "var(--radius-media-inner)",
+            }}
+          />
         </div>
       ) : (
         <>

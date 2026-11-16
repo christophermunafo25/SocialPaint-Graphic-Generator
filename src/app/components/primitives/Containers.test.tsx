@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ArrowUp, Copy, Paintbrush, Plus } from "lucide-react";
 import React from "react";
@@ -9,6 +9,7 @@ import { Badge } from "./Chips";
 import {
   Card,
   Metric,
+  Modal,
   ModalActions,
   ModalBody,
   ModalPanel,
@@ -138,6 +139,64 @@ describe("A dialog's parts", () => {
     );
     expect(container.querySelector("div.ui-modal__body")?.children.length).toBe(2);
     expect(container.querySelector<HTMLElement>(".ui-modal")?.dataset.wide).toBe("true");
+  });
+
+  it("takes the card title with or without an icon", () => {
+    render(
+      <>
+        <ModalPanel title="New template" titleStyle="card" />
+        <ModalPanel title="Public links" icon={Copy} />
+        <ModalPanel title="Delete this template?" />
+      </>,
+    );
+    expect(screen.getByText("New template").className).toContain("t-title-card");
+    expect(screen.getByText("Public links").className).toContain("t-title-card");
+    expect(screen.getByText("Delete this template?").className).toContain("t-title-group");
+  });
+});
+
+describe("Modal", () => {
+  function Harness({ withReturn }: { withReturn: boolean }) {
+    const [open, setOpen] = React.useState(false);
+    const back = React.useRef<HTMLButtonElement>(null);
+    return (
+      <>
+        <button ref={back} type="button">
+          New template
+        </button>
+        <button type="button" onClick={() => setOpen(true)}>
+          Open
+        </button>
+        <Modal
+          open={open}
+          onOpenChange={setOpen}
+          title="Choose a size"
+          returnFocus={withReturn ? back : undefined}
+        >
+          <p>Sizes</p>
+        </Modal>
+      </>
+    );
+  }
+
+  it("hands focus back to what opened it", async () => {
+    const user = userEvent.setup();
+    render(<Harness withReturn={false} />);
+    await user.click(screen.getByRole("button", { name: "Open" }));
+    await user.click(screen.getByRole("button", { name: "Close" }));
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole("button", { name: "Open" })),
+    );
+  });
+
+  it("hands focus to returnFocus instead when it has one", async () => {
+    const user = userEvent.setup();
+    render(<Harness withReturn />);
+    await user.click(screen.getByRole("button", { name: "Open" }));
+    await user.click(screen.getByRole("button", { name: "Close" }));
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole("button", { name: "New template" })),
+    );
   });
 });
 

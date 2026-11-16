@@ -21,8 +21,9 @@
  * calls in loading ("hang") or error ("fail") through src/lib/stores/local/
  * devStall.ts, `seed` edits the fixture's database first (the empty states),
  * `publicLink` answers the public page's Edge Function (a payload built from
- * the fixture, or a 404 for the unavailable state), `widths` limits the
- * route, and `act` opens a dialog before the shot. At the widest width each
+ * the fixture, or a 404 for the unavailable state), `devImport` has the
+ * dev backend stand in for a workspace with Figma and Canva connected,
+ * `widths` limits the route, and `act` opens a dialog before the shot. At the widest width each
  * route also opens every menu, select and popover trigger it renders
  * ([aria-haspopup]) one at a time and saves <name>--popup-<n>-<theme>-<width>.png
  * (skip with --no-popups).
@@ -63,6 +64,18 @@ const firstTemplate = devDb.templates[0].id;
 // The fixture's Generate threads: a finished result, then a question.
 const resultThread = devDb.generateThreads[0].id;
 const questionThread = devDb.generateThreads[2].id;
+
+/** The Template Builder list's first card: open its row menu, choose. */
+async function openRowMenuItem(page, item) {
+  await page.locator(".sp-tbcard .ui-rowmenu").first().click();
+  await page.getByRole("menuitem", { name: item }).click();
+}
+
+/** New template is open (the list, from /template-builder/new): choose a
+ * way to start. */
+async function chooseStartPath(page, label) {
+  await page.getByRole("button", { name: new RegExp(`^${label}`) }).click();
+}
 
 const ROUTES = [
   ["brand-templates", "/templates"],
@@ -143,19 +156,53 @@ const ROUTES = [
   [
     "template-builder-delete",
     "/template-builder",
-    { act: (page) => page.locator("button[title=Delete]").first().click() },
+    { act: (page) => openRowMenuItem(page, "Delete") },
+  ],
+  // Make another size: Choose a size with the template's own size marked.
+  [
+    "template-builder-another-size",
+    "/template-builder",
+    { act: (page) => openRowMenuItem(page, "Make another size") },
   ],
   ["builder-editor", `/template-builder/${firstTemplate}`],
-  ["builder-picker", "/template-builder/new"],
+  // New template and the dialogs after it (new brand, Phase 6a). The dev
+  // backend stands in for a workspace with Figma and Canva connected, so
+  // the dialogs draw what their frames show. /template-builder/new with
+  // nothing handed over opens the list with New template.
+  ["builder-picker", "/template-builder/new", { devImport: "connected" }],
   [
     "builder-size-gallery",
     "/template-builder/new",
+    { devImport: "connected", act: (page) => chooseStartPath(page, "Start blank") },
+  ],
+  [
+    "builder-import-figma",
+    "/template-builder/new",
+    { devImport: "connected", act: (page) => chooseStartPath(page, "Import from Figma") },
+  ],
+  [
+    "builder-import-canva",
+    "/template-builder/new",
+    { devImport: "connected", act: (page) => chooseStartPath(page, "Import from Canva") },
+  ],
+  [
+    "builder-auto-build",
+    "/template-builder/new",
+    { devImport: "connected", act: (page) => chooseStartPath(page, "Auto build") },
+  ],
+  [
+    "builder-auto-build-building",
+    "/template-builder/new",
     {
-      act: (page) =>
-        page
-          .getByRole("button", { name: /^Start blank/ })
-          .first()
-          .click(),
+      devImport: "connected",
+      stall: { "designImport.autoBuild": "hang" },
+      act: async (page) => {
+        await chooseStartPath(page, "Auto build");
+        await page
+          .getByLabel("Design link")
+          .fill("https://www.figma.com/design/acme/Brand?node-id=1-2");
+        await page.getByRole("button", { name: "Build template" }).click();
+      },
     },
   ],
   ["bulk-fill", `/templates/${firstTemplate}/bulk`],
@@ -263,7 +310,7 @@ function publicPayload() {
 async function newContext(
   browser,
   theme,
-  { fresh = false, stall, seed: edit, publicLink } = {},
+  { fresh = false, stall, seed: edit, publicLink, devImport } = {},
   width = 1440,
 ) {
   const context = await browser.newContext({
@@ -290,9 +337,12 @@ async function newContext(
     typeof v === "string" ? v : JSON.stringify(v),
   ]);
   await context.addInitScript(
-    ({ entries, theme, stall, collapsed }) => {
+    ({ entries, theme, stall, devImport, collapsed }) => {
       try {
         if (stall) sessionStorage.setItem("sp-dev-stall", JSON.stringify(stall));
+        // The dev backend's stand-in for connected imports
+        // (src/lib/stores/local/localStores.ts, devImportConnected).
+        if (devImport) sessionStorage.setItem("sp-dev-design-import", devImport);
         if (sessionStorage.getItem("shots-seeded")) return;
         sessionStorage.setItem("shots-seeded", "1");
         for (const [k, v] of entries) localStorage.setItem(k, v);
@@ -303,7 +353,13 @@ async function newContext(
         /* a frame without storage */
       }
     },
-    { entries, theme, stall: stall ?? null, collapsed: Boolean(flags.collapsed) },
+    {
+      entries,
+      theme,
+      stall: stall ?? null,
+      devImport: devImport ?? null,
+      collapsed: Boolean(flags.collapsed),
+    },
   );
   return context;
 }

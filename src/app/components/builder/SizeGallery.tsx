@@ -1,13 +1,22 @@
-import React, { useMemo, useRef, useState } from "react";
-import { LayoutGrid, Link2, Link2Off } from "lucide-react";
-import type { PlatformIcon } from "@/lib/templates/platformIcons";
+import React, { useMemo, useState } from "react";
+import {
+  Globe,
+  LayoutGrid,
+  Link2,
+  Link2Off,
+  Mail,
+  Megaphone,
+  Printer,
+  Search,
+  Settings2,
+  Users,
+} from "lucide-react";
 import {
   aspectRatioOf,
   classifySize,
   orientationOf,
   platformById,
   type CanvasSize,
-  type Platform,
   type PlatformId,
 } from "@/lib/templates/platforms";
 import {
@@ -18,41 +27,46 @@ import {
   type SizeCategoryId,
 } from "@/lib/templates/sizeCategories";
 import { coverFor } from "@/lib/templates/sizeCovers";
-import { TemplateSearchField } from "../templates/TemplateSearchField";
-import { useEdgeFade } from "../templates/useEdgeFade";
+import {
+  Badge,
+  Button,
+  EmptyState,
+  Field,
+  IconButton,
+  Input,
+  Modal,
+  NavItem,
+  Skeleton,
+} from "../primitives";
+import type { IconComponent } from "../primitives/cx";
+import { useRovingSelect } from "../primitives/roving";
+import { LibrarySearch } from "../templates/LibrarySearch";
+import { PlatformFilter } from "../templates/PlatformFilter";
 import { MAX_SIDE, MIN_SIDE, WARN_MEGAPIXELS, sideError } from "./CanvasSizePicker";
+
+type Dimensions = { width: number; height: number };
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
-/** The rail's one non-category entry. Custom is a MODE — it swaps the grid
- *  for the custom inputs — so it lives here, not in CATEGORIES. */
+/** The rail's one entry that isn't a category. Custom is a mode: it swaps
+ *  the grid for the two sides. */
 type RailId = SizeCategoryId | "custom";
 
-/** Shared roving-tabindex arrows, the GroupChips contract: one stop in the
- *  tab order, arrows move within the group and select as they go. Serves
- *  both the vertical rail and the horizontal chip bar, so either arrow axis
- *  works in both. */
-const rovingKeyDown =
-  (count: number, activeIndex: number, focusAndSelect: (i: number) => void) =>
-  (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-      e.preventDefault();
-      focusAndSelect((activeIndex + 1) % count);
-    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-      e.preventDefault();
-      focusAndSelect((activeIndex - 1 + count) % count);
-    } else if (e.key === "Home") {
-      e.preventDefault();
-      focusAndSelect(0);
-    } else if (e.key === "End") {
-      e.preventDefault();
-      focusAndSelect(count - 1);
-    }
-  };
+/** Each entry's 18 icon (329:2970). Print has no frame of its own; it takes
+ *  the printer. */
+const RAIL_ICON: Record<RailId, IconComponent> = {
+  social: Users,
+  email: Mail,
+  display: Megaphone,
+  web: Globe,
+  print: Printer,
+  general: LayoutGrid,
+  custom: Settings2,
+};
 
-/** The category rail. A radio group like the chip bar — both filter one
- *  region in place, so they share one semantic instead of splitting into
- *  half-tablist, half-radio. */
+/** The categories, as Nav items (329:2970): one radio group, one tab stop,
+ *  the arrows move and choose. They filter one region in place, as the chips
+ *  do, so the two share the radio semantic. */
 function CategoryRail({
   entries,
   selected,
@@ -62,218 +76,104 @@ function CategoryRail({
   selected: RailId;
   onSelect(next: RailId): void;
 }) {
-  const refs = useRef<Array<HTMLButtonElement | null>>([]);
-  const activeIndex = Math.max(
-    0,
+  const { itemProps } = useRovingSelect(
+    entries,
     entries.findIndex((e) => e.id === selected),
+    (e) => onSelect(e.id),
   );
-  const focusAndSelect = (i: number) => {
-    onSelect(entries[i].id);
-    refs.current[i]?.focus();
-  };
-  const onKeyDown = rovingKeyDown(entries.length, activeIndex, focusAndSelect);
-
   return (
-    <div
-      role="radiogroup"
-      aria-label="Size category"
-      className="flex-shrink-0 space-y-1"
-      style={{ width: 188, overflowY: "auto" }}
-    >
+    <div role="radiogroup" aria-label="Size category" className="sp-size__categories">
       {entries.map((entry, i) => {
         const isSelected = entry.id === selected;
         return (
-          <button
+          <NavItem
             key={entry.id}
-            ref={(el) => {
-              refs.current[i] = el;
-            }}
-            type="button"
+            {...itemProps(i)}
+            icon={RAIL_ICON[entry.id]}
+            selected={isSelected}
+            // A radio, not a page: the selected look without aria-current.
+            aria-current={undefined}
             role="radio"
             aria-checked={isSelected}
-            tabIndex={isSelected ? 0 : -1}
             onClick={() => onSelect(entry.id)}
-            onKeyDown={onKeyDown}
-            className="sp-railitem w-full px-3 text-left"
-            style={{
-              minHeight: 44, // hit target
-              fontSize: "var(--type-label-size)",
-            }}
           >
             {entry.label}
-          </button>
+          </NavItem>
         );
       })}
     </div>
   );
 }
 
-/** The platform chip bar for one category: All first — there is no
- *  popularity signal in this product, so no chip pretends otherwise — then
- *  the category's platforms in PLATFORMS order with enabled-size counts. */
-function PlatformChips({
-  entries,
-  total,
-  selected,
-  onSelect,
-}: {
-  entries: Array<{ platform: Platform; count: number }>;
-  total: number;
-  /** null is the All chip. */
-  selected: PlatformId | null;
-  onSelect(next: PlatformId | null): void;
-}) {
-  const { ref, atStart, atEnd } = useEdgeFade<HTMLDivElement>([entries.length]);
-  const chipRefs = useRef<Array<HTMLButtonElement | null>>([]);
-
-  const ids: Array<PlatformId | null> = [null, ...entries.map((e) => e.platform.id)];
-  const activeIndex = Math.max(0, ids.indexOf(selected));
-  const focusAndSelect = (i: number) => {
-    onSelect(ids[i]);
-    chipRefs.current[i]?.focus();
-  };
-  const onKeyDown = rovingKeyDown(ids.length, activeIndex, focusAndSelect);
-
-  const chip = (
-    id: PlatformId | null,
-    index: number,
-    label: string,
-    count: number,
-    Icon: PlatformIcon,
-  ) => {
-    const isSelected = selected === id;
-    return (
-      <button
-        key={id ?? "all"}
-        ref={(el) => {
-          chipRefs.current[index] = el;
-        }}
-        type="button"
-        role="radio"
-        aria-checked={isSelected}
-        tabIndex={isSelected ? 0 : -1}
-        className="sp-chip"
-        data-selected={isSelected || undefined}
-        onClick={() => onSelect(id)}
-        onKeyDown={onKeyDown}
-      >
-        <Icon className="sp-chip__icon" strokeWidth={1.5} aria-hidden />
-        <span className="sp-chip__label">{label}</span>
-        <span className="sp-chip__count">{count}</span>
-      </button>
-    );
-  };
-
-  return (
-    <div
-      className="sp-railfade"
-      data-at-start={atStart || undefined}
-      data-at-end={atEnd || undefined}
-    >
-      <div
-        ref={ref}
-        className="sp-railfade__track sp-chipbar"
-        role="radiogroup"
-        aria-label="Filter by platform"
-      >
-        {chip(null, 0, "All", total, LayoutGrid)}
-        {entries.map((e, i) =>
-          chip(e.platform.id, i + 1, e.platform.label, e.count, e.platform.Icon),
-        )}
-      </div>
-    </div>
-  );
-}
-
-/** One size card. The whole card is the control — the plate is decoration —
- *  and the chosen card wears aria-pressed, which the CSS turns into the
- *  stronger border. */
-function SizeCard({
+/** One size (329:3372): its cover on a 4:3 plate at radius/lg, then the
+ *  name in Label/S over the dimensions and ratio in Caption/M, 8 apart. The
+ *  whole cover is the button. The template's own size, when there is one
+ *  (Make another size), is marked and can't be chosen. */
+function SizeCover({
   size,
   current,
   onPick,
 }: {
   size: CanvasSize;
   current: boolean;
-  onPick(next: { width: number; height: number }): void;
+  onPick(next: Dimensions): void;
 }) {
-  const cover = coverFor(size.id);
+  const platforms = size.platforms.map((p) => platformById(p).label).join(", ");
   return (
     <button
       type="button"
-      className="sp-card sp-media-card sp-sizecard"
-      aria-pressed={current}
-      aria-label={`${size.assetType}, ${size.width} by ${size.height}`}
+      className="ui-reset ui-ring sp-size-cover"
+      aria-label={`${size.assetType} for ${platforms}, ${size.width} by ${size.height}${current ? ", the current size" : ""}`}
+      disabled={current}
       onClick={() => onPick({ width: size.width, height: size.height })}
     >
-      {cover ? (
-        // Committed assets, not user content — inlining is safe, and it is
-        // what lets the app's --cover-* tokens reach inside the SVG.
-        <div
-          className="sp-sizecard__plate"
-          aria-hidden
-          dangerouslySetInnerHTML={{ __html: cover }}
-        />
-      ) : (
-        // No art yet: the size's true proportions as an outline, drawn large
-        // on the same ground, so a half-covered grid still reads as one set.
-        <div className="sp-sizecard__plate" aria-hidden>
-          <div className="flex items-center justify-center" style={{ width: "72%", height: "72%" }}>
-            <div
-              style={{
-                aspectRatio: `${size.width} / ${size.height}`,
-                ...(size.width / size.height >= 1 ? { width: "100%" } : { height: "100%" }),
-                border: "1px solid var(--cover-chrome-2)",
-              }}
-            />
-          </div>
-        </div>
-      )}
-      {/* The media card's own two-tier inset — the two card families read
-          as one system. */}
-      <div className="sp-template-card__meta sp-template-card__meta--stack">
-        <span
-          className="block truncate"
-          style={{
-            fontSize: "var(--type-label-size)",
-            fontWeight: "var(--weight-ui)",
-            color: "var(--text-primary)",
-          }}
-        >
-          {size.assetType}
+      <span className="sp-size-cover__plate">
+        <img src={coverFor(size.id)} alt="" decoding="async" />
+      </span>
+      <span className="sp-size-cover__text">
+        <span className="sp-size-cover__name">
+          <span className="t-label-s sp-size-cover__label">{size.assetType}</span>
+          {current && <Badge tone="neutral">Current size</Badge>}
         </span>
-        <span
-          className="block"
-          style={{
-            marginTop: "var(--space-3xs)",
-            fontFamily: "var(--font-mono)",
-            fontSize: "var(--type-caption-size)",
-            letterSpacing: "0.04em",
-            color: "var(--text-muted)",
-          }}
-        >
+        <span className="t-caption-m sp-size-cover__dims">
           {size.width} × {size.height} · {aspectRatioOf(size.width, size.height)}
         </span>
-      </div>
+      </span>
     </button>
   );
 }
 
-/** The custom inputs, lifted from CanvasSizePicker's custom tab with the
- *  same bounds, warnings, aspect link, and wording. Creation has no aspect
- *  constraint, so the aspectLock branches simply do not exist here. */
+/** A cover while the sizes load, in the cover's own boxes. */
+function SizeCoverSkeleton() {
+  return (
+    <span className="sp-size-cover" aria-hidden>
+      <span className="sp-size-cover__plate">
+        <Skeleton width="100%" height="100%" radius="lg" />
+      </span>
+      <span className="sp-size-cover__text">
+        <Skeleton width={96} height={9} />
+        <Skeleton width={112} height={8} />
+      </span>
+    </span>
+  );
+}
+
+/** Custom size: the two sides with the aspect link between them, what the
+ *  numbers make as they're typed, and the button that uses them. The bounds
+ *  and warnings are CanvasSizePicker's, one source. */
 function CustomSizePane({
-  value,
+  seed,
   onPick,
 }: {
-  value: { width: number; height: number };
-  onPick(next: { width: number; height: number }): void;
+  /** The sides it opens with. */
+  seed: Dimensions;
+  onPick(next: Dimensions): void;
 }) {
-  const [customW, setCustomW] = useState(String(value.width));
-  const [customH, setCustomH] = useState(String(value.height));
-  /** Aspect link for the custom inputs: typing one side computes the other. */
+  const [customW, setCustomW] = useState(String(seed.width));
+  const [customH, setCustomH] = useState(String(seed.height));
+  /** The aspect link: typing one side computes the other. */
   const [linked, setLinked] = useState(false);
-  const linkRatio = value.width / value.height;
+  const linkRatio = seed.width / seed.height;
 
   const w = Number(customW);
   const h = Number(customH);
@@ -283,116 +183,101 @@ function CustomSizePane({
       : Number.isNaN(w) || Number.isNaN(h)
         ? "Numbers only."
         : (sideError(w) ?? sideError(h));
-  const customMeaning = customErr ? null : classifySize(w, h);
+  const meaning = customErr ? null : classifySize(w, h);
+  const verdict = customErr
+    ? customErr
+    : `${aspectRatioOf(w, h)} · ${orientationOf(w, h)}${
+        meaning && meaning.assetType !== "Custom size"
+          ? ` · ${meaning.platforms.map((p) => platformById(p).label).join(", ")} ${meaning.assetType.toLowerCase()}`
+          : ""
+      }`;
+
+  const side = (
+    label: "Width" | "Height",
+    value: string,
+    setValue: (v: string) => void,
+    other: (n: number) => number,
+    setOther: (v: string) => void,
+  ) => (
+    <Field label={label}>
+      <Input
+        type="number"
+        inputMode="numeric"
+        min={MIN_SIDE}
+        max={MAX_SIDE}
+        value={value}
+        onChange={(e) => {
+          setValue(e.target.value);
+          const n = Number(e.target.value);
+          if (linked && Number.isFinite(n) && n > 0) setOther(String(Math.round(other(n))));
+        }}
+      />
+    </Field>
+  );
 
   return (
-    <div className="space-y-3" style={{ maxWidth: 400 }}>
-      <div className="flex items-center gap-1.5">
-        {(
-          [
-            ["Width", customW, setCustomW, (side: number) => side / linkRatio, setCustomH],
-            ["Height", customH, setCustomH, (side: number) => side * linkRatio, setCustomW],
-          ] as const
-        ).map(([label, val, setVal, other, setOther]) => (
-          <label key={label} className="flex-1">
-            <span className="sp-eyebrow block" style={{ marginBottom: 2 }}>
-              {label}
-            </span>
-            <input
-              type="number"
-              inputMode="numeric"
-              min={MIN_SIDE}
-              max={MAX_SIDE}
-              value={val}
-              onChange={(e) => {
-                setVal(e.target.value);
-                const n = Number(e.target.value);
-                if (linked && Number.isFinite(n) && n > 0) setOther(String(Math.round(other(n))));
-              }}
-              className="w-full px-2 py-1.5"
-              data-radius-control
-              style={{
-                border: "1px solid var(--border-strong)",
-                background: "var(--bg-surface)",
-                fontSize: "var(--type-label-size)",
-                color: "var(--text-primary)",
-              }}
-            />
-          </label>
-        ))}
-        <button
-          onClick={() => setLinked((v) => !v)}
+    <form
+      className="sp-size-custom"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!customErr) onPick({ width: w, height: h });
+      }}
+    >
+      <div className="sp-size-custom__sides">
+        {side("Width", customW, setCustomW, (n) => n / linkRatio, setCustomH)}
+        <IconButton
+          variant="ghost"
+          icon={linked ? Link2 : Link2Off}
+          label={linked ? "Unlock the aspect ratio" : "Lock the aspect ratio"}
           aria-pressed={linked}
-          title={linked ? "Unlock the aspect ratio" : "Lock the aspect ratio while typing"}
-          aria-label={linked ? "Unlock the aspect ratio" : "Lock the aspect ratio"}
-          className="sp-icon-btn flex-shrink-0"
-          style={{ marginTop: 16, color: linked ? "var(--state-primary)" : undefined }}
-        >
-          {linked ? (
-            <Link2 style={{ width: 15, height: 15 }} />
-          ) : (
-            <Link2Off style={{ width: 15, height: 15 }} />
-          )}
-        </button>
+          selected={linked}
+          onClick={() => setLinked((v) => !v)}
+          className="sp-size-custom__link"
+        />
+        {side("Height", customH, setCustomH, (n) => n * linkRatio, setCustomW)}
       </div>
-
-      {/* Live verdicts: the ratio and orientation as they type, and the
-          platform classification so a custom number that lands on a known
-          size says so. */}
-      <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}>
-        {customErr ??
-          `${aspectRatioOf(w, h)} · ${orientationOf(w, h)}${
-            customMeaning && customMeaning.assetType !== "Custom size"
-              ? ` · ${customMeaning.platforms
-                  .map((p) => platformById(p).label)
-                  .join(" · ")} ${customMeaning.assetType}`
-              : ""
-          }`}
+      <p className="t-caption-m sp-size-custom__verdict" role="status">
+        {verdict}
       </p>
       {!customErr && w * h > WARN_MEGAPIXELS && (
-        <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}>
+        <p className="t-caption-m sp-size-custom__verdict">
           Over 4 megapixels: exporting a canvas this large can run a phone browser out of memory.
         </p>
       )}
-      <button
-        onClick={() => {
-          if (customErr) return;
-          onPick({ width: w, height: h });
-        }}
-        disabled={Boolean(customErr)}
-        className="sp-btn w-full"
-        style={{ minHeight: 36 }}
-      >
-        {customErr ? "Use custom size" : `Use ${w}×${h}`}
-      </button>
-    </div>
+      <div>
+        <Button kind="primary" type="submit" disabled={Boolean(customErr)}>
+          {customErr ? "Use custom size" : `Use ${w} × ${h}`}
+        </Button>
+      </div>
+    </form>
   );
 }
 
-/** The start screen's size gallery: category rail, platform chips, cover
- *  grid. Replaces the 280px preset list on ONE call site — the builder's
- *  other two size surfaces stay on CanvasSizePicker, which carries the
- *  resize-time constraints this surface deliberately has no use for.
- *
- *  Picking a card only marks it and calls onPick — the three path cards
- *  below decide what happens next; choosing a size never auto-advances. */
+export type SizesState =
+  | { status: "loading" }
+  | { status: "error"; retry(): void }
+  | { status: "ready"; sizes: CanvasSize[] };
+
+/** Choose a size's body (329:2970): the categories on the left, 200 wide;
+ *  on the right the platform chips and the search over the covers, 24
+ *  apart. A size is picked by a click on its cover. */
 export function SizeGallery({
-  sizes,
-  value,
+  state,
+  current = null,
   onPick,
 }: {
   /** The workspace's enabled subset of the size catalogue. */
-  sizes: CanvasSize[];
-  /** The current canvas size — pressed in the grid, seeds custom mode. */
-  value: { width: number; height: number };
-  onPick(next: { width: number; height: number }): void;
+  state: SizesState;
+  /** The template's own size (Make another size): marked, and not offered. */
+  current?: Dimensions | null;
+  onPick(next: Dimensions): void;
 }) {
+  const sizes = useMemo(() => (state.status === "ready" ? state.sizes : []), [state]);
   const present = useMemo(() => categoriesPresent(sizes), [sizes]);
 
-  /** null means "not chosen yet": social when it has sizes, else the first
-   *  populated category, else custom — so a workspace that emptied the
-   *  social set still lands somewhere real. A remembered pick that loses
-   *  its sizes falls back the same way. */
+  /** null is "not chosen yet": Social media when it has sizes, else the
+   *  first populated category, else custom, so a workspace that turned the
+   *  social set off still lands somewhere real. */
   const [picked, setPicked] = useState<RailId | null>(null);
   const fallback: RailId = present.some((c) => c.id === "social")
     ? "social"
@@ -410,7 +295,7 @@ export function SizeGallery({
 
   const selectCategory = (next: RailId) => {
     setPicked(next);
-    // Chips are per-category; a stale platform would silently empty the grid.
+    // The chips are per category; a stale platform would empty the grid.
     setPlatform(null);
   };
 
@@ -429,80 +314,139 @@ export function SizeGallery({
   );
 
   const filtered = query.trim() !== "" || platform !== null;
-  const announcement =
-    !isCustom && filtered
-      ? `${plural(visible.length, "size")}${query.trim() ? ` for “${query.trim()}”` : ""}${
-          platform ? ` · ${platformById(platform).label}` : ""
-        }`
-      : "";
+  const announcement = !isCustom && filtered ? plural(visible.length, "size") : "";
+
+  if (state.status === "error") {
+    return (
+      <EmptyState
+        icon={LayoutGrid}
+        title="We couldn't load the sizes."
+        action={
+          <Button kind="primary" onClick={state.retry}>
+            Try again
+          </Button>
+        }
+        className="sp-size__error"
+      />
+    );
+  }
 
   return (
-    <div className="flex items-stretch" style={{ gap: "var(--space-lg)" }}>
-      <CategoryRail entries={railEntries} selected={category} onSelect={selectCategory} />
+    <div className="sp-size">
+      {state.status === "loading" ? (
+        <div className="sp-size__categories" aria-hidden>
+          {Array.from({ length: 4 }, (_, i) => (
+            <Skeleton key={i} width="100%" height={36} radius="sm" />
+          ))}
+        </div>
+      ) : (
+        <CategoryRail entries={railEntries} selected={category} onSelect={selectCategory} />
+      )}
 
-      <div className="flex-1 min-w-0 space-y-4">
-        {isCustom ? (
-          <CustomSizePane value={value} onPick={onPick} />
+      <div className="sp-size__main">
+        {state.status === "loading" ? (
+          <div className="sp-size__scroll" aria-busy="true" aria-label="Loading sizes">
+            <div className="sp-size__grid">
+              {Array.from({ length: 8 }, (_, i) => (
+                <SizeCoverSkeleton key={i} />
+              ))}
+            </div>
+          </div>
+        ) : isCustom ? (
+          <CustomSizePane
+            seed={current ?? sizes[0] ?? { width: 1080, height: 1080 }}
+            onPick={onPick}
+          />
         ) : (
           <>
-            <TemplateSearchField
-              value={query}
-              onChange={setQuery}
-              placeholder="Search sizes, platforms, or dimensions"
-              ariaLabel="Search sizes"
-            />
-            <PlatformChips
-              entries={chipEntries}
-              total={sizesFor(category, sizes).length}
-              selected={platform}
-              onSelect={setPlatform}
-            />
-
+            <div className="sp-size__filters">
+              <PlatformFilter
+                facets={chipEntries}
+                selected={platform}
+                onSelect={setPlatform}
+                chevron={false}
+                className="sp-size__chips"
+              />
+              <LibrarySearch
+                className="sp-size__search"
+                value={query}
+                onChange={setQuery}
+                label="Search sizes"
+                placeholder="Search sizes, platforms, or dimensions"
+              />
+            </div>
             <p className="sp-live" role="status" aria-live="polite">
               {announcement}
             </p>
-
-            {visible.length === 0 ? (
-              <div className="sp-emptystate">
-                <p className="sp-emptystate__title">
-                  {query.trim() ? `No sizes match “${query.trim()}”.` : "That set is empty."}
-                </p>
-                <div className="sp-emptystate__actions">
-                  {query.trim() && (
-                    <button
-                      type="button"
-                      className="sp-btn sp-btn-primary"
-                      onClick={() => setQuery("")}
-                    >
-                      Clear search
-                    </button>
-                  )}
-                  {!query.trim() && platform && (
-                    <button
-                      type="button"
-                      className="sp-btn sp-btn-primary"
-                      onClick={() => setPlatform(null)}
-                    >
-                      Back to all sizes
-                    </button>
-                  )}
+            <div className="sp-size__scroll">
+              {visible.length === 0 ? (
+                <EmptyState
+                  icon={Search}
+                  title={query.trim() ? "No sizes match that search." : "No sizes here yet."}
+                  action={
+                    query.trim() ? (
+                      <Button kind="primary" onClick={() => setQuery("")}>
+                        Clear search
+                      </Button>
+                    ) : platform ? (
+                      <Button kind="primary" onClick={() => setPlatform(null)}>
+                        Show all sizes
+                      </Button>
+                    ) : undefined
+                  }
+                  className="sp-size__empty"
+                />
+              ) : (
+                <div className="sp-size__grid">
+                  {visible.map((s) => (
+                    <SizeCover
+                      key={s.id}
+                      size={s}
+                      current={
+                        current !== null && s.width === current.width && s.height === current.height
+                      }
+                      onPick={onPick}
+                    />
+                  ))}
                 </div>
-              </div>
-            ) : (
-              <div className="sp-sizegrid">
-                {visible.map((s) => (
-                  <SizeCard
-                    key={s.id}
-                    size={s}
-                    current={s.width === value.width && s.height === value.height}
-                    onPick={onPick}
-                  />
-                ))}
-              </div>
-            )}
+              )}
+            </div>
           </>
         )}
       </div>
     </div>
+  );
+}
+
+/** Choose a size (329:2970): a 1040 dialog around the gallery. A blank
+ *  template starts at the size picked here, and Make another size builds
+ *  its version at it. */
+export function ChooseSizeDialog({
+  open,
+  onOpenChange,
+  state,
+  current,
+  onPick,
+  returnFocus,
+}: {
+  open: boolean;
+  onOpenChange(open: boolean): void;
+  state: SizesState;
+  current?: Dimensions | null;
+  onPick(next: Dimensions): void;
+  /** Where focus goes when it closes (New template's opener). */
+  returnFocus?: React.RefObject<HTMLElement | null>;
+}) {
+  return (
+    <Modal
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Choose a size"
+      titleStyle="card"
+      className="sp-size-dialog"
+      returnFocus={returnFocus}
+    >
+      <SizeGallery state={state} current={current} onPick={onPick} />
+    </Modal>
   );
 }
