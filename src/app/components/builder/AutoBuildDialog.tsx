@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Figma, RefreshCw, Sparkles, Upload, X } from "lucide-react";
-import type { AutoBuildResult, DesignSource } from "@/lib/types";
+import type { AutoBuildResult, DesignImportResult, DesignSource } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useFileDrop } from "@/lib/useFileDrop";
@@ -9,7 +9,7 @@ type Tab = "figma" | "canva" | "image";
 
 interface AutoBuildDialogProps {
   onClose(): void;
-  onBuilt(result: AutoBuildResult): void;
+  onBuilt(result: AutoBuildResult | DesignImportResult): void | Promise<void>;
   /** Which source tab opens first. The start screen's Canva card lands on
    * the Canva tab; every other opener leaves it at Figma. */
   initialTab?: Tab;
@@ -73,7 +73,7 @@ export function AutoBuildDialog({ onClose, onBuilt, initialTab }: AutoBuildDialo
         source,
         hint.trim() || undefined,
       );
-      onBuilt(result);
+      await onBuilt(result);
     } catch (e) {
       setError(`${e instanceof Error ? e.message : "Auto-build failed."} ${MANUAL_PATHS_NOTE}`);
     } finally {

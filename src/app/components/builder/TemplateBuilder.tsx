@@ -26,10 +26,12 @@ import {
   X,
 } from "lucide-react";
 import type {
+  AutoBuildMeta,
   AutoBuildResult,
   DesignImportResult,
   FieldEffect,
   FieldValues,
+  ImportIntentReport,
   ImportIssue,
   LayoutGroup,
   NewTemplateInput,
@@ -123,9 +125,21 @@ import {
 } from "./fieldOps";
 import { composeFigmaBackground } from "@/lib/figma/composeLayers";
 import { assembleElementFields, mergeOverlayFields } from "@/lib/figma/overlayFields";
-import { stackImported } from "@/lib/figma/importLanding";
+import { FIELD_KEY_RE, inFormOrder, landOnTop, stackImported } from "@/lib/figma/importLanding";
+import {
+  asSentence,
+  createFaceMeasurer,
+  importSummary,
+  prepareImport,
+  templateNameFromFrame,
+} from "@/lib/figma/importPrepare";
 import { isFigmaNodeUrl } from "@/lib/figma/figmaUrl";
-import { verifyMissingFamilies } from "@/lib/render/fonts";
+import {
+  fieldsFontUsage,
+  fontUsageLoaded,
+  loadGoogleFonts,
+  verifyMissingFamilies,
+} from "@/lib/render/fonts";
 import { lockedProperties } from "@/lib/brand/resolveStyle";
 import { celebrate } from "@/lib/celebrate";
 import { createCanvasMeasurer } from "@/lib/render/autoFit";
@@ -1625,25 +1639,36 @@ export function TemplateBuilder({
     setNotice("Importing that Figma layer…");
     try {
       const result = await stores.designImport.importElementsFromUrl(company.id, url);
-      const fields = assembleElementFields(result, at, draft.fields, {
-        width: draft.canvasWidth,
-        height: draft.canvasHeight,
+      // The import can take a minute. The layer is placed and keyed against
+      // the draft as it is now, and lands on whatever the draft holds by
+      // then, so an edit made while it was in flight is kept.
+      const current = draftRef.current;
+      const assembled = assembleElementFields(result, at, current.fields, {
+        width: current.canvasWidth,
+        height: current.canvasHeight,
       });
-      setFields([...draft.fields, ...fields]);
-      setSelectedIds(fields.map((f) => f.id));
-      const missingFonts = await verifyMissingFamilies(
-        fields,
-        brandAssets.filter((a) => a.kind === "font"),
+      // Labels and member flags arrive with the elements; the browser adds
+      // the measured limits before they land, so the paste is one change.
+      const { fields, issues, missingFonts } = await prepareImported(
+        assembled,
+        result.intent,
+        { canvasWidth: current.canvasWidth, canvasHeight: current.canvasHeight },
+        result.frameName ?? "Pasted layer",
+        current.fields,
       );
+      setDraft((d) => ({ ...d, fields: [...d.fields, ...landOnTop(fields, d.fields)] }));
+      setSelectedIds(fields.map((f) => f.id));
       setNotice(
-        `${fields.length} element${fields.length !== 1 ? "s" : ""} pasted from Figma, all fixed. Turn off Fixed on anything members should fill in.` +
+        importSummary(fields, "pasted") +
+          unfilledNote(result.intent, fields) +
           (missingFonts.length
             ? ` Fonts not available here: ${missingFonts.join(", ")}. Upload them in Brand Studio.`
             : ""),
       );
       window.clearTimeout(noticeTimer.current);
       noticeTimer.current = window.setTimeout(() => setNotice(null), 8000);
-      if (result.warnings.length) setError(result.warnings.join(" "));
+      const report = degradedReport([...(result.warningDetails ?? []), ...issues]);
+      if (report) setError(report);
     } catch (e) {
       setNotice(null);
       setError(e instanceof Error ? e.message : "Couldn't import that Figma layer.");
@@ -2130,6 +2155,86 @@ export function TemplateBuilder({
   // Figma import
   // -------------------------------------------------------------------------
 
+  const faces = useMemo(() => createFaceMeasurer(), []);
+
+  /** The browser's share of an import, once its fonts are in: cap-trimmed
+   * text re-placed from the face's metrics, character limits measured from
+   * real glyphs, and the colours the kit would repaint named. It never
+   * fails an import: on any trouble the fields land as they arrived. */
+  const prepareImported = async (
+    fields: TemplateField[],
+    intent: ImportIntentReport | undefined,
+    canvas: { canvasWidth: number; canvasHeight: number },
+    layer: string,
+    /** Fields already on the canvas, for a pasted layer. */
+    context: TemplateField[] = [],
+  ): Promise<{ fields: TemplateField[]; issues: ImportIssue[]; missingFonts: string[] }> => {
+    try {
+      const missingFonts = await verifyMissingFamilies(
+        fields,
+        brandAssets.filter((a) => a.kind === "font"),
+      );
+      const usage = fieldsFontUsage(fields, kit);
+      loadGoogleFonts(usage);
+      await fontUsageLoaded(usage);
+      const prepared = prepareImport(fields, {
+        intent,
+        kit,
+        // A fresh measurer: the shared one may hold widths from before
+        // these faces arrived.
+        measure: createCanvasMeasurer(),
+        faces,
+        ...canvas,
+        layer,
+        missingFonts,
+        context,
+      });
+      return { ...prepared, missingFonts };
+    } catch (e) {
+      console.error("Import preparation failed", e);
+      return { fields, issues: [], missingFonts: [] };
+    }
+  };
+
+  /** Said in the notice when an import landed without the model pass and
+   * had something to label. */
+  const unfilledNote = (intent: ImportIntentReport | undefined, landed: TemplateField[]): string =>
+    intent?.filledBy === "keys" &&
+    landed.some((f) => f.type === "text" || f.type === "multiline" || f.type === "image")
+      ? " Labels come from the layer names."
+      : "";
+
+  /** The template's details from an import, filled without overwriting
+   * what the admin already wrote, with caption tags re-pointed at any field
+   * the landing had to re-key. */
+  const templatePatch = (
+    template: Partial<AutoBuildResult["template"]>,
+    arrived: TemplateField[],
+    imported: TemplateField[],
+    meta: AutoBuildMeta | undefined,
+  ): Partial<NewTemplateInput> => {
+    const landedKey = new Map(imported.map((f) => [f.id, f.fieldKey]));
+    let caption = template.captionTemplate ?? "";
+    for (const f of arrived) {
+      const finalKey = landedKey.get(f.id);
+      if (finalKey && finalKey !== f.fieldKey) {
+        caption = caption.split(`{${f.fieldKey}}`).join(`{${finalKey}}`);
+      }
+    }
+    // What the admin has written by the time the import lands, which can be
+    // a minute after it started.
+    const current = draftRef.current;
+    const untitled = !current.name.trim() || current.name === "Untitled template";
+    return {
+      name: untitled && template.name?.trim() ? template.name : current.name,
+      description: current.description.trim() ? current.description : (template.description ?? ""),
+      category: current.category.trim() ? current.category : (template.category ?? ""),
+      tags: current.tags.length ? current.tags : (template.tags ?? []),
+      captionTemplate: current.captionTemplate.trim() ? current.captionTemplate : caption,
+      ...(meta ? { autobuildMeta: meta } : {}),
+    };
+  };
+
   /** Shared landing for every import path: merge the incoming fields into the
    * draft with unique keys and stacked z-indexes, enter the wizard, announce
    * what happened, and lift the imported elements off the background.
@@ -2147,6 +2252,8 @@ export function TemplateBuilder({
      * re-render so both passes decompose one consistent snapshot. */
     tree?: unknown;
     fields: TemplateField[];
+    /** Member field ids as the form should read. Paint order is untouched. */
+    formOrder?: string[];
     /** The frame's own effects, which become the canvas's. */
     canvasEffects?: FieldEffect[];
     /** How to key each incoming field against what already exists. */
@@ -2156,10 +2263,16 @@ export function TemplateBuilder({
     patch?(imported: TemplateField[]): Partial<NewTemplateInput>;
     summary(imported: TemplateField[]): string;
   }): TemplateField[] => {
-    // Computed OUTSIDE the setDraft updater: updaters run at render time (and
-    // twice under StrictMode), so pushing into `imported` there would leave it
-    // empty for the recomposition below and duplicate every field in dev.
-    const imported = stackImported(opts.fields, draft.fields, opts.fieldKeyFor);
+    // Keyed against the draft as it is now: an import can take a minute, and
+    // the admin may have changed it meanwhile. Computed OUTSIDE the setDraft
+    // updater: updaters run at render time (and twice under StrictMode), so
+    // pushing into `imported` there would leave it empty for the
+    // recomposition below and duplicate every field in dev.
+    const current = draftRef.current;
+    // Paint order, which the recompose relies on to put overlay layers back.
+    const imported = stackImported(opts.fields, current.fields, opts.fieldKeyFor);
+    // The form's order is only the draft's array.
+    const inForm = inFormOrder(imported, opts.formOrder);
     const patch = opts.patch?.(imported) ?? {};
     setDraft((d) => ({
       ...d,
@@ -2171,7 +2284,7 @@ export function TemplateBuilder({
       // canvas carries none of its own until the recomposed plate lands
       // (recomposeBackground); a re-import clears the last frame's.
       canvasEffects: undefined,
-      fields: [...d.fields, ...imported],
+      fields: [...d.fields, ...inForm],
     }));
     // A successful import IS a chosen source, even if the background render
     // came back empty — without this the wizard stays on the source screen
@@ -2184,10 +2297,10 @@ export function TemplateBuilder({
     // An import sizes the canvas from the frame, not from the picker — said
     // out loud rather than silently replacing the admin's choice.
     const sizeNote =
-      opts.canvasWidth !== draft.canvasWidth || opts.canvasHeight !== draft.canvasHeight
+      opts.canvasWidth !== current.canvasWidth || opts.canvasHeight !== current.canvasHeight
         ? ` Canvas set to the frame's own size, ${opts.canvasWidth}×${opts.canvasHeight}.`
         : "";
-    setNotice(opts.summary(imported) + sizeNote);
+    setNotice(opts.summary(inForm) + sizeNote);
     window.clearTimeout(noticeTimer.current);
     noticeTimer.current = window.setTimeout(() => setNotice(null), 8000);
 
@@ -2206,7 +2319,7 @@ export function TemplateBuilder({
       );
       if (missingFonts.length) {
         setNotice(
-          opts.summary(imported) +
+          opts.summary(inForm) +
             sizeNote +
             ` Fonts not available here: ${missingFonts.join(", ")}. That text shows its Figma render until you upload them in Brand Studio.`,
         );
@@ -2233,78 +2346,91 @@ export function TemplateBuilder({
     }. Fix them in Figma and re-import for an exact match.`;
   };
 
-  /** Every detected element lands FIXED, exactly as designed — the admin
-   * opts elements IN to being member fields by turning Fixed off. Counts
-   * from the data, never hardcoded. */
-  const applyImport = (result: DesignImportResult) => {
+  /** The frame lands as its designer keyed it: what members fill in is
+   * already set, with labels, measured limits and the template's details,
+   * in one change to the draft. An unkeyed layer the model left alone stays
+   * fixed, exactly as designed. Counts come from the data. */
+  const applyImport = async (result: DesignImportResult) => {
+    const prepared = await prepareImported(
+      result.suggestedFields,
+      result.intent,
+      { canvasWidth: result.canvasWidth, canvasHeight: result.canvasHeight },
+      result.frameName ?? "This frame",
+    );
     landImport({
       backgroundUrl: result.backgroundUrl,
       canvasWidth: result.canvasWidth,
       canvasHeight: result.canvasHeight,
       sourceUrl: result.sourceUrl,
       tree: result.tree,
-      fields: result.suggestedFields,
+      fields: prepared.fields,
+      formOrder: result.intent?.formOrder,
       canvasEffects: result.canvasEffects,
-      fieldKeyFor: (f, existing) => suggestFieldKey(f.label, existing),
+      // Keep the import's keys (the caption's merge tags reference them);
+      // only a clash with the draft, or a key the form can't use, re-keys.
+      fieldKeyFor: (f, existing) =>
+        FIELD_KEY_RE.test(f.fieldKey) && !existing.some((e) => e.fieldKey === f.fieldKey)
+          ? f.fieldKey
+          : suggestFieldKey(f.label, existing),
+      patch: (imported) =>
+        templatePatch(
+          result.template ?? { name: templateNameFromFrame(result.frameName ?? "") },
+          prepared.fields,
+          imported,
+          result.meta ? { ...result.meta, rationale: result.rationale } : undefined,
+        ),
       summary: (imported) =>
         imported.length === 0
           ? "Nothing was detected, but the background imported. Draw fields on the canvas."
-          : `${imported.length} element${imported.length !== 1 ? "s" : ""} imported, all fixed and exactly as designed. Select the elements members should fill in and turn off Fixed.`,
+          : importSummary(imported, "imported") + unfilledNote(result.intent, imported),
     });
     // The import report: the dialog closes on success, so anything that
     // degraded must surface here or the admin never learns what to fix.
-    const report = degradedReport(result.warningDetails);
+    const report = degradedReport([...(result.warningDetails ?? []), ...prepared.issues]);
     if (report) setError(report);
   };
 
-  /** Claude's proposal lands exactly like a manual import — fields with
-   * label, type, Fixed marks, guardrails, and brand bindings already set —
-   * plus the template metadata, pre-filling the wizard's later steps without
-   * bypassing them. */
-  const applyAutoBuild = (result: AutoBuildResult) => {
+  /** A flat design (Canva or an image) lands from Claude's proposal: fields
+   * with label, type, Fixed marks and brand bindings already set, plus the
+   * template metadata, pre-filling the wizard's later steps without
+   * bypassing them. A Figma link is the import itself, so it lands as one. */
+  const applyAutoBuild = async (result: AutoBuildResult | DesignImportResult) => {
+    if ("suggestedFields" in result) {
+      await applyImport(result);
+      setAutoBuildOpen(false);
+      return;
+    }
+    // The limits are measured here, on every route, from real glyphs.
+    const prepared = await prepareImported(
+      result.fields,
+      undefined,
+      { canvasWidth: result.canvasWidth, canvasHeight: result.canvasHeight },
+      "This design",
+    );
     setAutoBuildOpen(false);
     landImport({
       backgroundUrl: result.backgroundUrl,
       canvasWidth: result.canvasWidth,
       canvasHeight: result.canvasHeight,
       sourceUrl: result.sourceUrl,
-      fields: result.fields,
+      fields: prepared.fields,
       // Keep Claude's keys (the caption's merge tags reference them); only a
       // clash with fields already in the draft forces a re-key.
       fieldKeyFor: (f, existing) =>
         existing.some((e) => e.fieldKey === f.fieldKey)
           ? suggestFieldKey(f.label, existing)
           : f.fieldKey,
-      patch: (imported) => {
-        // Re-point caption tags at any re-keyed fields so they still resolve.
-        let caption = result.template.captionTemplate;
-        result.fields.forEach((f, i) => {
-          const finalKey = imported[i]?.fieldKey;
-          if (finalKey && finalKey !== f.fieldKey) {
-            caption = caption.split(`{${f.fieldKey}}`).join(`{${finalKey}}`);
-          }
-        });
-        const meta = { ...result.meta, rationale: result.rationale };
-        // Fill, don't clobber: a mid-build auto-build must not overwrite the
-        // name or caption the admin already wrote.
-        return {
-          name:
-            draft.name.trim() && draft.name !== "Untitled template"
-              ? draft.name
-              : result.template.name,
-          description: draft.description.trim() ? draft.description : result.template.description,
-          category: draft.category.trim() ? draft.category : result.template.category,
-          tags: draft.tags.length ? draft.tags : result.template.tags,
-          captionTemplate: draft.captionTemplate.trim() ? draft.captionTemplate : caption,
-          autobuildMeta: meta,
-        };
-      },
-      summary: (imported) => {
-        const editable = imported.filter((f) => !f.static).length;
-        return `${imported.length} element${imported.length !== 1 ? "s" : ""} imported. Claude made ${editable} editable and marked ${imported.length - editable} fixed. Change anything in the inspector.`;
-      },
+      patch: (imported) =>
+        templatePatch(result.template, prepared.fields, imported, {
+          ...result.meta,
+          rationale: result.rationale,
+        }),
+      summary: (imported) => importSummary(imported, "imported"),
     });
-    if (result.warnings.length) setError(result.warnings.join(" "));
+    // The function's warnings are sentences already; the browser's own
+    // issues (colours the kit will repaint) join them.
+    const notes = [...result.warnings, ...prepared.issues.map((i) => asSentence(i.issue))];
+    if (notes.length) setError(notes.join(" "));
   };
 
   /** Lift the imported elements OFF the background: re-render the frame
@@ -2826,9 +2952,9 @@ export function TemplateBuilder({
       {canvaOpen && (
         <CanvaImportDialog
           onClose={() => setCanvaOpen(false)}
-          onBuilt={(result) => {
+          onBuilt={async (result) => {
+            await applyAutoBuild(result);
             setCanvaOpen(false);
-            applyAutoBuild(result);
           }}
         />
       )}
@@ -2836,11 +2962,11 @@ export function TemplateBuilder({
       {figmaOpen && (
         <FigmaImportDialog
           onClose={() => setFigmaOpen(false)}
-          onImported={(result) => {
-            setFigmaOpen(false);
+          onImported={async (result) => {
             // No pre-selection step: everything lands on the canvas, and the
-            // admin marks chrome as Fixed in the inspector, in context.
-            applyImport(result);
+            // admin changes what members fill in from the inspector.
+            await applyImport(result);
+            setFigmaOpen(false);
           }}
         />
       )}
