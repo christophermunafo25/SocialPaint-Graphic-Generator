@@ -5,8 +5,6 @@ import {
   Image as ImageIcon,
   Minus,
   MousePointer2,
-  PencilRuler,
-  Figma,
   RefreshCw,
   Redo2,
   Square,
@@ -1296,6 +1294,12 @@ export function TemplateBuilder({
   };
 
   const logoAssets = useMemo(() => brandAssets.filter((a) => a.kind === "logo"), [brandAssets]);
+  const logoUrls = useMemo(() => new Set(logoAssets.map((a) => a.url)), [logoAssets]);
+  /** An image that is one of the brand's logos wears the logo glyph in Layers. */
+  const isLogoField = useCallback(
+    (f: TemplateField) => f.type === "image" && logoUrls.has(f.staticValue ?? ""),
+    [logoUrls],
+  );
   /** Natural pixel size per logo asset, warmed as soon as the logos are known
    * so a drop can size its box to the artwork synchronously. A drop that
    * beats the measurement lands in a square box and is re-fit the moment the
@@ -3078,71 +3082,52 @@ export function TemplateBuilder({
                   onSelect={(id) => setRailTab(id as "layers" | "form")}
                   className="sp-builder__rail-tabs"
                 />
-                <div
-                  className="sp-builder__rail-body space-y-3"
-                  style={{ padding: "var(--space-2xs)" }}
-                >
-                  {/* The palette adds elements to the graphic, so it lives with
-                  the Layers tab. Form is the member's view: what they fill
-                  in, in order, and nothing to add. */}
-                  {mode === "edit" &&
-                    railTab === "layers" &&
-                    stores.designImport.isConfigured() && (
-                      <div className="sp-rail-imports">
-                        <Button
-                          kind="neutral"
-                          size="sm"
-                          icon={Figma}
-                          onClick={() => setFigmaOpen(true)}
-                        >
-                          Import from Figma
-                        </Button>
-                        <Button
-                          kind="neutral"
-                          size="sm"
-                          icon={PencilRuler}
-                          onClick={() => setAutoBuildOpen(true)}
-                        >
-                          Auto build
-                        </Button>
-                      </div>
-                    )}
-                  {mode === "edit" && railTab === "layers" && (
-                    <ElementPalette
-                      onAdd={(id) => addPaletteField(id)}
-                      onAddIcon={(name) => void addIconField(name)}
-                      logos={logoAssets}
-                      activeTool={tool}
-                    />
-                  )}
+                <div className="sp-builder__rail-body sp-rail">
                   {railTab === "layers" ? (
-                    <LayersPanel
-                      fields={draft.fields}
-                      groups={groups}
-                      selectedIds={selectedIds}
-                      onSelect={setSelectedIds}
-                      onPaintOrder={setPaintOrder}
-                      onRename={renameField}
-                      lockedIds={lockedIds}
-                      hiddenIds={hiddenIds}
-                      onToggleLocked={toggleLocked}
-                      onToggleHidden={toggleHidden}
-                      onContextMenu={(e, fieldId) => {
-                        e.preventDefault();
-                        if (!selectedIds.includes(fieldId)) setSelectedIds([fieldId]);
-                        setMenu({
-                          x: e.clientX,
-                          y: e.clientY,
-                          fieldId,
-                          canvasPoint: { x: 0, y: 0 },
-                        });
-                      }}
-                    />
+                    <>
+                      <ElementPalette
+                        onAdd={(id) => addPaletteField(id)}
+                        onAddIcon={(name) => void addIconField(name)}
+                        logos={logoAssets}
+                        onOpenLogos={() => navigate({ name: "brandStudio", category: "logos" })}
+                        onImportFigma={
+                          stores.designImport.isConfigured() ? () => setFigmaOpen(true) : undefined
+                        }
+                        onAutoBuild={
+                          stores.designImport.isConfigured()
+                            ? () => setAutoBuildOpen(true)
+                            : undefined
+                        }
+                      />
+                      {draft.fields.length > 0 && <hr className="sp-rail__divider" />}
+                      <LayersPanel
+                        fields={draft.fields}
+                        groups={groups}
+                        selectedIds={selectedIds}
+                        onSelect={setSelectedIds}
+                        onPaintOrder={setPaintOrder}
+                        onRename={renameField}
+                        lockedIds={lockedIds}
+                        hiddenIds={hiddenIds}
+                        onToggleLocked={toggleLocked}
+                        onToggleHidden={toggleHidden}
+                        isLogo={isLogoField}
+                        onContextMenu={(e, fieldId) => {
+                          e.preventDefault();
+                          if (!selectedIds.includes(fieldId)) setSelectedIds([fieldId]);
+                          setMenu({
+                            x: e.clientX,
+                            y: e.clientY,
+                            fieldId,
+                            canvasPoint: { x: 0, y: 0 },
+                          });
+                        }}
+                      />
+                    </>
                   ) : (
                     <FieldListPanel
                       fields={draft.fields}
                       groups={groups}
-                      variants={draft.variants}
                       selectedIds={selectedIds}
                       onSelect={setSelectedIds}
                       onReorder={setFields}

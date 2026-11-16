@@ -698,12 +698,192 @@
   color: var(--text-primary);
   text-decoration: underline;
 }
-/* The rail's import paths, over the palette, until the rail's own pass. */
-.sp-rail-imports {
+/* The left rail's body under its tabs (322:186): Add, a hairline, then the
+   list, 16 apart. It scrolls under the tabs. */
+.sp-rail {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: var(--space-16);
+}
+.sp-rail__divider {
+  flex: none;
+  margin: 0;
+  border: 0;
+  border-top: 1px solid var(--border-subtle);
+}
+/* Add (322:194): Mono/Eyebrow over the tiles, 10 apart, and the tiles three
+   across, 9 apart (both off the scale, as drawn). */
+.sp-palette {
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* as drawn */
+}
+.sp-palette__title {
+  margin: 0;
+  color: var(--text-secondary);
+}
+.sp-palette__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px; /* as drawn */
+}
+/* Element Tile (321:77): 60 tall on surface/sunken, an 18 icon over its
+   name, 6 apart; hover lays state/hover over it. */
+.sp-element-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-6);
+  min-width: 0;
+  height: 60px; /* as drawn */
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.sp-element-tile[draggable="true"] {
+  cursor: grab;
+}
+.sp-element-tile:hover,
+.sp-element-tile[aria-expanded="true"] {
+  background: linear-gradient(var(--state-hover), var(--state-hover)), var(--surface-sunken);
+}
+/* One line each. The names are trimmed to their capitals, so the clip box
+   is widened past the descenders without moving the line. */
+.sp-element-tile__label {
+  max-width: 100%;
+  padding: 0.3em var(--space-4);
+  margin-block: -0.3em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Layers (322:203): Layer Rows, 2 apart. */
+.sp-layers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+/* Layer Row (321:30): 32 tall, its parts 8 apart and 8 in from each side.
+   Hover takes state/hover and the selected row surface/sunken. The file
+   rounds it at 7; it takes the row step, 8. A nested row steps in 16 for
+   each level. */
+.sp-layer {
+  display: flex;
+  align-items: center;
   gap: var(--space-8);
-  margin-bottom: var(--space-16);
+  height: 32px; /* as drawn */
+  padding: 0 var(--space-8) 0 calc(var(--space-8) + var(--layer-depth, 0) * var(--space-16));
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+}
+.sp-layer:hover,
+.sp-layer[data-over] {
+  background: var(--state-hover);
+}
+.sp-layer[data-selected] {
+  background: var(--surface-sunken);
+}
+.sp-layer__main {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+  height: 100%;
+  color: inherit;
+  text-align: left;
+}
+.sp-layer[data-muted] .sp-layer__main {
+  color: var(--text-secondary);
+}
+.sp-layer__name,
+.sp-form-row__name {
+  flex: 1;
+  min-width: 0;
+  padding-block: 0.3em;
+  margin-block: -0.3em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-layer__rename {
+  flex: 1;
+  min-width: 0;
+}
+.sp-layer__twisty,
+.sp-form-row__twisty {
+  display: flex;
+  flex: none;
+  color: var(--text-secondary);
+}
+/* Hide and Pin show on the row's hover or keyboard focus, and stay while
+   on. A click leaves focus in the row, so plain focus would keep them up
+   on the selected row, which the frame draws without them. */
+.sp-layer__aids {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2);
+}
+.sp-layer__aids > .ui-iconbtn {
+  display: none;
+}
+.sp-layer:hover .sp-layer__aids > .ui-iconbtn,
+.sp-layer:has(:focus-visible) .sp-layer__aids > .ui-iconbtn,
+.sp-layer__aids > .ui-iconbtn[aria-pressed="true"] {
+  display: inline-flex;
+}
+.sp-layer__fixed {
+  color: var(--text-primary);
+}
+/* Form (321:64): Form Rows, 2 apart. */
+.sp-form-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.sp-form-rows__empty {
+  margin: 0;
+  color: var(--text-secondary);
+}
+/* Form Row (321:64): 40 tall, its parts 10 apart, 8 in on the left and 10
+   on the right (off the scale, as drawn). */
+.sp-form-row {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* as drawn */
+  height: 40px; /* as drawn */
+  padding: 0 10px 0 calc(var(--space-8) + var(--layer-depth, 0) * var(--space-16)); /* as drawn */
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  cursor: grab;
+}
+.sp-form-row:hover,
+.sp-form-row[data-over] {
+  background: var(--state-hover);
+}
+.sp-form-row[data-selected] {
+  background: var(--surface-sunken);
+}
+.sp-form-row__grip {
+  color: var(--text-secondary);
+}
+.sp-form-row__main {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 10px; /* as drawn */
+  min-width: 0;
+  height: 100%;
+  color: inherit;
+  text-align: left;
+}
+.sp-form-row__number,
+.sp-form-row__meta {
+  flex: none;
+  color: var(--text-secondary);
 }
 
 /* Publish template (326:1233): the graphic on a sunken well, then the

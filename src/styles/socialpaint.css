@@ -1280,43 +1280,6 @@ body[data-sp-gesture] * {
   }
 }
 
-/* ── Brand hover moments ────────────────────────────────────────────────────
-   Transient identity: the four brand colours take turns under the cursor
-   and exist nowhere else on screen — colour that only lives during a hover
-   can be playful without cluttering anything. Dark tints the GLYPH (every
-   hue clears 3:1 against the dark ladder — the floor is Purple Kara at
-   3.82:1 on --bg-hover); light tints the WASH behind an
-   ink glyph, because no brand hue clears 3:1 as a glyph on white (the
-   header's rule). The sidebar nav stays neutral on hover (2026-08-14,
-   at Chris's direction) — its colour arrives only on the ACTIVE row. The
-   palette tiles are the one surface left: .sp-icon-btn took the hues too
-   until 2026-09-25, when the Figma "Navigation" page gave icon buttons a
-   neutral hover (see .sp-icon-btn). */
-.sp-palette-tile {
-  --hover-hue: var(--slime);
-}
-.sp-palette-tile:nth-of-type(4n + 2) {
-  --hover-hue: var(--aqua);
-}
-.sp-palette-tile:nth-of-type(4n + 3) {
-  --hover-hue: var(--purple-legacy);
-}
-.sp-palette-tile:nth-of-type(4n + 4) {
-  --hover-hue: var(--fire);
-}
-
-.sp-palette-tile svg {
-  color: var(--state-primary);
-  transition: color var(--dur-state) var(--ease);
-}
-
-[data-theme="dark"] .sp-palette-tile:hover svg {
-  color: var(--hover-hue);
-}
-[data-theme="light"] .sp-palette-tile:hover {
-  background: color-mix(in srgb, var(--hover-hue) 22%, transparent);
-}
-
 /* Upload processing chip (FieldInput) — the BYQ drop-zone gem's chip
    lifecycle on platform tokens: enter rides the existing sp-chip-in,
    progress is a 3px Slime bar (no shimmer, no glow — the DS bans

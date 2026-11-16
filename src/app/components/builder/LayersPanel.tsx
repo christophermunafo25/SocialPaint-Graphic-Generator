@@ -1,32 +1,21 @@
 import React, { useRef, useState } from "react";
 import {
-  AlignLeft,
   ChevronDown,
   ChevronRight,
+  Columns3,
   Eye,
   EyeOff,
-  Frame,
-  GripVertical,
-  Image as ImageIcon,
+  Group as GroupGlyph,
   Lock,
-  Shapes,
-  Smile,
-  Type as TypeIcon,
-  Unlock,
+  Pin,
+  Rows3,
 } from "lucide-react";
-import type { FieldType, LayoutGroup, TemplateField } from "@/lib/types";
+import type { LayoutGroup, TemplateField } from "@/lib/types";
 import { groupChildRef, parseGroupChildRef } from "@/lib/types";
 import { outermostGroupOf } from "@/lib/render/layout";
 import { paintOrder } from "./fieldOps";
-
-const ICONS: Record<FieldType, React.ComponentType<{ style?: React.CSSProperties }>> = {
-  text: TypeIcon,
-  multiline: AlignLeft,
-  image: ImageIcon,
-  select: ChevronDown,
-  shape: Shapes,
-  icon: Smile,
-};
+import { elementIcon } from "./elementIcons";
+import { IconButton, Input } from "../primitives";
 
 interface LayersPanelProps {
   fields: TemplateField[];
@@ -37,13 +26,20 @@ interface LayersPanelProps {
   onPaintOrder(backToFront: string[]): void;
   /** Rename writes `label` and nothing else — never the merge tag. */
   onRename(fieldId: string, label: string): void;
-  /** Session-only, both of them. See the note at the foot of the panel. */
+  /** Hide and pin are editing aids for this session only: never saved, never
+   * in the export, never in what your team sees. Pinned is `lockedIds`: the
+   * element can't be selected or dragged on the canvas. */
   lockedIds: Set<string>;
   hiddenIds: Set<string>;
   onToggleLocked(fieldId: string): void;
   onToggleHidden(fieldId: string): void;
   onContextMenu(e: React.MouseEvent, fieldId: string): void;
+  /** True for an image that is one of the brand's logos. */
+  isLogo?(field: TemplateField): boolean;
 }
+
+const groupGlyph = (g: LayoutGroup) =>
+  g.mode === "stack" ? (g.direction === "horizontal" ? Columns3 : Rows3) : GroupGlyph;
 
 /** One entry in the paint-order tree. A group is not itself painted, so it
  * takes the z of its frontmost member — that is where the group reads as
@@ -124,10 +120,11 @@ function flatten(nodes: Node[]): string[] {
   return [...nodes].reverse().flatMap((n) => n.fieldIds);
 }
 
-/** Paint order, frontmost at the top: what the graphic actually stacks like.
- * Deliberately a different list from the Form tab beside it — that one is the
- * order members fill things in, and the two are independent. Dragging here
- * rewrites zIndex and nothing else. */
+/** The Layers list (322:203): paint order, frontmost at the top, in Layer
+ * Rows (321:30). A fixed element carries the lock, as drawn; your team never
+ * edits it. Hide and Pin show on a row's hover or focus, and stay while
+ * they are on. A drag reorders siblings and rewrites zIndex, nothing else;
+ * the Form tab's order is separate. Double-click or F2 renames. */
 export function LayersPanel({
   fields,
   groups,
@@ -140,6 +137,7 @@ export function LayersPanel({
   onToggleLocked,
   onToggleHidden,
   onContextMenu,
+  isLogo,
 }: LayersPanelProps) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [renaming, setRenaming] = useState<string | null>(null);
@@ -202,213 +200,156 @@ export function LayersPanel({
     onPaintOrder(flatten(reordered));
   };
 
-  if (!fields.length) {
-    return (
-      <div className="px-3 py-4">
-        <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
-          Nothing on the canvas yet. What you add here stacks front to back: the top row paints over
-          everything under it.
-        </p>
-      </div>
-    );
-  }
+  if (!rows.length) return null;
+
+  const select = (e: React.MouseEvent, key: string, isSelected: boolean) => {
+    if (e.shiftKey || e.metaKey || e.ctrlKey) {
+      onSelect(isSelected ? selectedIds.filter((id) => id !== key) : [...selectedIds, key]);
+    } else {
+      onSelect([key]);
+    }
+  };
+
+  const toggleCollapsed = (groupId: string) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupId)) next.delete(groupId);
+      else next.add(groupId);
+      return next;
+    });
 
   return (
-    <div className="space-y-2">
-      <p style={{ fontSize: 10.5, color: "var(--text-muted)", padding: "0 2px" }}>
-        Front to back. Drag a row to change what paints over what. This is the graphic's stacking.
-        The fill order lives on the Form tab.
-      </p>
-      <div className="space-y-1">
-        {rows.map((n) => {
-          const isGroup = Boolean(n.group);
-          const f = n.field;
-          const isSelected = selectedIds.includes(n.key);
-          const isOver = overKey === n.key && dragKey.current !== null;
-          const isCollapsed = n.group ? collapsed.has(n.group.id) : false;
-          const locked = f ? lockedIds.has(f.id) : false;
-          const hidden = f ? hiddenIds.has(f.id) : false;
-          const Icon = f ? (ICONS[f.type] ?? Shapes) : Frame;
-          return (
-            <div
-              key={n.key}
-              draggable={renaming !== n.key}
-              onDragStart={() => {
-                dragKey.current = n.key;
-              }}
-              onDragOver={(e) => {
-                if (!dragKey.current) return;
-                e.preventDefault();
-                setOverKey(n.key);
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                drop(n);
-              }}
-              onDragEnd={() => drop(n)}
-              onClick={(e) => {
-                if (e.shiftKey || e.metaKey || e.ctrlKey) {
-                  onSelect(
-                    isSelected ? selectedIds.filter((id) => id !== n.key) : [...selectedIds, n.key],
-                  );
-                } else {
-                  onSelect([n.key]);
-                }
-              }}
-              onDoubleClick={() => f && setRenaming(f.id)}
-              onContextMenu={(e) => f && onContextMenu(e, f.id)}
-              className="flex items-center gap-1.5 px-2 py-1.5 cursor-pointer"
-              style={{
-                marginLeft: n.depth * 14,
-                borderRadius: "var(--radius-control)",
-                border: `1px solid ${isSelected ? "var(--state-primary)" : "var(--border)"}`,
-                background: isSelected
-                  ? "var(--accent-wash)"
-                  : isOver
-                    ? "var(--bg-raised)"
-                    : "var(--bg-surface)",
-                opacity: hidden ? 0.5 : 1,
-              }}
-            >
-              <GripVertical
-                style={{
-                  width: 13,
-                  height: 13,
-                  color: "var(--text-disabled)",
-                  flexShrink: 0,
-                  cursor: "grab",
+    <div className="sp-layers" role="list" aria-label="Layers">
+      {rows.map((n) => {
+        const f = n.field;
+        const g = n.group;
+        const isSelected = selectedIds.includes(n.key);
+        const isOver = overKey === n.key && dragKey.current !== null;
+        const isCollapsed = g ? collapsed.has(g.id) : false;
+        const locked = f ? lockedIds.has(f.id) : false;
+        const hidden = f ? hiddenIds.has(f.id) : false;
+        const isRenaming = Boolean(f && renaming === f.id);
+        const Icon = f ? elementIcon(f, isLogo?.(f) ?? false) : g ? groupGlyph(g) : GroupGlyph;
+        const name = f ? f.label : (g?.name ?? "");
+        return (
+          <div
+            key={n.key}
+            role="listitem"
+            className="sp-layer"
+            data-selected={isSelected || undefined}
+            data-over={isOver || undefined}
+            data-muted={hidden || undefined}
+            style={{ "--layer-depth": n.depth } as React.CSSProperties}
+            draggable={!isRenaming}
+            onDragStart={() => {
+              dragKey.current = n.key;
+            }}
+            onDragOver={(e) => {
+              if (!dragKey.current) return;
+              e.preventDefault();
+              setOverKey(n.key);
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              drop(n);
+            }}
+            onDragEnd={() => drop(n)}
+            onClick={(e) => select(e, n.key, isSelected)}
+            onDoubleClick={() => f && setRenaming(f.id)}
+            onContextMenu={(e) => f && onContextMenu(e, f.id)}
+          >
+            {g && (
+              <button
+                type="button"
+                className="ui-reset ui-ring sp-layer__twisty"
+                aria-expanded={!isCollapsed}
+                aria-label={`${g.name}, ${isCollapsed ? "expand" : "collapse"}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleCollapsed(g.id);
                 }}
-              />
-              {isGroup && (
-                <button
-                  aria-label={isCollapsed ? "Expand group" : "Collapse group"}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setCollapsed((prev) => {
-                      const nextSet = new Set(prev);
-                      if (n.group && nextSet.has(n.group.id)) nextSet.delete(n.group.id);
-                      else if (n.group) nextSet.add(n.group.id);
-                      return nextSet;
-                    });
-                  }}
-                  className="flex items-center"
-                  style={{ width: 14, flexShrink: 0, color: "var(--text-muted)" }}
-                >
-                  {isCollapsed ? (
-                    <ChevronRight style={{ width: 12, height: 12 }} />
-                  ) : (
-                    <ChevronDown style={{ width: 12, height: 12 }} />
-                  )}
-                </button>
-              )}
-              <Icon style={{ width: 13, height: 13, color: "var(--text-muted)", flexShrink: 0 }} />
-              {renaming === n.key || (f && renaming === f.id) ? (
-                <input
+              >
+                {isCollapsed ? (
+                  <ChevronRight size={16} className="ui-icon" aria-hidden />
+                ) : (
+                  <ChevronDown size={16} className="ui-icon" aria-hidden />
+                )}
+              </button>
+            )}
+            {isRenaming && f ? (
+              <span className="sp-layer__main">
+                <Icon size={16} className="ui-icon" aria-hidden />
+                <Input
+                  size="sm"
                   autoFocus
-                  defaultValue={f?.label ?? ""}
-                  aria-label="Element name"
+                  defaultValue={f.label}
+                  aria-label="Name"
+                  className="sp-layer__rename"
                   onClick={(e) => e.stopPropagation()}
+                  onDoubleClick={(e) => e.stopPropagation()}
                   onBlur={(e) => {
-                    if (f && e.target.value.trim()) onRename(f.id, e.target.value.trim());
+                    const next = e.currentTarget.value.trim();
+                    if (next && next !== f.label) onRename(f.id, next);
                     setRenaming(null);
                   }}
                   onKeyDown={(e) => {
                     e.stopPropagation();
-                    if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                    if (e.key === "Enter") e.currentTarget.blur();
                     if (e.key === "Escape") {
-                      (e.target as HTMLInputElement).value = f?.label ?? "";
-                      (e.target as HTMLInputElement).blur();
+                      e.currentTarget.value = f.label;
+                      e.currentTarget.blur();
                     }
-                  }}
-                  className="flex-1 min-w-0"
-                  style={{
-                    fontSize: 12.5,
-                    background: "var(--bg-raised)",
-                    border: "1px solid var(--border-strong)",
-                    borderRadius: 3,
-                    padding: "1px 4px",
-                    color: "var(--text-primary)",
                   }}
                 />
-              ) : (
-                <span
-                  className="flex-1 truncate"
-                  title={f ? `${f.label}: double-click to rename` : n.group?.name}
-                  style={{ fontSize: 12.5, color: "var(--text-primary)" }}
-                >
-                  {f ? f.label : n.group?.name}
-                </span>
-              )}
-              {f && (
-                <span
-                  title={
-                    f.static ? "Fixed. Members never see or edit this." : "Members fill this one in"
+              </span>
+            ) : (
+              <button
+                type="button"
+                className="ui-reset ui-ring sp-layer__main"
+                aria-pressed={isSelected}
+                aria-label={f?.static ? `${name}, fixed` : undefined}
+                onKeyDown={(e) => {
+                  if (e.key === "F2" && f) {
+                    e.preventDefault();
+                    setRenaming(f.id);
                   }
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 9.5,
-                    color: f.static ? "var(--text-muted)" : "var(--state-primary)",
-                    flexShrink: 0,
+                }}
+              >
+                <Icon size={16} className="ui-icon" aria-hidden />
+                <span className="t-body-s sp-layer__name">{name}</span>
+              </button>
+            )}
+            {f && !isRenaming && (
+              <span className="sp-layer__aids">
+                <IconButton
+                  variant="ghost"
+                  size="sm"
+                  icon={hidden ? EyeOff : Eye}
+                  label={`Hide ${f.label}`}
+                  aria-pressed={hidden}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleHidden(f.id);
                   }}
-                >
-                  {f.static ? "fixed" : "fills in"}
-                </span>
-              )}
-              {f && (
-                <>
-                  <button
-                    aria-label={hidden ? `Show ${f.label}` : `Hide ${f.label} while editing`}
-                    title={
-                      hidden
-                        ? "Show on the canvas again"
-                        : "Hide while you work. It still exports and members still see it."
-                    }
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onToggleHidden(f.id);
-                    }}
-                    className="flex items-center flex-shrink-0"
-                    style={{ width: 16, color: "var(--text-muted)" }}
-                  >
-                    {hidden ? (
-                      <EyeOff style={{ width: 12, height: 12 }} />
-                    ) : (
-                      <Eye style={{ width: 12, height: 12 }} />
-                    )}
-                  </button>
-                  <button
-                    aria-label={locked ? `Unlock ${f.label}` : `Lock ${f.label} while editing`}
-                    title={
-                      locked
-                        ? "Let it be selected on the canvas again"
-                        : "Keep it from being selected or dragged while you work"
-                    }
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onToggleLocked(f.id);
-                    }}
-                    className="flex items-center flex-shrink-0"
-                    style={{
-                      width: 16,
-                      color: locked ? "var(--text-primary)" : "var(--text-muted)",
-                    }}
-                  >
-                    {locked ? (
-                      <Lock style={{ width: 12, height: 12 }} />
-                    ) : (
-                      <Unlock style={{ width: 12, height: 12 }} />
-                    )}
-                  </button>
-                </>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      <p style={{ fontSize: 10.5, color: "var(--text-muted)", padding: "0 2px" }}>
-        Hiding and locking only affect this editing session. They are never saved and never change
-        the exported graphic or what your team sees.
-      </p>
+                />
+                <IconButton
+                  variant="ghost"
+                  size="sm"
+                  icon={Pin}
+                  label={`Pin ${f.label}`}
+                  aria-pressed={locked}
+                  selected={locked}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleLocked(f.id);
+                  }}
+                />
+              </span>
+            )}
+            {f?.static && <Lock size={16} className="ui-icon sp-layer__fixed" aria-hidden />}
+          </div>
+        );
+      })}
     </div>
   );
 }
