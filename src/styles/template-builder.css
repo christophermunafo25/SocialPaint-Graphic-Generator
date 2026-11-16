@@ -9,43 +9,14 @@
 /* ── The list (328:1944) ───────────────────────────────────────────────── */
 
 /* The filter bar, 40 tall: the status switch on the left, the sort and the
-   search 8 apart on the right. It pins under the header as the grid
-   scrolls, as the library's does: flat at rest; pinned, the page's ground
-   runs behind it and fades out 24 below. */
-.sp-tb-sentinel {
-  height: 1px;
-  margin-top: -1px;
-}
+   search 8 apart on the right. It scrolls with the page. */
 .sp-tb-filterbar {
-  position: sticky;
-  top: var(--chrome-top);
-  z-index: var(--z-sticky);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-12) var(--space-8);
   min-height: 40px; /* as drawn */
-}
-/* In the app frame the bar pins to the content's top edge: sticky measures
-   from inside the content's 24 of top padding, so the offset gives it
-   back. */
-@media (min-width: 1024px) {
-  .sp-frame[data-head] .sp-tb-filterbar {
-    top: calc(-1 * var(--space-24));
-  }
-}
-.sp-tb-filterbar::before {
-  content: "";
-  position: absolute;
-  inset: calc(-1 * var(--space-8)) calc(-1 * var(--space-8)) calc(-1 * var(--space-24));
-  z-index: -1;
-  pointer-events: none;
-  background: linear-gradient(to bottom, var(--surface-page) 70%, transparent);
-  opacity: 0;
-}
-.sp-tb-filterbar[data-pinned]::before {
-  opacity: 1;
 }
 .sp-tb-filterbar__end {
   display: flex;

@@ -10,45 +10,13 @@
 /* ── The library (new brand: 2308:4, platform filter 2308:538, search
    2308:739) ───────────────────────────────────────────────────────────────── */
 
-/* The filter bar pins under the app chrome as the page scrolls. Flat at
-   rest; pinned, the page's own ground runs behind it and fades out 24
-   below, so cards scroll under it without meeting an edge. The sentinel
-   above it tells the page when it has pinned. The search button, then the
-   chips, 8 apart. */
-.sp-lib-sentinel {
-  height: 1px;
-  margin-top: -1px;
-}
+/* The filter bar scrolls with the page (CJ, 2026-11-16: nothing sticks).
+   The search button, then the chips, 8 apart. */
 .sp-lib-filterbar {
-  position: sticky;
-  top: var(--chrome-top);
-  z-index: var(--z-sticky);
   display: flex;
   align-items: center;
   gap: var(--space-8);
   min-height: 56px;
-}
-/* In the app frame the library's bar pins to the content's top edge, right
-   under the header row. Sticky measures from inside the content's 24 of
-   top padding, so the bar's offset gives that 24 back. Only the library's:
-   History's bar shares the class but is positioned, not sticky, and an
-   offset would lift it onto its title. */
-@media (min-width: 1024px) {
-  .sp-frame[data-head] .sp-page--bleed > .sp-lib-filterbar {
-    top: calc(-1 * var(--space-24));
-  }
-}
-.sp-lib-filterbar::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 calc(-1 * var(--space-24));
-  z-index: -1;
-  pointer-events: none;
-  background: linear-gradient(to bottom, var(--surface-page) 70%, transparent);
-  opacity: 0;
-}
-.sp-lib-filterbar[data-pinned]::before {
-  opacity: 1;
 }
 /* The search (50:62) is round here: a 50 button that opens into the 440
    pill (2308:739). */
