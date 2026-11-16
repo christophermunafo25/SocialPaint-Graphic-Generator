@@ -10,6 +10,7 @@
 // model's proposed boxes are clamped hard.
 
 import type { ExtractedElement, ExtractionResult, ImportedEffect } from "./extract.ts";
+import { plainCaption } from "./captionCopy.ts";
 
 export type AutobuildSourceKind = "figma" | "canva" | "image";
 
@@ -152,23 +153,25 @@ function reslug(raw: string, taken: Set<string>): string {
   return key;
 }
 
-/** The template's own details, cleaned: lengths held, and caption tags that
- * name no field removed. Shared by every route that asks the model. */
+/** The template's own details, cleaned: lengths held, caption tags that name
+ * no field removed, and the caption held to the house copy rules. Shared by
+ * every route that asks the model. */
 export function sanitizeTemplate(
   raw: unknown,
   validKeys: Set<string>,
   warnings: string[],
 ): ProposedTemplate {
   const t = (raw && typeof raw === "object" ? raw : {}) as Partial<ProposedTemplate>;
-  let caption = typeof t.captionTemplate === "string" ? t.captionTemplate : "";
-  caption = caption
-    .replace(/\{([a-z][a-z0-9_]*)\}/g, (tag, key: string) => {
-      if (validKeys.has(key)) return tag;
-      warnings.push(`Caption tag {${key}} doesn't match any field — removed.`);
-      return "";
-    })
-    .replace(/[ \t]{2,}/g, " ")
-    .trim();
+  const caption = plainCaption(
+    (typeof t.captionTemplate === "string" ? t.captionTemplate : "").replace(
+      /\{([a-z][a-z0-9_]*)\}/g,
+      (tag, key: string) => {
+        if (validKeys.has(key)) return tag;
+        warnings.push(`Caption tag {${key}} doesn't match any field, so it was removed.`);
+        return "";
+      },
+    ),
+  );
   return {
     name: (typeof t.name === "string" && t.name.trim() ? t.name.trim() : "Untitled template").slice(
       0,

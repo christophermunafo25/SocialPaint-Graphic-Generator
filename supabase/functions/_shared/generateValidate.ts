@@ -14,6 +14,7 @@
 // back (cleaned, bounded, or dropped). Every warning written here reaches the
 // member, so none carries an em dash.
 
+import { plainCaption } from "./captionCopy.ts";
 import { isRequiredField } from "./fieldRules.ts";
 import { HttpError } from "./http.ts";
 import { requireString } from "./validate.ts";
@@ -379,7 +380,7 @@ export function validateGeneration(
       templateId: template.id,
       templateName: template.name,
       values,
-      caption: typeof p.caption === "string" ? p.caption.trim().slice(0, 600) : "",
+      caption: typeof p.caption === "string" ? plainCaption(p.caption.trim().slice(0, 600)) : "",
       why: typeof p.why === "string" ? p.why.trim().slice(0, 200) : "",
       imageFieldsNeeded: template.fields
         .filter((f) => !f.static && f.type === "image")
