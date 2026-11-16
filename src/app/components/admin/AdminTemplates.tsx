@@ -8,7 +8,7 @@ import { useBrand } from "@/lib/brand/BrandContext";
 import { seedStarterTemplates } from "@/lib/templates/starters/seed";
 import { consumeSeedNotice } from "@/lib/templates/starters/seedNotice";
 import { useRouter } from "../../router";
-import { Page, PageHeader } from "../layout/Page";
+import { Page } from "../layout/Page";
 import { ConfirmDialog } from "../ConfirmDialog";
 import { InlineEdit } from "../InlineEdit";
 import { TemplateSearchField } from "../templates/TemplateSearchField";
@@ -20,7 +20,16 @@ import { CanvasSizePicker } from "../builder/CanvasSizePicker";
 import { ErrorState } from "../ErrorState";
 import { SkeletonCard } from "../templates/TemplateSkeleton";
 import { TemplateThumbnail } from "../TemplateThumbnail";
-import { Badge, Button, IconButton, Modal, SegmentedControl, Select, Toast } from "../primitives";
+import {
+  Badge,
+  Button,
+  IconButton,
+  Modal,
+  PageHeader,
+  SegmentedControl,
+  Select,
+  Toast,
+} from "../primitives";
 
 type StatusFilter = "all" | "published" | "draft";
 type SortKey = "recent" | "name" | "downloads";
@@ -229,8 +238,34 @@ export function AdminTemplates() {
     }
   };
 
+  const header = (
+    <PageHeader
+      title="Template Builder"
+      actions={
+        <>
+          <Button
+            kind="neutral"
+            icon={RotateCcw}
+            onClick={() => setConfirmingRestore(true)}
+            disabled={restoring || !kit}
+            title="Recreate deleted starter templates"
+          >
+            {restoring ? "Restoring…" : "Restore starters"}
+          </Button>
+          <Button
+            kind="primary"
+            icon={Plus}
+            onClick={() => navigate({ name: "builder", templateId: null })}
+          >
+            New template
+          </Button>
+        </>
+      }
+    />
+  );
+
   return (
-    <Page>
+    <Page header={header}>
       {toast && (
         // The fill page's toast position: centred at the foot of the page.
         <div className="sp-fill-toast" aria-live="polite">
@@ -273,29 +308,6 @@ export function AdminTemplates() {
         tone="primary"
         onCancel={() => setConfirmingRestore(false)}
         onConfirm={() => void restoreStarters()}
-      />
-      <PageHeader
-        title="Template Builder"
-        actions={
-          <div className="flex items-center" style={{ gap: "var(--space-2xs)" }}>
-            <Button
-              kind="neutral"
-              icon={RotateCcw}
-              onClick={() => setConfirmingRestore(true)}
-              disabled={restoring || !kit}
-              title="Recreate deleted starter templates"
-            >
-              {restoring ? "Restoring…" : "Restore starters"}
-            </Button>
-            <Button
-              kind="primary"
-              icon={Plus}
-              onClick={() => navigate({ name: "builder", templateId: null })}
-            >
-              New template
-            </Button>
-          </div>
-        }
       />
 
       {templatesState.status === "ready" && templates.length > 0 && (

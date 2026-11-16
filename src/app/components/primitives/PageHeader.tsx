@@ -19,14 +19,23 @@ export interface BreadcrumbProps {
   crumbs: Crumb[];
   /** The id of the last crumb, which names the page and is its heading. */
   currentId?: string;
+  /** Whether the last crumb is the page's heading (it is, unless the page
+   * sets its own title under the trail, as History does). */
+  currentIsHeading?: boolean;
   className?: string;
 }
 
 /** Breadcrumb (Figma 2213:111): the trail in Label/M, 8 apart. Earlier
  * crumbs are links on text/secondary with a slash between them; the last
  * names the page, on text/primary, and is its heading. */
-export function Breadcrumb({ crumbs, currentId, className }: BreadcrumbProps) {
+export function Breadcrumb({
+  crumbs,
+  currentId,
+  currentIsHeading = true,
+  className,
+}: BreadcrumbProps) {
   const last = crumbs.length - 1;
+  const Current = currentIsHeading ? "h1" : "span";
   return (
     <nav aria-label="Breadcrumb" className={cx("ui-breadcrumb", className)}>
       <ol>
@@ -38,9 +47,13 @@ export function Breadcrumb({ crumbs, currentId, className }: BreadcrumbProps) {
               </span>
             )}
             {i === last ? (
-              <h1 id={currentId} className="t-label-m ui-breadcrumb__current" aria-current="page">
+              <Current
+                id={currentId}
+                className="t-label-m ui-breadcrumb__current"
+                aria-current="page"
+              >
                 {crumb.label}
-              </h1>
+              </Current>
             ) : crumb.href ? (
               <a
                 href={crumb.href}
@@ -73,7 +86,7 @@ interface PageHeaderShared {
   /** The page's actions, on the right, 8 apart. */
   actions?: React.ReactNode;
   /** A quiet line before the actions, in Body/S (a detail page's save
-   * status). */
+   * status), read out politely as it changes. */
   status?: React.ReactNode;
   className?: string;
 }
@@ -85,6 +98,7 @@ export type PageHeaderProps = PageHeaderShared &
         title: React.ReactNode;
         crumbs?: undefined;
         currentId?: undefined;
+        currentIsHeading?: undefined;
       }
     | {
         title?: undefined;
@@ -92,6 +106,8 @@ export type PageHeaderProps = PageHeaderShared &
         crumbs: Crumb[];
         /** The page heading's id, for a region it names. */
         currentId?: string;
+        /** False when the page sets its own title under the trail. */
+        currentIsHeading?: boolean;
       }
   );
 
@@ -99,19 +115,23 @@ export type PageHeaderProps = PageHeaderShared &
  * breadcrumb on the left and the page's actions on the right. The title or
  * the breadcrumb's last crumb is the page's heading. */
 export const PageHeader = React.forwardRef<HTMLElement, PageHeaderProps>(function PageHeader(
-  { title, crumbs, currentId, actions, status, className },
+  { title, crumbs, currentId, currentIsHeading, actions, status, className },
   ref,
 ) {
   return (
     <header ref={ref} className={cx("ui-page-header", className)}>
       {crumbs ? (
-        <Breadcrumb crumbs={crumbs} currentId={currentId} />
+        <Breadcrumb crumbs={crumbs} currentId={currentId} currentIsHeading={currentIsHeading} />
       ) : (
         <h1 className="t-title-page ui-page-header__title">{title}</h1>
       )}
       {(status || actions) && (
         <div className="ui-page-header__end">
-          {status && <span className="t-body-s ui-page-header__status">{status}</span>}
+          {status && (
+            <span className="t-body-s ui-page-header__status" role="status">
+              {status}
+            </span>
+          )}
           {actions && <div className="ui-page-header__actions">{actions}</div>}
         </div>
       )}

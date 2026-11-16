@@ -9,8 +9,7 @@ import { GenerateHeader } from "../chat/GenerateHeader";
 import { ResultCardSkeleton } from "../chat/GenerateTurn";
 import { AssistantMessage } from "../chat/Messages";
 import { Button } from "../primitives";
-import { LegalLinks } from "./LegalLinks";
-import { useScrollFades } from "./ScrollFade";
+import { useScrollFades } from "../layout/useScrollFades";
 import { takeComposerFocus } from "./composerFocus";
 
 /** The thread's composer placeholder (PROMPT §7.9), here and on the page. */
@@ -42,8 +41,11 @@ export function ChatLoading({ onNewChat, onHistory }: ChatPageActions) {
   const threadRef = useRef<HTMLDivElement>(null);
   const { gutter } = useScrollFades(threadRef);
   return (
-    <Page layout={{ className: "sp-chat-page", state: "thread" }}>
-      <GenerateHeader title={null} onNewChat={onNewChat} onHistory={onHistory} />
+    <Page
+      kind="self"
+      layout={{ className: "sp-chat-page", state: "thread" }}
+      header={<GenerateHeader title={null} onNewChat={onNewChat} onHistory={onHistory} />}
+    >
       <div className="sp-chat-split">
         <div className="sp-chat-split__chat">
           <div className="sp-chat-thread-frame">
@@ -84,9 +86,6 @@ export function ChatLoading({ onNewChat, onHistory }: ChatPageActions) {
                 disabled
               />
             </div>
-            <p className="tu-caption-m sp-tchat-legal">
-              <LegalLinks />
-            </p>
           </div>
         </div>
       </div>
@@ -113,8 +112,11 @@ export function ChatUnavailable({
     takeComposerFocus();
   }, []);
   return (
-    <Page layout={{ className: "sp-chat-page", state: "thread" }}>
-      <GenerateHeader title={null} onNewChat={onNewChat} onHistory={onHistory} />
+    <Page
+      kind="self"
+      layout={{ className: "sp-chat-page", state: "thread" }}
+      header={<GenerateHeader title={null} onNewChat={onNewChat} onHistory={onHistory} />}
+    >
       <div className="sp-chat-unavailable">
         {failure.reason === "error" ? (
           <ErrorState
@@ -136,9 +138,6 @@ export function ChatUnavailable({
           </div>
         )}
       </div>
-      <footer className="sp-chat-footer">
-        <LegalLinks />
-      </footer>
     </Page>
   );
 }

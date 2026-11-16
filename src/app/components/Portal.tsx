@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { PRIVACY_URL, TERMS_URL } from "@/lib/legalLinks";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -15,9 +14,9 @@ import {
 import { PLATFORMS, type PlatformId } from "@/lib/templates/platforms";
 import { buildSearchIndex, searchTemplates } from "@/lib/templates/searchIndex";
 import { useRouter } from "../router";
-import { Page, PageHeader } from "./layout/Page";
+import { Page } from "./layout/Page";
 import { ErrorState } from "./ErrorState";
-import { Button } from "./primitives";
+import { Button, PageHeader } from "./primitives";
 import { LibrarySearch } from "./templates/LibrarySearch";
 import { PlatformFilter } from "./templates/PlatformFilter";
 import { PlatformShelf } from "./templates/PlatformShelf";
@@ -153,8 +152,7 @@ export function Portal() {
 
   if (templatesState.status === "error") {
     return (
-      <Page bleed>
-        <PageHeader title="Brand Templates" />
+      <Page bleed header={<PageHeader title="Brand Templates" />}>
         <ErrorState
           title="We couldn't load your templates."
           detail="Check your connection and try again."
@@ -165,12 +163,7 @@ export function Portal() {
   }
 
   return (
-    <Page bleed>
-      {/* The Generate action and the workspace eyebrow left this header
-          (2026-09 frames + CJ, 2026-09-15); the description came back with
-          the Figma "Navigation" page (2026-09-25). */}
-      <PageHeader title="Brand Templates" />
-
+    <Page bleed header={<PageHeader title="Brand Templates" />}>
       <div ref={sentinel} aria-hidden className="sp-lib-sentinel" />
       <div className="sp-lib-filterbar" data-pinned={pinned || undefined}>
         <LibrarySearch value={query} onChange={(q) => setState({ q }, true)} />
@@ -255,15 +248,6 @@ export function Portal() {
           </>
         )}
       </div>
-
-      <p className="sp-lib-legal tu-caption-m">
-        <a href={TERMS_URL} target="_blank" rel="noopener noreferrer">
-          Terms of Service
-        </a>
-        <a href={PRIVACY_URL} target="_blank" rel="noopener noreferrer">
-          Privacy Policy
-        </a>
-      </p>
     </Page>
   );
 }

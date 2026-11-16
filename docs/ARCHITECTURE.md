@@ -247,16 +247,24 @@ isolation, the lifecycle, the cascades, and cap concurrency.
 
 ## App shell
 
-Navigation is a persistent left sidebar (`src/app/components/Sidebar.tsx`,
-layout from Figma `KFBFgZBs7Tl9LXovzNUaNP` node 13:28, surface treatment from
-the current design system — flat, no glass): a panel pinned to the left
-edge, rounded on its right corners, with logo + collapse toggle, six
-role-gated destinations (Brand Templates · Template Builder · Insights &
-Analytics · Brand Studio · People · Settings & Admin — members see only the
-first), and a user block pinned to the bottom (theme toggle, sign out, and —
-on the dev backend — the tenant/role switcher). Every sidebar color is a
-`--sb-*` token themed for light AND dark in `socialpaint.css`; tenant brand
-kits never re-color the shell.
+At 1024 and wider the window is the app frame (new brand, Phase 3; every page frame of
+"Master UX UI New Brand (Copy)"): `AppShell` lays out 12 of padding around the Sidebar and
+Main on surface/page, stops above the local backend's banner, and the document does not
+scroll. The Sidebar (`src/app/components/Sidebar.tsx`, the Patterns page's component
+`2218:679`) is 320 wide or a 76 rail, with the lockup, the theme toggle and Collapse, five
+role-gated destinations (members see the first two) and the account row, whose Settings
+button is the avatar when collapsed. Below 1024 a sticky mobile bar with a drop-down nav
+takes its place and the document scrolls.
+
+Main is `layout/Page.tsx`: the page's header in a 36 header row, the content under it and
+Footer Links at the foot, each with a 32 gutter. Most pages scroll their content inside
+Main under an 80 fade ("scroll"); the Generate thread and History scroll their own region
+("self"); the builder editor fills Main ("bare"). Page Up and Down from the sidebar or the
+page itself reach the content (`layout/useFrameKeys.ts`), and the content returns to the
+top when the route's path changes. The shell reads tokens and the three measures it
+defines itself in `src/styles/shell.css` (the page gutter `--page-pad`, the mobile bar's
+height `--chrome-top`, the public link page's cap `--page-max`); tenant brand kits never
+re-color it.
 
 ## Theming
 
@@ -290,7 +298,8 @@ primitives in the phase that rebuilds them (`docs/design/new-brand/PLAN.md`); th
 
 The shell is the sidebar (`src/app/components/Sidebar.tsx`: the Figma Sidebar component,
 expanded or collapsed, built on the primitives and styled in `src/styles/shell.css`) and
-the page header (`layout/Page.tsx`: a title and its actions). Settings opens from the
+Main (`layout/Page.tsx`), which places each page's `PageHeader` (the primitive: a title or
+a breadcrumb, with a status and actions) and the footer links. Settings opens from the
 account gear and holds People (`/people` and `/settings/team` redirect there), workspace
 switching (the Workspaces card) and sign out; on the local backend the dev role switch
 sits in `DevBackendBanner`. What each role reaches is `screenFor` (`src/app/router.tsx`)
@@ -315,15 +324,16 @@ lands in Phase 7b. Sharing's rows copy a link's address (its token is stored sin
 before 0033 need New address first.
 
 Brand Studio is on the new look (Phase 6; styles in `src/styles/brand-studio.css`, the
-`sp-bs-*` classes). Detail pages head themselves with `BreadcrumbHeader` (save status and
-Undo on the right); file rows and cards carry `RowMenu` / `RowContextMenu` (the same menu
+`sp-bs-*` classes). Detail pages head with `BrandDetailHeader` (the PageHeader primitive's
+breadcrumb kind, with the save status and Undo on the right), which `BrandStudio` places
+in the frame's header row; file rows and cards carry `RowMenu` / `RowContextMenu` (the same menu
 on right-click); preview cards use `PreviewOverlay decorative`. Escape on an in-place edit
 also drops that edit's undo steps (`brand.cancelTo`).
 
 Brand Templates is on the new look (Phase 4; styles in `src/styles/brand-templates.css`).
 The library's template card is one button that steps through its looks on hover. A page
-under the library (the fill page, the template chat) heads itself with
-`layout/Breadcrumb.tsx` in place of a title. The fill page (`TemplateFill`, shared with the
+under the library (the fill page, the template chat) heads itself with the breadcrumb kind
+of the `PageHeader` primitive in place of a title. The fill page (`TemplateFill`, shared with the
 public link page) is a step form, one field per step on the Field primitive (a photo on the
 Upload control, whose picking and cropping is `imagePick.tsx`, shared with Generate's
 editor), then a finish step with the look, the caption with Copy and the downloads, beside

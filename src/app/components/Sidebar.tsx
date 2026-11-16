@@ -14,12 +14,8 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { useColorScheme } from "@/lib/colorScheme";
 import { useRouter, type Route } from "../router";
 import { useChrome } from "./layout/ChromeContext";
-import { BrandLockup, BrandMark } from "./BrandMark";
+import { BrandLockup } from "./BrandMark";
 import { Avatar, IconButton, NavItem, Tooltip } from "./primitives";
-
-// Re-exported so existing `import { BrandMark } from "../Sidebar"` call sites
-// keep working; the components themselves live in BrandMark.tsx.
-export { BrandMark };
 
 interface NavDef {
   label: string;
@@ -30,9 +26,9 @@ interface NavDef {
   matches: Route["name"][];
 }
 
-/** The five nav items of the Sidebar (Figma 56:646), in its order. People
- * and Settings live in Settings, opened from the account gear. A member
- * sees the first two. */
+/** The five nav items of the Sidebar (2218:588), in its order. People and
+ * Settings live in Settings, opened from the account. A member sees the
+ * first two. */
 const NAV: NavDef[] = [
   {
     label: "Brand Templates",
@@ -82,9 +78,8 @@ const THEME_GLYPHS = { light: Sun, dark: Moon };
 
 /** The light and dark quick toggle. It writes the same colour scheme
  * Settings' System / Light / Dark control does, so the two always agree.
- * The glyph follows the theme in CSS. The new file draws no toggle in the
- * sidebar, so it takes the look of the Collapse button beside it (a ghost
- * Small icon button) until Phase 3 places it. */
+ * The file draws no toggle; CJ kept it beside Collapse (2026-11-15), in the
+ * Collapse button's look (Ghost Small). The collapsed rail leaves it out. */
 function SidebarThemeToggle() {
   const { resolved, setScheme } = useColorScheme();
   const next = resolved === "dark" ? "light" : "dark";
@@ -119,9 +114,10 @@ function useAccount() {
   return { initials, name, detail };
 }
 
-/** The Account block (Figma 56:1330): avatar, name and email, and the gear
- * that opens Settings, selected while Settings shows. Stacked in the
- * collapsed rail (189:2493). */
+/** The account row (2218:620): the avatar, the name over the email 8 apart,
+ * and Settings, 12 apart, selected while Settings shows. The collapsed rail
+ * (2218:673) draws the avatar alone, so there the avatar is the Settings
+ * button. */
 function SidebarAccount({
   collapsed,
   onOpenSettings,
@@ -132,22 +128,20 @@ function SidebarAccount({
   const { route } = useRouter();
   const { initials, name, detail } = useAccount();
   const inSettings = route.name === "settings";
-  const gear = (
-    <IconButton
-      variant="ghost"
-      size="sm"
-      icon={Settings}
-      label="Settings"
-      selected={inSettings}
-      aria-current={inSettings ? "page" : undefined}
-      onClick={onOpenSettings}
-    />
-  );
   if (collapsed) {
     return (
       <div className="sp-shell-account" data-collapsed>
-        <Avatar initials={initials} label={name} />
-        {gear}
+        <Tooltip label="Settings" placement="right">
+          <button
+            type="button"
+            className="ui-reset ui-ring sp-shell-account__settings"
+            aria-label="Settings"
+            aria-current={inSettings ? "page" : undefined}
+            onClick={onOpenSettings}
+          >
+            <Avatar initials={initials} />
+          </button>
+        </Tooltip>
       </div>
     );
   }
@@ -155,31 +149,39 @@ function SidebarAccount({
     <div className="sp-shell-account">
       <Avatar initials={initials} />
       <div className="sp-shell-account__text">
-        <span className="tu-label-s" title={name}>
+        <span className="t-label-m sp-shell-account__name" title={name}>
           {name}
         </span>
-        <span className="tu-caption-s sp-shell-account__detail" title={detail}>
+        <span className="t-caption-m sp-shell-account__detail" title={detail}>
           {detail}
         </span>
       </div>
-      {gear}
+      <IconButton
+        variant="ghost"
+        size="sm"
+        icon={Settings}
+        label="Settings"
+        selected={inSettings}
+        aria-current={inSettings ? "page" : undefined}
+        onClick={onOpenSettings}
+      />
     </div>
   );
 }
 
-/** App-shell navigation. Desktop (1024 and wider): the floating Sidebar
- * (Figma 56:646), expanded or collapsed to its 76 rail. Narrower: no rail,
- * a slim top bar with the brand and a menu button, the nav dropping down
- * over a scrim (today's behavior; below desktop the new look changes only
- * its contents). SocialPaint product UI: tenant brand kits never recolour
- * it. */
+/** App-shell navigation. At 1024 and wider: the Sidebar (2218:679), open at
+ * 320 or collapsed to its 76 rail, the frame's first part. Narrower: no
+ * rail, a slim top bar with the lockup, the theme toggle and a menu button,
+ * the nav dropping down over a scrim (no frame draws it; it keeps its
+ * earlier behavior on the new tokens). SocialPaint product UI: tenant
+ * brand kits never recolour it. */
 export function Sidebar() {
   const { role } = useAuth();
   const { route, navigate } = useRouter();
   const [isNarrow, setIsNarrow] = useState(() => window.matchMedia("(max-width: 1023px)").matches);
   const [menuOpen, setMenuOpen] = useState(false);
   // Collapse state lives in ChromeContext: the Template Builder borrows the
-  // rail for as long as it owns the viewport, and hands it back untouched.
+  // rail for as long as it is open, and hands it back untouched.
   const { sidebarCollapsed, setSidebarCollapsed } = useChrome();
 
   useEffect(() => {
@@ -213,48 +215,25 @@ export function Sidebar() {
     return (
       <>
         {menuOpen && (
-          <div
-            className="fixed inset-0"
-            style={{
-              background: "color-mix(in srgb, var(--text-on-accent) 40%, transparent)",
-              // One layer under the header so the open menu's scrim covers
-              // the page's sticky chrome (the filter bar at --z-sticky) too.
-              zIndex: "calc(var(--z-drawer) - 1)",
-            }}
-            onClick={() => setMenuOpen(false)}
-            aria-hidden
-          />
+          <div className="sp-mobilebar__scrim" onClick={() => setMenuOpen(false)} aria-hidden />
         )}
-        <header
-          className="sp-mobilebar sticky top-0 w-full"
-          data-menu-open={menuOpen || undefined}
-          style={{
-            // App chrome outranks page chrome: above the filter bar's
-            // --z-sticky, below modals.
-            zIndex: "var(--z-drawer)",
-            paddingTop: "env(safe-area-inset-top)",
-          }}
-        >
-          <div className="flex items-center justify-between px-4" style={{ height: 56 }}>
-            <button onClick={() => go(home)} aria-label="SocialPaint home">
+        <header className="sp-mobilebar" data-menu-open={menuOpen || undefined}>
+          <div className="sp-mobilebar__row">
+            <button
+              className="sp-shell-logo"
+              onClick={() => go(home)}
+              aria-label="SocialPaint home"
+            >
               <BrandLockup height={18} />
             </button>
-            <div className="flex items-center gap-2">
+            <div className="sp-mobilebar__end">
               <SidebarThemeToggle />
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
                 aria-expanded={menuOpen}
                 aria-label={menuOpen ? "Close navigation" : "Open navigation"}
                 data-open={menuOpen}
-                className="sp-nav-toggle relative flex items-center justify-center "
-                data-radius-control
-                style={{
-                  // 44px touch floor (the .sp-shelf__viewall pattern).
-                  width: 44,
-                  height: 44,
-                  color: "var(--sb-fg-active)",
-                  border: "1px solid var(--sb-border)",
-                }}
+                className="sp-nav-toggle sp-mobilebar__toggle"
               >
                 <span aria-hidden className="sp-nav-toggle__bar sp-nav-toggle__bar--top" />
                 <span aria-hidden className="sp-nav-toggle__bar sp-nav-toggle__bar--mid" />
@@ -263,37 +242,12 @@ export function Sidebar() {
             </div>
           </div>
 
-          {/* Drop-down panel — slides down from under the bar */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateRows: menuOpen ? "1fr" : "0fr",
-              transition: "grid-template-rows var(--dur-panel) var(--ease)",
-            }}
-          >
-            {/* Collapsed to 0fr the nav is clipped, not gone: without
-                visibility its buttons stay in the tab order and the AT
-                tree. Held visible until the collapse finishes, dropped
-                at once on the way open. */}
-            <div
-              style={{
-                overflow: "hidden",
-                visibility: menuOpen ? "visible" : "hidden",
-                transition: menuOpen ? "visibility 0s" : "visibility 0s linear var(--dur-panel)",
-              }}
-            >
-              <nav
-                aria-label="Primary"
-                className="px-3 pb-3 pt-1"
-                style={{
-                  // dvh, not vh: mobile browser chrome shrinks the visual
-                  // viewport, and the last nav item must stay reachable. The
-                  // header now also carries the safe-area top inset, so that
-                  // comes out of the budget too.
-                  maxHeight: "calc(100dvh - 72px - env(safe-area-inset-top, 0px))",
-                  overflowY: "auto",
-                }}
-              >
+          {/* The drop-down panel, sliding down from under the bar. Collapsed,
+              the nav is clipped, not gone: without visibility its buttons
+              would stay in the tab order and the accessibility tree. */}
+          <div className="sp-mobilebar__drawer" data-open={menuOpen || undefined}>
+            <div className="sp-mobilebar__clip">
+              <nav aria-label="Primary" className="sp-mobilebar__nav">
                 <div className="sp-shell-nav">
                   {items.map(({ label, route: target, Icon, matches }) => (
                     <NavItem
@@ -306,7 +260,7 @@ export function Sidebar() {
                     </NavItem>
                   ))}
                 </div>
-                <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--sb-border)" }}>
+                <div className="sp-mobilebar__account">
                   <SidebarAccount collapsed={false} onOpenSettings={openSettings} />
                 </div>
               </nav>
@@ -317,7 +271,7 @@ export function Sidebar() {
     );
   }
 
-  // ── Desktop: the floating Sidebar ───────────────────────────────────────
+  // ── Desktop: the Sidebar ────────────────────────────────────────────────
   const collapsed = sidebarCollapsed;
   const collapseButton = (
     <IconButton
@@ -332,32 +286,25 @@ export function Sidebar() {
   return (
     <div className="sp-shell-sidebar" data-collapsed={collapsed || undefined}>
       <aside className="sp-shell-panel" aria-label="Sidebar">
-        {collapsed ? (
-          <>
-            <div className="sp-shell-panel__header">{collapseButton}</div>
-            <button
-              className="sp-shell-mark"
-              onClick={() => go(home)}
-              aria-label="SocialPaint home"
-            >
-              <BrandMark width={24} />
-            </button>
-          </>
-        ) : (
-          <div className="sp-shell-panel__header">
-            <button
-              className="sp-shell-logo"
-              onClick={() => go(home)}
-              aria-label="SocialPaint home"
-            >
-              <BrandLockup height={24} />
-            </button>
-            <div className="sp-shell-panel__utility">
-              <SidebarThemeToggle />
-              {collapseButton}
-            </div>
-          </div>
-        )}
+        <div className="sp-shell-panel__header">
+          {collapsed ? (
+            collapseButton
+          ) : (
+            <>
+              <button
+                className="sp-shell-logo"
+                onClick={() => go(home)}
+                aria-label="SocialPaint home"
+              >
+                <BrandLockup height={24} />
+              </button>
+              <div className="sp-shell-panel__utility">
+                <SidebarThemeToggle />
+                {collapseButton}
+              </div>
+            </>
+          )}
+        </div>
 
         {/* Nav: scrolls on short viewports so the account stays reachable. */}
         <nav className="sp-shell-nav" aria-label="Primary">

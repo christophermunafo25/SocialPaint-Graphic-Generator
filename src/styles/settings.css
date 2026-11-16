@@ -2,31 +2,15 @@
    The page column and legal links, the cards' drawn gaps, the confirms,
    then each section's parts. */
 
-/* The page column: the header, the rail and section, and the legal links at
-   the foot of a viewport-tall column (13:14766). */
+/* The page column: the rail and section, then the toast's anchor at its
+   foot. The app frame places the header and the legal links
+   (layout/Page.tsx). */
 .sp-st-page {
   display: flex;
   flex-direction: column;
-  min-height: calc(100dvh - var(--chrome-top));
-  padding-bottom: calc(28px + var(--dev-banner-h, 0px)); /* as drawn */
 }
 .sp-st-page > .sp-shell-settings {
   flex: 1 0 auto;
-}
-.sp-st-legal {
-  display: flex;
-  justify-content: center;
-  gap: var(--space-sm);
-  margin: 0;
-  padding-top: var(--space-xl);
-  color: var(--text-secondary);
-}
-.sp-st-legal > a {
-  color: inherit;
-  text-decoration: none;
-}
-.sp-st-legal > a:hover {
-  text-decoration: underline;
 }
 
 /* The section: cards 24 apart (13:14697). */
@@ -115,6 +99,15 @@
   display: flex;
   justify-content: center;
   height: 0;
+}
+/* In the app frame (1024 and wider) the content scrolls, not the window:
+   the anchor rides the content's foot. Sticky measures from inside the
+   content's 24 of bottom padding, so 8 more puts the toast 32 above the
+   footer links, as Brand Studio's. */
+@media (min-width: 1024px) {
+  .sp-st-toast-anchor {
+    bottom: var(--space-8);
+  }
 }
 .sp-st-toast-anchor > .ui-toast {
   position: absolute;

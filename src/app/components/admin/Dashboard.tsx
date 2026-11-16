@@ -20,9 +20,9 @@ import {
 import { digestHeading, digestSentence, windowDates } from "@/lib/insights/digest";
 import { PLATFORMS, type PlatformId } from "@/lib/templates/platforms";
 import { routeToUrl, useRouter, type Route } from "../../router";
-import { Page, PageHeader } from "../layout/Page";
+import { Page } from "../layout/Page";
 import { ErrorState } from "../ErrorState";
-import { Button, Skeleton } from "../primitives";
+import { Button, PageHeader, Skeleton } from "../primitives";
 import { useLinkClick } from "./brand/useLinkClick";
 import { changeCopy, InsightKpi } from "./insights/InsightKpi";
 import { TrendCard } from "./insights/TrendCard";
@@ -222,11 +222,16 @@ export function Dashboard(route: Omit<DashboardRoute, "name">) {
 
   if (eventsState.status === "error") {
     return (
-      <ErrorState
-        title="We couldn't load your usage data."
-        detail="Check your connection and try again."
-        onRetry={eventsState.retry}
-      />
+      <Page
+        layout={{ className: "sp-in-page" }}
+        header={<PageHeader title="Insights & Analytics" />}
+      >
+        <ErrorState
+          title="We couldn't load your usage data."
+          detail="Check your connection and try again."
+          onRetry={eventsState.retry}
+        />
+      </Page>
     );
   }
 
@@ -236,8 +241,10 @@ export function Dashboard(route: Omit<DashboardRoute, "name">) {
   // (D12), unless a filter is narrowing it (then the cards read zero).
   if (loaded.events.length === 0 && !refreshing && !hasFilters(filters)) {
     return (
-      <Page layout={{ className: "sp-in-page" }}>
-        <PageHeader title="Insights & Analytics" />
+      <Page
+        layout={{ className: "sp-in-page" }}
+        header={<PageHeader title="Insights & Analytics" />}
+      >
         <section className="sp-in-card sp-in-empty" aria-labelledby="sp-in-empty-title">
           <h2 id="sp-in-empty-title" className="tu-title-card">
             No usage yet
@@ -267,8 +274,10 @@ export function Dashboard(route: Omit<DashboardRoute, "name">) {
       : [];
 
   return (
-    <Page layout={{ className: "sp-in-page" }}>
-      <PageHeader title="Insights & Analytics" actions={exportCsv} />
+    <Page
+      layout={{ className: "sp-in-page" }}
+      header={<PageHeader title="Insights & Analytics" actions={exportCsv} />}
+    >
       {filterRow}
       {insights && (
         <div className="sp-in-content" aria-busy={refreshing || undefined}>
@@ -357,8 +366,7 @@ export function Dashboard(route: Omit<DashboardRoute, "name">) {
 function InsightsSkeleton() {
   const bone = (w: number | string, h: number) => <Skeleton width={w} height={h} />;
   return (
-    <Page layout={{ className: "sp-in-page" }}>
-      <PageHeader title="Insights & Analytics" />
+    <Page layout={{ className: "sp-in-page" }} header={<PageHeader title="Insights & Analytics" />}>
       <div className="sp-in-content" aria-busy="true" aria-label="Loading Insights">
         <div className="sp-in-card sp-in-digest">
           {bone(220, 20)}

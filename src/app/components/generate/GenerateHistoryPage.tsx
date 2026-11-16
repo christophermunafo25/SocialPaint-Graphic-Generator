@@ -30,12 +30,12 @@ import { ErrorState } from "../ErrorState";
 import { useFullViewport } from "../layout/ChromeContext";
 import { Page } from "../layout/Page";
 import { MessageSquarePlus } from "lucide-react";
-import { Button } from "../primitives";
+import { Button, PageHeader } from "../primitives";
 import { LibrarySearch } from "../templates/LibrarySearch";
 import { PlatformFilter } from "../templates/PlatformFilter";
 import { HistoryCard } from "./HistoryCard";
-import { LegalLinks } from "./LegalLinks";
-import { ScrollFade, useScrollFades } from "./ScrollFade";
+import { useScrollFades } from "../layout/useScrollFades";
+import { ScrollFade } from "./ScrollFade";
 import { requestComposerFocus, takeHistoryFocus } from "./composerFocus";
 import { useThreadPreviews } from "./useThreadPreviews";
 
@@ -377,31 +377,20 @@ export function GenerateHistoryPage() {
   }
 
   return (
-    <Page layout={{ className: "sp-chat-page", state: "history" }}>
-      {/* The header (13:3433): "Generate" / "History", then the title in
-          Title/Page with New chat on its row. */}
+    <Page
+      kind="self"
+      layout={{ className: "sp-chat-page", state: "history" }}
+      // The trail (13:3433), "Generate" / "History". The title under it is
+      // the page's heading, so the last crumb is not.
+      header={
+        <PageHeader
+          crumbs={[{ label: "Generate", onClick: newChat }, { label: "History" }]}
+          currentIsHeading={false}
+        />
+      }
+    >
+      {/* The title in Title/Page with New chat on its row. */}
       <header className="sp-gen-history-head">
-        <nav aria-label="Breadcrumb" className="sp-shell-crumbs">
-          <ol>
-            <li>
-              <button
-                type="button"
-                className="ui-reset ui-ring tu-label-m sp-shell-crumbs__link"
-                onClick={newChat}
-              >
-                Generate
-              </button>
-            </li>
-            <li>
-              <span className="tu-body-m sp-shell-crumbs__sep" aria-hidden>
-                /
-              </span>
-              <span className="tu-label-m sp-shell-crumbs__current" aria-current="page">
-                History
-              </span>
-            </li>
-          </ol>
-        </nav>
         <div className="sp-gen-history-head__title">
           <h1 ref={titleRef} tabIndex={-1} className="tu-title-page">
             History
@@ -451,10 +440,6 @@ export function GenerateHistoryPage() {
         <ScrollFade position="top" visible={fades.top} gutter={fades.gutter} />
         <ScrollFade position="bottom" visible={fades.bottom} gutter={fades.gutter} />
       </div>
-
-      <footer className="sp-chat-footer">
-        <LegalLinks />
-      </footer>
     </Page>
   );
 }

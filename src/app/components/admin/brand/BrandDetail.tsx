@@ -2,7 +2,6 @@ import React from "react";
 import { useBrand } from "@/lib/brand/BrandContext";
 import type { BrandCategory } from "../../../router";
 import { CATEGORY_TITLES } from "./categories";
-import { BrandDetailHeader } from "./BrandDetailHeader";
 import { ColorsDetail } from "./ColorsDetail";
 import { FontsDetail } from "./FontsDetail";
 import { ImagesDetail } from "./ImagesDetail";
@@ -22,12 +21,12 @@ interface BrandDetailProps {
 }
 
 /** One category, edited in place. The draft lives in BrandStudio above, so
- * moving between the overview and any detail page never reloads it. */
+ * moving between the overview and any detail page never reloads it, and
+ * BrandStudio places the page's header in the frame's header row. */
 export function BrandDetail({ category, surface, brand, bindings }: BrandDetailProps) {
   const { loading } = useBrand();
   return (
     <>
-      <BrandDetailHeader title={CATEGORY_TITLES[category]} brand={brand} />
       {brand.error && (
         <p className="tu-body-m sp-bs-error" role="alert">
           {brand.error}

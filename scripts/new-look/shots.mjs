@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* Screenshot loop for the new look. See docs/design/new-look/README.md.
  *
- *   node scripts/new-look/shots.mjs capture <dir> [--only a,b] [--themes light,dark] [--widths 1440,1024,390] [--no-popups] [--base URL]
+ *   node scripts/new-look/shots.mjs capture <dir> [--only a,b] [--themes light,dark] [--widths 1440,1024,390] [--no-popups] [--collapsed] [--base URL]
  *   node scripts/new-look/shots.mjs compare <beforeDir> <afterDir> [outDir]
  *   node scripts/new-look/shots.mjs compare-image <a.png> <b.png> <out.png>
  *   node scripts/new-look/shots.mjs boards <dir> [--base URL]
@@ -26,6 +26,13 @@
  * route also opens every menu, select and popover trigger it renders
  * ([aria-haspopup]) one at a time and saves <name>--popup-<n>-<theme>-<width>.png
  * (skip with --no-popups).
+ *
+ * At 1024 and wider the app frame scrolls Main's content, not the document,
+ * so before each shot the window grows by the height that content hides and
+ * the shot holds the whole page, the way a tall window shows it. A page that
+ * scrolls itself (the Generate thread, History, the builder) keeps the
+ * window's height. --collapsed starts every route with the sidebar
+ * collapsed.
  *
  * compare writes a heatmap per changed screen (changed pixels in magenta over
  * the dimmed new screen) and prints the share of pixels that moved. Both
@@ -181,7 +188,7 @@ const ROUTES = [
 const [mode, ...rest] = process.argv.slice(2);
 const flags = {};
 const positional = [];
-const BOOLEAN_FLAGS = new Set(["all", "no-popups"]);
+const BOOLEAN_FLAGS = new Set(["all", "no-popups", "collapsed"]);
 for (let i = 0; i < rest.length; i++) {
   const name = rest[i].startsWith("--") ? rest[i].slice(2) : null;
   if (name && BOOLEAN_FLAGS.has(name)) flags[name] = true;
@@ -281,18 +288,20 @@ async function newContext(
     typeof v === "string" ? v : JSON.stringify(v),
   ]);
   await context.addInitScript(
-    ({ entries, theme, stall }) => {
+    ({ entries, theme, stall, collapsed }) => {
       try {
         if (stall) sessionStorage.setItem("sp-dev-stall", JSON.stringify(stall));
         if (sessionStorage.getItem("shots-seeded")) return;
         sessionStorage.setItem("shots-seeded", "1");
         for (const [k, v] of entries) localStorage.setItem(k, v);
         localStorage.setItem("sp-color-scheme", theme);
+        // The sidebar's collapsed preference (layout/ChromeContext.tsx).
+        if (collapsed) localStorage.setItem("sp-sidebar-collapsed", "1");
       } catch {
         /* a frame without storage */
       }
     },
-    { entries, theme, stall: stall ?? null },
+    { entries, theme, stall: stall ?? null, collapsed: Boolean(flags.collapsed) },
   );
   return context;
 }
@@ -308,6 +317,75 @@ async function settle(page) {
       if ((el.textContent ?? "").startsWith("Dev backend")) el.style.display = "none";
     }
     await document.fonts.ready;
+  });
+}
+
+/** The app frame (layout/Page.tsx) scrolls Main's content inside the window
+ * at 1024 and wider, so a full-page shot would stop at the window's foot.
+ * Grow the window by what the content hides, until it hides nothing: the
+ * frame then holds the whole page, as a window that tall would. The content
+ * carries [data-frame-scroll]; it scrolls only in the frame's "scroll" kind
+ * at desktop width, so narrow layouts, pages that scroll themselves and
+ * pages outside the frame keep the window as it is. Sizes inside the
+ * content tied to the window's height (the fill page's art and bulk fill's
+ * preview cap themselves at a share of 100vh) are held first at what the
+ * capture's own window gives them, so they don't grow with it. */
+async function growToFrame(page) {
+  for (let pass = 0; pass < 4; pass++) {
+    const hidden = await page.evaluate(() => {
+      const el = document.querySelector("[data-frame-scroll]");
+      if (!el) return 0;
+      const { overflowY } = getComputedStyle(el);
+      if (overflowY !== "auto" && overflowY !== "scroll") return 0;
+      return Math.max(0, el.scrollHeight - el.clientHeight);
+    });
+    if (hidden <= 0) return;
+    if (pass === 0) await holdWindowSizes(page);
+    const { width, height } = page.viewportSize();
+    await page.setViewportSize({ width, height: height + hidden });
+    await page.waitForTimeout(400);
+  }
+}
+
+/** Pins each size inside Main's content that a stylesheet rule or an inline
+ * style writes in vh units (vh, dvh, svh, lvh, vmin, vmax) at its value
+ * now, before growToFrame grows the window. */
+async function holdWindowSizes(page) {
+  await page.evaluate(() => {
+    const content = document.querySelector("[data-frame-scroll]");
+    if (!content) return;
+    const props = ["width", "height", "min-width", "min-height", "max-width", "max-height"];
+    const tied = /\d(?:[dsl]?vh|vmin|vmax)\b/;
+    const hold = (el, prop) =>
+      el.style.setProperty(prop, getComputedStyle(el).getPropertyValue(prop), "important");
+    const walk = (rules) => {
+      for (const rule of rules) {
+        if (rule instanceof CSSStyleRule) {
+          const held = props.filter((p) => tied.test(rule.style.getPropertyValue(p)));
+          if (held.length === 0) continue;
+          let els = [];
+          try {
+            els = content.querySelectorAll(rule.selectorText);
+          } catch {
+            continue;
+          }
+          for (const el of els) for (const p of held) hold(el, p);
+        } else if (rule.cssRules) {
+          if (rule.media && !matchMedia(rule.media.mediaText).matches) continue;
+          walk(rule.cssRules);
+        }
+      }
+    };
+    for (const sheet of document.styleSheets) {
+      try {
+        walk(sheet.cssRules);
+      } catch {
+        // A stylesheet from another origin can't be read.
+      }
+    }
+    for (const el of content.querySelectorAll("[style]")) {
+      for (const p of props) if (tied.test(el.style.getPropertyValue(p))) hold(el, p);
+    }
   });
 }
 
@@ -343,6 +421,7 @@ async function capture(dir) {
             await opts.act(page).catch(() => console.log(`  ${name}: nothing to open at ${width}`));
             await settle(page);
           }
+          await growToFrame(page);
           await shoot(page, `${name}-${theme}-${width}.png`);
           console.log(`${name}-${theme}-${width}  ${new URL(page.url()).pathname}`);
           if (popups && !opts.act && width === Math.max(...widths)) {

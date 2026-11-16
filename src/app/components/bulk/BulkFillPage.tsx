@@ -22,8 +22,16 @@ import { MAX_BULK_ROWS, runBulk, slugify, type BulkRunResult } from "@/lib/bulk/
 import { overCapLine, readyLine, rowStatus } from "@/lib/bulk/copy";
 import { useRouter } from "../../router";
 import { ErrorState } from "../ErrorState";
-import { Page, PageHeader } from "../layout/Page";
-import { Button, ProgressBar, Select, Skeleton, SkeletonLines, Switch } from "../primitives";
+import { Page } from "../layout/Page";
+import {
+  Button,
+  PageHeader,
+  ProgressBar,
+  Select,
+  Skeleton,
+  SkeletonLines,
+  Switch,
+} from "../primitives";
 import { TemplateThumbnail } from "../TemplateThumbnail";
 import { BulkExportStage, type BulkExportStageHandle } from "./BulkExportStage";
 
@@ -71,9 +79,12 @@ export function BulkFillPage({ templateId }: { templateId: string }) {
   const templateState = useAsync(() => stores.templates.get(templateId), [templateId]);
   const template = templateState.status === "ready" ? templateState.data : null;
 
+  // Every state keeps the page's header row, so nothing jumps as the
+  // template loads.
+  const header = <PageHeader title="Bulk fill" />;
   if (templateState.status === "loading") {
     return (
-      <Page>
+      <Page header={header}>
         <div aria-busy="true" aria-label="Loading template">
           <Skeleton width={148} height={13} style={{ marginBottom: 20 }} />
           <div className="sp-card p-5">
@@ -85,23 +96,27 @@ export function BulkFillPage({ templateId }: { templateId: string }) {
   }
   if (templateState.status === "error") {
     return (
-      <ErrorState
-        title="We couldn't load this template."
-        detail="Check your connection and try again."
-        onRetry={templateState.retry}
-      />
+      <Page header={header}>
+        <ErrorState
+          title="We couldn't load this template."
+          detail="Check your connection and try again."
+          onRetry={templateState.retry}
+        />
+      </Page>
     );
   }
   if (!template) {
     return (
-      <p className="tu-body-s text-center py-24" style={muted}>
-        Template not found.
-      </p>
+      <Page header={header}>
+        <p className="tu-body-s text-center py-24" style={muted}>
+          Template not found.
+        </p>
+      </Page>
     );
   }
   if (template.status !== "published") {
     return (
-      <Page>
+      <Page header={header}>
         <BackLink onClick={() => navigate({ name: "template", templateId })} />
         <p className="tu-body-s text-center py-24" style={muted}>
           Publish this template before filling it in bulk.
@@ -281,9 +296,8 @@ function BulkFill({
   useEffect(() => () => abortRef.current?.abort(), []);
 
   return (
-    <Page>
+    <Page header={<PageHeader title="Bulk fill" />}>
       <BackLink onClick={() => navigate({ name: "template", templateId: template.id })} />
-      <PageHeader title="Bulk fill" />
 
       {/* The off-screen canvas is mounted for the whole visit, so the
           background and fonts are resolved once, before the first row. */}

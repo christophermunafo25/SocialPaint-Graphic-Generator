@@ -2710,7 +2710,7 @@ export function TemplateBuilder({
     return (
       <div
         className="flex items-center justify-center"
-        style={{ height: "100dvh", background: "var(--bg-canvas)" }}
+        style={{ height: "100%", background: "var(--bg-canvas)" }}
         aria-busy="true"
         aria-label="Loading this template"
       >

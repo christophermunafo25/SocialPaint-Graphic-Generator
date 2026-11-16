@@ -4,7 +4,6 @@ import { isRequiredField } from "@/lib/templates/fieldRules";
 import { requiredError } from "@/lib/templates/fieldCopy";
 import { mergeCaption } from "@/lib/caption";
 import { resolveFieldStyle } from "@/lib/brand/resolveStyle";
-import { PRIVACY_URL, TERMS_URL } from "@/lib/legalLinks";
 import { applyVariantToSchema, getVariant, hasVariants } from "@/lib/templates/variants";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { ErrorState } from "./ErrorState";
@@ -16,7 +15,15 @@ import { ArrowLeft, Check } from "lucide-react";
 import { COPIED_MS, DetailField } from "./details/DetailsPanel";
 import { LinkedInMark } from "./details/LinkedInMark";
 import { TemplateThumbnail } from "./TemplateThumbnail";
-import { Button, Field, LookTile, SegmentedControl, TextArea, Toast } from "./primitives";
+import {
+  Button,
+  Field,
+  FooterLinks,
+  LookTile,
+  SegmentedControl,
+  TextArea,
+  Toast,
+} from "./primitives";
 
 interface TemplateFillProps {
   template: TemplateSchema;
@@ -536,14 +543,9 @@ export function TemplateFill({
               </p>
             )}
           </div>
-          <p className="tu-caption-m sp-fill__legal">
-            <a href={TERMS_URL} target="_blank" rel="noopener noreferrer">
-              Terms of Service
-            </a>
-            <a href={PRIVACY_URL} target="_blank" rel="noopener noreferrer">
-              Privacy Policy
-            </a>
-          </p>
+          {/* Under the stage (2322:931), here and on the public link page,
+              which renders this form outside the app frame. */}
+          <FooterLinks className="sp-fill__legal" />
         </div>
       </div>
     </>

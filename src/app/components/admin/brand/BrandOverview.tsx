@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useBrand } from "@/lib/brand/BrandContext";
 import { routeToUrl, useRouter, type BrandCategory } from "../../../router";
-import { PageHeader } from "../../layout/Page";
 import { Button, PreviewOverlay, Skeleton } from "../../primitives";
 import { roleStyle } from "@/lib/brand/fontRoles";
 import { requestAddFlow } from "./addFlow";
@@ -120,8 +119,6 @@ export function BrandOverview({ brand, companyId }: { brand: BrandDraft; company
 
   return (
     <>
-      <PageHeader title="Brand Studio" />
-
       <div className="sp-bs-overview">
         {brand.error && (
           <p className="tu-body-m sp-bs-error" role="alert">

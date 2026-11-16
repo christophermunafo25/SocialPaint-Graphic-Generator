@@ -9,9 +9,8 @@ import { useRouter } from "../router";
 import { ErrorState } from "./ErrorState";
 import { TemplateFill } from "./TemplateFill";
 import { TemplateLinksDialog } from "./admin/TemplateLinksDialog";
-import { BreadcrumbHeader } from "./layout/Breadcrumb";
 import { Page } from "./layout/Page";
-import { Button, Skeleton } from "./primitives";
+import { Button, PageHeader, Skeleton } from "./primitives";
 
 /** Member self-service flow. Loads the template through the authenticated
  * store, then hands it to the shared fill surface — the same component the
@@ -29,11 +28,16 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
     // The fill page's shape (header, stage, panel), so nothing jumps when
     // the template lands.
     return (
-      <Page layout={{ className: "sp-fill-page" }}>
-        <div aria-busy="true" aria-label="Loading template">
-          <div className="sp-shell-pagehead">
+      <Page
+        layout={{ className: "sp-fill-page" }}
+        footer={false}
+        header={
+          <div className="ui-page-header">
             <Skeleton width={220} height={14} />
           </div>
+        }
+      >
+        <div aria-busy="true" aria-label="Loading template">
           <div className="sp-fill">
             <div className="sp-fill__form">
               <Skeleton width={220} height={28} radius="full" />
@@ -53,20 +57,26 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
       </Page>
     );
   }
+  // With no form there are no links under a stage, so these two states
+  // take the frame's footer links.
   if (templateState.status === "error") {
     return (
-      <ErrorState
-        title="We couldn't load this template."
-        detail="Check your connection and try again."
-        onRetry={templateState.retry}
-      />
+      <Page>
+        <ErrorState
+          title="We couldn't load this template."
+          detail="Check your connection and try again."
+          onRetry={templateState.retry}
+        />
+      </Page>
     );
   }
   if (!template) {
     return (
-      <p className="tu-body-m text-center py-24" style={{ color: "var(--text-secondary)" }}>
-        Template not found.
-      </p>
+      <Page>
+        <p className="tu-body-m text-center py-24" style={{ color: "var(--text-secondary)" }}>
+          Template not found.
+        </p>
+      </Page>
     );
   }
 
@@ -85,45 +95,47 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
    * (stores.generate.isConfigured()), and is for everyone. */
   const canAssist = template.status === "published" && stores.generate.isConfigured();
 
-  return (
-    <Page layout={{ className: "sp-fill-page" }}>
-      {sharing && <TemplateLinksDialog template={template} onClose={() => setSharing(false)} />}
+  const header = (
+    <PageHeader
+      crumbs={[
+        { label: "Brand Templates", onClick: () => navigate({ name: "portal" }) },
+        { label: template.name },
+      ]}
+      actions={
+        (canAssist || canBulkFill || canShare) && (
+          <>
+            {canAssist && (
+              <Button
+                kind="neutral"
+                icon={Sparkles}
+                onClick={() => navigate({ name: "templateChat", templateId: template.id })}
+              >
+                Use AI to assist
+              </Button>
+            )}
+            {canBulkFill && (
+              <Button
+                kind="neutral"
+                icon={LayoutGrid}
+                onClick={() => navigate({ name: "bulk", templateId: template.id })}
+              >
+                Bulk fill
+              </Button>
+            )}
+            {canShare && (
+              <Button kind="neutral" icon={Link} onClick={() => setSharing(true)}>
+                Public link
+              </Button>
+            )}
+          </>
+        )
+      }
+    />
+  );
 
-      <BreadcrumbHeader
-        crumbs={[
-          { label: "Brand Templates", onClick: () => navigate({ name: "portal" }) },
-          { label: template.name },
-        ]}
-        actions={
-          (canAssist || canBulkFill || canShare) && (
-            <>
-              {canAssist && (
-                <Button
-                  kind="neutral"
-                  icon={Sparkles}
-                  onClick={() => navigate({ name: "templateChat", templateId: template.id })}
-                >
-                  Use AI to assist
-                </Button>
-              )}
-              {canBulkFill && (
-                <Button
-                  kind="neutral"
-                  icon={LayoutGrid}
-                  onClick={() => navigate({ name: "bulk", templateId: template.id })}
-                >
-                  Bulk fill
-                </Button>
-              )}
-              {canShare && (
-                <Button kind="neutral" icon={Link} onClick={() => setSharing(true)}>
-                  Public link
-                </Button>
-              )}
-            </>
-          )
-        }
-      />
+  return (
+    <Page layout={{ className: "sp-fill-page" }} header={header} footer={false}>
+      {sharing && <TemplateLinksDialog template={template} onClose={() => setSharing(false)} />}
 
       <TemplateFill
         template={template}

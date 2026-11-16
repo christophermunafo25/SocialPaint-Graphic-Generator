@@ -45,8 +45,7 @@ import { useBrand } from "@/lib/brand/BrandContext";
 import { useRouter } from "../../router";
 import { useFullViewport } from "../layout/ChromeContext";
 import { Page } from "../layout/Page";
-import { BreadcrumbHeader } from "../layout/Breadcrumb";
-import { Button, Toast } from "../primitives";
+import { Button, PageHeader, Toast } from "../primitives";
 import { ChatComposer } from "../chat/ChatComposer";
 import {
   TemplateInterviewLive,
@@ -65,9 +64,9 @@ import {
   ExportErrorToast,
   type EditorSaveToLibrary,
 } from "./EditorPanel";
-import { LegalLinks } from "./LegalLinks";
 import { RecentChats } from "./RecentChats";
-import { ScrollFade, useScrollFades } from "./ScrollFade";
+import { useScrollFades } from "../layout/useScrollFades";
+import { ScrollFade } from "./ScrollFade";
 import { UserMessage } from "../chat/Messages";
 import { requestComposerFocus, requestHistoryFocus, takeComposerFocus } from "./composerFocus";
 import { useChatController } from "./useChatController";
@@ -820,9 +819,10 @@ export function GenerateChat({
 
   // The sheet is modal (aria-modal): everything outside it goes inert while
   // it is up, which is the page's header and chat column under the scrim,
-  // and the app's own chrome beside the page (the sidebar, or below 1024px
-  // the top bar the sheet starts under, whose menu would otherwise open
-  // over it). The chrome is found as the app shell's children that do not
+  // the frame's footer links, and the app's own chrome beside the page (the
+  // sidebar, or below 1024px the top bar the sheet starts under, whose menu
+  // would otherwise open over it). The chrome is found as the app shell's
+  // children that do not
   // hold the page, and found again if the shell swaps them (the sidebar
   // becomes the top bar as the window narrows). Dialogs opened from the
   // sheet portal to <body>, outside the shell, and stay live. The panel
@@ -834,11 +834,13 @@ export function GenerateChat({
     const page = chatRef.current;
     const shell = page?.closest(".sp-appshell") ?? null;
     const made = new Set<HTMLElement>();
+    // The frame's footer links sit beside the page, outside the chat.
+    const footer = page?.closest(".sp-frame")?.querySelector(":scope > .sp-frame__foot") ?? null;
     const apply = () => {
       const chrome = shell
         ? Array.from(shell.children).filter((el) => !page || !el.contains(page))
         : [];
-      for (const el of [headerRef.current, chatRef.current, ...chrome]) {
+      for (const el of [headerRef.current, chatRef.current, footer, ...chrome]) {
         if (el instanceof HTMLElement && !el.inert) {
           el.inert = true;
           made.add(el);
@@ -1095,9 +1097,6 @@ export function GenerateChat({
               )}
             </div>
           </div>
-          <p className="tu-caption-m sp-gen-legal">
-            <LegalLinks />
-          </p>
         </Page>
       </>
     );
@@ -1114,69 +1113,71 @@ export function GenerateChat({
   // under it and the panel beside it (or over it, below 1180px).
   const editView = Boolean(template && editorOpen && selectedDraft);
   const lookOptions = template?.variants?.map((v) => ({ id: v.id, label: v.name })) ?? [];
+  const threadHeader = template ? (
+    // A template chat's header (13:7138, 13:8222): the breadcrumb and
+    // its actions on the new look's Buttons.
+    <PageHeader
+      ref={headerRef}
+      currentId={titleId}
+      crumbs={
+        editView
+          ? [
+              { label: "Brand Templates", onClick: openBrandTemplates },
+              { label: template.name, onClick: closeEditor },
+              { label: "Edit details" },
+            ]
+          : [{ label: "Brand Templates", onClick: openBrandTemplates }, { label: template.name }]
+      }
+      actions={
+        editView ? (
+          <Button kind="neutral" icon={ArrowLeft} onClick={closeEditor}>
+            Back to chat
+          </Button>
+        ) : (
+          <>
+            <Button
+              kind="neutral"
+              icon={Pencil}
+              onClick={() => navigate({ name: "template", templateId: template.id })}
+            >
+              Fill in by hand
+            </Button>
+            {role === "admin" && (
+              <Button
+                kind="neutral"
+                icon={LayoutGrid}
+                onClick={() => navigate({ name: "bulk", templateId: template.id })}
+              >
+                Bulk fill
+              </Button>
+            )}
+            {role === "admin" && (
+              <Button kind="primary" icon={Link} onClick={() => setSharing(true)}>
+                Public link
+              </Button>
+            )}
+          </>
+        )
+      }
+    />
+  ) : (
+    <GenerateHeader
+      ref={headerRef}
+      title={thread.title}
+      titleId={titleId}
+      onNewChat={startNewChat}
+      onHistory={openHistory}
+    />
+  );
+
   return (
     <>
       {exportExtras}
-      <Page layout={{ className: "sp-chat-page", state: "thread" }}>
-        {template ? (
-          // A template chat's header (13:7138, 13:8222): the breadcrumb and
-          // its actions on the new look's Buttons.
-          <BreadcrumbHeader
-            ref={headerRef}
-            currentId={titleId}
-            crumbs={
-              editView
-                ? [
-                    { label: "Brand Templates", onClick: openBrandTemplates },
-                    { label: template.name, onClick: closeEditor },
-                    { label: "Edit details" },
-                  ]
-                : [
-                    { label: "Brand Templates", onClick: openBrandTemplates },
-                    { label: template.name },
-                  ]
-            }
-            actions={
-              editView ? (
-                <Button kind="neutral" icon={ArrowLeft} onClick={closeEditor}>
-                  Back to chat
-                </Button>
-              ) : (
-                <>
-                  <Button
-                    kind="neutral"
-                    icon={Pencil}
-                    onClick={() => navigate({ name: "template", templateId: template.id })}
-                  >
-                    Fill in by hand
-                  </Button>
-                  {role === "admin" && (
-                    <Button
-                      kind="neutral"
-                      icon={LayoutGrid}
-                      onClick={() => navigate({ name: "bulk", templateId: template.id })}
-                    >
-                      Bulk fill
-                    </Button>
-                  )}
-                  {role === "admin" && (
-                    <Button kind="primary" icon={Link} onClick={() => setSharing(true)}>
-                      Public link
-                    </Button>
-                  )}
-                </>
-              )
-            }
-          />
-        ) : (
-          <GenerateHeader
-            ref={headerRef}
-            title={thread.title}
-            titleId={titleId}
-            onNewChat={startNewChat}
-            onHistory={openHistory}
-          />
-        )}
+      <Page
+        kind="self"
+        layout={{ className: "sp-chat-page", state: "thread" }}
+        header={threadHeader}
+      >
         <div
           className="sp-chat-split"
           data-editor={editorPresentation}
@@ -1332,10 +1333,6 @@ export function GenerateChat({
                 />
                 {unsaved && <p className="sp-chat-dock__note">{NOT_SAVED_YET}</p>}
               </div>
-              {/* The footnote is the legal links alone (13:2821, 13:7195). */}
-              <p className="tu-caption-m sp-tchat-legal">
-                <LegalLinks />
-              </p>
             </div>
           </div>
           {editor && editorTurn && selectedDraft && editorPresentation && (

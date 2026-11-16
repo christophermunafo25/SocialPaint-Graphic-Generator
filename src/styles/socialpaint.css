@@ -146,11 +146,13 @@
   font-display: swap;
   unicode-range: U+2190-2199;
 }
-/* The document is the vertical scroll container (AppShell's main has no
-   overflow of its own). Reserving the scrollbar gutter keeps the centred
-   content column in exactly the same place on pages that scroll and pages
-   that don't — without it, a classic (non-overlay) scrollbar eats 12–15px
-   off the right gutter only when content overflows. */
+/* Below 1024, and on the pages outside the app (sign in, the public link
+   page), the document is the vertical scroll container. Reserving the
+   scrollbar gutter keeps the content column in exactly the same place on
+   pages that scroll and pages that don't — without it, a classic
+   (non-overlay) scrollbar eats 12–15px off the right gutter only when
+   content overflows. In the app frame at desktop width the document does
+   not scroll, and shell.css hands the gutter back. */
 html {
   scrollbar-gutter: stable;
 }
@@ -292,10 +294,9 @@ html {
   --row-h-compact: 32px;
   --border-width: 1px;
 
-  /* Layout */
-  --page-max: 1720px; /* THE content column cap — one knob, see .sp-page */
-  --page-pad: var(--space-xl); /* column gutter (48px desktop); tiers step down below --bp-xl */
-  --chrome-top: 0px; /* height of fixed app chrome above the page: 0 beside the rail; 56px (the mobile header) below --bp-lg. Sticky page chrome offsets from this, never from top: 0. */
+  /* Layout. The page gutter (--page-pad), the mobile bar's height
+     (--chrome-top) and the public page's cap (--page-max) are the shell's
+     own measures, defined in shell.css. */
   --bp-md: 768px;
   --bp-lg: 1024px;
   --bp-xl: 1280px;
@@ -635,12 +636,6 @@ html {
      against that lockup. Ink stays the fg, as on every brand fill. */
   --brand-surface: var(--slime);
   --brand-surface-fg: var(--text-on-brand);
-
-  /* The narrow layout's top bar and drawer read these; the desktop sidebar
-     is in shell.css (new look, Phase 3). */
-  --sb-bg: var(--bg-surface);
-  --sb-border: var(--border);
-  --sb-fg-active: var(--text-primary);
 
   /* The scrim behind the chat editor's sheet. One scrim in both themes.
      (Brand Studio's thumbnail edit overlay read it until Phase 6.) */
@@ -1298,37 +1293,55 @@ body[data-sp-gesture] * {
 }
 
 /* --- Full-viewport surfaces ------------------------------------------------
-   The Template Builder is a design environment, not a page: it owns the
-   whole viewport and scrolls only inside its own regions. Scoped to an
-   attribute the surface sets on `html` while it is mounted, so every other
-   route keeps the normal document scroll and the sidebar's sticky
-   positioning. */
-html[data-sp-fullscreen],
-html[data-sp-fullscreen] body {
-  height: 100%;
-  overflow: hidden;
-}
-html[data-sp-fullscreen] .sp-appshell {
-  height: 100dvh;
-  min-height: 0;
-  overflow: hidden;
-}
-html[data-sp-fullscreen] .sp-appshell > main {
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
+   Below 1024, where the document scrolls, the Generate thread and History
+   take the whole viewport and scroll only inside their own regions. Scoped
+   to an attribute the surface sets on `html` while it is mounted
+   (useFullViewport), so every other route keeps the document scroll. At
+   1024 and wider the app frame already holds every page to the window
+   (shell.css), so these rules stand down there. */
+@media (max-width: 1023px) {
+  html[data-sp-fullscreen],
+  html[data-sp-fullscreen] body {
+    height: 100%;
+    overflow: hidden;
+  }
+  html[data-sp-fullscreen] .sp-appshell {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+  html[data-sp-fullscreen] .sp-appshell > main {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+  /* The page (layout/Page.tsx) carries main's height down to the column:
+     the header row keeps its size and the content takes the rest. */
+  html[data-sp-fullscreen] .sp-frame {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+  }
+  /* Above the frame's own narrow rule for a page with footer links
+     (.sp-frame[data-foot] .sp-frame__body), which lets the body grow. */
+  html[data-sp-fullscreen] .sp-frame .sp-frame__body {
+    flex: 1 1 0;
+    min-height: 0;
+  }
 }
 
 /* --- Builder shell ---------------------------------------------------------
    Four regions: a full-width top bar, a left rail, the canvas viewport, and
    the right inspector. Rails resize and collapse; every region scrolls on
-   its own. Elevation is surface colour and a hairline, never a shadow. */
+   its own. Elevation is surface colour and a hairline, never a shadow. It
+   fills Main, beside the collapsed rail (the app frame's "bare" page). */
 .sp-builder {
   position: relative;
   display: grid;
   grid-template-columns: auto 1fr auto;
   grid-template-rows: auto minmax(0, 1fr);
-  height: 100dvh;
+  height: 100%;
   min-height: 0;
   overflow: hidden;
   background: var(--bg-canvas);
@@ -1773,17 +1786,11 @@ input[type="radio"] {
   background: var(--icon-btn-bg-hover);
 }
 
-/* THE content column. Beside the rail (>= --bp-lg) it is centred in the
-   region to the rail's right; below --bp-lg the shell is the 56px top bar
-   and the nav-to-content relationship is vertical — 24px of top padding
-   under the header (see the responsive block) instead of this rule's 48px.
-   Width and gutter are tokens (--page-max / --page-pad — 48/32/24/16 by
-   tier); nothing else may cap or offset the column. margin-inline: auto
-   splits any surplus equally, so the rail gutter and the window gutter stay
-   equal in both sidebar states — and both sit at exactly --page-pad only
-   until the region outgrows --page-max (1720px). Past that (viewport >
-   1984px expanded, > 1812px collapsed) the auto margins grow both gutters
-   beyond --page-pad, together. */
+/* The page's content (layout/Page.tsx) and the public link page's column.
+   In the app frame at desktop width Main's rules in shell.css take over
+   (no cap, 32 gutters, 24 above and below); below --bp-lg the content
+   keeps the earlier column, 24 under the mobile bar (the responsive block)
+   with the --page-pad tiers. */
 .sp-page {
   max-width: var(--page-max);
   margin-inline: auto;
@@ -2317,38 +2324,6 @@ input[type="radio"] {
   --sp-searchfield-h: var(--control-sm);
 }
 
-/* The mobile app header wears the same frosted fade (2026-09-15, at CJ's
-   direction). Constant rather than scroll-gated: at rest the fade sits on
-   bare canvas and is invisible, so there is nothing to switch. The ramp is
-   in px — solid until 32px from the skirt's end (4px inside the bar plus
-   the 28px run-out) — because this bar's height moves with the safe-area
-   inset. The drop-down nav lives INSIDE this header and needs a real
-   ground, so the open state hands back the solid chrome surface and its
-   hairline and drops the fade. */
-.sp-mobilebar {
-  background: transparent;
-  border-bottom: 1px solid transparent;
-}
-.sp-mobilebar::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 -28px;
-  z-index: -1;
-  pointer-events: none;
-  background: linear-gradient(to bottom, var(--bg-canvas) calc(100% - 32px), transparent);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 32px), transparent);
-  mask-image: linear-gradient(to bottom, black calc(100% - 32px), transparent);
-}
-.sp-mobilebar[data-menu-open] {
-  background: var(--sb-bg);
-  border-bottom-color: var(--sb-border);
-}
-.sp-mobilebar[data-menu-open]::before {
-  content: none;
-}
-
 /* Horizontal rail with edge fades. Shared by the chip bar and the shelves:
    the mask hides at whichever end has nothing left to reveal. */
 .sp-railfade {
@@ -2762,50 +2737,31 @@ input[type="radio"] {
 }
 
 /* --- Responsive -----------------------------------------------------------
-   --page-pad steps down one tier at a time. Boundaries are the --bp-* tokens
-   (var() is not valid inside a media query, hence the literals):
-     >= 1280 (--bp-xl)        48px  (the :root default)
-     1024-1279 (--bp-lg..xl)  32px
-     768-1023 (--bp-md..lg)   24px
-     <= 767 (below --bp-md)   16px
-   Source order does the tiering — each narrower block overrides the last. */
-@media (max-width: 1279px) {
-  :root {
-    --page-pad: var(--space-lg); /* 32px */
-  }
-}
+   The gutter tiers (--page-pad) are the shell's (shell.css). Boundaries are
+   the --bp-* tokens (var() is not valid inside a media query, hence the
+   literals). */
 /* Shell boundary: --bp-lg (1024px). The rail exists at >= 1024; the mobile
    top bar below. This block must break where the JS shell switch does
    (Sidebar.tsx matchMedia), so it fires at 1023. With no rail, the
    nav-to-content relationship is vertical: 24px under the sticky 56px
    header instead of the desktop 48px top. */
 @media (max-width: 1023px) {
-  :root {
-    --page-pad: var(--space-md); /* 24px */
-    /* The mobile header (Sidebar.tsx): 56px bar + the notch inset it
-       carries as padding-top. */
-    --chrome-top: calc(56px + env(safe-area-inset-top, 0px));
-  }
   .sp-page {
-    /* Bottom keeps the 64px rhythm plus the home-indicator inset. */
+    /* Bottom keeps the 64px rhythm, plus the home-indicator inset where
+       the frame's footer links don't carry it (--frame-inset-bottom). */
     padding: var(--space-md) var(--page-pad)
-      calc(var(--space-2xl) + env(safe-area-inset-bottom, 0px));
+      calc(var(--space-2xl) + var(--frame-inset-bottom, env(safe-area-inset-bottom, 0px)));
   }
 }
 @media (max-width: 767px) {
-  /* 16px page gutter on mobile, per the DS layout spec. :root so the
-     bands' column padding follows the same token. */
-  :root {
-    --page-pad: 16px;
-  }
-
   /* Brand Templates mobile gutter model (2026-09 frames, C5): the page
      drops its horizontal padding so the RAILS bleed to the screen edge,
      and the 16px gutter moves onto the children so TEXT stays inset. A
      pattern change, not a rounding difference — only the templates route
      opts in, via .sp-page--bleed; every other .sp-page keeps --page-pad. */
   .sp-page--bleed {
-    padding: var(--space-md) 0 calc(30px + env(safe-area-inset-bottom, 0px));
+    padding: var(--space-md) 0
+      calc(30px + var(--frame-inset-bottom, env(safe-area-inset-bottom, 0px)));
   }
   .sp-page--bleed .sp-emptystate {
     margin-inline: var(--space-sm);
@@ -3037,37 +2993,30 @@ input[type="radio"] {
 
 /* ── Generate chat: the page (Figma "Generate · Chat", frames 01 to 05 and
    07; PROMPT §8.1) ─────────────────────────────────────────────────────────
-   Every state is the .sp-page column (its gutters, cap and 48 top) laid
-   out as a flex column.
+   Every state is the page's content (.sp-page) laid out as a flex column.
+   At desktop width the app frame holds it (layout/Page.tsx): Start scrolls
+   in the frame and centres its 760 column in the content, and the thread
+   states and History are its "self" pages, as tall as Main, scrolling
+   their own region. The header row and the legal links are the frame's.
 
-   Start is the normal document page, at least one viewport tall: the
-   Start region takes the room above the legal links and centres the 760
-   column in it, with the frame's 48 of padding under the column. The
-   frame insets the page 45 top and bottom; the top maps to the page's 48,
-   and the bottom matches it.
-
-   The thread states and History take the viewport (useFullViewport), so
-   the page is exactly the main region's height: the header and the dock
-   keep their size and the one scrolling region between them takes the
-   rest. The thread states end 24 above the window's foot, as drawn;
-   History, like Start, 48. Each bottom adds the home-indicator inset. */
+   Below --bp-lg Start is the normal document page, at least one viewport
+   tall, and the thread states and History take the viewport
+   (useFullViewport): the header and the dock keep their size and the one
+   scrolling region between them takes the rest. The thread states end 24
+   above the window's foot, History and Start 48, each plus the
+   home-indicator inset. */
 .sp-chat-page {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
 }
+/* Start fills what the frame leaves above the footer links (the frame is at
+   least the window under the mobile bar), so its column centres in it. */
 .sp-chat-page[data-state="start"] {
-  min-height: calc(100dvh - var(--chrome-top));
-  padding-bottom: calc(var(--space-xl) + env(safe-area-inset-bottom, 0px));
-}
-/* Below --bp-lg the mobile header is its 56 (--chrome-top) plus a 1px
-   hairline under it (.sp-mobilebar's border), so main starts one hairline
-   lower than --chrome-top says. Without it the Start state runs 1px past
-   the window and the whole column nudges on every wheel. */
-@media (max-width: 1023px) {
-  .sp-chat-page[data-state="start"] {
-    min-height: calc(100dvh - var(--chrome-top) - var(--border-width));
-  }
+  flex: 1 0 auto;
+  padding-bottom: calc(
+    var(--space-xl) + var(--frame-inset-bottom, env(safe-area-inset-bottom, 0px))
+  );
 }
 .sp-chat-page[data-state="thread"],
 .sp-chat-page[data-state="history"] {
@@ -3075,10 +3024,21 @@ input[type="radio"] {
   min-height: 0;
 }
 .sp-chat-page[data-state="thread"] {
-  padding-bottom: calc(var(--space-md) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(
+    var(--space-md) + var(--frame-inset-bottom, env(safe-area-inset-bottom, 0px))
+  );
 }
 .sp-chat-page[data-state="history"] {
-  padding-bottom: calc(var(--space-xl) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(
+    var(--space-xl) + var(--frame-inset-bottom, env(safe-area-inset-bottom, 0px))
+  );
+}
+/* The chat's header sits right on the thread (13:7138); the thread's own
+   top padding and Edit details' split carry the gap, so the content takes
+   none of its own under the frame's header row. Generate's thread, the
+   template chat's and their load states. */
+.sp-frame[data-head] .sp-frame__body > .sp-chat-page[data-state="thread"] {
+  padding-top: 0;
 }
 
 /* ── Generate chat: Start state (frames 01 to 03; PROMPT §8.2) ────────────
@@ -3093,36 +3053,6 @@ input[type="radio"] {
   align-items: center;
   justify-content: center;
   padding-bottom: var(--space-xl);
-}
-
-/* The legal links (PROMPT §11.3): 12/125% in the muted ink, underlined.
-   On the Start state and History they are the page's foot, centred and 16
-   apart; in the dock they close the footnote row (below). */
-.sp-chat-footer {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--space-sm);
-  flex-shrink: 0;
-}
-.sp-chat-legal {
-  font-family: var(--font-ui);
-  font-size: var(--type-caption-size);
-  line-height: 1.25;
-  font-weight: 400;
-  color: var(--text-muted);
-  text-decoration: underline;
-  text-underline-position: from-font;
-  white-space: nowrap;
-  border-radius: var(--radius-control);
-  transition: color var(--dur-state) var(--ease);
-}
-.sp-chat-legal:hover {
-  color: var(--text-secondary);
-}
-.sp-chat-legal:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
 }
 
 /* ── Generate chat: the thread (frames 04 and 05, "Thread") ──────────────
@@ -3160,7 +3090,12 @@ input[type="radio"] {
   min-height: 0;
   margin-inline: calc(-1 * var(--page-pad));
 }
+/* Positioned, so screen-reader-only text in the thread is held by the
+   scroller, clipped and scrolled with it. Held by the frame around it, it
+   sat at its place in the thread and stretched the page past the window at
+   1024 and wider, where Main no longer clips. */
 .sp-chat-thread {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;

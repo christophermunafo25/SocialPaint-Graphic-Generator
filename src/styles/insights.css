@@ -8,10 +8,6 @@
   display: flex;
   flex-direction: column;
   gap: 28px; /* off the scale, as drawn */
-  padding-bottom: calc(40px + var(--dev-banner-h, 0px)); /* as drawn */
-}
-.sp-in-page > .sp-shell-pagehead {
-  margin-bottom: -8px; /* 20 under the header, not the column's 28 */
 }
 .sp-in-content {
   display: flex;
