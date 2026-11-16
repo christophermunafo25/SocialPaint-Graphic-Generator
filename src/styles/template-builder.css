@@ -549,6 +549,163 @@
   background: var(--surface-sunken);
 }
 
+/* What floats over the stage, above the canvas: the variations at the top,
+   the tools on the left edge, the size and the zoom at the foot, and the
+   checks between them. */
+.sp-stage-looks,
+.sp-builder__tools,
+.sp-stage__size,
+.sp-stage__zoom,
+.sp-stage__notes {
+  position: absolute;
+  z-index: 4;
+}
+/* The variations (322:403): a raised capsule, 16 down, centred. */
+.sp-stage-looks {
+  top: var(--space-16);
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  max-width: calc(100% - 2 * var(--space-16));
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-2-overlay);
+  transform: translateX(-50%);
+}
+.sp-stage-looks > .ui-segmented {
+  min-width: 0;
+  overflow-x: auto;
+}
+/* The tools (322:428): Ghost Small buttons in a raised column on the left
+   edge, centred, Undo and Redo under a divider. */
+.sp-builder__tools {
+  top: 50%;
+  left: var(--space-16);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px; /* as drawn */
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-2-overlay);
+  transform: translateY(-50%);
+}
+.sp-builder__tool-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.sp-builder__tools-divider {
+  width: 20px; /* as drawn */
+  height: var(--stroke-hairline);
+  margin-block: var(--space-4);
+  background: var(--border-subtle);
+}
+/* The canvas size and the zoom, Small selects 16 in from the stage's foot
+   corners; the checks centred between them. */
+.sp-stage__size {
+  bottom: var(--space-16);
+  left: var(--space-16);
+  max-width: calc(50% - var(--space-64));
+}
+.sp-stage__size > .ui-select__value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-stage__zoom {
+  right: var(--space-16);
+  bottom: var(--space-16);
+}
+.sp-stage__notes {
+  bottom: var(--space-16);
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  transform: translateX(-50%);
+}
+.sp-stage__status {
+  padding: 6px var(--space-12); /* a 28 pill, as the buttons beside it */
+  border-radius: var(--radius-full);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-1-raised);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+/* The canvas fills the stage, which is its pasteboard; the artboard fits
+   clear of the controls (STAGE_FIT_INSETS in TemplateBuilder). */
+.sp-stage__area {
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  align-items: stretch;
+  min-height: 0;
+}
+.sp-stage__area[data-mode="preview"] {
+  align-items: center;
+  padding: var(--space-40);
+}
+/* The checks: a pill that opens a panel above it. */
+.sp-stage-checks {
+  position: relative;
+}
+.sp-stage-checks__panel {
+  position: absolute;
+  bottom: calc(100% + var(--space-8));
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  width: 360px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: var(--space-16);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-2-overlay);
+  transform: translateX(-50%);
+}
+.sp-stage-checks__group,
+.sp-stage-checks__group ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-secondary);
+}
+.sp-stage-checks__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+.sp-stage-checks__head > h3 {
+  margin: 0;
+  color: var(--text-primary);
+}
+.sp-stage-checks__item {
+  border-radius: var(--radius-xs);
+  color: var(--text-secondary);
+  text-align: left;
+}
+.sp-stage-checks__item:hover {
+  color: var(--text-primary);
+  text-decoration: underline;
+}
+/* The rail's import paths, over the palette, until the rail's own pass. */
+.sp-rail-imports {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  margin-bottom: var(--space-16);
+}
+
 /* Publish template (326:1233): the graphic on a sunken well, then the
    details, 24 apart. */
 .ui-modal.sp-publish-dialog {

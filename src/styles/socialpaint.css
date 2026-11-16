@@ -1162,16 +1162,7 @@ select.sp-input:disabled {
   --editor-accent: #0d99ff; /* selection blue — functional, never brand; foreign to artwork by design */
   --editor-line: 1px;
   --editor-handle: 7px;
-  /* The pasteboard the artboard floats on. Light gets the raised step so a
-     white artboard still reads as a distinct object; dark gets the canvas
-     floor, which is the deepest surface and makes the artwork carry. Both
-     are token-derived, and the separation is colour plus a hairline —
-     never a shadow. */
-  --editor-pasteboard: var(--bg-raised);
   --editor-artboard-edge: var(--border-strong);
-}
-[data-theme="dark"] {
-  --editor-pasteboard: var(--bg-canvas);
 }
 
 /* While a canvas gesture is live the body forces one cursor and everything
@@ -1183,9 +1174,9 @@ body[data-sp-gesture] * {
 }
 
 /* The pan/zoom window. It clips; the artboard inside it carries its own
-   clip so bleeding content crops exactly as it exports. */
+   clip so bleeding content crops exactly as it exports. The builder's stage
+   behind it is the pasteboard. */
 .sp-canvas-viewport {
-  background: var(--editor-pasteboard);
   overscroll-behavior: none;
 }
 
@@ -1226,22 +1217,6 @@ body[data-sp-gesture] * {
     flex: 1 1 0;
     min-height: 0;
   }
-}
-
-/* The drawing tools, floating on the canvas's left edge — next to the work,
-   out of the top bar (which must never scroll). Surface + hairline, no
-   shadow, above the rail grip (3) and below the step slide-over (20). */
-.sp-builder__tools {
-  position: absolute;
-  left: var(--space-xs);
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 4;
-  display: flex;
-  flex-direction: column;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-strong);
-  overflow: hidden;
 }
 
 /* --- Mobile nav toggle -----------------------------------------------------

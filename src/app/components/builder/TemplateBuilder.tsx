@@ -5,7 +5,7 @@ import {
   Image as ImageIcon,
   Minus,
   MousePointer2,
-  Sparkles,
+  PencilRuler,
   Figma,
   RefreshCw,
   Redo2,
@@ -50,7 +50,8 @@ import { cutOffAtCanvas } from "@/lib/render/effects";
 import { normalizeEffects } from "./effectOps";
 import { FieldOverlayEditor, type CanvasViewApi } from "./FieldOverlayEditor";
 import { FieldInspector } from "./FieldInspector";
-import { VariantFilmstrip } from "./VariantFilmstrip";
+import { VariationSwitch } from "./VariationSwitch";
+import { StageChecks } from "./StageChecks";
 import {
   applyVariant,
   cloneVariant,
@@ -144,7 +145,8 @@ import { reflowTemplate, versionName } from "@/lib/templates/reflow";
 import { CanvasSizePicker } from "./CanvasSizePicker";
 import { clearStart, peekStart, requestNewTemplate, type BuilderStart } from "./startHandoff";
 import { BUILDER_MIN_VIEWPORT_PX, useViewportAtLeast } from "./useViewportAtLeast";
-import { Alert, Badge, Button, SegmentedControl, Skeleton, Toast } from "../primitives";
+import { Alert, Badge, Button, IconButton, SegmentedControl, Skeleton, Toast } from "../primitives";
+import { classifySize } from "@/lib/templates/platforms";
 import { CrumbRename } from "./CrumbRename";
 import { PublishDialog, PublishedDialog } from "./PublishDialog";
 import { limitOverflows } from "@/lib/templates/publishChecks";
@@ -177,6 +179,11 @@ const TOOL_ORDER: Array<{
   { key: "line", label: "Line", Icon: Minus },
   { key: "image", label: "Image", Icon: ImageIcon },
 ];
+
+/** Room around the artboard at fit, clear of what floats over the stage:
+ * the variations above (16 + 44 + 16), the tools on the left (16 + 40 + 16)
+ * and the selects below (16 + 28 + 16). */
+const STAGE_FIT_INSETS = { top: 76, right: 72, bottom: 60, left: 72 };
 
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
 
@@ -628,11 +635,6 @@ export function TemplateBuilder({
     return out;
   }, [hiddenIds, selectedVariant, draft.fields]);
   const contrastWarnings = useMemo(() => variantContrastWarnings(draft, kit), [draft, kit]);
-  const contrastCounts = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const w of contrastWarnings) m.set(w.variantId, (m.get(w.variantId) ?? 0) + 1);
-    return m;
-  }, [contrastWarnings]);
 
   /** Add a variation: a copy of the selected look in a new frame. From a
    * single-variant template this creates the set — "Variation 1" is the
@@ -3083,6 +3085,28 @@ export function TemplateBuilder({
                   {/* The palette adds elements to the graphic, so it lives with
                   the Layers tab. Form is the member's view: what they fill
                   in, in order, and nothing to add. */}
+                  {mode === "edit" &&
+                    railTab === "layers" &&
+                    stores.designImport.isConfigured() && (
+                      <div className="sp-rail-imports">
+                        <Button
+                          kind="neutral"
+                          size="sm"
+                          icon={Figma}
+                          onClick={() => setFigmaOpen(true)}
+                        >
+                          Import from Figma
+                        </Button>
+                        <Button
+                          kind="neutral"
+                          size="sm"
+                          icon={PencilRuler}
+                          onClick={() => setAutoBuildOpen(true)}
+                        >
+                          Auto build
+                        </Button>
+                      </div>
+                    )}
                   {mode === "edit" && railTab === "layers" && (
                     <ElementPalette
                       onAdd={(id) => addPaletteField(id)}
@@ -3141,95 +3165,76 @@ export function TemplateBuilder({
 
             {/* ── Canvas viewport ───────────────────────────────────────── */}
             <div className="sp-builder__canvas">
-              {/* The tool strip floats on the canvas edge, next to the work it
-                acts on — moving it out of the top bar is what keeps the bar
-                from scrolling. Same tools, same letters, same shift-to-lock;
-                only the orientation changed. */}
+              {/* The tools (322:428), floating on the stage's left edge: Ghost
+                  Small buttons in a raised column, then Undo and Redo under a
+                  divider. Same tools, same letters, same shift-to-lock. */}
               {mode === "edit" && (
-                <div className="sp-builder__tools" data-radius-control>
-                  <div role="radiogroup" aria-label="Canvas tool" className="flex flex-col">
-                    {TOOL_ORDER.map(({ key, label, Icon }, i) => {
-                      const on = tool === key;
-                      return (
-                        <button
-                          key={key}
-                          role="radio"
-                          aria-checked={on}
-                          aria-label={`${label} (${TOOL_LETTER[key]})`}
-                          title={`${label}: ${TOOL_LETTER[key]}${
-                            key === "move" ? "" : `, ⇧${TOOL_LETTER[key]} to keep it active`
-                          }`}
-                          onClick={() => {
-                            setTool(key);
-                            setToolLocked(false);
-                          }}
-                          className="px-2 py-2"
-                          style={{
-                            borderTop: i > 0 ? "1px solid var(--border)" : undefined,
-                            background: on ? "var(--fill-action)" : "var(--bg-surface)",
-                            color: on ? "var(--text-on-action)" : "var(--text-secondary)",
-                          }}
-                        >
-                          <Icon style={{ width: 14, height: 14 }} />
-                        </button>
-                      );
-                    })}
+                <div
+                  className="sp-builder__tools"
+                  role="toolbar"
+                  aria-label="Canvas tools"
+                  aria-orientation="vertical"
+                >
+                  <div
+                    role="radiogroup"
+                    aria-label="Canvas tool"
+                    className="sp-builder__tool-group"
+                  >
+                    {TOOL_ORDER.map(({ key, label, Icon }) => (
+                      <IconButton
+                        key={key}
+                        variant="ghost"
+                        size="sm"
+                        icon={Icon}
+                        label={`${label} (${TOOL_LETTER[key]})`}
+                        title={`${label}: ${TOOL_LETTER[key]}${
+                          key === "move" ? "" : `, ⇧${TOOL_LETTER[key]} to keep it active`
+                        }`}
+                        role="radio"
+                        aria-checked={tool === key}
+                        selected={tool === key}
+                        onClick={() => {
+                          setTool(key);
+                          setToolLocked(false);
+                        }}
+                      />
+                    ))}
                   </div>
-                  {/* Undo and redo ride below the tools: same strip, own
-                    group. The keyboard shortcuts are unchanged. */}
-                  <button
+                  <span className="sp-builder__tools-divider" aria-hidden />
+                  <IconButton
+                    variant="ghost"
+                    size="sm"
+                    icon={Undo2}
+                    label="Undo"
+                    title={`Undo (${isMac ? "⌘" : "Ctrl+"}Z)`}
                     onClick={doUndo}
                     disabled={!canUndo}
-                    title={`Undo (${isMac ? "⌘" : "Ctrl+"}Z)`}
-                    aria-label="Undo"
-                    className="px-2 py-2"
-                    style={{
-                      borderTop: "1px solid var(--border-strong)",
-                      background: "var(--bg-surface)",
-                      color: canUndo ? "var(--text-secondary)" : "var(--text-disabled)",
-                      cursor: canUndo ? "pointer" : "default",
-                    }}
-                  >
-                    <Undo2 style={{ width: 14, height: 14 }} />
-                  </button>
-                  <button
+                  />
+                  <IconButton
+                    variant="ghost"
+                    size="sm"
+                    icon={Redo2}
+                    label="Redo"
+                    title={`Redo (${isMac ? "⇧⌘" : "Ctrl+Shift+"}Z)`}
                     onClick={doRedo}
                     disabled={!canRedo}
-                    title={`Redo (${isMac ? "⇧⌘" : "Ctrl+Shift+"}Z)`}
-                    aria-label="Redo"
-                    className="px-2 py-2"
-                    style={{
-                      borderTop: "1px solid var(--border)",
-                      background: "var(--bg-surface)",
-                      color: canRedo ? "var(--text-secondary)" : "var(--text-disabled)",
-                      cursor: canRedo ? "pointer" : "default",
-                    }}
-                  >
-                    <Redo2 style={{ width: 14, height: 14 }} />
-                  </button>
+                  />
                 </div>
               )}
-              {/* Variations, as connected frames above the working canvas.
-                Every frame is this draft; the selected one is what the
-                canvas below edits. */}
-              <VariantFilmstrip
-                schema={previewSchema}
-                brandKit={kit}
-                values={worstCaseValues}
-                selectedId={selectedVariant?.id}
-                warningCounts={contrastCounts}
-                onSelect={setSelectedVariantId}
-                onAdd={addVariation}
-                onRename={renameVariation}
-                onRemove={deleteVariation}
-                onSetDefault={setDefaultVariation}
-              />
-              <div
-                className={`flex-1 min-h-0 flex justify-center ${
-                  mode === "edit" ? "items-stretch" : "items-center"
-                }`}
-                style={{ padding: "var(--space-sm)" }}
-              >
+              {/* The variations (322:403), over the top of the stage; the
+                  selected one is what the canvas edits. */}
+              {mode === "edit" && (
+                <VariationSwitch
+                  variants={draft.variants ?? []}
+                  selectedId={selectedVariant?.id}
+                  onSelect={setSelectedVariantId}
+                  onAdd={addVariation}
+                  onRename={renameVariation}
+                  onRemove={deleteVariation}
+                  onSetDefault={setDefaultVariation}
+                />
+              )}
+              <div className="sp-stage__area" data-mode={mode}>
                 {/* Canvas boundary: a crash on the design surface leaves the
                   top bar, rails, and inspector standing; the draft is
                   autosaved up to the last change. Mode switches and edits
@@ -3319,6 +3324,7 @@ export function TemplateBuilder({
                       apiRef={canvasViewRef}
                       onScaleChange={onCanvasScale}
                       viewKey={savedId ?? "new"}
+                      fitInsets={STAGE_FIT_INSETS}
                     />
                   ) : (
                     /* Preview letterboxes inside the region: full height, width
@@ -3342,167 +3348,59 @@ export function TemplateBuilder({
                 </ErrorBoundary>
               </div>
 
-              {/* Canvas footer: the hint line, the import paths, and any layout
-                warnings — everything that describes the canvas without
-                sitting on top of it. */}
-              <div
-                className="flex-shrink-0"
-                style={{ borderTop: "1px solid var(--border)", background: "var(--bg-surface)" }}
-              >
-                {mode === "edit" && reflowWarnings && reflowWarnings.length > 0 && (
-                  <div
-                    role="status"
-                    className="px-3 py-2 space-y-1"
-                    style={{ borderBottom: "1px solid var(--border)" }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <p className="sp-eyebrow flex-1" style={{ color: "var(--text-primary)" }}>
-                        Reflow review: the automatic layout is a starting point. Adjust it before
-                        you publish.
-                      </p>
-                      <button
-                        onClick={() => setReflowWarnings(null)}
-                        className="flex-shrink-0"
-                        style={{
-                          fontSize: "var(--type-caption-size)",
-                          color: "var(--text-secondary)",
-                        }}
-                      >
-                        Done reviewing
-                      </button>
-                    </div>
-                    {reflowWarnings.map((w) => (
-                      <button
-                        key={w.fieldId}
-                        onClick={() => setSelectedIds([w.fieldId])}
-                        className="block text-left"
-                        style={{
-                          fontSize: "var(--type-caption-size)",
-                          color: "var(--text-secondary)",
-                          textDecoration: "underline",
-                          textDecorationColor: "var(--border-strong)",
-                          textUnderlineOffset: 2,
-                        }}
-                        title="Select this field on the canvas"
-                      >
-                        {w.message}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {mode === "edit" && layoutWarnings.length > 0 && (
-                  <div
-                    role="status"
-                    className="px-3 py-2 space-y-1"
-                    style={{ borderBottom: "1px solid var(--border)" }}
-                  >
-                    {layoutWarnings.map((w, i) => (
-                      <p
-                        key={i}
-                        style={{
-                          fontSize: "var(--type-caption-size)",
-                          color: "var(--text-secondary)",
-                        }}
-                      >
-                        {w}
-                      </p>
-                    ))}
-                  </div>
-                )}
-                <div
-                  className="flex items-center gap-4 px-3 flex-wrap"
-                  style={{ minHeight: 34, paddingBlock: 6 }}
-                >
-                  <p
-                    style={{
-                      fontSize: "var(--type-caption-size)",
-                      color: "var(--text-muted)",
-                      flex: "1 1 260px",
-                      minWidth: 0,
+              {/* The canvas size (bottom left) and the zoom (bottom right), as
+                  Small selects (322:379); the checks between them. The size
+                  opens the picker creation uses, for rescaling in place. */}
+              {mode === "edit" && (
+                <>
+                  <button
+                    type="button"
+                    className="ui-reset ui-fill ui-ring ui-select sp-stage__size"
+                    data-size="sm"
+                    data-hug
+                    aria-haspopup="dialog"
+                    onClick={(e) => {
+                      const r = e.currentTarget.getBoundingClientRect();
+                      setSizeMenuAt({ x: r.left, y: r.top });
                     }}
                   >
-                    {mode === "edit"
-                      ? "Drag elements from the palette onto the canvas, then move them by dragging; handles resize and the top handle rotates. Right-click for copy/paste."
-                      : "Member preview: placeholder content, locked styling."}
-                  </p>
-                  {stores.designImport.isConfigured() && mode === "edit" && (
-                    <>
-                      <button
-                        onClick={() => setFigmaOpen(true)}
-                        className="flex items-center gap-1.5 flex-shrink-0"
-                        style={{
-                          fontSize: "var(--type-caption-size)",
-                          color: "var(--text-secondary)",
-                        }}
-                      >
-                        <Figma className="w-3.5 h-3.5" />
-                        Import more fields from Figma
-                      </button>
-                      <button
-                        onClick={() => setAutoBuildOpen(true)}
-                        className="flex items-center gap-1.5 flex-shrink-0"
-                        style={{
-                          fontSize: "var(--type-caption-size)",
-                          color: "var(--text-secondary)",
-                        }}
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        Auto-build with Claude
-                      </button>
-                    </>
-                  )}
-                  {/* Canvas facts live with the canvas: size, status, and the
-                    view controls all describe this region, not the document
-                    chrome above it. In edit mode the size is a control — it
-                    opens the same picker creation uses, for rescaling in
-                    place. */}
-                  {mode === "edit" ? (
-                    <button
-                      onClick={(e) => {
-                        const r = e.currentTarget.getBoundingClientRect();
-                        setSizeMenuAt({ x: r.left, y: r.top });
-                      }}
-                      title="Change the canvas size"
-                      aria-haspopup="dialog"
-                      className="sp-eyebrow flex-shrink-0 whitespace-nowrap flex items-center gap-1"
-                      style={{ cursor: "pointer" }}
-                    >
-                      {draft.canvasWidth}×{draft.canvasHeight} · {draft.status}
-                      {recomposing ? " · lifting elements off background…" : ""}
-                      <ChevronDown style={{ width: 11, height: 11 }} />
-                    </button>
-                  ) : (
-                    <span className="sp-eyebrow flex-shrink-0 whitespace-nowrap">
-                      {draft.canvasWidth}×{draft.canvasHeight} · {draft.status}
+                    <span className="ui-select__value t-body-s">
+                      {`${classifySize(draft.canvasWidth, draft.canvasHeight).assetType} · ${draft.canvasWidth} × ${draft.canvasHeight}`}
                     </span>
-                  )}
-                  {mode === "edit" && (
-                    <button
-                      onClick={(e) => {
-                        const r = e.currentTarget.getBoundingClientRect();
-                        setViewMenuAt({ x: r.left, y: r.top });
-                      }}
-                      title="View commands"
-                      aria-label={`Zoom ${Math.round(canvasScale * 100)} percent, view commands`}
-                      aria-haspopup="menu"
-                      className="flex items-center gap-1 px-2 py-1 flex-shrink-0"
-                      data-radius-control
-                      style={{
-                        border: "1px solid var(--border-strong)",
-                        background: "var(--bg-surface)",
-                        fontFamily: "var(--font-mono)",
-                        fontSize: 11,
-                        color: "var(--text-secondary)",
-                        minWidth: 62,
-                        justifyContent: "center",
-                      }}
-                    >
+                    <ChevronDown size={16} className="ui-icon ui-select__chevron" aria-hidden />
+                  </button>
+                  <div className="sp-stage__notes">
+                    {recomposing && (
+                      <span className="t-caption-m sp-stage__status" role="status">
+                        Lifting elements off the background…
+                      </span>
+                    )}
+                    <StageChecks
+                      checks={layoutWarnings}
+                      review={reflowWarnings}
+                      onShow={(fieldId) => setSelectedIds([fieldId])}
+                      onDoneReviewing={() => setReflowWarnings(null)}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    className="ui-reset ui-fill ui-ring ui-select sp-stage__zoom"
+                    data-size="sm"
+                    data-hug
+                    aria-haspopup="menu"
+                    aria-label={`Zoom ${Math.round(canvasScale * 100)} percent, view commands`}
+                    onClick={(e) => {
+                      const r = e.currentTarget.getBoundingClientRect();
+                      setViewMenuAt({ x: r.left, y: r.top });
+                    }}
+                  >
+                    <span className="ui-select__value t-body-s">
                       {Math.round(canvasScale * 100)}%
-                      <ChevronDown style={{ width: 11, height: 11 }} />
-                    </button>
-                  )}
-                </div>
-              </div>
+                    </span>
+                    <ChevronDown size={16} className="ui-icon ui-select__chevron" aria-hidden />
+                  </button>
+                </>
+              )}
             </div>
 
             {/* ── Right inspector (322:380): a card, 320 wide ─────────────── */}

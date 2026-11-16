@@ -99,6 +99,10 @@ interface FieldOverlayEditorProps {
   onScaleChange?(scale: number): void;
   /** Session key for remembering zoom and pan (the template id). */
   viewKey?: string;
+  /** Room to leave around the artboard at fit, per side, for what floats
+   * over the view (the builder stage's variations, tools and selects).
+   * Absent, FIT_MARGIN_PX on every side. Must be stable. */
+  fitInsets?: { top: number; right: number; bottom: number; left: number };
   /** Elements the admin has locked or hidden FOR THIS SESSION. Locked ones
    * refuse selection and drags on the canvas; hidden ones are left out of
    * the canvas view. Neither reaches the schema, the layout pass, the
@@ -619,6 +623,7 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
     apiRef,
     onScaleChange,
     viewKey,
+    fitInsets,
     lockedIds,
     hiddenIds,
     emptyHint,
@@ -800,22 +805,30 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
   /** The view that frames a canvas-space rect, centred, with pasteboard
    * showing around it. Fit is this over the whole artboard — a computed
    * target, not the zoom floor. */
-  const viewFraming = useCallback((r: Rect): View | null => {
-    const vp = viewportRef.current;
-    if (!vp) return null;
-    const w = vp.clientWidth;
-    const h = vp.clientHeight;
-    if (w <= 0 || h <= 0 || r.width <= 0 || r.height <= 0) return null;
-    const inner = 2 * FIT_MARGIN_PX;
-    const s = clampScale(
-      Math.min(Math.max(1, w - inner) / r.width, Math.max(1, h - inner) / r.height),
-    );
-    return {
-      scale: s,
-      x: w / 2 - (r.x + r.width / 2) * s,
-      y: h / 2 - (r.y + r.height / 2) * s,
-    };
-  }, []);
+  const viewFraming = useCallback(
+    (r: Rect): View | null => {
+      const vp = viewportRef.current;
+      if (!vp) return null;
+      const w = vp.clientWidth;
+      const h = vp.clientHeight;
+      if (w <= 0 || h <= 0 || r.width <= 0 || r.height <= 0) return null;
+      const ins = fitInsets ?? {
+        top: FIT_MARGIN_PX,
+        right: FIT_MARGIN_PX,
+        bottom: FIT_MARGIN_PX,
+        left: FIT_MARGIN_PX,
+      };
+      const innerW = Math.max(1, w - ins.left - ins.right);
+      const innerH = Math.max(1, h - ins.top - ins.bottom);
+      const s = clampScale(Math.min(innerW / r.width, innerH / r.height));
+      return {
+        scale: s,
+        x: ins.left + innerW / 2 - (r.x + r.width / 2) * s,
+        y: ins.top + innerH / 2 - (r.y + r.height / 2) * s,
+      };
+    },
+    [fitInsets],
+  );
 
   const fitView = useCallback(
     (): View | null => viewFraming({ x: 0, y: 0, width: canvasWidth, height: canvasHeight }),
