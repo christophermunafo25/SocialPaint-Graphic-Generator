@@ -163,7 +163,22 @@ describe("caption merge tags", () => {
       "figma",
     );
     expect(out.template.captionTemplate).toBe("Meet {headline} at today");
-    expect(out.warnings.some((w) => w.includes("{venue}"))).toBe(true);
+    expect(out.warnings).toContain(
+      "Caption tag {venue} doesn't match any field, so it was removed.",
+    );
+  });
+
+  it("holds the caption to the house copy rules", () => {
+    // Emoji and the dash are escapes: the repository holds no emoji.
+    const out = validateProposal(
+      proposal([field({})], {
+        captionTemplate: "Congrats {headline}! \u{1F389} Proud of you \u{2014} always",
+      }),
+      extraction([element("1:10")]),
+      brand,
+      "figma",
+    );
+    expect(out.template.captionTemplate).toBe("Congrats {headline}. Proud of you, always");
   });
 });
 

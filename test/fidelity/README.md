@@ -12,6 +12,7 @@ test/fidelity/
     figma-node.json  figma fixtures: the raw node, for offline import replay
     *.png, *.woff2   images and fonts the fixture uses
   fonts-private/     gitignored: fonts whose license forbids redistribution
+  google-fonts/      Google's recorded answers to the fixtures' font requests
   out/               gitignored: renders, heatmaps and report.json
 ```
 
@@ -63,3 +64,23 @@ The harness launches Firefox with `nglayout.initialpaint.delay` set to 40 (stock
 Firefox suppresses painting for that many milliseconds at the start of every document's life, the export snapshot's own document included. A snapshot drawn inside the window comes out without anything clipped to text (a text gradient, grain on glyphs), and Firefox keeps that raster, so a later draw cannot repair it. At 5 ms an export that draws too early loses the race only on a slow machine, which showed as an occasional `builder-roundtrip` failure on CI. At 40 ms, longer than a frame, it loses on every run.
 
 The export waits `SNAPSHOT_SETTLE_MS` (50 ms, `src/lib/render/exportPng.ts`) before its first draw. The harness value (`FIREFOX_PAINT_DELAY_MS` in `scripts/fidelity/fidelity.mjs`) must stay below that wait, or every Firefox run loses its text-clipped fills.
+
+## Google's fonts are recorded
+
+The harness never asks Google for a font. Every request a fixture's page makes to `fonts.googleapis.com` or `fonts.gstatic.com` is answered from `google-fonts/`: `recording.json` maps each engine's requests to the bodies in `files/`, which are named by their content. `scripts/fidelity/fontRecording.mjs` does the answering, for `run`, `bless` and `baseline` alike.
+
+The export fetches a family's stylesheet again at export time and embeds the files it names, and Google does not answer every request alike. A few percent of the time it names a second build of the same font version, whose letters land up to a pixel apart. Asked live, that moved `feature-highlight-import` on WebKit by 0.15 points with no code change. On the recording every row reads its baseline.
+
+A request the recording lacks is failed. Its row reports `error`, and the run and `report.json` name the request. That happens when a fixture asks for a family, or a set of faces of one, that no fixture asked for before, and when a change alters which stylesheets the app asks Google for: the css2 query in `src/lib/render/fonts.ts`, or the Google `@import` in `src/styles/socialpaint.css` (a test in `npm run verify` catches that one). Then run
+
+```bash
+node scripts/fidelity/fidelity.mjs fonts
+```
+
+and commit `google-fonts/`. It renders the fixtures into `out/fonts/`, fetches the answers the recording lacks, and never fetches one it already has. It keeps only a stylesheet, a font file, or Google's 400 for a family it does not serve. Anything else, such as an outage or a rate limit, is reported and the command exits non-zero, so run it again. When it has rendered every fixture in every engine it also drops the answers none of them asked for. A run narrowed with `--only`, or to fewer than three engines, drops nothing.
+
+A fixture skipped for a missing font file is left out of both: what its page asks Google for is neither reported nor recorded.
+
+To move a family to Google's current build, delete that family's `css2` answers from `recording.json` (or the whole file, for every family) and run `fonts`. That can move rows, so it needs the baselines re-measured with CJ's approval.
+
+Each recorded family is under the SIL Open Font License, and `google-fonts/licenses/` has a copy for each. When `fonts` records a family for the first time, check that its license allows redistribution and add its copy there.

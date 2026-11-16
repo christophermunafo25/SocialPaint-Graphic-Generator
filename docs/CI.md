@@ -33,12 +33,19 @@ because the baselines were recorded there; text rasterizes differently on
 Linux. macOS runner minutes bill at a higher rate than Linux on private
 repositories, which is one reason it only runs when its paths change.
 
-Two things can move its numbers with no code change: the runner image
-(GitHub updates `macos-latest`), and Google Fonts, which the starter fixtures
-and most text load live, shipping a new build of a family. When the job fails
-across many fixtures at once, check those first: open the `fidelity-out`
-artifact's heatmaps, and if only glyph edges moved, re-measure the baselines
-with CJ's approval. It is not a required check today; add **`fidelity`** to the ruleset
+One thing can move its numbers with no code change: the runner image
+(GitHub updates `macos-latest`). When the job fails across many fixtures at
+once, check that first: open the `fidelity-out` artifact's heatmaps, and if
+only glyph edges moved, re-measure the baselines with CJ's approval.
+
+Google Fonts cannot move them. The harness answers every Google font request
+from the recording in `test/fidelity/google-fonts` and never asks Google, so
+a new build of a family changes nothing until the recording is refreshed
+(`test/fidelity/README.md`). A row that reports `error` with a note about the
+recording means a change asks Google for something the recording lacks: run
+`node scripts/fidelity/fidelity.mjs fonts` and commit that folder.
+
+It is not a required check today; add **`fidelity`** to the ruleset
 below if it should gate merges (it only reports on pull requests that touch
 its paths, so a required check would block the others).
 

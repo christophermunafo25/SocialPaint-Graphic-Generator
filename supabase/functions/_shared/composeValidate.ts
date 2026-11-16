@@ -44,6 +44,7 @@ import {
   type ShadowEffect,
   type TypeStyleEntry,
 } from "./compose.ts";
+import { plainCaption } from "./captionCopy.ts";
 import { isRequiredField } from "./fieldRules.ts";
 import {
   replaceEmDashes,
@@ -1103,16 +1104,19 @@ export function validateCompose(
     }
 
     // The caption is a template: {key} tags naming member fields survive,
-    // anything else is stripped. The resolved form is what the card shows.
+    // anything else is stripped, and it keeps to the house copy rules. The
+    // resolved form is what the card shows.
     const editableKeys = new Set(fields.filter((f) => !f.static).map((f) => f.fieldKey));
-    const captionTemplate = (typeof p.caption === "string" ? p.caption.trim().slice(0, 600) : "")
-      .replace(/\{([a-z][a-z0-9_]*)\}/g, (tag, key: string) => {
-        if (editableKeys.has(key)) return tag;
-        notes.push(`${label}: caption tag {${key}} doesn't match any field, so it was removed.`);
-        return "";
-      })
-      .replace(/[ \t]{2,}/g, " ")
-      .trim();
+    const captionTemplate = plainCaption(
+      (typeof p.caption === "string" ? p.caption.trim().slice(0, 600) : "").replace(
+        /\{([a-z][a-z0-9_]*)\}/g,
+        (tag, key: string) => {
+          if (editableKeys.has(key)) return tag;
+          notes.push(`${label}: caption tag {${key}} doesn't match any field, so it was removed.`);
+          return "";
+        },
+      ),
+    );
     const caption = captionTemplate
       .replace(/\{([a-z][a-z0-9_]*)\}/g, (_tag, key: string) => values[key] ?? "")
       .replace(/[ \t]{2,}/g, " ")

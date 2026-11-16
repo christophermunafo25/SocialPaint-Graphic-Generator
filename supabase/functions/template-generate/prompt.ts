@@ -40,7 +40,7 @@ The request says so when the member attached a photo before generating. You neve
 
 ## Caption and rationale
 
-- caption: one or two sentences the member would actually post alongside the graphic, in the same voice as the values. No hashtag walls, no exclamation marks, no marketing filler, and never an em dash.
+- caption: one or two sentences the member would actually post alongside the graphic, in the same voice as the values. No hashtag walls, no emoji, no exclamation marks, no marketing filler, and never an em dash.
 - why: one sentence saying why this template fits this brief, addressed to the member.
 
 ## When nothing fits
@@ -110,7 +110,7 @@ The request gives you the brief, the canvas, the brand (colors, type styles, fon
 - lead: the reference id the design follows (R2), or "none".
 - background: { "from": "R2" } reuses a template's ground; otherwise a "color", a gradient "fill", and "grain".
 - elements: in paint order, each with a key, a type, a box, and "from" or its own look.
-- caption: one or two sentences the member would post, with {key} tags for member fields so it still works after the member edits the copy. No hashtag walls.
+- caption: one or two sentences the member would post, with {key} tags for member fields so it still works after the member edits the copy. No hashtag walls, no emoji, no exclamation marks, and never an em dash.
 - why: one sentence to the member on the design and which of their templates it follows.
 
 ## Reply and title
