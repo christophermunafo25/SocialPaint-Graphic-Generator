@@ -321,3 +321,16 @@ Removed, each with no reader left in `src/`:
 - the composer text area's dead `ui-ring-none` class: its focus rings the whole chat box, as a field's does
 
 Kept for a later phase: `LookTile` and the Looks card, which only the hidden template chat draws (cleanup), and `PreviewOverlay`, which Brand Studio's covers, swatches and logo plates use (Phase 7). `TypeStylesDetail.tsx` still names the dead `ui-ring-none` (Phase 7).
+
+## 11. What Phase 6a removed and found
+
+Phase 6a moved the Template Builder's list and how a template starts onto their frames: the list with its row menu, New template, Choose a size, and the import dialogs. The rules it rebuilt (`src/styles/template-builder.css`) read tokens only.
+
+Removed, each with no reader left in `src/`:
+
+- `--cover-ground`, `--cover-card`, `--cover-back` and `--cover-chrome-1` to `-3`, which only the SVG size covers read: the covers are the file's photographs, exported as WebP
+- the builder's start screen (`BuildPicker.tsx`, `StartGlyphs.tsx`, `ImportLinkPopup.tsx`) and its rules (`.sp-start*`, `.sp-start-card*`, `.sp-start-tile`, `.sp-import-pop*`, `.sp-hero-title`)
+- the earlier size gallery's rules (`.sp-sizegrid`, `.sp-sizecard*`, `.sp-railitem`, `.sp-chipbar`, `.sp-chip` and its parts) and `templates/TemplateSearchField.tsx` with `.sp-searchfield*`
+- the list card's inline rename, its AI-built label and its icon buttons
+
+Kept for Phase 6b: `CanvasSizePicker`, which the editor's resize popover still uses, and the editor's own loading pulse on `.sp-skeleton__block`. `.sp-chip-in`, the upload chip's entrance, is a different class and stays.
