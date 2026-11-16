@@ -78,7 +78,11 @@ const ROUTES = [
   [
     "generate-edit",
     `/generate/c/${resultThread}`,
-    { act: (page) => page.locator("button.ui-preview__edit").first().click({ force: true }) },
+    // The Result card's Edit (Ghost Small, top right), which opens the editor.
+    {
+      act: (page) =>
+        page.locator(".ui-result-card__tools button[aria-label^='Edit ']").first().click(),
+    },
   ],
   ["generate-thread-question", `/generate/c/${questionThread}`],
   // The sign-in gate, rendered without Supabase (PHASE-8B §9 D8).
