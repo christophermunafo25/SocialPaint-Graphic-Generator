@@ -649,9 +649,9 @@
 .sp-details__note[role="alert"] {
   color: var(--feedback-error-text);
 }
-/* Generate's preview stage (13:3312): 290 tall, the draft contained 10
-   inside a sunken well, with the fill page's hairline so a white graphic
-   still reads (PHASE-5 §8). It gives up height on a short window so the
+/* Generate's preview stage (new brand, 13:3150): 290 tall, the draft
+   contained 16 inside surface/field at radius/lg, with a hairline so a
+   white graphic still reads. It gives up height on a short window so the
    fields keep room. */
 .sp-details__stage {
   display: flex;
@@ -661,9 +661,9 @@
   height: 290px;
   min-height: 180px;
   box-sizing: border-box;
-  padding: 10px;
-  border-radius: var(--radius-control-md);
-  background: var(--surface-sunken);
+  padding: var(--space-16);
+  border-radius: var(--radius-lg);
+  background: var(--surface-field);
   container-type: size;
 }
 @media (max-height: 760px) {
@@ -672,7 +672,7 @@
   }
 }
 .sp-details__stage .sp-chat-editor__graphic {
-  outline: 1px solid var(--border-default);
+  outline: var(--stroke-hairline) solid var(--border-subtle);
   outline-offset: -1px;
 }
 /* 8 under Generate's stage: the panel's 20 between its parts, given back. */

@@ -108,7 +108,6 @@
   /* Elevation */
   --elevation-small: var(--elevation-1-raised);
   --elevation-medium: var(--elevation-2-overlay);
-  --elevation-large: var(--elevation-2-overlay);
   --elevation-floating: var(--elevation-3-floating);
   --shadow-card: 0 2px 8px 0 var(--shadow-raised);
 }

@@ -489,11 +489,14 @@ look (Phase 5) is `docs/design/new-look/PHASE-5.md`.
 - **Components** in `src/app/components/generate/`: `GeneratePage` (Start
   and thread), `GenerateHistoryPage`, `EditorPanel`, and the hooks that hold
   the side effects (`useChatController`, `useThreadPersistence`,
-  `useDraftDownload`). The chat's pieces on the new look, shared with the
+  `useDraftDownload`). The chat's pieces on the new brand, shared with the
   template chat, are in `src/app/components/chat/`: `ChatComposer` (on
-  `useComposer`), `AttachMenu` (Upload, and Generate's Details), the
-  messages, `GenerateTurn` on the Result card primitive, `CaptionCard` and
-  `GenerateHeader`. Styles are `src/styles/generate.css`.
+  `useComposer`; the Details row holds the platform and the details as
+  tags), `AttachMenu` (Generate's Output with Platform, Upload, Generate's
+  Details, and Context), the messages, `GenerateTurn` (one Result Card a
+  turn, the primitive in `primitives/Previews.tsx`, with the switch between
+  its drafts and its own Download for all of them) and `GenerateHeader`.
+  Styles are `src/styles/generate.css`.
 - **Server**: `supabase/functions/template-generate/` (the function and its
   system prompt) and `_shared/generateValidate.ts` (every parser and
   validator, pure, so vitest runs the same code the function does).

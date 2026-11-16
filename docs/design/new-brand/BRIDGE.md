@@ -109,7 +109,7 @@ These are the rows of `PROMPT.md` section 5 that the code or the file changes. P
 | `--accent-green-subtle`, `--accent-green-glow` | 0, 0 | Not bridged | Deleted. `--glow-hint` has no readers either |
 | `--elevation-small` | 29 in 7 | `--elevation-1-raised` | Drop 2/2 blur 8 → 0/2 blur 8 |
 | `--elevation-medium` | 6 in 3 | `--elevation-2-overlay` | Drop 4/4 blur 16 on `--shadow-raised` → 0/4 blur 16 on `--shadow-floating` |
-| `--elevation-large` | 2 in 2 | `--elevation-2-overlay` | 6/6 blur 25 → 0/4 blur 16. No match in the file; both readers are hover lifts that Phases 4 and 5 remove |
+| ~~`--elevation-large`~~ | 0 | Removed in Phase 5, with its last reader: the Recent and History cards' hover lift | Hover keeps the card's Elevation/1 (`RULES.md` section 6) |
 | `--elevation-floating` | 1 in 1 | `--elevation-3-floating` | 8/8 → 0/8, blur 32 |
 
 ### Earlier primitives still read by name
@@ -302,4 +302,20 @@ Removed, each with no reader left in `src/`:
 - `details/LinkedInMark.tsx` (Post to LinkedIn carries no icon in `2308:3596`)
 - the fill page's step form rules (`.sp-fill__step*`, `.sp-fill__rail`, `.sp-fill__looks`, the Preview card) and the shelves' `--shelf-visible` sizing
 
-Kept for a later phase: `.sp-lib-link`, the earlier underlined "View all", which Generate's Recent still uses (Phase 5), and Generate's preview stage rules inside the Details panel, which still read `--radius-control-md` and `--border-default` (Phase 5).
+Kept for a later phase: `.sp-lib-link`, the earlier underlined "View all", which Generate's Recent still uses (Phase 5), and Generate's preview stage rules inside the Details panel, which still read `--radius-control-md` and `--border-default` (Phase 5). Phase 5 removed both.
+
+## 10. What Phase 5 removed and found
+
+Phase 5 moved Generate onto its frames: the chat box and its plus menu, the thread with one Result card a turn, the editor beside it, Start, Recent and History. The rules it rebuilt (the composer, the attach menu and its panels, the Result card, the assistant message and the sent message, the chat cards, the attachment tiles and the editor's preview stage) read tokens only.
+
+Removed, each with no reader left in `src/`:
+
+- `--elevation-large`, whose last readers were the Recent and History cards' hover lift
+- `chat/CaptionCard.tsx` and its rules (`.sp-tchat-caption*`, and the caption skeleton's switch, circle and lines): the caption is part of the Result card
+- `captionTabs` in `draftView.ts`: the card's switch names the drafts with `linkedFields`' `sizeNames`, as the editor's does
+- `PlatformSelect` in `chat/Attachments.tsx`: Platform is in the plus menu's Output section
+- the per-draft cards (`.sp-gen-results`, `.sp-gen-result*` but `__gone`, `.sp-tchat-result`, `.sp-tchat-preview`), the earlier Result card's rules in `primitives.css` (`104:602`), and the column width `useThreadScroll` measured for them
+- `.sp-lib-link`, the earlier underlined "View all", and the saved chat sketch's sunken wells (`.sp-gen-loading__*`), now Skeletons
+- the composer text area's dead `ui-ring-none` class: its focus rings the whole chat box, as a field's does
+
+Kept for a later phase: `LookTile` and the Looks card, which only the hidden template chat draws (cleanup), and `PreviewOverlay`, which Brand Studio's covers, swatches and logo plates use (Phase 7). `TypeStylesDetail.tsx` still names the dead `ui-ring-none` (Phase 7).

@@ -149,8 +149,8 @@
   flex: none;
 }
 
-/* ── Attachments on a message (13:2383, 13:2540): the 64 photo and the
-   file tile, each with its round remove 4 in from the top right. ── */
+/* ── Attachments (new brand, 13:2301 and 13:2454): the composer's 56 photo
+   with its round remove, and the file tile with its Ghost remove. ── */
 .sp-chat-tile {
   position: relative;
   display: inline-flex;
@@ -158,45 +158,48 @@
 }
 .sp-chat-tile__photo {
   display: block;
-  width: 64px;
-  height: 64px;
-  border-radius: var(--radius-control-md);
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-md);
   object-fit: cover;
 }
 .sp-chat-tile--file {
   box-sizing: border-box;
   align-items: center;
-  gap: 10px; /* as drawn */
-  height: 64px;
-  max-width: 280px;
-  padding: 7px 14px 7px 7px; /* 7 as drawn */
-  border-radius: var(--radius-control-md);
-  background: var(--input-bg);
-  color: var(--text-strong);
-}
-.sp-chat-tile--file[data-removable] {
-  padding-right: 35px; /* the remove's room, as drawn */
+  gap: var(--space-8);
+  width: 256px;
+  max-width: 100%;
+  padding: var(--space-8) var(--space-12) var(--space-8) var(--space-8);
+  border: var(--stroke-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--text-primary);
 }
 .sp-chat-tile__type {
   flex: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 50px;
-  height: 50px;
-  border-radius: var(--radius-control);
-  background: var(--surface-raised);
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-field);
 }
 .sp-chat-tile__text {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-8);
   min-width: 0;
 }
+/* Cap-trimmed, so the clip box reaches past the descenders without moving
+   the line. */
 .sp-chat-tile__name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding-block: 0.3em;
+  margin-block: -0.3em;
 }
 .sp-chat-tile__kind {
   color: var(--text-secondary);

@@ -2130,12 +2130,13 @@ button.ui-detail-tag__value {
   color: var(--text-secondary);
   opacity: 1;
 }
+/* The attachments (13:2454): the photo and the file 8 apart, 24 over the
+   text. */
 .ui-composer__attachments {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2xs);
-  margin-top: 6px;
+  gap: var(--space-8);
 }
 .ui-composer__error {
   margin: -16px 0 0;
