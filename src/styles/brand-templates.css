@@ -834,7 +834,12 @@
   width: min(380px, 100%);
   height: 100%;
 }
-/* ── The Public links dialog (168:758): New link, a divider, then Links ── */
+/* ── The Public links dialog (new brand, 2323:888): 520 wide, its own
+   header (the 18 link icon and the title in Title/Card), then New link,
+   16 between its rows, a divider, and Links. ── */
+.ui-modal.sp-links-dialog {
+  width: 520px; /* as drawn (2323:888) */
+}
 .sp-links__note {
   margin: 0;
   color: var(--text-secondary);
@@ -842,22 +847,23 @@
 .sp-links__alert,
 .sp-links__error {
   margin: 0;
-  color: var(--state-error);
+  color: var(--feedback-error-text);
 }
 .sp-links__fresh,
 .sp-links__form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: var(--space-16);
 }
 .sp-links__form > h3,
 .sp-links__list > h3 {
   margin: 0;
 }
+/* Stops working after and Open limit, 12 apart. */
 .sp-links__pair {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-xs);
+  gap: var(--space-12);
 }
 @media (max-width: 599px) {
   .sp-links__pair {
@@ -868,22 +874,22 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-xs);
+  gap: var(--space-12);
 }
 .sp-links__divider {
   margin: 0;
   border: 0;
-  border-top: 1px solid var(--border-default);
+  border-top: var(--stroke-hairline) solid var(--border-subtle);
 }
 .sp-links__list {
   display: flex;
   flex-direction: column;
-  gap: 14px; /* as drawn (168:760) */
+  gap: var(--space-16);
 }
 .sp-links__rows {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: var(--space-24);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -891,27 +897,27 @@
 .sp-links__row {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--space-16);
 }
 .sp-links__rowhead {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-xs);
+  gap: var(--space-12);
 }
 .sp-links__rowname,
 .sp-links__rowactions {
   display: flex;
   align-items: center;
-  gap: var(--space-2xs);
+  gap: var(--space-8);
   min-width: 0;
 }
 /* Four Stats in equal columns (168:760); two on a phone. */
 .sp-links__stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--space-sm);
+  gap: var(--space-16);
 }
 @media (max-width: 599px) {
   .sp-links__stats {

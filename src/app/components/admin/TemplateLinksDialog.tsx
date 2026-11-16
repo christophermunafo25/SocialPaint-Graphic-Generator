@@ -113,7 +113,13 @@ export function TemplateLinksDialog({
   };
 
   return (
-    <Modal open onOpenChange={(open) => !open && onClose()} title="Public links" icon={Link} wide>
+    <Modal
+      open
+      onOpenChange={(open) => !open && onClose()}
+      title="Public links"
+      icon={Link}
+      className="sp-links-dialog"
+    >
       <PublicLinksBody
         state={!available ? "unavailable" : template.status !== "published" ? "draft" : "ready"}
         variants={hasVariants(template) ? template.variants : undefined}
@@ -176,7 +182,8 @@ export function PublicLinksBody({
 }: {
   /** Ready, or why there is nothing to manage. */
   state: "ready" | "unavailable" | "draft";
-  /** The template's looks, when there is more than one to pin. */
+  /** The template's variations (looks in the schema), when there is more
+   * than one to pin. */
   variants?: TemplateVariant[];
   /** Workspace-level starting values (Settings › Sharing). */
   defaults: CompanyLinkDefaults;
@@ -413,7 +420,7 @@ function CreateLinkForm({
 
   return (
     <section className="sp-links__form" aria-labelledby="sp-links-new">
-      <h3 id="sp-links-new" className="tu-label-m">
+      <h3 id="sp-links-new" className="t-label-m">
         New link
       </h3>
       <Field label="Name">
@@ -446,9 +453,9 @@ function CreateLinkForm({
       </div>
       {variants && (
         <div className="ui-field">
-          <span className="t-label-xs ui-field__label">Look</span>
+          <span className="t-label-xs ui-field__label">Variation</span>
           <Select
-            ariaLabel="Which look this link opens"
+            ariaLabel="Which variation this link opens"
             value={pinned}
             options={lookOptions(variants)}
             onSelect={setPinned}
@@ -456,7 +463,7 @@ function CreateLinkForm({
         </div>
       )}
       <div className="sp-links__toggle">
-        <span className="tu-body-m">Allow photo uploads</span>
+        <span className="t-label-m">Allow photo uploads</span>
         <Switch
           checked={allowUploads}
           onChange={setAllowUploads}
@@ -529,9 +536,9 @@ function LinkRow({
       </div>
       {variants && (
         <div className="sp-links__toggle">
-          <span className="tu-body-m">Look</span>
+          <span className="t-label-m">Variation</span>
           <Select
-            ariaLabel={`Which look ${name} opens`}
+            ariaLabel={`Which variation ${name} opens`}
             value={link.pinnedVariantId ?? ""}
             options={lookOptions(variants)}
             onSelect={(next) => onPin(next || null)}
@@ -541,7 +548,7 @@ function LinkRow({
         </div>
       )}
       <div className="sp-links__toggle">
-        <span className="tu-body-m">Photo uploads</span>
+        <span className="t-label-m">Photo uploads</span>
         <Switch
           checked={link.allowUploads}
           onChange={onToggleUploads}
