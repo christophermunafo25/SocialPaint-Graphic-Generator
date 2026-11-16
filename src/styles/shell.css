@@ -192,6 +192,21 @@
   color: var(--text-secondary);
 }
 
+/* ── The lockup and the mark (54:66, 61:467) ──
+   One colour each from the theme they sit in: the lockup on text/primary,
+   the mark alone on text/secondary. A nested [data-theme] (the Light
+   gate) recomputes the colour. */
+.sp-brand-lockup {
+  display: block;
+  flex: none;
+  color: var(--text-primary);
+}
+.sp-brand-mark {
+  display: block;
+  flex: none;
+  color: var(--text-secondary);
+}
+
 /* ── Sidebar (2218:679; open 2218:577, collapsed 2218:633) ──────────────────
    The frame's first part: 320 wide, or a 76 rail, as tall as the frame, on
    surface/raised with a border/raised hairline inside it, 20 around and 24

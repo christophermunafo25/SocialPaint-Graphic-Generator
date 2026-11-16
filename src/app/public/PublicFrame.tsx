@@ -1,5 +1,5 @@
 import React from "react";
-import mark from "@/assets/socialpaint/mark.svg";
+import { BrandMark } from "../components/BrandMark";
 
 /** The public page's chrome, and there is deliberately very little of it.
  *
@@ -40,7 +40,7 @@ function PublicAttribution() {
         borderTop: "1px solid var(--border)",
       }}
     >
-      <img src={mark} alt="" aria-hidden style={{ width: 16, height: "auto", display: "block" }} />
+      <BrandMark width={16} />
       <span style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
         Made with{" "}
         <a
