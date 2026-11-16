@@ -154,7 +154,8 @@ These play several roles or belong to one screen, exactly as `docs/design/new-lo
 | `--nav-active-bg`, `--nav-active-fg`, `--nav-hover-bg`, `--nav-hover-fg` | 6, 6, 5, 5 | 6 |
 | `--edge-*`, `--card-*`, `--chip-*` (the stylesheet's own), `--shadow-rest`, `--shadow-card-hover`, `--radius-control-lg`, `--radius-media`, `--radius-media-inner`, `--radius-tag` | 1 to 11 each | 6 |
 | `--start-*` | 10 names, 1 each | 6 |
-| `--gen-fade`, `--gen-fade-h`, `--gen-marker-*`, `--gen-h-tag` | 1 to 3 each | 5 |
+| ~~`--gen-fade`, `--gen-fade-h`~~ | 0 | Removed in Phase 5. The chats' scroll fade reads `--surface-page`, and each chat scroller sets its fade heights (`--chat-fade-top`, `--chat-fade-bottom`), which its scroll padding reads too |
+| `--gen-marker-*`, `--gen-h-tag` | 1 to 3 each | Cleanup: only the hidden template chat's Missing markers read them |
 | ~~`--sb-bg`, `--sb-border`, `--sb-fg-active`~~ | 0 | Removed in Phase 3. The mobile bar reads `--surface-raised`, `--border-subtle` and `--text-primary` |
 | `--chrome-top` | 3 in 3 | Not a bridge: the shell's own measure, defined in `shell.css` since Phase 3. The mobile bar's height below 1024 (0 beside the rail). The frame's narrow minimum height, the Brand Templates filter bar below 1024 and Generate's editor sheet offset from it. Stays while the mobile bar does |
 | `--page-pad` | 10 in 3 | Not a bridge: the shell's own measure, defined in `shell.css` since Phase 3 on `--space-48`, `-32`, `-24` and `-16` by width. The frame's header row and footer read it below 1024. Its other readers go with their screens: the public link page's column (Phase 4), Generate's thread and History, which reach into Main's gutters by it at 32 (Phase 5), and the pre-app shell (`auth.css`, Phase 9) |
@@ -311,6 +312,7 @@ Phase 5 moved Generate onto its frames: the chat box and its plus menu, the thre
 Removed, each with no reader left in `src/`:
 
 - `--elevation-large`, whose last readers were the Recent and History cards' hover lift
+- `--gen-fade` and `--gen-fade-h` (above), and the rebuilt rules' reads of `--focus-width`, now `--stroke-focus`
 - `chat/CaptionCard.tsx` and its rules (`.sp-tchat-caption*`, and the caption skeleton's switch, circle and lines): the caption is part of the Result card
 - `captionTabs` in `draftView.ts`: the card's switch names the drafts with `linkedFields`' `sizeNames`, as the editor's does
 - `PlatformSelect` in `chat/Attachments.tsx`: Platform is in the plus menu's Output section

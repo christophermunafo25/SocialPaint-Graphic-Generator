@@ -11,10 +11,14 @@ import { FileTile, PhotoTile } from "./Attachments";
 
 export interface ChatComposerProps extends ComposerProps {
   /** The platform the next message asks for (Generate only): the attach
-   * menu's OUTPUT section, and a tag at the head of the Details row. */
+   * menu's OUTPUT section shows it, picked or reused from the last send
+   * (null is any platform). One the member picked for this message is also
+   * a tag at the head of the Details row; its x takes the pick back. */
   platform?: {
     value: PlatformId | null;
+    chosen: boolean;
     onChange(next: PlatformId | null): void;
+    onReset(): void;
   };
   /** How many variations the next message asks for (Generate only): the
    * Stepper. */
@@ -30,7 +34,7 @@ export interface ChatComposerProps extends ComposerProps {
 }
 
 /** The Composer (new brand, 13:2454): the attachments, the text, the
- * Details row (the platform and the details as tags), then the toolbar:
+ * Details row (a picked platform and the details as tags), then the toolbar:
  * Attach on the left, the Variations stepper and Send on the right. The
  * template chat has no platform, details or stepper. The behaviour is
  * useComposer's: Enter sends, a pasted or dropped photo attaches, Send
@@ -53,6 +57,9 @@ export function ChatComposer(props: ChatComposerProps) {
   const c = useComposer(props);
   // A tag's x goes with its tag; focus goes to the text.
   const focusText = () => c.rootRef.current?.querySelector("textarea")?.focus();
+  // Only a platform picked for this message is a tag; one reused from the
+  // last send shows in the menu alone (13:2985 draws no tag for it).
+  const pickedPlatform = platform?.chosen ? platform.value : null;
   return (
     <form
       {...c.dropProps}
@@ -87,24 +94,24 @@ export function ChatComposer(props: ChatComposerProps) {
         onKeyDown={c.onKeyDown}
       />
       {c.photoError && (
-        <p role="alert" className="tu-caption-m ui-composer__error">
+        <p role="alert" className="t-caption-m ui-composer__error">
           {c.photoError}
         </p>
       )}
-      {(platform?.value || (details && details.value.length > 0)) && (
+      {(pickedPlatform || (details && details.value.length > 0)) && (
         <TagRail>
-          {platform?.value && (
+          {platform && pickedPlatform && (
             <li key="platform">
               <DetailTag
-                editLabel={`Edit platform: ${platformLabel(platform.value)}`}
+                editLabel={`Edit platform: ${platformLabel(pickedPlatform)}`}
                 onEdit={(e) => menuRef.current?.editPlatform(e.currentTarget)}
-                removeLabel={`Remove ${platformLabel(platform.value)}`}
+                removeLabel={`Remove ${platformLabel(pickedPlatform)}`}
                 onRemove={() => {
-                  platform.onChange(null);
+                  platform.onReset();
                   focusText();
                 }}
               >
-                {platformLabel(platform.value)}
+                {platformLabel(pickedPlatform)}
               </DetailTag>
             </li>
           )}
@@ -137,7 +144,7 @@ export function ChatComposer(props: ChatComposerProps) {
             onPickDocument={c.takeDocument}
             onPickAsset={c.takeAsset}
             onOpenChange={onMenuOpenChange}
-            platform={platform}
+            platform={platform && { value: platform.value, onChange: platform.onChange }}
             details={
               details && {
                 value: details.value,

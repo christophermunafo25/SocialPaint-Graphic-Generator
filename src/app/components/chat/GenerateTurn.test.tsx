@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 import type { GeneratedProposal, TemplateField, TemplateSchema } from "@/lib/types";
 import type { AssistantTurn, ChatDraft, ChatThread } from "@/lib/generate/chat";
 import { chatReducer, emptyThread, type ChatAction } from "@/lib/generate/chatReducer";
-import { GenerateTurn, downloadAllLabel } from "./GenerateTurn";
+import { GenerateTurn, downloadAllLabel, expectedDrafts } from "./GenerateTurn";
 
 vi.mock("@/lib/brand/BrandContext", () => ({ useBrand: () => ({ kit: null, assets: [] }) }));
 vi.mock("../TemplateThumbnail", () => ({
@@ -113,9 +113,9 @@ const handlers = () => ({
 const renderTurn = (
   turn: AssistantTurn,
   h: ReturnType<typeof handlers>,
-  over: Partial<{ pickedDraftId: string; selectedDraftId: string | null }> = {},
-) =>
-  render(
+  over: Partial<{ pickedDraftId: string; selectedDraftId: string | null; lead: boolean }> = {},
+) => {
+  const ui = (picked = over.pickedDraftId) => (
     <GenerateTurn
       turn={turn}
       photo={null}
@@ -123,14 +123,30 @@ const renderTurn = (
       canRetry={false}
       selectedDraftId={over.selectedDraftId ?? null}
       busyDraftId={null}
-      pickedDraftId={over.pickedDraftId}
+      pickedDraftId={picked}
+      leadDownload={over.lead ?? true}
       {...h}
-    />,
+    />
+  );
+  const result = render(ui());
+  return { ...result, pick: (id: string) => result.rerender(ui(id)) };
+};
+
+/** A turn that finished with these drafts. */
+const doneTurn = (...drafts: ChatDraft[]) =>
+  assistantOf(
+    run(
+      sent,
+      arrived,
+      ...drafts.map((d): ChatAction => ({ type: "draftResolved", runId: "run-1", draft: d })),
+      { type: "done", runId: "run-1", reply: "Here it is.", at: T0 },
+    ),
   );
 
 describe("GenerateTurn", () => {
   it("shows Progress and the Result card's Loading state while the drafts build", () => {
     const turn = assistantOf(run(sent, arrived));
+    expect(expectedDrafts(turn)).toBe(2);
     const { container } = renderTurn(turn, handlers());
     expect(screen.getByRole("progressbar")).toBeTruthy();
     const card = container.querySelector(".ui-result-card");
@@ -139,41 +155,24 @@ describe("GenerateTurn", () => {
   });
 
   it("puts every draft on one card, switching between them", async () => {
-    const turn = assistantOf(
-      run(
-        sent,
-        arrived,
-        { type: "draftResolved", runId: "run-1", draft: SQUARE },
-        { type: "draftResolved", runId: "run-1", draft: LINK },
-        { type: "done", runId: "run-1", reply: "Here it is in two sizes.", at: T0 },
-      ),
-    );
+    const turn = doneTurn(SQUARE, LINK);
     const h = handlers();
-    const { rerender } = renderTurn(turn, h);
-    const group = screen.getByRole("radiogroup", { name: "Variations" });
+    const { pick } = renderTurn(turn, h);
+    const group = screen.getByRole("radiogroup", { name: "Sizes" });
     const tabs = Array.from(group.querySelectorAll("[role=radio]")).map((el) => el.textContent);
     expect(tabs).toEqual(["Instagram", "LinkedIn"]);
     expect(screen.getByText("1080 × 1080")).toBeTruthy();
     expect(screen.getByTestId("art").textContent).toBe("Feature highlight");
+    expect(screen.getByText("Feature highlight caption")).toBeTruthy();
 
     await userEvent.click(screen.getByRole("radio", { name: "LinkedIn" }));
     expect(h.onPickDraft).toHaveBeenCalledWith(turn.id, "d2");
 
     // The page's pick shows the second draft, its size and its caption.
-    rerender(
-      <GenerateTurn
-        turn={turn}
-        photo={null}
-        tryNext={[]}
-        canRetry={false}
-        selectedDraftId={null}
-        busyDraftId={null}
-        pickedDraftId="d2"
-        {...h}
-      />,
-    );
+    pick("d2");
     expect(screen.getByText("1200 × 627")).toBeTruthy();
     expect(screen.getByTestId("art").textContent).toBe("Open role");
+    expect(screen.getByText("Open role caption")).toBeTruthy();
 
     await userEvent.click(screen.getByRole("button", { name: "Edit Open role" }));
     expect(h.onEditDraft).toHaveBeenCalledWith(turn.id, "d2");
@@ -187,20 +186,35 @@ describe("GenerateTurn", () => {
   });
 
   it("follows the editor's draft while it is open on the turn", () => {
-    const turn = assistantOf(
-      run(
-        sent,
-        arrived,
-        { type: "draftResolved", runId: "run-1", draft: SQUARE },
-        { type: "draftResolved", runId: "run-1", draft: LINK },
-        { type: "done", runId: "run-1", reply: "Here it is in two sizes.", at: T0 },
-      ),
-    );
-    renderTurn(turn, handlers(), { pickedDraftId: "d1", selectedDraftId: "d2" });
+    renderTurn(doneTurn(SQUARE, LINK), handlers(), { pickedDraftId: "d1", selectedDraftId: "d2" });
     expect(screen.getByTestId("art").textContent).toBe("Open role");
     expect(
       screen.getByRole("button", { name: "Edit Open role" }).getAttribute("aria-current"),
     ).toBe("true");
+  });
+
+  it("gives one draft no switch and one Download, at the card's foot", () => {
+    renderTurn(doneTurn(SQUARE), handlers());
+    expect(screen.queryByRole("radiogroup")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Download Feature highlight" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Download" }).dataset.kind).toBe("primary");
+  });
+
+  it("counts only the drafts it can export, and draws a gone one's note", () => {
+    const gone = { ...LINK, schema: null };
+    const h = handlers();
+    const { pick } = renderTurn(doneTurn(SQUARE, gone), h);
+    expect(screen.getByRole("button", { name: "Download" })).toBeTruthy();
+    pick("d2");
+    expect(screen.getByText("Open role is no longer available.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Edit Open role" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Download Open role" })).toBeNull();
+  });
+
+  it("leads with its Download only when the page says so", () => {
+    renderTurn(doneTurn(SQUARE, LINK), handlers(), { lead: false });
+    const download = screen.getByRole("button", { name: "Download both" });
+    expect(download.dataset.kind).toBe("neutral");
   });
 
   it("names the card's Download by how many drafts it holds", () => {

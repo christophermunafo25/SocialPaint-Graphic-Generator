@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { GeneratedProposal, TemplateField, TemplateSchema } from "../types";
+import type { FieldValues, GeneratedProposal, TemplateField, TemplateSchema } from "../types";
 import { ExportAssetError } from "../render/exportPng";
 import type { ChatDraft } from "./chat";
 import {
@@ -12,6 +12,7 @@ import {
   instrumentsUsage,
   missingFields,
   settle,
+  turnDownloadPlan,
   type DownloadJob,
 } from "./draftDownload";
 
@@ -221,5 +222,31 @@ describe("missingFields", () => {
 
   it("has nothing to list for a draft whose template is gone", () => {
     expect(missingFields(draft({ schema: null }), {})).toEqual([]);
+  });
+});
+
+describe("turnDownloadPlan", () => {
+  const required: TemplateField = {
+    id: "headline",
+    label: "Headline",
+    fieldKey: "headline",
+    type: "text",
+    x: 0,
+    y: 0,
+    width: 100,
+    height: 100,
+  };
+  const filled = draft({ id: "a", schema: schema({ fields: [required] }) });
+  const empty = draft({ id: "b", schema: schema({ fields: [required] }) });
+  const gone = draft({ id: "c", schema: null });
+  const values = (d: ChatDraft): FieldValues => (d.id === "a" ? { headline: "Now hiring" } : {});
+
+  it("exports every draft whose template is still there, in order", () => {
+    const plan = turnDownloadPlan([filled, gone, draft({ id: "d" })], values);
+    expect(plan.kind === "export" && plan.drafts.map((d) => d.id)).toEqual(["a", "d"]);
+  });
+
+  it("opens the editor on the first draft with a gap and exports nothing", () => {
+    expect(turnDownloadPlan([filled, empty], values)).toEqual({ kind: "fill", draftId: "b" });
   });
 });

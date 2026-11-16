@@ -28,10 +28,10 @@ export interface PreviewOverlayProps {
   "data-demo-state"?: DemoStateAttr;
 }
 
-/** The preview hover (Result card 104:584, and every template, recent and
- * history preview): the preview dims under overlay/hover (Deep Moss at
- * 35%) and shows the Edit button on overlay/control. Keyboard focus shows
- * the same look, in place of a ring. */
+/** The preview hover (104:584): the preview dims under overlay/hover and
+ * shows the Edit button on overlay/control. Keyboard focus shows the same
+ * look, in place of a ring. Brand Studio's covers, swatches and logo plates
+ * use it (decorative, the card around it being the control). */
 export function PreviewOverlay({
   children,
   onEdit,
@@ -110,8 +110,10 @@ export interface ResultCardProps {
   downloadBusy?: boolean;
   /** The shown draft's caption, as written. */
   caption?: string;
-  /** The card's primary action: every draft ("Download both"). */
-  downloadAll?: { label: string; onClick(): void; busy?: boolean };
+  /** The card's own Download, for every draft ("Download both"). Primary
+   * where it leads the view (the default), Neutral where another action
+   * does (one Primary a view). */
+  downloadAll?: { label: string; onClick(): void; busy?: boolean; lead?: boolean };
   /** The artwork's accessible description, never drawn (Generate's
    * provenance line), read with Edit. */
   description?: string;
@@ -232,7 +234,7 @@ export function ResultCard({
           )}
           {downloadAll && (
             <Button
-              kind="primary"
+              kind={downloadAll.lead === false ? "neutral" : "primary"}
               icon={Download}
               className="ui-result-card__download"
               aria-busy={downloadAll.busy || undefined}

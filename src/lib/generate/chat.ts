@@ -114,8 +114,8 @@ export interface AssistantTurn {
   pendingSlots: number;
   /** Each proposal's canvas size, in proposal order, when the client knew
    * it at step 2 (null when it did not). The unresolved slots are the last
-   * `pendingSlots` of these, so a measuring skeleton takes the shape of the
-   * card that will replace it. Absent while asking. */
+   * `pendingSlots` of these, so the reducer can tell a dropped draft from
+   * one still coming. Absent while asking. */
   slotCanvases?: Array<{ width: number; height: number } | null>;
   /** The server's reply (PROMPT.md §10), when it sent one. */
   reply?: string;

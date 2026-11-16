@@ -29,7 +29,7 @@ import { useRouter } from "../../router";
 import { ErrorState } from "../ErrorState";
 import { useFullViewport } from "../layout/ChromeContext";
 import { Page } from "../layout/Page";
-import { MessageSquarePlus, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button, PageHeader } from "../primitives";
 import { LibrarySearch } from "../templates/LibrarySearch";
 import { PlatformFilter } from "../templates/PlatformFilter";
@@ -263,8 +263,9 @@ export function GenerateHistoryPage() {
   const [gridRef, columns] = useGridColumns();
 
   // Arriving from a chat's History or View all, whose button unmounted with
-  // the chat page: focus lands on the title, so the next Tab reaches New
-  // chat, the search and the chips in order (§9.10).
+  // the chat page: focus lands on the title, so the next Tab reaches the
+  // search and the chips in order (New chat sits before it, in the header
+  // row).
   const titleRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     if (takeHistoryFocus()) titleRef.current?.focus({ preventScroll: true });
@@ -316,7 +317,7 @@ export function GenerateHistoryPage() {
           Chats you start in Generate show up here, newest first.
         </p>
         <div className="sp-emptystate__actions">
-          <Button kind="primary" size="sm" icon={MessageSquarePlus} onClick={newChat}>
+          <Button kind="primary" size="sm" icon={Plus} onClick={newChat}>
             New chat
           </Button>
         </div>
@@ -379,8 +380,6 @@ export function GenerateHistoryPage() {
     <Page
       kind="self"
       layout={{ className: "sp-chat-page", state: "history" }}
-      // The trail (13:3433), "Generate" / "History". The title under it is
-      // the page's heading, so the last crumb is not.
       // The trail (13:3359), "Generate" / "History", with New chat (Neutral)
       // at the row's end. The title under it is the page's heading, so the
       // last crumb is not.

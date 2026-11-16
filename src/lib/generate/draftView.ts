@@ -1,8 +1,7 @@
-// How a chat draft reads on screen (PROMPT.md §7.14, §7.16, §9.9): the
-// values its preview paints, its name and caption, the labels on the
-// caption card's platform switch, the compact card's platform meta, and the
-// chat's fallback title. Pure, so the thread, the caption card and the
-// editor all derive these from one place and the rules are unit-tested.
+// How a chat draft reads on screen (PROMPT.md §7.14, §9.9): the values its
+// preview paints, its name and caption, its platform, and the chat's
+// fallback title. Pure, so the thread, the Result Card and the editor all
+// derive these from one place and the rules are unit-tested.
 //
 // A draft's platform is always its canvas's PRIMARY platform: the first
 // entry classifySize gives for the size. One size can serve several

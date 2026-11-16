@@ -6,9 +6,9 @@ import { BrandMark } from "../BrandMark";
 import { DetailTag } from "../primitives";
 import { FileTile } from "./Attachments";
 
-/** Message bubble (Figma 61:505): the person's message, on surface/sunken,
- * up to 472 wide and hugging shorter text, with sent detail tags under it.
- * The thread aligns it right. */
+/** Message bubble (new brand, 13:2985): the person's message in Body/L, on
+ * surface/sunken at radius/lg, up to 440 wide and hugging shorter text,
+ * with sent detail tags under it. The thread aligns it right. */
 export function MessageBubble({
   children,
   tags,
@@ -25,9 +25,10 @@ export function MessageBubble({
   );
 }
 
-/** Assistant message (Figma 61:532): SocialPaint's reply. The mark signs
- * it, then the message, then its Content slot: results, the caption card,
- * follow-up chips. `mark` is off for a run of questions after the first. */
+/** Assistant message (new brand, 13:2985): SocialPaint's reply. The mark
+ * signs it, then the message in Body/L 16 under it, then its Content slot
+ * 24 under that: progress, the Result Card, follow-up chips. `mark` is off
+ * for a run of questions after the first. */
 export function AssistantMessage({
   message,
   messageId,
@@ -56,8 +57,8 @@ export function AssistantMessage({
   );
 }
 
-/** The person's message in a thread (Generate · Sent 13:2729; the template
- * chat's follow-ups, 13:7484): a right-aligned column, 6 apart, of what it
+/** The person's message in a thread (Generate · Sent 13:2639; the template
+ * chat's follow-ups, 13:7484): a right-aligned column, 8 apart, of what it
  * was sent with (the 64 photo and the file tile, without remove), then the
  * Message bubble with its sent detail tags. Each tag reads "{label}:
  * {value}" (only the value is drawn), a link's with the globe. `note` is a

@@ -50,7 +50,7 @@ export function ChatCardMeta({
   );
 }
 
-/** A chat on the Start state's Recent row (13:1560, sp-recent-card). One
+/** A chat on the Start state's Recent row (13:1453, sp-recent-card). One
  * button on the card recipe with an 8 frame: a 104 tall well showing the
  * chat's first draft letterboxed with contain, then the title and meta.
  * Its hover changes nothing but the pointer: the card keeps Elevation/1, as

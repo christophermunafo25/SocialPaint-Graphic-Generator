@@ -86,6 +86,23 @@ describe("ResultCard", () => {
     writeText.mockRestore();
   });
 
+  it("drops the copied check when the caption changes, and claims nothing when the write fails", async () => {
+    const user = userEvent.setup();
+    const writeText = vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue();
+    const { rerender } = render(<ResultCard meta="" art={null} caption="First" />);
+    await user.click(screen.getByRole("button", { name: "Copy caption" }));
+    expect(screen.getByRole("status").textContent).toBe("Caption copied");
+    rerender(<ResultCard meta="" art={null} caption="Second" />);
+    expect(screen.getByRole("status").textContent).toBe("");
+
+    writeText.mockRejectedValue(new Error("denied"));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    await user.click(screen.getByRole("button", { name: "Copy caption" }));
+    expect(screen.getByRole("status").textContent).toBe("");
+    warn.mockRestore();
+    writeText.mockRestore();
+  });
+
   it("draws its Loading state as decoration", () => {
     const { container } = render(<ResultCardSkeleton />);
     const card = container.firstElementChild as HTMLElement;

@@ -1970,6 +1970,9 @@ button.ui-detail-tag__value {
 .ui-skeleton[data-radius="md"] {
   border-radius: var(--radius-md);
 }
+.ui-skeleton[data-radius="lg"] {
+  border-radius: var(--radius-lg);
+}
 .ui-skeleton[data-radius="full"] {
   border-radius: var(--radius-full);
 }
@@ -2074,11 +2077,6 @@ button.ui-detail-tag__value {
   color: var(--text-secondary);
 }
 
-/* ── Composer (61:504): the chat box on surface/raised with Elevation/Small.
-   The component's 5 border/raised edge lies under its own fill, so it
-   draws nothing; its 5 stays in the padding. Body/L is drawn trimmed: 20
-   above the text's cap and 30 to the toolbar, so the untrimmed line sits 6
-   higher and 6 closer. ── */
 /* The Composer (new brand, 13:2985): 16 in from a border/raised hairline at
    radius/xl, under Elevation/1; the text 4 in from that, then the toolbar
    24 under it. */
@@ -2106,7 +2104,7 @@ button.ui-detail-tag__value {
 .ui-composer[data-drag-active] {
   box-shadow:
     var(--elevation-1-raised),
-    inset 0 0 0 1px var(--state-selection);
+    inset 0 0 0 var(--stroke-hairline) var(--editor-selection);
 }
 /* Body/L from its variables (a text area takes no text style class). Its
    lines keep their boxes, so the margins give the half-leading back: the
@@ -2138,9 +2136,11 @@ button.ui-detail-tag__value {
   align-items: center;
   gap: var(--space-8);
 }
+/* An error under the text, 8 under its baseline: the row gap's 24 less
+   16. */
 .ui-composer__error {
-  margin: -16px 0 0;
-  color: var(--state-error);
+  margin: calc(-1 * var(--space-16)) 0 0;
+  color: var(--feedback-error-text);
 }
 /* The toolbar (13:1453): Attach on the left; the stepper and Send 8 apart
    on the right. */
@@ -2229,12 +2229,12 @@ button.ui-detail-tag__value {
 .ui-bubble__tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--space-8);
 }
 .ui-bubble__tag-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--space-8);
   margin: 0;
   padding: 0;
   list-style: none;

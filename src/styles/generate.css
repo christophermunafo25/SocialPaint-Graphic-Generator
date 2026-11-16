@@ -1,8 +1,8 @@
 /* ==========================================================================
-   Generate (new look, Phase 5): Start, the thread, the editor and History,
-   built from the primitives. Measurements are from
-   docs/design/new-look/PHASE-5-SCREENS.md. Tokens and .t-* classes only;
-   nothing here declares a token.
+   Generate (new brand, Phase 5): Start, the thread, the editor and History,
+   built from the primitives. Measurements are from the frames on the
+   Generate page (8:674; docs/design/new-brand/PLAN.md, the screen map).
+   Tokens and .t-* classes only; nothing here declares a token.
    ========================================================================== */
 
 /* ── Start (new brand, 13:1453) ──────────────────────────────────────────
@@ -43,14 +43,14 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-2xs);
+  gap: var(--space-8);
   text-align: center;
-  color: var(--text-strong);
+  color: var(--text-primary);
 }
 .sp-gen-start__unavailable > p {
   margin: 0;
 }
-.sp-gen-start__unavailable > .tu-body-m {
+.sp-gen-start__unavailable > .t-body-m {
   color: var(--text-secondary);
 }
 
@@ -74,7 +74,7 @@
 .sp-gen-recent__grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-xs);
+  gap: var(--space-12);
 }
 @media (max-width: 599px) {
   .sp-gen-recent__grid {
@@ -213,7 +213,7 @@
   justify-content: center;
   width: 16px;
   height: 16px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-full);
   background: var(--surface-inverse);
   color: var(--text-inverse);
 }
@@ -237,11 +237,7 @@
 .sp-attach__section {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-}
-/* The frame's section labels are set in capitals (13:1746). */
-.sp-attach__label {
-  text-transform: uppercase;
+  gap: var(--space-2);
 }
 .sp-attach__item {
   width: 100%;
@@ -288,28 +284,28 @@
   filter: blur(3px);
 }
 
-/* ── The thread's turns (13:2757, 13:3080) ── */
+/* ── The thread's turns (13:2985) ── */
 .sp-gen-result__gone {
-  padding: var(--space-sm);
+  padding: var(--space-16);
   color: var(--text-secondary);
   text-align: center;
   overflow-wrap: anywhere;
 }
-/* Try next (13:3125): Caption/M, then the Chips, 8 apart. */
+/* Try next (13:2985): Caption/M, then the Chips, 8 apart. */
 .sp-gen-trynext {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2xs);
+  gap: var(--space-8);
 }
 .sp-gen-trynext__label {
   color: var(--text-secondary);
 }
 
-/* Generate's thread fades 68 at the top (13:2968) and 56 at the foot
-   (13:2807). */
-.sp-chat-thread-frame[data-chat="generate"] > .sp-chat-scroll-fade[data-position="top"] {
-  height: 68px;
+/* Generate's thread fades 68 at the top and 56 at the foot; the fade and
+   the scroller's focus line both read it. */
+.sp-chat-thread-frame[data-chat="generate"] {
+  --chat-fade-top: 68px;
 }
 
 /* ── History (13:3359) ── */
@@ -339,7 +335,7 @@
   flex-shrink: 0;
   aspect-ratio: var(--fit-ratio);
   width: min(100cqw, 100cqh * var(--fit-ratio));
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-sm);
   overflow: hidden;
 }
 .sp-gen-card__overscan {
@@ -363,12 +359,14 @@
   outline: none;
 }
 /* The library's filter bar, 24 under the header. The page itself never
-   scrolls (the grid does), so the bar never pins. */
+   scrolls (the grid does), so the bar never pins: positioned only so its
+   (unused) pin gradient stays inside it, with no offset (the library's
+   sticky top would move it down by the mobile bar below 1024). */
 .sp-chat-page[data-state="history"] .sp-lib-filterbar {
-  /* Positioned, so its (unused) pin gradient stays inside it. */
   position: relative;
+  top: 0;
   flex-shrink: 0;
-  margin-top: var(--space-md);
+  margin-top: var(--space-24);
 }
 /* Four columns, 12 apart (13:3509); three, then two, as the page narrows. */
 .sp-chat-page[data-state="history"] .sp-chat-history-grid {
@@ -384,7 +382,8 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-/* The bottom fade runs 120 over the grid's foot (2344:1625). */
-.sp-chat-page[data-state="history"] .sp-chat-scroll-fade[data-position="bottom"] {
-  height: 120px;
+/* The bottom fade runs 120 over the grid's foot (2344:1625); the scroller
+   keeps a focused card clear of it. */
+.sp-chat-history-frame {
+  --chat-fade-bottom: 120px;
 }

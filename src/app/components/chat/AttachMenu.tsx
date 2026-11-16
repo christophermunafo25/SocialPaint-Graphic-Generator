@@ -90,7 +90,7 @@ export function platformLabel(id: PlatformId | null): string {
 
 /** What the attach menu edits when the chat has details (Generate). */
 export interface AttachDetails {
-  /** The tags waiting beside the plus, one per kind. */
+  /** The tags waiting in the Details row, one per kind. */
   value: readonly DetailTagValue[];
   /** Adds the kind's tag, or replaces its value when it has one. */
   onSet(detail: GenerateDetailKind, value: string): void;
@@ -108,7 +108,8 @@ export interface AttachMenuHandle {
    * back to `returnTo` (the tag) when it closes. */
   editDetail(fieldKey: string, returnTo?: HTMLElement | null): void;
   /** Opens the platform list; focus goes back to `returnTo` (the
-   * platform's tag) when it closes. */
+   * platform's tag) when it closes, or to the plus when Any takes the tag
+   * away. */
   editPlatform(returnTo?: HTMLElement | null): void;
 }
 
@@ -519,9 +520,11 @@ export const AttachMenu = React.forwardRef<
       </div>
     );
   } else if (view?.kind === "platform" && platform) {
+    // Any leaves no tag to go back to (only a platform is one), so focus
+    // goes to the plus instead.
     const choose = (next: PlatformId | null) => {
       platform.onChange(next);
-      close(view.returnTo);
+      close(next === null ? null : view.returnTo);
     };
     const option = (
       key: string,

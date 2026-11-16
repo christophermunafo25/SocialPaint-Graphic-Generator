@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { useFullViewport } from "../layout/ChromeContext";
 import { Page } from "../layout/Page";
 import { ErrorState } from "../ErrorState";
-import { MessageSquarePlus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { ChatComposer } from "../chat/ChatComposer";
 import { GenerateHeader } from "../chat/GenerateHeader";
 import { AssistantMessage } from "../chat/Messages";
@@ -55,11 +55,11 @@ export function ChatLoading({ onNewChat, onHistory }: ChatPageActions) {
               aria-label="Loading chat"
             >
               <div className="sp-chat-thread__column" aria-hidden>
+                {/* A one-line bubble: 12 around a line of Body/L. */}
                 <div className="sp-tchat-user">
-                  <Skeleton shape="block" width="min(320px, 70%)" height={46} />
+                  <Skeleton shape="block" width="min(320px, 70%)" height={36} radius="lg" />
                 </div>
-                <AssistantMessage>
-                  <Skeleton width="min(360px, 80%)" />
+                <AssistantMessage message={<Skeleton width={360} />}>
                   <ResultCardSkeleton />
                 </AssistantMessage>
               </div>
@@ -124,7 +124,7 @@ export function ChatUnavailable({
               It may have been deleted, or it was started in another workspace or account.
             </p>
             <div className="sp-emptystate__actions">
-              <Button kind="primary" size="sm" icon={MessageSquarePlus} onClick={onNewChat}>
+              <Button kind="primary" size="sm" icon={Plus} onClick={onNewChat}>
                 New chat
               </Button>
             </div>

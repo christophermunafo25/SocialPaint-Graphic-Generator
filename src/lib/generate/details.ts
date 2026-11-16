@@ -1,6 +1,6 @@
 // Details: the fields a member can fill in themselves from a template
 // chat's plus menu (Template chat PROMPT §11.4 to §11.6). Each one becomes a
-// tag beside the plus and travels with the message as a `details` entry,
+// tag in the chat box's Details row and travels with the message as a `details` entry,
 // applied verbatim; the model never writes it.
 
 import type { GenerateFactKind, TemplateField, TemplateSchema } from "../types";
@@ -23,7 +23,7 @@ export interface DetailField {
   options?: string[];
 }
 
-/** A detail the member has added, waiting beside the plus or sent. */
+/** A detail the member has added, waiting in the Details row or sent. */
 export interface DetailTagValue {
   fieldKey: string;
   label: string;

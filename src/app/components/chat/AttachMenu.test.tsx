@@ -175,4 +175,22 @@ describe("AttachMenu", () => {
     await userEvent.keyboard("{Escape}");
     expect(document.activeElement).toBe(tag);
   });
+
+  it("moves from Back into the list with the arrows, Home and End", async () => {
+    render(<Harness withPlatform />);
+    await userEvent.click(screen.getByRole("button", { name: "Platform tag" }));
+    const radios = () => screen.getAllByRole("menuitemradio");
+    const back = screen.getByRole("button", { name: "Back" });
+    for (const [key, at] of [
+      ["{ArrowDown}", 0],
+      ["{ArrowUp}", -1],
+      ["{End}", -1],
+      ["{Home}", 0],
+    ] as const) {
+      back.focus();
+      await userEvent.keyboard(key);
+      const list = radios();
+      expect(document.activeElement).toBe(list[at < 0 ? list.length + at : at]);
+    }
+  });
 });

@@ -96,6 +96,7 @@ export const GenerateTurn = memo(function GenerateTurn({
   onEditDraft,
   onDownloadDraft,
   onDownloadAll,
+  leadDownload,
   onTryNext,
   onRetry,
   onFillIn,
@@ -121,6 +122,9 @@ export const GenerateTurn = memo(function GenerateTurn({
   onEditDraft(turnId: string, draftId: string): void;
   onDownloadDraft(turnId: string, draftId: string): void;
   onDownloadAll(turnId: string): void;
+  /** The card's Download is the view's Primary (the latest finished turn,
+   * while the editor is closed); otherwise it is Neutral. */
+  leadDownload: boolean;
   onTryNext(action: TryNextAction): void;
   onRetry(turnId: string): void;
   onFillIn(turnId: string, draftId: string, fieldKey: string): void;
@@ -175,7 +179,7 @@ export const GenerateTurn = memo(function GenerateTurn({
 
       {gaps.length > 0 && (
         <div className="sp-tchat-fillin">
-          <span className="tu-body-s sp-tchat-fillin__label">Fill in</span>
+          <span className="t-body-s sp-tchat-fillin__label">Fill in</span>
           <ul className="sp-tchat-fillin__tags" aria-label="Fill in">
             {gaps.map((g) => (
               <li key={g.id}>
@@ -201,7 +205,6 @@ export const GenerateTurn = memo(function GenerateTurn({
             sizes={tabs}
             selectedId={shown.id}
             onSelect={(id) => onPickDraft(turn.id, id)}
-            sizesLabel="Variations"
             meta={`${shown.canvas.width} × ${shown.canvas.height}`}
             art={<DraftArt draft={shown} photo={photo} />}
             onEdit={shown.schema ? () => onEditDraft(turn.id, shown.id) : undefined}
@@ -219,9 +222,10 @@ export const GenerateTurn = memo(function GenerateTurn({
             downloadAll={
               exportable > 0
                 ? {
-                    label: downloadAllLabel(turn.drafts.length),
+                    label: downloadAllLabel(exportable),
                     onClick: () => onDownloadAll(turn.id),
                     busy: busyDraftId !== null,
+                    lead: leadDownload,
                   }
                 : undefined
             }
@@ -233,7 +237,7 @@ export const GenerateTurn = memo(function GenerateTurn({
       {!running && turn.warnings.length > 0 && (
         <div className="sp-tchat-warnings">
           {turn.warnings.map((w, i) => (
-            <p key={i} className="tu-caption-m">
+            <p key={i} className="t-caption-m">
               {w}
             </p>
           ))}
@@ -250,7 +254,7 @@ export const GenerateTurn = memo(function GenerateTurn({
 
       {tryNext.length > 0 && (
         <div className="sp-gen-trynext" role="group" aria-labelledby={tryNextId}>
-          <span id={tryNextId} className="tu-caption-m sp-gen-trynext__label">
+          <span id={tryNextId} className="t-caption-m sp-gen-trynext__label">
             Try next
           </span>
           {tryNext.map((action) => (

@@ -17,8 +17,13 @@ import {
   type ChatPhoto,
   type ChatThread,
 } from "@/lib/generate/chat";
-import { clampVariations, lastComposerTurn, sameEdits } from "@/lib/generate/chatReducer";
-import { EXPORT_ERROR_TITLE, missingFields } from "@/lib/generate/draftDownload";
+import {
+  fillSendGaps,
+  lastComposerTurn,
+  latestDoneTurn,
+  sameEdits,
+} from "@/lib/generate/chatReducer";
+import { EXPORT_ERROR_TITLE, missingFields, turnDownloadPlan } from "@/lib/generate/draftDownload";
 import { captionFor, previewValues, tooLongFields, turnPhoto } from "@/lib/generate/draftView";
 import { defaultVariant } from "@/lib/templates/variants";
 import { detailKindOf, type DetailTagValue } from "@/lib/generate/details";
@@ -142,26 +147,24 @@ type SaveState =
  *
  * Three states, one page:
  *
- *  - Start (no message yet): the normal document page. A centred 760
- *    column holds the greeting, the Large composer (Attach, the platform
- *    select, the Variations stepper, Send) and the Start from chips, which
- *    pin one of the company's published templates for the next send
- *    (§9.7). The legal links sit at the foot of the page.
- *  - Thread (a message sent): the route takes the whole viewport
- *    (useFullViewport), a column of the page header (breadcrumb with the
+ *  - Start (no message yet, 13:1453): a centred 720 column holds the
+ *    greeting, the chat box (Attach, whose menu holds the platform and the
+ *    details, the Variations stepper and Send) and Recent. The legal links
+ *    sit at Main's foot.
+ *  - Thread (a message sent, 13:2985): the page header (breadcrumb with the
  *    chat's title, History, New chat), the thread as the only scrolling
- *    region, and the dock: the Compact composer over the footnote row. The
- *    thread is a log of user messages and assistant turns, 24 apart in a
- *    760 column anchored to the bottom (short threads sit on the dock, as
- *    chats do); it follows new content while the member is at the latest
- *    turn, never scrolling that turn's head (status and progress) under
- *    the top scroll fade, which appears once the thread has scrolled.
- *  - Edit (frame 06, §8.5): a draft's preview, or Try next's fill chip,
- *    opens the editor panel on that turn. Under the header the chat column
- *    (its thread and dock, now as wide as the column) and the 380 panel
- *    share a row, 24 apart, every draft card goes Compact and the edited
- *    one is outlined. Below 1180px the panel lays over the chat as a sheet
- *    on a scrim instead. Edits go through the controller, one call per
+ *    region, and the dock: the chat box over the footnote row. The thread
+ *    is a log of user messages and assistant turns, 24 apart in a 720
+ *    column anchored to the bottom (short threads sit on the dock, as chats
+ *    do); it follows new content while the member is at the latest turn,
+ *    never scrolling that turn's head (status and progress) under the top
+ *    scroll fade, which appears once the thread has scrolled.
+ *  - Edit (13:3150): a card's Edit, a Fill in tag or Try next's fill chip
+ *    opens the editor panel on that turn. The chat column fills and the 380
+ *    panel sits 24 to its right, running to Main's foot, with the legal
+ *    links under the chat column; the turn's card shows the draft the
+ *    editor is on. Below 1180px the panel lays over the chat as a sheet on
+ *    a scrim instead. Edits go through the controller, one call per
  *    linked group, so the cards, the caption and the panel's live preview
  *    all repaint from the thread. The panel closes on Close, Escape or the
  *    scrim, handing focus back to the preview that opened it, and on its
@@ -169,18 +172,19 @@ type SaveState =
  *    Opening or closing it never moves the thread off what the member was
  *    looking at.
  *
- * A card's Download exports its draft straight through the one export
- * path (useDraftDownload's off-screen renderer, §9.6), painted exactly as
- * the card shows it; a failure shows TemplateFill's toast. A draft with a
- * required field still empty opens the editor on that field instead, as
- * the fill page withholds its Download until every one is filled.
+ * A card's Downloads export its drafts straight through the one export
+ * path (useDraftDownload's off-screen renderer, one at a time), painted
+ * exactly as the card shows them; a failure shows TemplateFill's toast. A
+ * draft with a required field still empty opens the editor on that field
+ * instead, as the fill page withholds its Download until every one is
+ * filled.
  *
  * Everything that happens to the thread goes through useChatController
  * (the run pipeline, stop, retry, follow-ups) and its pure reducer; this
- * page owns only what outlives no run: the composer's text, photo and
- * toolbar choices, the pinned chip, which caption each turn shows, the
- * editor (which draft, what opened it), Save to library's progress per
- * draft, and the card downloads.
+ * page owns only what outlives no run: the composer's text, photo,
+ * document, details, platform and count, which draft each turn's card
+ * shows, the editor (which draft, what opened it), Save to library's
+ * progress per draft, and the card downloads.
  *
  * The member's photo never leaves the browser: the composer hands it here
  * as a data URL, the send snapshots it onto the message, and only its flag
@@ -376,9 +380,17 @@ export function GenerateChat({
   // One canvas measurer for the page's "too long" checks (§9.4).
   const measure = useMemo(() => createCanvasMeasurer(), []);
   const lastTurn = thread.turns[thread.turns.length - 1];
+  // The chat box shows what the next message would ask for: the member's
+  // pick, or the last composer send's, which a send reuses (fillSendGaps).
   const lastSend = useMemo(() => lastComposerTurn(thread.turns), [thread.turns]);
-  const nextPlatform = platform !== undefined ? platform : (lastSend?.platformHint ?? null);
-  const nextVariations = variations ?? clampVariations(lastSend?.variations);
+  const shownSend = fillSendGaps({ platformHint: platform, variations }, lastSend);
+  const nextPlatform = shownSend.platformHint ?? null;
+  const nextVariations = shownSend.variations;
+  const resetPlatform = useCallback(() => setPlatform(undefined), []);
+  // The latest finished turn's card leads with its Download (one Primary a
+  // view, RULES.md section 7); the editor's Download PNG leads while it is
+  // open.
+  const leadTurnId = useMemo(() => latestDoneTurn(thread.turns)?.id ?? null, [thread.turns]);
   // The first message of a reopened chat that was sent with a photo: the
   // photo was not saved, and the note under it says so (§9.8). A message
   // sent on this page still holds its photo and needs no note.
@@ -681,6 +693,8 @@ export function GenerateChat({
     ) => {
       if (!editorOpenRef.current) preserve(anchor);
       opener.current = { el: from, draftId };
+      // The card shows the draft the editor opens on, and stays on it after.
+      setDraftPicks((p) => ({ ...p, [turnId]: draftId }));
       const openId = ++openCount.current;
       const turn = threadRef.current.turns.find((t) => t.id === turnId);
       const snapshot = turn && isAssistantTurn(turn) ? turn.drafts : [];
@@ -972,13 +986,12 @@ export function GenerateChat({
       const turn = current.turns.find((t) => t.id === turnId);
       if (!turn || !isAssistantTurn(turn)) return;
       const photo = turnPhoto(current, turn);
-      const drafts = turn.drafts.filter((d) => d.schema);
-      const blocked = drafts.find((d) => missingFields(d, previewValues(d, photo)).length > 0);
-      if (blocked) {
-        downloadDraft(turnId, blocked.id);
+      const plan = turnDownloadPlan(turn.drafts, (d) => previewValues(d, photo));
+      if (plan.kind === "fill") {
+        downloadDraft(turnId, plan.draftId);
         return;
       }
-      for (const d of drafts) void download(d, previewValues(d, photo));
+      for (const d of plan.drafts) void download(d, previewValues(d, photo));
     },
     [download, downloadDraft],
   );
@@ -1101,7 +1114,12 @@ export function GenerateChat({
                     onSubmit={submit}
                     onStop={stop}
                     placeholder={START_PLACEHOLDER}
-                    platform={{ value: nextPlatform, onChange: setPlatform }}
+                    platform={{
+                      value: nextPlatform,
+                      chosen: platform !== undefined,
+                      onChange: setPlatform,
+                      onReset: resetPlatform,
+                    }}
                     variations={{ value: nextVariations, onChange: setVariations }}
                     details={{ value: details, onChange: setDetails }}
                     onMenuOpenChange={setMenuOpen}
@@ -1109,8 +1127,8 @@ export function GenerateChat({
                   />
                 ) : (
                   <div className="sp-gen-start__unavailable">
-                    <p className="tu-title-card">Generate isn't available on this backend</p>
-                    <p className="tu-body-m">
+                    <p className="t-title-card">Generate isn't available on this backend</p>
+                    <p className="t-body-m">
                       It needs the Supabase backend and an Anthropic API key (see .env.example). The
                       template library and manual fill work as usual.
                     </p>
@@ -1318,6 +1336,7 @@ export function GenerateChat({
                         onEditDraft={openDraftEditor}
                         onDownloadDraft={downloadDraft}
                         onDownloadAll={downloadTurn}
+                        leadDownload={turn.id === leadTurnId && !editorOpen}
                         onTryNext={onTryNext}
                         onRetry={onRetry}
                         onFillIn={onFillIn}
@@ -1336,7 +1355,7 @@ export function GenerateChat({
             <div className="sp-chat-dock">
               <div className="sp-chat-dock__composer">
                 {full && (
-                  <p className="sp-chat-dock__note">
+                  <p className="t-caption-m sp-chat-dock__note">
                     This chat is full. Start a new chat to keep going.
                   </p>
                 )}
@@ -1361,7 +1380,16 @@ export function GenerateChat({
                   }
                   // A template chat's details come from its questions, and it
                   // has one template's size and one draft.
-                  platform={template ? undefined : { value: nextPlatform, onChange: setPlatform }}
+                  platform={
+                    template
+                      ? undefined
+                      : {
+                          value: nextPlatform,
+                          chosen: platform !== undefined,
+                          onChange: setPlatform,
+                          onReset: resetPlatform,
+                        }
+                  }
                   variations={
                     template ? undefined : { value: nextVariations, onChange: setVariations }
                   }
@@ -1369,10 +1397,14 @@ export function GenerateChat({
                   textareaRef={composerRef}
                   disabled={full}
                 />
-                {unsaved && <p className="sp-chat-dock__note">{NOT_SAVED_YET}</p>}
+                {unsaved && <p className="t-caption-m sp-chat-dock__note">{NOT_SAVED_YET}</p>}
               </div>
             </div>
-            {editorPresentation === "inline" && <FooterLinks className="sp-chat-split__foot" />}
+            {editorPresentation === "inline" && (
+              <footer className="sp-chat-split__foot">
+                <FooterLinks />
+              </footer>
+            )}
           </div>
           {editor && editorTurn && selectedDraft && editorPresentation && (
             <EditorPanel
