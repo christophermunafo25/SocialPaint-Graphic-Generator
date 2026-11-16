@@ -639,9 +639,31 @@
   align-items: stretch;
   min-height: 0;
 }
+/* Preview letterboxes the graphic clear of the stage's controls, as the
+   edit view fits it (STAGE_FIT_INSETS), so it does not jump between the
+   two. */
 .sp-stage__area[data-mode="preview"] {
   align-items: center;
-  padding: var(--space-40);
+  padding: 76px 72px 60px; /* the edit view's fit */
+}
+.sp-stage__letterbox {
+  height: 100%;
+  max-width: 100%;
+}
+/* The zoom in Preview: the scale it is shown at, read only. */
+.sp-stage__readout {
+  display: flex;
+  align-items: center;
+  height: var(--size-control-sm);
+  padding: 0 var(--space-8);
+  color: var(--text-secondary);
+}
+/* Preview's Details panel fills the right column; it has no footer. */
+.sp-builder__details {
+  min-height: 0;
+}
+.sp-builder__details .sp-details__foot:empty {
+  display: none;
 }
 /* The checks: a pill that opens a panel above it. */
 .sp-stage-checks {

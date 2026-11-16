@@ -42,7 +42,9 @@ import { useBrand } from "@/lib/brand/BrandContext";
 import { ErrorBoundary } from "../ErrorBoundary";
 import { ErrorState } from "../ErrorState";
 import { newId } from "@/lib/stores/local/db";
-import { retagCaption, suggestFieldKey } from "@/lib/caption";
+import { mergeCaption, retagCaption, suggestFieldKey } from "@/lib/caption";
+import { resolveFieldStyle } from "@/lib/brand/resolveStyle";
+import { DetailsPanel } from "../details/DetailsPanel";
 import { useSignedUrl } from "@/lib/render/useSignedUrl";
 import { useUnsavedChangesWarning } from "@/lib/useUnsavedChangesWarning";
 import { routeToUrl, useRouter } from "../../router";
@@ -645,6 +647,28 @@ export function TemplateBuilder({
   // the same draft, so a structural edit is visible everywhere at once.
   // -------------------------------------------------------------------------
   const multiLook = hasVariants(draft);
+  /** Preview (326:924): what your team types in the Details panel, and the
+   * caption once it is typed over. Held for this session; the template
+   * never keeps them. */
+  const [previewValues, setPreviewValues] = useState<FieldValues>({});
+  const [previewCaption, setPreviewCaption] = useState<string | null>(null);
+  const previewFields = useMemo(
+    () => draft.fields.filter((f) => !f.static && f.type !== "shape" && f.type !== "icon"),
+    [draft.fields],
+  );
+  /** The artboard's scale in Preview, for the zoom readout. */
+  const previewBoxRef = useRef<HTMLDivElement>(null);
+  const [previewScale, setPreviewScale] = useState<number | null>(null);
+  useEffect(() => {
+    if (mode !== "preview") return;
+    const el = previewBoxRef.current;
+    if (!el) return;
+    const measure = () => setPreviewScale(el.clientWidth / draft.canvasWidth);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [mode, draft.canvasWidth]);
   const selectedVariant = useMemo(
     () => getVariant(draft, selectedVariantId),
     [draft, selectedVariantId],
@@ -3353,18 +3377,17 @@ export function TemplateBuilder({
                       fitInsets={STAGE_FIT_INSETS}
                     />
                   ) : (
-                    /* Preview letterboxes inside the region: full height, width
-                     from the canvas ratio, never wider than the region. */
+                    /* Preview letterboxes inside the region, clear of the
+                     stage's controls as the edit view's fit is: full
+                     height, width from the canvas ratio, never wider. */
                     <div
-                      style={{
-                        height: "100%",
-                        maxWidth: "100%",
-                        aspectRatio: `${draft.canvasWidth} / ${draft.canvasHeight}`,
-                      }}
+                      ref={previewBoxRef}
+                      className="sp-stage__letterbox"
+                      style={{ aspectRatio: `${draft.canvasWidth} / ${draft.canvasHeight}` }}
                     >
                       <SchemaRenderer
                         schema={previewSchema}
-                        values={worstCaseValues}
+                        values={previewValues}
                         brandKit={kit}
                         instrument={false}
                         variantId={selectedVariant?.id}
@@ -3376,23 +3399,29 @@ export function TemplateBuilder({
 
               {/* The canvas size (bottom left) and the zoom (bottom right), as
                   Small selects (322:379); the checks between them. The size
-                  opens the picker creation uses, for rescaling in place. */}
+                  opens the picker creation uses, for rescaling in place.
+                  Preview keeps the size and reads the zoom (326:924). */}
+              <button
+                type="button"
+                className="ui-reset ui-fill ui-ring ui-select sp-stage__size"
+                data-size="sm"
+                data-hug
+                aria-haspopup="dialog"
+                onClick={(e) => {
+                  const r = e.currentTarget.getBoundingClientRect();
+                  setSizeMenuAt({ x: r.left, y: r.top });
+                }}
+              >
+                <span className="ui-select__value t-body-s">{sizeLabel}</span>
+                <ChevronDown size={16} className="ui-icon ui-select__chevron" aria-hidden />
+              </button>
+              {mode === "preview" && previewScale !== null && (
+                <span className="t-body-s sp-stage__zoom sp-stage__readout">
+                  {Math.round(previewScale * 100)}%
+                </span>
+              )}
               {mode === "edit" && (
                 <>
-                  <button
-                    type="button"
-                    className="ui-reset ui-fill ui-ring ui-select sp-stage__size"
-                    data-size="sm"
-                    data-hug
-                    aria-haspopup="dialog"
-                    onClick={(e) => {
-                      const r = e.currentTarget.getBoundingClientRect();
-                      setSizeMenuAt({ x: r.left, y: r.top });
-                    }}
-                  >
-                    <span className="ui-select__value t-body-s">{sizeLabel}</span>
-                    <ChevronDown size={16} className="ui-icon ui-select__chevron" aria-hidden />
-                  </button>
                   <div className="sp-stage__notes">
                     {recomposing && (
                       <span className="t-caption-m sp-stage__status" role="status">
@@ -3427,170 +3456,250 @@ export function TemplateBuilder({
               )}
             </div>
 
-            {/* ── Right inspector (322:380): a card, 320 wide ─────────────── */}
-            <section className="sp-builder__rail sp-builder__rail--right" aria-label="Inspector">
-              <div className="sp-builder__rail-body">
-                {selectedGroup ? (
-                  <GroupInspector
-                    group={selectedGroup}
-                    computedRect={builderLayout.groupRects.get(selectedGroup.id)}
-                    onChange={(patch, stream) => patchGroup(selectedGroup.id, patch, stream)}
-                    onModeChange={(m) => setGroupMode(selectedGroup.id, m)}
-                    onUngroup={ungroupSelection}
-                    onDelete={() => deleteFields([groupChildRef(selectedGroup.id)])}
-                  />
-                ) : singleSelected ? (
-                  <FieldInspector
-                    field={singleSelected}
-                    allFields={draft.fields}
-                    canvasWidth={draft.canvasWidth}
-                    canvasHeight={draft.canvasHeight}
-                    focusLabelFieldId={focusLabelFieldId}
-                    containingGroup={groups.find((g) =>
-                      g.children.includes(singleSelected.fieldKey),
-                    )}
-                    computedRect={builderLayout.fieldRects.get(singleSelected.id)}
-                    computedFontSize={builderLayout.fontSizes.get(singleSelected.id)}
-                    worstCasePreview={worstCaseFieldId === singleSelected.id}
-                    onWorstCasePreview={(on) => setWorstCaseFieldId(on ? singleSelected.id : null)}
-                    onChange={(patch, stream) => patchField(singleSelected.id, patch, stream)}
-                    onDelete={() => deleteFields([singleSelected.id])}
-                    onBringToFront={() => reorderLayer([singleSelected.id], "front")}
-                    onSendToBack={() => reorderLayer([singleSelected.id], "back")}
-                    variantMode={
-                      multiLook && selectedVariant
-                        ? {
-                            variant: selectedVariant,
-                            merged: applyVariant(singleSelected, selectedVariant),
-                            onOverride: (patch) =>
-                              setVariantOverride(singleSelected.fieldKey, patch),
-                          }
-                        : undefined
-                    }
-                  />
-                ) : selectedFields.length > 1 ? (
-                  <div className="sp-insp">
-                    <InspectorHeader
-                      icon={SquareDashed}
-                      name={`${selectedFields.length} selected`}
-                      actions={[
-                        {
-                          items: [
-                            { label: "Copy", icon: Copy, onSelect: () => copyFields(selectedIds) },
-                            {
-                              label: "Duplicate",
-                              icon: CopyPlus,
-                              onSelect: () => duplicateSelected(selectedIds),
-                            },
-                            {
-                              label: "Bring to front",
-                              icon: BringToFront,
-                              onSelect: () => reorderLayer(selectedIds, "front"),
-                            },
-                            {
-                              label: "Send to back",
-                              icon: SendToBack,
-                              onSelect: () => reorderLayer(selectedIds, "back"),
-                            },
-                          ],
-                        },
-                        {
-                          items: [
-                            {
-                              label: `Delete ${selectedFields.length} elements`,
-                              icon: Trash2,
-                              destructive: true,
-                              onSelect: () => deleteFields(selectedIds),
-                            },
-                          ],
-                        },
-                      ]}
+            {/* ── Preview (326:924): the fill page's Details, 380 wide ─────── */}
+            {mode === "preview" ? (
+              <DetailsPanel
+                title="Details"
+                className="sp-builder__details"
+                look={
+                  multiLook
+                    ? {
+                        options: (draft.variants ?? []).map((v) => ({ id: v.id, label: v.name })),
+                        selectedId: selectedVariant?.id ?? null,
+                        onSelect: setSelectedVariantId,
+                      }
+                    : null
+                }
+                fields={previewFields}
+                values={previewValues}
+                onValueChange={(key, value) => setPreviewValues((v) => ({ ...v, [key]: value }))}
+                maxLengthFor={(field) => resolveFieldStyle(field, kit).maxLength}
+                caption={
+                  draft.captionTemplate
+                    ? {
+                        value: previewCaption ?? mergeCaption(previewSchema, previewValues),
+                        onChange: setPreviewCaption,
+                      }
+                    : null
+                }
+                footer={null}
+              />
+            ) : (
+              /* ── Right inspector (322:380): a card, 320 wide ─────────────── */
+              <section className="sp-builder__rail sp-builder__rail--right" aria-label="Inspector">
+                <div className="sp-builder__rail-body">
+                  {selectedGroup ? (
+                    <GroupInspector
+                      group={selectedGroup}
+                      computedRect={builderLayout.groupRects.get(selectedGroup.id)}
+                      onChange={(patch, stream) => patchGroup(selectedGroup.id, patch, stream)}
+                      onModeChange={(m) => setGroupMode(selectedGroup.id, m)}
+                      onUngroup={ungroupSelection}
+                      onDelete={() => deleteFields([groupChildRef(selectedGroup.id)])}
                     />
-                    <div className="sp-insp-panel">
-                      <InspectorSection id="selection-align" title="Align">
-                        <div className="sp-insp-row__control sp-insp-wrap">
-                          <AlignControls
-                            scope="selection"
-                            onAlign={alignSelection}
-                            onDistribute={distributeSelection}
-                            alignDisabledReason={alignDisabledReason}
-                            distributeDisabledReason={distributeDisabledReason}
-                          />
-                        </div>
-                      </InspectorSection>
-                      <Button kind="neutral" icon={GroupGlyph} onClick={groupSelection}>
-                        Group selection
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="sp-insp">
-                    <InspectorHeader icon={FrameGlyph} name="Canvas" />
-                    <div className="sp-insp-panel">
-                      {multiLook && selectedVariant && (
-                        <SegmentedControl
-                          aria-label="Background for"
-                          options={[
-                            {
-                              id: "all",
-                              label: "All variations",
-                              title: "The base background every variation starts from",
-                            },
-                            {
-                              id: "this",
-                              label: "This variation",
-                              title: `The background of ${selectedVariant.name} only`,
-                            },
-                          ]}
-                          selectedId={bgScope}
-                          onSelect={(id) => setBgScope(id as "all" | "this")}
-                          className="sp-builder__span-switch"
-                        />
+                  ) : singleSelected ? (
+                    <FieldInspector
+                      field={singleSelected}
+                      allFields={draft.fields}
+                      canvasWidth={draft.canvasWidth}
+                      canvasHeight={draft.canvasHeight}
+                      focusLabelFieldId={focusLabelFieldId}
+                      containingGroup={groups.find((g) =>
+                        g.children.includes(singleSelected.fieldKey),
                       )}
-                      <InspectorSection id="canvas-size" title="Size">
-                        <PropertyRow label="Size">
-                          <button
-                            type="button"
-                            className="ui-reset ui-fill ui-ring ui-select"
-                            data-size="md"
-                            aria-haspopup="dialog"
-                            onClick={(e) => {
-                              const r = e.currentTarget.getBoundingClientRect();
-                              setSizeMenuAt({
-                                x: r.right - SIZE_MENU_WIDTH,
-                                y: r.bottom,
-                                below: true,
-                              });
-                            }}
-                          >
-                            <span className="ui-select__value t-body-m">{sizeLabel}</span>
-                            <ChevronDown
-                              size={16}
-                              className="ui-icon ui-select__chevron"
-                              aria-hidden
+                      computedRect={builderLayout.fieldRects.get(singleSelected.id)}
+                      computedFontSize={builderLayout.fontSizes.get(singleSelected.id)}
+                      worstCasePreview={worstCaseFieldId === singleSelected.id}
+                      onWorstCasePreview={(on) =>
+                        setWorstCaseFieldId(on ? singleSelected.id : null)
+                      }
+                      onChange={(patch, stream) => patchField(singleSelected.id, patch, stream)}
+                      onDelete={() => deleteFields([singleSelected.id])}
+                      onBringToFront={() => reorderLayer([singleSelected.id], "front")}
+                      onSendToBack={() => reorderLayer([singleSelected.id], "back")}
+                      variantMode={
+                        multiLook && selectedVariant
+                          ? {
+                              variant: selectedVariant,
+                              merged: applyVariant(singleSelected, selectedVariant),
+                              onOverride: (patch) =>
+                                setVariantOverride(singleSelected.fieldKey, patch),
+                            }
+                          : undefined
+                      }
+                    />
+                  ) : selectedFields.length > 1 ? (
+                    <div className="sp-insp">
+                      <InspectorHeader
+                        icon={SquareDashed}
+                        name={`${selectedFields.length} selected`}
+                        actions={[
+                          {
+                            items: [
+                              {
+                                label: "Copy",
+                                icon: Copy,
+                                onSelect: () => copyFields(selectedIds),
+                              },
+                              {
+                                label: "Duplicate",
+                                icon: CopyPlus,
+                                onSelect: () => duplicateSelected(selectedIds),
+                              },
+                              {
+                                label: "Bring to front",
+                                icon: BringToFront,
+                                onSelect: () => reorderLayer(selectedIds, "front"),
+                              },
+                              {
+                                label: "Send to back",
+                                icon: SendToBack,
+                                onSelect: () => reorderLayer(selectedIds, "back"),
+                              },
+                            ],
+                          },
+                          {
+                            items: [
+                              {
+                                label: `Delete ${selectedFields.length} elements`,
+                                icon: Trash2,
+                                destructive: true,
+                                onSelect: () => deleteFields(selectedIds),
+                              },
+                            ],
+                          },
+                        ]}
+                      />
+                      <div className="sp-insp-panel">
+                        <InspectorSection id="selection-align" title="Align">
+                          <div className="sp-insp-row__control sp-insp-wrap">
+                            <AlignControls
+                              scope="selection"
+                              onAlign={alignSelection}
+                              onDistribute={distributeSelection}
+                              alignDisabledReason={alignDisabledReason}
+                              distributeDisabledReason={distributeDisabledReason}
                             />
-                          </button>
-                        </PropertyRow>
-                      </InspectorSection>
-                      <InspectorSection id="canvas-background" title="Background">
-                        <HexRow
-                          ref={bgSwatchRef}
-                          swatch={fillSwatchCss(backgroundColor)}
-                          swatchLabel={
-                            variantScoped
-                              ? `Background color of ${selectedVariant?.name ?? ""}`
-                              : "Background color"
-                          }
-                          expanded={bgPickerOpen}
-                          onSwatch={() => setBgPickerOpen((o) => !o)}
-                          hex={backgroundColor}
-                          hexLabel="Background hex value"
-                          onHex={setBackgroundColor}
-                        />
-                        {variantScoped && selectedVariant ? (
-                          <>
+                          </div>
+                        </InspectorSection>
+                        <Button kind="neutral" icon={GroupGlyph} onClick={groupSelection}>
+                          Group selection
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="sp-insp">
+                      <InspectorHeader icon={FrameGlyph} name="Canvas" />
+                      <div className="sp-insp-panel">
+                        {multiLook && selectedVariant && (
+                          <SegmentedControl
+                            aria-label="Background for"
+                            options={[
+                              {
+                                id: "all",
+                                label: "All variations",
+                                title: "The base background every variation starts from",
+                              },
+                              {
+                                id: "this",
+                                label: "This variation",
+                                title: `The background of ${selectedVariant.name} only`,
+                              },
+                            ]}
+                            selectedId={bgScope}
+                            onSelect={(id) => setBgScope(id as "all" | "this")}
+                            className="sp-builder__span-switch"
+                          />
+                        )}
+                        <InspectorSection id="canvas-size" title="Size">
+                          <PropertyRow label="Size">
+                            <button
+                              type="button"
+                              className="ui-reset ui-fill ui-ring ui-select"
+                              data-size="md"
+                              aria-haspopup="dialog"
+                              onClick={(e) => {
+                                const r = e.currentTarget.getBoundingClientRect();
+                                setSizeMenuAt({
+                                  x: r.right - SIZE_MENU_WIDTH,
+                                  y: r.bottom,
+                                  below: true,
+                                });
+                              }}
+                            >
+                              <span className="ui-select__value t-body-m">{sizeLabel}</span>
+                              <ChevronDown
+                                size={16}
+                                className="ui-icon ui-select__chevron"
+                                aria-hidden
+                              />
+                            </button>
+                          </PropertyRow>
+                        </InspectorSection>
+                        <InspectorSection id="canvas-background" title="Background">
+                          <HexRow
+                            ref={bgSwatchRef}
+                            swatch={fillSwatchCss(backgroundColor)}
+                            swatchLabel={
+                              variantScoped
+                                ? `Background color of ${selectedVariant?.name ?? ""}`
+                                : "Background color"
+                            }
+                            expanded={bgPickerOpen}
+                            onSwatch={() => setBgPickerOpen((o) => !o)}
+                            hex={backgroundColor}
+                            hexLabel="Background hex value"
+                            onHex={setBackgroundColor}
+                          />
+                          {variantScoped && selectedVariant ? (
+                            <>
+                              <GradientEditor
+                                gradient={variantBackground.gradient}
+                                defaultStops={[
+                                  {
+                                    position: 0,
+                                    color: kit?.colors[0]?.hex ?? platformPrimitive("--slime"),
+                                  },
+                                  {
+                                    position: 1,
+                                    color: kit?.colors[1]?.hex ?? platformPrimitive("--ink"),
+                                  },
+                                ]}
+                                onChange={(backgroundGradient) =>
+                                  setVariantBackground(
+                                    {
+                                      backgroundGradient,
+                                      // Clearing the gradient here means "this
+                                      // look wants the base pair again" unless a
+                                      // colour was set for it too.
+                                      ...(backgroundGradient === undefined &&
+                                      selectedVariant.backgroundColor === undefined
+                                        ? { backgroundColor: undefined }
+                                        : {}),
+                                    },
+                                    `vbg:gradient:${selectedVariant.id}`,
+                                  )
+                                }
+                              />
+                              {(selectedVariant.backgroundColor !== undefined ||
+                                selectedVariant.backgroundGradient !== undefined) && (
+                                <Button
+                                  kind="neutral"
+                                  size="sm"
+                                  onClick={() =>
+                                    setVariantBackground({
+                                      backgroundColor: undefined,
+                                      backgroundGradient: undefined,
+                                    })
+                                  }
+                                >
+                                  Use the base background
+                                </Button>
+                              )}
+                            </>
+                          ) : (
                             <GradientEditor
-                              gradient={variantBackground.gradient}
+                              gradient={draft.backgroundGradient}
                               defaultStops={[
                                 {
                                   position: 0,
@@ -3602,146 +3711,102 @@ export function TemplateBuilder({
                                 },
                               ]}
                               onChange={(backgroundGradient) =>
-                                setVariantBackground(
-                                  {
-                                    backgroundGradient,
-                                    // Clearing the gradient here means "this
-                                    // look wants the base pair again" unless a
-                                    // colour was set for it too.
-                                    ...(backgroundGradient === undefined &&
-                                    selectedVariant.backgroundColor === undefined
-                                      ? { backgroundColor: undefined }
-                                      : {}),
-                                  },
-                                  `vbg:gradient:${selectedVariant.id}`,
-                                )
+                                setDraft((d) => ({ ...d, backgroundGradient }), "bg:gradient")
                               }
                             />
-                            {(selectedVariant.backgroundColor !== undefined ||
-                              selectedVariant.backgroundGradient !== undefined) && (
-                              <Button
-                                kind="neutral"
-                                size="sm"
-                                onClick={() =>
-                                  setVariantBackground({
-                                    backgroundColor: undefined,
-                                    backgroundGradient: undefined,
-                                  })
-                                }
-                              >
-                                Use the base background
-                              </Button>
-                            )}
-                          </>
-                        ) : (
-                          <GradientEditor
-                            gradient={draft.backgroundGradient}
-                            defaultStops={[
-                              {
-                                position: 0,
-                                color: kit?.colors[0]?.hex ?? platformPrimitive("--slime"),
-                              },
-                              {
-                                position: 1,
-                                color: kit?.colors[1]?.hex ?? platformPrimitive("--ink"),
-                              },
-                            ]}
-                            onChange={(backgroundGradient) =>
-                              setDraft((d) => ({ ...d, backgroundGradient }), "bg:gradient")
-                            }
-                          />
-                        )}
-                        <PropertyRow label="Image">
-                          <Upload
-                            placeholder={uploading ? "Uploading…" : "Add an image"}
-                            thumbnail={draft.backgroundUrl ? signedBackground.url : null}
-                            fileName={backgroundFileName(draft.backgroundUrl)}
-                            disabled={uploading}
-                            onClick={() => bgFileRef.current?.click()}
-                            onDropFile={(file) => void onDropBackground([file])}
-                          />
-                          {draft.backgroundUrl && (
-                            <IconButton
-                              variant="ghost"
-                              size="sm"
-                              icon={Minus}
-                              label="Remove the image"
-                              onClick={() => setDraft((d) => ({ ...d, backgroundUrl: "" }))}
-                            />
                           )}
-                          <input
-                            ref={bgFileRef}
-                            type="file"
-                            accept="image/png,image/jpeg"
-                            hidden
-                            onChange={(e) => {
-                              const f = e.target.files?.[0];
-                              e.target.value = "";
-                              if (f) void onDropBackground([f]);
-                            }}
-                          />
-                        </PropertyRow>
-                      </InspectorSection>
-                      {/* Canvas effects: grain over everything, an inner shadow
+                          <PropertyRow label="Image">
+                            <Upload
+                              placeholder={uploading ? "Uploading…" : "Add an image"}
+                              thumbnail={draft.backgroundUrl ? signedBackground.url : null}
+                              fileName={backgroundFileName(draft.backgroundUrl)}
+                              disabled={uploading}
+                              onClick={() => bgFileRef.current?.click()}
+                              onDropFile={(file) => void onDropBackground([file])}
+                            />
+                            {draft.backgroundUrl && (
+                              <IconButton
+                                variant="ghost"
+                                size="sm"
+                                icon={Minus}
+                                label="Remove the image"
+                                onClick={() => setDraft((d) => ({ ...d, backgroundUrl: "" }))}
+                              />
+                            )}
+                            <input
+                              ref={bgFileRef}
+                              type="file"
+                              accept="image/png,image/jpeg"
+                              hidden
+                              onChange={(e) => {
+                                const f = e.target.files?.[0];
+                                e.target.value = "";
+                                if (f) void onDropBackground([f]);
+                              }}
+                            />
+                          </PropertyRow>
+                        </InspectorSection>
+                        {/* Canvas effects: grain over everything, an inner shadow
                           at the edge. Scoped like the background: a look can
                           replace them, the base is what every look starts
                           from. */}
-                      {multiLook && selectedVariant && bgScope === "this" ? (
-                        <EffectsEditor
-                          id="canvas-effects"
-                          effects={selectedVariant.canvasEffects ?? draft.canvasEffects}
-                          target={{ kind: "canvas" }}
+                        {multiLook && selectedVariant && bgScope === "this" ? (
+                          <EffectsEditor
+                            id="canvas-effects"
+                            effects={selectedVariant.canvasEffects ?? draft.canvasEffects}
+                            target={{ kind: "canvas" }}
+                            kit={kit}
+                            companyId={company?.id}
+                            onChange={(next) =>
+                              setVariantBackground(
+                                { canvasEffects: normalizeEffects(next, { kind: "canvas" }) ?? [] },
+                                `vbg:effects:${selectedVariant.id}`,
+                              )
+                            }
+                            onUseBase={
+                              selectedVariant.canvasEffects !== undefined
+                                ? () => setVariantBackground({ canvasEffects: undefined })
+                                : undefined
+                            }
+                          />
+                        ) : (
+                          <EffectsEditor
+                            id="canvas-effects"
+                            effects={draft.canvasEffects}
+                            target={{ kind: "canvas" }}
+                            kit={kit}
+                            companyId={company?.id}
+                            onChange={(next) =>
+                              setDraft(
+                                (d) => ({
+                                  ...d,
+                                  canvasEffects: normalizeEffects(next, { kind: "canvas" }),
+                                }),
+                                "bg:effects",
+                              )
+                            }
+                          />
+                        )}
+                      </div>
+                      {bgPickerOpen && (
+                        <FillPicker
+                          anchorRef={bgSwatchRef}
+                          field={backgroundProxy}
                           kit={kit}
                           companyId={company?.id}
-                          onChange={(next) =>
-                            setVariantBackground(
-                              { canvasEffects: normalizeEffects(next, { kind: "canvas" }) ?? [] },
-                              `vbg:effects:${selectedVariant.id}`,
-                            )
-                          }
-                          onUseBase={
-                            selectedVariant.canvasEffects !== undefined
-                              ? () => setVariantBackground({ canvasEffects: undefined })
-                              : undefined
-                          }
-                        />
-                      ) : (
-                        <EffectsEditor
-                          id="canvas-effects"
-                          effects={draft.canvasEffects}
-                          target={{ kind: "canvas" }}
-                          kit={kit}
-                          companyId={company?.id}
-                          onChange={(next) =>
-                            setDraft(
-                              (d) => ({
-                                ...d,
-                                canvasEffects: normalizeEffects(next, { kind: "canvas" }),
-                              }),
-                              "bg:effects",
-                            )
-                          }
+                          locked={false}
+                          solidOnly
+                          onChange={(patch) => {
+                            if (patch.colorHex) setBackgroundColor(patch.colorHex);
+                          }}
+                          onClose={() => setBgPickerOpen(false)}
                         />
                       )}
                     </div>
-                    {bgPickerOpen && (
-                      <FillPicker
-                        anchorRef={bgSwatchRef}
-                        field={backgroundProxy}
-                        kit={kit}
-                        companyId={company?.id}
-                        locked={false}
-                        solidOnly
-                        onChange={(patch) => {
-                          if (patch.colorHex) setBackgroundColor(patch.colorHex);
-                        }}
-                        onClose={() => setBgPickerOpen(false)}
-                      />
-                    )}
-                  </div>
-                )}
-              </div>
-            </section>
+                  )}
+                </div>
+              </section>
+            )}
           </>
         )}
       </div>
