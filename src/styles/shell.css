@@ -2,7 +2,7 @@
    The shell (new brand, Phase 3; docs/design/new-brand/PHASE-3.md): the app
    frame and Main (layout/Page.tsx), the sidebar, page headers and the
    compositions inside Settings. Measurements are RULES.md section 10's.
-   Tokens and .t-* classes only, plus the three measures the shell owns
+   Tokens and .t-* classes only, plus the two measures the shell owns
    (below); nothing here declares a token. z-index is not a Figma token,
    so the mobile bar's layer is a number, as in primitives.css.
    ========================================================================== */
@@ -12,10 +12,9 @@
    16 below 768. Main sets 32 at 1024 and wider, where Generate's thread
    and History reach into it. --chrome-top, the mobile bar's height below
    1024 (0 beside the rail): sticky page chrome and Generate's editor sheet
-   offset from it. --page-max caps the public link page's column until
-   Phase 4; the frame caps nothing. */
+   offset from it. The frame caps nothing; the public link page's column
+   caps itself (.sp-public__column). */
 :root {
-  --page-max: 1720px;
   --page-pad: var(--space-48);
   --chrome-top: 0px;
 }
@@ -178,9 +177,8 @@
     min-height: 0;
   }
   /* Three classes, so a page's own `.sp-page.sp-x` padding or height loses
-     to the frame's at this width, and so does the public page's 45 gutter
-     (below). Generate's thread and History reach into the gutters by
-     --page-pad. Positioned, so an absolute child (a screen-reader-only
+     to the frame's at this width. Generate's thread and History reach
+     into the gutters by --page-pad. Positioned, so an absolute child (a screen-reader-only
      label) scrolls and clips with the content instead of anchoring to the
      body around it. */
   .sp-frame .sp-frame__body > .sp-page {
@@ -500,18 +498,6 @@
   margin-top: var(--space-12);
   padding-top: var(--space-12);
   border-top: var(--stroke-hairline) solid var(--border-subtle);
-}
-
-/* The public link page's column (src/app/public/PublicFrame.tsx), outside
-   the app frame: 45 from the top and the sides from 1280 up (13:5776; off
-   the scale, kept as drawn). Inside the frame, Main's rules above win. The
-   narrower tiers (32, 24, 16) stay as they are. Phase 4 rebuilds the
-   public page. */
-@media (min-width: 1280px) {
-  .sp-page {
-    --page-pad: 45px;
-    padding-top: 45px;
-  }
 }
 
 /* ── Settings: the rail (8:678) and the section column ──

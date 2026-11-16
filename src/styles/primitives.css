@@ -141,18 +141,6 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   outline: var(--stroke-focus) solid var(--border-focus);
   outline-offset: var(--focus-offset);
 }
-.ui-ring-tight {
-  box-shadow: var(--_shadow, 0 0 0 0 transparent);
-}
-.ui-ring-tight:focus-visible,
-.ui-ring-tight[data-demo-state="focus"] {
-  outline: 2px solid transparent;
-  outline-offset: 0;
-  box-shadow:
-    0 0 0 var(--focus-width) var(--ring),
-    var(--_shadow, 0 0 0 0 transparent);
-}
-
 /* ── Button (2206:542) ─────────────────────────────────────────────────────
    Small 28, Medium 36, Large 44, all at radius/sm. Neutral carries a
    hairline edge, which sits inside the box and takes its own room, as the
@@ -1115,7 +1103,11 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   border-radius: var(--radius-full);
   box-shadow: var(--elevation-1-raised);
   --_fill: var(--surface-raised);
-  color: var(--text-primary);
+  --_hover: var(--action-neutral-hover);
+  --_pressed: var(--action-neutral-pressed);
+  --_selected: var(--surface-inverse);
+  --_fg: var(--text-primary);
+  --_fg-selected: var(--text-inverse);
   white-space: nowrap;
 }
 .ui-platform-chip__tile {
@@ -1141,8 +1133,6 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 .ui-platform-chip[data-demo-state="selected"] {
   border-color: transparent;
   box-shadow: none;
-  --_fill: var(--surface-inverse);
-  color: var(--text-inverse);
 }
 .ui-platform-chip[data-selected] .ui-platform-chip__tile,
 .ui-platform-chip[data-demo-state="selected"] .ui-platform-chip__tile {

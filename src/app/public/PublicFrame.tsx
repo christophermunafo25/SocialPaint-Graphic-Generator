@@ -12,7 +12,7 @@ export function PublicFrame({ children }: { children: React.ReactNode }) {
   return (
     <div className="sp-public">
       <main className="sp-public__main">
-        <div className="sp-page">{children}</div>
+        <div className="sp-page sp-public__column">{children}</div>
       </main>
       <PublicAttribution />
     </div>

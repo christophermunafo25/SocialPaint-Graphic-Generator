@@ -136,6 +136,20 @@
   min-width: 0;
   margin: 0;
 }
+/* The earlier "View all", a text link 32 tall, underlined (13:5921). The
+   shelves now use a Ghost button; Generate's Recent (RecentChats.tsx) keeps
+   this until Phase 5 rebuilds it. */
+.sp-lib-link {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 var(--space-2xs);
+  border-radius: var(--radius-control);
+  color: var(--text-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  white-space: nowrap;
+}
 /* The rail: cards 302 wide and 16 apart, the next one cut off at the
    content's edge under the fade (2308:4). The track keeps 12 for the
    cards' Elevation/1 and the focus ring above, below and at both ends (a
@@ -170,8 +184,8 @@
 }
 
 /* A result group (2308:538): its label and count, 32 tall and 12 apart,
-   16 above the grid; three columns of cards 16 apart, rows 17 apart (as
-   drawn). */
+   16 above the grid; three columns of cards 16 apart both ways (RULES.md
+   section 10; the frame's 17 between rows is off the scale). */
 .sp-lib-group {
   display: flex;
   flex-direction: column;
@@ -189,12 +203,14 @@
   margin: 0;
 }
 .sp-lib-group__count {
+  flex: none;
   color: var(--text-secondary);
+  white-space: nowrap;
 }
 .sp-lib-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 17px var(--space-16); /* rows 17 apart, as drawn (2308:538) */
+  gap: var(--space-16);
   align-items: start;
 }
 @media (max-width: 1023px) {
@@ -241,8 +257,9 @@
    name in Label/M over its size and variations in Caption/M, 8 apart,
    beside the go arrow, on surface/raised at radius/xl with Elevation/1.
    One button with the keyboard ring. Hover and focus step through its
-   variations (judgement call 4); hover lifts it to Elevation/2 and fills
-   the arrow with the primary pair. ── */
+   variations (judgement call 4) and fill the arrow with the primary pair;
+   hover changes colour only (RULES.md section 6), so the card keeps its
+   Elevation/1 and the rail's 12 of room holds it. ── */
 .sp-tcard {
   box-sizing: border-box;
   display: flex;
@@ -255,10 +272,6 @@
   color: var(--text-primary);
   text-align: left;
   cursor: pointer;
-  transition: box-shadow var(--motion-duration-fast) var(--motion-easing-standard);
-}
-.sp-tcard:hover {
-  box-shadow: var(--elevation-2-overlay);
 }
 .sp-tcard__go {
   flex: none;
@@ -356,6 +369,20 @@
   .sp-page--bleed .sp-lib-chips {
     margin-right: 0;
   }
+  /* The open search (440) is wider than a phone's bar: it takes a row of
+     its own and the chips wrap under it, 12 apart, so the chips' rail and
+     its 12 of shadow room meet the field without covering it. */
+  .sp-lib-filterbar {
+    flex-wrap: wrap;
+    row-gap: var(--space-12);
+  }
+  .sp-lib-search:has(.ui-search--open),
+  .sp-lib-filterbar:has(.ui-search--open) .sp-lib-chips {
+    flex: 1 1 100%;
+  }
+  .sp-lib-search .ui-search--open {
+    width: 100%;
+  }
 }
 
 /* ── The fill page and the public link page (new brand, 2322:918) ─────────
@@ -439,6 +466,11 @@
   flex: 1;
   min-width: 0;
 }
+/* The column: the page gutters and padding of .sp-page, stopping at 1720
+   on a very wide window. */
+.sp-public__column {
+  max-width: 1720px;
+}
 .sp-public__attribution {
   display: flex;
   align-items: center;
@@ -476,17 +508,69 @@
   margin: 0;
 }
 
-/* Below 1024 the stage and the panel stack, the graphic first, 24 in from
-   the stage's edges and no wider than 480. */
+/* Stacked: the graphic first, 24 in from the stage's edges and no wider
+   than 480, then the panel, then Terms and Privacy at the page's foot
+   (decision 14). The preview column steps aside so its links can follow
+   the panel. Below 1024 the document scrolls. */
 @media (max-width: 1023px) {
   .sp-fill {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .sp-fill__preview {
+    display: contents;
   }
   .sp-fill__stage {
     padding: var(--space-24);
   }
   .sp-fill__art {
     max-width: 480px;
+  }
+  .sp-fill__note {
+    margin: 0;
+  }
+  .sp-fill__legal {
+    order: 1;
+    padding-top: 0;
+  }
+}
+/* In the app frame at 1024 and wider, a fill page whose content is too
+   narrow for the panel (380), the gap and a 360 stage (the sidebar open at
+   1024 to 1180) stacks the same way and scrolls its own column, with 12 of
+   room inside it for the shadows and the focus ring. */
+@media (min-width: 1024px) {
+  .sp-frame .sp-frame__body > .sp-fill-page {
+    container: fillpage / inline-size;
+  }
+}
+@container fillpage (max-width: 763px) {
+  .sp-fill[data-place="member"] {
+    grid-template-columns: minmax(0, 1fr);
+    /* Each row keeps its content's height (the stage and the panel set no
+       floor of their own), so the column scrolls instead of squeezing. */
+    grid-auto-rows: max-content;
+    align-content: start;
+    height: calc(100% + 2 * var(--space-12));
+    margin: calc(-1 * var(--space-12));
+    padding: var(--space-12);
+    overflow-y: auto;
+  }
+  .sp-fill[data-place="member"] .sp-fill__preview {
+    display: contents;
+  }
+  .sp-fill[data-place="member"] .sp-fill__stage {
+    padding: var(--space-24);
+    container-type: inline-size;
+  }
+  .sp-fill[data-place="member"] .sp-fill__art {
+    width: 100%;
+    max-width: 480px;
+  }
+  .sp-fill[data-place="member"] .sp-fill__note {
+    margin: 0;
+  }
+  .sp-fill[data-place="member"] .sp-fill__legal {
+    order: 1;
+    padding-top: 0;
   }
 }
 
@@ -538,13 +622,22 @@
 .sp-details .sp-details__caption.ui-input[data-size="multiline"] {
   min-height: 96px;
 }
-/* Variation's segments share the panel's width (2322:918). */
+/* Variation's segments share the panel's width (2322:918), and a long
+   name ends in an ellipsis when several share it. */
 .sp-details__look {
   display: flex;
   width: 100%;
 }
 .sp-details__look > * {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
+}
+.sp-details__look .ui-segment > .t-label-s {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-block: 0.3em;
+  margin-block: -0.3em;
 }
 .sp-details__foot {
   display: flex;
@@ -594,9 +687,10 @@
   outline: 1px solid var(--border-default);
   outline-offset: -1px;
 }
+/* 8 under Generate's stage: the panel's 20 between its parts, given back. */
 .sp-details__warning {
   flex: none;
-  margin: calc(var(--space-2xs) - var(--space-sm)) 0 0;
+  margin: calc(var(--space-8) - var(--space-20)) 0 0;
   color: var(--text-secondary);
 }
 @media (max-width: 1023px) {

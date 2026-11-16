@@ -96,13 +96,12 @@ These are the rows of `PROMPT.md` section 5 that the code or the file changes. P
 | ~~`--state-hover-inverse`, `--state-pressed-inverse`~~ | 0 | Removed in Phase 2 | The primary button reads `--action-primary-hover` and `-pressed`. Attach is a Filled icon button and the switch has no fill state |
 | ~~`--state-hover-on-color`, `--state-pressed-on-color`~~ | 0 | Removed in Phase 2 | Send reads `--action-accent-hover` and `-pressed`, Destructive `--action-danger-hover` and `-pressed` |
 | `--state-selection` | 2 in 1 | `--editor-selection` | None (`#0D99FF`) |
-| `--control-fill` | 3 in 2 | `--surface-sunken` | Dark `#171819` → `#232425`. Phase 2 moved the buttons, selects and the settings rail off it. The readers left are the Platform chip and one Brand Templates rule (Phase 4) |
+| ~~`--control-fill`~~ | 0 | Removed in Phase 4, with its last readers: the Platform chip and the library's chips |
 | ~~`--switch-track-on`~~ | 0 | Removed in Phase 2 | The Switch reads `--control-on` |
 | `--switch-background` | 1 in 1 | `--border-control` | The shadcn theme's switch token in `theme.css`. The Switch itself fills its off track with `--border-control` (finding 9, corrected in section 6) |
 | ~~`--status-active-bg`, `--status-active-fg`~~ | 0 | Removed in Phase 2 | The Badge reads `--status-active-surface` and `--status-active-text` |
 | ~~`--status-positive-bg`~~ | 0 | Removed in Phase 2 | The Badge reads `--status-positive-surface` |
-| `--chip-selected-bg` | 2 in 1 | `--surface-inverse` | Dark `#2F3133` → white. The Platform chip is a Product component and is rebuilt in Phase 4 (decided at the Phase 2 gate) |
-| `--chip-selected-tile` | 1 in 1 | `--state-selected` | Holding value |
+| ~~`--chip-selected-bg`, `--chip-selected-tile`~~ | 0 | Removed in Phase 4: the rebuilt Platform chip reads `--surface-inverse` and `--surface-raised` |
 | `--chip-tile` | 2 in 2 | `--action-neutral` | Dark `#0B0B0C` → white 10% |
 | ~~`--tag-detail-fg`~~ | 0 | Removed in Phase 2 | An editable detail is a Chip |
 | ~~`--tag-sent-bg`, `--tag-sent-fg`, `--tag-sent-border`~~ | 0 | Removed in Phase 2 | A sent detail is a Default Tag |
@@ -159,7 +158,7 @@ These play several roles or belong to one screen, exactly as `docs/design/new-lo
 | ~~`--sb-bg`, `--sb-border`, `--sb-fg-active`~~ | 0 | Removed in Phase 3. The mobile bar reads `--surface-raised`, `--border-subtle` and `--text-primary` |
 | `--chrome-top` | 3 in 3 | Not a bridge: the shell's own measure, defined in `shell.css` since Phase 3. The mobile bar's height below 1024 (0 beside the rail). The frame's narrow minimum height, the Brand Templates filter bar below 1024 and Generate's editor sheet offset from it. Stays while the mobile bar does |
 | `--page-pad` | 10 in 3 | Not a bridge: the shell's own measure, defined in `shell.css` since Phase 3 on `--space-48`, `-32`, `-24` and `-16` by width. The frame's header row and footer read it below 1024. Its other readers go with their screens: the public link page's column (Phase 4), Generate's thread and History, which reach into Main's gutters by it at 32 (Phase 5), and the pre-app shell (`auth.css`, Phase 9) |
-| `--page-max` | 1 in 1 | Not a bridge: defined in `shell.css` since Phase 3. It caps only the public link page's column (`.sp-page` in `PublicFrame.tsx`) and goes in Phase 4. The app frame has no cap |
+| ~~`--page-max`~~ | 0 | Removed in Phase 4: the public link page's column caps itself (`.sp-public__column`, 1720). The app frame has no cap |
 | `--state-warning`, `--fill-warning`, `--fill-attention`, `--danger-wash`, `--accent-wash` | 1 to 6 each | With each screen that moves its alert blocks onto the Alert, which reads `--feedback-warning-*` and `--feedback-error-surface`. Phase 2 built the Alert and moved no page onto it. Most readers are in the builder (Phase 6) |
 | `--ease`, `--dur-state`, `--dur-panel` | 54 in 6, 58 in 6, 8 in 4 | Bridged in Phase 1 to `--motion-easing-standard`, `--motion-duration-fast` (140 → 120 ms) and `--motion-duration-base` (220 → 200 ms). The reduced-motion override that zeroes them stays |
 | `--type-caption-size`, `--type-label-size`, `--type-cardtitle-size` and the rest of the stylesheet's type variables | 67 in 21, 43 in 20, 14 in 8 | Per area, 4 to 9. Their values (12, 13, 17) are untouched in Phase 1 |
@@ -250,7 +249,7 @@ What Phase 1 found while building this:
 - One stylesheet rule names a text class in a selector (`.sp-gen-start__unavailable > .tu-body-m` in `generate.css`), so the rename covered it.
 - The rule in `brand-templates.css` that reads `--type-label-l` keeps the name, so its text goes from 15 to 16.
 - Sixteen `.tu-*` twins existed after Phase 1. Title/Display, Mono/Display, Mono/M and Mono/Code have no call site and no twin. Phase 2 removed the Title/Section and Title/Group twins, so fourteen are left.
-- The template card title is Label/S (13) in the Brand Templates frame. Phase 1 holds it at Label/M, the nearer of the two targets this table allows, and Phase 4 takes the frame's style.
+- The template card title is Label/M in the new library frame (`2308:4`), which Phase 4 read again; Phase 1's hold at Label/M was right, and the card takes the trimmed `.t-label-m`.
 - The Glow/Accent composite is `--glow-accent-shadow`, because `--glow-accent` is the Color token for the glow's color.
 
 ## 6. What Phase 2 removed and found
@@ -279,7 +278,7 @@ Not tokens, but the same kind of debt. These are the earlier control families th
 
 ## 8. What Phase 3 removed and found
 
-Phase 3 built the app frame. The shell (`AppShell.tsx`, `Sidebar.tsx`, `BrandMark.tsx`, `layout/Page.tsx` and `shell.css`) reads no name from `legacy-bridge.css` and none of `socialpaint.css`'s own. It reads tokens and the three measures it defines itself (`--page-pad`, `--chrome-top`, `--page-max`, the rows above). The mobile bar's layer is a number, as in `primitives.css`, since z-index is not a Figma token. It has no inline style objects except the fade's measured scrollbar gutter, a custom property set as `ScrollFade` sets it.
+Phase 3 built the app frame. The shell (`AppShell.tsx`, `Sidebar.tsx`, `BrandMark.tsx`, `layout/Page.tsx` and `shell.css`) reads no name from `legacy-bridge.css` and none of `socialpaint.css`'s own. It reads tokens and the measures it defines itself (`--page-pad` and `--chrome-top`, the rows above; Phase 3 also defined `--page-max`, which Phase 4 removed). The mobile bar's layer is a number, as in `primitives.css`, since z-index is not a Figma token. It has no inline style objects except the fade's measured scrollbar gutter, a custom property set as `ScrollFade` sets it.
 
 Removed, each with no reader left in `src/`:
 
@@ -290,3 +289,17 @@ Removed, each with no reader left in `src/`:
 Kept, defined in `shell.css` where the shell owns them, and corrected above: `--chrome-top` is the shell's own measure for the mobile bar, `--page-pad` still has readers below 1024, in Generate and in the pre-app shell, and `--page-max` caps only the public link page's column.
 
 Added: `--frame-inset-bottom`, set to 0 inside a frame with footer links below 1024 and read with the home-indicator inset as its fallback by the pages' bottom padding, since the footer links carry the inset there.
+
+## 9. What Phase 4 removed and found
+
+Phase 4 moved Brand Templates onto its frames. The rules it rebuilt (the library, the template card, the fill page, the Details panel's base, the public links dialog and the public page's chrome) read tokens only.
+
+Removed, each with no reader left in `src/`:
+
+- `--control-fill`, `--chip-selected-bg` and `--chip-selected-tile` (the rebuilt Platform chip reads `--surface-raised`, `--surface-field` and `--surface-inverse`)
+- `--page-max` (the public link page's column caps itself)
+- `.ui-ring-tight`, whose one user was the Platform chip (it takes the 2 px ring 2 out)
+- `details/LinkedInMark.tsx` (Post to LinkedIn carries no icon in `2308:3596`)
+- the fill page's step form rules (`.sp-fill__step*`, `.sp-fill__rail`, `.sp-fill__looks`, the Preview card) and the shelves' `--shelf-visible` sizing
+
+Kept for a later phase: `.sp-lib-link`, the earlier underlined "View all", which Generate's Recent still uses (Phase 5), and Generate's preview stage rules inside the Details panel, which still read `--radius-control-md` and `--border-default` (Phase 5).

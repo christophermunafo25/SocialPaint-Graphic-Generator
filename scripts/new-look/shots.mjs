@@ -63,25 +63,23 @@ const firstTemplate = devDb.templates[0].id;
 // The fixture's Generate threads: a finished result, then a question.
 const resultThread = devDb.generateThreads[0].id;
 const questionThread = devDb.generateThreads[2].id;
-// The saved template chat (new look, Phase 4): its template and its draft.
-const templateChat = devDb.generateThreads.find((t) => t.templateId);
-const chatTemplate = templateChat.templateId;
-const chatDraft = templateChat.turns.at(-1).drafts[0].id;
 
 const ROUTES = [
   ["brand-templates", "/templates"],
   ["brand-templates-platform", "/templates?platform=instagram"],
   ["brand-templates-search", "/templates?q=launch"],
   ["template-fill", `/templates/${firstTemplate}`],
-  ["template-chat", `/templates/${chatTemplate}/chat`],
-  ["template-chat-result", `/templates/${chatTemplate}/chat/${templateChat.id}`],
-  [
-    "template-chat-edit",
-    `/templates/${chatTemplate}/chat/${templateChat.id}?edit=${encodeURIComponent(chatDraft)}`,
-  ],
+  // The template chat is hidden (new brand Phase 4): its addresses open the
+  // fill page, which "template-fill" already captures. Generate's editor
+  // (the shared Details panel) is captured instead, opened from the result.
   ["generate", "/generate"],
   ["generate-history", "/generate/history"],
   ["generate-thread", `/generate/c/${resultThread}`],
+  [
+    "generate-edit",
+    `/generate/c/${resultThread}`,
+    { act: (page) => page.locator("button.ui-preview__edit").first().click({ force: true }) },
+  ],
   ["generate-thread-question", `/generate/c/${questionThread}`],
   // The sign-in gate, rendered without Supabase (PHASE-8B §9 D8).
   ["auth-sign-in", "/dev/auth"],

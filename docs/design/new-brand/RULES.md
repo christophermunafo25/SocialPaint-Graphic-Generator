@@ -149,14 +149,14 @@ A dialog's close button sits in its top right corner.
 
 | Part | Measure |
 |---|---|
-| Filter bar | 56 tall. Search Field (50 square) then the platform chip rail, chips 50 tall with 8 between them. The rail runs off the right edge under a 72 wide fade |
+| Filter bar | 56 tall. Search Field (50, round in the library's frames) then the platform chip rail, chips 50 tall with 8 between them. The rail runs off the right edge under a 72 wide fade |
 | Shelves | 32 between shelves. A shelf is a header (28 tall, title on the left, View all on the right) then a rail 16 below it |
 | Shelf rail | Cards in a row, 16 apart, running off the right edge under a 96 wide fade |
 | Template Card | 302 wide. 434 tall for portrait templates, 226 for landscape. 8 padding around the preview |
 | Filtered or search view | A result line (28 tall, the count and Clear), then one group per size: a header 32 tall and a grid 16 below it. Three cards across, 327 wide, 16 between columns and rows |
 | Fill page | Breadcrumb header with Bulk fill and Public link on the right. Below it a row, 24 apart: the Preview fills, the Details panel is 380 wide |
 | Preview | The graphic centered on a stage with 40 padding. The legal links sit under the stage |
-| Details panel | 20 padding, 20 between fields. Download PNG pinned to its bottom |
+| Details panel | 20 padding, 20 between its title, its fields and its footer, 16 between fields (2322:918; Phase 4 read it again). Download PNG pinned to its bottom |
 
 ### Generate
 

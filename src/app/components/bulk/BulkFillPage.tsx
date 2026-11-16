@@ -438,11 +438,17 @@ function BulkFill({
                     </span>
                   }
                 />
-                <Checkbox
-                  checked={includeProblems}
-                  onChange={setIncludeProblems}
-                  label="Include rows with problems anyway. They export as they are: text that overflows runs past the edge of the graphic, and an empty required field shows the field's placeholder."
-                />
+                <div>
+                  <Checkbox
+                    checked={includeProblems}
+                    onChange={setIncludeProblems}
+                    label="Include rows with problems anyway"
+                  />
+                  <p className="tu-body-s pl-6 mt-1" style={secondary}>
+                    They export as they are: text that overflows runs past the edge of the graphic,
+                    and an empty required field shows the field's placeholder.
+                  </p>
+                </div>
               </div>
             )}
 

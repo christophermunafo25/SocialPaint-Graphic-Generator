@@ -155,6 +155,13 @@ export function TemplateFill({
   const [layoutWarnings, setLayoutWarnings] = useState<string[]>([]);
 
   useEffect(() => () => window.clearTimeout(toastTimer.current), []);
+  // Download PNG gives way to Download again once a file exists: keep the
+  // person's place by handing focus on to it.
+  useEffect(() => {
+    if (!downloaded) return;
+    const active = document.activeElement;
+    if (!active || active === document.body || !active.isConnected) downloadRef.current?.focus();
+  }, [downloaded]);
 
   const showToast = (kind: ToastKind, detail?: string) => {
     window.clearTimeout(toastTimer.current);
@@ -178,7 +185,7 @@ export function TemplateFill({
   };
 
   const handleDownload = async () => {
-    if (sendToMissing() || !rendererRef.current) return;
+    if (exporting || sendToMissing() || !rendererRef.current) return;
     setExporting(true);
     try {
       const outcome = await rendererRef.current.exportPng();
@@ -214,7 +221,8 @@ export function TemplateFill({
 
   // Download PNG looks disabled until every required field has a value, as
   // drawn, but stays a stop in the tab order: pressed early, it says what
-  // is missing and takes the person there.
+  // is missing and takes the person there. While a file is being made the
+  // button keeps its place in the tab order too, and a press does nothing.
   const incomplete = missingRequired.length > 0;
   const actions = downloaded ? (
     <>
@@ -223,7 +231,7 @@ export function TemplateFill({
         kind="neutral"
         size="lg"
         onClick={() => void handleDownload()}
-        disabled={exporting}
+        aria-disabled={exporting || undefined}
         aria-busy={exporting || undefined}
       >
         {exporting ? "Generating…" : "Download again"}
@@ -240,8 +248,7 @@ export function TemplateFill({
       icon={Download}
       className="sp-details__grow"
       onClick={() => void handleDownload()}
-      disabled={exporting}
-      aria-disabled={incomplete || undefined}
+      aria-disabled={incomplete || exporting || undefined}
       aria-busy={exporting || undefined}
     >
       {exporting ? "Generating…" : "Download PNG"}

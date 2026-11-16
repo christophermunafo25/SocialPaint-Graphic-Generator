@@ -27,9 +27,8 @@ export function cardMeta(template: CatalogTemplate): string {
  * A template with several variations shows them off while the pointer (or
  * focus) rests on the card: the preview steps through every one, one a
  * second, with dots and the variation's name on an Overlay tag, and settles
- * back on the default when attention moves on (judgement call 4). The swap
- * is a repaint through the one renderer, not an animation, so it is the
- * same under reduced motion.
+ * back on the default when attention moves on (judgement call 4). Under
+ * reduced motion it stays on the default.
  */
 export function TemplateCard({
   template,
@@ -49,7 +48,10 @@ export function TemplateCard({
   const [attended, setAttended] = useState(false);
   const [lookIndex, setLookIndex] = useState<number | null>(null);
   useEffect(() => {
-    if (!attended || !multiLook) {
+    // Under reduced motion the card holds its first variation (RULES.md
+    // section 6).
+    const still = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    if (!attended || !multiLook || still) {
       setLookIndex(null);
       return;
     }

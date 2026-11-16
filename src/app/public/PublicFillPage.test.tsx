@@ -17,9 +17,11 @@ vi.mock("@/lib/publicLink/client", async (importOriginal) => ({
   recordPublicDownload: vi.fn(),
   recordPublicShare: vi.fn(),
 }));
-// The canvas itself is the renderer's business, and happy-dom has none.
+// The canvas itself is the renderer's business, and happy-dom has none. Its
+// export answers as a finished download would.
 vi.mock("../components/SchemaRenderer", () => ({
-  SchemaRenderer: React.forwardRef(function Stub() {
+  SchemaRenderer: React.forwardRef(function Stub(_props, ref) {
+    React.useImperativeHandle(ref, () => ({ exportPng: async () => "downloaded" }));
     return <div data-testid="graphic" />;
   }),
 }));
@@ -116,6 +118,18 @@ describe("PublicFillPage", () => {
     await userEvent.type(headline, "Meet Acme Pro");
     expect(download.getAttribute("aria-disabled")).toBeNull();
     expect(headline.getAttribute("aria-invalid")).not.toBe("true");
+  });
+
+  it("swaps Download PNG for Download again and Post to LinkedIn once a file exists", async () => {
+    vi.mocked(fetchPublicTemplate).mockResolvedValue(payload());
+    render(<PublicFillPage token="tok" />);
+    await userEvent.type(await screen.findByLabelText("Headline"), "Meet Acme Pro");
+    await userEvent.click(screen.getByRole("button", { name: /Download PNG/ }));
+    const again = await screen.findByRole("button", { name: "Download again" });
+    expect(screen.getByRole("button", { name: "Post to LinkedIn" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Download PNG/ })).toBeNull();
+    // The person's place moves on to the button that took Download PNG's.
+    expect(document.activeElement).toBe(again);
   });
 
   it("offers no photo field when the link turns uploads off", async () => {

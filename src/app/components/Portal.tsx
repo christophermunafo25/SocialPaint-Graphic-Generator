@@ -166,7 +166,7 @@ export function Portal() {
         <LibrarySearch value={query} onChange={(q) => setState({ q }, true)} />
         {catalog.length > 0 && (
           <PlatformFilter
-            allLabel="All Templates"
+            allLabel="All templates"
             facets={chipFacets}
             selected={platform?.id ?? null}
             onSelect={(next) => setState({ platform: next })}

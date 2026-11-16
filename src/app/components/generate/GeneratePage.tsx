@@ -594,17 +594,14 @@ export function GenerateChat({
   }, [navigate]);
 
   /** A Recent card: the chat opens at its own address, a page of its own,
-   * with focus in its composer once it has loaded (§9.10). */
+   * with focus in its composer once it has loaded (§9.10). A saved template
+   * chat goes on from there to its template's fill page while the template
+   * is published (SavedChat; PLAN.md judgement call 8), and stays an
+   * ordinary chat once it has gone. */
   const openChat = useCallback(
     (threadId: string, templateId: string | null) => {
-      requestComposerFocus();
-      // A template chat opens on its template's page, which sends it on to
-      // /generate/c/<id> when that template has gone (template-chat §12.1).
-      navigate(
-        templateId
-          ? { name: "templateChat", templateId, threadId }
-          : { name: "generate", threadId },
-      );
+      if (!templateId) requestComposerFocus();
+      navigate({ name: "generate", threadId });
     },
     [navigate],
   );

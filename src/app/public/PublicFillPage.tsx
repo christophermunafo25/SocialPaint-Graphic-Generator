@@ -13,6 +13,7 @@ import {
 } from "@/lib/publicLink/client";
 import { clearDraft, hasDraftableFields, loadDraft, saveDraft } from "@/lib/publicLink/draft";
 import { TemplateFill } from "../components/TemplateFill";
+import { Skeleton } from "../components/primitives";
 import { PublicFrame } from "./PublicFrame";
 import { PublicLinkUnavailable } from "./PublicLinkUnavailable";
 
@@ -27,12 +28,26 @@ export function PublicFillPage({ token }: { token: string }) {
   if (state.status === "loading") {
     return (
       <PublicFrame>
-        <p
-          className="text-center py-24"
-          style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}
+        {/* The form's shape (decision 13): the stage and the panel's bones. */}
+        <div
+          className="sp-fill"
+          data-place="public"
+          aria-busy="true"
+          aria-label="Opening your template"
         >
-          Opening your template…
-        </p>
+          <div className="sp-fill__preview">
+            <div className="sp-fill__stage" />
+          </div>
+          <div className="sp-details">
+            <Skeleton width={80} height={13} />
+            <div className="sp-details__fields">
+              {[0, 1, 2, 3].map((i) => (
+                <Skeleton key={i} width="100%" height={36} radius="sm" />
+              ))}
+            </div>
+            <Skeleton width="100%" height={44} radius="sm" />
+          </div>
+        </div>
       </PublicFrame>
     );
   }
@@ -122,8 +137,8 @@ function ResumeNote({ resumable, resumed }: { resumable: boolean; resumed: boole
   if (!resumable) return null;
   return (
     <div className="sp-fill__resume">
-      <Info size={14} className="ui-icon" aria-hidden />
-      <p className="tu-caption-m">
+      <Info size={16} className="ui-icon" aria-hidden />
+      <p className="t-caption-m">
         {resumed
           ? "We brought back what you'd typed. It's saved on this device only: a photo needs adding again, and another browser or phone will start fresh."
           : "What you type is saved on this device, so you can close the tab and come back. A photo isn't saved, and another browser or phone will start fresh."}

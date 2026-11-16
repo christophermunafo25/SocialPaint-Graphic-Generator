@@ -118,10 +118,11 @@ function starterCell(text: string): string {
 export function starterCsv(schema: Pick<TemplateSchema, "fields" | "variants">): string {
   const fields = fillableFields(schema);
   const cells = fields.map((f) => [starterCell(f.label), starterCell(f.placeholder ?? "")]);
-  // A template with several looks gets a "Look" column, pre-filled with the
-  // default's name, so the person sees where the choice goes.
+  // A template with several variations (looks in the schema) gets a
+  // "Variation" column, pre-filled with the default's name, so the person
+  // sees where the choice goes.
   if (hasVariants(schema)) {
-    cells.push(["Look", starterCell(defaultVariant(schema)?.name ?? "")]);
+    cells.push(["Variation", starterCell(defaultVariant(schema)?.name ?? "")]);
   }
   const header = cells.map((c) => c[0]).join(",");
   const row = cells.map((c) => c[1]).join(",");
