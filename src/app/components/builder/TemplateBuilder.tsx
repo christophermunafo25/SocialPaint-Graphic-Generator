@@ -125,8 +125,14 @@ import {
 } from "./fieldOps";
 import { composeFigmaBackground } from "@/lib/figma/composeLayers";
 import { assembleElementFields, mergeOverlayFields } from "@/lib/figma/overlayFields";
-import { FIELD_KEY_RE, stackImported } from "@/lib/figma/importLanding";
-import { createFaceMeasurer, importSummary, prepareImport } from "@/lib/figma/importPrepare";
+import { FIELD_KEY_RE, inFormOrder, landOnTop, stackImported } from "@/lib/figma/importLanding";
+import {
+  asSentence,
+  createFaceMeasurer,
+  importSummary,
+  prepareImport,
+  templateNameFromFrame,
+} from "@/lib/figma/importPrepare";
 import { isFigmaNodeUrl } from "@/lib/figma/figmaUrl";
 import {
   fieldsFontUsage,
@@ -1633,23 +1639,28 @@ export function TemplateBuilder({
     setNotice("Importing that Figma layer…");
     try {
       const result = await stores.designImport.importElementsFromUrl(company.id, url);
-      const assembled = assembleElementFields(result, at, draft.fields, {
-        width: draft.canvasWidth,
-        height: draft.canvasHeight,
+      // The import can take a minute. The layer is placed and keyed against
+      // the draft as it is now, and lands on whatever the draft holds by
+      // then, so an edit made while it was in flight is kept.
+      const current = draftRef.current;
+      const assembled = assembleElementFields(result, at, current.fields, {
+        width: current.canvasWidth,
+        height: current.canvasHeight,
       });
       // Labels and member flags arrive with the elements; the browser adds
       // the measured limits before they land, so the paste is one change.
       const { fields, issues, missingFonts } = await prepareImported(
         assembled,
         result.intent,
-        { canvasWidth: draft.canvasWidth, canvasHeight: draft.canvasHeight },
-        "The pasted layer",
+        { canvasWidth: current.canvasWidth, canvasHeight: current.canvasHeight },
+        result.frameName ?? "Pasted layer",
+        current.fields,
       );
-      setFields([...draft.fields, ...fields]);
+      setDraft((d) => ({ ...d, fields: [...d.fields, ...landOnTop(fields, d.fields)] }));
       setSelectedIds(fields.map((f) => f.id));
       setNotice(
         importSummary(fields, "pasted") +
-          unfilledNote(result.intent) +
+          unfilledNote(result.intent, fields) +
           (missingFonts.length
             ? ` Fonts not available here: ${missingFonts.join(", ")}. Upload them in Brand Studio.`
             : ""),
@@ -2144,14 +2155,6 @@ export function TemplateBuilder({
   // Figma import
   // -------------------------------------------------------------------------
 
-  /** Shared landing for every import path: merge the incoming fields into the
-   * draft with unique keys and stacked z-indexes, enter the wizard, announce
-   * what happened, and lift the imported elements off the background.
-   *
-   * There is no pre-selection step: deciding what should be member-editable
-   * before seeing the frame is a decision made with the least information
-   * available. The proposal — human or model — lands as real fields and the
-   * admin corrects in context. */
   const faces = useMemo(() => createFaceMeasurer(), []);
 
   /** The browser's share of an import, once its fonts are in: cap-trimmed
@@ -2163,6 +2166,8 @@ export function TemplateBuilder({
     intent: ImportIntentReport | undefined,
     canvas: { canvasWidth: number; canvasHeight: number },
     layer: string,
+    /** Fields already on the canvas, for a pasted layer. */
+    context: TemplateField[] = [],
   ): Promise<{ fields: TemplateField[]; issues: ImportIssue[]; missingFonts: string[] }> => {
     try {
       const missingFonts = await verifyMissingFamilies(
@@ -2182,6 +2187,7 @@ export function TemplateBuilder({
         ...canvas,
         layer,
         missingFonts,
+        context,
       });
       return { ...prepared, missingFonts };
     } catch (e) {
@@ -2190,9 +2196,13 @@ export function TemplateBuilder({
     }
   };
 
-  /** Said in the notice when an import landed without the model pass. */
-  const unfilledNote = (intent: ImportIntentReport | undefined): string =>
-    intent?.filledBy === "keys" ? " Labels come from the layer names." : "";
+  /** Said in the notice when an import landed without the model pass and
+   * had something to label. */
+  const unfilledNote = (intent: ImportIntentReport | undefined, landed: TemplateField[]): string =>
+    intent?.filledBy === "keys" &&
+    landed.some((f) => f.type === "text" || f.type === "multiline" || f.type === "image")
+      ? " Labels come from the layer names."
+      : "";
 
   /** The template's details from an import, filled without overwriting
    * what the admin already wrote, with caption tags re-pointed at any field
@@ -2211,17 +2221,28 @@ export function TemplateBuilder({
         caption = caption.split(`{${f.fieldKey}}`).join(`{${finalKey}}`);
       }
     }
-    const untitled = !draft.name.trim() || draft.name === "Untitled template";
+    // What the admin has written by the time the import lands, which can be
+    // a minute after it started.
+    const current = draftRef.current;
+    const untitled = !current.name.trim() || current.name === "Untitled template";
     return {
-      name: untitled && template.name?.trim() ? template.name : draft.name,
-      description: draft.description.trim() ? draft.description : (template.description ?? ""),
-      category: draft.category.trim() ? draft.category : (template.category ?? ""),
-      tags: draft.tags.length ? draft.tags : (template.tags ?? []),
-      captionTemplate: draft.captionTemplate.trim() ? draft.captionTemplate : caption,
+      name: untitled && template.name?.trim() ? template.name : current.name,
+      description: current.description.trim() ? current.description : (template.description ?? ""),
+      category: current.category.trim() ? current.category : (template.category ?? ""),
+      tags: current.tags.length ? current.tags : (template.tags ?? []),
+      captionTemplate: current.captionTemplate.trim() ? current.captionTemplate : caption,
       ...(meta ? { autobuildMeta: meta } : {}),
     };
   };
 
+  /** Shared landing for every import path: merge the incoming fields into the
+   * draft with unique keys and stacked z-indexes, enter the wizard, announce
+   * what happened, and lift the imported elements off the background.
+   *
+   * There is no pre-selection step: deciding what should be member-editable
+   * before seeing the frame is a decision made with the least information
+   * available. The proposal — human or model — lands as real fields and the
+   * admin corrects in context. */
   const landImport = (opts: {
     backgroundUrl: string;
     canvasWidth: number;
@@ -2242,10 +2263,16 @@ export function TemplateBuilder({
     patch?(imported: TemplateField[]): Partial<NewTemplateInput>;
     summary(imported: TemplateField[]): string;
   }): TemplateField[] => {
-    // Computed OUTSIDE the setDraft updater: updaters run at render time (and
-    // twice under StrictMode), so pushing into `imported` there would leave it
-    // empty for the recomposition below and duplicate every field in dev.
-    const imported = stackImported(opts.fields, draft.fields, opts.fieldKeyFor, opts.formOrder);
+    // Keyed against the draft as it is now: an import can take a minute, and
+    // the admin may have changed it meanwhile. Computed OUTSIDE the setDraft
+    // updater: updaters run at render time (and twice under StrictMode), so
+    // pushing into `imported` there would leave it empty for the
+    // recomposition below and duplicate every field in dev.
+    const current = draftRef.current;
+    // Paint order, which the recompose relies on to put overlay layers back.
+    const imported = stackImported(opts.fields, current.fields, opts.fieldKeyFor);
+    // The form's order is only the draft's array.
+    const inForm = inFormOrder(imported, opts.formOrder);
     const patch = opts.patch?.(imported) ?? {};
     setDraft((d) => ({
       ...d,
@@ -2257,7 +2284,7 @@ export function TemplateBuilder({
       // canvas carries none of its own until the recomposed plate lands
       // (recomposeBackground); a re-import clears the last frame's.
       canvasEffects: undefined,
-      fields: [...d.fields, ...imported],
+      fields: [...d.fields, ...inForm],
     }));
     // A successful import IS a chosen source, even if the background render
     // came back empty — without this the wizard stays on the source screen
@@ -2270,10 +2297,10 @@ export function TemplateBuilder({
     // An import sizes the canvas from the frame, not from the picker — said
     // out loud rather than silently replacing the admin's choice.
     const sizeNote =
-      opts.canvasWidth !== draft.canvasWidth || opts.canvasHeight !== draft.canvasHeight
+      opts.canvasWidth !== current.canvasWidth || opts.canvasHeight !== current.canvasHeight
         ? ` Canvas set to the frame's own size, ${opts.canvasWidth}×${opts.canvasHeight}.`
         : "";
-    setNotice(opts.summary(imported) + sizeNote);
+    setNotice(opts.summary(inForm) + sizeNote);
     window.clearTimeout(noticeTimer.current);
     noticeTimer.current = window.setTimeout(() => setNotice(null), 8000);
 
@@ -2292,7 +2319,7 @@ export function TemplateBuilder({
       );
       if (missingFonts.length) {
         setNotice(
-          opts.summary(imported) +
+          opts.summary(inForm) +
             sizeNote +
             ` Fonts not available here: ${missingFonts.join(", ")}. That text shows its Figma render until you upload them in Brand Studio.`,
         );
@@ -2347,7 +2374,7 @@ export function TemplateBuilder({
           : suggestFieldKey(f.label, existing),
       patch: (imported) =>
         templatePatch(
-          result.template ?? { name: result.frameName ?? "" },
+          result.template ?? { name: templateNameFromFrame(result.frameName ?? "") },
           prepared.fields,
           imported,
           result.meta ? { ...result.meta, rationale: result.rationale } : undefined,
@@ -2355,7 +2382,7 @@ export function TemplateBuilder({
       summary: (imported) =>
         imported.length === 0
           ? "Nothing was detected, but the background imported. Draw fields on the canvas."
-          : importSummary(imported, "imported") + unfilledNote(result.intent),
+          : importSummary(imported, "imported") + unfilledNote(result.intent, imported),
     });
     // The import report: the dialog closes on success, so anything that
     // degraded must surface here or the admin never learns what to fix.
@@ -2398,12 +2425,12 @@ export function TemplateBuilder({
           ...result.meta,
           rationale: result.rationale,
         }),
-      summary: (imported) => {
-        const editable = imported.filter((f) => !f.static).length;
-        return `${imported.length} element${imported.length !== 1 ? "s" : ""} imported. Claude made ${editable} editable and marked ${imported.length - editable} fixed. Change anything in the inspector.`;
-      },
+      summary: (imported) => importSummary(imported, "imported"),
     });
-    if (result.warnings.length) setError(result.warnings.join(" "));
+    // The function's warnings are sentences already; the browser's own
+    // issues (colours the kit will repaint) join them.
+    const notes = [...result.warnings, ...prepared.issues.map((i) => asSentence(i.issue))];
+    if (notes.length) setError(notes.join(" "));
   };
 
   /** Lift the imported elements OFF the background: re-render the frame

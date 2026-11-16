@@ -15,6 +15,16 @@ import { applyFrameIntent, type CapTrim, type FieldIntent } from "./frameIntent.
 import { logError } from "./http.ts";
 import type { ParseReport } from "./recipe.ts";
 
+/** The parse report of a frame whose keys couldn't be read. */
+const UNREAD: ParseReport = {
+  layers: 0,
+  keyed: 0,
+  kinds: {},
+  unknownKinds: [],
+  unknownKeys: [],
+  invalid: [],
+};
+
 export interface FrameImport {
   fields: SuggestedField[];
   /** Template mode: the frame's own effects (its grain, an inner glow),
@@ -56,8 +66,27 @@ export function importFrame(
       severity: "degraded",
     });
   }
-  // The keys in the layer names, applied to the fields they describe.
-  const { intents, parse, capTrim } = applyFrameIntent(root, fields, warnings);
+  // The keys in the layer names, applied to the fields they describe. Keys
+  // that can't be read leave the frame importing as if it had none: the
+  // fields go back to what the walk made.
+  let intents: FieldIntent[] = [];
+  let parse: ParseReport = { ...UNREAD };
+  let capTrim: CapTrim[] = [];
+  const unkeyed = structuredClone(fields);
+  const said = warnings.length;
+  try {
+    ({ intents, parse, capTrim } = applyFrameIntent(root, fields, warnings));
+  } catch (e) {
+    logError("importFrame", e);
+    fields.splice(0, fields.length, ...unkeyed);
+    warnings.length = said;
+    warnings.push({
+      layer: root.name,
+      nodeId: root.id,
+      issue: "the keys in this frame's layer names couldn't be read, so it imported without them.",
+      severity: "degraded",
+    });
+  }
   if (mode === "template" && !fields.length) {
     warnings.push({
       layer: root.name,

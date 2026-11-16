@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { importFrame } from "./importFrame.ts";
 import {
   MAX_ASKED,
@@ -13,6 +13,7 @@ import {
   intentTool,
   intentUserText,
   readIntentAnswer,
+  runIntentPass,
   styleMismatch,
   tokensOf,
   type KitTypeStyle,
@@ -509,6 +510,15 @@ describe("type styles", () => {
     expect(out.issues).toEqual([]);
   });
 
+  it("leaves a style that would change the limit unbound", () => {
+    // The headline declares max=32, and a bound style's limit replaces the
+    // field's when the form is filled in.
+    const field = setup().field("33:18");
+    const hex = new Map([["ink", "#0C3654"]]);
+    expect(styleMismatch({ ...exact, maxLength: 60 }, field, hex)).toBe("limit");
+    expect(styleMismatch({ ...exact, maxLength: 32 }, field, hex)).toBeNull();
+  });
+
   it("names the first property that differs", () => {
     const field = setup().field("33:18");
     const hex = new Map([["ink", "#0C3654"]]);
@@ -606,5 +616,192 @@ describe("the report", () => {
     // No form order was given: the copy from the top down, then the
     // pictures. Paint order (the photo first) is not how a form reads.
     expect(report.formOrder).toEqual([id("Headline"), id("Call to action"), id("Photo")]);
+  });
+});
+
+describe("the kit's logo, drawn as vectors", () => {
+  /** The frame with its logo landed as an icon, as a vector logo would. */
+  const iconLogo = () => {
+    const frame = importFrame(portraitWithPlate());
+    const logo = frame.fields.find((f) => f.sourceNodeId === "33:19")!;
+    logo.type = "icon";
+    delete logo.staticValue;
+    logo.colorHex = "#0C3654";
+    (logo as { vector?: unknown }).vector = { paths: [] };
+    return { frame, logo };
+  };
+
+  it("becomes a picture of the kit's logo", () => {
+    const { frame, logo } = iconLogo();
+    const issues: ImportWarning[] = [];
+    applyKitLogos(frame.fields, frame.intents, { light: "brand-assets/co/logo/light.svg" }, issues);
+    expect(logo).toMatchObject({
+      type: "image",
+      staticValue: "brand-assets/co/logo/light.svg",
+      objectFit: "contain",
+      static: true,
+    });
+    expect(logo.vector).toBeUndefined();
+    expect(logo.colorHex).toBeUndefined();
+    expect(issues.map((i) => i.issue)).toEqual(["swapped for your light primary logo."]);
+  });
+
+  it("stays as drawn when the kit has none, and says so", () => {
+    const { frame, logo } = iconLogo();
+    const issues: ImportWarning[] = [];
+    applyKitLogos(frame.fields, frame.intents, {}, issues);
+    expect(logo.type).toBe("icon");
+    expect(issues.map((i) => i.issue)).toEqual([
+      "Brand Studio has no light primary logo, so the Figma artwork stays.",
+    ]);
+  });
+});
+
+describe("the model pass", () => {
+  const answerFor = (s: ReturnType<typeof setup>, extra: object = {}) => ({
+    input: {
+      fields: [
+        {
+          sourceId: s.elementOf("Headline"),
+          label: "Question",
+          fieldKey: "question",
+          type: "multiline",
+          static: false,
+          ...extra,
+        },
+      ],
+      template: TEMPLATE,
+      rationale: [],
+    },
+    usage: { input_tokens: 1000, cache_read_input_tokens: 500, output_tokens: 200 },
+    stopReason: "tool_use",
+  });
+
+  const run = (
+    s: ReturnType<typeof setup>,
+    deps: {
+      call: (image: string | null, text: string) => Promise<ReturnType<typeof answerFor>>;
+      brand?: () => Promise<typeof BRAND>;
+      picture?: () => Promise<string | null>;
+    },
+  ) => {
+    let t = 0;
+    return runIntentPass({
+      mode: "template",
+      frameName: "P15",
+      width: 1080,
+      height: 1350,
+      fields: s.fields,
+      intents: s.intents,
+      ask: s.ask,
+      deps: {
+        brand: deps.brand ?? (async () => BRAND),
+        picture: deps.picture ?? (async () => "aGVsbG8="),
+        call: deps.call,
+      },
+      // Each reading of the clock is half a second later.
+      now: () => (t += 500),
+    });
+  };
+
+  it("applies a checked answer and reports what it cost", async () => {
+    const s = setup();
+    const out = await run(s, { call: async () => answerFor(s) });
+    expect(out.failed).toBeUndefined();
+    expect(out.outcome?.template?.name).toBe("Doctor topic");
+    expect(s.field("33:18").label).toBe("Question");
+    expect(out.cost).toEqual({ calls: 1, inputTokens: 1500, outputTokens: 200, modelMs: 500 });
+  });
+
+  it("leaves the fields as the keys put them when the call fails, and counts the call", async () => {
+    const s = setup();
+    const before = structuredClone(s.fields);
+    const out = await run(s, {
+      call: async () => {
+        throw new Error("model request failed (529)");
+      },
+    });
+    expect(out.outcome).toBeUndefined();
+    expect(out.failed).toBe("model request failed (529)");
+    expect(s.fields).toEqual(before);
+    expect(out.cost).toEqual({ calls: 1, inputTokens: 0, outputTokens: 0, modelMs: 500 });
+  });
+
+  it("reads nothing from an answer cut off at the token limit", async () => {
+    const s = setup();
+    const before = structuredClone(s.fields);
+    const out = await run(s, {
+      call: async () => ({ ...answerFor(s), stopReason: "max_tokens", input: undefined }),
+    } as never);
+    expect(out.outcome).toBeUndefined();
+    expect(out.failed).toBe("no usable proposal (max_tokens)");
+    expect(s.fields).toEqual(before);
+    expect(out.cost).toMatchObject({ calls: 1, inputTokens: 1500, outputTokens: 200 });
+  });
+
+  it("leaves nothing of an answer behind when it fails part way", async () => {
+    const s = setup();
+    const before = structuredClone(s.fields);
+    // A kit style stored without a usable family: checking it throws after
+    // the headline has already taken the model's label.
+    const broken = {
+      ...BRAND,
+      typeStyles: [{ key: "bad", name: "Bad", font: { family: 7 } } as unknown as KitTypeStyle],
+    };
+    const out = await run(s, {
+      brand: async () => broken,
+      call: async () => answerFor(s, { typeStyleKey: "bad" }),
+    });
+    expect(out.outcome).toBeUndefined();
+    expect(out.failed).toBeDefined();
+    expect(s.fields).toEqual(before);
+  });
+
+  it("makes no call when the kit can't be read", async () => {
+    const s = setup();
+    const call = vi.fn();
+    const out = await run(s, {
+      call,
+      brand: async () => {
+        throw new Error("the database is down");
+      },
+    });
+    expect(call).not.toHaveBeenCalled();
+    expect(out).toEqual({
+      cost: NO_MODEL_COST,
+      failed: "the kit couldn't be read: the database is down",
+    });
+  });
+
+  it("asks with the list alone when the picture can't be fetched", async () => {
+    const s = setup();
+    const call = vi.fn(async (_image: string | null, _text: string) => answerFor(s));
+    await run(s, {
+      call,
+      picture: async () => {
+        throw new Error("404");
+      },
+    });
+    expect(call).toHaveBeenCalledTimes(1);
+    expect(call.mock.calls[0][0]).toBeNull();
+    expect(call.mock.calls[0][1]).toContain('"sourceId":"e1"');
+  });
+
+  it("asks nothing when there is nothing to fill in", async () => {
+    const s = setup();
+    const call = vi.fn();
+    const out = await runIntentPass({
+      mode: "template",
+      frameName: "Shapes",
+      width: 100,
+      height: 100,
+      fields: [],
+      intents: [],
+      ask: { elements: [], fieldIdByElement: new Map(), skipped: 0 },
+      deps: { brand: async () => BRAND, picture: async () => null, call },
+    });
+    expect(call).not.toHaveBeenCalled();
+    expect(out).toEqual({ cost: NO_MODEL_COST });
+    expect(s.fields).toHaveLength(5);
   });
 });

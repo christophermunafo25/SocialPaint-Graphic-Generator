@@ -121,6 +121,8 @@ describe("roleLabel", () => {
     expect(roleLabel("divider-tag")).toBe("Divider tag");
     expect(roleLabel("tag-a")).toBe("Tag a");
     expect(roleLabel("cta")).toBe("Call to action");
+    // A known role keeps its label behind a build suffix.
+    expect(roleLabel("cta-text")).toBe("Call to action");
     expect(roleLabel("logo")).toBe("Logo");
   });
 });

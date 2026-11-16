@@ -3,11 +3,13 @@ import type { ImportIntentReport as ServerIntentReport } from "../../../supabase
 import type { BrandKit, ImportIntentReport, TemplateField } from "../types";
 import type { LineMeasurer } from "../render/autoFit";
 import {
+  asSentence,
   correctCapTrim,
   importSummary,
   measureLimits,
   offPaletteIssue,
   prepareImport,
+  templateNameFromFrame,
   type FaceMeasurer,
 } from "./importPrepare";
 
@@ -73,6 +75,13 @@ describe("correctCapTrim", () => {
     expect(correctCapTrim(fields, [{ fieldId: "t1", capHeight: 73 }], null, even)[0]).toBe(
       fields[0],
     );
+  });
+
+  it("leaves text in a face this workspace can't draw", () => {
+    const fields = [text()];
+    expect(
+      correctCapTrim(fields, [{ fieldId: "t1", capHeight: 58.6 }], null, serif, ["Newsreader"])[0],
+    ).toBe(fields[0]);
   });
 
   it("does nothing without the real face, or for a field that isn't listed", () => {
@@ -169,13 +178,103 @@ describe("measureLimits", () => {
       width: 900,
       height: 250,
     });
-    // 500px to the logo less 40 of padding, 10px a glyph: 46 fit, 41 kept.
+    // To the logo, less a gap as wide as its padding, is 480px; less 40 of
+    // padding, 10px a glyph: 44 fit, 39 kept.
     const out = run(pill, [], [logo, plate]);
-    expect(out.fields[0].maxLength).toBe(41);
+    expect(out.fields[0].maxLength).toBe(39);
     // Alone, it runs to the margin it keeps from the left: 800 - 40 = 760.
     expect(run(pill, [], [plate]).fields[0].maxLength).toBe(68);
     // A keyed max under that still wins.
     expect(run(pill, [{ fieldId: "p1", max: 24 }], [logo]).fields[0].maxLength).toBe(24);
+  });
+});
+
+describe("measureLimits, more", () => {
+  const limitOf = (field: TemplateField, lines?: number) =>
+    measureLimits([field], {
+      limits: lines ? [{ fieldId: field.id, lines }] : [],
+      kit: null,
+      measure,
+      ...CANVAS,
+    }).fields[0].maxLength!;
+
+  it("measures a field with no floor of its own at three quarters of its size", () => {
+    const none = limitOf(text({ minFontScale: undefined }), 2);
+    expect(none).toBe(limitOf(text({ minFontScale: 0.75 }), 2));
+    // Measured where it may really shrink to, the limit would be far higher.
+    expect(none).toBeLessThan(limitOf(text({ minFontScale: 0.25 }), 2));
+    // The field itself still shrinks as far as it did.
+    const out = measureLimits([text({ minFontScale: undefined })], {
+      limits: [],
+      kit: null,
+      measure,
+      ...CANVAS,
+    });
+    expect(out.fields[0].minFontScale).toBeUndefined();
+  });
+
+  const pill = (over: Partial<TemplateField> = {}) =>
+    text({
+      id: "p1",
+      type: "text",
+      label: "Call to action",
+      x: 100,
+      y: 800,
+      width: 200,
+      height: 60,
+      fontSizePx: 20,
+      plateColor: "#FFFFFF",
+      platePaddingX: 20,
+      align: "left",
+      ...over,
+    });
+
+  it("grows a centred pill both ways, to the margin the content keeps", () => {
+    const centred = pill({ x: 450, width: 100, align: "center" });
+    // Alone there is nothing to go by: it keeps its own width, 60px of copy.
+    expect(limitOf(centred)).toBe(5);
+    // A headline keeps 100px from the edges: the pill may run 100 to 900,
+    // which is 760px of copy.
+    const headline = text({ id: "h1", x: 100, y: 200, width: 800, height: 300 });
+    const out = measureLimits([centred, headline], { limits: [], kit: null, measure, ...CANVAS });
+    expect(out.fields[0].maxLength).toBe(68);
+  });
+
+  it("sees what is already on the canvas when a layer is pasted", () => {
+    const logo = text({ id: "l1", type: "image", x: 600, y: 800, width: 100, height: 60 });
+    const out = measureLimits([pill()], {
+      limits: [],
+      kit: null,
+      measure,
+      ...CANVAS,
+      context: [logo],
+    });
+    expect(out.fields[0].maxLength).toBe(39);
+  });
+});
+
+describe("templateNameFromFrame", () => {
+  it("leaves out a library frame's code and the layout it describes", () => {
+    expect(templateNameFromFrame("P15 · Doctor topic · Portrait with plate")).toBe("Doctor topic");
+    expect(templateNameFromFrame("P01 · Announcement · Circle photo / v2")).toBe("Announcement");
+  });
+
+  it("keeps any other name as it is", () => {
+    expect(templateNameFromFrame("Feature Highlight Post / Light / Green")).toBe(
+      "Feature Highlight Post / Light / Green",
+    );
+    expect(templateNameFromFrame("Hero · Light")).toBe("Hero · Light");
+    expect(templateNameFromFrame(" sp-auth-panel ")).toBe("sp-auth-panel");
+    expect(templateNameFromFrame("")).toBe("");
+  });
+});
+
+describe("asSentence", () => {
+  it("starts an issue with a capital", () => {
+    expect(asSentence("these colors aren't in your palette.")).toBe(
+      "These colors aren't in your palette.",
+    );
+    expect(asSentence("")).toBe("");
   });
 });
 

@@ -69,6 +69,31 @@ describe("gradientAngle", () => {
 describe("overlayUnitsToFields", () => {
   const imported = mkImported(7);
 
+  it("puts an overlay above the right field when the fields come in form order", () => {
+    // The builder keeps its draft in form order (members first), while the
+    // decomposer counts lifted layers in paint order.
+    const form = [imported[4], imported[0], imported[6], ...imported.slice(1, 4), imported[5]];
+    const units: FigmaLayerUnit[] = [
+      {
+        kind: "node",
+        name: "Fade",
+        x: 0,
+        y: 0,
+        width: 10,
+        height: 10,
+        url: "https://storage/fade.png",
+        afterExcluded: 5,
+      },
+    ];
+    const fields = mergeOverlayFields(units, form, form);
+    const zOf = (id: string) => fields.find((f) => f.id === id)!.zIndex!;
+    const fade = fields.find((f) => f.label === "Fade")!;
+    expect(fade.zIndex!).toBe(zOf("f5") + 1);
+    expect(fade.zIndex!).toBe(zOf("f6") - 1);
+    // The form's order survives the merge.
+    expect(fields.slice(0, 7).map((f) => f.id)).toEqual(form.map((f) => f.id));
+  });
+
   it("turns a node render above the 5th field into a static image between fields 5 and 6", () => {
     const units: FigmaLayerUnit[] = [
       { kind: "solid", x: 0, y: 0, width: 10, height: 10, color: "rgba(0,0,0,1)" }, // background

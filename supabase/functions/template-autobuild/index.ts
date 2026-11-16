@@ -31,20 +31,17 @@ import {
 import { warningStrings, type ExtractionResult } from "../_shared/extract.ts";
 import { importResponse, runFigmaImport } from "../_shared/figmaImportRun.ts";
 import {
-  NO_MODEL_COST,
   applyIntentProposal,
   intentAsk,
   intentReport,
   intentRequest,
-  intentUserText,
   readIntentAnswer,
+  runIntentPass,
   skippedIssue,
-  tokensOf,
   unfilledIssue,
   type IntentAnswer,
-  type IntentOutcome,
+  type IntentBrand,
   type KitTypeStyle,
-  type ModelCost,
 } from "../_shared/importIntent.ts";
 import {
   AutobuildValidationError,
@@ -444,6 +441,36 @@ async function callIntentModel(
   return answer;
 }
 
+/** The kit as the model pass reads it: the palette and type styles, and
+ * for a template the catalog's names and categories. */
+async function loadIntentBrand(
+  db: ReturnType<typeof serviceClient>,
+  companyId: string,
+  mode: "template" | "elements",
+): Promise<IntentBrand> {
+  const { data: kitRow } = await db
+    .from("brand_kits")
+    .select("colors, type_styles")
+    .eq("company_id", companyId)
+    .eq("is_active", true)
+    .maybeSingle();
+  const colors = ((kitRow?.colors ?? []) as Array<{ key: string; name: string; hex: string }>).map(
+    ({ key, name, hex }) => ({ key, name, hex }),
+  );
+  const typeStyles = (kitRow?.type_styles ?? []) as KitTypeStyle[];
+  if (mode !== "template") return { colors, typeStyles, catalog: [] };
+  const { data: templateRows } = await db
+    .from("templates")
+    .select("name, category")
+    .eq("company_id", companyId)
+    .limit(40);
+  return {
+    colors,
+    typeStyles,
+    catalog: (templateRows ?? []) as Array<{ name: string; category: string }>,
+  };
+}
+
 // ---------------------------------------------------------------------------
 
 /** Validate the polymorphic `source` before anything runs. The image kind's
@@ -514,74 +541,30 @@ Deno.serve(async (req) => {
     if (source.kind === "figma") {
       const run = await runFigmaImport({ db, companyId, url: source.url, mode, modelImage: true });
       const ask = intentAsk(run.fields, run.intents);
-      const cost: ModelCost = { ...NO_MODEL_COST };
-      let outcome: IntentOutcome | undefined;
-      if (ask.elements.length) {
-        try {
-          const { data: kitRow } = await db
-            .from("brand_kits")
-            .select("colors, type_styles")
-            .eq("company_id", companyId)
-            .eq("is_active", true)
-            .maybeSingle();
-          const brand = {
-            colors: (
-              (kitRow?.colors ?? []) as Array<{ key: string; name: string; hex: string }>
-            ).map(({ key, name, hex }) => ({ key, name, hex })),
-            typeStyles: (kitRow?.type_styles ?? []) as KitTypeStyle[],
-            catalog: [] as Array<{ name: string; category: string }>,
-          };
-          if (mode === "template") {
-            const { data: templateRows } = await db
-              .from("templates")
-              .select("name, category")
-              .eq("company_id", companyId)
-              .limit(40);
-            brand.catalog = (templateRows ?? []) as Array<{ name: string; category: string }>;
-          }
-          // Without a picture the model still has the list, the copy and
-          // the layer names.
-          const imageBase64 = run.modelImageUrl
-            ? await fetchPngBase64(db, run.modelImageUrl).catch(() => null)
-            : null;
-          const userText = intentUserText({
-            mode,
-            frameName: run.frameName,
-            canvasWidth: run.width,
-            canvasHeight: run.height,
-            elements: ask.elements,
-            brand,
-            hint,
-          });
-          const started = Date.now();
-          try {
-            const answer = await callIntentModel(apiKey, imageBase64, userText, mode, (usage) =>
+      // The import never depends on the model: when the pass decides
+      // nothing, the fields stand exactly as the keys put them.
+      const pass = await runIntentPass({
+        mode,
+        frameName: run.frameName,
+        width: run.width,
+        height: run.height,
+        fields: run.fields,
+        intents: run.intents,
+        ask,
+        hint,
+        deps: {
+          brand: () => loadIntentBrand(db, companyId, mode),
+          picture: () =>
+            run.modelImageUrl ? fetchPngBase64(db, run.modelImageUrl) : Promise.resolve(null),
+          call: (imageBase64, userText) =>
+            callIntentModel(apiKey, imageBase64, userText, mode, (usage) =>
               record("autobuild", usage),
-            );
-            cost.calls = 1;
-            Object.assign(cost, tokensOf(answer.usage));
-            if (answer.input === undefined) {
-              throw new Error(
-                `the model returned no usable proposal (${answer.stopReason ?? "no tool call"})`,
-              );
-            }
-            outcome = applyIntentProposal(answer.input, {
-              mode,
-              fields: run.fields,
-              intents: run.intents,
-              ask,
-              brand,
-            });
-          } finally {
-            cost.modelMs = Date.now() - started;
-          }
-          run.details.push(...outcome.issues);
-        } catch (e) {
-          // The import never depends on the model: it lands on its keys.
-          logError("template-autobuild", e);
-          outcome = undefined;
-        }
-      }
+            ),
+        },
+      });
+      if (pass.failed) logError("template-autobuild", `model pass: ${pass.failed}`);
+      const outcome = pass.outcome;
+      if (outcome) run.details.push(...outcome.issues);
       // A frame with no text or image has no form to fill in, so there is
       // nothing to say about it.
       if (!outcome && ask.elements.length) run.details.push(unfilledIssue(run.frameName, mode));
@@ -594,7 +577,7 @@ Deno.serve(async (req) => {
         capTrim: run.capTrim,
         filledBy: outcome ? "model" : "keys",
         formOrder: outcome?.formOrder,
-        cost,
+        cost: pass.cost,
       });
       return json(
         importResponse(run, warningStrings, {

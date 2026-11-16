@@ -1256,6 +1256,8 @@ export interface ElementImportResult {
   warnings: string[];
   warningDetails?: ImportIssue[];
   sourceUrl?: string;
+  /** The pasted layer's name. */
+  frameName?: string;
   intent?: ImportIntentReport;
 }
 

@@ -119,7 +119,7 @@ export async function runFigmaImport(opts: {
   if (!parsed) {
     throw new HttpError(
       400,
-      "url must be a figma.com frame link — copy a frame link (with node-id) from Figma.",
+      "That isn't a link to a Figma frame. Copy the link to a frame in Figma and try again.",
     );
   }
   const token = await getFigmaToken(db, companyId);
@@ -132,7 +132,7 @@ export async function runFigmaImport(opts: {
   if ("error" in fetched) throw new HttpError(fetched.status, fetched.error);
   const root = fetched.root;
   if (!root.absoluteBoundingBox) {
-    throw new HttpError(400, "That node has no renderable bounds — pick a layer or frame.");
+    throw new HttpError(400, "That layer has nothing to draw. Pick a frame or a visible layer.");
   }
   const frame = root.absoluteBoundingBox;
   const stamp = Date.now();
@@ -221,7 +221,7 @@ export async function runFigmaImport(opts: {
           details.push({
             layer: u.name ?? "layer",
             nodeId: "",
-            issue: "this border can't be reproduced as an element — it was left out.",
+            issue: "this border can't be drawn as an element, so it was left out.",
             severity: "degraded",
           });
           continue;
@@ -231,7 +231,7 @@ export async function runFigmaImport(opts: {
         details.push({
           layer: u.name ?? "layer",
           nodeId: "",
-          issue: "this layer's mask/clip is dropped when pasted as an element.",
+          issue: "this layer's mask or clip is left out when it's pasted as an element.",
           severity: "degraded",
         });
         delete u.clip;
@@ -243,7 +243,7 @@ export async function runFigmaImport(opts: {
     if (nodeUnits.length > MAX_UNITS) {
       throw new HttpError(
         400,
-        `That layer decomposes into ${nodeUnits.length} pieces — more than the ${MAX_UNITS} this import supports. Simplify or flatten part of it in Figma.`,
+        `That layer breaks into ${nodeUnits.length} pieces, more than the ${MAX_UNITS} an import can take. Flatten part of it in Figma and try again.`,
       );
     }
     const unitRenders = await renderNodes(
@@ -257,7 +257,7 @@ export async function runFigmaImport(opts: {
         details.push({
           layer: u.name ?? "layer",
           nodeId: u.nodeId!,
-          issue: "this piece could not be rendered — skipped.",
+          issue: "this piece couldn't be rendered, so it was left out.",
           severity: "degraded",
         });
       }

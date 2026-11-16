@@ -175,9 +175,10 @@ const BUILD_SUFFIX = /-(fill|shape|group|text|image)$/;
 /** A role as a field label, in sentence case: "headline" reads "Headline",
  * "photo-fill" reads "Photo", "divider-tag" reads "Divider tag". */
 export function roleLabel(role: string): string {
-  const known = ROLE_LABELS[role];
+  const bare = role.replace(BUILD_SUFFIX, "") || role;
+  const known = ROLE_LABELS[role] ?? ROLE_LABELS[bare];
   if (known) return known;
-  const words = (role.replace(BUILD_SUFFIX, "") || role).replace(/-/g, " ").trim();
+  const words = bare.replace(/-/g, " ").trim();
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 

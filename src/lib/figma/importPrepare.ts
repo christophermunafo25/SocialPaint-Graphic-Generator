@@ -80,12 +80,16 @@ export function correctCapTrim(
   capTrim: ImportIntentReport["capTrim"],
   kit: BrandKit | null,
   faces: FaceMeasurer,
+  missingFonts: string[] = [],
 ): TemplateField[] {
   const byId = new Map(capTrim.map((c) => [c.fieldId, c]));
+  const missing = new Set(missingFonts);
   return fields.map((field) => {
     const entry = byId.get(field.id);
     if (!entry || !isText(field)) return field;
     const style = resolveFieldStyle(field, kit);
+    // A face this workspace can't draw would be measured as its fallback.
+    if (style.fontFamily && missing.has(style.fontFamily)) return field;
     const metrics = faces(style);
     if (!metrics) return field;
     const size = style.fontSizePx ?? DEFAULT_FONT_SIZE;
@@ -112,13 +116,16 @@ function longSample(field: TemplateField): string {
 }
 
 /** How wide a single-line pill's copy may run. The pill hugs its text and
- * grows from the edge it holds, so its room is the way to the next element
- * on that side, or to the margin it already keeps from the canvas edge. */
-function pillRoom(field: TemplateField, fields: TemplateField[], canvasWidth: number): number {
+ * grows from the edge it holds, up to the next element on that side, less
+ * a gap as wide as its own side padding so the two never touch. With
+ * nothing there, a pill held at one edge keeps the margin it already keeps
+ * on that side, and a centred pill grows both ways to the margin the
+ * frame's other text and images keep from the canvas edge. */
+function pillRoom(field: TemplateField, others: TemplateField[], canvasWidth: number): number {
   const left = field.x;
   const right = field.x + field.width;
-  const pad = 2 * (field.platePaddingX ?? 0);
-  const beside = fields.filter(
+  const padX = field.platePaddingX ?? 0;
+  const beside = others.filter(
     (o) =>
       o.id !== field.id &&
       o.anchor !== "center" &&
@@ -127,28 +134,49 @@ function pillRoom(field: TemplateField, fields: TemplateField[], canvasWidth: nu
       // Whatever it sits on is behind it, not beside it.
       !(o.x <= left && o.x + o.width >= right),
   );
-  const nextRight = Math.min(
-    canvasWidth - Math.max(0, left),
-    ...beside.filter((o) => o.x >= right).map((o) => o.x),
-  );
-  const nextLeft = Math.max(
-    Math.max(0, canvasWidth - right),
-    ...beside.filter((o) => o.x + o.width <= left).map((o) => o.x + o.width),
-  );
+  const toRight = beside.filter((o) => o.x >= right).map((o) => o.x - padX);
+  const toLeft = beside.filter((o) => o.x + o.width <= left).map((o) => o.x + o.width + padX);
   const align = field.align ?? "left";
-  const span =
-    align === "left"
-      ? nextRight - left
-      : align === "right"
-        ? right - nextLeft
-        : 2 * Math.min(nextRight - (left + right) / 2, (left + right) / 2 - nextLeft);
-  return Math.max(field.width, span) - pad;
+  let span: number;
+  if (align === "left") {
+    span = Math.min(canvasWidth - Math.max(0, left), ...toRight) - left;
+  } else if (align === "right") {
+    span = right - Math.max(Math.max(0, canvasWidth - right), ...toLeft);
+  } else {
+    // The margin the frame's content keeps: the narrowest one any other text
+    // or image keeps, short of running to the edge. Shapes are left out, as
+    // a plate or a background reaches past the content it holds.
+    const content = others
+      .filter(
+        (o) =>
+          o.id !== field.id &&
+          o.anchor !== "center" &&
+          o.type !== "shape" &&
+          o.x > 0.5 &&
+          o.x + o.width < canvasWidth - 0.5,
+      )
+      .map((o) => Math.min(o.x, canvasWidth - (o.x + o.width)));
+    const margin = Math.min(Math.max(0, Math.min(left, canvasWidth - right)), ...content);
+    const centre = (left + right) / 2;
+    const rightEdge = Math.min(canvasWidth - margin, ...toRight);
+    const leftEdge = Math.max(margin, ...toLeft);
+    span = 2 * Math.min(rightEdge - centre, centre - leftEdge);
+  }
+  return Math.max(field.width, span) - 2 * padX;
 }
+
+/** The floor a character limit is measured at when a field has no floor of
+ * its own. Such a field shrinks to the 18px default (CJ, 2026-10-04), which
+ * fits a member's longer copy, but a limit measured there would let a
+ * headline's copy run to a few hundred characters. Three quarters of the
+ * set size keeps the copy near the size the design gave it. */
+export const LIMIT_FLOOR_SCALE = 0.75;
 
 /** Give every member text field its measured character limit.
  *
  * The limit is the most of the designer's own copy that fits the box at the
- * field's shrink floor, inside `lines` when the layer names them. A keyed
+ * field's shrink floor (LIMIT_FLOOR_SCALE when it has none), inside `lines`
+ * when the layer names them. A keyed
  * `max` that is lower wins; one that can't fit is lowered, and the import
  * says so. A field in a face this workspace can't draw keeps what its keys
  * gave it, since a fallback's glyphs measure nothing. */
@@ -162,8 +190,11 @@ export function measureLimits(
     canvasHeight: number;
     /** Families that can't be drawn here. */
     missingFonts?: string[];
+    /** Fields already on the canvas, which a pasted pill can't grow into. */
+    context?: TemplateField[];
   },
 ): { fields: TemplateField[]; issues: ImportIssue[] } {
+  const neighbours = [...fields, ...(opts.context ?? [])];
   const declaredById = new Map(opts.limits.map((l) => [l.fieldId, l]));
   const missing = new Set(opts.missingFonts ?? []);
   const issues: ImportIssue[] = [];
@@ -174,21 +205,24 @@ export function measureLimits(
     if (style.fontFamily && missing.has(style.fontFamily)) return field;
 
     let probe: TemplateField;
-    let probeStyle = style;
+    let probeStyle =
+      style.minFontScale === undefined && style.minFontSizePx === undefined
+        ? { ...style, minFontScale: LIMIT_FLOOR_SCALE }
+        : style;
     if (field.plateColor) {
       // A multiline plate hugs its height, so only its keys bound it.
       if (field.type === "multiline") return field;
       probe = {
         ...field,
         plateColor: undefined,
-        width: pillRoom(field, fields, opts.canvasWidth),
+        width: pillRoom(field, neighbours, opts.canvasWidth),
       };
       // A pill never shrinks: it grows with its copy at the designed size.
-      probeStyle = { ...style, textSizing: "free" };
+      probeStyle = { ...probeStyle, textSizing: "free" };
     } else if (declared?.lines !== undefined && field.type === "multiline") {
       const base = style.fontSizePx ?? DEFAULT_FONT_SIZE;
       const shrinks = style.textSizing === "shrink" || style.textSizing === "fill";
-      const size = shrinks ? minFontSizeFor(style, base) : base;
+      const size = shrinks ? minFontSizeFor(probeStyle, base) : base;
       const lineBox = size * (style.lineHeight ?? DEFAULT_LINE_HEIGHT);
       probe = { ...field, height: Math.min(field.height, declared.lines * lineBox + 0.5) };
     } else {
@@ -270,9 +304,17 @@ export function prepareImport(
     /** The frame's name, for an issue about the import as a whole. */
     layer: string;
     missingFonts?: string[];
+    /** Fields already on the canvas, for a pasted layer. */
+    context?: TemplateField[];
   },
 ): { fields: TemplateField[]; issues: ImportIssue[] } {
-  const placed = correctCapTrim(fields, opts.intent?.capTrim ?? [], opts.kit, opts.faces);
+  const placed = correctCapTrim(
+    fields,
+    opts.intent?.capTrim ?? [],
+    opts.kit,
+    opts.faces,
+    opts.missingFonts,
+  );
   const measured = measureLimits(placed, {
     limits: opts.intent?.limits ?? [],
     kit: opts.kit,
@@ -280,6 +322,7 @@ export function prepareImport(
     canvasWidth: opts.canvasWidth,
     canvasHeight: opts.canvasHeight,
     missingFonts: opts.missingFonts,
+    context: opts.context,
   });
   const palette = offPaletteIssue(measured.fields, opts.kit, opts.layer);
   return {
@@ -309,3 +352,20 @@ export function importSummary(imported: TemplateField[], how: "imported" | "past
   if (!members.length) return `${landed}, all fixed.`;
   return `${landed}. Members fill in ${members.length}: ${nameList(members.map((f) => f.label))}.`;
 }
+
+/** A template's name from its frame's, when no model named it. A library
+ * frame is often named "P15 · Doctor topic · Portrait with plate": its code
+ * and the layout it describes are left out. */
+export function templateNameFromFrame(frameName: string): string {
+  const parts = frameName
+    .split("·")
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (parts.length >= 2 && /^[A-Za-z]{0,3}\d{1,4}[a-z]?$/.test(parts[0])) return parts[1];
+  return frameName.trim();
+}
+
+/** An issue as a sentence of its own, for a message with no layer to put
+ * it under. */
+export const asSentence = (issue: string): string =>
+  issue ? issue.charAt(0).toUpperCase() + issue.slice(1) : issue;

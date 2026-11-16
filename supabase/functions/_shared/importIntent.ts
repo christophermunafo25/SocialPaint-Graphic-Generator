@@ -283,6 +283,7 @@ export interface KitTypeStyle {
   colorKey?: string;
   fontSizePx?: number;
   textSizing?: string;
+  maxLength?: number;
 }
 
 export interface IntentBrand {
@@ -402,6 +403,9 @@ export function styleMismatch(
   if (style.textSizing !== undefined && style.textSizing !== (field.textSizing ?? "free")) {
     return "sizing";
   }
+  // A style's limit replaces the field's when the form is filled in, so a
+  // style that sets one fits only a layer that declares that very limit.
+  if (style.maxLength !== undefined && style.maxLength !== field.maxLength) return "limit";
   return null;
 }
 
@@ -650,8 +654,9 @@ export function skippedIssue(frameName: string, skipped: number): ImportWarning 
 
 /** A keyed logo takes the brand's own (I5): `variant=primary` with a
  * `surface` swaps the Figma artwork for the kit's primary logo for that
- * surface, contained so a different aspect never crops it. Without one in
- * the kit the Figma artwork stays, and the import says so. */
+ * surface, contained so a different aspect never crops it. A logo the walk
+ * rebuilt as an icon becomes a picture of the kit's. Without one in the kit
+ * the Figma artwork stays, and the import says so. */
 export function applyKitLogos(
   fields: SuggestedField[],
   intents: FieldIntent[],
@@ -662,7 +667,7 @@ export function applyKitLogos(
   for (const intent of intents) {
     const d = intent.declared;
     const field = fieldById.get(intent.fieldId);
-    if (!field || field.type !== "image") continue;
+    if (!field || (field.type !== "image" && field.type !== "icon")) continue;
     if (d.kind !== "logo" || d.variant !== "primary" || !d.surface) continue;
     const source = kitLogos[d.surface];
     if (!source) {
@@ -673,6 +678,12 @@ export function applyKitLogos(
         severity: "info",
       });
       continue;
+    }
+    if (field.type === "icon") {
+      field.type = "image";
+      delete field.vector;
+      delete field.colorHex;
+      delete field.textGradient;
     }
     field.staticValue = source;
     field.objectFit = "contain";
@@ -685,5 +696,100 @@ export function applyKitLogos(
       issue: `swapped for your ${d.surface} primary logo.`,
       severity: "info",
     });
+  }
+}
+
+/** What the model pass needs from outside: the kit, the picture and the
+ * call itself. Injected, so the pass is tested without a network. */
+export interface IntentPassDeps {
+  /** The kit's palette and type styles, and the catalog for a template. */
+  brand(): Promise<IntentBrand>;
+  /** The frame's picture as base64 PNG, or null to ask with the list alone. */
+  picture(): Promise<string | null>;
+  /** One model call. Resolves with whatever came back, metered; throws when
+   * nothing did. */
+  call(imageBase64: string | null, userText: string): Promise<IntentAnswer>;
+}
+
+export interface IntentPass {
+  /** Undefined when the pass decided nothing. */
+  outcome?: IntentOutcome;
+  cost: ModelCost;
+  /** Why it decided nothing, for the log. */
+  failed?: string;
+}
+
+const reason = (e: unknown): string => (e instanceof Error ? e.message : String(e));
+
+/** The model pass over an import: ask, check, apply. The import never
+ * depends on it. When the kit can't be read, the call fails or is cut off,
+ * or the answer can't be applied, the fields are left exactly as the keys
+ * put them and `outcome` is undefined. A call that was sent counts, whether
+ * or not it answered. */
+export async function runIntentPass(opts: {
+  mode: "template" | "elements";
+  frameName: string;
+  width: number;
+  height: number;
+  fields: SuggestedField[];
+  intents: FieldIntent[];
+  ask: IntentAsk;
+  hint?: string;
+  deps: IntentPassDeps;
+  now?: () => number;
+}): Promise<IntentPass> {
+  const now = opts.now ?? Date.now;
+  const cost: ModelCost = { ...NO_MODEL_COST };
+  if (!opts.ask.elements.length) return { cost };
+
+  let brand: IntentBrand;
+  try {
+    brand = await opts.deps.brand();
+  } catch (e) {
+    return { cost, failed: `the kit couldn't be read: ${reason(e)}` };
+  }
+  // Without a picture the model still has the list, the copy and the layer
+  // names.
+  const imageBase64 = await opts.deps.picture().catch(() => null);
+  const userText = intentUserText({
+    mode: opts.mode,
+    frameName: opts.frameName,
+    canvasWidth: opts.width,
+    canvasHeight: opts.height,
+    elements: opts.ask.elements,
+    brand,
+    hint: opts.hint,
+  });
+
+  const started = now();
+  cost.calls = 1;
+  let answer: IntentAnswer;
+  try {
+    answer = await opts.deps.call(imageBase64, userText);
+  } catch (e) {
+    cost.modelMs = now() - started;
+    return { cost, failed: reason(e) };
+  }
+  cost.modelMs = now() - started;
+  Object.assign(cost, tokensOf(answer.usage));
+  if (answer.input === undefined) {
+    return { cost, failed: `no usable proposal (${answer.stopReason ?? "no tool call"})` };
+  }
+
+  // Applied to a copy, so an answer that fails part way leaves nothing of
+  // itself behind.
+  const working = structuredClone(opts.fields);
+  try {
+    const outcome = applyIntentProposal(answer.input, {
+      mode: opts.mode,
+      fields: working,
+      intents: opts.intents,
+      ask: opts.ask,
+      brand,
+    });
+    opts.fields.splice(0, opts.fields.length, ...working);
+    return { cost, outcome };
+  } catch (e) {
+    return { cost, failed: reason(e) };
   }
 }

@@ -8,7 +8,7 @@
 import type { FigmaLayerUnit, TemplateField, TemplateSchema } from "@/lib/types";
 import { suggestFieldKey } from "@/lib/caption";
 import { composeFigmaBackground } from "@/lib/figma/composeLayers";
-import { stackImported } from "@/lib/figma/importLanding";
+import { inFormOrder, stackImported } from "@/lib/figma/importLanding";
 import { createFaceMeasurer, prepareImport } from "@/lib/figma/importPrepare";
 import { createCanvasMeasurer } from "@/lib/render/autoFit";
 import { fieldsFontUsage, fontUsageLoaded, loadGoogleFonts } from "@/lib/render/fonts";
@@ -79,8 +79,6 @@ export async function replayImport(spec: ImportReplaySpec): Promise<TemplateSche
   };
   await landImageAssets(fields, sources, async (url) => url, warnings);
 
-  // The builder lands the fields, then figma-layers decomposes the pruned
-  // tree it sent without them.
   // The builder's share: once the faces are in, cap-trimmed text is
   // re-placed from their metrics and the limits are measured. No model
   // answers offline, so the fields stand on their keys.
@@ -90,15 +88,16 @@ export async function replayImport(spec: ImportReplaySpec): Promise<TemplateSche
   const usage = fieldsFontUsage(fields as TemplateField[]);
   loadGoogleFonts(usage);
   await fontUsageLoaded(usage);
+  const report = intentReport({
+    fields,
+    intents,
+    parse,
+    capTrim,
+    filledBy: "keys",
+    cost: NO_MODEL_COST,
+  });
   const prepared = prepareImport(fields as TemplateField[], {
-    intent: intentReport({
-      fields,
-      intents,
-      parse,
-      capTrim,
-      filledBy: "keys",
-      cost: NO_MODEL_COST,
-    }),
+    intent: report,
     kit: null,
     measure: createCanvasMeasurer(),
     faces: createFaceMeasurer(),
@@ -107,6 +106,9 @@ export async function replayImport(spec: ImportReplaySpec): Promise<TemplateSche
     layer: root.name,
   });
 
+  // The builder lands the fields in paint order, then figma-layers
+  // decomposes the pruned tree it sent without them. Only the draft's array
+  // takes the form's order.
   const imported = stackImported(prepared.fields, [], (f, existing) =>
     suggestFieldKey(f.label, existing),
   );
@@ -152,6 +154,6 @@ export async function replayImport(spec: ImportReplaySpec): Promise<TemplateSche
     captionTemplate: "",
     createdAt: STAMP,
     updatedAt: STAMP,
-    fields: mergeOverlayFields(layerUnits, lifted, imported),
+    fields: mergeOverlayFields(layerUnits, lifted, inFormOrder(imported, report.formOrder)),
   };
 }
