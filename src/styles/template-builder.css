@@ -409,3 +409,234 @@
   height: auto;
   aspect-ratio: 1;
 }
+
+/* ── The editor (322:36): the top bar, then the workspace 12 under it, in
+   Main beside the collapsed rail ("bare" in layout/Page.tsx). ── */
+.sp-builder {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  height: 100%;
+  min-height: 0;
+}
+/* The top bar (322:157), 44 tall: the trail, the status Badge and the save
+   state, 12 apart; then Edit or Preview and Publish at the end. */
+.sp-builder__bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-12);
+  height: 44px; /* as drawn */
+  min-width: 0;
+  padding-left: 6px; /* as drawn */
+}
+.sp-builder__crumbs {
+  min-width: 0;
+}
+.sp-builder__crumbs li:last-child {
+  min-width: 0;
+}
+.sp-builder__spacer {
+  flex: 1;
+  min-width: var(--space-8);
+}
+.sp-builder__save {
+  flex: none;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.sp-builder__save[data-failed] {
+  color: var(--feedback-error-text);
+}
+.sp-builder__alert {
+  flex: none;
+}
+/* The last crumb names the template and renames it: a click turns it into a
+   Small field in the trail. */
+.sp-crumb-rename {
+  display: flex;
+  min-width: 0;
+  margin: 0;
+}
+.sp-crumb-rename__name {
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-block: 0.3em;
+  margin-block: -0.3em;
+  border-radius: var(--radius-xs);
+  cursor: text;
+}
+.sp-crumb-rename__input {
+  width: 280px;
+}
+.sp-builder__toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--space-32) + var(--dev-banner-h, 0px));
+  z-index: var(--z-sticky);
+  transform: translateX(-50%);
+  max-width: min(560px, calc(100vw - var(--space-32)));
+}
+
+/* The workspace (322:185): the rail, the stage and the inspector, 12 apart,
+   each a card. In Preview the rail goes and the Details panel, 380, takes
+   the right (326:924). */
+.sp-builder__workspace {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 260px minmax(0, 1fr) 320px; /* as drawn */
+  gap: var(--space-12);
+  min-height: 0;
+}
+.sp-builder__workspace[data-mode="preview"] {
+  grid-template-columns: minmax(0, 1fr) 380px; /* as drawn */
+}
+.sp-builder__rail {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-1-raised);
+}
+.sp-builder__rail-tabs {
+  display: flex;
+  flex: none;
+  margin: var(--space-16) var(--space-16) 0;
+}
+.sp-builder__rail-tabs > * {
+  flex: 1 1 0;
+  min-width: 0;
+}
+/* A switch that spans its panel's width (the background's All variations
+   or This variation). */
+.sp-builder__span-switch {
+  display: flex;
+}
+.sp-builder__span-switch > * {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.sp-builder__rail-head {
+  flex: none;
+  padding: var(--space-16) var(--space-16) 0;
+}
+.sp-builder__rail-head > h2 {
+  margin: 0;
+}
+.sp-builder__rail-body {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: var(--space-16);
+}
+/* The stage (322:379): surface/sunken at radius/xl, the artboard in the
+   middle and its controls floating over it. */
+.sp-builder__canvas {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  background: var(--surface-sunken);
+}
+
+/* Publish template (326:1233): the graphic on a sunken well, then the
+   details, 24 apart. */
+.ui-modal.sp-publish-dialog {
+  width: 880px; /* as drawn */
+}
+.sp-publish {
+  display: flex;
+  gap: var(--space-24);
+  min-height: 0;
+}
+.sp-publish__preview {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  box-sizing: border-box;
+  width: 302px; /* as drawn */
+  aspect-ratio: 302 / 370; /* as drawn */
+  padding: var(--space-16);
+  border-radius: var(--radius-lg);
+  background: var(--surface-sunken);
+  container-type: size;
+}
+.sp-publish__art {
+  position: relative;
+  flex-shrink: 0;
+  aspect-ratio: var(--fit-ratio);
+  width: min(100cqw, 100cqh * var(--fit-ratio));
+  overflow: hidden;
+  border-radius: var(--radius-xs);
+}
+.sp-publish__form {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+.sp-publish__pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-12);
+}
+/* A field whose limit runs past its box: a warning row with Show. */
+.sp-publish__warning {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  padding: var(--space-8) var(--space-12) var(--space-8) var(--space-16);
+  border-radius: var(--radius-sm);
+  background: var(--feedback-warning-surface);
+  color: var(--feedback-warning-text);
+}
+.sp-publish__warning > .t-body-s {
+  flex: 1;
+  min-width: 0;
+}
+.sp-publish__show {
+  flex: none;
+  padding: var(--space-4);
+  border-radius: var(--radius-xs);
+  color: inherit;
+}
+.sp-publish__show:hover {
+  text-decoration: underline;
+}
+/* The caption and a chip for each field, 12 under it. */
+.sp-caption-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+.sp-caption-editor__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+/* Template published (326:1742). */
+.ui-modal.sp-published-dialog {
+  width: 440px; /* as drawn */
+}
+@media (max-width: 1099px) {
+  .sp-publish {
+    flex-direction: column;
+  }
+  .sp-publish__preview {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+  }
+}

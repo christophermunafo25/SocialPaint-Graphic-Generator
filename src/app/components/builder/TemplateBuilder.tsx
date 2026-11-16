@@ -1,24 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowLeft,
-  ArrowRight,
-  Check,
-  CheckCircle2,
   ChevronDown,
   Circle,
   Image as ImageIcon,
   Minus,
   MousePointer2,
-  Eye,
   Sparkles,
   Figma,
-  PanelLeftClose,
-  PanelRightClose,
-  Pencil,
   RefreshCw,
   Redo2,
-  Save,
-  Send,
   Square,
   Type,
   Undo2,
@@ -50,10 +40,9 @@ import { newId } from "@/lib/stores/local/db";
 import { retagCaption, suggestFieldKey } from "@/lib/caption";
 import { useFileDrop } from "@/lib/useFileDrop";
 import { useUnsavedChangesWarning } from "@/lib/useUnsavedChangesWarning";
-import { useRouter } from "../../router";
+import { routeToUrl, useRouter } from "../../router";
 import { ColorControl } from "../ColorControl";
 import { useChrome, useFullViewport } from "../layout/ChromeContext";
-import { InlineEdit } from "../InlineEdit";
 import { SchemaRenderer, schemaBackgroundCss } from "../SchemaRenderer";
 import { GradientEditor } from "./GradientEditor";
 import { EffectsEditor } from "./EffectsEditor";
@@ -75,7 +64,6 @@ import {
   retagVariants,
 } from "@/lib/templates/variants";
 import { variantContrastWarnings } from "@/lib/templates/variantContrast";
-import { CaptionEditor } from "./CaptionEditor";
 import { FigmaImportDialog } from "./FigmaImportDialog";
 import { AutoBuildDialog } from "./AutoBuildDialog";
 import { ElementPalette } from "./ElementPalette";
@@ -84,15 +72,6 @@ import { LayersPanel } from "./LayersPanel";
 import { FieldContextMenu, type MenuAction } from "./FieldContextMenu";
 import { inspectorGestureActive } from "./InspectorControls";
 import { canvasGestureActive } from "./canvasGesture";
-import { WIZARD_STEPS, WizardStepBar, type WizardStep } from "./WizardStepper";
-import {
-  BuilderRail,
-  BuilderSlideOver,
-  RailHeader,
-  RailTabs,
-  useRailCollapsed,
-  useRailWidth,
-} from "./BuilderShell";
 import {
   LOGO_PALETTE_PREFIX,
   PALETTE_ITEMS,
@@ -158,14 +137,17 @@ import {
   ungroup,
 } from "./groupOps";
 import { ConfirmDialog } from "../ConfirmDialog";
-import { linkState } from "../admin/TemplateLinksDialog";
+import { linkState, TemplateLinksDialog } from "../admin/TemplateLinksDialog";
 import type { CanvasSize } from "@/lib/templates/platforms";
 import { rescaleTemplate, sameAspect, type RescaleWarning } from "@/lib/templates/rescale";
 import { reflowTemplate, versionName } from "@/lib/templates/reflow";
 import { CanvasSizePicker } from "./CanvasSizePicker";
 import { clearStart, peekStart, requestNewTemplate, type BuilderStart } from "./startHandoff";
 import { BUILDER_MIN_VIEWPORT_PX, useViewportAtLeast } from "./useViewportAtLeast";
-import { Skeleton } from "../primitives";
+import { Alert, Badge, Button, SegmentedControl, Skeleton, Toast } from "../primitives";
+import { CrumbRename } from "./CrumbRename";
+import { PublishDialog, PublishedDialog } from "./PublishDialog";
+import { limitOverflows } from "@/lib/templates/publishChecks";
 import { BackgroundReflowDialog } from "./BackgroundReflowDialog";
 import { ShortcutsPanel } from "./ShortcutsPanel";
 import { AlignControls } from "./AlignControls";
@@ -181,9 +163,6 @@ import {
 import { GroupInspector } from "./GroupInspector";
 import { roleFace } from "@/lib/brand/fontRoles";
 
-/** Rail bounds. The minimums are the narrowest width at which each rail's
- * own content still reads (the palette's two-across tiles; the inspector's
- * label + control row); the maximums stop a rail from eating the canvas. */
 /** The tool strip, in the order every design tool puts it. Each one is
  * backed by an element the palette already offers. */
 const TOOL_ORDER: Array<{
@@ -198,11 +177,6 @@ const TOOL_ORDER: Array<{
   { key: "line", label: "Line", Icon: Minus },
   { key: "image", label: "Image", Icon: ImageIcon },
 ];
-
-const RAIL_LEFT_MIN = 200;
-const RAIL_LEFT_MAX = 420;
-const RAIL_RIGHT_MIN = 260;
-const RAIL_RIGHT_MAX = 520;
 
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
 
@@ -345,8 +319,11 @@ export function TemplateBuilder({
   /** True once a creation path was chosen — "Start blank" needs no
    * background, so backgroundUrl alone can't gate the wizard anymore. */
   const [started, setStarted] = useState<boolean>(Boolean(templateId));
-  const [step, setStep] = useState<WizardStep>("fields");
-  const [visited, setVisited] = useState<Set<WizardStep>>(() => new Set(["fields"]));
+  /** Publish template, then Template published, then a public link
+   * (326:1233, 326:1742). The name, caption and details live in Publish. */
+  const [publishOpen, setPublishOpen] = useState(false);
+  const [publishedOpen, setPublishedOpen] = useState(false);
+  const [linksOpen, setLinksOpen] = useState(false);
   const [mode, setMode] = useState<"edit" | "preview">("edit");
   /** The variation frame the admin is working in. View state, never in the
    * schema and never in history: undo restores colours, not which frame is
@@ -379,18 +356,6 @@ export function TemplateBuilder({
   const toggleLocked = useCallback((id: string) => setLockedIds((prev) => toggleIn(prev, id)), []);
   const toggleHidden = useCallback((id: string) => setHiddenIds((prev) => toggleIn(prev, id)), []);
   // Chrome the admin owns, remembered per browser and never in the schema.
-  const [leftWidth, setLeftWidth] = useRailWidth("rail-left", 260, RAIL_LEFT_MIN, RAIL_LEFT_MAX);
-  const [rightWidth, setRightWidth] = useRailWidth(
-    "rail-right",
-    300,
-    RAIL_RIGHT_MIN,
-    RAIL_RIGHT_MAX,
-  );
-  const [leftCollapsed, setLeftCollapsed] = useRailCollapsed("rail-left-collapsed");
-  const [rightCollapsed, setRightCollapsed] = useRailCollapsed("rail-right-collapsed");
-  /** The step panels carry forms, not property rows — they get their own
-   * comfortable width rather than inheriting the inspector's. */
-  const stepPanelWidth = Math.max(380, Math.min(520, rightWidth));
 
   /** The canvas owns its own zoom and pan; the top bar only reads the scale
    * and calls the commands. Keeping the view state in the editor is what
@@ -532,9 +497,6 @@ export function TemplateBuilder({
     const { id: _id, createdAt: _c, updatedAt: _u, ...rest } = templateState.data;
     resetHistory(rest); // loading installs a fresh baseline — no undo across it
     savedSnapshotRef.current = JSON.stringify(rest);
-    // Editing an existing template: every step is already completed.
-    setVisited(new Set<WizardStep>(["name", "fields", "caption", "details"]));
-    setStep("fields");
 
     // Create-a-version handoff: the loaded template is a fresh duplicate and
     // this session reflows it to the target size as an UNSAVED change over
@@ -577,43 +539,6 @@ export function TemplateBuilder({
   /** Publishing needs a REAL name, not the placeholder default. */
   const hasRealName = Boolean(draft.name.trim()) && draft.name.trim() !== "Untitled template";
   const fieldsComplete = draft.fields.length > 0;
-  /** Set when Publish was pressed while the name is still the default. */
-  const [nameNeeded, setNameNeeded] = useState(false);
-  useEffect(() => {
-    if (hasRealName) setNameNeeded(false);
-  }, [hasRealName]);
-
-  const complete = useMemo(() => {
-    const s = new Set<WizardStep>();
-    // A real name, not just any name: the default "Untitled template" would
-    // otherwise tick the final step green before it has been touched.
-    if (hasRealName) s.add("name");
-    if (fieldsComplete) s.add("fields");
-    if (visited.has("caption")) s.add("caption");
-    if (visited.has("details")) s.add("details");
-    return s;
-  }, [hasRealName, fieldsComplete, visited]);
-
-  const canGo = useCallback(
-    (target: WizardStep): boolean => {
-      if (!sourceChosen) return false;
-      if (target === "fields") return true;
-      // Everything after Fields — including Name, now last — needs at least
-      // one field on the canvas.
-      return fieldsComplete;
-    },
-    [sourceChosen, fieldsComplete],
-  );
-
-  const goTo = useCallback((target: WizardStep) => {
-    setStep(target);
-    setVisited((v) => new Set(v).add(target));
-    setMenu(null);
-  }, []);
-
-  const stepIndex = WIZARD_STEPS.findIndex((s) => s.key === step);
-  const nextStep = WIZARD_STEPS[stepIndex + 1]?.key;
-  const prevStep = WIZARD_STEPS[stepIndex - 1]?.key;
 
   // -------------------------------------------------------------------------
   // Field operations
@@ -1820,12 +1745,14 @@ export function TemplateBuilder({
     [draft.fields, setFields],
   );
 
-  // Keyboard shortcuts on the Fields step: ⌘/Ctrl C, X, V, D, Delete, Escape.
-  // Never fire while typing in an input.
+  // Keyboard shortcuts while editing: ⌘/Ctrl C, X, V, D, Delete, Escape.
+  // Never fire while typing in an input, or from inside a dialog (Publish,
+  // an import), whose keys are its own.
   useEffect(() => {
-    if (step !== "fields" || mode !== "edit") return;
+    if (mode !== "edit") return;
     const handler = (e: KeyboardEvent) => {
       if (isTypingTarget(e)) return; // native text undo stays native
+      if (e.target instanceof Element && e.target.closest("[role=dialog]")) return;
       // Mid-drag the canvas owns the pointer AND the keyboard: deleting or
       // undoing the element under an active gesture would strand it.
       // (Escape cancels the drag inside the gesture core and never lands here.)
@@ -1906,7 +1833,6 @@ export function TemplateBuilder({
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [
-    step,
     mode,
     selectedIds,
     copyFields,
@@ -2067,26 +1993,22 @@ export function TemplateBuilder({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draft, dirty, sourceChosen]);
 
-  /** Publish: processing indicator → success marker → back to Templates
-   * page (create new / edit existing). */
+  /** Publish from the Publish dialog, which has made sure of a real name:
+   * save as published, then Template published, with the confetti. */
   const publish = async () => {
-    if (!hasRealName) {
-      // Name at the end is fine — but published templates need a real one.
-      setNameNeeded(true);
-      goTo("name"); // the name input autofocuses on mount
-      return;
-    }
+    if (!hasRealName) return;
     setPublishState("publishing");
     const saved = await save("published");
     if (!saved) {
       setPublishState("idle"); // save() already surfaced the error
       return;
     }
-    setPublishState("success");
-    // Publishing sends work to the world — the one moment loud enough for
+    setPublishState("idle");
+    setPublishOpen(false);
+    setPublishedOpen(true);
+    // Publishing sends work to the world: the one moment loud enough for
     // confetti (brand primitives; motion from the BYQ gem, styling ours).
     celebrate(document.activeElement instanceof Element ? document.activeElement : null);
-    window.setTimeout(() => navigate({ name: "adminTemplates" }), 1400);
   };
 
   const previewSchema: TemplateSchema = useMemo(
@@ -2097,6 +2019,12 @@ export function TemplateBuilder({
       updatedAt: "",
     }),
     [draft, savedId],
+  );
+
+  /** Fields whose own limit runs past their box, for Publish (326:1233). */
+  const publishOverflows = useMemo(
+    () => (publishOpen ? limitOverflows(previewSchema, worstCaseValues, kit, measurer) : []),
+    [publishOpen, previewSchema, worstCaseValues, kit, measurer],
   );
 
   // -------------------------------------------------------------------------
@@ -2239,8 +2167,6 @@ export function TemplateBuilder({
     // with the imported fields invisible behind it.
     setStarted(true);
     setMode("edit");
-    // Fields is Step 1; Name comes last in the wizard.
-    goTo("fields");
 
     // An import sizes the canvas from the frame, not from the picker — said
     // out loud rather than silently replacing the admin's choice.
@@ -2399,7 +2325,6 @@ export function TemplateBuilder({
     if (handedStart.kind === "blank") {
       pickCreationSize(handedStart.size);
       setStarted(true);
-      goTo("fields");
       return;
     }
     const landing =
@@ -2849,74 +2774,44 @@ export function TemplateBuilder({
 
   return (
     <div className="sp-builder">
-      {publishState !== "idle" && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{
-            background: "color-mix(in srgb, var(--text-on-accent) 55%, transparent)",
-            backdropFilter: "blur(2px)",
+      {publishOpen && (
+        <PublishDialog
+          schema={previewSchema}
+          details={{
+            name: draft.name,
+            captionTemplate: draft.captionTemplate,
+            category: draft.category,
+            tags: draft.tags,
+            description: draft.description,
           }}
-          role="status"
-          aria-live="polite"
-        >
-          <div
-            className="w-full max-w-xs p-7 text-center space-y-3"
-            style={{ background: "var(--bg-surface)", borderRadius: "var(--radius-card)" }}
-          >
-            {publishState === "publishing" ? (
-              <>
-                <RefreshCw
-                  className="animate-spin mx-auto"
-                  style={{ width: 28, height: 28, color: "var(--state-primary)" }}
-                />
-                <p
-                  style={{
-                    fontFamily: "var(--font-head)",
-                    fontWeight: "var(--weight-head)",
-                    fontSize: "var(--type-cardtitle-size)",
-                    letterSpacing: "var(--track-head)",
-                    color: "var(--text-primary)",
-                  }}
-                >
-                  Publishing…
-                </p>
-                <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
-                  Saving "{draft.name.trim() || "Untitled template"}" and making it live for your
-                  team.
-                </p>
-              </>
-            ) : (
-              <>
-                <span
-                  className="mx-auto flex items-center justify-center"
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: "var(--radius-pill)",
-                    background: "var(--fill-action)",
-                  }}
-                >
-                  <Check style={{ width: 22, height: 22, color: "var(--text-on-action)" }} />
-                </span>
-                <p
-                  style={{
-                    fontFamily: "var(--font-head)",
-                    fontWeight: "var(--weight-head)",
-                    fontSize: "var(--type-cardtitle-size)",
-                    letterSpacing: "var(--track-head)",
-                    color: "var(--text-primary)",
-                  }}
-                >
-                  Template published
-                </p>
-                <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
-                  "{draft.name.trim() || "Untitled template"}" is live. Taking you back to
-                  Templates…
-                </p>
-              </>
-            )}
-          </div>
-        </div>
+          fields={draft.fields}
+          onDetails={(patch) =>
+            setDraft((d) => ({ ...d, ...patch }), `text:${Object.keys(patch)[0] ?? "details"}`)
+          }
+          overflows={publishOverflows}
+          onShowField={(fieldId) => {
+            setPublishOpen(false);
+            setMode("edit");
+            setSelectedIds([fieldId]);
+          }}
+          busy={publishState === "publishing"}
+          republish={draft.status === "published"}
+          onPublish={() => void publish()}
+          onClose={() => setPublishOpen(false)}
+        />
+      )}
+      {publishedOpen && (
+        <PublishedDialog
+          name={draft.name.trim()}
+          onPublicLink={() => {
+            setPublishedOpen(false);
+            setLinksOpen(true);
+          }}
+          onDone={() => setPublishedOpen(false)}
+        />
+      )}
+      {linksOpen && savedId && (
+        <TemplateLinksDialog template={previewSchema} onClose={() => setLinksOpen(false)} />
       )}
 
       {autoBuildOpen && (
@@ -3056,1213 +2951,894 @@ export function TemplateBuilder({
       />
 
       {notice && (
-        <div className="sp-toast" role="status" aria-live="polite">
-          <CheckCircle2
-            style={{
-              width: 16,
-              height: 16,
-              color: "var(--state-primary)",
-              flexShrink: 0,
-              marginTop: 1,
-            }}
-          />
-          <span
-            style={{
-              fontSize: "var(--type-label-size)",
-              fontWeight: 500,
-              color: "var(--text-primary)",
-            }}
-          >
-            {notice}
-          </span>
+        <div className="sp-builder__toast" aria-live="polite">
+          <Toast message={notice} />
         </div>
       )}
 
-      {/* ── Top bar ─────────────────────────────────────────────────────── */}
-      {/* The bar exists for the EDITOR — save state, steps, publish, a name
-          worth showing. Before a path is chosen there is nothing to save and
-          nothing named, so the start screen renders without it and carries
-          its own quiet way back instead of a near-empty 52px strip. */}
-      {sourceChosen && (
-        <div className="sp-builder__bar">
-          {/* This row must NEVER scroll or clip at any viewport ≥ 1024px, with
-            the app sidebar expanded or collapsed. That budget is already
-            spent: before adding a control here, move something out (the
-            tools, zoom, and canvas info live with the canvas for exactly
-            this reason). The name is the only child allowed to shrink. */}
-          <div
-            className="flex items-center gap-2 min-w-0 flex-nowrap"
-            style={{ height: 52, padding: "0 var(--space-xs)" }}
-          >
-            <button
-              onClick={() => navigate({ name: "adminTemplates" })}
-              className="flex items-center gap-1.5 flex-shrink-0"
-              style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              Templates
-            </button>
-            <span
-              aria-hidden
-              style={{ width: 1, height: 20, background: "var(--border)", flexShrink: 0 }}
-            />
-            <InlineEdit
-              className="min-w-0"
-              // The name is the only shrinkable item in a crowded bar; it
-              // already truncates, so the floor is just enough to stay
-              // clickable, and a cap stops a long name from pushing the
-              // step control off the end.
-              style={{ flex: "0 1 auto", minWidth: 72, maxWidth: 320 }}
-              value={draft.name}
-              ariaLabel="Rename this template"
-              inputAriaLabel="Template name"
-              placeholder="Untitled template"
-              valueStyle={{
-                fontFamily: "var(--font-ui)",
-                fontWeight: 500,
-                fontSize: "var(--type-label-size)",
-                color: "var(--text-primary)",
-              }}
-              onSave={(name) => setDraft((d) => ({ ...d, name }), "text:name")}
-            />
-            {sourceChosen && (
-              <>
-                {/* Save state, compressed to a dot and a word so its width is
-                  stable. The full sentence lives in the tooltip — and, for a
-                  failure, in the error region below the bar, which doSave
-                  always fills. The dot goes destructive on failure so the
-                  short word still reads as trouble at a glance. */}
-                <span
-                  role="status"
-                  className="flex items-center gap-1.5 flex-shrink-0 whitespace-nowrap"
-                  title={
-                    saveFailed
-                      ? "Not saved. See the message below the bar"
-                      : lastSavedAt && !dirty && !saving
-                        ? savedAgo(lastSavedAt, nowTick)
-                        : undefined
-                  }
-                  style={{
-                    width: 78,
-                    fontSize: "var(--type-caption-size)",
-                    color: saveFailed ? "var(--destructive)" : "var(--text-muted)",
-                    fontWeight: saveFailed ? 500 : undefined,
-                  }}
-                >
-                  {(saving || saveFailed || dirty || lastSavedAt) && (
-                    <span
-                      aria-hidden
-                      style={{
-                        width: 6,
-                        height: 6,
-                        borderRadius: "50%",
-                        background: "currentColor",
-                        flexShrink: 0,
-                      }}
-                    />
-                  )}
-                  {saving
-                    ? "Saving…"
-                    : saveFailed
-                      ? "Not saved"
-                      : dirty
-                        ? "Unsaved"
-                        : lastSavedAt
-                          ? "Saved"
-                          : null}
-                </span>
-                {/* Retry stands in for Save draft while a save has failed —
-                  same operation, and the loud red state stays a real button
-                  rather than moving into a menu. */}
-                {saveFailed && !saving ? (
-                  <button
-                    onClick={() => void doSave(undefined, true)}
-                    className="sp-btn sp-btn-ghost flex-shrink-0"
-                    style={{ minHeight: 30, padding: "4px 10px" }}
-                  >
-                    Retry
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => void save()}
-                    disabled={saving}
-                    className="sp-btn sp-btn-ghost flex-shrink-0"
-                    style={{ minHeight: 30, padding: "4px 10px" }}
-                  >
-                    <Save className="w-3.5 h-3.5" />
-                    Save draft
-                  </button>
-                )}
-              </>
-            )}
-
-            <span className="flex-1" style={{ minWidth: "var(--space-2xs)" }} />
-
-            {sourceChosen && (
-              <>
-                <div className="sp-tabstrip">
-                  {(["edit", "preview"] as const).map((m) => (
-                    <button
-                      key={m}
-                      onClick={() => setMode(m)}
-                      title={m === "edit" ? "Edit" : "Preview"}
-                      aria-label={m === "edit" ? "Edit" : "Preview"}
-                      aria-pressed={mode === m}
-                      className="sp-tabstrip__tab px-2.5 py-1.5"
-                    >
-                      {m === "edit" ? (
-                        <Pencil className="w-3.5 h-3.5" />
-                      ) : (
-                        <Eye className="w-3.5 h-3.5" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-                {fieldsComplete ? (
-                  <WizardStepBar current={step} complete={complete} canGo={canGo} onGo={goTo} />
-                ) : (
-                  /* Until a field exists nothing past the editor is reachable,
-                   so three dimmed panel buttons would only restate the
-                   dimmed Publish. Say what is missing instead. */
-                  <span
-                    className="flex-shrink-0 whitespace-nowrap"
-                    style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}
-                  >
-                    Add a field to continue
-                  </span>
-                )}
-                {step === "fields" && (
-                  /* The editor's one primary control: the answer to "what
-                   now". With the default name still in place, publish()
-                   opens the Name panel with the field focused and the
-                   name-needed note showing — the same guard the panel's own
-                   Publish runs. */
-                  <button
-                    onClick={() => void publish()}
-                    disabled={!fieldsComplete || saving || publishState !== "idle"}
-                    title={
-                      !fieldsComplete
-                        ? "Add a field to continue"
-                        : hasRealName
-                          ? draft.status === "published"
-                            ? "Publish these changes to your team"
-                            : "Publish this template to your team"
-                          : "Name the template, then publish"
-                    }
-                    className="sp-btn sp-btn-primary flex-shrink-0"
-                    style={{ minHeight: 32, padding: "6px 12px" }}
-                  >
-                    {hasRealName ? (
-                      <Send className="w-3.5 h-3.5" />
-                    ) : (
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    )}
-                    Publish
-                  </button>
-                )}
-              </>
-            )}
-          </div>
-
-          {error && (
-            <p
-              role="alert"
-              className="px-4 py-2"
-              style={{
-                fontSize: "var(--type-caption-size)",
-                background: "var(--danger-wash)",
-                color: "var(--destructive)",
-                borderTop: "1px solid var(--border)",
-              }}
-            >
-              {error}
-            </p>
-          )}
-        </div>
-      )}
-
-      {!sourceChosen ? (
-        /* A design handed over from the list is landing (its fonts load and
-           its limits are measured). */
-        <div className="sp-builder-opening" role="status" aria-busy="true">
-          <span className="sp-live">Opening your design</span>
-          <Skeleton shape="block" radius="md" />
-        </div>
-      ) : (
-        <>
-          {/* ── Left rail ─────────────────────────────────────────────── */}
-          <BuilderRail
-            side="left"
-            label="Elements and fields"
-            width={leftWidth}
-            onWidth={setLeftWidth}
-            minWidth={RAIL_LEFT_MIN}
-            maxWidth={RAIL_LEFT_MAX}
-            collapsed={leftCollapsed}
-            onCollapsed={setLeftCollapsed}
-          >
-            <RailHeader title="Elements">
-              <button
-                onClick={() => setLeftCollapsed(true)}
-                className="sp-icon-btn"
-                title="Hide this rail"
-                aria-label="Hide the elements rail"
+      {/* ── Top bar (322:157): the trail, the status and the save state, then
+          Edit or Preview and Publish. ───────────────────────────────────── */}
+      <header className="sp-builder__bar">
+        <nav aria-label="Breadcrumb" className="ui-breadcrumb sp-builder__crumbs">
+          <ol>
+            <li>
+              <a
+                href={routeToUrl({ name: "adminTemplates" })}
+                className="ui-reset ui-ring t-label-m ui-breadcrumb__link"
+                onClick={(e) => {
+                  if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+                  e.preventDefault();
+                  navigate({ name: "adminTemplates" });
+                }}
               >
-                <PanelLeftClose style={{ width: 15, height: 15 }} />
-              </button>
-            </RailHeader>
-            {/* Two orderings, two tabs. The titles spell out the difference
+                Template Builder
+              </a>
+            </li>
+            <li>
+              <span className="t-label-m ui-breadcrumb__divider" aria-hidden>
+                /
+              </span>
+              <CrumbRename
+                value={draft.name}
+                placeholder="Untitled template"
+                onSave={(name) => setDraft((d) => ({ ...d, name }), "text:name")}
+              />
+            </li>
+          </ol>
+        </nav>
+        {sourceChosen && (
+          <>
+            <Badge tone={draft.status === "published" ? "positive" : "neutral"}>
+              {draft.status === "published" ? "Published" : "Draft"}
+            </Badge>
+            <span
+              role="status"
+              className="t-caption-m sp-builder__save"
+              data-failed={saveFailed || undefined}
+              title={
+                lastSavedAt && !dirty && !saving && !saveFailed
+                  ? savedAgo(lastSavedAt, nowTick)
+                  : undefined
+              }
+            >
+              {saving
+                ? "Saving…"
+                : saveFailed
+                  ? "Not saved"
+                  : dirty
+                    ? "Unsaved changes"
+                    : lastSavedAt
+                      ? "Saved"
+                      : null}
+            </span>
+            {saveFailed && !saving && (
+              <Button kind="ghost" size="sm" onClick={() => void doSave(undefined, true)}>
+                Try again
+              </Button>
+            )}
+          </>
+        )}
+        <span className="sp-builder__spacer" />
+        {sourceChosen && (
+          <>
+            <SegmentedControl
+              aria-label="Mode"
+              options={[
+                { id: "edit", label: "Edit" },
+                { id: "preview", label: "Preview" },
+              ]}
+              selectedId={mode}
+              onSelect={(id) => setMode(id as "edit" | "preview")}
+            />
+            <Button
+              kind="primary"
+              onClick={() => setPublishOpen(true)}
+              disabled={!fieldsComplete || saving || publishState !== "idle"}
+            >
+              Publish
+            </Button>
+          </>
+        )}
+      </header>
+      {error && (
+        <Alert tone="error" title="Something went wrong" className="sp-builder__alert">
+          {error}
+        </Alert>
+      )}
+
+      <div className="sp-builder__workspace" data-mode={mode}>
+        {!sourceChosen ? (
+          /* A design handed over from the list is landing (its fonts load and
+           its limits are measured). */
+          <div className="sp-builder-opening" role="status" aria-busy="true">
+            <span className="sp-live">Opening your design</span>
+            <Skeleton shape="block" radius="md" />
+          </div>
+        ) : (
+          <>
+            {/* ── Left rail (322:186): a card, 260 wide ───────────────────── */}
+            {mode === "edit" && (
+              <section
+                className="sp-builder__rail sp-builder__rail--left"
+                aria-label="Elements and fields"
+              >
+                {/* Two orderings, two tabs. The titles spell out the difference
                 because it is the one thing about this rail that is not
                 self-evident, and getting it wrong quietly reorders either the
                 graphic or the member form. */}
-            <RailTabs
-              tabs={[
-                {
-                  key: "layers",
-                  label: "Layers",
-                  title: "Layers: what paints on top of what",
-                },
-                {
-                  key: "form",
-                  label: "Form",
-                  title: "Form: what your team fills in, in order",
-                },
-              ]}
-              active={railTab}
-              onSelect={(key) => setRailTab(key)}
-            />
-            <div
-              className="sp-builder__rail-body space-y-3"
-              style={{ padding: "var(--space-2xs)" }}
-            >
-              {/* The palette adds elements to the graphic, so it lives with
+                <SegmentedControl
+                  aria-label="List"
+                  options={[
+                    { id: "layers", label: "Layers", title: "What paints on top of what" },
+                    { id: "form", label: "Form", title: "What your team fills in, in order" },
+                  ]}
+                  selectedId={railTab}
+                  onSelect={(id) => setRailTab(id as "layers" | "form")}
+                  className="sp-builder__rail-tabs"
+                />
+                <div
+                  className="sp-builder__rail-body space-y-3"
+                  style={{ padding: "var(--space-2xs)" }}
+                >
+                  {/* The palette adds elements to the graphic, so it lives with
                   the Layers tab. Form is the member's view: what they fill
                   in, in order, and nothing to add. */}
-              {mode === "edit" && railTab === "layers" && (
-                <ElementPalette
-                  onAdd={(id) => addPaletteField(id)}
-                  onAddIcon={(name) => void addIconField(name)}
-                  logos={logoAssets}
-                  activeTool={tool}
-                />
-              )}
-              {railTab === "layers" ? (
-                <LayersPanel
-                  fields={draft.fields}
-                  groups={groups}
-                  selectedIds={selectedIds}
-                  onSelect={setSelectedIds}
-                  onPaintOrder={setPaintOrder}
-                  onRename={renameField}
-                  lockedIds={lockedIds}
-                  hiddenIds={hiddenIds}
-                  onToggleLocked={toggleLocked}
-                  onToggleHidden={toggleHidden}
-                  onContextMenu={(e, fieldId) => {
-                    e.preventDefault();
-                    if (!selectedIds.includes(fieldId)) setSelectedIds([fieldId]);
-                    setMenu({ x: e.clientX, y: e.clientY, fieldId, canvasPoint: { x: 0, y: 0 } });
-                  }}
-                />
-              ) : (
-                <FieldListPanel
-                  fields={draft.fields}
-                  groups={groups}
-                  variants={draft.variants}
-                  selectedIds={selectedIds}
-                  onSelect={setSelectedIds}
-                  onReorder={setFields}
-                  onReorderChildren={(id, children) => patchGroup(id, { children })}
-                  onContextMenu={(e, fieldId) => {
-                    e.preventDefault();
-                    if (!selectedIds.includes(fieldId)) setSelectedIds([fieldId]);
-                    setMenu({ x: e.clientX, y: e.clientY, fieldId, canvasPoint: { x: 0, y: 0 } });
-                  }}
-                />
-              )}
-            </div>
-          </BuilderRail>
+                  {mode === "edit" && railTab === "layers" && (
+                    <ElementPalette
+                      onAdd={(id) => addPaletteField(id)}
+                      onAddIcon={(name) => void addIconField(name)}
+                      logos={logoAssets}
+                      activeTool={tool}
+                    />
+                  )}
+                  {railTab === "layers" ? (
+                    <LayersPanel
+                      fields={draft.fields}
+                      groups={groups}
+                      selectedIds={selectedIds}
+                      onSelect={setSelectedIds}
+                      onPaintOrder={setPaintOrder}
+                      onRename={renameField}
+                      lockedIds={lockedIds}
+                      hiddenIds={hiddenIds}
+                      onToggleLocked={toggleLocked}
+                      onToggleHidden={toggleHidden}
+                      onContextMenu={(e, fieldId) => {
+                        e.preventDefault();
+                        if (!selectedIds.includes(fieldId)) setSelectedIds([fieldId]);
+                        setMenu({
+                          x: e.clientX,
+                          y: e.clientY,
+                          fieldId,
+                          canvasPoint: { x: 0, y: 0 },
+                        });
+                      }}
+                    />
+                  ) : (
+                    <FieldListPanel
+                      fields={draft.fields}
+                      groups={groups}
+                      variants={draft.variants}
+                      selectedIds={selectedIds}
+                      onSelect={setSelectedIds}
+                      onReorder={setFields}
+                      onReorderChildren={(id, children) => patchGroup(id, { children })}
+                      onContextMenu={(e, fieldId) => {
+                        e.preventDefault();
+                        if (!selectedIds.includes(fieldId)) setSelectedIds([fieldId]);
+                        setMenu({
+                          x: e.clientX,
+                          y: e.clientY,
+                          fieldId,
+                          canvasPoint: { x: 0, y: 0 },
+                        });
+                      }}
+                    />
+                  )}
+                </div>
+              </section>
+            )}
 
-          {/* ── Canvas viewport ───────────────────────────────────────── */}
-          <div className="sp-builder__canvas">
-            {/* The tool strip floats on the canvas edge, next to the work it
+            {/* ── Canvas viewport ───────────────────────────────────────── */}
+            <div className="sp-builder__canvas">
+              {/* The tool strip floats on the canvas edge, next to the work it
                 acts on — moving it out of the top bar is what keeps the bar
                 from scrolling. Same tools, same letters, same shift-to-lock;
                 only the orientation changed. */}
-            {mode === "edit" && (
-              <div className="sp-builder__tools" data-radius-control>
-                <div role="radiogroup" aria-label="Canvas tool" className="flex flex-col">
-                  {TOOL_ORDER.map(({ key, label, Icon }, i) => {
-                    const on = tool === key;
-                    return (
-                      <button
-                        key={key}
-                        role="radio"
-                        aria-checked={on}
-                        aria-label={`${label} (${TOOL_LETTER[key]})`}
-                        title={`${label}: ${TOOL_LETTER[key]}${
-                          key === "move" ? "" : `, ⇧${TOOL_LETTER[key]} to keep it active`
-                        }`}
-                        onClick={() => {
-                          setTool(key);
-                          setToolLocked(false);
-                        }}
-                        className="px-2 py-2"
-                        style={{
-                          borderTop: i > 0 ? "1px solid var(--border)" : undefined,
-                          background: on ? "var(--fill-action)" : "var(--bg-surface)",
-                          color: on ? "var(--text-on-action)" : "var(--text-secondary)",
-                        }}
-                      >
-                        <Icon style={{ width: 14, height: 14 }} />
-                      </button>
-                    );
-                  })}
-                </div>
-                {/* Undo and redo ride below the tools: same strip, own
+              {mode === "edit" && (
+                <div className="sp-builder__tools" data-radius-control>
+                  <div role="radiogroup" aria-label="Canvas tool" className="flex flex-col">
+                    {TOOL_ORDER.map(({ key, label, Icon }, i) => {
+                      const on = tool === key;
+                      return (
+                        <button
+                          key={key}
+                          role="radio"
+                          aria-checked={on}
+                          aria-label={`${label} (${TOOL_LETTER[key]})`}
+                          title={`${label}: ${TOOL_LETTER[key]}${
+                            key === "move" ? "" : `, ⇧${TOOL_LETTER[key]} to keep it active`
+                          }`}
+                          onClick={() => {
+                            setTool(key);
+                            setToolLocked(false);
+                          }}
+                          className="px-2 py-2"
+                          style={{
+                            borderTop: i > 0 ? "1px solid var(--border)" : undefined,
+                            background: on ? "var(--fill-action)" : "var(--bg-surface)",
+                            color: on ? "var(--text-on-action)" : "var(--text-secondary)",
+                          }}
+                        >
+                          <Icon style={{ width: 14, height: 14 }} />
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {/* Undo and redo ride below the tools: same strip, own
                     group. The keyboard shortcuts are unchanged. */}
-                <button
-                  onClick={doUndo}
-                  disabled={!canUndo}
-                  title={`Undo (${isMac ? "⌘" : "Ctrl+"}Z)`}
-                  aria-label="Undo"
-                  className="px-2 py-2"
-                  style={{
-                    borderTop: "1px solid var(--border-strong)",
-                    background: "var(--bg-surface)",
-                    color: canUndo ? "var(--text-secondary)" : "var(--text-disabled)",
-                    cursor: canUndo ? "pointer" : "default",
-                  }}
-                >
-                  <Undo2 style={{ width: 14, height: 14 }} />
-                </button>
-                <button
-                  onClick={doRedo}
-                  disabled={!canRedo}
-                  title={`Redo (${isMac ? "⇧⌘" : "Ctrl+Shift+"}Z)`}
-                  aria-label="Redo"
-                  className="px-2 py-2"
-                  style={{
-                    borderTop: "1px solid var(--border)",
-                    background: "var(--bg-surface)",
-                    color: canRedo ? "var(--text-secondary)" : "var(--text-disabled)",
-                    cursor: canRedo ? "pointer" : "default",
-                  }}
-                >
-                  <Redo2 style={{ width: 14, height: 14 }} />
-                </button>
-              </div>
-            )}
-            {/* Variations, as connected frames above the working canvas.
+                  <button
+                    onClick={doUndo}
+                    disabled={!canUndo}
+                    title={`Undo (${isMac ? "⌘" : "Ctrl+"}Z)`}
+                    aria-label="Undo"
+                    className="px-2 py-2"
+                    style={{
+                      borderTop: "1px solid var(--border-strong)",
+                      background: "var(--bg-surface)",
+                      color: canUndo ? "var(--text-secondary)" : "var(--text-disabled)",
+                      cursor: canUndo ? "pointer" : "default",
+                    }}
+                  >
+                    <Undo2 style={{ width: 14, height: 14 }} />
+                  </button>
+                  <button
+                    onClick={doRedo}
+                    disabled={!canRedo}
+                    title={`Redo (${isMac ? "⇧⌘" : "Ctrl+Shift+"}Z)`}
+                    aria-label="Redo"
+                    className="px-2 py-2"
+                    style={{
+                      borderTop: "1px solid var(--border)",
+                      background: "var(--bg-surface)",
+                      color: canRedo ? "var(--text-secondary)" : "var(--text-disabled)",
+                      cursor: canRedo ? "pointer" : "default",
+                    }}
+                  >
+                    <Redo2 style={{ width: 14, height: 14 }} />
+                  </button>
+                </div>
+              )}
+              {/* Variations, as connected frames above the working canvas.
                 Every frame is this draft; the selected one is what the
                 canvas below edits. */}
-            <VariantFilmstrip
-              schema={previewSchema}
-              brandKit={kit}
-              values={worstCaseValues}
-              selectedId={selectedVariant?.id}
-              warningCounts={contrastCounts}
-              onSelect={setSelectedVariantId}
-              onAdd={addVariation}
-              onRename={renameVariation}
-              onRemove={deleteVariation}
-              onSetDefault={setDefaultVariation}
-            />
-            <div
-              className={`flex-1 min-h-0 flex justify-center ${
-                mode === "edit" ? "items-stretch" : "items-center"
-              }`}
-              style={{ padding: "var(--space-sm)" }}
-            >
-              {/* Canvas boundary: a crash on the design surface leaves the
+              <VariantFilmstrip
+                schema={previewSchema}
+                brandKit={kit}
+                values={worstCaseValues}
+                selectedId={selectedVariant?.id}
+                warningCounts={contrastCounts}
+                onSelect={setSelectedVariantId}
+                onAdd={addVariation}
+                onRename={renameVariation}
+                onRemove={deleteVariation}
+                onSetDefault={setDefaultVariation}
+              />
+              <div
+                className={`flex-1 min-h-0 flex justify-center ${
+                  mode === "edit" ? "items-stretch" : "items-center"
+                }`}
+                style={{ padding: "var(--space-sm)" }}
+              >
+                {/* Canvas boundary: a crash on the design surface leaves the
                   top bar, rails, and inspector standing; the draft is
                   autosaved up to the last change. Mode switches and edits
                   reset a crashed boundary. */}
-              <ErrorBoundary
-                level="canvas"
-                context={{ templateId: savedId ?? undefined }}
-                resetKeys={[mode, draft.fields]}
-                fallback={(retry) => (
-                  <ErrorState
-                    title="The canvas ran into a problem."
-                    detail="Everything up to your last save is safe. Try again. If it keeps happening, undo your last change."
-                    onRetry={retry}
-                  />
-                )}
-              >
-                {mode === "edit" ? (
-                  <FieldOverlayEditor
-                    canvasWidth={draft.canvasWidth}
-                    canvasHeight={draft.canvasHeight}
-                    backgroundUrl={variantBackground.url}
-                    backgroundCss={schemaBackgroundCss(
-                      {
-                        backgroundColor: variantBackground.color,
-                        backgroundGradient: variantBackground.gradient,
-                      },
-                      kit,
-                    )}
-                    canvasEffects={selectedVariant?.canvasEffects ?? draft.canvasEffects}
-                    appearanceOf={appearanceOf}
-                    fields={draft.fields}
-                    groups={groups}
-                    layout={builderLayout}
-                    values={worstCaseValues}
-                    overflowGroupIds={overflowGroupIds}
-                    selectedIds={selectedIds}
-                    onSelect={setSelectedIds}
-                    onChange={setFields}
-                    onMoveSelection={moveSelection}
-                    flashGroupId={flashGroupId}
-                    onReorderChildren={(id, children) => patchGroup(id, { children })}
-                    tool={tool}
-                    lockedIds={lockedIds}
-                    hiddenIds={paintHiddenIds}
-                    emptyHint={
-                      draft.fields.length === 0
-                        ? stores.designImport.isConfigured()
-                          ? "Drag an element from the palette onto the canvas, or import a designed frame from Figma."
-                          : "Drag an element from the palette onto the canvas. You can also paste an image or a Figma layer straight in."
-                        : undefined
-                    }
-                    onDraw={addDrawnField}
-                    onTransformSelection={transformSelection}
-                    onDropElement={(id, at) => addPaletteField(id, at)}
-                    onDropFiles={(files, at) => void addImageFiles(files, at)}
-                    onContextMenu={(pos, fieldId, canvasPoint) =>
-                      setMenu({ x: pos.x, y: pos.y, fieldId, canvasPoint })
-                    }
-                    onRequestLabelFocus={setFocusLabelFieldId}
-                    selectionToolbar={
-                      selectedIds.length > 0 ? (
-                        <SelectionToolbar
-                          count={selectedIds.length}
-                          single={singleSelected}
-                          isGroup={Boolean(selectedGroup)}
-                          groupable={
-                            selectedFields.length >= 2 &&
-                            selectedFields.every(
-                              (f) => !groups.some((g) => g.children.includes(f.fieldKey)),
-                            )
-                          }
-                          onAlign={alignSelection}
-                          onDistribute={distributeSelection}
-                          alignDisabledReason={alignDisabledReason}
-                          distributeDisabledReason={distributeDisabledReason}
-                          onGroup={groupSelection}
-                          onUngroup={ungroupSelection}
-                          onBringForward={() => reorderLayer(selectedIds, "front")}
-                          onDelete={() => deleteFields(selectedIds)}
-                          onPatchSingle={(patch) =>
-                            singleSelected && patchField(singleSelected.id, patch)
-                          }
-                          singleLocked={singleLockedProps}
-                        />
-                      ) : null
-                    }
-                    apiRef={canvasViewRef}
-                    onScaleChange={onCanvasScale}
-                    viewKey={savedId ?? "new"}
-                  />
-                ) : (
-                  /* Preview letterboxes inside the region: full height, width
-                     from the canvas ratio, never wider than the region. */
-                  <div
-                    style={{
-                      height: "100%",
-                      maxWidth: "100%",
-                      aspectRatio: `${draft.canvasWidth} / ${draft.canvasHeight}`,
-                    }}
-                  >
-                    <SchemaRenderer
-                      schema={previewSchema}
-                      values={worstCaseValues}
-                      brandKit={kit}
-                      instrument={false}
-                      variantId={selectedVariant?.id}
+                <ErrorBoundary
+                  level="canvas"
+                  context={{ templateId: savedId ?? undefined }}
+                  resetKeys={[mode, draft.fields]}
+                  fallback={(retry) => (
+                    <ErrorState
+                      title="The canvas ran into a problem."
+                      detail="Everything up to your last save is safe. Try again. If it keeps happening, undo your last change."
+                      onRetry={retry}
                     />
-                  </div>
-                )}
-              </ErrorBoundary>
-            </div>
+                  )}
+                >
+                  {mode === "edit" ? (
+                    <FieldOverlayEditor
+                      canvasWidth={draft.canvasWidth}
+                      canvasHeight={draft.canvasHeight}
+                      backgroundUrl={variantBackground.url}
+                      backgroundCss={schemaBackgroundCss(
+                        {
+                          backgroundColor: variantBackground.color,
+                          backgroundGradient: variantBackground.gradient,
+                        },
+                        kit,
+                      )}
+                      canvasEffects={selectedVariant?.canvasEffects ?? draft.canvasEffects}
+                      appearanceOf={appearanceOf}
+                      fields={draft.fields}
+                      groups={groups}
+                      layout={builderLayout}
+                      values={worstCaseValues}
+                      overflowGroupIds={overflowGroupIds}
+                      selectedIds={selectedIds}
+                      onSelect={setSelectedIds}
+                      onChange={setFields}
+                      onMoveSelection={moveSelection}
+                      flashGroupId={flashGroupId}
+                      onReorderChildren={(id, children) => patchGroup(id, { children })}
+                      tool={tool}
+                      lockedIds={lockedIds}
+                      hiddenIds={paintHiddenIds}
+                      emptyHint={
+                        draft.fields.length === 0
+                          ? stores.designImport.isConfigured()
+                            ? "Drag an element from the palette onto the canvas, or import a designed frame from Figma."
+                            : "Drag an element from the palette onto the canvas. You can also paste an image or a Figma layer straight in."
+                          : undefined
+                      }
+                      onDraw={addDrawnField}
+                      onTransformSelection={transformSelection}
+                      onDropElement={(id, at) => addPaletteField(id, at)}
+                      onDropFiles={(files, at) => void addImageFiles(files, at)}
+                      onContextMenu={(pos, fieldId, canvasPoint) =>
+                        setMenu({ x: pos.x, y: pos.y, fieldId, canvasPoint })
+                      }
+                      onRequestLabelFocus={setFocusLabelFieldId}
+                      selectionToolbar={
+                        selectedIds.length > 0 ? (
+                          <SelectionToolbar
+                            count={selectedIds.length}
+                            single={singleSelected}
+                            isGroup={Boolean(selectedGroup)}
+                            groupable={
+                              selectedFields.length >= 2 &&
+                              selectedFields.every(
+                                (f) => !groups.some((g) => g.children.includes(f.fieldKey)),
+                              )
+                            }
+                            onAlign={alignSelection}
+                            onDistribute={distributeSelection}
+                            alignDisabledReason={alignDisabledReason}
+                            distributeDisabledReason={distributeDisabledReason}
+                            onGroup={groupSelection}
+                            onUngroup={ungroupSelection}
+                            onBringForward={() => reorderLayer(selectedIds, "front")}
+                            onDelete={() => deleteFields(selectedIds)}
+                            onPatchSingle={(patch) =>
+                              singleSelected && patchField(singleSelected.id, patch)
+                            }
+                            singleLocked={singleLockedProps}
+                          />
+                        ) : null
+                      }
+                      apiRef={canvasViewRef}
+                      onScaleChange={onCanvasScale}
+                      viewKey={savedId ?? "new"}
+                    />
+                  ) : (
+                    /* Preview letterboxes inside the region: full height, width
+                     from the canvas ratio, never wider than the region. */
+                    <div
+                      style={{
+                        height: "100%",
+                        maxWidth: "100%",
+                        aspectRatio: `${draft.canvasWidth} / ${draft.canvasHeight}`,
+                      }}
+                    >
+                      <SchemaRenderer
+                        schema={previewSchema}
+                        values={worstCaseValues}
+                        brandKit={kit}
+                        instrument={false}
+                        variantId={selectedVariant?.id}
+                      />
+                    </div>
+                  )}
+                </ErrorBoundary>
+              </div>
 
-            {/* Canvas footer: the hint line, the import paths, and any layout
+              {/* Canvas footer: the hint line, the import paths, and any layout
                 warnings — everything that describes the canvas without
                 sitting on top of it. */}
-            <div
-              className="flex-shrink-0"
-              style={{ borderTop: "1px solid var(--border)", background: "var(--bg-surface)" }}
-            >
-              {mode === "edit" && reflowWarnings && reflowWarnings.length > 0 && (
-                <div
-                  role="status"
-                  className="px-3 py-2 space-y-1"
-                  style={{ borderBottom: "1px solid var(--border)" }}
-                >
-                  <div className="flex items-center gap-3">
-                    <p className="sp-eyebrow flex-1" style={{ color: "var(--text-primary)" }}>
-                      Reflow review: the automatic layout is a starting point. Adjust it before you
-                      publish.
-                    </p>
-                    <button
-                      onClick={() => setReflowWarnings(null)}
-                      className="flex-shrink-0"
-                      style={{
-                        fontSize: "var(--type-caption-size)",
-                        color: "var(--text-secondary)",
-                      }}
-                    >
-                      Done reviewing
-                    </button>
-                  </div>
-                  {reflowWarnings.map((w) => (
-                    <button
-                      key={w.fieldId}
-                      onClick={() => setSelectedIds([w.fieldId])}
-                      className="block text-left"
-                      style={{
-                        fontSize: "var(--type-caption-size)",
-                        color: "var(--text-secondary)",
-                        textDecoration: "underline",
-                        textDecorationColor: "var(--border-strong)",
-                        textUnderlineOffset: 2,
-                      }}
-                      title="Select this field on the canvas"
-                    >
-                      {w.message}
-                    </button>
-                  ))}
-                </div>
-              )}
-              {mode === "edit" && layoutWarnings.length > 0 && (
-                <div
-                  role="status"
-                  className="px-3 py-2 space-y-1"
-                  style={{ borderBottom: "1px solid var(--border)" }}
-                >
-                  {layoutWarnings.map((w, i) => (
-                    <p
-                      key={i}
-                      style={{
-                        fontSize: "var(--type-caption-size)",
-                        color: "var(--text-secondary)",
-                      }}
-                    >
-                      {w}
-                    </p>
-                  ))}
-                </div>
-              )}
               <div
-                className="flex items-center gap-4 px-3 flex-wrap"
-                style={{ minHeight: 34, paddingBlock: 6 }}
+                className="flex-shrink-0"
+                style={{ borderTop: "1px solid var(--border)", background: "var(--bg-surface)" }}
               >
-                <p
-                  style={{
-                    fontSize: "var(--type-caption-size)",
-                    color: "var(--text-muted)",
-                    flex: "1 1 260px",
-                    minWidth: 0,
-                  }}
-                >
-                  {mode === "edit"
-                    ? "Drag elements from the palette onto the canvas, then move them by dragging; handles resize and the top handle rotates. Right-click for copy/paste."
-                    : "Member preview: placeholder content, locked styling."}
-                </p>
-                {stores.designImport.isConfigured() && mode === "edit" && (
-                  <>
-                    <button
-                      onClick={() => setFigmaOpen(true)}
-                      className="flex items-center gap-1.5 flex-shrink-0"
-                      style={{
-                        fontSize: "var(--type-caption-size)",
-                        color: "var(--text-secondary)",
-                      }}
-                    >
-                      <Figma className="w-3.5 h-3.5" />
-                      Import more fields from Figma
-                    </button>
-                    <button
-                      onClick={() => setAutoBuildOpen(true)}
-                      className="flex items-center gap-1.5 flex-shrink-0"
-                      style={{
-                        fontSize: "var(--type-caption-size)",
-                        color: "var(--text-secondary)",
-                      }}
-                    >
-                      <Sparkles className="w-3.5 h-3.5" />
-                      Auto-build with Claude
-                    </button>
-                  </>
+                {mode === "edit" && reflowWarnings && reflowWarnings.length > 0 && (
+                  <div
+                    role="status"
+                    className="px-3 py-2 space-y-1"
+                    style={{ borderBottom: "1px solid var(--border)" }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <p className="sp-eyebrow flex-1" style={{ color: "var(--text-primary)" }}>
+                        Reflow review: the automatic layout is a starting point. Adjust it before
+                        you publish.
+                      </p>
+                      <button
+                        onClick={() => setReflowWarnings(null)}
+                        className="flex-shrink-0"
+                        style={{
+                          fontSize: "var(--type-caption-size)",
+                          color: "var(--text-secondary)",
+                        }}
+                      >
+                        Done reviewing
+                      </button>
+                    </div>
+                    {reflowWarnings.map((w) => (
+                      <button
+                        key={w.fieldId}
+                        onClick={() => setSelectedIds([w.fieldId])}
+                        className="block text-left"
+                        style={{
+                          fontSize: "var(--type-caption-size)",
+                          color: "var(--text-secondary)",
+                          textDecoration: "underline",
+                          textDecorationColor: "var(--border-strong)",
+                          textUnderlineOffset: 2,
+                        }}
+                        title="Select this field on the canvas"
+                      >
+                        {w.message}
+                      </button>
+                    ))}
+                  </div>
                 )}
-                {/* Canvas facts live with the canvas: size, status, and the
+                {mode === "edit" && layoutWarnings.length > 0 && (
+                  <div
+                    role="status"
+                    className="px-3 py-2 space-y-1"
+                    style={{ borderBottom: "1px solid var(--border)" }}
+                  >
+                    {layoutWarnings.map((w, i) => (
+                      <p
+                        key={i}
+                        style={{
+                          fontSize: "var(--type-caption-size)",
+                          color: "var(--text-secondary)",
+                        }}
+                      >
+                        {w}
+                      </p>
+                    ))}
+                  </div>
+                )}
+                <div
+                  className="flex items-center gap-4 px-3 flex-wrap"
+                  style={{ minHeight: 34, paddingBlock: 6 }}
+                >
+                  <p
+                    style={{
+                      fontSize: "var(--type-caption-size)",
+                      color: "var(--text-muted)",
+                      flex: "1 1 260px",
+                      minWidth: 0,
+                    }}
+                  >
+                    {mode === "edit"
+                      ? "Drag elements from the palette onto the canvas, then move them by dragging; handles resize and the top handle rotates. Right-click for copy/paste."
+                      : "Member preview: placeholder content, locked styling."}
+                  </p>
+                  {stores.designImport.isConfigured() && mode === "edit" && (
+                    <>
+                      <button
+                        onClick={() => setFigmaOpen(true)}
+                        className="flex items-center gap-1.5 flex-shrink-0"
+                        style={{
+                          fontSize: "var(--type-caption-size)",
+                          color: "var(--text-secondary)",
+                        }}
+                      >
+                        <Figma className="w-3.5 h-3.5" />
+                        Import more fields from Figma
+                      </button>
+                      <button
+                        onClick={() => setAutoBuildOpen(true)}
+                        className="flex items-center gap-1.5 flex-shrink-0"
+                        style={{
+                          fontSize: "var(--type-caption-size)",
+                          color: "var(--text-secondary)",
+                        }}
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        Auto-build with Claude
+                      </button>
+                    </>
+                  )}
+                  {/* Canvas facts live with the canvas: size, status, and the
                     view controls all describe this region, not the document
                     chrome above it. In edit mode the size is a control — it
                     opens the same picker creation uses, for rescaling in
                     place. */}
-                {mode === "edit" ? (
-                  <button
-                    onClick={(e) => {
-                      const r = e.currentTarget.getBoundingClientRect();
-                      setSizeMenuAt({ x: r.left, y: r.top });
-                    }}
-                    title="Change the canvas size"
-                    aria-haspopup="dialog"
-                    className="sp-eyebrow flex-shrink-0 whitespace-nowrap flex items-center gap-1"
-                    style={{ cursor: "pointer" }}
-                  >
-                    {draft.canvasWidth}×{draft.canvasHeight} · {draft.status}
-                    {recomposing ? " · lifting elements off background…" : ""}
-                    <ChevronDown style={{ width: 11, height: 11 }} />
-                  </button>
-                ) : (
-                  <span className="sp-eyebrow flex-shrink-0 whitespace-nowrap">
-                    {draft.canvasWidth}×{draft.canvasHeight} · {draft.status}
-                  </span>
-                )}
-                {mode === "edit" && (
-                  <button
-                    onClick={(e) => {
-                      const r = e.currentTarget.getBoundingClientRect();
-                      setViewMenuAt({ x: r.left, y: r.top });
-                    }}
-                    title="View commands"
-                    aria-label={`Zoom ${Math.round(canvasScale * 100)} percent, view commands`}
-                    aria-haspopup="menu"
-                    className="flex items-center gap-1 px-2 py-1 flex-shrink-0"
-                    data-radius-control
-                    style={{
-                      border: "1px solid var(--border-strong)",
-                      background: "var(--bg-surface)",
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 11,
-                      color: "var(--text-secondary)",
-                      minWidth: 62,
-                      justifyContent: "center",
-                    }}
-                  >
-                    {Math.round(canvasScale * 100)}%
-                    <ChevronDown style={{ width: 11, height: 11 }} />
-                  </button>
-                )}
+                  {mode === "edit" ? (
+                    <button
+                      onClick={(e) => {
+                        const r = e.currentTarget.getBoundingClientRect();
+                        setSizeMenuAt({ x: r.left, y: r.top });
+                      }}
+                      title="Change the canvas size"
+                      aria-haspopup="dialog"
+                      className="sp-eyebrow flex-shrink-0 whitespace-nowrap flex items-center gap-1"
+                      style={{ cursor: "pointer" }}
+                    >
+                      {draft.canvasWidth}×{draft.canvasHeight} · {draft.status}
+                      {recomposing ? " · lifting elements off background…" : ""}
+                      <ChevronDown style={{ width: 11, height: 11 }} />
+                    </button>
+                  ) : (
+                    <span className="sp-eyebrow flex-shrink-0 whitespace-nowrap">
+                      {draft.canvasWidth}×{draft.canvasHeight} · {draft.status}
+                    </span>
+                  )}
+                  {mode === "edit" && (
+                    <button
+                      onClick={(e) => {
+                        const r = e.currentTarget.getBoundingClientRect();
+                        setViewMenuAt({ x: r.left, y: r.top });
+                      }}
+                      title="View commands"
+                      aria-label={`Zoom ${Math.round(canvasScale * 100)} percent, view commands`}
+                      aria-haspopup="menu"
+                      className="flex items-center gap-1 px-2 py-1 flex-shrink-0"
+                      data-radius-control
+                      style={{
+                        border: "1px solid var(--border-strong)",
+                        background: "var(--bg-surface)",
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 11,
+                        color: "var(--text-secondary)",
+                        minWidth: 62,
+                        justifyContent: "center",
+                      }}
+                    >
+                      {Math.round(canvasScale * 100)}%
+                      <ChevronDown style={{ width: 11, height: 11 }} />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* ── Right inspector ───────────────────────────────────────── */}
-          <BuilderRail
-            side="right"
-            label="Inspector"
-            width={rightWidth}
-            onWidth={setRightWidth}
-            minWidth={RAIL_RIGHT_MIN}
-            maxWidth={RAIL_RIGHT_MAX}
-            collapsed={rightCollapsed}
-            onCollapsed={setRightCollapsed}
-          >
-            <RailHeader
-              title={
-                selectedGroup
-                  ? "Group"
-                  : singleSelected
-                    ? "Element"
-                    : selectedFields.length > 1
-                      ? `${selectedFields.length} selected`
-                      : "Canvas"
-              }
-            >
-              <button
-                onClick={() => setRightCollapsed(true)}
-                className="sp-icon-btn"
-                title="Hide the inspector"
-                aria-label="Hide the inspector"
+            {/* ── Right inspector (322:380): a card, 320 wide ─────────────── */}
+            <section className="sp-builder__rail sp-builder__rail--right" aria-label="Inspector">
+              <header className="sp-builder__rail-head">
+                <h2 className="t-title-card">
+                  {selectedGroup
+                    ? "Group"
+                    : singleSelected
+                      ? "Element"
+                      : selectedFields.length > 1
+                        ? `${selectedFields.length} selected`
+                        : "Canvas"}
+                </h2>
+              </header>
+              <div
+                className="sp-builder__rail-body"
+                style={{ padding: "var(--space-2xs) var(--space-xs) var(--space-md)" }}
               >
-                <PanelRightClose style={{ width: 15, height: 15 }} />
-              </button>
-            </RailHeader>
-            <div
-              className="sp-builder__rail-body"
-              style={{ padding: "var(--space-2xs) var(--space-xs) var(--space-md)" }}
-            >
-              {selectedGroup ? (
-                <GroupInspector
-                  group={selectedGroup}
-                  computedRect={builderLayout.groupRects.get(selectedGroup.id)}
-                  onChange={(patch, stream) => patchGroup(selectedGroup.id, patch, stream)}
-                  onModeChange={(m) => setGroupMode(selectedGroup.id, m)}
-                  onUngroup={ungroupSelection}
-                  onDelete={() => deleteFields([groupChildRef(selectedGroup.id)])}
-                />
-              ) : singleSelected ? (
-                <FieldInspector
-                  field={singleSelected}
-                  allFields={draft.fields}
-                  canvasWidth={draft.canvasWidth}
-                  canvasHeight={draft.canvasHeight}
-                  focusLabelFieldId={focusLabelFieldId}
-                  containingGroup={groups.find((g) => g.children.includes(singleSelected.fieldKey))}
-                  computedRect={builderLayout.fieldRects.get(singleSelected.id)}
-                  computedFontSize={builderLayout.fontSizes.get(singleSelected.id)}
-                  worstCasePreview={worstCaseFieldId === singleSelected.id}
-                  onWorstCasePreview={(on) => setWorstCaseFieldId(on ? singleSelected.id : null)}
-                  onChange={(patch, stream) => patchField(singleSelected.id, patch, stream)}
-                  onDelete={() => deleteFields([singleSelected.id])}
-                  onBringToFront={() => reorderLayer([singleSelected.id], "front")}
-                  onSendToBack={() => reorderLayer([singleSelected.id], "back")}
-                  variantMode={
-                    multiLook && selectedVariant
-                      ? {
-                          variant: selectedVariant,
-                          merged: applyVariant(singleSelected, selectedVariant),
-                          onOverride: (patch) => setVariantOverride(singleSelected.fieldKey, patch),
-                        }
-                      : undefined
-                  }
-                />
-              ) : selectedFields.length > 1 ? (
-                <div className="space-y-3">
-                  <div className="space-y-1.5">
-                    <label className="sp-eyebrow block">Align to selection</label>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <AlignControls
-                        scope="selection"
-                        onAlign={alignSelection}
-                        onDistribute={distributeSelection}
-                        alignDisabledReason={alignDisabledReason}
-                        distributeDisabledReason={distributeDisabledReason}
-                      />
+                {selectedGroup ? (
+                  <GroupInspector
+                    group={selectedGroup}
+                    computedRect={builderLayout.groupRects.get(selectedGroup.id)}
+                    onChange={(patch, stream) => patchGroup(selectedGroup.id, patch, stream)}
+                    onModeChange={(m) => setGroupMode(selectedGroup.id, m)}
+                    onUngroup={ungroupSelection}
+                    onDelete={() => deleteFields([groupChildRef(selectedGroup.id)])}
+                  />
+                ) : singleSelected ? (
+                  <FieldInspector
+                    field={singleSelected}
+                    allFields={draft.fields}
+                    canvasWidth={draft.canvasWidth}
+                    canvasHeight={draft.canvasHeight}
+                    focusLabelFieldId={focusLabelFieldId}
+                    containingGroup={groups.find((g) =>
+                      g.children.includes(singleSelected.fieldKey),
+                    )}
+                    computedRect={builderLayout.fieldRects.get(singleSelected.id)}
+                    computedFontSize={builderLayout.fontSizes.get(singleSelected.id)}
+                    worstCasePreview={worstCaseFieldId === singleSelected.id}
+                    onWorstCasePreview={(on) => setWorstCaseFieldId(on ? singleSelected.id : null)}
+                    onChange={(patch, stream) => patchField(singleSelected.id, patch, stream)}
+                    onDelete={() => deleteFields([singleSelected.id])}
+                    onBringToFront={() => reorderLayer([singleSelected.id], "front")}
+                    onSendToBack={() => reorderLayer([singleSelected.id], "back")}
+                    variantMode={
+                      multiLook && selectedVariant
+                        ? {
+                            variant: selectedVariant,
+                            merged: applyVariant(singleSelected, selectedVariant),
+                            onOverride: (patch) =>
+                              setVariantOverride(singleSelected.fieldKey, patch),
+                          }
+                        : undefined
+                    }
+                  />
+                ) : selectedFields.length > 1 ? (
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <label className="sp-eyebrow block">Align to selection</label>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <AlignControls
+                          scope="selection"
+                          onAlign={alignSelection}
+                          onDistribute={distributeSelection}
+                          alignDisabledReason={alignDisabledReason}
+                          distributeDisabledReason={distributeDisabledReason}
+                        />
+                      </div>
                     </div>
-                  </div>
-                  <button className="sp-btn sp-btn-primary w-full" onClick={groupSelection}>
-                    Group selection {isMac ? "⌘G" : "Ctrl+G"}
-                  </button>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button className="sp-btn sp-btn-ghost" onClick={() => copyFields(selectedIds)}>
-                      Copy
+                    <button className="sp-btn sp-btn-primary w-full" onClick={groupSelection}>
+                      Group selection {isMac ? "⌘G" : "Ctrl+G"}
                     </button>
-                    <button
-                      className="sp-btn sp-btn-ghost"
-                      onClick={() => duplicateSelected(selectedIds)}
-                    >
-                      Duplicate
-                    </button>
-                    <button
-                      className="sp-btn sp-btn-ghost"
-                      onClick={() => reorderLayer(selectedIds, "front")}
-                    >
-                      To front
-                    </button>
-                    <button
-                      className="sp-btn sp-btn-ghost"
-                      onClick={() => reorderLayer(selectedIds, "back")}
-                    >
-                      To back
-                    </button>
-                  </div>
-                  <button
-                    className="sp-btn sp-btn-ghost w-full"
-                    style={{ color: "var(--destructive)" }}
-                    onClick={() => deleteFields(selectedIds)}
-                  >
-                    Delete {selectedFields.length} fields
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
-                    {draft.fields.length === 0
-                      ? "Drag your first element from the palette onto the canvas. Style the template background below."
-                      : "Select a field to edit it, or style the template background here."}
-                  </p>
-                  {multiLook && selectedVariant && (
-                    <div className="space-y-1">
-                      <RailTabs
-                        tabs={[
-                          {
-                            key: "all",
-                            label: "All variations",
-                            title: "The base background every variation starts from",
-                          },
-                          {
-                            key: "this",
-                            label: "This variation",
-                            title: `The background of "${selectedVariant.name}" only`,
-                          },
-                        ]}
-                        active={bgScope}
-                        onSelect={(key) => setBgScope(key as "all" | "this")}
-                      />
-                      <p
-                        style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        className="sp-btn sp-btn-ghost"
+                        onClick={() => copyFields(selectedIds)}
                       >
-                        {bgScope === "this"
-                          ? `Colours "${selectedVariant.name}" only. A colour or gradient set here replaces the base pair for this look.`
-                          : "The base background. A variation with its own colour or gradient keeps it."}
-                      </p>
+                        Copy
+                      </button>
+                      <button
+                        className="sp-btn sp-btn-ghost"
+                        onClick={() => duplicateSelected(selectedIds)}
+                      >
+                        Duplicate
+                      </button>
+                      <button
+                        className="sp-btn sp-btn-ghost"
+                        onClick={() => reorderLayer(selectedIds, "front")}
+                      >
+                        To front
+                      </button>
+                      <button
+                        className="sp-btn sp-btn-ghost"
+                        onClick={() => reorderLayer(selectedIds, "back")}
+                      >
+                        To back
+                      </button>
                     </div>
-                  )}
-                  {multiLook && selectedVariant && bgScope === "this" ? (
-                    <>
-                      <div className="space-y-2">
-                        <label className="sp-eyebrow block">Background color</label>
-                        <ColorControl
-                          ariaLabel={`Background color of ${selectedVariant.name}`}
-                          value={variantBackground.color ?? "#ffffff"}
-                          onChange={(hex) =>
+                    <button
+                      className="sp-btn sp-btn-ghost w-full"
+                      style={{ color: "var(--destructive)" }}
+                      onClick={() => deleteFields(selectedIds)}
+                    >
+                      Delete {selectedFields.length} fields
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
+                      {draft.fields.length === 0
+                        ? "Drag your first element from the palette onto the canvas. Style the template background below."
+                        : "Select a field to edit it, or style the template background here."}
+                    </p>
+                    {multiLook && selectedVariant && (
+                      <div className="space-y-1">
+                        <SegmentedControl
+                          aria-label="Background for"
+                          options={[
+                            {
+                              id: "all",
+                              label: "All variations",
+                              title: "The base background every variation starts from",
+                            },
+                            {
+                              id: "this",
+                              label: "This variation",
+                              title: `The background of "${selectedVariant.name}" only`,
+                            },
+                          ]}
+                          selectedId={bgScope}
+                          onSelect={(id) => setBgScope(id as "all" | "this")}
+                          className="sp-builder__span-switch"
+                        />
+                        <p
+                          style={{
+                            fontSize: "var(--type-caption-size)",
+                            color: "var(--text-muted)",
+                          }}
+                        >
+                          {bgScope === "this"
+                            ? `Colours "${selectedVariant.name}" only. A colour or gradient set here replaces the base pair for this look.`
+                            : "The base background. A variation with its own colour or gradient keeps it."}
+                        </p>
+                      </div>
+                    )}
+                    {multiLook && selectedVariant && bgScope === "this" ? (
+                      <>
+                        <div className="space-y-2">
+                          <label className="sp-eyebrow block">Background color</label>
+                          <ColorControl
+                            ariaLabel={`Background color of ${selectedVariant.name}`}
+                            value={variantBackground.color ?? "#ffffff"}
+                            onChange={(hex) =>
+                              setVariantBackground(
+                                { backgroundColor: hex, backgroundGradient: undefined },
+                                `vbg:color:${selectedVariant.id}`,
+                              )
+                            }
+                          />
+                        </div>
+                        <GradientEditor
+                          label="Gradient background"
+                          gradient={variantBackground.gradient}
+                          defaultStops={[
+                            {
+                              position: 0,
+                              color: kit?.colors[0]?.hex ?? platformPrimitive("--slime"),
+                            },
+                            {
+                              position: 1,
+                              color: kit?.colors[1]?.hex ?? platformPrimitive("--ink"),
+                            },
+                          ]}
+                          onChange={(backgroundGradient) =>
                             setVariantBackground(
-                              { backgroundColor: hex, backgroundGradient: undefined },
-                              `vbg:color:${selectedVariant.id}`,
+                              {
+                                backgroundGradient,
+                                // Clearing the gradient here means "this look
+                                // wants the base pair again" unless a colour
+                                // was set for it too.
+                                ...(backgroundGradient === undefined &&
+                                selectedVariant.backgroundColor === undefined
+                                  ? { backgroundColor: undefined }
+                                  : {}),
+                              },
+                              `vbg:gradient:${selectedVariant.id}`,
                             )
                           }
                         />
-                      </div>
-                      <GradientEditor
-                        label="Gradient background"
-                        gradient={variantBackground.gradient}
-                        defaultStops={[
-                          {
-                            position: 0,
-                            color: kit?.colors[0]?.hex ?? platformPrimitive("--slime"),
-                          },
-                          { position: 1, color: kit?.colors[1]?.hex ?? platformPrimitive("--ink") },
-                        ]}
-                        onChange={(backgroundGradient) =>
-                          setVariantBackground(
+                        {(selectedVariant.backgroundColor !== undefined ||
+                          selectedVariant.backgroundGradient !== undefined) && (
+                          <button
+                            type="button"
+                            className="sp-btn sp-btn-ghost w-full"
+                            onClick={() =>
+                              setVariantBackground({
+                                backgroundColor: undefined,
+                                backgroundGradient: undefined,
+                              })
+                            }
+                          >
+                            Use the base background
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <div className="space-y-2">
+                          <label className="sp-eyebrow block">Background color</label>
+                          <ColorControl
+                            ariaLabel="Template background color"
+                            value={draft.backgroundColor ?? "#ffffff"}
+                            onChange={(hex) =>
+                              setDraft((d) => ({ ...d, backgroundColor: hex }), "bg:color")
+                            }
+                          />
+                        </div>
+                        <GradientEditor
+                          label="Gradient background"
+                          gradient={draft.backgroundGradient}
+                          defaultStops={[
                             {
-                              backgroundGradient,
-                              // Clearing the gradient here means "this look
-                              // wants the base pair again" unless a colour
-                              // was set for it too.
-                              ...(backgroundGradient === undefined &&
-                              selectedVariant.backgroundColor === undefined
-                                ? { backgroundColor: undefined }
-                                : {}),
+                              position: 0,
+                              color: kit?.colors[0]?.hex ?? platformPrimitive("--slime"),
                             },
-                            `vbg:gradient:${selectedVariant.id}`,
+                            {
+                              position: 1,
+                              color: kit?.colors[1]?.hex ?? platformPrimitive("--ink"),
+                            },
+                          ]}
+                          onChange={(backgroundGradient) =>
+                            setDraft((d) => ({ ...d, backgroundGradient }), "bg:gradient")
+                          }
+                        />
+                      </>
+                    )}
+                    <div className="space-y-2">
+                      <label className="sp-eyebrow block">Background image</label>
+                      <label
+                        {...bgDrop.bind}
+                        data-active={bgDrop.active}
+                        className="sp-dropzone flex items-center justify-center gap-2 cursor-pointer py-2.5"
+                        style={{
+                          border: "1.5px dashed var(--border-strong)",
+                          borderRadius: "var(--radius-control)",
+                          fontSize: "var(--type-caption-size)",
+                          color: "var(--text-secondary)",
+                        }}
+                      >
+                        {uploading ? (
+                          <RefreshCw
+                            className="w-3.5 h-3.5 animate-spin"
+                            style={{ color: "var(--state-primary)" }}
+                          />
+                        ) : (
+                          <Upload
+                            className="sp-dropzone__icon w-3.5 h-3.5"
+                            style={{ color: "var(--state-primary)" }}
+                          />
+                        )}
+                        {uploading
+                          ? "Uploading…"
+                          : draft.backgroundUrl
+                            ? "Replace image"
+                            : "Upload image"}
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg"
+                          className="hidden"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) void onDropBackground([f]);
+                          }}
+                        />
+                      </label>
+                      {draft.backgroundUrl && (
+                        <button
+                          onClick={() => setDraft((d) => ({ ...d, backgroundUrl: "" }))}
+                          style={{ fontSize: 11, color: "var(--destructive)" }}
+                        >
+                          Remove image
+                        </button>
+                      )}
+                      <p style={{ fontSize: 10.5, color: "var(--text-muted)" }}>
+                        An image covers the gradient, which covers the color.
+                      </p>
+                    </div>
+                    {/* Canvas effects: grain over everything, an inner shadow at
+                    the edge. Scoped like the background: a look can replace
+                    them, the base is what every look starts from. */}
+                    {multiLook && selectedVariant && bgScope === "this" ? (
+                      <EffectsEditor
+                        id="canvas-effects"
+                        effects={selectedVariant.canvasEffects ?? draft.canvasEffects}
+                        target={{ kind: "canvas" }}
+                        kit={kit}
+                        companyId={company?.id}
+                        onChange={(next) =>
+                          setVariantBackground(
+                            { canvasEffects: normalizeEffects(next, { kind: "canvas" }) ?? [] },
+                            `vbg:effects:${selectedVariant.id}`,
+                          )
+                        }
+                        onUseBase={
+                          selectedVariant.canvasEffects !== undefined
+                            ? () => setVariantBackground({ canvasEffects: undefined })
+                            : undefined
+                        }
+                      />
+                    ) : (
+                      <EffectsEditor
+                        id="canvas-effects"
+                        effects={draft.canvasEffects}
+                        target={{ kind: "canvas" }}
+                        kit={kit}
+                        companyId={company?.id}
+                        onChange={(next) =>
+                          setDraft(
+                            (d) => ({
+                              ...d,
+                              canvasEffects: normalizeEffects(next, { kind: "canvas" }),
+                            }),
+                            "bg:effects",
                           )
                         }
                       />
-                      {(selectedVariant.backgroundColor !== undefined ||
-                        selectedVariant.backgroundGradient !== undefined) && (
-                        <button
-                          type="button"
-                          className="sp-btn sp-btn-ghost w-full"
-                          onClick={() =>
-                            setVariantBackground({
-                              backgroundColor: undefined,
-                              backgroundGradient: undefined,
-                            })
-                          }
-                        >
-                          Use the base background
-                        </button>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <div className="space-y-2">
-                        <label className="sp-eyebrow block">Background color</label>
-                        <ColorControl
-                          ariaLabel="Template background color"
-                          value={draft.backgroundColor ?? "#ffffff"}
-                          onChange={(hex) =>
-                            setDraft((d) => ({ ...d, backgroundColor: hex }), "bg:color")
-                          }
-                        />
-                      </div>
-                      <GradientEditor
-                        label="Gradient background"
-                        gradient={draft.backgroundGradient}
-                        defaultStops={[
-                          {
-                            position: 0,
-                            color: kit?.colors[0]?.hex ?? platformPrimitive("--slime"),
-                          },
-                          { position: 1, color: kit?.colors[1]?.hex ?? platformPrimitive("--ink") },
-                        ]}
-                        onChange={(backgroundGradient) =>
-                          setDraft((d) => ({ ...d, backgroundGradient }), "bg:gradient")
-                        }
-                      />
-                    </>
-                  )}
-                  <div className="space-y-2">
-                    <label className="sp-eyebrow block">Background image</label>
-                    <label
-                      {...bgDrop.bind}
-                      data-active={bgDrop.active}
-                      className="sp-dropzone flex items-center justify-center gap-2 cursor-pointer py-2.5"
-                      style={{
-                        border: "1.5px dashed var(--border-strong)",
-                        borderRadius: "var(--radius-control)",
-                        fontSize: "var(--type-caption-size)",
-                        color: "var(--text-secondary)",
-                      }}
-                    >
-                      {uploading ? (
-                        <RefreshCw
-                          className="w-3.5 h-3.5 animate-spin"
-                          style={{ color: "var(--state-primary)" }}
-                        />
-                      ) : (
-                        <Upload
-                          className="sp-dropzone__icon w-3.5 h-3.5"
-                          style={{ color: "var(--state-primary)" }}
-                        />
-                      )}
-                      {uploading
-                        ? "Uploading…"
-                        : draft.backgroundUrl
-                          ? "Replace image"
-                          : "Upload image"}
-                      <input
-                        type="file"
-                        accept="image/png,image/jpeg"
-                        className="hidden"
-                        onChange={(e) => {
-                          const f = e.target.files?.[0];
-                          if (f) void onDropBackground([f]);
-                        }}
-                      />
-                    </label>
-                    {draft.backgroundUrl && (
-                      <button
-                        onClick={() => setDraft((d) => ({ ...d, backgroundUrl: "" }))}
-                        style={{ fontSize: 11, color: "var(--destructive)" }}
-                      >
-                        Remove image
-                      </button>
                     )}
-                    <p style={{ fontSize: 10.5, color: "var(--text-muted)" }}>
-                      An image covers the gradient, which covers the color.
-                    </p>
                   </div>
-                  {/* Canvas effects: grain over everything, an inner shadow at
-                    the edge. Scoped like the background: a look can replace
-                    them, the base is what every look starts from. */}
-                  {multiLook && selectedVariant && bgScope === "this" ? (
-                    <EffectsEditor
-                      id="canvas-effects"
-                      effects={selectedVariant.canvasEffects ?? draft.canvasEffects}
-                      target={{ kind: "canvas" }}
-                      kit={kit}
-                      companyId={company?.id}
-                      onChange={(next) =>
-                        setVariantBackground(
-                          { canvasEffects: normalizeEffects(next, { kind: "canvas" }) ?? [] },
-                          `vbg:effects:${selectedVariant.id}`,
-                        )
-                      }
-                      onUseBase={
-                        selectedVariant.canvasEffects !== undefined
-                          ? () => setVariantBackground({ canvasEffects: undefined })
-                          : undefined
-                      }
-                    />
-                  ) : (
-                    <EffectsEditor
-                      id="canvas-effects"
-                      effects={draft.canvasEffects}
-                      target={{ kind: "canvas" }}
-                      kit={kit}
-                      companyId={company?.id}
-                      onChange={(next) =>
-                        setDraft(
-                          (d) => ({
-                            ...d,
-                            canvasEffects: normalizeEffects(next, { kind: "canvas" }),
-                          }),
-                          "bg:effects",
-                        )
-                      }
-                    />
-                  )}
-                </div>
-              )}
-            </div>
-          </BuilderRail>
-
-          {/* ── Step panels: Caption, Tags & details, Name ─────────────── */}
-          {step !== "fields" && (
-            <BuilderSlideOver
-              title={WIZARD_STEPS.find((s) => s.key === step)?.title ?? ""}
-              width={stepPanelWidth}
-              onClose={() => goTo("fields")}
-              footer={
-                <>
-                  {prevStep ? (
-                    <button
-                      onClick={() => goTo(prevStep)}
-                      className="sp-btn sp-btn-ghost"
-                      style={{ minHeight: 32 }}
-                    >
-                      <ArrowLeft className="w-3.5 h-3.5" />
-                      Back
-                    </button>
-                  ) : (
-                    <span />
-                  )}
-                  {nextStep ? (
-                    <button
-                      onClick={() => goTo(nextStep)}
-                      disabled={!canGo(nextStep)}
-                      className="sp-btn sp-btn-primary"
-                      style={{ minHeight: 32 }}
-                    >
-                      Next
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  ) : (
-                    <span />
-                  )}
-                </>
-              }
-            >
-              {step === "name" && (
-                <div className="space-y-4">
-                  <p
-                    style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}
-                  >
-                    Members see this name in their template gallery. This is the last step: name it
-                    and publish.
-                  </p>
-                  <input
-                    autoFocus
-                    value={draft.name}
-                    onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }), "text:name")}
-                    onFocus={(e) => {
-                      // The default is a placeholder, not a choice — typing
-                      // should replace it, not append to it.
-                      if (e.target.value.trim() === "Untitled template") e.target.select();
-                    }}
-                    placeholder="e.g. Employee anniversary post"
-                    className="sp-input"
-                  />
-                  {nameNeeded && (
-                    <p
-                      role="alert"
-                      style={{
-                        fontSize: "var(--type-caption-size)",
-                        color: "var(--state-primary)",
-                      }}
-                    >
-                      Name the template before publishing. Members find it by this name in their
-                      gallery.
-                    </p>
-                  )}
-                  <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
-                    "{draft.name.trim() || "Untitled template"}" · {draft.fields.length} field
-                    {draft.fields.length !== 1 ? "s" : ""} ·{" "}
-                    {draft.captionTemplate ? "caption set" : "no caption"}
-                  </p>
-                  <button
-                    onClick={() => void publish()}
-                    disabled={saving || publishState !== "idle" || draft.fields.length === 0}
-                    className="sp-btn sp-btn-primary w-full"
-                    style={{ padding: "11px 14px" }}
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    {draft.status === "published" ? "Publish changes" : "Publish template"}
-                  </button>
-                </div>
-              )}
-
-              {step === "caption" && (
-                <div className="space-y-4">
-                  <p
-                    style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}
-                  >
-                    Members get this caption next to the finished graphic, with the tags filled from
-                    what they typed. Click a tag chip to insert it. Optional.
-                  </p>
-                  <CaptionEditor
-                    value={draft.captionTemplate}
-                    fields={draft.fields}
-                    onChange={(captionTemplate) =>
-                      setDraft((d) => ({ ...d, captionTemplate }), "text:caption")
-                    }
-                  />
-                </div>
-              )}
-
-              {step === "details" && (
-                <div className="space-y-3">
-                  <p
-                    style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}
-                  >
-                    Shown on the template's card in the members' gallery. Optional.
-                  </p>
-                  <input
-                    value={draft.description}
-                    onChange={(e) =>
-                      setDraft((d) => ({ ...d, description: e.target.value }), "text:description")
-                    }
-                    placeholder="Short description shown on the portal card"
-                    className="sp-input"
-                  />
-                  <input
-                    value={draft.category}
-                    onChange={(e) =>
-                      setDraft((d) => ({ ...d, category: e.target.value }), "text:category")
-                    }
-                    placeholder="Category"
-                    className="sp-input"
-                  />
-                  <input
-                    value={draft.tags.join(", ")}
-                    onChange={(e) =>
-                      setDraft(
-                        (d) => ({
-                          ...d,
-                          tags: e.target.value
-                            .split(",")
-                            .map((t) => t.trim())
-                            .filter(Boolean),
-                        }),
-                        "text:tags",
-                      )
-                    }
-                    placeholder="Tags (comma-separated)"
-                    className="sp-input"
-                  />
-                  <label
-                    {...bgDrop.bind}
-                    data-active={bgDrop.active}
-                    className="sp-dropzone flex items-center gap-2 cursor-pointer"
-                    data-radius-control
-                    style={{
-                      fontSize: "var(--type-caption-size)",
-                      color: "var(--text-secondary)",
-                      padding: "4px 6px",
-                      margin: "-4px -6px",
-                    }}
-                  >
-                    {uploading ? (
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Upload className="sp-dropzone__icon w-3.5 h-3.5" />
-                    )}
-                    {uploading
-                      ? "Uploading…"
-                      : draft.backgroundUrl
-                        ? "Replace background PNG"
-                        : "Add a background PNG (optional)"}
-                    <input
-                      type="file"
-                      accept="image/png,image/jpeg"
-                      className="hidden"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) void onDropBackground([f]);
-                      }}
-                    />
-                  </label>
-                </div>
-              )}
-            </BuilderSlideOver>
-          )}
-        </>
-      )}
+                )}
+              </div>
+            </section>
+          </>
+        )}
+      </div>
     </div>
   );
 }
