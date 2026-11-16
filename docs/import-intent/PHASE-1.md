@@ -1,6 +1,6 @@
 # Import intent, Phase 1: read the frame, then build it
 
-Status (2026-11-15): Steps 1 to 5 and 7 done, Gates 1 and 2 passed. Step 6's script (`scripts/import-intent/eval.mjs`) ran its offline half; CJ skipped the model half (I10), so the bar Gate 3 sets for unkeyed frames, and the calls, tokens and seconds per import, are still open and are to be read from live imports. `RECON-1.md` holds the recon, and "As built" at the end of this file lists where the build departs from the prompt. The P15 fixture is `portrait-plate-import`, a neutral copy of the frame in the GTM Graphics file (`g9mjhQHoPVgYbBIPKR1VsT`, node `432:3`), with no baseline until CJ approves one: it measures about 0.7% to 0.9% once pull request 184 (I8) is merged in.
+Status (2026-11-16): Steps 1 to 5 and 7 done, Gates 1 and 2 passed, and the phase review's findings fixed. Step 6's script (`scripts/import-intent/eval.mjs`) ran its offline half; CJ skipped the model half (I10), so the bar Gate 3 sets for unkeyed frames, and the calls, tokens and seconds per import, are still open and are to be read from live imports. `RECON-1.md` holds the recon, and "As built" at the end of this file lists where the build departs from the prompt. The P15 fixture is `portrait-plate-import`, a neutral copy of the frame in the GTM Graphics file (`g9mjhQHoPVgYbBIPKR1VsT`, node `432:3`). With pull request 184 (I8) merged it measures 0.72%, 0.87% and 0.86% changed in Chromium, Firefox and WebKit, and it has no baseline until CJ approves one.
 
 You are working in the SocialPaint repo. An admin who imports a Figma frame should get the template the designer made, with its member form already set up, whichever way they import it. Today the two Figma routes disagree, and both leave work behind:
 
@@ -224,6 +224,12 @@ Where the build departs from the prompt above. Each was reported to CJ on 2026-1
 - **The kit's logo is swapped on the server**, in the run both functions share, and is contained and centred in the Figma logo's box.
 - **The flat routes** (Canva and image) no longer propose `maxLength`; the browser measures it. Their retry now validates with the same source kind and plate option as the first call.
 - **The builder calls `template-autobuild` for every Figma import and falls back to `figma-import`** when that function is missing, fails, can't be reached or answers in the older shape. A refusal (a bad link, Figma not connected) is final.
+- **Limits are measured at three quarters of the set size when a field has no floor of its own.** Imported text has none (the builder's own text hasn't had one since CJ's decision of 2026-10-04), so it shrinks to the 18px default, and a limit measured there would let a headline run to a few hundred characters. The field still shrinks as far as it did. RECON-1.md listed a 0.75 floor on P15's headline itself; that would have changed how such a field renders, so it isn't set.
+- **A pill's room is a heuristic.** It stops a padding short of its neighbour, keeps the margin it already keeps on the side it grows toward, and a centred pill grows to the narrowest margin the frame's other text and images keep. The row's own gap isn't sent to the browser.
+- **Without the model, a template takes its name from the frame's**, leaving out a library code and the layout description ("P15 · Doctor topic · Portrait with plate" reads "Doctor topic").
+- **The model isn't sent the kit's logos.** The tool has no logo decision for it to make; the swap reads the keys.
+- **A pasted layer reports only what degraded**, as a template import already did. Before, it showed every warning.
+- **Strings added after Gate 1**, each following the copy rules: the count of elements a pass left out, the singular off-palette sentence, the unfilled sentence for pasted layers, "Labels come from the layer names.", "the keys in this frame's layer names couldn't be read, so it imported without them.", and the rewritten link, empty-layer and too-many-pieces errors.
 
 ## Later phases
 

@@ -104,8 +104,9 @@ Import intent (Phase 1, `docs/import-intent/PHASE-1.md`) adds no property. It de
 
 - **Keys in a layer's name** (`role · kind · key=value`): `edit` sets `static`, `max` sets `maxLength`, `fit` sets `objectFit`, `align` sets `align`, and the role gives the label.
 - **The auto layout around a layer:** a hug-width pill's `align` is the edge its row holds, its `platePaddingY` comes from its container's height, and a member text box takes the height its fixed-height parent leaves it.
-- **One model pass** for what the names leave open: `label`, `static` on unkeyed layers, `type: "select"` with `options` on a member's single line, and `typeStyleKey` only when the layer is drawn in that style exactly. It never sets geometry, color or a limit.
-- **In the browser, as the import lands:** `maxLength` is measured from real glyphs, and text on a cap-trimmed layer is re-placed from the loaded face's metrics (`src/lib/figma/importPrepare.ts`).
+- **One model pass** for what the names leave open: `label`, `fieldKey`, `static` on unkeyed layers, `type: "select"` with `options` on a member's single line, `placeholder` where the layer has no copy of its own, and `typeStyleKey` only when the layer is drawn in that style exactly (limit included). It never sets geometry, color or a limit.
+- **A keyed logo** (`variant=primary` with a `surface`) lands as an `image` with the kit's primary logo for that surface as its `staticValue`, `objectFit: "contain"`.
+- **In the browser, as the import lands:** `maxLength` is measured from real glyphs at the field's shrink floor, or at three quarters of its set size when it has none, and text on a cap-trimmed layer is re-placed from the loaded face's metrics (`src/lib/figma/importPrepare.ts`).
 
 The fields array is the form's order, and `zIndex` keeps the frame's paint order.
 
@@ -184,7 +185,7 @@ Icons (brand-system Phase 3, migration 0049):
 
 Guardrails:
 
-- `maxLength` — hard char limit enforced by the input. An import measures it at the field's shrink floor, and a designer's keyed `max` wins when it is lower.
+- `maxLength` — hard char limit enforced by the input. An import measures it at the field's shrink floor (three quarters of the set size when the field has none), and a designer's keyed `max` wins when it is lower.
 - `textSizing` — how text responds to its content, always measured against
   real glyphs (`src/lib/render/autoFit.ts`):
   - `free` (or absent): the font size is fixed and the box grows taller as
@@ -195,7 +196,8 @@ Guardrails:
     fits, growing up from its floor.
 - `minFontScale` — the floor for `shrink` and `fill`, as a fraction of the
   set size (0.25 to 1; the builder's "Min text" shows it as a percentage).
-  New fields and imports get 0.75. It wins over `minFontSizePx`.
+  New fields and imports set none (CJ, 2026-10-04), so their text shrinks to
+  the 18px default. It wins over `minFontSizePx`.
 - `minFontSizePx` — the older absolute floor in px. Templates saved before
   `minFontScale` keep it and render exactly as before; with neither set the
   floor is 18px. Both are read through `minFontSizeFor` only.
