@@ -166,6 +166,7 @@ export function Portal() {
         <LibrarySearch value={query} onChange={(q) => setState({ q }, true)} />
         {catalog.length > 0 && (
           <PlatformFilter
+            allLabel="All Templates"
             facets={chipFacets}
             selected={platform?.id ?? null}
             onSelect={(next) => setState({ platform: next })}
@@ -188,8 +189,8 @@ export function Portal() {
           </>
         ) : catalog.length === 0 ? (
           <div className="sp-lib-empty">
-            <p className="tu-title-card">Publish your first template</p>
-            <p className="tu-body-m sp-lib-empty__body">
+            <p className="t-title-card">Publish your first template</p>
+            <p className="t-body-m sp-lib-empty__body">
               Published templates appear here for everyone on your team.
             </p>
           </div>
@@ -208,7 +209,7 @@ export function Portal() {
         ) : (
           <>
             <div className="sp-lib-resultline">
-              <p className="sp-lib-eyebrow">{announcement}</p>
+              <p className="t-mono-eyebrow sp-lib-eyebrow">{announcement}</p>
               <Button kind="neutral" size="sm" onClick={() => setState({ platform: null, q: "" })}>
                 Clear
               </Button>
@@ -216,7 +217,7 @@ export function Portal() {
 
             {results.length === 0 ? (
               <div className="sp-lib-empty">
-                <p className="tu-title-card">
+                <p className="t-title-card">
                   {query ? `No templates match “${query}”.` : "That set is empty."}
                 </p>
                 <div className="sp-lib-empty__actions">
@@ -238,9 +239,7 @@ export function Portal() {
                 </div>
               </div>
             ) : (
-              resultGroups.map((g) => (
-                <ResultGroup key={g.id} group={g} showTags={Boolean(query)} onOpen={openTemplate} />
-              ))
+              resultGroups.map((g) => <ResultGroup key={g.id} group={g} onOpen={openTemplate} />)
             )}
           </>
         )}
@@ -249,36 +248,28 @@ export function Portal() {
   );
 }
 
-/** One group of the results (13:6310, 13:6511): its label and count over a
- *  three-column grid of cards, each group in its own frame ratio. */
+/** One group of the results (2308:538, 2308:739): its label and count over
+ *  a three-column grid of cards, each group in its own frame ratio. */
 function ResultGroup({
   group,
-  showTags,
   onOpen,
 }: {
   group: TemplateGroup;
-  showTags: boolean;
   onOpen(template: CatalogTemplate): void;
 }) {
   return (
     <section className="sp-lib-group" aria-labelledby={`group-${group.id}`}>
       <div className="sp-lib-group__header">
-        <h2 className="tu-title-card" id={`group-${group.id}`}>
+        <h2 className="t-title-card" id={`group-${group.id}`}>
           {group.label}
         </h2>
-        <span className="tu-body-m sp-lib-group__count">
+        <span className="t-body-m sp-lib-group__count">
           {plural(group.templates.length, "template")}
         </span>
       </div>
       <div className="sp-lib-grid">
         {group.templates.map((t) => (
-          <TemplateCard
-            key={t.id}
-            template={t}
-            frame={group.frame}
-            showTags={showTags}
-            onOpen={onOpen}
-          />
+          <TemplateCard key={t.id} template={t} frame={group.frame} onOpen={onOpen} />
         ))}
       </div>
     </section>

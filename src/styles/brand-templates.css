@@ -7,12 +7,14 @@
    layer), not colours.
    ========================================================================== */
 
-/* ── The library (13:5776, 13:6310, 13:6511) ─────────────────────────────── */
+/* ── The library (new brand: 2308:4, platform filter 2308:538, search
+   2308:739) ───────────────────────────────────────────────────────────────── */
 
 /* The filter bar pins under the app chrome as the page scrolls. Flat at
    rest; pinned, the page's own ground runs behind it and fades out 24
    below, so cards scroll under it without meeting an edge. The sentinel
-   above it tells the page when it has pinned. */
+   above it tells the page when it has pinned. The search button, then the
+   chips, 8 apart. */
 .sp-lib-sentinel {
   height: 1px;
   margin-top: -1px;
@@ -23,7 +25,7 @@
   z-index: var(--z-sticky);
   display: flex;
   align-items: center;
-  gap: var(--space-2xs);
+  gap: var(--space-8);
   min-height: 56px;
 }
 /* In the app frame the bar pins to the content's top edge, right under the
@@ -37,7 +39,7 @@
 .sp-lib-filterbar::before {
   content: "";
   position: absolute;
-  inset: 0 0 calc(-1 * var(--space-md));
+  inset: 0 0 calc(-1 * var(--space-24));
   z-index: -1;
   pointer-events: none;
   background: linear-gradient(to bottom, var(--surface-page) 70%, transparent);
@@ -46,14 +48,19 @@
 .sp-lib-filterbar[data-pinned]::before {
   opacity: 1;
 }
+/* The search (50:62) is round here: a 50 button that opens into the 440
+   pill (2308:739). */
 .sp-lib-search {
   flex: none;
   display: flex;
 }
+.sp-lib-search .ui-search {
+  border-radius: var(--radius-full);
+}
 
-/* A rail that scrolls sideways and fades out at its right edge over 96 to
-   the page (13:5978), the fade gone once the end is in view. The chips'
-   rail and the shelves' rails share it. */
+/* A rail that scrolls sideways and fades out at its right edge to the page,
+   the fade gone once the end is in view: 96 over a shelf, 72 over the
+   chips (2308:4). */
 .sp-lib-rail {
   position: relative;
   min-width: 0;
@@ -64,7 +71,7 @@
   top: 0;
   right: 0;
   bottom: 0;
-  width: var(--space-3xl);
+  width: 96px;
   z-index: 1;
   pointer-events: none;
   background: linear-gradient(to right, transparent, var(--surface-page));
@@ -81,155 +88,102 @@
   display: none;
 }
 
-/* The chips' rail: the focus ring's room inside the scroller on every side
-   (a scroller clips), cancelled by the rail's margins, so the chips sit
-   exactly where they are drawn. */
+/* The chips' rail: room inside the scroller for the chips' Elevation/1 and
+   the focus ring (a scroller clips both), 12 above, below and at the end,
+   and 8 at the start, where the search button sits 8 away. The rail's
+   margins give it back, so the chips sit exactly where they are drawn and
+   the fade ends at the content's edge. */
 .sp-lib-chips {
   flex: 1;
-  margin: -4px;
+  margin: calc(-1 * var(--space-12)) 0 calc(-1 * var(--space-12)) calc(-1 * var(--space-8));
+}
+.sp-lib-chips::after {
+  width: 72px;
 }
 .sp-lib-chips__track {
   align-items: center;
-  gap: var(--space-2xs);
-  padding: 4px;
-  scroll-padding-inline: 4px;
-}
-/* Today's chip size (CJ, 2026-10-04), over the frame's hugging 50: 48 tall
-   on a 152 floor, the chevron at the far right. A label that needs more
-   grows the chip by that much. The search square matches its height. */
-.sp-lib-chips .ui-platform-chip {
-  flex: none;
-  box-sizing: border-box;
-  min-width: 152px;
-  height: 48px;
-  padding: 0 var(--space-xs) 0 var(--space-2xs);
-  gap: var(--space-2xs);
-}
-.sp-lib-chips .ui-platform-chip__chevron {
-  margin-left: auto;
-}
-.sp-lib-search .ui-search:not(.ui-search--open) {
-  width: 48px;
-  height: 48px;
-}
-.sp-lib-search .ui-search--open {
-  height: 48px;
+  gap: var(--space-8);
+  padding: var(--space-12) var(--space-12) var(--space-12) var(--space-8);
+  scroll-padding-inline: var(--space-8) var(--space-12);
 }
 
 /* The page under the filter bar: 40 down to the first shelf (16 + 24),
-   then 32 between shelves, 24 between a platform's groups and 28 between
-   a search's (PHASE-4.md §8). */
+   then 32 between shelves and between a result line and its groups. */
 .sp-lib-body {
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
-  padding-top: 40px;
-}
-.sp-lib-body[data-state="platform"] {
-  gap: var(--space-md);
-}
-.sp-lib-body[data-state="search"] {
-  gap: 28px; /* as drawn (13:6635) */
+  gap: var(--space-32);
+  padding-top: var(--space-40);
 }
 
-/* A shelf: its header 32 tall, 16 above the rail. */
+/* A shelf (2308:4): its header, 28 tall with View all at its end, 16
+   above the rail. */
 .sp-lib-shelf {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: var(--space-16);
   min-width: 0;
 }
 .sp-lib-shelf__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-sm);
-  min-height: 32px;
-  padding-left: var(--space-3xs);
-  color: var(--text-strong);
+  gap: var(--space-12);
+  min-height: var(--size-control-sm);
+  color: var(--text-primary);
 }
 .sp-lib-shelf__header > h2 {
+  min-width: 0;
   margin: 0;
 }
-/* "View all": a text link, 32 tall, underlined (13:5921). */
-.sp-lib-link {
-  display: inline-flex;
-  align-items: center;
-  height: 32px;
-  padding: 0 var(--space-2xs);
-  border-radius: var(--radius-control);
-  color: var(--text-strong);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  white-space: nowrap;
-}
-/* Exactly --shelf-visible cards fill the rail before it scrolls (CJ,
-   2026-10-04: today's sizes, over the frame's fixed 302 with a fourth cut
-   by the fade): three across at laptop widths, four from 1800, two and a
-   bit on a phone. The width is derived from the rail's own gap, so the
-   two can never drift. The track pads for the cards' shadow and the
-   focus ring (a scroller clips both) and the rail steps back by as much,
-   as the chips' rail does, so the fade ends where the cards are clipped. */
+/* The rail: cards 302 wide and 16 apart, the next one cut off at the
+   content's edge under the fade (2308:4). The track keeps 12 for the
+   cards' Elevation/1 and the focus ring above, below and at both ends (a
+   scroller clips both), and the rail steps back by as much at the top,
+   the bottom and the start, so the cards sit where they are drawn and the
+   clip falls on the content's edge. */
 .sp-lib-shelf > .sp-lib-rail {
-  margin: -4px -4px calc(-1 * var(--space-sm));
+  margin: calc(-1 * var(--space-12)) 0 calc(-1 * var(--space-12)) calc(-1 * var(--space-12));
 }
 .sp-lib-shelf__track {
-  --shelf-visible: 1.15;
-  --shelf-gap: var(--space-sm);
-  gap: var(--shelf-gap);
-  padding: 4px 4px var(--space-sm);
-  scroll-padding-inline: 4px;
+  gap: var(--space-16);
+  padding: var(--space-12);
+  scroll-padding-inline: var(--space-12);
   scroll-snap-type: x mandatory;
-}
-@media (min-width: 480px) {
-  .sp-lib-shelf__track {
-    --shelf-visible: 2;
-  }
-}
-@media (min-width: 768px) {
-  .sp-lib-shelf__track {
-    --shelf-visible: 3;
-  }
-}
-@media (min-width: 1800px) {
-  .sp-lib-shelf__track {
-    --shelf-visible: 4;
-  }
 }
 .sp-lib-shelf__item {
   flex: none;
-  width: calc((100% - (var(--shelf-visible) - 1) * var(--shelf-gap)) / var(--shelf-visible));
+  width: 302px; /* as drawn (2308:4) */
   scroll-snap-align: start;
 }
 
-/* The result line (13:6452): what the page shows, and Clear. */
+/* The result line (2308:538): what the page shows in Mono/Eyebrow, and
+   Clear, 12 apart. */
 .sp-lib-resultline {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: var(--space-12);
 }
 .sp-lib-eyebrow {
   margin: 0;
-  font: var(--type-mono-eyebrow);
-  letter-spacing: var(--type-mono-eyebrow-tracking);
-  text-transform: uppercase;
   color: var(--text-secondary);
 }
 
-/* A result group (13:6456): its label and count, then three columns of
-   cards 17 apart (as drawn, off the scale). */
+/* A result group (2308:538): its label and count, 32 tall and 12 apart,
+   16 above the grid; three columns of cards 16 apart, rows 17 apart (as
+   drawn). */
 .sp-lib-group {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: var(--space-16);
   min-width: 0;
 }
 .sp-lib-group__header {
   display: flex;
-  align-items: baseline;
-  gap: 10px; /* as drawn (13:6457) */
-  padding-left: var(--space-3xs);
-  color: var(--text-strong);
+  align-items: center;
+  gap: var(--space-12);
+  min-height: 32px;
+  color: var(--text-primary);
 }
 .sp-lib-group__header > h2 {
   margin: 0;
@@ -240,7 +194,7 @@
 .sp-lib-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 17px;
+  gap: 17px var(--space-16); /* rows 17 apart, as drawn (2308:538) */
   align-items: start;
 }
 @media (max-width: 1023px) {
@@ -264,10 +218,10 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-2xs);
-  padding: var(--space-2xl) var(--space-lg);
+  gap: var(--space-8);
+  padding: var(--space-64) var(--space-32);
   text-align: center;
-  color: var(--text-strong);
+  color: var(--text-primary);
 }
 .sp-lib-empty > p {
   margin: 0;
@@ -279,43 +233,43 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: var(--space-2xs);
-  margin-top: var(--space-xs);
+  gap: var(--space-8);
+  margin-top: var(--space-12);
 }
 
-/* ── Template card (13:5924): the Result card's anatomy with a go arrow.
-   One button with the keyboard ring; hover and focus step through its
-   looks (CJ, 2026-10-04: today's hover, kept over the frame's dim). ── */
+/* ── Template card (2308:4): 8 around the preview (radius/lg), then the
+   name in Label/M over its size and variations in Caption/M, 8 apart,
+   beside the go arrow, on surface/raised at radius/xl with Elevation/1.
+   One button with the keyboard ring. Hover and focus step through its
+   variations (judgement call 4); hover lifts it to Elevation/2 and fills
+   the arrow with the primary pair. ── */
 .sp-tcard {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   width: 100%;
-  padding: var(--space-2xs);
-  border-radius: var(--radius-card);
+  padding: var(--space-8);
+  border-radius: var(--radius-xl);
   background: var(--surface-raised);
-  box-shadow: var(--elevation-small);
-  color: var(--text-strong);
+  box-shadow: var(--elevation-1-raised);
+  color: var(--text-primary);
   text-align: left;
   cursor: pointer;
-}
-/* Hover deepens the card's shadow to Elevation/Large and fills the go
-   arrow with the primary pair, eased (CJ, 2026-10-04: today's hover). */
-.sp-tcard {
-  transition: box-shadow var(--dur-state) var(--ease);
+  transition: box-shadow var(--motion-duration-fast) var(--motion-easing-standard);
 }
 .sp-tcard:hover {
-  box-shadow: var(--elevation-large);
+  box-shadow: var(--elevation-2-overlay);
 }
 .sp-tcard__go {
+  flex: none;
   transition:
-    background-color var(--dur-state) var(--ease),
-    color var(--dur-state) var(--ease);
+    background-color var(--motion-duration-fast) var(--motion-easing-standard),
+    color var(--motion-duration-fast) var(--motion-easing-standard);
 }
 .sp-tcard:hover .sp-tcard__go,
 .sp-tcard:focus-visible .sp-tcard__go {
-  background: var(--btn-primary-bg);
-  color: var(--btn-primary-fg);
+  background: var(--action-primary);
+  color: var(--action-on-primary);
 }
 .sp-tcard__frame {
   position: relative;
@@ -324,65 +278,62 @@
   justify-content: center;
   aspect-ratio: var(--frame-ratio, 4 / 5);
   overflow: hidden;
-  border-radius: var(--radius-media-plate);
+  border-radius: var(--radius-lg);
   background: var(--surface-sunken);
 }
-/* The looks a card steps through: dots, and the name while stepping, on
-   the Overlay tag, 8 in from the preview's bottom left. */
+/* The variations a card steps through: dots, and the name while stepping,
+   on the Overlay tag, 8 in from the preview's bottom left. */
 .sp-tcard__looks {
   position: absolute;
-  left: var(--space-2xs);
-  bottom: var(--space-2xs);
+  left: var(--space-8);
+  bottom: var(--space-8);
   pointer-events: none;
 }
 .sp-tcard__dots {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-3xs);
+  gap: var(--space-4);
 }
 .sp-tcard__dots:not(:last-child) {
-  margin-right: 6px;
+  margin-right: var(--space-6);
 }
 .sp-tcard__dot {
   width: 5px;
   height: 5px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-full);
   background: currentColor;
   opacity: 0.45;
 }
 .sp-tcard__dot[data-on] {
   opacity: 1;
 }
+/* 16 under the preview, 8 in from the card's sides and foot; the arrow is
+   the 36 Filled Icon Button. */
 .sp-tcard__meta {
   display: flex;
   align-items: center;
-  gap: var(--space-2xs);
-  padding: var(--space-sm) var(--space-2xs) var(--space-2xs);
+  gap: var(--space-8);
+  padding: var(--space-16) var(--space-8) var(--space-8);
 }
 .sp-tcard__text {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3xs);
+  gap: var(--space-8);
 }
+/* One line each. The text is trimmed to its capitals, so the clip box is
+   widened past the descenders without moving the line. */
 .sp-tcard__title,
 .sp-tcard__size {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding-block: 0.3em;
+  margin-block: -0.3em;
 }
 .sp-tcard__size {
   color: var(--text-secondary);
-}
-.sp-tcard__tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px; /* as drawn (13:6653) */
-  padding-top: 6px;
-}
-.sp-tcard__go {
-  flex: none;
 }
 
 /* ── Below 768 the library's rails bleed to the screen edge (.sp-page--bleed
@@ -393,14 +344,14 @@
   .sp-page--bleed .sp-lib-group,
   .sp-page--bleed .sp-lib-empty,
   .sp-page--bleed .sp-lib-shelf__header {
-    padding-inline: var(--space-sm);
+    padding-inline: var(--space-16);
   }
   .sp-page--bleed .sp-lib-shelf > .sp-lib-rail {
     margin-inline: 0;
   }
   .sp-page--bleed .sp-lib-shelf__track {
-    padding-inline: var(--space-sm);
-    scroll-padding-inline: var(--space-sm);
+    padding-inline: var(--space-16);
+    scroll-padding-inline: var(--space-16);
   }
   .sp-page--bleed .sp-lib-chips {
     margin-right: 0;
