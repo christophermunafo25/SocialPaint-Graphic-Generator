@@ -8,8 +8,16 @@ import { PHOTO_ANSWER, type InterviewStep } from "@/lib/generate/interview";
 import { progressLabel, provenanceSentence } from "@/lib/generate/runCopy";
 import { defaultVariant, hasVariants } from "@/lib/templates/variants";
 import { TemplateThumbnail } from "../TemplateThumbnail";
-import { Button, Chip, LookTile, Progress, ResultCard, Tag } from "../primitives";
-import { CaptionCard } from "./CaptionCard";
+import {
+  Button,
+  Chip,
+  LookTile,
+  Progress,
+  ResultCard,
+  ResultCardArt,
+  ResultCardSkeleton,
+  Tag,
+} from "../primitives";
 import { AssistantMessage, MessageBubble, UserMessage } from "./Messages";
 
 /** The result card's preview height (13:7871): 264, the width following
@@ -284,37 +292,23 @@ function LookCard({
   );
 }
 
-/** The result, the Looks card and the caption while the draft builds
- * (13:7358): their shapes in sunken bones. Decoration only; the status
- * sentence carries the progress. */
+/** The Result card and the Looks card while the draft builds: the card's
+ * Loading state (one draft, so no switch) and the Looks card's shape.
+ * Decoration only; the status sentence carries the progress. */
 function BuildingSkeleton({ template }: { template: TemplateSchema }) {
-  const width = Math.round(PREVIEW_H * (template.canvasWidth / template.canvasHeight));
   const looks = template.variants?.length ?? 0;
   return (
-    <>
-      <div className="sp-tchat-results" aria-hidden>
-        <div className="ui-result-card sp-tchat-skeleton" style={{ width: width + 16 }}>
+    <div className="sp-tchat-results" aria-hidden>
+      <ResultCardSkeleton withSizes={false} />
+      {looks > 1 && (
+        <div className="sp-tchat-looks sp-tchat-skeleton">
           <span className="sp-tchat-skeleton__preview" style={{ height: PREVIEW_H }} />
           <span className="sp-tchat-skeleton__meta">
-            <span className="sp-tchat-skeleton__bar" style={{ width: 90 }} />
-            <span className="sp-tchat-skeleton__bar" style={{ width: 130, height: 8 }} />
+            <span className="sp-tchat-skeleton__bar" style={{ width: 56 }} />
           </span>
         </div>
-        {looks > 1 && (
-          <div className="sp-tchat-looks sp-tchat-skeleton">
-            <span className="sp-tchat-skeleton__preview" style={{ height: PREVIEW_H }} />
-            <span className="sp-tchat-skeleton__meta">
-              <span className="sp-tchat-skeleton__bar" style={{ width: 56 }} />
-            </span>
-          </div>
-        )}
-      </div>
-      <div className="sp-tchat-caption sp-tchat-skeleton" aria-hidden>
-        <span className="sp-tchat-skeleton__bar" style={{ width: 56 }} />
-        <span className="sp-tchat-skeleton__bar" style={{ width: "100%", height: 12 }} />
-        <span className="sp-tchat-skeleton__bar" style={{ width: "50%", height: 12 }} />
-      </div>
-    </>
+      )}
+    </div>
   );
 }
 
@@ -394,32 +388,37 @@ export const TemplateTurn = memo(function TemplateTurn({
       {draft && (
         <div className="sp-tchat-results">
           <ResultCard
-            title={draftName(draft)}
             meta={`${draft.canvas.width} × ${draft.canvas.height}`}
-            previewStyle={{
-              width: Math.round(PREVIEW_H * (draft.canvas.width / draft.canvas.height)) + 16,
-            }}
-            preview={
-              <span className="sp-tchat-preview" style={{ height: PREVIEW_H }}>
-                {schema ? (
+            art={
+              schema ? (
+                <ResultCardArt ratio={schema.canvasWidth / schema.canvasHeight}>
                   <TemplateThumbnail
                     template={schema}
                     values={values}
                     variantId={draft.variantId}
                     emptyFields="chat"
                   />
-                ) : (
-                  <span className="tu-caption-m">{draftName(draft)} is no longer available.</span>
-                )}
-              </span>
+                </ResultCardArt>
+              ) : (
+                <span className="t-caption-m sp-gen-result__gone">
+                  {draftName(draft)} is no longer available.
+                </span>
+              )
             }
             onEdit={schema ? () => handlers.onEditDraft(turn.id, draft.id) : undefined}
             editLabel={`Edit ${draftName(draft)}`}
             editRef={previewRef}
-            onDownload={schema ? () => handlers.onDownloadDraft(turn.id, draft.id) : undefined}
-            downloadLabel={`Download ${draftName(draft)}`}
-            downloadBusy={busyDraftId === draft.id}
-            className="sp-tchat-result"
+            caption={running ? "" : caption}
+            downloadAll={
+              schema
+                ? {
+                    label: "Download",
+                    onClick: () => handlers.onDownloadDraft(turn.id, draft.id),
+                    busy: busyDraftId === draft.id,
+                  }
+                : undefined
+            }
+            description={description}
           />
           {schema && hasVariants(schema) && (
             <LookCard
@@ -428,7 +427,6 @@ export const TemplateTurn = memo(function TemplateTurn({
               onPick={(variantId) => handlers.onChangeLook(turn.id, draft.id, variantId)}
             />
           )}
-          {description && <span className="sr-only">{description}</span>}
         </div>
       )}
 
@@ -441,8 +439,6 @@ export const TemplateTurn = memo(function TemplateTurn({
           ))}
         </div>
       )}
-
-      {draft && !running && caption && <CaptionCard caption={caption} />}
 
       {turn.phase === "error" && (
         <div>

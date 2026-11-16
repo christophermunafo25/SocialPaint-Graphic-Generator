@@ -135,24 +135,11 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 
 /* Focus. Every control takes the global ring (socialpaint.css
    :focus-visible): stroke/focus of border/focus, focus/offset outside the
-   element. .ui-ring repeats it for the demo state. .ui-ring-tight is the
-   earlier ring drawn against the edge, for what has not been rebuilt. */
+   element. .ui-ring repeats it for the demo state. */
 .ui-ring[data-demo-state="focus"] {
   outline: var(--stroke-focus) solid var(--border-focus);
   outline-offset: var(--focus-offset);
 }
-.ui-ring-tight {
-  box-shadow: var(--_shadow, 0 0 0 0 transparent);
-}
-.ui-ring-tight:focus-visible,
-.ui-ring-tight[data-demo-state="focus"] {
-  outline: 2px solid transparent;
-  outline-offset: 0;
-  box-shadow:
-    0 0 0 var(--focus-width) var(--ring),
-    var(--_shadow, 0 0 0 0 transparent);
-}
-
 /* ── Button (2206:542) ─────────────────────────────────────────────────────
    Small 28, Medium 36, Large 44, all at radius/sm. Neutral carries a
    hairline edge, which sits inside the box and takes its own room, as the
@@ -1099,59 +1086,56 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   border-color: transparent;
 }
 
-/* ── Platform chip (53:96) ── */
+/* ── Platform chip (53:96): a 50 pill that hugs its label. The mark on a 36
+   round tile, the label in Label/M and a chevron, 8 apart, 7 in from the
+   tile's side and 16 from the chevron's. Raised at rest; selected, it turns
+   inverse with the tile on surface/raised and the chevron points down. ── */
 .ui-platform-chip {
+  box-sizing: border-box;
   display: inline-flex;
+  flex: none;
   align-items: center;
   height: 50px;
-  padding: var(--space-2xs) 9px var(--space-2xs) 7px; /* 7 and 9 as drawn (53:85) */
-  gap: 7px;
-  border-radius: var(--radius-control-md);
-  --_fill: var(--control-fill);
-  color: var(--text-strong);
+  padding: 7px var(--space-16) 7px 7px; /* 7 as drawn (53:96) */
+  gap: var(--space-8);
+  border: var(--stroke-hairline) solid var(--border-strong);
+  border-radius: var(--radius-full);
+  box-shadow: var(--elevation-1-raised);
+  --_fill: var(--surface-raised);
+  --_hover: var(--action-neutral-hover);
+  --_pressed: var(--action-neutral-pressed);
+  --_selected: var(--surface-inverse);
+  --_fg: var(--text-primary);
+  --_fg-selected: var(--text-inverse);
+  white-space: nowrap;
 }
 .ui-platform-chip__tile {
   display: inline-flex;
+  flex: none;
   align-items: center;
   justify-content: center;
   width: 36px;
   height: 36px;
-  border-radius: var(--radius-control);
-  background: var(--chip-tile);
+  border-radius: var(--radius-full);
+  background: var(--surface-field);
+  color: var(--text-primary);
 }
 .ui-platform-chip__chevron {
-  color: var(--text-secondary);
+  flex: none;
+  color: inherit;
 }
 .ui-platform-chip[data-expanded] .ui-platform-chip__chevron,
 .ui-platform-chip[data-demo-state="selected"] .ui-platform-chip__chevron {
   transform: rotate(90deg);
 }
-/* Selected: in Light the chip keeps its fill and only the tile turns ink
-   (53:74); in Dark the whole chip turns ink. Set on the theme roots so a
-   chip takes the nearest theme's look. */
-[data-theme="light"] {
-  --_platform-chip-selected-fill: var(--control-fill);
-  --_platform-chip-selected-ink: var(--text-strong);
-  --_platform-chip-selected-chevron: var(--text-secondary);
-}
-[data-theme="dark"] {
-  --_platform-chip-selected-fill: var(--chip-selected-bg);
-  --_platform-chip-selected-ink: var(--text-on-fill);
-  --_platform-chip-selected-chevron: var(--text-on-fill);
-}
 .ui-platform-chip[data-selected],
 .ui-platform-chip[data-demo-state="selected"] {
-  --_fill: var(--_platform-chip-selected-fill, var(--chip-selected-bg));
-  color: var(--_platform-chip-selected-ink, var(--text-on-fill));
+  border-color: transparent;
+  box-shadow: none;
 }
 .ui-platform-chip[data-selected] .ui-platform-chip__tile,
 .ui-platform-chip[data-demo-state="selected"] .ui-platform-chip__tile {
-  background: var(--chip-selected-tile);
-  color: var(--accent-green);
-}
-.ui-platform-chip[data-selected] .ui-platform-chip__chevron,
-.ui-platform-chip[data-demo-state="selected"] .ui-platform-chip__chevron {
-  color: var(--_platform-chip-selected-chevron, var(--text-on-fill));
+  background: var(--surface-raised);
 }
 
 /* ── Tag (2212:143): a 24 pill in Label/XS. A tag is text and paints its
@@ -1538,55 +1522,87 @@ button.ui-detail-tag__value {
   outline: 2px solid transparent;
 }
 
-/* ── Result card (104:602) ── */
+/* ── Result card (2216:287): 12 in and 16 between its rows, on
+   surface/raised with a border/raised hairline at radius/xl, under
+   Elevation/1. ── */
 .ui-result-card {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  padding: var(--space-2xs);
-  border-radius: var(--radius-card);
+  gap: var(--space-16);
+  width: 100%;
+  padding: var(--space-12);
+  border: var(--stroke-hairline) solid var(--border-raised);
+  border-radius: var(--radius-xl);
   background: var(--surface-raised);
-  box-shadow: var(--elevation-small);
-  color: var(--text-strong);
+  box-shadow: var(--elevation-1-raised);
+  color: var(--text-primary);
 }
-.ui-result-card > .ui-preview {
-  border-radius: var(--radius-media-plate);
+/* The switch on the left; the size, Edit and Download 8 apart on the
+   right. On a narrow card they take a line of their own, still right. */
+.ui-result-card__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  min-height: var(--size-control-md);
 }
-/* The whole preview opens the editor, not only the Edit circle: the
-   button's hit area covers the well (the overlay still draws on hover and
-   focus). */
-.ui-result-card .ui-preview__edit::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-}
-/* The card the editor is open on (Generate · Edit 13:3150): a 0.75
-   outline in text/strong on the card's edge. */
-.ui-result-card[data-selected] {
-  box-shadow:
-    var(--elevation-small),
-    inset 0 0 0 0.75px var(--text-strong);
+.ui-result-card__tools {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-8);
+  margin-left: auto;
 }
 .ui-result-card__meta {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+/* The stage: 340 tall, 16 in, radius/md on surface/field. A size container,
+   so the artwork fits it in CSS. */
+.ui-result-card__stage {
+  box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: var(--space-2xs);
-  padding: var(--space-sm) var(--space-2xs) var(--space-2xs);
+  justify-content: center;
+  height: 340px; /* as drawn */
+  padding: var(--space-16);
+  border-radius: var(--radius-md);
+  background: var(--surface-field);
+  container-type: size;
 }
-.ui-result-card__text {
-  flex: 1;
-  min-width: 0;
+.ui-result-card__art {
+  position: relative;
+  flex-shrink: 0;
+  aspect-ratio: var(--fit-ratio);
+  width: min(100cqw, 100cqh * var(--fit-ratio));
+  overflow: hidden;
+}
+.ui-result-card__overscan {
+  position: absolute;
+  inset: -1px;
+}
+.ui-result-card__caption {
+  margin: 0;
+  white-space: pre-wrap;
+}
+/* Copy caption on the left, the card's Download on the right. */
+.ui-result-card__foot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+.ui-result-card__download,
+.ui-result-card__foot[data-spread] > :last-child {
+  margin-left: auto;
+}
+/* Two lines 8 apart in a 30 box, as tall as two lines of Body/M. */
+.ui-result-card__lines {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3xs);
-}
-.ui-result-card__size {
-  color: var(--text-secondary);
-}
-.ui-result-card__text > span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  gap: var(--space-8);
+  padding-block: 1px; /* as drawn */
 }
 
 /* ── Look tile (104:996) ── */
@@ -1954,6 +1970,9 @@ button.ui-detail-tag__value {
 .ui-skeleton[data-radius="md"] {
   border-radius: var(--radius-md);
 }
+.ui-skeleton[data-radius="lg"] {
+  border-radius: var(--radius-lg);
+}
 .ui-skeleton[data-radius="full"] {
   border-radius: var(--radius-full);
 }
@@ -2058,76 +2077,94 @@ button.ui-detail-tag__value {
   color: var(--text-secondary);
 }
 
-/* ── Composer (61:504): the chat box on surface/raised with Elevation/Small.
-   The component's 5 border/raised edge lies under its own fill, so it
-   draws nothing; its 5 stays in the padding. Body/L is drawn trimmed: 20
-   above the text's cap and 30 to the toolbar, so the untrimmed line sits 6
-   higher and 6 closer. ── */
+/* The Composer (new brand, 13:2985): 16 in from a border/raised hairline at
+   radius/xl, under Elevation/1; the text 4 in from that, then the toolbar
+   24 under it. */
 .ui-composer {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: var(--space-24);
   width: 100%;
-  padding: 19px 17px 17px 25px; /* 20/12/12/20 inside the 5 edge */
-  border-radius: var(--radius-card);
+  padding: var(--space-16);
+  border: var(--stroke-hairline) solid var(--border-raised);
+  border-radius: var(--radius-xl);
   background: var(--surface-raised);
-  box-shadow: var(--elevation-small);
-  color: var(--text-strong);
+  box-shadow: var(--elevation-1-raised);
+  color: var(--text-primary);
+}
+/* The text area's focus rings the whole box, as a field's does. */
+.ui-composer:has(.ui-composer__input:focus-visible) {
+  outline: var(--stroke-focus) solid var(--border-focus);
+  outline-offset: var(--focus-offset);
+}
+.ui-composer__input:focus-visible {
+  outline: none;
 }
 .ui-composer[data-drag-active] {
   box-shadow:
-    var(--elevation-small),
-    inset 0 0 0 1px var(--state-selection);
+    var(--elevation-1-raised),
+    inset 0 0 0 var(--stroke-hairline) var(--editor-selection);
 }
+/* Body/L from its variables (a text area takes no text style class). Its
+   lines keep their boxes, so the margins give the half-leading back: the
+   first line's capitals sit 4 under the text's top edge and the next row
+   starts 24 under the last baseline, as the frame measures them (13:1453). */
 .ui-composer__input {
   display: block;
+  box-sizing: border-box;
   width: 100%;
+  margin: calc(var(--space-4) - (1lh - 1cap) / 2) 0 calc((1cap - 1lh) / 2);
+  padding: 0 0 0 var(--space-4);
+  font: var(--type-body-l);
+  letter-spacing: var(--type-body-l-tracking);
   resize: none;
   overflow-y: hidden;
   background: transparent;
-  color: var(--text-strong);
-  caret-color: var(--text-strong);
+  color: var(--text-primary);
+  caret-color: var(--text-primary);
 }
 .ui-composer__input::placeholder {
   color: var(--text-secondary);
   opacity: 1;
 }
+/* The attachments (13:2454): the photo and the file 8 apart, 24 over the
+   text. */
 .ui-composer__attachments {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2xs);
-  margin-top: 6px;
+  gap: var(--space-8);
 }
+/* An error under the text, 8 under its baseline: the row gap's 24 less
+   16. */
 .ui-composer__error {
-  margin: -16px 0 0;
-  color: var(--state-error);
+  margin: calc(-1 * var(--space-16)) 0 0;
+  color: var(--feedback-error-text);
 }
+/* The toolbar (13:1453): Attach on the left; the stepper and Send 8 apart
+   on the right. */
 .ui-composer__toolbar {
   display: flex;
-  align-items: flex-end;
-  gap: var(--space-xs);
+  align-items: center;
+  gap: var(--space-12);
 }
-/* The plus is a Medium icon button, as tall as the controls at the other
-   end of the row, and the tags center on it. */
 .ui-composer__inputs {
   flex: 1;
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 6px; /* as drawn (61:472) */
 }
-/* The Tags row beside the plus (61:476): detail tags, scrolling sideways
-   behind a fade to the composer's fill (Phase 5). */
+/* The Details row (13:2454), between the text and the toolbar: the platform
+   and the details as tags, scrolling sideways behind a fade to the
+   composer's fill. */
 .ui-composer__tags {
   position: relative;
-  flex: 1;
   min-width: 0;
 }
 .ui-composer__tag-list {
   display: flex;
-  gap: 6px; /* as drawn (13:2558) */
+  gap: var(--space-8);
   min-height: 28px;
   margin: 0;
   /* Room for the value buttons' and remove buttons' 2px-out rings, which
@@ -2169,7 +2206,7 @@ button.ui-detail-tag__value {
 .ui-composer__output {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-8);
 }
 
 /* ── Message bubble (61:505) ── */
@@ -2177,12 +2214,12 @@ button.ui-detail-tag__value {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 10px; /* as drawn (61:505) */
-  max-width: 472px;
-  padding: var(--space-xs) var(--space-sm);
-  border-radius: var(--radius-menu);
+  gap: var(--space-12);
+  max-width: 440px; /* as drawn (new brand, 13:2985) */
+  padding: var(--space-12) var(--space-16);
+  border-radius: var(--radius-lg);
   background: var(--surface-sunken);
-  color: var(--text-strong);
+  color: var(--text-primary);
 }
 .ui-bubble__text {
   margin: 0;
@@ -2192,25 +2229,27 @@ button.ui-detail-tag__value {
 .ui-bubble__tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--space-8);
 }
 .ui-bubble__tag-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--space-8);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-/* ── Assistant message (61:532) ── */
+/* ── Assistant message (new brand, 13:2985): the mark, then the message
+   16 under it in Body/L; what the message brings (progress, the Result
+   card, Try next) follows 24 apart, as the thread spaces its rows. ── */
 .ui-assistant {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--space-sm);
+  gap: var(--space-16);
   min-width: 0;
-  color: var(--text-strong);
+  color: var(--text-primary);
 }
 .ui-assistant__message {
   margin: 0;
@@ -2219,9 +2258,10 @@ button.ui-detail-tag__value {
 .ui-assistant__content {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: var(--space-24);
   width: 100%;
   min-width: 0;
+  margin-top: var(--space-8);
 }
 
 /* ── Option tile (257:4145) and its groups ───────────────────────────────────

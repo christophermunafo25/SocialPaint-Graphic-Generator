@@ -228,9 +228,6 @@
 .dev-ui-w-200 {
   width: 200px;
 }
-.dev-ui-w-227 {
-  width: 227px;
-}
 .dev-ui-w-285 {
   width: 285px;
 }
@@ -240,13 +237,17 @@
 .dev-ui-w-400 {
   width: 400px;
 }
+.dev-ui-w-720 {
+  width: 720px;
+  max-width: 100%;
+}
 /* Flat stand-ins for sample artwork (the template art is sample content,
    not platform imagery). Artwork does not invert with the theme, so they
    use fixed values: the light green post and the Deep Moss variation. */
 .dev-ui-sample-preview {
   display: block;
-  width: 211px;
-  height: 264px;
+  width: 100%;
+  height: 100%;
   background: var(--tint-green);
 }
 .dev-ui-sample-thumb {

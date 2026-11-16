@@ -8,7 +8,10 @@
 import type { FigmaLayerUnit, TemplateField, TemplateSchema } from "@/lib/types";
 import { suggestFieldKey } from "@/lib/caption";
 import { composeFigmaBackground } from "@/lib/figma/composeLayers";
-import { stackImported } from "@/lib/figma/importLanding";
+import { inFormOrder, stackImported } from "@/lib/figma/importLanding";
+import { createFaceMeasurer, prepareImport } from "@/lib/figma/importPrepare";
+import { createCanvasMeasurer } from "@/lib/render/autoFit";
+import { fieldsFontUsage, fontUsageLoaded, loadGoogleFonts } from "@/lib/render/fonts";
 import { mergeOverlayFields } from "@/lib/figma/overlayFields";
 import { normalizeEffects } from "@/app/components/builder/effectOps";
 import type { FigmaNode } from "../../../supabase/functions/_shared/extract.ts";
@@ -19,6 +22,7 @@ import {
   maskIdsOf,
   renderIdsOf,
 } from "../../../supabase/functions/_shared/importFrame.ts";
+import { NO_MODEL_COST, intentReport } from "../../../supabase/functions/_shared/importIntent.ts";
 import {
   decomposeFrame,
   pruneTree,
@@ -66,7 +70,7 @@ export async function replayImport(spec: ImportReplaySpec): Promise<TemplateSche
     Object.fromEntries(keys.map((k) => [k, asset(k, what)]));
 
   // The server half of figma-import.
-  const { fields, canvasEffects, warnings } = importFrame(root);
+  const { fields, canvasEffects, warnings, intents, parse, capTrim } = importFrame(root);
   const fills = lookup(fillRefsOf(fields), "fill");
   const sources = {
     fills,
@@ -75,9 +79,37 @@ export async function replayImport(spec: ImportReplaySpec): Promise<TemplateSche
   };
   await landImageAssets(fields, sources, async (url) => url, warnings);
 
-  // The builder lands the fields, then figma-layers decomposes the pruned
-  // tree it sent without them.
-  const imported = stackImported(fields as TemplateField[], [], (f, existing) =>
+  // The builder's share: once the faces are in, cap-trimmed text is
+  // re-placed from their metrics and the limits are measured. No model
+  // answers offline, so the fields stand on their keys.
+  const frame = root.absoluteBoundingBox;
+  const canvasWidth = Math.round(frame.width);
+  const canvasHeight = Math.round(frame.height);
+  const usage = fieldsFontUsage(fields as TemplateField[]);
+  loadGoogleFonts(usage);
+  await fontUsageLoaded(usage);
+  const report = intentReport({
+    fields,
+    intents,
+    parse,
+    capTrim,
+    filledBy: "keys",
+    cost: NO_MODEL_COST,
+  });
+  const prepared = prepareImport(fields as TemplateField[], {
+    intent: report,
+    kit: null,
+    measure: createCanvasMeasurer(),
+    faces: createFaceMeasurer(),
+    canvasWidth,
+    canvasHeight,
+    layer: root.name,
+  });
+
+  // The builder lands the fields in paint order, then figma-layers
+  // decomposes the pruned tree it sent without them. Only the draft's array
+  // takes the form's order.
+  const imported = stackImported(prepared.fields, [], (f, existing) =>
     suggestFieldKey(f.label, existing),
   );
   const lifted = imported.filter((f) => Boolean(f.sourceNodeId));
@@ -96,9 +128,6 @@ export async function replayImport(spec: ImportReplaySpec): Promise<TemplateSche
     .filter((u) => u.kind !== "node" || u.url)
     .map(({ nodeId: _n, ...rest }) => rest) as FigmaLayerUnit[];
 
-  const frame = root.absoluteBoundingBox;
-  const canvasWidth = Math.round(frame.width);
-  const canvasHeight = Math.round(frame.height);
   const plate = await composeFigmaBackground({
     canvasWidth,
     canvasHeight,
@@ -125,6 +154,6 @@ export async function replayImport(spec: ImportReplaySpec): Promise<TemplateSche
     captionTemplate: "",
     createdAt: STAMP,
     updatedAt: STAMP,
-    fields: mergeOverlayFields(layerUnits, lifted, imported),
+    fields: mergeOverlayFields(layerUnits, lifted, inFormOrder(imported, report.formOrder)),
   };
 }

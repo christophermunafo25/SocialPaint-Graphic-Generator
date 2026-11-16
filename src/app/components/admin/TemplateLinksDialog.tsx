@@ -22,6 +22,7 @@ import {
   ModalActions,
   ModalBody,
   Select,
+  Skeleton,
   Stat,
   Switch,
 } from "../primitives";
@@ -113,7 +114,13 @@ export function TemplateLinksDialog({
   };
 
   return (
-    <Modal open onOpenChange={(open) => !open && onClose()} title="Public links" icon={Link} wide>
+    <Modal
+      open
+      onOpenChange={(open) => !open && onClose()}
+      title="Public links"
+      icon={Link}
+      className="sp-links-dialog"
+    >
       <PublicLinksBody
         state={!available ? "unavailable" : template.status !== "published" ? "draft" : "ready"}
         variants={hasVariants(template) ? template.variants : undefined}
@@ -176,7 +183,8 @@ export function PublicLinksBody({
 }: {
   /** Ready, or why there is nothing to manage. */
   state: "ready" | "unavailable" | "draft";
-  /** The template's looks, when there is more than one to pin. */
+  /** The template's variations (looks in the schema), when there is more
+   * than one to pin. */
   variants?: TemplateVariant[];
   /** Workspace-level starting values (Settings › Sharing). */
   defaults: CompanyLinkDefaults;
@@ -199,7 +207,7 @@ export function PublicLinksBody({
 
   if (state === "unavailable") {
     return (
-      <p className="tu-body-m sp-links__note">
+      <p className="t-body-m sp-links__note">
         Public links need the Supabase backend. This session is running on the local development
         store, which has no way to issue or check a link.
       </p>
@@ -207,7 +215,7 @@ export function PublicLinksBody({
   }
   if (state === "draft") {
     return (
-      <p className="tu-body-m sp-links__note">
+      <p className="t-body-m sp-links__note">
         Publish this template first. A link to a draft would refuse the moment someone opened it.
       </p>
     );
@@ -243,7 +251,7 @@ export function PublicLinksBody({
       {freshUrl && <FreshLink url={freshUrl} />}
 
       {missingAssets && missingAssets.length > 0 && (
-        <p role="alert" className="tu-body-m sp-links__alert">
+        <p role="alert" className="t-body-m sp-links__alert">
           Links to this template won't open right now.{" "}
           {missingAssets.length === 1
             ? `“${missingAssets[0]}” points at an image that no longer exists.`
@@ -254,7 +262,7 @@ export function PublicLinksBody({
       )}
 
       {error && (
-        <p role="alert" className="tu-caption-m sp-links__error">
+        <p role="alert" className="t-caption-m sp-links__error">
           {error}
         </p>
       )}
@@ -264,7 +272,7 @@ export function PublicLinksBody({
       <hr className="sp-links__divider" />
 
       <section className="sp-links__list" aria-labelledby="sp-links-title">
-        <h3 id="sp-links-title" className="tu-label-m">
+        <h3 id="sp-links-title" className="t-label-m">
           Links
         </h3>
         {loadError ? (
@@ -274,9 +282,12 @@ export function PublicLinksBody({
             onRetry={onRetryLoad}
           />
         ) : links === null ? (
-          <p className="tu-body-m sp-links__note">Loading…</p>
+          <div className="sp-links__rows" aria-busy="true" aria-label="Loading links">
+            <Skeleton width="40%" height={13} />
+            <Skeleton width="100%" height={36} radius="sm" />
+          </div>
         ) : links.length === 0 ? (
-          <p className="tu-body-m sp-links__note">No links yet.</p>
+          <p className="t-body-m sp-links__note">No links yet.</p>
         ) : (
           <ul className="sp-links__rows">
             {links.map((link) => (
@@ -413,7 +424,7 @@ function CreateLinkForm({
 
   return (
     <section className="sp-links__form" aria-labelledby="sp-links-new">
-      <h3 id="sp-links-new" className="tu-label-m">
+      <h3 id="sp-links-new" className="t-label-m">
         New link
       </h3>
       <Field label="Name">
@@ -446,9 +457,9 @@ function CreateLinkForm({
       </div>
       {variants && (
         <div className="ui-field">
-          <span className="t-label-xs ui-field__label">Look</span>
+          <span className="t-label-xs ui-field__label">Variation</span>
           <Select
-            ariaLabel="Which look this link opens"
+            ariaLabel="Which variation this link opens"
             value={pinned}
             options={lookOptions(variants)}
             onSelect={setPinned}
@@ -456,7 +467,7 @@ function CreateLinkForm({
         </div>
       )}
       <div className="sp-links__toggle">
-        <span className="tu-body-m">Allow photo uploads</span>
+        <span className="t-label-m">Allow photo uploads</span>
         <Switch
           checked={allowUploads}
           onChange={setAllowUploads}
@@ -504,7 +515,7 @@ function LinkRow({
     <div className="sp-links__row">
       <div className="sp-links__rowhead">
         <span className="sp-links__rowname">
-          <span className="tu-label-m">{name}</span>
+          <span className="t-label-m">{name}</span>
           <Badge tone={state.live ? "active" : "neutral"}>{state.label}</Badge>
         </span>
         <span className="sp-links__rowactions">
@@ -529,9 +540,9 @@ function LinkRow({
       </div>
       {variants && (
         <div className="sp-links__toggle">
-          <span className="tu-body-m">Look</span>
+          <span className="t-label-m">Variation</span>
           <Select
-            ariaLabel={`Which look ${name} opens`}
+            ariaLabel={`Which variation ${name} opens`}
             value={link.pinnedVariantId ?? ""}
             options={lookOptions(variants)}
             onSelect={(next) => onPin(next || null)}
@@ -541,7 +552,7 @@ function LinkRow({
         </div>
       )}
       <div className="sp-links__toggle">
-        <span className="tu-body-m">Photo uploads</span>
+        <span className="t-label-m">Photo uploads</span>
         <Switch
           checked={link.allowUploads}
           onChange={onToggleUploads}

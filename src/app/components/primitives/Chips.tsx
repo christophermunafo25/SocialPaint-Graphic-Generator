@@ -59,16 +59,16 @@ export function PlatformLogo({
 
 export interface PlatformChipProps extends ButtonAttrs {
   platform: PlatformId | "all";
-  /** Selected turns the tile ink (the whole chip in Dark), the mark Slime
-   * and the chevron down. */
+  /** Selected turns the chip inverse, with the tile on surface/raised, and
+   * the chevron down. */
   selected?: boolean;
   /** Its menu is open; the chevron points down. */
   expanded?: boolean;
 }
 
-/** Platform chip (Figma 53:96): a tile with the platform's mark, the label
- * and a chevron, 50 tall on control/fill. The caller gives it its role
- * (radio in a filter group) and its aria state. */
+/** Platform chip (Figma 53:96): a 50 pill that hugs its label, with the
+ * platform's mark on a round tile and a chevron, raised at rest. The caller
+ * gives it its role (radio in a filter group) and its aria state. */
 export const PlatformChip = React.forwardRef<HTMLButtonElement, PlatformChipProps>(
   function PlatformChip(
     { platform, selected = false, expanded = false, className, children, type = "button", ...rest },
@@ -78,7 +78,7 @@ export const PlatformChip = React.forwardRef<HTMLButtonElement, PlatformChipProp
       <button
         ref={ref}
         type={type}
-        className={cx("ui-reset ui-tint ui-ring-tight ui-platform-chip", className)}
+        className={cx("ui-reset ui-fill ui-ring ui-platform-chip", className)}
         data-selected={selected || undefined}
         data-expanded={selected || expanded || undefined}
         {...rest}
@@ -87,7 +87,7 @@ export const PlatformChip = React.forwardRef<HTMLButtonElement, PlatformChipProp
           <PlatformLogo platform={platform} />
         </span>
         <span className="t-label-m">{children}</span>
-        <ChevronRight size={14} className="ui-icon ui-platform-chip__chevron" aria-hidden />
+        <ChevronRight size={16} className="ui-icon ui-platform-chip__chevron" aria-hidden />
       </button>
     );
   },

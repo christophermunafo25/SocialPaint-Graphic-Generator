@@ -166,6 +166,9 @@ interface ModalBodyProps {
   /** A dialog that holds a form or a picker instead of a question takes
    * the wider panel. */
   wide?: boolean;
+  /** A class on the panel, for a dialog the file draws at a width of its
+   * own (the public links dialog's 520, 2323:888). */
+  className?: string;
 }
 
 export interface ModalProps extends ModalBodyProps {
@@ -179,7 +182,9 @@ export interface ModalProps extends ModalBodyProps {
 /** The inside of a dialog: the title in Title/Group, the close button in
  * the top right corner, then what the dialog holds. The close button
  * follows the title in the document, so it is the first stop for the
- * keyboard, and it is placed in the corner by the panel. */
+ * keyboard, and it is placed in the corner by the panel. A dialog with an
+ * icon draws its own header (the public links dialog, 2323:888): the 18
+ * icon and the title in Title/Card, 8 apart. */
 function ModalInside({
   title,
   icon: Icon,
@@ -214,6 +219,7 @@ export function Modal({
   children,
   closeLabel = "Close",
   wide = false,
+  className,
   onOpenAutoFocus,
 }: ModalProps) {
   // Radix returns focus only to a Dialog.Trigger. A modal opened from
@@ -227,7 +233,7 @@ export function Modal({
       <Dialog.Portal>
         <Dialog.Overlay className="ui-modal-scrim" />
         <Dialog.Content
-          className="ui-modal"
+          className={cx("ui-modal", className)}
           data-wide={wide || undefined}
           aria-describedby={undefined}
           onOpenAutoFocus={onOpenAutoFocus}
@@ -241,7 +247,11 @@ export function Modal({
             title={title}
             icon={icon}
             heading={(t) => (
-              <Dialog.Title className="t-title-group ui-modal__title">{t}</Dialog.Title>
+              <Dialog.Title
+                className={cx(icon ? "t-title-card" : "t-title-group", "ui-modal__title")}
+              >
+                {t}
+              </Dialog.Title>
             )}
             close={
               <Dialog.Close asChild>
@@ -271,13 +281,18 @@ export function ModalPanel({
   children,
   closeLabel = "Close",
   wide = false,
+  className,
 }: ModalBodyProps) {
   return (
-    <div className="ui-modal ui-modal--static" data-wide={wide || undefined}>
+    <div className={cx("ui-modal ui-modal--static", className)} data-wide={wide || undefined}>
       <ModalInside
         title={title}
         icon={icon}
-        heading={(t) => <span className="t-title-group ui-modal__title">{t}</span>}
+        heading={(t) => (
+          <span className={cx(icon ? "t-title-card" : "t-title-group", "ui-modal__title")}>
+            {t}
+          </span>
+        )}
         close={
           <IconButton
             variant="ghost"

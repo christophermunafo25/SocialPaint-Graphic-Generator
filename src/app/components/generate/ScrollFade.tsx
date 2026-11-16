@@ -1,8 +1,8 @@
 import React from "react";
 
-/** The soft edge where a scrolling region meets fixed chrome (Figma
- * "Generate · Chat", sp-scroll-fade 341:813, Position Top / Bottom): 56
- * tall, full width, pointer-transparent. The page ground ramps from solid
+/** The soft edge where a scrolling region meets fixed chrome (sp-scroll-fade
+ * 341:813, Position Top / Bottom): 56 tall unless its frame sets
+ * --chat-fade-top or --chat-fade-bottom, full width, pointer-transparent. The page ground ramps from solid
  * at the pinned edge to nothing, and a backdrop blur eases out along the
  * same direction, so content reads as sliding under the header rather
  * than being cut off by it. `visible` fades it in and out over

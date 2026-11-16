@@ -407,7 +407,7 @@ describe("select and static rules", () => {
 
   it("a Fixed text field bakes the source text and drops member-input props", () => {
     const out = validateProposal(
-      proposal([field({ static: true, maxLength: 40, placeholder: "unused" })]),
+      proposal([field({ static: true, placeholder: "unused" })]),
       extraction([element("1:10", "text", { text: "SocialPaint" })]),
       brand,
       "figma",
@@ -420,18 +420,14 @@ describe("select and static rules", () => {
     expect(f.placeholder).toBeUndefined();
   });
 
-  it("clamps maxLength into 1..2000", () => {
+  it("takes no character limit from the model: the browser measures it", () => {
     const out = validateProposal(
-      proposal([
-        field({ maxLength: 99999 }),
-        field({ sourceId: "1:11", label: "Sub", fieldKey: "sub", maxLength: 0 }),
-      ]),
-      extraction([element("1:10"), element("1:11")]),
+      proposal([{ ...field({}), maxLength: 40 } as ProposedField]),
+      extraction([element("1:10")]),
       brand,
       "figma",
     );
-    expect(out.fields[0].maxLength).toBe(2000);
-    expect(out.fields[1].maxLength).toBe(1);
+    expect(out.fields[0].maxLength).toBeUndefined();
   });
 });
 

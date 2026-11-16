@@ -8,7 +8,7 @@ import { ImportLinkPopup } from "./ImportLinkPopup";
 
 interface FigmaImportDialogProps {
   onClose(): void;
-  onImported(result: DesignImportResult): void;
+  onImported(result: DesignImportResult): void | Promise<void>;
 }
 
 /** Paste a Figma frame link → rendered background + suggested fields.
@@ -37,7 +37,7 @@ export function FigmaImportDialog({ onClose, onImported }: FigmaImportDialogProp
     setError(null);
     try {
       const result = await stores.designImport.importFromUrl(company.id, url.trim());
-      onImported(result);
+      await onImported(result);
     } catch (e) {
       setError(
         (e instanceof Error ? e.message : "Import failed.") +

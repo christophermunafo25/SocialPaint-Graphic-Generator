@@ -106,26 +106,8 @@ describe("routeState", () => {
 });
 
 describe("Template chat routes (Template chat PROMPT §12.1)", () => {
-  it("reads a new and a saved template chat, keeping edit and field", () => {
-    expect(urlToRoute("/templates/t-1/chat", "")).toEqual({
-      name: "templateChat",
-      templateId: "t-1",
-    });
-    expect(urlToRoute("/templates/t-1/chat/c-9", "?edit=d-2&field=apply_link")).toEqual({
-      name: "templateChat",
-      templateId: "t-1",
-      threadId: "c-9",
-      edit: "d-2",
-      field: "apply_link",
-    });
-    // A field with no draft to edit means nothing.
-    expect(urlToRoute("/templates/t-1/chat", "?field=role")).toEqual({
-      name: "templateChat",
-      templateId: "t-1",
-    });
-  });
-
-  it("round-trips every template chat route, and leaves the fill and bulk pages alone", () => {
+  it("opens the fill page for every template chat address, a saved thread's included", () => {
+    // The template chat is hidden (new brand, PLAN.md judgement calls 1 and 8).
     for (const url of [
       "/templates/t-1/chat",
       "/templates/t-1/chat/c-9",
@@ -133,8 +115,23 @@ describe("Template chat routes (Template chat PROMPT §12.1)", () => {
       "/templates/t-1/chat?edit=d-2",
     ]) {
       const [path, qs = ""] = url.split("?");
-      expect(routeToUrl(urlToRoute(path, qs ? `?${qs}` : ""))).toBe(url);
+      const route = urlToRoute(path, qs ? `?${qs}` : "");
+      expect(route).toEqual({ name: "template", templateId: "t-1" });
+      expect(routeToUrl(route)).toBe("/templates/t-1");
     }
+  });
+
+  it("still writes a template chat's own address, for the page kept until cleanup", () => {
+    expect(routeToUrl({ name: "templateChat", templateId: "t-1" })).toBe("/templates/t-1/chat");
+    expect(
+      routeToUrl({
+        name: "templateChat",
+        templateId: "t-1",
+        threadId: "c-9",
+        edit: "d-2",
+        field: "apply_link",
+      }),
+    ).toBe("/templates/t-1/chat/c-9?edit=d-2&field=apply_link");
     expect(urlToRoute("/templates/t-1", "")).toEqual({ name: "template", templateId: "t-1" });
     expect(urlToRoute("/templates/t-1/bulk", "")).toEqual({ name: "bulk", templateId: "t-1" });
   });
@@ -155,7 +152,7 @@ describe("Template chat routes (Template chat PROMPT §12.1)", () => {
 
 describe("withHistoryState", () => {
   it("restores savedInPlace on a chat's address from its history entry, and nothing else", () => {
-    const chat = urlToRoute("/templates/t-1/chat/c-1", "");
+    const chat = urlToRoute("/generate/c/c-1", "");
     expect(withHistoryState(chat, { savedInPlace: true })).toMatchObject({ savedInPlace: true });
     expect(withHistoryState(chat, null)).toBe(chat);
     const portal = urlToRoute("/templates", "");

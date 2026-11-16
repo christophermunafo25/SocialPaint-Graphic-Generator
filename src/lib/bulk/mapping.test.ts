@@ -164,8 +164,8 @@ describe("the look column", () => {
     expect(rowVariantName(["Ada"], ["name"])).toBe("");
   });
 
-  it("adds a Look column to the starter, pre-filled with the default", () => {
-    expect(starterCsv({ fields, variants })).toBe("Name,Look\r\n,Green\r\n");
+  it("adds a Variation column to the starter, pre-filled with the default", () => {
+    expect(starterCsv({ fields, variants })).toBe("Name,Variation\r\n,Green\r\n");
     expect(starterCsv({ fields, variants: [variants[0]] })).toBe("Name\r\n\r\n");
   });
 });

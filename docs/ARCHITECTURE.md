@@ -261,10 +261,9 @@ Footer Links at the foot, each with a 32 gutter. Most pages scroll their content
 Main under an 80 fade ("scroll"); the Generate thread and History scroll their own region
 ("self"); the builder editor fills Main ("bare"). Page Up and Down from the sidebar or the
 page itself reach the content (`layout/useFrameKeys.ts`), and the content returns to the
-top when the route's path changes. The shell reads tokens and the three measures it
-defines itself in `src/styles/shell.css` (the page gutter `--page-pad`, the mobile bar's
-height `--chrome-top`, the public link page's cap `--page-max`); tenant brand kits never
-re-color it.
+top when the route's path changes. The shell reads tokens and the two measures it
+defines itself in `src/styles/shell.css` (the page gutter `--page-pad` and the mobile
+bar's height `--chrome-top`); tenant brand kits never re-color it.
 
 ## Theming
 
@@ -330,15 +329,16 @@ in the frame's header row; file rows and cards carry `RowMenu` / `RowContextMenu
 on right-click); preview cards use `PreviewOverlay decorative`. Escape on an in-place edit
 also drops that edit's undo steps (`brand.cancelTo`).
 
-Brand Templates is on the new look (Phase 4; styles in `src/styles/brand-templates.css`).
-The library's template card is one button that steps through its looks on hover. A page
-under the library (the fill page, the template chat) heads itself with the breadcrumb kind
-of the `PageHeader` primitive in place of a title. The fill page (`TemplateFill`, shared with the
-public link page) is a step form, one field per step on the Field primitive (a photo on the
-Upload control, whose picking and cropping is `imagePick.tsx`, shared with Generate's
-editor), then a finish step with the look, the caption with Copy and the downloads, beside
-a live Preview card. Both chats' Edit details is `details/DetailsPanel.tsx`: every
-field in one panel, with Close and Discard; Generate's adds a size switch and its own stage.
+Brand Templates is on the new brand (Phase 4; styles in `src/styles/brand-templates.css`).
+The library's template card is one button that steps through its variations on hover. A
+page under the library (the fill page) heads itself with the breadcrumb kind of the
+`PageHeader` primitive in place of a title. The fill page (`TemplateFill`, shared with the
+public link page) is form only: the graphic on its stage, beside the Details panel
+(`details/DetailsPanel.tsx`) with every field at once (a photo on the Upload control, whose
+picking and cropping is `imagePick.tsx`, shared with Generate's editor), the caption with
+Copy, and Download PNG, then Download again and Post to LinkedIn. Generate's Edit details
+uses the same panel, with Close and Discard, a size switch and its own stage. The template
+chat is hidden: its addresses open the fill page.
 
 ## Insights
 
@@ -489,11 +489,14 @@ look (Phase 5) is `docs/design/new-look/PHASE-5.md`.
 - **Components** in `src/app/components/generate/`: `GeneratePage` (Start
   and thread), `GenerateHistoryPage`, `EditorPanel`, and the hooks that hold
   the side effects (`useChatController`, `useThreadPersistence`,
-  `useDraftDownload`). The chat's pieces on the new look, shared with the
+  `useDraftDownload`). The chat's pieces on the new brand, shared with the
   template chat, are in `src/app/components/chat/`: `ChatComposer` (on
-  `useComposer`), `AttachMenu` (Upload, and Generate's Details), the
-  messages, `GenerateTurn` on the Result card primitive, `CaptionCard` and
-  `GenerateHeader`. Styles are `src/styles/generate.css`.
+  `useComposer`; the Details row holds the platform and the details as
+  tags), `AttachMenu` (Generate's Output with Platform, Upload, Generate's
+  Details, and Context), the messages, `GenerateTurn` (one Result Card a
+  turn, the primitive in `primitives/Previews.tsx`, with the switch between
+  its drafts and its own Download for all of them) and `GenerateHeader`.
+  Styles are `src/styles/generate.css`.
 - **Server**: `supabase/functions/template-generate/` (the function and its
   system prompt) and `_shared/generateValidate.ts` (every parser and
   validator, pure, so vitest runs the same code the function does).

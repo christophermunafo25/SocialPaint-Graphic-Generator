@@ -2,8 +2,9 @@ import React from "react";
 import { cx } from "./cx";
 
 /** The corner of what a skeleton stands in for, when it is not the shape's
- * own: a button's radius/sm, a badge's radius/full. */
-export type SkeletonRadius = "xs" | "sm" | "md" | "full";
+ * own: a button's radius/sm, a message bubble's radius/lg, a badge's
+ * radius/full. */
+export type SkeletonRadius = "xs" | "sm" | "md" | "lg" | "full";
 
 export interface SkeletonProps extends Omit<React.HTMLAttributes<HTMLSpanElement>, "children"> {
   /** Line stands in for a line of text, Block for an image or a card and

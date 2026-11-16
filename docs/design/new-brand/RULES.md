@@ -149,25 +149,28 @@ A dialog's close button sits in its top right corner.
 
 | Part | Measure |
 |---|---|
-| Filter bar | 56 tall. Search Field (50 square) then the platform chip rail, chips 50 tall with 8 between them. The rail runs off the right edge under a 72 wide fade |
+| Filter bar | 56 tall. Search Field (50, round in the library's frames) then the platform chip rail, chips 50 tall with 8 between them. The rail runs off the right edge under a 72 wide fade |
 | Shelves | 32 between shelves. A shelf is a header (28 tall, title on the left, View all on the right) then a rail 16 below it |
 | Shelf rail | Cards in a row, 16 apart, running off the right edge under a 96 wide fade |
 | Template Card | 302 wide. 434 tall for portrait templates, 226 for landscape. 8 padding around the preview |
 | Filtered or search view | A result line (28 tall, the count and Clear), then one group per size: a header 32 tall and a grid 16 below it. Three cards across, 327 wide, 16 between columns and rows |
 | Fill page | Breadcrumb header with Bulk fill and Public link on the right. Below it a row, 24 apart: the Preview fills, the Details panel is 380 wide |
 | Preview | The graphic centered on a stage with 40 padding. The legal links sit under the stage |
-| Details panel | 20 padding, 20 between fields. Download PNG pinned to its bottom |
+| Details panel | 20 padding, 20 between its title, its fields and its footer, 16 between fields (2322:918; Phase 4 read it again). Download PNG pinned to its bottom |
 
 ### Generate
 
 | Part | Measure |
 |---|---|
-| Start | One column 720 wide, centered in Main both ways. The chat box, then Recent 48 below it: a header 28 tall and a list with 12 between cards |
-| Chat box | 720 wide, 16 padding, 24 between the text and the controls row |
-| Thread | Breadcrumb header with History and New chat. Below it one column 720 wide, centered: the thread fills and scrolls, the chat box sits under it, the legal links under that. 24 between messages |
-| Messages | A sent message sits right, up to 440 wide, with attachments above it. An assistant message and a Result Card run the full 720. Result Card has 12 padding |
+| Start | One column 720 wide, centered in Main both ways. The greeting in Title/Display, the chat box 32 below it, then Recent 48 below that: a header 28 tall (Title/Card, and a Ghost Small View all) and, 16 under it, three cards 12 apart |
+| Chat box | 720 wide, 16 padding, 24 between its rows: the attachments, the text, the Details row (the platform, then the details, as tags 8 apart) and the controls row (Attach on the left; the Variations stepper and Send 8 apart on the right) |
+| Plus menu | 240 wide, 8 under the plus: Output (Platform), Upload (Photo, File), Details and Context (Brand Studio). The platform list and Add a detail (a 280 popover, 12 padding) open in its place |
+| Thread | Breadcrumb header with History and New chat (Neutral). Below it one column 720 wide, centered: the thread fills and scrolls, the chat box sits 24 under its last row, the legal links under that. 24 between messages |
+| Messages | A sent message sits right: its bubble up to 440 wide, 8 under its attachments. The assistant message is the mark, then the message in Body/L 16 under it, then what it brings (progress, the Result Card, Try next) 24 apart |
+| Result Card | One a turn, the full 720, 12 padding, 16 between its rows: the switch between the turn's drafts, with the size, Edit and Download on the right; the 340 stage (16 padding on surface/field); the caption in Body/M; Copy caption, and the card's Download ("Download both") on the right, Primary on the latest finished turn while the editor is closed and Neutral otherwise |
 | Try next | A row of chips under the result, 8 apart |
-| History | Breadcrumb header, the page title, a filter row (Search Field then platform chips, 8 apart), then a grid: four cards across, 245 square, 12 between them |
+| Edit | Beside the inline editor (1180 and wider) the chat column fills, and the 380 panel sits 24 to its right, running to Main's foot. The legal links sit under the chat column |
+| History | Breadcrumb header with New chat (Neutral), the page title, a filter row (Search Field then platform chips, 8 apart), then a grid: four cards across, 245 square, 12 between them, under a 120 fade |
 
 ### Template Builder
 

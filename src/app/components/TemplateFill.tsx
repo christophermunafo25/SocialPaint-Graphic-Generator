@@ -11,19 +11,9 @@ import { SchemaRenderer, type SchemaRendererHandle } from "./SchemaRenderer";
 import { ExportAssetError, type ExportOutcome } from "@/lib/render/exportPng";
 import { celebrate } from "@/lib/celebrate";
 import { openLinkedInComposer } from "@/lib/share/linkedin";
-import { ArrowLeft, Check } from "lucide-react";
-import { COPIED_MS, DetailField } from "./details/DetailsPanel";
-import { LinkedInMark } from "./details/LinkedInMark";
-import { TemplateThumbnail } from "./TemplateThumbnail";
-import {
-  Button,
-  Field,
-  FooterLinks,
-  LookTile,
-  SegmentedControl,
-  TextArea,
-  Toast,
-} from "./primitives";
+import { Download } from "lucide-react";
+import { DetailsPanel } from "./details/DetailsPanel";
+import { Button, FooterLinks, Toast, focusFirstInvalid } from "./primitives";
 
 interface TemplateFillProps {
   template: TemplateSchema;
@@ -47,11 +37,11 @@ interface TemplateFillProps {
   /** Whether member-fillable image fields are offered. A public link can turn
    * them off; the member path never does. */
   allowUploads?: boolean;
-  /** Rendered under the steps. The public page puts its resume note here. */
+  /** Rendered in the panel above its buttons. The public page puts its
+   * resume note here. */
   footer?: React.ReactNode;
-  /** The public link page: the preview comes before the steps on a phone
-   * (someone opening a link wants to see the graphic before they meet a
-   * form). */
+  /** Where the form sits: the fill page in the app frame, which holds it to
+   * the window, or the public link page, which scrolls. */
   variant?: "member" | "public";
 }
 
@@ -68,12 +58,11 @@ const TOAST_COPY: Record<ToastKind, string> = {
     "Your browser blocked the new tab. Your caption is copied. Open LinkedIn and paste it into a new post.",
 };
 
-/** THE fill surface: the template filled in one step at a time on the
- * left, the live Preview on the right (CJ, 2026-10-04: the earlier step
- * form, on the new look's tokens and primitives, over the frames' single
- * Details panel). With several looks, "Choose a look" comes first; every
- * field is a step, reachable in one click from the step rail; Finish holds
- * the look switch, the caption and the downloads.
+/** THE fill surface (new brand, 2322:918; decision 9): the graphic on its
+ * stage on the left, with Terms and Privacy under it, and the Details panel
+ * on the right: Variation when the template has several, every member
+ * field at once, then Caption, with Download PNG at the panel's foot. Once
+ * a file exists, Download again and Post to LinkedIn take its place.
  *
  * Used unchanged by the signed-in member page and by the public link page,
  * so a fix in one is a fix in both, and the PNG a stranger exports from a
@@ -92,13 +81,14 @@ export function TemplateFill({
   footer,
   variant: place = "member",
 }: TemplateFillProps) {
-  /** Looks. The chosen look changes nothing about the VALUES: they are keyed
-   * by fieldKey, which every look shares, so switching keeps every entry. */
+  /** Variations (looks in the schema). The chosen one changes nothing about
+   * the VALUES: they are keyed by fieldKey, which every variation shares,
+   * so switching keeps every entry. */
   const multiLook = hasVariants(template);
   const [variantId, setVariantId] = useState<string | null>(null);
   const look = getVariant(template, variantId);
-  /** The schema as the chosen look renders it: the form reads from this
-   * too, so an element hidden in this look is not asked for. */
+  /** The schema as the chosen variation renders it: the form reads from
+   * this too, so an element hidden in it is not asked for. */
   const rendered = useMemo(() => applyVariantToSchema(template, variantId), [template, variantId]);
   /** What the canvas paints. On a link with uploads switched off, image
    * fields are not member fields for this visitor: they keep their designed
@@ -134,47 +124,24 @@ export function TemplateFill({
     [formFields, values],
   );
 
-  /** Steps: the look picker (when there is a choice), one per field, then
-   * Finish. Free to move in both directions. */
-  const lead = multiLook ? 1 : 0;
-  const finishStep = lead + formFields.length;
-  const [step, setStep] = useState(0);
-  // A step index can outlive the field list it pointed into (uploads turned
-  // off, a look that hides a field): clamp rather than show a blank card.
-  const current = Math.min(step, finishStep);
-  const fieldIndex = current - lead;
-  const onFinish = current === finishStep;
-  const stepRef = useRef<HTMLDivElement>(null);
-  const movedRef = useRef(false);
-  useEffect(() => {
-    // Land focus on the step's control so people can type at once, but not
-    // on first render, where it would pull the page down.
-    if (!movedRef.current) return;
-    stepRef.current
-      ?.querySelector<HTMLElement>(
-        "input:not([type=file]), textarea, button.ui-upload, [role=radio][tabindex='0']",
-      )
-      ?.focus();
-  }, [current]);
-  const go = (next: number) => {
-    movedRef.current = true;
-    setStep(Math.max(0, Math.min(next, finishStep)));
-  };
-
   /** The caption follows the fields until the person types in it. */
   const [caption, setCaption] = useState<string | null>(null);
   const shownCaption = caption ?? mergeCaption(template, values);
-  const [copied, setCopied] = useState(false);
-  const copiedTimer = useRef<number | undefined>(undefined);
 
   /** Set by a refused Download: from then on an empty required field shows
-   * its error on its step, and filling it clears it. */
+   * its error, and filling it clears it. Each refusal takes the person to
+   * the first one. */
   const [checked, setChecked] = useState(false);
-  const errorOf = (key: string): string | undefined => {
-    if (!checked) return undefined;
-    const f = missingRequired.find((m) => m.fieldKey === key);
-    return f ? requiredError(f) : undefined;
-  };
+  const [attempt, setAttempt] = useState(0);
+  const formRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    if (attempt > 0 && formRef.current) focusFirstInvalid(formRef.current);
+  }, [attempt]);
+  const errors = useMemo<Record<string, string | undefined>>(
+    () =>
+      checked ? Object.fromEntries(missingRequired.map((f) => [f.fieldKey, requiredError(f)])) : {},
+    [checked, missingRequired],
+  );
 
   const [exporting, setExporting] = useState(false);
   /** A file exists: Download again, and Post to LinkedIn leads. */
@@ -184,16 +151,17 @@ export function TemplateFill({
   const rendererRef = useRef<SchemaRendererHandle>(null);
   const downloadRef = useRef<HTMLButtonElement>(null);
   /** Text at its minimum size that still doesn't fit: said under the
-   * preview; shortening the entry is the fix. */
+   * graphic; shortening the entry is the fix. */
   const [layoutWarnings, setLayoutWarnings] = useState<string[]>([]);
 
-  useEffect(
-    () => () => {
-      window.clearTimeout(toastTimer.current);
-      window.clearTimeout(copiedTimer.current);
-    },
-    [],
-  );
+  useEffect(() => () => window.clearTimeout(toastTimer.current), []);
+  // Download PNG gives way to Download again once a file exists: keep the
+  // person's place by handing focus on to it.
+  useEffect(() => {
+    if (!downloaded) return;
+    const active = document.activeElement;
+    if (!active || active === document.body || !active.isConnected) downloadRef.current?.focus();
+  }, [downloaded]);
 
   const showToast = (kind: ToastKind, detail?: string) => {
     window.clearTimeout(toastTimer.current);
@@ -212,12 +180,12 @@ export function TemplateFill({
   const sendToMissing = (): boolean => {
     if (missingRequired.length === 0) return false;
     setChecked(true);
-    go(lead + formFields.indexOf(missingRequired[0]));
+    setAttempt((n) => n + 1);
     return true;
   };
 
   const handleDownload = async () => {
-    if (sendToMissing() || !rendererRef.current) return;
+    if (exporting || sendToMissing() || !rendererRef.current) return;
     setExporting(true);
     try {
       const outcome = await rendererRef.current.exportPng();
@@ -243,8 +211,7 @@ export function TemplateFill({
 
   /** Hand the caption to LinkedIn's composer. The graphic does NOT go with
    * it (LinkedIn takes no image from a URL), so the person attaches the
-   * file they downloaded; the toast says so. A caption built from
-   * half-filled fields is worse than none, so it waits for them too. */
+   * file they downloaded; the toast says so. */
   const handlePostToLinkedIn = () => {
     if (sendToMissing()) return;
     const opened = openLinkedInComposer(shownCaption);
@@ -252,15 +219,41 @@ export function TemplateFill({
     showToast(opened ? "linkedin" : "popup-blocked");
   };
 
-  const copyCaption = async () => {
-    await navigator.clipboard.writeText(shownCaption);
-    setCopied(true);
-    window.clearTimeout(copiedTimer.current);
-    copiedTimer.current = window.setTimeout(() => setCopied(false), COPIED_MS);
-  };
-
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const stepLabel = `Step ${pad(current + 1)} of ${pad(finishStep)}`;
+  // Download PNG looks disabled until every required field has a value, as
+  // drawn, but stays a stop in the tab order: pressed early, it says what
+  // is missing and takes the person there. While a file is being made the
+  // button keeps its place in the tab order too, and a press does nothing.
+  const incomplete = missingRequired.length > 0;
+  const actions = downloaded ? (
+    <>
+      <Button
+        ref={downloadRef}
+        kind="neutral"
+        size="lg"
+        onClick={() => void handleDownload()}
+        aria-disabled={exporting || undefined}
+        aria-busy={exporting || undefined}
+      >
+        {exporting ? "Generating…" : "Download again"}
+      </Button>
+      <Button kind="primary" size="lg" className="sp-details__grow" onClick={handlePostToLinkedIn}>
+        Post to LinkedIn
+      </Button>
+    </>
+  ) : (
+    <Button
+      ref={downloadRef}
+      kind="primary"
+      size="lg"
+      icon={Download}
+      className="sp-details__grow"
+      onClick={() => void handleDownload()}
+      aria-disabled={incomplete || exporting || undefined}
+      aria-busy={exporting || undefined}
+    >
+      {exporting ? "Generating…" : "Download PNG"}
+    </Button>
+  );
 
   return (
     <>
@@ -271,238 +264,11 @@ export function TemplateFill({
       )}
 
       <div className="sp-fill" data-place={place}>
-        {/* Left: the steps. */}
-        <div className="sp-fill__form">
-          {template.description && (
-            <p className="tu-body-m sp-fill__description">{template.description}</p>
-          )}
-
-          {/* The step rail: every step one click away, forward or back. A
-              field's step shows a check once it has a value; Finish is the
-              flag at the end. */}
-          {(formFields.length > 0 || multiLook) && (
-            <nav aria-label="Steps" className="sp-fill__rail">
-              {multiLook && (
-                <button
-                  type="button"
-                  className="ui-reset ui-ring-tight sp-fill__stepchip tu-label-xs"
-                  data-current={current === 0 || undefined}
-                  aria-current={current === 0 ? "step" : undefined}
-                  aria-label={`Step 1: Choose a look${look ? ` (${look.name})` : ""}`}
-                  onClick={() => go(0)}
-                >
-                  Look
-                </button>
-              )}
-              {formFields.map((f, i) => {
-                const filled = Boolean(values[f.fieldKey]);
-                const here = fieldIndex === i;
-                return (
-                  <button
-                    key={f.id}
-                    type="button"
-                    className="ui-reset ui-ring-tight sp-fill__stepdot tu-label-xs"
-                    data-current={here || undefined}
-                    data-filled={(filled && !here) || undefined}
-                    data-error={(!filled && Boolean(errorOf(f.fieldKey))) || undefined}
-                    aria-current={here ? "step" : undefined}
-                    aria-label={`Step ${lead + i + 1}: ${f.label}${filled ? " (filled)" : ""}`}
-                    title={f.label}
-                    onClick={() => go(lead + i)}
-                  >
-                    {filled && !here ? <Check size={12} className="ui-icon" aria-hidden /> : i + 1}
-                  </button>
-                );
-              })}
-              <button
-                type="button"
-                className="ui-reset ui-ring-tight sp-fill__stepchip tu-label-xs"
-                data-current={onFinish || undefined}
-                aria-current={onFinish ? "step" : undefined}
-                aria-label="Finish: caption and download"
-                onClick={() => go(finishStep)}
-              >
-                Finish
-              </button>
-            </nav>
-          )}
-
-          {/* Choose a look: live thumbnails through the one renderer.
-              Picking one sets the look and moves to the first field. */}
-          {multiLook && current === 0 && (
-            <div ref={stepRef} className="sp-fill__step">
-              <div className="sp-fill__stephead">
-                <span className="sp-fill__eyebrow">{stepLabel}</span>
-                <h2 className="tu-label-m">Choose a look</h2>
-              </div>
-              <LookChoice
-                template={template}
-                selectedId={look?.id}
-                onPick={(id) => {
-                  setVariantId(id);
-                  go(1);
-                }}
-              />
-            </div>
-          )}
-
-          {/* One field at a time. Enter on a one-line field moves on. */}
-          {fieldIndex >= 0 &&
-            fieldIndex < formFields.length &&
-            (() => {
-              const field = formFields[fieldIndex];
-              const maxLength = resolveFieldStyle(field, brandKit).maxLength;
-              const length = (values[field.fieldKey] ?? "").length;
-              return (
-                <div
-                  key={field.id}
-                  ref={stepRef}
-                  className="sp-fill__step"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && (e.target as HTMLElement).tagName === "INPUT") {
-                      e.preventDefault();
-                      go(current + 1);
-                    }
-                  }}
-                >
-                  <div className="sp-fill__stephead">
-                    <span className="sp-fill__eyebrow">{stepLabel}</span>
-                    {maxLength !== undefined && field.type !== "image" && (
-                      <span
-                        className="sp-fill__eyebrow"
-                        role="status"
-                        aria-live="polite"
-                        aria-label={`${length} of ${maxLength} characters used`}
-                      >
-                        {length}/{maxLength}
-                      </span>
-                    )}
-                  </div>
-                  <DetailField
-                    field={field}
-                    value={values[field.fieldKey] ?? ""}
-                    onChange={(v) => setValue(field.fieldKey, v)}
-                    maxLength={maxLength}
-                    error={errorOf(field.fieldKey)}
-                    edited={false}
-                  />
-                  <div className="sp-fill__nav">
-                    <Button
-                      kind="neutral"
-                      icon={ArrowLeft}
-                      onClick={() => go(current - 1)}
-                      disabled={current === 0}
-                    >
-                      Back
-                    </Button>
-                    <Button kind="primary" onClick={() => go(current + 1)}>
-                      {fieldIndex === formFields.length - 1 ? "Finish" : "Next"}
-                    </Button>
-                  </div>
-                </div>
-              );
-            })()}
-
-          {/* Finish: the look switch, the caption, the downloads. */}
-          {onFinish && (
-            <>
-              {multiLook && (
-                <div className="sp-fill__step">
-                  <Field label="Look">
-                    <SegmentedControl
-                      aria-label="Look"
-                      options={(template.variants ?? []).map((v) => ({ id: v.id, label: v.name }))}
-                      selectedId={look?.id ?? null}
-                      onSelect={setVariantId}
-                      className="sp-details__look"
-                    />
-                  </Field>
-                </div>
-              )}
-              {template.captionTemplate && (
-                <div className="sp-fill__step">
-                  <Field
-                    label="Caption"
-                    action={{
-                      label: copied ? "Copied" : "Copy",
-                      onClick: () => void copyCaption(),
-                    }}
-                  >
-                    <TextArea
-                      value={shownCaption}
-                      onChange={(e) => setCaption(e.target.value)}
-                      className="sp-fill__caption"
-                    />
-                  </Field>
-                </div>
-              )}
-              <div className="sp-fill__step sp-fill__downloads">
-                {downloaded ? (
-                  <>
-                    <Button
-                      kind="primary"
-                      size="lg"
-                      icon={LinkedInMark}
-                      onClick={handlePostToLinkedIn}
-                    >
-                      Post to LinkedIn
-                    </Button>
-                    <Button
-                      ref={downloadRef}
-                      kind="neutral"
-                      size="lg"
-                      onClick={() => void handleDownload()}
-                      disabled={exporting}
-                      aria-busy={exporting || undefined}
-                    >
-                      {exporting ? "Generating…" : "Download again"}
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button
-                      ref={downloadRef}
-                      kind="primary"
-                      size="lg"
-                      onClick={() => void handleDownload()}
-                      disabled={exporting}
-                      aria-busy={exporting || undefined}
-                    >
-                      {exporting ? "Generating…" : "Download PNG"}
-                    </Button>
-                    <Button
-                      kind="neutral"
-                      size="lg"
-                      icon={LinkedInMark}
-                      onClick={handlePostToLinkedIn}
-                    >
-                      Post to LinkedIn
-                    </Button>
-                  </>
-                )}
-              </div>
-              {finishStep > 0 && (
-                <div>
-                  <Button kind="neutral" icon={ArrowLeft} onClick={() => go(finishStep - 1)}>
-                    {formFields.length > 0 ? "Back to fields" : "Back to looks"}
-                  </Button>
-                </div>
-              )}
-            </>
-          )}
-
-          {footer}
-        </div>
-
-        {/* Right: the live preview. */}
+        {/* The stage (2322:931), with Terms and Privacy under it, here and
+            on the public link page, which renders this form outside the
+            app frame. */}
         <div className="sp-fill__preview">
-          <div className="sp-fill__previewcard">
-            <div className="sp-fill__previewhead">
-              <h2 className="tu-title-card">Preview</h2>
-              <span className="tu-caption-m sp-fill__size">
-                {template.canvasWidth} × {template.canvasHeight}
-              </span>
-            </div>
+          <div className="sp-fill__stage">
             <div
               className="sp-fill__art"
               style={
@@ -537,77 +303,38 @@ export function TemplateFill({
                 />
               </ErrorBoundary>
             </div>
-            {layoutWarnings.length > 0 && (
-              <p role="status" className="tu-caption-m sp-fill__note">
-                {layoutWarnings[0]}
-              </p>
-            )}
           </div>
-          {/* Under the stage (2322:931), here and on the public link page,
-              which renders this form outside the app frame. */}
+          {layoutWarnings.length > 0 && (
+            <p role="status" className="t-caption-m sp-fill__note">
+              {layoutWarnings[0]}
+            </p>
+          )}
           <FooterLinks className="sp-fill__legal" />
         </div>
+
+        <DetailsPanel
+          title="Details"
+          className="sp-fill__details"
+          look={
+            multiLook
+              ? {
+                  options: (template.variants ?? []).map((v) => ({ id: v.id, label: v.name })),
+                  selectedId: look?.id ?? null,
+                  onSelect: setVariantId,
+                }
+              : null
+          }
+          fields={formFields}
+          values={values}
+          onValueChange={setValue}
+          maxLengthFor={(field) => resolveFieldStyle(field, brandKit).maxLength}
+          errors={errors}
+          caption={template.captionTemplate ? { value: shownCaption, onChange: setCaption } : null}
+          formRef={formRef}
+          footerLead={footer}
+          footer={actions}
+        />
       </div>
     </>
-  );
-}
-
-/** The looks as live thumbnails on Look tiles: each the one renderer at
- * small scale with the placeholder values, so what the person picks is
- * what they will fill. A radio group; the arrows move the choice. */
-function LookChoice({
-  template,
-  selectedId,
-  onPick,
-}: {
-  template: TemplateSchema;
-  selectedId: string | undefined;
-  onPick(id: string): void;
-}) {
-  const looks = template.variants ?? [];
-  const refs = useRef(new Map<string, HTMLButtonElement>());
-  const onKeyDown = (e: React.KeyboardEvent) => {
-    const i = looks.findIndex((v) => v.id === selectedId);
-    const step =
-      e.key === "ArrowRight" || e.key === "ArrowDown"
-        ? 1
-        : e.key === "ArrowLeft" || e.key === "ArrowUp"
-          ? -1
-          : 0;
-    if (!step) return;
-    e.preventDefault();
-    const next = looks[(Math.max(i, 0) + step + looks.length) % looks.length];
-    refs.current.get(next.id)?.focus();
-  };
-  return (
-    <div role="radiogroup" aria-label="Looks" className="sp-fill__looks" onKeyDown={onKeyDown}>
-      {looks.map((v) => {
-        const on = v.id === selectedId;
-        return (
-          <LookTile
-            key={v.id}
-            ref={(el) => {
-              if (el) refs.current.set(v.id, el);
-              else refs.current.delete(v.id);
-            }}
-            role="radio"
-            aria-checked={on}
-            aria-label={v.name}
-            tabIndex={on || (!selectedId && v === looks[0]) ? 0 : -1}
-            selected={on}
-            name={v.name}
-            onClick={() => onPick(v.id)}
-            thumbnail={
-              <span
-                className="sp-fill__lookthumb"
-                style={{ aspectRatio: `${template.canvasWidth} / ${template.canvasHeight}` }}
-              >
-                <TemplateThumbnail template={template} variantId={v.id} />
-              </span>
-            }
-          />
-        );
-      })}
-    </div>
   );
 }

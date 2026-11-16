@@ -273,14 +273,10 @@ html {
   --radius-media: 12px; /* the media card itself */
   --radius-media-inner: 9px; /* its thumbnail well */
 
-  /* ── The chats (Figma "Generate · Chat", 2026-09-25; "Brand Templates ·
-     Chat", 2026-09-28) ──
-     The scroll fade's depth (sp-scroll-fade 341:813); the thread reads it
-     too, to keep a focused control and the head of the latest turn clear
-     of the fade rather than under it. The Missing marker on the template
-     chat's stage is 28 tall and sits on artwork, which never inverts, so
-     its dark scrim and white edge are the same in both themes. */
-  --gen-fade-h: 56px;
+  /* ── The chats (Figma "Brand Templates · Chat", 2026-09-28) ──
+     The Missing marker on the template chat's stage is 28 tall and sits on
+     artwork, which never inverts, so its dark scrim and white edge are the
+     same in both themes. */
   --gen-h-tag: 28px;
   --gen-marker-bg: rgb(11 11 12 / 0.56);
   --gen-marker-edge: rgb(255 255 255 / 0.6);
@@ -294,9 +290,8 @@ html {
   --row-h-compact: 32px;
   --border-width: 1px;
 
-  /* Layout. The page gutter (--page-pad), the mobile bar's height
-     (--chrome-top) and the public page's cap (--page-max) are the shell's
-     own measures, defined in shell.css. */
+  /* Layout. The page gutter (--page-pad) and the mobile bar's height
+     (--chrome-top) are the shell's own measures, defined in shell.css. */
   --bp-md: 768px;
   --bp-lg: 1024px;
   --bp-xl: 1280px;
@@ -478,9 +473,6 @@ html {
   --shadow-rest-hover: 0 0 0 0 transparent;
   --shadow-card-hover: 6px 6px 25px 0 rgb(0 0 0 / 0.3);
 
-  /* The chats' scroll fade ground. */
-  --gen-fade: var(--bg-canvas);
-
   color-scheme: dark;
 }
 
@@ -602,9 +594,6 @@ html {
   --shadow-rest-hover: 6px 6px 25px 0 rgb(53 53 53 / 0.07);
   --shadow-card-hover: 6px 6px 25px 0 rgb(53 53 53 / 0.1);
 
-  /* The chats' scroll fade ground. */
-  --gen-fade: var(--bg-canvas);
-
   color-scheme: light;
 }
 
@@ -618,7 +607,7 @@ html {
      creates the offset. */
   --focus-ring:
     0 0 0 var(--focus-offset) var(--bg-surface),
-    0 0 0 calc(var(--focus-offset) + var(--focus-width)) var(--ring);
+    0 0 0 calc(var(--focus-offset) + var(--stroke-focus)) var(--ring);
   --focus-ring-tight: 0 0 0 var(--focus-width) var(--ring);
 
   /* Selection and active states tint with the brand green — a wash is a
@@ -1792,7 +1781,6 @@ input[type="radio"] {
    keeps the earlier column, 24 under the mobile bar (the responsive block)
    with the --page-pad tiers. */
 .sp-page {
-  max-width: var(--page-max);
   margin-inline: auto;
   padding: 48px var(--page-pad) 64px;
   box-sizing: border-box;
@@ -2924,10 +2912,12 @@ input[type="radio"] {
   }
 }
 
-/* ── Generate chat: scroll fade (Figma "Generate · Chat", sp-scroll-fade
-   341:813, Position Top / Bottom) ────────────────────────────────────────
-   56 tall across the scroller, pinned to its top or bottom edge, never
-   hit-testable. Two layers so neither alpha multiplies the other: the
+/* ── Generate chat: scroll fade (sp-scroll-fade 341:813, Position Top /
+   Bottom) ─────────────────────────────────────────────────────────────────
+   Across the scroller, pinned to its top or bottom edge, never
+   hit-testable: 56 tall unless the scroller's frame sets --chat-fade-top or
+   --chat-fade-bottom, which its scroll padding reads too (Generate's
+   thread 68 at the top, History 120 at the foot). Two layers so neither alpha multiplies the other: the
    blur (::before) masked from 8px at the pinned edge to none, and over it
    the page ground (::after) at 100 / 85 / 40 / 0% from the pinned edge
    (0 / 30 / 65 / 100% of the height), as drawn. The layers fade rather
@@ -2944,12 +2934,13 @@ input[type="radio"] {
   inset-inline: 0 var(--scroll-fade-gutter, 0px);
   top: 0;
   z-index: 1;
-  height: var(--gen-fade-h);
+  height: var(--chat-fade-top, 56px);
   pointer-events: none;
 }
 .sp-chat-scroll-fade[data-position="bottom"] {
   --fade-dir: to top;
   top: auto;
+  height: var(--chat-fade-bottom, 56px);
   bottom: 0;
 }
 .sp-chat-scroll-fade::before,
@@ -2958,7 +2949,7 @@ input[type="radio"] {
   position: absolute;
   inset: 0;
   opacity: 0;
-  transition: opacity var(--dur-state) var(--ease);
+  transition: opacity var(--motion-duration-fast) var(--motion-easing-standard);
 }
 .sp-chat-scroll-fade::before {
   -webkit-backdrop-filter: blur(8px);
@@ -2969,9 +2960,9 @@ input[type="radio"] {
 .sp-chat-scroll-fade::after {
   background: linear-gradient(
     var(--fade-dir),
-    var(--gen-fade),
-    color-mix(in srgb, var(--gen-fade) 85%, transparent) 30%,
-    color-mix(in srgb, var(--gen-fade) 40%, transparent) 65%,
+    var(--surface-page),
+    color-mix(in srgb, var(--surface-page) 85%, transparent) 30%,
+    color-mix(in srgb, var(--surface-page) 40%, transparent) 65%,
     transparent
   );
 }
@@ -3015,7 +3006,7 @@ input[type="radio"] {
 .sp-chat-page[data-state="start"] {
   flex: 1 0 auto;
   padding-bottom: calc(
-    var(--space-xl) + var(--frame-inset-bottom, env(safe-area-inset-bottom, 0px))
+    var(--space-48) + var(--frame-inset-bottom, env(safe-area-inset-bottom, 0px))
   );
 }
 .sp-chat-page[data-state="thread"],
@@ -3025,20 +3016,13 @@ input[type="radio"] {
 }
 .sp-chat-page[data-state="thread"] {
   padding-bottom: calc(
-    var(--space-md) + var(--frame-inset-bottom, env(safe-area-inset-bottom, 0px))
+    var(--space-24) + var(--frame-inset-bottom, env(safe-area-inset-bottom, 0px))
   );
 }
 .sp-chat-page[data-state="history"] {
   padding-bottom: calc(
-    var(--space-xl) + var(--frame-inset-bottom, env(safe-area-inset-bottom, 0px))
+    var(--space-48) + var(--frame-inset-bottom, env(safe-area-inset-bottom, 0px))
   );
-}
-/* The chat's header sits right on the thread (13:7138); the thread's own
-   top padding and Edit details' split carry the gap, so the content takes
-   none of its own under the frame's header row. Generate's thread, the
-   template chat's and their load states. */
-.sp-frame[data-head] .sp-frame__body > .sp-chat-page[data-state="thread"] {
-  padding-top: 0;
 }
 
 /* ── Generate chat: Start state (frames 01 to 03; PROMPT §8.2) ────────────
@@ -3072,8 +3056,8 @@ input[type="radio"] {
    as --thread-scrollbar (useScrollFades' `gutter`, 0 for an overlay
    scrollbar), and the side padding gives it back, so the column keeps
    the box it has without one: flush with the header and the dock
-   composer where it fills the width, and 546 wide beside the editor at
-   1440 (below), as History's grid does.
+   composer where it fills the width, as History's grid does. Beside the
+   inline editor (below) the gutter sits at the end only.
 
    A control that focus scrolls into view stops under the top fade, with
    its whole focus ring, rather than veiled by it; useThreadScroll holds
@@ -3100,46 +3084,46 @@ input[type="radio"] {
   flex-direction: column;
   height: 100%;
   box-sizing: border-box;
-  padding: var(--space-sm) max(0px, var(--page-pad) - var(--thread-scrollbar, 0px)) var(--space-lg);
+  /* The first row (always the member's message) starts at the content's
+     24 under the header; 12 under the last row holds a card's Elevation/1,
+     and with the dock's 12 the composer sits 24 under it (13:2985). */
+  padding: 0 max(0px, var(--page-pad) - var(--thread-scrollbar, 0px)) var(--space-12);
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable both-edges;
-  scroll-padding-top: calc(var(--gen-fade-h) + var(--focus-offset) + var(--focus-width));
+  scroll-padding-top: calc(var(--chat-fade-top, 56px) + var(--focus-offset) + var(--stroke-focus));
   overflow-anchor: none;
 }
 .sp-chat-thread__column {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: var(--space-24);
   width: 100%;
-  max-width: 760px;
+  max-width: 720px; /* the chat column (new brand, 13:2985) */
   margin: auto auto 0;
 }
 
-/* ── Generate chat: the composer dock (frames 04 and 05, "Composer dock")
-   ──────────────────────────────────────────────────────────────────────
-   16 over the Compact composer (the chat column's width), then the
-   footnote row 10 under it. A full chat's note sits 8 over the composer. */
+/* ── Generate chat: the dock (13:2985) ─────────────────────────────────────
+   12 over the chat box (the chat column's width), which with the thread's
+   12 under its last row makes the frame's 24. A full chat's note sits 8
+   over the chat box, and an unsaved chat's 8 under it, in Caption/M. */
 .sp-chat-dock {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
   flex-shrink: 0;
-  padding-top: var(--space-sm);
+  padding-top: var(--space-12);
 }
 .sp-chat-dock__composer {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2xs);
+  gap: var(--space-8);
   width: 100%;
-  max-width: 760px;
+  max-width: 720px; /* the chat column (new brand, 13:2985) */
 }
 .sp-chat-dock__note {
   margin: 0;
-  font-size: var(--type-caption-size);
-  line-height: 1.25;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   text-align: center;
 }
 
@@ -3171,31 +3155,30 @@ input[type="radio"] {
   min-height: 0;
 }
 
-/* Inline (1180px and wider): the frame's Split. 24 under the header, the
-   chat column (flex 1) and the 380 panel 24 apart, both running to the
-   page's foot (the panel stretches to the row). The chat column keeps its
-   thread and dock, but narrowed: the thread is exactly the column (it no
-   longer runs into the gutters; the panel is on its right), its padding
-   becomes 0 32 32 32, and the thread's column and the dock's composer fill
-   the width instead of stopping at 760. The top scroll fade spans the
-   column, as drawn.
-
-   The sides are the frame's 32 less 3: the frame's page gutter is 45 and
-   the app's is 48 (--page-pad; the thread states already map the frame's
-   45 to the page's 48, §8.1), so the chat column comes out 7 narrower than
-   the frame's 611. Giving the 3 back on each side puts the thread column
-   where the frame draws it (77 from the page's edge) at nearly the frame's
-   width (546 of 547 at 1440), which is what keeps the frame's two compact
-   cards on one row (163 + 12 + 366 = 541); at 32 they wrap by a pixel. */
+/* Inline (1180px and wider): the frame's Split (new brand, 13:3150). The
+   chat column fills and the 380 panel sits 24 to its right, both running
+   to the page's foot (the panel stretches to the row). The thread and the
+   dock's composer fill the chat column (616 at 1440), and the thread's
+   scroller reaches 12 past it on each side, as drawn, which holds the
+   cards' shadows and keeps 12 from the panel. A classic scrollbar takes
+   its gutter at the end only and the 12 stays at both sides, so a shadow
+   is never cut: the cards end the gutter's width short of the composer
+   there. */
 .sp-chat-split[data-editor="inline"] {
-  gap: var(--space-md);
-  padding-top: var(--space-md);
+  gap: var(--space-24);
 }
 .sp-chat-split[data-editor="inline"] .sp-chat-thread-frame {
-  margin-inline: 0;
+  margin-inline: calc(-1 * var(--space-12));
 }
 .sp-chat-split[data-editor="inline"] .sp-chat-thread {
-  padding: 0 max(0px, 29px - var(--thread-scrollbar, 0px)) var(--space-lg);
+  scrollbar-gutter: stable;
+  padding: 0 var(--space-12) var(--space-12);
+}
+/* The links under the chat column, 24 under the composer, as the page's
+   own footer sits. */
+.sp-chat-split__foot {
+  flex: none;
+  margin-top: var(--space-24);
 }
 .sp-chat-split[data-editor="inline"] .sp-chat-thread__column,
 .sp-chat-split[data-editor="inline"] .sp-chat-dock__composer {
@@ -3235,17 +3218,18 @@ input[type="radio"] {
   position: relative;
   flex: 1 1 0;
   min-height: 0;
-  margin: var(--space-sm) calc(-1 * var(--page-pad)) 0;
+  margin: var(--space-16) calc(-1 * var(--page-pad)) 0;
 }
 .sp-chat-history-scroll {
   height: 100%;
   box-sizing: border-box;
-  padding: var(--space-md) max(0px, var(--page-pad) - var(--history-scrollbar, 0px)) 0
+  padding: var(--space-24) max(0px, var(--page-pad) - var(--history-scrollbar, 0px)) 0
     var(--page-pad);
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
-  scroll-padding-block: calc(var(--gen-fade-h) + var(--focus-offset) + var(--focus-width));
+  scroll-padding-block: calc(var(--chat-fade-top, 56px) + var(--focus-offset) + var(--stroke-focus))
+    calc(var(--chat-fade-bottom, 56px) + var(--focus-offset) + var(--stroke-focus));
 }
 
 /* Square cards, as many 220px-or-wider columns as fit, 12 apart: four of
@@ -3253,14 +3237,14 @@ input[type="radio"] {
 .sp-chat-history-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: var(--space-xs);
+  gap: var(--space-12);
 }
 
 /* The foot of the list: the paging sentinel the IntersectionObserver
    watches, and 24 of room under the last row so its shadow is not cut by
    the scroller's edge and the cards do not end flush on the legal links. */
 .sp-chat-history-end {
-  height: var(--space-md);
+  height: var(--space-24);
 }
 
 /* ── Component colour overrides (design-system distribution, section 8) ─────
@@ -3541,7 +3525,7 @@ input[type="radio"] {
   padding-top: 0;
 }
 .sp-chat-split[data-view="edit"]:not([data-editor="inline"]) {
-  padding-top: var(--space-md);
+  padding-top: var(--space-24);
 }
 
 /* The Missing marker on the stage (§11.13): in the renderer's overlay, in
