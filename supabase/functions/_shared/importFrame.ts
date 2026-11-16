@@ -11,7 +11,19 @@ import {
   type ImportWarning,
   type SuggestedField,
 } from "./extract.ts";
+import { applyFrameIntent, type CapTrim, type FieldIntent } from "./frameIntent.ts";
 import { logError } from "./http.ts";
+import type { ParseReport } from "./recipe.ts";
+
+/** The parse report of a frame whose keys couldn't be read. */
+const UNREAD: ParseReport = {
+  layers: 0,
+  keyed: 0,
+  kinds: {},
+  unknownKinds: [],
+  unknownKeys: [],
+  invalid: [],
+};
 
 export interface FrameImport {
   fields: SuggestedField[];
@@ -19,6 +31,14 @@ export interface FrameImport {
    * which land on the canvas. */
   canvasEffects?: ImportedEffect[];
   warnings: ImportWarning[];
+  /** What the layer names declare, per field that came from a keyed layer
+   * (import intent, Phase 1). Already applied to `fields`. */
+  intents: FieldIntent[];
+  /** How much of the frame is keyed, and what the grammar didn't know. */
+  parse: ParseReport;
+  /** Text boxes grown back from a cap trim, for the browser to re-place
+   * from real font metrics. */
+  capTrim: CapTrim[];
 }
 
 /** Fields from the tree, coordinates relative to the node's own box.
@@ -46,6 +66,27 @@ export function importFrame(
       severity: "degraded",
     });
   }
+  // The keys in the layer names, applied to the fields they describe. Keys
+  // that can't be read leave the frame importing as if it had none: the
+  // fields go back to what the walk made.
+  let intents: FieldIntent[] = [];
+  let parse: ParseReport = { ...UNREAD };
+  let capTrim: CapTrim[] = [];
+  const unkeyed = structuredClone(fields);
+  const said = warnings.length;
+  try {
+    ({ intents, parse, capTrim } = applyFrameIntent(root, fields, warnings));
+  } catch (e) {
+    logError("importFrame", e);
+    fields.splice(0, fields.length, ...unkeyed);
+    warnings.length = said;
+    warnings.push({
+      layer: root.name,
+      nodeId: root.id,
+      issue: "the keys in this frame's layer names couldn't be read, so it imported without them.",
+      severity: "degraded",
+    });
+  }
   if (mode === "template" && !fields.length) {
     warnings.push({
       layer: root.name,
@@ -67,7 +108,14 @@ export function importFrame(
       "info",
     );
   }
-  return { fields, canvasEffects: canvasEffects?.length ? canvasEffects : undefined, warnings };
+  return {
+    fields,
+    canvasEffects: canvasEffects?.length ? canvasEffects : undefined,
+    warnings,
+    intents,
+    parse,
+    capTrim,
+  };
 }
 
 /** Image-fill refs the import needs resolved (/v1/files/{key}/images). */

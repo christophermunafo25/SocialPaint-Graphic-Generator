@@ -83,6 +83,24 @@ export interface FigmaNode {
   };
   fills?: FigmaPaint[];
   children?: FigmaNode[];
+  /** Auto layout, as the REST API sends it (import intent, Phase 1): read
+   * for the edge a hugging pill holds and the room a text box is given,
+   * never to build a stack. Absent on a node without auto layout. */
+  layoutMode?: string;
+  primaryAxisAlignItems?: string;
+  counterAxisAlignItems?: string;
+  primaryAxisSizingMode?: string;
+  counterAxisSizingMode?: string;
+  paddingTop?: number;
+  paddingBottom?: number;
+  paddingLeft?: number;
+  paddingRight?: number;
+  itemSpacing?: number;
+  /** How this node sizes inside its auto layout parent: FIXED, HUG, FILL. */
+  layoutSizingHorizontal?: string;
+  layoutSizingVertical?: string;
+  /** "ABSOLUTE": placed by hand inside an auto layout parent. */
+  layoutPositioning?: string;
 }
 
 /** One Figma effect as the REST API sends it (only the keys the import
@@ -260,7 +278,10 @@ export interface SuggestedField {
   textSizing?: "free" | "shrink";
   /** Relative shrink floor, matching TemplateField.minFontScale. */
   minFontScale?: number;
-  objectFit?: "cover";
+  objectFit?: "cover" | "contain";
+  /** Member text: the character limit a keyed layer declares (`max`),
+   * matching TemplateField.maxLength (import intent, Phase 1). */
+  maxLength?: number;
   /** Element opacity 0–100, only when the node is not fully opaque. */
   opacity?: number;
   /** Per-corner radius, matching TemplateField.cornerRadius. */
@@ -1152,7 +1173,11 @@ export function walk(
         verticalAlign: undefined,
         plateColor: toHex(containerFill.color!),
         platePaddingX: Math.max(0, Math.round(childBox.x - box.x)),
-        platePaddingY: Math.max(0, Math.round(childBox.y - box.y)),
+        // The plate hugs whole line boxes, so its padding is what is left
+        // of the container around them: a cap-trimmed text box is shorter
+        // than the lines the renderer paints, and padding measured from it
+        // drew the pill taller than designed (93 for a 76 pill).
+        platePaddingY: Math.max(0, px((place.height - t.height) / 2)),
         // An UNSET radius on a plated field renders the pill default, so a
         // square container must store explicit zeros to stay square.
         cornerRadius: cornerRadiusOf(node) ?? { tl: 0, tr: 0, br: 0, bl: 0 },
@@ -1346,46 +1371,4 @@ export interface ExtractionResult {
   elements: ExtractedElement[];
   sourceUrl?: string; // enables the layered recompose
   warnings: string[];
-}
-
-/** Map the Figma walk's SuggestedField[] onto the common element shape. The
- * suggested field IS the extraction on this path — geometry and typography
- * come straight from the node tree, and `placeholder` carries the source
- * text the model needs for judgment. */
-export function figmaFieldsToElements(fields: SuggestedField[]): ExtractedElement[] {
-  return fields.map((f) => ({
-    sourceId: f.sourceNodeId,
-    // An icon is vector art: to autobuild it is one fixed picture, as it
-    // was before the importer rebuilt it from paths, so it bakes as an image.
-    kind:
-      f.type === "image" || f.type === "icon"
-        ? ("image" as const)
-        : f.type === "shape"
-          ? ("shape" as const)
-          : ("text" as const),
-    label: f.label,
-    shape: f.shape,
-    cornerRadius: f.cornerRadius,
-    textGradient: f.textGradient,
-    strokeColor: f.strokeColor,
-    strokeWidthPx: f.strokeWidthPx,
-    strokeAlign: f.strokeAlign,
-    effects: f.effects,
-    x: f.x,
-    y: f.y,
-    width: f.width,
-    height: f.height,
-    rotation: f.rotation,
-    anchor: f.anchor,
-    opacity: f.opacity,
-    text: f.placeholder,
-    fontFamily: f.fontFamily,
-    fontWeight: f.fontWeight,
-    fontSizePx: f.fontSizePx,
-    colorHex: f.colorHex,
-    align: f.align,
-    uppercase: f.uppercase,
-    letterSpacingPx: f.letterSpacingPx,
-    lineHeight: f.lineHeight,
-  }));
 }

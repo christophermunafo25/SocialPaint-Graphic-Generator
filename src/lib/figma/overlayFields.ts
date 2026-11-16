@@ -146,10 +146,10 @@ function unitField(u: FigmaLayerUnit, label: string): TemplateField | null {
  *
  * z-indexes are renumbered 0..n-1 over the interleaved paint order — the
  * z_index column is an integer, so slotting between two consecutive values
- * must renumber, exactly like setLayerOrder does. `imported` must be the
- * lifted fields in the exact order their node ids were sent to the
- * decomposer (walk order == paint order), since `afterExcluded` counts
- * excluded nodes in that order.
+ * must renumber, exactly like setLayerOrder does. `afterExcluded` counts
+ * excluded nodes in walk order, which is paint order: `imported` (the
+ * lifted fields) is read in that order by its zIndex, so a caller holding
+ * the fields in form order still gets each overlay above the right field.
  */
 export function mergeOverlayFields(
   units: FigmaLayerUnit[],
@@ -158,9 +158,13 @@ export function mergeOverlayFields(
 ): TemplateField[] {
   const overlays: Array<{ anchorId: string; field: TemplateField }> = [];
   const taken = [...existingFields];
+  const walked = imported
+    .map((f, i) => ({ f, i }))
+    .sort((a, b) => (a.f.zIndex ?? 0) - (b.f.zIndex ?? 0) || a.i - b.i)
+    .map((e) => e.f);
   for (const u of units) {
     if (!u.afterExcluded || u.afterExcluded <= 0) continue;
-    const anchor = imported[Math.min(u.afterExcluded, imported.length) - 1];
+    const anchor = walked[Math.min(u.afterExcluded, walked.length) - 1];
     if (!anchor) continue;
     const mapped = unitField(u, u.name?.trim() || "Background detail");
     if (!mapped) continue;

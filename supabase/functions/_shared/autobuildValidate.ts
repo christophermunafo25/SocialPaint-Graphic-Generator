@@ -5,7 +5,7 @@
 // The dividing line it enforces (Rule 1): Claude decides SEMANTICS, the
 // extractor owns GEOMETRY. Every x/y/width/height/rotation/fontSize/color/
 // align on a geometry path is copied verbatim from the extraction after the
-// model responds; the model contributes only the twelve semantic properties.
+// model responds; the model contributes only the semantic properties. Character limits are not among them: the browser measures those from real glyphs (import intent, Phase 1).
 // The one exception is the flat-image path, where no geometry exists and the
 // model's proposed boxes are clamped hard.
 
@@ -23,7 +23,6 @@ export interface ProposedField {
   type: "text" | "multiline" | "image" | "select";
   options?: string[];
   static?: boolean;
-  maxLength?: number;
   placeholder?: string;
   typeStyleKey?: string;
   colorKey?: string;
@@ -151,6 +150,54 @@ function reslug(raw: string, taken: Set<string>): string {
   while (taken.has(key)) key = `${rooted}_${n++}`;
   taken.add(key);
   return key;
+}
+
+/** The template's own details, cleaned: lengths held, and caption tags that
+ * name no field removed. Shared by every route that asks the model. */
+export function sanitizeTemplate(
+  raw: unknown,
+  validKeys: Set<string>,
+  warnings: string[],
+): ProposedTemplate {
+  const t = (raw && typeof raw === "object" ? raw : {}) as Partial<ProposedTemplate>;
+  let caption = typeof t.captionTemplate === "string" ? t.captionTemplate : "";
+  caption = caption
+    .replace(/\{([a-z][a-z0-9_]*)\}/g, (tag, key: string) => {
+      if (validKeys.has(key)) return tag;
+      warnings.push(`Caption tag {${key}} doesn't match any field — removed.`);
+      return "";
+    })
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+  return {
+    name: (typeof t.name === "string" && t.name.trim() ? t.name.trim() : "Untitled template").slice(
+      0,
+      80,
+    ),
+    description: typeof t.description === "string" ? t.description.trim().slice(0, 300) : "",
+    category: typeof t.category === "string" ? t.category.trim().slice(0, 60) : "",
+    tags: (Array.isArray(t.tags) ? t.tags : [])
+      .filter((x): x is string => typeof x === "string" && x.trim().length > 0)
+      .map((x) => x.trim().slice(0, 40))
+      .slice(0, 8),
+    captionTemplate: caption,
+  };
+}
+
+/** The model's reasons, kept only for fields that landed. */
+export function sanitizeRationale(
+  raw: unknown,
+  validKeys: Set<string>,
+): Array<{ fieldKey: string; why: string }> {
+  return (Array.isArray(raw) ? raw : [])
+    .filter(
+      (r) =>
+        r &&
+        typeof r.fieldKey === "string" &&
+        typeof r.why === "string" &&
+        validKeys.has(r.fieldKey),
+    )
+    .map((r) => ({ fieldKey: r.fieldKey, why: r.why.slice(0, 200) }));
 }
 
 /** Copy geometry + typography from the extraction — never from the model. */
@@ -294,11 +341,6 @@ export function validateProposal(
       }
     }
 
-    let maxLength =
-      typeof p.maxLength === "number" && Number.isFinite(p.maxLength)
-        ? Math.min(2000, Math.max(1, Math.round(p.maxLength)))
-        : undefined;
-
     const isStatic = p.static === true;
 
     // ---- geometry ----------------------------------------------------------
@@ -382,7 +424,6 @@ export function validateProposal(
         : undefined,
       // No required flag: requiredness is derived (see fieldRules.ts), so
       // the draft carries nothing for the legacy column to store.
-      maxLength: !isStatic && type !== "image" ? maxLength : undefined,
       typeStyleKey,
       ...(brandHex !== undefined ? { colorHex: brandHex } : {}),
       textSizing: type === "text" || type === "multiline" ? ("shrink" as const) : undefined,
@@ -455,41 +496,9 @@ export function validateProposal(
   if (errors.length > 0) throw new AutobuildValidationError(errors);
 
   // ---- template + caption --------------------------------------------------
-  const t = proposal.template ?? ({} as ProposedTemplate);
   const validKeys = new Set(fields.map((f) => f.fieldKey));
-  let caption = typeof t.captionTemplate === "string" ? t.captionTemplate : "";
-  caption = caption
-    .replace(/\{([a-z][a-z0-9_]*)\}/g, (tag, key: string) => {
-      if (validKeys.has(key)) return tag;
-      warnings.push(`Caption tag {${key}} doesn't match any field — removed.`);
-      return "";
-    })
-    .replace(/[ \t]{2,}/g, " ")
-    .trim();
-
-  const template: ProposedTemplate = {
-    name: (typeof t.name === "string" && t.name.trim() ? t.name.trim() : "Untitled template").slice(
-      0,
-      80,
-    ),
-    description: typeof t.description === "string" ? t.description.trim().slice(0, 300) : "",
-    category: typeof t.category === "string" ? t.category.trim().slice(0, 60) : "",
-    tags: (Array.isArray(t.tags) ? t.tags : [])
-      .filter((x): x is string => typeof x === "string" && x.trim().length > 0)
-      .map((x) => x.trim().slice(0, 40))
-      .slice(0, 8),
-    captionTemplate: caption,
-  };
-
-  const rationale = (Array.isArray(proposal.rationale) ? proposal.rationale : [])
-    .filter(
-      (r) =>
-        r &&
-        typeof r.fieldKey === "string" &&
-        typeof r.why === "string" &&
-        validKeys.has(r.fieldKey),
-    )
-    .map((r) => ({ fieldKey: r.fieldKey, why: r.why.slice(0, 200) }));
+  const template = sanitizeTemplate(proposal.template, validKeys, warnings);
+  const rationale = sanitizeRationale(proposal.rationale, validKeys);
 
   return { fields, template, rationale, warnings };
 }

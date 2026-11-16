@@ -240,12 +240,13 @@ export interface DesignImportProvider {
   /** Auto-build: Claude turns a design into a complete template proposal —
    * fields with Fixed marks, labels, guardrails, brand bindings, metadata,
    * and a caption. The client applies it to the draft; nothing is written
-   * server-side. */
+   * server-side. A Figma source answers with the import itself, model pass
+   * included: the same result importFromUrl gives. */
   autoBuild(
     companyId: string,
     source: import("../types").DesignSource,
     hint?: string,
-  ): Promise<import("../types").AutoBuildResult>;
+  ): Promise<import("../types").AutoBuildResult | DesignImportResult>;
   /** Canva connection lifecycle (flagged server-side; enabled=false hides the
    * tab). The PKCE state and verifier never reach the browser — start returns
    * only the authorize URL, and the callback echoes code+state back. */

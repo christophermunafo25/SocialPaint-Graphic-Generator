@@ -170,3 +170,53 @@ describe("landImageAssets", () => {
     expect(masked.maskNodeId).toBeUndefined();
   });
 });
+
+describe("a keyed frame (import intent, Phase 1)", () => {
+  // The neutral portrait post saved from Figma, keyed in the recipe grammar.
+  const keyed = () => importFrame(savedFrame("portrait-plate-import", "432:3"));
+
+  it("lands with its form set up", () => {
+    const { fields, warnings, parse } = keyed();
+    expect(warnings).toEqual([]);
+    expect(parse).toMatchObject({ layers: 10, keyed: 6 });
+    expect(
+      fields.map((f) => [f.label, f.type, f.static === true ? "fixed" : "member"].join(" / ")),
+    ).toEqual([
+      "Photo / image / member",
+      "Plate / shape / fixed",
+      "Headline / multiline / member",
+      "Call to action / text / member",
+      "Logo / image / fixed",
+    ]);
+  });
+
+  it("keeps the photo's crop and mask on a member field", () => {
+    const photo = keyed().fields[0];
+    expect(photo).toMatchObject({ x: 0, y: 0, width: 1080, height: 1350, maskNodeId: "432:4" });
+    expect(photo.imageRect).toEqual({ x: 0, y: 0.0003, width: 1, height: 1.0832 });
+  });
+
+  it("gives the headline its limit and its band", () => {
+    expect(keyed().fields[2]).toMatchObject({
+      x: 133,
+      y: 855.1,
+      width: 709,
+      height: 240.8,
+      verticalAlign: "top",
+      textSizing: "shrink",
+      maxLength: 32,
+    });
+  });
+
+  it("draws the pill 76 tall and holds its left edge", () => {
+    expect(keyed().fields[3]).toMatchObject({
+      x: 133,
+      y: 1119,
+      height: 76,
+      align: "left",
+      platePaddingX: 44,
+      platePaddingY: 18.5,
+      maxLength: 24,
+    });
+  });
+});

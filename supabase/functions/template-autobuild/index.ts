@@ -3,14 +3,13 @@
 // VALIDATES (never trusting model output), and RESPONDS. It writes nothing to
 // the database — the client applies the proposal to its draft and saves
 // through templateStore like any manual edit.
+//
+// A Figma source is the import itself (import intent, Phase 1): the same
+// run figma-import makes, then one forced tool call for what the layer
+// names leave open, applied to the imported fields without touching their
+// geometry. If that call fails the import still lands on its keys.
 
-import {
-  figmaGet,
-  getFigmaToken,
-  parseFigmaUrl,
-  requireRole,
-  serviceClient,
-} from "../_shared/figma.ts";
+import { requireRole, serviceClient } from "../_shared/figma.ts";
 import {
   GENERIC_ERROR,
   HttpError,
@@ -19,6 +18,7 @@ import {
   logError,
 } from "../_shared/http.ts";
 import {
+  optionalEnum,
   optionalString,
   parseBody,
   parseCanvaUrl,
@@ -28,23 +28,28 @@ import {
   requireString,
   requireUuid,
 } from "../_shared/validate.ts";
+import { warningStrings, type ExtractionResult } from "../_shared/extract.ts";
+import { importResponse, runFigmaImport } from "../_shared/figmaImportRun.ts";
 import {
-  figmaFieldsToElements,
-  walk,
-  warningStrings,
-  type ExtractionResult,
-  type FigmaNode,
-  type ImportWarning,
-  type SuggestedField,
-} from "../_shared/extract.ts";
+  applyIntentProposal,
+  intentAsk,
+  intentReport,
+  intentRequest,
+  readIntentAnswer,
+  runIntentPass,
+  skippedIssue,
+  unfilledIssue,
+  type IntentAnswer,
+  type IntentBrand,
+  type KitTypeStyle,
+} from "../_shared/importIntent.ts";
 import {
   AutobuildValidationError,
   validateProposal,
   type AutobuildSourceKind,
   type ModelProposal,
-  type ValidatedField,
 } from "../_shared/autobuildValidate.ts";
-import { AUTOBUILD_SYSTEM_PROMPT } from "./prompt.ts";
+import { AUTOBUILD_DEFAULT_MODEL, AUTOBUILD_SYSTEM_PROMPT } from "./prompt.ts";
 import { recordModelUsage, type AnthropicUsage, type UsageKind } from "../_shared/usage.ts";
 import { canvaEnabled, getCanvaToken } from "../_shared/canva.ts";
 import {
@@ -61,96 +66,11 @@ type DesignSource =
   | { kind: "canva"; url: string }
   | { kind: "image"; backgroundUrl: string; canvasWidth: number; canvasHeight: number };
 
-const ANTHROPIC_MODEL = Deno.env.get("ANTHROPIC_MODEL") ?? "claude-sonnet-4-6";
+const ANTHROPIC_MODEL = Deno.env.get("ANTHROPIC_MODEL") ?? AUTOBUILD_DEFAULT_MODEL;
 
 // ---------------------------------------------------------------------------
 // Extractors
 // ---------------------------------------------------------------------------
-
-async function extractFigma(
-  db: ReturnType<typeof serviceClient>,
-  companyId: string,
-  url: string,
-): Promise<ExtractionResult & { modelImageUrl: string }> {
-  const parsed = parseFigmaUrl(url);
-  if (!parsed)
-    throw new HttpError(
-      400,
-      "Could not read that link — copy a frame link (with node-id) from Figma.",
-    );
-  const token = await getFigmaToken(db, companyId);
-  if (!token) throw new HttpError(400, "Figma is not connected for this company.");
-
-  const nodesRes = await figmaGet(
-    `/v1/files/${parsed.fileKey}/nodes?ids=${encodeURIComponent(parsed.nodeId)}&geometry=paths`,
-    token,
-  );
-  if (!nodesRes.ok) throw new HttpError(400, `Figma nodes request failed (${nodesRes.status}).`);
-  const nodesBody = (await nodesRes.json()) as {
-    nodes: Record<string, { document: FigmaNode } | null>;
-  };
-  const root = nodesBody.nodes[parsed.nodeId]?.document;
-  if (!root?.absoluteBoundingBox)
-    throw new HttpError(400, "That node has no renderable bounds — pick a frame.");
-  const frame = root.absoluteBoundingBox;
-
-  // Two renders: scale 2 for the stored background (matching figma-import),
-  // scale 1 for the model's eyes — a frame is nearly always <=1568 at 1x, so
-  // no client-side resampling is needed in this runtime.
-  const imgRes = await figmaGet(
-    `/v1/images/${parsed.fileKey}?ids=${encodeURIComponent(parsed.nodeId)}&format=png&scale=2`,
-    token,
-  );
-  if (!imgRes.ok) throw new HttpError(400, `Figma render failed (${imgRes.status}).`);
-  const imgBody = (await imgRes.json()) as { images: Record<string, string | null> };
-  const renderUrl = imgBody.images[parsed.nodeId];
-  if (!renderUrl) throw new HttpError(400, "Figma could not render that frame.");
-  const png = await (await fetch(renderUrl)).arrayBuffer();
-
-  const path = `${companyId}/autobuild-${Date.now()}.png`;
-  const upload = await db.storage
-    .from("template-backgrounds")
-    .upload(path, png, { contentType: "image/png" });
-  if (upload.error) {
-    logError("template-autobuild", upload.error);
-    throw new HttpError(500, "Storage upload failed — try again.");
-  }
-  // Storage REFERENCE — the buckets are private; the client signs it.
-  const backgroundUrl = `template-backgrounds/${path}`;
-
-  const scale1Res = await figmaGet(
-    `/v1/images/${parsed.fileKey}?ids=${encodeURIComponent(parsed.nodeId)}&format=png&scale=1`,
-    token,
-  );
-  let modelImageUrl = renderUrl; // fall back to the 2x render — the API downsizes
-  if (scale1Res.ok) {
-    const body = (await scale1Res.json()) as { images: Record<string, string | null> };
-    modelImageUrl = body.images[parsed.nodeId] ?? renderUrl;
-  }
-
-  const suggested: SuggestedField[] = [];
-  const details: ImportWarning[] = [];
-  const taken = new Set<string>();
-  const seenIds = new Set<string>();
-  const warnings: string[] = [];
-  try {
-    for (const child of root.children ?? []) walk(child, frame, suggested, details, taken, seenIds);
-  } catch (e) {
-    logError("template-autobuild", e);
-    warnings.push("Element detection stopped early.");
-  }
-  warnings.unshift(...warningStrings(details));
-
-  return {
-    backgroundUrl,
-    canvasWidth: Math.round(frame.width),
-    canvasHeight: Math.round(frame.height),
-    elements: figmaFieldsToElements(suggested),
-    sourceUrl: url,
-    warnings,
-    modelImageUrl,
-  };
-}
 
 const CANVA_LINK_HELP =
   "Open the design in Canva and copy the link from the browser's address bar. It starts with canva.com/design/.";
@@ -297,7 +217,6 @@ const PROPOSE_TEMPLATE_TOOL = {
               type: "boolean",
               description: "true = Fixed: stays on the canvas, leaves the member form.",
             },
-            maxLength: { type: "number" },
             placeholder: { type: "string" },
             typeStyleKey: { type: "string" },
             colorKey: { type: "string" },
@@ -477,63 +396,79 @@ async function callClaude(
 }
 
 // ---------------------------------------------------------------------------
-// Fixed images need real content: a static image field is lifted off the
-// background by the recompose, so without a staticValue it would vanish.
-// Render those nodes individually and re-host them; if a render fails, the
-// field degrades to editable (visible placeholder) rather than to nothing.
+// The Figma route: one forced tool call over the imported fields.
 // ---------------------------------------------------------------------------
 
-async function bakeStaticImages(
+/** How long the import waits for the model before landing on its keys.
+ * The Figma work comes first, and the two together have to end inside the
+ * platform's limit on a request. */
+const INTENT_TIMEOUT_MS = 90_000;
+
+/** One model call for a Figma import. A response that comes back is metered
+ * before it is read. Throws when no response comes back; the caller lands
+ * the import without it. */
+async function callIntentModel(
+  apiKey: string,
+  imageBase64: string | null,
+  userText: string,
+  mode: "template" | "elements",
+  record: (usage: AnthropicUsage | undefined) => Promise<void>,
+): Promise<IntentAnswer> {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    signal: AbortSignal.timeout(INTENT_TIMEOUT_MS),
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify(
+      intentRequest({
+        model: ANTHROPIC_MODEL,
+        system: AUTOBUILD_SYSTEM_PROMPT,
+        mode,
+        imageBase64,
+        userText,
+      }),
+    ),
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`model request failed (${res.status}): ${detail.slice(0, 500)}`);
+  }
+  const answer = readIntentAnswer(await res.json());
+  await record(answer.usage);
+  return answer;
+}
+
+/** The kit as the model pass reads it: the palette and type styles, and
+ * for a template the catalog's names and categories. */
+async function loadIntentBrand(
   db: ReturnType<typeof serviceClient>,
   companyId: string,
-  sourceUrl: string,
-  fields: ValidatedField[],
-  warnings: string[],
-): Promise<void> {
-  const targets = fields.filter((f) => f.static && f.type === "image" && f.sourceNodeId);
-  if (!targets.length) return;
-  const parsed = parseFigmaUrl(sourceUrl);
-  const token = parsed ? await getFigmaToken(db, companyId) : null;
-  const degrade = (f: ValidatedField, why: string) => {
-    f.static = undefined;
-    f.staticValue = undefined;
-    warnings.push(`"${f.label}": ${why} — left member-editable so it stays visible.`);
+  mode: "template" | "elements",
+): Promise<IntentBrand> {
+  const { data: kitRow } = await db
+    .from("brand_kits")
+    .select("colors, type_styles")
+    .eq("company_id", companyId)
+    .eq("is_active", true)
+    .maybeSingle();
+  const colors = ((kitRow?.colors ?? []) as Array<{ key: string; name: string; hex: string }>).map(
+    ({ key, name, hex }) => ({ key, name, hex }),
+  );
+  const typeStyles = (kitRow?.type_styles ?? []) as KitTypeStyle[];
+  if (mode !== "template") return { colors, typeStyles, catalog: [] };
+  const { data: templateRows } = await db
+    .from("templates")
+    .select("name, category")
+    .eq("company_id", companyId)
+    .limit(40);
+  return {
+    colors,
+    typeStyles,
+    catalog: (templateRows ?? []) as Array<{ name: string; category: string }>,
   };
-  if (!parsed || !token) {
-    targets.forEach((f) => degrade(f, "couldn't render its artwork"));
-    return;
-  }
-  try {
-    const ids = targets.map((f) => f.sourceNodeId!).join(",");
-    const res = await figmaGet(
-      `/v1/images/${parsed.fileKey}?ids=${encodeURIComponent(ids)}&format=png&scale=2`,
-      token,
-    );
-    const body = res.ok
-      ? ((await res.json()) as { images: Record<string, string | null> })
-      : { images: {} };
-    for (const f of targets) {
-      const url = body.images[f.sourceNodeId!];
-      if (!url) {
-        degrade(f, "Figma couldn't render its artwork");
-        continue;
-      }
-      const png = await (await fetch(url)).arrayBuffer();
-      const path = `${companyId}/autobuild-static-${crypto.randomUUID()}.png`;
-      const upload = await db.storage
-        .from("template-backgrounds")
-        .upload(path, png, { contentType: "image/png" });
-      if (upload.error) {
-        degrade(f, "its artwork upload failed");
-        continue;
-      }
-      f.staticValue = `template-backgrounds/${path}`;
-    }
-  } catch {
-    targets
-      .filter((f) => f.static && !f.staticValue)
-      .forEach((f) => degrade(f, "couldn't render its artwork"));
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -571,6 +506,10 @@ Deno.serve(async (req) => {
     const companyId = requireUuid(body.companyId, "companyId");
     const source = validateSource(body.source);
     const hint = optionalString(body.hint, "hint", 500);
+    const mode = optionalEnum(body.mode, "mode", ["template", "elements"] as const) ?? "template";
+    if (mode === "elements" && source.kind !== "figma") {
+      throw new HttpError(400, "mode elements needs a Figma source.");
+    }
 
     const caller = await requireRole(req, companyId, "admin");
     if ("error" in caller) return json({ error: caller.error }, caller.status);
@@ -588,11 +527,82 @@ Deno.serve(async (req) => {
 
     const db = serviceClient();
 
+    const record = (kind: UsageKind, usage: AnthropicUsage | undefined) =>
+      recordModelUsage(db, {
+        companyId,
+        userId: caller.userId,
+        fn: "template-autobuild",
+        kind,
+        model: ANTHROPIC_MODEL,
+        usage,
+      });
+
+    // A Figma source: the import, then the model pass over its fields.
+    if (source.kind === "figma") {
+      const run = await runFigmaImport({ db, companyId, url: source.url, mode, modelImage: true });
+      const ask = intentAsk(run.fields, run.intents);
+      // The import never depends on the model: when the pass decides
+      // nothing, the fields stand exactly as the keys put them.
+      const pass = await runIntentPass({
+        mode,
+        frameName: run.frameName,
+        width: run.width,
+        height: run.height,
+        fields: run.fields,
+        intents: run.intents,
+        ask,
+        hint,
+        deps: {
+          brand: () => loadIntentBrand(db, companyId, mode),
+          picture: () =>
+            run.modelImageUrl ? fetchPngBase64(db, run.modelImageUrl) : Promise.resolve(null),
+          call: (imageBase64, userText) =>
+            callIntentModel(apiKey, imageBase64, userText, mode, (usage) =>
+              record("autobuild", usage),
+            ),
+        },
+      });
+      if (pass.failed) logError("template-autobuild", `model pass: ${pass.failed}`);
+      const outcome = pass.outcome;
+      if (outcome) run.details.push(...outcome.issues);
+      // A frame with no text or image has no form to fill in, so there is
+      // nothing to say about it.
+      if (!outcome && ask.elements.length) run.details.push(unfilledIssue(run.frameName, mode));
+      if (outcome && ask.skipped) run.details.push(skippedIssue(run.frameName, ask.skipped));
+
+      const intent = intentReport({
+        fields: run.fields,
+        intents: run.intents,
+        parse: run.parse,
+        capTrim: run.capTrim,
+        filledBy: outcome ? "model" : "keys",
+        formOrder: outcome?.formOrder,
+        cost: pass.cost,
+      });
+      return json(
+        importResponse(run, warningStrings, {
+          frameName: run.frameName,
+          intent,
+          ...(outcome
+            ? {
+                ...(outcome.template ? { template: outcome.template } : {}),
+                rationale: outcome.rationale,
+                meta: {
+                  model: ANTHROPIC_MODEL,
+                  sourceKind: "figma",
+                  generatedAt: new Date().toISOString(),
+                  elementCount: run.fields.length,
+                  editableCount: intent.formOrder.length,
+                },
+              }
+            : {}),
+        }),
+      );
+    }
+
     // 1. Extract.
     let extraction: ExtractionResult & { modelImageUrl: string };
-    if (source.kind === "figma") {
-      extraction = await extractFigma(db, companyId, source.url);
-    } else if (source.kind === "image") {
+    if (source.kind === "image") {
       extraction = extractImage(source);
     } else {
       if (!canvaEnabled()) return json({ error: "Canva auto-build is not enabled." }, 501);
@@ -637,15 +647,6 @@ Deno.serve(async (req) => {
       proposalKind,
       platesBehindText,
     );
-    const record = (kind: UsageKind, usage: AnthropicUsage | undefined) =>
-      recordModelUsage(db, {
-        companyId,
-        userId: caller.userId,
-        fn: "template-autobuild",
-        kind,
-        model: ANTHROPIC_MODEL,
-        usage,
-      });
     let attempt = await callClaude(apiKey, imageBase64, userText, { record, kind: "autobuild" });
     let validated;
     try {
@@ -680,7 +681,8 @@ Deno.serve(async (req) => {
             typeStyleKeys: typeStyles.map((s) => s.key),
             colors: colors.map(({ key, hex }) => ({ key, hex })),
           },
-          source.kind,
+          proposalKind,
+          { platesBehindText },
         );
       } catch {
         return json(
@@ -694,11 +696,6 @@ Deno.serve(async (req) => {
     }
 
     const warnings = [...extraction.warnings, ...validated.warnings];
-
-    // 5. Fixed image fields get their artwork baked, or degrade to editable.
-    if (source.kind === "figma" && extraction.sourceUrl) {
-      await bakeStaticImages(db, companyId, extraction.sourceUrl, validated.fields, warnings);
-    }
 
     const editableCount = validated.fields.filter((f) => !f.static).length;
     return json({
