@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { routeToUrl, useRouter, type SettingsSection } from "../../router";
-import { LegalLinks } from "../generate/LegalLinks";
 import { Page } from "../layout/Page";
 import { PageHeader, SettingsRailItem } from "../primitives";
 import { AccountSection } from "./settings/AccountSection";
@@ -95,9 +94,6 @@ export function SettingsAdmin({ section }: { section?: SettingsSection }) {
           <div className="sp-shell-settings__section">{RENDER[active.key]()}</div>
         </div>
       </SettingsToastProvider>
-      <p className="tu-caption-m sp-st-legal">
-        <LegalLinks />
-      </p>
     </Page>
   );
 }

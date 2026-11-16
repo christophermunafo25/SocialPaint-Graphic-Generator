@@ -58,10 +58,24 @@
   display: none;
 }
 /* Below 1024 the header row keeps the earlier page's place: 24 under the
-   mobile bar, in the page's gutters, with the content 24 under it. */
+   mobile bar, in the page's gutters, with the content 24 under it. The
+   footer links follow the content, and on a short page they sit at the
+   window's foot (the frame is at least the window under the bar). */
 @media (max-width: 1023px) {
   .sp-frame__head {
     padding: var(--space-24) var(--page-pad) 0;
+  }
+  .sp-frame[data-foot] {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100dvh - var(--chrome-top) - var(--border-width));
+  }
+  .sp-frame[data-foot] .sp-frame__body {
+    flex: 1 0 auto;
+  }
+  .sp-frame__foot {
+    padding: 0 var(--page-pad)
+      calc(var(--space-32) + env(safe-area-inset-bottom, 0px) + var(--dev-banner-h, 0px));
   }
 }
 @media (min-width: 1024px) {
@@ -80,6 +94,12 @@
   }
   .sp-frame__head {
     flex: none;
+    padding-inline: var(--space-32);
+  }
+  /* Footer Links (4015:750) at the foot of Main, 24 under the content. */
+  .sp-frame__foot {
+    flex: none;
+    margin-top: var(--space-24);
     padding-inline: var(--space-32);
   }
   .sp-frame__body {

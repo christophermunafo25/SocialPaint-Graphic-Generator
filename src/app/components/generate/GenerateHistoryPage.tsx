@@ -34,7 +34,6 @@ import { Button, PageHeader } from "../primitives";
 import { LibrarySearch } from "../templates/LibrarySearch";
 import { PlatformFilter } from "../templates/PlatformFilter";
 import { HistoryCard } from "./HistoryCard";
-import { LegalLinks } from "./LegalLinks";
 import { ScrollFade, useScrollFades } from "./ScrollFade";
 import { requestComposerFocus, takeHistoryFocus } from "./composerFocus";
 import { useThreadPreviews } from "./useThreadPreviews";
@@ -440,10 +439,6 @@ export function GenerateHistoryPage() {
         <ScrollFade position="top" visible={fades.top} gutter={fades.gutter} />
         <ScrollFade position="bottom" visible={fades.bottom} gutter={fades.gutter} />
       </div>
-
-      <footer className="sp-chat-footer">
-        <LegalLinks />
-      </footer>
     </Page>
   );
 }

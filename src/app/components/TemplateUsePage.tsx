@@ -30,6 +30,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
     return (
       <Page
         layout={{ className: "sp-fill-page" }}
+        footer={false}
         header={
           <div className="ui-page-header">
             <Skeleton width={220} height={14} />
@@ -127,7 +128,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
   );
 
   return (
-    <Page layout={{ className: "sp-fill-page" }} header={header}>
+    <Page layout={{ className: "sp-fill-page" }} header={header} footer={false}>
       {sharing && <TemplateLinksDialog template={template} onClose={() => setSharing(false)} />}
 
       <TemplateFill

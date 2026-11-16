@@ -2,34 +2,14 @@
    The page column, the detail header's actions, the toast and the legal
    links, then each page's parts. */
 
-/* The page column: the header, the content 24 under it, and the legal links
-   at the foot of a viewport-tall column (13:9173). */
+/* The page column: the content, then the toast's anchor at its foot. The
+   app frame places the header and the legal links (layout/Page.tsx). */
 .sp-bs-page {
   display: flex;
   flex-direction: column;
-  min-height: calc(100dvh - var(--chrome-top));
-  padding-bottom: calc(28px + var(--dev-banner-h, 0px)); /* as drawn */
 }
 .sp-bs-content {
   flex: 1 0 auto;
-}
-
-/* Terms and Privacy at the foot of every Brand Studio page, not underlined
-   (13:9173). */
-.sp-bs-legal {
-  display: flex;
-  justify-content: center;
-  gap: var(--space-sm);
-  margin: 0;
-  padding-top: var(--space-xl);
-  color: var(--text-secondary);
-}
-.sp-bs-legal > a {
-  color: inherit;
-  text-decoration: none;
-}
-.sp-bs-legal > a:hover {
-  text-decoration: underline;
 }
 
 /* The toast (13:9850): centred on the page column, 75 above the window's
@@ -42,6 +22,13 @@
   display: flex;
   justify-content: center;
   height: 0;
+}
+/* In the app frame (1024 and wider) the content scrolls, not the window:
+   the anchor rides the content's foot, 48 above the legal links. */
+@media (min-width: 1024px) {
+  .sp-bs-toast-anchor {
+    bottom: 0;
+  }
 }
 .sp-bs-toast-anchor > .ui-toast {
   position: absolute;

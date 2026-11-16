@@ -54,29 +54,6 @@
 .sp-gen-start__unavailable > .tu-body-m {
   color: var(--text-secondary);
 }
-/* Terms and Privacy, not underlined until hovered (13:1598). */
-.sp-gen-legal,
-.sp-tchat-legal {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--space-sm);
-  margin: 0;
-  color: var(--text-secondary);
-}
-.sp-gen-legal > a,
-.sp-tchat-legal > a {
-  color: inherit;
-  text-decoration: none;
-}
-.sp-gen-legal > a:hover,
-.sp-tchat-legal > a:hover {
-  text-decoration: underline;
-}
-.sp-gen-legal {
-  flex-shrink: 0;
-  padding-top: 30px; /* as drawn */
-}
 
 /* ── Recent (13:1560): one row of three cards ── */
 .sp-gen-recent {

@@ -9,7 +9,6 @@ import { GenerateHeader } from "../chat/GenerateHeader";
 import { ResultCardSkeleton } from "../chat/GenerateTurn";
 import { AssistantMessage } from "../chat/Messages";
 import { Button } from "../primitives";
-import { LegalLinks } from "./LegalLinks";
 import { useScrollFades } from "./ScrollFade";
 import { takeComposerFocus } from "./composerFocus";
 
@@ -87,9 +86,6 @@ export function ChatLoading({ onNewChat, onHistory }: ChatPageActions) {
                 disabled
               />
             </div>
-            <p className="tu-caption-m sp-tchat-legal">
-              <LegalLinks />
-            </p>
           </div>
         </div>
       </div>
@@ -142,9 +138,6 @@ export function ChatUnavailable({
           </div>
         )}
       </div>
-      <footer className="sp-chat-footer">
-        <LegalLinks />
-      </footer>
     </Page>
   );
 }

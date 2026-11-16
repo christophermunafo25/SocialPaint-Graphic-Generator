@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { PRIVACY_URL, TERMS_URL } from "@/lib/legalLinks";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -249,15 +248,6 @@ export function Portal() {
           </>
         )}
       </div>
-
-      <p className="sp-lib-legal tu-caption-m">
-        <a href={TERMS_URL} target="_blank" rel="noopener noreferrer">
-          Terms of Service
-        </a>
-        <a href={PRIVACY_URL} target="_blank" rel="noopener noreferrer">
-          Privacy Policy
-        </a>
-      </p>
     </Page>
   );
 }

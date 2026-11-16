@@ -8,7 +8,6 @@
   display: flex;
   flex-direction: column;
   gap: 28px; /* off the scale, as drawn */
-  padding-bottom: calc(40px + var(--dev-banner-h, 0px)); /* as drawn */
 }
 .sp-in-content {
   display: flex;

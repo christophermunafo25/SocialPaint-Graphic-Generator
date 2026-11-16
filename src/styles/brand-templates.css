@@ -275,22 +275,6 @@
   margin-top: var(--space-xs);
 }
 
-/* Terms and Privacy under the page (13:6040). */
-.sp-lib-legal {
-  display: flex;
-  justify-content: center;
-  gap: var(--space-sm);
-  margin: var(--space-xl) 0 0;
-  color: var(--text-secondary);
-}
-.sp-lib-legal > a {
-  color: inherit;
-  text-decoration: none;
-}
-.sp-lib-legal > a:hover {
-  text-decoration: underline;
-}
-
 /* ── Template card (13:5924): the Result card's anatomy with a go arrow.
    One button with the keyboard ring; hover and focus step through its
    looks (CJ, 2026-10-04: today's hover, kept over the frame's dim). ── */
@@ -400,7 +384,6 @@
   .sp-page--bleed .sp-lib-resultline,
   .sp-page--bleed .sp-lib-group,
   .sp-page--bleed .sp-lib-empty,
-  .sp-page--bleed .sp-lib-legal,
   .sp-page--bleed .sp-lib-shelf__header {
     padding-inline: var(--space-sm);
   }
@@ -593,20 +576,9 @@
   margin: 0;
   color: var(--text-secondary);
 }
+/* Terms and Privacy under the stage (2322:931): Footer Links, 16 under it. */
 .sp-fill__legal {
-  display: flex;
-  justify-content: center;
-  gap: var(--space-sm);
-  margin: 0;
-  padding-top: var(--space-sm);
-  color: var(--text-secondary);
-}
-.sp-fill__legal > a {
-  color: inherit;
-  text-decoration: none;
-}
-.sp-fill__legal > a:hover {
-  text-decoration: underline;
+  padding-top: var(--space-16);
 }
 /* Today's export messages, at the foot of the viewport. */
 .sp-fill-toast {

@@ -64,7 +64,6 @@ import {
   ExportErrorToast,
   type EditorSaveToLibrary,
 } from "./EditorPanel";
-import { LegalLinks } from "./LegalLinks";
 import { RecentChats } from "./RecentChats";
 import { ScrollFade, useScrollFades } from "./ScrollFade";
 import { UserMessage } from "../chat/Messages";
@@ -1094,9 +1093,6 @@ export function GenerateChat({
               )}
             </div>
           </div>
-          <p className="tu-caption-m sp-gen-legal">
-            <LegalLinks />
-          </p>
         </Page>
       </>
     );
@@ -1333,10 +1329,6 @@ export function GenerateChat({
                 />
                 {unsaved && <p className="sp-chat-dock__note">{NOT_SAVED_YET}</p>}
               </div>
-              {/* The footnote is the legal links alone (13:2821, 13:7195). */}
-              <p className="tu-caption-m sp-tchat-legal">
-                <LegalLinks />
-              </p>
             </div>
           </div>
           {editor && editorTurn && selectedDraft && editorPresentation && (

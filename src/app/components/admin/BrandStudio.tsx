@@ -3,7 +3,6 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { useUnsavedChangesWarning } from "@/lib/useUnsavedChangesWarning";
 import { type BrandCategory } from "../../router";
 import { Page } from "../layout/Page";
-import { LegalLinks } from "../generate/LegalLinks";
 import { PageHeader, Toast } from "../primitives";
 import { BrandDetail } from "./brand/BrandDetail";
 import { BrandDetailHeader } from "./brand/BrandDetailHeader";
@@ -62,10 +61,6 @@ export function BrandStudio({
           />
         )}
       </div>
-
-      <p className="tu-caption-m sp-bs-legal">
-        <LegalLinks />
-      </p>
     </Page>
   );
 }

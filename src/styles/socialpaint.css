@@ -3073,36 +3073,6 @@ input[type="radio"] {
   padding-bottom: var(--space-xl);
 }
 
-/* The legal links (PROMPT §11.3): 12/125% in the muted ink, underlined.
-   On the Start state and History they are the page's foot, centred and 16
-   apart; in the dock they close the footnote row (below). */
-.sp-chat-footer {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--space-sm);
-  flex-shrink: 0;
-}
-.sp-chat-legal {
-  font-family: var(--font-ui);
-  font-size: var(--type-caption-size);
-  line-height: 1.25;
-  font-weight: 400;
-  color: var(--text-muted);
-  text-decoration: underline;
-  text-underline-position: from-font;
-  white-space: nowrap;
-  border-radius: var(--radius-control);
-  transition: color var(--dur-state) var(--ease);
-}
-.sp-chat-legal:hover {
-  color: var(--text-secondary);
-}
-.sp-chat-legal:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
-}
-
 /* ── Generate chat: the thread (frames 04 and 05, "Thread") ──────────────
    The only scrolling region. The frame holds the top scroll fade beside
    the scroller (ScrollFade's placement note) and runs into the page
