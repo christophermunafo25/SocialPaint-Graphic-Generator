@@ -28,11 +28,13 @@
   gap: var(--space-8);
   min-height: 56px;
 }
-/* In the app frame the bar pins to the content's top edge, right under the
-   header row. Sticky measures from inside the content's 24 of top padding,
-   so the bar's offset gives that 24 back. */
+/* In the app frame the library's bar pins to the content's top edge, right
+   under the header row. Sticky measures from inside the content's 24 of
+   top padding, so the bar's offset gives that 24 back. Only the library's:
+   History's bar shares the class but is positioned, not sticky, and an
+   offset would lift it onto its title. */
 @media (min-width: 1024px) {
-  .sp-frame[data-head] .sp-lib-filterbar {
+  .sp-frame[data-head] .sp-page--bleed > .sp-lib-filterbar {
     top: calc(-1 * var(--space-24));
   }
 }

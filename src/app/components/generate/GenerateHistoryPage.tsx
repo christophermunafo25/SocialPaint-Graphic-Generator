@@ -29,7 +29,7 @@ import { useRouter } from "../../router";
 import { ErrorState } from "../ErrorState";
 import { useFullViewport } from "../layout/ChromeContext";
 import { Page } from "../layout/Page";
-import { MessageSquarePlus } from "lucide-react";
+import { MessageSquarePlus, Plus } from "lucide-react";
 import { Button, PageHeader } from "../primitives";
 import { LibrarySearch } from "../templates/LibrarySearch";
 import { PlatformFilter } from "../templates/PlatformFilter";
@@ -381,23 +381,26 @@ export function GenerateHistoryPage() {
       layout={{ className: "sp-chat-page", state: "history" }}
       // The trail (13:3433), "Generate" / "History". The title under it is
       // the page's heading, so the last crumb is not.
+      // The trail (13:3359), "Generate" / "History", with New chat (Neutral)
+      // at the row's end. The title under it is the page's heading, so the
+      // last crumb is not.
       header={
         <PageHeader
           crumbs={[{ label: "Generate", onClick: newChat }, { label: "History" }]}
           currentIsHeading={false}
+          actions={
+            <Button kind="neutral" icon={Plus} onClick={newChat}>
+              New chat
+            </Button>
+          }
         />
       }
     >
-      {/* The title in Title/Page with New chat on its row. */}
+      {/* The title in Title/Page, over the filter bar. */}
       <header className="sp-gen-history-head">
-        <div className="sp-gen-history-head__title">
-          <h1 ref={titleRef} tabIndex={-1} className="tu-title-page">
-            History
-          </h1>
-          <Button kind="primary" icon={MessageSquarePlus} onClick={newChat}>
-            New chat
-          </Button>
-        </div>
+        <h1 ref={titleRef} tabIndex={-1} className="t-title-page">
+          History
+        </h1>
       </header>
 
       {!noChats && (

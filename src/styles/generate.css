@@ -22,7 +22,7 @@
   align-items: stretch;
   gap: 75px; /* as drawn (13:1529) */
   width: 100%;
-  max-width: 760px;
+  max-width: 720px; /* the chat column (new brand, 13:1453) */
 }
 /* Laid out but unseen until Recent has settled (at most 400ms), so the
    column shows once, in its final place. */
@@ -387,24 +387,19 @@
   inset: -1px;
 }
 
+/* The title (13:3359) in Title/Page; New chat sits in the header row. */
 .sp-gen-history-head {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2xs);
   flex-shrink: 0;
+  color: var(--text-primary);
 }
-.sp-gen-history-head__title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
-}
-.sp-gen-history-head__title > h1 {
+.sp-gen-history-head > h1 {
   margin: 0;
 }
 /* A landing point when a chat's History or View all brings the member
    here, not a control: no ring. */
-.sp-gen-history-head__title > h1:focus {
+.sp-gen-history-head > h1:focus {
   outline: none;
 }
 /* The library's filter bar, 24 under the header. The page itself never
@@ -429,7 +424,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-/* The bottom fade runs 132 over the grid's foot (13:3594). */
+/* The bottom fade runs 120 over the grid's foot (2344:1625). */
 .sp-chat-page[data-state="history"] .sp-chat-scroll-fade[data-position="bottom"] {
-  height: 132px;
+  height: 120px;
 }

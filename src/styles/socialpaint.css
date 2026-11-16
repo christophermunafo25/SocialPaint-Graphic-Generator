@@ -3031,13 +3031,6 @@ input[type="radio"] {
     var(--space-xl) + var(--frame-inset-bottom, env(safe-area-inset-bottom, 0px))
   );
 }
-/* The chat's header sits right on the thread (13:7138); the thread's own
-   top padding and Edit details' split carry the gap, so the content takes
-   none of its own under the frame's header row. Generate's thread, the
-   template chat's and their load states. */
-.sp-frame[data-head] .sp-frame__body > .sp-chat-page[data-state="thread"] {
-  padding-top: 0;
-}
 
 /* ── Generate chat: Start state (frames 01 to 03; PROMPT §8.2) ────────────
    Greeting (26/125% Medium at -1.5% in the heading ink over 15/140% in the
@@ -3110,7 +3103,7 @@ input[type="radio"] {
   flex-direction: column;
   gap: var(--space-md);
   width: 100%;
-  max-width: 760px;
+  max-width: 720px; /* the chat column (new brand, 13:2985) */
   margin: auto auto 0;
 }
 
@@ -3131,7 +3124,7 @@ input[type="radio"] {
   flex-direction: column;
   gap: var(--space-2xs);
   width: 100%;
-  max-width: 760px;
+  max-width: 720px; /* the chat column (new brand, 13:2985) */
 }
 .sp-chat-dock__note {
   margin: 0;

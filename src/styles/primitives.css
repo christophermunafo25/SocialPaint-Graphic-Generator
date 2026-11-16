@@ -135,8 +135,7 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 
 /* Focus. Every control takes the global ring (socialpaint.css
    :focus-visible): stroke/focus of border/focus, focus/offset outside the
-   element. .ui-ring repeats it for the demo state. .ui-ring-tight is the
-   earlier ring drawn against the edge, for what has not been rebuilt. */
+   element. .ui-ring repeats it for the demo state. */
 .ui-ring[data-demo-state="focus"] {
   outline: var(--stroke-focus) solid var(--border-focus);
   outline-offset: var(--focus-offset);
@@ -2048,31 +2047,37 @@ button.ui-detail-tag__value {
    draws nothing; its 5 stays in the padding. Body/L is drawn trimmed: 20
    above the text's cap and 30 to the toolbar, so the untrimmed line sits 6
    higher and 6 closer. ── */
+/* The Composer (new brand, 13:2985): 16 in from a border/raised hairline at
+   radius/xl, under Elevation/1; the text 4 in from that, then the toolbar
+   24 under it. */
 .ui-composer {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: var(--space-24);
   width: 100%;
-  padding: 19px 17px 17px 25px; /* 20/12/12/20 inside the 5 edge */
-  border-radius: var(--radius-card);
+  padding: var(--space-16);
+  border: var(--stroke-hairline) solid var(--border-raised);
+  border-radius: var(--radius-xl);
   background: var(--surface-raised);
-  box-shadow: var(--elevation-small);
-  color: var(--text-strong);
+  box-shadow: var(--elevation-1-raised);
+  color: var(--text-primary);
 }
 .ui-composer[data-drag-active] {
   box-shadow:
-    var(--elevation-small),
+    var(--elevation-1-raised),
     inset 0 0 0 1px var(--state-selection);
 }
 .ui-composer__input {
   display: block;
+  box-sizing: border-box;
   width: 100%;
+  padding: var(--space-4) 0 0 var(--space-4);
   resize: none;
   overflow-y: hidden;
   background: transparent;
-  color: var(--text-strong);
-  caret-color: var(--text-strong);
+  color: var(--text-primary);
+  caret-color: var(--text-primary);
 }
 .ui-composer__input::placeholder {
   color: var(--text-secondary);
@@ -2162,12 +2167,12 @@ button.ui-detail-tag__value {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 10px; /* as drawn (61:505) */
-  max-width: 472px;
-  padding: var(--space-xs) var(--space-sm);
-  border-radius: var(--radius-menu);
+  gap: var(--space-12);
+  max-width: 440px; /* as drawn (new brand, 13:2985) */
+  padding: var(--space-12) var(--space-16);
+  border-radius: var(--radius-lg);
   background: var(--surface-sunken);
-  color: var(--text-strong);
+  color: var(--text-primary);
 }
 .ui-bubble__text {
   margin: 0;
