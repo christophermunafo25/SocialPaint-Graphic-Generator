@@ -378,8 +378,8 @@ the single export (`exportSchemaPng`, which adds delivery) and bulk fill both
 call it. It ports the proven technique from the original generators: dimensions from the schema (never hardcoded),
 all raster assets pre-converted to data URLs (html-to-image drops
 cross-origin images silently), one html-to-image snapshot (`toSvg`) that the
-export loads and draws itself, twice with a 150 ms pause (Safari decode
-warm-up), `navigator.share` on mobile with download fallback. Custom
+export loads and draws itself, twice with a 150 ms pause,
+`navigator.share` on mobile with download fallback. Custom
 uploaded fonts are embedded via `fontEmbedCSS`; Google fonts render from the
 document font cache.
 
@@ -390,6 +390,19 @@ text (a text gradient, grain on glyphs). Firefox then reuses that raster, so
 a later draw cannot repair it. html-to-image's own `toPng` draws one
 animation frame after the load, which on a busy page falls inside the
 window; that is why the export does not use it.
+
+WebKit decodes a large bitmap inside the snapshot off the main thread. It
+starts only when the snapshot is first drawn and paints nothing of the bitmap
+until the decode lands, so a draw that comes first exports the graphic
+without its photos. The export therefore sets `decoding="sync"` on every
+`<img>` in the snapshot before loading it (`withSyncDecodedImages`,
+src/lib/render/snapshotDecoding.ts), and WebKit decodes the image inside the
+draw that paints it, however slow the machine. Chromium and Firefox paint a
+snapshot's images in the draw either way and render the same pixels. A CSS
+image has no such attribute. The renderer paints one bitmap that way, an
+image field's alpha mask, and until it is decoded WebKit paints nothing of
+the masked photo: the second draw, 150 ms after the first, is what that mask
+still depends on.
 
 ## The way in: the gate and onboarding
 

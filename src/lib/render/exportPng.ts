@@ -1,6 +1,7 @@
 import { toSvg } from "html-to-image";
 import type { BrandKit, TemplateSchema } from "../types";
 import { buildExportFontEmbedCss, ensureSchemaFontsLoaded } from "./fonts";
+import { withSyncDecodedImages } from "./snapshotDecoding";
 
 export type ExportOutcome = "downloaded" | "shared" | "canceled";
 
@@ -8,8 +9,8 @@ export type ExportOutcome = "downloaded" | "shared" | "canceled";
  *
  * Ported from the reference Generator's handleDownload:
  *  - dimensions come from the SCHEMA, never a literal
- *  - the snapshot is drawn twice with a short pause (Safari image-decode
- *    warm-up)
+ *  - the snapshot's images decode inside the draw, and it is drawn twice
+ *    with a short pause (Safari decodes a CSS mask after the first draw)
  *  - mobile tries navigator.share with a File, falling back to a download
  * EVERY font the schema renders with (uploaded AND Google, type-style-bound
  * included) is embedded via fontEmbedCSS — the snapshot SVG rasterizes in an
@@ -80,13 +81,22 @@ async function ensureImagesReady(node: HTMLElement): Promise<void> {
  * run of the harness loses its text-clipped fills. */
 const SNAPSHOT_SETTLE_MS = 50;
 
-/** The pause between the two draws (Safari image-decode warm-up). */
+/** The pause between the two draws, the second of which is the export.
+ *
+ * WebKit starts decoding a large bitmap inside the snapshot only when the
+ * snapshot is drawn, and paints nothing of it until the decode lands. The
+ * snapshot's images do not wait on this pause: they are decoded inside the
+ * draw (withSyncDecodedImages). What still does is a CSS image, which has no
+ * such attribute. The renderer paints one bitmap that way, an image field's
+ * alpha mask, and while it is undecoded WebKit paints nothing of the masked
+ * photo. Safari 18 and older can also fire the snapshot's load before the
+ * images inside it have loaded. */
 const WARM_UP_PAUSE_MS = 150;
 
 const pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-/** The snapshot as an image element: loaded and decoded, not yet drawn. */
-function loadSnapshot(url: string): Promise<HTMLImageElement> {
+/** A snapshot as an image element: loaded and decoded, not yet drawn. */
+function loadSnapshotImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
     image.onload = () => {
@@ -101,6 +111,22 @@ function loadSnapshot(url: string): Promise<HTMLImageElement> {
     image.decoding = "async";
     image.src = url;
   });
+}
+
+/** html-to-image's snapshot as an image element, with the images inside it
+ * set to decode in the draw that paints them. Should that edit ever leave a
+ * snapshot that does not load, the snapshot is loaded as html-to-image made
+ * it: an export on the fixed pause alone is better than none. */
+async function loadSnapshot(snapshot: string): Promise<HTMLImageElement> {
+  const marked = withSyncDecodedImages(snapshot);
+  if (marked !== snapshot) {
+    try {
+      return await loadSnapshotImage(marked);
+    } catch {
+      // Falls through to the snapshot as it was made.
+    }
+  }
+  return loadSnapshotImage(snapshot);
 }
 
 function drawSnapshot(image: HTMLImageElement, width: number, height: number): HTMLCanvasElement {
@@ -138,7 +164,8 @@ export async function renderSchemaBlob(
   });
 
   // Loaded and drawn here rather than by html-to-image's toPng, so the
-  // first draw waits for the snapshot to settle (SNAPSHOT_SETTLE_MS).
+  // snapshot's images decode inside the draw and the first draw waits for
+  // the snapshot to settle (SNAPSHOT_SETTLE_MS).
   const image = await loadSnapshot(snapshot);
   await pause(SNAPSHOT_SETTLE_MS);
   drawSnapshot(image, width, height);
