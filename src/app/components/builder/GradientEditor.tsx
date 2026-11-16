@@ -1,78 +1,86 @@
+import React from "react";
+import { Minus, Plus, RotateCw } from "lucide-react";
 import type { TextGradient } from "@/lib/types";
 import { ColorControl } from "../ColorControl";
-import { NumericField } from "./InspectorControls";
+import { Button, IconButton } from "../primitives";
+import { NumericField, SegmentedIconGroup } from "./InspectorControls";
 import { RadialFields } from "./FillPicker";
 
 interface GradientEditorProps {
   gradient: TextGradient | undefined;
   disabled?: boolean;
-  /** Checkbox label — "Gradient fill" for text, "Gradient" for the canvas. */
+  /** The row's name ("Gradient"). */
   label?: string;
-  /** Default stops when first enabled. */
+  /** Default stops when first added. */
   defaultStops?: TextGradient["stops"];
   onChange(gradient: TextGradient | undefined): void;
 }
 
-/** Linear-gradient editor: toggle, per-stop hex-first color controls, stop
- * positions, and angle. Shared by the text fill and the canvas background.
- * Numeric entry runs on the inspector's NumericField contract: draft while
- * typing, commit on Enter/blur, revert on Escape or invalid input — clearing
- * a field can never write a constant into the gradient. */
+/** The canvas background's gradient, as the Blank frame draws it (325:484):
+ * its name and Add, then, once added, its kind, a row for each stop (the
+ * colour and its position), Add stop and the angle. Numeric entry runs on
+ * the inspector's NumericField contract: draft while typing, commit on
+ * Enter or blur, revert on Escape or invalid input. */
 export function GradientEditor({
   gradient,
   disabled = false,
-  label = "Gradient fill",
+  label = "Gradient",
   defaultStops = [
     { position: 0, color: "#FF8300" },
     { position: 1, color: "#FF5A72" },
   ],
   onChange,
 }: GradientEditorProps) {
-  const enabled = Boolean(gradient);
   return (
-    <div className="space-y-2">
-      <label
-        className="flex items-center gap-2"
-        style={{ fontSize: "var(--type-label-size)", color: "var(--text-primary)" }}
-      >
-        <input
-          type="checkbox"
-          disabled={disabled}
-          checked={enabled}
-          onChange={(e) =>
-            onChange(e.target.checked ? { angle: 90, stops: defaultStops } : undefined)
-          }
-        />
-        {label}
-      </label>
+    <div className="sp-insp-group">
+      <div className="sp-insp-titled">
+        <span className="t-label-s">{label}</span>
+        {gradient ? (
+          <IconButton
+            variant="ghost"
+            size="sm"
+            icon={Minus}
+            label={`Remove the ${label.toLowerCase()}`}
+            disabled={disabled}
+            onClick={() => onChange(undefined)}
+          />
+        ) : (
+          <Button
+            kind="neutral"
+            size="sm"
+            icon={Plus}
+            disabled={disabled}
+            aria-label={`Add a ${label.toLowerCase()}`}
+            onClick={() => onChange({ angle: 90, stops: defaultStops })}
+          >
+            Add
+          </Button>
+        )}
+      </div>
       {gradient && (
-        <div className="space-y-1.5 pl-5">
-          <div className="sp-seg" data-stretch role="group" aria-label="Gradient kind">
-            {(["linear", "radial"] as const).map((k) => (
-              <button
-                key={k}
-                type="button"
-                disabled={disabled}
-                aria-pressed={(gradient.kind ?? "linear") === k}
-                data-active={(gradient.kind ?? "linear") === k || undefined}
-                onClick={() =>
-                  onChange(
-                    k === "radial"
-                      ? { ...gradient, kind: "radial" }
-                      : { angle: gradient.angle, stops: gradient.stops },
-                  )
-                }
-                style={{ textTransform: "capitalize" }}
-              >
-                {k}
-              </button>
-            ))}
-          </div>
+        <>
+          <SegmentedIconGroup
+            stretch
+            ariaLabel="Gradient kind"
+            disabled={disabled}
+            value={gradient.kind ?? "linear"}
+            options={[
+              { key: "linear", label: "Linear", title: "Linear" },
+              { key: "radial", label: "Radial", title: "Radial" },
+            ]}
+            onSelect={(k) =>
+              onChange(
+                k === "radial"
+                  ? { ...gradient, kind: "radial" }
+                  : { angle: gradient.angle, stops: gradient.stops },
+              )
+            }
+          />
           {gradient.kind === "radial" && (
             <RadialFields gradient={gradient} disabled={disabled} onChange={onChange} />
           )}
           {gradient.stops.map((stop, i) => (
-            <div key={i} className="flex items-center gap-2">
+            <div key={i} className="sp-insp-row__control">
               <ColorControl
                 ariaLabel={`Gradient stop ${i + 1}`}
                 size={24}
@@ -84,71 +92,63 @@ export function GradientEditor({
                   })
                 }
               />
-              <div style={{ width: 74, flexShrink: 0, display: "flex" }}>
-                <NumericField
-                  suffix="%"
-                  ariaLabel={`Stop ${i + 1} position`}
-                  precision={0}
-                  min={0}
-                  max={100}
-                  value={Math.round(stop.position * 100)}
-                  onCommit={(v) =>
-                    onChange({
-                      ...gradient,
-                      stops: gradient.stops.map((st, j) =>
-                        j === i ? { ...st, position: (v ?? stop.position * 100) / 100 } : st,
-                      ),
-                    })
-                  }
-                />
-              </div>
+              <NumericField
+                suffix="%"
+                ariaLabel={`Stop ${i + 1} position`}
+                precision={0}
+                min={0}
+                max={100}
+                value={Math.round(stop.position * 100)}
+                onCommit={(v) =>
+                  onChange({
+                    ...gradient,
+                    stops: gradient.stops.map((st, j) =>
+                      j === i ? { ...st, position: (v ?? stop.position * 100) / 100 } : st,
+                    ),
+                  })
+                }
+              />
               {gradient.stops.length > 2 && (
-                <button
+                <IconButton
+                  variant="ghost"
+                  size="sm"
+                  icon={Minus}
+                  label={`Remove stop ${i + 1}`}
                   onClick={() =>
                     onChange({ ...gradient, stops: gradient.stops.filter((_, j) => j !== i) })
                   }
-                  style={{ fontSize: 11, color: "var(--text-muted)" }}
-                >
-                  Remove
-                </button>
+                />
               )}
             </div>
           ))}
-          <div className="flex items-center gap-3">
-            <button
+          <div className="sp-insp-row__control">
+            <Button
+              kind="ghost"
+              size="sm"
+              icon={Plus}
               onClick={() =>
                 onChange({
                   ...gradient,
                   stops: [...gradient.stops, { position: 1, color: "#FFED8C" }],
                 })
               }
-              style={{ fontSize: 11, color: "var(--state-primary)" }}
             >
-              + Add stop
-            </button>
-            <label
-              className="flex items-center gap-1.5"
-              style={{
-                fontSize: 11,
-                color: "var(--text-secondary)",
-                display: gradient.kind === "radial" ? "none" : undefined,
-              }}
-            >
-              Angle
-              <div style={{ width: 74, flexShrink: 0, display: "flex" }}>
-                <NumericField
-                  suffix="°"
-                  ariaLabel="Gradient angle"
-                  precision={0}
-                  value={gradient.angle}
-                  onCommit={(v) =>
-                    onChange({ ...gradient, angle: (((v ?? gradient.angle) % 360) + 360) % 360 })
-                  }
-                />
-              </div>
-            </label>
+              Add stop
+            </Button>
+            {gradient.kind !== "radial" && (
+              <NumericField
+                icon={<RotateCw size={16} strokeWidth={1.5} aria-hidden />}
+                suffix="°"
+                ariaLabel="Gradient angle"
+                precision={0}
+                value={gradient.angle}
+                onCommit={(v) =>
+                  onChange({ ...gradient, angle: (((v ?? gradient.angle) % 360) + 360) % 360 })
+                }
+              />
+            )}
           </div>
-        </div>
+        </>
       )}
     </div>
   );

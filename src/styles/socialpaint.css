@@ -645,14 +645,6 @@ optgroup {
   color: var(--text-heading);
 }
 
-.sp-panel-title {
-  font-family: var(--font-ui);
-  font-size: 14px;
-  font-weight: var(--weight-ui);
-  letter-spacing: var(--type-label-track);
-  color: var(--text-primary);
-}
-
 .sp-btn {
   font-family: var(--font-ui);
   font-weight: var(--weight-ui);
