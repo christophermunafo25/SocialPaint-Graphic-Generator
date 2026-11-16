@@ -146,11 +146,13 @@
   font-display: swap;
   unicode-range: U+2190-2199;
 }
-/* The document is the vertical scroll container (AppShell's main has no
-   overflow of its own). Reserving the scrollbar gutter keeps the centred
-   content column in exactly the same place on pages that scroll and pages
-   that don't — without it, a classic (non-overlay) scrollbar eats 12–15px
-   off the right gutter only when content overflows. */
+/* Below 1024, and on the pages outside the app (sign in, the public link
+   page), the document is the vertical scroll container. Reserving the
+   scrollbar gutter keeps the content column in exactly the same place on
+   pages that scroll and pages that don't — without it, a classic
+   (non-overlay) scrollbar eats 12–15px off the right gutter only when
+   content overflows. In the app frame at desktop width the document does
+   not scroll, and shell.css hands the gutter back. */
 html {
   scrollbar-gutter: stable;
 }
@@ -293,9 +295,16 @@ html {
   --border-width: 1px;
 
   /* Layout */
-  --page-max: 1720px; /* THE content column cap — one knob, see .sp-page */
-  --page-pad: var(--space-xl); /* column gutter (48px desktop); tiers step down below --bp-xl */
-  --chrome-top: 0px; /* height of fixed app chrome above the page: 0 beside the rail; 56px (the mobile header) below --bp-lg. Sticky page chrome offsets from this, never from top: 0. */
+  /* The public link page's column cap (.sp-page outside the app frame, until
+     new-brand Phase 4); the app frame caps nothing (layout/Page.tsx). */
+  --page-max: 1720px;
+  /* The page gutter: the tiers below --bp-lg, the public page's column and
+     the pre-app shell. The app frame sets it to 32 on Main at desktop
+     width, where Generate's thread and History reach into it. */
+  --page-pad: var(--space-xl);
+  /* The height of fixed app chrome above the page: 0 beside the rail, the
+     56px mobile bar below --bp-lg. Sticky page chrome offsets from this. */
+  --chrome-top: 0px;
   --bp-md: 768px;
   --bp-lg: 1024px;
   --bp-xl: 1280px;
@@ -1783,17 +1792,11 @@ input[type="radio"] {
   background: var(--icon-btn-bg-hover);
 }
 
-/* THE content column. Beside the rail (>= --bp-lg) it is centred in the
-   region to the rail's right; below --bp-lg the shell is the 56px top bar
-   and the nav-to-content relationship is vertical — 24px of top padding
-   under the header (see the responsive block) instead of this rule's 48px.
-   Width and gutter are tokens (--page-max / --page-pad — 48/32/24/16 by
-   tier); nothing else may cap or offset the column. margin-inline: auto
-   splits any surplus equally, so the rail gutter and the window gutter stay
-   equal in both sidebar states — and both sit at exactly --page-pad only
-   until the region outgrows --page-max (1720px). Past that (viewport >
-   1984px expanded, > 1812px collapsed) the auto margins grow both gutters
-   beyond --page-pad, together. */
+/* The page's content (layout/Page.tsx) and the public link page's column.
+   In the app frame at desktop width Main's rules in shell.css take over
+   (no cap, 32 gutters, 24 above and below); below --bp-lg the content
+   keeps the earlier column, 24 under the mobile bar (the responsive block)
+   with the --page-pad tiers. */
 .sp-page {
   max-width: var(--page-max);
   margin-inline: auto;
@@ -3015,20 +3018,18 @@ input[type="radio"] {
 
 /* ── Generate chat: the page (Figma "Generate · Chat", frames 01 to 05 and
    07; PROMPT §8.1) ─────────────────────────────────────────────────────────
-   Every state is the .sp-page column (its gutters, cap and 48 top) laid
-   out as a flex column.
+   Every state is the page's content (.sp-page) laid out as a flex column.
+   At desktop width the app frame holds it (layout/Page.tsx): Start scrolls
+   in the frame and centres its 760 column in the content, and the thread
+   states and History are its "self" pages, as tall as Main, scrolling
+   their own region. The header row and the legal links are the frame's.
 
-   Start is the normal document page, at least one viewport tall: the
-   Start region takes the room above the legal links and centres the 760
-   column in it, with the frame's 48 of padding under the column. The
-   frame insets the page 45 top and bottom; the top maps to the page's 48,
-   and the bottom matches it.
-
-   The thread states and History take the viewport (useFullViewport), so
-   the page is exactly the main region's height: the header and the dock
-   keep their size and the one scrolling region between them takes the
-   rest. The thread states end 24 above the window's foot, as drawn;
-   History, like Start, 48. Each bottom adds the home-indicator inset. */
+   Below --bp-lg Start is the normal document page, at least one viewport
+   tall, and the thread states and History take the viewport
+   (useFullViewport): the header and the dock keep their size and the one
+   scrolling region between them takes the rest. The thread states end 24
+   above the window's foot, History and Start 48, each plus the
+   home-indicator inset. */
 .sp-chat-page {
   display: flex;
   flex-direction: column;

@@ -182,7 +182,7 @@ Containers that clip without scrolling:
 
 | Container | Holds | Phase |
 |---|---|---|
-| `html[data-sp-fullscreen]`, `.sp-appshell` and `main` (`socialpaint.css:1675`) | The Generate thread and History columns, which run flush to Main's edges | 3 |
+| ~~`html[data-sp-fullscreen]`, `.sp-appshell` and `main` (`socialpaint.css:1675`)~~ | The Generate thread and History columns, which ran flush to Main's edges | Done in 3. At desktop width the app frame holds every page: Main does not clip, and the content keeps its 32 gutters as padding, so a card's shadow has room. The full-viewport rules apply below 1024 only |
 | `.sp-builder`, `__rail`, `__canvas`, `__tools` (`socialpaint.css:1701` to `1778`) | Nothing raised today: the builder draws hairlines, never shadows. The frames turn its rails into raised cards, so every one of these changes | 6 |
 | `.sp-auth__panel` (`auth.css:74`) | The floating card over the art, 24 from the edge against a shadow that reaches further. The clip also crops the art | 9 |
 
@@ -225,6 +225,35 @@ Phase 2 rebuilt the primitives against the Components page. Where the file and t
 
 `/dev/ui` draws the eight boards from `src/app/dev/boards.json`, which is data read from the file: every set's variants at the file's coordinates. `npm run shots -- boards <dir>` saves each board as an image, and `compare-image` sets it against its export in `docs/design/new-brand/reference/`. What is left in those comparisons is glyph antialiasing, label widths (the file rounds a text box to whole pixels), the phase of the dashed boxes and shadow blur. The Themes board is shorter than the file's because it leaves out the Composer and the help text on its first Field.
 
+## What Phase 3 found
+
+Phase 3 built the app frame and moved every page into it. These are the points a later phase needs.
+
+### CJ's answers at the gate (2026-11-15)
+
+- The theme toggle stays beside Collapse in the open sidebar and in the mobile bar, though the file draws none. The collapsed rail shows Expand alone.
+- The collapsed rail's avatar is the Settings button, and its mark is gone, as drawn.
+- The lockup and the mark are one colour from the theme, as every frame draws them. The favicon keeps its tile, the mark on the new Slime.
+- The content has no width cap.
+- My calls, left standing: the content returns to the top when the route's path changes (a filter in the address keeps the scroll), and the builder editor has no footer links, as its frames draw.
+
+### Built and how it works
+
+- `layout/Page.tsx` is Main. A page passes its `PageHeader` as `header` and picks a kind: "scroll" (the content scrolls in the frame under an 80 fade), "self" (the Generate thread and History, which scroll their own region) or "bare" (the builder editor). Footer Links are on by default; the fill page turns them off and sets its own under the stage, since the public link page renders the same form outside the frame.
+- The content is `.sp-page` plus the page's own class, so a page's rules still match. At desktop width Main's rules win over a page's own outer padding and minimum height (three classes), and the content is positioned, so an absolute child scrolls and clips with it.
+- `layout/useFrameKeys.ts` sends Page Up and Down, Home, End and the arrows from the page itself or the sidebar to the content (Space from the page itself only).
+- `npm run shots -- capture` grows the window by the content's hidden height before each shot, and `--collapsed` starts every route with the sidebar collapsed.
+
+### Left for each phase
+
+| For | What |
+|---|---|
+| Phase 4 | Brand Templates' filter bar pins at the content's top, and its `data-pinned` shade switches when the sentinel leaves the scroller; the frame draws a scroll region below a still filter bar. The fill page's art cap reads `100vh - 240px`, set for the earlier header. The public link page keeps `.sp-page`, `--page-max` and `--page-pad` outside the frame. Bulk fill's back link sits under its header row |
+| Phase 5 | The thread's header sits right on the thread (the content takes no top padding there) where the file draws 24. History's title row, its primary New chat and its filters stay in the content; the file puts New chat in the top bar as Neutral. History's fade is 120 in the file and the result draws a top fade. Generate's thread and History reach into the gutters by `--page-pad`, which the frame sets to 32 |
+| Phase 6b | The editor fills Main beside the 76 rail with its own 52 bar (the file draws 44); `.sp-builder` is `height: 100%` |
+| Phases 7 and 8 | Brand Studio's and Settings' toasts ride the content's foot 48 above the links (the file draws 32; the content keeps 24 of shadow room). Their columns no longer pin anything |
+| Phase 9 | Two sources for the legal pages: `src/lib/legalLinks.ts` holds the live addresses the app's links use, and `src/lib/legal.ts` holds placeholders (`#terms`, `#privacy`) that sign in, the sign-up consent line and onboarding read. The pre-app shell reads `--page-pad` |
+
 ## Scope
 
 In scope: every frame in the screen map, the shell around them, and the system pages they draw from.
@@ -240,7 +269,7 @@ One pull request per phase into `main`. Phase 0 changed the prompt's order in tw
 | 0 | Recon and plan | This folder. No product code | CJ approves the plan and answers the questions | Merged 2026-11-14 (#183) |
 | 1 | Foundation | The exporter, JSON, generator and check on the new collections. `tokens.css` regenerated from the new file. `legacy-bridge.css` rewritten so every older name still read points at a new token. The 2 px focus ring, on fields too. The 20 text styles, with existing call sites renamed onto untrimmed twins | Every changed value is on the expected list. No layout moves | Merged 2026-11-14 (#185) |
 | 2 | Primitives | Every component in `PROMPT.md` section 6.1 on the new tokens with its states, tested. The folds (Icon Button, Select, Tooltip, Switch). The new ones (Checkbox, Radio, Table Row, Alert, Empty State, Search, Tabs). `/dev/ui` redrawn to show each one in Light and Dark the way the Components page does | `/dev/ui` matches the boards in both themes | Merged 2026-11-15 (#189) |
-| 3 | Shell | The app frame: viewport padding, the 320 sidebar, Main as a frame whose content scrolls, the one Page Header row on every page, Breadcrumb, one Footer Links slot. The new logo, mark and favicon | Every route still reachable in both themes. Titles sit at one height | Not started |
+| 3 | Shell | The app frame: viewport padding, the 320 sidebar, Main as a frame whose content scrolls, the one Page Header row on every page, Breadcrumb, one Footer Links slot. The new logo, mark and favicon | Every route still reachable in both themes. Titles sit at one height | Built 2026-11-15, in review |
 | 4 | Brand Templates | The library, filter, search, the form-only fill page on the Details panel, the public link page's form, the public links dialog, bulk fill in the new shell. The template chat behind its redirect | Screens match their frames in both themes. No shadow cut off on the shelves, the chip rail or the grids | Not started |
 | 5 | Generate | Every state in the screen map, the new chat box, the Result Card with size tabs, History with skeletons | Same | Not started |
 | 6a | Template Builder: list and start | The list with its row menu, New template, Choose a size with the new covers, the Figma import and auto build dialogs | Light matches the frames. Dark reviewed by screenshot | Not started |
@@ -277,7 +306,7 @@ Paths are under `src/app/components/` unless they start with `src/`. Entry point
 | Settings | Workspace `13:14570` / `2413:1552`, People `13:14769` / `2413:1728`, Integrations `13:15051` / `2413:1987`, Plan and usage `13:15203` / `2413:2113`, Sharing `13:15384` / `2413:2263`, Account `13:15649` / `2413:2520`, Advanced `13:15837` / `2413:2680`, page `8:678` | `/settings/:section` | `admin/SettingsAdmin.tsx`, `admin/settings/*` |
 | Sign-in gate | Sign in `200:168`, error `201:254`, Sign up `201:289`, error `201:332`, Check your email `201:373`, Reset password `201:414`, Reset link sent `201:454`, New password `201:495`, page `194:2`. Light only | No session, at any URL | `PreAppShell.tsx`, `auth/AuthPage.tsx`, `AuthScreen.tsx`, `AuthPanel.tsx` |
 | Create account | `258:16`, `258:262`, `258:438`, `258:708`, `259:357`, `259:5170`, `259:478`, `259:630`, `259:799`, `259:968`, shell `257:3`, page `257:2`. Light only | First sign-in with no workspace | `onboarding/OnboardingFlow.tsx`, `onboarding/pieces.tsx`, `PreAppShell.tsx`, `primitives/OptionTile.tsx` |
-| Shell | Sidebar `2218:679`, the Generate pattern `2218:685` for the frame | all | `layout/AppShell.tsx`, `Sidebar.tsx`, `layout/Page.tsx`, `layout/Breadcrumb.tsx`, `layout/ChromeContext.tsx`, `generate/LegalLinks.tsx`, `BrandMark.tsx`, `src/styles/shell.css` |
+| Shell | Sidebar `2218:679`, the Generate pattern `2218:685` for the frame | all | `AppShell.tsx` (corrected), `Sidebar.tsx`, `layout/Page.tsx`, `layout/useFrameKeys.ts`, `layout/ChromeContext.tsx`, `BrandMark.tsx`, `brandArt.ts`, `primitives/PageHeader.tsx`, `src/styles/shell.css`. Phase 3 deleted `layout/Breadcrumb.tsx` and `generate/LegalLinks.tsx` |
 | System | Foundations `4012:1192`, Components `4012:1193`, Product components `4012:1194`, Patterns `4012:1195` | `/dev/ui` | `src/styles/*`, `primitives/*`, `src/app/dev/*` |
 
 `npm run shots` captures 76 routes (counted at `4bd5d1a`), bulk fill, the public link page and the builder editor among them. Phase 6a adds the builder states its frames draw that the fixture lacks.

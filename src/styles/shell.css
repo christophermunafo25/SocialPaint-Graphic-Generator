@@ -169,12 +169,12 @@
 .sp-workspaces__row {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
-  padding: var(--space-xs) 0;
-  color: var(--text-strong);
+  gap: var(--space-12);
+  padding: var(--space-12) 0;
+  color: var(--text-primary);
 }
 .sp-workspaces__row + .sp-workspaces__row {
-  border-top: 1px solid var(--border-default);
+  border-top: var(--stroke-hairline) solid var(--border-subtle);
 }
 .sp-workspaces__text {
   flex: 1;
@@ -442,7 +442,7 @@
 .sp-shell-settings {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: var(--space-24);
 }
 .sp-shell-settings__rail {
   display: flex;
@@ -457,7 +457,7 @@
   .sp-shell-settings {
     flex-direction: row;
     align-items: flex-start;
-    gap: var(--space-lg);
+    gap: var(--space-32);
   }
   .sp-shell-settings__rail {
     flex: none;
