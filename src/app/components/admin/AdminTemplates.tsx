@@ -112,14 +112,6 @@ export function AdminTemplates() {
 
   /** Template pending delete confirmation. */
   const [deleting, setDeleting] = useState<TemplateSchema | null>(null);
-  /** Template whose name is open for inline rename. */
-
-  const confirmDelete = async () => {
-    if (!deleting) return;
-    await stores.templates.delete(deleting.id);
-    setDeleting(null);
-    reload();
-  };
 
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
@@ -235,6 +227,15 @@ export function AdminTemplates() {
     navigate({ name: "builder", templateId: null });
   };
   const closeStart = () => setStartStep(null);
+
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    await stores.templates.delete(deleting.id);
+    // The card's menu goes with the card, so focus goes to New template.
+    dialogReturn.current = newButton.current;
+    setDeleting(null);
+    reload();
+  };
 
   /** Create a version for another platform: duplicate — the original is
    * never touched — then open the copy with the reflow handoff so the
@@ -485,16 +486,7 @@ export function AdminTemplates() {
           onRetry={templatesState.retry}
         />
       ) : templates.length === 0 ? (
-        <EmptyState
-          icon={Frame}
-          title="Create your first template"
-          action={
-            <Button kind="primary" icon={Plus} onClick={openNewTemplate}>
-              New template
-            </Button>
-          }
-          className="sp-tb-empty"
-        />
+        <EmptyState icon={Frame} title="Create your first template" className="sp-tb-empty" />
       ) : visible.length === 0 ? (
         <EmptyState
           icon={query.trim() ? Search : Frame}

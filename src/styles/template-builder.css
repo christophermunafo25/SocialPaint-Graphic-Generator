@@ -189,13 +189,6 @@
 .sp-tb-dialog .ui-progress {
   width: 100%;
 }
-/* Auto build's note: the text area starts at 96, as drawn, and grows with
-   what is typed. */
-.sp-tb-dialog .ui-input[data-size="multiline"] {
-  field-sizing: content;
-  min-height: 96px; /* as drawn */
-  resize: none;
-}
 
 /* New template's four paths: Option Tiles (257:4145) drawn as actions, 12
    apart. Raised on a hairline at radius/md, 12 by 16 inside; hover lays
@@ -218,9 +211,6 @@
   color: var(--text-primary);
   text-align: left;
   cursor: pointer;
-}
-.sp-new-path:disabled {
-  cursor: default;
 }
 .sp-new-path__text {
   display: flex;
@@ -401,4 +391,21 @@
     width: auto;
     flex: none;
   }
+}
+
+/* While a design handed over from the list lands in the builder (its fonts
+   load and its limits are measured): a pulse where the canvas will be,
+   across both of the builder's grid rows. */
+.sp-builder-opening {
+  grid-column: 1 / -1;
+  grid-row: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+.sp-builder-opening > .ui-skeleton {
+  width: min(420px, 70%);
+  height: auto;
+  aspect-ratio: 1;
 }

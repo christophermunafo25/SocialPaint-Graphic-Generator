@@ -43,9 +43,9 @@ const PATHS: Array<{
  * in Label/M over a line in Caption/M). Choosing one closes this and opens
  * its next step: Choose a size, or the import's own dialog.
  *
- * The imports need the Supabase backend; on the dev backend their tiles
- * stay in place, inert. Import from Canva shows once the workspace's plan
- * has Canva. */
+ * The imports need the Supabase backend, so the dev backend offers Start
+ * blank alone. Import from Canva shows once the workspace's plan has
+ * Canva. */
 export function NewTemplateDialog({
   open,
   onOpenChange,
@@ -68,23 +68,22 @@ export function NewTemplateDialog({
       className="sp-tb-dialog"
     >
       <div className="sp-new-paths">
-        {PATHS.filter((p) => p.id !== "canva" || canvaEnabled).map(
-          ({ id, icon: Icon, label, description }) => (
-            <button
-              key={id}
-              type="button"
-              className="ui-reset ui-tint ui-ring sp-new-path"
-              disabled={id !== "blank" && !importReady}
-              onClick={() => onChoose(id)}
-            >
-              <Icon size={16} className="ui-icon" aria-hidden />
-              <span className="sp-new-path__text">
-                <span className="t-label-m">{label}</span>
-                <span className="t-caption-m sp-new-path__description">{description}</span>
-              </span>
-            </button>
-          ),
-        )}
+        {PATHS.filter(
+          (p) => p.id === "blank" || (importReady && (p.id !== "canva" || canvaEnabled)),
+        ).map(({ id, icon: Icon, label, description }) => (
+          <button
+            key={id}
+            type="button"
+            className="ui-reset ui-tint ui-ring sp-new-path"
+            onClick={() => onChoose(id)}
+          >
+            <Icon size={16} className="ui-icon" aria-hidden />
+            <span className="sp-new-path__text">
+              <span className="t-label-m">{label}</span>
+              <span className="t-caption-m sp-new-path__description">{description}</span>
+            </span>
+          </button>
+        ))}
       </div>
     </Modal>
   );

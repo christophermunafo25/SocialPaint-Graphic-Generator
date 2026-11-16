@@ -29,6 +29,12 @@ export function CanvaImportDialog({ onClose, onBuilt, returnFocus }: CanvaImport
   const stillOpen = useStillOpen();
   const input = useRef<HTMLInputElement>(null);
 
+  // A failed import brings the form back with the error under the link;
+  // focus goes there, so the error is read with it.
+  useEffect(() => {
+    if (error) input.current?.focus();
+  }, [error]);
+
   useEffect(() => {
     if (!company) return;
     let cancelled = false;

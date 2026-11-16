@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { sizeById } from "./platforms";
-import { FALLBACK_COVER, coverFor, coverIds, hasCover } from "./sizeCovers";
+import { coverFor, coverIds } from "./sizeCovers";
 
 describe("cover resolution", () => {
   it("resolves only real catalogue ids, so a misspelled filename fails here", () => {
@@ -12,15 +12,14 @@ describe("cover resolution", () => {
 
   it("returns each shipped cover's own image", () => {
     for (const id of coverIds()) {
-      expect(hasCover(id)).toBe(true);
       expect(coverFor(id)).toMatch(new RegExp(`${id}\\.webp`));
     }
   });
 
   it("falls back to the twelfth cover for a size without its own", () => {
-    expect(hasCover("not-a-size")).toBe(false);
-    expect(coverFor("not-a-size")).toBe(FALLBACK_COVER);
-    expect(FALLBACK_COVER).toMatch(/fallback\.webp/);
+    const fallback = coverFor("not-a-size");
+    expect(fallback).toMatch(/fallback\.webp/);
     expect(coverIds()).not.toContain("fallback");
+    for (const id of coverIds()) expect(coverFor(id)).not.toBe(fallback);
   });
 });

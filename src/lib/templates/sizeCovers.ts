@@ -25,12 +25,6 @@ const byId = new Map(
 /** Every size id that shipped with cover art, sorted for stable assertions. */
 export const coverIds = (): string[] => [...byId.keys()].sort();
 
-/** Whether a size has a cover of its own. */
-export const hasCover = (sizeId: string): boolean => byId.has(sizeId);
-
 /** The cover's URL for one size, or the fallback cover for a size without
  *  its own. */
 export const coverFor = (sizeId: string): string => byId.get(sizeId) ?? fallbackCover;
-
-/** The fallback cover's URL. */
-export const FALLBACK_COVER: string = fallbackCover;

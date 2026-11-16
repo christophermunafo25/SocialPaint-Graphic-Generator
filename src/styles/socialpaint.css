@@ -261,7 +261,6 @@ html {
   --type-composer-size: 16px; /* the Generate brief — one step above body, per Figma 72:27 */
 
   /* Shape — hold the gap between soft containers and crisp controls. */
-  --radius-control-lg: 12px; /* larger controls (-lg buttons and inputs) */
   /* The Option D chat box (Figma "Brand Templates · Chat", 2026-09-28):
      the plus, tags, the tooltip bubble and the template ref thumb. */
   --radius-tag: 8px;
@@ -281,14 +280,11 @@ html {
   --gen-marker-bg: rgb(11 11 12 / 0.56);
   --gen-marker-edge: rgb(255 255 255 / 0.6);
   --gen-marker-fg: #ffffff;
-  --control-sm: 38px;
-  --control-md: 46px;
   --control-lg: 54px;
   /* Inspector density — the builder's property rows run tighter than the
      38px form floor: label + control on a 32px line, Figma-inspector style.
      Builder chrome only; member-facing forms keep the --control-* heights. */
   --row-h-compact: 32px;
-  --border-width: 1px;
 
   /* Layout. The page gutter (--page-pad) and the mobile bar's height
      (--chrome-top) are the shell's own measures, defined in shell.css. */
@@ -327,21 +323,6 @@ html {
    this mode). One ladder: #0B0B0C canvas → #171819
    card/surface/raised → #2a2a2a hover → #323232 border-on-surface. */
 [data-theme="dark"] {
-  /* Build-picker tiles (Figma 221:321). Four icon tiles, each a flat
-     colour with the glyph knocked out in its deep tint; light mode swaps
-     the pair. The blank tile is Fire exactly, so it binds to the
-     primitive (2026-09-05). The violet, the cyan, and the four deep glyph
-     tints sit outside the four-colour palette — they are the frame's
-     artwork, not state, and stay literal. */
-  --start-tile-blank: var(--fire);
-  --start-glyph-blank: #220905;
-  --start-tile-figma: #a66bff;
-  --start-glyph-figma: #1b0b35;
-  --start-tile-auto: var(--slime);
-  --start-glyph-auto: #082a16;
-  --start-tile-canva: #00ebff;
-  --start-glyph-canva: #071b25;
-  --start-input-bg: var(--chip-raised);
   /* The two-step Brand Studio frames flattened chrome onto the lifted fill
      (2026-09-15): the rail, inputs, and menus no longer read lighter than
      the cards beside them — surface, raised, and card are one rung, and
@@ -361,7 +342,6 @@ html {
      follows. The gate panel and colour popover pin the old pair. */
   --edge-rgb: 255 255 255;
   --edge-alpha: 0.2;
-  --edge-alpha-hover: 0.25;
   /* Per-surface rest alphas. Each surface assigns its own to --edge-alpha
      (.sp-card does it with the card rung), so a surface's edge can move
      without dragging the others. The bare --edge-alpha / --edge-alpha-hover
@@ -460,7 +440,6 @@ html {
      trigger keep their edges only. */
   --shadow-rest: 0 0 0 0 transparent;
   --shadow-rest-hover: 0 0 0 0 transparent;
-  --shadow-card-hover: 6px 6px 25px 0 rgb(0 0 0 / 0.3);
 
   color-scheme: dark;
 }
@@ -470,15 +449,6 @@ html {
    field was #F1F1F1 until 2026-09-25; the Figma "Navigation" page moved it
    to #F9F9F8 (--paper-050). */
 [data-theme="light"] {
-  --start-tile-blank: #220905;
-  --start-glyph-blank: var(--fire);
-  --start-tile-figma: #1b0b35;
-  --start-glyph-figma: #a66bff;
-  --start-tile-auto: #082a16;
-  --start-glyph-auto: var(--slime);
-  --start-tile-canva: #071b25;
-  --start-glyph-canva: #00ebff;
-  --start-input-bg: var(--bg-raised);
   --accent-wash: color-mix(in srgb, var(--slime) 30%, transparent);
   --accent-wash-strong: color-mix(in srgb, var(--slime) 48%, transparent);
   --bg-raised: #e8e8e8;
@@ -492,7 +462,6 @@ html {
      and other cards, and the import field. */
   --edge-rgb: 39 39 39;
   --edge-alpha: 0.15;
-  --edge-alpha-hover: 0.25;
   /* Light cards keep the shared edge exactly — the card rung is a dark
      idea (see the dark block). A literal, not var(--edge-alpha): .sp-card
      assigns --edge-alpha FROM this token, and a var() back at it on the
@@ -571,7 +540,6 @@ html {
      surfaces, so the shadow alone lifts them. */
   --shadow-rest: 6px 6px 25px 0 rgb(53 53 53 / 0.05);
   --shadow-rest-hover: 6px 6px 25px 0 rgb(53 53 53 / 0.07);
-  --shadow-card-hover: 6px 6px 25px 0 rgb(53 53 53 / 0.1);
 
   color-scheme: light;
 }
@@ -1650,28 +1618,6 @@ input[type="radio"] {
   }
 }
 
-/* Title block — the second tier of a deliberate two-tier inset. The plate
-   sits --media-pad (8px) from the card edge; the text block sits a further
-   8px in, 16px from the edge, with 16px of air above it and 16px of card
-   below it (8px here + the frame). Every media-card call site shares this
-   one rule — the offset is the design, so it must never differ per card. */
-.sp-template-card__meta {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-  padding: var(--space-sm) var(--space-2xs) var(--space-2xs);
-}
-/* Same inset, stacked flow: the admin card's title row and status line and
-   the size card's caption are vertical stacks rather than a text + arrow
-   row. Only the direction differs — the spacing is the rule above. */
-.sp-template-card__meta--stack {
-  display: block;
-}
-.sp-template-card__text {
-  flex: 1;
-  min-width: 0;
-}
-
 /* ── Row menu (D9) ──────────────────────────────────────────────────────────
    The 32px "More actions" trigger on rows without a thumbnail, and its
    floating menu. The trigger shows on the ROW's hover (hover-capable
@@ -1728,65 +1674,6 @@ input[type="radio"] {
 /* Content-panel card padding (Insights, Brand Studio, Settings, People). */
 .sp-card--content {
   padding: 24px;
-}
-
-/* Media card: an 8px frame on every side; the preview is its own inset
-   surface. The frame is square — most templates are 1:1 social posts, so a
-   square well crops the least and keeps the grid rows even. Both call sites
-   compare a template's own ratio against 1 to decide which axis to pin. */
-.sp-media-card {
-  --media-pad: var(--space-2xs);
-  padding: var(--media-pad);
-  border-radius: var(--radius-card);
-}
-.sp-media-card__preview {
-  /* The card's 20px and the well's 15px are a matched pair, both set
-     explicitly (see --radius-media-plate; 12 and 9 until 2026-09-25). The
-     Figma draws 15 rather than the 12 that 20 minus the 8px inset gives. */
-  border-radius: var(--radius-media-plate);
-  /* Anchors the looks indicator a multi-look card paints in its corner. */
-  position: relative;
-  /* Square unless a caller sets the group's own ratio. Grouping the gallery
-     by platform AND shape means every card in a rail shares one ratio, so
-     the frame can simply BE that ratio and nothing letterboxes. */
-  aspect-ratio: var(--frame-ratio, 1 / 1);
-  /* The card's own fill, NOT --bg-hover (2026-09-15, at CJ's direction):
-     the contained artwork rounds sub-pixel short of the well, and a
-     lighter ground showed through the hairline gap as an inner border
-     around every preview. On the card's fill the sliver is invisible;
-     letterboxed odd-ratio artwork now sits on card rather than a lifted
-     well, which is the cleaner read. */
-  background: var(--bg-card);
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-}
-
-/* Media card grid: --space-md gap; 4 / 3 / 2 / 1 columns. minmax(0, 1fr),
-   not 1fr — a plain 1fr track can't go below its card's min-content, so one
-   card with a wide title row steals width from the rest of the row. */
-.sp-grid-media {
-  display: grid;
-  gap: var(--space-md);
-  grid-template-columns: minmax(0, 1fr);
-  align-items: stretch;
-}
-@media (min-width: 768px) {
-  .sp-grid-media {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-@media (min-width: 1100px) {
-  .sp-grid-media {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-@media (min-width: 1440px) {
-  .sp-grid-media {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
 }
 
 /* --- Brand swatch ---------------------------------------------------------
@@ -2059,49 +1946,6 @@ input[type="radio"] {
    light (2026-09-25); the pinned filter bar itself casts none and
    separates with a hairline rather than lifting. */
 
-/* Horizontal rail with edge fades. Shared by the chip bar and the shelves:
-   the mask hides at whichever end has nothing left to reveal. */
-.sp-railfade {
-  position: relative;
-  min-width: 0;
-}
-.sp-railfade::before,
-.sp-railfade::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 80px;
-  pointer-events: none;
-  z-index: 1;
-  opacity: 1;
-  transition: opacity var(--dur-state) var(--ease);
-}
-.sp-railfade::before {
-  left: 0;
-  background: linear-gradient(to right, var(--bg-canvas), transparent);
-}
-.sp-railfade::after {
-  right: 0;
-  background: linear-gradient(to left, var(--bg-canvas), transparent);
-}
-.sp-railfade[data-at-start]::before {
-  opacity: 0;
-}
-.sp-railfade[data-at-end]::after {
-  opacity: 0;
-}
-
-.sp-railfade__track {
-  display: flex;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.sp-railfade__track::-webkit-scrollbar {
-  display: none;
-}
-
 /* Brand-templates platform chips (Figma oMzk60i8cTNIedZrwH125n 141:329
    dark, 141:858 light). A tile-and-text card, not a pill: the mark sits
    on a 45px tile that lights to near-black on hover and stays lit once
@@ -2118,8 +1962,7 @@ input[type="radio"] {
    side-by-side). Tile 36, mark 20, chevron 14; the label moved to the
    13px label step on 2026-09-25 (the Figma "Navigation" page). 152 is a
    floor in both breakpoints, not a fixed width: a chip whose label needs
-   more grows by exactly that much (see min-width below). `.sp-chip`
-   above is the size gallery's compact pill, a different control. */
+   more grows by exactly that much (see min-width below). */
 :root {
   /* Chip geometry (2026-09 frames, adjusted to the 4px scale — see the C1
      mapping in the redesign brief). One knob per dimension; the filter
@@ -2328,13 +2171,6 @@ input[type="radio"] {
   white-space: nowrap;
 }
 
-@media (max-width: 767px) {
-  .sp-railfade::before,
-  .sp-railfade::after {
-    width: 40px;
-  }
-}
-
 /* Empty state — the DS pattern: a headline naming the way out, one line of
    body, and the actions. No illustration. */
 .sp-emptystate {
@@ -2382,26 +2218,6 @@ input[type="radio"] {
 .sp-skeleton__block {
   background-color: var(--bg-raised);
   animation: sp-skeleton-pulse 1.4s var(--ease) infinite;
-}
-.sp-skeleton__line {
-  display: block;
-  height: 13px;
-  border-radius: var(--radius-control);
-}
-.sp-skeleton-card {
-  pointer-events: none;
-}
-/* The skeleton card's text block holds the real card's line boxes — a
-   15 × 1.25 title, 4px, a 12 × 1.4 metaline — so the row keeps its height
-   when the data lands; the bars sit centred in it. */
-.sp-skeleton-card .sp-template-card__text {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 6px;
-  min-height: calc(
-    var(--type-body-size) * 1.25 + var(--space-3xs) + var(--type-caption-size) * 1.4
-  );
 }
 
 @media (prefers-reduced-motion: reduce) {

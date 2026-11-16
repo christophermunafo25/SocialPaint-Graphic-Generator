@@ -28,6 +28,12 @@ export function FigmaImportDialog({ onClose, onImported, returnFocus }: FigmaImp
   const input = useRef<HTMLInputElement>(null);
   const stillOpen = useStillOpen();
 
+  // A failure puts the error under the link and the focus on it, so the
+  // error is read with it.
+  useEffect(() => {
+    if (error) input.current?.focus();
+  }, [error]);
+
   useEffect(() => {
     if (!company) return;
     let cancelled = false;
@@ -88,9 +94,16 @@ export function FigmaImportDialog({ onClose, onImported, returnFocus }: FigmaImp
               placeholder="figma.com/design/…"
               autoComplete="off"
               spellCheck={false}
-              disabled={busy}
+              // Read-only, not disabled, while it imports: a disabled field
+              // drops the focus it holds.
+              readOnly={busy}
             />
           </Field>
+          {/* The error is read out when it appears, wherever the focus is
+              (Enter in the field leaves it there). */}
+          <p className="sp-live" role="alert">
+            {error ?? ""}
+          </p>
           <ModalActions>
             <Button kind="neutral" onClick={onClose}>
               Cancel
@@ -98,7 +111,9 @@ export function FigmaImportDialog({ onClose, onImported, returnFocus }: FigmaImp
             <Button
               kind="primary"
               type="submit"
-              disabled={busy || connected === null || !url.trim()}
+              disabled={!busy && (connected === null || !url.trim())}
+              // Busy, it keeps its focus and does nothing (runImport waits).
+              aria-disabled={busy || undefined}
               aria-busy={busy || undefined}
             >
               {busy ? "Importing…" : "Import"}

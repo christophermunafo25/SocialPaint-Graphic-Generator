@@ -152,12 +152,12 @@ These play several roles or belong to one screen, exactly as `docs/design/new-lo
 | `--bg-hover`, `--bg-raised`, `--bg-plate` | 25 in 12, 12 in 5, 4 in 2 | Per area, 4 to 9 |
 | `--editor-accent`, `--editor-line`, `--editor-handle`, `--editor-artboard-edge`, `--editor-pasteboard` | 22, 14, 4, 1, 1 | 6. `--editor-accent` becomes `--editor-selection` |
 | `--nav-active-bg`, `--nav-active-fg`, `--nav-hover-bg`, `--nav-hover-fg` | 6, 6, 5, 5 | 6 |
-| `--edge-*`, `--card-*`, `--chip-*` (the stylesheet's own), `--shadow-rest`, `--shadow-card-hover`, `--radius-control-lg`, `--radius-media`, `--radius-media-inner`, `--radius-tag` | 1 to 11 each | 6 |
-| `--start-*` | 10 names, 1 each | 6 |
+| `--edge-*`, `--card-*`, `--chip-*` (the stylesheet's own), `--shadow-rest`, `--radius-media`, `--radius-media-inner`, `--radius-tag` | 1 to 11 each | 6b. Phase 6a removed `--shadow-card-hover`, `--radius-control-lg` and `--edge-alpha-hover`, whose last readers were the earlier list card and size gallery |
+| ~~`--start-*`~~ | 0 | Removed in Phase 6a with the builder's start screen, their only reader |
 | ~~`--gen-fade`, `--gen-fade-h`~~ | 0 | Removed in Phase 5. The chats' scroll fade reads `--surface-page`, and each chat scroller sets its fade heights (`--chat-fade-top`, `--chat-fade-bottom`), which its scroll padding reads too |
 | `--gen-marker-*`, `--gen-h-tag` | 1 to 3 each | Cleanup: only the hidden template chat's Missing markers read them |
 | ~~`--sb-bg`, `--sb-border`, `--sb-fg-active`~~ | 0 | Removed in Phase 3. The mobile bar reads `--surface-raised`, `--border-subtle` and `--text-primary` |
-| `--chrome-top` | 3 in 3 | Not a bridge: the shell's own measure, defined in `shell.css` since Phase 3. The mobile bar's height below 1024 (0 beside the rail). The frame's narrow minimum height, the Brand Templates filter bar below 1024 and Generate's editor sheet offset from it. Stays while the mobile bar does |
+| `--chrome-top` | 4 in 4 | Not a bridge: the shell's own measure, defined in `shell.css` since Phase 3. The mobile bar's height below 1024 (0 beside the rail). The frame's narrow minimum height, the Brand Templates and Template Builder filter bars below 1024 and Generate's editor sheet offset from it. Stays while the mobile bar does |
 | `--page-pad` | 10 in 3 | Not a bridge: the shell's own measure, defined in `shell.css` since Phase 3 on `--space-48`, `-32`, `-24` and `-16` by width. The frame's header row and footer read it below 1024. Its other readers go with their screens: the public link page's column (Phase 4), Generate's thread and History, which reach into Main's gutters by it at 32 (Phase 5), and the pre-app shell (`auth.css`, Phase 9) |
 | ~~`--page-max`~~ | 0 | Removed in Phase 4: the public link page's column caps itself (`.sp-public__column`, 1720). The app frame has no cap |
 | `--state-warning`, `--fill-warning`, `--fill-attention`, `--danger-wash`, `--accent-wash` | 1 to 6 each | With each screen that moves its alert blocks onto the Alert, which reads `--feedback-warning-*` and `--feedback-error-surface`. Phase 2 built the Alert and moved no page onto it. Most readers are in the builder (Phase 6) |
@@ -331,6 +331,8 @@ Removed, each with no reader left in `src/`:
 - `--cover-ground`, `--cover-card`, `--cover-back` and `--cover-chrome-1` to `-3`, which only the SVG size covers read: the covers are the file's photographs, exported as WebP
 - the builder's start screen (`BuildPicker.tsx`, `StartGlyphs.tsx`, `ImportLinkPopup.tsx`) and its rules (`.sp-start*`, `.sp-start-card*`, `.sp-start-tile`, `.sp-import-pop*`, `.sp-hero-title`)
 - the earlier size gallery's rules (`.sp-sizegrid`, `.sp-sizecard*`, `.sp-railitem`, `.sp-chipbar`, `.sp-chip` and its parts) and `templates/TemplateSearchField.tsx` with `.sp-searchfield*`
-- the list card's inline rename, its AI-built label and its icon buttons
+- the list card's inline rename, its AI-built label and its icon buttons, and the earlier card's rules (`.sp-template-card__meta*`, `.sp-media-card*`, `.sp-grid-media`) with `SkeletonCard`, `.sp-skeleton-card` and `.sp-skeleton__line`
+- `templates/GroupChips.tsx`, which nothing imported, and `.sp-railfade*`, whose last live reader was the earlier size gallery
+- `--start-*` (the start screen's tiles, with their hex), `--shadow-card-hover`, `--radius-control-lg`, `--edge-alpha-hover`, `--control-sm`, `--control-md` and `--border-width`, which lost their last readers with the screens above
 
-Kept for Phase 6b: `CanvasSizePicker`, which the editor's resize popover still uses, and the editor's own loading pulse on `.sp-skeleton__block`. `.sp-chip-in`, the upload chip's entrance, is a different class and stays.
+Kept for Phase 6b: `CanvasSizePicker`, which the editor's resize popover still uses, and the editor's own loading pulse on `.sp-skeleton__block`. `.sp-chip-in`, the upload chip's entrance, is a different class and stays. The type ramp's `--type-h2-*` lost its last reader too, and stays: the stylesheet keeps unread steps of the ramp whole, and deletes only unread component tokens.

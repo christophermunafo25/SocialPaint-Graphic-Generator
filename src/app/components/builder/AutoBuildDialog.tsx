@@ -15,7 +15,8 @@ import {
   TextArea,
   Upload,
 } from "../primitives";
-import { useStillOpen } from "./useStillOpen";
+import { notConnectedLine } from "./NotConnected";
+import { focusLost, useStillOpen } from "./useStillOpen";
 
 type Tab = "figma" | "canva" | "image";
 
@@ -30,12 +31,15 @@ export const BUILD_STAGES = [
 ];
 const STAGE_MS = 9000;
 
-/** The step a build is on, while it runs. */
+/** The step a build is on, while it runs. Back to the first between runs,
+ * so a second build never opens on the last one's step. */
 export function useBuildStage(busy: boolean): number {
   const [stage, setStage] = useState(0);
   useEffect(() => {
-    if (!busy) return;
-    setStage(0);
+    if (!busy) {
+      setStage(0);
+      return;
+    }
     const id = window.setInterval(
       () => setStage((s) => Math.min(s + 1, BUILD_STAGES.length - 1)),
       STAGE_MS,
@@ -48,8 +52,11 @@ export function useBuildStage(busy: boolean): number {
 /** A build in progress (329:4286): the Progress steps across the dialog,
  * "2 of 3 · Choosing what to edit", then Cancel alone. Cancel closes the
  * dialog and the result is dropped when it lands. The steps sit in a
- * status region, so each new step is read out. */
+ * status region, so each new step is read out, and Cancel takes the focus
+ * from the button that started the build, which is gone. */
 export function BuildProgress({ stage, onCancel }: { stage: number; onCancel(): void }) {
+  const cancel = useRef<HTMLButtonElement>(null);
+  useEffect(() => cancel.current?.focus(), []);
   return (
     <div className="sp-tb-dialog__form">
       <div role="status" aria-live="polite">
@@ -59,7 +66,7 @@ export function BuildProgress({ stage, onCancel }: { stage: number; onCancel(): 
         />
       </div>
       <ModalActions>
-        <Button kind="neutral" onClick={onCancel}>
+        <Button ref={cancel} kind="neutral" onClick={onCancel}>
           Cancel
         </Button>
       </ModalActions>
@@ -108,6 +115,8 @@ export function AutoBuildDialog({ onClose, onBuilt, returnFocus }: AutoBuildDial
   const stillOpen = useStillOpen();
   const fileInput = useRef<HTMLInputElement>(null);
   const firstControl = useRef<HTMLInputElement>(null);
+  const upload = useRef<HTMLButtonElement>(null);
+  const openSettings = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!company) return;
@@ -150,14 +159,37 @@ export function AutoBuildDialog({ onClose, onBuilt, returnFocus }: AutoBuildDial
     }
   };
 
+  // A workspace whose plan has no Canva gets no Canva link, as New
+  // template shows no Import from Canva; one with Canva that hasn't
+  // connected it is told so here.
+  const canvaOffered = canva?.enabled !== false;
   const notConnected =
     tab === "figma"
       ? figmaConnected === false
       : tab === "canva"
-        ? canva !== null && !(canva.enabled && canva.connected)
+        ? canva !== null && !canva.connected
         : false;
   const checking = tab === "figma" ? figmaConnected === null : tab === "canva" && canva === null;
   const ready = tab === "image" ? image !== null : links[tab].trim() !== "" && !checking;
+
+  // The plan turned out to have no Canva while its tab was open.
+  useEffect(() => {
+    if (!canvaOffered && tab === "canva") setTab("figma");
+  }, [canvaOffered, tab]);
+
+  // The check came back "not connected" while the link field had focus:
+  // Open settings, which replaced it, takes it.
+  useEffect(() => {
+    if (notConnected && focusLost()) openSettings.current?.focus();
+  }, [notConnected]);
+
+  // A failed build brings the form back with the error under its control;
+  // focus goes there, so the error is read with it.
+  useEffect(() => {
+    if (!error) return;
+    if (tab === "image") upload.current?.focus();
+    else firstControl.current?.focus();
+  }, [error, tab]);
 
   const run = async () => {
     if (!company || busy || !ready) return;
@@ -227,7 +259,7 @@ export function AutoBuildDialog({ onClose, onBuilt, returnFocus }: AutoBuildDial
             aria-label="Design source"
             options={[
               { id: "figma", label: "Figma link" },
-              { id: "canva", label: "Canva link" },
+              ...(canvaOffered ? [{ id: "canva", label: "Canva link" }] : []),
               { id: "image", label: "Image" },
             ]}
             selectedId={tab}
@@ -238,10 +270,11 @@ export function AutoBuildDialog({ onClose, onBuilt, returnFocus }: AutoBuildDial
             className="sp-tb-dialog__source"
           />
           {notConnected ? (
-            <p className="t-body-m sp-tb-dialog__note">{`${service} isn't connected for this workspace.`}</p>
+            <p className="t-body-m sp-tb-dialog__note">{notConnectedLine(service)}</p>
           ) : tab === "image" ? (
             <Field label="Image" error={error}>
               <Upload
+                ref={upload}
                 placeholder="Add an image"
                 thumbnail={image?.url ?? null}
                 fileName={image?.file.name}
@@ -290,6 +323,7 @@ export function AutoBuildDialog({ onClose, onBuilt, returnFocus }: AutoBuildDial
             </Button>
             {notConnected ? (
               <Button
+                ref={openSettings}
                 kind="primary"
                 onClick={() => {
                   onClose();

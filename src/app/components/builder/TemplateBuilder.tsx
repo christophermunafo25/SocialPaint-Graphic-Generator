@@ -165,6 +165,7 @@ import { reflowTemplate, versionName } from "@/lib/templates/reflow";
 import { CanvasSizePicker } from "./CanvasSizePicker";
 import { clearStart, peekStart, requestNewTemplate, type BuilderStart } from "./startHandoff";
 import { BUILDER_MIN_VIEWPORT_PX, useViewportAtLeast } from "./useViewportAtLeast";
+import { Skeleton } from "../primitives";
 import { BackgroundReflowDialog } from "./BackgroundReflowDialog";
 import { ShortcutsPanel } from "./ShortcutsPanel";
 import { AlignControls } from "./AlignControls";
@@ -469,21 +470,11 @@ export function TemplateBuilder({
     target: { width: number; height: number };
   } | null>(null);
 
-  useEffect(() => {
-    // A new template with nothing handed over defaults to the company's
-    // first enabled size. A start from the list brings its own size (Choose
-    // a size, or the imported frame's), which this must never overwrite
-    // when the sizes land after it. Dimensions always flow size → schema →
-    // renderer/export.
-    if (sizesState.status !== "ready" || templateId || handedStart) return;
-    const first = sizesState.data[0];
-    // Baseline, not an edit: establishing the canvas must not be undoable.
-    if (first)
-      resetHistory((d) => ({ ...d, canvasWidth: first.width, canvasHeight: first.height }));
-  }, [sizesState, templateId, handedStart, resetHistory]);
-
-  /** A blank start's size, from Choose a size. Same baseline rule as the
-   * default above — establishing the canvas is not an undoable edit. */
+  /** A blank start's size, from Choose a size. A new template always
+   * starts from the list with its size (Choose a size, or the imported
+   * frame's), so nothing sets a default here. It is a baseline, not an
+   * edit: establishing the canvas can't be undone. Dimensions always flow
+   * size, then schema, then renderer and export. */
   const pickCreationSize = useCallback(
     (next: { width: number; height: number }) =>
       resetHistory((d) => ({ ...d, canvasWidth: next.width, canvasHeight: next.height })),
@@ -2855,17 +2846,6 @@ export function TemplateBuilder({
       />
     );
   }
-  // A new template needs the canvas sizes before the source picker makes
-  // sense; when editing, dimensions come from the loaded template instead.
-  if (!templateId && sizesState.status === "error") {
-    return (
-      <ErrorState
-        title="We couldn't load the canvas sizes."
-        detail="Check your connection and try again."
-        onRetry={sizesState.retry}
-      />
-    );
-  }
 
   return (
     <div className="sp-builder">
@@ -3303,23 +3283,10 @@ export function TemplateBuilder({
 
       {!sourceChosen ? (
         /* A design handed over from the list is landing (its fonts load and
-           its limits are measured): the loading pulse, spanning both grid
-           rows as the editor will. */
-        <div
-          className="flex items-center justify-center"
-          style={{ gridColumn: "1 / -1", gridRow: "1 / -1", background: "var(--bg-canvas)" }}
-          aria-busy="true"
-          aria-label="Opening your design"
-        >
-          <span
-            aria-hidden
-            className="sp-skeleton__block"
-            style={{
-              width: "min(420px, 70vw)",
-              aspectRatio: "1 / 1",
-              borderRadius: "var(--radius-media-inner)",
-            }}
-          />
+           its limits are measured). */
+        <div className="sp-builder-opening" role="status" aria-busy="true">
+          <span className="sp-live">Opening your design</span>
+          <Skeleton shape="block" radius="md" />
         </div>
       ) : (
         <>

@@ -13,3 +13,11 @@ export function useStillOpen() {
   }, []);
   return open;
 }
+
+/** Whether keyboard focus was lost: nothing has it, or only the page or the
+ * dialog itself (the control that had it was removed, and the dialog took
+ * it back). A dialog then hands it to the control that replaced it. */
+export function focusLost(): boolean {
+  const active = document.activeElement;
+  return !active || active === document.body || active.getAttribute("role") === "dialog";
+}
