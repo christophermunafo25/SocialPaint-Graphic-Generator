@@ -28,7 +28,6 @@ import {
 } from "@/lib/templates/sizeCategories";
 import { coverFor } from "@/lib/templates/sizeCovers";
 import {
-  Badge,
   Button,
   EmptyState,
   Field,
@@ -37,6 +36,7 @@ import {
   Modal,
   NavItem,
   Skeleton,
+  Tag,
 } from "../primitives";
 import type { IconComponent } from "../primitives/cx";
 import { useRovingSelect } from "../primitives/roving";
@@ -108,7 +108,7 @@ function CategoryRail({
 /** One size (329:3372): its cover on a 4:3 plate at radius/lg, then the
  *  name in Label/S over the dimensions and ratio in Caption/M, 8 apart. The
  *  whole cover is the button. The template's own size, when there is one
- *  (Make another size), is marked and can't be chosen. */
+ *  (Make another size), carries an overlay tag and can't be chosen. */
 function SizeCover({
   size,
   current,
@@ -129,12 +129,15 @@ function SizeCover({
     >
       <span className="sp-size-cover__plate">
         <img src={coverFor(size.id)} alt="" decoding="async" />
+        {/* On the cover, so the text below keeps its rows. */}
+        {current && (
+          <Tag kind="overlay" className="sp-size-cover__tag">
+            Current size
+          </Tag>
+        )}
       </span>
       <span className="sp-size-cover__text">
-        <span className="sp-size-cover__name">
-          <span className="t-label-s sp-size-cover__label">{size.assetType}</span>
-          {current && <Badge tone="neutral">Current size</Badge>}
-        </span>
+        <span className="t-label-s sp-size-cover__name">{size.assetType}</span>
         <span className="t-caption-m sp-size-cover__dims">
           {size.width} × {size.height} · {aspectRatioOf(size.width, size.height)}
         </span>

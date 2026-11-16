@@ -189,8 +189,8 @@
 .sp-tb-dialog .ui-progress {
   width: 100%;
 }
-/* The note is the one thing in its field's place; Auto build's text area
-   takes the primitive's 96 and grows with what is typed. */
+/* Auto build's note: the text area starts at 96, as drawn, and grows with
+   what is typed. */
 .sp-tb-dialog .ui-input[data-size="multiline"] {
   field-sizing: content;
   min-height: 96px; /* as drawn */
@@ -337,22 +337,24 @@
 .sp-size-cover:not(:disabled):active .sp-size-cover__plate::after {
   background: var(--state-pressed);
 }
+/* The template's own size (Make another size): an overlay tag on the
+   cover, 8 in from its corner. */
+.sp-size-cover__tag {
+  position: absolute;
+  top: var(--space-8);
+  left: var(--space-8);
+  z-index: 1;
+}
 .sp-size-cover__text {
   display: flex;
   flex-direction: column;
   gap: var(--space-8);
   min-width: 0;
 }
-.sp-size-cover__name {
-  display: flex;
-  align-items: center;
-  gap: var(--space-8);
-  min-width: 0;
-}
 .sp-size-cover__dims {
   color: var(--text-secondary);
 }
-.sp-size-cover__label,
+.sp-size-cover__name,
 .sp-size-cover__dims {
   overflow: hidden;
   text-overflow: ellipsis;
