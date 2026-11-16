@@ -26,8 +26,7 @@ function readFades(el: HTMLElement, gutter: number): Fades {
 /** Which edges of a vertical scroller have content hidden past them: `top`
  * once it is scrolled at all, `bottom` while more lies below; and `gutter`,
  * the width its scrollbar takes from the box (0 for overlay scrollbars),
- * for a fade to leave clear. The app frame's content (layout/Page.tsx) and
- * Generate's ScrollFade read it. Listens to scroll and to size changes of
+ * for a fade to leave clear. Generate's ScrollFade reads it. Listens to scroll and to size changes of
  * the scroller and of its children (content that grows inside an
  * unchanged box changes scrollHeight, which a ResizeObserver on the
  * scroller alone misses; see useEdgeFade). A scrollbar appearing shrinks

@@ -23,13 +23,11 @@
   justify-content: center;
   height: 0;
 }
-/* In the app frame (1024 and wider) the content scrolls, not the window:
-   the anchor rides the content's foot. Sticky measures from inside the
-   content's 24 of bottom padding, so 8 more puts the toast 32 above the
-   footer links, as drawn. */
+/* In the app frame (1024 and wider) the frame scrolls, not the window:
+   the anchor rides 32 above the frame's foot. */
 @media (min-width: 1024px) {
   .sp-bs-toast-anchor {
-    bottom: var(--space-8);
+    bottom: var(--space-32);
   }
 }
 .sp-bs-toast-anchor > .ui-toast {

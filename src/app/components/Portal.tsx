@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useMemo } from "react";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -128,19 +128,6 @@ export function Portal() {
    *  template filled in by hand, then downloaded (new brand decision 9). */
   const openTemplate = (t: CatalogTemplate) => navigate({ name: "template", templateId: t.id });
 
-  // ── Sticky pin ──────────────────────────────────────────────────────────
-  const sentinel = useRef<HTMLDivElement>(null);
-  const [pinned, setPinned] = useState(false);
-  useEffect(() => {
-    const el = sentinel.current;
-    if (!el) return;
-    const io = new IntersectionObserver(([entry]) => setPinned(!entry.isIntersecting), {
-      threshold: 1,
-    });
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
   const announcement = browsing
     ? ""
     : query
@@ -161,8 +148,7 @@ export function Portal() {
 
   return (
     <Page bleed header={<PageHeader title="Brand Templates" />}>
-      <div ref={sentinel} aria-hidden className="sp-lib-sentinel" />
-      <div className="sp-lib-filterbar" data-pinned={pinned || undefined}>
+      <div className="sp-lib-filterbar">
         <LibrarySearch value={query} onChange={(q) => setState({ q }, true)} />
         {catalog.length > 0 && (
           <PlatformFilter

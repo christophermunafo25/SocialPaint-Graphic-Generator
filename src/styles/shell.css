@@ -85,15 +85,13 @@
    The header row, then the content, each the full width of Main with a 32
    gutter inside it. The 24 under the header row is the content's own top
    padding and the gutters its side padding, so a card's shadow is never
-   cut by the content's edge. "scroll": the content scrolls under an 80
-   fade while the header row stays put. "self": the content is a column as
-   tall as Main allows and the page scrolls its own region inside it.
-   "bare": the builder editor fills Main. */
+   cut by the content's edge. "scroll": the header row, the content and
+   the footer links scroll inside the frame as one page, and nothing
+   sticks. "self": the content is a column as tall as Main allows and the
+   page scrolls its own region inside it. "bare": the builder editor fills
+   Main. */
 .sp-frame[data-kind="bare"] .sp-frame__body > .sp-page {
   padding: 0;
-}
-.sp-frame__fade {
-  display: none;
 }
 /* Below 1024 the header row keeps the earlier page's place: 24 under the
    mobile bar, in the page's gutters, with the content 24 under it. The
@@ -153,15 +151,22 @@
   .sp-frame[data-kind="bare"] {
     padding: 0;
   }
+  /* The frame is the scroller: the header row and the footer links move
+     with the content. The body keeps its content's height, and on a short
+     page takes what is left, so the links sit at Main's foot. */
+  .sp-frame[data-kind="scroll"] {
+    overflow-y: auto;
+  }
+  .sp-frame[data-kind="scroll"] .sp-frame__body {
+    flex: 1 0 auto;
+  }
   .sp-frame__head {
     flex: none;
     padding-inline: var(--space-32);
   }
-  /* Footer Links (4015:750) at the foot of Main, 24 under the content. On
-     a scrolling page that 24 is the content's own bottom padding, so the
-     fade ends on the links (Brand Templates, 2308:77) and the last block,
-     scrolled to, ends 24 above them (Insights, 13:832). A page that
-     scrolls its own region takes it as a margin. */
+  /* Footer Links (4015:750) at the foot of the page, 24 under the content.
+     On a scrolling page that 24 is the content's own bottom padding. A
+     page that scrolls its own region takes it as a margin. */
   .sp-frame__foot {
     flex: none;
     padding-inline: var(--space-32);
@@ -178,9 +183,8 @@
   }
   /* Three classes, so a page's own `.sp-page.sp-x` padding or height loses
      to the frame's at this width. Generate's thread and History reach
-     into the gutters by --page-pad. Positioned, so an absolute child (a screen-reader-only
-     label) scrolls and clips with the content instead of anchoring to the
-     body around it. */
+     into the gutters by --page-pad. Positioned, so an absolute child (a
+     screen-reader-only label) anchors to the content. */
   .sp-frame .sp-frame__body > .sp-page {
     --page-pad: var(--space-32);
     position: relative;
@@ -195,36 +199,13 @@
     padding-top: var(--space-24);
   }
   .sp-frame[data-kind="scroll"] .sp-frame__body > .sp-page {
-    overflow-y: auto;
+    flex: 1 0 auto;
   }
   .sp-frame[data-kind="self"] .sp-frame__body > .sp-page {
     padding-bottom: 0;
   }
   .sp-frame[data-kind="bare"] .sp-frame__body > .sp-page {
     padding: 0;
-  }
-  /* The fade (2308:267): 80 tall over the content's foot, surface/page
-     ramping in at 40 and 85 percent, shown while more lies below. */
-  .sp-frame__fade {
-    position: absolute;
-    right: var(--frame-fade-gutter, 0px);
-    bottom: 0;
-    left: 0;
-    display: block;
-    height: 80px;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity var(--motion-duration-fast) var(--motion-easing-standard);
-    background: linear-gradient(
-      to bottom,
-      color-mix(in srgb, var(--surface-page) 0%, transparent) 0%,
-      color-mix(in srgb, var(--surface-page) 40%, transparent) 35%,
-      color-mix(in srgb, var(--surface-page) 85%, transparent) 70%,
-      var(--surface-page) 100%
-    );
-  }
-  .sp-frame__fade[data-visible] {
-    opacity: 1;
   }
 }
 

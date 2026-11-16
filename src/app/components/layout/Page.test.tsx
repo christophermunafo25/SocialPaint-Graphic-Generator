@@ -11,11 +11,12 @@ vi.mock("../../router", () => ({
 
 import { Page } from "./Page";
 
-const content = (container: HTMLElement) =>
+const content = (container: HTMLElement) => container.querySelector<HTMLElement>(".sp-page")!;
+const scroller = (container: HTMLElement) =>
   container.querySelector<HTMLElement>("[data-frame-scroll]")!;
 
 describe("Page", () => {
-  it("puts the header in the header row, above the scrolling content", () => {
+  it("scrolls the header row, the content and the footer links as one page", () => {
     const { container } = render(
       <Page header={<h1>Insights</h1>}>
         <p>Body</p>
@@ -27,7 +28,9 @@ describe("Page", () => {
     expect(frame.querySelector(".sp-frame__head h1")?.textContent).toBe("Insights");
     expect(content(container).classList.contains("sp-page")).toBe(true);
     expect(content(container).textContent).toBe("Body");
-    expect(frame.querySelector(".sp-frame__fade")?.getAttribute("aria-hidden")).toBe("true");
+    expect(scroller(container)).toBe(frame);
+    expect(frame.querySelector(".sp-frame__foot")).not.toBeNull();
+    expect(frame.querySelector(".sp-frame__fade")).toBeNull();
   });
 
   it("keeps the page's own class, state and narrow gutters on the content", () => {
@@ -42,7 +45,7 @@ describe("Page", () => {
     expect(container.querySelector(".sp-frame")?.hasAttribute("data-head")).toBe(false);
   });
 
-  it("leaves the fade out of a page that scrolls itself", () => {
+  it("keeps the header row on a page that scrolls itself", () => {
     const { container } = render(
       <Page kind="self" header={<h1>Generate</h1>}>
         <p>Thread</p>
@@ -50,17 +53,15 @@ describe("Page", () => {
     );
     expect(container.querySelector(".sp-frame")?.getAttribute("data-kind")).toBe("self");
     expect(container.querySelector(".sp-frame__head")).not.toBeNull();
-    expect(container.querySelector(".sp-frame__fade")).toBeNull();
   });
 
-  it("gives a bare page no header row and no fade", () => {
+  it("gives a bare page no header row", () => {
     const { container } = render(
       <Page kind="bare" header={<h1>Ignored</h1>}>
         <p>Editor</p>
       </Page>,
     );
     expect(container.querySelector(".sp-frame__head")).toBeNull();
-    expect(container.querySelector(".sp-frame__fade")).toBeNull();
     expect(container.querySelector(".sp-frame")?.hasAttribute("data-head")).toBe(false);
   });
 
@@ -71,7 +72,7 @@ describe("Page", () => {
         <p>Body</p>
       </Page>,
     );
-    const el = content(container);
+    const el = scroller(container);
     el.scrollTop = 300;
     url = "/templates?platform=linkedin";
     rerender(
