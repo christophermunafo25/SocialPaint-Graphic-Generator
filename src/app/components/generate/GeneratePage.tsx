@@ -1117,7 +1117,7 @@ export function GenerateChat({
   return (
     <>
       {exportExtras}
-      <Page layout={{ className: "sp-chat-page", state: "thread" }}>
+      <Page kind="self" layout={{ className: "sp-chat-page", state: "thread" }}>
         {template ? (
           // A template chat's header (13:7138, 13:8222): the breadcrumb and
           // its actions on the new look's Buttons.

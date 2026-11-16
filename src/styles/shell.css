@@ -1,9 +1,137 @@
 /* ==========================================================================
-   The shell (new look, Phase 3): the sidebar, page headers and the
-   compositions Phase 3 adds inside Settings, built from the primitives.
-   Measurements are from docs/design/new-look/PHASE-3-SHELL.md. Tokens and
-   .t-* classes only; nothing here declares a token.
+   The shell (new brand, Phase 3; docs/design/new-brand/PHASE-3.md): the app
+   frame and Main (layout/Page.tsx), the sidebar, page headers and the
+   compositions inside Settings. Measurements are RULES.md section 10's.
+   Tokens and .t-* classes only; nothing here declares a token.
    ========================================================================== */
+
+/* ── The app frame (every page frame, e.g. 13:832) ──
+   At 1024 and wider the window is the frame: 12 around, the Sidebar, 12,
+   then Main, on surface/page. It stops above the local backend's banner,
+   and the document does not scroll: Main's content does. Below 1024 the
+   mobile bar sits on top and the document scrolls, as before. */
+.sp-appshell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--surface-page);
+  font-family: var(--font-sans);
+}
+.sp-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+@media (min-width: 1024px) {
+  /* Nothing scrolls the document here, so it keeps no scrollbar gutter. */
+  html:has(.sp-appshell) {
+    overflow: hidden;
+    scrollbar-gutter: auto;
+  }
+  .sp-appshell {
+    flex-direction: row;
+    gap: var(--space-12);
+    box-sizing: border-box;
+    height: calc(100dvh - var(--dev-banner-h, 0px));
+    min-height: 0;
+    padding: var(--space-12);
+  }
+  .sp-main {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+}
+
+/* ── Main: one page (13:905; Brand Templates 2308:77) ──
+   The header row, then the content, each the full width of Main with a 32
+   gutter inside it. The 24 under the header row is the content's own top
+   padding and the gutters its side padding, so a card's shadow is never
+   cut by the content's edge. "scroll": the content scrolls under an 80
+   fade while the header row stays put. "self": the content is a column as
+   tall as Main allows and the page scrolls its own region inside it.
+   "bare": the builder editor fills Main. */
+.sp-frame[data-kind="bare"] .sp-frame__body > .sp-page {
+  padding: 0;
+}
+.sp-frame__fade {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .sp-frame {
+    /* Generate's thread and History reach into the gutters by this. */
+    --page-pad: var(--space-32);
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    box-sizing: border-box;
+    min-height: 0;
+    padding-block: var(--space-16);
+  }
+  .sp-frame[data-kind="bare"] {
+    padding: 0;
+  }
+  .sp-frame__head {
+    flex: none;
+    padding-inline: var(--space-32);
+  }
+  .sp-frame__body {
+    position: relative;
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    min-height: 0;
+  }
+  /* Three classes, so a page's own `.sp-page.sp-x` padding or height loses
+     to the frame's at this width. Positioned, so an absolute child (a
+     screen-reader-only label) scrolls and clips with the content instead
+     of anchoring to the body around it. */
+  .sp-frame .sp-frame__body > .sp-page {
+    --page-pad: var(--space-32);
+    position: relative;
+    flex: 1 1 auto;
+    box-sizing: border-box;
+    max-width: none;
+    min-height: 0;
+    margin: 0;
+    padding: 0 var(--space-32) var(--space-24);
+  }
+  .sp-frame[data-head] .sp-frame__body > .sp-page {
+    padding-top: var(--space-24);
+  }
+  .sp-frame[data-kind="scroll"] .sp-frame__body > .sp-page {
+    overflow-y: auto;
+  }
+  .sp-frame[data-kind="self"] .sp-frame__body > .sp-page {
+    padding-bottom: 0;
+  }
+  .sp-frame[data-kind="bare"] .sp-frame__body > .sp-page {
+    padding: 0;
+  }
+  /* The fade (2308:267): 80 tall over the content's foot, surface/page
+     ramping in at 40 and 85 percent, shown while more lies below. */
+  .sp-frame__fade {
+    position: absolute;
+    right: var(--frame-fade-gutter, 0px);
+    bottom: 0;
+    left: 0;
+    display: block;
+    height: 80px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--motion-duration-fast) var(--motion-easing-standard);
+    background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--surface-page) 0%, transparent) 0%,
+      color-mix(in srgb, var(--surface-page) 40%, transparent) 35%,
+      color-mix(in srgb, var(--surface-page) 85%, transparent) 70%,
+      var(--surface-page) 100%
+    );
+  }
+  .sp-frame__fade[data-visible] {
+    opacity: 1;
+  }
+}
 
 /* ── Settings › Workspace, Workspaces (13:14698) ── */
 .sp-workspaces {
@@ -37,31 +165,19 @@
   color: var(--text-secondary);
 }
 
-/* ── Sidebar (56:646; collapsed 189:2151, 189:2415) ─────────────────────────
-   A floating panel inset 10 from the viewport's top, left and bottom (none
-   on the right: the page column starts at its edge), sticky to the
-   viewport. Expanded it is 325 wide; collapsed, a 76 rail. */
+/* ── Sidebar (2218:679; open 2218:577, collapsed 2218:633) ──────────────────
+   The frame's first part: 320 wide, or a 76 rail, as tall as the frame. */
 .sp-shell-sidebar {
-  box-sizing: border-box;
+  display: flex;
   flex: none;
-  width: 335px;
-  padding: 10px 0 10px 10px; /* the frame's inset, as drawn (56:76) */
-}
-.sp-shell-sidebar[data-collapsed] {
-  width: 86px;
 }
 .sp-shell-panel {
   box-sizing: border-box;
-  position: sticky;
-  top: 10px;
-  z-index: 30;
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
-  width: 325px;
-  /* --dev-banner-h: the local backend's warning bar (DevBackendBanner),
-     which the panel stops above; unset everywhere else. */
-  height: calc(100vh - 20px - var(--dev-banner-h, 0px));
+  width: 320px;
+  height: 100%;
   padding: 20px; /* as drawn (56:77) */
   border-radius: var(--radius-card);
   background: var(--surface-raised);
@@ -200,11 +316,11 @@
   align-items: center;
   gap: var(--space-2xs);
 }
-/* At desktop width the page column starts 45 from the sidebar's edge and
-   45 from the top, as every frame draws it (13:5776; off the scale, kept as
-   drawn). Scoped to the page, so the pre-app shell's --page-pad is
-   untouched; the page's full-bleed bars read the same value. The narrower
-   tiers (32, 24, 16) stay as they are. */
+/* The public link page's column (src/app/public/PublicFrame.tsx), outside
+   the app frame: 45 from the top and the sides from 1280 up (13:5776; off
+   the scale, kept as drawn). Inside the frame, Main's rules above win. The
+   narrower tiers (32, 24, 16) stay as they are. Phase 4 rebuilds the
+   public page. */
 @media (min-width: 1280px) {
   .sp-page {
     --page-pad: 45px;

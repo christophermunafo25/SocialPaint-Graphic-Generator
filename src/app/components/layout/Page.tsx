@@ -1,50 +1,86 @@
-import React from "react";
+import React, { useLayoutEffect, useRef } from "react";
+import { routeToUrl, useRouter } from "../../router";
+import { useScrollFades } from "../generate/ScrollFade";
+import { cx } from "../primitives/cx";
+import { useFrameKeys } from "./useFrameKeys";
 
-/** THE content column — every page renders inside this, and none defines its
- * own container. At >= 1024 (the rail shell) it is horizontally centred in
- * the region right of the sidebar, a --page-pad gutter each side (48px at
- * >= 1280, 32px at 1024-1279); below 1024 the shell is the mobile top bar
- * and the nav-to-content relationship is vertical instead — 24px under the
- * 56px header, with a 24px (16px under 768) side gutter. The width cap and
- * gutters are tokens (--page-max / --page-pad on .sp-page) — one knob, no
- * per-page overrides. The rail gutter and the window gutter stay equal in
- * both sidebar states, and both equal --page-pad exactly until the region
- * outgrows --page-max (1720px; viewport > 1984px expanded, > 1812px
- * collapsed), where margin-inline: auto grows the two together. `narrow`
- * caps the inner content (People 900) and centres it inside the column.
- * `layout` is for a page that lays its children out itself (the Generate
- * chat, a flex column in each of its states): its class and data-state go
- * on the column, and the children sit directly in it rather than in the
- * inner wrapper, so the column's own layout reaches them. The gutters,
- * cap and top padding are unchanged. */
+/** How a page sits in Main:
+ * - "scroll", most pages: the content scrolls inside Main under an 80 fade,
+ *   while the header row stays put.
+ * - "self", the Generate thread and History: the content is a column as
+ *   tall as Main allows, and the page scrolls its own region inside it.
+ * - "bare", the builder editor: it fills Main, with no gutters and no
+ *   header row. */
+export type PageKind = "scroll" | "self" | "bare";
+
+/** Main, holding one page (the app frame's Main: 13:905 and every page
+ * frame of the new brand file; RULES.md section 10). At 1024 and wider the
+ * header row (36 tall) sits at the top and the content under it, each the
+ * full width of Main with a 32 gutter inside, and only the content scrolls.
+ * Below 1024 the document scrolls and the page keeps its earlier gutters
+ * (--page-pad).
+ *
+ * The content is `.sp-page` with the page's own layout class and state, so
+ * every page rule written against `.sp-page.sp-x` still matches, and it
+ * carries [data-frame-scroll] for the screenshot tool. It returns to the
+ * top when the route's path changes (a new page or section); a filter in
+ * the address keeps the scroll. */
 export function Page({
-  narrow,
+  header,
+  kind = "scroll",
   bleed,
   layout,
   children,
 }: {
-  narrow?: 760 | 900;
+  /** The page's header: the PageHeader primitive, in the header row. */
+  header?: React.ReactNode;
+  kind?: PageKind;
   /** Mobile gutter model (2026-09): below 768 the page drops its horizontal
    *  padding so rails bleed to the screen edge, and the 16px gutter moves
    *  onto the children (see .sp-page--bleed). Brand Templates only. */
   bleed?: boolean;
-  /** The column's own layout class and state (never with `narrow`). */
+  /** The page's own column class and state, set on the content. */
   layout?: { className: string; state?: string };
   children: React.ReactNode;
 }) {
-  const className = ["sp-page", bleed && "sp-page--bleed", layout?.className]
-    .filter(Boolean)
-    .join(" ");
-  if (layout) {
-    return (
-      <div className={className} data-state={layout.state}>
-        {children}
-      </div>
-    );
-  }
+  const contentRef = useRef<HTMLDivElement>(null);
+  const { route } = useRouter();
+  const path = routeToUrl(route).split("?")[0];
+  const scrolls = kind === "scroll";
+  const headed = Boolean(header) && kind !== "bare";
+
+  useLayoutEffect(() => {
+    if (scrolls && contentRef.current) contentRef.current.scrollTop = 0;
+  }, [path, scrolls]);
+  useFrameKeys(contentRef, scrolls);
+  const fades = useScrollFades(contentRef);
+
   return (
-    <div className={className}>
-      <div style={narrow ? { maxWidth: narrow, marginInline: "auto" } : undefined}>{children}</div>
+    <div className="sp-frame" data-kind={kind} data-head={headed || undefined}>
+      {headed && <div className="sp-frame__head">{header}</div>}
+      <div className="sp-frame__body">
+        <div
+          ref={contentRef}
+          className={cx("sp-page", bleed && "sp-page--bleed", layout?.className)}
+          data-state={layout?.state}
+          data-frame-scroll=""
+        >
+          {children}
+        </div>
+        {scrolls && (
+          <div
+            className="sp-frame__fade"
+            data-visible={fades.bottom || undefined}
+            // Clear of a classic scrollbar, as Generate's ScrollFade leaves it.
+            style={
+              fades.gutter
+                ? ({ "--frame-fade-gutter": `${fades.gutter}px` } as React.CSSProperties)
+                : undefined
+            }
+            aria-hidden
+          />
+        )}
+      </div>
     </div>
   );
 }

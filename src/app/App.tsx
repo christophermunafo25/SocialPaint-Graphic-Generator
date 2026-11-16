@@ -15,6 +15,7 @@ import {
 } from "./router";
 import { readCanvaReturn, takeCanvaConnectPending } from "@/lib/canvaReturn";
 import { AppShell } from "./components/AppShell";
+import { Page } from "./components/layout/Page";
 import { DevBackendBanner } from "./components/DevBackendBanner";
 import { ErrorState } from "./components/ErrorState";
 import { Portal } from "./components/Portal";
@@ -290,14 +291,17 @@ function Screen() {
         {route.name === "generateHistory" && <GenerateHistoryPage />}
         {!gated && route.name === "adminTemplates" && <AdminTemplates />}
         {!gated && route.name === "builder" && (
-          // Keyed: the builder's saved-id and wizard state assume one
-          // template per mount, and create-a-version navigates builder →
-          // builder (the freshly duplicated copy).
-          <TemplateBuilder
-            key={route.templateId ?? "new"}
-            templateId={route.templateId}
-            reflowParam={route.reflow ?? null}
-          />
+          // The editor fills Main with its own bar and regions. Keyed: the
+          // builder's saved-id and wizard state assume one template per
+          // mount, and create-a-version navigates builder → builder (the
+          // freshly duplicated copy).
+          <Page kind="bare">
+            <TemplateBuilder
+              key={route.templateId ?? "new"}
+              templateId={route.templateId}
+              reflowParam={route.reflow ?? null}
+            />
+          </Page>
         )}
         {!gated && route.name === "brandStudio" && (
           <BrandStudio category={route.category} surface={route.surface} />

@@ -42,7 +42,7 @@ export function ChatLoading({ onNewChat, onHistory }: ChatPageActions) {
   const threadRef = useRef<HTMLDivElement>(null);
   const { gutter } = useScrollFades(threadRef);
   return (
-    <Page layout={{ className: "sp-chat-page", state: "thread" }}>
+    <Page kind="self" layout={{ className: "sp-chat-page", state: "thread" }}>
       <GenerateHeader title={null} onNewChat={onNewChat} onHistory={onHistory} />
       <div className="sp-chat-split">
         <div className="sp-chat-split__chat">
@@ -113,7 +113,7 @@ export function ChatUnavailable({
     takeComposerFocus();
   }, []);
   return (
-    <Page layout={{ className: "sp-chat-page", state: "thread" }}>
+    <Page kind="self" layout={{ className: "sp-chat-page", state: "thread" }}>
       <GenerateHeader title={null} onNewChat={onNewChat} onHistory={onHistory} />
       <div className="sp-chat-unavailable">
         {failure.reason === "error" ? (

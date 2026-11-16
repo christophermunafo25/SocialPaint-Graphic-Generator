@@ -1298,37 +1298,53 @@ body[data-sp-gesture] * {
 }
 
 /* --- Full-viewport surfaces ------------------------------------------------
-   The Template Builder is a design environment, not a page: it owns the
-   whole viewport and scrolls only inside its own regions. Scoped to an
-   attribute the surface sets on `html` while it is mounted, so every other
-   route keeps the normal document scroll and the sidebar's sticky
-   positioning. */
-html[data-sp-fullscreen],
-html[data-sp-fullscreen] body {
-  height: 100%;
-  overflow: hidden;
-}
-html[data-sp-fullscreen] .sp-appshell {
-  height: 100dvh;
-  min-height: 0;
-  overflow: hidden;
-}
-html[data-sp-fullscreen] .sp-appshell > main {
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
+   Below 1024, where the document scrolls, the Generate thread and History
+   take the whole viewport and scroll only inside their own regions. Scoped
+   to an attribute the surface sets on `html` while it is mounted
+   (useFullViewport), so every other route keeps the document scroll. At
+   1024 and wider the app frame already holds every page to the window
+   (shell.css), so these rules stand down there. */
+@media (max-width: 1023px) {
+  html[data-sp-fullscreen],
+  html[data-sp-fullscreen] body {
+    height: 100%;
+    overflow: hidden;
+  }
+  html[data-sp-fullscreen] .sp-appshell {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+  html[data-sp-fullscreen] .sp-appshell > main {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+  /* The page (layout/Page.tsx) carries main's height down to the column:
+     the header row keeps its size and the content takes the rest. */
+  html[data-sp-fullscreen] .sp-frame {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+  }
+  html[data-sp-fullscreen] .sp-frame__body {
+    flex: 1 1 0;
+    min-height: 0;
+  }
 }
 
 /* --- Builder shell ---------------------------------------------------------
    Four regions: a full-width top bar, a left rail, the canvas viewport, and
    the right inspector. Rails resize and collapse; every region scrolls on
-   its own. Elevation is surface colour and a hairline, never a shadow. */
+   its own. Elevation is surface colour and a hairline, never a shadow. It
+   fills Main, beside the collapsed rail (the app frame's "bare" page). */
 .sp-builder {
   position: relative;
   display: grid;
   grid-template-columns: auto 1fr auto;
   grid-template-rows: auto minmax(0, 1fr);
-  height: 100dvh;
+  height: 100%;
   min-height: 0;
   overflow: hidden;
   background: var(--bg-canvas);

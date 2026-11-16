@@ -377,7 +377,7 @@ export function GenerateHistoryPage() {
   }
 
   return (
-    <Page layout={{ className: "sp-chat-page", state: "history" }}>
+    <Page kind="self" layout={{ className: "sp-chat-page", state: "history" }}>
       {/* The header (13:3433): "Generate" / "History", then the title in
           Title/Page with New chat on its row. */}
       <header className="sp-gen-history-head">
