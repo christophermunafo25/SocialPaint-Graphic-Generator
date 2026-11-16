@@ -234,6 +234,7 @@ Phase 3 built the app frame and moved every page into it. These are the points a
 - The theme toggle stays beside Collapse in the open sidebar and in the mobile bar, though the file draws none. The collapsed rail shows Expand alone.
 - The collapsed rail's avatar is the Settings button, and its mark is gone, as drawn.
 - The lockup and the mark are one colour from the theme, as every frame draws them. The favicon keeps its tile, the mark on the new Slime.
+  - Changed 2026-11-16: the lockup is CJ's two files, the gradient mark with its grain beside a light wordmark for Dark (`src/assets/socialpaint/logo-on-dark.svg`) and a dark one for Light (`logo-on-light.svg`). The mark alone and the favicon stay as above until CJ settles them.
 - The content has no width cap.
 - My calls, left standing: the content returns to the top when the route's path changes (a filter in the address keeps the scroll), and the builder editor has no footer links, as its frames draw.
 

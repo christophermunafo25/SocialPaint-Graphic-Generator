@@ -260,14 +260,37 @@
   color: var(--text-secondary);
 }
 
-/* ── The lockup and the mark (54:66, 61:467) ──
-   One colour each from the theme they sit in: the lockup on text/primary,
-   the mark alone on text/secondary. A nested [data-theme] (the Light
-   gate) recomputes the colour. */
+/* ── The lockup and the mark (CJ's lockup files, 2026-11-16; 61:467) ──
+   The lockup is two files, the wordmark light for Dark and dark for Light,
+   and shows the one for the nearest [data-theme] by the rule the theme
+   toggle's glyph pair follows in primitives.css: each deeper level of
+   nesting wins by specificity, three levels deep (the app's html, the
+   Light gate, a theme the lockup names). The mark alone takes
+   text/secondary from the theme it sits in. */
 .sp-brand-lockup {
   display: block;
   flex: none;
-  color: var(--text-primary);
+}
+.sp-brand-lockup > img {
+  display: block;
+}
+[data-theme="light"] .sp-brand-lockup__on-dark,
+[data-theme="dark"] .sp-brand-lockup__on-light,
+[data-theme="dark"] [data-theme="light"] .sp-brand-lockup__on-dark,
+[data-theme="light"] [data-theme="dark"] .sp-brand-lockup__on-light {
+  display: none;
+}
+[data-theme="dark"] [data-theme="light"] .sp-brand-lockup__on-light,
+[data-theme="light"] [data-theme="dark"] .sp-brand-lockup__on-dark {
+  display: block;
+}
+[data-theme="dark"] [data-theme="light"] [data-theme="dark"] .sp-brand-lockup__on-light,
+[data-theme="light"] [data-theme="dark"] [data-theme="light"] .sp-brand-lockup__on-dark {
+  display: none;
+}
+[data-theme="dark"] [data-theme="light"] [data-theme="dark"] .sp-brand-lockup__on-dark,
+[data-theme="light"] [data-theme="dark"] [data-theme="light"] .sp-brand-lockup__on-light {
+  display: block;
 }
 .sp-brand-mark {
   display: block;

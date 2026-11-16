@@ -1,5 +1,7 @@
 import React from "react";
-import { LOCKUP_MARK, LOCKUP_VIEWBOX, LOCKUP_WORDMARK, MARK } from "./brandArt";
+import logoOnDark from "@/assets/socialpaint/logo-on-dark.svg";
+import logoOnLight from "@/assets/socialpaint/logo-on-light.svg";
+import { MARK } from "./brandArt";
 
 /** The SocialPaint mark alone (Logo Mark, 61:467): the four-field mark, 20
  * square in the file, in text/secondary. Drawn inline on currentColor, so
@@ -21,10 +23,14 @@ export function BrandMark({ width = 20 }: { width?: number }) {
   );
 }
 
-/** The lockup (Logo, 54:66): the mark and the wordmark in one colour,
- * text/primary, so it reads dark in Light and white in Dark (CJ,
- * 2026-11-15: as every frame draws it). Drawn inline on currentColor and
- * sized by height. Shared by the sidebar, the mobile bar, the sign-in gate
+/** The lockup's box in CJ's files: 220 by 40. */
+const LOCKUP_RATIO = 220 / 40;
+
+/** The lockup: the gradient mark with its grain beside the wordmark, from
+ * CJ's two files (2026-11-16). They differ only in the wordmark, light for
+ * Dark and dark for Light, so the lockup draws both and shell.css shows the
+ * one for the nearest [data-theme], as the theme toggle shows its glyph.
+ * Sized by height. Shared by the sidebar, the mobile bar, the sign-in gate
  * and onboarding. */
 export function BrandLockup({
   height = 16,
@@ -36,23 +42,26 @@ export function BrandLockup({
    * sits in. */
   scheme?: "light" | "dark";
 }) {
-  const width = Math.round(((height * LOCKUP_VIEWBOX.width) / LOCKUP_VIEWBOX.height) * 100) / 100;
+  const width = Math.round(height * LOCKUP_RATIO * 100) / 100;
+  // The hidden file is display: none, so only the shown one is named.
   return (
-    <svg
-      className="sp-brand-lockup"
-      data-theme={scheme}
-      width={width}
-      height={height}
-      viewBox={`0 0 ${LOCKUP_VIEWBOX.width} ${LOCKUP_VIEWBOX.height}`}
-      fill="currentColor"
-      role="img"
-      aria-label="SocialPaint"
-      focusable="false"
-    >
-      <path d={LOCKUP_MARK} fillRule="evenodd" clipRule="evenodd" />
-      {LOCKUP_WORDMARK.map((d, i) => (
-        <path key={i} d={d} />
-      ))}
-    </svg>
+    <span className="sp-brand-lockup" data-theme={scheme}>
+      <img
+        className="sp-brand-lockup__on-light"
+        src={logoOnLight}
+        width={width}
+        height={height}
+        alt="SocialPaint"
+        draggable={false}
+      />
+      <img
+        className="sp-brand-lockup__on-dark"
+        src={logoOnDark}
+        width={width}
+        height={height}
+        alt="SocialPaint"
+        draggable={false}
+      />
+    </span>
   );
 }
