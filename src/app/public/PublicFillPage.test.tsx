@@ -91,24 +91,38 @@ afterEach(() => {
 });
 
 describe("PublicFillPage", () => {
-  it("renders the steps and the preview with no header buttons", async () => {
+  it("renders the Details panel with every field at once and no header buttons", async () => {
     vi.mocked(fetchPublicTemplate).mockResolvedValue(payload());
     render(<PublicFillPage token="tok" />);
-    expect(await screen.findByRole("heading", { name: "Preview" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Details" })).toBeTruthy();
     for (const name of ["Use AI to assist", "Bulk fill", "Public link"]) {
       expect(screen.queryByRole("button", { name })).toBeNull();
     }
-    // Headline, then the photo, then Finish.
-    expect(screen.getByRole("button", { name: /^Step 2: Photo/ })).toBeTruthy();
-    await userEvent.click(screen.getByRole("button", { name: /^Step 2: Photo/ }));
+    // The headline and the photo together, then Download PNG.
+    expect(screen.getByLabelText("Headline")).toBeTruthy();
     expect(screen.getByRole("button", { name: /^Photo: Add a photo/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Download PNG/ })).toBeTruthy();
   });
 
-  it("offers no photo step when the link turns uploads off", async () => {
+  it("keeps Download PNG looking disabled until the headline is in, and an early press marks it", async () => {
+    vi.mocked(fetchPublicTemplate).mockResolvedValue(payload());
+    render(<PublicFillPage token="tok" />);
+    const download = await screen.findByRole("button", { name: /Download PNG/ });
+    expect(download.getAttribute("aria-disabled")).toBe("true");
+    await userEvent.click(download);
+    const headline = screen.getByLabelText("Headline");
+    expect(headline.getAttribute("aria-invalid")).toBe("true");
+    expect(document.activeElement).toBe(headline);
+    await userEvent.type(headline, "Meet Acme Pro");
+    expect(download.getAttribute("aria-disabled")).toBeNull();
+    expect(headline.getAttribute("aria-invalid")).not.toBe("true");
+  });
+
+  it("offers no photo field when the link turns uploads off", async () => {
     vi.mocked(fetchPublicTemplate).mockResolvedValue(payload({ allowUploads: false }));
     render(<PublicFillPage token="tok" />);
-    await screen.findByRole("heading", { name: "Preview" });
-    expect(screen.queryByRole("button", { name: /^Step 2: Photo/ })).toBeNull();
+    await screen.findByRole("heading", { name: "Details" });
+    expect(screen.queryByRole("button", { name: /^Photo:/ })).toBeNull();
     expect(screen.getByLabelText("Headline")).toBeTruthy();
   });
 
@@ -118,7 +132,6 @@ describe("PublicFillPage", () => {
     render(<PublicFillPage token="tok" />);
     const headline = (await screen.findByLabelText("Headline")) as HTMLInputElement;
     expect(headline.value).toBe("Meet Acme Pro");
-    await userEvent.click(screen.getByRole("button", { name: /^Finish/ }));
     expect((screen.getByLabelText("Caption") as HTMLTextAreaElement).value).toBe("Meet Acme Pro");
   });
 });

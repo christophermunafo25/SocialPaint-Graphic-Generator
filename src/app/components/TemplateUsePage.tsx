@@ -30,6 +30,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
     return (
       <Page
         layout={{ className: "sp-fill-page" }}
+        kind="self"
         footer={false}
         header={
           <div className="ui-page-header">
@@ -37,21 +38,18 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
           </div>
         }
       >
-        <div aria-busy="true" aria-label="Loading template">
-          <div className="sp-fill">
-            <div className="sp-fill__form">
-              <Skeleton width={220} height={28} radius="full" />
-              <div className="sp-fill__step">
-                <Skeleton width={96} height={10} />
-                <Skeleton width="100%" height={40} radius="sm" />
-              </div>
+        <div className="sp-fill" data-place="member" aria-busy="true" aria-label="Loading template">
+          <div className="sp-fill__preview">
+            <div className="sp-fill__stage" />
+          </div>
+          <div className="sp-details">
+            <Skeleton width={80} height={13} />
+            <div className="sp-details__fields">
+              {[0, 1, 2, 3].map((i) => (
+                <Skeleton key={i} width="100%" height={36} radius="sm" />
+              ))}
             </div>
-            <div className="sp-fill__preview">
-              <div className="sp-fill__previewcard">
-                <Skeleton width={80} height={17} />
-                <Skeleton shape="block" width="100%" height={480} />
-              </div>
-            </div>
+            <Skeleton width="100%" height={44} radius="sm" />
           </div>
         </div>
       </Page>
@@ -123,7 +121,10 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
   );
 
   return (
-    <Page layout={{ className: "sp-fill-page" }} header={header} footer={false}>
+    // The page holds to the window in the app frame and the panel's fields
+    // scroll ("self"); Terms and Privacy sit under the stage, so the frame
+    // has no footer here.
+    <Page layout={{ className: "sp-fill-page" }} kind="self" header={header} footer={false}>
       {sharing && <TemplateLinksDialog template={template} onClose={() => setSharing(false)} />}
 
       <TemplateFill

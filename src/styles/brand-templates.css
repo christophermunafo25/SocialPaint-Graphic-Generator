@@ -358,241 +358,160 @@
   }
 }
 
-/* ── The fill page and the public link page ─────────────────────────────────
-   The step form on the left, the live Preview on the right (CJ,
-   2026-10-04: the earlier page on the new look, over the frames' single
-   Details panel; the breadcrumb header and the buttons stay the frame's). */
-.sp-page.sp-fill-page {
-  padding-bottom: var(--space-xl);
-}
+/* ── The fill page and the public link page (new brand, 2322:918) ─────────
+   The graphic on its stage on the left, Terms and Privacy 16 under it, and
+   the Details panel (380) on the right, 24 apart. In the app frame (1024
+   and wider, "self" in layout/Page.tsx) the page holds to the window: the
+   stage takes the height Main leaves and the graphic is as large as the
+   stage allows either way, while the panel's fields scroll. The public
+   link page scrolls, and its graphic takes the stage's width up to the
+   window's height. */
 .sp-fill {
   display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-  gap: var(--space-md);
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: var(--space-24);
 }
-.sp-fill__form {
+.sp-fill__preview {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
   min-width: 0;
 }
-.sp-fill__description {
-  margin: 0;
-  color: var(--text-secondary);
-}
-
-/* The step rail: a numbered dot per field, Look and Finish as pills. The
-   step being filled is inverse; a filled one shows its check. */
-.sp-fill__rail {
+/* The stage (2322:931): surface/sunken at radius/xl, 40 in from its
+   edges, the graphic centred on it at radius/xl with Elevation/1. */
+.sp-fill__stage {
+  box-sizing: border-box;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-}
-.sp-fill__stepdot,
-.sp-fill__stepchip {
-  display: inline-flex;
+  flex: 1;
   align-items: center;
   justify-content: center;
-  height: 28px;
-  border-radius: var(--radius-pill);
-  box-shadow: inset 0 0 0 1px var(--border-strong);
-  color: var(--text-secondary);
-  cursor: pointer;
-}
-.sp-fill__stepdot {
-  width: 28px;
-}
-.sp-fill__stepchip {
-  padding: 0 var(--space-xs);
-}
-.sp-fill__stepdot[data-filled] {
-  box-shadow: none;
-  background: var(--control-fill);
-  color: var(--text-strong);
-}
-.sp-fill__stepdot[data-error] {
-  box-shadow: inset 0 0 0 1px var(--state-error);
-  color: var(--state-error);
-}
-.sp-fill__stepdot[data-current],
-.sp-fill__stepchip[data-current] {
-  box-shadow: none;
-  background: var(--surface-inverse);
-  color: var(--text-inverse);
-}
-
-/* A step: a card with its count, the field, then Back and Next. */
-.sp-fill__step {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-  padding: 20px;
-  border-radius: var(--radius-card);
-  background: var(--surface-raised);
-  box-shadow: var(--elevation-small);
-  color: var(--text-strong);
-}
-.sp-fill__stephead {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-xs);
-}
-.sp-fill__stephead > h2 {
-  margin: 0;
-}
-.sp-fill__step:has(> .sp-fill__stephead > h2) .sp-fill__stephead {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-3xs);
-}
-.sp-fill__eyebrow {
-  font: var(--type-mono-eyebrow);
-  letter-spacing: var(--type-mono-eyebrow-tracking);
-  text-transform: uppercase;
-  color: var(--text-secondary);
-}
-/* The field's label is the step's title. */
-.sp-fill__step .ui-field__label {
-  font: var(--type-label-l);
-  letter-spacing: var(--type-label-l-tracking);
-  color: var(--text-strong);
-}
-.sp-fill__step .ui-input[data-size="multiline"] {
-  field-sizing: content;
-  min-height: 64px;
-  resize: none;
-}
-.sp-fill__nav {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--space-2xs);
-  padding-top: var(--space-3xs);
-}
-.sp-fill__looks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-sm);
-}
-.sp-fill__lookthumb {
-  display: block;
-  width: 100%;
-  overflow: hidden;
-  border-radius: var(--radius-control);
-}
-.sp-fill__downloads > .ui-btn {
-  width: 100%;
-}
-
-/* The Preview: sticky beside the steps, the graphic as large as the
-   window's height allows. */
-.sp-fill__preview {
-  position: sticky;
-  top: var(--space-lg);
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-.sp-fill__previewcard {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-  padding: 20px;
-  border-radius: var(--radius-card);
-  background: var(--surface-raised);
-  box-shadow: var(--elevation-small);
-  color: var(--text-strong);
-}
-.sp-fill__previewhead {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-xs);
-}
-.sp-fill__previewhead > h2 {
-  margin: 0;
-}
-.sp-fill__size {
-  color: var(--text-secondary);
+  min-height: 0;
+  padding: var(--space-40);
+  border-radius: var(--radius-xl);
+  background: var(--surface-sunken);
+  container-type: inline-size;
 }
 .sp-fill__art {
+  flex: none;
   width: 100%;
-  max-width: calc((100vh - 240px) * var(--art-ratio, 1));
-  margin-inline: auto;
+  aspect-ratio: var(--art-ratio, 1);
   overflow: hidden;
-  border-radius: var(--radius-media-plate);
-  background: var(--surface-sunken);
-  /* A hairline over the artwork's edge, so a white graphic still reads on
-     the white card. */
-  outline: 1px solid var(--border-default);
-  outline-offset: -1px;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--elevation-1-raised);
 }
 .sp-fill__note {
-  margin: 0;
+  margin: var(--space-16) 0 0;
   color: var(--text-secondary);
 }
 /* Terms and Privacy under the stage (2322:931): Footer Links, 16 under it. */
 .sp-fill__legal {
   padding-top: var(--space-16);
 }
+@media (min-width: 1024px) {
+  .sp-fill[data-place="member"] {
+    height: 100%;
+    min-height: 0;
+  }
+  .sp-fill[data-place="member"] .sp-fill__stage {
+    container-type: size;
+  }
+  .sp-fill[data-place="member"] .sp-fill__art {
+    width: min(100cqw, 100cqh * var(--art-ratio, 1));
+  }
+  /* Outside the frame nothing holds the page to the window, so the graphic
+     stops at the window's height less the page's top padding, the stage's
+     40 and the links (192, two 96s). */
+  .sp-fill[data-place="public"] .sp-fill__art {
+    max-width: calc((100dvh - 2 * var(--space-96)) * var(--art-ratio, 1));
+  }
+}
+/* The public link page's chrome (src/app/public/PublicFrame.tsx): the page
+   ground, the column, and the attribution under a hairline. */
+.sp-public {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--surface-page);
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+}
+.sp-public__main {
+  flex: 1;
+  min-width: 0;
+}
+.sp-public__attribution {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  padding: var(--space-24) var(--space-16);
+  border-top: var(--stroke-hairline) solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+.sp-public__link {
+  border-radius: var(--radius-xs);
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 /* Today's export messages, at the foot of the viewport. */
 .sp-fill-toast {
   position: fixed;
   left: 50%;
   /* Above the local backend's warning bar, where it shows. */
-  bottom: calc(var(--space-lg) + var(--dev-banner-h, 0px));
+  bottom: calc(var(--space-32) + var(--dev-banner-h, 0px));
   z-index: var(--z-sticky);
   transform: translateX(-50%);
-  max-width: min(560px, calc(100vw - 32px));
+  max-width: min(560px, calc(100vw - var(--space-32)));
 }
-/* The public link page's note on what survives a closed tab. */
+/* The public link page's note on what survives a closed tab, in the panel
+   above its buttons. */
 .sp-fill__resume {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-2xs);
+  gap: var(--space-8);
   color: var(--text-secondary);
 }
 .sp-fill__resume > p {
   margin: 0;
 }
 
-/* Below 1024 the steps and the preview stack: the steps first on the
-   member page, the preview first on the public link page. */
+/* Below 1024 the stage and the panel stack, the graphic first, 24 in from
+   the stage's edges and no wider than 480. */
 @media (max-width: 1023px) {
   .sp-fill {
     grid-template-columns: minmax(0, 1fr);
   }
-  .sp-fill__preview {
-    position: static;
+  .sp-fill__stage {
+    padding: var(--space-24);
   }
-  .sp-fill[data-place="public"] .sp-fill__preview {
-    order: -1;
+  .sp-fill__art {
+    max-width: 480px;
   }
 }
 
-/* ── The Details panel (156:782; 13:8148 in the template chat) ──────────── */
+/* ── The Details panel (new brand, 2322:918; 13:8148 in the template chat) ──
+   One component, configured per place (DetailsPanel.tsx): the title in
+   Title/Card, the fields 16 apart, then the footer, each 20 apart and 20
+   in from the panel's edges, on surface/raised at radius/xl with
+   Elevation/1. */
 .sp-details {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: var(--space-20);
   min-height: 0;
-  padding: 20px; /* as drawn (156:782) */
-  border-radius: var(--radius-card);
+  padding: var(--space-20);
+  border-radius: var(--radius-xl);
   background: var(--surface-raised);
-  box-shadow: var(--elevation-small);
-  color: var(--text-strong);
+  box-shadow: var(--elevation-1-raised);
+  color: var(--text-primary);
 }
 .sp-details__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-xs);
-  min-height: 32px;
+  gap: var(--space-12);
 }
 .sp-details__head > h2 {
   margin: 0;
@@ -604,19 +523,22 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
-  margin: -4px;
-  padding: 4px;
+  gap: var(--space-16);
+  margin: calc(-1 * var(--space-4));
+  padding: var(--space-4);
   overflow-y: auto;
 }
-/* Multiline fields and the caption hug their text (156:820): no resize
-   grip, and no floor above a Medium input's height. */
+/* Multiline fields hug their text: no resize grip, and no floor above a
+   Medium input's height. The caption opens 96 tall (2308:3596). */
 .sp-details .ui-input[data-size="multiline"] {
   field-sizing: content;
   min-height: var(--size-control-md);
   resize: none;
 }
-/* Look's segments share the panel's width (156:792). */
+.sp-details .sp-details__caption.ui-input[data-size="multiline"] {
+  min-height: 96px;
+}
+/* Variation's segments share the panel's width (2322:918). */
 .sp-details__look {
   display: flex;
   width: 100%;
@@ -626,24 +548,25 @@
 }
 .sp-details__foot {
   display: flex;
-  gap: var(--space-2xs);
+  gap: var(--space-8);
 }
 .sp-details__grow {
   flex: 1;
 }
 /* Generate's footer: Save to library (and its saved state or error) full
-   width above Discard and Download PNG (PHASE-5 §9 D8). */
+   width above Discard and Download PNG (PHASE-5 §9 D8). The public link
+   page's resume note sits there too. */
 .sp-details__footer {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2xs);
+  gap: var(--space-8);
 }
 .sp-details__note {
   margin: 0;
   color: var(--text-secondary);
 }
 .sp-details__note[role="alert"] {
-  color: var(--state-error);
+  color: var(--feedback-error-text);
 }
 /* Generate's preview stage (13:3312): 290 tall, the draft contained 10
    inside a sunken well, with the fill page's hairline so a white graphic

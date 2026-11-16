@@ -10,11 +10,8 @@ import { BrandMark } from "../components/BrandMark";
  * page exists to win. */
 export function PublicFrame({ children }: { children: React.ReactNode }) {
   return (
-    <div
-      className="min-h-screen flex flex-col"
-      style={{ background: "var(--bg-canvas)", fontFamily: "var(--font-ui)" }}
-    >
-      <main className="flex-1 min-w-0">
+    <div className="sp-public">
+      <main className="sp-public__main">
         <div className="sp-page">{children}</div>
       </main>
       <PublicAttribution />
@@ -32,22 +29,15 @@ export function PublicFrame({ children }: { children: React.ReactNode }) {
  * a stray tap. */
 function PublicAttribution() {
   return (
-    <footer
-      className="flex items-center justify-center"
-      style={{
-        gap: "var(--space-2xs)",
-        padding: "var(--space-md) var(--space-sm)",
-        borderTop: "1px solid var(--border)",
-      }}
-    >
+    <footer className="sp-public__attribution">
       <BrandMark width={16} />
-      <span style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
+      <span className="t-caption-m">
         Made with{" "}
         <a
           href="https://socialpaint.ai"
           target="_blank"
           rel="noreferrer noopener"
-          style={{ color: "var(--text-secondary)", textDecoration: "underline" }}
+          className="ui-ring sp-public__link"
         >
           SocialPaint
         </a>

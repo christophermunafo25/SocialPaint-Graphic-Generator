@@ -42,7 +42,8 @@ export interface DetailsPanelProps {
   sizeSwitch?: DetailsLook | null;
   /** Generate's preview stage, under the size switch. */
   stage?: React.ReactNode;
-  /** Look, as a Segmented control, when the template has more than one. */
+  /** The variation (a look in the schema), as a Segmented control, when the
+   * template has more than one. */
   look?: DetailsLook | null;
   /** The member fields to show, in the template's order. */
   fields?: TemplateField[];
@@ -77,10 +78,11 @@ export interface DetailsPanelProps {
 /**
  * The Details panel (new look, 156:782 and 13:8148): one component,
  * configured per place (PHASE-4.md §9 D4). The fill page titles it
- * "Details"; the template chat "Edit details", with a close button. The
- * fields come from the template in both: Look, every member field (a photo
- * as the Upload control), then Caption, whose label row carries Copy. The
- * fields scroll inside the panel; the title and the footer stay put.
+ * "Details" (new brand, 2322:918); the template chat "Edit details", with a
+ * close button. The fields come from the template in both: Variation,
+ * every member field (a photo as the Upload control), then Caption, whose
+ * label row carries Copy. The fields scroll inside the panel; the title and
+ * the footer stay put.
  */
 export function DetailsPanel({
   title,
@@ -127,7 +129,7 @@ export function DetailsPanel({
       className={["sp-details", className].filter(Boolean).join(" ")}
     >
       <div className="sp-details__head">
-        <h2 id={titleId} className="tu-title-card">
+        <h2 id={titleId} className="t-title-card">
           {title}
         </h2>
         {onClose && (
@@ -163,7 +165,7 @@ export function DetailsPanel({
           <div className="ui-field">
             <div className="ui-field__row">
               <span id={lookLabelId} className="t-label-xs ui-field__label">
-                Look
+                Variation
               </span>
             </div>
             <SegmentedControl
@@ -195,7 +197,11 @@ export function DetailsPanel({
             edited={caption.edited}
             action={{ label: copied ? "Copied" : "Copy", onClick: () => void copyCaption() }}
           >
-            <TextArea value={caption.value} onChange={(e) => caption.onChange(e.target.value)} />
+            <TextArea
+              value={caption.value}
+              onChange={(e) => caption.onChange(e.target.value)}
+              className="sp-details__caption"
+            />
           </Field>
         )}
       </form>
