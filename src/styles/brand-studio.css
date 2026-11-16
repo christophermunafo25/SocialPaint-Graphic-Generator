@@ -14,17 +14,6 @@
   flex: 1 0 auto;
 }
 
-/* The detail header's actions (13:9388): the save status, 16, then Undo. */
-.sp-bs-head__actions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-}
-.sp-bs-head__status {
-  color: var(--text-secondary);
-  white-space: nowrap;
-}
-
 /* Terms and Privacy at the foot of every Brand Studio page, not underlined
    (13:9173). */
 .sp-bs-legal {

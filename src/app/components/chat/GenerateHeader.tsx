@@ -1,7 +1,6 @@
 import React from "react";
 import { History, MessageSquarePlus } from "lucide-react";
-import { BreadcrumbHeader } from "../layout/Breadcrumb";
-import { Button } from "../primitives";
+import { Button, PageHeader } from "../primitives";
 
 /** Generate's page header over a chat (13:3059): "Generate" / the chat's
  * title, then History (neutral) and New chat (primary). "Generate" starts a
@@ -18,7 +17,7 @@ export const GenerateHeader = React.forwardRef<
   }
 >(function GenerateHeader({ title, titleId, onNewChat, onHistory }, ref) {
   return (
-    <BreadcrumbHeader
+    <PageHeader
       ref={ref}
       currentId={titleId}
       crumbs={

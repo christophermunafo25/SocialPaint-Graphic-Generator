@@ -22,8 +22,16 @@ import { MAX_BULK_ROWS, runBulk, slugify, type BulkRunResult } from "@/lib/bulk/
 import { overCapLine, readyLine, rowStatus } from "@/lib/bulk/copy";
 import { useRouter } from "../../router";
 import { ErrorState } from "../ErrorState";
-import { Page, PageHeader } from "../layout/Page";
-import { Button, ProgressBar, Select, Skeleton, SkeletonLines, Switch } from "../primitives";
+import { Page } from "../layout/Page";
+import {
+  Button,
+  PageHeader,
+  ProgressBar,
+  Select,
+  Skeleton,
+  SkeletonLines,
+  Switch,
+} from "../primitives";
 import { TemplateThumbnail } from "../TemplateThumbnail";
 import { BulkExportStage, type BulkExportStageHandle } from "./BulkExportStage";
 
@@ -281,9 +289,8 @@ function BulkFill({
   useEffect(() => () => abortRef.current?.abort(), []);
 
   return (
-    <Page>
+    <Page header={<PageHeader title="Bulk fill" />}>
       <BackLink onClick={() => navigate({ name: "template", templateId: template.id })} />
-      <PageHeader title="Bulk fill" />
 
       {/* The off-screen canvas is mounted for the whole visit, so the
           background and fonts are resolved once, before the first row. */}

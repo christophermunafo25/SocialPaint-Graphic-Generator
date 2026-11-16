@@ -22,6 +22,17 @@ describe("Breadcrumb", () => {
     expect(onHome).toHaveBeenCalledTimes(1);
   });
 
+  it("leaves the heading to the page when the last crumb is not it", () => {
+    render(
+      <Breadcrumb
+        currentIsHeading={false}
+        crumbs={[{ label: "Generate", onClick: () => {} }, { label: "History" }]}
+      />,
+    );
+    expect(screen.queryByRole("heading")).toBeNull();
+    expect(screen.getByText("History").getAttribute("aria-current")).toBe("page");
+  });
+
   it("a crumb with an address is a real link whose plain click stays in the app", async () => {
     const onClick = vi.fn();
     render(
@@ -53,7 +64,9 @@ describe("PageHeader", () => {
       />,
     );
     expect(screen.getByRole("heading", { level: 1, name: "Colors" })).toBeTruthy();
-    const status = screen.getByText("All changes saved");
+    // The save status is read out as it changes.
+    const status = screen.getByRole("status");
+    expect(status.textContent).toBe("All changes saved");
     const undo = screen.getByRole("button", { name: "Undo" });
     // The status comes before the actions.
     expect(status.compareDocumentPosition(undo) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

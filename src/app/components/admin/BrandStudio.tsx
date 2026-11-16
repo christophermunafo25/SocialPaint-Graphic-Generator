@@ -4,9 +4,11 @@ import { useUnsavedChangesWarning } from "@/lib/useUnsavedChangesWarning";
 import { type BrandCategory } from "../../router";
 import { Page } from "../layout/Page";
 import { LegalLinks } from "../generate/LegalLinks";
-import { Toast } from "../primitives";
+import { PageHeader, Toast } from "../primitives";
 import { BrandDetail } from "./brand/BrandDetail";
+import { BrandDetailHeader } from "./brand/BrandDetailHeader";
 import { BrandOverview } from "./brand/BrandOverview";
+import { CATEGORY_TITLES } from "./brand/categories";
 import type { LogoSurface } from "./brand/kitOps";
 import { useBrandBindings, useBrandDraft } from "./brand/kitPlumbing";
 
@@ -32,7 +34,16 @@ export function BrandStudio({
   useUnsavedChangesWarning(brand.pending || brand.saving);
 
   return (
-    <Page layout={{ className: "sp-bs-page" }}>
+    <Page
+      layout={{ className: "sp-bs-page" }}
+      header={
+        category ? (
+          <BrandDetailHeader title={CATEGORY_TITLES[category]} brand={brand} />
+        ) : (
+          <PageHeader title="Brand Studio" />
+        )
+      }
+    >
       <div className="sp-bs-content">
         {category ? (
           <BrandDetail category={category} surface={surface} brand={brand} bindings={bindings} />

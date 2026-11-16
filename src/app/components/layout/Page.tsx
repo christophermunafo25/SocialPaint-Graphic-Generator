@@ -84,21 +84,3 @@ export function Page({
     </div>
   );
 }
-
-/** The page header (new look): the title alone, with the page's actions on
- * the right (RULES §9: no eyebrow, no helper line). 36 tall, 24 above the
- * page's first content, as every screen draws it. */
-export function PageHeader({
-  title,
-  actions,
-}: {
-  title: React.ReactNode;
-  actions?: React.ReactNode;
-}) {
-  return (
-    <header className="sp-shell-pagehead">
-      <h1 className="tu-title-page">{title}</h1>
-      {actions && <div className="sp-shell-pagehead__actions">{actions}</div>}
-    </header>
-  );
-}

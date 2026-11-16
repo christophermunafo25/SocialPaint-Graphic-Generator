@@ -45,8 +45,7 @@ import { useBrand } from "@/lib/brand/BrandContext";
 import { useRouter } from "../../router";
 import { useFullViewport } from "../layout/ChromeContext";
 import { Page } from "../layout/Page";
-import { BreadcrumbHeader } from "../layout/Breadcrumb";
-import { Button, Toast } from "../primitives";
+import { Button, PageHeader, Toast } from "../primitives";
 import { ChatComposer } from "../chat/ChatComposer";
 import {
   TemplateInterviewLive,
@@ -1114,69 +1113,71 @@ export function GenerateChat({
   // under it and the panel beside it (or over it, below 1180px).
   const editView = Boolean(template && editorOpen && selectedDraft);
   const lookOptions = template?.variants?.map((v) => ({ id: v.id, label: v.name })) ?? [];
+  const threadHeader = template ? (
+    // A template chat's header (13:7138, 13:8222): the breadcrumb and
+    // its actions on the new look's Buttons.
+    <PageHeader
+      ref={headerRef}
+      currentId={titleId}
+      crumbs={
+        editView
+          ? [
+              { label: "Brand Templates", onClick: openBrandTemplates },
+              { label: template.name, onClick: closeEditor },
+              { label: "Edit details" },
+            ]
+          : [{ label: "Brand Templates", onClick: openBrandTemplates }, { label: template.name }]
+      }
+      actions={
+        editView ? (
+          <Button kind="neutral" icon={ArrowLeft} onClick={closeEditor}>
+            Back to chat
+          </Button>
+        ) : (
+          <>
+            <Button
+              kind="neutral"
+              icon={Pencil}
+              onClick={() => navigate({ name: "template", templateId: template.id })}
+            >
+              Fill in by hand
+            </Button>
+            {role === "admin" && (
+              <Button
+                kind="neutral"
+                icon={LayoutGrid}
+                onClick={() => navigate({ name: "bulk", templateId: template.id })}
+              >
+                Bulk fill
+              </Button>
+            )}
+            {role === "admin" && (
+              <Button kind="primary" icon={Link} onClick={() => setSharing(true)}>
+                Public link
+              </Button>
+            )}
+          </>
+        )
+      }
+    />
+  ) : (
+    <GenerateHeader
+      ref={headerRef}
+      title={thread.title}
+      titleId={titleId}
+      onNewChat={startNewChat}
+      onHistory={openHistory}
+    />
+  );
+
   return (
     <>
       {exportExtras}
-      <Page kind="self" layout={{ className: "sp-chat-page", state: "thread" }}>
-        {template ? (
-          // A template chat's header (13:7138, 13:8222): the breadcrumb and
-          // its actions on the new look's Buttons.
-          <BreadcrumbHeader
-            ref={headerRef}
-            currentId={titleId}
-            crumbs={
-              editView
-                ? [
-                    { label: "Brand Templates", onClick: openBrandTemplates },
-                    { label: template.name, onClick: closeEditor },
-                    { label: "Edit details" },
-                  ]
-                : [
-                    { label: "Brand Templates", onClick: openBrandTemplates },
-                    { label: template.name },
-                  ]
-            }
-            actions={
-              editView ? (
-                <Button kind="neutral" icon={ArrowLeft} onClick={closeEditor}>
-                  Back to chat
-                </Button>
-              ) : (
-                <>
-                  <Button
-                    kind="neutral"
-                    icon={Pencil}
-                    onClick={() => navigate({ name: "template", templateId: template.id })}
-                  >
-                    Fill in by hand
-                  </Button>
-                  {role === "admin" && (
-                    <Button
-                      kind="neutral"
-                      icon={LayoutGrid}
-                      onClick={() => navigate({ name: "bulk", templateId: template.id })}
-                    >
-                      Bulk fill
-                    </Button>
-                  )}
-                  {role === "admin" && (
-                    <Button kind="primary" icon={Link} onClick={() => setSharing(true)}>
-                      Public link
-                    </Button>
-                  )}
-                </>
-              )
-            }
-          />
-        ) : (
-          <GenerateHeader
-            ref={headerRef}
-            title={thread.title}
-            titleId={titleId}
-            onNewChat={startNewChat}
-            onHistory={openHistory}
-          />
-        )}
+      <Page
+        kind="self"
+        layout={{ className: "sp-chat-page", state: "thread" }}
+        header={threadHeader}
+      >
         <div
           className="sp-chat-split"
           data-editor={editorPresentation}

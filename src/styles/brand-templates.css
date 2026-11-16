@@ -981,9 +981,10 @@
   height: 100%;
 }
 /* The chat's header sits right on the thread (13:7138); the thread's own
-   top padding and Edit details' split carry the gap. */
-.sp-chat-page > .sp-shell-pagehead {
-  margin-bottom: 0;
+   top padding and Edit details' split carry the gap, so the content takes
+   none of its own under the frame's header row. */
+.sp-frame[data-head] .sp-frame__body > .sp-chat-page[data-state="thread"] {
+  padding-top: 0;
 }
 
 /* ── The Public links dialog (168:758): New link, a divider, then Links ── */

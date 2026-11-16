@@ -12,8 +12,8 @@ import {
 import { useAuth } from "@/lib/auth/AuthContext";
 import { routeToUrl, useRouter, type SettingsSection } from "../../router";
 import { LegalLinks } from "../generate/LegalLinks";
-import { Page, PageHeader } from "../layout/Page";
-import { SettingsRailItem } from "../primitives";
+import { Page } from "../layout/Page";
+import { PageHeader, SettingsRailItem } from "../primitives";
 import { AccountSection } from "./settings/AccountSection";
 import { AdvancedSection } from "./settings/AdvancedSection";
 import { IntegrationsSection } from "./settings/IntegrationsSection";
@@ -71,9 +71,8 @@ export function SettingsAdmin({ section }: { section?: SettingsSection }) {
   }, [section, active.key, navigate]);
 
   return (
-    <Page layout={{ className: "sp-st-page" }}>
+    <Page layout={{ className: "sp-st-page" }} header={<PageHeader title="Settings & Admin" />}>
       <SettingsToastProvider>
-        <PageHeader title="Settings & Admin" />
         <div className="sp-shell-settings">
           <nav className="sp-shell-settings__rail" aria-label="Settings sections">
             {visible.map(({ key, label }) => (
