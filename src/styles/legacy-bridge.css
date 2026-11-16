@@ -71,7 +71,6 @@
   --gen-sunken: var(--surface-sunken);
   --fill-action: var(--surface-inverse);
   --text-on-action: var(--text-inverse);
-  --control-fill: var(--surface-sunken);
 
   /* Overlays */
   --overlay-hover: var(--state-pressed);
@@ -98,8 +97,6 @@
 
   /* Controls and chips */
   --switch-background: var(--border-control);
-  --chip-selected-bg: var(--surface-inverse);
-  --chip-selected-tile: var(--state-selected);
   --chip-tile: var(--action-neutral);
 
   /* Chart and field hues */

@@ -7,12 +7,14 @@
    layer), not colours.
    ========================================================================== */
 
-/* ── The library (13:5776, 13:6310, 13:6511) ─────────────────────────────── */
+/* ── The library (new brand: 2308:4, platform filter 2308:538, search
+   2308:739) ───────────────────────────────────────────────────────────────── */
 
 /* The filter bar pins under the app chrome as the page scrolls. Flat at
    rest; pinned, the page's own ground runs behind it and fades out 24
    below, so cards scroll under it without meeting an edge. The sentinel
-   above it tells the page when it has pinned. */
+   above it tells the page when it has pinned. The search button, then the
+   chips, 8 apart. */
 .sp-lib-sentinel {
   height: 1px;
   margin-top: -1px;
@@ -23,7 +25,7 @@
   z-index: var(--z-sticky);
   display: flex;
   align-items: center;
-  gap: var(--space-2xs);
+  gap: var(--space-8);
   min-height: 56px;
 }
 /* In the app frame the bar pins to the content's top edge, right under the
@@ -37,7 +39,7 @@
 .sp-lib-filterbar::before {
   content: "";
   position: absolute;
-  inset: 0 0 calc(-1 * var(--space-md));
+  inset: 0 0 calc(-1 * var(--space-24));
   z-index: -1;
   pointer-events: none;
   background: linear-gradient(to bottom, var(--surface-page) 70%, transparent);
@@ -46,14 +48,19 @@
 .sp-lib-filterbar[data-pinned]::before {
   opacity: 1;
 }
+/* The search (50:62) is round here: a 50 button that opens into the 440
+   pill (2308:739). */
 .sp-lib-search {
   flex: none;
   display: flex;
 }
+.sp-lib-search .ui-search {
+  border-radius: var(--radius-full);
+}
 
-/* A rail that scrolls sideways and fades out at its right edge over 96 to
-   the page (13:5978), the fade gone once the end is in view. The chips'
-   rail and the shelves' rails share it. */
+/* A rail that scrolls sideways and fades out at its right edge to the page,
+   the fade gone once the end is in view: 96 over a shelf, 72 over the
+   chips (2308:4). */
 .sp-lib-rail {
   position: relative;
   min-width: 0;
@@ -64,7 +71,7 @@
   top: 0;
   right: 0;
   bottom: 0;
-  width: var(--space-3xl);
+  width: 96px;
   z-index: 1;
   pointer-events: none;
   background: linear-gradient(to right, transparent, var(--surface-page));
@@ -81,77 +88,57 @@
   display: none;
 }
 
-/* The chips' rail: the focus ring's room inside the scroller on every side
-   (a scroller clips), cancelled by the rail's margins, so the chips sit
-   exactly where they are drawn. */
+/* The chips' rail: room inside the scroller for the chips' Elevation/1 and
+   the focus ring (a scroller clips both), 12 above, below and at the end,
+   and 8 at the start, where the search button sits 8 away. The rail's
+   margins give it back, so the chips sit exactly where they are drawn and
+   the fade ends at the content's edge. */
 .sp-lib-chips {
   flex: 1;
-  margin: -4px;
+  margin: calc(-1 * var(--space-12)) 0 calc(-1 * var(--space-12)) calc(-1 * var(--space-8));
+}
+.sp-lib-chips::after {
+  width: 72px;
 }
 .sp-lib-chips__track {
   align-items: center;
-  gap: var(--space-2xs);
-  padding: 4px;
-  scroll-padding-inline: 4px;
-}
-/* Today's chip size (CJ, 2026-10-04), over the frame's hugging 50: 48 tall
-   on a 152 floor, the chevron at the far right. A label that needs more
-   grows the chip by that much. The search square matches its height. */
-.sp-lib-chips .ui-platform-chip {
-  flex: none;
-  box-sizing: border-box;
-  min-width: 152px;
-  height: 48px;
-  padding: 0 var(--space-xs) 0 var(--space-2xs);
-  gap: var(--space-2xs);
-}
-.sp-lib-chips .ui-platform-chip__chevron {
-  margin-left: auto;
-}
-.sp-lib-search .ui-search:not(.ui-search--open) {
-  width: 48px;
-  height: 48px;
-}
-.sp-lib-search .ui-search--open {
-  height: 48px;
+  gap: var(--space-8);
+  padding: var(--space-12) var(--space-12) var(--space-12) var(--space-8);
+  scroll-padding-inline: var(--space-8) var(--space-12);
 }
 
 /* The page under the filter bar: 40 down to the first shelf (16 + 24),
-   then 32 between shelves, 24 between a platform's groups and 28 between
-   a search's (PHASE-4.md §8). */
+   then 32 between shelves and between a result line and its groups. */
 .sp-lib-body {
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
-  padding-top: 40px;
-}
-.sp-lib-body[data-state="platform"] {
-  gap: var(--space-md);
-}
-.sp-lib-body[data-state="search"] {
-  gap: 28px; /* as drawn (13:6635) */
+  gap: var(--space-32);
+  padding-top: var(--space-40);
 }
 
-/* A shelf: its header 32 tall, 16 above the rail. */
+/* A shelf (2308:4): its header, 28 tall with View all at its end, 16
+   above the rail. */
 .sp-lib-shelf {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: var(--space-16);
   min-width: 0;
 }
 .sp-lib-shelf__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-sm);
-  min-height: 32px;
-  padding-left: var(--space-3xs);
-  color: var(--text-strong);
+  gap: var(--space-12);
+  min-height: var(--size-control-sm);
+  color: var(--text-primary);
 }
 .sp-lib-shelf__header > h2 {
+  min-width: 0;
   margin: 0;
 }
-/* "View all": a text link, 32 tall, underlined (13:5921). */
+/* The earlier "View all", a text link 32 tall, underlined (13:5921). The
+   shelves now use a Ghost button; Generate's Recent (RecentChats.tsx) keeps
+   this until Phase 5 rebuilds it. */
 .sp-lib-link {
   display: inline-flex;
   align-items: center;
@@ -163,84 +150,67 @@
   text-underline-offset: 3px;
   white-space: nowrap;
 }
-/* Exactly --shelf-visible cards fill the rail before it scrolls (CJ,
-   2026-10-04: today's sizes, over the frame's fixed 302 with a fourth cut
-   by the fade): three across at laptop widths, four from 1800, two and a
-   bit on a phone. The width is derived from the rail's own gap, so the
-   two can never drift. The track pads for the cards' shadow and the
-   focus ring (a scroller clips both) and the rail steps back by as much,
-   as the chips' rail does, so the fade ends where the cards are clipped. */
+/* The rail: cards 302 wide and 16 apart, the next one cut off at the
+   content's edge under the fade (2308:4). The track keeps 12 for the
+   cards' Elevation/1 and the focus ring above, below and at both ends (a
+   scroller clips both), and the rail steps back by as much at the top,
+   the bottom and the start, so the cards sit where they are drawn and the
+   clip falls on the content's edge. */
 .sp-lib-shelf > .sp-lib-rail {
-  margin: -4px -4px calc(-1 * var(--space-sm));
+  margin: calc(-1 * var(--space-12)) 0 calc(-1 * var(--space-12)) calc(-1 * var(--space-12));
 }
 .sp-lib-shelf__track {
-  --shelf-visible: 1.15;
-  --shelf-gap: var(--space-sm);
-  gap: var(--shelf-gap);
-  padding: 4px 4px var(--space-sm);
-  scroll-padding-inline: 4px;
+  gap: var(--space-16);
+  padding: var(--space-12);
+  scroll-padding-inline: var(--space-12);
   scroll-snap-type: x mandatory;
-}
-@media (min-width: 480px) {
-  .sp-lib-shelf__track {
-    --shelf-visible: 2;
-  }
-}
-@media (min-width: 768px) {
-  .sp-lib-shelf__track {
-    --shelf-visible: 3;
-  }
-}
-@media (min-width: 1800px) {
-  .sp-lib-shelf__track {
-    --shelf-visible: 4;
-  }
 }
 .sp-lib-shelf__item {
   flex: none;
-  width: calc((100% - (var(--shelf-visible) - 1) * var(--shelf-gap)) / var(--shelf-visible));
+  width: 302px; /* as drawn (2308:4) */
   scroll-snap-align: start;
 }
 
-/* The result line (13:6452): what the page shows, and Clear. */
+/* The result line (2308:538): what the page shows in Mono/Eyebrow, and
+   Clear, 12 apart. */
 .sp-lib-resultline {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: var(--space-12);
 }
 .sp-lib-eyebrow {
   margin: 0;
-  font: var(--type-mono-eyebrow);
-  letter-spacing: var(--type-mono-eyebrow-tracking);
-  text-transform: uppercase;
   color: var(--text-secondary);
 }
 
-/* A result group (13:6456): its label and count, then three columns of
-   cards 17 apart (as drawn, off the scale). */
+/* A result group (2308:538): its label and count, 32 tall and 12 apart,
+   16 above the grid; three columns of cards 16 apart both ways (RULES.md
+   section 10; the frame's 17 between rows is off the scale). */
 .sp-lib-group {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: var(--space-16);
   min-width: 0;
 }
 .sp-lib-group__header {
   display: flex;
-  align-items: baseline;
-  gap: 10px; /* as drawn (13:6457) */
-  padding-left: var(--space-3xs);
-  color: var(--text-strong);
+  align-items: center;
+  gap: var(--space-12);
+  min-height: 32px;
+  color: var(--text-primary);
 }
 .sp-lib-group__header > h2 {
   margin: 0;
 }
 .sp-lib-group__count {
+  flex: none;
   color: var(--text-secondary);
+  white-space: nowrap;
 }
 .sp-lib-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 17px;
+  gap: var(--space-16);
   align-items: start;
 }
 @media (max-width: 1023px) {
@@ -264,10 +234,10 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-2xs);
-  padding: var(--space-2xl) var(--space-lg);
+  gap: var(--space-8);
+  padding: var(--space-64) var(--space-32);
   text-align: center;
-  color: var(--text-strong);
+  color: var(--text-primary);
 }
 .sp-lib-empty > p {
   margin: 0;
@@ -279,43 +249,40 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: var(--space-2xs);
-  margin-top: var(--space-xs);
+  gap: var(--space-8);
+  margin-top: var(--space-12);
 }
 
-/* ── Template card (13:5924): the Result card's anatomy with a go arrow.
-   One button with the keyboard ring; hover and focus step through its
-   looks (CJ, 2026-10-04: today's hover, kept over the frame's dim). ── */
+/* ── Template card (2308:4): 8 around the preview (radius/lg), then the
+   name in Label/M over its size and variations in Caption/M, 8 apart,
+   beside the go arrow, on surface/raised at radius/xl with Elevation/1.
+   One button with the keyboard ring. Hover and focus step through its
+   variations (judgement call 4) and fill the arrow with the primary pair;
+   hover changes colour only (RULES.md section 6), so the card keeps its
+   Elevation/1 and the rail's 12 of room holds it. ── */
 .sp-tcard {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   width: 100%;
-  padding: var(--space-2xs);
-  border-radius: var(--radius-card);
+  padding: var(--space-8);
+  border-radius: var(--radius-xl);
   background: var(--surface-raised);
-  box-shadow: var(--elevation-small);
-  color: var(--text-strong);
+  box-shadow: var(--elevation-1-raised);
+  color: var(--text-primary);
   text-align: left;
   cursor: pointer;
 }
-/* Hover deepens the card's shadow to Elevation/Large and fills the go
-   arrow with the primary pair, eased (CJ, 2026-10-04: today's hover). */
-.sp-tcard {
-  transition: box-shadow var(--dur-state) var(--ease);
-}
-.sp-tcard:hover {
-  box-shadow: var(--elevation-large);
-}
 .sp-tcard__go {
+  flex: none;
   transition:
-    background-color var(--dur-state) var(--ease),
-    color var(--dur-state) var(--ease);
+    background-color var(--motion-duration-fast) var(--motion-easing-standard),
+    color var(--motion-duration-fast) var(--motion-easing-standard);
 }
 .sp-tcard:hover .sp-tcard__go,
 .sp-tcard:focus-visible .sp-tcard__go {
-  background: var(--btn-primary-bg);
-  color: var(--btn-primary-fg);
+  background: var(--action-primary);
+  color: var(--action-on-primary);
 }
 .sp-tcard__frame {
   position: relative;
@@ -324,65 +291,62 @@
   justify-content: center;
   aspect-ratio: var(--frame-ratio, 4 / 5);
   overflow: hidden;
-  border-radius: var(--radius-media-plate);
+  border-radius: var(--radius-lg);
   background: var(--surface-sunken);
 }
-/* The looks a card steps through: dots, and the name while stepping, on
-   the Overlay tag, 8 in from the preview's bottom left. */
+/* The variations a card steps through: dots, and the name while stepping,
+   on the Overlay tag, 8 in from the preview's bottom left. */
 .sp-tcard__looks {
   position: absolute;
-  left: var(--space-2xs);
-  bottom: var(--space-2xs);
+  left: var(--space-8);
+  bottom: var(--space-8);
   pointer-events: none;
 }
 .sp-tcard__dots {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-3xs);
+  gap: var(--space-4);
 }
 .sp-tcard__dots:not(:last-child) {
-  margin-right: 6px;
+  margin-right: var(--space-6);
 }
 .sp-tcard__dot {
   width: 5px;
   height: 5px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-full);
   background: currentColor;
   opacity: 0.45;
 }
 .sp-tcard__dot[data-on] {
   opacity: 1;
 }
+/* 16 under the preview, 8 in from the card's sides and foot; the arrow is
+   the 36 Filled Icon Button. */
 .sp-tcard__meta {
   display: flex;
   align-items: center;
-  gap: var(--space-2xs);
-  padding: var(--space-sm) var(--space-2xs) var(--space-2xs);
+  gap: var(--space-8);
+  padding: var(--space-16) var(--space-8) var(--space-8);
 }
 .sp-tcard__text {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3xs);
+  gap: var(--space-8);
 }
+/* One line each. The text is trimmed to its capitals, so the clip box is
+   widened past the descenders without moving the line. */
 .sp-tcard__title,
 .sp-tcard__size {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding-block: 0.3em;
+  margin-block: -0.3em;
 }
 .sp-tcard__size {
   color: var(--text-secondary);
-}
-.sp-tcard__tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px; /* as drawn (13:6653) */
-  padding-top: 6px;
-}
-.sp-tcard__go {
-  flex: none;
 }
 
 /* ── Below 768 the library's rails bleed to the screen edge (.sp-page--bleed
@@ -393,255 +357,245 @@
   .sp-page--bleed .sp-lib-group,
   .sp-page--bleed .sp-lib-empty,
   .sp-page--bleed .sp-lib-shelf__header {
-    padding-inline: var(--space-sm);
+    padding-inline: var(--space-16);
   }
   .sp-page--bleed .sp-lib-shelf > .sp-lib-rail {
     margin-inline: 0;
   }
   .sp-page--bleed .sp-lib-shelf__track {
-    padding-inline: var(--space-sm);
-    scroll-padding-inline: var(--space-sm);
+    padding-inline: var(--space-16);
+    scroll-padding-inline: var(--space-16);
   }
   .sp-page--bleed .sp-lib-chips {
     margin-right: 0;
   }
+  /* The open search (440) is wider than a phone's bar: it takes a row of
+     its own and the chips wrap under it, 12 apart, so the chips' rail and
+     its 12 of shadow room meet the field without covering it. */
+  .sp-lib-filterbar {
+    flex-wrap: wrap;
+    row-gap: var(--space-12);
+  }
+  .sp-lib-search:has(.ui-search--open),
+  .sp-lib-filterbar:has(.ui-search--open) .sp-lib-chips {
+    flex: 1 1 100%;
+  }
+  .sp-lib-search .ui-search--open {
+    width: 100%;
+  }
 }
 
-/* ── The fill page and the public link page ─────────────────────────────────
-   The step form on the left, the live Preview on the right (CJ,
-   2026-10-04: the earlier page on the new look, over the frames' single
-   Details panel; the breadcrumb header and the buttons stay the frame's). */
-.sp-page.sp-fill-page {
-  padding-bottom: var(--space-xl);
-}
+/* ── The fill page and the public link page (new brand, 2322:918) ─────────
+   The graphic on its stage on the left, Terms and Privacy 16 under it, and
+   the Details panel (380) on the right, 24 apart. In the app frame (1024
+   and wider, "self" in layout/Page.tsx) the page holds to the window: the
+   stage takes the height Main leaves and the graphic is as large as the
+   stage allows either way, while the panel's fields scroll. The public
+   link page scrolls, and its graphic takes the stage's width up to the
+   window's height. */
 .sp-fill {
   display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-  gap: var(--space-md);
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: var(--space-24);
 }
-.sp-fill__form {
+.sp-fill__preview {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
   min-width: 0;
 }
-.sp-fill__description {
-  margin: 0;
-  color: var(--text-secondary);
-}
-
-/* The step rail: a numbered dot per field, Look and Finish as pills. The
-   step being filled is inverse; a filled one shows its check. */
-.sp-fill__rail {
+/* The stage (2322:931): surface/sunken at radius/xl, 40 in from its
+   edges, the graphic centred on it at radius/xl with Elevation/1. */
+.sp-fill__stage {
+  box-sizing: border-box;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-}
-.sp-fill__stepdot,
-.sp-fill__stepchip {
-  display: inline-flex;
+  flex: 1;
   align-items: center;
   justify-content: center;
-  height: 28px;
-  border-radius: var(--radius-pill);
-  box-shadow: inset 0 0 0 1px var(--border-strong);
-  color: var(--text-secondary);
-  cursor: pointer;
-}
-.sp-fill__stepdot {
-  width: 28px;
-}
-.sp-fill__stepchip {
-  padding: 0 var(--space-xs);
-}
-.sp-fill__stepdot[data-filled] {
-  box-shadow: none;
-  background: var(--control-fill);
-  color: var(--text-strong);
-}
-.sp-fill__stepdot[data-error] {
-  box-shadow: inset 0 0 0 1px var(--state-error);
-  color: var(--state-error);
-}
-.sp-fill__stepdot[data-current],
-.sp-fill__stepchip[data-current] {
-  box-shadow: none;
-  background: var(--surface-inverse);
-  color: var(--text-inverse);
-}
-
-/* A step: a card with its count, the field, then Back and Next. */
-.sp-fill__step {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-  padding: 20px;
-  border-radius: var(--radius-card);
-  background: var(--surface-raised);
-  box-shadow: var(--elevation-small);
-  color: var(--text-strong);
-}
-.sp-fill__stephead {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-xs);
-}
-.sp-fill__stephead > h2 {
-  margin: 0;
-}
-.sp-fill__step:has(> .sp-fill__stephead > h2) .sp-fill__stephead {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-3xs);
-}
-.sp-fill__eyebrow {
-  font: var(--type-mono-eyebrow);
-  letter-spacing: var(--type-mono-eyebrow-tracking);
-  text-transform: uppercase;
-  color: var(--text-secondary);
-}
-/* The field's label is the step's title. */
-.sp-fill__step .ui-field__label {
-  font: var(--type-label-l);
-  letter-spacing: var(--type-label-l-tracking);
-  color: var(--text-strong);
-}
-.sp-fill__step .ui-input[data-size="multiline"] {
-  field-sizing: content;
-  min-height: 64px;
-  resize: none;
-}
-.sp-fill__nav {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--space-2xs);
-  padding-top: var(--space-3xs);
-}
-.sp-fill__looks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-sm);
-}
-.sp-fill__lookthumb {
-  display: block;
-  width: 100%;
-  overflow: hidden;
-  border-radius: var(--radius-control);
-}
-.sp-fill__downloads > .ui-btn {
-  width: 100%;
-}
-
-/* The Preview: sticky beside the steps, the graphic as large as the
-   window's height allows. */
-.sp-fill__preview {
-  position: sticky;
-  top: var(--space-lg);
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-.sp-fill__previewcard {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-  padding: 20px;
-  border-radius: var(--radius-card);
-  background: var(--surface-raised);
-  box-shadow: var(--elevation-small);
-  color: var(--text-strong);
-}
-.sp-fill__previewhead {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-xs);
-}
-.sp-fill__previewhead > h2 {
-  margin: 0;
-}
-.sp-fill__size {
-  color: var(--text-secondary);
+  min-height: 0;
+  padding: var(--space-40);
+  border-radius: var(--radius-xl);
+  background: var(--surface-sunken);
+  container-type: inline-size;
 }
 .sp-fill__art {
+  flex: none;
   width: 100%;
-  max-width: calc((100vh - 240px) * var(--art-ratio, 1));
-  margin-inline: auto;
+  aspect-ratio: var(--art-ratio, 1);
   overflow: hidden;
-  border-radius: var(--radius-media-plate);
-  background: var(--surface-sunken);
-  /* A hairline over the artwork's edge, so a white graphic still reads on
-     the white card. */
-  outline: 1px solid var(--border-default);
-  outline-offset: -1px;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--elevation-1-raised);
 }
 .sp-fill__note {
-  margin: 0;
+  margin: var(--space-16) 0 0;
   color: var(--text-secondary);
 }
 /* Terms and Privacy under the stage (2322:931): Footer Links, 16 under it. */
 .sp-fill__legal {
   padding-top: var(--space-16);
 }
+@media (min-width: 1024px) {
+  .sp-fill[data-place="member"] {
+    height: 100%;
+    min-height: 0;
+  }
+  .sp-fill[data-place="member"] .sp-fill__stage {
+    container-type: size;
+  }
+  .sp-fill[data-place="member"] .sp-fill__art {
+    width: min(100cqw, 100cqh * var(--art-ratio, 1));
+  }
+  /* Outside the frame nothing holds the page to the window, so the graphic
+     stops at the window's height less the page's top padding, the stage's
+     40 and the links (192, two 96s). */
+  .sp-fill[data-place="public"] .sp-fill__art {
+    max-width: calc((100dvh - 2 * var(--space-96)) * var(--art-ratio, 1));
+  }
+}
+/* The public link page's chrome (src/app/public/PublicFrame.tsx): the page
+   ground, the column, and the attribution under a hairline. */
+.sp-public {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--surface-page);
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+}
+.sp-public__main {
+  flex: 1;
+  min-width: 0;
+}
+/* The column: the page gutters and padding of .sp-page, stopping at 1720
+   on a very wide window. */
+.sp-public__column {
+  max-width: 1720px;
+}
+.sp-public__attribution {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  padding: var(--space-24) var(--space-16);
+  border-top: var(--stroke-hairline) solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+.sp-public__link {
+  border-radius: var(--radius-xs);
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 /* Today's export messages, at the foot of the viewport. */
 .sp-fill-toast {
   position: fixed;
   left: 50%;
   /* Above the local backend's warning bar, where it shows. */
-  bottom: calc(var(--space-lg) + var(--dev-banner-h, 0px));
+  bottom: calc(var(--space-32) + var(--dev-banner-h, 0px));
   z-index: var(--z-sticky);
   transform: translateX(-50%);
-  max-width: min(560px, calc(100vw - 32px));
+  max-width: min(560px, calc(100vw - var(--space-32)));
 }
-/* The public link page's note on what survives a closed tab. */
+/* The public link page's note on what survives a closed tab, in the panel
+   above its buttons. */
 .sp-fill__resume {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-2xs);
+  gap: var(--space-8);
   color: var(--text-secondary);
 }
 .sp-fill__resume > p {
   margin: 0;
 }
 
-/* Below 1024 the steps and the preview stack: the steps first on the
-   member page, the preview first on the public link page. */
+/* Stacked: the graphic first, 24 in from the stage's edges and no wider
+   than 480, then the panel, then Terms and Privacy at the page's foot
+   (decision 14). The preview column steps aside so its links can follow
+   the panel. Below 1024 the document scrolls. */
 @media (max-width: 1023px) {
   .sp-fill {
     grid-template-columns: minmax(0, 1fr);
   }
   .sp-fill__preview {
-    position: static;
+    display: contents;
   }
-  .sp-fill[data-place="public"] .sp-fill__preview {
-    order: -1;
+  .sp-fill__stage {
+    padding: var(--space-24);
+  }
+  .sp-fill__art {
+    max-width: 480px;
+  }
+  .sp-fill__note {
+    margin: 0;
+  }
+  .sp-fill__legal {
+    order: 1;
+    padding-top: 0;
+  }
+}
+/* In the app frame at 1024 and wider, a fill page whose content is too
+   narrow for the panel (380), the gap and a 360 stage (the sidebar open at
+   1024 to 1180) stacks the same way and scrolls its own column, with 12 of
+   room inside it for the shadows and the focus ring. */
+@media (min-width: 1024px) {
+  .sp-frame .sp-frame__body > .sp-fill-page {
+    container: fillpage / inline-size;
+  }
+}
+@container fillpage (max-width: 763px) {
+  .sp-fill[data-place="member"] {
+    grid-template-columns: minmax(0, 1fr);
+    /* Each row keeps its content's height (the stage and the panel set no
+       floor of their own), so the column scrolls instead of squeezing. */
+    grid-auto-rows: max-content;
+    align-content: start;
+    height: calc(100% + 2 * var(--space-12));
+    margin: calc(-1 * var(--space-12));
+    padding: var(--space-12);
+    overflow-y: auto;
+  }
+  .sp-fill[data-place="member"] .sp-fill__preview {
+    display: contents;
+  }
+  .sp-fill[data-place="member"] .sp-fill__stage {
+    padding: var(--space-24);
+    container-type: inline-size;
+  }
+  .sp-fill[data-place="member"] .sp-fill__art {
+    width: 100%;
+    max-width: 480px;
+  }
+  .sp-fill[data-place="member"] .sp-fill__note {
+    margin: 0;
+  }
+  .sp-fill[data-place="member"] .sp-fill__legal {
+    order: 1;
+    padding-top: 0;
   }
 }
 
-/* ── The Details panel (156:782; 13:8148 in the template chat) ──────────── */
+/* ── The Details panel (new brand, 2322:918; 13:8148 in the template chat) ──
+   One component, configured per place (DetailsPanel.tsx): the title in
+   Title/Card, the fields 16 apart, then the footer, each 20 apart and 20
+   in from the panel's edges, on surface/raised at radius/xl with
+   Elevation/1. */
 .sp-details {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: var(--space-20);
   min-height: 0;
-  padding: 20px; /* as drawn (156:782) */
-  border-radius: var(--radius-card);
+  padding: var(--space-20);
+  border-radius: var(--radius-xl);
   background: var(--surface-raised);
-  box-shadow: var(--elevation-small);
-  color: var(--text-strong);
+  box-shadow: var(--elevation-1-raised);
+  color: var(--text-primary);
 }
 .sp-details__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-xs);
-  min-height: 32px;
+  gap: var(--space-12);
 }
 .sp-details__head > h2 {
   margin: 0;
@@ -653,46 +607,59 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
-  margin: -4px;
-  padding: 4px;
+  gap: var(--space-16);
+  margin: calc(-1 * var(--space-4));
+  padding: var(--space-4);
   overflow-y: auto;
 }
-/* Multiline fields and the caption hug their text (156:820): no resize
-   grip, and no floor above a Medium input's height. */
+/* Multiline fields hug their text: no resize grip, and no floor above a
+   Medium input's height. The caption opens 96 tall (2308:3596). */
 .sp-details .ui-input[data-size="multiline"] {
   field-sizing: content;
   min-height: var(--size-control-md);
   resize: none;
 }
-/* Look's segments share the panel's width (156:792). */
+.sp-details .sp-details__caption.ui-input[data-size="multiline"] {
+  min-height: 96px;
+}
+/* Variation's segments share the panel's width (2322:918), and a long
+   name ends in an ellipsis when several share it. */
 .sp-details__look {
   display: flex;
   width: 100%;
 }
 .sp-details__look > * {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
+}
+.sp-details__look .ui-segment > .t-label-s {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-block: 0.3em;
+  margin-block: -0.3em;
 }
 .sp-details__foot {
   display: flex;
-  gap: var(--space-2xs);
+  gap: var(--space-8);
 }
 .sp-details__grow {
   flex: 1;
 }
 /* Generate's footer: Save to library (and its saved state or error) full
-   width above Discard and Download PNG (PHASE-5 §9 D8). */
+   width above Discard and Download PNG (PHASE-5 §9 D8). The public link
+   page's resume note sits there too. */
 .sp-details__footer {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2xs);
+  gap: var(--space-8);
 }
 .sp-details__note {
   margin: 0;
   color: var(--text-secondary);
 }
 .sp-details__note[role="alert"] {
-  color: var(--state-error);
+  color: var(--feedback-error-text);
 }
 /* Generate's preview stage (13:3312): 290 tall, the draft contained 10
    inside a sunken well, with the fill page's hairline so a white graphic
@@ -720,9 +687,10 @@
   outline: 1px solid var(--border-default);
   outline-offset: -1px;
 }
+/* 8 under Generate's stage: the panel's 20 between its parts, given back. */
 .sp-details__warning {
   flex: none;
-  margin: calc(var(--space-2xs) - var(--space-sm)) 0 0;
+  margin: calc(var(--space-8) - var(--space-20)) 0 0;
   color: var(--text-secondary);
 }
 @media (max-width: 1023px) {
@@ -960,7 +928,12 @@
   width: min(380px, 100%);
   height: 100%;
 }
-/* ── The Public links dialog (168:758): New link, a divider, then Links ── */
+/* ── The Public links dialog (new brand, 2323:888): 520 wide, its own
+   header (the 18 link icon and the title in Title/Card), then New link,
+   16 between its rows, a divider, and Links. ── */
+.ui-modal.sp-links-dialog {
+  width: 520px; /* as drawn (2323:888) */
+}
 .sp-links__note {
   margin: 0;
   color: var(--text-secondary);
@@ -968,22 +941,23 @@
 .sp-links__alert,
 .sp-links__error {
   margin: 0;
-  color: var(--state-error);
+  color: var(--feedback-error-text);
 }
 .sp-links__fresh,
 .sp-links__form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: var(--space-16);
 }
 .sp-links__form > h3,
 .sp-links__list > h3 {
   margin: 0;
 }
+/* Stops working after and Open limit, 12 apart. */
 .sp-links__pair {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-xs);
+  gap: var(--space-12);
 }
 @media (max-width: 599px) {
   .sp-links__pair {
@@ -994,22 +968,22 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-xs);
+  gap: var(--space-12);
 }
 .sp-links__divider {
   margin: 0;
   border: 0;
-  border-top: 1px solid var(--border-default);
+  border-top: var(--stroke-hairline) solid var(--border-subtle);
 }
 .sp-links__list {
   display: flex;
   flex-direction: column;
-  gap: 14px; /* as drawn (168:760) */
+  gap: var(--space-16);
 }
 .sp-links__rows {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: var(--space-24);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -1017,27 +991,27 @@
 .sp-links__row {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--space-16);
 }
 .sp-links__rowhead {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-xs);
+  gap: var(--space-12);
 }
 .sp-links__rowname,
 .sp-links__rowactions {
   display: flex;
   align-items: center;
-  gap: var(--space-2xs);
+  gap: var(--space-8);
   min-width: 0;
 }
 /* Four Stats in equal columns (168:760); two on a phone. */
 .sp-links__stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--space-sm);
+  gap: var(--space-16);
 }
 @media (max-width: 599px) {
   .sp-links__stats {

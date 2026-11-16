@@ -76,7 +76,7 @@ export function checkRows(
       variantId = (match ?? fallback)?.id;
       if (wanted && !match && fallback) {
         notes.push(
-          `No look called "${wanted}" on this template, so this row uses ${fallback.name}.`,
+          `No variation called "${wanted}" on this template, so this row uses ${fallback.name}.`,
         );
       }
     }

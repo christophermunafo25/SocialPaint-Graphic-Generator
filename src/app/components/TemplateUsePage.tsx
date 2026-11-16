@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { LayoutGrid, Link, Sparkles } from "lucide-react";
+import { LayoutGrid, Link } from "lucide-react";
 import type { FieldValues } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
@@ -30,6 +30,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
     return (
       <Page
         layout={{ className: "sp-fill-page" }}
+        kind="self"
         footer={false}
         header={
           <div className="ui-page-header">
@@ -37,21 +38,18 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
           </div>
         }
       >
-        <div aria-busy="true" aria-label="Loading template">
-          <div className="sp-fill">
-            <div className="sp-fill__form">
-              <Skeleton width={220} height={28} radius="full" />
-              <div className="sp-fill__step">
-                <Skeleton width={96} height={10} />
-                <Skeleton width="100%" height={40} radius="sm" />
-              </div>
+        <div className="sp-fill" data-place="member" aria-busy="true" aria-label="Loading template">
+          <div className="sp-fill__preview">
+            <div className="sp-fill__stage" />
+          </div>
+          <div className="sp-details">
+            <Skeleton width={80} height={13} />
+            <div className="sp-details__fields">
+              {[0, 1, 2, 3].map((i) => (
+                <Skeleton key={i} width="100%" height={36} radius="sm" />
+              ))}
             </div>
-            <div className="sp-fill__preview">
-              <div className="sp-fill__previewcard">
-                <Skeleton width={80} height={17} />
-                <Skeleton shape="block" width="100%" height={480} />
-              </div>
-            </div>
+            <Skeleton width="100%" height={44} radius="sm" />
           </div>
         </div>
       </Page>
@@ -90,11 +88,9 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
   /** Bulk fill follows the same rule: admin-only, and only once there is a
    * published template to fill. A draft has nothing to run forty times. */
   const canBulkFill = role === "admin" && template.status === "published";
-  /** The template chat asks for each field and builds the graphic; it needs
-   * a published template and somewhere for the chat to run
-   * (stores.generate.isConfigured()), and is for everyone. */
-  const canAssist = template.status === "published" && stores.generate.isConfigured();
 
+  // The page is form only (new brand, PLAN.md decision 9): no way into the
+  // template chat from here.
   const header = (
     <PageHeader
       crumbs={[
@@ -102,17 +98,8 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
         { label: template.name },
       ]}
       actions={
-        (canAssist || canBulkFill || canShare) && (
+        (canBulkFill || canShare) && (
           <>
-            {canAssist && (
-              <Button
-                kind="neutral"
-                icon={Sparkles}
-                onClick={() => navigate({ name: "templateChat", templateId: template.id })}
-              >
-                Use AI to assist
-              </Button>
-            )}
             {canBulkFill && (
               <Button
                 kind="neutral"
@@ -134,7 +121,10 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
   );
 
   return (
-    <Page layout={{ className: "sp-fill-page" }} header={header} footer={false}>
+    // The page holds to the window in the app frame and the panel's fields
+    // scroll ("self"); Terms and Privacy sit under the stage, so the frame
+    // has no footer here.
+    <Page layout={{ className: "sp-fill-page" }} kind="self" header={header} footer={false}>
       {sharing && <TemplateLinksDialog template={template} onClose={() => setSharing(false)} />}
 
       <TemplateFill

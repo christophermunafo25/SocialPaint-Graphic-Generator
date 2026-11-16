@@ -765,7 +765,7 @@ function ContainersGroup() {
         <ProgressBar value={0.4} label="Importing" />
         <ProgressBar label="Uploading" />
       </SettingsCard>
-      <ModalPanel title="Public links" icon={Link} wide>
+      <ModalPanel title="Public links" icon={Link} className="sp-links-dialog">
         <PublicLinksBody
           state="ready"
           variants={SAMPLE_LOOKS}
@@ -784,7 +784,13 @@ function ContainersGroup() {
           onToggleUploads={() => {}}
         />
       </ModalPanel>
-      <Modal open={open} onOpenChange={setOpen} title="Public links" icon={Link} wide>
+      <Modal
+        open={open}
+        onOpenChange={setOpen}
+        title="Public links"
+        icon={Link}
+        className="sp-links-dialog"
+      >
         <Field label="Headline">
           <Input placeholder="Creative Director" />
         </Field>

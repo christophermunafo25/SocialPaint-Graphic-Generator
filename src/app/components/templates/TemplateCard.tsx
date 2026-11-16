@@ -4,52 +4,43 @@ import type { CatalogTemplate } from "@/lib/templates/catalog";
 import { Tag } from "../primitives";
 import { TemplateThumbnail } from "../TemplateThumbnail";
 
-/** Up to two: a third starts competing with the meta line. */
-const MAX_TAGS = 2;
-
-/** How long each look shows while the card steps through them. */
+/** How long each variation shows while the card steps through them. */
 const LOOK_STEP_MS = 1000;
 
 /** The card's size line, as the frames write it: "1080 × 1350", plus
- * " · 3 looks" when the template has more than one. */
+ * " · 3 variations" when the template has more than one (decision 8: the
+ * interface calls looks variations). */
 export function cardMeta(template: CatalogTemplate): string {
-  const looks = template.template.variants?.length ?? 0;
+  const variations = template.template.variants?.length ?? 0;
   const size = `${template.width} × ${template.height}`;
-  return looks > 1 ? `${size} · ${looks} looks` : size;
+  return variations > 1 ? `${size} · ${variations} variations` : size;
 }
 
 /**
- * The library's template card (new look, 13:5776): the Result card's
- * anatomy (104:602) with the go arrow in place of Download. Shelves and
- * result grids share it.
+ * The library's template card (new brand, 2308:4): the preview, the name
+ * and size, and the go arrow. Shelves and result grids share it.
  *
  * The whole card is one button that opens the fill page; the go arrow is
  * aria-hidden, so a screen reader hears one named target per card and the
  * keyboard has one stop.
  *
- * A template with several looks shows them off while the pointer (or
- * focus) rests on the card: the preview steps through every look, one a
- * second, with dots and the look's name on an Overlay tag, and settles back
- * on the default when attention moves on (CJ, 2026-10-04, keeping today's
- * hover over the frame's dim and Edit circle). The swap is a repaint
- * through the one renderer, not an animation, so it is the same under
- * reduced motion.
+ * A template with several variations shows them off while the pointer (or
+ * focus) rests on the card: the preview steps through every one, one a
+ * second, with dots and the variation's name on an Overlay tag, and settles
+ * back on the default when attention moves on (judgement call 4). Under
+ * reduced motion it stays on the default.
  */
 export function TemplateCard({
   template,
   frame,
-  showTags = false,
   onOpen,
 }: {
   template: CatalogTemplate;
   /** The group's frame ratio as a CSS aspect-ratio, e.g. "1200 / 627".
    *  Every card in a group shares it, which keeps a row even. */
   frame?: string;
-  /** Search results only (13:6511). */
-  showTags?: boolean;
   onOpen(template: CatalogTemplate): void;
 }) {
-  const tags = template.useCases.slice(0, MAX_TAGS);
   const looks = useMemo(() => template.template.variants ?? [], [template.template.variants]);
   const multiLook = looks.length > 1;
   const landscape = template.width / template.height >= 1;
@@ -57,7 +48,10 @@ export function TemplateCard({
   const [attended, setAttended] = useState(false);
   const [lookIndex, setLookIndex] = useState<number | null>(null);
   useEffect(() => {
-    if (!attended || !multiLook) {
+    // Under reduced motion the card holds its first variation (RULES.md
+    // section 6).
+    const still = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    if (!attended || !multiLook || still) {
       setLookIndex(null);
       return;
     }
@@ -88,7 +82,7 @@ export function TemplateCard({
       onFocus={() => setAttended(true)}
       onBlur={() => setAttended(false)}
       aria-label={`${template.name}, ${template.platformLabel}, ${template.width} by ${template.height}${
-        multiLook ? `, ${looks.length} looks` : ""
+        multiLook ? `, ${looks.length} variations` : ""
       }`}
     >
       <span
@@ -109,8 +103,8 @@ export function TemplateCard({
           <TemplateThumbnail template={template.template} variantId={shownLook?.id} />
         </span>
         {multiLook && (
-          // Which look is showing, and how many there are: dots, the way a
-          // carousel says it, plus the name while the card steps through.
+          // Which variation is showing, and how many there are: dots, the way
+          // a carousel says it, plus the name while the card steps through.
           <Tag kind="overlay" className="sp-tcard__looks" aria-hidden>
             <span className="sp-tcard__dots">
               {looks.map((v, i) => (
@@ -128,17 +122,10 @@ export function TemplateCard({
 
       <span className="sp-tcard__meta">
         <span className="sp-tcard__text">
-          <span className="tu-label-m sp-tcard__title" title={template.name}>
+          <span className="t-label-m sp-tcard__title" title={template.name}>
             {template.name}
           </span>
-          <span className="tu-caption-m sp-tcard__size">{cardMeta(template)}</span>
-          {showTags && tags.length > 0 && (
-            <span className="sp-tcard__tags">
-              {tags.map((tag) => (
-                <Tag key={tag}>{tag}</Tag>
-              ))}
-            </span>
-          )}
+          <span className="t-caption-m sp-tcard__size">{cardMeta(template)}</span>
         </span>
         <span
           className="ui-fill ui-iconbtn sp-tcard__go"

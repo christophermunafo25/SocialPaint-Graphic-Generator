@@ -257,24 +257,20 @@ const parsePlatform = (raw: string | null): PlatformId | undefined =>
  * dead end. */
 export function urlToRoute(pathname: string, search: string): Route {
   const params = new URLSearchParams(search);
-  const [head, tail, third, fourth] = pathname.split("/").filter(Boolean);
+  const [head, tail, third] = pathname.split("/").filter(Boolean);
 
   switch (head) {
     case "onboarding":
       return { name: "onboarding" };
     case "templates":
       if (tail && third === "bulk") return { name: "bulk", templateId: decodeURIComponent(tail) };
-      if (tail && third === "chat") {
-        const edit = params.get("edit") ?? undefined;
-        const field = edit ? (params.get("field") ?? undefined) : undefined;
-        return {
-          name: "templateChat",
-          templateId: decodeURIComponent(tail),
-          ...(fourth ? { threadId: decodeURIComponent(fourth) } : {}),
-          ...(edit ? { edit } : {}),
-          ...(field ? { field } : {}),
-        };
-      }
+      // The template chat is hidden (new brand, PLAN.md judgement calls 1
+      // and 8): every one of its addresses, a saved thread's included, opens
+      // the template's fill page, and the address bar follows (the
+      // canonical replace below). Its route and page stay for the cleanup
+      // phase.
+      if (tail && third === "chat")
+        return { name: "template", templateId: decodeURIComponent(tail) };
       if (tail) return { name: "template", templateId: decodeURIComponent(tail) };
       return {
         name: "portal",

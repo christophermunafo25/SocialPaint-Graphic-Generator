@@ -25,6 +25,7 @@ import { ErrorState } from "../ErrorState";
 import { Page } from "../layout/Page";
 import {
   Button,
+  Checkbox,
   PageHeader,
   ProgressBar,
   Select,
@@ -367,9 +368,7 @@ function BulkFill({
                           })),
                           // Only when there is a choice of look: the column
                           // names a variation, not a field.
-                          ...(multiLook
-                            ? [{ value: VARIANT_COLUMN, label: "Look (which variation)" }]
-                            : []),
+                          ...(multiLook ? [{ value: VARIANT_COLUMN, label: "Variation" }] : []),
                         ]}
                         onSelect={(v) => setColumn(i, v)}
                       />
@@ -439,19 +438,17 @@ function BulkFill({
                     </span>
                   }
                 />
-                <label className="tu-body-s flex items-start gap-2" style={secondary}>
-                  <input
-                    type="checkbox"
-                    className="mt-0.5"
+                <div>
+                  <Checkbox
                     checked={includeProblems}
-                    onChange={(e) => setIncludeProblems(e.target.checked)}
+                    onChange={setIncludeProblems}
+                    label="Include rows with problems anyway"
                   />
-                  <span>
-                    Include rows with problems anyway. They export as they are: text that overflows
-                    runs past the edge of the graphic, and an empty required field shows the field's
-                    placeholder.
-                  </span>
-                </label>
+                  <p className="tu-body-s pl-6 mt-1" style={secondary}>
+                    They export as they are: text that overflows runs past the edge of the graphic,
+                    and an empty required field shows the field's placeholder.
+                  </p>
+                </div>
               </div>
             )}
 

@@ -276,14 +276,13 @@ export function GenerateHistoryPage() {
     navigate({ name: "generate" });
   }, [navigate]);
 
-  // A template chat opens on its template's page (template-chat §12.1).
+  // Every chat opens at its Generate address. A saved template chat goes on
+  // from there to its template's fill page while the template is published
+  // (SavedChat; PLAN.md judgement call 8), and stays an ordinary chat once
+  // the template has gone.
   const openChat = (id: string, templateId: string | null) => {
-    requestComposerFocus();
-    navigate(
-      templateId
-        ? { name: "templateChat", templateId, threadId: id }
-        : { name: "generate", threadId: id },
-    );
+    if (!templateId) requestComposerFocus();
+    navigate({ name: "generate", threadId: id });
   };
 
   const retry = () => {

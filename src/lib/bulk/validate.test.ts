@@ -203,7 +203,7 @@ describe("checkRows — the look column", () => {
     expect(out[0].variantId).toBe("v-green");
     expect(out[0].ok).toBe(true);
     expect(out[0].notes).toEqual([
-      'No look called "Purple" on this template, so this row uses Green.',
+      'No variation called "Purple" on this template, so this row uses Green.',
     ]);
   });
 

@@ -1,12 +1,14 @@
 import React from "react";
 import type { CatalogTemplate } from "@/lib/templates/catalog";
 import type { TemplateGroup } from "@/lib/templates/groups";
+import { Button } from "../primitives";
 import { TemplateCard } from "./TemplateCard";
 import { useEdgeFade } from "./useEdgeFade";
 
 /**
- * One shelf of the library (13:5776): its title and "View all", over a
- * horizontally scrolling rail of cards that fades out at the right edge.
+ * One shelf of the library (2308:4): its title and View all, over a
+ * horizontally scrolling rail of 302 cards that fades out at the right
+ * edge, the next card cut off.
  *
  * The rail itself is tabbable and carries the shelf's name, so a keyboard
  * user can reach it and scroll with the arrow keys; pointers swipe or
@@ -27,16 +29,12 @@ export function PlatformShelf({
   return (
     <section className="sp-lib-shelf" aria-labelledby={`shelf-${group.id}`}>
       <div className="sp-lib-shelf__header">
-        <h2 className="tu-title-card" id={`shelf-${group.id}`}>
+        <h2 className="t-title-card" id={`shelf-${group.id}`}>
           {group.label}
         </h2>
-        <button
-          type="button"
-          className="ui-reset ui-ring tu-label-m sp-lib-link"
-          onClick={onViewAll}
-        >
+        <Button kind="ghost" size="sm" onClick={onViewAll}>
           View all
-        </button>
+        </Button>
       </div>
 
       <div

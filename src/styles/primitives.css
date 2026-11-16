@@ -141,18 +141,6 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   outline: var(--stroke-focus) solid var(--border-focus);
   outline-offset: var(--focus-offset);
 }
-.ui-ring-tight {
-  box-shadow: var(--_shadow, 0 0 0 0 transparent);
-}
-.ui-ring-tight:focus-visible,
-.ui-ring-tight[data-demo-state="focus"] {
-  outline: 2px solid transparent;
-  outline-offset: 0;
-  box-shadow:
-    0 0 0 var(--focus-width) var(--ring),
-    var(--_shadow, 0 0 0 0 transparent);
-}
-
 /* ── Button (2206:542) ─────────────────────────────────────────────────────
    Small 28, Medium 36, Large 44, all at radius/sm. Neutral carries a
    hairline edge, which sits inside the box and takes its own room, as the
@@ -1099,59 +1087,56 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   border-color: transparent;
 }
 
-/* ── Platform chip (53:96) ── */
+/* ── Platform chip (53:96): a 50 pill that hugs its label. The mark on a 36
+   round tile, the label in Label/M and a chevron, 8 apart, 7 in from the
+   tile's side and 16 from the chevron's. Raised at rest; selected, it turns
+   inverse with the tile on surface/raised and the chevron points down. ── */
 .ui-platform-chip {
+  box-sizing: border-box;
   display: inline-flex;
+  flex: none;
   align-items: center;
   height: 50px;
-  padding: var(--space-2xs) 9px var(--space-2xs) 7px; /* 7 and 9 as drawn (53:85) */
-  gap: 7px;
-  border-radius: var(--radius-control-md);
-  --_fill: var(--control-fill);
-  color: var(--text-strong);
+  padding: 7px var(--space-16) 7px 7px; /* 7 as drawn (53:96) */
+  gap: var(--space-8);
+  border: var(--stroke-hairline) solid var(--border-strong);
+  border-radius: var(--radius-full);
+  box-shadow: var(--elevation-1-raised);
+  --_fill: var(--surface-raised);
+  --_hover: var(--action-neutral-hover);
+  --_pressed: var(--action-neutral-pressed);
+  --_selected: var(--surface-inverse);
+  --_fg: var(--text-primary);
+  --_fg-selected: var(--text-inverse);
+  white-space: nowrap;
 }
 .ui-platform-chip__tile {
   display: inline-flex;
+  flex: none;
   align-items: center;
   justify-content: center;
   width: 36px;
   height: 36px;
-  border-radius: var(--radius-control);
-  background: var(--chip-tile);
+  border-radius: var(--radius-full);
+  background: var(--surface-field);
+  color: var(--text-primary);
 }
 .ui-platform-chip__chevron {
-  color: var(--text-secondary);
+  flex: none;
+  color: inherit;
 }
 .ui-platform-chip[data-expanded] .ui-platform-chip__chevron,
 .ui-platform-chip[data-demo-state="selected"] .ui-platform-chip__chevron {
   transform: rotate(90deg);
 }
-/* Selected: in Light the chip keeps its fill and only the tile turns ink
-   (53:74); in Dark the whole chip turns ink. Set on the theme roots so a
-   chip takes the nearest theme's look. */
-[data-theme="light"] {
-  --_platform-chip-selected-fill: var(--control-fill);
-  --_platform-chip-selected-ink: var(--text-strong);
-  --_platform-chip-selected-chevron: var(--text-secondary);
-}
-[data-theme="dark"] {
-  --_platform-chip-selected-fill: var(--chip-selected-bg);
-  --_platform-chip-selected-ink: var(--text-on-fill);
-  --_platform-chip-selected-chevron: var(--text-on-fill);
-}
 .ui-platform-chip[data-selected],
 .ui-platform-chip[data-demo-state="selected"] {
-  --_fill: var(--_platform-chip-selected-fill, var(--chip-selected-bg));
-  color: var(--_platform-chip-selected-ink, var(--text-on-fill));
+  border-color: transparent;
+  box-shadow: none;
 }
 .ui-platform-chip[data-selected] .ui-platform-chip__tile,
 .ui-platform-chip[data-demo-state="selected"] .ui-platform-chip__tile {
-  background: var(--chip-selected-tile);
-  color: var(--accent-green);
-}
-.ui-platform-chip[data-selected] .ui-platform-chip__chevron,
-.ui-platform-chip[data-demo-state="selected"] .ui-platform-chip__chevron {
-  color: var(--_platform-chip-selected-chevron, var(--text-on-fill));
+  background: var(--surface-raised);
 }
 
 /* ── Tag (2212:143): a 24 pill in Label/XS. A tag is text and paints its
