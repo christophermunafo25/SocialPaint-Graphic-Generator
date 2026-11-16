@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Copy, Eye, EyeOff, Pencil, Plus, Proportions, RotateCcw, Trash2 } from "lucide-react";
+import { Copy, Eye, EyeOff, Frame, Pencil, Plus, Search, Trash2, Undo2 } from "lucide-react";
 import type { TemplateSchema, UsageSummary } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
@@ -10,41 +10,33 @@ import { consumeSeedNotice } from "@/lib/templates/starters/seedNotice";
 import { useRouter } from "../../router";
 import { Page } from "../layout/Page";
 import { ConfirmDialog } from "../ConfirmDialog";
-import { InlineEdit } from "../InlineEdit";
-import { TemplateSearchField } from "../templates/TemplateSearchField";
+import { LibrarySearch } from "../templates/LibrarySearch";
 import { toCatalogTemplate } from "@/lib/templates/catalog";
+import { builderUsageLine } from "@/lib/templates/builderMeta";
 import { buildSearchIndex, searchTemplates } from "@/lib/templates/searchIndex";
 import { versionName } from "@/lib/templates/reflow";
 import type { CanvasSize } from "@/lib/templates/platforms";
 import { CanvasSizePicker } from "../builder/CanvasSizePicker";
 import { ErrorState } from "../ErrorState";
-import { SkeletonCard } from "../templates/TemplateSkeleton";
-import { TemplateThumbnail } from "../TemplateThumbnail";
+import { BuilderTemplateCard, BuilderTemplateCardSkeleton } from "./BuilderTemplateCard";
 import {
-  Badge,
   Button,
-  IconButton,
+  EmptyState,
   Modal,
   PageHeader,
   SegmentedControl,
   Select,
   Toast,
+  type RowMenuGroup,
 } from "../primitives";
 
 type StatusFilter = "all" | "published" | "draft";
 type SortKey = "recent" | "name" | "downloads";
 
-const lastUsed = (iso: string | null): string => {
-  if (!iso) return "";
-  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
-  if (days <= 0) return "today";
-  if (days === 1) return "yesterday";
-  if (days < 30) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString();
-};
-
-/** Admin template list: drafts + published, search/filter/sort, usage on the
- * card, publish toggle, edit, duplicate, delete. */
+/** The Template Builder list (new brand, 328:1944): drafts and published
+ * templates under the status switch, the sort and the search, each card
+ * with its usage line and its row menu (329:2206): Edit, Duplicate, Make
+ * another size, then Publish or Unpublish, and Delete. */
 export function AdminTemplates() {
   const { company } = useAuth();
   const { navigate } = useRouter();
@@ -171,19 +163,6 @@ export function AdminTemplates() {
     }
   };
 
-  /** Rename from the card. Throws on failure so the inline editor rolls the
-   *  name back instead of showing a change that never landed. */
-  const renameTemplate = async (t: TemplateSchema, name: string) => {
-    try {
-      await stores.templates.update(t.id, { name });
-      reload();
-    } catch (e) {
-      setToast("Couldn't rename. Try again.");
-      toastTimer.current = window.setTimeout(() => setToast(null), 4000);
-      throw e;
-    }
-  };
-
   /** Template whose "Create a version for…" picker is open. */
   const [versionFor, setVersionFor] = useState<TemplateSchema | null>(null);
   // The workspace's enabled sizes, for the version picker.
@@ -238,6 +217,50 @@ export function AdminTemplates() {
     }
   };
 
+  // The bar pins to the content's top edge as the grid scrolls, as the
+  // library's does; the sentinel above it says when it has.
+  const showBar = templatesState.status === "ready" && templates.length > 0;
+  const sentinel = useRef<HTMLDivElement>(null);
+  const [pinned, setPinned] = useState(false);
+  useEffect(() => {
+    const el = sentinel.current;
+    if (!showBar || !el) return;
+    const io = new IntersectionObserver(([entry]) => setPinned(!entry.isIntersecting), {
+      threshold: 1,
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [showBar]);
+
+  /** A card's row menu (329:2206). */
+  const menuFor = (t: TemplateSchema): RowMenuGroup[] => [
+    {
+      items: [
+        {
+          label: "Edit",
+          icon: Pencil,
+          movesFocus: true,
+          onSelect: () => navigate({ name: "builder", templateId: t.id }),
+        },
+        { label: "Duplicate", icon: Copy, onSelect: () => void duplicateTemplate(t) },
+        {
+          label: "Make another size",
+          icon: Frame,
+          movesFocus: true,
+          onSelect: () => setVersionFor(t),
+        },
+      ],
+    },
+    {
+      items: [
+        t.status === "published"
+          ? { label: "Unpublish", icon: EyeOff, onSelect: () => void toggleStatus(t) }
+          : { label: "Publish", icon: Eye, onSelect: () => void toggleStatus(t) },
+        { label: "Delete", icon: Trash2, movesFocus: true, onSelect: () => setDeleting(t) },
+      ],
+    },
+  ];
+
   const header = (
     <PageHeader
       title="Template Builder"
@@ -245,7 +268,7 @@ export function AdminTemplates() {
         <>
           <Button
             kind="neutral"
-            icon={RotateCcw}
+            icon={Undo2}
             onClick={() => setConfirmingRestore(true)}
             disabled={restoring || !kit}
             title="Recreate deleted starter templates"
@@ -310,41 +333,48 @@ export function AdminTemplates() {
         onConfirm={() => void restoreStarters()}
       />
 
-      {templatesState.status === "ready" && templates.length > 0 && (
-        <div
-          className="sp-admin-filterrow flex flex-wrap items-center mb-6"
-          style={{ gap: "var(--space-xs)" }}
-        >
-          <TemplateSearchField value={query} onChange={setQuery} />
-          <SegmentedControl
-            aria-label="Filter by status"
-            options={[
-              { id: "all", label: `All ${templates.length}` },
-              { id: "published", label: `Published ${publishedCount}` },
-              { id: "draft", label: `Drafts ${draftCount}` },
-            ]}
-            selectedId={statusFilter}
-            onSelect={(id) => setStatusFilter(id as StatusFilter)}
-          />
-          <div style={{ width: 200 }}>
-            <Select<SortKey>
-              ariaLabel="Sort templates"
-              value={sort}
+      {showBar && (
+        <>
+          <div ref={sentinel} aria-hidden className="sp-tb-sentinel" />
+          <div className="sp-tb-filterbar" data-pinned={pinned || undefined}>
+            <SegmentedControl
+              aria-label="Filter by status"
               options={[
-                { value: "recent", label: "Recently edited" },
-                { value: "name", label: "Name" },
-                { value: "downloads", label: "Most downloaded" },
+                { id: "all", label: `All ${templates.length}` },
+                { id: "published", label: `Published ${publishedCount}` },
+                { id: "draft", label: `Drafts ${draftCount}` },
               ]}
-              onSelect={setSort}
+              selectedId={statusFilter}
+              onSelect={(id) => setStatusFilter(id as StatusFilter)}
             />
+            <div className="sp-tb-filterbar__end">
+              <Select<SortKey>
+                ariaLabel="Sort templates"
+                hug
+                value={sort}
+                options={[
+                  { value: "recent", label: "Recently edited" },
+                  { value: "name", label: "Name" },
+                  { value: "downloads", label: "Most downloaded" },
+                ]}
+                onSelect={setSort}
+              />
+              <LibrarySearch
+                className="sp-tb-search"
+                value={query}
+                onChange={setQuery}
+                label="Search templates"
+                placeholder="Search templates, platforms, or sizes"
+              />
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       {templatesState.status === "loading" ? (
-        <div className="sp-grid-media" aria-busy="true" aria-label="Loading templates">
+        <div className="sp-tb-grid" aria-busy="true" aria-label="Loading templates">
           {Array.from({ length: 8 }, (_, i) => (
-            <SkeletonCard key={i} />
+            <BuilderTemplateCardSkeleton key={i} />
           ))}
         </div>
       ) : templatesState.status === "error" ? (
@@ -354,152 +384,33 @@ export function AdminTemplates() {
           onRetry={templatesState.retry}
         />
       ) : templates.length === 0 ? (
-        <div
-          className="text-center py-24"
-          style={{
-            border: "1.5px dashed var(--border-strong)",
-            borderRadius: "var(--radius-card)",
-          }}
-        >
-          <p className="tu-title-card" style={{ color: "var(--text-primary)", marginBottom: 6 }}>
-            Create your first template
-          </p>
-          <p className="tu-body-s max-w-md mx-auto" style={{ color: "var(--text-secondary)" }}>
-            Upload a PNG or import a Figma frame, map the editable fields, and publish it for your
-            team.
-          </p>
-        </div>
+        <EmptyState icon={Frame} title="Create your first template" className="sp-tb-empty" />
       ) : visible.length === 0 ? (
-        <p className="tu-body-m text-center py-20" style={{ color: "var(--text-secondary)" }}>
-          {query.trim()
-            ? "No templates match that search."
-            : statusFilter === "draft"
-              ? "No drafts."
-              : "Nothing published yet."}
-        </p>
+        <EmptyState
+          icon={query.trim() ? Search : Frame}
+          title={
+            query.trim()
+              ? "No templates match that search."
+              : statusFilter === "draft"
+                ? "No drafts."
+                : "Nothing published yet."
+          }
+          className="sp-tb-empty"
+        />
       ) : (
-        <div className="sp-grid-media">
-          {visible.map((t) => {
-            return (
-              <div key={t.id} className="sp-card sp-media-card flex flex-col">
-                <button
-                  onClick={() => navigate({ name: "builder", templateId: t.id })}
-                  className="sp-media-card__preview"
-                  aria-label={`Edit ${t.name}`}
-                >
-                  <div
-                    style={{
-                      aspectRatio: `${t.canvasWidth} / ${t.canvasHeight}`,
-                      // Contain, unlike the member gallery: an admin needs to see
-                      // the whole artwork, so pin the LONG axis and letterbox.
-                      ...(t.canvasWidth / t.canvasHeight >= 1
-                        ? { width: "100%" }
-                        : { height: "100%" }),
-                    }}
-                  >
-                    <TemplateThumbnail template={t} />
-                  </div>
-                </button>
-                <div className="sp-template-card__meta sp-template-card__meta--stack">
-                  {/* Line 1: the title, alone. Five 32px icons beside it left
-                      the rename field ~18px wide at four columns; the name
-                      and its input now own the whole line. */}
-                  <InlineEdit
-                    className="tu-label-m min-w-0"
-                    value={t.name}
-                    ariaLabel={`Rename ${t.name}`}
-                    inputAriaLabel="Template name"
-                    placeholder="Untitled template"
-                    valueStyle={{ color: "var(--text-primary)" }}
-                    onSave={(name) => renameTemplate(t, name)}
-                  />
-                  {/* Line 2: status (+ provenance when a model built the fields) */}
-                  <Badge tone={t.status === "published" ? "active" : "neutral"}>
-                    {t.status === "published" ? "Published" : "Draft"}
-                  </Badge>
-                  {/* Starter templates carry autobuildMeta for provenance
-                      and idempotency but are seeded designs, not model
-                      output — labeling them AI-built would be wrong. */}
-                  {t.autobuildMeta && t.autobuildMeta.source !== "starter" && (
-                    <span
-                      className="sp-eyebrow inline-block ml-2"
-                      title={`Built by ${t.autobuildMeta.model} from ${t.autobuildMeta.sourceKind}`}
-                      style={{ color: "var(--text-muted)" }}
-                    >
-                      · AI-built
-                    </span>
-                  )}
-                  {/* Line 3: meta */}
-                  {usageState.status === "ready" && (
-                    <p
-                      className="tu-caption-s"
-                      style={{ color: "var(--text-muted)", marginTop: 2 }}
-                    >
-                      {(() => {
-                        const u = usageByTemplate.get(t.id);
-                        if (!u || u.downloads === 0) return "Not used yet";
-                        // An admin who sent a link out wants to know it is
-                        // working, and that only shows if public traffic is
-                        // counted apart from the team's own.
-                        const viaLink =
-                          u.publicDownloads > 0 ? ` · ${u.publicDownloads} via link` : "";
-                        return `${u.downloads} download${u.downloads === 1 ? "" : "s"}${viaLink} · last used ${lastUsed(u.lastUsedAt)}`;
-                      })()}
-                    </p>
-                  )}
-                  {/* Line 4: the actions, on a row of their own. Five 32px
-                      icons are 192px wide; at four columns the card offers 218,
-                      so they share a line with nothing — not the title (which
-                      they squeezed to ~18px) and not the status. */}
-                  <div
-                    className="flex items-center"
-                    style={{ gap: "var(--space-2xs)", marginTop: "var(--space-2xs)" }}
-                  >
-                    <IconButton
-                      variant="ghost"
-                      size="sm"
-                      icon={t.status === "published" ? EyeOff : Eye}
-                      label={t.status === "published" ? "Unpublish" : "Publish"}
-                      title={t.status === "published" ? "Unpublish" : "Publish"}
-                      onClick={() => void toggleStatus(t)}
-                    />
-                    <IconButton
-                      variant="ghost"
-                      size="sm"
-                      icon={Pencil}
-                      label="Edit"
-                      title="Edit"
-                      onClick={() => navigate({ name: "builder", templateId: t.id })}
-                    />
-                    <IconButton
-                      variant="ghost"
-                      size="sm"
-                      icon={Copy}
-                      label="Duplicate"
-                      title="Duplicate"
-                      onClick={() => void duplicateTemplate(t)}
-                    />
-                    <IconButton
-                      variant="ghost"
-                      size="sm"
-                      icon={Proportions}
-                      label="Create a version for another size"
-                      title="Create a version for another size"
-                      onClick={() => setVersionFor(t)}
-                    />
-                    <IconButton
-                      variant="ghost"
-                      size="sm"
-                      icon={Trash2}
-                      label="Delete"
-                      title="Delete"
-                      onClick={() => setDeleting(t)}
-                    />
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+        <div className="sp-tb-grid">
+          {visible.map((t) => (
+            <BuilderTemplateCard
+              key={t.id}
+              template={t}
+              usage={builderUsageLine(
+                t,
+                usageState.status === "ready" ? (usageByTemplate.get(t.id)?.downloads ?? 0) : null,
+              )}
+              menu={menuFor(t)}
+              onOpen={() => navigate({ name: "builder", templateId: t.id })}
+            />
+          ))}
         </div>
       )}
     </Page>

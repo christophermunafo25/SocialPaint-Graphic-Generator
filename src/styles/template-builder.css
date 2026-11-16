@@ -1,0 +1,157 @@
+/* ==========================================================================
+   Template Builder (new brand, Phase 6a): the list and how a template
+   starts, built from the primitives. Measurements are from the frames on
+   the Template Builder page (8:675; docs/design/new-brand/PLAN.md, the
+   screen map). Light only in the file; Dark follows the tokens. Tokens and
+   .t-* classes only; nothing here declares a token.
+   ========================================================================== */
+
+/* ── The list (328:1944) ───────────────────────────────────────────────── */
+
+/* The filter bar, 40 tall: the status switch on the left, the sort and the
+   search 8 apart on the right. It pins under the header as the grid
+   scrolls, as the library's does: flat at rest; pinned, the page's ground
+   runs behind it and fades out 24 below. */
+.sp-tb-sentinel {
+  height: 1px;
+  margin-top: -1px;
+}
+.sp-tb-filterbar {
+  position: sticky;
+  top: var(--chrome-top);
+  z-index: var(--z-sticky);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12) var(--space-8);
+  min-height: 40px; /* as drawn */
+}
+/* In the app frame the bar pins to the content's top edge: sticky measures
+   from inside the content's 24 of top padding, so the offset gives it
+   back. */
+@media (min-width: 1024px) {
+  .sp-frame[data-head] .sp-tb-filterbar {
+    top: calc(-1 * var(--space-24));
+  }
+}
+.sp-tb-filterbar::before {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--space-8)) calc(-1 * var(--space-8)) calc(-1 * var(--space-24));
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(to bottom, var(--surface-page) 70%, transparent);
+  opacity: 0;
+}
+.sp-tb-filterbar[data-pinned]::before {
+  opacity: 1;
+}
+.sp-tb-filterbar__end {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  margin-left: auto;
+}
+/* The search (50:62) is the 40 square here, at radius/sm (328:1944), and
+   opens into a 320 field beside the sort. */
+.sp-lib-search.sp-tb-search .ui-search {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+}
+.sp-lib-search.sp-tb-search .ui-search--open {
+  width: 320px;
+  max-width: 100%;
+}
+
+/* The grid, 24 under the bar: four 242 cards across at 1440, 16 apart. */
+.sp-tb-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
+  gap: var(--space-16);
+  margin-top: var(--space-24);
+}
+.sp-tb-empty {
+  margin-top: var(--space-48);
+}
+
+/* ── The card (sp-template-card in 328:1944) ── */
+.sp-tbcard {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: var(--space-8);
+  border-radius: var(--radius-xl);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-1-raised);
+  color: var(--text-primary);
+}
+/* The well: square, sunken, the template fitted 12 in at its own ratio.
+   A size container, so the fit is CSS. */
+.sp-tbcard__preview {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  padding: var(--space-12);
+  border-radius: var(--radius-lg);
+  background: var(--surface-sunken);
+  container-type: size;
+  cursor: pointer;
+}
+.sp-tbcard__preview[data-loading] {
+  cursor: default;
+}
+.sp-tbcard__art {
+  position: relative;
+  flex-shrink: 0;
+  aspect-ratio: var(--fit-ratio);
+  width: min(100cqw, 100cqh * var(--fit-ratio));
+  overflow: hidden;
+  border-radius: var(--radius-xs);
+}
+.sp-tbcard__overscan {
+  position: absolute;
+  inset: -1px;
+}
+/* The name over its status and usage, then the row menu: 16 over the name
+   (the frame's untrimmed line, measured to the capitals), 8 at the left. */
+.sp-tbcard__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-16) var(--space-4) var(--space-4) var(--space-8);
+}
+.sp-tbcard__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+}
+.sp-tbcard__name {
+  margin: 0;
+}
+.sp-tbcard__status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+}
+.sp-tbcard__usage {
+  min-width: 0;
+  color: var(--text-secondary);
+}
+/* Truncating, cap-trimmed lines: each clip box reaches past the descenders
+   without moving the line, as the Menu's labels do. */
+.sp-tbcard__name,
+.sp-tbcard__usage {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-block: 0.3em;
+  margin-block: -0.3em;
+}

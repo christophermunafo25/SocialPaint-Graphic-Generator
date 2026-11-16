@@ -158,6 +158,8 @@ export function MenuDividerStatic() {
 export interface RowMenuAction {
   label: string;
   onSelect(): void;
+  /** A leading 16 icon (the Template Builder's row menu, 329:2206). */
+  icon?: IconComponent;
   disabled?: boolean;
   destructive?: boolean;
   checked?: boolean;
@@ -214,7 +216,9 @@ function RowMenuItems({
                 item.onSelect();
               }}
             >
-              <MenuItemContent selected={item.checked}>{item.label}</MenuItemContent>
+              <MenuItemContent icon={item.icon} selected={item.checked}>
+                {item.label}
+              </MenuItemContent>
             </kit.Item>
           ))}
         </React.Fragment>
