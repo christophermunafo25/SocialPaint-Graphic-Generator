@@ -80,6 +80,7 @@ import {
   Upload,
 } from "../primitives";
 import { InspectorHeader } from "./InspectorHeader";
+import { CROP_RATIOS, cropChoice, keepAlpha } from "./inspectorValues";
 import { elementIcon } from "./elementIcons";
 import {
   HexRow,
@@ -153,24 +154,6 @@ const FIELD_TYPES: Array<{ value: FieldType; label: string }> = [
   { value: "select", label: "Dropdown" },
   { value: "shape", label: "Shape" },
 ];
-
-/** Crop presets for a photo your team adds; Box crops to the box's own
- * shape. */
-const CROP_RATIOS: Array<{ label: string; ratio: number }> = [
-  { label: "1:1", ratio: 1 },
-  { label: "4:5", ratio: 4 / 5 },
-  { label: "3:4", ratio: 3 / 4 },
-  { label: "4:3", ratio: 4 / 3 },
-  { label: "3:2", ratio: 3 / 2 },
-  { label: "2:3", ratio: 2 / 3 },
-  { label: "16:9", ratio: 16 / 9 },
-  { label: "9:16", ratio: 9 / 16 },
-];
-
-/** A six-digit hex typed over an eight-digit colour keeps its alpha: the
- * row shows the colour, and the opacity beside it owns the alpha. */
-const keepAlpha = (typed: string, current: string): string =>
-  typed.length === 7 && current.length === 9 ? typed + current.slice(7).toUpperCase() : typed;
 
 const gradientName = (kind: string | undefined) =>
   kind === "radial" ? "Radial gradient" : "Linear gradient";
@@ -255,6 +238,9 @@ export function FieldInspector(props: FieldInspectorProps) {
   /** The image dialog for a fixed image: the brand's images or this device. */
   const [choosingStatic, setChoosingStatic] = useState(false);
   useEffect(() => setChoosingStatic(false), [field.id]);
+  /** Custom chosen in Crop, before or after a ratio is typed. */
+  const [customCrop, setCustomCrop] = useState(false);
+  useEffect(() => setCustomCrop(false), [field.id]);
   const signedStatic = useSignedUrl(
     field.type === "image" && isStatic ? merged.staticValue : undefined,
   );
@@ -633,17 +619,12 @@ export function FieldInspector(props: FieldInspectorProps) {
     </PropertyGrid>
   );
 
-  const cropRatio = field.aspectRatio;
-  const cropPreset =
-    cropRatio === undefined
-      ? "box"
-      : (CROP_RATIOS.find((r) => Math.abs(r.ratio - cropRatio) < 0.005)?.label ?? "custom");
+  /** Crop: Box, a preset, or Custom, which shows the ratio as a number. */
+  const cropValue = customCrop ? "custom" : cropChoice(field.aspectRatio);
   const cropOptions = [
     { value: "box", label: "Box" },
     ...CROP_RATIOS.map((r) => ({ value: r.label, label: r.label })),
-    ...(cropPreset === "custom" && cropRatio !== undefined
-      ? [{ value: "custom", label: cropRatio.toFixed(2) }]
-      : []),
+    { value: "custom", label: "Custom" },
   ];
 
   const changeType = (t: FieldType) => {
@@ -785,21 +766,9 @@ export function FieldInspector(props: FieldInspectorProps) {
                   value={sizingMode}
                   disabled={sizingLocked}
                   options={[
-                    {
-                      key: "free",
-                      label: "Grows",
-                      title: "The text keeps its size and the box grows taller",
-                    },
-                    {
-                      key: "shrink",
-                      label: "Shrinks",
-                      title: "The box keeps its size and the text shrinks to fit",
-                    },
-                    {
-                      key: "fill",
-                      label: "Fills",
-                      title: "The text is sized to fill the box, growing or shrinking",
-                    },
+                    { key: "free", label: "Grows" },
+                    { key: "shrink", label: "Shrinks" },
+                    { key: "fill", label: "Fills" },
                   ]}
                   onSelect={setSizingMode}
                 />
@@ -890,8 +859,8 @@ export function FieldInspector(props: FieldInspectorProps) {
               ariaLabel="Fit"
               value={field.objectFit ?? "cover"}
               options={[
-                { key: "cover", label: "Cover", title: "Fill the box, cropping the photo" },
-                { key: "contain", label: "Contain", title: "Fit the whole photo inside the box" },
+                { key: "cover", label: "Cover" },
+                { key: "contain", label: "Contain" },
               ]}
               onSelect={(k) => onChange({ objectFit: k as TemplateField["objectFit"] })}
             />
@@ -901,20 +870,33 @@ export function FieldInspector(props: FieldInspectorProps) {
               <PropertyRow label="Crop">
                 <Select
                   ariaLabel="Crop"
-                  value={cropPreset}
+                  value={cropValue}
                   options={cropOptions}
                   onSelect={(v) => {
+                    setCustomCrop(v === "custom");
                     if (v === "box") onChange({ aspectRatio: undefined });
-                    else {
-                      const preset = CROP_RATIOS.find((r) => r.label === v);
-                      if (preset) onChange({ aspectRatio: preset.ratio });
-                    }
+                    const preset = CROP_RATIOS.find((r) => r.label === v);
+                    if (preset) onChange({ aspectRatio: preset.ratio });
                   }}
                 />
               </PropertyRow>
             )}
             <PropertyRow label="Corners">{radiusControl}</PropertyRow>
           </PropertyGrid>
+          {!isStatic && cropValue === "custom" && (
+            <PropertyRow label="Ratio">
+              <NumericField
+                ariaLabel="Crop ratio, width over height"
+                precision={2}
+                step={0.1}
+                min={0.1}
+                allowEmpty
+                placeholder={(field.width / field.height).toFixed(2)}
+                value={field.aspectRatio}
+                onCommit={(v) => onChange({ aspectRatio: v })}
+              />
+            </PropertyRow>
+          )}
           {cornersGrid}
           {/* Where the photo sits inside its box. Imports land with the
               designer's position; Reset returns to the plain fit. */}
@@ -1027,6 +1009,14 @@ export function FieldInspector(props: FieldInspectorProps) {
             {hasRadius && <PropertyRow label="Corners">{radiusControl}</PropertyRow>}
           </PropertyGrid>
           {hasRadius && cornersGrid}
+          <PropertyRow label="Type">
+            <Select
+              ariaLabel="Type"
+              value={field.type}
+              options={FIELD_TYPES}
+              onSelect={changeType}
+            />
+          </PropertyRow>
         </InspectorSection>
       )}
 
@@ -1106,7 +1096,7 @@ export function FieldInspector(props: FieldInspectorProps) {
       )}
 
       {variantMode && (
-        <InspectorSection id="look" title={`Look · ${variantMode.variant.name}`}>
+        <InspectorSection id="variation" title={`Variation · ${variantMode.variant.name}`}>
           <SwitchRow
             label="Hidden in this variation"
             checked={hiddenHere}
@@ -1116,7 +1106,7 @@ export function FieldInspector(props: FieldInspectorProps) {
           {isText && typeStyleRows}
           {hasOverride && (
             <Button kind="neutral" size="sm" onClick={() => variantMode.onOverride(null)}>
-              Reset to base look
+              Use the base styling
             </Button>
           )}
         </InspectorSection>
@@ -1238,9 +1228,9 @@ export function FieldInspector(props: FieldInspectorProps) {
                   ariaLabel="Stroke position"
                   value={field.strokeAlign ?? "inside"}
                   options={[
-                    { key: "inside", label: "Inside", title: "Inside the edge" },
-                    { key: "center", label: "Center", title: "Centered on the edge" },
-                    { key: "outside", label: "Outside", title: "Outside the edge" },
+                    { key: "inside", label: "Inside" },
+                    { key: "center", label: "Center" },
+                    { key: "outside", label: "Outside" },
                   ]}
                   onSelect={(align) =>
                     onChange({ strokeAlign: align === "inside" ? undefined : align })
@@ -1433,16 +1423,8 @@ export function FieldInspector(props: FieldInspectorProps) {
               aria-label="Effects for"
               className="sp-builder__span-switch"
               options={[
-                {
-                  id: "all",
-                  label: "All variations",
-                  title: "The list every variation starts from",
-                },
-                {
-                  id: "this",
-                  label: "This variation",
-                  title: `${variantMode.variant.name} only`,
-                },
+                { id: "all", label: "All variations" },
+                { id: "this", label: "This variation" },
               ]}
               selectedId={tab}
               onSelect={(id) => setTab(id as "all" | "this")}
@@ -1511,13 +1493,8 @@ export function FieldInspector(props: FieldInspectorProps) {
           </PropertyRow>
         )}
         {!isStatic && isTextish && onWorstCasePreview && (
-          <Button
-            kind="neutral"
-            size="sm"
-            aria-pressed={Boolean(worstCasePreview)}
-            onClick={() => onWorstCasePreview(!worstCasePreview)}
-          >
-            Show the longest entry
+          <Button kind="neutral" size="sm" onClick={() => onWorstCasePreview(!worstCasePreview)}>
+            {worstCasePreview ? "Hide the longest entry" : "Show the longest entry"}
           </Button>
         )}
         {isSelect && (
@@ -1554,6 +1531,7 @@ export function FieldInspector(props: FieldInspectorProps) {
   return (
     <div className="sp-insp">
       <InspectorHeader
+        key={field.id}
         icon={elementIcon(field, isLogo)}
         name={field.label}
         renameRequest={focusLabelFieldId === field.id ? field.id : null}

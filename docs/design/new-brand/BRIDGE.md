@@ -349,5 +349,5 @@ Removed, each with no reader left in `src/`:
 
 Kept for Phase 10: the size popover's insides (`CanvasSizePicker`), the fill picker (`FillPicker`), the icon picker's search, the background reflow dialog and the shortcuts panel, which the frames do not draw and which still read `.sp-btn`, `.sp-input`, `.sp-icon-btn`, `.sp-seg` and `.sp-tabstrip`; `compactControlStyle` and `inspectorLabelStyle` stay for the fill picker. The gradient's stops keep `ColorControl`.
 
-Off the scale, kept as drawn: the Element Tiles' gap 9, Add's gap 10, the Form Row's gap and right padding 10, and the fill row's gap 10. The Layer Row and the fill row's swatch take radius/sm (the file draws 7).
+Off the scale, kept as drawn: the Element Tiles' gap 9, Add's gap 10, the Form Row's gap and right padding 10, and the fill row's gap 10. The stage fits the artboard inside insets of 76, 72, 60 and 72 (`STAGE_FIT_INSETS`, and Preview's padding), which clear its controls: the capsule's 16 and 44 and 16 above, the tools' 16 and 40 and 16 at the sides, the selects' 16 and 28 and 16 below. The Layer Row and the fill row's swatch take radius/sm (the file draws 7). The Element Tile's hover lays `--state-hover` over its fill, as `321:77` draws it, and RULES section 6 records it as an exception.
 

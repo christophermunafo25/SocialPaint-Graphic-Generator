@@ -1,6 +1,7 @@
 import React, { useId, useRef, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { IconButton, SegmentedControl, Switch } from "../primitives";
+import { parseHexInput } from "./inspectorValues";
 
 // ---------------------------------------------------------------------------
 // The inspector's structure, from the editor's frames (322:380): sections in
@@ -150,7 +151,8 @@ export function SegmentedIconGroup<T extends string>({
   stretch = false,
   onSelect,
 }: {
-  options: Array<{ key: T; Icon?: LucideIcon; label?: string; title: string; active?: boolean }>;
+  /** Icon options name themselves with `title`; worded ones show `label`. */
+  options: Array<{ key: T; Icon?: LucideIcon; label?: string; title?: string; active?: boolean }>;
   value?: T | null;
   ariaLabel: string;
   disabled?: boolean;
@@ -163,7 +165,7 @@ export function SegmentedIconGroup<T extends string>({
       <fieldset className="sp-insp-choices" disabled={disabled} data-stretch={stretch || undefined}>
         <SegmentedControl
           aria-label={ariaLabel}
-          options={options.map((o) => ({ id: o.key, label: o.label ?? o.key, title: o.title }))}
+          options={options.map((o) => ({ id: o.key, label: o.label ?? o.key }))}
           selectedId={value}
           onSelect={(id) => onSelect(id as T)}
         />
@@ -172,16 +174,17 @@ export function SegmentedIconGroup<T extends string>({
   }
   return (
     <div className="sp-insp-icons" role="group" aria-label={ariaLabel}>
-      {options.map(({ key, Icon, title, active }) => {
+      {options.map(({ key, Icon, label, title, active }) => {
         const on = active ?? (value != null ? value === key : undefined);
+        const name = title ?? label ?? key;
         return (
           <IconButton
             key={key}
             variant="ghost"
             size="sm"
             icon={Icon ?? (() => null)}
-            label={title}
-            title={title}
+            label={name}
+            title={name}
             disabled={disabled}
             aria-pressed={on}
             selected={Boolean(on)}
@@ -479,8 +482,8 @@ export const HexRow = React.forwardRef<HTMLButtonElement, HexRowProps>(function 
             }
           }}
           onBlur={(e) => {
-            const m = /^#?([0-9a-fA-F]{6})([0-9a-fA-F]{2})?$/.exec(e.target.value.trim());
-            if (m) onHex?.(`#${m[1].toUpperCase()}${m[2] ? m[2].toUpperCase() : ""}`);
+            const hex = parseHexInput(e.target.value);
+            if (hex) onHex?.(hex);
             else e.target.value = shown;
           }}
         />

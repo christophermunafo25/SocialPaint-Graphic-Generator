@@ -135,6 +135,16 @@ describe("LayersPanel", () => {
     expect(p.onSelect).not.toHaveBeenCalled();
   });
 
+  it("hands focus back to the row when a rename ends on Escape", async () => {
+    const p = props();
+    render(<LayersPanel {...p} />);
+    screen.getByRole("button", { name: "Role" }).focus();
+    await userEvent.keyboard("{F2}");
+    await userEvent.keyboard("{Escape}");
+    expect(p.onRename).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Role" }));
+  });
+
   it("renames with F2 and Enter", async () => {
     const p = props();
     render(<LayersPanel {...p} />);

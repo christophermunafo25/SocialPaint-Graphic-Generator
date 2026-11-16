@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { TemplateField } from "../types";
+import type { BrandKit, TemplateField } from "../types";
 import type { LineMeasurer } from "../render/autoFit";
 import { limitOverflows, limitSample } from "./publishChecks";
 
@@ -44,6 +44,17 @@ describe("limitOverflows", () => {
     const apply = mkField({ label: "Apply link", maxLength: 80 });
     const role = mkField({ label: "Role", maxLength: 30 });
     expect(limitOverflows(schema([apply, role]), {}, null, measure)).toEqual([
+      { fieldId: apply.id, label: "Apply link", maxLength: 80 },
+    ]);
+  });
+
+  it("reads a bound type style's limit, as the fill page does", () => {
+    const kit = {
+      colors: [],
+      typeStyles: [{ key: "link", name: "Link", maxLength: 80 }],
+    } as unknown as BrandKit;
+    const apply = mkField({ label: "Apply link", maxLength: undefined, typeStyleKey: "link" });
+    expect(limitOverflows(schema([apply]), {}, kit, measure)).toEqual([
       { fieldId: apply.id, label: "Apply link", maxLength: 80 },
     ]);
   });

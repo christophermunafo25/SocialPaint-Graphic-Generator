@@ -6,7 +6,11 @@ import { Input, RowMenu, type RowMenuGroup } from "../primitives";
  * its name in Title/Card, then its more menu. A name that can change
  * renames in place, as the trail's last crumb does: a click turns it into a
  * Small input, Enter or a click away keeps the new name, and Escape keeps
- * the old one. */
+ * the old one. Enter and Escape hand focus back to the name.
+ *
+ * Give it a `key` for what it names. A rename still open when the selection
+ * moves (the canvas selects on pointerdown, before the input loses focus)
+ * is kept for the element it began on, never the one selected next. */
 export function InspectorHeader({
   icon: Icon,
   name,
@@ -29,6 +33,24 @@ export function InspectorHeader({
   const button = useRef<HTMLButtonElement>(null);
   const input = useRef<HTMLInputElement>(null);
 
+  // What an unmount needs to keep an open rename: the text as typed, the
+  // name it started from and the callback for the element it names.
+  const pending = useRef<{ text: string; name: string; onRename?(next: string): void } | null>(
+    null,
+  );
+  useEffect(() => {
+    pending.current = editing ? { text, name, onRename } : null;
+  });
+  useEffect(
+    () => () => {
+      const open = pending.current;
+      if (!open) return;
+      const next = open.text.trim();
+      if (next && next !== open.name) open.onRename?.(next);
+    },
+    [],
+  );
+
   useEffect(() => {
     if (!renameRequest || !onRename) return;
     setText(name);
@@ -43,12 +65,12 @@ export function InspectorHeader({
     input.current?.select();
   }, [editing]);
 
-  const finish = (save: boolean) => {
+  const finish = (save: boolean, refocus: boolean) => {
     if (!editing) return;
     setEditing(false);
     const next = text.trim();
     if (save && next && next !== name) onRename?.(next);
-    requestAnimationFrame(() => button.current?.focus());
+    if (refocus) requestAnimationFrame(() => button.current?.focus());
   };
 
   return (
@@ -61,15 +83,15 @@ export function InspectorHeader({
           aria-label="Name"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          onBlur={() => finish(true)}
+          onBlur={() => finish(true, false)}
           onKeyDown={(e) => {
             e.stopPropagation();
             if (e.key === "Enter") {
               e.preventDefault();
-              finish(true);
+              finish(true, true);
             } else if (e.key === "Escape") {
               e.preventDefault();
-              finish(false);
+              finish(false, true);
             }
           }}
           className="sp-insp-head__input"

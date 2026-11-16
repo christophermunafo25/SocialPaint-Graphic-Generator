@@ -134,6 +134,7 @@ export function GroupInspector({
   return (
     <div className="sp-insp">
       <InspectorHeader
+        key={group.id}
         icon={free ? GroupGlyph : vertical ? Rows3 : Columns3}
         name={group.name}
         onRename={(name) => onChange({ name: name.trim() || "Group" })}
@@ -159,8 +160,8 @@ export function GroupInspector({
                   ariaLabel={`Direction of the ${stackName.toLowerCase()}`}
                   value={group.direction}
                   options={[
-                    { key: "vertical", label: "Vertical", title: "Stack top to bottom" },
-                    { key: "horizontal", label: "Horizontal", title: "Stack left to right" },
+                    { key: "vertical", label: "Vertical" },
+                    { key: "horizontal", label: "Horizontal" },
                   ]}
                   onSelect={changeDirection}
                 />

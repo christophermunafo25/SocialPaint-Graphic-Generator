@@ -3,7 +3,7 @@ import type { LineMeasurer } from "../render/autoFit";
 import { resolveFieldStyle } from "../brand/resolveStyle";
 import { fitsInContext, type MeasurableSchema } from "../generate/measureProposal";
 
-/** A member text field whose own character limit runs past its box. */
+/** A member text field whose character limit runs past its box. */
 export interface LimitOverflow {
   fieldId: string;
   label: string;
@@ -35,9 +35,11 @@ export function limitOverflows(
   const out: LimitOverflow[] = [];
   for (const field of schema.fields) {
     if (field.static || (field.type !== "text" && field.type !== "multiline")) continue;
-    const limit = field.maxLength;
-    if (!limit || limit <= 0) continue;
+    // The limit the fill page enforces: a bound type style's, else the
+    // field's own.
     const style = resolveFieldStyle(field, kit);
+    const limit = style.maxLength ?? field.maxLength;
+    if (!limit || limit <= 0) continue;
     const sample = limitSample(field, limit);
     if (!fitsInContext(schema, values, kit, measure, field, style, sample, {})) {
       out.push({ fieldId: field.id, label: field.label, maxLength: limit });

@@ -26,12 +26,14 @@ export function CrumbRename({
     input.current?.select();
   }, [editing]);
 
-  const finish = (save: boolean) => {
+  /** Enter and Escape hand focus back to the name; a click away leaves it
+   * where the click put it. */
+  const finish = (save: boolean, refocus: boolean) => {
     if (!editing) return;
     setEditing(false);
     const next = text.trim();
     if (save && next && next !== value.trim()) onSave(next);
-    requestAnimationFrame(() => button.current?.focus());
+    if (refocus) requestAnimationFrame(() => button.current?.focus());
   };
 
   return (
@@ -43,14 +45,14 @@ export function CrumbRename({
           aria-label="Template name"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          onBlur={() => finish(true)}
+          onBlur={() => finish(true, false)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
-              finish(true);
+              finish(true, true);
             } else if (e.key === "Escape") {
               e.preventDefault();
-              finish(false);
+              finish(false, true);
             }
           }}
           className="sp-crumb-rename__input"

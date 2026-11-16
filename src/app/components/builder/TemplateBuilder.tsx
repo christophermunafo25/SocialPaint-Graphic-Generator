@@ -815,7 +815,7 @@ export function TemplateBuilder({
     for (const g of groups) {
       if (builderLayout.groupRects.get(g.id)?.overflows) {
         out.push(
-          `"${g.name}" extends beyond the canvas, so its content can crop on export. Shorten the content, tighten the gap, or enable "Shrink to fit".`,
+          `"${g.name}" extends beyond the canvas, so its content can crop on export. Shorten the content, tighten the gap, or turn on "Shrink text to fit the canvas".`,
         );
       }
     }
@@ -1813,13 +1813,15 @@ export function TemplateBuilder({
   );
 
   // Keyboard shortcuts while editing: ⌘/Ctrl C, X, V, D, Delete, Escape.
-  // Never fire while typing in an input, or from inside a dialog (Publish,
-  // an import), whose keys are its own.
+  // Never fire while typing in an input, from inside a dialog (Publish, an
+  // import) or a menu, whose keys are their own, or for a key a control has
+  // already used (the arrows in Tabs and Segmented Controls).
   useEffect(() => {
     if (mode !== "edit") return;
     const handler = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return;
       if (isTypingTarget(e)) return; // native text undo stays native
-      if (e.target instanceof Element && e.target.closest("[role=dialog]")) return;
+      if (e.target instanceof Element && e.target.closest("[role=dialog], [role=menu]")) return;
       // Mid-drag the canvas owns the pointer AND the keyboard: deleting or
       // undoing the element under an active gesture would strand it.
       // (Escape cancels the drag inside the gesture core and never lands here.)
@@ -3133,15 +3135,13 @@ export function TemplateBuilder({
                 className="sp-builder__rail sp-builder__rail--left"
                 aria-label="Elements and fields"
               >
-                {/* Two orderings, two tabs. The titles spell out the difference
-                because it is the one thing about this rail that is not
-                self-evident, and getting it wrong quietly reorders either the
-                graphic or the member form. */}
+                {/* Two orderings, two tabs: what paints over what, and what
+                your team fills in, in order. */}
                 <SegmentedControl
                   aria-label="List"
                   options={[
-                    { id: "layers", label: "Layers", title: "What paints on top of what" },
-                    { id: "form", label: "Form", title: "What your team fills in, in order" },
+                    { id: "layers", label: "Layers" },
+                    { id: "form", label: "Form" },
                   ]}
                   selectedId={railTab}
                   onSelect={(id) => setRailTab(id as "layers" | "form")}
@@ -3225,11 +3225,7 @@ export function TemplateBuilder({
                   aria-label="Canvas tools"
                   aria-orientation="vertical"
                 >
-                  <div
-                    role="radiogroup"
-                    aria-label="Canvas tool"
-                    className="sp-builder__tool-group"
-                  >
+                  <div role="group" aria-label="Canvas tool" className="sp-builder__tool-group">
                     {TOOL_ORDER.map(({ key, label, Icon }) => (
                       <IconButton
                         key={key}
@@ -3237,11 +3233,8 @@ export function TemplateBuilder({
                         size="sm"
                         icon={Icon}
                         label={`${label} (${TOOL_LETTER[key]})`}
-                        title={`${label}: ${TOOL_LETTER[key]}${
-                          key === "move" ? "" : `, ⇧${TOOL_LETTER[key]} to keep it active`
-                        }`}
-                        role="radio"
-                        aria-checked={tool === key}
+                        title={`${label} (${TOOL_LETTER[key]})`}
+                        aria-pressed={tool === key}
                         selected={tool === key}
                         onClick={() => {
                           setTool(key);
@@ -3329,13 +3322,6 @@ export function TemplateBuilder({
                       tool={tool}
                       lockedIds={lockedIds}
                       hiddenIds={paintHiddenIds}
-                      emptyHint={
-                        draft.fields.length === 0
-                          ? stores.designImport.isConfigured()
-                            ? "Drag an element from the palette onto the canvas, or import a designed frame from Figma."
-                            : "Drag an element from the palette onto the canvas. You can also paste an image or a Figma layer straight in."
-                          : undefined
-                      }
                       onDraw={addDrawnField}
                       onTransformSelection={transformSelection}
                       onDropElement={(id, at) => addPaletteField(id, at)}
@@ -3595,16 +3581,8 @@ export function TemplateBuilder({
                           <SegmentedControl
                             aria-label="Background for"
                             options={[
-                              {
-                                id: "all",
-                                label: "All variations",
-                                title: "The base background every variation starts from",
-                              },
-                              {
-                                id: "this",
-                                label: "This variation",
-                                title: `The background of ${selectedVariant.name} only`,
-                              },
+                              { id: "all", label: "All variations" },
+                              { id: "this", label: "This variation" },
                             ]}
                             selectedId={bgScope}
                             onSelect={(id) => setBgScope(id as "all" | "this")}
