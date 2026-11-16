@@ -12,7 +12,7 @@ Import intent, Phase 1 (2026-11-15) made the Figma importer read how a frame is 
 | ----------------------- | -------------------------- | ----------- | ----------- |
 | `portrait-plate-import` | 0.72 / 0.69                | 0.87 / 1.46 | 0.86 / 1.78 |
 
-These are measurements, not a baseline: the fixture has none until CJ approves one. They include pull request 184, which requests the optical size axis for the Google families that have one, so the Newsreader headline is drawn in the display cut Figma draws; before it the fixture measured 2.23, 2.25 and 2.27. What is left: the golden's first row is a darker band from Figma's export (about 0.07 points in every engine), the headline is about 0.3% lighter than Figma's with one-pixel differences in line placement between engines, and the browsers measure the call to action's label about 2px narrower than Figma, so the pill ends 2px short.
+These are the fixture's baseline, approved by CJ on 2026-11-16. They include pull request 184, which requests the optical size axis for the Google families that have one, so the Newsreader headline is drawn in the display cut Figma draws; before it the fixture measured 2.23, 2.25 and 2.27. What is left: the golden's first row is a darker band from Figma's export (about 0.07 points in every engine), the headline is about 0.3% lighter than Figma's with one-pixel differences in line placement between engines, and the browsers measure the call to action's label about 2px narrower than Figma, so the pill ends 2px short.
 
 What an import now carries:
 
