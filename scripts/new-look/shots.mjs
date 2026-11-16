@@ -431,7 +431,7 @@ async function settle(page) {
   });
 }
 
-/** The app frame (layout/Page.tsx) scrolls Main's content inside the window
+/** The app frame (layout/Page.tsx) scrolls the page inside the window
  * at 1024 and wider, so a full-page shot would stop at the window's foot.
  * Grow the window by what the content hides, until it hides nothing: the
  * frame then holds the whole page, as a window that tall would. The content

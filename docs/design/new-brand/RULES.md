@@ -138,8 +138,8 @@ Measured from the frames at 1440 wide. Fixed sizes stay fixed and everything mar
 | Sidebar | 320 wide, 76 collapsed, full height. 20 padding, 24 between its groups. The account row stays at the bottom. The theme toggle sits beside Collapse (CJ, 2026-11-15; the file draws none). Collapsed, the header is Expand alone and the avatar is the Settings button, ringed in `--border-strong` 2 out while Settings shows (the file draws no selected state for it) |
 | Main | Fills, with no width cap. 16 padding top and bottom. A 32 gutter left and right, so content is 1020 wide at 1440 |
 | Page Header | One row 36 tall at the top of Main on every page. Title or breadcrumb on the left, centered in the row, and actions on the right with 8 between them |
-| Content | Starts 24 below the header: the content's own top padding, as the gutters are its side padding, so a card's shadow is never cut. It scrolls inside Main while the header and the footer stay put, and returns to the top when the route's path changes (a filter in the address keeps the scroll). A scrolling area ends in an 80 tall fade at its bottom edge, shown while there is more below. The Generate thread and History scroll their own region instead, and the builder editor fills Main |
-| Footer Links | Centered at the bottom of Main, 24 under the content, 16 between the two links. On a scrolling page that 24 is the content's own bottom padding, so the fade ends on the links; a page that scrolls its own region takes it as a margin. The fill page sets them under its stage instead. The builder editor has none, as its frames draw |
+| Content | Starts 24 below the header: the content's own top padding, as the gutters are its side padding, so a card's shadow is never cut. The header, the content and the footer links scroll inside Main as one page: nothing sticks, and no fade covers the bottom edge (CJ, 2026-11-16, against the file's 2308:267). The page returns to the top when the route's path changes (a filter in the address keeps the scroll). The Generate thread and History scroll their own region instead, and the builder editor fills Main |
+| Footer Links | Centered at the bottom of Main, 24 under the content, 16 between the two links. On a scrolling page that 24 is the content's own bottom padding, and the links scroll with the page; a page that scrolls its own region takes it as a margin. The fill page sets them under its stage instead. The builder editor has none, as its frames draw |
 
 Three frames draw the title lower or tighter than this (Brand Templates, the Brand Studio overview, Settings). The one header row wins everywhere, so titles sit at the same height on every page.
 
@@ -149,7 +149,7 @@ A dialog's close button sits in its top right corner.
 
 | Part | Measure |
 |---|---|
-| Filter bar | 56 tall. Search Field (50, round in the library's frames) then the platform chip rail, chips 50 tall with 8 between them. The rail runs off the right edge under a 72 wide fade |
+| Filter bar | 56 tall. Search Field (50, round in the library's frames) then the platform chip rail, chips 50 tall with 8 between them. It scrolls with the page and never pins (CJ, 2026-11-16). The rail runs off the right edge under a 72 wide fade |
 | Shelves | 32 between shelves. A shelf is a header (28 tall, title on the left, View all on the right) then a rail 16 below it |
 | Shelf rail | Cards in a row, 16 apart, running off the right edge under a 96 wide fade |
 | Template Card | 302 wide. 434 tall for portrait templates, 226 for landscape. 8 padding around the preview |

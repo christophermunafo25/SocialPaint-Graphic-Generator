@@ -283,20 +283,7 @@ export function AdminTemplates() {
     }
   };
 
-  // The bar pins to the content's top edge as the grid scrolls, as the
-  // library's does; the sentinel above it says when it has.
   const showBar = templatesState.status === "ready" && templates.length > 0;
-  const sentinel = useRef<HTMLDivElement>(null);
-  const [pinned, setPinned] = useState(false);
-  useEffect(() => {
-    const el = sentinel.current;
-    if (!showBar || !el) return;
-    const io = new IntersectionObserver(([entry]) => setPinned(!entry.isIntersecting), {
-      threshold: 1,
-    });
-    io.observe(el);
-    return () => io.disconnect();
-  }, [showBar]);
 
   /** A card's row menu (329:2206). */
   const menuFor = (t: TemplateSchema): RowMenuGroup[] => [
@@ -437,8 +424,7 @@ export function AdminTemplates() {
 
       {showBar && (
         <>
-          <div ref={sentinel} aria-hidden className="sp-tb-sentinel" />
-          <div className="sp-tb-filterbar" data-pinned={pinned || undefined}>
+          <div className="sp-tb-filterbar">
             <SegmentedControl
               aria-label="Filter by status"
               options={[

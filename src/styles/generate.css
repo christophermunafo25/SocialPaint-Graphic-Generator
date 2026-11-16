@@ -358,13 +358,9 @@
 .sp-gen-history-head > h1:focus {
   outline: none;
 }
-/* The library's filter bar, 24 under the header. The page itself never
-   scrolls (the grid does), so the bar never pins: positioned only so its
-   (unused) pin gradient stays inside it, with no offset (the library's
-   sticky top would move it down by the mobile bar below 1024). */
+/* The library's filter bar, 24 under the header. The grid scrolls under
+   it; the page itself never does. */
 .sp-chat-page[data-state="history"] .sp-lib-filterbar {
-  position: relative;
-  top: 0;
   flex-shrink: 0;
   margin-top: var(--space-24);
 }
