@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { upsertDetail, type DetailTagValue } from "@/lib/generate/details";
+import type { PlatformId } from "@/lib/templates/platforms";
 import { AttachMenu, type AttachMenuHandle } from "./AttachMenu";
 
 vi.mock("@/lib/brand/BrandContext", () => ({ useBrand: () => ({ assets: [] }) }));
@@ -11,8 +12,15 @@ vi.mock("../ImageSourceChooser", () => ({
   pickableAssets: () => [],
 }));
 
-function Harness({ withDetails = true }: { withDetails?: boolean }) {
+function Harness({
+  withDetails = true,
+  withPlatform = false,
+}: {
+  withDetails?: boolean;
+  withPlatform?: boolean;
+}) {
   const [tags, setTags] = useState<DetailTagValue[]>([]);
+  const [platform, setPlatform] = useState<PlatformId | null>(null);
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   const menu = useRef<AttachMenuHandle>(null);
@@ -25,6 +33,7 @@ function Harness({ withDetails = true }: { withDetails?: boolean }) {
         onPickDocument={() => {}}
         onPickAsset={() => {}}
         onOpenChange={setOpen}
+        platform={withPlatform ? { value: platform, onChange: setPlatform } : undefined}
         details={
           withDetails
             ? { value: tags, onSet: (kind, v) => setTags((t) => upsertDetail(t, kind, v)) }
@@ -32,6 +41,10 @@ function Harness({ withDetails = true }: { withDetails?: boolean }) {
         }
       />
       <output data-testid="open">{String(open)}</output>
+      <output data-testid="platform">{String(platform)}</output>
+      <button type="button" onClick={(e) => menu.current?.editPlatform(e.currentTarget)}>
+        Platform tag
+      </button>
       <ul>
         {tags.map((t) => (
           <li key={t.fieldKey}>
@@ -105,5 +118,61 @@ describe("AttachMenu", () => {
     expect(screen.queryByRole("menu")).toBeNull();
     expect(document.activeElement).toBe(plus);
     expect(screen.getByTestId("open").textContent).toBe("false");
+  });
+
+  it("leads with Output, and picks a platform from its list", async () => {
+    render(<Harness withPlatform />);
+    const plus = screen.getByRole("button", { name: "Add" });
+    await userEvent.click(plus);
+    const rows = screen.getAllByRole("menuitem");
+    expect(rows.map((el) => el.textContent)).toEqual([
+      "PlatformAny",
+      "Photo",
+      "File",
+      "Headline",
+      "Date & time",
+      "Location",
+      "Link",
+    ]);
+    expect(screen.getByRole("group", { name: "Output" })).toBeTruthy();
+    await userEvent.click(rows[0]);
+
+    // The list replaces the menu, on the platform picked (Any).
+    const any = screen.getByRole("menuitemradio", { name: "Any" });
+    expect(any.getAttribute("aria-checked")).toBe("true");
+    expect(document.activeElement).toBe(any);
+    await userEvent.keyboard("{ArrowDown}");
+    expect(document.activeElement).toBe(screen.getByRole("menuitemradio", { name: "LinkedIn" }));
+
+    await userEvent.click(screen.getByRole("menuitemradio", { name: "Instagram" }));
+    expect(screen.getByTestId("platform").textContent).toBe("instagram");
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(plus);
+
+    await userEvent.click(plus);
+    expect(screen.getAllByRole("menuitem")[0].textContent).toBe("PlatformInstagram");
+  });
+
+  it("opens the list from the platform's tag, and Tab moves between Back and the list", async () => {
+    render(<Harness withPlatform />);
+    const tag = screen.getByRole("button", { name: "Platform tag" });
+    await userEvent.click(tag);
+    const back = screen.getByRole("button", { name: "Back" });
+    await userEvent.keyboard("{Shift>}{Tab}{/Shift}");
+    expect(document.activeElement).toBe(back);
+    await userEvent.keyboard("{Tab}");
+    expect(document.activeElement).toBe(screen.getByRole("menuitemradio", { name: "Any" }));
+
+    // Back lands on the Platform row; Escape from the list returns to the tag.
+    await userEvent.click(back);
+    expect(document.activeElement).toBe(screen.getByRole("menuitem", { name: "Platform Any" }));
+    await userEvent.keyboard("{Enter}");
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Add" }));
+
+    await userEvent.click(tag);
+    await userEvent.keyboard("{Escape}");
+    expect(document.activeElement).toBe(tag);
   });
 });

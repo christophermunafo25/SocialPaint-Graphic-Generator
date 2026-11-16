@@ -1,8 +1,6 @@
 import React from "react";
-import { FileText, Globe, X } from "lucide-react";
+import { FileText, X } from "lucide-react";
 import type { ChatDocumentKind } from "@/lib/types";
-import { PLATFORMS, type PlatformId } from "@/lib/templates/platforms";
-import { Select, type SelectOption } from "../primitives";
 
 /** The round x on an attachment tile (13:2384): 16 on surface/inverse in
  * Light and the page's ink in Dark, 4 in from the tile's top right. Its
@@ -63,37 +61,5 @@ export function FileTile({
       </span>
       {onRemove && <RemoveButton label={`Remove ${name}`} onClick={onRemove} />}
     </span>
-  );
-}
-
-/** The composer's platform hint on the Compact select (99:568): "Any
- * platform" with the globe, then every platform with its mark. Generate
- * composes a new design at any platform's size, so every platform is
- * offered alike. */
-export function PlatformSelect({
-  value,
-  onChange,
-}: {
-  value: PlatformId | null;
-  onChange(next: PlatformId | null): void;
-}) {
-  const options: Array<SelectOption<string>> = [
-    { value: "", label: "Any platform", icon: <Globe size={16} className="ui-icon" aria-hidden /> },
-    ...PLATFORMS.map((p) => ({
-      value: p.id as string,
-      label: p.label,
-      icon: <p.Icon width={16} height={16} className="ui-icon" aria-hidden />,
-    })),
-  ];
-  return (
-    <Select
-      size="sm"
-      hug
-      ariaLabel="Platform"
-      value={value ?? ""}
-      options={options}
-      onSelect={(v) => onChange((v || null) as PlatformId | null)}
-      menuMinWidth={220}
-    />
   );
 }

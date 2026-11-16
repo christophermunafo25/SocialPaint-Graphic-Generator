@@ -17,7 +17,7 @@ import {
   type ChatPhoto,
   type ChatThread,
 } from "@/lib/generate/chat";
-import { DEFAULT_VARIATIONS, sameEdits } from "@/lib/generate/chatReducer";
+import { clampVariations, lastComposerTurn, sameEdits } from "@/lib/generate/chatReducer";
 import { EXPORT_ERROR_TITLE, missingFields } from "@/lib/generate/draftDownload";
 import { captionFor, previewValues, tooLongFields, turnPhoto } from "@/lib/generate/draftView";
 import { defaultVariant } from "@/lib/templates/variants";
@@ -331,8 +331,11 @@ export function GenerateChat({
   const [details, setDetails] = useState<DetailTagValue[]>([]);
   // The attach menu or Add a detail is showing: Start blurs Recent (§9 D6).
   const [menuOpen, setMenuOpen] = useState(false);
-  const [platform, setPlatform] = useState<PlatformId | null>(null);
-  const [variations, setVariations] = useState(DEFAULT_VARIATIONS);
+  // The next message's platform (null is any) and variation count, when the
+  // member sets them. Unset, a message reuses the thread's last composer
+  // send's (fillSendGaps), and the chat box shows those.
+  const [platform, setPlatform] = useState<PlatformId | null | undefined>(undefined);
+  const [variations, setVariations] = useState<number | undefined>(undefined);
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
   // Edit details' stage, where the panel renders the draft (§12.7).
   const [stageEl, setStageEl] = useState<HTMLDivElement | null>(null);
@@ -373,6 +376,9 @@ export function GenerateChat({
   // One canvas measurer for the page's "too long" checks (§9.4).
   const measure = useMemo(() => createCanvasMeasurer(), []);
   const lastTurn = thread.turns[thread.turns.length - 1];
+  const lastSend = useMemo(() => lastComposerTurn(thread.turns), [thread.turns]);
+  const nextPlatform = platform !== undefined ? platform : (lastSend?.platformHint ?? null);
+  const nextVariations = variations ?? clampVariations(lastSend?.variations);
   // The first message of a reopened chat that was sent with a photo: the
   // photo was not saved, and the note under it says so (§9.8). A message
   // sent on this page still holds its photo and needs no note.
@@ -503,25 +509,26 @@ export function GenerateChat({
     const sentDetails = details.length
       ? { details: details.map(({ fieldKey, label, value }) => ({ fieldKey, label, value })) }
       : {};
-    const started = fromStart
-      ? send({
-          text,
-          photo,
-          document: doc,
-          platformHint: platform,
-          variations,
-          ...sentDetails,
-        })
-      : // The compact composer has no platform or count: the controller
-        // reuses the thread's last composer send (never a chip's).
-        send({ text, photo, document: doc, ...sentDetails });
+    // A platform or count left unset reuses the thread's last composer send
+    // (never a chip's).
+    const started = send({
+      text,
+      photo,
+      document: doc,
+      platformHint: platform,
+      variations,
+      ...sentDetails,
+    });
     if (!started) return;
     // The photo, the document and the tags are snapshotted on the message;
-    // the composer starts clean.
+    // the composer starts clean, and shows this message's platform and
+    // count for the next.
     setText("");
     setPhoto(null);
     setDoc(null);
     setDetails([]);
+    setPlatform(undefined);
+    setVariations(undefined);
     follow();
     if (fromStart) {
       // The Large composer leaves with the Start state; the member keeps
@@ -548,8 +555,8 @@ export function GenerateChat({
     setAnswers({});
     setAnswerError(null);
     autoBuilt.current = null;
-    setPlatform(null);
-    setVariations(DEFAULT_VARIATIONS);
+    setPlatform(undefined);
+    setVariations(undefined);
     setCaptionPicks({});
     setEditor(null);
     requestComposerFocus();
@@ -1067,8 +1074,8 @@ export function GenerateChat({
                     onSubmit={submit}
                     onStop={stop}
                     placeholder={START_PLACEHOLDER}
-                    platform={{ value: platform, onChange: setPlatform }}
-                    variations={{ value: variations, onChange: setVariations }}
+                    platform={{ value: nextPlatform, onChange: setPlatform }}
+                    variations={{ value: nextVariations, onChange: setVariations }}
                     details={{ value: details, onChange: setDetails }}
                     onMenuOpenChange={setMenuOpen}
                     textareaRef={composerRef}
@@ -1323,7 +1330,12 @@ export function GenerateChat({
                         ? TEMPLATE_THREAD_PLACEHOLDER
                         : THREAD_PLACEHOLDER
                   }
-                  // A template chat's details come from its questions.
+                  // A template chat's details come from its questions, and it
+                  // has one template's size and one draft.
+                  platform={template ? undefined : { value: nextPlatform, onChange: setPlatform }}
+                  variations={
+                    template ? undefined : { value: nextVariations, onChange: setVariations }
+                  }
                   details={template ? undefined : { value: details, onChange: setDetails }}
                   textareaRef={composerRef}
                   disabled={full}

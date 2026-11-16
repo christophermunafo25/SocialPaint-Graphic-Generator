@@ -6,32 +6,33 @@ import { upsertDetail, type DetailTagValue } from "@/lib/generate/details";
 import { UploadChipView } from "../imageUpload";
 import { useComposer, type ComposerProps } from "./useComposer";
 import { DetailTag, SendButton, Stepper } from "../primitives";
-import { AttachMenu, type AttachMenuHandle } from "./AttachMenu";
-import { FileTile, PhotoTile, PlatformSelect } from "./Attachments";
+import { AttachMenu, platformLabel, type AttachMenuHandle } from "./AttachMenu";
+import { FileTile, PhotoTile } from "./Attachments";
 
 export interface ChatComposerProps extends ComposerProps {
-  /** The Start state's platform hint (Generate only): the Compact select. */
+  /** The platform the next message asks for (Generate only): the attach
+   * menu's OUTPUT section, and a tag at the head of the Details row. */
   platform?: {
     value: PlatformId | null;
     onChange(next: PlatformId | null): void;
   };
-  /** The Start state's Variations (Generate only): the Stepper. */
+  /** How many variations the next message asks for (Generate only): the
+   * Stepper. */
   variations?: { value: number; onChange(next: number): void };
   /** Generate's details (PHASE-5 §9 D4): the attach menu's DETAILS
-   * section, and the message's tags in the Tags row beside the plus. */
+   * section, and the message's tags in the Details row. */
   details?: {
     value: readonly DetailTagValue[];
     onChange(next: DetailTagValue[]): void;
   };
-  /** Whether the attach menu or Add a detail is showing. */
+  /** Whether the attach menu or one of its panels is showing. */
   onMenuOpenChange?(open: boolean): void;
 }
 
-/** The Composer (Figma 61:504): the attachments, the text, then the
- * toolbar, the Attach button and the Tags row on the left, the platform
- * select, the Variations stepper and Send on the right. The select and the
- * stepper show on Generate's Start state only (a follow-up reuses the
- * last send's); the template chat has neither. The behaviour is
+/** The Composer (new brand, 13:2454): the attachments, the text, the
+ * Details row (the platform and the details as tags), then the toolbar:
+ * Attach on the left, the Variations stepper and Send on the right. The
+ * template chat has no platform, details or stepper. The behaviour is
  * useComposer's: Enter sends, a pasted or dropped photo attaches, Send
  * turns to Stop while a run is in flight. */
 export function ChatComposer(props: ChatComposerProps) {
@@ -50,6 +51,8 @@ export function ChatComposer(props: ChatComposerProps) {
   } = props;
   const menuRef = useRef<AttachMenuHandle>(null);
   const c = useComposer(props);
+  // A tag's x goes with its tag; focus goes to the text.
+  const focusText = () => c.rootRef.current?.querySelector("textarea")?.focus();
   return (
     <form
       {...c.dropProps}
@@ -73,7 +76,7 @@ export function ChatComposer(props: ChatComposerProps) {
       )}
       <textarea
         ref={c.setTextarea}
-        className="ui-reset ui-ring-none tu-body-l ui-composer__input"
+        className="ui-reset ui-composer__input"
         rows={1}
         value={value}
         maxLength={MAX_BRIEF}
@@ -88,6 +91,42 @@ export function ChatComposer(props: ChatComposerProps) {
           {c.photoError}
         </p>
       )}
+      {(platform?.value || (details && details.value.length > 0)) && (
+        <TagRail>
+          {platform?.value && (
+            <li key="platform">
+              <DetailTag
+                editLabel={`Edit platform: ${platformLabel(platform.value)}`}
+                onEdit={(e) => menuRef.current?.editPlatform(e.currentTarget)}
+                removeLabel={`Remove ${platformLabel(platform.value)}`}
+                onRemove={() => {
+                  platform.onChange(null);
+                  focusText();
+                }}
+              >
+                {platformLabel(platform.value)}
+              </DetailTag>
+            </li>
+          )}
+          {details &&
+            details.value.map((tag) => (
+              <li key={tag.fieldKey}>
+                <DetailTag
+                  icon={tag.kind === "link" ? Globe : undefined}
+                  editLabel={`Edit ${tag.label}: ${tag.value}`}
+                  onEdit={(e) => menuRef.current?.editDetail(tag.fieldKey, e.currentTarget)}
+                  removeLabel={`Remove ${tag.label}`}
+                  onRemove={() => {
+                    details.onChange(details.value.filter((t) => t.fieldKey !== tag.fieldKey));
+                    focusText();
+                  }}
+                >
+                  {tag.value}
+                </DetailTag>
+              </li>
+            ))}
+        </TagRail>
+      )}
       <div className="ui-composer__toolbar">
         <div className="ui-composer__inputs">
           <AttachMenu
@@ -98,6 +137,7 @@ export function ChatComposer(props: ChatComposerProps) {
             onPickDocument={c.takeDocument}
             onPickAsset={c.takeAsset}
             onOpenChange={onMenuOpenChange}
+            platform={platform}
             details={
               details && {
                 value: details.value,
@@ -105,30 +145,8 @@ export function ChatComposer(props: ChatComposerProps) {
               }
             }
           />
-          {details && details.value.length > 0 && (
-            <TagRail>
-              {details.value.map((tag) => (
-                <li key={tag.fieldKey}>
-                  <DetailTag
-                    icon={tag.kind === "link" ? Globe : undefined}
-                    editLabel={`Edit ${tag.label}: ${tag.value}`}
-                    onEdit={(e) => menuRef.current?.editDetail(tag.fieldKey, e.currentTarget)}
-                    removeLabel={`Remove ${tag.label}`}
-                    onRemove={() => {
-                      details.onChange(details.value.filter((t) => t.fieldKey !== tag.fieldKey));
-                      // The x goes with its tag; focus goes to the text.
-                      c.rootRef.current?.querySelector("textarea")?.focus();
-                    }}
-                  >
-                    {tag.value}
-                  </DetailTag>
-                </li>
-              ))}
-            </TagRail>
-          )}
         </div>
         <div className="ui-composer__output">
-          {platform && <PlatformSelect value={platform.value} onChange={platform.onChange} />}
           {variations && (
             <Stepper
               label="Variations"
@@ -152,9 +170,9 @@ export function ChatComposer(props: ChatComposerProps) {
   );
 }
 
-/** The Tags row (13:2557): one line of tags that scrolls sideways, 48 of
- * room after the last, under a 121 fade to the composer's fill while more
- * lies past the right edge. */
+/** The Details row (13:2454): one line of tags 8 apart that scrolls
+ * sideways, 48 of room after the last, under a 121 fade to the composer's
+ * fill while more lies past the right edge. */
 function TagRail({ children }: { children: React.ReactNode }) {
   const listRef = useRef<HTMLUListElement>(null);
   const [more, setMore] = useState(false);

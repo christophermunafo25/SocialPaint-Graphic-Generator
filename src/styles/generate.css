@@ -214,13 +214,14 @@
   inset: -4px; /* a 24 hit area */
 }
 
-/* ── Attach menu (13:1746) and Add a detail (13:2285), PHASE-5 §9 D3/D4 ──
-   On the Menu primitive's panel, rows and labels. 300 wide, Elevation/
-   Medium; fixed off the composer box by AttachMenu. */
+/* ── Attach menu (13:1601) and Add a detail (13:2140) ──
+   On the Menu primitive's panel, rows and labels: 240 wide, fixed off the
+   plus by AttachMenu. The platform list is the menu with a head; Add a
+   detail is a 280 popover, 12 in and 12 between its rows. */
 .sp-attach {
   position: fixed;
   z-index: 500; /* the popover layer; z-index is not a Figma token */
-  width: 300px;
+  width: 240px;
   max-width: calc(100vw - 16px);
   overflow-y: auto;
 }
@@ -244,29 +245,28 @@
   background: var(--state-hover);
 }
 .sp-attach--detail {
-  padding-top: 9px; /* as drawn (13:2285) */
+  width: 280px;
+  gap: var(--space-12);
+  padding: var(--space-12);
 }
+/* Back (Ghost Small) and the panel's name in Label/M, 4 apart. */
 .sp-attach__head {
   display: flex;
+  flex: none;
   align-items: center;
-  gap: 6px;
-  padding: 4px 0 4px 4px;
+  gap: var(--space-4);
 }
-.sp-attach__back {
-  display: inline-flex;
-  border-radius: var(--radius-control);
-  color: var(--text-strong);
-  cursor: pointer;
+.sp-attach--list .sp-attach__head {
+  padding: var(--space-4);
 }
 .sp-attach__title {
   margin: 0;
-  color: var(--text-strong);
+  color: var(--text-primary);
 }
 .sp-attach__body {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 4px 6px 6px;
+  gap: var(--space-12);
 }
 .sp-attach__foot {
   display: flex;

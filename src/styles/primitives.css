@@ -2063,16 +2063,31 @@ button.ui-detail-tag__value {
   box-shadow: var(--elevation-1-raised);
   color: var(--text-primary);
 }
+/* The text area's focus rings the whole box, as a field's does. */
+.ui-composer:has(.ui-composer__input:focus-visible) {
+  outline: var(--stroke-focus) solid var(--border-focus);
+  outline-offset: var(--focus-offset);
+}
+.ui-composer__input:focus-visible {
+  outline: none;
+}
 .ui-composer[data-drag-active] {
   box-shadow:
     var(--elevation-1-raised),
     inset 0 0 0 1px var(--state-selection);
 }
+/* Body/L from its variables (a text area takes no text style class). Its
+   lines keep their boxes, so the margins give the half-leading back: the
+   first line's capitals sit 4 under the text's top edge and the next row
+   starts 24 under the last baseline, as the frame measures them (13:1453). */
 .ui-composer__input {
   display: block;
   box-sizing: border-box;
   width: 100%;
-  padding: var(--space-4) 0 0 var(--space-4);
+  margin: calc(var(--space-4) - (1lh - 1cap) / 2) 0 calc((1cap - 1lh) / 2);
+  padding: 0 0 0 var(--space-4);
+  font: var(--type-body-l);
+  letter-spacing: var(--type-body-l-tracking);
   resize: none;
   overflow-y: hidden;
   background: transparent;
@@ -2094,30 +2109,29 @@ button.ui-detail-tag__value {
   margin: -16px 0 0;
   color: var(--state-error);
 }
+/* The toolbar (13:1453): Attach on the left; the stepper and Send 8 apart
+   on the right. */
 .ui-composer__toolbar {
   display: flex;
-  align-items: flex-end;
-  gap: var(--space-xs);
+  align-items: center;
+  gap: var(--space-12);
 }
-/* The plus is a Medium icon button, as tall as the controls at the other
-   end of the row, and the tags center on it. */
 .ui-composer__inputs {
   flex: 1;
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 6px; /* as drawn (61:472) */
 }
-/* The Tags row beside the plus (61:476): detail tags, scrolling sideways
-   behind a fade to the composer's fill (Phase 5). */
+/* The Details row (13:2454), between the text and the toolbar: the platform
+   and the details as tags, scrolling sideways behind a fade to the
+   composer's fill. */
 .ui-composer__tags {
   position: relative;
-  flex: 1;
   min-width: 0;
 }
 .ui-composer__tag-list {
   display: flex;
-  gap: 6px; /* as drawn (13:2558) */
+  gap: var(--space-8);
   min-height: 28px;
   margin: 0;
   /* Room for the value buttons' and remove buttons' 2px-out rings, which
@@ -2159,7 +2173,7 @@ button.ui-detail-tag__value {
 .ui-composer__output {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-8);
 }
 
 /* ── Message bubble (61:505) ── */
