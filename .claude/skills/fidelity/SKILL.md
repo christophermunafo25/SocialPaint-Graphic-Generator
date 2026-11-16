@@ -10,6 +10,7 @@ Commands, from the repo root:
 - `node scripts/fidelity/fidelity.mjs run [--only a,b] [--engines chromium,firefox,webkit]`
 - `node scripts/fidelity/fidelity.mjs bless <name>`: for starter fixtures, today's Chromium render becomes the golden.
 - `node scripts/fidelity/fidelity.mjs baseline <name>`: records the current changed percentages as the fixture's baseline. Only with CJ's approval.
+- `node scripts/fidelity/fidelity.mjs fonts`: records Google's answers to the font requests the recording in `test/fidelity/google-fonts` lacks. Run it when a row errors because a Google font request is not in the recording, then commit that folder.
 - `node scripts/fidelity/goldens.mjs fetch <name>`: for figma fixtures, exports the golden and the node JSON. Needs `FIGMA_TOKEN`.
 
 ## Reading results

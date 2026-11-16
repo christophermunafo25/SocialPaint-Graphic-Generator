@@ -71,8 +71,9 @@ node scripts/fidelity/fidelity.mjs run --engines webkit
 node scripts/fidelity/goldens.mjs fetch <fixture>        # figma fixtures, needs FIGMA_TOKEN
 node scripts/fidelity/fidelity.mjs bless <fixture>       # starter fixtures: today's Chromium render becomes the golden
 node scripts/fidelity/fidelity.mjs baseline <fixture> --approved   # only once CJ approves the numbers
+node scripts/fidelity/fidelity.mjs fonts                 # record the Google font answers the recording lacks
 ```
 
 The runner starts its own Vite dev server on the local backend (port 4327, or `--port`; `--base` uses one already running). Results land in `test/fidelity/out/`: each render, its heatmap (changed pixels in magenta), and `report.json`. It exits non-zero when a render errors, changes size, or gets worse than its baseline by more than the fixture's tolerance (default 0.25 points). A fixture with a missing private font or no golden is reported as skipped, never as passed. `bless` and `goldens.mjs fetch` refuse to replace an existing golden, and `baseline` refuses to run, without `--approved`. Under CI a fixture with no golden or no baseline fails; locally it is reported, which is how a new fixture gets its first numbers.
 
-Starter fixtures render with Google Fonts, so a run needs network access. `test/fidelity/README.md` describes the fixture format.
+Google's fonts are answered from the recording in `test/fidelity/google-fonts`, so a run never asks Google for one, and a font request the recording lacks fails its row; `fonts` records it. `test/fidelity/README.md` describes the fixture format and the recording.

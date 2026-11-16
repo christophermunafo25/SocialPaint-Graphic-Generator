@@ -44,7 +44,8 @@ jobs:
       - name: Browser engines
         run: npx playwright install --with-deps chromium firefox webkit
 
-      # Starter fixtures load Google Fonts, so the run needs network access.
+      # Google's fonts come from the recording in test/fidelity/google-fonts,
+      # so the run asks Google for nothing.
       - name: Render and compare
         run: node scripts/fidelity/fidelity.mjs run
 

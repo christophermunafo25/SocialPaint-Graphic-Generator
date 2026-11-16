@@ -7,3 +7,4 @@ docs
 guidelines
 default_shadcn_theme.css
 supabase/migrations
+test/fidelity/google-fonts
