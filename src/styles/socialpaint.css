@@ -636,12 +636,6 @@ html {
   --brand-surface: var(--slime);
   --brand-surface-fg: var(--text-on-brand);
 
-  /* The narrow layout's top bar and drawer read these; the desktop sidebar
-     is in shell.css (new look, Phase 3). */
-  --sb-bg: var(--bg-surface);
-  --sb-border: var(--border);
-  --sb-fg-active: var(--text-primary);
-
   /* The scrim behind the chat editor's sheet. One scrim in both themes.
      (Brand Studio's thumbnail edit overlay read it until Phase 6.) */
   --media-overlay: rgba(11, 11, 12, 0.56);
@@ -2331,38 +2325,6 @@ input[type="radio"] {
    step so it sits level with the 40px segmented status filter beside it. */
 .sp-admin-filterrow .sp-searchfield {
   --sp-searchfield-h: var(--control-sm);
-}
-
-/* The mobile app header wears the same frosted fade (2026-09-15, at CJ's
-   direction). Constant rather than scroll-gated: at rest the fade sits on
-   bare canvas and is invisible, so there is nothing to switch. The ramp is
-   in px — solid until 32px from the skirt's end (4px inside the bar plus
-   the 28px run-out) — because this bar's height moves with the safe-area
-   inset. The drop-down nav lives INSIDE this header and needs a real
-   ground, so the open state hands back the solid chrome surface and its
-   hairline and drops the fade. */
-.sp-mobilebar {
-  background: transparent;
-  border-bottom: 1px solid transparent;
-}
-.sp-mobilebar::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 -28px;
-  z-index: -1;
-  pointer-events: none;
-  background: linear-gradient(to bottom, var(--bg-canvas) calc(100% - 32px), transparent);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 32px), transparent);
-  mask-image: linear-gradient(to bottom, black calc(100% - 32px), transparent);
-}
-.sp-mobilebar[data-menu-open] {
-  background: var(--sb-bg);
-  border-bottom-color: var(--sb-border);
-}
-.sp-mobilebar[data-menu-open]::before {
-  content: none;
 }
 
 /* Horizontal rail with edge fades. Shared by the chip bar and the shelves:

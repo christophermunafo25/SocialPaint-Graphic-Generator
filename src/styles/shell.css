@@ -166,7 +166,9 @@
 }
 
 /* ── Sidebar (2218:679; open 2218:577, collapsed 2218:633) ──────────────────
-   The frame's first part: 320 wide, or a 76 rail, as tall as the frame. */
+   The frame's first part: 320 wide, or a 76 rail, as tall as the frame, on
+   surface/raised with a border/raised hairline inside it, 20 around and 24
+   between its header, nav and account. */
 .sp-shell-sidebar {
   display: flex;
   flex: none;
@@ -175,25 +177,29 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: var(--space-24);
   width: 320px;
   height: 100%;
-  padding: 20px; /* as drawn (56:77) */
-  border-radius: var(--radius-card);
+  padding: var(--space-20);
+  border: var(--stroke-hairline) solid var(--border-raised);
+  border-radius: var(--radius-xl);
   background: var(--surface-raised);
-  box-shadow: var(--elevation-small);
-  color: var(--text-strong);
+  box-shadow: var(--elevation-1-raised);
+  color: var(--text-primary);
 }
 .sp-shell-sidebar[data-collapsed] .sp-shell-panel {
   width: 76px;
-  padding: 20px var(--space-sm);
-  align-items: center;
 }
+/* The header row (2218:578): the Logo 24 tall, then the theme toggle and
+   Collapse (Ghost Small) 8 apart. Collapsed (2218:634): Expand (Ghost
+   Medium) alone, centred. */
 .sp-shell-panel__header {
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: space-between;
-  min-height: 32px;
+  gap: var(--space-8);
+  height: var(--size-control-md);
 }
 .sp-shell-sidebar[data-collapsed] .sp-shell-panel__header {
   justify-content: center;
@@ -201,58 +207,179 @@
 .sp-shell-panel__utility {
   display: flex;
   align-items: center;
-  gap: var(--space-2xs);
+  gap: var(--space-8);
 }
-.sp-shell-logo,
-.sp-shell-mark {
+.sp-shell-logo {
   display: inline-flex;
   padding: 0;
   border: 0;
+  border-radius: var(--radius-xs);
   background: transparent;
+  color: inherit;
   cursor: pointer;
 }
 
-/* The nav takes the free height and scrolls on short viewports, so the
-   account stays reachable. The 4px of padding keeps the rows' 2px-out
-   focus rings inside the scroll box. */
+/* The nav (2218:588): Nav Items 36 tall, 4 apart. It takes the free height
+   and scrolls on short viewports, so the account stays reachable; its 4 of
+   padding keeps the rows' 2px-out focus rings inside the scroll box.
+   Collapsed, each item fills the rail's 34 (2218:641). */
 .sp-shell-nav {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px; /* as drawn (56:98) */
-  margin: calc(-1 * var(--space-3xs));
-  padding: var(--space-3xs);
+  gap: var(--space-4);
+  margin: calc(-1 * var(--space-4));
+  padding: var(--space-4);
   overflow-y: auto;
 }
-.sp-shell-sidebar[data-collapsed] .sp-shell-nav {
-  align-items: center;
+.sp-shell-sidebar[data-collapsed] .sp-shell-nav .ui-nav-item {
+  width: 100%;
 }
 
-/* ── Account (56:1330; stacked in the collapsed rail, 189:2493) ── */
+/* ── Account (2218:620; the collapsed rail's avatar alone, 2218:673) ──
+   The avatar, the name (Label/M) over the email (Caption/M) 8 apart, and
+   Settings, 12 apart. Collapsed, the avatar is the Settings button. */
 .sp-shell-account {
   display: flex;
+  flex: none;
   align-items: center;
-  gap: var(--space-xs);
+  gap: var(--space-12);
   min-width: 0;
 }
 .sp-shell-account[data-collapsed] {
-  flex-direction: column;
-  gap: var(--space-2xs);
+  justify-content: center;
 }
 .sp-shell-account__text {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
+  gap: var(--space-8);
 }
+/* One line each. The text is trimmed to its capitals, so the clip box is
+   widened past the descenders without moving the line. */
 .sp-shell-account__text > * {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding-block: 0.3em;
+  margin-block: -0.3em;
+}
+.sp-shell-account__name {
+  color: var(--text-primary);
 }
 .sp-shell-account__detail {
   color: var(--text-secondary);
+}
+.sp-shell-account__settings {
+  display: inline-flex;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+}
+
+/* ── The mobile bar (below 1024; no frame draws it) ──
+   The lockup, the theme toggle and the menu button in a 56 row, sticky
+   at the top, with the nav dropping down from under it over a scrim. At
+   rest it wears a frosted fade over the page (constant rather than
+   scroll-gated: on bare page it is invisible). The ramp is in px, solid
+   until 32 from the skirt's end, because the bar's height moves with the
+   safe-area inset. Open, the panel takes surface/raised and its hairline
+   and drops the fade. */
+.sp-mobilebar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-drawer);
+  width: 100%;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  border-bottom: var(--stroke-hairline) solid transparent;
+  background: transparent;
+}
+.sp-mobilebar::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 -28px;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(to bottom, var(--surface-page) calc(100% - 32px), transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 32px), transparent);
+  mask-image: linear-gradient(to bottom, black calc(100% - 32px), transparent);
+}
+.sp-mobilebar[data-menu-open] {
+  background: var(--surface-raised);
+  border-bottom-color: var(--border-subtle);
+}
+.sp-mobilebar[data-menu-open]::before {
+  content: none;
+}
+/* One layer under the bar, so the open menu's scrim covers the page's
+   sticky chrome (the filter bar at --z-sticky) too. */
+.sp-mobilebar__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-drawer) - 1);
+  background: var(--surface-scrim);
+}
+.sp-mobilebar__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding-inline: var(--space-16);
+}
+.sp-mobilebar__end {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+/* The menu button holds the 44 touch floor. */
+.sp-mobilebar__toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-control-lg);
+  height: var(--size-control-lg);
+  padding: 0;
+  border: var(--stroke-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+/* The drop-down: rows 0fr to 1fr. Shut, the nav is held visible until the
+   collapse finishes, and hidden at once on the way open. */
+.sp-mobilebar__drawer {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--motion-duration-base) var(--motion-easing-standard);
+}
+.sp-mobilebar__drawer[data-open] {
+  grid-template-rows: 1fr;
+}
+.sp-mobilebar__clip {
+  overflow: hidden;
+  visibility: hidden;
+  transition: visibility 0s linear var(--motion-duration-base);
+}
+.sp-mobilebar__drawer[data-open] .sp-mobilebar__clip {
+  visibility: visible;
+  transition: visibility 0s;
+}
+/* dvh, not vh: mobile browser chrome shrinks the visual viewport, and the
+   last nav item must stay reachable under the bar and the notch inset. */
+.sp-mobilebar__nav {
+  max-height: calc(100dvh - 72px - env(safe-area-inset-top, 0px));
+  overflow-y: auto;
+  padding: var(--space-4) var(--space-12) var(--space-12);
+}
+.sp-mobilebar__account {
+  margin-top: var(--space-12);
+  padding-top: var(--space-12);
+  border-top: var(--stroke-hairline) solid var(--border-subtle);
 }
 
 /* ── Page header and page column (every screen; Part A §3) ──
