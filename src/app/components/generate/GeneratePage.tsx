@@ -65,7 +65,8 @@ import {
   type EditorSaveToLibrary,
 } from "./EditorPanel";
 import { RecentChats } from "./RecentChats";
-import { ScrollFade, useScrollFades } from "./ScrollFade";
+import { useScrollFades } from "../layout/useScrollFades";
+import { ScrollFade } from "./ScrollFade";
 import { UserMessage } from "../chat/Messages";
 import { requestComposerFocus, requestHistoryFocus, takeComposerFocus } from "./composerFocus";
 import { useChatController } from "./useChatController";
@@ -818,9 +819,10 @@ export function GenerateChat({
 
   // The sheet is modal (aria-modal): everything outside it goes inert while
   // it is up, which is the page's header and chat column under the scrim,
-  // and the app's own chrome beside the page (the sidebar, or below 1024px
-  // the top bar the sheet starts under, whose menu would otherwise open
-  // over it). The chrome is found as the app shell's children that do not
+  // the frame's footer links, and the app's own chrome beside the page (the
+  // sidebar, or below 1024px the top bar the sheet starts under, whose menu
+  // would otherwise open over it). The chrome is found as the app shell's
+  // children that do not
   // hold the page, and found again if the shell swaps them (the sidebar
   // becomes the top bar as the window narrows). Dialogs opened from the
   // sheet portal to <body>, outside the shell, and stay live. The panel
@@ -832,11 +834,13 @@ export function GenerateChat({
     const page = chatRef.current;
     const shell = page?.closest(".sp-appshell") ?? null;
     const made = new Set<HTMLElement>();
+    // The frame's footer links sit beside the page, outside the chat.
+    const footer = page?.closest(".sp-frame")?.querySelector(":scope > .sp-frame__foot") ?? null;
     const apply = () => {
       const chrome = shell
         ? Array.from(shell.children).filter((el) => !page || !el.contains(page))
         : [];
-      for (const el of [headerRef.current, chatRef.current, ...chrome]) {
+      for (const el of [headerRef.current, chatRef.current, footer, ...chrome]) {
         if (el instanceof HTMLElement && !el.inert) {
           el.inert = true;
           made.add(el);

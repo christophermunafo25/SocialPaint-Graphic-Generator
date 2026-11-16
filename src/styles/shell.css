@@ -2,8 +2,40 @@
    The shell (new brand, Phase 3; docs/design/new-brand/PHASE-3.md): the app
    frame and Main (layout/Page.tsx), the sidebar, page headers and the
    compositions inside Settings. Measurements are RULES.md section 10's.
-   Tokens and .t-* classes only; nothing here declares a token.
+   Tokens and .t-* classes only, plus the three measures the shell owns
+   (below); nothing here declares a token. z-index is not a Figma token,
+   so the mobile bar's layer is a number, as in primitives.css.
    ========================================================================== */
+
+/* ── The shell's own measures (BRIDGE.md section 2) ──
+   --page-pad, the page gutter: 48 from 1280, 32 from 1024, 24 below it and
+   16 below 768. Main sets 32 at 1024 and wider, where Generate's thread
+   and History reach into it. --chrome-top, the mobile bar's height below
+   1024 (0 beside the rail): sticky page chrome and Generate's editor sheet
+   offset from it. --page-max caps the public link page's column until
+   Phase 4; the frame caps nothing. */
+:root {
+  --page-max: 1720px;
+  --page-pad: var(--space-48);
+  --chrome-top: 0px;
+}
+@media (max-width: 1279px) {
+  :root {
+    --page-pad: var(--space-32);
+  }
+}
+@media (max-width: 1023px) {
+  :root {
+    --page-pad: var(--space-24);
+    /* The bar's 56 row and the notch inset it carries as padding. */
+    --chrome-top: calc(56px + env(safe-area-inset-top, 0px));
+  }
+}
+@media (max-width: 767px) {
+  :root {
+    --page-pad: var(--space-16);
+  }
+}
 
 /* ── The app frame (every page frame, e.g. 13:832) ──
    At 1024 and wider the window is the frame: 12 around, the Sidebar, 12,
@@ -23,10 +55,17 @@
   min-width: 0;
 }
 @media (min-width: 1024px) {
-  /* Nothing scrolls the document here, so it keeps no scrollbar gutter. */
+  /* Nothing scrolls the document here, so it keeps no scrollbar gutter, and
+     the body clips at the window as the full-viewport rules did: a page's
+     screen-reader text anchored outside its own scroller (the Generate
+     thread's) cannot stretch the document. Clip, not hidden, so the body
+     never becomes a scroller a script could move. */
   html:has(.sp-appshell) {
     overflow: hidden;
     scrollbar-gutter: auto;
+  }
+  html:has(.sp-appshell) body {
+    overflow: clip;
   }
   .sp-appshell {
     flex-direction: row;
@@ -60,18 +99,43 @@
 /* Below 1024 the header row keeps the earlier page's place: 24 under the
    mobile bar, in the page's gutters, with the content 24 under it. The
    footer links follow the content, and on a short page they sit at the
-   window's foot (the frame is at least the window under the bar). */
+   window's foot: the frame is at least the window under the bar (the
+   bar's 56, its inset and its hairline), and a page's own column can fill
+   what the links leave (Generate Start). The footer carries the
+   home-indicator inset, so a page's content above it takes none
+   (--frame-inset-bottom, read by the pages' bottom padding). */
 @media (max-width: 1023px) {
   .sp-frame__head {
     padding: var(--space-24) var(--page-pad) 0;
   }
+  /* As the earlier header did on a narrow screen, the actions take a line
+     of their own when they don't fit beside the title or the trail, and
+     wrap among themselves when one line can't hold them. */
+  .sp-frame__head .ui-page-header {
+    flex-wrap: wrap;
+  }
+  .sp-frame__head .ui-page-header__end {
+    flex-shrink: 1;
+    min-width: 0;
+  }
+  .sp-frame__head .ui-page-header__actions {
+    flex-wrap: wrap;
+  }
   .sp-frame[data-foot] {
+    --frame-inset-bottom: 0px;
     display: flex;
     flex-direction: column;
-    min-height: calc(100dvh - var(--chrome-top) - var(--border-width));
+    min-height: calc(100dvh - var(--chrome-top) - var(--stroke-hairline));
   }
   .sp-frame[data-foot] .sp-frame__body {
+    display: flex;
     flex: 1 0 auto;
+    flex-direction: column;
+  }
+  /* As a flex item the content would shrink to its own width between its
+     auto side margins (.sp-page centres its column); it keeps the body's. */
+  .sp-frame[data-foot] .sp-frame__body > .sp-page {
+    margin-inline: 0;
   }
   .sp-frame__foot {
     padding: 0 var(--page-pad)
@@ -80,8 +144,6 @@
 }
 @media (min-width: 1024px) {
   .sp-frame {
-    /* Generate's thread and History reach into the gutters by this. */
-    --page-pad: var(--space-32);
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;
@@ -96,11 +158,17 @@
     flex: none;
     padding-inline: var(--space-32);
   }
-  /* Footer Links (4015:750) at the foot of Main, 24 under the content. */
+  /* Footer Links (4015:750) at the foot of Main, 24 under the content. On
+     a scrolling page that 24 is the content's own bottom padding, so the
+     fade ends on the links (Brand Templates, 2308:77) and the last block,
+     scrolled to, ends 24 above them (Insights, 13:832). A page that
+     scrolls its own region takes it as a margin. */
   .sp-frame__foot {
     flex: none;
-    margin-top: var(--space-24);
     padding-inline: var(--space-32);
+  }
+  .sp-frame[data-kind="self"] .sp-frame__foot {
+    margin-top: var(--space-24);
   }
   .sp-frame__body {
     position: relative;
@@ -110,9 +178,11 @@
     min-height: 0;
   }
   /* Three classes, so a page's own `.sp-page.sp-x` padding or height loses
-     to the frame's at this width. Positioned, so an absolute child (a
-     screen-reader-only label) scrolls and clips with the content instead
-     of anchoring to the body around it. */
+     to the frame's at this width, and so does the public page's 45 gutter
+     (below). Generate's thread and History reach into the gutters by
+     --page-pad. Positioned, so an absolute child (a screen-reader-only
+     label) scrolls and clips with the content instead of anchoring to the
+     body around it. */
   .sp-frame .sp-frame__body > .sp-page {
     --page-pad: var(--space-32);
     position: relative;
@@ -319,6 +389,14 @@
   border-radius: var(--radius-full);
   cursor: pointer;
 }
+/* Selected while Settings shows, as the open row's Settings button is. The
+   avatar fills the button, so no ground can show behind it: a border/strong
+   ring sits 2 out from it instead, under the focus ring's place. */
+.sp-shell-account__settings[aria-current="page"] {
+  box-shadow:
+    0 0 0 var(--space-2) var(--surface-raised),
+    0 0 0 var(--space-4) var(--border-strong);
+}
 
 /* ── The mobile bar (below 1024; no frame draws it) ──
    The lockup, the theme toggle and the menu button in a 56 row, sticky
@@ -331,7 +409,7 @@
 .sp-mobilebar {
   position: sticky;
   top: 0;
-  z-index: var(--z-drawer);
+  z-index: 200; /* the drawer layer, as socialpaint.css's --z-drawer */
   width: 100%;
   box-sizing: border-box;
   padding-top: env(safe-area-inset-top, 0px);
@@ -358,11 +436,11 @@
   content: none;
 }
 /* One layer under the bar, so the open menu's scrim covers the page's
-   sticky chrome (the filter bar at --z-sticky) too. */
+   sticky chrome (the filter bar's 100, --z-sticky) too. */
 .sp-mobilebar__scrim {
   position: fixed;
   inset: 0;
-  z-index: calc(var(--z-drawer) - 1);
+  z-index: 199;
   background: var(--surface-scrim);
 }
 .sp-mobilebar__row {

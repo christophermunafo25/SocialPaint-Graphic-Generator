@@ -3,8 +3,9 @@
    components page. They carry no colour: BrandMark.tsx fills them with the
    text colour of the theme they sit in. */
 
-/** The lockup's box: the four-field mark, then the wordmark. */
-export const LOCKUP_VIEWBOX = { width: 129, height: 24 } as const;
+/** The lockup's box: the four-field mark, then the wordmark. The node is
+ * 128.78 wide; the file's SVG export rounds its canvas up to 129. */
+export const LOCKUP_VIEWBOX = { width: 128.78, height: 24 } as const;
 
 /** The mark inside the lockup (even-odd). */
 export const LOCKUP_MARK =

@@ -1378,9 +1378,10 @@ button.ui-detail-tag__value {
 .ui-breadcrumb {
   min-width: 0;
 }
+/* One line, so a header row holds 36: the earlier crumbs keep their width
+   and the page's own crumb gives way with an ellipsis. */
 .ui-breadcrumb > ol {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-8);
   margin: 0;
@@ -1392,6 +1393,9 @@ button.ui-detail-tag__value {
   align-items: center;
   gap: var(--space-8);
   min-width: 0;
+}
+.ui-breadcrumb li:not(:last-child) {
+  flex: none;
 }
 .ui-breadcrumb__divider,
 .ui-breadcrumb__link {

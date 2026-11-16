@@ -1,9 +1,9 @@
 import React, { useLayoutEffect, useRef } from "react";
 import { routeToUrl, useRouter } from "../../router";
-import { useScrollFades } from "../generate/ScrollFade";
 import { FooterLinks } from "../primitives/PageHeader";
 import { cx } from "../primitives/cx";
 import { useFrameKeys } from "./useFrameKeys";
+import { useScrollFades } from "./useScrollFades";
 
 /** How a page sits in Main:
  * - "scroll", most pages: the content scrolls inside Main under an 80 fade,

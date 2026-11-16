@@ -294,17 +294,9 @@ html {
   --row-h-compact: 32px;
   --border-width: 1px;
 
-  /* Layout */
-  /* The public link page's column cap (.sp-page outside the app frame, until
-     new-brand Phase 4); the app frame caps nothing (layout/Page.tsx). */
-  --page-max: 1720px;
-  /* The page gutter: the tiers below --bp-lg, the public page's column and
-     the pre-app shell. The app frame sets it to 32 on Main at desktop
-     width, where Generate's thread and History reach into it. */
-  --page-pad: var(--space-xl);
-  /* The height of fixed app chrome above the page: 0 beside the rail, the
-     56px mobile bar below --bp-lg. Sticky page chrome offsets from this. */
-  --chrome-top: 0px;
+  /* Layout. The page gutter (--page-pad), the mobile bar's height
+     (--chrome-top) and the public page's cap (--page-max) are the shell's
+     own measures, defined in shell.css. */
   --bp-md: 768px;
   --bp-lg: 1024px;
   --bp-xl: 1280px;
@@ -1331,7 +1323,9 @@ body[data-sp-gesture] * {
     height: 100%;
     min-height: 0;
   }
-  html[data-sp-fullscreen] .sp-frame__body {
+  /* Above the frame's own narrow rule for a page with footer links
+     (.sp-frame[data-foot] .sp-frame__body), which lets the body grow. */
+  html[data-sp-fullscreen] .sp-frame .sp-frame__body {
     flex: 1 1 0;
     min-height: 0;
   }
@@ -2743,50 +2737,31 @@ input[type="radio"] {
 }
 
 /* --- Responsive -----------------------------------------------------------
-   --page-pad steps down one tier at a time. Boundaries are the --bp-* tokens
-   (var() is not valid inside a media query, hence the literals):
-     >= 1280 (--bp-xl)        48px  (the :root default)
-     1024-1279 (--bp-lg..xl)  32px
-     768-1023 (--bp-md..lg)   24px
-     <= 767 (below --bp-md)   16px
-   Source order does the tiering — each narrower block overrides the last. */
-@media (max-width: 1279px) {
-  :root {
-    --page-pad: var(--space-lg); /* 32px */
-  }
-}
+   The gutter tiers (--page-pad) are the shell's (shell.css). Boundaries are
+   the --bp-* tokens (var() is not valid inside a media query, hence the
+   literals). */
 /* Shell boundary: --bp-lg (1024px). The rail exists at >= 1024; the mobile
    top bar below. This block must break where the JS shell switch does
    (Sidebar.tsx matchMedia), so it fires at 1023. With no rail, the
    nav-to-content relationship is vertical: 24px under the sticky 56px
    header instead of the desktop 48px top. */
 @media (max-width: 1023px) {
-  :root {
-    --page-pad: var(--space-md); /* 24px */
-    /* The mobile header (Sidebar.tsx): 56px bar + the notch inset it
-       carries as padding-top. */
-    --chrome-top: calc(56px + env(safe-area-inset-top, 0px));
-  }
   .sp-page {
-    /* Bottom keeps the 64px rhythm plus the home-indicator inset. */
+    /* Bottom keeps the 64px rhythm, plus the home-indicator inset where
+       the frame's footer links don't carry it (--frame-inset-bottom). */
     padding: var(--space-md) var(--page-pad)
-      calc(var(--space-2xl) + env(safe-area-inset-bottom, 0px));
+      calc(var(--space-2xl) + var(--frame-inset-bottom, env(safe-area-inset-bottom, 0px)));
   }
 }
 @media (max-width: 767px) {
-  /* 16px page gutter on mobile, per the DS layout spec. :root so the
-     bands' column padding follows the same token. */
-  :root {
-    --page-pad: 16px;
-  }
-
   /* Brand Templates mobile gutter model (2026-09 frames, C5): the page
      drops its horizontal padding so the RAILS bleed to the screen edge,
      and the 16px gutter moves onto the children so TEXT stays inset. A
      pattern change, not a rounding difference — only the templates route
      opts in, via .sp-page--bleed; every other .sp-page keeps --page-pad. */
   .sp-page--bleed {
-    padding: var(--space-md) 0 calc(30px + env(safe-area-inset-bottom, 0px));
+    padding: var(--space-md) 0
+      calc(30px + var(--frame-inset-bottom, env(safe-area-inset-bottom, 0px)));
   }
   .sp-page--bleed .sp-emptystate {
     margin-inline: var(--space-sm);
@@ -3035,18 +3010,13 @@ input[type="radio"] {
   flex-direction: column;
   box-sizing: border-box;
 }
+/* Start fills what the frame leaves above the footer links (the frame is at
+   least the window under the mobile bar), so its column centres in it. */
 .sp-chat-page[data-state="start"] {
-  min-height: calc(100dvh - var(--chrome-top));
-  padding-bottom: calc(var(--space-xl) + env(safe-area-inset-bottom, 0px));
-}
-/* Below --bp-lg the mobile header is its 56 (--chrome-top) plus a 1px
-   hairline under it (.sp-mobilebar's border), so main starts one hairline
-   lower than --chrome-top says. Without it the Start state runs 1px past
-   the window and the whole column nudges on every wheel. */
-@media (max-width: 1023px) {
-  .sp-chat-page[data-state="start"] {
-    min-height: calc(100dvh - var(--chrome-top) - var(--border-width));
-  }
+  flex: 1 0 auto;
+  padding-bottom: calc(
+    var(--space-xl) + var(--frame-inset-bottom, env(safe-area-inset-bottom, 0px))
+  );
 }
 .sp-chat-page[data-state="thread"],
 .sp-chat-page[data-state="history"] {
@@ -3054,10 +3024,21 @@ input[type="radio"] {
   min-height: 0;
 }
 .sp-chat-page[data-state="thread"] {
-  padding-bottom: calc(var(--space-md) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(
+    var(--space-md) + var(--frame-inset-bottom, env(safe-area-inset-bottom, 0px))
+  );
 }
 .sp-chat-page[data-state="history"] {
-  padding-bottom: calc(var(--space-xl) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(
+    var(--space-xl) + var(--frame-inset-bottom, env(safe-area-inset-bottom, 0px))
+  );
+}
+/* The chat's header sits right on the thread (13:7138); the thread's own
+   top padding and Edit details' split carry the gap, so the content takes
+   none of its own under the frame's header row. Generate's thread, the
+   template chat's and their load states. */
+.sp-frame[data-head] .sp-frame__body > .sp-chat-page[data-state="thread"] {
+  padding-top: 0;
 }
 
 /* ── Generate chat: Start state (frames 01 to 03; PROMPT §8.2) ────────────

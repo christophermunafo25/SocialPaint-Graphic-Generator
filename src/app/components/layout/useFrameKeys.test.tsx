@@ -3,22 +3,36 @@ import React, { useRef } from "react";
 import { describe, expect, it } from "vitest";
 import { useFrameKeys } from "./useFrameKeys";
 
-/** The app shell in miniature: a sidebar button, then Main's content (a
- * scroller 500 tall holding 2000) with a field and a button inside. */
+/** The app shell in miniature: a sidebar button and a nav, then Main's
+ * content (a scroller 500 tall holding 2000) with a field, a button, a list
+ * that can scroll on its own and a line of text inside. */
 function Shell({ active = true }: { active?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   useFrameKeys(ref, active);
   return (
     <div className="sp-appshell">
       <button type="button">Brand Templates</button>
+      <nav data-testid="nav" style={{ overflowY: "auto" }}>
+        <button type="button">Insights</button>
+      </nav>
       <main>
         <div ref={ref} data-testid="content" style={{ overflowY: "auto" }}>
           <input aria-label="Search" />
           <button type="button">Inside</button>
+          <div data-testid="list" style={{ overflowY: "auto" }}>
+            <p data-testid="row">Row</p>
+          </div>
+          <p data-testid="text">Text</p>
         </div>
       </main>
     </div>
   );
+}
+
+/** Gives an element room to scroll, as a real layout would. */
+function overflow(el: HTMLElement) {
+  Object.defineProperty(el, "clientHeight", { configurable: true, value: 100 });
+  Object.defineProperty(el, "scrollHeight", { configurable: true, value: 300 });
 }
 
 function setup(active = true) {
@@ -67,6 +81,26 @@ describe("useFrameKeys", () => {
     document.body.dispatchEvent(handled);
     fireEvent.keyDown(document.body, { key: "PageDown", metaKey: true });
     expect(content.scrollTop).toBe(0);
+  });
+
+  it("leaves a key to a region of the shell that scrolls on its own", () => {
+    const { content, getByRole, getByTestId } = setup();
+    fireEvent.keyDown(getByRole("button", { name: "Insights" }), { key: "PageDown" });
+    expect(content.scrollTop).toBe(460);
+    overflow(getByTestId("nav"));
+    fireEvent.keyDown(getByRole("button", { name: "Insights" }), { key: "PageDown" });
+    expect(content.scrollTop).toBe(460);
+  });
+
+  it("with nothing focused, starts from where the pointer last went down", () => {
+    const { content, getByTestId } = setup();
+    overflow(getByTestId("list"));
+    fireEvent.pointerDown(getByTestId("row"));
+    fireEvent.keyDown(document.body, { key: "PageDown" });
+    expect(content.scrollTop).toBe(0);
+    fireEvent.pointerDown(getByTestId("text"));
+    fireEvent.keyDown(document.body, { key: "PageDown" });
+    expect(content.scrollTop).toBe(460);
   });
 
   it("leaves a dialog outside the shell alone", () => {

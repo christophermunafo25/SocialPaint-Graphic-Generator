@@ -222,11 +222,16 @@ export function Dashboard(route: Omit<DashboardRoute, "name">) {
 
   if (eventsState.status === "error") {
     return (
-      <ErrorState
-        title="We couldn't load your usage data."
-        detail="Check your connection and try again."
-        onRetry={eventsState.retry}
-      />
+      <Page
+        layout={{ className: "sp-in-page" }}
+        header={<PageHeader title="Insights & Analytics" />}
+      >
+        <ErrorState
+          title="We couldn't load your usage data."
+          detail="Check your connection and try again."
+          onRetry={eventsState.retry}
+        />
+      </Page>
     );
   }
 

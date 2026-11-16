@@ -253,11 +253,13 @@ function Screen() {
           "threadId" in route ? route.threadId : null,
         ]}
         fallback={(retry) => (
-          <ErrorState
-            title="This screen ran into a problem."
-            detail="Everything up to your last save is safe. Try again, or head somewhere else from the sidebar."
-            onRetry={retry}
-          />
+          <Page>
+            <ErrorState
+              title="This screen ran into a problem."
+              detail="Everything up to your last save is safe. Try again, or head somewhere else from the sidebar."
+              onRetry={retry}
+            />
+          </Page>
         )}
       >
         {(gated || route.name === "portal") && <Portal />}

@@ -157,9 +157,9 @@ These play several roles or belong to one screen, exactly as `docs/design/new-lo
 | `--start-*` | 10 names, 1 each | 6 |
 | `--gen-fade`, `--gen-fade-h`, `--gen-marker-*`, `--gen-h-tag` | 1 to 3 each | 5 |
 | ~~`--sb-bg`, `--sb-border`, `--sb-fg-active`~~ | 0 | Removed in Phase 3. The mobile bar reads `--surface-raised`, `--border-subtle` and `--text-primary` |
-| `--chrome-top` | 5 in 3 | Kept as the shell's own measure, not a bridge: the mobile bar's height below 1024 (0 beside the rail). Sticky page chrome and Generate's editor sheet offset from it |
-| `--page-pad` | 10 in 3 | Kept: the gutter tiers below 1024, the public link page's column and the pre-app shell (`auth.css`). The app frame sets it to 32 on Main at desktop width, where Generate's thread and History reach into it. Their readers go in Phases 4, 5 and 9 |
-| `--page-max` | 1 in 1 | Kept for the public link page's column (`.sp-page` in `PublicFrame.tsx`) until Phase 4. The app frame has no cap |
+| `--chrome-top` | 3 in 3 | Not a bridge: the shell's own measure, defined in `shell.css` since Phase 3. The mobile bar's height below 1024 (0 beside the rail). The frame's narrow minimum height, the Brand Templates filter bar below 1024 and Generate's editor sheet offset from it. Stays while the mobile bar does |
+| `--page-pad` | 10 in 3 | Not a bridge: the shell's own measure, defined in `shell.css` since Phase 3 on `--space-48`, `-32`, `-24` and `-16` by width. The frame's header row and footer read it below 1024. Its other readers go with their screens: the public link page's column (Phase 4), Generate's thread and History, which reach into Main's gutters by it at 32 (Phase 5), and the pre-app shell (`auth.css`, Phase 9) |
+| `--page-max` | 1 in 1 | Not a bridge: defined in `shell.css` since Phase 3. It caps only the public link page's column (`.sp-page` in `PublicFrame.tsx`) and goes in Phase 4. The app frame has no cap |
 | `--state-warning`, `--fill-warning`, `--fill-attention`, `--danger-wash`, `--accent-wash` | 1 to 6 each | With each screen that moves its alert blocks onto the Alert, which reads `--feedback-warning-*` and `--feedback-error-surface`. Phase 2 built the Alert and moved no page onto it. Most readers are in the builder (Phase 6) |
 | `--ease`, `--dur-state`, `--dur-panel` | 54 in 6, 58 in 6, 8 in 4 | Bridged in Phase 1 to `--motion-easing-standard`, `--motion-duration-fast` (140 → 120 ms) and `--motion-duration-base` (220 → 200 ms). The reduced-motion override that zeroes them stays |
 | `--type-caption-size`, `--type-label-size`, `--type-cardtitle-size` and the rest of the stylesheet's type variables | 67 in 21, 43 in 20, 14 in 8 | Per area, 4 to 9. Their values (12, 13, 17) are untouched in Phase 1 |
@@ -279,7 +279,7 @@ Not tokens, but the same kind of debt. These are the earlier control families th
 
 ## 8. What Phase 3 removed and found
 
-Phase 3 built the app frame. The shell (`AppShell.tsx`, `Sidebar.tsx`, `BrandMark.tsx`, `layout/Page.tsx` and `shell.css`) reads no bridged name and has no inline style objects except the fade's measured scrollbar gutter, a custom property set as `ScrollFade` sets it.
+Phase 3 built the app frame. The shell (`AppShell.tsx`, `Sidebar.tsx`, `BrandMark.tsx`, `layout/Page.tsx` and `shell.css`) reads no name from `legacy-bridge.css` and none of `socialpaint.css`'s own. It reads tokens and the three measures it defines itself (`--page-pad`, `--chrome-top`, `--page-max`, the rows above). The mobile bar's layer is a number, as in `primitives.css`, since z-index is not a Figma token. It has no inline style objects except the fade's measured scrollbar gutter, a custom property set as `ScrollFade` sets it.
 
 Removed, each with no reader left in `src/`:
 
@@ -287,4 +287,6 @@ Removed, each with no reader left in `src/`:
 - `AppShell`'s inline `--bg-canvas` and `--font-ui` (the frame sets `--surface-page` and `--font-sans`)
 - `logo-on-light.svg`, `logo-on-dark.svg` and `mark.svg`, which drew the mark in old Slime: the lockup and the mark are now path data (`brandArt.ts`) filled from `--text-primary` and `--text-secondary`
 
-Kept, and corrected above: `--chrome-top` is the shell's own measure for the mobile bar, `--page-pad` still has readers below 1024, in Generate and in the pre-app shell, and `--page-max` caps only the public link page's column.
+Kept, defined in `shell.css` where the shell owns them, and corrected above: `--chrome-top` is the shell's own measure for the mobile bar, `--page-pad` still has readers below 1024, in Generate and in the pre-app shell, and `--page-max` caps only the public link page's column.
+
+Added: `--frame-inset-bottom`, set to 0 inside a frame with footer links below 1024 and read with the home-indicator inset as its fallback by the pages' bottom padding, since the footer links carry the inset there.

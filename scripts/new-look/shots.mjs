@@ -326,7 +326,10 @@ async function settle(page) {
  * frame then holds the whole page, as a window that tall would. The content
  * carries [data-frame-scroll]; it scrolls only in the frame's "scroll" kind
  * at desktop width, so narrow layouts, pages that scroll themselves and
- * pages outside the frame keep the window as it is. */
+ * pages outside the frame keep the window as it is. Sizes inside the
+ * content tied to the window's height (the fill page's art and bulk fill's
+ * preview cap themselves at a share of 100vh) are held first at what the
+ * capture's own window gives them, so they don't grow with it. */
 async function growToFrame(page) {
   for (let pass = 0; pass < 4; pass++) {
     const hidden = await page.evaluate(() => {
@@ -337,10 +340,53 @@ async function growToFrame(page) {
       return Math.max(0, el.scrollHeight - el.clientHeight);
     });
     if (hidden <= 0) return;
+    if (pass === 0) await holdWindowSizes(page);
     const { width, height } = page.viewportSize();
     await page.setViewportSize({ width, height: height + hidden });
     await page.waitForTimeout(400);
   }
+}
+
+/** Pins each size inside Main's content that a stylesheet rule or an inline
+ * style writes in vh units (vh, dvh, svh, lvh, vmin, vmax) at its value
+ * now, before growToFrame grows the window. */
+async function holdWindowSizes(page) {
+  await page.evaluate(() => {
+    const content = document.querySelector("[data-frame-scroll]");
+    if (!content) return;
+    const props = ["width", "height", "min-width", "min-height", "max-width", "max-height"];
+    const tied = /\d(?:[dsl]?vh|vmin|vmax)\b/;
+    const hold = (el, prop) =>
+      el.style.setProperty(prop, getComputedStyle(el).getPropertyValue(prop), "important");
+    const walk = (rules) => {
+      for (const rule of rules) {
+        if (rule instanceof CSSStyleRule) {
+          const held = props.filter((p) => tied.test(rule.style.getPropertyValue(p)));
+          if (held.length === 0) continue;
+          let els = [];
+          try {
+            els = content.querySelectorAll(rule.selectorText);
+          } catch {
+            continue;
+          }
+          for (const el of els) for (const p of held) hold(el, p);
+        } else if (rule.cssRules) {
+          if (rule.media && !matchMedia(rule.media.mediaText).matches) continue;
+          walk(rule.cssRules);
+        }
+      }
+    };
+    for (const sheet of document.styleSheets) {
+      try {
+        walk(sheet.cssRules);
+      } catch {
+        // A stylesheet from another origin can't be read.
+      }
+    }
+    for (const el of content.querySelectorAll("[style]")) {
+      for (const p of props) if (tied.test(el.style.getPropertyValue(p))) hold(el, p);
+    }
+  });
 }
 
 // ---------------------------------------------------------------- capture

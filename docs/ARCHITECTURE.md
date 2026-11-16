@@ -261,8 +261,10 @@ Footer Links at the foot, each with a 32 gutter. Most pages scroll their content
 Main under an 80 fade ("scroll"); the Generate thread and History scroll their own region
 ("self"); the builder editor fills Main ("bare"). Page Up and Down from the sidebar or the
 page itself reach the content (`layout/useFrameKeys.ts`), and the content returns to the
-top when the route's path changes. The shell reads only tokens (`src/styles/shell.css`);
-tenant brand kits never re-color it.
+top when the route's path changes. The shell reads tokens and the three measures it
+defines itself in `src/styles/shell.css` (the page gutter `--page-pad`, the mobile bar's
+height `--chrome-top`, the public link page's cap `--page-max`); tenant brand kits never
+re-color it.
 
 ## Theming
 
@@ -330,8 +332,8 @@ also drops that edit's undo steps (`brand.cancelTo`).
 
 Brand Templates is on the new look (Phase 4; styles in `src/styles/brand-templates.css`).
 The library's template card is one button that steps through its looks on hover. A page
-under the library (the fill page, the template chat) heads itself with
-`layout/Breadcrumb.tsx` in place of a title. The fill page (`TemplateFill`, shared with the
+under the library (the fill page, the template chat) heads itself with the breadcrumb kind
+of the `PageHeader` primitive in place of a title. The fill page (`TemplateFill`, shared with the
 public link page) is a step form, one field per step on the Field primitive (a photo on the
 Upload control, whose picking and cropping is `imagePick.tsx`, shared with Generate's
 editor), then a finish step with the look, the caption with Copy and the downloads, beside

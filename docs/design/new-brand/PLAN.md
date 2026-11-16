@@ -241,17 +241,20 @@ Phase 3 built the app frame and moved every page into it. These are the points a
 
 - `layout/Page.tsx` is Main. A page passes its `PageHeader` as `header` and picks a kind: "scroll" (the content scrolls in the frame under an 80 fade), "self" (the Generate thread and History, which scroll their own region) or "bare" (the builder editor). Footer Links are on by default; the fill page turns them off and sets its own under the stage, since the public link page renders the same form outside the frame.
 - The content is `.sp-page` plus the page's own class, so a page's rules still match. At desktop width Main's rules win over a page's own outer padding and minimum height (three classes), and the content is positioned, so an absolute child scrolls and clips with it.
-- `layout/useFrameKeys.ts` sends Page Up and Down, Home, End and the arrows from the page itself or the sidebar to the content (Space from the page itself only).
-- `npm run shots -- capture` grows the window by the content's hidden height before each shot, and `--collapsed` starts every route with the sidebar collapsed.
+- On a scrolling page the content's own 24 of bottom padding is the gap above the footer links, so the fade ends on them; a page that scrolls its own region takes the 24 as a margin.
+- Below 1024 the header row's actions take a line of their own when they don't fit, and wrap among themselves. The footer links carry the home-indicator inset, so a page's bottom padding drops it inside the frame (`--frame-inset-bottom`).
+- `layout/useFrameKeys.ts` sends Page Up and Down, Home, End and the arrows from the page itself or the sidebar to the content (Space from the page itself only). It leaves a key to a region that scrolls on its own: the sidebar's nav on a short window, or, with nothing focused, a list inside the content that was clicked last.
+- `--page-pad`, `--chrome-top` and `--page-max` are the shell's own measures, defined in `shell.css`.
+- `npm run shots -- capture` grows the window by the content's hidden height before each shot, holding any size written in vh units inside the content at its first value, and `--collapsed` starts every route with the sidebar collapsed.
 
 ### Left for each phase
 
 | For | What |
 |---|---|
-| Phase 4 | Brand Templates' filter bar pins at the content's top, and its `data-pinned` shade switches when the sentinel leaves the scroller; the frame draws a scroll region below a still filter bar. The fill page's art cap reads `100vh - 240px`, set for the earlier header. The public link page keeps `.sp-page`, `--page-max` and `--page-pad` outside the frame. Bulk fill's back link sits under its header row |
-| Phase 5 | The thread's header sits right on the thread (the content takes no top padding there) where the file draws 24. History's title row, its primary New chat and its filters stay in the content; the file puts New chat in the top bar as Neutral. History's fade is 120 in the file and the result draws a top fade. Generate's thread and History reach into the gutters by `--page-pad`, which the frame sets to 32 |
+| Phase 4 | Brand Templates' filter bar pins to the content's top edge (its offset gives back the content's 24 of top padding), and its `data-pinned` shade switches when the sentinel leaves the scroller; the frame draws a scroll region below a still filter bar. The fill page's art cap reads `100vh - 240px`, set for the earlier header, and bulk fill's preview caps at `100vh - 180px`. At 390 the fill page's three header actions wrap onto two lines (they ran 24 past the window before). The public link page keeps `.sp-page`, `--page-max` and `--page-pad` outside the frame. Bulk fill's back link sits under its header row |
+| Phase 5 | The thread's header sits right on the thread (the content takes no top padding there, a rule now with the Generate rules in `socialpaint.css`) where the file draws 24. History's title row, its primary New chat and its filters stay in the content; the file puts New chat in the top bar as Neutral. History's fade is 120 in the file and the result draws a top fade. Generate's thread and History reach into the gutters by `--page-pad`, which the frame sets to 32. Below 1024 Start fills what the frame leaves above the footer links instead of keeping a window-tall minimum |
 | Phase 6b | The editor fills Main beside the 76 rail with its own 52 bar (the file draws 44); `.sp-builder` is `height: 100%` |
-| Phases 7 and 8 | Brand Studio's and Settings' toasts ride the content's foot 48 above the links (the file draws 32; the content keeps 24 of shadow room). Their columns no longer pin anything |
+| Phases 7 and 8 | Brand Studio's and Settings' toasts ride the content's foot 32 above the links, as drawn (sticky measures from inside the content's 24 of bottom padding, so their offset is 8). Their columns no longer pin anything |
 | Phase 9 | Two sources for the legal pages: `src/lib/legalLinks.ts` holds the live addresses the app's links use, and `src/lib/legal.ts` holds placeholders (`#terms`, `#privacy`) that sign in, the sign-up consent line and onboarding read. The pre-app shell reads `--page-pad` |
 
 ## Scope

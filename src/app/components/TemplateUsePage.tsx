@@ -57,20 +57,26 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
       </Page>
     );
   }
+  // With no form there are no links under a stage, so these two states
+  // take the frame's footer links.
   if (templateState.status === "error") {
     return (
-      <ErrorState
-        title="We couldn't load this template."
-        detail="Check your connection and try again."
-        onRetry={templateState.retry}
-      />
+      <Page>
+        <ErrorState
+          title="We couldn't load this template."
+          detail="Check your connection and try again."
+          onRetry={templateState.retry}
+        />
+      </Page>
     );
   }
   if (!template) {
     return (
-      <p className="tu-body-m text-center py-24" style={{ color: "var(--text-secondary)" }}>
-        Template not found.
-      </p>
+      <Page>
+        <p className="tu-body-m text-center py-24" style={{ color: "var(--text-secondary)" }}>
+          Template not found.
+        </p>
+      </Page>
     );
   }
 

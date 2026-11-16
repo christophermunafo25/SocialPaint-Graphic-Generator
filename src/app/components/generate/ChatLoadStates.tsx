@@ -9,7 +9,7 @@ import { GenerateHeader } from "../chat/GenerateHeader";
 import { ResultCardSkeleton } from "../chat/GenerateTurn";
 import { AssistantMessage } from "../chat/Messages";
 import { Button } from "../primitives";
-import { useScrollFades } from "./ScrollFade";
+import { useScrollFades } from "../layout/useScrollFades";
 import { takeComposerFocus } from "./composerFocus";
 
 /** The thread's composer placeholder (PROMPT §7.9), here and on the page. */
