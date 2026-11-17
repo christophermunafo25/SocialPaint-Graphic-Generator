@@ -81,6 +81,27 @@ When all three read the right-hand numbers, the attribute no longer reaches the 
 
 The rows do not cover an image field's alpha mask. A mask is a CSS image, which has no such attribute, so WebKit still decodes it after the first draw, and the export still depends on its 150 ms pause (`WARM_UP_PAUSE_MS`) for it. A WebKit row whose masked photo is missing from the render has lost that race, not the attribute.
 
+## The WebKit rows are not Safari before 26
+
+The harness's WebKit is the build Playwright ships, 26.6 today. Safari 18 and older paint some things differently, on screen and in the export, and no row here can catch that.
+
+One difference is handled in the renderer. Safari before 26 stops clipping the layers it paints straight from an element whose filter moves pixels (a drop shadow or a blur), so a cropped photo under a shadow came out whole, over its frame and its corners (WebKit bug 219520, fixed in Safari 26). An image field's clipping box is therefore its own stacking context whenever an effects wrapper holds it (`WRAPPED_IMAGE_BOX`, `src/app/components/SchemaRenderer.tsx`), which puts the crop back inside a layer that clips. `SchemaRenderer.effects.test.tsx` holds that markup. It cannot show that Safari draws it right.
+
+| `crop-matrix` on Safari 18.6's engine | Changed / blurred |
+| ------------------------------------- | ----------------- |
+| Without the stacking context          | 12.78 / 12.81     |
+| With it                               | 1.87 / 0.00       |
+| WebKit 26, the row's baseline         | 2.01 / 0.00       |
+
+Those numbers are this harness's compare on exports made by the system WebKit of a Mac on Safari 18.6 (2026-11-17), driven by a helper kept outside the repo. A change to how a field is clipped, filtered or given effects needs that check again on a Safari before 26, or a look in one.
+
+Measured the same day on 18.6 and not handled:
+
+- An inner shadow with no offset and no spread on a square-cornered box is not drawn, the canvas's included: `effects-matrix` reads 15.11 / 14.66 there and `builder-roundtrip` 13.62 / 15.39.
+- A flipped field's drop shadow falls on the side it would without the flip.
+- A field with opacity under 100 and a drop shadow is darker inside its box.
+- The lower lines of a multiline paragraph sit about a pixel off.
+
 ## Google's fonts are recorded
 
 The harness never asks Google for a font. Every request a fixture's page makes to `fonts.googleapis.com` or `fonts.gstatic.com` is answered from `google-fonts/`: `recording.json` maps each engine's requests to the bodies in `files/`, which are named by their content. `scripts/fidelity/fontRecording.mjs` does the answering, for `run`, `bless` and `baseline` alike.
