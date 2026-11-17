@@ -65,6 +65,22 @@ Firefox suppresses painting for that many milliseconds at the start of every doc
 
 The export waits `SNAPSHOT_SETTLE_MS` (50 ms, `src/lib/render/exportPng.ts`) before its first draw. The harness value (`FIREFOX_PAINT_DELAY_MS` in `scripts/fidelity/fidelity.mjs`) must stay below that wait, or every Firefox run loses its text-clipped fills.
 
+## WebKit's photo rows need the decode in the draw
+
+The export sets `decoding="sync"` on every `<img>` in its snapshot (`withSyncDecodedImages`, `src/lib/render/snapshotDecoding.ts`), so WebKit decodes a photo whole inside the draw and scales it as it paints. Without the attribute WebKit decodes a large photo off the main thread at the size it is drawn, and the pixels differ wherever a photo is drawn smaller than it is. Chromium and Firefox render the same pixels either way.
+
+Three WebKit baselines were recorded with the attribute in place (approved by CJ on 2026-11-17), and each row fails without it:
+
+| Fixture                    | With it (changed / blurred) | Without it   |
+| -------------------------- | --------------------------- | ------------ |
+| `crop-matrix`              | 2.01 / 0.00                 | 11.58 / 0.09 |
+| `gtm-composer-import`      | 2.80 / 0.53                 | 6.19 / 0.54  |
+| `feature-highlight-import` | 5.04 / 10.74                | 6.04 / 10.74 |
+
+When all three read the right-hand numbers, the attribute no longer reaches the snapshot. Either the export stopped setting it, or the edited snapshot failed to load and the export fell back to the one html-to-image made, which it logs as an error.
+
+The rows do not cover an image field's alpha mask. A mask is a CSS image, which has no such attribute, so WebKit still decodes it after the first draw, and the export still depends on its 150 ms pause (`WARM_UP_PAUSE_MS`) for it. A WebKit row whose masked photo is missing from the render has lost that race, not the attribute.
+
 ## Google's fonts are recorded
 
 The harness never asks Google for a font. Every request a fixture's page makes to `fonts.googleapis.com` or `fonts.gstatic.com` is answered from `google-fonts/`: `recording.json` maps each engine's requests to the bodies in `files/`, which are named by their content. `scripts/fidelity/fontRecording.mjs` does the answering, for `run`, `bless` and `baseline` alike.

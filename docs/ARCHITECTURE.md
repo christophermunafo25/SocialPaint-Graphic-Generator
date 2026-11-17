@@ -404,6 +404,8 @@ Chromium and Firefox paint a snapshot's images in the draw either way and
 render the same pixels. WebKit's pixels change where an image is drawn
 smaller than it is: decoded in the draw it is decoded whole and scaled as it
 is drawn, where the decode off the main thread was made at the drawn size.
+Three WebKit fidelity baselines were recorded with the attribute in place and
+fail without it (test/fidelity/README.md).
 
 Two things still depend on the second draw coming 150 ms after the first. A
 CSS image has no such attribute, and the one large bitmap the renderer paints
