@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { FieldEffect, TemplateField } from "@/lib/types";
 import { DEFAULT_FILL_HEX, FieldBoxContent } from "./SchemaRenderer";
 
-/** One transparent pixel. A data URL paints at once, with no fetch. */
+/** One pixel. A data URL paints at once, with no fetch. */
 const PHOTO =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
 
@@ -17,11 +17,13 @@ const DROP_SHADOW: FieldEffect = {
   color: DEFAULT_FILL_HEX,
 };
 const LAYER_BLUR: FieldEffect = { type: "layerBlur", radius: 8 };
-const INNER_SHADOW: FieldEffect = {
+/** An inner shadow with no blur: its frame carries no filter of its own. */
+const HARD_INNER_SHADOW: FieldEffect = {
   type: "innerShadow",
   x: 0,
   y: 6,
-  blur: 16,
+  blur: 0,
+  spread: 6,
   color: DEFAULT_FILL_HEX,
 };
 
@@ -52,7 +54,8 @@ function renderPhoto(field: TemplateField) {
 // Safari before 26 draws a positioned descendant of a filtered element with
 // no clip unless it paints inside a clipping stacking context (WebKit bug
 // 219520). No fidelity row can see that: the harness's WebKit is 26. These
-// tests hold the markup that keeps the crop inside its frame there.
+// tests hold the markup that keeps a crop and an inner shadow inside the
+// photo's frame there.
 describe("an image field's clipping box under an effects wrapper", () => {
   it("is a stacking context under a drop shadow, with the crop inside it", () => {
     const { root, box, image } = renderPhoto(photo({ imageRect: CROP, effects: [DROP_SHADOW] }));
@@ -68,15 +71,21 @@ describe("an image field's clipping box under an effects wrapper", () => {
   it("is a stacking context under a layer blur", () => {
     const { root, box } = renderPhoto(photo({ imageRect: CROP, effects: [LAYER_BLUR] }));
     expect(root.style.filter).toContain("blur(");
+    expect(box.parentElement).toBe(root);
     expect(box.style.isolation).toBe("isolate");
   });
 
-  it("holds the inner shadow overlay inside the same stacking context", () => {
-    const { box } = renderPhoto(photo({ imageRect: CROP, effects: [DROP_SHADOW, INNER_SHADOW] }));
+  it("holds an unblurred inner shadow's frame inside the same stacking context", () => {
+    const { root, box } = renderPhoto(photo({ effects: [DROP_SHADOW, HARD_INNER_SHADOW] }));
+    expect(root.style.filter).toContain("drop-shadow(");
     expect(box.style.isolation).toBe("isolate");
     const overlay = box.lastElementChild as HTMLElement;
-    expect(overlay.tagName).toBe("DIV");
     expect(overlay.style.overflow).toBe("hidden");
+    // With no blur the frame has no filter of its own, so it is one more
+    // positioned layer Safari would paint whole under the wrapper.
+    const frame = overlay.firstElementChild as HTMLElement;
+    expect(frame.style.position).toBe("absolute");
+    expect(frame.style.filter).toBe("");
   });
 
   it("keeps a field with no effects on the markup it had: one box, no wrapper", () => {
