@@ -1014,6 +1014,19 @@ function TextFieldBox({ field, value, brandKit, fontSize: layoutFontSize }: Fiel
   );
 }
 
+/** An image field's clipping box when an effects wrapper holds it. It is its
+ * own stacking context so that a cropped image, which is positioned and so
+ * a layer of its own, paints inside the box's layer. Safari before 26 stops
+ * clipping the layers it paints straight from an element whose filter moves
+ * pixels (the wrapper's drop shadow or blur), and drew the crop whole, over
+ * the frame and its corners (WebKit bug 219520). */
+const WRAPPED_IMAGE_BOX: React.CSSProperties = {
+  width: "100%",
+  height: "100%",
+  position: "relative",
+  isolation: "isolate",
+};
+
 function ImageFieldBox({ field, value }: { field: TemplateField; value: string | undefined }) {
   // EVERY image the canvas paints has to be a data URL before toPng runs.
   // html-to-image refetches remote sources in an isolated context, and when
@@ -1057,9 +1070,7 @@ function ImageFieldBox({ field, value }: { field: TemplateField; value: string |
       data-image-status={status}
       data-field-label={field.label}
       style={{
-        ...(effects.length
-          ? { width: "100%", height: "100%", position: "relative" }
-          : contentBaseStyle(field)),
+        ...(effects.length ? WRAPPED_IMAGE_BOX : contentBaseStyle(field)),
         overflow: "hidden",
         borderRadius: cornerRadiusCss(field),
         display: "flex",
