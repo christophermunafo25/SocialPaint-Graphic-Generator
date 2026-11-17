@@ -387,11 +387,6 @@ html {
   --state-warning: #ffd900;
   --fill-warning: #ffd900;
 
-  /* Confirm-flash wash as a bare rgb triplet — the keyframes below need a
-     literal rgba() because Chrome drops the alpha when it interpolates a
-     color-mix()'d colour inside a keyframe. Neutral, like every wash. */
-  --flash-rgb: 23, 255, 126; /* the confirm flash is a Slime wash */
-
   /* Brand-templates platform chip (Figma 141:329; states from the
      "Navigation" hover sheet 255:3, 2026-09-25). #252627 is the one value
      with no rung — five units off both --bg-surface-raised and --bg-hover —
@@ -497,10 +492,6 @@ html {
   /* Functional signals, outside the brand palette. */
   --state-warning: #756200;
   --fill-warning: #ffd900;
-
-  /* See the dark block for why this is a bare rgb triplet. The flash is
-     a wash — fill-tier, so Slime is legal on light. */
-  --flash-rgb: 23, 255, 126;
 
   /* Platform chip, light (Figma 141:858; states from the "Navigation"
      hover sheet 253:3, 2026-09-25). Rest: a white chip on a soft shadow,
@@ -643,14 +634,6 @@ optgroup {
   font-weight: var(--weight-head);
   letter-spacing: var(--type-h4-track);
   color: var(--text-heading);
-}
-
-.sp-panel-title {
-  font-family: var(--font-ui);
-  font-size: 14px;
-  font-weight: var(--weight-ui);
-  letter-spacing: var(--type-label-track);
-  color: var(--text-primary);
 }
 
 .sp-btn {
@@ -1162,16 +1145,7 @@ select.sp-input:disabled {
   --editor-accent: #0d99ff; /* selection blue — functional, never brand; foreign to artwork by design */
   --editor-line: 1px;
   --editor-handle: 7px;
-  /* The pasteboard the artboard floats on. Light gets the raised step so a
-     white artboard still reads as a distinct object; dark gets the canvas
-     floor, which is the deepest surface and makes the artwork carry. Both
-     are token-derived, and the separation is colour plus a hairline —
-     never a shadow. */
-  --editor-pasteboard: var(--bg-raised);
   --editor-artboard-edge: var(--border-strong);
-}
-[data-theme="dark"] {
-  --editor-pasteboard: var(--bg-canvas);
 }
 
 /* While a canvas gesture is live the body forces one cursor and everything
@@ -1183,9 +1157,9 @@ body[data-sp-gesture] * {
 }
 
 /* The pan/zoom window. It clips; the artboard inside it carries its own
-   clip so bleeding content crops exactly as it exports. */
+   clip so bleeding content crops exactly as it exports. The builder's stage
+   behind it is the pasteboard. */
 .sp-canvas-viewport {
-  background: var(--editor-pasteboard);
   overscroll-behavior: none;
 }
 
@@ -1226,122 +1200,6 @@ body[data-sp-gesture] * {
     flex: 1 1 0;
     min-height: 0;
   }
-}
-
-/* --- Builder shell ---------------------------------------------------------
-   Four regions: a full-width top bar, a left rail, the canvas viewport, and
-   the right inspector. Rails resize and collapse; every region scrolls on
-   its own. Elevation is surface colour and a hairline, never a shadow. It
-   fills Main, beside the collapsed rail (the app frame's "bare" page). */
-.sp-builder {
-  position: relative;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  grid-template-rows: auto minmax(0, 1fr);
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
-  background: var(--bg-canvas);
-}
-.sp-builder__bar {
-  grid-column: 1 / -1;
-  min-width: 0;
-  background: var(--bg-surface);
-  border-bottom: 1px solid var(--border);
-}
-.sp-builder__rail {
-  position: relative;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  background: var(--bg-surface);
-  overflow: hidden;
-}
-.sp-builder__rail--left {
-  border-right: 1px solid var(--border);
-}
-.sp-builder__rail--right {
-  border-left: 1px solid var(--border);
-}
-.sp-builder__rail-body {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-/* The grab strip between a rail and the canvas. Invisible until you are on
-   it — a hairline is the rail's border, not an affordance. */
-.sp-builder__grip {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 9px;
-  cursor: col-resize;
-  z-index: 3;
-  background: transparent;
-}
-.sp-builder__grip--left {
-  right: -5px;
-}
-.sp-builder__grip--right {
-  left: -5px;
-}
-.sp-builder__grip:hover::after,
-.sp-builder__grip[data-dragging="true"]::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 4px;
-  width: 1px;
-  background: var(--editor-accent);
-}
-.sp-builder__canvas {
-  position: relative;
-  min-width: 0;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-/* The drawing tools, floating on the canvas's left edge — next to the work,
-   out of the top bar (which must never scroll). Surface + hairline, no
-   shadow, above the rail grip (3) and below the step slide-over (20). */
-.sp-builder__tools {
-  position: absolute;
-  left: var(--space-xs);
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 4;
-  display: flex;
-  flex-direction: column;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-strong);
-  overflow: hidden;
-}
-/* A collapsed rail keeps a strip so the way back is where the rail was. */
-.sp-builder__stub {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-2xs);
-  padding: var(--space-2xs) 0;
-  /* The one piece of builder furniture that reads as a CARD (a collapsed
-     placeholder), not chrome — it moves with the card tier. */
-  background: var(--bg-card);
-}
-/* The step panels (Caption, Tags & details, Name) ride over the inspector
-   rather than replacing it — the canvas never moves when one opens. */
-.sp-builder__slideover {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 20;
-  display: flex;
-  flex-direction: column;
-  background: var(--bg-surface);
-  border-left: 1px solid var(--border-strong);
 }
 
 /* --- Mobile nav toggle -----------------------------------------------------
@@ -1403,43 +1261,6 @@ body[data-sp-gesture] * {
   .sp-nav-toggle__bar {
     transition-duration: 0.001ms;
   }
-}
-
-/* ── Brand hover moments ────────────────────────────────────────────────────
-   Transient identity: the four brand colours take turns under the cursor
-   and exist nowhere else on screen — colour that only lives during a hover
-   can be playful without cluttering anything. Dark tints the GLYPH (every
-   hue clears 3:1 against the dark ladder — the floor is Purple Kara at
-   3.82:1 on --bg-hover); light tints the WASH behind an
-   ink glyph, because no brand hue clears 3:1 as a glyph on white (the
-   header's rule). The sidebar nav stays neutral on hover (2026-08-14,
-   at Chris's direction) — its colour arrives only on the ACTIVE row. The
-   palette tiles are the one surface left: .sp-icon-btn took the hues too
-   until 2026-09-25, when the Figma "Navigation" page gave icon buttons a
-   neutral hover (see .sp-icon-btn). */
-.sp-palette-tile {
-  --hover-hue: var(--slime);
-}
-.sp-palette-tile:nth-of-type(4n + 2) {
-  --hover-hue: var(--aqua);
-}
-.sp-palette-tile:nth-of-type(4n + 3) {
-  --hover-hue: var(--purple-legacy);
-}
-.sp-palette-tile:nth-of-type(4n + 4) {
-  --hover-hue: var(--fire);
-}
-
-.sp-palette-tile svg {
-  color: var(--state-primary);
-  transition: color var(--dur-state) var(--ease);
-}
-
-[data-theme="dark"] .sp-palette-tile:hover svg {
-  color: var(--hover-hue);
-}
-[data-theme="light"] .sp-palette-tile:hover {
-  background: color-mix(in srgb, var(--hover-hue) 22%, transparent);
 }
 
 /* Upload processing chip (FieldInput) — the BYQ drop-zone gem's chip
@@ -1713,233 +1534,6 @@ input[type="radio"] {
   }
 }
 
-/* --- Inline edit ----------------------------------------------------------
-   Click-to-edit-in-place: a value reads as plain text with a pencil that
-   fades in on hover/focus, then swaps to a pre-filled input with save and
-   cancel buttons. Enter saves, Escape cancels, a neutral flash confirms.
-
-   The interaction model and every timing value are lifted from the BYQ
-   Supply "InlineEdit" gem; the colors, type, radii and focus ring are ours.
-   Timings are literal (0.15s / 0.18s / 0.13s / 0.7s) rather than
-   --dur-state because they are the effect — reduced motion is handled by
-   the block at the bottom, not by re-tokenizing them. */
-
-/* Stacked card of labelled rows (the group presentation). */
-.sp-inline-edit-group {
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-card);
-  overflow: hidden;
-}
-.sp-inline-edit-group .sp-inline-edit {
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--border);
-}
-.sp-inline-edit-group .sp-inline-edit:last-child {
-  border-bottom: none;
-}
-
-/* One editable value. Standalone (outside a group) it carries no chrome, so
-   it drops into a toolbar or a card title without disturbing the layout. */
-.sp-inline-edit {
-  position: relative;
-  min-width: 0;
-}
-
-.sp-inline-edit__label {
-  display: block;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  margin-bottom: 5px;
-  user-select: none;
-}
-
-/* ── Display row (value + pencil) ── */
-.sp-inline-edit__row {
-  min-height: 28px;
-  display: flex;
-  align-items: center;
-  min-width: 0;
-}
-
-.sp-inline-edit__display {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  max-width: 100%;
-  min-width: 0;
-  cursor: pointer;
-  border: none;
-  background: transparent;
-  text-align: left;
-  border-radius: var(--radius-control);
-  padding: 2px 4px;
-  margin: 0 -4px;
-  color: inherit;
-  font: inherit;
-  transition: background 0.15s ease;
-}
-
-.sp-inline-edit__display:hover,
-.sp-inline-edit__display:focus-visible {
-  background: var(--bg-hover);
-}
-
-.sp-inline-edit__display:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring-tight);
-}
-
-.sp-inline-edit__value {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.sp-inline-edit__icon {
-  display: flex;
-  align-items: center;
-  opacity: 0;
-  color: var(--text-muted);
-  transition: opacity 0.18s ease;
-  flex-shrink: 0;
-}
-
-.sp-inline-edit__display:hover .sp-inline-edit__icon,
-.sp-inline-edit__display:focus-visible .sp-inline-edit__icon {
-  opacity: 1;
-}
-
-/* ── Edit row (input + save/cancel) ── */
-.sp-inline-edit__edit-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 28px;
-  min-width: 0;
-}
-
-/* width:0 alongside flex — an <input> otherwise reports its `size`-derived
-   width as its min-content contribution, which widens the grid track the
-   card sits in and makes the card jump the moment editing opens. */
-.sp-inline-edit__input {
-  flex: 1 1 0;
-  width: 0;
-  min-width: 0;
-  font: inherit;
-  font-family: var(--font-ui);
-  letter-spacing: var(--type-body-track);
-  color: var(--text-primary);
-  background: var(--bg-hover);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-control);
-  padding: 3px 8px;
-  outline: none;
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
-}
-
-/* The control's own 1px edge takes the ring colour, as .sp-input did before
-   the new brand. Kept until Phase 6 rebuilds the builder's inline edit. */
-.sp-inline-edit__input:focus {
-  border-color: var(--ring);
-  box-shadow: none;
-  outline: none;
-}
-
-.sp-inline-edit__save,
-.sp-inline-edit__cancel {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  flex-shrink: 0;
-  border: none;
-  border-radius: var(--radius-control);
-  cursor: pointer;
-  transition:
-    background 0.13s ease,
-    color 0.13s ease;
-}
-
-/* Save wears the primary construction: the neutral action fill, inverting
-   per theme. */
-.sp-inline-edit__save {
-  background: var(--btn-primary-bg);
-  color: var(--btn-primary-fg);
-}
-.sp-inline-edit__save:hover {
-  background: var(--btn-primary-bg-hover);
-}
-
-.sp-inline-edit__cancel {
-  background: var(--bg-hover);
-  color: var(--text-muted);
-}
-.sp-inline-edit__cancel:hover {
-  background: var(--bg-hover);
-  color: var(--text-primary);
-}
-
-.sp-inline-edit__save:focus-visible,
-.sp-inline-edit__cancel:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring-tight);
-}
-
-/* ── Confirm flash ──
-   Neutral wash (the theme's --flash-rgb triplet), built as literal rgba()
-   rather than color-mix: Chrome drops the alpha when it interpolates a
-   color-mix()'d color() inside a keyframe, which turns the wash into a
-   solid bar. */
-@keyframes sp-inline-edit-flash {
-  0% {
-    background-color: rgba(var(--flash-rgb), 0.18);
-  }
-  60% {
-    background-color: rgba(var(--flash-rgb), 0.12);
-  }
-  100% {
-    background-color: rgba(var(--flash-rgb), 0);
-  }
-}
-
-.sp-inline-edit[data-flash="true"] {
-  animation: sp-inline-edit-flash 0.7s ease forwards;
-}
-
-/* Visually hidden announcement region. */
-.sp-inline-edit__live {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sp-inline-edit__display,
-  .sp-inline-edit__icon,
-  .sp-inline-edit__input,
-  .sp-inline-edit__save,
-  .sp-inline-edit__cancel {
-    transition-duration: 0.001ms;
-  }
-  /* The confirm still has to register — it just holds still and clears on a
-     timer instead of animating out. */
-  .sp-inline-edit[data-flash="true"] {
-    animation: none;
-    background-color: rgba(181, 255, 0, 0.12);
-  }
-}
-
 /* --- Brand templates: search, filter bar, shelves -------------------------
    The catalogue's browse chrome. Surfaces, radii and motion come from the
    tokens above. The chips and the search trigger take the rest shadow in
@@ -2200,31 +1794,6 @@ input[type="radio"] {
   justify-content: center;
   gap: var(--space-2xs);
   margin-top: var(--space-md);
-}
-
-/* --- Skeletons -----------------------------------------------------------
-   The builder's own (its list cards and its start screen), until the
-   builder is rebuilt. Everything else uses the Skeleton primitive
-   (.ui-skeleton in primitives.css). */
-@keyframes sp-skeleton-pulse {
-  0%,
-  100% {
-    background-color: var(--bg-raised);
-  }
-  50% {
-    background-color: var(--bg-hover);
-  }
-}
-.sp-skeleton__block {
-  background-color: var(--bg-raised);
-  animation: sp-skeleton-pulse 1.4s var(--ease) infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  /* State still changes; it just doesn't pulse. */
-  .sp-skeleton__block {
-    animation: none;
-  }
 }
 
 /* --- Responsive -----------------------------------------------------------

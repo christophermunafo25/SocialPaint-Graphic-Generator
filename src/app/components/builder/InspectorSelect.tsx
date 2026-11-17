@@ -1,20 +1,19 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, Lock } from "lucide-react";
+import { Input } from "../primitives";
 import { step, useDismiss, useScrollActiveIntoView } from "../primitives/Select";
 
 // ---------------------------------------------------------------------------
-// The inspector's select: the accessible combobox the builder's font pickers
-// grew, with what the Select primitive doesn't carry: a search field in the
-// menu, a lock on a value a bound style owns, a trigger label of its own, and
-// rows previewed in their own face. It stays in the builder's folder with the
-// builder's other legacy controls until the builder's own phase designs them
-// (new look, PHASE-9 §9 D10). The machinery (useDismiss, step,
-// useScrollActiveIntoView) lives in primitives/Select.
+// The font pickers' select. It wears the Select primitive's trigger, floating
+// menu and rows, and adds what the primitive does not carry: a search field
+// in the menu, a lock on a value a bound style owns, a trigger label of its
+// own, and rows previewed in their own face. The machinery (useDismiss,
+// step, useScrollActiveIntoView) lives in primitives/Select.
 // ---------------------------------------------------------------------------
 
-/** The dropdown surface. Fixed-positioned off the trigger's rect rather than
- * absolutely positioned inside its container, which may scroll and would clip
- * it. Elevation is surface + border, never shadow. */
+/** The dropdown surface, the primitive's floating menu. Fixed-positioned
+ * off the trigger's rect rather than absolutely positioned inside its
+ * container, which may scroll and would clip it. */
 export function MenuSurface({
   triggerRef,
   surfaceRef,
@@ -53,7 +52,7 @@ export function MenuSurface({
       id={id}
       tabIndex={autoFocus ? -1 : undefined}
       onKeyDown={onKeyDown}
-      className="fixed z-50 py-1 overflow-y-auto"
+      className="ui-menu ui-menu--floating"
       style={{
         left: rect?.left,
         top: flip ? undefined : (rect?.bottom ?? 0) + 4,
@@ -61,9 +60,6 @@ export function MenuSurface({
         width: rect?.width,
         minWidth,
         maxHeight: Math.min(maxHeight, Math.max(160, flip ? (rect?.top ?? 0) - 12 : below)),
-        background: "var(--bg-surface)",
-        border: "1px solid var(--border)",
-        borderRadius: "var(--radius-control)",
         outline: "none",
       }}
     >
@@ -115,39 +111,22 @@ export function MenuRow({
         onSelect();
       }}
       onPointerEnter={onHover}
-      className="flex items-center justify-between gap-2 px-2.5 py-1.5 cursor-pointer"
-      style={{
-        background: selected ? "var(--accent-wash)" : active ? "var(--bg-hover)" : "transparent",
-        color: dimmed ? "var(--text-muted)" : "var(--text-primary)",
-        transition: "background var(--dur-state) var(--ease)",
-      }}
+      className="ui-menu-item"
+      data-highlighted={active || undefined}
+      data-selected={selected || undefined}
+      data-dimmed={dimmed || undefined}
     >
-      <span className="flex items-center gap-2 min-w-0">
-        {icon}
-        <span className="truncate" style={{ fontSize: 13, ...previewStyle }}>
-          {label}
-        </span>
+      {icon}
+      <span className="ui-menu-item__label t-body-m" style={previewStyle}>
+        {label}
       </span>
-      {selected && (
-        <Check style={{ width: 12, height: 12, flexShrink: 0, color: "var(--state-primary)" }} />
-      )}
+      {selected && <Check size={16} className="ui-icon ui-menu-item__check" aria-hidden />}
     </div>
   );
 }
 
-/** Group headers inside a menu: ALL CAPS mono, hairline-divided. */
-export const menuGroupLabelStyle: React.CSSProperties = {
-  fontFamily: "var(--font-mono)",
-  fontSize: 9.5,
-  letterSpacing: "0.06em",
-  textTransform: "uppercase",
-  color: "var(--text-disabled)",
-  padding: "6px 10px 3px",
-};
-
-/** The trigger. By default it looks exactly like the .sp-input select it
- * replaces, so nothing around it shifts; a caller with its own look (the
- * Generate chat's tile trigger) passes `className` and `chevron`. */
+/** The trigger, the primitive Select's Medium trigger. Its value can show
+ * in its own face, and a value a bound style owns shows the lock. */
 export const TriggerButton = React.forwardRef<
   HTMLButtonElement,
   {
@@ -159,10 +138,9 @@ export const TriggerButton = React.forwardRef<
     ariaLabel: string;
     expanded: boolean;
     controls?: string;
-    /** Extra trigger styling (compact rows squeeze it onto their height). */
+    /** Extra trigger styling. */
     triggerStyle?: React.CSSProperties;
-    /** Replaces the .sp-input look with the caller's own class (the Generate
-     * chat's tile trigger). Omitted, the trigger is the .sp-input box. */
+    /** Replaces the primitive's look with the caller's own class. */
     className?: string;
     /** Replaces the trailing chevron; the lock still wins when lockedHint. */
     chevron?: React.ReactNode;
@@ -199,26 +177,18 @@ export const TriggerButton = React.forwardRef<
       disabled={disabled}
       onClick={onOpen}
       onKeyDown={onKeyDown}
-      className={className ?? "sp-input flex items-center justify-between gap-2 text-left"}
-      style={{
-        opacity: disabled ? 0.5 : 1,
-        cursor: disabled ? "default" : "pointer",
-        ...triggerStyle,
-      }}
+      className={className ?? "ui-reset ui-fill ui-ring ui-select"}
+      data-size={className ? undefined : "md"}
+      data-placeholder={value ? undefined : true}
+      style={triggerStyle}
     >
-      <span className="flex items-center gap-2 min-w-0">
-        <span className="truncate" style={value ? previewStyle : { color: "var(--text-disabled)" }}>
-          {value || placeholder}
-        </span>
+      <span className="ui-select__value t-body-m" style={value ? previewStyle : undefined}>
+        {value || placeholder}
       </span>
       {lockedHint ? (
-        <Lock style={{ width: 11, height: 11, flexShrink: 0, color: "var(--state-primary)" }} />
+        <Lock size={16} className="ui-icon ui-select__chevron" aria-hidden />
       ) : (
-        (chevron ?? (
-          <ChevronDown
-            style={{ width: 12, height: 12, flexShrink: 0, color: "var(--text-muted)" }}
-          />
-        ))
+        (chevron ?? <ChevronDown size={16} className="ui-icon ui-select__chevron" aria-hidden />)
       )}
     </button>
   );
@@ -256,9 +226,9 @@ interface SelectProps<T extends string> {
    * Empty string falls through to the placeholder. */
   triggerLabel?: string;
   triggerPreviewStyle?: React.CSSProperties;
-  /** Extra trigger styling (compact rows squeeze it onto their height). */
+  /** Extra trigger styling. */
   triggerStyle?: React.CSSProperties;
-  /** Replaces the trigger's .sp-input look with the caller's own class. */
+  /** Replaces the trigger's look with the caller's own class. */
   triggerClassName?: string;
   /** Replaces the trigger's trailing chevron. */
   triggerChevron?: React.ReactNode;
@@ -371,17 +341,7 @@ export function Select<T extends string>({
   const shownLabel = triggerLabel !== undefined ? triggerLabel : (selected?.label ?? "");
 
   const caption = menuCaption ? (
-    <p
-      style={{
-        fontSize: "var(--type-caption-size)",
-        color: "var(--text-muted)",
-        padding: "6px 10px 4px",
-        borderTop: "1px solid var(--border)",
-        marginTop: 4,
-      }}
-    >
-      {menuCaption}
-    </p>
+    <p className="ui-menu__caption t-caption-m">{menuCaption}</p>
   ) : null;
 
   let lastGroup = "";
@@ -391,17 +351,7 @@ export function Select<T extends string>({
     lastGroup = group;
     return (
       <React.Fragment key={o.value}>
-        {newGroup && group && (
-          <div
-            style={{
-              ...menuGroupLabelStyle,
-              borderTop: i === 0 ? undefined : "1px solid var(--border)",
-              marginTop: i === 0 ? 0 : 4,
-            }}
-          >
-            {group}
-          </div>
-        )}
+        {newGroup && group && <div className="ui-menu-label t-mono-eyebrow">{group}</div>}
         <MenuRow
           id={`${id}-opt-${i}`}
           label={o.label}
@@ -449,11 +399,10 @@ export function Select<T extends string>({
             id={`${id}-menu`}
             minWidth={menuMinWidth}
           >
-            <div style={{ padding: "2px 6px 6px" }}>
-              <input
+            <div className="sp-select-search">
+              <Input
+                size="sm"
                 autoFocus
-                className="sp-input"
-                style={{ padding: "6px 9px", fontSize: 12.5 }}
                 placeholder={searchPlaceholder}
                 value={query}
                 aria-label={searchPlaceholder}
@@ -468,9 +417,7 @@ export function Select<T extends string>({
             </div>
             <div role="listbox" id={`${id}-list`} aria-label={ariaLabel}>
               {visible.length === 0 && searchEmptyText && (
-                <p style={{ fontSize: 12, color: "var(--text-muted)", padding: "6px 10px 8px" }}>
-                  {searchEmptyText(query)}
-                </p>
+                <p className="ui-menu__caption t-caption-m">{searchEmptyText(query)}</p>
               )}
               {rows}
             </div>

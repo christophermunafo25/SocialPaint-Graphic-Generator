@@ -1,13 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import { GripVertical, Minus, Plus } from "lucide-react";
 import type { BrandKit, FieldEffect, TemplateField } from "@/lib/types";
+import { Button, IconButton } from "../primitives";
 import { Menu, MenuItem } from "../primitives/Menu";
-import {
-  InspectorSection,
-  NumericField,
-  PropertyRow,
-  compactControlStyle,
-} from "./InspectorControls";
+import { HexRow, InspectorSection, NumericField, PropertyRow } from "./InspectorControls";
 import { FillPicker, fillSwatchCss } from "./FillPicker";
 import {
   EFFECT_LABELS,
@@ -21,14 +17,6 @@ import {
   splitColor,
   type EffectTarget,
 } from "./effectOps";
-
-const iconStyle = { width: 13, height: 13 } as const;
-const useBaseStyle: React.CSSProperties = { color: "var(--text-secondary)", flexShrink: 0 };
-const quietButton: React.CSSProperties = {
-  color: "var(--text-muted)",
-  display: "flex",
-  flexShrink: 0,
-};
 
 /** A field FillPicker can point at for one solid color (a proxy, as the
  * stroke and plate pickers use). */
@@ -76,53 +64,19 @@ export function ColorRow({
     onChange(alpha ? joinColor(nextHex, nextPct) : nextHex.slice(0, 7).toUpperCase());
   return (
     <PropertyRow label={label} full={!label}>
-      <button
+      <HexRow
         ref={swatchRef}
-        title={`Edit ${ariaName.toLowerCase()} color`}
-        aria-label={`Edit ${ariaName.toLowerCase()} color`}
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-        style={{
-          width: 24,
-          height: 24,
-          flexShrink: 0,
-          borderRadius: "var(--radius-control)",
-          border: "1px solid var(--border-strong)",
-          background: fillSwatchCss(value),
-          cursor: "pointer",
-        }}
-      />
-      <input
-        type="text"
-        spellCheck={false}
-        aria-label={`${ariaName} hex value`}
-        className="sp-input"
-        style={{
-          ...compactControlStyle,
-          fontFamily: "var(--font-mono)",
-          fontSize: "var(--type-caption-size)",
-          minWidth: 0,
-          flex: 1,
-        }}
-        key={`${ariaName}:${hex}`}
-        defaultValue={hex}
-        onKeyDown={(e) => {
-          e.stopPropagation();
-          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-          if (e.key === "Escape") {
-            (e.target as HTMLInputElement).value = hex;
-            (e.target as HTMLInputElement).blur();
-          }
-        }}
-        onBlur={(e) => {
-          const m = /^#?([0-9a-fA-F]{6})$/.exec(e.target.value.trim());
-          if (m) write(`#${m[1]}`);
-          else e.target.value = hex;
-        }}
-      />
-      {alpha && (
-        <div style={{ width: 68, flexShrink: 0 }}>
+        swatch={fillSwatchCss(value)}
+        swatchLabel={`Edit ${ariaName.toLowerCase()} color`}
+        expanded={open}
+        onSwatch={() => setOpen((o) => !o)}
+        hex={hex}
+        hexLabel={`${ariaName} hex value`}
+        onHex={(next) => write(next.slice(0, 7))}
+      >
+        {alpha && (
           <NumericField
+            bare
             suffix="%"
             ariaLabel={`${ariaName} opacity`}
             precision={0}
@@ -131,12 +85,12 @@ export function ColorRow({
             value={pct}
             onCommit={(v) => write(hex, v ?? pct)}
           />
-        </div>
-      )}
+        )}
+      </HexRow>
       {onUseBase && (
-        <button onClick={onUseBase} className="tu-caption-m" style={useBaseStyle}>
+        <Button kind="ghost" size="sm" onClick={onUseBase}>
           Use base
-        </button>
+        </Button>
       )}
       {open && (
         <FillPicker
@@ -197,11 +151,10 @@ function EffectSettings({
       onChange={(c) => onChange({ ...e, color: c } as FieldEffect)}
     />
   );
-  const indent: React.CSSProperties = { paddingLeft: "var(--space-lg)" };
   if (kind === "layerBlur") {
     const e = effect as Extract<FieldEffect, { type: "layerBlur" }>;
     return (
-      <div style={indent}>
+      <div className="sp-effect-settings">
         <PropertyRow full>{num("Radius", e.radius, (v) => ({ ...e, radius: v }), 0)}</PropertyRow>
       </div>
     );
@@ -209,7 +162,7 @@ function EffectSettings({
   if (kind === "noise") {
     const e = effect as Noise;
     return (
-      <div style={indent}>
+      <div className="sp-effect-settings">
         <PropertyRow full>
           {num("Size", e.size, (v) => ({ ...e, size: v }), 0.5)}
           <NumericField
@@ -233,7 +186,7 @@ function EffectSettings({
   // A glow is a drop shadow at 0, 0, so it keeps X and Y: a shadow edited
   // to 0, 0 reads as a glow and can still be offset again.
   return (
-    <div style={indent}>
+    <div className="sp-effect-settings">
       <PropertyRow full>
         {num("X", e.x, (v) => ({ ...e, x: v }))}
         {num("Y", e.y, (v) => ({ ...e, y: v }))}
@@ -258,8 +211,10 @@ export function EffectsEditor({
   companyId,
   onChange,
   onUseBase,
+  scope,
 }: {
-  /** The section's id, for its remembered open state. */
+  /** Names the section (`data-section`), and resets what is open when it
+   * changes. */
   id: string;
   effects: FieldEffect[] | undefined;
   target: EffectTarget;
@@ -267,8 +222,11 @@ export function EffectsEditor({
   kit: BrandKit | null;
   companyId?: string;
   onChange(next: FieldEffect[]): void;
-  /** Present on a look's tab when this look changes the effects. */
+  /** Present when a look changes the effects. */
   onUseBase?(): void;
+  /** Which list the section edits, in variation mode (All variations or
+   * This variation), above the effects. */
+  scope?: React.ReactNode;
 }) {
   // Read like the renderer reads: a malformed entry, or one this target
   // can't paint, isn't listed (and isn't written back by the next edit).
@@ -291,24 +249,16 @@ export function EffectsEditor({
       id={id}
       title="Effects"
       headerExtra={
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-xs)" }}>
+        <span className="sp-insp-actions">
           {onUseBase && (
-            <button onClick={onUseBase} className="tu-caption-m" style={useBaseStyle}>
+            <Button kind="ghost" size="sm" onClick={onUseBase}>
               Use base
-            </button>
+            </Button>
           )}
           <Menu
-            aria-label="Add effect"
+            aria-label="Add an effect"
             align="end"
-            trigger={
-              <button
-                title="Add effect"
-                aria-label="Add effect"
-                style={{ color: "var(--text-secondary)", display: "flex" }}
-              >
-                <Plus style={iconStyle} strokeWidth={1.5} />
-              </button>
-            }
+            trigger={<IconButton variant="ghost" size="sm" icon={Plus} label="Add an effect" />}
           >
             {effectKindsFor(target).map((kind) => (
               <MenuItem
@@ -322,9 +272,10 @@ export function EffectsEditor({
               </MenuItem>
             ))}
           </Menu>
-        </div>
+        </span>
       }
     >
+      {scope}
       {list.map((effect, index) => {
         const name = EFFECT_LABELS[kindOf(effect)];
         const isOpen = openIndex === index;
@@ -340,8 +291,10 @@ export function EffectsEditor({
               setDragFrom(null);
             }}
           >
-            <PropertyRow full>
+            <div className="sp-effect-row">
               <button
+                type="button"
+                className="ui-reset ui-ring sp-effect-row__grip"
                 draggable
                 onDragStart={() => setDragFrom(index)}
                 onDragEnd={() => setDragFrom(null)}
@@ -350,51 +303,30 @@ export function EffectsEditor({
                   if (e.key === "ArrowUp") reorder(index, index - 1);
                   if (e.key === "ArrowDown") reorder(index, index + 1);
                 }}
-                title={`Reorder ${name.toLowerCase()}`}
                 aria-label={`Reorder ${name.toLowerCase()}`}
-                style={{ ...quietButton, cursor: "grab" }}
               >
-                <GripVertical style={iconStyle} strokeWidth={1.5} />
+                <GripVertical size={16} className="ui-icon" aria-hidden />
               </button>
               <button
+                type="button"
+                className="ui-reset ui-ring sp-effect-row__main"
                 aria-expanded={isOpen}
                 onClick={() => setOpenIndex(isOpen ? null : index)}
-                style={{
-                  display: "flex",
-                  alignItems: "baseline",
-                  gap: "var(--space-2xs)",
-                  flex: 1,
-                  minWidth: 0,
-                  textAlign: "left",
-                }}
               >
-                <span style={{ fontSize: "var(--type-label-size)", color: "var(--text-primary)" }}>
-                  {name}
-                </span>
-                <span
-                  className="tu-caption-m"
-                  style={{
-                    color: "var(--text-secondary)",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {effectSummary(effect)}
-                </span>
+                <span className="t-label-s">{name}</span>
+                <span className="t-caption-m sp-effect-row__summary">{effectSummary(effect)}</span>
               </button>
-              <button
-                title={`Remove ${name.toLowerCase()}`}
-                aria-label={`Remove ${name.toLowerCase()}`}
+              <IconButton
+                variant="ghost"
+                size="sm"
+                icon={Minus}
+                label={`Remove ${name.toLowerCase()}`}
                 onClick={() => {
                   onChange(list.filter((_, i) => i !== index));
                   setOpenIndex(null);
                 }}
-                style={quietButton}
-              >
-                <Minus style={iconStyle} strokeWidth={1.5} />
-              </button>
-            </PropertyRow>
+              />
+            </div>
             {isOpen && (
               <EffectSettings
                 effect={effect}

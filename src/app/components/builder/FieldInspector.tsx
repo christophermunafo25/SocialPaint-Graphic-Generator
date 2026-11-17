@@ -1,7 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   AlignCenter,
   Blend,
+  BringToFront,
   CaseUpper,
   SquareRoundCorner,
   AlignLeft,
@@ -15,12 +16,11 @@ import {
   Lock,
   Minus,
   Plus,
-  RefreshCw,
   RotateCw,
+  SendToBack,
   ZoomIn,
   Trash2,
   Unlink,
-  Upload,
 } from "lucide-react";
 import type {
   CornerRadius,
@@ -39,7 +39,6 @@ import {
   withWeight,
 } from "@/lib/icons/lucide";
 import { hasStrokePaths } from "@/lib/render/vector";
-import { RailTabs } from "./BuilderShell";
 import { stores } from "@/lib/stores";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useBrand } from "@/lib/brand/BrandContext";
@@ -55,7 +54,7 @@ import {
   type FontStyle,
 } from "@/lib/render/fontCatalog";
 import { suggestFieldKey } from "@/lib/caption";
-import { useFileDrop } from "@/lib/useFileDrop";
+import { useSignedUrl } from "@/lib/render/useSignedUrl";
 import {
   getTypeStyle,
   isStyleLocked,
@@ -69,21 +68,35 @@ import {
   PLATE_PADDING_Y_DEFAULT,
   gradientCss,
 } from "../SchemaRenderer";
-import { Select, type SelectOption } from "./InspectorSelect";
-import { Switch } from "../primitives";
+import { Select as FontSelect, type SelectOption as FontOption } from "./InspectorSelect";
 import {
+  Button,
+  IconButton,
+  Input,
+  SegmentedControl,
+  Select,
+  Tabs,
+  TextArea,
+  Upload,
+} from "../primitives";
+import { InspectorHeader } from "./InspectorHeader";
+import { CROP_RATIOS, cropChoice, keepAlpha } from "./inspectorValues";
+import { elementIcon } from "./elementIcons";
+import {
+  HexRow,
   InspectorSection,
   NumericField,
+  PropertyGrid,
   PropertyRow,
   SegmentedIconGroup,
-  compactControlStyle,
+  SwitchRow,
 } from "./InspectorControls";
 import { AlignControls } from "./AlignControls";
 import { fixedPatch, imagePosition, withImagePosition } from "./fieldOps";
 import { ColorRow, EffectsEditor } from "./EffectsEditor";
 import { normalizeEffects } from "./effectOps";
 import { FillPicker, fillSwatchCss, getFill } from "./FillPicker";
-import { ImageSourceChooser, ImageSourceDialog, pickableAssets } from "../ImageSourceChooser";
+import { ImageSourceDialog, pickableAssets } from "../ImageSourceChooser";
 import { parseHex, toHex } from "@/lib/color";
 import { DEFAULT_FONT_SIZE, DEFAULT_MIN_FONT_SIZE } from "@/lib/render/autoFit";
 import { styleFaces } from "@/lib/brand/fontRoles";
@@ -135,12 +148,15 @@ interface FieldInspectorProps {
 }
 
 const FIELD_TYPES: Array<{ value: FieldType; label: string }> = [
-  { value: "text", label: "Text (single line)" },
-  { value: "multiline", label: "Text (multi-line)" },
+  { value: "text", label: "Text" },
+  { value: "multiline", label: "Paragraph" },
   { value: "image", label: "Image" },
   { value: "select", label: "Dropdown" },
   { value: "shape", label: "Shape" },
 ];
+
+const gradientName = (kind: string | undefined) =>
+  kind === "radial" ? "Radial gradient" : "Linear gradient";
 
 const SHAPE_KINDS: Array<{ value: NonNullable<TemplateField["shape"]>; label: string }> = [
   { value: "rect", label: "Rectangle" },
@@ -151,10 +167,10 @@ const SHAPE_KINDS: Array<{ value: NonNullable<TemplateField["shape"]>; label: st
 
 type TextSizingMode = "free" | "shrink" | "fill";
 
-/** Inspector for the selected field: a flat, hairline-divided stack of
- * collapsible sections — Field, Position, Layout, Appearance, Typography,
- * Fill — built on the InspectorSection / PropertyRow / NumericField
- * primitives. */
+/** The inspector for the selected element (322:380): its header, then
+ * Design and Field. Design holds the frame's Text, Image and Fill sections
+ * first, then the ones the frame does not draw (Plate, Stroke, Layout,
+ * Layer, Effects); Field holds what your team fills in (2289:4772). */
 /** Wrap an angle into Figma's −180..180 display range. */
 const wrapDeg = (n: number): number => ((((n + 180) % 360) + 360) % 360) - 180;
 
@@ -180,9 +196,11 @@ export function FieldInspector(props: FieldInspectorProps) {
    * in variation mode, the field itself otherwise. Structure always reads
    * from `field` — it is shared and identical either way. */
   const merged = variantMode?.merged ?? field;
+  /** In variation mode, whether Effects edits the template's list, which
+   * every look starts from, or this look's own. Everything else has one
+   * home: shared settings edit the template, a look's colours, opacity,
+   * bound style and content edit the look. */
   const [tab, setTab] = useState<"all" | "this">("this");
-  const showAll = !variantMode || tab === "all";
-  const showThis = !variantMode || tab === "this";
   /** Appearance writes. In variation mode only the whitelisted keys travel,
    * into the override map; everything else is a shared-structure write and
    * goes through onChange as it always has. */
@@ -216,11 +234,21 @@ export function FieldInspector(props: FieldInspectorProps) {
   const inStack = Boolean(containingGroup) && containingGroup?.mode !== "free";
   const groupVertical = containingGroup?.direction !== "horizontal";
   const mainSizeComputed = inStack && isText;
-  const labelRef = useRef<HTMLInputElement>(null);
   const [uploadingStatic, setUploadingStatic] = useState(false);
-  /** The replace-image dialog for a fixed image that already has one. */
-  const [replacingStatic, setReplacingStatic] = useState(false);
-  useEffect(() => setReplacingStatic(false), [field.id]);
+  /** The image dialog for a fixed image: the brand's images or this device. */
+  const [choosingStatic, setChoosingStatic] = useState(false);
+  useEffect(() => setChoosingStatic(false), [field.id]);
+  /** Custom chosen in Crop, before or after a ratio is typed. */
+  const [customCrop, setCustomCrop] = useState(false);
+  useEffect(() => setCustomCrop(false), [field.id]);
+  const signedStatic = useSignedUrl(
+    field.type === "image" && isStatic ? merged.staticValue : undefined,
+  );
+  /** Design or Field. Shapes and icons are design only, so they have no
+   * Field tab. The tab stays put as the selection moves. */
+  const hasFieldSide = !isShape && !isIcon;
+  const [side, setSide] = useState<"design" | "field">("design");
+  const panelId = useId();
 
   const uploadStaticImage = async (file: File) => {
     if (!company) return;
@@ -235,24 +263,9 @@ export function FieldInspector(props: FieldInspectorProps) {
     }
   };
 
-  const staticDrop = useFileDrop((files) => {
-    if (files[0]) void uploadStaticImage(files[0]);
-  });
-
-  // A freshly-dropped palette element opens for naming immediately; the
-  // parent clears focusLabelFieldId once selection moves on, so merely
-  // re-selecting a field never steals focus into the label input.
-  useEffect(() => {
-    if (focusLabelFieldId !== field.id) return;
-    labelRef.current?.focus();
-    labelRef.current?.select();
-  }, [focusLabelFieldId, field.id]);
-
-  // Secondary, not muted — teaching copy in the panel clears 4.5:1.
-  const hintStyle: React.CSSProperties = {
-    fontSize: "var(--type-caption-size)",
-    color: "var(--text-secondary)",
-  };
+  // A freshly dropped palette element opens its name for typing (the
+  // header's rename); the parent clears focusLabelFieldId once selection
+  // moves on, so re-selecting a field never opens it.
 
   const centered = field.anchor === "center";
 
@@ -326,13 +339,6 @@ export function FieldInspector(props: FieldInspectorProps) {
         100,
     ),
   );
-  /** Whether the Member input section has anything to show: Max chars for
-   * text under Shrink or Fill (under Free it lives in Layout), Options for
-   * a dropdown. Nothing for an image. */
-  const hasMemberInput =
-    !isStatic &&
-    (field.type === "select" ||
-      ((field.type === "text" || field.type === "multiline") && sizingMode !== "free"));
   const displayFamily = resolved.fontFamily;
   const currentStyle = toFontStyle(resolved.fontWeight, resolved.fontStyle, resolved.fontStretch);
   const fontAssets = useMemo(() => assets.filter((a) => a.kind === "font"), [assets]);
@@ -407,7 +413,6 @@ export function FieldInspector(props: FieldInspectorProps) {
   /** This look sets its own color or gradient for the field. */
   const fillOverridden = Boolean(
     variantMode &&
-    tab === "this" &&
     (variantMode.variant.overrides?.[field.fieldKey]?.colorHex !== undefined ||
       variantMode.variant.overrides?.[field.fieldKey]?.textGradient !== undefined),
   );
@@ -459,11 +464,11 @@ export function FieldInspector(props: FieldInspectorProps) {
     }
   };
 
-  /** Element opacity. Appearance in the base panel; This variation in
-   * variation mode. One definition, one home at a time. */
+  /** Element opacity: Layer in the base panel, the look's own section on
+   * This variation. One definition, one home at a time. */
   const opacityField = (
     <NumericField
-      icon={<Blend style={{ width: 12, height: 12 }} strokeWidth={1.5} />}
+      icon={<Blend size={16} strokeWidth={1.5} aria-hidden />}
       suffix="%"
       ariaLabel="Opacity"
       precision={0}
@@ -474,416 +479,503 @@ export function FieldInspector(props: FieldInspectorProps) {
     />
   );
 
-  /** Brand type style binding and its rule sentences. Typography in the base
-   * panel; This variation in variation mode (a dark look binds "Headline on
+  /** The brand type style binding and its rules. Text in the base panel; the
+   * look's own section on This variation (a dark look binds "Headline on
    * dark", say). */
   const typeStyleRows = (
     <>
       <PropertyRow label="Type style">
-        <select
-          className="sp-input"
-          style={compactControlStyle}
-          aria-label="Saved brand type style"
+        <Select
+          ariaLabel="Type style"
           value={merged.typeStyleKey ?? ""}
-          onChange={(e) => look({ typeStyleKey: e.target.value || undefined })}
-        >
-          <option value="">None (style freely)</option>
-          {(kit?.typeStyles ?? []).map((ts) => (
-            <option key={ts.key} value={ts.key}>
-              {ts.name}
-            </option>
-          ))}
-        </select>
+          options={[
+            { value: "", label: "None" },
+            ...(kit?.typeStyles ?? []).map((ts) => ({ value: ts.key, label: ts.name })),
+          ]}
+          onSelect={(key) => look({ typeStyleKey: key || undefined })}
+        />
       </PropertyRow>
       {boundStyle && (
-        <div
-          className="px-3 py-2 space-y-0.5"
-          data-radius-control
-          style={{
-            background: "var(--accent-wash)",
-            border: "1px solid var(--accent-border)",
-          }}
-        >
+        <ul className="sp-insp-rules">
           {ruleSentences(boundStyle, kit).map((rule) => (
-            <p key={rule} style={{ fontSize: 11, color: "var(--text-secondary)" }}>
-              <Lock
-                style={{
-                  width: 10,
-                  height: 10,
-                  display: "inline",
-                  marginRight: 5,
-                  verticalAlign: "-1px",
-                  color: "var(--state-primary)",
-                }}
-              />
+            <li key={rule} className="t-caption-m">
+              <Lock size={12} className="ui-icon" aria-hidden />
               {rule}
-            </p>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </>
   );
 
-  /** A fixed element's content: text, or an image uploaded from here. In
-   * variation mode these read the variation's merge and write its override
-   * (a wordmark that flips to white, a logo's colourway asset). The same
-   * slot carries `placeholderRow` when the element is not fixed: one row,
-   * whose label and write target follow the Fixed switch. */
-  const staticContentRows = (
-    <>
-      {isStatic && isText && (
-        <PropertyRow label="Content" align="start">
-          <textarea
-            rows={field.type === "multiline" ? 3 : 1}
-            className="sp-input"
-            style={{
-              fontSize: "var(--type-label-size)",
-              padding: "var(--space-2xs)",
-              resize: "vertical",
-            }}
-            aria-label="Fixed content"
+  /** A fixed element's content: its text, or its image from the brand or
+   * this device. In variation mode it reads the variation's merge and writes
+   * its override (a wordmark that flips to white, a logo's colourway). */
+  const contentLabel = variantMode ? `Content · ${variantMode.variant.name}` : "Content";
+  const staticAsset = assets.find((a) => a.url === merged.staticValue);
+  const staticContentRows =
+    isStatic && isText ? (
+      <PropertyRow label={contentLabel}>
+        {field.type === "multiline" ? (
+          <TextArea
+            aria-label={contentLabel}
             value={merged.staticValue ?? ""}
-            placeholder="The exact text shown on the graphic"
             onChange={(e) => look({ staticValue: e.target.value || undefined }, true)}
           />
-        </PropertyRow>
-      )}
-      {isStatic && field.type === "image" && (
-        <PropertyRow label="Image" align="start">
-          {/* A fixed image can come from the brand (a logo, an uploaded
-              image — set by reference, no re-upload) or from this device.
-              The first pick offers both inline; replacing asks in a dialog,
-              after the admin says they want to replace. */}
-          <ImageSourceDialog
-            open={replacingStatic}
-            onClose={() => setReplacingStatic(false)}
-            assets={pickableAssets(assets)}
-            selectedUrl={merged.staticValue}
-            onPickAsset={(asset) => look({ staticValue: asset.url })}
-            onPickFile={(file) => void uploadStaticImage(file)}
-            accept="image/png,image/jpeg,image/svg+xml,image/webp"
+        ) : (
+          <Input
+            aria-label={contentLabel}
+            value={merged.staticValue ?? ""}
+            onChange={(e) => look({ staticValue: e.target.value || undefined }, true)}
           />
-          {merged.staticValue ? (
-            <button
-              type="button"
-              className="sp-btn sp-btn-ghost"
-              style={{ minHeight: "var(--row-h-compact)" }}
-              disabled={uploadingStatic}
-              onClick={() => setReplacingStatic(true)}
-            >
-              {uploadingStatic ? (
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <RefreshCw className="w-3.5 h-3.5" />
-              )}
-              {uploadingStatic ? "Uploading…" : "Replace image"}
-            </button>
-          ) : (
-            <ImageSourceChooser
-              assets={pickableAssets(assets)}
-              compact
-              selectedUrl={merged.staticValue}
-              onPickAsset={(asset) => look({ staticValue: asset.url })}
-              device={
-                <label
-                  {...staticDrop.bind}
-                  data-active={staticDrop.active}
-                  className="sp-dropzone flex flex-1 items-center justify-center gap-2 cursor-pointer"
-                  style={{
-                    border: "1.5px dashed var(--border-strong)",
-                    borderRadius: "var(--radius-control)",
-                    fontSize: "var(--type-caption-size)",
-                    color: "var(--text-secondary)",
-                    minHeight: "var(--row-h-compact)",
-                  }}
-                >
-                  {uploadingStatic ? (
-                    <RefreshCw
-                      className="w-3.5 h-3.5 animate-spin"
-                      style={{ color: "var(--state-primary)" }}
-                    />
-                  ) : (
-                    <Upload
-                      className="sp-dropzone__icon w-3.5 h-3.5"
-                      style={{ color: "var(--state-primary)" }}
-                    />
-                  )}
-                  {uploadingStatic ? "Uploading…" : "Upload image"}
-                  <input
-                    type="file"
-                    accept="image/png,image/jpeg,image/svg+xml,image/webp"
-                    className="hidden"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) void uploadStaticImage(f);
-                    }}
-                  />
-                </label>
-              }
-            />
-          )}
-        </PropertyRow>
-      )}
-    </>
-  );
+        )}
+      </PropertyRow>
+    ) : isStatic && field.type === "image" ? (
+      <PropertyRow label={variantMode ? `Image · ${variantMode.variant.name}` : "Image"}>
+        <Upload
+          placeholder={uploadingStatic ? "Uploading…" : "Add an image"}
+          thumbnail={merged.staticValue ? signedStatic.url : null}
+          fileName={staticAsset?.name ?? "Image"}
+          disabled={uploadingStatic}
+          onClick={() => setChoosingStatic(true)}
+          onDropFile={(file) => void uploadStaticImage(file)}
+        />
+        <ImageSourceDialog
+          open={choosingStatic}
+          onClose={() => setChoosingStatic(false)}
+          title={merged.staticValue ? "Replace image" : "Choose an image"}
+          assets={pickableAssets(assets)}
+          selectedUrl={merged.staticValue}
+          onPickAsset={(asset) => look({ staticValue: asset.url })}
+          onPickFile={(file) => void uploadStaticImage(file)}
+          accept="image/png,image/jpeg,image/svg+xml,image/webp"
+        />
+      </PropertyRow>
+    ) : null;
 
-  /** The non-fixed counterpart of the Content row: what the member sees in
-   * the form before they type. For a dropdown the same value is the empty
-   * option's text, so the row says so. Placeholder is shared structure,
-   * never a per-variation override (it is not in VARIANT_OVERRIDE_KEYS), so
-   * it reads from `field` and writes through onChange, never look(). A
-   * non-fixed image has nothing to pre-fill, so it gets no row. */
+  /** What your team sees in the form before they type. For a dropdown the
+   * same value is the empty option's text. Placeholder is shared structure,
+   * never a per-variation override, so it writes through onChange. */
   const isSelect = field.type === "select";
   const placeholderRow = !isStatic && isText && (
     <PropertyRow label={isSelect ? "Empty option" : "Placeholder"}>
-      <input
-        className="sp-input"
-        style={compactControlStyle}
-        aria-label={isSelect ? "Dropdown empty option" : "Member form placeholder"}
+      <Input
+        aria-label={isSelect ? "Empty option" : "Placeholder"}
         value={field.placeholder ?? ""}
-        placeholder={
-          isSelect
-            ? "What the dropdown says before a choice"
-            : "What your team sees before they type"
-        }
         onChange={(e) => onChange({ placeholder: e.target.value || undefined }, true)}
       />
     </PropertyRow>
   );
 
-  return (
-    <div>
-      <div
-        className="flex items-center justify-between"
-        style={{ paddingBottom: "var(--space-xs)" }}
-      >
-        <h3 className="sp-panel-title">Field settings</h3>
-        <button onClick={onDelete} title="Delete field">
-          <Trash2 className="w-4 h-4" style={{ color: "var(--destructive)" }} />
-        </button>
-      </div>
+  /** Corner radius, one value for all four corners, with the link that
+   * splits it; unlinked, the four sit in a grid in the corners they edit. */
+  const radiusControl = (
+    <>
+      <NumericField
+        icon={<SquareRoundCorner size={16} strokeWidth={1.5} aria-hidden />}
+        ariaLabel="Corner radius"
+        precision={0}
+        min={0}
+        value={radiusLinked || radiusUniform ? (field.cornerRadius?.tl ?? 0) : undefined}
+        mixed={!radiusLinked && !radiusUniform}
+        onCommit={(v) => {
+          const rad = Math.max(0, v ?? field.cornerRadius?.tl ?? 0);
+          setRadius({ tl: rad, tr: rad, br: rad, bl: rad });
+        }}
+      />
+      <IconButton
+        variant="ghost"
+        size="sm"
+        icon={radiusLinked ? LinkIcon : Unlink}
+        label="Link the corners"
+        aria-pressed={radiusLinked}
+        selected={radiusLinked}
+        onClick={() => {
+          if (!radiusLinked) {
+            // Re-linking collapses to the top-left value.
+            const rad = field.cornerRadius?.tl ?? 0;
+            setRadius({ tl: rad, tr: rad, br: rad, bl: rad });
+          }
+          setRadiusLinked(!radiusLinked);
+        }}
+      />
+    </>
+  );
+  const cornersGrid = !radiusLinked && (
+    <PropertyGrid columns="repeat(2, minmax(0, 1fr))">
+      {CORNERS.map((c) => (
+        <NumericField
+          key={c.key}
+          label={c.label}
+          ariaLabel={`Corner radius ${c.label}`}
+          precision={0}
+          min={0}
+          value={field.cornerRadius?.[c.key] ?? 0}
+          onCommit={(v) =>
+            setRadius({ [c.key]: Math.max(0, v ?? field.cornerRadius?.[c.key] ?? 0) })
+          }
+        />
+      ))}
+    </PropertyGrid>
+  );
 
-      {variantMode && (
-        <div style={{ marginBottom: "var(--space-2xs)" }}>
-          <RailTabs
-            tabs={[
-              {
-                key: "all",
-                label: "All variations",
-                title: "Shared by every variation: position, size, type, guardrails",
-              },
-              {
-                key: "this",
-                label: "This variation",
-                title: `Only ${variantMode.variant.name}: fill, opacity, bound style, content`,
-              },
-            ]}
-            active={tab}
-            onSelect={(key) => setTab(key as "all" | "this")}
-          />
-          <p style={{ ...hintStyle, paddingTop: "var(--space-2xs)" }}>
-            {tab === "all"
-              ? "Changes here move every frame at once."
-              : `Changes here colour "${variantMode.variant.name}" only.`}
-          </p>
-        </div>
-      )}
+  /** Crop: Box, a preset, or Custom, which shows the ratio as a number. */
+  const cropValue = customCrop ? "custom" : cropChoice(field.aspectRatio);
+  const cropOptions = [
+    { value: "box", label: "Box" },
+    ...CROP_RATIOS.map((r) => ({ value: r.label, label: r.label })),
+    { value: "custom", label: "Custom" },
+  ];
 
-      {variantMode && showThis && (
-        <InspectorSection id="variant-look" title={`Look · ${variantMode.variant.name}`}>
-          <PropertyRow label="Hidden">
-            <Switch
-              checked={hiddenHere}
-              ariaLabel="Hidden in this variation"
-              onChange={(next) => variantMode.onOverride({ hidden: next || undefined })}
-            />
-          </PropertyRow>
-          <p style={hintStyle}>
-            {hiddenHere
-              ? "Absent from this look: not painted, not exported, not asked for."
-              : hasOverride
-                ? "Styled for this look. Reset to inherit the base styling again."
-                : "Not styled here: inherits the base look. Change a fill or opacity to style it."}
-          </p>
-          <PropertyRow label="Opacity">{opacityField}</PropertyRow>
-          {isText && typeStyleRows}
-          {hasOverride && (
-            <button
-              type="button"
-              className="sp-btn sp-btn-ghost w-full"
-              onClick={() => variantMode.onOverride(null)}
-            >
-              Reset to base look
-            </button>
-          )}
-        </InspectorSection>
-      )}
+  const changeType = (t: FieldType) => {
+    if (t === field.type) return;
+    if (t === "shape") {
+      // Shapes are always static design elements with a fill.
+      onChange({
+        type: t,
+        shape: field.shape ?? "rect",
+        static: true,
+        colorHex: field.colorHex ?? "#d9d9d9",
+      });
+    } else if (isShape) {
+      onChange({ type: t, shape: undefined, static: undefined, staticValue: undefined });
+    } else {
+      onChange({ type: t });
+    }
+  };
 
-      {showAll && (
-        <InspectorSection id="field" title="Field">
-          {/* The field type control that exists today, left in place — same
-            options, same static/shape conversion patches. */}
-          {!isIcon && (
-            <PropertyRow label="Type">
-              <select
-                className="sp-input"
-                style={compactControlStyle}
-                aria-label="Field type"
-                value={field.type}
-                onChange={(e) => {
-                  const t = e.target.value as FieldType;
-                  if (t === "shape") {
-                    // Shapes are always static design elements with a fill.
-                    onChange({
-                      type: t,
-                      shape: field.shape ?? "rect",
-                      static: true,
-                      colorHex: field.colorHex ?? "#d9d9d9",
-                    });
-                  } else if (isShape) {
-                    onChange({
-                      type: t,
-                      shape: undefined,
-                      static: undefined,
-                      staticValue: undefined,
-                    });
-                  } else {
-                    onChange({ type: t });
-                  }
-                }}
-              >
-                {FIELD_TYPES.filter((t) => !isStatic || isShape || t.value !== "select").map(
-                  (t) => (
-                    <option key={t.value} value={t.value}>
-                      {t.label}
-                    </option>
-                  ),
-                )}
-              </select>
-            </PropertyRow>
-          )}
+  /** The add and remove at the end of an optional property's section name. */
+  const addOrRemove = (has: boolean, name: string, add: () => void, remove: () => void) =>
+    has ? (
+      <IconButton
+        variant="ghost"
+        size="sm"
+        icon={Minus}
+        label={`Remove ${name}`}
+        onClick={remove}
+      />
+    ) : (
+      <IconButton variant="ghost" size="sm" icon={Plus} label={`Add ${name}`} onClick={add} />
+    );
 
-          {isShape && (
-            <>
-              <PropertyRow label="Shape">
-                <select
-                  className="sp-input"
-                  style={compactControlStyle}
-                  aria-label="Shape kind"
-                  value={field.shape ?? "rect"}
-                  onChange={(e) => onChange({ shape: e.target.value as TemplateField["shape"] })}
-                >
-                  {SHAPE_KINDS.map((s) => (
-                    <option key={s.value} value={s.value}>
-                      {s.label}
-                    </option>
-                  ))}
-                </select>
-              </PropertyRow>
-              <p style={hintStyle}>Shapes are design-only. Members never see them as fields.</p>
-            </>
-          )}
+  const isLogo =
+    field.type === "image" && assets.some((a) => a.kind === "logo" && a.url === field.staticValue);
+  const shownSide = hasFieldSide ? side : "design";
 
-          {/* Field name: shares its default with the member-form placeholder
-            (shown as the input's placeholder when the name is empty) but
-            writes only label + fieldKey — editing it never touches the
-            placeholder. */}
-          <PropertyRow label="Name">
-            <div className="flex flex-col flex-1" style={{ gap: "var(--space-3xs)", minWidth: 0 }}>
-              <input
-                ref={labelRef}
-                className="sp-input"
-                style={compactControlStyle}
-                aria-label="Field name"
-                value={field.label}
-                placeholder={field.placeholder || undefined}
-                onChange={(e) => {
-                  const label = e.target.value;
-                  onChange(
-                    {
-                      label,
-                      fieldKey: suggestFieldKey(
-                        label,
-                        allFields.filter((f) => f.id !== field.id),
-                      ),
-                    },
-                    true,
-                  );
-                }}
+  const design = (
+    <>
+      {isText && (
+        <InspectorSection id="text" title="Text">
+          {!variantMode && typeStyleRows}
+          <PropertyGrid>
+            <PropertyRow label="Font">
+              <FontFamilySelect
+                value={displayFamily}
+                groups={familyGroups}
+                disabled={locked.has("fontFamily")}
+                onSelect={changeFamily}
               />
-              {!isStatic && (
-                <p className="font-mono" style={{ fontSize: 10, color: "var(--text-secondary)" }}>
-                  caption tag: {"{"}
-                  {field.fieldKey}
-                  {"}"}
-                </p>
-              )}
-            </div>
-          </PropertyRow>
-
-          {field.type !== "select" && !isShape && !isIcon && (
-            <>
-              <PropertyRow label="Fixed">
-                <Switch
-                  checked={isStatic}
-                  ariaLabel="Fixed element"
-                  onChange={(next) => onChange(fixedPatch(field, next))}
-                />
-              </PropertyRow>
-              <p style={hintStyle}>
-                Fixed elements stay exactly as designed. Members don't see or edit them. You can
-                still move and style them.
-              </p>
-            </>
+            </PropertyRow>
+            <PropertyRow label="Weight">
+              <FontStyleSelect
+                family={displayFamily}
+                styles={styleOptions}
+                value={displayStyle}
+                disabled={!displayFamily || styleLocked}
+                locked={styleLocked}
+                onSelect={changeStyle}
+              />
+            </PropertyRow>
+          </PropertyGrid>
+          {fontCatalog && !fontCatalog.verified && (
+            <p className="t-caption-m sp-insp-note">
+              We don't have {displayFamily} on file, so its weights are a guess. Upload it in Brand
+              Studio for the real ones.
+            </p>
           )}
-
-          {!isStatic &&
-            (field.type === "text" ||
-              field.type === "multiline" ||
-              field.type === "select" ||
-              field.type === "image") && (
-              <PropertyRow label="Optional">
-                <Switch
-                  checked={Boolean(field.optional)}
-                  ariaLabel="Optional field"
-                  onChange={(next) => onChange({ optional: next || undefined })}
+          <PropertyGrid>
+            <PropertyRow label="Size">
+              <NumericField
+                ariaLabel="Font size"
+                precision={2}
+                min={1}
+                disabled={locked.has("fontSizePx")}
+                value={field.fontSizePx ?? 45}
+                onCommit={(v) => onChange({ fontSizePx: v ?? field.fontSizePx })}
+              />
+            </PropertyRow>
+            <PropertyRow label="Line height">
+              <NumericField
+                suffix="%"
+                ariaLabel="Line height"
+                precision={0}
+                min={0}
+                allowEmpty
+                placeholder="110"
+                disabled={locked.has("lineHeight")}
+                value={
+                  field.lineHeight === undefined ? undefined : Math.round(field.lineHeight * 100)
+                }
+                onCommit={(v) => onChange({ lineHeight: v === undefined ? undefined : v / 100 })}
+              />
+            </PropertyRow>
+            <PropertyRow label="Spacing">
+              <NumericField
+                suffix="px"
+                ariaLabel="Letter spacing"
+                precision={1}
+                allowEmpty
+                placeholder="0"
+                disabled={locked.has("letterSpacingPx")}
+                value={field.letterSpacingPx}
+                onCommit={(v) => onChange({ letterSpacingPx: v })}
+              />
+            </PropertyRow>
+          </PropertyGrid>
+          {sizingMode === "fill" && !field.plateColor && computedFontSize !== undefined && (
+            <p className="t-caption-m sp-insp-note">
+              The box sets the size: {Math.round(computedFontSize)} px.
+            </p>
+          )}
+          {sizingMode === "shrink" &&
+            !field.plateColor &&
+            computedFontSize !== undefined &&
+            computedFontSize < (resolved.fontSizePx ?? 45) - 0.5 && (
+              <p className="t-caption-m sp-insp-note">
+                The content fits at {Math.round(computedFontSize)} px.
+              </p>
+            )}
+          <PropertyGrid columns={canSetSizing ? "auto minmax(0, 1fr)" : undefined}>
+            <PropertyRow label="Align">
+              <SegmentedIconGroup
+                ariaLabel="Text alignment"
+                value={field.align ?? "left"}
+                options={[
+                  { key: "left", Icon: AlignLeft, title: "Align left" },
+                  { key: "center", Icon: AlignCenter, title: "Align center" },
+                  { key: "right", Icon: AlignRight, title: "Align right" },
+                ]}
+                onSelect={(k) => onChange({ align: k as TemplateField["align"] })}
+              />
+            </PropertyRow>
+            {canSetSizing && (
+              <PropertyRow label="Text sizing">
+                <SegmentedIconGroup
+                  stretch
+                  ariaLabel="Text sizing"
+                  value={sizingMode}
+                  disabled={sizingLocked}
+                  options={[
+                    { key: "free", label: "Grows" },
+                    { key: "shrink", label: "Shrinks" },
+                    { key: "fill", label: "Fills" },
+                  ]}
+                  onSelect={setSizingMode}
                 />
               </PropertyRow>
             )}
-
-          {/* One slot: Content while fixed (fixed content moves to This
-              variation in variation mode), Placeholder otherwise. Placeholder
-              is shared, so it stays here on All variations. */}
-          {!variantMode && staticContentRows}
-          {placeholderRow}
+          </PropertyGrid>
+          {sizingLocked && boundStyle && (
+            <p className="t-caption-m sp-insp-note">Text sizing is set by {boundStyle.name}.</p>
+          )}
+          <PropertyGrid
+            columns={
+              sizingMode !== "free" && !field.plateColor && field.type !== "select"
+                ? "auto auto minmax(0, 1fr)"
+                : "auto auto"
+            }
+          >
+            {/* A grouped text child hugs its content: there is no free
+                vertical space to align within. */}
+            {!mainSizeComputed && (
+              <PropertyRow label="Vertical">
+                <SegmentedIconGroup
+                  ariaLabel="Vertical alignment"
+                  value={field.verticalAlign ?? "middle"}
+                  options={[
+                    { key: "top", Icon: AlignVerticalJustifyStart, title: "Align top" },
+                    { key: "middle", Icon: AlignVerticalJustifyCenter, title: "Align middle" },
+                    { key: "bottom", Icon: AlignVerticalJustifyEnd, title: "Align bottom" },
+                  ]}
+                  onSelect={(k) =>
+                    onChange({
+                      verticalAlign:
+                        k === "middle" ? undefined : (k as TemplateField["verticalAlign"]),
+                    })
+                  }
+                />
+              </PropertyRow>
+            )}
+            <PropertyRow label="Case">
+              <SegmentedIconGroup
+                ariaLabel="Letter case"
+                disabled={locked.has("uppercase")}
+                options={[
+                  {
+                    key: "uppercase",
+                    Icon: CaseUpper,
+                    title: "Uppercase",
+                    active: field.uppercase ?? false,
+                  },
+                ]}
+                onSelect={() => onChange({ uppercase: field.uppercase ? undefined : true })}
+              />
+            </PropertyRow>
+            {/* The floor under Shrinks and Fills, as a share of the set size. */}
+            {sizingMode !== "free" && !field.plateColor && field.type !== "select" && (
+              <PropertyRow label="Min text">
+                <NumericField
+                  suffix="%"
+                  ariaLabel="Minimum text size"
+                  precision={0}
+                  min={25}
+                  max={100}
+                  allowEmpty
+                  placeholder={minTextPlaceholder}
+                  value={
+                    field.minFontScale === undefined
+                      ? undefined
+                      : Math.round(field.minFontScale * 100)
+                  }
+                  onCommit={(v) =>
+                    onChange(
+                      v === undefined
+                        ? { minFontScale: undefined }
+                        : { minFontScale: v / 100, minFontSizePx: undefined },
+                    )
+                  }
+                />
+              </PropertyRow>
+            )}
+          </PropertyGrid>
         </InspectorSection>
       )}
 
-      {/* An icon's artwork and line weight: the same in every look. */}
-      {showAll && isIcon && (
-        <InspectorSection id="icon" title="Icon">
-          <PropertyRow full>
-            <span
-              className="flex items-center flex-1"
-              style={{ gap: "var(--space-2xs)", minWidth: 0, color: "var(--text-primary)" }}
-            >
-              {field.vector?.source && <IconGlyph name={field.vector.source.name} size={16} />}
-              <span className="truncate" style={{ fontSize: "var(--type-caption-size)" }}>
-                {field.vector?.source ? iconTitle(field.vector.source.name) : "Vector"}
+      {field.type === "image" && (
+        <InspectorSection id="image" title="Image">
+          <PropertyRow label="Fit">
+            <SegmentedIconGroup
+              stretch
+              ariaLabel="Fit"
+              value={field.objectFit ?? "cover"}
+              options={[
+                { key: "cover", label: "Cover" },
+                { key: "contain", label: "Contain" },
+              ]}
+              onSelect={(k) => onChange({ objectFit: k as TemplateField["objectFit"] })}
+            />
+          </PropertyRow>
+          <PropertyGrid>
+            {!isStatic && (
+              <PropertyRow label="Crop">
+                <Select
+                  ariaLabel="Crop"
+                  value={cropValue}
+                  options={cropOptions}
+                  onSelect={(v) => {
+                    setCustomCrop(v === "custom");
+                    if (v === "box") onChange({ aspectRatio: undefined });
+                    const preset = CROP_RATIOS.find((r) => r.label === v);
+                    if (preset) onChange({ aspectRatio: preset.ratio });
+                  }}
+                />
+              </PropertyRow>
+            )}
+            <PropertyRow label="Corners">{radiusControl}</PropertyRow>
+          </PropertyGrid>
+          {!isStatic && cropValue === "custom" && (
+            <PropertyRow label="Ratio">
+              <NumericField
+                ariaLabel="Crop ratio, width over height"
+                precision={2}
+                step={0.1}
+                min={0.1}
+                allowEmpty
+                placeholder={(field.width / field.height).toFixed(2)}
+                value={field.aspectRatio}
+                onCommit={(v) => onChange({ aspectRatio: v })}
+              />
+            </PropertyRow>
+          )}
+          {cornersGrid}
+          {/* Where the photo sits inside its box. Imports land with the
+              designer's position; Reset returns to the plain fit. */}
+          <PropertyRow
+            label={
+              <span className="sp-insp-row__label-row">
+                Photo position
+                {field.imageRect && (
+                  <button
+                    type="button"
+                    className="ui-reset ui-ring t-label-xs sp-insp-link"
+                    onClick={() => onChange({ imageRect: undefined })}
+                  >
+                    Reset
+                  </button>
+                )}
               </span>
+            }
+          >
+            {(
+              [
+                ["zoom", "Zoom", "Photo zoom"],
+                ["x", "X", "Photo position X"],
+                ["y", "Y", "Photo position Y"],
+              ] as const
+            ).map(([key, label, ariaLabel]) => (
+              <NumericField
+                key={key}
+                {...(key === "zoom"
+                  ? { icon: <ZoomIn size={16} strokeWidth={1.5} aria-hidden /> }
+                  : { label })}
+                suffix="%"
+                ariaLabel={ariaLabel}
+                precision={0}
+                min={key === "zoom" ? 10 : -1000}
+                max={1000}
+                value={Math.round(imagePosition(field.imageRect)[key])}
+                onCommit={(v) =>
+                  v !== undefined &&
+                  onChange({ imageRect: withImagePosition(field.imageRect, { [key]: v }) })
+                }
+              />
+            ))}
+          </PropertyRow>
+          {/* An imported custom-shape mask. Masks arrive from the Figma
+              importer; here one can only be removed. */}
+          {field.maskUrl && (
+            <PropertyRow label="Mask">
+              <span className="t-body-s sp-insp-computed">Custom shape</span>
+              <IconButton
+                variant="ghost"
+                size="sm"
+                icon={Minus}
+                label="Remove the mask"
+                onClick={() => onChange({ maskUrl: undefined })}
+              />
+            </PropertyRow>
+          )}
+        </InspectorSection>
+      )}
+
+      {isIcon && (
+        <InspectorSection id="icon" title="Icon">
+          <div className="sp-insp-icon-pick">
+            {field.vector?.source && <IconGlyph name={field.vector.source.name} size={16} />}
+            <span className="t-body-s">
+              {field.vector?.source ? iconTitle(field.vector.source.name) : "Vector"}
             </span>
-            <button
+            <Button
               ref={iconChangeRef}
-              type="button"
-              className="tu-caption-m"
-              style={{ color: "var(--text-secondary)", flexShrink: 0 }}
+              kind="neutral"
+              size="sm"
               aria-haspopup="dialog"
               aria-expanded={iconPickerOpen}
               onClick={() => setIconPickerOpen((o) => !o)}
             >
               Change
-            </button>
-          </PropertyRow>
+            </Button>
+          </div>
           {field.vector && hasStrokePaths(field.vector) && (
             <PropertyRow label="Weight">
               <NumericField
@@ -903,1138 +995,584 @@ export function FieldInspector(props: FieldInspectorProps) {
         </InspectorSection>
       )}
 
-      {/* Fixed content in variation mode: the wordmark that flips to white,
-          the logo's colourway asset. Lives on This variation, so a swap
-          never reaches the other frames. */}
-      {variantMode && showThis && isStatic && (isText || field.type === "image") && (
-        <InspectorSection id="variant-content" title="Content">
-          {staticContentRows}
+      {isShape && (
+        <InspectorSection id="shape" title="Shape">
+          <PropertyGrid>
+            <PropertyRow label="Shape">
+              <Select
+                ariaLabel="Shape"
+                value={field.shape ?? "rect"}
+                options={SHAPE_KINDS}
+                onSelect={(v) => onChange({ shape: v })}
+              />
+            </PropertyRow>
+            {hasRadius && <PropertyRow label="Corners">{radiusControl}</PropertyRow>}
+          </PropertyGrid>
+          {hasRadius && cornersGrid}
+          <PropertyRow label="Type">
+            <Select
+              ariaLabel="Type"
+              value={field.type}
+              options={FIELD_TYPES}
+              onSelect={changeType}
+            />
+          </PropertyRow>
         </InspectorSection>
       )}
 
-      {showAll && (
-        <InspectorSection id="position" title="Position">
-          {inStack ? (
-            // Stacked: the stack places this element. Show where it landed
-            // rather than offering editors the layout pass would override.
-            <PropertyRow label="Position">
-              <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                X {Math.round(computedRect?.x ?? field.x)} · Y{" "}
-                {Math.round(computedRect?.y ?? field.y)}, placed by "{containingGroup?.name}"
+      {hasFill && (
+        <InspectorSection
+          id="fill"
+          title={`${isIcon ? "Color" : "Fill"}${variantMode ? ` · ${variantMode.variant.name}` : ""}`}
+          headerExtra={
+            fillLocked ? undefined : (
+              <span className="sp-insp-actions">
+                {variantMode && fillOverridden && (
+                  <Button
+                    kind="ghost"
+                    size="sm"
+                    onClick={() =>
+                      variantMode.onOverride({ colorHex: undefined, textGradient: undefined })
+                    }
+                  >
+                    Use base
+                  </Button>
+                )}
+                {addOrRemove(
+                  Boolean(fill),
+                  "fill",
+                  () => look({ colorHex: DEFAULT_FILL_HEX, textGradient: undefined }),
+                  () => {
+                    setPickerOpen(false);
+                    look({ colorHex: undefined, textGradient: undefined });
+                  },
+                )}
               </span>
-            </PropertyRow>
-          ) : (
-            <>
-              <PropertyRow label="Align">
-                {/* The same control the multi-selection panel and the floating
-                  toolbar use — only the reference frame differs. */}
-                <AlignControls
-                  scope="canvas"
-                  onAlign={(axis, edge) => (axis === "h" ? alignBoxH(edge) : alignBoxV(edge))}
+            )
+          }
+        >
+          {fill && (
+            <HexRow
+              ref={fillSwatchRef}
+              swatch={fillSwatchCss(
+                fill.type === "gradient" ? gradientCss({ ...fill.gradient, angle: 90 }) : fill.hex,
+                fill.type === "gradient",
+              )}
+              swatchLabel="Edit fill"
+              expanded={pickerOpen}
+              onSwatch={() => setPickerOpen((o) => !o)}
+              hex={fill.type === "solid" ? fill.hex : undefined}
+              text={fill.type === "gradient" ? gradientName(fill.gradient.kind) : undefined}
+              hexLabel="Fill hex value"
+              disabled={fillLocked}
+              onHex={(hex) =>
+                fill.type === "solid" &&
+                look({ colorHex: keepAlpha(hex, fill.hex), textGradient: undefined })
+              }
+            >
+              {fill.type === "solid" && (
+                <NumericField
+                  bare
+                  suffix="%"
+                  ariaLabel="Fill opacity"
+                  precision={0}
+                  min={0}
+                  max={100}
+                  disabled={fillLocked}
+                  value={fillAlpha}
+                  onCommit={(v) => {
+                    const base = parseHex(fill.hex);
+                    if (!base) return;
+                    look({
+                      colorHex: toHex({ ...base, a: (v ?? fillAlpha) / 100 }),
+                      textGradient: undefined,
+                    });
+                  }}
                 />
-              </PropertyRow>
-              <PropertyRow label="Position">
+              )}
+            </HexRow>
+          )}
+        </InspectorSection>
+      )}
+
+      {variantMode && (
+        <InspectorSection id="variation" title={`Variation · ${variantMode.variant.name}`}>
+          <SwitchRow
+            label="Hidden in this variation"
+            checked={hiddenHere}
+            onChange={(next) => variantMode.onOverride({ hidden: next || undefined })}
+          />
+          <PropertyRow label="Opacity">{opacityField}</PropertyRow>
+          {isText && typeStyleRows}
+          {hasOverride && (
+            <Button kind="neutral" size="sm" onClick={() => variantMode.onOverride(null)}>
+              Use the base styling
+            </Button>
+          )}
+        </InspectorSection>
+      )}
+
+      {isTextish && (
+        <InspectorSection
+          id="plate"
+          title="Plate"
+          headerExtra={addOrRemove(
+            Boolean(field.plateColor),
+            "plate",
+            () =>
+              onChange({
+                plateColor: kit?.colors[0]?.hex ?? DEFAULT_FILL_HEX,
+                platePaddingX: PLATE_PADDING_X_DEFAULT,
+                platePaddingY: PLATE_PADDING_Y_DEFAULT,
+              }),
+            () =>
+              onChange({
+                plateColor: undefined,
+                platePaddingX: undefined,
+                platePaddingY: undefined,
+              }),
+          )}
+        >
+          {field.plateColor && (
+            <>
+              <HexRow
+                ref={plateSwatchRef}
+                swatch={fillSwatchCss(field.plateColor)}
+                swatchLabel="Edit plate color"
+                expanded={platePickerOpen}
+                onSwatch={() => setPlatePickerOpen((o) => !o)}
+                hex={field.plateColor}
+                hexLabel="Plate hex value"
+                onHex={(hex) => onChange({ plateColor: keepAlpha(hex, field.plateColor ?? hex) })}
+              />
+              <PropertyRow label="Padding">
                 <NumericField
                   label="X"
-                  ariaLabel="X position"
+                  ariaLabel="Plate horizontal padding"
                   precision={0}
-                  value={field.x}
-                  onCommit={(v) => onChange({ x: v ?? field.x })}
+                  min={0}
+                  value={field.platePaddingX ?? PLATE_PADDING_X_DEFAULT}
+                  onCommit={(v) =>
+                    onChange({
+                      platePaddingX: Math.max(
+                        0,
+                        v ?? field.platePaddingX ?? PLATE_PADDING_X_DEFAULT,
+                      ),
+                    })
+                  }
                 />
                 <NumericField
                   label="Y"
-                  ariaLabel="Y position"
-                  precision={0}
-                  value={field.y}
-                  onCommit={(v) => onChange({ y: v ?? field.y })}
-                />
-              </PropertyRow>
-            </>
-          )}
-          <PropertyRow label="Rotate">
-            <NumericField
-              icon={<RotateCw style={{ width: 12, height: 12 }} strokeWidth={1.5} />}
-              suffix="°"
-              ariaLabel="Rotation in degrees"
-              precision={0}
-              value={wrapDeg(field.rotation ?? 0)}
-              onCommit={(v) =>
-                onChange({ rotation: wrapDeg(v ?? field.rotation ?? 0) || undefined })
-              }
-            />
-            <SegmentedIconGroup
-              ariaLabel="Flip"
-              options={[
-                {
-                  key: "flipX",
-                  Icon: FlipHorizontal2,
-                  title: "Flip horizontal",
-                  active: Boolean(field.flipX),
-                },
-                {
-                  key: "flipY",
-                  Icon: FlipVertical2,
-                  title: "Flip vertical",
-                  active: Boolean(field.flipY),
-                },
-              ]}
-              onSelect={(k) =>
-                k === "flipX"
-                  ? onChange({ flipX: field.flipX ? undefined : true })
-                  : onChange({ flipY: field.flipY ? undefined : true })
-              }
-            />
-          </PropertyRow>
-          {!inStack && (
-            <PropertyRow label="Anchor">
-              <select
-                className="sp-input"
-                style={compactControlStyle}
-                aria-label="Anchor point"
-                value={field.anchor ?? "topLeft"}
-                onChange={(e) => changeAnchor(e.target.value as "topLeft" | "center")}
-              >
-                <option value="topLeft">Top-left (X/Y = box corner)</option>
-                <option value="center">Center (X/Y = box center)</option>
-              </select>
-            </PropertyRow>
-          )}
-        </InspectorSection>
-      )}
-
-      {showAll && (
-        <InspectorSection id="layout" title="Layout">
-          {canSetSizing && (
-            <>
-              {/* Stacked: three worded options need more width than the label
-                column leaves, and squeezing them wraps every one onto a
-                second line. */}
-              <PropertyRow label="Text sizing" stack>
-                <SegmentedIconGroup
-                  stretch
-                  ariaLabel="Text sizing behavior"
-                  value={sizingMode}
-                  disabled={sizingLocked}
-                  options={[
-                    {
-                      key: "free",
-                      label: "Box grows",
-                      title:
-                        "The text stays at its set size; the box gets taller as more is entered",
-                    },
-                    {
-                      key: "shrink",
-                      label: "Text shrinks",
-                      title:
-                        "The box stays exactly as drawn; the text gets smaller until it fits, and never grows past its set size",
-                    },
-                    {
-                      key: "fill",
-                      label: "Fill box",
-                      title:
-                        "The box stays exactly as drawn; the text is sized to fill it, growing as well as shrinking",
-                    },
-                  ]}
-                  onSelect={setSizingMode}
-                />
-              </PropertyRow>
-              {sizingLocked && boundStyle && (
-                <p style={hintStyle}>Set by the “{boundStyle.name}” style.</p>
-              )}
-              {!isStatic && onWorstCasePreview && (
-                <PropertyRow label="Preview">
-                  <button
-                    type="button"
-                    aria-pressed={worstCasePreview}
-                    onClick={() => onWorstCasePreview(!worstCasePreview)}
-                    className="sp-input"
-                    style={{
-                      fontSize: "var(--type-caption-size)",
-                      color: worstCasePreview ? "var(--state-primary)" : "var(--text-secondary)",
-                      cursor: "pointer",
-                    }}
-                    title={
-                      field.maxLength
-                        ? `Fill the canvas preview with a ${field.maxLength}-character entry`
-                        : "Fill the canvas preview with a long entry (set Max chars to bound it)"
-                    }
-                  >
-                    {worstCasePreview ? "Showing longest entry" : "Show longest entry"}
-                  </button>
-                </PropertyRow>
-              )}
-            </>
-          )}
-          <PropertyRow label="Dimensions">
-            {(mainSizeComputed && !groupVertical) ||
-            (isTextish && Boolean(field.plateColor) && field.type !== "multiline") ? (
-              <span style={{ fontSize: 11, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-                W {Math.round(computedRect?.width ?? field.width)} ·{" "}
-                {field.plateColor ? "hugs content" : "computed"}
-              </span>
-            ) : (
-              <NumericField
-                label="W"
-                ariaLabel="Width"
-                precision={0}
-                min={1}
-                value={field.width}
-                onCommit={commitW}
-              />
-            )}
-            {(mainSizeComputed && groupVertical) ||
-            (isText && sizingMode === "free") ||
-            (isTextish && Boolean(field.plateColor)) ? (
-              <span style={{ fontSize: 11, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-                H {Math.round(computedRect?.height ?? field.height)} · hugs content
-              </span>
-            ) : (
-              <NumericField
-                label="H"
-                ariaLabel="Height"
-                precision={0}
-                min={1}
-                value={field.height}
-                onCommit={commitH}
-              />
-            )}
-            <button
-              onClick={() => setConstrain(!constrain)}
-              aria-pressed={constrain}
-              title={
-                constrain
-                  ? "Unlink: edit width and height independently"
-                  : "Constrain proportions: width and height scale together"
-              }
-              style={{ flexShrink: 0, display: "flex", alignItems: "center" }}
-            >
-              {constrain ? (
-                <LinkIcon
-                  style={{ width: 13, height: 13, color: "var(--state-primary)" }}
-                  strokeWidth={1.5}
-                />
-              ) : (
-                <Unlink
-                  style={{ width: 13, height: 13, color: "var(--text-muted)" }}
-                  strokeWidth={1.5}
-                />
-              )}
-            </button>
-          </PropertyRow>
-          {/* The control that decides whether the chosen mode can fail: the
-            size floor under Shrink and Fill, the entry bound under Free. */}
-          {isText && field.type !== "select" && sizingMode !== "free" && !field.plateColor && (
-            <PropertyRow label="Min text">
-              <NumericField
-                suffix="%"
-                ariaLabel="Minimum text size, as a percentage of the set size"
-                precision={0}
-                min={25}
-                max={100}
-                allowEmpty
-                placeholder={minTextPlaceholder}
-                value={
-                  field.minFontScale === undefined
-                    ? undefined
-                    : Math.round(field.minFontScale * 100)
-                }
-                onCommit={(v) =>
-                  onChange(
-                    v === undefined
-                      ? { minFontScale: undefined }
-                      : { minFontScale: v / 100, minFontSizePx: undefined },
-                  )
-                }
-              />
-            </PropertyRow>
-          )}
-          {isText && field.type !== "select" && sizingMode === "free" && !isStatic && (
-            <PropertyRow label="Max chars">
-              <NumericField
-                ariaLabel="Maximum characters"
-                precision={0}
-                min={1}
-                allowEmpty
-                placeholder="none"
-                disabled={locked.has("maxLength")}
-                value={field.maxLength}
-                onCommit={(v) => onChange({ maxLength: v })}
-              />
-            </PropertyRow>
-          )}
-        </InspectorSection>
-      )}
-
-      {showAll && (
-        <InspectorSection id="appearance" title="Appearance">
-          {/* Opacity + corner radius on one row, X/Y rhythm. Radius appears
-            only where the renderer honors it (images, rect shapes).
-            Full width: the row has no label to put in the gutter, and two
-            numeric fields plus the link toggle sharing 171px left each input
-            about 12px of room — not enough for "100", let alone "999". */}
-          {(!variantMode || hasRadius) && (
-            <PropertyRow full>
-              {!variantMode && opacityField}
-              {hasRadius && (
-                <>
-                  <NumericField
-                    icon={<SquareRoundCorner style={{ width: 12, height: 12 }} strokeWidth={1.5} />}
-                    suffix="px"
-                    ariaLabel="Corner radius"
-                    precision={0}
-                    min={0}
-                    value={
-                      radiusLinked || radiusUniform ? (field.cornerRadius?.tl ?? 0) : undefined
-                    }
-                    mixed={!radiusLinked && !radiusUniform}
-                    onCommit={(v) => {
-                      const rad = Math.max(0, v ?? field.cornerRadius?.tl ?? 0);
-                      setRadius({ tl: rad, tr: rad, br: rad, bl: rad });
-                    }}
-                  />
-                  <button
-                    onClick={() => {
-                      if (!radiusLinked) {
-                        // Re-linking collapses to the top-left value.
-                        const rad = field.cornerRadius?.tl ?? 0;
-                        setRadius({ tl: rad, tr: rad, br: rad, bl: rad });
-                      }
-                      setRadiusLinked(!radiusLinked);
-                    }}
-                    aria-pressed={radiusLinked}
-                    title={
-                      radiusLinked
-                        ? "Unlink corners: set each independently"
-                        : "Link corners: one value for all four"
-                    }
-                    // A real control box, sized to the row: without one the
-                    // toggle sat flush against the rail body's clipped edge
-                    // and its focus ring was cut off. sp-icon-btn already
-                    // centres, prevents shrinking, and paints the hover fill;
-                    // only the size and the crisp control radius are set here.
-                    className="sp-icon-btn"
-                    style={{
-                      width: "var(--row-h-compact)",
-                      height: "var(--row-h-compact)",
-                      borderRadius: "var(--radius-control)",
-                    }}
-                  >
-                    {radiusLinked ? (
-                      <LinkIcon
-                        style={{ width: 13, height: 13, color: "var(--state-primary)" }}
-                        strokeWidth={1.5}
-                      />
-                    ) : (
-                      <Unlink
-                        style={{ width: 13, height: 13, color: "var(--text-muted)" }}
-                        strokeWidth={1.5}
-                      />
-                    )}
-                  </button>
-                </>
-              )}
-            </PropertyRow>
-          )}
-          {/* Per-corner inputs. Full width: the row has no label, and the
-            96px gutter left four inputs about 30px each at the rail's
-            minimum, which is less than one digit once NumericField's own
-            padding and scrub label are paid for. A fixed 2×2 grid so each
-            input sits in the corner it edits (top row TL TR, bottom BL BR). */}
-          {hasRadius && !radiusLinked && (
-            <PropertyRow full>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(2, 1fr)",
-                  gap: "var(--space-3xs)",
-                  flex: 1,
-                  minWidth: 0,
-                }}
-              >
-                {CORNERS.map((c) => (
-                  <NumericField
-                    key={c.key}
-                    label={c.label}
-                    ariaLabel={`Corner radius ${c.label}`}
-                    precision={0}
-                    min={0}
-                    value={field.cornerRadius?.[c.key] ?? 0}
-                    onCommit={(v) =>
-                      setRadius({ [c.key]: Math.max(0, v ?? field.cornerRadius?.[c.key] ?? 0) })
-                    }
-                  />
-                ))}
-              </div>
-            </PropertyRow>
-          )}
-          {field.type === "image" && (
-            <>
-              <PropertyRow label="Fit">
-                <select
-                  className="sp-input"
-                  style={compactControlStyle}
-                  aria-label="Image fit"
-                  value={field.objectFit ?? "cover"}
-                  onChange={(e) =>
-                    onChange({ objectFit: e.target.value as TemplateField["objectFit"] })
-                  }
-                >
-                  <option value="cover">Cover (fill box)</option>
-                  <option value="contain">Contain (fit inside)</option>
-                </select>
-              </PropertyRow>
-              {!isStatic && (
-                <PropertyRow label="Crop ratio">
-                  <NumericField
-                    ariaLabel="Crop ratio (width over height)"
-                    precision={2}
-                    step={0.1}
-                    min={0.1}
-                    allowEmpty
-                    placeholder={`box: ${(field.width / field.height).toFixed(2)}`}
-                    value={field.aspectRatio}
-                    onCommit={(v) => onChange({ aspectRatio: v })}
-                  />
-                </PropertyRow>
-              )}
-              {/* Where the photo sits inside its box. Imports land with the
-                designer's position; Reset returns to the plain fit. Shared
-                by every look, so it lives on All only. */}
-              <PropertyRow
-                stack
-                label={
-                  <span className="flex items-center" style={{ gap: "var(--space-2xs)" }}>
-                    <span style={{ flex: 1 }}>Photo position</span>
-                    {field.imageRect && (
-                      <button
-                        type="button"
-                        className="tu-caption-m"
-                        style={{ color: "var(--text-secondary)" }}
-                        onClick={() => onChange({ imageRect: undefined })}
-                      >
-                        Reset
-                      </button>
-                    )}
-                  </span>
-                }
-              >
-                {(
-                  [
-                    ["zoom", "Zoom", "Photo zoom"],
-                    ["x", "X", "Photo position X"],
-                    ["y", "Y", "Photo position Y"],
-                  ] as const
-                ).map(([key, label, ariaLabel]) => (
-                  <NumericField
-                    key={key}
-                    {...(key === "zoom"
-                      ? { icon: <ZoomIn style={{ width: 12, height: 12 }} strokeWidth={1.5} /> }
-                      : { label })}
-                    suffix="%"
-                    ariaLabel={ariaLabel}
-                    precision={0}
-                    min={key === "zoom" ? 10 : -1000}
-                    max={1000}
-                    value={Math.round(imagePosition(field.imageRect)[key])}
-                    onCommit={(v) =>
-                      v !== undefined &&
-                      onChange({ imageRect: withImagePosition(field.imageRect, { [key]: v }) })
-                    }
-                  />
-                ))}
-              </PropertyRow>
-              {/* An imported custom-shape mask. Masks can't be authored
-                in-app (yet — they arrive from the Figma importer), so the
-                row only says one is applied and offers removal. */}
-              {field.maskUrl && (
-                <PropertyRow label="Mask">
-                  <span
-                    style={{
-                      fontSize: "var(--type-caption-size)",
-                      color: "var(--text-secondary)",
-                      flex: 1,
-                      minWidth: 0,
-                    }}
-                  >
-                    Custom shape from import
-                  </span>
-                  <button
-                    title="Remove mask (the image becomes rectangular)"
-                    aria-label="Remove mask"
-                    onClick={() => onChange({ maskUrl: undefined })}
-                    style={{ color: "var(--text-muted)", display: "flex", flexShrink: 0 }}
-                  >
-                    <Minus style={{ width: 13, height: 13 }} strokeWidth={1.5} />
-                  </button>
-                </PropertyRow>
-              )}
-            </>
-          )}
-          {/* Shape stroke. Same row grammar as the Fill section: swatch, hex,
-            then the content-sized numeric, then remove; its position on the
-            edge sits below. Shown in every template: the stroke's geometry is
-            shared, and a look changes only its color (This variation). */}
-          {isShape && (
-            <PropertyRow label="Stroke" stack={Boolean(field.strokeColor)}>
-              {field.strokeColor ? (
-                <>
-                  <button
-                    ref={strokeSwatchRef}
-                    title="Edit stroke color"
-                    aria-label="Edit stroke color"
-                    aria-expanded={strokePickerOpen}
-                    onClick={() => setStrokePickerOpen((o) => !o)}
-                    style={{
-                      width: 24,
-                      height: 24,
-                      flexShrink: 0,
-                      borderRadius: "var(--radius-control)",
-                      border: "1px solid var(--border-strong)",
-                      background: fillSwatchCss(field.strokeColor),
-                      cursor: "pointer",
-                    }}
-                  />
-                  <input
-                    type="text"
-                    spellCheck={false}
-                    aria-label="Stroke hex value"
-                    className="sp-input"
-                    style={{
-                      ...compactControlStyle,
-                      fontFamily: "var(--font-mono)",
-                      fontSize: "var(--type-caption-size)",
-                      minWidth: 0,
-                      flex: 1,
-                    }}
-                    key={`${field.id}:stroke:${field.strokeColor}`}
-                    defaultValue={field.strokeColor}
-                    onKeyDown={(e) => {
-                      e.stopPropagation();
-                      if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-                      if (e.key === "Escape") {
-                        (e.target as HTMLInputElement).value = field.strokeColor!;
-                        (e.target as HTMLInputElement).blur();
-                      }
-                    }}
-                    onBlur={(e) => {
-                      const m = /^#?([0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?)$/.exec(
-                        e.target.value.trim(),
-                      );
-                      if (m) onChange({ strokeColor: `#${m[1].toUpperCase()}` });
-                      else e.target.value = field.strokeColor!;
-                    }}
-                  />
-                  <div style={{ width: 68, flexShrink: 0 }}>
-                    <NumericField
-                      suffix="px"
-                      ariaLabel="Stroke width"
-                      precision={0}
-                      min={1}
-                      value={field.strokeWidthPx ?? 1}
-                      onCommit={(v) =>
-                        onChange({ strokeWidthPx: Math.max(1, v ?? field.strokeWidthPx ?? 1) })
-                      }
-                    />
-                  </div>
-                  <button
-                    title="Remove stroke"
-                    aria-label="Remove stroke"
-                    onClick={() => onChange({ strokeColor: undefined, strokeWidthPx: undefined })}
-                    style={{ color: "var(--text-muted)", display: "flex", flexShrink: 0 }}
-                  >
-                    <Minus style={{ width: 13, height: 13 }} strokeWidth={1.5} />
-                  </button>
-                </>
-              ) : (
-                <button
-                  title="Add stroke"
-                  aria-label="Add stroke"
-                  onClick={() => onChange({ strokeColor: DEFAULT_FILL_HEX, strokeWidthPx: 2 })}
-                  style={{ color: "var(--text-secondary)", display: "flex" }}
-                >
-                  <Plus style={{ width: 13, height: 13 }} strokeWidth={1.5} />
-                </button>
-              )}
-            </PropertyRow>
-          )}
-          {isShape && field.strokeColor && (
-            <PropertyRow label="Position">
-              <SegmentedIconGroup
-                ariaLabel="Stroke position"
-                stretch
-                value={field.strokeAlign ?? "inside"}
-                options={[
-                  { key: "inside", label: "Inside", title: "Inside the edge" },
-                  { key: "center", label: "Center", title: "Centered on the edge" },
-                  { key: "outside", label: "Outside", title: "Outside the edge" },
-                ]}
-                onSelect={(align) =>
-                  onChange({ strokeAlign: align === "inside" ? undefined : align })
-                }
-              />
-            </PropertyRow>
-          )}
-          {/* Text plate (pill) — same row grammar as the stroke above. The
-            corner radius controls higher in this section apply to the plate
-            once one is set (hasRadius widens); unset radius renders the
-            fully-rounded pill default. */}
-          {isTextish && (
-            <>
-              <PropertyRow label="Plate" stack={Boolean(field.plateColor)}>
-                {field.plateColor ? (
-                  <>
-                    <button
-                      ref={plateSwatchRef}
-                      title="Edit plate color"
-                      aria-label="Edit plate color"
-                      aria-expanded={platePickerOpen}
-                      onClick={() => setPlatePickerOpen((o) => !o)}
-                      style={{
-                        width: 24,
-                        height: 24,
-                        flexShrink: 0,
-                        borderRadius: "var(--radius-control)",
-                        border: "1px solid var(--border-strong)",
-                        background: fillSwatchCss(field.plateColor),
-                        cursor: "pointer",
-                      }}
-                    />
-                    <input
-                      type="text"
-                      spellCheck={false}
-                      aria-label="Plate hex value"
-                      className="sp-input"
-                      style={{
-                        ...compactControlStyle,
-                        fontFamily: "var(--font-mono)",
-                        fontSize: "var(--type-caption-size)",
-                        minWidth: 0,
-                        flex: 1,
-                      }}
-                      key={`${field.id}:plate:${field.plateColor}`}
-                      defaultValue={field.plateColor}
-                      onKeyDown={(e) => {
-                        e.stopPropagation();
-                        if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-                        if (e.key === "Escape") {
-                          (e.target as HTMLInputElement).value = field.plateColor!;
-                          (e.target as HTMLInputElement).blur();
-                        }
-                      }}
-                      onBlur={(e) => {
-                        const m = /^#?([0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?)$/.exec(
-                          e.target.value.trim(),
-                        );
-                        if (m) onChange({ plateColor: `#${m[1].toUpperCase()}` });
-                        else e.target.value = field.plateColor!;
-                      }}
-                    />
-                    <button
-                      title="Remove plate"
-                      aria-label="Remove plate"
-                      onClick={() =>
-                        onChange({
-                          plateColor: undefined,
-                          platePaddingX: undefined,
-                          platePaddingY: undefined,
-                        })
-                      }
-                      style={{ color: "var(--text-muted)", display: "flex", flexShrink: 0 }}
-                    >
-                      <Minus style={{ width: 13, height: 13 }} strokeWidth={1.5} />
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    title="Add plate"
-                    aria-label="Add plate"
-                    onClick={() =>
-                      onChange({
-                        plateColor: kit?.colors[0]?.hex ?? DEFAULT_FILL_HEX,
-                        platePaddingX: PLATE_PADDING_X_DEFAULT,
-                        platePaddingY: PLATE_PADDING_Y_DEFAULT,
-                      })
-                    }
-                    style={{ color: "var(--text-secondary)", display: "flex" }}
-                  >
-                    <Plus style={{ width: 13, height: 13 }} strokeWidth={1.5} />
-                  </button>
-                )}
-              </PropertyRow>
-              {field.plateColor && (
-                <PropertyRow label="Padding">
-                  <NumericField
-                    label="X"
-                    ariaLabel="Plate horizontal padding"
-                    precision={0}
-                    min={0}
-                    value={field.platePaddingX ?? PLATE_PADDING_X_DEFAULT}
-                    onCommit={(v) =>
-                      onChange({
-                        platePaddingX: Math.max(
-                          0,
-                          v ?? field.platePaddingX ?? PLATE_PADDING_X_DEFAULT,
-                        ),
-                      })
-                    }
-                  />
-                  <NumericField
-                    label="Y"
-                    ariaLabel="Plate vertical padding"
-                    precision={0}
-                    min={0}
-                    value={field.platePaddingY ?? PLATE_PADDING_Y_DEFAULT}
-                    onCommit={(v) =>
-                      onChange({
-                        platePaddingY: Math.max(
-                          0,
-                          v ?? field.platePaddingY ?? PLATE_PADDING_Y_DEFAULT,
-                        ),
-                      })
-                    }
-                  />
-                </PropertyRow>
-              )}
-            </>
-          )}
-        </InspectorSection>
-      )}
-
-      {showAll && (
-        <InspectorSection id="typography" title="Typography">
-          {isText && (
-            <>
-              {!variantMode && typeStyleRows}
-              <PropertyRow full>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <FontFamilySelect
-                    value={displayFamily}
-                    groups={familyGroups}
-                    disabled={locked.has("fontFamily")}
-                    triggerStyle={compactControlStyle}
-                    onSelect={changeFamily}
-                  />
-                </div>
-              </PropertyRow>
-              <PropertyRow>
-                <div style={{ flex: 1.4, minWidth: 0 }}>
-                  <FontStyleSelect
-                    family={displayFamily}
-                    styles={styleOptions}
-                    value={displayStyle}
-                    disabled={!displayFamily || styleLocked}
-                    locked={styleLocked}
-                    triggerStyle={compactControlStyle}
-                    onSelect={changeStyle}
-                  />
-                </div>
-                <NumericField
-                  suffix="px"
-                  ariaLabel="Font size"
-                  precision={2}
-                  min={1}
-                  disabled={locked.has("fontSizePx")}
-                  value={field.fontSizePx ?? 45}
-                  onCommit={(v) => onChange({ fontSizePx: v ?? field.fontSizePx })}
-                />
-              </PropertyRow>
-              {sizingMode === "fill" && !field.plateColor && computedFontSize !== undefined && (
-                <p style={hintStyle}>
-                  Fill box ignores this. The box sets the size, currently{" "}
-                  {Math.round(computedFontSize)}px.
-                </p>
-              )}
-              {sizingMode === "shrink" &&
-                !field.plateColor &&
-                computedFontSize !== undefined &&
-                computedFontSize < (resolved.fontSizePx ?? 45) - 0.5 && (
-                  <p style={hintStyle}>
-                    This is the size at rest. The current content fits at{" "}
-                    {Math.round(computedFontSize)}px.
-                  </p>
-                )}
-              {fontCatalog && !fontCatalog.verified && (
-                <p style={hintStyle}>
-                  We don't have {displayFamily} on file, so these styles are a guess. Upload the
-                  font in Brand Studio to pick from what it really has.
-                </p>
-              )}
-              <PropertyRow label="Line height">
-                <NumericField
-                  suffix="%"
-                  ariaLabel="Line height percent"
+                  ariaLabel="Plate vertical padding"
                   precision={0}
                   min={0}
-                  allowEmpty
-                  placeholder="110"
-                  disabled={locked.has("lineHeight")}
-                  value={
-                    field.lineHeight === undefined ? undefined : Math.round(field.lineHeight * 100)
+                  value={field.platePaddingY ?? PLATE_PADDING_Y_DEFAULT}
+                  onCommit={(v) =>
+                    onChange({
+                      platePaddingY: Math.max(
+                        0,
+                        v ?? field.platePaddingY ?? PLATE_PADDING_Y_DEFAULT,
+                      ),
+                    })
                   }
-                  onCommit={(v) => onChange({ lineHeight: v === undefined ? undefined : v / 100 })}
                 />
               </PropertyRow>
-              <PropertyRow label="Spacing">
-                <NumericField
-                  suffix="px"
-                  ariaLabel="Letter spacing in pixels"
-                  precision={1}
-                  allowEmpty
-                  placeholder="0"
-                  disabled={locked.has("letterSpacingPx")}
-                  value={field.letterSpacingPx}
-                  onCommit={(v) => onChange({ letterSpacingPx: v })}
-                />
-              </PropertyRow>
-              <PropertyRow label="Align">
-                <SegmentedIconGroup
-                  ariaLabel="Horizontal text alignment"
-                  value={field.align ?? "left"}
-                  options={[
-                    { key: "left", Icon: AlignLeft, title: "Align text left" },
-                    { key: "center", Icon: AlignCenter, title: "Center text" },
-                    { key: "right", Icon: AlignRight, title: "Align text right" },
-                  ]}
-                  onSelect={(k) => onChange({ align: k as TemplateField["align"] })}
-                />
-                {/* A grouped text child hugs its content — there is no free
-                  vertical space to align within; the STACK's anchor and gap
-                  own vertical placement. */}
-                {!mainSizeComputed && (
-                  <SegmentedIconGroup
-                    ariaLabel="Vertical text alignment"
-                    value={field.verticalAlign ?? "middle"}
-                    options={[
-                      {
-                        key: "top",
-                        Icon: AlignVerticalJustifyStart,
-                        title: "Align text to the top of the box",
-                      },
-                      {
-                        key: "middle",
-                        Icon: AlignVerticalJustifyCenter,
-                        title: "Center text vertically",
-                      },
-                      {
-                        key: "bottom",
-                        Icon: AlignVerticalJustifyEnd,
-                        title: "Align text to the bottom of the box",
-                      },
-                    ]}
-                    onSelect={(k) =>
-                      onChange({
-                        verticalAlign:
-                          k === "middle" ? undefined : (k as TemplateField["verticalAlign"]),
-                      })
-                    }
-                  />
-                )}
-                <SegmentedIconGroup
-                  ariaLabel="Letter case"
-                  disabled={locked.has("uppercase")}
-                  options={[
-                    {
-                      key: "uppercase",
-                      Icon: CaseUpper,
-                      title: "Uppercase",
-                      active: field.uppercase ?? false,
-                    },
-                  ]}
-                  onSelect={() => onChange({ uppercase: field.uppercase ? undefined : true })}
-                />
-              </PropertyRow>
+              <PropertyRow label="Corners">{radiusControl}</PropertyRow>
+              {cornersGrid}
             </>
           )}
         </InspectorSection>
       )}
 
-      {showThis && (
+      {isShape && (
         <InspectorSection
-          id="fill"
-          title={isIcon ? "Color" : "Fill"}
-          headerExtra={
-            variantMode && fillOverridden ? (
-              <button
-                type="button"
-                className="tu-caption-m"
-                style={{ color: "var(--text-secondary)" }}
-                onClick={() =>
-                  variantMode.onOverride({ colorHex: undefined, textGradient: undefined })
-                }
-              >
-                Use base
-              </button>
-            ) : hasFill && !fill && !fillLocked ? (
-              <button
-                title="Add fill"
-                aria-label="Add fill"
-                onClick={() => look({ colorHex: DEFAULT_FILL_HEX, textGradient: undefined })}
-                style={{ color: "var(--text-secondary)", display: "flex" }}
-              >
-                <Plus style={{ width: 13, height: 13 }} strokeWidth={1.5} />
-              </button>
-            ) : undefined
-          }
+          id="stroke"
+          title="Stroke"
+          headerExtra={addOrRemove(
+            Boolean(field.strokeColor),
+            "stroke",
+            () => onChange({ strokeColor: DEFAULT_FILL_HEX, strokeWidthPx: 2 }),
+            () => {
+              setStrokePickerOpen(false);
+              onChange({ strokeColor: undefined, strokeWidthPx: undefined });
+            },
+          )}
         >
-          {hasFill &&
-            (fill ? (
-              /* Full width: this row has no label to put in the gutter, and it
-               carries four controls — a hex that must show all nine
-               characters of #RRGGBBAA, at that. Spending 104px on an empty
-               column to align with rows that DO have labels cost more than
-               the alignment was worth. */
-              <PropertyRow full>
-                <button
-                  ref={fillSwatchRef}
-                  title="Edit fill"
-                  aria-label="Edit fill"
-                  aria-expanded={pickerOpen}
-                  onClick={() => setPickerOpen((o) => !o)}
-                  style={{
-                    width: 24,
-                    height: 24,
-                    flexShrink: 0,
-                    borderRadius: "var(--radius-control)",
-                    border: "1px solid var(--border-strong)",
-                    // Through the shared helper: a bare colour in a non-final
-                    // background layer is invalid CSS, and this row used to
-                    // write exactly that — so every solid fill previewed empty.
-                    background: fillSwatchCss(
-                      fill.type === "gradient"
-                        ? gradientCss({ ...fill.gradient, angle: 90 })
-                        : fill.hex,
-                      fill.type === "gradient",
-                    ),
-                    cursor: "pointer",
-                  }}
+          {field.strokeColor && (
+            <>
+              <HexRow
+                ref={strokeSwatchRef}
+                swatch={fillSwatchCss(field.strokeColor)}
+                swatchLabel="Edit stroke color"
+                expanded={strokePickerOpen}
+                onSwatch={() => setStrokePickerOpen((o) => !o)}
+                hex={field.strokeColor}
+                hexLabel="Stroke hex value"
+                onHex={(hex) => onChange({ strokeColor: keepAlpha(hex, field.strokeColor ?? hex) })}
+              >
+                <NumericField
+                  bare
+                  suffix="px"
+                  ariaLabel="Stroke width"
+                  precision={0}
+                  min={1}
+                  value={field.strokeWidthPx ?? 1}
+                  onCommit={(v) =>
+                    onChange({ strokeWidthPx: Math.max(1, v ?? field.strokeWidthPx ?? 1) })
+                  }
                 />
-                {fill.type === "solid" ? (
-                  <>
-                    <input
-                      type="text"
-                      spellCheck={false}
-                      disabled={fillLocked}
-                      aria-label="Fill hex value"
-                      className="sp-input"
-                      style={{
-                        ...compactControlStyle,
-                        fontFamily: "var(--font-mono)",
-                        fontSize: "var(--type-caption-size)",
-                        minWidth: 0,
-                        flex: 1,
-                      }}
-                      key={`${field.id}:${fill.hex}`}
-                      defaultValue={fill.hex}
-                      onKeyDown={(e) => {
-                        e.stopPropagation();
-                        if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-                        if (e.key === "Escape") {
-                          (e.target as HTMLInputElement).value = fill.hex;
-                          (e.target as HTMLInputElement).blur();
-                        }
-                      }}
-                      onBlur={(e) => {
-                        const m = /^#?([0-9a-fA-F]{6})([0-9a-fA-F]{2})?$/.exec(
-                          e.target.value.trim(),
-                        );
-                        if (m) {
-                          look({
-                            colorHex: `#${m[1].toUpperCase()}${m[2] ? m[2].toUpperCase() : ""}`,
-                            textGradient: undefined,
-                          });
-                        } else {
-                          e.target.value = fill.hex;
-                        }
-                      }}
-                    />
-                    {/* Sized to its content instead of splitting the row with
-                      the hex: NumericField is flex-1 by default, which is
-                      right for the paired X/Y and W/H rows and wrong here,
-                      where one field holds "100" and the other nine hex
-                      characters. */}
-                    <div style={{ width: 68, flexShrink: 0 }}>
-                      <NumericField
-                        suffix="%"
-                        ariaLabel="Fill opacity"
-                        precision={0}
-                        min={0}
-                        max={100}
-                        disabled={fillLocked}
-                        value={fillAlpha}
-                        onCommit={(v) => {
-                          const base = parseHex(fill.hex);
-                          if (!base) return;
-                          look({
-                            colorHex: toHex({ ...base, a: (v ?? fillAlpha) / 100 }),
-                            textGradient: undefined,
-                          });
-                        }}
-                      />
-                    </div>
-                  </>
-                ) : (
-                  <span
-                    style={{
-                      fontSize: "var(--type-caption-size)",
-                      color: "var(--text-secondary)",
-                      flex: 1,
-                    }}
-                  >
-                    {fill.gradient.kind === "radial" ? "Radial gradient" : "Linear gradient"}
-                  </span>
-                )}
-                <button
-                  title="Remove fill"
-                  aria-label="Remove fill"
-                  disabled={fillLocked}
-                  onClick={() => {
-                    setPickerOpen(false);
-                    look({ colorHex: undefined, textGradient: undefined });
-                  }}
-                  style={{
-                    color: fillLocked ? "var(--text-disabled)" : "var(--text-muted)",
-                    display: "flex",
-                    flexShrink: 0,
-                  }}
-                >
-                  <Minus style={{ width: 13, height: 13 }} strokeWidth={1.5} />
-                </button>
+              </HexRow>
+              <PropertyRow label="Position">
+                <SegmentedIconGroup
+                  stretch
+                  ariaLabel="Stroke position"
+                  value={field.strokeAlign ?? "inside"}
+                  options={[
+                    { key: "inside", label: "Inside" },
+                    { key: "center", label: "Center" },
+                    { key: "outside", label: "Outside" },
+                  ]}
+                  onSelect={(align) =>
+                    onChange({ strokeAlign: align === "inside" ? undefined : align })
+                  }
+                />
               </PropertyRow>
-            ) : (
-              <p style={hintStyle}>
-                No fill, so{" "}
-                {isShape
-                  ? "the shape falls back to ink"
-                  : isIcon
-                    ? "the icon falls back to ink"
-                    : "text falls back to ink"}
-                . Add one with the plus.
-              </p>
-            ))}
+            </>
+          )}
         </InspectorSection>
       )}
 
       {/* A look's own stroke and plate colors. Their geometry stays on All. */}
-      {showThis &&
-        variantMode &&
-        ((isShape && field.strokeColor) || (isTextish && field.plateColor)) && (
-          <InspectorSection id="look-strokes" title={isShape ? "Stroke" : "Plate"}>
-            {isShape && merged.strokeColor && (
-              <ColorRow
-                ariaName="Stroke"
-                value={merged.strokeColor}
-                alpha={false}
-                kit={kit}
-                companyId={company?.id}
-                onChange={(c) => look({ strokeColor: c })}
-                onUseBase={
-                  variantMode.variant.overrides?.[field.fieldKey]?.strokeColor !== undefined
-                    ? () => variantMode.onOverride({ strokeColor: undefined })
-                    : undefined
-                }
-              />
-            )}
-            {isTextish && merged.plateColor && (
-              <ColorRow
-                ariaName="Plate"
-                value={merged.plateColor}
-                alpha={false}
-                kit={kit}
-                companyId={company?.id}
-                onChange={(c) => look({ plateColor: c })}
-                onUseBase={
-                  variantMode.variant.overrides?.[field.fieldKey]?.plateColor !== undefined
-                    ? () => variantMode.onOverride({ plateColor: undefined })
-                    : undefined
-                }
-              />
-            )}
-          </InspectorSection>
-        )}
-
-      {/* Effects. On a template's All tab (or a template without looks) they
-        edit the template, which every look starts from; on This variation
-        they replace the look's whole list, an option, never a requirement. */}
-      {
-        <EffectsEditor
-          key={field.id}
-          id="effects"
-          effects={variantMode && tab === "this" ? merged.effects : field.effects}
-          target={{ kind: "field", field }}
-          accentHex={kit?.colors[0]?.hex}
-          kit={kit}
-          companyId={company?.id}
-          onChange={(next) => {
-            const normalized = normalizeEffects(next, { kind: "field", field });
-            if (variantMode && tab === "this") {
-              // An emptied list in a look stays an override: "none here".
-              look({ effects: normalized ?? [] });
-            } else {
-              onChange({ effects: normalized });
-            }
-          }}
-          onUseBase={
-            variantMode &&
-            tab === "this" &&
-            variantMode.variant.overrides?.[field.fieldKey]?.effects !== undefined
-              ? () => variantMode.onOverride({ effects: undefined })
-              : undefined
-          }
-        />
-      }
-
-      {/* Member input — what the member sees in their form; gone on fixed
-          elements. Same write paths the old panel used. Requiredness is not a
-          control any more: a non-fixed element is required by construction
-          (see lib/templates/fieldRules). The section renders only when a
-          control survives for this field type, so a non-fixed image, which
-          has none, gets no empty header. */}
-      {hasMemberInput && showAll && (
-        <InspectorSection id="member-input" title="Member input">
-          {/* Under Free this control lives in Layout — it bounds how far the
-              box can grow, which is that mode's failure question. */}
-          {isText && field.type !== "select" && sizingMode !== "free" && (
-            <PropertyRow label="Max chars">
-              <NumericField
-                ariaLabel="Maximum characters"
-                precision={0}
-                min={1}
-                allowEmpty
-                placeholder="none"
-                disabled={locked.has("maxLength")}
-                value={field.maxLength}
-                onCommit={(v) => onChange({ maxLength: v })}
-              />
-            </PropertyRow>
+      {variantMode && ((isShape && field.strokeColor) || (isTextish && field.plateColor)) && (
+        <InspectorSection
+          id="look-strokes"
+          title={`${isShape ? "Stroke" : "Plate"} · ${variantMode.variant.name}`}
+        >
+          {isShape && merged.strokeColor && (
+            <ColorRow
+              ariaName="Stroke"
+              value={merged.strokeColor}
+              alpha={false}
+              kit={kit}
+              companyId={company?.id}
+              onChange={(c) => look({ strokeColor: c })}
+              onUseBase={
+                variantMode.variant.overrides?.[field.fieldKey]?.strokeColor !== undefined
+                  ? () => variantMode.onOverride({ strokeColor: undefined })
+                  : undefined
+              }
+            />
           )}
-          {field.type === "select" && (
-            <PropertyRow label="Options" align="start">
-              <textarea
-                rows={3}
-                className="sp-input"
-                style={{
-                  fontSize: "var(--type-label-size)",
-                  padding: "var(--space-2xs)",
-                  resize: "vertical",
-                }}
-                aria-label="Dropdown options, one per line"
-                value={(field.options ?? []).join("\n")}
-                onChange={(e) =>
-                  onChange(
-                    {
-                      options: e.target.value
-                        .split("\n")
-                        .map((s) => s.trim())
-                        .filter(Boolean),
-                    },
-                    true,
-                  )
-                }
-              />
-            </PropertyRow>
+          {isTextish && merged.plateColor && (
+            <ColorRow
+              ariaName="Plate"
+              value={merged.plateColor}
+              alpha={false}
+              kit={kit}
+              companyId={company?.id}
+              onChange={(c) => look({ plateColor: c })}
+              onUseBase={
+                variantMode.variant.overrides?.[field.fieldKey]?.plateColor !== undefined
+                  ? () => variantMode.onOverride({ plateColor: undefined })
+                  : undefined
+              }
+            />
           )}
         </InspectorSection>
       )}
+
+      <InspectorSection id="layout" title="Layout">
+        {inStack ? (
+          <p className="t-body-s sp-insp-note">
+            Placed by {containingGroup?.name} at X {Math.round(computedRect?.x ?? field.x)}, Y{" "}
+            {Math.round(computedRect?.y ?? field.y)}.
+          </p>
+        ) : (
+          <>
+            <PropertyRow label="Align">
+              {/* The same control the selection and the floating toolbar
+                    use; only the reference frame differs. */}
+              <AlignControls
+                scope="canvas"
+                onAlign={(axis, edge) => (axis === "h" ? alignBoxH(edge) : alignBoxV(edge))}
+              />
+            </PropertyRow>
+            <PropertyRow label="Position">
+              <NumericField
+                label="X"
+                ariaLabel="X position"
+                precision={0}
+                value={field.x}
+                onCommit={(v) => onChange({ x: v ?? field.x })}
+              />
+              <NumericField
+                label="Y"
+                ariaLabel="Y position"
+                precision={0}
+                value={field.y}
+                onCommit={(v) => onChange({ y: v ?? field.y })}
+              />
+            </PropertyRow>
+          </>
+        )}
+        <PropertyRow label="Size">
+          {(mainSizeComputed && !groupVertical) ||
+          (isTextish && Boolean(field.plateColor) && field.type !== "multiline") ? (
+            <span className="t-body-s sp-insp-computed">
+              W {Math.round(computedRect?.width ?? field.width)},{" "}
+              {field.plateColor ? "hugs its text" : "set by the group"}
+            </span>
+          ) : (
+            <NumericField
+              label="W"
+              ariaLabel="Width"
+              precision={0}
+              min={1}
+              value={field.width}
+              onCommit={commitW}
+            />
+          )}
+          {(mainSizeComputed && groupVertical) ||
+          (isText && sizingMode === "free") ||
+          (isTextish && Boolean(field.plateColor)) ? (
+            <span className="t-body-s sp-insp-computed">
+              H {Math.round(computedRect?.height ?? field.height)}, hugs its text
+            </span>
+          ) : (
+            <NumericField
+              label="H"
+              ariaLabel="Height"
+              precision={0}
+              min={1}
+              value={field.height}
+              onCommit={commitH}
+            />
+          )}
+          <IconButton
+            variant="ghost"
+            size="sm"
+            icon={constrain ? LinkIcon : Unlink}
+            label="Keep the proportions"
+            aria-pressed={constrain}
+            selected={constrain}
+            onClick={() => setConstrain(!constrain)}
+          />
+        </PropertyRow>
+        <PropertyRow label="Rotation">
+          <NumericField
+            icon={<RotateCw size={16} strokeWidth={1.5} aria-hidden />}
+            suffix="°"
+            ariaLabel="Rotation"
+            precision={0}
+            value={wrapDeg(field.rotation ?? 0)}
+            onCommit={(v) => onChange({ rotation: wrapDeg(v ?? field.rotation ?? 0) || undefined })}
+          />
+          <SegmentedIconGroup
+            ariaLabel="Flip"
+            options={[
+              {
+                key: "flipX",
+                Icon: FlipHorizontal2,
+                title: "Flip horizontal",
+                active: Boolean(field.flipX),
+              },
+              {
+                key: "flipY",
+                Icon: FlipVertical2,
+                title: "Flip vertical",
+                active: Boolean(field.flipY),
+              },
+            ]}
+            onSelect={(k) =>
+              k === "flipX"
+                ? onChange({ flipX: field.flipX ? undefined : true })
+                : onChange({ flipY: field.flipY ? undefined : true })
+            }
+          />
+        </PropertyRow>
+        {!inStack && (
+          <PropertyRow label="Anchor">
+            <Select
+              ariaLabel="Anchor"
+              value={field.anchor ?? "topLeft"}
+              options={[
+                { value: "topLeft", label: "Top left corner" },
+                { value: "center", label: "Center" },
+              ]}
+              onSelect={(v) => changeAnchor(v)}
+            />
+          </PropertyRow>
+        )}
+      </InspectorSection>
+
+      {!variantMode && (
+        <InspectorSection id="layer" title="Layer">
+          <PropertyRow label="Opacity">{opacityField}</PropertyRow>
+        </InspectorSection>
+      )}
+
+      {/* Effects. On All variations (or a template without looks) they edit
+          the template, which every look starts from; on This variation they
+          replace the look's whole list. */}
+      <EffectsEditor
+        key={field.id}
+        id="effects"
+        scope={
+          variantMode && (
+            <SegmentedControl
+              aria-label="Effects for"
+              className="sp-builder__span-switch"
+              options={[
+                { id: "all", label: "All variations" },
+                { id: "this", label: "This variation" },
+              ]}
+              selectedId={tab}
+              onSelect={(id) => setTab(id as "all" | "this")}
+            />
+          )
+        }
+        effects={variantMode && tab === "this" ? merged.effects : field.effects}
+        target={{ kind: "field", field }}
+        accentHex={kit?.colors[0]?.hex}
+        kit={kit}
+        companyId={company?.id}
+        onChange={(next) => {
+          const normalized = normalizeEffects(next, { kind: "field", field });
+          if (variantMode && tab === "this") {
+            // An emptied list in a look stays an override: "none here".
+            look({ effects: normalized ?? [] });
+          } else {
+            onChange({ effects: normalized });
+          }
+        }}
+        onUseBase={
+          variantMode &&
+          tab === "this" &&
+          variantMode.variant.overrides?.[field.fieldKey]?.effects !== undefined
+            ? () => variantMode.onOverride({ effects: undefined })
+            : undefined
+        }
+      />
+    </>
+  );
+
+  /** The Field tab (2289:4772): whether your team fills it in, then what
+   * they see. Shared structure, except a fixed element's content, which is
+   * the selected variation's in variation mode. */
+  const fieldSide = (
+    <>
+      {field.type !== "select" && (
+        <SwitchRow
+          label="Team fills in"
+          checked={!isStatic}
+          onChange={(next) => onChange(fixedPatch(field, !next))}
+        />
+      )}
+      <div className="sp-insp-group">
+        {staticContentRows}
+        {placeholderRow}
+        {!isStatic && (
+          <SwitchRow
+            label="Optional"
+            checked={Boolean(field.optional)}
+            onChange={(next) => onChange({ optional: next || undefined })}
+          />
+        )}
+        {!isStatic && isTextish && (
+          <PropertyRow label="Max characters">
+            <NumericField
+              ariaLabel="Max characters"
+              precision={0}
+              min={1}
+              allowEmpty
+              placeholder="None"
+              disabled={locked.has("maxLength")}
+              value={field.maxLength}
+              onCommit={(v) => onChange({ maxLength: v })}
+            />
+          </PropertyRow>
+        )}
+        {!isStatic && isTextish && onWorstCasePreview && (
+          <Button kind="neutral" size="sm" onClick={() => onWorstCasePreview(!worstCasePreview)}>
+            {worstCasePreview ? "Hide the longest entry" : "Show the longest entry"}
+          </Button>
+        )}
+        {isSelect && (
+          <PropertyRow label="Options">
+            <TextArea
+              aria-label="Options"
+              value={(field.options ?? []).join("\n")}
+              onChange={(e) =>
+                onChange(
+                  {
+                    options: e.target.value
+                      .split("\n")
+                      .map((s) => s.trim())
+                      .filter(Boolean),
+                  },
+                  true,
+                )
+              }
+            />
+          </PropertyRow>
+        )}
+        <PropertyRow label="Type">
+          <Select
+            ariaLabel="Type"
+            value={field.type}
+            options={FIELD_TYPES.filter((t) => !isStatic || t.value !== "select")}
+            onSelect={changeType}
+          />
+        </PropertyRow>
+      </div>
+    </>
+  );
+
+  return (
+    <div className="sp-insp">
+      <InspectorHeader
+        key={field.id}
+        icon={elementIcon(field, isLogo)}
+        name={field.label}
+        renameRequest={focusLabelFieldId === field.id ? field.id : null}
+        onRename={(label) =>
+          onChange({
+            label,
+            fieldKey: suggestFieldKey(
+              label,
+              allFields.filter((f) => f.id !== field.id),
+            ),
+          })
+        }
+        actions={[
+          {
+            items: [
+              { label: "Bring to front", icon: BringToFront, onSelect: props.onBringToFront },
+              { label: "Send to back", icon: SendToBack, onSelect: props.onSendToBack },
+            ],
+          },
+          { items: [{ label: "Delete", icon: Trash2, destructive: true, onSelect: onDelete }] },
+        ]}
+      />
+      {hasFieldSide && (
+        <Tabs
+          aria-label="Inspector"
+          items={[
+            { id: "design", label: "Design", panelId: `${panelId}-design` },
+            { id: "field", label: "Field", panelId: `${panelId}-field` },
+          ]}
+          selectedId={shownSide}
+          onSelect={(id) => setSide(id as "design" | "field")}
+        />
+      )}
+      <div
+        className="sp-insp-panel"
+        id={`${panelId}-${shownSide}`}
+        role={hasFieldSide ? "tabpanel" : undefined}
+        aria-label={hasFieldSide ? (shownSide === "design" ? "Design" : "Field") : undefined}
+      >
+        {shownSide === "design" ? design : fieldSide}
+      </div>
 
       {iconPickerOpen && isIcon && (
         <IconPicker
@@ -2073,9 +1611,9 @@ export function FieldInspector(props: FieldInspectorProps) {
         />
       )}
 
-      {/* The stroke's own picker: same full fill surface, pointed at
-        strokeColor — a stroke holds one solid color, so the gradient mode
-        is hidden. */}
+      {/* The stroke's own picker: the full fill surface pointed at
+          strokeColor. A stroke holds one solid color, so the gradient mode
+          is hidden. */}
       {strokePickerOpen && isShape && field.strokeColor && (
         <FillPicker
           anchorRef={strokeSwatchRef}
@@ -2091,9 +1629,8 @@ export function FieldInspector(props: FieldInspectorProps) {
         />
       )}
 
-      {/* The plate's own picker: the full fill surface (brand colors, color
-        map, recents) pointed at plateColor through a proxy field — plates
-        hold one solid color, so the gradient mode is hidden. */}
+      {/* The plate's own picker, pointed at plateColor through a proxy field.
+          Plates hold one solid color, so the gradient mode is hidden. */}
       {platePickerOpen && isTextish && field.plateColor && (
         <FillPicker
           anchorRef={plateSwatchRef}
@@ -2128,17 +1665,15 @@ function FontFamilySelect({
   value,
   groups,
   disabled,
-  triggerStyle,
   onSelect,
 }: {
   value: string | undefined;
   groups: Array<{ label: string; families: string[] }>;
   disabled: boolean;
-  triggerStyle?: React.CSSProperties;
   onSelect(family: string | undefined): void;
 }) {
-  const options = useMemo<Array<SelectOption<string>>>(() => {
-    const all: Array<SelectOption<string>> = [{ value: "", label: "Default (sans-serif)" }];
+  const options = useMemo<Array<FontOption<string>>>(() => {
+    const all: Array<FontOption<string>> = [{ value: "", label: "Default (sans-serif)" }];
     for (const g of groups) {
       for (const family of g.families) {
         all.push({
@@ -2154,7 +1689,7 @@ function FontFamilySelect({
 
   // Preview each visible family in its own face. One face per family, and
   // only for what is on the list right now, so typing narrows the work.
-  const loadVisible = useCallback((visible: Array<SelectOption<string>>) => {
+  const loadVisible = useCallback((visible: Array<FontOption<string>>) => {
     const usage = new Map(
       visible
         .filter((o) => o.value)
@@ -2169,7 +1704,7 @@ function FontFamilySelect({
   }, []);
 
   return (
-    <Select
+    <FontSelect
       id="sp-family"
       ariaLabel="Font family"
       value={value ?? ""}
@@ -2180,7 +1715,6 @@ function FontFamilySelect({
       triggerPreviewStyle={value ? { fontFamily: `"${value}", sans-serif` } : undefined}
       disabled={disabled}
       lockedHint={disabled}
-      triggerStyle={triggerStyle}
       searchable
       searchPlaceholder="Search fonts"
       searchEmptyText={(q) => `No fonts match “${q}”.`}
@@ -2197,7 +1731,6 @@ function FontStyleSelect({
   value,
   disabled,
   locked,
-  triggerStyle,
   onSelect,
 }: {
   family: string | undefined;
@@ -2205,7 +1738,6 @@ function FontStyleSelect({
   value: FontStyle;
   disabled: boolean;
   locked: boolean;
-  triggerStyle?: React.CSSProperties;
   onSelect(style: FontStyle): void;
 }) {
   const faceOf = useCallback(
@@ -2219,7 +1751,7 @@ function FontStyleSelect({
   );
 
   const byKey = useMemo(() => new Map(styles.map((s) => [styleKey(s), s])), [styles]);
-  const options = useMemo<Array<SelectOption<string>>>(
+  const options = useMemo<Array<FontOption<string>>>(
     () =>
       styleGroups(styles).flatMap((group) =>
         group.styles.map((style) => ({
@@ -2237,7 +1769,7 @@ function FontStyleSelect({
   );
 
   return (
-    <Select
+    <FontSelect
       id="sp-style"
       ariaLabel="Font style"
       value={styleKey(value)}
@@ -2251,7 +1783,6 @@ function FontStyleSelect({
       triggerPreviewStyle={faceOf(value)}
       disabled={disabled}
       lockedHint={locked}
-      triggerStyle={triggerStyle}
     />
   );
 }

@@ -370,6 +370,7 @@
 .sp-builder-opening {
   grid-column: 1 / -1;
   grid-row: 1 / -1;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -379,4 +380,997 @@
   width: min(420px, 70%);
   height: auto;
   aspect-ratio: 1;
+}
+
+/* ── The editor (322:36): the top bar, then the workspace 12 under it, in
+   Main beside the collapsed rail ("bare" in layout/Page.tsx). ── */
+.sp-builder {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  height: 100%;
+  min-height: 0;
+}
+/* The top bar (322:157), 44 tall: the trail, the status Badge and the save
+   state, 12 apart; then Edit or Preview and Publish at the end. */
+.sp-builder__bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-12);
+  height: 44px; /* as drawn */
+  min-width: 0;
+  padding-left: var(--space-6);
+}
+.sp-builder__crumbs {
+  min-width: 0;
+}
+.sp-builder__crumbs li:last-child {
+  min-width: 0;
+}
+.sp-builder__spacer {
+  flex: 1;
+  min-width: var(--space-8);
+}
+.sp-builder__save {
+  flex: none;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.sp-builder__save[data-failed] {
+  color: var(--feedback-error-text);
+}
+.sp-builder__alert {
+  flex: none;
+}
+/* The last crumb names the template and renames it: a click turns it into a
+   Small field in the trail. */
+.sp-crumb-rename {
+  display: flex;
+  min-width: 0;
+  margin: 0;
+}
+.sp-crumb-rename__name {
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-block: 0.3em;
+  margin-block: -0.3em;
+  border-radius: var(--radius-xs);
+  cursor: text;
+}
+.sp-crumb-rename__input {
+  width: 280px;
+}
+.sp-builder__toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--space-32) + var(--dev-banner-h, 0px));
+  z-index: var(--z-sticky);
+  transform: translateX(-50%);
+  max-width: min(560px, calc(100vw - var(--space-32)));
+}
+
+/* The workspace (322:185): the rail, the stage and the inspector, 12 apart,
+   each a card. In Preview the rail goes and the Details panel, 380, takes
+   the right (326:924). */
+.sp-builder__workspace {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 260px minmax(0, 1fr) 320px; /* as drawn */
+  gap: var(--space-12);
+  min-height: 0;
+}
+.sp-builder__workspace[data-mode="preview"] {
+  grid-template-columns: minmax(0, 1fr) 380px; /* as drawn */
+}
+.sp-builder__rail {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-1-raised);
+}
+.sp-builder__rail-tabs {
+  display: flex;
+  flex: none;
+  margin: var(--space-16) var(--space-16) 0;
+}
+.sp-builder__rail-tabs > * {
+  flex: 1 1 0;
+  min-width: 0;
+}
+/* A switch that spans its panel's width (the background's All variations
+   or This variation). */
+.sp-builder__span-switch {
+  display: flex;
+}
+.sp-builder__span-switch > * {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.sp-builder__rail-body {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: var(--space-16);
+}
+/* The stage (322:379): surface/sunken at radius/xl, the artboard in the
+   middle and its controls floating over it. */
+.sp-builder__canvas {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  background: var(--surface-sunken);
+}
+
+/* What floats over the stage, above the canvas: the variations at the top,
+   the tools on the left edge, the size and the zoom at the foot, and the
+   checks between them. */
+.sp-stage-looks,
+.sp-builder__tools,
+.sp-stage__size,
+.sp-stage__zoom,
+.sp-stage__notes {
+  position: absolute;
+  z-index: 4;
+}
+/* The variations (322:403): a raised capsule, 16 down, centred. */
+.sp-stage-looks {
+  top: var(--space-16);
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  max-width: calc(100% - 2 * var(--space-16));
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-2-overlay);
+  transform: translateX(-50%);
+}
+.sp-stage-looks > .ui-segmented {
+  min-width: 0;
+  overflow-x: auto;
+}
+/* The tools (322:428): Ghost Small buttons in a raised column on the left
+   edge, centred, Undo and Redo under a divider. */
+.sp-builder__tools {
+  top: 50%;
+  left: var(--space-16);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-2-overlay);
+  transform: translateY(-50%);
+}
+.sp-builder__tool-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.sp-builder__tools-divider {
+  width: 20px; /* as drawn */
+  height: var(--stroke-hairline);
+  margin-block: var(--space-4);
+  background: var(--border-subtle);
+}
+/* The canvas size and the zoom, Small selects 16 in from the stage's foot
+   corners; the checks centred between them. */
+.sp-stage__size {
+  bottom: var(--space-16);
+  left: var(--space-16);
+  max-width: calc(50% - var(--space-64));
+}
+.sp-stage__size > .ui-select__value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-stage__zoom {
+  right: var(--space-16);
+  bottom: var(--space-16);
+}
+.sp-stage__notes {
+  bottom: var(--space-16);
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  transform: translateX(-50%);
+}
+.sp-stage__status {
+  display: flex;
+  align-items: center;
+  height: var(--size-control-sm);
+  padding: 0 var(--space-12);
+  border-radius: var(--radius-full);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-1-raised);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+/* The canvas fills the stage, which is its pasteboard; the artboard fits
+   clear of the controls (STAGE_FIT_INSETS in TemplateBuilder). */
+.sp-stage__area {
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  align-items: stretch;
+  min-height: 0;
+}
+/* Preview letterboxes the graphic clear of the stage's controls, as the
+   edit view fits it (STAGE_FIT_INSETS), so it does not jump between the
+   two. */
+.sp-stage__area[data-mode="preview"] {
+  align-items: center;
+  padding: 76px 72px 60px; /* the edit view's fit */
+}
+.sp-stage__letterbox {
+  height: 100%;
+  max-width: 100%;
+}
+/* The zoom in Preview: the scale it is shown at, read only. */
+.sp-stage__readout {
+  display: flex;
+  align-items: center;
+  height: var(--size-control-sm);
+  padding: 0 var(--space-8);
+  color: var(--text-secondary);
+}
+/* Preview's Details panel fills the right column; it has no footer. */
+.sp-builder__details {
+  min-height: 0;
+}
+.sp-builder__details .sp-details__foot:empty {
+  display: none;
+}
+/* The checks: a pill that opens a panel above it. */
+.sp-stage-checks {
+  position: relative;
+}
+.sp-stage-checks__panel {
+  position: absolute;
+  bottom: calc(100% + var(--space-8));
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  width: 360px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: var(--space-16);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-2-overlay);
+  transform: translateX(-50%);
+}
+.sp-stage-checks__group,
+.sp-stage-checks__group ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-secondary);
+}
+.sp-stage-checks__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+.sp-stage-checks__head > h3 {
+  margin: 0;
+  color: var(--text-primary);
+}
+.sp-stage-checks__item {
+  border-radius: var(--radius-xs);
+  color: var(--text-secondary);
+  text-align: left;
+}
+.sp-stage-checks__item:hover {
+  color: var(--text-primary);
+  text-decoration: underline;
+}
+/* The left rail's body under its tabs (322:186): Add, a hairline, then the
+   list, 16 apart. It scrolls under the tabs. */
+.sp-rail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+}
+.sp-rail__divider {
+  flex: none;
+  margin: 0;
+  border: 0;
+  border-top: 1px solid var(--border-subtle);
+}
+/* Add (322:194): Mono/Eyebrow over the tiles, 10 apart, and the tiles three
+   across, 9 apart (both off the scale, as drawn). */
+.sp-palette {
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* as drawn */
+}
+.sp-palette__title {
+  margin: 0;
+  color: var(--text-secondary);
+}
+.sp-palette__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px; /* as drawn */
+}
+/* Element Tile (321:77): 60 tall on surface/sunken, an 18 icon over its
+   name, 6 apart; hover lays state/hover over it. */
+.sp-element-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-6);
+  min-width: 0;
+  height: 60px; /* as drawn */
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.sp-element-tile[draggable="true"] {
+  cursor: grab;
+}
+.sp-element-tile:hover,
+.sp-element-tile[aria-expanded="true"] {
+  background: linear-gradient(var(--state-hover), var(--state-hover)), var(--surface-sunken);
+}
+/* One line each. The names are trimmed to their capitals, so the clip box
+   is widened past the descenders without moving the line. */
+.sp-element-tile__label {
+  max-width: 100%;
+  padding: 0.3em var(--space-4);
+  margin-block: -0.3em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Layers (322:203): Layer Rows, 2 apart. */
+.sp-layers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+/* Layer Row (321:30): 32 tall, its parts 8 apart and 8 in from each side.
+   Hover takes state/hover and the selected row surface/sunken. The file
+   rounds it at 7; it takes the row step, 8. A nested row steps in 16 for
+   each level. */
+.sp-layer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  height: 32px; /* as drawn */
+  padding: 0 var(--space-8) 0 calc(var(--space-8) + var(--layer-depth, 0) * var(--space-16));
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+}
+.sp-layer:hover,
+.sp-layer[data-over] {
+  background: var(--state-hover);
+}
+.sp-layer[data-selected] {
+  background: var(--surface-sunken);
+}
+.sp-layer__main {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+  height: 100%;
+  color: inherit;
+  text-align: left;
+}
+.sp-layer[data-muted] .sp-layer__main {
+  color: var(--text-secondary);
+}
+.sp-layer__name,
+.sp-form-row__name {
+  flex: 1;
+  min-width: 0;
+  padding-block: 0.3em;
+  margin-block: -0.3em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-layer__rename {
+  flex: 1;
+  min-width: 0;
+}
+.sp-layer__twisty,
+.sp-form-row__twisty {
+  display: flex;
+  flex: none;
+  color: var(--text-secondary);
+}
+/* Hide and Pin show on the row's hover or keyboard focus, and stay while
+   on. A click leaves focus in the row, so plain focus would keep them up
+   on the selected row, which the frame draws without them. Hidden, they
+   are zero wide rather than not rendered: Tab from the name blurs it
+   before it focuses Hide, and a button that stops rendering in between
+   drops the focus to the page. */
+.sp-layer__aids {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2);
+}
+.sp-layer__aids > .ui-iconbtn {
+  width: 0;
+  overflow: hidden;
+  opacity: 0;
+}
+.sp-layer:hover .sp-layer__aids > .ui-iconbtn,
+.sp-layer:has(:focus-visible) .sp-layer__aids > .ui-iconbtn,
+.sp-layer__aids > .ui-iconbtn[aria-pressed="true"] {
+  width: var(--size-control-sm);
+  overflow: visible;
+  opacity: 1;
+}
+.sp-layer__fixed {
+  color: var(--text-primary);
+}
+/* Form (321:64): Form Rows, 2 apart. */
+.sp-form-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.sp-form-rows__empty {
+  margin: 0;
+  color: var(--text-secondary);
+}
+/* Form Row (321:64): 40 tall, its parts 10 apart, 8 in on the left and 10
+   on the right (off the scale, as drawn). */
+.sp-form-row {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* as drawn */
+  height: 40px; /* as drawn */
+  padding: 0 10px 0 calc(var(--space-8) + var(--layer-depth, 0) * var(--space-16)); /* as drawn */
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  cursor: grab;
+}
+.sp-form-row:hover,
+.sp-form-row[data-over] {
+  background: var(--state-hover);
+}
+.sp-form-row[data-selected] {
+  background: var(--surface-sunken);
+}
+.sp-form-row__grip {
+  color: var(--text-secondary);
+}
+.sp-form-row__main {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 10px; /* as drawn */
+  min-width: 0;
+  height: 100%;
+  color: inherit;
+  text-align: left;
+}
+.sp-form-row__number,
+.sp-form-row__meta {
+  flex: none;
+  color: var(--text-secondary);
+}
+
+/* Publish template (326:1233): the graphic on a sunken well, then the
+   details, 24 apart. */
+.ui-modal.sp-publish-dialog {
+  width: 880px; /* as drawn */
+}
+.sp-publish {
+  display: flex;
+  gap: var(--space-24);
+  min-height: 0;
+}
+.sp-publish__preview {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  box-sizing: border-box;
+  width: 302px; /* as drawn */
+  aspect-ratio: 302 / 370; /* as drawn */
+  padding: var(--space-16);
+  border-radius: var(--radius-lg);
+  background: var(--surface-sunken);
+  container-type: size;
+}
+.sp-publish__art {
+  position: relative;
+  flex-shrink: 0;
+  aspect-ratio: var(--fit-ratio);
+  width: min(100cqw, 100cqh * var(--fit-ratio));
+  overflow: hidden;
+  border-radius: var(--radius-xs);
+}
+.sp-publish__form {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+.sp-publish__pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-12);
+}
+/* A field whose limit runs past its box: a warning row with Show. */
+.sp-publish__warning {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  padding: var(--space-8) var(--space-12) var(--space-8) var(--space-16);
+  border-radius: var(--radius-sm);
+  background: var(--feedback-warning-surface);
+  color: var(--feedback-warning-text);
+}
+.sp-publish__warning > .t-body-s {
+  flex: 1;
+  min-width: 0;
+}
+.sp-publish__show {
+  flex: none;
+  padding: var(--space-4);
+  border-radius: var(--radius-xs);
+  color: inherit;
+}
+.sp-publish__show:hover {
+  text-decoration: underline;
+}
+/* The caption and a chip for each field, 12 under it. */
+.sp-caption-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+.sp-caption-editor__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+/* Template published (326:1742). */
+.ui-modal.sp-published-dialog {
+  width: 440px; /* as drawn */
+}
+@media (max-width: 1099px) {
+  .sp-publish {
+    flex-direction: column;
+  }
+  .sp-publish__preview {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+  }
+}
+
+/* ── The inspector (322:380) ─────────────────────────────────────────────
+   The right card's column: the header, the Design and Field tabs, then the
+   sections, 20 apart. */
+.sp-insp {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-20);
+  min-width: 0;
+}
+/* Header (322:381): the element's 18 glyph, its name in Title/Card, and the
+   more menu, 8 apart, 28 tall. */
+.sp-insp-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-height: var(--size-control-sm);
+}
+.sp-insp-head__icon {
+  flex: none;
+  color: var(--text-primary);
+}
+.sp-insp-head__title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding-block: 0.3em;
+  margin-block: -0.3em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-insp-head__rename {
+  display: block;
+  max-width: 100%;
+  padding-block: 0.3em;
+  margin-block: -0.3em;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-radius: var(--radius-xs);
+}
+.sp-insp-head__rename:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--border-strong);
+  text-underline-offset: 0.2em;
+}
+.sp-insp-head__input {
+  flex: 1;
+  min-width: 0;
+}
+.sp-insp-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-20);
+  min-width: 0;
+}
+/* A section: its name in Mono/Eyebrow, then its rows, 12 apart. An add or
+   remove at the end of the name sits centred on it without moving it. */
+.sp-insp-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  min-width: 0;
+}
+.sp-insp-section__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+.sp-insp-section__head > h3 {
+  margin: 0;
+  color: var(--text-secondary);
+}
+.sp-insp-section__head > :not(h3) {
+  margin-block: calc((var(--size-control-sm) - 1cap) / -2);
+}
+/* A field: Label/XS over its control, 6 apart; a row of controls 8 apart. */
+.sp-insp-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  min-width: 0;
+}
+.sp-insp-row__label {
+  color: var(--text-secondary);
+}
+.sp-insp-row__control {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+}
+.sp-insp-row__control > .ui-input,
+.sp-insp-row__control > .ui-select,
+.sp-insp-row__control > .ui-select-wrap {
+  flex: 1 1 0;
+  min-width: 0;
+}
+/* Fields side by side, 8 apart, on equal columns unless the caller says. */
+.sp-insp-grid {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: var(--space-8);
+  align-items: end;
+}
+/* Icon choices: Ghost Small icon buttons 2 apart, centred on a 36 row so
+   they line up with the controls beside them. */
+.sp-insp-icons {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--size-control-md);
+}
+.sp-insp-choices {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.sp-insp-choices[data-stretch] {
+  flex: 1 1 0;
+}
+.sp-insp-choices[data-stretch] .ui-segmented {
+  display: flex;
+}
+.sp-insp-choices[data-stretch] .ui-segment {
+  flex: 1 1 0;
+  min-width: 0;
+}
+/* The scrubbable number on the Input's look. Its leading letter or glyph is
+   the scrub handle. */
+.sp-numfield {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.sp-numfield__lead {
+  display: flex;
+  flex: none;
+  align-items: center;
+  color: var(--text-secondary);
+  cursor: ew-resize;
+  touch-action: none;
+  user-select: none;
+}
+.sp-numfield__lead[data-disabled] {
+  color: var(--text-disabled);
+  cursor: default;
+}
+.sp-numfield__suffix {
+  flex: none;
+  color: var(--text-secondary);
+  user-select: none;
+}
+/* Bare: a value inside another control's row, in Body/S (the fill row's
+   opacity). */
+.sp-numfield--bare {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2);
+  font: var(--type-body-s);
+  letter-spacing: var(--type-body-s-tracking);
+  color: var(--text-secondary);
+  cursor: text;
+}
+.sp-numfield--bare .sp-numfield__input {
+  width: 4ch;
+  height: auto;
+  text-align: right;
+  color: inherit;
+}
+.sp-numfield--bare .sp-numfield__input:focus-visible {
+  outline: var(--stroke-focus) solid var(--border-focus);
+  outline-offset: var(--focus-offset);
+  border-radius: var(--radius-xs);
+}
+/* The fill row (322:380): 40 tall on surface/field, the 24 swatch, the hex
+   in Mono/S and what follows it, 10 apart (as drawn). The swatch takes the
+   row step, 8 (the file draws 7). */
+.sp-hexrow {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px; /* as drawn */
+  min-width: 0;
+  height: 40px; /* as drawn */
+  padding: 0 var(--space-12) 0 var(--space-8);
+  border-radius: var(--radius-sm);
+  background: var(--surface-field);
+}
+.sp-hexrow:hover {
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-strong);
+}
+.sp-hexrow[data-disabled] {
+  background: var(--action-disabled);
+  box-shadow: none;
+}
+.sp-hexrow__swatch {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-subtle);
+  cursor: pointer;
+}
+.sp-hexrow__swatch:disabled {
+  cursor: default;
+}
+.sp-hexrow__hex {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  font: var(--type-mono-s);
+  letter-spacing: var(--type-mono-s-tracking);
+  text-transform: uppercase;
+  color: var(--text-primary);
+}
+.sp-hexrow__hex:disabled {
+  color: var(--text-disabled);
+}
+.sp-hexrow__hex:focus-visible {
+  outline: none;
+}
+.sp-hexrow:has(.sp-hexrow__hex:focus-visible) {
+  outline: var(--stroke-focus) solid var(--border-focus);
+  outline-offset: var(--focus-offset);
+}
+.sp-hexrow__text {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-secondary);
+}
+/* A line under a control that reports state (the face is a guess, the size
+   the content fits at). */
+.sp-insp-note {
+  margin: 0;
+  color: var(--text-secondary);
+}
+/* The font menu's search, over its rows. */
+.sp-select-search {
+  padding-bottom: var(--space-4);
+}
+/* Team fills in, Optional (2289:4772): the name, then the switch at the
+   end of a 20 row. */
+.sp-insp-switch.ui-switch {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 20px; /* as drawn */
+  color: var(--text-primary);
+}
+/* The Field tab's details under Team fills in, 12 apart. */
+.sp-insp-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  min-width: 0;
+}
+/* A bound type style's rules, each with its lock. */
+.sp-insp-rules {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-secondary);
+}
+.sp-insp-rules > li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-6);
+}
+/* A value the layout computes, where its control would be. */
+.sp-insp-computed {
+  flex: 1 1 0;
+  min-width: 0;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+/* A quiet text action beside a field's label (Photo position's Reset). */
+.sp-insp-row__label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+.sp-insp-link {
+  color: var(--text-secondary);
+  border-radius: var(--radius-xs);
+}
+.sp-insp-link:hover {
+  color: var(--text-primary);
+}
+/* An icon element's artwork: the glyph, its name, then Change. */
+.sp-insp-icon-pick {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+}
+.sp-insp-icon-pick > span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-insp-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+/* A name with its action at the row's end (Gradient and Add). */
+.sp-insp-titled {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  min-height: var(--size-control-sm);
+  color: var(--text-primary);
+}
+.sp-insp-row__control > .ui-upload {
+  flex: 1 1 0;
+  min-width: 0;
+}
+/* Controls that wrap onto a second line when the card is narrow (the
+   selection's align and distribute). */
+.sp-insp-wrap {
+  flex-wrap: wrap;
+}
+/* The canvas size popover: the overlay surface, as menus and popovers. */
+.sp-size-popover {
+  position: fixed;
+  z-index: 500; /* the popover layer; z-index is not a Figma token */
+  overflow-y: auto;
+  padding: var(--space-12);
+  border: var(--stroke-hairline) solid var(--border-raised);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-2-overlay);
+}
+.sp-insp-row__control > .sp-hexrow {
+  flex: 1 1 0;
+}
+/* An effect in the Effects list: its grip, its name and summary (which
+   opens its settings), and its remove. */
+.sp-effect-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+  min-height: var(--size-control-md);
+}
+.sp-effect-row__grip {
+  display: flex;
+  flex: none;
+  color: var(--text-secondary);
+  border-radius: var(--radius-xs);
+  cursor: grab;
+}
+.sp-effect-row__main {
+  display: flex;
+  flex: 1;
+  align-items: baseline;
+  gap: var(--space-8);
+  min-width: 0;
+  text-align: left;
+  color: var(--text-primary);
+  border-radius: var(--radius-xs);
+}
+.sp-effect-row__summary {
+  min-width: 0;
+  padding-block: 0.3em;
+  margin-block: -0.3em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+.sp-effect-settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  padding-left: var(--space-24);
+}
+/* Below the builder's width: the message, centred on the page. */
+.sp-builder-gate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+  padding: var(--space-24) var(--space-16);
 }

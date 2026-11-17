@@ -150,7 +150,7 @@ These play several roles or belong to one screen, exactly as `docs/design/new-lo
 |---|---|---|
 | `--state-primary` | 36 in 15 | Slime in Dark and `#272727` in Light, through `--slime`, so it follows the bridge. Readers move per area in Phases 4 to 9 |
 | `--bg-hover`, `--bg-raised`, `--bg-plate` | 25 in 12, 12 in 5, 4 in 2 | Per area, 4 to 9 |
-| `--editor-accent`, `--editor-line`, `--editor-handle`, `--editor-artboard-edge`, `--editor-pasteboard` | 22, 14, 4, 1, 1 | 6. `--editor-accent` becomes `--editor-selection` |
+| `--editor-accent`, `--editor-line`, `--editor-handle`, `--editor-artboard-edge` | 22, 14, 4, 1 | 6. `--editor-accent` becomes `--editor-selection`. Phase 6b removed `--editor-pasteboard`: the stage is the pasteboard |
 | `--nav-active-bg`, `--nav-active-fg`, `--nav-hover-bg`, `--nav-hover-fg` | 6, 6, 5, 5 | 6 |
 | `--edge-*`, `--card-*`, `--chip-*` (the stylesheet's own), `--shadow-rest`, `--radius-media`, `--radius-media-inner`, `--radius-tag` | 1 to 11 each | 6b. Phase 6a removed `--shadow-card-hover`, `--radius-control-lg` and `--edge-alpha-hover`, whose last readers were the earlier list card and size gallery |
 | ~~`--start-*`~~ | 0 | Removed in Phase 6a with the builder's start screen, their only reader |
@@ -336,3 +336,18 @@ Removed, each with no reader left in `src/`:
 - `--start-*` (the start screen's tiles, with their hex), `--shadow-card-hover`, `--radius-control-lg`, `--edge-alpha-hover`, `--control-sm`, `--control-md` and `--border-width`, which lost their last readers with the screens above
 
 Kept for Phase 6b: `CanvasSizePicker`, which the editor's resize popover still uses, and the editor's own loading pulse on `.sp-skeleton__block`. `.sp-chip-in`, the upload chip's entrance, is a different class and stays. The type ramp's `--type-h2-*` lost its last reader too, and stays: the stylesheet keeps unread steps of the ramp whole, and deletes only unread component tokens.
+
+## 12. What Phase 6b removed and found
+
+Phase 6b moved the Template Builder's editor onto its frames: the top bar, the carded workspace, the rail, the stage's controls, the inspector, Preview and Publish. Its rules (`src/styles/template-builder.css`) read tokens only.
+
+Removed, each with no reader left in `src/`:
+
+- the step bar and its panels (`WizardStepper.tsx`, `BuilderShell.tsx` with `BuilderRail`, `RailHeader`, `RailTabs`, `BuilderSlideOver` and the rail width and collapse hooks), the filmstrip (`VariantFilmstrip.tsx`), and `InlineEdit.tsx`, whose last reader was the group inspector
+- the earlier builder rules in `socialpaint.css`: the bar, rails, grips, slide-over, stub and tools (`.sp-builder__*`), the palette tiles' hover hues (`.sp-palette-tile`), `.sp-panel-title`, the inline edit (`.sp-inline-edit*`) and the builder's skeleton (`.sp-skeleton__block` and its pulse)
+- `--editor-pasteboard` (the stage is the pasteboard) and `--flash-rgb`, the inline edit's confirm wash, with its hex triplet
+
+Kept for Phase 10: the size popover's insides (`CanvasSizePicker`), the fill picker (`FillPicker`), the icon picker's search, the background reflow dialog and the shortcuts panel, which the frames do not draw and which still read `.sp-btn`, `.sp-input`, `.sp-icon-btn`, `.sp-seg` and `.sp-tabstrip`; `compactControlStyle` and `inspectorLabelStyle` stay for the fill picker. The gradient's stops keep `ColorControl`.
+
+Off the scale, kept as drawn: the Element Tiles' gap 9, Add's gap 10, the Form Row's gap and right padding 10, and the fill row's gap 10. The stage fits the artboard inside insets of 76, 72, 60 and 72 (`STAGE_FIT_INSETS`, and Preview's padding), which clear its controls: the capsule's 16 and 44 and 16 above, the tools' 16 and 40 and 16 at the sides, the selects' 16 and 28 and 16 below. The Layer Row and the fill row's swatch take radius/sm (the file draws 7). The Element Tile's hover lays `--state-hover` over its fill, as `321:77` draws it, and RULES section 6 records it as an exception.
+

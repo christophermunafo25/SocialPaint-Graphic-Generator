@@ -1,16 +1,17 @@
 import React from "react";
-import { Ungroup as UngroupIcon } from "lucide-react";
+import { Columns3, Group as GroupGlyph, Rows3, Trash2, Ungroup as UngroupIcon } from "lucide-react";
 import type { GroupAxisPoint, LayoutGroup } from "@/lib/types";
 import { isFreeGroup } from "@/lib/types";
 import type { GroupRect } from "@/lib/render/layout";
-import { Switch } from "../primitives";
-import { InlineEdit } from "../InlineEdit";
+import { Select } from "../primitives";
+import { InspectorHeader } from "./InspectorHeader";
 import {
   InspectorSection,
   NumericField,
+  PropertyGrid,
   PropertyRow,
   SegmentedIconGroup,
-  compactControlStyle,
+  SwitchRow,
 } from "./InspectorControls";
 
 interface GroupInspectorProps {
@@ -125,190 +126,138 @@ export function GroupInspector({
     );
   };
 
-  return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between gap-2 pb-2">
-        {/* The name takes the row; the mode label beside it is fixed-width
-            and never squeezes it. Without the min-width the flex row let the
-            name shrink to its content-free minimum and even "Group" — the
-            default — came out as "Gr…". */}
-        <InlineEdit
-          style={{ flex: "1 1 auto", minWidth: 0 }}
-          value={group.name}
-          onSave={(name) => onChange({ name: name.trim() || "Group" })}
-          ariaLabel="Group name"
-          inputAriaLabel="Group name"
-        />
-        <span style={{ fontSize: 10, color: "var(--text-muted)", flexShrink: 0 }}>
-          {free ? "Group" : vertical ? "Vertical stack" : "Horizontal stack"}
-        </span>
-      </div>
+  const stackName = vertical ? "Vertical stack" : "Horizontal stack";
+  const mainSize = computedRect
+    ? Math.round(vertical ? computedRect.height : computedRect.width)
+    : undefined;
 
-      <InspectorSection id="group-layout" title="Layout">
-        <PropertyRow label="Auto layout">
-          <Switch
+  return (
+    <div className="sp-insp">
+      <InspectorHeader
+        key={group.id}
+        icon={free ? GroupGlyph : vertical ? Rows3 : Columns3}
+        name={group.name}
+        onRename={(name) => onChange({ name: name.trim() || "Group" })}
+        actions={[
+          { items: [{ label: "Ungroup", icon: UngroupIcon, onSelect: onUngroup }] },
+          {
+            items: [{ label: "Delete group", icon: Trash2, destructive: true, onSelect: onDelete }],
+          },
+        ]}
+      />
+      <div className="sp-insp-panel">
+        <InspectorSection id="group-layout" title="Layout">
+          <SwitchRow
+            label="Auto layout"
             checked={!free}
-            ariaLabel="Auto layout: place children in a stack with a fixed gap"
             onChange={(next) => onModeChange(next ? "stack" : "free")}
           />
-        </PropertyRow>
-        <p style={{ fontSize: 10.5, color: "var(--text-muted)" }}>
-          {free
-            ? "Children keep the positions you gave them. The group just moves them together."
-            : "Children are placed along one axis with a fixed gap; growing content pushes the rest."}
-        </p>
-        {!free && (
-          <>
-            <PropertyRow label="Direction">
-              <SegmentedIconGroup
-                stretch
-                ariaLabel="Stack direction"
-                value={group.direction}
-                options={[
-                  { key: "vertical", label: "Vertical", title: "Stack children top to bottom" },
-                  {
-                    key: "horizontal",
-                    label: "Horizontal",
-                    title: "Stack children left to right",
-                  },
-                ]}
-                onSelect={changeDirection}
-              />
-            </PropertyRow>
-            <PropertyRow label="Gap">
-              <NumericField
-                ariaLabel="Gap between children in canvas pixels"
-                suffix="px"
-                min={0}
-                value={group.gap}
-                onCommit={(v) => onChange({ gap: v ?? group.gap })}
-              />
-            </PropertyRow>
-            <PropertyRow label="Anchor">
-              <select
-                className="sp-input"
-                style={compactControlStyle}
-                aria-label="Anchor: the point that holds still as content grows"
-                value={group.anchor}
-                onChange={(e) => changeAnchor(e.target.value as GroupAxisPoint)}
-              >
-                {(Object.keys(ANCHOR_LABELS[group.direction]) as GroupAxisPoint[]).map((k) => (
-                  <option key={k} value={k}>
-                    {ANCHOR_LABELS[group.direction][k]}
-                  </option>
-                ))}
-              </select>
-            </PropertyRow>
-            <PropertyRow label="Align">
-              <select
-                className="sp-input"
-                style={compactControlStyle}
-                aria-label="Cross-axis alignment of children"
-                value={group.align}
-                onChange={(e) => onChange({ align: e.target.value as GroupAxisPoint })}
-              >
-                {(Object.keys(ALIGN_LABELS[group.direction]) as GroupAxisPoint[]).map((k) => (
-                  <option key={k} value={k}>
-                    {ALIGN_LABELS[group.direction][k]}
-                  </option>
-                ))}
-              </select>
-            </PropertyRow>
-          </>
-        )}
-      </InspectorSection>
+          {!free && (
+            <>
+              <PropertyRow label="Direction">
+                <SegmentedIconGroup
+                  stretch
+                  ariaLabel={`Direction of the ${stackName.toLowerCase()}`}
+                  value={group.direction}
+                  options={[
+                    { key: "vertical", label: "Vertical" },
+                    { key: "horizontal", label: "Horizontal" },
+                  ]}
+                  onSelect={changeDirection}
+                />
+              </PropertyRow>
+              <PropertyGrid>
+                <PropertyRow label="Gap">
+                  <NumericField
+                    ariaLabel="Gap"
+                    suffix="px"
+                    min={0}
+                    value={group.gap}
+                    onCommit={(v) => onChange({ gap: v ?? group.gap })}
+                  />
+                </PropertyRow>
+                <PropertyRow label="Align">
+                  <Select
+                    ariaLabel="Align"
+                    value={group.align}
+                    options={(Object.keys(ALIGN_LABELS[group.direction]) as GroupAxisPoint[]).map(
+                      (k) => ({ value: k, label: ALIGN_LABELS[group.direction][k] }),
+                    )}
+                    onSelect={(v) => onChange({ align: v })}
+                  />
+                </PropertyRow>
+              </PropertyGrid>
+              <PropertyRow label="Anchor">
+                <Select
+                  ariaLabel="Anchor"
+                  value={group.anchor}
+                  options={(Object.keys(ANCHOR_LABELS[group.direction]) as GroupAxisPoint[]).map(
+                    (k) => ({ value: k, label: ANCHOR_LABELS[group.direction][k] }),
+                  )}
+                  onSelect={changeAnchor}
+                />
+              </PropertyRow>
+            </>
+          )}
+        </InspectorSection>
 
-      <InspectorSection id="group-position" title="Position">
-        {free ? (
-          // A plain group's frame is the children's bounding box — computed,
-          // never authored. Move it on the canvas; resize its children.
-          <PropertyRow label="Bounds">
-            <span style={{ fontSize: 11, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
+        <InspectorSection id="group-position" title="Position">
+          {free ? (
+            <p className="t-body-s sp-insp-note">
               {computedRect
-                ? `X ${Math.round(computedRect.x)} · Y ${Math.round(computedRect.y)} · ${Math.round(
+                ? `X ${Math.round(computedRect.x)}, Y ${Math.round(computedRect.y)}, ${Math.round(
                     computedRect.width,
-                  )} × ${Math.round(computedRect.height)} · from children`
-                : "—"}
-            </span>
-          </PropertyRow>
-        ) : (
-          <>
-            <PropertyRow label="Position">
-              <NumericField
-                label="X"
-                ariaLabel={vertical ? "Group X position" : "Group anchor X position"}
-                value={Math.round(group.x)}
-                onCommit={(v) => onChange({ x: v ?? group.x })}
-              />
-              <NumericField
-                label="Y"
-                ariaLabel={vertical ? "Group anchor Y position" : "Group Y position"}
-                value={Math.round(group.y)}
-                onCommit={(v) => onChange({ y: v ?? group.y })}
-              />
-            </PropertyRow>
-            <PropertyRow label="Size">
-              <NumericField
-                label={vertical ? "W" : "H"}
-                ariaLabel="Group cross-axis size"
-                min={16}
-                value={Math.round(group.crossSize)}
-                onCommit={(v) => onChange({ crossSize: v ?? group.crossSize })}
-              />
-              <span style={{ fontSize: 11, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-                {vertical ? "H" : "W"}{" "}
-                {computedRect
-                  ? Math.round(vertical ? computedRect.height : computedRect.width)
-                  : "—"}{" "}
-                · computed
-              </span>
-            </PropertyRow>
-          </>
-        )}
-      </InspectorSection>
+                  )} × ${Math.round(computedRect.height)}, from what it holds.`
+                : "From what it holds."}
+            </p>
+          ) : (
+            <>
+              <PropertyRow label="Position">
+                <NumericField
+                  label="X"
+                  ariaLabel="X position"
+                  value={Math.round(group.x)}
+                  onCommit={(v) => onChange({ x: v ?? group.x })}
+                />
+                <NumericField
+                  label="Y"
+                  ariaLabel="Y position"
+                  value={Math.round(group.y)}
+                  onCommit={(v) => onChange({ y: v ?? group.y })}
+                />
+              </PropertyRow>
+              <PropertyRow label="Size">
+                <NumericField
+                  label={vertical ? "W" : "H"}
+                  ariaLabel={vertical ? "Width" : "Height"}
+                  min={16}
+                  value={Math.round(group.crossSize)}
+                  onCommit={(v) => onChange({ crossSize: v ?? group.crossSize })}
+                />
+                <span className="t-body-s sp-insp-computed">
+                  {vertical ? "H" : "W"} {mainSize ?? "unknown"}, from what it holds
+                </span>
+              </PropertyRow>
+            </>
+          )}
+        </InspectorSection>
 
-      <InspectorSection id="group-overflow" title="Overflow">
-        {!free && (
-          <>
-            <PropertyRow label="Shrink to fit">
-              <Switch
+        {(!free || computedRect?.overflows) && (
+          <InspectorSection id="group-overflow" title="Overflow">
+            {!free && (
+              <SwitchRow
+                label="Shrink text to fit the canvas"
                 checked={Boolean(group.shrinkToFit)}
-                ariaLabel="Shrink text to keep the stack inside the canvas"
                 onChange={(next) => onChange({ shrinkToFit: next || undefined })}
               />
-            </PropertyRow>
-            <p style={{ fontSize: 10.5, color: "var(--text-muted)" }}>
-              {group.shrinkToFit
-                ? "Text in this stack shrinks (never below its minimum size) so the stack stays inside the canvas."
-                : "Content that outgrows the canvas stays visible and is flagged here in the builder. Members never see a warning."}
-            </p>
-          </>
+            )}
+            {computedRect?.overflows && (
+              <p className="t-body-s sp-insp-note">
+                This {free ? "group" : "stack"} runs past the canvas.
+              </p>
+            )}
+          </InspectorSection>
         )}
-        {computedRect?.overflows && (
-          <p style={{ fontSize: 10.5, color: "var(--text-secondary)" }}>
-            This {free ? "group" : "stack"} currently extends beyond the canvas.
-          </p>
-        )}
-        {free && !computedRect?.overflows && (
-          <p style={{ fontSize: 10.5, color: "var(--text-muted)" }}>
-            A group that outgrows the canvas is flagged here in the builder. Members never see a
-            warning.
-          </p>
-        )}
-      </InspectorSection>
-
-      <div className="flex gap-2 pt-2">
-        <button className="sp-btn sp-btn-ghost flex-1" onClick={onUngroup}>
-          <UngroupIcon className="w-3.5 h-3.5" />
-          Ungroup
-        </button>
-        <button
-          className="sp-btn sp-btn-ghost flex-1"
-          style={{ color: "var(--destructive)" }}
-          onClick={onDelete}
-        >
-          Delete group
-        </button>
       </div>
     </div>
   );

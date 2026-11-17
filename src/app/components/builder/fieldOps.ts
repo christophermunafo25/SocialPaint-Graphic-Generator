@@ -37,7 +37,7 @@ export const PALETTE_ITEMS: PaletteItem[] = [
   {
     id: "multiline",
     type: "multiline",
-    label: "Multiline text",
+    label: "Paragraph",
     width: 520,
     height: 220,
     group: "fields",
