@@ -67,9 +67,11 @@ Phase 4 (2026-10-27) carried the renderer's depth through the Figma importer (`d
 
 | Fixture                    | Chromium (exact / blurred) | Firefox       | WebKit        |
 | -------------------------- | -------------------------- | ------------- | ------------- |
-| `gtm-composer-import`      | 8.84 / 0.58                | 10.32 / 0.45  | 6.19 / 0.54   |
-| `feature-highlight-import` | 4.70 / 9.74                | 4.58 / 9.86   | 6.04 / 10.74  |
-| `crop-matrix`              | 0.00 / 0.00                | 7.50 / 0.00   | 11.58 / 0.09  |
+| `gtm-composer-import`      | 8.84 / 0.58                | 10.32 / 0.45  | 2.80 / 0.53   |
+| `feature-highlight-import` | 4.70 / 9.74                | 4.58 / 9.86   | 5.04 / 10.74  |
+| `crop-matrix`              | 0.00 / 0.00                | 7.50 / 0.00   | 2.01 / 0.00   |
+
+The WebKit column was re-recorded on 2026-11-17 with CJ's approval. Since pull request 202 the export has WebKit decode a snapshot's photos whole, inside the draw, where it used to decode each at the size it was drawn (`test/fidelity/README.md`). Before it the three rows read 6.19 / 0.54, 6.04 / 10.74 and 11.58 / 0.09.
 
 Before the phase the GTM import scored 27.39 / 27.55 on Chromium and Feature Highlight 4.29 / 10.75. What an import now carries:
 
@@ -82,7 +84,7 @@ Before the phase the GTM import scored 27.39 / 27.55 on Chromium and Feature Hig
 
 What is still approximated:
 
-- **Photo resampling.** A live photo is scaled by the browser, not pre-cut by Figma, so Firefox and WebKit differ on fine texture: WebKit's 6.04 on Feature Highlight is 1.1 points above the hand-built fixture, all in the photo, with the blurred share unchanged.
+- **Photo resampling.** A live photo is scaled by the browser, not pre-cut by Figma, so Firefox and WebKit differ on fine texture. WebKit's 6.04 on Feature Highlight was 1.1 points above the hand-built fixture, all in the photo, with the blurred share unchanged. It reads 5.04, 0.1 points above, now that the export has WebKit decode the photo whole and scale it in the draw.
 - **Cap trim** assumes a face's ascent above the cap height equals its descent; for other faces the line sits a pixel or two off.
 - **The condensed headline width** (the font catalog), background blur, a drop shadow's spread, duo and multi noise, angular and diamond gradients, and a rotated radial's tilt.
 

@@ -118,6 +118,6 @@
       }
     ]
   },
-  "baseline": { "chromium": 0, "firefox": 7.5, "webkit": 11.58 },
-  "blurBaseline": { "chromium": 0, "firefox": 0, "webkit": 0.09 }
+  "baseline": { "chromium": 0, "firefox": 7.5, "webkit": 2.01 },
+  "blurBaseline": { "chromium": 0, "firefox": 0, "webkit": 0 }
 }

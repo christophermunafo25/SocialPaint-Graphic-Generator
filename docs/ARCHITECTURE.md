@@ -383,8 +383,8 @@ the single export (`exportSchemaPng`, which adds delivery) and bulk fill both
 call it. It ports the proven technique from the original generators: dimensions from the schema (never hardcoded),
 all raster assets pre-converted to data URLs (html-to-image drops
 cross-origin images silently), one html-to-image snapshot (`toSvg`) that the
-export loads and draws itself, twice with a 150 ms pause (Safari decode
-warm-up), `navigator.share` on mobile with download fallback. Custom
+export loads and draws itself, twice with a 150 ms pause,
+`navigator.share` on mobile with download fallback. Custom
 uploaded fonts are embedded via `fontEmbedCSS`; Google fonts render from the
 document font cache.
 
@@ -395,6 +395,30 @@ text (a text gradient, grain on glyphs). Firefox then reuses that raster, so
 a later draw cannot repair it. html-to-image's own `toPng` draws one
 animation frame after the load, which on a busy page falls inside the
 window; that is why the export does not use it.
+
+WebKit decodes a large bitmap inside the snapshot off the main thread. It
+starts only when the snapshot is first drawn and paints nothing of the bitmap
+until the decode lands, so a draw that comes first exports the graphic
+without its photos. The export therefore sets `decoding="sync"` on every
+`<img>` in the snapshot before loading it (`withSyncDecodedImages`,
+src/lib/render/snapshotDecoding.ts), and WebKit decodes the image inside the
+draw that paints it, however slow the machine. If the edited snapshot does
+not load, the export logs it and loads the snapshot as html-to-image made it.
+
+Chromium and Firefox paint a snapshot's images in the draw either way and
+render the same pixels. WebKit's pixels change where an image is drawn
+smaller than it is: decoded in the draw it is decoded whole and scaled as it
+is drawn, where the decode off the main thread was made at the drawn size.
+Three WebKit fidelity baselines were recorded with the attribute in place and
+fail without it (test/fidelity/README.md).
+
+Two things still depend on the second draw coming 150 ms after the first. A
+CSS image has no such attribute, and the one large bitmap the renderer paints
+as a CSS image is an image field's alpha mask: until it is decoded WebKit
+paints nothing of the masked photo. (Grain tiles are CSS backgrounds too, but
+at 128 px square they are small enough that WebKit decodes them in the draw.)
+And before Safari 26 the snapshot's load does not wait for the images inside
+it to load, so an image can still arrive after the first draw.
 
 ## The way in: the gate and onboarding
 
