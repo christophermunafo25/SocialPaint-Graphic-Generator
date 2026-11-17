@@ -397,12 +397,21 @@ until the decode lands, so a draw that comes first exports the graphic
 without its photos. The export therefore sets `decoding="sync"` on every
 `<img>` in the snapshot before loading it (`withSyncDecodedImages`,
 src/lib/render/snapshotDecoding.ts), and WebKit decodes the image inside the
-draw that paints it, however slow the machine. Chromium and Firefox paint a
-snapshot's images in the draw either way and render the same pixels. A CSS
-image has no such attribute. The renderer paints one bitmap that way, an
-image field's alpha mask, and until it is decoded WebKit paints nothing of
-the masked photo: the second draw, 150 ms after the first, is what that mask
-still depends on.
+draw that paints it, however slow the machine. If the edited snapshot does
+not load, the export logs it and loads the snapshot as html-to-image made it.
+
+Chromium and Firefox paint a snapshot's images in the draw either way and
+render the same pixels. WebKit's pixels change where an image is drawn
+smaller than it is: decoded in the draw it is decoded whole and scaled as it
+is drawn, where the decode off the main thread was made at the drawn size.
+
+Two things still depend on the second draw coming 150 ms after the first. A
+CSS image has no such attribute, and the one large bitmap the renderer paints
+as a CSS image is an image field's alpha mask: until it is decoded WebKit
+paints nothing of the masked photo. (Grain tiles are CSS backgrounds too, but
+at 128 px square they are small enough that WebKit decodes them in the draw.)
+And before Safari 26 the snapshot's load does not wait for the images inside
+it to load, so an image can still arrive after the first draw.
 
 ## The way in: the gate and onboarding
 

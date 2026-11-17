@@ -21,6 +21,8 @@ import { withSyncDecodedImages } from "./snapshotDecoding";
 /** Firefox's nglayout.initialpaint.delay: how long a new document, the
  * snapshot image's included, paints nothing that is clipped to text. */
 const FIREFOX_PAINT_SUPPRESSION_MS = 5;
+/** The export's wait between a snapshot's load and its first draw. */
+const SNAPSHOT_SETTLE_MS = 50;
 
 const PNG =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
@@ -53,6 +55,8 @@ class FakeImage {
   static made: FakeImage[] = [];
   /** The sources that do not load. */
   static fails: (url: string) => boolean = () => false;
+  /** How long a source takes to load or fail. */
+  static takes = 0;
   onload: (() => void) | null = null;
   onerror: (() => void) | null = null;
   crossOrigin = "";
@@ -65,11 +69,13 @@ class FakeImage {
   set src(url: string) {
     this.url = url;
     FakeImage.made.push(this);
-    queueMicrotask(() => {
+    const settle = () => {
       if (FakeImage.fails(url)) return this.onerror?.();
       this.loaded = true;
       this.onload?.();
-    });
+    };
+    if (FakeImage.takes) setTimeout(settle, FakeImage.takes);
+    else queueMicrotask(settle);
   }
   decode() {
     return Promise.resolve();
@@ -90,6 +96,7 @@ describe("renderSchemaBlob", () => {
     snapshot.text = TEXT_ONLY;
     FakeImage.made = [];
     FakeImage.fails = () => false;
+    FakeImage.takes = 0;
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
     vi.stubGlobal("Image", FakeImage);
     vi.stubGlobal("document", {
@@ -111,6 +118,7 @@ describe("renderSchemaBlob", () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   it("leaves the loaded snapshot undrawn through Firefox's paint suppression", async () => {
@@ -153,6 +161,8 @@ describe("renderSchemaBlob", () => {
     const failed = expect(rendering).rejects.toThrow("snapshot");
     await vi.runAllTimersAsync();
     await failed;
+    // Nothing in it to mark, so there is no second snapshot to try.
+    expect(FakeImage.made).toHaveLength(1);
     expect(draws).toHaveLength(0);
   });
 
@@ -178,10 +188,13 @@ describe("renderSchemaBlob", () => {
   it("draws the snapshot as html-to-image made it when the edited one does not load", async () => {
     snapshot.text = WITH_PHOTOS;
     FakeImage.fails = (url) => url === withSyncDecodedImages(WITH_PHOTOS);
+    const logged = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const rendering = renderSchemaBlob(schema, node, null);
     await vi.runAllTimersAsync();
     const blob = await rendering;
 
+    // Said once, since the export itself gives no sign of it.
+    expect(logged).toHaveBeenCalledTimes(1);
     expect(blob.size).toBeGreaterThan(0);
     expect(snapshot.made).toBe(1);
     expect(FakeImage.made.map((image) => image.src)).toEqual([
@@ -195,9 +208,33 @@ describe("renderSchemaBlob", () => {
     ]);
   });
 
+  it("gives the snapshot it falls back to its own wait before the first draw", async () => {
+    snapshot.text = WITH_PHOTOS;
+    FakeImage.fails = (url) => url === withSyncDecodedImages(WITH_PHOTOS);
+    FakeImage.takes = 30;
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const rendering = renderSchemaBlob(schema, node, null);
+
+    // The edited snapshot fails at 30 ms and the plain one loads at 60 ms.
+    // It is a new document with a paint suppression window of its own, so
+    // the first draw waits the full settle from that load.
+    await vi.advanceTimersByTimeAsync(60);
+    expect(FakeImage.made).toHaveLength(2);
+    expect(FakeImage.made[1].loaded).toBe(true);
+    await vi.advanceTimersByTimeAsync(SNAPSHOT_SETTLE_MS - 1);
+    expect(draws).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(draws).toEqual([{ image: FakeImage.made[1], size: [1080, 1350] }]);
+
+    await vi.runAllTimersAsync();
+    await rendering;
+    expect(draws).toHaveLength(2);
+  });
+
   it("rejects when neither snapshot loads", async () => {
     snapshot.text = WITH_PHOTOS;
     FakeImage.fails = () => true;
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
     const rendering = renderSchemaBlob(schema, node, null);
     const failed = expect(rendering).rejects.toThrow("snapshot");
     await vi.runAllTimersAsync();

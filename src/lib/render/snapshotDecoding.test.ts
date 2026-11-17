@@ -57,12 +57,51 @@ describe("withSyncDecodedImages", () => {
   it("is not misled by attribute values and text that look like markup", () => {
     // XMLSerializer escapes these inside an attribute value; text keeps its
     // quotes.
-    const inner = `<p>an &lt;img src="x"&gt; tag, and decoding="async" in words</p><img alt="a &gt; b, decoding=&quot;async&quot;" data-decoding="async" src="${PHOTO}" /><p> decoding="async"</p>`;
+    const inner = `<p>an &lt;img src="x"&gt; tag, and decoding="async" in words</p><img alt="a &gt; b, decoding=&quot;async&quot; &lt;img src=&quot;x&quot;&gt;" data-decoding="async" src="${PHOTO}" /><p> decoding="async"</p>`;
     const marked = withSyncDecodedImages(snapshotOf(inner));
 
     expect(markupOf(marked)).toBe(
       markupOf(snapshotOf(inner.split("<img alt").join('<img decoding="sync" alt'))),
     );
+  });
+
+  it("reads a value that ends like the attribute it is looking for", () => {
+    // A field label is the image's alt text, and nothing stops one ending
+    // this way. The value's own closing quote must not read as the
+    // attribute's opening one.
+    const tag = `<img src="${PHOTO}" alt="Photo decoding=" style="width: 100%;" />`;
+    expect(imgTags(withSyncDecodedImages(snapshotOf(tag)))).toEqual([
+      `<img decoding="sync" src="${PHOTO}" alt="Photo decoding=" style="width: 100%;" />`,
+    ]);
+  });
+
+  it("reads the shapes of tag a serializer writes", () => {
+    const tags = [
+      "<img />",
+      `<img xmlns="http://www.w3.org/1999/xhtml" src="${PHOTO}" xml:lang="en" />`,
+      `<img decoding="" src="${PHOTO}" />`,
+      `<img src="${PHOTO}" alt="">`,
+    ];
+    expect(imgTags(withSyncDecodedImages(snapshotOf(tags.join(""))))).toEqual([
+      '<img decoding="sync" />',
+      `<img decoding="sync" xmlns="http://www.w3.org/1999/xhtml" src="${PHOTO}" xml:lang="en" />`,
+      `<img decoding="sync" src="${PHOTO}" />`,
+      `<img decoding="sync" src="${PHOTO}" alt="">`,
+    ]);
+  });
+
+  it("leaves a tag it cannot read as it is, and still marks the rest", () => {
+    // No serializer writes single quotes here. A tag that is not a run of
+    // name="value" pairs keeps today's decode instead of risking its markup.
+    const odd = `<img src='${PHOTO}' decoding="async" />`;
+    const tags = imgTags(
+      withSyncDecodedImages(snapshotOf(`<img src="${PHOTO}" />${odd}<img src="${PHOTO}" />`)),
+    );
+    expect(tags).toEqual([
+      `<img decoding="sync" src="${PHOTO}" />`,
+      odd,
+      `<img decoding="sync" src="${PHOTO}" />`,
+    ]);
   });
 
   it("leaves SVG images and a snapshot with no image as they are", () => {
