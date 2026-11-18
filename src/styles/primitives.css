@@ -140,6 +140,88 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   outline: var(--stroke-focus) solid var(--border-focus);
   outline-offset: var(--focus-offset);
 }
+/* ── Icon slot: the 16 slot of Button and Icon Button (PROMPT.md section
+   7.3). A change of icon crossfades: the leaving glyph fades and shrinks to
+   0.7 as the arriving one grows from it, on motion/duration/base. A check
+   draws its stroke after half of fast, and on its way out fades whole. An
+   arrow only fades. IconSlot sets data-animate only for a change the
+   pointer made, so the keyboard, reduced motion and first paint land the
+   end state at once. ── */
+.ui-icon-slot {
+  display: inline-grid;
+  flex: none;
+  width: 16px; /* the icon's own box */
+  height: 16px;
+}
+.ui-icon-slot__g {
+  grid-area: 1 / 1;
+  display: block;
+}
+.ui-icon-slot[data-animate] > .ui-icon-slot__g {
+  transition:
+    opacity var(--motion-duration-base) var(--motion-easing-standard),
+    scale var(--motion-duration-base) var(--motion-easing-standard);
+}
+@starting-style {
+  .ui-icon-slot[data-animate] > .ui-icon-slot__g {
+    opacity: 0;
+    scale: 0.7;
+  }
+}
+.ui-icon-slot > .ui-icon-slot__g[data-leaving] {
+  opacity: 0;
+  scale: 0.7;
+}
+.ui-icon-slot > .ui-icon-slot__g[data-arrow] {
+  scale: 1;
+}
+@starting-style {
+  .ui-icon-slot[data-animate] > .ui-icon-slot__g[data-arrow] {
+    scale: 1;
+  }
+}
+.ui-icon-slot__check path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+.ui-icon-slot[data-animate] > .ui-icon-slot__check:not([data-leaving]) path {
+  transition: stroke-dashoffset var(--motion-duration-base) var(--motion-easing-standard)
+    calc(var(--motion-duration-fast) / 2);
+}
+@starting-style {
+  .ui-icon-slot[data-animate] > .ui-icon-slot__check path {
+    stroke-dashoffset: 1;
+  }
+}
+.ui-icon-slot__spinner {
+  animation: ui-spin calc(var(--motion-duration-pulse) * 0.6) linear infinite;
+}
+@keyframes ui-spin {
+  to {
+    rotate: 1turn;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-icon-slot__spinner {
+    animation: none;
+  }
+}
+
+/* ── Press scale (PROMPT.md section 7.5): Button, Icon Button, Send, Chip
+   and Platform Chip shrink to 0.97 while the pointer holds them, on the
+   scale property so it never fights a transform. Never when disabled, and
+   never from the keyboard (inputModality.ts marks the root). ── */
+:root[data-input="pointer"] :is(.ui-btn, .ui-iconbtn, .ui-send, .ui-chip, .ui-platform-chip) {
+  transition: scale var(--motion-duration-fast) var(--motion-easing-standard);
+}
+:root[data-input="pointer"]
+  :is(.ui-btn, .ui-iconbtn, .ui-send, .ui-chip, .ui-platform-chip):not(
+    :disabled,
+    [aria-disabled="true"]
+  ):active {
+  scale: 0.97;
+}
+
 /* ── Button (2206:542) ─────────────────────────────────────────────────────
    Small 28, Medium 36, Large 44, all at radius/sm. Neutral carries a
    hairline edge, which sits inside the box and takes its own room, as the
@@ -248,6 +330,24 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   border-radius: var(--radius-sm);
   --_disabled: transparent;
 }
+/* Outline (Style=Outline): Filled's fill and edge on a rounded square, for
+   shell controls (collapse, settings). The glyph rests on text/secondary
+   and lifts to text/primary on hover, pressed and selected. Disabled keeps
+   a border/subtle hairline. */
+.ui-iconbtn[data-variant="outline"] {
+  border: var(--stroke-hairline) solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  --_fill: var(--action-neutral);
+  --_hover: var(--action-neutral-hover);
+  --_pressed: var(--action-neutral-pressed);
+  --_selected: var(--action-neutral-pressed);
+  --_fg: var(--text-secondary);
+  --_fg-hover: var(--text-primary);
+}
+.ui-iconbtn[data-variant="outline"]:disabled,
+.ui-iconbtn[data-variant="outline"][aria-disabled="true"] {
+  border-color: var(--border-subtle);
+}
 /* A themed pair (the theme toggle): the light glyph in Light and the dark
    one in Dark, by the nearest [data-theme]. Each deeper level of nesting
    wins by specificity; three levels cover the app's html, a themed panel
@@ -272,7 +372,7 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 }
 
 /* ── Stepper (2211:227): two ghost Small icon buttons around the value, in
-   a capsule on surface/field. ── */
+   a capsule on surface/soft. ── */
 .ui-stepper {
   display: inline-flex;
   flex: none;
@@ -280,7 +380,7 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   height: var(--size-control-md);
   padding: var(--space-4);
   border-radius: var(--radius-full);
-  background: var(--surface-field);
+  background: var(--surface-soft);
   color: var(--text-primary);
   white-space: nowrap;
 }
@@ -553,6 +653,22 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   border-radius: var(--radius-xs);
   background: var(--surface-raised);
   object-fit: cover;
+  /* A new photo develops in from a 4px blur once it has decoded (PROMPT.md
+     section 7.6), for everyone. */
+  transition:
+    opacity var(--motion-duration-base) var(--motion-easing-enter),
+    filter var(--motion-duration-base) var(--motion-easing-enter);
+}
+.ui-upload__thumb[data-pending] {
+  opacity: 0;
+  filter: blur(4px);
+}
+/* A slow upload pulses the tile as a skeleton. */
+.ui-upload__pulse {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-xs);
 }
 /* One line each. The text is trimmed to its capitals, so the clip box is
    widened past the descenders without moving the line. */
@@ -642,34 +758,48 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   color: var(--text-secondary);
 }
 
-/* ── Search field (50:62): a 50 square button that opens into a field. The
-   file still draws it with its own measures and a hover laid over the fill;
-   it is built as drawn. ── */
+/* ── Search field (50:62): a square button that opens into a field. Large
+   is 46 at radius/chip, beside Platform Chips; Medium is 36 at radius/sm,
+   beside other controls. Both are the control height plus the hairline on
+   each side at Large, and hover is a fill of its own. Open, the field is 440
+   or 280 wide with 16 or 12 before the glyph and 8 or 4 after the clear,
+   which is a ghost Small Icon Button. The glyph stays 20. ── */
 .ui-search {
+  box-sizing: border-box;
   display: inline-flex;
+  flex: none;
   align-items: center;
   justify-content: center;
-  width: 50px;
-  height: 50px;
-  padding: 8px 6px; /* off the scale, as drawn (50:62) */
   border: var(--stroke-hairline) solid var(--border-strong);
-  border-radius: var(--radius-sm);
   --_fill: var(--action-neutral);
-  --_hover: linear-gradient(var(--state-hover), var(--state-hover)), var(--action-neutral);
-  --_pressed: linear-gradient(var(--state-pressed), var(--state-pressed)), var(--action-neutral);
+  --_hover: var(--action-neutral-hover);
+  --_pressed: var(--action-neutral-pressed);
   --_fg: var(--text-primary);
 }
+.ui-search[data-size="lg"] {
+  width: calc(var(--size-control-lg) + 2 * var(--stroke-hairline));
+  height: calc(var(--size-control-lg) + 2 * var(--stroke-hairline));
+  border-radius: var(--radius-chip);
+}
+.ui-search[data-size="md"] {
+  width: var(--size-control-md);
+  height: var(--size-control-md);
+  border-radius: var(--radius-sm);
+}
 .ui-search--open {
-  box-sizing: border-box;
   justify-content: flex-start;
-  width: 440px;
   max-width: 100%;
-  /* 8 and 15 from the field's outer edge, off the scale, as drawn (50:62).
-     The hairline is 1 of each. */
-  padding: calc(8px - var(--stroke-hairline)) calc(15px - var(--stroke-hairline));
-  gap: 10px;
+  gap: var(--space-8);
   background: var(--action-neutral);
   color: var(--text-primary);
+}
+.ui-search--open[data-size="lg"] {
+  width: 440px; /* as drawn (50:61) */
+  padding: 0 var(--space-8) 0 var(--space-16);
+}
+.ui-search--open[data-size="md"] {
+  width: 280px; /* as drawn (6203:1754) */
+  padding: 0 var(--space-4) 0 var(--space-12);
 }
 .ui-search--open:has(.ui-search__input:focus-visible) {
   outline: var(--stroke-focus) solid var(--border-focus);
@@ -694,20 +824,6 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 }
 .ui-search__input::-webkit-search-cancel-button {
   display: none;
-}
-/* The clear glyph is drawn at 14; the hit area reaches 24. */
-.ui-search__clear {
-  position: relative;
-  display: inline-flex;
-  width: 14px;
-  height: 14px;
-  border-radius: var(--radius-full);
-  color: var(--text-secondary);
-}
-.ui-search__clear::after {
-  content: "";
-  position: absolute;
-  inset: -5px;
 }
 
 /* ── Menu (2213:159) and Menu item (2213:157). Shared by Menu and the
@@ -957,11 +1073,28 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   background: var(--control-on);
 }
 /* The mark is drawn on the whole box; the hairline of room is given back.
-   It is positioned so that it paints over the halo. */
+   It is positioned so that it paints over the halo. Both paths are always
+   there: the box's state shows one, and a check the pointer makes draws
+   itself in on motion/duration/fast (PROMPT.md section 7.4). Unchecking,
+   and the mark that is leaving, clear at once. */
 .ui-check__mark {
   position: relative;
   flex: none;
   margin: calc(-1 * var(--stroke-hairline));
+}
+.ui-check__mark path {
+  opacity: 0;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+.ui-check__box[data-on="true"] .ui-check__mark-check,
+.ui-check__box[data-on="mixed"] .ui-check__mark-dash {
+  opacity: 1;
+  stroke-dashoffset: 0;
+}
+:root[data-input="pointer"] .ui-check__box[data-on="true"] .ui-check__mark-check,
+:root[data-input="pointer"] .ui-check__box[data-on="mixed"] .ui-check__mark-dash {
+  transition: stroke-dashoffset var(--motion-duration-fast) var(--motion-easing-standard);
 }
 .ui-check__dot {
   position: relative;
@@ -993,6 +1126,8 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
    radius/xs, 2 apart, on a 36 track at radius/sm. The selected one rides
    control/thumb under Elevation/Thumb. ── */
 .ui-segmented {
+  position: relative;
+  isolation: isolate;
   display: inline-flex;
   padding: var(--space-4);
   gap: var(--space-2);
@@ -1015,6 +1150,91 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 .ui-segment[data-selected],
 .ui-segment[data-demo-state="selected"] {
   box-shadow: var(--elevation-thumb);
+}
+
+/* The liquid selection (PROMPT.md section 7.1). The labels sit above a
+   crisp thumb, and under it a goo layer holds a blob that rides with the
+   thumb and an 18 drop that trails it; the shared #sp-goo filter fuses the
+   two and casts Elevation/Thumb from the shape, so the strand between them
+   carries the shadow too. Once SegmentedControl has placed the thumb
+   (data-liquid) the selected segment stops drawing its own fill. */
+.ui-segmented .ui-segment {
+  position: relative;
+  z-index: 2;
+  transition: color var(--motion-duration-fast) var(--motion-easing-standard);
+}
+.ui-segmented[data-liquid] .ui-segment[data-selected] {
+  background: transparent;
+  box-shadow: none;
+}
+.ui-segmented .ui-segment:focus-visible {
+  z-index: 3;
+}
+.ui-segmented__goo,
+.ui-segmented__thumb {
+  position: absolute;
+  pointer-events: none;
+}
+.ui-segmented:not([data-liquid]) :is(.ui-segmented__goo, .ui-segmented__thumb) {
+  display: none;
+}
+.ui-segmented__goo {
+  inset: var(--space-4);
+  z-index: 0;
+  filter: url(#sp-goo) drop-shadow(0 1px 3px var(--shadow-thumb));
+}
+.ui-segmented__blob,
+.ui-segmented__thumb {
+  height: var(--size-control-sm);
+  width: var(--_thumb-w, 0px);
+  translate: var(--_thumb-x, 0px) 0;
+  border-radius: var(--radius-xs);
+  background: var(--control-thumb);
+  transition:
+    translate var(--motion-duration-base) var(--motion-easing-standard),
+    width var(--motion-duration-base) var(--motion-easing-standard);
+}
+.ui-segmented__blob {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+.ui-segmented__thumb {
+  top: var(--space-4);
+  left: var(--space-4);
+  z-index: 1;
+}
+/* The drop holds for half of fast while the thumb pulls away, then follows
+   on slow, so a strand stretches between them. */
+.ui-segmented__drop {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 18px; /* two thirds of the 28 thumb, as drawn (6262:353) */
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border-radius: var(--radius-full);
+  background: var(--control-thumb);
+  translate: var(--_drop-x, 0px) 0;
+  scale: var(--_drop-s, 0);
+  transition:
+    translate var(--motion-duration-slow) var(--motion-easing-standard)
+      calc(var(--motion-duration-fast) / 2),
+    scale var(--motion-duration-fast) var(--motion-easing-standard);
+}
+.ui-segmented[data-instant] :is(.ui-segmented__thumb, .ui-segmented__blob, .ui-segmented__drop) {
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-segmented__drop {
+    display: none;
+  }
+}
+.ui-goo-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
 }
 /* The ring reaches past the 2 between segments, so the focused one sits
    above its neighbours. */
@@ -1080,7 +1300,7 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   color: var(--text-disabled);
 }
 
-/* ── Chip (2212:187): a 28 pill on action/neutral with a hairline edge.
+/* ── Chip (2212:187): a 28 chip at radius/chip on action/neutral with a hairline edge.
    Selected takes the inverse fill and drops the edge. ── */
 .ui-chip {
   display: inline-flex;
@@ -1089,7 +1309,7 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   padding: 0 var(--space-12);
   gap: var(--space-6);
   border: var(--stroke-hairline) solid var(--border-strong);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-chip);
   --_fill: var(--action-neutral);
   --_hover: var(--action-neutral-hover);
   --_pressed: var(--action-neutral-pressed);
@@ -1156,7 +1376,7 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   background: var(--surface-raised);
 }
 
-/* ── Tag (2212:143): a 24 pill in Label/XS. A tag is text and paints its
+/* ── Tag (2212:143): a 24 tag at radius/tag in Label/XS. A tag is text and paints its
    own fill. Given something to do it is a button, and the shared state rules
    paint it: an Outline one hovers like a ghost control. ── */
 .ui-tag {
@@ -1165,7 +1385,7 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   height: var(--size-control-xs);
   padding: 0 var(--space-8);
   gap: var(--space-4);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-tag);
   --_fill: initial;
   --_fg: initial;
   white-space: nowrap;
@@ -1227,14 +1447,15 @@ button.ui-detail-tag__value {
   outline-offset: var(--focus-offset);
 }
 
-/* ── Badge (2212:130): a 24 pill in Label/XS naming a state. ── */
+/* ── Badge (2212:130): a 24 badge at radius/chip in Label/XS naming a
+   state. ── */
 .ui-badge {
   display: inline-flex;
   align-items: center;
   height: var(--size-control-xs);
   padding: 0 var(--space-8);
   gap: var(--space-4);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-chip);
   white-space: nowrap;
 }
 .ui-badge[data-tone="positive"] {
@@ -1372,6 +1593,27 @@ button.ui-detail-tag__value {
 }
 .ui-toast[data-action] {
   padding-right: var(--space-8);
+}
+/* It eases in from 8 below as it mounts and back down as it leaves; a new
+   message while it leaves turns it back from where it is (PROMPT.md section
+   7.2). */
+.ui-toast {
+  transition:
+    opacity var(--motion-duration-base) var(--motion-easing-enter),
+    translate var(--motion-duration-base) var(--motion-easing-enter);
+}
+@starting-style {
+  .ui-toast {
+    opacity: 0;
+    translate: 0 var(--space-8);
+  }
+}
+.ui-toast[data-leaving] {
+  opacity: 0;
+  translate: 0 var(--space-8);
+  pointer-events: none;
+  transition-duration: var(--motion-duration-fast);
+  transition-timing-function: var(--motion-easing-exit);
 }
 
 /* ── Breadcrumb (2213:111): the trail in Label/M, 8 apart. Earlier crumbs
@@ -1917,7 +2159,7 @@ button.ui-detail-tag__value {
   flex: 1;
   height: 4px;
   border-radius: var(--radius-full);
-  background: var(--surface-field);
+  background: var(--surface-soft);
 }
 .ui-progress__bar[data-done] {
   background: var(--text-primary);
@@ -1927,14 +2169,14 @@ button.ui-detail-tag__value {
   white-space: nowrap;
 }
 
-/* ── Progress bar (2215:272): a 4 tall track on surface/field, filled in
+/* ── Progress bar (2215:272): a 4 tall track on surface/soft, filled in
    text/primary. Indeterminate, a part of the fill slides along it. ── */
 .ui-progress-bar {
   width: 100%;
   height: 4px;
   overflow: hidden;
   border-radius: var(--radius-full);
-  background: var(--surface-field);
+  background: var(--surface-soft);
 }
 .ui-progress-bar__fill {
   display: block;

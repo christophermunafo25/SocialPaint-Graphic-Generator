@@ -24,18 +24,6 @@
   gap: var(--space-8);
   margin-left: auto;
 }
-/* The search (50:62) is the 40 square here, at radius/sm (328:1944), and
-   opens into a 320 field beside the sort. */
-.sp-lib-search.sp-tb-search .ui-search {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-sm);
-}
-.sp-lib-search.sp-tb-search .ui-search--open {
-  width: 320px;
-  max-width: 100%;
-}
-
 /* The grid, 24 under the bar: four 242 cards across at 1440, 16 apart. */
 .sp-tb-grid {
   display: grid;

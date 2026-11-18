@@ -448,7 +448,7 @@ export function AdminTemplates() {
                 onSelect={setSort}
               />
               <LibrarySearch
-                className="sp-tb-search"
+                size="md"
                 value={query}
                 onChange={setQuery}
                 label="Search templates"

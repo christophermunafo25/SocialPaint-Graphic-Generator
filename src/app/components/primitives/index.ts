@@ -22,3 +22,4 @@ export * from "./Skeleton";
 export * from "./Alert";
 export * from "./EmptyState";
 export * from "./OptionTile";
+export { CONFIRM_MS, BUSY_DELAY_MS } from "./motion";

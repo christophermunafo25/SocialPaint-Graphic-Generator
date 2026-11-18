@@ -1,6 +1,7 @@
 import React from "react";
 import { Minus, Plus } from "lucide-react";
 import { cx, type DemoStateAttr, type IconComponent } from "./cx";
+import { IconSlot } from "./IconSlot";
 import { useRoll } from "./useRoll";
 
 /** A glyph for each theme: `light` shows in Light and `dark` in Dark. */
@@ -15,9 +16,11 @@ export interface IconButtonProps extends Omit<
 > {
   /** The accessible name. Icon-only controls have no visible label. */
   label: string;
-  /** Filled is a circle on action/neutral with an edge. Ghost has no fill
-   * until it is hovered, and the control radius. */
-  variant?: "filled" | "ghost";
+  /** Filled is a circle on action/neutral with an edge. Outline is the same
+   * fill and edge on a rounded square, with the glyph on text/secondary at
+   * rest (the shell's collapse and settings). Ghost has no fill until it is
+   * hovered, and the control radius. */
+  variant?: "filled" | "outline" | "ghost";
   /** Small 28, Medium 36. */
   size?: "sm" | "md";
   /** The glyph, drawn at 16. A pair draws both and CSS shows the one for
@@ -33,6 +36,9 @@ export interface IconButtonProps extends Omit<
    * ignores clicks, so a control that turns itself off under the keyboard
    * (a stepper at the end of its range) never drops focus onto the page. */
   focusableWhenDisabled?: boolean;
+  /** Work is under way: aria-busy and aria-disabled, clicks are ignored, and
+   * past 400 ms the glyph gives way to a spinner. */
+  busy?: boolean;
   "data-demo-state"?: DemoStateAttr;
 }
 
@@ -50,6 +56,7 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(f
     label,
     selected,
     focusableWhenDisabled = false,
+    busy = false,
     disabled,
     onClick,
     className,
@@ -58,7 +65,7 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(f
   },
   ref,
 ) {
-  const soft = focusableWhenDisabled && disabled;
+  const soft = (focusableWhenDisabled && disabled) || busy;
   return (
     <button
       ref={ref}
@@ -66,6 +73,7 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(f
       aria-label={label}
       disabled={focusableWhenDisabled ? undefined : disabled}
       aria-disabled={soft || undefined}
+      aria-busy={busy || undefined}
       onClick={(e) => {
         if (soft) return;
         onClick?.(e);
@@ -82,7 +90,7 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(f
           <icon.dark size={16} className="ui-icon ui-iconbtn__dark" aria-hidden />
         </>
       ) : (
-        React.createElement(icon, { size: 16, className: "ui-icon", "aria-hidden": true })
+        <IconSlot icon={icon} busy={busy} />
       )}
     </button>
   );
@@ -103,7 +111,7 @@ export interface StepperProps {
 }
 
 /** Stepper (Figma 2211:227): Decrease, the value and Increase in a 36
- * capsule on surface/field. The value is a polite live region, so each step
+ * capsule on surface/soft. The value is a polite live region, so each step
  * is read out, and it rolls to each new value. At a limit the end button
  * stays focusable (aria-disabled), so focus never drops out of the group. */
 export function Stepper({

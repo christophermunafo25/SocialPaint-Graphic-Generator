@@ -3,6 +3,7 @@ import { Check, Copy, Download, Pencil } from "lucide-react";
 import { Button } from "./Button";
 import { cx, type DemoStateAttr } from "./cx";
 import { IconButton } from "./IconButton";
+import { CONFIRM_MS } from "./motion";
 import { Skeleton } from "./Skeleton";
 import { SegmentedControl, type SegmentOption } from "./Toggles";
 
@@ -82,7 +83,6 @@ export function PreviewOverlay({
 }
 
 /** How long Copy caption shows its check after a write lands. */
-const COPIED_MS = 1500;
 
 export interface ResultCardProps {
   /** One segment per draft (by platform, PLAN.md Phase 5); the switch shows
@@ -171,7 +171,7 @@ export function ResultCard({
     }
     setCopied(caption);
     window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => setCopied(null), COPIED_MS);
+    timer.current = window.setTimeout(() => setCopied(null), CONFIRM_MS);
   };
 
   return (
