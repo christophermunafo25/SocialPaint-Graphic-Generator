@@ -620,6 +620,8 @@ export const AttachMenu = React.forwardRef<
         <IconButton
           ref={buttonRef}
           id={buttonId}
+          variant="ghost"
+          selected={open}
           icon={Plus}
           label={ATTACH_TOOLTIP}
           aria-haspopup="menu"
