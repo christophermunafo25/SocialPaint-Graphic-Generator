@@ -4,6 +4,7 @@ import React, {
   useLayoutEffect,
   useMemo,
   useReducer,
+  useId,
   useRef,
   useState,
 } from "react";
@@ -264,13 +265,17 @@ export function GenerateHistoryPage() {
   const [gridRef, columns] = useGridColumns();
 
   // Arriving from a chat's History or View all, whose button unmounted with
-  // the chat page: focus lands on the title, so the next Tab reaches the
-  // search and the chips in order (New chat sits before it, in the header
-  // row).
-  const titleRef = useRef<HTMLHeadingElement>(null);
+  // the chat page: focus lands on the page's heading, the trail's last
+  // crumb (6023:3648 draws no title under the header row), so the next Tab
+  // reaches the search and the chips in order.
+  const titleId = useId();
   useEffect(() => {
-    if (takeHistoryFocus()) titleRef.current?.focus({ preventScroll: true });
-  }, []);
+    if (!takeHistoryFocus()) return;
+    const title = document.getElementById(titleId);
+    if (!title) return;
+    title.tabIndex = -1;
+    title.focus({ preventScroll: true });
+  }, [titleId]);
 
   // ── Actions ─────────────────────────────────────────────────────────────
   const newChat = useCallback(() => {
@@ -378,14 +383,13 @@ export function GenerateHistoryPage() {
     <Page
       kind="self"
       layout={{ className: "sp-chat-page", state: "history" }}
-      // The trail (13:3359), "Generate" / "History", with New chat (Neutral)
-      // at the row's end. The title under it is the page's heading, so the
-      // last crumb is not.
+      // The trail (6023:3648), "Generate" / "History", with New chat
+      // (Neutral) at the row's end. Its last crumb is the page's heading.
       header={
         <PageHeader
           icon={AREA_ICON.generate}
           crumbs={[{ label: "Generate", onClick: newChat }, { label: "History" }]}
-          currentIsHeading={false}
+          currentId={titleId}
           actions={
             <Button kind="neutral" icon={Plus} onClick={newChat}>
               New chat
@@ -394,13 +398,6 @@ export function GenerateHistoryPage() {
         />
       }
     >
-      {/* The title in Title/Page, over the filter bar. */}
-      <header className="sp-gen-history-head">
-        <h1 ref={titleRef} tabIndex={-1} className="t-title-page">
-          History
-        </h1>
-      </header>
-
       {!noChats && (
         <div className="sp-lib-filterbar">
           <LibrarySearch

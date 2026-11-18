@@ -2258,13 +2258,14 @@ input[type="radio"] {
    on every platform. A card that takes keyboard focus scrolls clear of
    both fades, ring and all, as the thread's messages clear its top fade.
    The frame around it is the non-scrolling box the scroll fades lie in
-   (ScrollFade), 16 under the filter bar and flush on the legal links,
-   which the bottom fade softens the grid into. */
+   (ScrollFade), right under the filter bar so the grid starts 24 below it
+   (ElevenLabs 6023:3648), and flush on the legal links, which the bottom
+   fade softens the grid into. */
 .sp-chat-history-frame {
   position: relative;
   flex: 1 1 0;
   min-height: 0;
-  margin: var(--space-16) calc(-1 * var(--page-pad)) 0;
+  margin: 0 calc(-1 * var(--page-pad));
 }
 .sp-chat-history-scroll {
   height: 100%;
