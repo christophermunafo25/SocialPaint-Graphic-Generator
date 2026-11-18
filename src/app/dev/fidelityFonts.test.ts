@@ -11,6 +11,7 @@ import {
   outcomeWithFonts,
   recordable,
   recordingEngine,
+  recordingPart,
   recordingToSave,
   replayable,
   requestKey,
@@ -56,6 +57,26 @@ describe("recordingEngine", () => {
 
   it("answers webkit18 from WebKit's", () => {
     expect(recordingEngine("webkit18")).toBe("webkit");
+  });
+});
+
+describe("recordingPart", () => {
+  it("replays each engine from its own part, and webkit18 from WebKit's", () => {
+    expect(recordingPart("chromium", false)).toBe("chromium");
+    expect(recordingPart("firefox", false)).toBe("firefox");
+    expect(recordingPart("webkit", false)).toBe("webkit");
+    expect(recordingPart("webkit18", false)).toBe("webkit");
+  });
+
+  it("records for the engines that have a part", () => {
+    expect(recordingPart("chromium", true)).toBe("chromium");
+    expect(recordingPart("firefox", true)).toBe("firefox");
+    expect(recordingPart("webkit", true)).toBe("webkit");
+  });
+
+  // What webkit18 fetched would be filed as WebKit's answers.
+  it("refuses to record for webkit18, and names the engine to record with", () => {
+    expect(() => recordingPart("webkit18", true)).toThrow(/--engines webkit\.$/);
   });
 });
 

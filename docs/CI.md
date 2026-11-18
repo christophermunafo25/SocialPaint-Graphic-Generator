@@ -55,6 +55,13 @@ Playwright's own install cannot fetch the older WebKit.
 each machine that runs the harness. A run that lacks it stops before it
 renders anything and names that command.
 
+That build is frozen: it belongs to a Playwright release from June 2025.
+If a new runner image stops it launching, or its archive leaves Playwright's
+CDN, the job fails at its install step or in every `webkit18` row, on every
+pull request that touches these paths. The remedy then is to drop the
+engine, with CJ's say: take `webkit18` out of the default engines in
+`scripts/fidelity/fidelity.mjs` and its step out of the workflow.
+
 ## Build-guard variables (optional)
 
 CI builds with correctly-shaped placeholder Supabase values — it compiles the

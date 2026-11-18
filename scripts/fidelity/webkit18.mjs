@@ -202,7 +202,8 @@ async function install() {
   if (!expected) {
     throw new Error(
       `No checksum is recorded for ${build}/${name}, this host's archive. ` +
-        `Known: ${Object.keys(ARCHIVES).join(", ")} (scripts/fidelity/webkit18.mjs).`,
+        `Known: ${Object.keys(ARCHIVES).join(", ")} (scripts/fidelity/webkit18.mjs). ` +
+        `The other engines run without it: --engines chromium,firefox,webkit.`,
     );
   }
   // The link goes first, as in Playwright's own install: from the moment

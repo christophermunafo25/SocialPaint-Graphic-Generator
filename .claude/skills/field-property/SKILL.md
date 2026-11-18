@@ -23,4 +23,4 @@ description: The end-to-end checklist for adding or changing a TemplateField pro
    - `src/lib/stores/supabase/templateStore.ts` create and update for a new `templates` column.
    - Write a new column only when it is set (`fieldToRow`, the store), so saves keep working if the app ships before the migration.
 10. **Docs.** `docs/TEMPLATE_SCHEMA.md`.
-11. **Fixture.** A fidelity fixture that exercises the property, passing on all three engines.
+11. **Fixture.** A fidelity fixture that exercises the property, passing on all four engines.

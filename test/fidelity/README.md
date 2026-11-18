@@ -116,7 +116,7 @@ The harness's fourth engine is the WebKit that Playwright 1.53.0 shipped: build 
 node scripts/fidelity/webkit18.mjs install
 ```
 
-A run that cannot find it stops before it renders anything and names that command.
+A run that cannot find it stops before it renders anything and names that command. The install has a checksum for one archive, which Apple silicon on macOS 15 and later takes. Anywhere else it refuses, and `--engines chromium,firefox,webkit` runs the other three.
 
 It is not Safari, and it draws like it. On 2026-11-18, 21 of the 24 fixtures came out of it pixel for pixel as they came out of Safari 18.6's own engine. The other three differ in the grain on an ellipse (`effects-matrix`, 0.62% of the picture), in the grain on an icon (`icons-matrix`, 0.01%), and by one level in 123 pixels of one of `crop-matrix`'s photos. In the two grain fields it draws exactly what WebKit 26.6 draws, so that difference lies between Playwright's builds and Safari's own. Three renders of each fixture, and a fourth under `taskpolicy -b`, were byte for byte the same.
 

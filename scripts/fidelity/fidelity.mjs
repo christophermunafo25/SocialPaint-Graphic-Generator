@@ -62,7 +62,7 @@ import { chromium, firefox, webkit } from "playwright";
 import * as prettier from "prettier";
 import {
   outcomeWithFonts,
-  recordingEngine,
+  recordingPart,
   sawEveryRequest,
 } from "../../src/app/dev/fidelityFonts.ts";
 import { DEFAULT_TOLERANCE, routeFor, verdictFor } from "../../src/app/dev/fidelityVerdict.ts";
@@ -228,7 +228,7 @@ async function renderEngine(base, engine, fixtures, dir, fonts) {
     for (const fixture of fixtures) {
       const page = await context.newPage();
       page.setDefaultTimeout(FIXTURE_TIMEOUT_MS);
-      const pinned = await fonts.attach(page, recordingEngine(engine));
+      const pinned = await fonts.attach(page, engine);
       let outcome;
       try {
         await page.goto(base + routeFor(fixture), { waitUntil: "domcontentloaded" });
@@ -476,6 +476,11 @@ function printUnanswered(fonts) {
     console.error(
       "Run `node scripts/fidelity/fidelity.mjs fonts` to record them, then commit that folder.",
     );
+    if (requests.some((request) => request.startsWith(`${WEBKIT_18} `))) {
+      console.error(
+        `fonts cannot record a request only ${WEBKIT_18} made: it is given WebKit's answers (test/fidelity/README.md).`,
+      );
+    }
   }
 }
 
@@ -570,11 +575,9 @@ async function baseline(name) {
 // ----------------------------------------------------------------- fonts
 /** Records Google's answers to the font requests the recording lacks. */
 async function recordFonts() {
-  if (engines.includes(WEBKIT_18)) {
-    throw new Error(
-      `${WEBKIT_18} is given WebKit's recorded answers and has none of its own. Record with --engines webkit.`,
-    );
-  }
+  // Refused before anything starts; fontRecording.mjs refuses it again
+  // where the fetch would happen.
+  for (const engine of engines) recordingPart(engine, true);
   const only = list(flags.only);
   const fixtures = await loadFixtures(only);
   if (!fixtures.length) {

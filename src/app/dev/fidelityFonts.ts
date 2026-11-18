@@ -36,6 +36,20 @@ export function recordingEngine(engine: Engine): RecordedEngine {
   return engine === "webkit18" ? "webkit" : engine;
 }
 
+/** The part of the recording a page's requests are answered from, in a run
+ * that replays or one that records. Recording for an engine with no part
+ * of its own is refused: what it fetched would be filed as another
+ * engine's answers, got with a different browser. */
+export function recordingPart(engine: Engine, record: boolean): RecordedEngine {
+  const part = recordingEngine(engine);
+  if (record && part !== engine) {
+    throw new Error(
+      `${engine} is given ${part}'s recorded answers and has none of its own. Record with --engines ${part}.`,
+    );
+  }
+  return part;
+}
+
 /** True for a request the recording answers. Anything else (the dev
  * server, a fixture's images) is not the recording's to answer. */
 export function isPinnedFontUrl(url: string): boolean {
@@ -48,7 +62,7 @@ export function requestKey(method: string, url: string): string {
 }
 
 /** One request by one engine, as the set of requests a run made holds it. */
-export function usedKey(engine: RecordedEngine, key: string): string {
+export function usedKey(engine: Engine, key: string): string {
   return `${engine} ${key}`;
 }
 
@@ -131,7 +145,7 @@ export function outcomeWithFonts(
 
 /** Whether a recording run made every request the fixtures can make, so
  * the answers it did not use can be dropped: it rendered every fixture in
- * every engine. A fixture that was skipped or errored made only some of
+ * every engine the recording has a part for. A fixture that was skipped or errored made only some of
  * its requests, and dropping the rest would break it wherever it does
  * render. */
 export function sawEveryRequest(run: {

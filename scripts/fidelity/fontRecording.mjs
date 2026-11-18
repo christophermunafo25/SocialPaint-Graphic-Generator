@@ -33,6 +33,7 @@ import {
   bodyFileName,
   bodyFiles,
   recordable,
+  recordingPart,
   recordingToSave,
   replayable,
   requestKey,
@@ -129,6 +130,9 @@ export async function openFontRecording(dir, { record = false } = {}) {
      * before the page closes; and keep(), which counts the page's requests
      * in the run. */
     async attach(page, engine) {
+      // Whose answers this engine is given. webkit18 takes WebKit's, and
+      // a recording run refuses it here, where the fetch would happen.
+      const part = recordingPart(engine, record);
       const answered = new Set();
       const missed = [];
       let open = 0;
@@ -136,17 +140,17 @@ export async function openFontRecording(dir, { record = false } = {}) {
       const answer = async (route) => {
         const request = route.request();
         const key = requestKey(request.method(), request.url());
-        const id = usedKey(engine, key);
+        const id = usedKey(part, key);
         let found;
         let bytes;
         try {
-          found = recording[engine]?.[key];
+          found = recording[part]?.[key];
           if (!found && record) {
             // A fetch that failed is tried again by the next request.
             if (!fetching.has(id)) {
               fetching.set(
                 id,
-                fetchLive(engine, key, route).finally(() => fetching.delete(id)),
+                fetchLive(part, key, route).finally(() => fetching.delete(id)),
               );
             }
             found = await fetching.get(id);
@@ -206,7 +210,9 @@ export async function openFontRecording(dir, { record = false } = {}) {
          * fixture that was skipped: its page asks Google for the family
          * whose file is missing, which is nothing to record or report. */
         keep() {
-          for (const key of answered) used.add(usedKey(engine, key));
+          for (const key of answered) used.add(usedKey(part, key));
+          // Named by the engine that asked, so a request only webkit18
+          // made reads as its own.
           for (const key of missed) unanswered.add(usedKey(engine, key));
         },
       };

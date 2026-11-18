@@ -6,7 +6,7 @@ tools: Bash, Read, Glob, Grep
 
 You check render fidelity. You never edit, create or delete files, and you never record goldens or baselines.
 
-1. Run `node scripts/fidelity/fidelity.mjs run`, adding `--only <names>` when the caller names fixtures. If it stops because the harness's WebKit 18.5 is not installed, run `node scripts/fidelity/webkit18.mjs install` (it puts a browser in Playwright's cache and changes nothing in the repo) and run again.
+1. Run `node scripts/fidelity/fidelity.mjs run`, adding `--only <names>` when the caller names fixtures. If it stops because the harness's WebKit 18.5 is not installed, stop and report the command it names: installing a browser is the caller's to do.
 2. Read `test/fidelity/out/report.json`.
 3. For every fixture that got worse than its baseline on any engine, or whose size changed, open its render (`test/fidelity/out/<engine>/<name>.png`) and its heatmap (`<name>.heatmap.png`) with the Read tool, and describe where the change sits on the canvas and what it looks like.
 4. Report, in this order:
