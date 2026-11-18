@@ -1,26 +1,17 @@
 import React, { useEffect, useState } from "react";
-import {
-  BarChart3,
-  Frame,
-  Moon,
-  Paintbrush,
-  PanelLeft,
-  PencilRuler,
-  Settings,
-  Sparkles,
-  Sun,
-} from "lucide-react";
+import { Moon, PanelLeft, Sun } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useColorScheme } from "@/lib/colorScheme";
 import { useRouter, type Route } from "../router";
 import { useChrome } from "./layout/ChromeContext";
-import { BrandLockup } from "./BrandMark";
+import { AREA_ICON } from "./areas";
+import { BrandLockup, BrandLockupMark } from "./BrandMark";
 import { Avatar, IconButton, NavItem, Tooltip } from "./primitives";
 
 interface NavDef {
   label: string;
   route: Route;
-  Icon: typeof Paintbrush;
+  Icon: (typeof AREA_ICON)[keyof typeof AREA_ICON];
   adminOnly: boolean;
   /** Route names that keep this item selected. */
   matches: Route["name"][];
@@ -33,35 +24,35 @@ const NAV: NavDef[] = [
   {
     label: "Brand Templates",
     route: { name: "portal" },
-    Icon: Paintbrush,
+    Icon: AREA_ICON.brandTemplates,
     adminOnly: false,
     matches: ["portal", "template", "templateChat"],
   },
   {
     label: "Generate",
     route: { name: "generate" },
-    Icon: Sparkles,
+    Icon: AREA_ICON.generate,
     adminOnly: false,
     matches: ["generate", "generateHistory"],
   },
   {
     label: "Template Builder",
     route: { name: "adminTemplates" },
-    Icon: Frame,
+    Icon: AREA_ICON.templateBuilder,
     adminOnly: true,
     matches: ["adminTemplates", "builder"],
   },
   {
     label: "Insights & Analytics",
     route: { name: "dashboard" },
-    Icon: BarChart3,
+    Icon: AREA_ICON.insights,
     adminOnly: true,
     matches: ["dashboard"],
   },
   {
     label: "Brand Studio",
     route: { name: "brandStudio" },
-    Icon: PencilRuler,
+    Icon: AREA_ICON.brandStudio,
     adminOnly: true,
     matches: ["brandStudio"],
   },
@@ -79,13 +70,15 @@ const THEME_GLYPHS = { light: Sun, dark: Moon };
 /** The light and dark quick toggle. It writes the same colour scheme
  * Settings' System / Light / Dark control does, so the two always agree.
  * The file draws no toggle; CJ kept it beside Collapse (2026-11-15), in the
- * Collapse button's look (Ghost Small). The collapsed rail leaves it out. */
-function SidebarThemeToggle() {
+ * Collapse button's look: Outline Small in the sidebar (PHASE-E2 question
+ * 1), Ghost Small in the mobile bar as before. The collapsed rail leaves it
+ * out. */
+function SidebarThemeToggle({ variant }: { variant: "outline" | "ghost" }) {
   const { resolved, setScheme } = useColorScheme();
   const next = resolved === "dark" ? "light" : "dark";
   return (
     <IconButton
-      variant="ghost"
+      variant={variant}
       size="sm"
       icon={THEME_GLYPHS}
       label={`Switch to ${next} mode`}
@@ -157,9 +150,9 @@ function SidebarAccount({
         </span>
       </div>
       <IconButton
-        variant="ghost"
+        variant="outline"
         size="sm"
-        icon={Settings}
+        icon={AREA_ICON.settings}
         label="Settings"
         selected={inSettings}
         aria-current={inSettings ? "page" : undefined}
@@ -169,8 +162,9 @@ function SidebarAccount({
   );
 }
 
-/** App-shell navigation. At 1024 and wider: the Sidebar (2218:679), open at
- * 320 or collapsed to its 76 rail, the frame's first part. Narrower: no
+/** App-shell navigation. At 1024 and wider: the Sidebar (2218:679), flush
+ * on surface/shell, open at 301 with its edge or collapsed to its 76 rail,
+ * the frame's first part. Narrower: no
  * rail, a slim top bar with the lockup, the theme toggle and a menu button,
  * the nav dropping down over a scrim (no frame draws it; it keeps its
  * earlier behavior on the new tokens). SocialPaint product UI: tenant
@@ -227,7 +221,7 @@ export function Sidebar() {
               <BrandLockup height={18} />
             </button>
             <div className="sp-mobilebar__end">
-              <SidebarThemeToggle />
+              <SidebarThemeToggle variant="ghost" />
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
                 aria-expanded={menuOpen}
@@ -273,9 +267,11 @@ export function Sidebar() {
 
   // ── Desktop: the Sidebar ────────────────────────────────────────────────
   const collapsed = sidebarCollapsed;
+  // Collapse is Outline Small (2218:582); Expand stays Ghost Medium
+  // (2218:635).
   const collapseButton = (
     <IconButton
-      variant="ghost"
+      variant={collapsed ? "ghost" : "outline"}
       size={collapsed ? "md" : "sm"}
       icon={PanelLeft}
       label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -286,6 +282,19 @@ export function Sidebar() {
   return (
     <div className="sp-shell-sidebar" data-collapsed={collapsed || undefined}>
       <aside className="sp-shell-panel" aria-label="Sidebar">
+        {/* Collapsed (2218:633), the lockup's mark is the home link, above
+            Expand. */}
+        {collapsed && (
+          <Tooltip label="SocialPaint home" placement="right">
+            <button
+              className="sp-shell-logo sp-shell-logo--mark"
+              onClick={() => go(home)}
+              aria-label="SocialPaint home"
+            >
+              <BrandLockupMark />
+            </button>
+          </Tooltip>
+        )}
         <div className="sp-shell-panel__header">
           {collapsed ? (
             collapseButton
@@ -299,7 +308,7 @@ export function Sidebar() {
                 <BrandLockup height={24} />
               </button>
               <div className="sp-shell-panel__utility">
-                <SidebarThemeToggle />
+                <SidebarThemeToggle variant="outline" />
                 {collapseButton}
               </div>
             </>

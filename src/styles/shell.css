@@ -257,37 +257,24 @@
   color: var(--text-secondary);
 }
 
-/* ── The lockup and the mark (CJ's lockup files, 2026-11-16; 61:467) ──
-   The lockup is two files, the wordmark light for Dark and dark for Light,
-   and shows the one for the nearest [data-theme] by the rule the theme
-   toggle's glyph pair follows in primitives.css: each deeper level of
-   nesting wins by specificity, three levels deep (the app's html, the
-   Light gate, a theme the lockup names). The mark alone takes
-   text/secondary from the theme it sits in. */
+/* ── The lockup and the marks (CJ's update in the Sidebar, 6243:8529;
+   the collapsed rail's mark, 6112:44073; the earlier mark, 61:467) ──
+   The lockup and its mark are drawn on currentColor in logo/ink, so they
+   are near-black on Light and off-white on Dark, and a nested
+   [data-theme] (the Light gate) recomputes it. The earlier mark alone
+   takes text/secondary from the theme it sits in. */
 .sp-brand-lockup {
   display: block;
   flex: none;
+  color: var(--logo-ink);
 }
-.sp-brand-lockup > img {
+.sp-brand-lockup > svg,
+.sp-brand-lockup-mark {
   display: block;
 }
-[data-theme="light"] .sp-brand-lockup__on-dark,
-[data-theme="dark"] .sp-brand-lockup__on-light,
-[data-theme="dark"] [data-theme="light"] .sp-brand-lockup__on-dark,
-[data-theme="light"] [data-theme="dark"] .sp-brand-lockup__on-light {
-  display: none;
-}
-[data-theme="dark"] [data-theme="light"] .sp-brand-lockup__on-light,
-[data-theme="light"] [data-theme="dark"] .sp-brand-lockup__on-dark {
-  display: block;
-}
-[data-theme="dark"] [data-theme="light"] [data-theme="dark"] .sp-brand-lockup__on-light,
-[data-theme="light"] [data-theme="dark"] [data-theme="light"] .sp-brand-lockup__on-dark {
-  display: none;
-}
-[data-theme="dark"] [data-theme="light"] [data-theme="dark"] .sp-brand-lockup__on-dark,
-[data-theme="light"] [data-theme="dark"] [data-theme="light"] .sp-brand-lockup__on-light {
-  display: block;
+.sp-brand-lockup-mark {
+  flex: none;
+  color: var(--logo-ink);
 }
 .sp-brand-mark {
   display: block;
@@ -296,9 +283,11 @@
 }
 
 /* ── Sidebar (2218:679; open 2218:577, collapsed 2218:633) ──────────────────
-   The frame's first part: 320 wide, or a 76 rail, as tall as the frame, on
-   surface/raised with a border/raised hairline inside it, 20 around and 24
-   between its header, nav and account. */
+   The frame's first part, flush against the window: 300 wide plus a
+   border/raised hairline on its right (301 in all), or a 76 rail with its
+   edge, as tall as the frame, on surface/shell. Its other edges are
+   stroke/shell-edge (0), its corners radius/shell (0), and it casts no
+   shadow. 20 around and 24 between its header, nav and account. */
 .sp-shell-sidebar {
   display: flex;
   flex: none;
@@ -308,31 +297,32 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-24);
-  width: 320px;
+  width: calc(300px + var(--stroke-hairline));
   height: 100%;
   padding: var(--space-20);
-  border: var(--stroke-hairline) solid var(--border-raised);
-  border-radius: var(--radius-xl);
-  background: var(--surface-raised);
-  box-shadow: var(--elevation-1-raised);
+  border: var(--stroke-shell-edge) solid var(--border-raised);
+  border-right-width: var(--stroke-hairline);
+  border-radius: var(--radius-shell);
+  background: var(--surface-shell);
   color: var(--text-primary);
 }
 .sp-shell-sidebar[data-collapsed] .sp-shell-panel {
   width: 76px;
 }
-/* The header row (2218:578): the Logo 24 tall, then the theme toggle and
-   Collapse (Ghost Small) 8 apart. Collapsed (2218:634): Expand (Ghost
-   Medium) alone, centred. */
+/* The header row (2218:578), 28 tall: the lockup 24 tall, then the theme
+   toggle and Collapse (Outline Small) 8 apart. Collapsed (2218:634):
+   Expand (Ghost Medium) alone, centred, under the mark. */
 .sp-shell-panel__header {
   display: flex;
   flex: none;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-8);
-  height: var(--size-control-md);
+  height: var(--size-control-sm);
 }
 .sp-shell-sidebar[data-collapsed] .sp-shell-panel__header {
   justify-content: center;
+  height: var(--size-control-md);
 }
 .sp-shell-panel__utility {
   display: flex;
@@ -347,6 +337,11 @@
   background: transparent;
   color: inherit;
   cursor: pointer;
+}
+/* Collapsed, the mark (21.16 square in the rail) sits centred over
+   Expand. */
+.sp-shell-logo--mark {
+  align-self: center;
 }
 
 /* The nav (2218:588): Nav Items 36 tall, 4 apart. It takes the free height
@@ -409,10 +404,11 @@
 }
 /* Selected while Settings shows, as the open row's Settings button is. The
    avatar fills the button, so no ground can show behind it: a border/strong
-   ring sits 2 out from it instead, under the focus ring's place. */
+   ring sits 2 out from it on the sidebar's ground instead, under the focus
+   ring's place. */
 .sp-shell-account__settings[aria-current="page"] {
   box-shadow:
-    0 0 0 var(--space-2) var(--surface-raised),
+    0 0 0 var(--space-2) var(--surface-shell),
     0 0 0 var(--space-4) var(--border-strong);
 }
 
