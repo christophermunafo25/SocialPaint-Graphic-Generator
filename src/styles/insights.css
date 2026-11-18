@@ -26,12 +26,13 @@
 }
 
 /* A raised card: Elevation/Small, radius 20 (every part of the page). */
+/* ElevenLabs E1: raised surfaces are flat, so a panel on the white page draws a border/raised hairline (inside the box, so nothing moves). Insights 6095:1030. */
 .sp-in-card {
   box-sizing: border-box;
   min-width: 0;
   border-radius: var(--radius-card);
   background: var(--surface-raised);
-  box-shadow: var(--elevation-small);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-raised);
   color: var(--text-strong);
 }
 .sp-in-card h2,

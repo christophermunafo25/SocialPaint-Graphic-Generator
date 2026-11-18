@@ -3,7 +3,6 @@ import React from "react";
 import { describe, expect, it } from "vitest";
 import { BOARDS, BoardView } from "./Boards";
 import { SPECIMENS } from "./specimens";
-import { ThemesPanels } from "./ThemesPanels";
 
 const parts = BOARDS.flatMap((board) =>
   board.blocks.flatMap((block) =>
@@ -12,17 +11,16 @@ const parts = BOARDS.flatMap((board) =>
 );
 
 describe("The boards of /dev/ui", () => {
-  it("follow the Components page's order", () => {
+  it("follow the file's six type pages, in order", () => {
     expect(BOARDS.map((b) => b.name)).toEqual([
-      "Buttons",
-      "Fields",
+      "Actions",
+      "Inputs",
       "Selection",
-      "Labels",
-      "Avatars",
+      "Labels and feedback",
       "Navigation",
       "Containers",
-      "Themes",
     ]);
+    expect(BOARDS.flatMap((b) => b.blocks)).toHaveLength(39);
   });
 
   it("have a specimen for every component the file draws", () => {
@@ -41,9 +39,7 @@ describe("The boards of /dev/ui", () => {
 
   it("draw every variant twice: in Light and in its Dark preview", () => {
     for (const board of BOARDS) {
-      const { container, unmount } = render(
-        <BoardView board={board}>{board.name === "Themes" && <ThemesPanels />}</BoardView>,
-      );
+      const { container, unmount } = render(<BoardView board={board} />);
       const variants = board.blocks
         .flatMap((block) =>
           block.parts.flatMap((part) => (part.kind === "row" ? part.parts : [part])),

@@ -288,9 +288,10 @@ expression lives in the template graphics. Fonts load via the Google Fonts css2 
 runtime `@font-face` with data URLs for uploads (export-safe — see
 `src/lib/render/fonts.ts`).
 
-Token values come from the Figma file "Master UX UI New Brand (Copy)"
-(`1dYWgFH2V8i9Jez2ylI3ky`), which replaced "Master UX-UI" in the new-brand program's
-Phase 1 (`docs/design/new-brand/`). `design/tokens/master.tokens.json` is its export
+Token values come from the Figma file "Master UX-UI New Brand Eleven Labs Inspired"
+(`dQ8bQq3V7Bue5pvFrI2g9X`), which replaced "Master UX UI New Brand (Copy)" in the
+ElevenLabs program's Phase E1 (`docs/design/elevenlabs/`), itself the successor of
+"Master UX-UI" (`docs/design/new-brand/`). `design/tokens/master.tokens.json` is its export
 (made with the development plugin in `design/tokens/figma-export/`), and
 `npm run tokens` generates `src/styles/tokens.css` from it with `scripts/build-tokens.mjs`.
 Nobody edits either file by hand. `src/styles/legacy-bridge.css` points older token
@@ -300,12 +301,14 @@ older names (the first stylesheet's and the earlier Figma file's) and the untrim
 `tokens.css` is out of date or when a stylesheet redeclares a token it owns.
 
 Interface controls are the primitives in `src/app/components/primitives/`, one per
-component on the Components page of the Figma file "Master UX UI New Brand (Copy)",
-styled in `src/styles/primitives.css` with their interaction states built in and tested
-in the happy-dom Vitest project. In development, `/dev/ui` draws that page board by
-board from `src/app/dev/boards.json` (every component in every variant and state, in
-Light with a Dark preview), then a working sheet of live controls. Screens move onto the
-primitives in the phase that rebuilds them (`docs/design/new-brand/PLAN.md`); the
+core component on the six component type pages (Actions, Inputs, Selection, Labels and
+feedback, Navigation, Containers) of the Figma file "Master UX-UI New Brand Eleven Labs
+Inspired", styled in `src/styles/primitives.css` with their interaction states and their
+microinteractions built in (`docs/design/elevenlabs/PROMPT.md` section 7) and tested in
+the happy-dom Vitest project. In development, `/dev/ui` draws those six pages from
+`src/app/dev/boards.json`, one board a page and every component in every variant and
+state in its own Light and Dark panel, then a working sheet of live controls. Screens
+move onto the primitives in the phase that rebuilds them (`docs/design/elevenlabs/PLAN.md`); the
 `.sp-btn`, `.sp-input` and `.sp-chat-*` classes stay until nothing uses them.
 
 The shell is the sidebar (`src/app/components/Sidebar.tsx`: the Figma Sidebar component,

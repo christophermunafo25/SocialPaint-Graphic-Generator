@@ -87,6 +87,7 @@
    radius/xl under Elevation/1, which hover keeps (RULES.md section 6, as
    the library's cards). The preview sits in a sunken well at radius/lg,
    then the title and meta. ── */
+/* ElevenLabs E1: content cards are flat on surface/card with no edge (RULES.md section 4). Recent Card 4018:183, History Card 4018:1728. */
 .sp-gen-card {
   box-sizing: border-box;
   display: flex;
@@ -94,7 +95,7 @@
   width: 100%;
   padding: var(--space-8);
   border-radius: var(--radius-xl);
-  background: var(--surface-raised);
+  background: var(--surface-card);
   box-shadow: var(--elevation-1-raised);
   color: var(--text-primary);
   text-align: left;
@@ -175,6 +176,7 @@
   background: var(--surface-raised);
   color: var(--text-primary);
 }
+/* ElevenLabs E1: an icon tile sits on surface/soft (PROMPT.md section 3.2). */
 .sp-chat-tile__type {
   flex: none;
   display: inline-flex;
@@ -183,7 +185,7 @@
   width: 40px;
   height: 40px;
   border-radius: var(--radius-sm);
-  background: var(--surface-field);
+  background: var(--surface-soft);
 }
 .sp-chat-tile__text {
   flex: 1;

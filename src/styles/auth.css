@@ -297,7 +297,7 @@ a.sp-auth-strong {
   padding: var(--space-2xs);
   border-radius: 12px; /* as drawn; no Figma token yet */
   background: var(--surface-raised);
-  box-shadow: var(--elevation-small);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-raised);
 }
 .sp-onb-color-card .sp-color-control,
 .sp-onb-color-card .sp-color-control__row {
@@ -322,7 +322,7 @@ a.sp-auth-strong {
   height: 20px;
   border-radius: var(--radius-pill);
   background: var(--surface-raised);
-  box-shadow: var(--elevation-small);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-raised);
   color: var(--text-strong);
   opacity: 0;
 }
@@ -491,7 +491,7 @@ a.sp-auth-strong {
   padding: var(--space-sm);
   border-radius: 12px; /* as drawn; no Figma token yet */
   background: var(--surface-raised);
-  box-shadow: var(--elevation-small);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-raised);
 }
 .sp-onb-pull__row[data-status="waiting"] .sp-onb-pull__label {
   color: var(--text-secondary);
@@ -511,7 +511,7 @@ a.sp-auth-strong {
   padding: var(--space-sm);
   border-radius: 12px; /* as drawn; no Figma token yet */
   --_fill: var(--surface-raised);
-  box-shadow: var(--elevation-small);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-raised);
 }
 .sp-onb-logo-tile > img {
   max-width: 100%;
@@ -541,7 +541,7 @@ a.sp-auth-strong {
   padding: var(--space-sm);
   border-radius: 12px; /* as drawn; no Figma token yet */
   background: var(--surface-raised);
-  box-shadow: var(--elevation-small);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-raised);
 }
 
 /* Invites (259:904): rows of email and role, 12 apart. */

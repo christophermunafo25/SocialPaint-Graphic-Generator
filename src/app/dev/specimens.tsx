@@ -125,7 +125,9 @@ export const SPECIMENS: Record<string, Specimen> = {
   "Icon Button": {
     render: ({ values }) => (
       <IconButton
-        variant={values.Style === "Filled" ? "filled" : "ghost"}
+        variant={
+          values.Style === "Filled" ? "filled" : values.Style === "Outline" ? "outline" : "ghost"
+        }
         size={values.Size === "Small" ? "sm" : "md"}
         icon={Ellipsis}
         label="More actions"
@@ -232,6 +234,7 @@ export const SPECIMENS: Record<string, Specimen> = {
         onChange={noop}
         onClear={noop}
         label="Search templates"
+        size={values.Size === "Medium" ? "md" : "lg"}
         focusOnOpen={false}
         data-demo-state={demo(values.State === "Open" ? undefined : values.State)}
       />

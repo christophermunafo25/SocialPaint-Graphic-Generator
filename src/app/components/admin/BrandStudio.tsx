@@ -9,7 +9,7 @@ import { BrandDetailHeader } from "./brand/BrandDetailHeader";
 import { BrandOverview } from "./brand/BrandOverview";
 import { CATEGORY_TITLES } from "./brand/categories";
 import type { LogoSurface } from "./brand/kitOps";
-import { useBrandBindings, useBrandDraft } from "./brand/kitPlumbing";
+import { TOAST_MS, useBrandBindings, useBrandDraft } from "./brand/kitPlumbing";
 
 /** Brand Studio, in two steps: /brand-studio is an overview of category
  * cards, /brand-studio/<category> is that category's detail page, edited
@@ -53,13 +53,15 @@ export function BrandStudio({
 
       {/* The toast (13:9850): the Toast primitive, centred on the page. */}
       <div className="sp-bs-toast-anchor">
-        {brand.undoOffer && (
-          <Toast
-            message={brand.undoOffer.message}
-            actionLabel="Undo"
-            onAction={() => brand.undo(brand.undoOffer?.snapshot)}
-          />
-        )}
+        <Toast
+          open={brand.undoOffer !== null}
+          message={brand.undoOffer?.message}
+          messageKey={brand.undoOffer}
+          actionLabel="Undo"
+          onAction={() => brand.undo(brand.undoOffer?.snapshot)}
+          duration={TOAST_MS}
+          onTimeout={brand.dismissUndo}
+        />
       </div>
     </Page>
   );

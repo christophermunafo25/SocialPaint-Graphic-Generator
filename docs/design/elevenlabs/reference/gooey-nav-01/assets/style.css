@@ -1,0 +1,143 @@
+/* Gooey Nav Indicator — original.
+   A horizontal nav where a liquid pill indicator travels between links. The
+   pill and a trailing "drop" live inside a goo layer that runs an inline SVG
+   filter (feGaussianBlur → feColorMatrix), so the two shapes merge and the
+   indicator stretches with surface tension as it moves — then re-forms on the
+   hovered / focused / active link.
+   Every selector is scoped to .byq-gem--gooey-nav-01. */
+
+.byq-gem--gooey-nav-01 {
+  font-family: var(--byq-font-sans);
+  color: var(--byq-fg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(46rem, 100%);
+  padding: 0.5rem;
+}
+
+/* ---- Nav shell ------------------------------------------------------- */
+.byq-gem--gooey-nav-01__nav {
+  position: relative;
+  padding: 0.4rem;
+  border-radius: 999px;
+  background: var(--byq-card);
+  border: 1px solid var(--byq-depth);
+  box-shadow: 0 18px 40px -30px rgba(4, 4, 4, 0.55);
+  max-width: 100%;
+}
+
+/* The goo layer sits behind the links and carries the SVG filter that fuses
+   the pill + drop into one liquid mass. */
+.byq-gem--gooey-nav-01__goo {
+  position: absolute;
+  inset: 0.4rem;
+  z-index: 0;
+  pointer-events: none;
+  filter: url(#byq-gooey-nav-01-goo);
+}
+
+/* The main pill. JS sets --x (left offset) and --w (width) to match the
+   target link; the springy transition makes it flow into place. */
+.byq-gem--gooey-nav-01__blob {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--w, 5rem);
+  border-radius: 999px;
+  background: var(--byq-accent-lime);
+  transform: translateX(var(--x, 0px));
+  transition:
+    transform 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+    width 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, width;
+}
+
+/* The trailing metaball. It chases the pill's centre a touch slower and with a
+   springier curve, so during travel a thin liquid bridge forms between them
+   (that's the goo). At rest it parks under the pill and collapses into it. */
+.byq-gem--gooey-nav-01__drop {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 1.6rem;
+  height: 1.6rem;
+  margin-top: -0.8rem;
+  margin-left: -0.8rem;
+  border-radius: 999px;
+  background: var(--byq-accent-lime);
+  transform: translateX(var(--dx, 0px)) scale(var(--ds, 0));
+  transition: transform 0.62s cubic-bezier(0.34, 1.4, 0.5, 1);
+  will-change: transform;
+}
+
+/* ---- Links ----------------------------------------------------------- */
+.byq-gem--gooey-nav-01__list {
+  position: relative;
+  z-index: 1;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 0.15rem;
+}
+
+.byq-gem--gooey-nav-01__item {
+  display: flex;
+}
+
+.byq-gem--gooey-nav-01__link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.62rem 1.15rem;
+  border-radius: 999px;
+  font-size: 0.92rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  white-space: nowrap;
+  color: var(--byq-fg);
+  outline: none;
+  transition: color 0.3s ease;
+}
+
+/* Whichever link the pill is resting under reads as text-on-accent (dark). */
+.byq-gem--gooey-nav-01__link.is-active {
+  color: var(--byq-on-accent);
+}
+
+.byq-gem--gooey-nav-01__link:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--byq-bg),
+    0 0 0 4px var(--byq-fg);
+}
+
+/* ---- The goo filter host is size-zero; keep it out of layout. -------- */
+.byq-gem--gooey-nav-01__filter {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/* ---- Reduced motion: snap instead of travel, drop stays hidden ------- */
+@media (prefers-reduced-motion: reduce) {
+  .byq-gem--gooey-nav-01__blob,
+  .byq-gem--gooey-nav-01__drop {
+    transition-duration: 0.001ms;
+  }
+}
+
+/* ---- Narrow screens -------------------------------------------------- */
+@media (max-width: 560px) {
+  .byq-gem--gooey-nav-01__nav {
+    overflow-x: auto;
+    max-width: 100%;
+  }
+  .byq-gem--gooey-nav-01__link {
+    padding: 0.55rem 0.85rem;
+    font-size: 0.85rem;
+  }
+}

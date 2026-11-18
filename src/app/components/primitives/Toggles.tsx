@@ -1,5 +1,7 @@
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import { cx, type DemoStateAttr } from "./cx";
+import { inputModality } from "./inputModality";
+import { motionMs, prefersReducedMotion } from "./motion";
 import { useRovingSelect } from "./roving";
 
 export interface SwitchProps {
@@ -52,8 +54,11 @@ export function Switch({
 }
 
 /** The mark inside a checked box, drawn on the 16 box as the file draws it:
- * a 9 by 7 check or an 8 wide dash, at a 1.5 stroke. */
-function CheckMark({ mixed }: { mixed: boolean }) {
+ * a 9 by 7 check or an 8 wide dash, at a 1.5 stroke. Both paths are always
+ * there, on pathLength 1, and the box's state shows one: a box checked at
+ * first paint is simply drawn, and one checked later draws its mark in
+ * (PROMPT.md section 7.4). */
+function CheckMark() {
   return (
     <svg
       className="ui-check__mark"
@@ -67,7 +72,8 @@ function CheckMark({ mixed }: { mixed: boolean }) {
       strokeLinejoin="round"
       aria-hidden
     >
-      {mixed ? <path d="M4 8h8" /> : <path d="M3.5 8.5l3 3 6-7" />}
+      <path className="ui-check__mark-check" pathLength={1} d="M3.5 8.5l3 3 6-7" />
+      <path className="ui-check__mark-dash" pathLength={1} d="M4 8h8" />
     </svg>
   );
 }
@@ -131,8 +137,12 @@ export function Checkbox({
         aria-label={ariaLabel}
         onChange={(e) => onChange(e.target.checked)}
       />
-      <span className="ui-check__box" data-on={checked !== false || undefined} aria-hidden>
-        {checked !== false && <CheckMark mixed={mixed} />}
+      <span
+        className="ui-check__box"
+        data-on={mixed ? "mixed" : checked ? "true" : undefined}
+        aria-hidden
+      >
+        <CheckMark />
       </span>
       {label !== undefined && <span className="t-body-m">{label}</span>}
     </label>
@@ -227,6 +237,29 @@ export interface SegmentOption {
   dot?: SegmentDot;
 }
 
+/** The one #sp-goo filter every Segmented Control's liquid layer reads:
+ * blur the thumb and the drop, then push the alpha so the two read as one
+ * liquid (the metaball trick from BYQ's gooey nav, reference/gooey-nav-01).
+ * sRGB keeps the fill exactly control/thumb. Added to the document once, on
+ * the first control's mount. */
+const GOO_ID = "sp-goo";
+function ensureGooFilter(): void {
+  if (typeof document === "undefined" || document.getElementById(GOO_ID)) return;
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("width", "0");
+  svg.setAttribute("height", "0");
+  svg.setAttribute("aria-hidden", "true");
+  svg.setAttribute("focusable", "false");
+  svg.setAttribute("class", "ui-goo-defs");
+  svg.innerHTML =
+    `<filter id="${GOO_ID}" x="-20%" y="-60%" width="140%" height="220%" color-interpolation-filters="sRGB">` +
+    '<feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />' +
+    '<feColorMatrix in="blur" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -10" />' +
+    "</filter>";
+  document.body.appendChild(svg);
+}
+
 export interface SegmentedControlProps {
   options: SegmentOption[];
   selectedId: string | null;
@@ -238,7 +271,14 @@ export interface SegmentedControlProps {
 
 /** Segmented control (Figma 2211:213): a radio group of Segments on a 36
  * track, with one tab stop: the arrows select and wrap, and Home and End
- * jump to the ends. It needs a name: aria-label or aria-labelledby. */
+ * jump to the ends. It needs a name: aria-label or aria-labelledby.
+ *
+ * The liquid selection (PROMPT.md section 7.1, reference/liquid-selection.html):
+ * the thumb is its own layer under the labels, and when the pointer picks
+ * a segment it travels there with a drop of the same color trailing it,
+ * fused by the shared #sp-goo filter. The keyboard, reduced motion, first
+ * paint, a resize and a change to the options place it at once. Until it
+ * is placed the selected segment draws its own fill, so nothing flashes. */
 export function SegmentedControl({
   options,
   selectedId,
@@ -248,14 +288,90 @@ export function SegmentedControl({
   className,
 }: SegmentedControlProps) {
   const selectedIndex = options.findIndex((o) => o.id === selectedId);
-  const { itemProps } = useRovingSelect(options, selectedIndex, (o) => onSelect(o.id));
+  const track = useRef<HTMLDivElement>(null);
+  // How the next selection was made: a pointer click travels.
+  const travelNext = useRef(false);
+  const dropTimer = useRef<number | undefined>(undefined);
+  const placedAt = useRef<number | null>(null);
+  const select = (option: SegmentOption, travel: boolean) => {
+    travelNext.current = travel && option.id !== selectedId;
+    onSelect(option.id);
+  };
+  const { itemProps } = useRovingSelect(options, selectedIndex, (o) => select(o, false));
+
+  const place = useCallback((travel: boolean) => {
+    const el = track.current;
+    if (!el) return;
+    const segment = el.querySelector<HTMLElement>('.ui-segment[aria-checked="true"]');
+    window.clearTimeout(dropTimer.current);
+    if (!segment) {
+      delete el.dataset.liquid;
+      placedAt.current = null;
+      return;
+    }
+    const pad = parseFloat(getComputedStyle(el).paddingLeft) || 0;
+    const x = segment.offsetLeft - pad;
+    const w = segment.offsetWidth;
+    el.style.setProperty("--_thumb-x", `${x}px`);
+    el.style.setProperty("--_thumb-w", `${w}px`);
+    el.style.setProperty("--_drop-x", `${x + w / 2}px`);
+    if (!travel) {
+      el.dataset.instant = "";
+      el.style.setProperty("--_drop-s", "0");
+      el.getBoundingClientRect(); // commit before the transitions return
+      requestAnimationFrame(() => delete el.dataset.instant);
+    } else {
+      // The drop grows where the thumb was, holds while the thumb pulls
+      // away, follows on the slower curve and shrinks into the thumb as it
+      // lands.
+      el.style.setProperty("--_drop-s", "1");
+      dropTimer.current = window.setTimeout(
+        () => el.style.setProperty("--_drop-s", "0"),
+        motionMs(el, "--motion-duration-base"),
+      );
+    }
+    el.dataset.liquid = "";
+    placedAt.current = x;
+  }, []);
+
+  // Every render that changes the selection or the options places the
+  // thumb before paint; only a pointer selection travels.
+  const optionsKey = options.map((o) => `${o.id}\u{1f}${o.label}`).join("\u{1e}");
+  useLayoutEffect(() => {
+    const travel =
+      travelNext.current &&
+      placedAt.current !== null &&
+      inputModality() !== "keyboard" &&
+      !prefersReducedMotion();
+    travelNext.current = false;
+    place(travel);
+  }, [selectedId, optionsKey, place]);
+
+  useEffect(ensureGooFilter, []);
+
+  // A resize (fonts settling, the container growing) places it at once.
+  useEffect(() => {
+    const el = track.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => place(false));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [place]);
+  useEffect(() => () => window.clearTimeout(dropTimer.current), []);
+
   return (
     <div
+      ref={track}
       role="radiogroup"
       aria-label={ariaLabel}
       aria-labelledby={ariaLabelledBy}
       className={cx("ui-segmented", className)}
     >
+      <span className="ui-segmented__goo" aria-hidden>
+        <span className="ui-segmented__blob" />
+        <span className="ui-segmented__drop" />
+      </span>
+      <span className="ui-segmented__thumb" aria-hidden />
       {options.map((option, i) => {
         const selected = option.id === selectedId;
         const { ref, ...roving } = itemProps(i);
@@ -268,7 +384,8 @@ export function SegmentedControl({
             selected={selected}
             dot={option.dot}
             title={option.title}
-            onClick={() => onSelect(option.id)}
+            // detail is 0 when Space or Enter clicks the button.
+            onClick={(e) => select(option, e.detail !== 0)}
             {...roving}
           >
             {option.label}

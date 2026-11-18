@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import { Button } from "./Button";
 import { cx } from "./cx";
+import { motionMs } from "./motion";
 
 /** How long the pointer or keyboard focus rests before a hint shows. */
 const OPEN_DELAY_MS = 300;
@@ -187,23 +188,143 @@ export interface ToastProps {
   /** The optional action ("Undo"). */
   actionLabel?: string;
   onAction?(): void;
+  /** Showing (the default). Turned off, it eases out and then unmounts; a
+   * new message while it leaves turns it back. */
+  open?: boolean;
+  /** How long it shows, in ms, before `onTimeout`. The time waits while the
+   * pointer or focus is on the toast and while the tab is hidden. */
+  duration?: number;
+  /** Time ran out: the owner closes it (sets `open` false). */
+  onTimeout?(): void;
+  /** Restarts the time when it changes, for a new message that reads the
+   * same as the last ("Color changed" twice). */
+  messageKey?: unknown;
   className?: string;
 }
 
 /** Toast (Figma 2213:213): a confirmation in Body/M with an optional action,
  * a ghost Small button. A polite status, so it is read out without taking
- * focus. */
-export function Toast({ message, actionLabel, onAction, className }: ToastProps) {
+ * focus.
+ *
+ * It eases in from 8 below as it mounts and eases back out when it closes
+ * (PROMPT.md section 7.2). Given a `duration` it owns its timer, which
+ * waits while the pointer or focus is on it or the tab is hidden, so its
+ * Undo never runs out under the pointer (WCAG 2.2.1). */
+export function Toast({
+  message,
+  actionLabel,
+  onAction,
+  open = true,
+  duration,
+  onTimeout,
+  messageKey,
+  className,
+}: ToastProps) {
+  const el = useRef<HTMLDivElement>(null);
+  // While it leaves it keeps showing what it last said.
+  const shown = useRef({ message, actionLabel, onAction });
+  if (open) shown.current = { message, actionLabel, onAction };
+  const [mounted, setMounted] = useState(open);
+  const leaving = mounted && !open;
+  // Focus that came from the page before it, for the way back.
+  const returnFocus = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      setMounted(true);
+      return;
+    }
+    // It leaves under pointer-events: none and may unmount before the
+    // pointer moves, so a hold never outlives the toast it was on.
+    held.current = { pointer: false, focus: false };
+    if (!mounted) return;
+    const node = el.current;
+    if (node && node.contains(document.activeElement)) {
+      const back = returnFocus.current;
+      if (back && back.isConnected) back.focus();
+      else (document.activeElement as HTMLElement | null)?.blur();
+    }
+    const id = window.setTimeout(
+      () => setMounted(false),
+      motionMs(node, "--motion-duration-fast") + 40,
+    );
+    return () => window.clearTimeout(id);
+  }, [open, mounted]);
+
+  // The timer: a fresh run each time it opens or its message changes.
+  const timeout = useRef(onTimeout);
+  timeout.current = onTimeout;
+  const held = useRef({ pointer: false, focus: false });
+  const clock = useRef({ remaining: 0, since: 0, id: undefined as number | undefined });
+  const resetKey = typeof message === "string" ? message : null;
+
+  const isHeld = () =>
+    held.current.pointer || held.current.focus || document.visibilityState === "hidden";
+  const stop = useCallback(() => {
+    const c = clock.current;
+    if (c.id === undefined) return;
+    window.clearTimeout(c.id);
+    c.id = undefined;
+    c.remaining = Math.max(0, c.remaining - (performance.now() - c.since));
+  }, []);
+  const run = useCallback(() => {
+    const c = clock.current;
+    if (c.id !== undefined || isHeld()) return;
+    c.since = performance.now();
+    c.id = window.setTimeout(() => {
+      c.id = undefined;
+      timeout.current?.();
+    }, c.remaining);
+  }, []);
+
+  useEffect(() => {
+    if (!open || duration === undefined) return;
+    const c = clock.current;
+    if (c.id !== undefined) window.clearTimeout(c.id);
+    c.id = undefined;
+    c.remaining = duration;
+    run();
+    const onVisibility = () => (isHeld() ? stop() : run());
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      if (c.id !== undefined) window.clearTimeout(c.id);
+      c.id = undefined;
+    };
+  }, [open, duration, resetKey, messageKey, run, stop]);
+
+  const hold = (part: "pointer" | "focus", on: boolean) => {
+    held.current[part] = on;
+    if (!open || duration === undefined) return;
+    if (isHeld()) stop();
+    else run();
+  };
+
+  if (!mounted && !open) return null;
+  const now = shown.current;
   return (
     <div
+      ref={el}
       className={cx("ui-toast", className)}
       role="status"
-      data-action={actionLabel ? "" : undefined}
+      data-action={now.actionLabel ? "" : undefined}
+      data-leaving={leaving || undefined}
+      onPointerEnter={() => hold("pointer", true)}
+      onPointerLeave={() => hold("pointer", false)}
+      onFocus={(e) => {
+        if (!held.current.focus && e.relatedTarget instanceof HTMLElement)
+          returnFocus.current = e.relatedTarget;
+        hold("focus", true);
+      }}
+      onBlur={(e) => {
+        if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+        hold("focus", false);
+      }}
     >
-      <span className="t-body-m ui-toast__message">{message}</span>
-      {actionLabel && (
-        <Button kind="ghost" size="sm" onClick={onAction}>
-          {actionLabel}
+      <span className="t-body-m ui-toast__message">{now.message}</span>
+      {now.actionLabel && (
+        <Button kind="ghost" size="sm" onClick={now.onAction} tabIndex={leaving ? -1 : undefined}>
+          {now.actionLabel}
         </Button>
       )}
     </div>

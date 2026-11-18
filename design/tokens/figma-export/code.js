@@ -1,7 +1,7 @@
 // SocialPaint token export (Figma development plugin).
 //
-// Run it in the Figma file "Master UX UI New Brand (Copy)"
-// (1dYWgFH2V8i9Jez2ylI3ky): Plugins > Development > Import plugin from
+// Run it in the Figma file "Master UX-UI New Brand Eleven Labs Inspired"
+// (dQ8bQq3V7Bue5pvFrI2g9X): Plugins > Development > Import plugin from
 // manifest, pick this folder's manifest.json, then run "SocialPaint token
 // export" and save the file it offers as design/tokens/master.tokens.json.
 // Then run `npm run tokens` in the repo.
@@ -10,10 +10,13 @@
 // connector can also run it through use_figma. That tool truncates long
 // results, so return one section at a time and merge them.
 
-const SOURCE = { figmaFile: "1dYWgFH2V8i9Jez2ylI3ky", name: "Master UX UI New Brand (Copy)" };
+const SOURCE = {
+  figmaFile: "dQ8bQq3V7Bue5pvFrI2g9X",
+  name: "Master UX-UI New Brand Eleven Labs Inspired",
+};
 const DESCRIPTION =
-  'SocialPaint design tokens exported from the Figma file "Master UX UI New Brand (Copy)" ' +
-  "(1dYWgFH2V8i9Jez2ylI3ky). This file is the source for src/styles/tokens.css. Do not edit " +
+  'SocialPaint design tokens exported from the Figma file "Master UX-UI New Brand Eleven Labs Inspired" ' +
+  "(dQ8bQq3V7Bue5pvFrI2g9X). This file is the source for src/styles/tokens.css. Do not edit " +
   "values here by hand: change the Figma variables or styles, re-export, then run `npm run tokens`.";
 
 // The file's twenty text styles and six effect styles. Anything else in the
@@ -54,8 +57,8 @@ async function exportTokens() {
   const variables = await figma.variables.getLocalVariablesAsync();
   const byId = new Map(variables.map((v) => [v.id, v]));
   // Collections are found by exact name, never by position. The file holds
-  // exactly one of each (checked 2026-11-14: no "v2" prefix, and the earlier
-  // Brand, Radius and Spacing collections are gone).
+  // exactly one of each (checked 2026-11-17: Color has only the Light and
+  // Dark modes, Scale only Value, and the v2 modes are gone).
   const collection = (name) => {
     const found = collections.filter((x) => x.name === name);
     if (found.length === 0) throw new Error(`Missing variable collection "${name}"`);
