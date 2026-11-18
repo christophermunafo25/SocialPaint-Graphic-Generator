@@ -36,11 +36,13 @@
   }
 }
 
-/* ── The app frame (every page frame, e.g. 13:832) ──
-   At 1024 and wider the window is the frame: 12 around, the Sidebar, 12,
-   then Main, on surface/page. It stops above the local backend's banner,
-   and the document does not scroll: Main's content does. Below 1024 the
-   mobile bar sits on top and the document scrolls, as before. */
+/* ── The app frame (every product frame, e.g. Brand Templates 6010:2064) ──
+   At 1024 and wider the window is the frame: the Sidebar flush against
+   its top, left and bottom, then Main, on surface/page, with no inset
+   around or between them (--layout-shell-inset, 0). It stops above the
+   local backend's banner, and the document does not scroll: Main's
+   content does. Below 1024 the mobile bar sits on top and the document
+   scrolls, as before. */
 .sp-appshell {
   display: flex;
   flex-direction: column;
@@ -68,11 +70,11 @@
   }
   .sp-appshell {
     flex-direction: row;
-    gap: var(--space-12);
+    gap: var(--layout-shell-inset);
     box-sizing: border-box;
     height: calc(100dvh - var(--dev-banner-h, 0px));
     min-height: 0;
-    padding: var(--space-12);
+    padding: var(--layout-shell-inset);
   }
   .sp-main {
     display: flex;
@@ -81,9 +83,12 @@
   }
 }
 
-/* ── Main: one page (13:905; Brand Templates 2308:77) ──
-   The header row, then the content, each the full width of Main with a 32
-   gutter inside it. The 24 under the header row is the content's own top
+/* ── Main: one page (Brand Templates 6010:2066) ──
+   The header row (6029:12824), 64 tall with a border/subtle hairline under
+   it and the 36 Page Header centred in it, then the content, each the full
+   width of Main with a 32 gutter inside it. Main has nothing above it, and
+   the footer links keep 16 under them so they never meet the window's
+   edge. The 24 under the header row is the content's own top
    padding and the gutters its side padding, so a card's shadow is never
    cut by the content's edge. "scroll": the header row, the content and
    the footer links scroll inside the frame as one page, and nothing
@@ -146,10 +151,6 @@
     flex-direction: column;
     box-sizing: border-box;
     min-height: 0;
-    padding-block: var(--space-16);
-  }
-  .sp-frame[data-kind="bare"] {
-    padding: 0;
   }
   /* The frame is the scroller: the header row and the footer links move
      with the content. The body keeps its content's height, and on a short
@@ -161,15 +162,24 @@
     flex: 1 0 auto;
   }
   .sp-frame__head {
+    display: flex;
     flex: none;
+    align-items: center;
+    box-sizing: border-box;
+    min-height: calc(var(--space-64) + var(--stroke-hairline));
     padding-inline: var(--space-32);
+    border-bottom: var(--stroke-hairline) solid var(--border-subtle);
+  }
+  .sp-frame__head > * {
+    flex: 1 1 auto;
+    min-width: 0;
   }
   /* Footer Links (4015:750) at the foot of the page, 24 under the content.
      On a scrolling page that 24 is the content's own bottom padding. A
      page that scrolls its own region takes it as a margin. */
   .sp-frame__foot {
     flex: none;
-    padding-inline: var(--space-32);
+    padding: 0 var(--space-32) var(--space-16);
   }
   .sp-frame[data-kind="self"] .sp-frame__foot {
     margin-top: var(--space-24);
@@ -203,6 +213,12 @@
   }
   .sp-frame[data-kind="self"] .sp-frame__body > .sp-page {
     padding-bottom: 0;
+  }
+  /* A page that scrolls its own region and sets its own links (the fill
+     page, Generate beside its inline editor) keeps the 16 Main used to
+     hold under it, so its panel never meets the window's edge. */
+  .sp-frame[data-kind="self"]:not([data-foot]) .sp-frame__body > .sp-page {
+    padding-bottom: var(--space-16);
   }
   .sp-frame[data-kind="bare"] .sp-frame__body > .sp-page {
     padding: 0;
