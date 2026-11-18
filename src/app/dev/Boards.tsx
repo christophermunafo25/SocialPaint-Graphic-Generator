@@ -43,9 +43,10 @@ interface Block {
 
 export interface Board {
   name: string;
-  /** The board's node id on the Components page (4012:1193). */
+  /** The type page's node id in the file ("Components · Actions" is
+   * 6218:2). */
   node: string;
-  /** How tall the file draws the board, at its 1600 width. */
+  /** Unused since the boards follow the type pages; kept as 0. */
   height: number;
   eyebrow: string;
   title: string;
@@ -53,9 +54,12 @@ export interface Board {
   blocks: Block[];
 }
 
-/** The Components page, board by board, as read from the Figma file
- * "Master UX UI New Brand (Copy)". boards.json is data from the file: the
- * layout of every board and the sample text of every variant. */
+/** The six component type pages (Actions, Inputs, Selection, Labels and
+ * feedback, Navigation, Containers) of the Figma file "Master UX-UI New
+ * Brand Eleven Labs Inspired" (dQ8bQq3V7Bue5pvFrI2g9X), one board each.
+ * boards.json is data from the file: each component set's variants where
+ * the set places them, their sample texts, and each component's
+ * description, read on 2026-11-17. */
 export const BOARDS = data as unknown as Board[];
 
 const texts = (text: string): string[] => (text === "" ? [] : text.split(" ¦ "));
@@ -120,21 +124,31 @@ function PartView({ part, boxed }: { part: Part; boxed: boolean }) {
 
 const partKey = (part: Part): string => (part.kind === "row" ? "row" : part.node);
 
-/** A component's block: its name and note, the component in Light, then
- * the same drawing as a Dark preview. A block that is one set previews as
- * that set in a frame; anything else sits 24 inside its frame. */
+/** A component's block: its name and the file's description of it, then
+ * the component in its Light panel and again in its Dark panel, as each
+ * board on the file's type pages draws it. A block that is one set shows
+ * that set in a frame; anything else sits 24 inside its frame. Each panel
+ * carries data-panel and the block data-component, so the shots script can
+ * save every panel as its own image. */
 function BlockView({ block }: { block: Block }) {
   const oneSet = block.parts.length === 1 && block.parts[0].kind === "set";
   return (
-    <div className="dev-board__block">
+    <div className="dev-board__block" data-component={slug(block.name)}>
       <h3 className="t-title-card">{block.name}</h3>
       <p className="t-body-m dev-board__note">{block.note}</p>
       <span className="t-mono-eyebrow dev-board__quiet">Light</span>
-      {block.parts.map((part) => (
-        <PartView key={partKey(part)} part={part} boxed />
-      ))}
+      <div className="dev-board__light" data-panel="light">
+        {block.parts.map((part) => (
+          <PartView key={partKey(part)} part={part} boxed />
+        ))}
+      </div>
       <span className="t-mono-eyebrow dev-board__quiet">Dark</span>
-      <div className="dev-board__dark" data-theme="dark" data-padded={oneSet ? undefined : ""}>
+      <div
+        className="dev-board__dark"
+        data-theme="dark"
+        data-panel="dark"
+        data-padded={oneSet ? undefined : ""}
+      >
         {block.parts.map((part) => (
           <PartView key={partKey(part)} part={part} boxed={false} />
         ))}
@@ -143,15 +157,17 @@ function BlockView({ block }: { block: Block }) {
   );
 }
 
-/** One board of the Components page, 1600 wide like the file's: the
- * section header, then a block for each component. `children` follow the
- * blocks (the Themes board's panels). */
-export function BoardView({ board, children }: { board: Board; children?: React.ReactNode }) {
+/** A component's name as a file name ("Icon Button" is icon-button). */
+export const slug = (name: string): string => name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+
+/** One type page of the file, 1600 wide like the file's boards: the
+ * section header, then a block for each component in the page's order. */
+export function BoardView({ board }: { board: Board }) {
   return (
     <section
       className="dev-board"
       data-theme="light"
-      data-board={board.name.toLowerCase()}
+      data-board={slug(board.name)}
       aria-label={board.name}
     >
       <div className="dev-board__inner">
@@ -163,7 +179,6 @@ export function BoardView({ board, children }: { board: Board; children?: React.
         {board.blocks.map((block) => (
           <BlockView key={block.name} block={block} />
         ))}
-        {children}
       </div>
     </section>
   );
