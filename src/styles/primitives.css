@@ -452,6 +452,20 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   field-sizing: content;
   resize: none;
 }
+/* With a copy button (2207:298, Filled) the text keeps clear of it: the
+   button is a Small Ghost Icon Button 6 in from the bottom right. */
+.ui-textarea-copy {
+  position: relative;
+  display: block;
+}
+.ui-input[data-size="multiline"][data-copy] {
+  padding-inline-end: calc(var(--size-control-sm) + 2 * var(--space-6));
+}
+.ui-textarea-copy__button {
+  position: absolute;
+  right: var(--space-6);
+  bottom: var(--space-6);
+}
 /* Where a text area cannot grow on its own, it keeps the grip. */
 @supports not (field-sizing: content) {
   .ui-input[data-size="multiline"] {

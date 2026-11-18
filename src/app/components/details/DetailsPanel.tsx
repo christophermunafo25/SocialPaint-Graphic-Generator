@@ -199,6 +199,11 @@ export function DetailsPanel({
               value={caption.value}
               onChange={(e) => caption.onChange(e.target.value)}
               className="sp-details__caption"
+              copy={
+                caption.value.trim()
+                  ? { label: "Copy caption", onCopy: () => void copyCaption(), copied }
+                  : undefined
+              }
             />
           </Field>
         )}

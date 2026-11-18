@@ -221,3 +221,27 @@ describe("Upload", () => {
     expect(onDropFile).toHaveBeenCalledWith(file);
   });
 });
+
+describe("TextArea copy", () => {
+  it("draws a Small Ghost copy button inside the box, and Field still labels the text", async () => {
+    const onCopy = vi.fn();
+    const { container, rerender } = render(
+      <Field label="Caption">
+        <TextArea defaultValue="Hello" copy={{ label: "Copy caption", onCopy }} />
+      </Field>,
+    );
+    const area = screen.getByLabelText("Caption");
+    expect(area.tagName.toLowerCase()).toBe("textarea");
+    const button = screen.getByRole("button", { name: "Copy caption" });
+    expect(button.getAttribute("data-variant")).toBe("ghost");
+    expect(button.getAttribute("data-size")).toBe("sm");
+    await userEvent.click(button);
+    expect(onCopy).toHaveBeenCalledTimes(1);
+    rerender(
+      <Field label="Caption">
+        <TextArea defaultValue="Hello" copy={{ label: "Copy caption", onCopy, copied: true }} />
+      </Field>,
+    );
+    expect(container.querySelector(".ui-icon-slot__check")).not.toBeNull();
+  });
+});
