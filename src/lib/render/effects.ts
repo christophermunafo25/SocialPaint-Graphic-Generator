@@ -107,8 +107,8 @@ export function filterCss(effects: readonly FieldEffect[], withShadows = true): 
  * no spread shrinks the hole and no offset moves it along that axis. With
  * both axes like that the hole is the box, so a canvas inner shadow with no
  * offset was never painted. With one, the same happened to a box the canvas
- * cuts off on the other axis. Edges this much inside the box never contain
- * a rectangle that reaches both of the box's.
+ * cuts off on the side the offset moves the hole away from. Edges this much
+ * inside the box never contain a rectangle that reaches both of the box's.
  *
  * It is more than the 1/64 px WebKit lays out in and survives px()'s two
  * decimals, and it changed no pixel of the fidelity renders in Chromium,

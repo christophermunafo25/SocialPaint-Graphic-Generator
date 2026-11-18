@@ -89,7 +89,7 @@ Two differences are handled in the renderer. Both come from how Safari before 26
 
 The first is a clip that never arrives. Safari before 26 stops clipping the layers it paints straight from an element whose filter moves pixels (a drop shadow or a blur). On an image field that was a cropped photo, drawn whole over its frame and its corners, and an inner shadow with no blur, whose ring was drawn outside the photo. On a rect shape, which carries its filter itself, it was the same unblurred inner shadow. So an image field's clipping box is its own stacking context whenever an effects wrapper holds it (`WRAPPED_IMAGE_BOX`, `src/app/components/SchemaRenderer.tsx`), and so is a field's inner shadow overlay when it holds an unblurred frame (`BoxOverlay`, the same file). That puts those layers back inside one that clips.
 
-The second is a ring that is never painted. An inner shadow is a blurred ring whose hole is the box, moved by the offset and shrunk by the spread. Safari before 26 hands a filtered layer a paint rectangle already cut by its ancestors' clip, and skips a border whose inner edge contains that rectangle. Along an axis where no offset moves the hole and no spread shrinks it, the hole's two edges sat exactly on the box's. With both axes like that the hole contained the whole of a square-cornered box, so the shadow never showed: every canvas inner shadow without an offset. With one axis like that, the same happened to a box the canvas cuts off along the other. On such an axis the hole's edges now sit 0.02 px inside the box, whatever its corners (`FLUSH_EDGE_INSET_PX`, `src/lib/render/effects.ts`).
+The second is a ring that is never painted. An inner shadow is a blurred ring whose hole is the box, moved by the offset and shrunk by the spread. Safari before 26 hands a filtered layer a paint rectangle already cut by its ancestors' clip, and skips a border whose inner edge contains that rectangle. Along an axis where no offset moves the hole and no spread shrinks it, the hole's two edges sat exactly on the box's. With both axes like that the hole contained the whole of a square-cornered box, so the shadow never showed: every canvas inner shadow without an offset. With one axis like that, the same happened to a box the canvas cuts off on the side the offset moves the hole away from, by at least the offset. On such an axis the hole's edges now sit 0.02 px inside the box, whatever its corners (`FLUSH_EDGE_INSET_PX`, `src/lib/render/effects.ts`).
 
 `SchemaRenderer.effects.test.tsx` and `effects.test.ts` hold that markup. They cannot show that Safari draws it right.
 
@@ -103,7 +103,7 @@ Those numbers are this harness's compare on exports made by the system WebKit of
 
 Measured on 18.6 and not handled:
 
-- An inner shadow is still not drawn on a box that is cut off along both axes, when its hole reaches past what is left of the box on every side. A box that bleeds off all four edges of the canvas is one.
+- An inner shadow is still not drawn on a box that bleeds off all four edges of the canvas (measured with a shadow that has no offset). By the same mechanism that should hold for any box cut off along both axes with its hole reaching past what is left on every side. Only the first was measured.
 - A flipped field's drop shadow falls on the side it would without the flip.
 - A field with opacity under 100 and a drop shadow is darker inside its box.
 - The lower lines of a multiline paragraph sit about a pixel off.
