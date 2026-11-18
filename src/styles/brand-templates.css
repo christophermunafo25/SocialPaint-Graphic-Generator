@@ -341,7 +341,7 @@
   }
   /* The open search (440) is wider than a phone's bar: it takes a row of
      its own and the chips wrap under it, 12 apart, so the chips' rail and
-     its 12 of shadow room meet the field without covering it. */
+     its 12 of focus-ring room meet the field without covering it. */
   .sp-lib-filterbar {
     flex-wrap: wrap;
     row-gap: var(--space-12);

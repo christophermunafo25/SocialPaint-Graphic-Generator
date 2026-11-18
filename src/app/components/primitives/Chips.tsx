@@ -59,19 +59,19 @@ export function PlatformLogo({
 
 export interface PlatformChipProps extends ButtonAttrs {
   platform: PlatformId | "all";
-  /** Selected turns the chip inverse, with the tile on surface/raised, and
-   * the chevron down. */
+  /** Selected turns the chip inverse, with the tile on action/primary-hover,
+   * and the chevron down. */
   selected?: boolean;
   /** Its menu is open; the chevron points down. */
   expanded?: boolean;
   /** Off where the chip is drawn without it (Choose a size, 329:2970): the
-   * tile and the label, 16 from the end. */
+   * tile and the label, 8 from the end. */
   chevron?: boolean;
 }
 
-/** Platform chip (Figma 53:96): a 50 pill that hugs its label, with the
- * platform's mark on a round tile and a chevron, raised at rest. The caller
- * gives it its role (radio in a filter group) and its aria state. */
+/** Platform chip (Figma 53:96): 46 tall at radius/chip, hugging its label,
+ * with the platform's mark on a 36 tile and a chevron, flat at rest. The
+ * caller gives it its role (radio in a filter group) and its aria state. */
 export const PlatformChip = React.forwardRef<HTMLButtonElement, PlatformChipProps>(
   function PlatformChip(
     {

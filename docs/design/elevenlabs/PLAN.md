@@ -110,7 +110,7 @@ One pull request per phase into `main`.
 
 ### What Phase E3 left for later phases
 
-- The Platform Chip is 46 on `--radius-chip` everywhere it appears, so Generate's and History's filter bars already have it, and History's search is the Large square the library uses.
+- The Platform Chip is 46 on `--radius-chip` everywhere it appears: the library, History's filter bar and the Template Builder's Choose a size dialog (`builder/SizeGallery.tsx`), where the chips now sit beside its 36 Medium search. History's search is the Large square the library uses. Phase E5 settles Choose a size against its frame (`6072:4848`).
 - Library headers (shelves and result groups) set their titles in Label/XS on `--text-secondary`, 8 in. History's groups still use the earlier header and are Phase E4's.
 - The Public links dialog's date field is the browser's own date input. The frame draws a field with a calendar icon and "Pick a date", which needs a date picker the primitives do not have yet.
 - The filled caption's copy button (frame 06) is Phase E4's, as `BRIDGE.md` section 7 says.
