@@ -247,10 +247,10 @@ function ResultGroup({
   return (
     <section className="sp-lib-group" aria-labelledby={`group-${group.id}`}>
       <div className="sp-lib-group__header">
-        <h2 className="t-title-card" id={`group-${group.id}`}>
+        <h2 className="t-label-xs" id={`group-${group.id}`}>
           {group.label}
         </h2>
-        <span className="t-body-m sp-lib-group__count">
+        <span className="t-label-xs sp-lib-group__count">
           {plural(group.templates.length, "template")}
         </span>
       </div>

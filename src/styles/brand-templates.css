@@ -18,14 +18,11 @@
   gap: var(--space-8);
   min-height: 56px;
 }
-/* The search (50:62) is round here: a 50 button that opens into the 440
-   pill (2308:739). */
+/* The search (50:62) at Large: a 46 square at radius/chip that opens into
+   the 440 field (6010:2436), beside the 46 chips. */
 .sp-lib-search {
   flex: none;
   display: flex;
-}
-.sp-lib-search .ui-search[data-size="lg"] {
-  border-radius: var(--radius-full);
 }
 
 /* A rail that scrolls sideways and fades out at its right edge to the page,
@@ -58,8 +55,8 @@
   display: none;
 }
 
-/* The chips' rail: room inside the scroller for the chips' Elevation/1 and
-   the focus ring (a scroller clips both), 12 above, below and at the end,
+/* The chips' rail: room inside the scroller for the focus ring (a
+   scroller clips it), 12 above, below and at the end,
    and 8 at the start, where the search button sits 8 away. The rail's
    margins give it back, so the chips sit exactly where they are drawn and
    the fade ends at the content's edge. */
@@ -86,8 +83,9 @@
   padding-top: var(--space-40);
 }
 
-/* A shelf (2308:4): its header, 28 tall with View all at its end, 16
-   above the rail. */
+/* A shelf (6010:2084): its header, 28 tall and 8 in from the content's
+   sides, the title in Label/XS on text/secondary with View all at its end,
+   16 above the rail. */
 .sp-lib-shelf {
   display: flex;
   flex-direction: column;
@@ -100,11 +98,23 @@
   justify-content: space-between;
   gap: var(--space-12);
   min-height: var(--size-control-sm);
-  color: var(--text-primary);
+  padding-inline: var(--space-8);
+  color: var(--text-secondary);
 }
 .sp-lib-shelf__header > h2 {
   min-width: 0;
   margin: 0;
+}
+/* View all (6010:2087): a Small Ghost button whose label is Label/XS on
+   text/secondary, underlined. Hover keeps the ghost's fill and lifts the
+   label to text/primary. */
+.ui-btn[data-kind].sp-lib-viewall {
+  --_fg: var(--text-secondary);
+  --_fg-hover: var(--text-primary);
+}
+.sp-lib-viewall > span {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 /* The rail: cards 302 wide and 16 apart, the next one cut off at the
    content's edge under the fade (2308:4). The track keeps 12 for the
@@ -139,7 +149,8 @@
   color: var(--text-secondary);
 }
 
-/* A result group (2308:538): its label and count, 32 tall and 12 apart,
+/* A result group (6010:2457): its label and count in Label/XS on
+   text/secondary at either end, 32 tall and 8 in from the content's sides,
    16 above the grid; three columns of cards 16 apart both ways (RULES.md
    section 10; the frame's 17 between rows is off the scale). */
 .sp-lib-group {
@@ -151,9 +162,11 @@
 .sp-lib-group__header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-12);
   min-height: 32px;
-  color: var(--text-primary);
+  padding-inline: var(--space-8);
+  color: var(--text-secondary);
 }
 .sp-lib-group__header > h2 {
   margin: 0;

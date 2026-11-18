@@ -98,9 +98,9 @@ export const PlatformChip = React.forwardRef<HTMLButtonElement, PlatformChipProp
         <span className="ui-platform-chip__tile">
           <PlatformLogo platform={platform} />
         </span>
-        <span className="t-label-m">{children}</span>
+        <span className="t-label-xs">{children}</span>
         {chevron && (
-          <ChevronRight size={16} className="ui-icon ui-platform-chip__chevron" aria-hidden />
+          <ChevronRight size={14} className="ui-icon ui-platform-chip__chevron" aria-hidden />
         )}
       </button>
     );

@@ -1,12 +1,11 @@
 import React from "react";
 import type { CatalogTemplate } from "@/lib/templates/catalog";
 import type { TemplateGroup } from "@/lib/templates/groups";
-import { Button } from "../primitives";
 import { TemplateCard } from "./TemplateCard";
 import { useEdgeFade } from "./useEdgeFade";
 
 /**
- * One shelf of the library (2308:4): its title and View all, over a
+ * One shelf of the library (6010:2084): its title and View all, over a
  * horizontally scrolling rail of 302 cards that fades out at the right
  * edge, the next card cut off.
  *
@@ -29,12 +28,20 @@ export function PlatformShelf({
   return (
     <section className="sp-lib-shelf" aria-labelledby={`shelf-${group.id}`}>
       <div className="sp-lib-shelf__header">
-        <h2 className="t-title-card" id={`shelf-${group.id}`}>
+        <h2 className="t-label-xs" id={`shelf-${group.id}`}>
           {group.label}
         </h2>
-        <Button kind="ghost" size="sm" onClick={onViewAll}>
-          View all
-        </Button>
+        {/* View all (6010:2087): the Small Ghost button with its label in
+            Label/XS, underlined. */}
+        <button
+          type="button"
+          className="ui-reset ui-fill ui-ring ui-btn sp-lib-viewall"
+          data-kind="ghost"
+          data-size="sm"
+          onClick={onViewAll}
+        >
+          <span className="t-label-xs">View all</span>
+        </button>
       </div>
 
       <div
