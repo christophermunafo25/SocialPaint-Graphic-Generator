@@ -18,9 +18,13 @@ export interface RecordedAnswer {
   file: string;
 }
 
+/** The engines the recording holds answers for. webkit18 has no part of
+ * its own (recordingEngine). */
+export type RecordedEngine = Exclude<Engine, "webkit18">;
+
 /** recording.json: each engine's requests and their answers. Per engine,
  * because Google answers each browser its own way. */
-export type FontRecording = Partial<Record<Engine, Record<string, RecordedAnswer>>>;
+export type FontRecording = Partial<Record<RecordedEngine, Record<string, RecordedAnswer>>>;
 
 /** The engine whose recorded answers an engine is given: its own, except
  * for webkit18 (scripts/fidelity/webkit18.mjs), which has none and takes
@@ -28,7 +32,7 @@ export type FontRecording = Partial<Record<Engine, Record<string, RecordedAnswer
  * name the same files, and a request WebKit never made fails its row like
  * any other the recording lacks. Given those answers it drew every fixture's
  * text as Safari 18.6 drew it from Google itself (2026-11-18). */
-export function recordingEngine(engine: Engine): Engine {
+export function recordingEngine(engine: Engine): RecordedEngine {
   return engine === "webkit18" ? "webkit" : engine;
 }
 
@@ -44,7 +48,7 @@ export function requestKey(method: string, url: string): string {
 }
 
 /** One request by one engine, as the set of requests a run made holds it. */
-export function usedKey(engine: Engine, key: string): string {
+export function usedKey(engine: RecordedEngine, key: string): string {
   return `${engine} ${key}`;
 }
 
@@ -204,4 +208,4 @@ export function bodyFiles(recording: FontRecording): Set<string> {
 }
 
 const entries = (recording: FontRecording) =>
-  Object.entries(recording) as Array<[Engine, Record<string, RecordedAnswer>]>;
+  Object.entries(recording) as Array<[RecordedEngine, Record<string, RecordedAnswer>]>;

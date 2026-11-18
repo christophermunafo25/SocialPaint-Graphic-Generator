@@ -101,6 +101,13 @@ The second is a ring that is never painted. An inner shadow is a blurred ring wh
 
 Those numbers are this harness's compare on exports made by the system WebKit of a Mac on Safari 18.6 (2026-11-17 and 18), driven by a helper kept outside the repo. No committed fixture has a crop under a layer blur, an unblurred inner shadow under a drop shadow or a blur, or an inner shadow on a box the canvas cuts off. Those were seen in temporary fixtures, wrong before and right with the fix. A change to how a field is clipped, filtered or given effects needs that check again: `--engines webkit18` for what the fixtures hold, and a Safari before 26 for the rest.
 
+Measured on 18.6 and not handled:
+
+- An inner shadow is still not drawn on a box that bleeds off all four edges of the canvas (measured with a shadow that has no offset). By the same mechanism that should hold for any box cut off along both axes with its hole reaching past what is left on every side. Only the first was measured.
+- A flipped field's drop shadow falls on the side it would without the flip.
+- A field with opacity under 100 and a drop shadow is darker inside its box.
+- The lower lines of a multiline paragraph sit about a pixel off.
+
 ### webkit18, a WebKit from before the change
 
 `--engines webkit18` renders in the WebKit that Playwright 1.53.0 shipped: build 2182, which calls itself 18.5 and is dated 3 June 2025, four weeks before bug 219520 was fixed. It has both differences above. `scripts/fidelity/webkit18.mjs` says how it is driven, and installs it:
@@ -110,7 +117,11 @@ node scripts/fidelity/webkit18.mjs install
 node scripts/fidelity/fidelity.mjs run --engines webkit18
 ```
 
-It is not Safari, and it draws like it. On 2026-11-18, 21 of the 24 fixtures came out of it pixel for pixel as they came out of Safari 18.6's own engine. The other three differ in the grain on an ellipse (`effects-matrix`, 0.62% of the picture), in the grain on an icon (`icons-matrix`, 0.01%), and by one level in 123 pixels of `crop-matrix`'s photos. Three renders of each fixture, and a fourth under `taskpolicy -b`, were byte for byte the same.
+It is not Safari, and it draws like it. On 2026-11-18, 21 of the 24 fixtures came out of it pixel for pixel as they came out of Safari 18.6's own engine. The other three differ in the grain on an ellipse (`effects-matrix`, 0.62% of the picture), in the grain on an icon (`icons-matrix`, 0.01%), and by one level in 123 pixels of one of `crop-matrix`'s photos. In the two grain fields it draws exactly what WebKit 26.6 draws, so that difference lies between Playwright's builds and Safari's own. Three renders of each fixture, and a fourth under `taskpolicy -b`, were byte for byte the same.
+
+Five temporary fixtures (crops, masks, flips, opacity, grain on a photo, unblurred inner shadows, boxes the canvas cuts off or that bleed off every edge) came out of it identical to Safari 18.6's engine in every pixel. That includes the first three things on the list above, which it draws wrong exactly as Safari 18.6 does.
+
+One fault of its own is known. An inner shadow in an opaque colour on a box with rounded corners comes out weaker in it than in Safari 18.6 and WebKit 26.6, which draw it alike: about an eighth of a 140 px box with 40 px corners differs. With a semi-transparent colour or square corners all three agree. Every inner shadow in the fixtures is semi-transparent, so no row shows it.
 
 Before the two fixes it read three rows 11 to 14 points worse, and the other 21 as it reads them now:
 
@@ -120,14 +131,9 @@ Before the two fixes it read three rows 11 to 14 points worse, and the other 21 
 | `effects-matrix`               | 14.50 / 14.66    | 0.85 / 1.13 |
 | `builder-roundtrip`            | 13.62 / 15.39    | 0.49 / 2.27 |
 
-No fixture has a `webkit18` baseline, so its rows read `no baseline`, a default run leaves the engine out, and nothing fails on it. It is given WebKit's recorded fonts: its page asks Google for the same stylesheets, and with WebKit's answers it drew every fixture's text as Safari 18.6 drew it from Google itself. `fonts` refuses it.
+No fixture has a `webkit18` baseline, so its rows read `no baseline` and a default run leaves the engine out. Under CI a row with no baseline fails, so the workflow renders it in steps of its own that empty `CI` and report only (`docs/CI.md`).
 
-Measured on 18.6 and not handled:
-
-- An inner shadow is still not drawn on a box that bleeds off all four edges of the canvas (measured with a shadow that has no offset). By the same mechanism that should hold for any box cut off along both axes with its hole reaching past what is left on every side. Only the first was measured.
-- A flipped field's drop shadow falls on the side it would without the flip.
-- A field with opacity under 100 and a drop shadow is darker inside its box.
-- The lower lines of a multiline paragraph sit about a pixel off.
+It is given WebKit's recorded fonts: its page asks Google for the same stylesheets, and with WebKit's answers it drew every fixture's text as Safari 18.6 drew it from Google itself. `fonts` refuses it. A request only it made would fail its row and could not be recorded this way, which would be the day to give it a recording of its own.
 
 ## Google's fonts are recorded
 

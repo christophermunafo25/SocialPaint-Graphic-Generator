@@ -385,6 +385,9 @@ const pct = (v) => (v === undefined || v === null ? "" : `${v.toFixed(2)}%`);
 const STRICT = Boolean(process.env.CI);
 
 async function measure(fixtures, selectedEngines, fonts) {
+  // An engine that is not installed is found here, before the dev server
+  // starts, and not after the engines named ahead of it have rendered.
+  for (const engine of selectedEngines) browserType(engine);
   const rendered = {};
   await withServer(async (base) => {
     for (const engine of selectedEngines) {

@@ -32,13 +32,12 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { createReadStream, createWriteStream, existsSync } from "node:fs";
-import { chmod, mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
-import { fileURLToPath } from "node:url";
 
 /** The engine's name in --engines, in a fixture's baselines and in reports. */
 export const WEBKIT_18 = "webkit18";
@@ -46,6 +45,13 @@ export const WEBKIT_18 = "webkit18";
 const PACKAGE = "playwright-webkit-18";
 const INSTALL = "node scripts/fidelity/webkit18.mjs install";
 const DOWNLOAD_TIMEOUT_MS = 5 * 60_000;
+/** What install names the folders it unpacks into, in the browser cache.
+ * The dot matters: Playwright takes a folder named webkit-* there for a
+ * browser of its own. */
+const STAGING = ".unpacking-webkit18-";
+/** A staging folder this old was left by an install that was killed.
+ * Unpacking takes seconds. */
+const STALE_STAGING_MS = 60 * 60_000;
 
 /** The SHA-256 of each archive install has been checked against, by build
  * folder and file name. A host whose archive is not listed gets nothing
@@ -63,7 +69,9 @@ const fromOldPlaywright = (load) => {
     return load();
   } catch (e) {
     if (e?.code !== "MODULE_NOT_FOUND") throw e;
-    throw new Error(`${PACKAGE} is not in node_modules. Run npm install.`, { cause: e });
+    throw new Error(`${PACKAGE} is not in node_modules. Run npm install.`, {
+      cause: e,
+    });
   }
 };
 
@@ -86,20 +94,28 @@ const sha256Of = async (file) => {
   return hash.digest("hex");
 };
 
-/** Saves the first of `urls` that answers to `file`. */
-async function download(urls, file) {
-  let failure = new Error("No address to download from");
+/** Saves to `file` the first of `urls` whose body has the SHA-256
+ * `expected`. A mirror that fails, or serves anything else, is passed over
+ * and named if none will do. */
+async function download(urls, file, expected) {
+  const failures = [];
   for (const url of urls) {
     try {
-      const response = await fetch(url, { signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS) });
-      if (!response.ok || !response.body) throw new Error(`${url} answered ${response.status}`);
+      const response = await fetch(url, {
+        signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
+      });
+      if (!response.ok || !response.body) throw new Error(`answered ${response.status}`);
       await pipeline(Readable.fromWeb(response.body), createWriteStream(file));
-      return url;
+      const actual = await sha256Of(file);
+      if (actual !== expected) throw new Error(`is not the archive on record (SHA-256 ${actual})`);
+      return;
     } catch (e) {
-      failure = e instanceof Error ? e : new Error(String(e));
+      // fetch says only "fetch failed"; its cause says why.
+      const reason = e instanceof Error ? (e.cause?.message ?? e.message) : String(e);
+      failures.push(`${url}: ${reason}`);
     }
   }
-  throw failure;
+  throw new Error(`Could not download the archive.\n  ${failures.join("\n  ")}`);
 }
 
 /** Playwright's record of which install uses which browser folders: a file
@@ -114,6 +130,46 @@ async function link(directory, packagePath) {
   );
 }
 
+/** Removes the staging folders that installs which were killed left in the
+ * cache. Nothing else would: the dot hides them from Playwright. */
+async function removeStaleStaging(cache) {
+  for (const entry of await readdir(cache)) {
+    if (!entry.startsWith(STAGING)) continue;
+    const folder = path.join(cache, entry);
+    const modified = await stat(folder).then(
+      (s) => s.mtimeMs,
+      () => Date.now(),
+    );
+    if (Date.now() - modified > STALE_STAGING_MS) {
+      await rm(folder, { recursive: true, force: true });
+    }
+  }
+}
+
+/** Moves a fully unpacked build into place. Another install's finished
+ * folder stays where it is. A half unpacked one makes way, once, and is
+ * moved aside before it is removed: if another install finished there in
+ * the meantime, what was moved aside is its folder, and it goes back. */
+async function moveIntoPlace(staging, directory) {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      await rename(staging, directory);
+      return;
+    } catch (e) {
+      if (existsSync(markerFile(directory))) return;
+      if (attempt === 2) throw e;
+      const aside = await mkdtemp(path.join(path.dirname(directory), STAGING));
+      try {
+        await rename(directory, aside);
+        if (existsSync(markerFile(aside))) await rename(aside, directory);
+      } catch {
+        // It is gone already, or another install's folder is there now.
+      }
+      await rm(aside, { recursive: true, force: true });
+    }
+  }
+}
+
 async function install() {
   const executable = fromOldPlaywright(() =>
     require(`${PACKAGE}/lib/server`).registry.findExecutable("webkit"),
@@ -122,7 +178,8 @@ async function install() {
   const { directory } = executable;
   const build = path.basename(directory);
   const label = `WebKit ${executable.browserVersion} (${build})`;
-  // The one folder this ever removes is the build's own, half unpacked.
+  // The one browser folder this ever removes is the build's own, half
+  // unpacked.
   if (!/^webkit-\d+$/.test(build)) throw new Error(`Unexpected browser folder ${directory}`);
   if (existsSync(markerFile(directory))) {
     await link(directory, packagePath);
@@ -140,20 +197,20 @@ async function install() {
         `Known: ${Object.keys(ARCHIVES).join(", ")} (scripts/fidelity/webkit18.mjs).`,
     );
   }
+  // The link goes first, as in Playwright's own install: from the moment
+  // the folder is in place, a `playwright install` in another checkout
+  // finds it named.
+  await link(directory, packagePath);
   const cache = path.dirname(directory);
-  await mkdir(cache, { recursive: true });
-  const scratch = await mkdtemp(path.join(os.tmpdir(), "socialpaint-webkit18-"));
-  // Beside the build's folder, so the move into place is one rename. The
-  // name starts with a dot: Playwright takes a folder named webkit-* here
-  // for a browser of its own.
-  const staging = await mkdtemp(path.join(cache, ".unpacking-webkit18-"));
+  await removeStaleStaging(cache);
+  let scratch;
+  let staging;
   try {
+    scratch = await mkdtemp(path.join(os.tmpdir(), "socialpaint-webkit18-"));
+    // Beside the build's folder, so the move into place is one rename.
+    staging = await mkdtemp(path.join(cache, STAGING));
     const archive = path.join(scratch, name);
-    const from = await download(executable.downloadURLs, archive);
-    const actual = await sha256Of(archive);
-    if (actual !== expected) {
-      throw new Error(`${from} is not the archive on record: SHA-256 ${actual}`);
-    }
+    await download(executable.downloadURLs, archive, expected);
     const unzip = spawnSync("unzip", ["-q", archive, "-d", staging], {
       stdio: ["ignore", "inherit", "inherit"],
     });
@@ -164,28 +221,21 @@ async function install() {
     }
     const launcher = path.relative(directory, executable.executablePath("javascript"));
     await chmod(path.join(staging, launcher), 0o755);
+    // mkdtemp makes a folder only its owner can open; Playwright's are 755.
+    await chmod(staging, 0o755);
     await writeFile(markerFile(staging), "");
-    for (let attempt = 1; ; attempt += 1) {
-      try {
-        await rename(staging, directory);
-        break;
-      } catch (e) {
-        // Something is there already. Another install's finished folder
-        // stays, and a half unpacked one makes way, once.
-        if (existsSync(markerFile(directory))) break;
-        if (attempt === 2) throw e;
-        await rm(directory, { recursive: true, force: true });
-      }
-    }
-    await link(directory, packagePath);
+    await moveIntoPlace(staging, directory);
     console.log(`${label} installed at ${directory}`);
   } finally {
-    await rm(scratch, { recursive: true, force: true });
-    await rm(staging, { recursive: true, force: true });
+    if (scratch) await rm(scratch, { recursive: true, force: true });
+    if (staging) await rm(staging, { recursive: true, force: true });
   }
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+// True only for the file node was started with, whatever path it was
+// reached by. Comparing argv with this file's own path fails through a
+// symlinked folder, and the install would then do nothing and exit 0.
+if (import.meta.main) {
   if (process.argv[2] !== "install") {
     console.error(`Usage: ${INSTALL}`);
     process.exit(2);

@@ -44,31 +44,46 @@ jobs:
       - name: Browser engines
         run: npx playwright install --with-deps chromium firefox webkit
 
-      # An older WebKit that draws as Safari before 26 does
-      # (scripts/fidelity/webkit18.mjs). It reports only, below, so a
-      # failed install fails nothing either.
-      - name: WebKit 18.5
-        continue-on-error: true
-        run: node scripts/fidelity/webkit18.mjs install
-
       # Google's fonts come from the recording in test/fidelity/google-fonts,
       # so the run asks Google for nothing.
       - name: Render and compare
         run: node scripts/fidelity/fidelity.mjs run
 
-      # No fixture has a webkit18 baseline, so this step reports and never
-      # fails the job. The harness fails a row with no baseline under CI,
-      # which is why CI is emptied here. The run writes its own report.json,
-      # so the one above is kept beside it for the upload.
-      - name: Render and compare in WebKit 18.5 (reports only)
-        if: always()
+      # An older WebKit that draws as Safari before 26 does
+      # (scripts/fidelity/webkit18.mjs). No fixture has a baseline for it,
+      # so the two steps below report and fail nothing. They come after the
+      # gate, each has a limit of its own inside the job's, and a failure
+      # in either shows as a warning on the run.
+      - name: WebKit 18.5
+        if: ${{ !cancelled() }}
         continue-on-error: true
-        timeout-minutes: 8
+        timeout-minutes: 3
+        run: |
+          node scripts/fidelity/webkit18.mjs install || {
+            echo "::warning title=WebKit 18.5::The install failed, so the webkit18 report has nothing to render in."
+            exit 1
+          }
+
+      # The harness fails a row with no baseline under CI, which is why CI
+      # is emptied here. Every run writes report.json, so the gate's is set
+      # aside and put back, and this run's is kept as report-webkit18.json.
+      - name: Render and compare in WebKit 18.5 (reports only)
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        timeout-minutes: 5
         env:
           CI: ""
         run: |
-          cp test/fidelity/out/report.json test/fidelity/out/report-default-engines.json || true
-          node scripts/fidelity/fidelity.mjs run --engines webkit18
+          out=test/fidelity/out
+          if [ -f "$out/report.json" ]; then mv "$out/report.json" "$out/report-gate.json"; fi
+          status=0
+          node scripts/fidelity/fidelity.mjs run --engines webkit18 || status=$?
+          if [ -f "$out/report.json" ]; then mv "$out/report.json" "$out/report-webkit18.json"; fi
+          if [ -f "$out/report-gate.json" ]; then mv "$out/report-gate.json" "$out/report.json"; fi
+          if [ "$status" -ne 0 ]; then
+            echo "::warning title=WebKit 18.5::The webkit18 run exited $status. It reports only. Read this step's log."
+          fi
+          exit "$status"
 
       - name: Upload renders, heatmaps and report
         if: always()
