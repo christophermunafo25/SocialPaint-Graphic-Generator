@@ -106,9 +106,10 @@ export interface ResultCardProps {
   downloadLabel?: string;
   /** A download is being made: Download is busy and takes no click. */
   downloadBusy?: boolean;
-  /** The run that made this card has just finished: once its art has
-   * decoded it develops in from a blur (PROMPT.md section 7.6). A revisit,
-   * a reload and a size switch show the art at once. */
+  /** The card's art is new in this view, from a run it saw: once the art
+   * has decoded it develops in from a blur (PROMPT.md section 7.6). Read
+   * when the card mounts, so a revisit, a reload and a size switch show
+   * the art at once. */
   arrive?: boolean;
   /** Changes each time one of the card's downloads finishes without a
    * failure. Once nothing is busy, the Download that was pressed shows the
@@ -179,7 +180,9 @@ export function ResultCard({
     const images = stage ? [...stage.querySelectorAll("img")] : [];
     void Promise.all([
       document.fonts?.ready,
-      ...images.map((img) => img.decode().catch(() => undefined)),
+      ...images.map((img) =>
+        typeof img.decode === "function" ? img.decode().catch(() => undefined) : undefined,
+      ),
     ]).then(() => {
       if (alive) setArrival("playing");
     });
@@ -254,6 +257,7 @@ export function ResultCard({
               onClick={() => {
                 if (downloadBusy) return;
                 pressed.current = "one";
+                setConfirmed(null);
                 onDownload();
               }}
             />
@@ -287,6 +291,7 @@ export function ResultCard({
               onClick={() => {
                 if (downloadAll.busy) return;
                 pressed.current = "all";
+                setConfirmed(null);
                 downloadAll.onClick();
               }}
             >

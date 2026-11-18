@@ -471,6 +471,10 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   .ui-input[data-size="multiline"] {
     resize: vertical;
   }
+  /* The copy button sits where the grip would. */
+  .ui-input[data-size="multiline"][data-copy] {
+    resize: none;
+  }
 }
 .ui-input::placeholder,
 .ui-input__control::placeholder {

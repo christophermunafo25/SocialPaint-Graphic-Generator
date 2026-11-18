@@ -221,3 +221,31 @@ describe("ResultCard microinteractions", () => {
     expect(button.querySelector(".ui-icon-slot__check")).not.toBeNull();
   });
 });
+
+describe("ResultCard download check after a failure", () => {
+  it("drops the check when a second download starts and fails", async () => {
+    function Card({ busy, done }: { busy: boolean; done: number }) {
+      return (
+        <ResultCard
+          meta="1080 × 1080"
+          art={<span>art</span>}
+          downloadedKey={done}
+          downloadAll={{ label: "Download", onClick: () => {}, busy }}
+        />
+      );
+    }
+    const { rerender } = render(<Card busy={false} done={0} />);
+    const button = screen.getByRole("button", { name: "Download" });
+    await userEvent.click(button);
+    rerender(<Card busy done={0} />);
+    rerender(<Card busy={false} done={1} />);
+    await waitFor(() => expect(screen.getByRole("status").textContent).toBe("Downloaded"));
+    // A second press, whose export fails: the count does not move.
+    await userEvent.click(button);
+    rerender(<Card busy done={1} />);
+    rerender(<Card busy={false} done={1} />);
+    expect(screen.getByRole("status").textContent).toBe("");
+    // The check may still be fading out; it is no longer the glyph shown.
+    expect(button.querySelector(".ui-icon-slot__check:not([data-leaving])")).toBeNull();
+  });
+});

@@ -993,6 +993,15 @@ export function GenerateChat({
     [download, downloadDraft],
   );
 
+  // While the editor is open its panel shows a card download's failure on
+  // its own Toast, so the page's line goes on the same time and does not
+  // come back when the editor closes.
+  useEffect(() => {
+    if (!editorOpen || !downloadError) return;
+    const timer = window.setTimeout(clearDownloadError, EXPORT_TOAST_MS);
+    return () => window.clearTimeout(timer);
+  }, [editorOpen, downloadError, clearDownloadError]);
+
   /** A Try next chip or Try again that starts a run goes with it (the row
    * hides while a run is in flight, a retried turn is replaced, an older
    * turn's Try again is disabled), so focus on it would fall to the page's

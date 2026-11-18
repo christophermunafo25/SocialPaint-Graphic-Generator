@@ -346,7 +346,10 @@ export const TemplateTurn = memo(function TemplateTurn({
   // finish: a revisit or a reload shows the art at once.
   const sawRun = useRef(running);
   if (running) sawRun.current = true;
-  const arrive = sawRun.current && !running;
+  // A template chat's card mounts as soon as its draft resolves, while the
+  // run is still going, so the card arrives when the view saw the run at
+  // all.
+  const arrive = sawRun.current;
   const draft = turn.drafts[0] as ChatDraft | undefined;
   const values = useMemo(() => (draft ? previewValues(draft, photo) : {}), [draft, photo]);
   const entries = useMemo(() => (draft ? fillInEntries(draft, values) : []), [draft, values]);

@@ -166,7 +166,7 @@ Fixed in the file while this kit was written, so a phase reading it sees the fix
 | Generate Start gains a header row | `6023:3097` | `generate/GeneratePage.tsx` passes a `PageHeader` (Phase E2, built) |
 | The builder editor's bar becomes the 64 header row | `6072:3662` | `builder/TemplateBuilder.tsx` (Phase E5) |
 | Field holds a Medium control | `4015:628` | Already the default: `Field` passes its control through and `Input`, `Select` and `Search` default to Medium. Phase E1 set the label 12 over the control (built) |
-| The filled Text Area carries a copy button | `2207:298` | `TextArea` gains `copy`, set by the Details panel's caption on the fill page and in Generate's editor (Phase E4, built) |
+| The filled Text Area carries a copy button | `2207:298` | `TextArea` gains `copy`, set by the Details panel's caption on the fill page, in Generate's editor and in the Template Builder's preview (Phase E4, built) |
 | Composer · Inline is the Composer | `6024:218` | `chat/ChatComposer.tsx` (Phase E4, built) |
 | The v2 Composer is retired | `2216:222`, deleted | Its layout went in Phase E4 (built) |
 | `LookTile` becomes `VariationTile` | `2216:315` | `primitives/Previews.tsx`, `.ui-look-tile` to `.ui-variation-tile` (Phase E4, built) |
