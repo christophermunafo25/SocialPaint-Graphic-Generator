@@ -129,11 +129,11 @@ Measured from the frames at 1440. Fixed sizes stay fixed and everything marked "
 | Part | Measure |
 |---|---|
 | Viewport | No padding. `--layout-shell-inset` is 0, so the sidebar and Main meet the window and each other. At 1024 and wider the document does not scroll, Main does |
-| Sidebar | 300 wide plus a hairline right edge in `--border-raised`, 76 collapsed, full height, on `--surface-shell`. 20 padding, 24 between its groups. The Logo in the header beside an Outline collapse button. Nav Items 36 tall, 4 apart. The account row at the bottom with an Outline settings button |
+| Sidebar | 300 wide plus a hairline right edge in `--border-raised`, 76 collapsed, full height, on `--surface-shell`. 20 padding, 24 between its groups. The Logo in a 28 header beside the theme toggle and an Outline collapse button, 8 apart. Collapsed, the lockup's mark above a Ghost Medium Expand. Nav Items 36 tall, 4 apart. The account row at the bottom with an Outline settings button |
 | Main | Fills, on `--surface-page` |
 | Page header | 64 tall plus a hairline bottom edge in `--border-subtle`. A 36 row centered in it, 32 at the sides. The area's icon at 18 on `--text-secondary`, then the page name in Label/M on `--text-secondary` (a top-level page) or the Breadcrumb (one level down). Actions on the right 8 apart |
 | Content | 24 at the top, 32 at the sides. Sections 32 apart. The header row, the content and the footer links scroll together inside Main, and nothing sticks (CJ, 2026-11-16) |
-| Footer Links | Centered at the bottom of the content on every page. The frames draw none, and decision 14 keeps them |
+| Footer Links | Centered at the bottom of the content on every page, 16 above Main's foot. The frames draw none, and decision 14 keeps them |
 
 A dialog's close button sits in its top right corner.
 

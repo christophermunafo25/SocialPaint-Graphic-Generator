@@ -162,20 +162,20 @@ Fixed in the file while this kit was written, so a phase reading it sees the fix
 | Chip and Badge on `--radius-chip`, Tag on `--radius-tag` | `2212:187`, `2212:130`, `2212:143` | `.ui-chip`, `.ui-badge`, `.ui-tag` (Phase E1, built) |
 | Stepper, pending progress steps and the Progress Bar's track on `--surface-soft` | `2211:227`, `2221:1105`, `2215:272` | `.ui-stepper`, `.ui-progress`, `.ui-progress-bar` (Phase E1, built) |
 | Search rests with a hairline | `2207:455` | `.ui-input--box` inside `Search` (Phase E1, built) |
-| Page Header leads with the area icon and names the page in Label/M | `4015:764` | `PageHeader` gains an `icon` prop, and the title kind sets Label/M on `--text-secondary` (Phase E2) |
-| Generate Start gains a header row | `6023:3097` | `generate/GeneratePage.tsx` passes a `PageHeader` (Phase E2) |
+| Page Header leads with the area icon and names the page in Label/M | `4015:764` | `PageHeader` gains an `icon` prop, and the title kind sets Label/M on `--text-secondary` (Phase E2, built) |
+| Generate Start gains a header row | `6023:3097` | `generate/GeneratePage.tsx` passes a `PageHeader` (Phase E2, built) |
 | The builder editor's bar becomes the 64 header row | `6072:3662` | `builder/TemplateBuilder.tsx` (Phase E5) |
 | Field holds a Medium control | `4015:628` | Already the default: `Field` passes its control through and `Input`, `Select` and `Search` default to Medium. Phase E1 set the label 12 over the control (built) |
 | The filled Text Area carries a copy button | `2207:298` | Where generated captions show (Phase E4) |
 | Composer · Inline is the Composer | `6024:218` | `chat/ChatComposer.tsx` (Phase E4) |
 | The v2 Composer is retired | `2216:222`, deleted | Its layout goes in Phase E4 |
 | `LookTile` becomes `VariationTile` | `2216:315` | `primitives/Previews.tsx`, `.ui-look-tile` to `.ui-variation-tile` (Phase E4) |
-| The Sidebar runs flush with the Logo and Outline buttons | `2218:679` | `Sidebar.tsx`, `src/styles/shell.css` (Phase E2) |
+| The Sidebar runs flush with the Logo and Outline buttons | `2218:679` | `Sidebar.tsx`, `src/styles/shell.css` (Phase E2, built) |
 | Template, Builder Template, Recent and History Cards on `--surface-card` | `4018:129`, `4018:156`, `4018:183`, `4018:1728` | `.sp-tcard`, `.sp-gen-card`, `.sp-tbcard` (Phase E1, so no card vanishes on the white page) |
 | Platform Chip is 46 on `--radius-chip` with a `--radius-tile` logo tile | `53:96` | `.ui-platform-chip` (Phase E3) |
 | Logo Card grounds on the plates | `4018:1794` | `admin/brand/LogosDetail.tsx` already reads `--plate-*` (Phase E6) |
 | Segmented Control gains the liquid selection | `2211:213`, Foundations › Interactions `6262:353` | `.ui-segmented` and `SegmentedControl` in `primitives/Toggles.tsx`, after `reference/liquid-selection.html` (Phase E1, built) |
-| The lockup is CJ's update, on `--logo-ink` | `6243:8529` | `BrandMark.tsx` (Phase E2) |
+| The lockup is CJ's update, on `--logo-ink` | `6243:8529` | `BrandMark.tsx` (Phase E2, built) |
 | The Toast eases in and out and owns a timer that pauses | `2213:213`, Foundations › Interactions `6262:353` | `Toast` gains `open`, `duration` and `onTimeout`, and `.ui-toast` its transitions. `admin/brand/kitPlumbing.ts` and `admin/settings/settingsToast.tsx` pass 5000 and 4000 in place of their own `setTimeout` (Phase E1, built). The other four callers move their timers onto it in their own phases, `TemplateFill.tsx` (Phase E3), `generate/EditorPanel.tsx` and `generate/GeneratePage.tsx` (Phase E4) and `admin/AdminTemplates.tsx` (Phase E5) |
 | Button and Icon Button swap icons with a drawn check, and show a spinner past 400 ms when busy | `2206:542`, `2206:686` | An icon slot in `Button` and `IconButton`, a `busy` prop, and `CONFIRM_MS` in place of the two `COPIED_MS` (Phase E1, built) |
 | The Checkbox's mark draws in | `2211:148` | `CheckMark` in `primitives/Toggles.tsx` renders both paths, `.ui-check__mark` (Phase E1, built) |

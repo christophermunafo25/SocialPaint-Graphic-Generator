@@ -260,18 +260,21 @@ isolation, the lifecycle, the cascades, and cap concurrency.
 
 ## App shell
 
-At 1024 and wider the window is the app frame (new brand, Phase 3; every page frame of
-"Master UX UI New Brand (Copy)"): `AppShell` lays out 12 of padding around the Sidebar and
-Main on surface/page, stops above the local backend's banner, and the document does not
-scroll. The Sidebar (`src/app/components/Sidebar.tsx`, the Patterns page's component
-`2218:679`) is 320 wide or a 76 rail, with the lockup, the theme toggle and Collapse, five
-role-gated destinations (members see the first two) and the account row, whose Settings
-button is the avatar when collapsed. Below 1024 a sticky mobile bar with a drop-down nav
+At 1024 and wider the window is the app frame (ElevenLabs, Phase E2; every product frame
+of `dQ8bQq3V7Bue5pvFrI2g9X`): `AppShell` lays the Sidebar flush against the window and Main
+beside it on surface/page, with no inset (`--layout-shell-inset`), stops above the local
+backend's banner, and the document does not scroll. The Sidebar
+(`src/app/components/Sidebar.tsx`, component `2218:679`) runs on surface/shell with a
+hairline on its right, 301 wide or a 76 rail, with CJ's lockup on `--logo-ink`, the theme
+toggle and Collapse, five role-gated destinations (members see the first two) and the
+account row, whose Settings button is the avatar when collapsed. Each area's icon comes
+from `areas.ts`, which the nav and the page headers share. Below 1024 a sticky mobile bar with a drop-down nav
 takes its place and the document scrolls.
 
-Main is `layout/Page.tsx`: the page's header in a 36 header row, the content under it and
-Footer Links at the foot, each with a 32 gutter. Most pages scroll their content inside
-Main under an 80 fade ("scroll"); the Generate thread and History scroll their own region
+Main is `layout/Page.tsx`: the page's header in a 64 header row with a hairline under it
+(the `PageHeader` leads with the area's icon), the content under it and Footer Links at
+the foot, each with a 32 gutter. Most pages scroll inside Main as one
+page, header row and links included, with nothing sticky ("scroll"); the Generate thread and History scroll their own region
 ("self"); the builder editor fills Main ("bare"). Page Up and Down from the sidebar or the
 page itself reach the content (`layout/useFrameKeys.ts`), and the content returns to the
 top when the route's path changes. The shell reads tokens and the two measures it
