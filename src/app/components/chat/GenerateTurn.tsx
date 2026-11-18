@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useId, useMemo } from "react";
+import React, { memo, useCallback, useId, useMemo, useRef } from "react";
 import { Plus } from "lucide-react";
 import type { AssistantTurn, ChatDraft, ChatPhoto } from "@/lib/generate/chat";
 import { isRunningTurn } from "@/lib/generate/chatReducer";
@@ -90,6 +90,7 @@ export const GenerateTurn = memo(function GenerateTurn({
   canRetry,
   selectedDraftId,
   busyDraftId,
+  downloadedCount,
   pickedDraftId,
   onPickDraft,
   registerPreview,
@@ -113,6 +114,9 @@ export const GenerateTurn = memo(function GenerateTurn({
   selectedDraftId: string | null;
   /** The draft a download is exporting, when it is one of this turn's. */
   busyDraftId: string | null;
+  /** Finished downloads of this turn's drafts, so the card can confirm
+   * them with a check. */
+  downloadedCount?: number;
   /** The draft the member picked on the card's switch. */
   pickedDraftId: string | undefined;
   onPickDraft(turnId: string, draftId: string): void;
@@ -133,6 +137,11 @@ export const GenerateTurn = memo(function GenerateTurn({
   const statusId = useId();
   const tryNextId = useId();
   const running = isRunningTurn(turn);
+  // The card arrives (PROMPT.md section 7.6) only for a run this view saw
+  // finish: a revisit or a reload shows the art at once.
+  const sawRun = useRef(running);
+  if (running) sawRun.current = true;
+  const arrive = sawRun.current && !running;
   const description = turn.meta ? provenanceSentence(turn.meta) : undefined;
   // The switch names each draft as the editor's does: its platform, with
   // the ratio where two share one (linkedFields' sizeNames).
@@ -218,6 +227,8 @@ export const GenerateTurn = memo(function GenerateTurn({
             }
             downloadLabel={`Download ${name}`}
             downloadBusy={busyDraftId === shown.id}
+            downloadedKey={downloadedCount}
+            arrive={arrive}
             caption={caption}
             downloadAll={
               exportable > 0

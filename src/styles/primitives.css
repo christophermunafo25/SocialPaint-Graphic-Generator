@@ -12,7 +12,7 @@
    properties start with --_ so they can never collide with one.
 
    The Product components that also live in primitives/ (the platform chip,
-   the result card, the look tile, the composer, the message bubble, the
+   the result card, the variation tile, the composer, the message bubble, the
    settings card, the stat and the option tile) keep their earlier rules,
    and the earlier names those rules read, until their own phase.
 
@@ -452,10 +452,28 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   field-sizing: content;
   resize: none;
 }
+/* With a copy button (2207:298, Filled) the text keeps clear of it: the
+   button is a Small Ghost Icon Button 6 in from the bottom right. */
+.ui-textarea-copy {
+  position: relative;
+  display: block;
+}
+.ui-input[data-size="multiline"][data-copy] {
+  padding-inline-end: calc(var(--size-control-sm) + 2 * var(--space-6));
+}
+.ui-textarea-copy__button {
+  position: absolute;
+  right: var(--space-6);
+  bottom: var(--space-6);
+}
 /* Where a text area cannot grow on its own, it keeps the grip. */
 @supports not (field-sizing: content) {
   .ui-input[data-size="multiline"] {
     resize: vertical;
+  }
+  /* The copy button sits where the grip would. */
+  .ui-input[data-size="multiline"][data-copy] {
+    resize: none;
   }
 }
 .ui-input::placeholder,
@@ -1861,7 +1879,7 @@ button.ui-detail-tag__value {
   height: 340px; /* as drawn */
   padding: var(--space-16);
   border-radius: var(--radius-md);
-  background: var(--surface-field);
+  background: var(--surface-stage);
   container-type: size;
 }
 .ui-result-card__art {
@@ -1870,6 +1888,17 @@ button.ui-detail-tag__value {
   aspect-ratio: var(--fit-ratio);
   width: min(100cqw, 100cqh * var(--fit-ratio));
   overflow: hidden;
+}
+/* The art of a run that has just finished develops in from a 4px blur on
+   motion/duration/slow once it has decoded (PROMPT.md section 7.6). */
+.ui-result-card__stage[data-arrive] > * {
+  transition:
+    opacity var(--motion-duration-slow) var(--motion-easing-enter),
+    filter var(--motion-duration-slow) var(--motion-easing-enter);
+}
+.ui-result-card__stage[data-arrive="pending"] > * {
+  opacity: 0;
+  filter: blur(4px);
 }
 .ui-result-card__overscan {
   position: absolute;
@@ -1897,8 +1926,8 @@ button.ui-detail-tag__value {
   padding-block: 1px; /* as drawn */
 }
 
-/* ── Look tile (104:996) ── */
-.ui-look-tile {
+/* ── Variation Tile (2216:315) ── */
+.ui-variation-tile {
   display: inline-flex;
   flex-direction: column;
   align-items: flex-start;
@@ -1906,33 +1935,33 @@ button.ui-detail-tag__value {
   width: 132px;
   color: var(--text-strong);
 }
-.ui-look-tile__ring {
+.ui-variation-tile__ring {
   box-sizing: border-box;
   display: block;
   width: 132px;
   padding: 2px; /* as drawn (104:918) */
   border-radius: var(--radius-control-md);
 }
-.ui-look-tile__thumb {
+.ui-variation-tile__thumb {
   display: block;
   width: 128px;
   height: 160px;
   overflow: hidden;
   border-radius: var(--radius-control);
 }
-.ui-look-tile:hover .ui-look-tile__ring,
-.ui-look-tile[data-demo-state="hover"] .ui-look-tile__ring {
+.ui-variation-tile:hover .ui-variation-tile__ring,
+.ui-variation-tile[data-demo-state="hover"] .ui-variation-tile__ring {
   box-shadow: 0 0 0 1px var(--border-strong);
 }
-.ui-look-tile[data-selected] .ui-look-tile__ring,
-.ui-look-tile[data-demo-state="selected"] .ui-look-tile__ring {
+.ui-variation-tile[data-selected] .ui-variation-tile__ring,
+.ui-variation-tile[data-demo-state="selected"] .ui-variation-tile__ring {
   box-shadow: 0 0 0 1px var(--text-strong);
 }
-.ui-look-tile:focus-visible {
+.ui-variation-tile:focus-visible {
   outline: none;
 }
-.ui-look-tile:focus-visible .ui-look-tile__ring,
-.ui-look-tile[data-demo-state="focus"] .ui-look-tile__ring {
+.ui-variation-tile:focus-visible .ui-variation-tile__ring,
+.ui-variation-tile[data-demo-state="focus"] .ui-variation-tile__ring {
   outline: 2px solid transparent;
   box-shadow: 0 0 0 var(--focus-width) var(--ring);
 }
@@ -2371,20 +2400,22 @@ button.ui-detail-tag__value {
   color: var(--text-secondary);
 }
 
-/* The Composer (new brand, 13:2985): 16 in from a border/raised hairline at
-   radius/xl, under Elevation/1; the text 4 in from that, then the toolbar
-   24 under it. */
+/* The Composer (6024:218): one line on radius/composer, 8 in from a
+   border/raised hairline on surface/raised. The line holds the plus, the
+   message, the count stepper and Send, bottom-aligned so a longer message
+   grows upward past them. Attachments and details stack above the line,
+   8 in, 12 apart, 8 over it. Flat, as raised surfaces are (RULES.md
+   section 4). */
 .ui-composer {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: var(--space-24);
+  gap: var(--space-8);
   width: 100%;
-  padding: var(--space-16);
+  padding: var(--space-8);
   border: var(--stroke-hairline) solid var(--border-raised);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-composer);
   background: var(--surface-raised);
-  box-shadow: var(--elevation-1-raised);
   color: var(--text-primary);
 }
 /* The text area's focus rings the whole box, as a field's does. */
@@ -2396,20 +2427,32 @@ button.ui-detail-tag__value {
   outline: none;
 }
 .ui-composer[data-drag-active] {
-  box-shadow:
-    var(--elevation-1-raised),
-    inset 0 0 0 var(--stroke-hairline) var(--editor-selection);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--editor-selection);
 }
-/* Body/L from its variables (a text area takes no text style class). Its
-   lines keep their boxes, so the margins give the half-leading back: the
-   first line's capitals sit 4 under the text's top edge and the next row
-   starts 24 under the last baseline, as the frame measures them (13:1453). */
+.ui-composer__top {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  padding: var(--space-8) var(--space-8) 0;
+  min-width: 0;
+}
+.ui-composer__bar {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-8);
+  min-width: 0;
+}
+/* Body/L from its variables (a text area takes no text style class). One
+   line is 36 tall, the controls' height: the line box's 24 and 6 above and
+   below it. */
 .ui-composer__input {
   display: block;
   box-sizing: border-box;
-  width: 100%;
-  margin: calc(var(--space-4) - (1lh - 1cap) / 2) 0 calc((1cap - 1lh) / 2);
-  padding: 0 0 0 var(--space-4);
+  flex: 1;
+  min-width: 0;
+  min-height: var(--size-control-md);
+  margin: 0;
+  padding: calc((var(--size-control-md) - 1lh) / 2) 0;
   font: var(--type-body-l);
   letter-spacing: var(--type-body-l-tracking);
   resize: none;
@@ -2422,35 +2465,26 @@ button.ui-detail-tag__value {
   color: var(--text-secondary);
   opacity: 1;
 }
-/* The attachments (13:2454): the photo and the file 8 apart, 24 over the
-   text. */
+/* The attachments: the photo and the file 8 apart. */
 .ui-composer__attachments {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-8);
 }
-/* An error under the text, 8 under its baseline: the row gap's 24 less
-   16. */
+/* An error under the line, 8 in. */
 .ui-composer__error {
-  margin: calc(-1 * var(--space-16)) 0 0;
+  margin: 0;
+  padding: 0 var(--space-8) var(--space-4);
   color: var(--feedback-error-text);
 }
-/* The toolbar (13:1453): Attach on the left; the stepper and Send 8 apart
-   on the right. */
-.ui-composer__toolbar {
-  display: flex;
-  align-items: center;
-  gap: var(--space-12);
-}
 .ui-composer__inputs {
-  flex: 1;
-  min-width: 0;
+  flex: none;
   display: flex;
   align-items: center;
 }
-/* The Details row (13:2454), between the text and the toolbar: the platform
-   and the details as tags, scrolling sideways behind a fade to the
+/* The Details row (6024:262), above the line: the platform and the
+   details as tags, scrolling sideways behind a fade to the
    composer's fill. */
 .ui-composer__tags {
   position: relative;

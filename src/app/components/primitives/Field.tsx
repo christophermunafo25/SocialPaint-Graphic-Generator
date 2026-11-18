@@ -1,5 +1,7 @@
 import React, { useId } from "react";
+import { Check, Copy } from "lucide-react";
 import { cx, type DemoStateAttr, type IconComponent } from "./cx";
+import { IconButton } from "./IconButton";
 
 export type FieldSize = "sm" | "md" | "lg";
 
@@ -58,6 +60,10 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(function Inp
 
 export interface TextAreaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   "data-demo-state"?: DemoStateAttr;
+  /** A generated caption's copy button (judgement call 10): a Small Ghost
+   * Icon Button 6 in from the box's bottom right, its glyph swapping to the
+   * drawn check while `copied`. */
+  copy?: { label: string; onCopy(): void; copied?: boolean };
 }
 
 /** Text area (Figma 2207:298): 96 tall with 12 around the text, growing
@@ -65,16 +71,31 @@ export interface TextAreaProps extends React.TextareaHTMLAttributes<HTMLTextArea
  * text style class: a trim would move the value and leave the placeholder
  * where it was. primitives.css sets Body/M. */
 export const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(function TextArea(
-  { className, ...rest },
+  { className, copy, ...rest },
   ref,
 ) {
-  return (
+  const area = (
     <textarea
       ref={ref}
       className={cx("ui-reset ui-fill ui-ring ui-input", className)}
       data-size="multiline"
+      data-copy={copy ? "" : undefined}
       {...rest}
     />
+  );
+  if (!copy) return area;
+  return (
+    <span className="ui-textarea-copy">
+      {area}
+      <IconButton
+        variant="ghost"
+        size="sm"
+        icon={copy.copied ? Check : Copy}
+        label={copy.label}
+        className="ui-textarea-copy__button"
+        onClick={copy.onCopy}
+      />
+    </span>
   );
 });
 

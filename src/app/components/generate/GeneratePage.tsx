@@ -63,12 +63,7 @@ import { GenerateHeader } from "../chat/GenerateHeader";
 import { GenerateTurn } from "../chat/GenerateTurn";
 import { TemplateLinksDialog } from "../admin/TemplateLinksDialog";
 import { ChatLoading, ChatUnavailable, THREAD_PLACEHOLDER } from "./ChatLoadStates";
-import {
-  EXPORT_TOAST_MS,
-  EditorPanel,
-  ExportErrorToast,
-  type EditorSaveToLibrary,
-} from "./EditorPanel";
+import { EXPORT_TOAST_MS, EditorPanel, type EditorSaveToLibrary } from "./EditorPanel";
 import { RecentChats } from "./RecentChats";
 import { useScrollFades } from "../layout/useScrollFades";
 import { ScrollFade } from "./ScrollFade";
@@ -939,6 +934,7 @@ export function GenerateChat({
   const {
     download,
     busyId,
+    doneCount,
     error: downloadError,
     clearError: clearDownloadError,
     stage: downloadStage,
@@ -996,11 +992,15 @@ export function GenerateChat({
     },
     [download, downloadDraft],
   );
+
+  // While the editor is open its panel shows a card download's failure on
+  // its own Toast, so the page's line goes on the same time and does not
+  // come back when the editor closes.
   useEffect(() => {
-    if (!downloadError) return;
+    if (!editorOpen || !downloadError) return;
     const timer = window.setTimeout(clearDownloadError, EXPORT_TOAST_MS);
     return () => window.clearTimeout(timer);
-  }, [downloadError, clearDownloadError]);
+  }, [editorOpen, downloadError, clearDownloadError]);
 
   /** A Try next chip or Try again that starts a run goes with it (the row
    * hides while a run is in flight, a retried turn is replaced, an older
@@ -1078,15 +1078,16 @@ export function GenerateChat({
   const exportExtras = (
     <>
       {downloadStage}
-      {!editorOpen &&
-        downloadError &&
-        (template ? (
-          <div className="sp-fill-toast" aria-live="assertive">
-            <Toast message={`${EXPORT_ERROR_TITLE}. ${downloadError}`} />
-          </div>
-        ) : (
-          <ExportErrorToast detail={downloadError} />
-        ))}
+      {/* A card download's failure, on the Toast's own time (PROMPT.md
+          section 7.2); the panel shows its own while it is open. */}
+      <div className="sp-fill-toast" aria-live="assertive">
+        <Toast
+          open={!editorOpen && downloadError !== null}
+          message={downloadError ? `${EXPORT_ERROR_TITLE}. ${downloadError}` : undefined}
+          duration={EXPORT_TOAST_MS}
+          onTimeout={clearDownloadError}
+        />
+      </div>
       {sharing && template && (
         <TemplateLinksDialog template={template} onClose={() => setSharing(false)} />
       )}
@@ -1320,6 +1321,10 @@ export function GenerateChat({
                         busyDraftId={
                           busyId && turn.drafts.some((d) => d.id === busyId) ? busyId : null
                         }
+                        downloadedCount={turn.drafts.reduce(
+                          (n, d) => n + (doneCount[d.id] ?? 0),
+                          0,
+                        )}
                         handlers={templateHandlers}
                       />
                     ) : (
@@ -1337,6 +1342,10 @@ export function GenerateChat({
                         busyDraftId={
                           busyId && turn.drafts.some((d) => d.id === busyId) ? busyId : null
                         }
+                        downloadedCount={turn.drafts.reduce(
+                          (n, d) => n + (doneCount[d.id] ?? 0),
+                          0,
+                        )}
                         pickedDraftId={draftPicks[turn.id]}
                         onPickDraft={pickDraft}
                         registerPreview={registerPreview}

@@ -60,6 +60,7 @@ export function ChatComposer(props: ChatComposerProps) {
   // Only a platform picked for this message is a tag; one reused from the
   // last send shows in the menu alone (13:2985 draws no tag for it).
   const pickedPlatform = platform?.chosen ? platform.value : null;
+  const hasTags = Boolean(pickedPlatform || (details && details.value.length > 0));
   return (
     <form
       {...c.dropProps}
@@ -74,67 +75,57 @@ export function ChatComposer(props: ChatComposerProps) {
       <span className="sr-only" role="status" aria-live="polite">
         {c.isDragActive ? "Drop the image to upload" : ""}
       </span>
-      {c.attachedRow && (
-        <div className="ui-composer__attachments">
-          {photo && <PhotoTile src={photo.dataUrl} onRemove={c.removePhoto} />}
-          {doc && <FileTile name={doc.name} kind={doc.kind} onRemove={c.removeDocument} />}
-          {c.chip && <UploadChipView chip={c.chip} />}
+      {/* Composer (6024:218): attachments and details stack above the
+          line once they are added, 8 in. */}
+      {(c.attachedRow || hasTags) && (
+        <div className="ui-composer__top">
+          {c.attachedRow && (
+            <div className="ui-composer__attachments">
+              {photo && <PhotoTile src={photo.dataUrl} onRemove={c.removePhoto} />}
+              {doc && <FileTile name={doc.name} kind={doc.kind} onRemove={c.removeDocument} />}
+              {c.chip && <UploadChipView chip={c.chip} />}
+            </div>
+          )}
+          {hasTags && (
+            <TagRail>
+              {platform && pickedPlatform && (
+                <li key="platform">
+                  <DetailTag
+                    editLabel={`Edit platform: ${platformLabel(pickedPlatform)}`}
+                    onEdit={(e) => menuRef.current?.editPlatform(e.currentTarget)}
+                    removeLabel={`Remove ${platformLabel(pickedPlatform)}`}
+                    onRemove={() => {
+                      platform.onReset();
+                      focusText();
+                    }}
+                  >
+                    {platformLabel(pickedPlatform)}
+                  </DetailTag>
+                </li>
+              )}
+              {details &&
+                details.value.map((tag) => (
+                  <li key={tag.fieldKey}>
+                    <DetailTag
+                      icon={tag.kind === "link" ? Globe : undefined}
+                      editLabel={`Edit ${tag.label}: ${tag.value}`}
+                      onEdit={(e) => menuRef.current?.editDetail(tag.fieldKey, e.currentTarget)}
+                      removeLabel={`Remove ${tag.label}`}
+                      onRemove={() => {
+                        details.onChange(details.value.filter((t) => t.fieldKey !== tag.fieldKey));
+                        focusText();
+                      }}
+                    >
+                      {tag.value}
+                    </DetailTag>
+                  </li>
+                ))}
+            </TagRail>
+          )}
         </div>
       )}
-      <textarea
-        ref={c.setTextarea}
-        className="ui-reset ui-composer__input"
-        rows={1}
-        value={value}
-        maxLength={MAX_BRIEF}
-        placeholder={placeholder}
-        aria-label="Describe the post"
-        disabled={disabled}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={c.onKeyDown}
-      />
-      {c.photoError && (
-        <p role="alert" className="t-caption-m ui-composer__error">
-          {c.photoError}
-        </p>
-      )}
-      {(pickedPlatform || (details && details.value.length > 0)) && (
-        <TagRail>
-          {platform && pickedPlatform && (
-            <li key="platform">
-              <DetailTag
-                editLabel={`Edit platform: ${platformLabel(pickedPlatform)}`}
-                onEdit={(e) => menuRef.current?.editPlatform(e.currentTarget)}
-                removeLabel={`Remove ${platformLabel(pickedPlatform)}`}
-                onRemove={() => {
-                  platform.onReset();
-                  focusText();
-                }}
-              >
-                {platformLabel(pickedPlatform)}
-              </DetailTag>
-            </li>
-          )}
-          {details &&
-            details.value.map((tag) => (
-              <li key={tag.fieldKey}>
-                <DetailTag
-                  icon={tag.kind === "link" ? Globe : undefined}
-                  editLabel={`Edit ${tag.label}: ${tag.value}`}
-                  onEdit={(e) => menuRef.current?.editDetail(tag.fieldKey, e.currentTarget)}
-                  removeLabel={`Remove ${tag.label}`}
-                  onRemove={() => {
-                    details.onChange(details.value.filter((t) => t.fieldKey !== tag.fieldKey));
-                    focusText();
-                  }}
-                >
-                  {tag.value}
-                </DetailTag>
-              </li>
-            ))}
-        </TagRail>
-      )}
-      <div className="ui-composer__toolbar">
+      {/* The line: the plus, the message, the count stepper and Send. */}
+      <div className="ui-composer__bar">
         <div className="ui-composer__inputs">
           <AttachMenu
             ref={menuRef}
@@ -153,6 +144,18 @@ export function ChatComposer(props: ChatComposerProps) {
             }
           />
         </div>
+        <textarea
+          ref={c.setTextarea}
+          className="ui-reset ui-composer__input"
+          rows={1}
+          value={value}
+          maxLength={MAX_BRIEF}
+          placeholder={placeholder}
+          aria-label="Describe the post"
+          disabled={disabled}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={c.onKeyDown}
+        />
         <div className="ui-composer__output">
           {variations && (
             <Stepper
@@ -173,6 +176,11 @@ export function ChatComposer(props: ChatComposerProps) {
           )}
         </div>
       </div>
+      {c.photoError && (
+        <p role="alert" className="t-caption-m ui-composer__error">
+          {c.photoError}
+        </p>
+      )}
     </form>
   );
 }

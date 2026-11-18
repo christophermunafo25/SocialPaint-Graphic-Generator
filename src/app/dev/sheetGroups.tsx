@@ -42,7 +42,7 @@ import {
   FooterLinks,
   IconButton,
   Input,
-  LookTile,
+  VariationTile,
   Menu,
   MenuDivider,
   MenuItem,
@@ -753,7 +753,7 @@ function ContainersGroup() {
         <ResultCardSkeleton />
         <div className="dev-ui-sheet__line" role="radiogroup" aria-label="Look">
           {["moss", "lime"].map((id) => (
-            <LookTile
+            <VariationTile
               key={id}
               name={id === "moss" ? "Moss" : "Lime"}
               thumbnail={<span className="dev-ui-sample-thumb" />}

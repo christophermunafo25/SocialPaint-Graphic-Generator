@@ -5,7 +5,7 @@ import React, { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { Modal, Progress, ProgressBar } from "./Containers";
 import {
-  LookTile,
+  VariationTile,
   PreviewOverlay,
   ResultCard,
   ResultCardArt,
@@ -118,11 +118,11 @@ describe("PreviewOverlay", () => {
   });
 });
 
-describe("LookTile", () => {
+describe("VariationTile", () => {
   it("takes the role and state its picker gives it", () => {
     render(
       <div role="radiogroup" aria-label="Look">
-        <LookTile name="Moss" thumbnail={<div />} selected role="radio" aria-checked />
+        <VariationTile name="Moss" thumbnail={<div />} selected role="radio" aria-checked />
       </div>,
     );
     expect(screen.getByRole("radio", { name: "Moss" }).dataset.selected).toBe("true");
@@ -175,5 +175,77 @@ describe("Progress", () => {
     expect(steps.getAttribute("aria-valuenow")).toBe("33");
     expect(steps.getAttribute("aria-valuetext")).toBe("1 of 3 · Reading your job post");
     expect(bar.getAttribute("aria-valuenow")).toBe("40");
+  });
+});
+
+describe("ResultCard microinteractions", () => {
+  it("holds a just-finished card's art back until it can paint, then develops it in", async () => {
+    const { container } = render(
+      <ResultCard meta="1080 × 1080" art={<span>art</span>} arrive caption="" />,
+    );
+    const stage = container.querySelector(".ui-result-card__stage")!;
+    expect(stage.getAttribute("data-arrive")).toBe("pending");
+    await waitFor(() => expect(stage.getAttribute("data-arrive")).toBe("playing"));
+  });
+
+  it("shows a revisited card's art at once", () => {
+    const { container } = render(<ResultCard meta="1080 × 1080" art={<span>art</span>} />);
+    expect(container.querySelector(".ui-result-card__stage")?.hasAttribute("data-arrive")).toBe(
+      false,
+    );
+  });
+
+  it("confirms a finished download with the check, once nothing is busy", async () => {
+    const onDownloadAll = vi.fn();
+    function Card({ busy, done }: { busy: boolean; done: number }) {
+      return (
+        <ResultCard
+          meta="1080 × 1080"
+          art={<span>art</span>}
+          downloadedKey={done}
+          downloadAll={{ label: "Download both", onClick: onDownloadAll, busy }}
+        />
+      );
+    }
+    const { rerender } = render(<Card busy={false} done={0} />);
+    const button = screen.getByRole("button", { name: "Download both" });
+    await userEvent.click(button);
+    expect(onDownloadAll).toHaveBeenCalledTimes(1);
+    rerender(<Card busy done={0} />);
+    expect(button.getAttribute("aria-busy")).toBe("true");
+    // The first file is done while the second still exports: no check yet.
+    rerender(<Card busy done={1} />);
+    expect(screen.getByRole("status").textContent).toBe("");
+    rerender(<Card busy={false} done={2} />);
+    await waitFor(() => expect(screen.getByRole("status").textContent).toBe("Downloaded"));
+    expect(button.querySelector(".ui-icon-slot__check")).not.toBeNull();
+  });
+});
+
+describe("ResultCard download check after a failure", () => {
+  it("drops the check when a second download starts and fails", async () => {
+    function Card({ busy, done }: { busy: boolean; done: number }) {
+      return (
+        <ResultCard
+          meta="1080 × 1080"
+          art={<span>art</span>}
+          downloadedKey={done}
+          downloadAll={{ label: "Download", onClick: () => {}, busy }}
+        />
+      );
+    }
+    const { rerender } = render(<Card busy={false} done={0} />);
+    const button = screen.getByRole("button", { name: "Download" });
+    await userEvent.click(button);
+    rerender(<Card busy done={0} />);
+    rerender(<Card busy={false} done={1} />);
+    await waitFor(() => expect(screen.getByRole("status").textContent).toBe("Downloaded"));
+    // A second press, whose export fails: the count does not move.
+    await userEvent.click(button);
+    rerender(<Card busy done={1} />);
+    rerender(<Card busy={false} done={1} />);
+    expect(screen.getByRole("status").textContent).toBe("");
+    // The check may still be fading out; it is no longer the glyph shown.
+    expect(button.querySelector(".ui-icon-slot__check:not([data-leaving])")).toBeNull();
   });
 });

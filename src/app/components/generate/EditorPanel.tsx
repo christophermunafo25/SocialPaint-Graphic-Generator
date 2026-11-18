@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { AlertTriangle } from "lucide-react";
 import type { BrandKit, TemplateField } from "@/lib/types";
 import type { ChatDraft, ChatPhoto } from "@/lib/generate/chat";
 import { captionFor, draftName, previewValues, tooLongFields } from "@/lib/generate/draftView";
@@ -388,14 +387,12 @@ export function EditorPanel({
   const rendererRef = useRef<SchemaRendererHandle>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [exporting, setExporting] = useState(false);
+  // The Toast owns its time (PROMPT.md section 7.2); `at` restarts it for
+  // a repeat of the same failure.
   const [toast, setToast] = useState<{ detail: string; at: number } | null>(null);
-  const toastTimer = useRef<number | undefined>(undefined);
-  useEffect(() => () => window.clearTimeout(toastTimer.current), []);
 
   const showError = useCallback((detail: string) => {
-    window.clearTimeout(toastTimer.current);
     setToast({ detail, at: Date.now() });
-    toastTimer.current = window.setTimeout(() => setToast(null), EXPORT_TOAST_MS);
   }, []);
 
   // The page's own export failure, once per message.
@@ -557,11 +554,15 @@ export function EditorPanel({
       {sheet && <div className="sp-chat-editor-sheet__scrim" aria-hidden onClick={onClose} />}
       {panel}
       {stageMode && stageTarget && createPortal(stage, stageTarget)}
-      {toast && (
-        <div key={toast.at} className="sp-fill-toast" aria-live="assertive">
-          <Toast message={`${EXPORT_ERROR_TITLE}. ${toast.detail}`} />
-        </div>
-      )}
+      <div className="sp-fill-toast" aria-live="assertive">
+        <Toast
+          open={toast !== null}
+          message={toast ? `${EXPORT_ERROR_TITLE}. ${toast.detail}` : undefined}
+          messageKey={toast?.at}
+          duration={EXPORT_TOAST_MS}
+          onTimeout={() => setToast(null)}
+        />
+      </div>
     </div>
   );
 }
@@ -709,23 +710,6 @@ function MissingMarker({
         <TagPlusGlyph aria-hidden />
         <span>{field.label}</span>
       </button>
-    </div>
-  );
-}
-
-/** An export that failed, in TemplateFill's error toast: the danger tone,
- * "Couldn't export the graphic", and `detail` under it (an ExportAssetError
- * names the image that did not load; anything else gets the generic line).
- * The panel shows it for Download PNG, and the page for a card download
- * while the panel is closed; the caller takes it down. */
-export function ExportErrorToast({ detail }: { detail: string }) {
-  return (
-    <div className="sp-toast" data-tone="danger" role="alert" aria-live="assertive">
-      <AlertTriangle className="sp-chat-editor__toast-icon" aria-hidden />
-      <span className="sp-chat-editor__toast-text">
-        <span className="sp-chat-editor__toast-title">{EXPORT_ERROR_TITLE}</span>
-        <span className="sp-chat-editor__toast-detail">{detail}</span>
-      </span>
     </div>
   );
 }

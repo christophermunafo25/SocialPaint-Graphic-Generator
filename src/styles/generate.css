@@ -345,26 +345,16 @@
   inset: -1px;
 }
 
-/* The title (13:3359) in Title/Page; New chat sits in the header row. */
-.sp-gen-history-head {
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  color: var(--text-primary);
-}
-.sp-gen-history-head > h1 {
-  margin: 0;
-}
-/* A landing point when a chat's History or View all brings the member
-   here, not a control: no ring. */
-.sp-gen-history-head > h1:focus {
+/* The page's heading is the trail's last crumb (6023:3648). It is a
+   landing point when a chat's History or View all brings the member here,
+   not a control: no ring. */
+.sp-frame:has(.sp-chat-page[data-state="history"]) .ui-breadcrumb__current:focus {
   outline: none;
 }
-/* The library's filter bar, 24 under the header. The grid scrolls under
-   it; the page itself never does. */
+/* The library's filter bar, the content's first row, 24 under the header
+   row's hairline. The grid scrolls under it; the page itself never does. */
 .sp-chat-page[data-state="history"] .sp-lib-filterbar {
   flex-shrink: 0;
-  margin-top: var(--space-24);
 }
 /* Four columns, 12 apart (13:3509); three, then two, as the page narrows. */
 .sp-chat-page[data-state="history"] .sp-chat-history-grid {

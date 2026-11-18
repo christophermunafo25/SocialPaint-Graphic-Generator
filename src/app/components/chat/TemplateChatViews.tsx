@@ -11,7 +11,7 @@ import { TemplateThumbnail } from "../TemplateThumbnail";
 import {
   Button,
   Chip,
-  LookTile,
+  VariationTile,
   Progress,
   ResultCard,
   ResultCardArt,
@@ -208,7 +208,7 @@ export interface TemplateTurnHandlers {
   onRetry(turnId: string): void;
 }
 
-/** The Look picker card (13:7899): the draft in each look as Look tiles on
+/** The Look picker card (13:7899): the draft in each look as Variation Tiles on
  * a sunken well, then "Look" and the chosen look's name. A radio group;
  * the arrows move the choice. Switching is instant and never calls the
  * model. */
@@ -252,7 +252,7 @@ function LookCard({
         {looks.map((v) => {
           const on = v.id === selected;
           return (
-            <LookTile
+            <VariationTile
               key={v.id}
               ref={(el) => {
                 if (el) refs.current.set(v.id, el);
@@ -329,16 +329,27 @@ export const TemplateTurn = memo(function TemplateTurn({
   photo,
   canRetry,
   busyDraftId,
+  downloadedCount,
   handlers,
 }: {
   turn: AssistantTurn;
   photo: ChatPhoto | null;
   canRetry: boolean;
   busyDraftId: string | null;
+  /** Finished downloads of this turn's drafts, for the card's check. */
+  downloadedCount?: number;
   handlers: TemplateTurnHandlers;
 }) {
   const statusId = useId();
   const running = isRunningTurn(turn);
+  // The card arrives (PROMPT.md section 7.6) only for a run this view saw
+  // finish: a revisit or a reload shows the art at once.
+  const sawRun = useRef(running);
+  if (running) sawRun.current = true;
+  // A template chat's card mounts as soon as its draft resolves, while the
+  // run is still going, so the card arrives when the view saw the run at
+  // all.
+  const arrive = sawRun.current;
   const draft = turn.drafts[0] as ChatDraft | undefined;
   const values = useMemo(() => (draft ? previewValues(draft, photo) : {}), [draft, photo]);
   const entries = useMemo(() => (draft ? fillInEntries(draft, values) : []), [draft, values]);
@@ -408,6 +419,8 @@ export const TemplateTurn = memo(function TemplateTurn({
             onEdit={schema ? () => handlers.onEditDraft(turn.id, draft.id) : undefined}
             editLabel={`Edit ${draftName(draft)}`}
             editRef={previewRef}
+            downloadedKey={downloadedCount}
+            arrive={arrive}
             caption={running ? "" : caption}
             downloadAll={
               schema
