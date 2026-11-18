@@ -1944,7 +1944,9 @@ button.ui-detail-tag__value {
   padding: var(--space-md);
   border-radius: var(--radius-card);
   background: var(--surface-raised);
-  box-shadow: var(--elevation-small);
+  /* Flat on the white page with a border/raised hairline (ElevenLabs E1,
+     Settings page 6227:2808), drawn inside so nothing moves. */
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-raised);
   color: var(--text-strong);
 }
 .ui-settings-card h2,
@@ -2540,7 +2542,9 @@ button.ui-detail-tag__value {
   padding: 14px 16px; /* as drawn; no Figma token yet */
   border-radius: 12px; /* as drawn; no Figma token yet */
   --_fill: var(--surface-raised);
-  box-shadow: var(--elevation-small);
+  /* Flat with a border/raised hairline (ElevenLabs E1, Create account
+     6101:1072), drawn inside so nothing moves. */
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-raised);
   color: var(--text-strong);
   text-align: left;
 }
