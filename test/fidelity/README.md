@@ -85,11 +85,11 @@ The rows do not cover an image field's alpha mask. A mask is a CSS image, which 
 
 The harness's WebKit is the build Playwright ships, 26.6 today. Safari 18 and older paint some things differently, on screen and in the export, and no row here can catch that.
 
-Two differences are handled in the renderer. Both come from how Safari before 26 clips what it paints under a filter, which WebKit changed in Safari 26 (bug 219520).
+Two differences are handled in the renderer. Both come from how Safari before 26 clips what it paints under a filter. Safari 26 has neither, and WebKit bug 219520 is the change that removed them.
 
-The first is a clip that never arrives. Safari before 26 stops clipping the layers it paints straight from an element whose filter moves pixels (a drop shadow or a blur). On an image field that was a cropped photo, drawn whole over its frame and its corners, and an inner shadow with no blur, whose ring was drawn outside the photo. On a rect shape, which carries its filter itself, it was the same unblurred inner shadow. So an image field's clipping box is its own stacking context whenever an effects wrapper holds it (`WRAPPED_IMAGE_BOX`, `src/app/components/SchemaRenderer.tsx`), and so is an inner shadow overlay that holds an unblurred frame (`BoxOverlay`, the same file). That puts those layers back inside one that clips.
+The first is a clip that never arrives. Safari before 26 stops clipping the layers it paints straight from an element whose filter moves pixels (a drop shadow or a blur). On an image field that was a cropped photo, drawn whole over its frame and its corners, and an inner shadow with no blur, whose ring was drawn outside the photo. On a rect shape, which carries its filter itself, it was the same unblurred inner shadow. So an image field's clipping box is its own stacking context whenever an effects wrapper holds it (`WRAPPED_IMAGE_BOX`, `src/app/components/SchemaRenderer.tsx`), and so is a field's inner shadow overlay when it holds an unblurred frame (`BoxOverlay`, the same file). That puts those layers back inside one that clips.
 
-The second is a ring that is never painted. Safari before 26 hands a filtered layer a paint rectangle already cut by its ancestors' clip, and skips a border whose inner edge contains that rectangle. An inner shadow is a blurred ring whose hole is the box. With no offset and no spread on a square-cornered box the hole contained the rectangle, so the ring was skipped and the shadow never showed: every canvas inner shadow without an offset. Such a hole is now 0.02 px smaller than the box (`FLUSH_HOLE_INSET_PX`, `src/lib/render/effects.ts`).
+The second is a ring that is never painted. An inner shadow is a blurred ring whose hole is the box, moved by the offset and shrunk by the spread. Safari before 26 hands a filtered layer a paint rectangle already cut by its ancestors' clip, and skips a border whose inner edge contains that rectangle. Along an axis where no offset moves the hole and no spread shrinks it, the hole's two edges sat exactly on the box's. With both axes like that the hole contained the whole of a square-cornered box, so the shadow never showed: every canvas inner shadow without an offset. With one axis like that, the same happened to a box the canvas cuts off along the other. On such an axis the hole's edges now sit 0.02 px inside the box, whatever its corners (`FLUSH_EDGE_INSET_PX`, `src/lib/render/effects.ts`).
 
 `SchemaRenderer.effects.test.tsx` and `effects.test.ts` hold that markup. They cannot show that Safari draws it right.
 
@@ -99,10 +99,11 @@ The second is a ring that is never painted. Safari before 26 hands a filtered la
 | `effects-matrix`, a canvas inner shadow    | 15.11 / 14.66 | 1.46 / 1.13  | 2.12 / 2.05                   |
 | `builder-roundtrip`, a canvas inner shadow | 13.62 / 15.39 | 0.49 / 2.27  | 0.73 / 1.99                   |
 
-Those numbers are this harness's compare on exports made by the system WebKit of a Mac on Safari 18.6 (2026-11-17 and 18), driven by a helper kept outside the repo. No committed fixture has a crop under a layer blur, or an unblurred inner shadow under a drop shadow or a blur. Those were seen in temporary fixtures, on a photo and on a rect shape, wrong before and right with the fix. A change to how a field is clipped, filtered or given effects needs that check again on a Safari before 26, or a look in one.
+Those numbers are this harness's compare on exports made by the system WebKit of a Mac on Safari 18.6 (2026-11-17 and 18), driven by a helper kept outside the repo. No committed fixture has a crop under a layer blur, an unblurred inner shadow under a drop shadow or a blur, or an inner shadow on a box the canvas cuts off. Those were seen in temporary fixtures, wrong before and right with the fix. A change to how a field is clipped, filtered or given effects needs that check again on a Safari before 26, or a look in one.
 
 Measured on 18.6 and not handled:
 
+- An inner shadow is still not drawn on a box that is cut off along both axes, when its hole reaches past what is left of the box on every side. A box that bleeds off all four edges of the canvas is one.
 - A flipped field's drop shadow falls on the side it would without the flip.
 - A field with opacity under 100 and a drop shadow is darker inside its box.
 - The lower lines of a multiline paragraph sit about a pixel off.

@@ -27,6 +27,9 @@ const HARD_INNER_SHADOW: FieldEffect = {
   color: DEFAULT_FILL_HEX,
 };
 
+/** The same shadow blurred: its frame carries a filter of its own. */
+const SOFT_INNER_SHADOW: FieldEffect = { ...HARD_INNER_SHADOW, blur: 16 };
+
 const photo = (over: Partial<TemplateField>): TemplateField => ({
   id: "f1",
   label: "Photo",
@@ -75,7 +78,7 @@ describe("an image field's clipping box under an effects wrapper", () => {
     expect(box.style.isolation).toBe("isolate");
   });
 
-  it("holds an unblurred inner shadow's frame inside the same stacking context", () => {
+  it("holds an unblurred inner shadow's frame inside the box's stacking context", () => {
     const { root, box } = renderPhoto(photo({ effects: [DROP_SHADOW, HARD_INNER_SHADOW] }));
     expect(root.style.filter).toContain("drop-shadow(");
     expect(box.style.isolation).toBe("isolate");
@@ -113,9 +116,10 @@ const rect = (over: Partial<TemplateField>): TemplateField => ({
 });
 
 // A rect shape carries its drop shadow or blur itself, so the same Safari
-// fault reaches the one positioned layer under it that has no filter of its
-// own: an inner shadow's frame with no blur. The overlay that clips the
-// frame is a stacking context, which keeps the frame's ring inside the shape.
+// fault reaches an inner shadow's frame with no blur: a positioned layer
+// under the filter with no filter of its own and a clip to receive from the
+// overlay. The overlay is a stacking context when it holds such a frame,
+// which keeps the frame's ring inside the shape.
 describe("the inner shadow overlay of a rect shape", () => {
   it("is a stacking context that clips, under the shape's own drop shadow", () => {
     const { container } = render(
@@ -128,7 +132,6 @@ describe("the inner shadow overlay of a rect shape", () => {
     const shape = container.firstElementChild as HTMLElement;
     expect(shape.style.filter).toContain("drop-shadow(");
     const overlay = shape.firstElementChild as HTMLElement;
-    expect(overlay.parentElement).toBe(shape);
     expect(overlay.style.overflow).toBe("hidden");
     expect(overlay.style.isolation).toBe("isolate");
     const frame = overlay.firstElementChild as HTMLElement;
@@ -153,17 +156,9 @@ describe("the inner shadow overlay of a rect shape", () => {
   it("keeps the markup it had when every frame is blurred", () => {
     // A blurred frame carries its own filter, and Safari clips a filtered
     // layer when it applies the filter.
-    const soft: FieldEffect = {
-      type: "innerShadow",
-      x: 0,
-      y: 6,
-      blur: 16,
-      spread: 6,
-      color: DEFAULT_FILL_HEX,
-    };
     const { container } = render(
       <FieldBoxContent
-        field={rect({ effects: [DROP_SHADOW, soft] })}
+        field={rect({ effects: [DROP_SHADOW, SOFT_INNER_SHADOW] })}
         value={undefined}
         brandKit={null}
       />,
@@ -172,5 +167,39 @@ describe("the inner shadow overlay of a rect shape", () => {
     expect(overlay.style.overflow).toBe("hidden");
     expect(overlay.style.isolation).toBe("");
     expect((overlay.firstElementChild as HTMLElement).style.filter).toContain("blur(");
+  });
+
+  it("is a stacking context when one frame of several has no blur", () => {
+    const { container } = render(
+      <FieldBoxContent
+        field={rect({ effects: [DROP_SHADOW, SOFT_INNER_SHADOW, HARD_INNER_SHADOW] })}
+        value={undefined}
+        brandKit={null}
+      />,
+    );
+    const overlay = container.firstElementChild!.firstElementChild as HTMLElement;
+    expect(overlay.children).toHaveLength(2);
+    expect(overlay.style.isolation).toBe("isolate");
+  });
+
+  it("keeps the markup it had when it holds only grain", () => {
+    const grain: FieldEffect = {
+      type: "noise",
+      color: DEFAULT_FILL_HEX,
+      size: 1,
+      density: 1,
+      seed: 1,
+    };
+    const { container } = render(
+      <FieldBoxContent
+        field={rect({ effects: [DROP_SHADOW, grain] })}
+        value={undefined}
+        brandKit={null}
+      />,
+    );
+    const overlay = container.firstElementChild!.firstElementChild as HTMLElement;
+    expect(overlay.children).toHaveLength(0);
+    expect(overlay.style.overflow).toBe("hidden");
+    expect(overlay.style.isolation).toBe("");
   });
 });

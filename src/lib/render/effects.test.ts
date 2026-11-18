@@ -89,9 +89,11 @@ describe("innerShadowFrames", () => {
     expect(frame.borderRadius).toBe("46px 46px 26px 26px");
   });
 
-  it("makes a blurred hole a hairline smaller than the box when nothing moves or shrinks it", () => {
-    // Safari before 26 never paints a ring whose hole is exactly the box, so
-    // a canvas inner shadow with no offset did not show there.
+  it("keeps a blurred hole a hairline inside the box on both axes when nothing moves or shrinks it", () => {
+    // In Safari before 26 a blurred ring is not painted when its hole
+    // contains everything the layer was asked to paint. A hole that is
+    // exactly the box does, so a canvas inner shadow with no offset did not
+    // show there.
     const flush = { type: "innerShadow", x: 0, y: 0, blur: 60, color: "#082A2366" } as const;
     const [frame] = innerShadowFrames([flush]);
     // ring = 60 + 4 = 64, and the frame stops 0.02 px short of it all round:
@@ -110,15 +112,46 @@ describe("innerShadowFrames", () => {
     expect(rounded).toMatchObject({ left: "-63.98px", borderRadius: "84px 84px 84px 84px" });
   });
 
-  it("leaves the hole where an offset or a spread already puts it off the box's edge", () => {
-    const moved = { type: "innerShadow", x: 0, y: 4, blur: 12, color: "#00000040" } as const;
-    // ring = 12 + 4 + 4 = 20, outer = 20: the hole is the box moved down 4.
-    expect(innerShadowFrames([moved])[0]).toMatchObject({
-      left: "-20px",
+  it("keeps the hairline on the one axis an offset leaves flush", () => {
+    // The builder's default inner shadow: moved down 4, so top and bottom are
+    // off the box's edges already, while left and right would sit on them. A
+    // box the canvas cuts off at the top lost this shadow in Safari before 26.
+    const down = { type: "innerShadow", x: 0, y: 4, blur: 12, color: "#00000040" } as const;
+    // ring = 12 + 4 + 4 = 20, outer = 20.
+    expect(innerShadowFrames([down])[0]).toMatchObject({
+      left: "-19.98px",
       top: "-16px",
-      width: "calc(100% + 40px)",
+      width: "calc(100% + 39.96px)",
       height: "calc(100% + 40px)",
+      border: "20px solid #00000040",
     });
+    // And the other way round, with a fractional offset.
+    const across = { type: "innerShadow", x: 0.5, y: 0, blur: 12, color: "#00000040" } as const;
+    // ring = ceil(12 + 0.5 + 4) = 17, outer = 17.
+    expect(innerShadowFrames([across])[0]).toMatchObject({
+      left: "-16.5px",
+      top: "-16.98px",
+      width: "calc(100% + 34px)",
+      height: "calc(100% + 33.96px)",
+    });
+  });
+
+  it("counts an offset under the hairline as none, and one at it as an offset", () => {
+    const under = { type: "innerShadow", x: 0.01, y: 3, blur: 12, color: "#00000040" } as const;
+    // ring = ceil(12 + 0.01 + 3 + 4) = 20: left = 0.01 - 20 + 0.02.
+    expect(innerShadowFrames([under])[0]).toMatchObject({
+      left: "-19.97px",
+      width: "calc(100% + 39.96px)",
+    });
+    const at = { type: "innerShadow", x: 0.02, y: 3, blur: 12, color: "#00000040" } as const;
+    // ring = ceil(12 + 0.02 + 3 + 4) = 20: left = 0.02 - 20, as it always was.
+    expect(innerShadowFrames([at])[0]).toMatchObject({
+      left: "-19.98px",
+      width: "calc(100% + 40px)",
+    });
+  });
+
+  it("leaves a hole that a spread shrinks, or an offset moves on both axes, exactly where it was", () => {
     const shrunk = {
       type: "innerShadow",
       x: 0,
@@ -132,6 +165,15 @@ describe("innerShadowFrames", () => {
       left: "-16px",
       top: "-16px",
       width: "calc(100% + 32px)",
+      height: "calc(100% + 32px)",
+    });
+    const moved = { type: "innerShadow", x: 3, y: 4, blur: 12, color: "#00000040" } as const;
+    // ring = 12 + 3 + 4 + 4 = 23, outer = 23.
+    expect(innerShadowFrames([moved])[0]).toMatchObject({
+      left: "-20px",
+      top: "-19px",
+      width: "calc(100% + 46px)",
+      height: "calc(100% + 46px)",
     });
   });
 
