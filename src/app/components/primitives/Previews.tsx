@@ -346,35 +346,41 @@ export function ResultCardSkeleton({ withSizes = true }: { withSizes?: boolean }
   );
 }
 
-export interface LookTileProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "name"> {
-  /** The look's name ("Moss"). */
+export interface VariationTileProps extends Omit<
+  React.ButtonHTMLAttributes<HTMLButtonElement>,
+  "name"
+> {
+  /** The variation's name ("Moss"). */
   name: React.ReactNode;
-  /** The template drawn in this look. */
+  /** The template drawn in this variation. */
   thumbnail: React.ReactNode;
   selected?: boolean;
   "data-demo-state"?: DemoStateAttr;
 }
 
-/** Look tile (Figma 104:996): one look in the template chat's picker.
+/** Variation Tile (Figma 2216:315): one variation in the template chat's
+ * picker.
  * Hover rings the thumbnail in border/strong, selected in text/strong, and
  * keyboard focus draws focus/ring on the same pixels. The caller gives it
  * its role (radio in the picker) and aria-checked. */
-export const LookTile = React.forwardRef<HTMLButtonElement, LookTileProps>(function LookTile(
-  { name, thumbnail, selected = false, className, type = "button", ...rest },
-  ref,
-) {
-  return (
-    <button
-      ref={ref}
-      type={type}
-      className={cx("ui-reset ui-look-tile", className)}
-      data-selected={selected || undefined}
-      {...rest}
-    >
-      <span className="ui-look-tile__ring">
-        <span className="ui-look-tile__thumb">{thumbnail}</span>
-      </span>
-      <span className="tu-label-s">{name}</span>
-    </button>
-  );
-});
+export const VariationTile = React.forwardRef<HTMLButtonElement, VariationTileProps>(
+  function VariationTile(
+    { name, thumbnail, selected = false, className, type = "button", ...rest },
+    ref,
+  ) {
+    return (
+      <button
+        ref={ref}
+        type={type}
+        className={cx("ui-reset ui-variation-tile", className)}
+        data-selected={selected || undefined}
+        {...rest}
+      >
+        <span className="ui-variation-tile__ring">
+          <span className="ui-variation-tile__thumb">{thumbnail}</span>
+        </span>
+        <span className="tu-label-s">{name}</span>
+      </button>
+    );
+  },
+);

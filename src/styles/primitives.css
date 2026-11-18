@@ -12,7 +12,7 @@
    properties start with --_ so they can never collide with one.
 
    The Product components that also live in primitives/ (the platform chip,
-   the result card, the look tile, the composer, the message bubble, the
+   the result card, the variation tile, the composer, the message bubble, the
    settings card, the stat and the option tile) keep their earlier rules,
    and the earlier names those rules read, until their own phase.
 
@@ -1908,8 +1908,8 @@ button.ui-detail-tag__value {
   padding-block: 1px; /* as drawn */
 }
 
-/* ── Look tile (104:996) ── */
-.ui-look-tile {
+/* ── Variation Tile (2216:315) ── */
+.ui-variation-tile {
   display: inline-flex;
   flex-direction: column;
   align-items: flex-start;
@@ -1917,33 +1917,33 @@ button.ui-detail-tag__value {
   width: 132px;
   color: var(--text-strong);
 }
-.ui-look-tile__ring {
+.ui-variation-tile__ring {
   box-sizing: border-box;
   display: block;
   width: 132px;
   padding: 2px; /* as drawn (104:918) */
   border-radius: var(--radius-control-md);
 }
-.ui-look-tile__thumb {
+.ui-variation-tile__thumb {
   display: block;
   width: 128px;
   height: 160px;
   overflow: hidden;
   border-radius: var(--radius-control);
 }
-.ui-look-tile:hover .ui-look-tile__ring,
-.ui-look-tile[data-demo-state="hover"] .ui-look-tile__ring {
+.ui-variation-tile:hover .ui-variation-tile__ring,
+.ui-variation-tile[data-demo-state="hover"] .ui-variation-tile__ring {
   box-shadow: 0 0 0 1px var(--border-strong);
 }
-.ui-look-tile[data-selected] .ui-look-tile__ring,
-.ui-look-tile[data-demo-state="selected"] .ui-look-tile__ring {
+.ui-variation-tile[data-selected] .ui-variation-tile__ring,
+.ui-variation-tile[data-demo-state="selected"] .ui-variation-tile__ring {
   box-shadow: 0 0 0 1px var(--text-strong);
 }
-.ui-look-tile:focus-visible {
+.ui-variation-tile:focus-visible {
   outline: none;
 }
-.ui-look-tile:focus-visible .ui-look-tile__ring,
-.ui-look-tile[data-demo-state="focus"] .ui-look-tile__ring {
+.ui-variation-tile:focus-visible .ui-variation-tile__ring,
+.ui-variation-tile[data-demo-state="focus"] .ui-variation-tile__ring {
   outline: 2px solid transparent;
   box-shadow: 0 0 0 var(--focus-width) var(--ring);
 }

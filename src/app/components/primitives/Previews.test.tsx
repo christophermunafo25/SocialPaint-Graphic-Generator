@@ -5,7 +5,7 @@ import React, { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { Modal, Progress, ProgressBar } from "./Containers";
 import {
-  LookTile,
+  VariationTile,
   PreviewOverlay,
   ResultCard,
   ResultCardArt,
@@ -118,11 +118,11 @@ describe("PreviewOverlay", () => {
   });
 });
 
-describe("LookTile", () => {
+describe("VariationTile", () => {
   it("takes the role and state its picker gives it", () => {
     render(
       <div role="radiogroup" aria-label="Look">
-        <LookTile name="Moss" thumbnail={<div />} selected role="radio" aria-checked />
+        <VariationTile name="Moss" thumbnail={<div />} selected role="radio" aria-checked />
       </div>,
     );
     expect(screen.getByRole("radio", { name: "Moss" }).dataset.selected).toBe("true");

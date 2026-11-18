@@ -11,7 +11,7 @@ import { TemplateThumbnail } from "../TemplateThumbnail";
 import {
   Button,
   Chip,
-  LookTile,
+  VariationTile,
   Progress,
   ResultCard,
   ResultCardArt,
@@ -208,7 +208,7 @@ export interface TemplateTurnHandlers {
   onRetry(turnId: string): void;
 }
 
-/** The Look picker card (13:7899): the draft in each look as Look tiles on
+/** The Look picker card (13:7899): the draft in each look as Variation Tiles on
  * a sunken well, then "Look" and the chosen look's name. A radio group;
  * the arrows move the choice. Switching is instant and never calls the
  * model. */
@@ -252,7 +252,7 @@ function LookCard({
         {looks.map((v) => {
           const on = v.id === selected;
           return (
-            <LookTile
+            <VariationTile
               key={v.id}
               ref={(el) => {
                 if (el) refs.current.set(v.id, el);

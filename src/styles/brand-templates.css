@@ -752,7 +752,7 @@
   gap: var(--space-xs);
 }
 
-/* The Looks card (13:7899): Look tiles centred on a 264 sunken well, then
+/* The Looks card (13:7899): Variation Tiles centred on a 264 sunken well, then
    "Look" and the chosen name. */
 .sp-tchat-looks {
   box-sizing: border-box;
@@ -777,7 +777,7 @@
   border-radius: var(--radius-media-plate);
   background: var(--surface-sunken);
 }
-.sp-tchat-looks__well .ui-look-tile {
+.sp-tchat-looks__well .ui-variation-tile {
   width: auto;
 }
 .sp-tchat-looks__thumb {
