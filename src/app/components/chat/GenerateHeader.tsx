@@ -1,6 +1,7 @@
 import React from "react";
 import { History, Plus } from "lucide-react";
 import { Button, PageHeader } from "../primitives";
+import { AREA_ICON } from "../areas";
 
 /** Generate's page header over a chat (new brand, 13:2985): "Generate" /
  * the chat's title, then History and New chat, both Neutral. "Generate" starts a
@@ -19,6 +20,7 @@ export const GenerateHeader = React.forwardRef<
   return (
     <PageHeader
       ref={ref}
+      icon={AREA_ICON.generate}
       currentId={titleId}
       crumbs={
         title

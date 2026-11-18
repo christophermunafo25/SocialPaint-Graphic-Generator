@@ -35,6 +35,7 @@ import {
 } from "../primitives";
 import { TemplateThumbnail } from "../TemplateThumbnail";
 import { BulkExportStage, type BulkExportStageHandle } from "./BulkExportStage";
+import { AREA_ICON } from "../areas";
 
 // Bulk fill: one published template, one spreadsheet, one graphic per row.
 //
@@ -82,7 +83,7 @@ export function BulkFillPage({ templateId }: { templateId: string }) {
 
   // Every state keeps the page's header row, so nothing jumps as the
   // template loads.
-  const header = <PageHeader title="Bulk fill" />;
+  const header = <PageHeader icon={AREA_ICON.brandTemplates} title="Bulk fill" />;
   if (templateState.status === "loading") {
     return (
       <Page header={header}>
@@ -297,7 +298,7 @@ function BulkFill({
   useEffect(() => () => abortRef.current?.abort(), []);
 
   return (
-    <Page header={<PageHeader title="Bulk fill" />}>
+    <Page header={<PageHeader icon={AREA_ICON.brandTemplates} title="Bulk fill" />}>
       <BackLink onClick={() => navigate({ name: "template", templateId: template.id })} />
 
       {/* The off-screen canvas is mounted for the whole visit, so the

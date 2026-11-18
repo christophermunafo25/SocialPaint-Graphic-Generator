@@ -11,6 +11,7 @@ import { TemplateFill } from "./TemplateFill";
 import { TemplateLinksDialog } from "./admin/TemplateLinksDialog";
 import { Page } from "./layout/Page";
 import { Button, PageHeader, Skeleton } from "./primitives";
+import { AREA_ICON } from "./areas";
 
 /** Member self-service flow. Loads the template through the authenticated
  * store, then hands it to the shared fill surface — the same component the
@@ -34,7 +35,15 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
         footer={false}
         header={
           <div className="ui-page-header">
-            <Skeleton width={220} height={14} />
+            <div className="ui-page-header__lead">
+              <AREA_ICON.brandTemplates
+                size={18}
+                strokeWidth={1.5}
+                className="ui-icon ui-page-header__icon"
+                aria-hidden
+              />
+              <Skeleton width={220} height={14} />
+            </div>
           </div>
         }
       >
@@ -93,6 +102,7 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
   // template chat from here.
   const header = (
     <PageHeader
+      icon={AREA_ICON.brandTemplates}
       crumbs={[
         { label: "Brand Templates", onClick: () => navigate({ name: "portal" }) },
         { label: template.name },

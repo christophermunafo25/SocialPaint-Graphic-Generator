@@ -78,6 +78,7 @@ import { useChatController } from "./useChatController";
 import { useDraftDownload } from "./useDraftDownload";
 import { useThreadPersistence } from "./useThreadPersistence";
 import { useThreadScroll } from "./useThreadScroll";
+import { AREA_ICON } from "../areas";
 
 /** The Start state's composer placeholder (PROMPT §7.9). */
 const START_PLACEHOLDER = "Describe the post. Add any dates, names, or links it needs.";
@@ -1097,7 +1098,12 @@ export function GenerateChat({
     return (
       <>
         {exportExtras}
-        <Page layout={{ className: "sp-chat-page", state: "start" }}>
+        <Page
+          layout={{ className: "sp-chat-page", state: "start" }}
+          // Start's header row (6023:3097): the Generate title. The greeting
+          // under it stays the page's one heading.
+          header={<PageHeader icon={AREA_ICON.generate} title="Generate" titleIsHeading={false} />}
+        >
           <div className="sp-gen-start">
             <div className="sp-gen-start__column" data-pending={startReady ? undefined : true}>
               <div className="sp-gen-start__lead">
@@ -1167,6 +1173,7 @@ export function GenerateChat({
     // its actions on the new look's Buttons.
     <PageHeader
       ref={headerRef}
+      icon={AREA_ICON.brandTemplates}
       currentId={titleId}
       crumbs={
         editView

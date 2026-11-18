@@ -38,6 +38,7 @@ import { useScrollFades } from "../layout/useScrollFades";
 import { ScrollFade } from "./ScrollFade";
 import { requestComposerFocus, takeHistoryFocus } from "./composerFocus";
 import { useThreadPreviews } from "./useThreadPreviews";
+import { AREA_ICON } from "../areas";
 
 /** The sentinel asks for the next page this far before it scrolls into
  * view (PROMPT §8.6), so the loading row is rarely seen at a reading pace. */
@@ -382,6 +383,7 @@ export function GenerateHistoryPage() {
       // last crumb is not.
       header={
         <PageHeader
+          icon={AREA_ICON.generate}
           crumbs={[{ label: "Generate", onClick: newChat }, { label: "History" }]}
           currentIsHeading={false}
           actions={

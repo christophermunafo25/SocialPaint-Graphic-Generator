@@ -1686,9 +1686,10 @@ button.ui-detail-tag__value {
   color: var(--text-primary);
 }
 
-/* ── Page header (4015:764): one row 36 tall. The title (Title/Page) or the
-   breadcrumb on the left; on the right a quiet status line, then the
-   page's actions 8 apart. ── */
+/* ── Page header (4015:764): one row 36 tall. The area's icon (18, on
+   text/secondary) then the title (Label/M on text/secondary) or the
+   breadcrumb, 8 apart, on the left; on the right a quiet status line, then
+   the page's actions 8 apart. ── */
 .ui-page-header {
   display: flex;
   align-items: center;
@@ -1697,9 +1698,29 @@ button.ui-detail-tag__value {
   min-height: var(--size-control-md);
   color: var(--text-primary);
 }
+.ui-page-header__lead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+}
+.ui-page-header__icon {
+  flex: none;
+  width: var(--size-icon-md);
+  height: var(--size-icon-md);
+  color: var(--text-secondary);
+}
 .ui-page-header__title {
   margin: 0;
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  /* Cap-trimmed: widen the clip box past the descenders without moving
+     the line. */
+  padding-block: 0.3em;
+  margin-block: -0.3em;
+  color: var(--text-secondary);
 }
 .ui-page-header__end {
   display: flex;

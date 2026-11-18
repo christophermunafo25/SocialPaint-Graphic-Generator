@@ -10,6 +10,7 @@ import { BrandOverview } from "./brand/BrandOverview";
 import { CATEGORY_TITLES } from "./brand/categories";
 import type { LogoSurface } from "./brand/kitOps";
 import { TOAST_MS, useBrandBindings, useBrandDraft } from "./brand/kitPlumbing";
+import { AREA_ICON } from "../areas";
 
 /** Brand Studio, in two steps: /brand-studio is an overview of category
  * cards, /brand-studio/<category> is that category's detail page, edited
@@ -39,7 +40,7 @@ export function BrandStudio({
         category ? (
           <BrandDetailHeader title={CATEGORY_TITLES[category]} brand={brand} />
         ) : (
-          <PageHeader title="Brand Studio" />
+          <PageHeader icon={AREA_ICON.brandStudio} title="Brand Studio" />
         )
       }
     >

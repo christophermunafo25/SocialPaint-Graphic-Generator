@@ -23,6 +23,7 @@ import { UsageSection } from "./settings/UsageSection";
 import { WorkspaceSection } from "./settings/WorkspaceSection";
 import { useLinkClick } from "./brand/useLinkClick";
 import { SettingsToastProvider } from "./settings/settingsToast";
+import { AREA_ICON } from "../areas";
 
 /** The rail's icons, as the Settings frames draw them (8:678). */
 const ICONS: Record<SettingsSection, LucideIcon> = {
@@ -70,7 +71,10 @@ export function SettingsAdmin({ section }: { section?: SettingsSection }) {
   }, [section, active.key, navigate]);
 
   return (
-    <Page layout={{ className: "sp-st-page" }} header={<PageHeader title="Settings & Admin" />}>
+    <Page
+      layout={{ className: "sp-st-page" }}
+      header={<PageHeader icon={AREA_ICON.settings} title="Settings & Admin" />}
+    >
       <SettingsToastProvider>
         <div className="sp-shell-settings">
           <nav className="sp-shell-settings__rail" aria-label="Settings sections">

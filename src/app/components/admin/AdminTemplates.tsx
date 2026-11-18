@@ -35,6 +35,7 @@ import {
   Toast,
   type RowMenuGroup,
 } from "../primitives";
+import { AREA_ICON } from "../areas";
 
 type StatusFilter = "all" | "published" | "draft";
 type SortKey = "recent" | "name" | "downloads";
@@ -327,6 +328,7 @@ export function AdminTemplates() {
 
   const header = (
     <PageHeader
+      icon={AREA_ICON.templateBuilder}
       title="Template Builder"
       actions={
         <>

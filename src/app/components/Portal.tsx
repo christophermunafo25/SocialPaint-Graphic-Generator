@@ -22,6 +22,7 @@ import { PlatformFilter } from "./templates/PlatformFilter";
 import { PlatformShelf } from "./templates/PlatformShelf";
 import { TemplateCard } from "./templates/TemplateCard";
 import { LibraryShelfSkeleton } from "./templates/TemplateSkeleton";
+import { AREA_ICON } from "./areas";
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
@@ -136,7 +137,7 @@ export function Portal() {
 
   if (templatesState.status === "error") {
     return (
-      <Page bleed header={<PageHeader title="Brand Templates" />}>
+      <Page bleed header={<PageHeader icon={AREA_ICON.brandTemplates} title="Brand Templates" />}>
         <ErrorState
           title="We couldn't load your templates."
           detail="Check your connection and try again."
@@ -147,7 +148,7 @@ export function Portal() {
   }
 
   return (
-    <Page bleed header={<PageHeader title="Brand Templates" />}>
+    <Page bleed header={<PageHeader icon={AREA_ICON.brandTemplates} title="Brand Templates" />}>
       <div className="sp-lib-filterbar">
         <LibrarySearch value={query} onChange={(q) => setState({ q }, true)} />
         {catalog.length > 0 && (
