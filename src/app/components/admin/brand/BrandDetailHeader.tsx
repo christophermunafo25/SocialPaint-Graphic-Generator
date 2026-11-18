@@ -3,6 +3,7 @@ import { Undo2 } from "lucide-react";
 import { routeToUrl, useRouter } from "../../../router";
 import { Button, PageHeader } from "../../primitives";
 import type { BrandDraft } from "./kitPlumbing";
+import { AREA_ICON } from "../../areas";
 
 const clockTime = (at: number) =>
   new Date(at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
@@ -19,6 +20,7 @@ export function BrandDetailHeader({ title, brand }: { title: string; brand: Bran
   const { saving, savedAt, canUndo, undo } = brand;
   return (
     <PageHeader
+      icon={AREA_ICON.brandStudio}
       crumbs={[
         {
           label: "Brand Studio",

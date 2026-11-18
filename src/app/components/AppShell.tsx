@@ -2,10 +2,11 @@ import React from "react";
 import { Sidebar } from "./Sidebar";
 import { ChromeProvider } from "./layout/ChromeContext";
 
-/** The app frame (every page frame of the new brand file; RULES.md section
- * 10): the Sidebar and Main on surface/page. At 1024 and wider the window
- * is the frame, 12 around and 12 between the two, and only Main's content
- * scrolls (layout/Page.tsx). Below 1024 the mobile bar sits on top and the
+/** The app frame (every product frame of the ElevenLabs file, e.g.
+ * 6010:2064; docs/design/elevenlabs/RULES.md section 10): the Sidebar and
+ * Main on surface/page. At 1024 and wider the window is the frame, the
+ * Sidebar flush against it with no inset (--layout-shell-inset), and only
+ * Main's content scrolls (layout/Page.tsx). Below 1024 the mobile bar sits on top and the
  * document scrolls. Tenant brand kits style the graphics, never this shell.
  *
  * Every child of `.sp-appshell` but `main` is the app's chrome: Generate's

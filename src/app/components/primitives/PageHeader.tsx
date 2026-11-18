@@ -1,6 +1,6 @@
 import React from "react";
 import { PRIVACY_URL, TERMS_URL } from "@/lib/legalLinks";
-import { cx } from "./cx";
+import { cx, type IconComponent } from "./cx";
 
 export interface Crumb {
   label: string;
@@ -83,6 +83,10 @@ export function Breadcrumb({
 }
 
 interface PageHeaderShared {
+  /** The area's icon, at 18 on text/secondary before the title or the
+   * trail, hidden from assistive tech. A page one level down takes its
+   * parent area's (areas.ts). */
+  icon?: IconComponent;
   /** The page's actions, on the right, 8 apart. */
   actions?: React.ReactNode;
   /** A quiet line before the actions, in Body/S (a detail page's save
@@ -94,14 +98,18 @@ interface PageHeaderShared {
 export type PageHeaderProps = PageHeaderShared &
   (
     | {
-        /** Title kind: the page's name, in Title/Page. */
+        /** Title kind: the page's name, in Label/M on text/secondary. */
         title: React.ReactNode;
+        /** False when the page sets its own heading under the header row
+         * (Generate Start's greeting), so the title is not a second h1. */
+        titleIsHeading?: boolean;
         crumbs?: undefined;
         currentId?: undefined;
         currentIsHeading?: undefined;
       }
     | {
         title?: undefined;
+        titleIsHeading?: undefined;
         /** Breadcrumb kind: the trail in place of a title. */
         crumbs: Crumb[];
         /** The page heading's id, for a region it names. */
@@ -111,20 +119,37 @@ export type PageHeaderProps = PageHeaderShared &
       }
   );
 
-/** Page header (Figma 4015:764): one row 36 tall, the title or the
- * breadcrumb on the left and the page's actions on the right. The title or
- * the breadcrumb's last crumb is the page's heading. */
+/** Page header (Figma 4015:764): one row 36 tall, in the frame's 64 header
+ * row. The area's icon leads, then the title or the breadcrumb, 8 apart;
+ * the page's actions sit on the right. The title or the breadcrumb's last
+ * crumb is the page's heading. */
 export const PageHeader = React.forwardRef<HTMLElement, PageHeaderProps>(function PageHeader(
-  { title, crumbs, currentId, currentIsHeading, actions, status, className },
+  {
+    icon: Icon,
+    title,
+    titleIsHeading = true,
+    crumbs,
+    currentId,
+    currentIsHeading,
+    actions,
+    status,
+    className,
+  },
   ref,
 ) {
+  const Title = titleIsHeading ? "h1" : "p";
   return (
     <header ref={ref} className={cx("ui-page-header", className)}>
-      {crumbs ? (
-        <Breadcrumb crumbs={crumbs} currentId={currentId} currentIsHeading={currentIsHeading} />
-      ) : (
-        <h1 className="t-title-page ui-page-header__title">{title}</h1>
-      )}
+      <div className="ui-page-header__lead">
+        {Icon && (
+          <Icon size={18} strokeWidth={1.5} className="ui-icon ui-page-header__icon" aria-hidden />
+        )}
+        {crumbs ? (
+          <Breadcrumb crumbs={crumbs} currentId={currentId} currentIsHeading={currentIsHeading} />
+        ) : (
+          <Title className="t-label-m ui-page-header__title">{title}</Title>
+        )}
+      </div>
       {(status || actions) && (
         <div className="ui-page-header__end">
           {status && (

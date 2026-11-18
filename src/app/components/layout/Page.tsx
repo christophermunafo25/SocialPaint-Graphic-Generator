@@ -13,9 +13,10 @@ import { useFrameKeys } from "./useFrameKeys";
  *   or footer (its frames draw none). */
 export type PageKind = "scroll" | "self" | "bare";
 
-/** Main, holding one page (the app frame's Main: 13:905 and every page
- * frame of the new brand file; RULES.md section 10). At 1024 and wider the
- * header row (36 tall) sits at the top, the content under it and the
+/** Main, holding one page (Brand Templates 6010:2066 and every product
+ * frame of the ElevenLabs file; RULES.md section 10). At 1024 and wider the
+ * header row (64 tall, a border/subtle hairline under it, the 36 Page
+ * Header centred in it) sits at the top, the content under it and the
  * footer links at the foot, each the full width of Main with a 32 gutter
  * inside, and the three scroll together inside the frame. Below 1024 the
  * document scrolls, the page keeps its earlier gutters (--page-pad) and

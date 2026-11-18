@@ -44,6 +44,9 @@ describe("Sidebar", () => {
     const toggle = screen.getByRole("button", { name: "Switch to dark mode" });
     const collapse = screen.getByRole("button", { name: "Collapse sidebar" });
     expect(toggle.parentElement).toBe(collapse.parentElement);
+    // Both are Outline Small, the bordered squares the file draws (2218:582).
+    expect(toggle.getAttribute("data-variant")).toBe("outline");
+    expect(collapse.getAttribute("data-variant")).toBe("outline");
     expect(screen.getByRole("button", { name: "SocialPaint home" })).toBeTruthy();
   });
 
@@ -51,17 +54,23 @@ describe("Sidebar", () => {
     render(<Sidebar />);
     expect(screen.getByText("Jo Doe")).toBeTruthy();
     expect(screen.getByText("jo.doe@example.com")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    const settings = screen.getByRole("button", { name: "Settings" });
+    expect(settings.getAttribute("data-variant")).toBe("outline");
+    fireEvent.click(settings);
     expect(navigate).toHaveBeenCalledWith({ name: "settings" });
   });
 
-  it("collapsed, draws Expand alone and makes the avatar the Settings button", () => {
+  it("collapsed, draws the mark as the home link above Expand and makes the avatar the Settings button", () => {
     collapsed = true;
     routeName = "settings";
     render(<Sidebar />);
-    expect(screen.getByRole("button", { name: "Expand sidebar" })).toBeTruthy();
+    const expand = screen.getByRole("button", { name: "Expand sidebar" });
+    expect(expand.getAttribute("data-variant")).toBe("ghost");
     expect(screen.queryByRole("button", { name: "Switch to dark mode" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "SocialPaint home" })).toBeNull();
+    const home = screen.getByRole("button", { name: "SocialPaint home" });
+    expect(home.compareDocumentPosition(expand) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    fireEvent.click(home);
+    expect(navigate).toHaveBeenCalledWith({ name: "adminTemplates" });
     expect(screen.queryByText("jo.doe@example.com")).toBeNull();
     const settings = screen.getByRole("button", { name: "Settings" });
     expect(settings.getAttribute("aria-current")).toBe("page");

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* Screenshot loop for the new look. See docs/design/new-look/README.md.
  *
- *   node scripts/new-look/shots.mjs capture <dir> [--only a,b] [--themes light,dark] [--widths 1440,1024,390] [--no-popups] [--collapsed] [--base URL]
+ *   node scripts/new-look/shots.mjs capture <dir> [--only a,b] [--themes light,dark] [--widths 1440,1024,390] [--no-popups] [--collapsed] [--height N] [--base URL]
  *   node scripts/new-look/shots.mjs compare <beforeDir> <afterDir> [outDir]
  *   node scripts/new-look/shots.mjs compare-image <a.png> <b.png> <out.png>
  *   node scripts/new-look/shots.mjs boards <dir> [--base URL]
@@ -33,7 +33,8 @@
  * the shot holds the whole page, the way a tall window shows it. A page that
  * scrolls itself (the Generate thread, History, the builder) keeps the
  * window's height. --collapsed starts every route with the sidebar
- * collapsed.
+ * collapsed. --height N holds the window at N tall and shoots only what it
+ * shows, the way a frame of the Figma file does (1053 for the shell gate).
  *
  * compare writes a heatmap per changed screen (changed pixels in magenta over
  * the dimmed new screen) and prints the share of pixels that moved. Both
@@ -366,7 +367,7 @@ async function newContext(
   width = 1440,
 ) {
   const context = await browser.newContext({
-    viewport: { width, height: width < 768 ? 844 : 900 },
+    viewport: { width, height: flags.height ? Number(flags.height) : width < 768 ? 844 : 900 },
   });
   if (publicLink) {
     await context.route("**/functions/v1/**", (route) =>
@@ -441,6 +442,7 @@ async function settle(page) {
  * preview cap themselves at a share of 100vh) are held first at what the
  * capture's own window gives them, so they don't grow with it. */
 async function growToFrame(page) {
+  if (flags.height) return;
   for (let pass = 0; pass < 4; pass++) {
     const hidden = await page.evaluate(() => {
       const el = document.querySelector("[data-frame-scroll]");
@@ -509,7 +511,7 @@ async function capture(dir) {
   const shoot = (page, file) =>
     page.screenshot({
       path: path.join(dir, file),
-      fullPage: true,
+      fullPage: !flags.height,
       animations: "disabled",
       caret: "hide",
     });

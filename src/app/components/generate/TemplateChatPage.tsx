@@ -8,7 +8,8 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { useAsync } from "@/lib/useAsync";
 import { useRouter } from "../../router";
 import { Page } from "../layout/Page";
-import { Button } from "../primitives";
+import { AREA_ICON } from "../areas";
+import { Button, PageHeader } from "../primitives";
 import { ChatLoading, ChatUnavailable } from "./ChatLoadStates";
 import { requestComposerFocus, requestHistoryFocus } from "./composerFocus";
 import { GenerateChat } from "./GeneratePage";
@@ -136,7 +137,16 @@ export function TemplateChatPage({
   }
   if (resolved.kind === "unavailable") {
     return (
-      <Page layout={{ className: "sp-chat-page", state: "start" }}>
+      <Page
+        layout={{ className: "sp-chat-page", state: "start" }}
+        // The trail alone, as Generate's unavailable chat has (ChatLoadStates).
+        header={
+          <PageHeader
+            icon={AREA_ICON.brandTemplates}
+            crumbs={[{ label: "Brand Templates", onClick: brandTemplates }]}
+          />
+        }
+      >
         <div className="sp-chat-start">
           <div className="sp-emptystate sp-tchat-gone" role="status">
             <p className="sp-emptystate__title">This template isn't available any more.</p>

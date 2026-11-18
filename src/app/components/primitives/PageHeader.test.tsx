@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { ChartColumn } from "lucide-react";
 import React from "react";
 import { describe, expect, it, vi } from "vitest";
 import { PRIVACY_URL, TERMS_URL } from "@/lib/legalLinks";
@@ -70,6 +71,36 @@ describe("PageHeader", () => {
     const undo = screen.getByRole("button", { name: "Undo" });
     // The status comes before the actions.
     expect(status.compareDocumentPosition(undo) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("leads with the area's icon, hidden from assistive tech, and sets the title in Label/M", () => {
+    const { container } = render(<PageHeader icon={ChartColumn} title="Insights & Analytics" />);
+    const lead = container.querySelector(".ui-page-header__lead")!;
+    const icon = lead.firstElementChild!;
+    expect(icon.tagName.toLowerCase()).toBe("svg");
+    expect(icon.getAttribute("aria-hidden")).toBe("true");
+    expect(icon.getAttribute("width")).toBe("18");
+    const heading = screen.getByRole("heading", { level: 1, name: "Insights & Analytics" });
+    expect(heading.classList.contains("t-label-m")).toBe(true);
+    expect(icon.nextElementSibling).toBe(heading);
+  });
+
+  it("puts the icon before the trail too", () => {
+    const { container } = render(
+      <PageHeader
+        icon={ChartColumn}
+        crumbs={[{ label: "Brand Studio", onClick: () => {} }, { label: "Colors" }]}
+      />,
+    );
+    const lead = container.querySelector(".ui-page-header__lead")!;
+    expect(lead.firstElementChild?.tagName.toLowerCase()).toBe("svg");
+    expect(lead.querySelector("nav[aria-label='Breadcrumb']")).not.toBeNull();
+  });
+
+  it("leaves the heading to the page when the title is not it", () => {
+    render(<PageHeader icon={ChartColumn} title="Generate" titleIsHeading={false} />);
+    expect(screen.queryByRole("heading")).toBeNull();
+    expect(screen.getByText("Generate").tagName.toLowerCase()).toBe("p");
   });
 
   it("has no trailing group when there is nothing to put in it", () => {

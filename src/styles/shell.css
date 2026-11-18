@@ -36,11 +36,13 @@
   }
 }
 
-/* ── The app frame (every page frame, e.g. 13:832) ──
-   At 1024 and wider the window is the frame: 12 around, the Sidebar, 12,
-   then Main, on surface/page. It stops above the local backend's banner,
-   and the document does not scroll: Main's content does. Below 1024 the
-   mobile bar sits on top and the document scrolls, as before. */
+/* ── The app frame (every product frame, e.g. Brand Templates 6010:2064) ──
+   At 1024 and wider the window is the frame: the Sidebar flush against
+   its top, left and bottom, then Main, on surface/page, with no inset
+   around or between them (--layout-shell-inset, 0). It stops above the
+   local backend's banner, and the document does not scroll: Main's
+   content does. Below 1024 the mobile bar sits on top and the document
+   scrolls, as before. */
 .sp-appshell {
   display: flex;
   flex-direction: column;
@@ -68,11 +70,11 @@
   }
   .sp-appshell {
     flex-direction: row;
-    gap: var(--space-12);
+    gap: var(--layout-shell-inset);
     box-sizing: border-box;
     height: calc(100dvh - var(--dev-banner-h, 0px));
     min-height: 0;
-    padding: var(--space-12);
+    padding: var(--layout-shell-inset);
   }
   .sp-main {
     display: flex;
@@ -81,9 +83,12 @@
   }
 }
 
-/* ── Main: one page (13:905; Brand Templates 2308:77) ──
-   The header row, then the content, each the full width of Main with a 32
-   gutter inside it. The 24 under the header row is the content's own top
+/* ── Main: one page (Brand Templates 6010:2066) ──
+   The header row (6029:12824), 64 tall with a border/subtle hairline under
+   it and the 36 Page Header centred in it, then the content, each the full
+   width of Main with a 32 gutter inside it. Main has nothing above it, and
+   the footer links keep 16 under them so they never meet the window's
+   edge. The 24 under the header row is the content's own top
    padding and the gutters its side padding, so a card's shadow is never
    cut by the content's edge. "scroll": the header row, the content and
    the footer links scroll inside the frame as one page, and nothing
@@ -146,10 +151,6 @@
     flex-direction: column;
     box-sizing: border-box;
     min-height: 0;
-    padding-block: var(--space-16);
-  }
-  .sp-frame[data-kind="bare"] {
-    padding: 0;
   }
   /* The frame is the scroller: the header row and the footer links move
      with the content. The body keeps its content's height, and on a short
@@ -161,15 +162,24 @@
     flex: 1 0 auto;
   }
   .sp-frame__head {
+    display: flex;
     flex: none;
+    align-items: center;
+    box-sizing: border-box;
+    min-height: calc(var(--space-64) + var(--stroke-hairline));
     padding-inline: var(--space-32);
+    border-bottom: var(--stroke-hairline) solid var(--border-subtle);
+  }
+  .sp-frame__head > * {
+    flex: 1 1 auto;
+    min-width: 0;
   }
   /* Footer Links (4015:750) at the foot of the page, 24 under the content.
      On a scrolling page that 24 is the content's own bottom padding. A
      page that scrolls its own region takes it as a margin. */
   .sp-frame__foot {
     flex: none;
-    padding-inline: var(--space-32);
+    padding: 0 var(--space-32) var(--space-16);
   }
   .sp-frame[data-kind="self"] .sp-frame__foot {
     margin-top: var(--space-24);
@@ -203,6 +213,12 @@
   }
   .sp-frame[data-kind="self"] .sp-frame__body > .sp-page {
     padding-bottom: 0;
+  }
+  /* A page that scrolls its own region and sets its own links (the fill
+     page, Generate beside its inline editor) keeps the 16 Main used to
+     hold under it, so its panel never meets the window's edge. */
+  .sp-frame[data-kind="self"]:not([data-foot]) .sp-frame__body > .sp-page {
+    padding-bottom: var(--space-16);
   }
   .sp-frame[data-kind="bare"] .sp-frame__body > .sp-page {
     padding: 0;
@@ -241,37 +257,24 @@
   color: var(--text-secondary);
 }
 
-/* ── The lockup and the mark (CJ's lockup files, 2026-11-16; 61:467) ──
-   The lockup is two files, the wordmark light for Dark and dark for Light,
-   and shows the one for the nearest [data-theme] by the rule the theme
-   toggle's glyph pair follows in primitives.css: each deeper level of
-   nesting wins by specificity, three levels deep (the app's html, the
-   Light gate, a theme the lockup names). The mark alone takes
-   text/secondary from the theme it sits in. */
+/* ── The lockup and the marks (CJ's update in the Sidebar, 6243:8529;
+   the collapsed rail's mark, 6112:44073; the earlier mark, 61:467) ──
+   The lockup and its mark are drawn on currentColor in logo/ink, so they
+   are near-black on Light and off-white on Dark, and a nested
+   [data-theme] (the Light gate) recomputes it. The earlier mark alone
+   takes text/secondary from the theme it sits in. */
 .sp-brand-lockup {
   display: block;
   flex: none;
+  color: var(--logo-ink);
 }
-.sp-brand-lockup > img {
+.sp-brand-lockup > svg,
+.sp-brand-lockup-mark {
   display: block;
 }
-[data-theme="light"] .sp-brand-lockup__on-dark,
-[data-theme="dark"] .sp-brand-lockup__on-light,
-[data-theme="dark"] [data-theme="light"] .sp-brand-lockup__on-dark,
-[data-theme="light"] [data-theme="dark"] .sp-brand-lockup__on-light {
-  display: none;
-}
-[data-theme="dark"] [data-theme="light"] .sp-brand-lockup__on-light,
-[data-theme="light"] [data-theme="dark"] .sp-brand-lockup__on-dark {
-  display: block;
-}
-[data-theme="dark"] [data-theme="light"] [data-theme="dark"] .sp-brand-lockup__on-light,
-[data-theme="light"] [data-theme="dark"] [data-theme="light"] .sp-brand-lockup__on-dark {
-  display: none;
-}
-[data-theme="dark"] [data-theme="light"] [data-theme="dark"] .sp-brand-lockup__on-dark,
-[data-theme="light"] [data-theme="dark"] [data-theme="light"] .sp-brand-lockup__on-light {
-  display: block;
+.sp-brand-lockup-mark {
+  flex: none;
+  color: var(--logo-ink);
 }
 .sp-brand-mark {
   display: block;
@@ -280,9 +283,11 @@
 }
 
 /* ── Sidebar (2218:679; open 2218:577, collapsed 2218:633) ──────────────────
-   The frame's first part: 320 wide, or a 76 rail, as tall as the frame, on
-   surface/raised with a border/raised hairline inside it, 20 around and 24
-   between its header, nav and account. */
+   The frame's first part, flush against the window: 300 wide plus a
+   border/raised hairline on its right (301 in all), or a 76 rail with its
+   edge, as tall as the frame, on surface/shell. Its other edges are
+   stroke/shell-edge (0), its corners radius/shell (0), and it casts no
+   shadow. 20 around and 24 between its header, nav and account. */
 .sp-shell-sidebar {
   display: flex;
   flex: none;
@@ -292,31 +297,32 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-24);
-  width: 320px;
+  width: calc(300px + var(--stroke-hairline));
   height: 100%;
   padding: var(--space-20);
-  border: var(--stroke-hairline) solid var(--border-raised);
-  border-radius: var(--radius-xl);
-  background: var(--surface-raised);
-  box-shadow: var(--elevation-1-raised);
+  border: var(--stroke-shell-edge) solid var(--border-raised);
+  border-right-width: var(--stroke-hairline);
+  border-radius: var(--radius-shell);
+  background: var(--surface-shell);
   color: var(--text-primary);
 }
 .sp-shell-sidebar[data-collapsed] .sp-shell-panel {
   width: 76px;
 }
-/* The header row (2218:578): the Logo 24 tall, then the theme toggle and
-   Collapse (Ghost Small) 8 apart. Collapsed (2218:634): Expand (Ghost
-   Medium) alone, centred. */
+/* The header row (2218:578), 28 tall: the lockup 24 tall, then the theme
+   toggle and Collapse (Outline Small) 8 apart. Collapsed (2218:634):
+   Expand (Ghost Medium) alone, centred, under the mark. */
 .sp-shell-panel__header {
   display: flex;
   flex: none;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-8);
-  height: var(--size-control-md);
+  height: var(--size-control-sm);
 }
 .sp-shell-sidebar[data-collapsed] .sp-shell-panel__header {
   justify-content: center;
+  height: var(--size-control-md);
 }
 .sp-shell-panel__utility {
   display: flex;
@@ -331,6 +337,15 @@
   background: transparent;
   color: inherit;
   cursor: pointer;
+}
+/* Collapsed, the mark (21.16 square in the rail) sits centred over
+   Expand, in a 24 hit area. */
+.sp-shell-logo--mark {
+  align-self: center;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--size-control-xs);
+  min-height: var(--size-control-xs);
 }
 
 /* The nav (2218:588): Nav Items 36 tall, 4 apart. It takes the free height
@@ -393,10 +408,11 @@
 }
 /* Selected while Settings shows, as the open row's Settings button is. The
    avatar fills the button, so no ground can show behind it: a border/strong
-   ring sits 2 out from it instead, under the focus ring's place. */
+   ring sits 2 out from it on the sidebar's ground instead, under the focus
+   ring's place. */
 .sp-shell-account__settings[aria-current="page"] {
   box-shadow:
-    0 0 0 var(--space-2) var(--surface-raised),
+    0 0 0 var(--space-2) var(--surface-shell),
     0 0 0 var(--space-4) var(--border-strong);
 }
 

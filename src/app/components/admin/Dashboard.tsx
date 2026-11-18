@@ -30,6 +30,7 @@ import { TopTemplatesCard } from "./insights/TopTemplatesCard";
 import { PublicLinksCard } from "./insights/PublicLinksCard";
 import { FilterMenu, type FilterOption } from "./insights/FilterMenu";
 import { downloadInsightsCsv } from "./insights/exportCsv";
+import { AREA_ICON } from "../areas";
 
 const RANGE_OPTION: Record<InsightsRange, string> = {
   "7d": "Last 7 days",
@@ -224,7 +225,7 @@ export function Dashboard(route: Omit<DashboardRoute, "name">) {
     return (
       <Page
         layout={{ className: "sp-in-page" }}
-        header={<PageHeader title="Insights & Analytics" />}
+        header={<PageHeader icon={AREA_ICON.insights} title="Insights & Analytics" />}
       >
         <ErrorState
           title="We couldn't load your usage data."
@@ -243,7 +244,7 @@ export function Dashboard(route: Omit<DashboardRoute, "name">) {
     return (
       <Page
         layout={{ className: "sp-in-page" }}
-        header={<PageHeader title="Insights & Analytics" />}
+        header={<PageHeader icon={AREA_ICON.insights} title="Insights & Analytics" />}
       >
         <section className="sp-in-card sp-in-empty" aria-labelledby="sp-in-empty-title">
           <h2 id="sp-in-empty-title" className="tu-title-card">
@@ -276,7 +277,9 @@ export function Dashboard(route: Omit<DashboardRoute, "name">) {
   return (
     <Page
       layout={{ className: "sp-in-page" }}
-      header={<PageHeader title="Insights & Analytics" actions={exportCsv} />}
+      header={
+        <PageHeader icon={AREA_ICON.insights} title="Insights & Analytics" actions={exportCsv} />
+      }
     >
       {filterRow}
       {insights && (
@@ -366,7 +369,10 @@ export function Dashboard(route: Omit<DashboardRoute, "name">) {
 function InsightsSkeleton() {
   const bone = (w: number | string, h: number) => <Skeleton width={w} height={h} />;
   return (
-    <Page layout={{ className: "sp-in-page" }} header={<PageHeader title="Insights & Analytics" />}>
+    <Page
+      layout={{ className: "sp-in-page" }}
+      header={<PageHeader icon={AREA_ICON.insights} title="Insights & Analytics" />}
+    >
       <div className="sp-in-content" aria-busy="true" aria-label="Loading Insights">
         <div className="sp-in-card sp-in-digest">
           {bone(220, 20)}
