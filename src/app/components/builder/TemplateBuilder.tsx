@@ -3718,6 +3718,7 @@ export function TemplateBuilder({
                               thumbnail={draft.backgroundUrl ? signedBackground.url : null}
                               fileName={backgroundFileName(draft.backgroundUrl)}
                               disabled={uploading}
+                              busy={uploading}
                               onClick={() => bgFileRef.current?.click()}
                               onDropFile={(file) => void onDropBackground([file])}
                             />
