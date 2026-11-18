@@ -144,7 +144,11 @@ px. A malformed entry is skipped at render time (`src/lib/render/effects.ts`).
 On an image the shadow and the blur are a filter on a wrapper around the box
 that clips the photo, so they follow the mask's shape. That box is its own
 stacking context: Safari before 26 draws a cropped photo whole under such a
-filter otherwise (`test/fidelity/README.md`).
+filter otherwise. For the same reason the overlay that clips an inner
+shadow's frame is a stacking context when the frame has no blur. And a
+blurred inner shadow with no offset and no spread has a hole 0.02 px smaller
+than the box, because Safari before 26 never paints a ring whose hole is
+exactly the box (`test/fidelity/README.md`).
 
 In the builder (brand-system Phase 2) every field has an Effects section and
 the empty-selection rail has one for the canvas (grain and inner shadow).
