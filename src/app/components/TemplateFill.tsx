@@ -146,15 +146,16 @@ export function TemplateFill({
   const [exporting, setExporting] = useState(false);
   /** A file exists: Download again, and Post to LinkedIn leads. */
   const [downloaded, setDownloaded] = useState(false);
-  const [toast, setToast] = useState<{ kind: ToastKind; detail?: string } | null>(null);
-  const toastTimer = useRef<number | undefined>(undefined);
+  // n tells a repeat of the same message from the last one, so the Toast
+  // restarts its time (PROMPT.md section 7.2).
+  const [toast, setToast] = useState<{ kind: ToastKind; detail?: string; n: number } | null>(null);
+  const lastToast = useRef<{ kind: ToastKind; detail?: string } | null>(null);
   const rendererRef = useRef<SchemaRendererHandle>(null);
   const downloadRef = useRef<HTMLButtonElement>(null);
   /** Text at its minimum size that still doesn't fit: said under the
    * graphic; shortening the entry is the fix. */
   const [layoutWarnings, setLayoutWarnings] = useState<string[]>([]);
 
-  useEffect(() => () => window.clearTimeout(toastTimer.current), []);
   // Download PNG gives way to Download again once a file exists: keep the
   // person's place by handing focus on to it.
   useEffect(() => {
@@ -164,13 +165,12 @@ export function TemplateFill({
   }, [downloaded]);
 
   const showToast = (kind: ToastKind, detail?: string) => {
-    window.clearTimeout(toastTimer.current);
-    setToast({ kind, detail });
-    toastTimer.current = window.setTimeout(
-      () => setToast(null),
-      kind === "error" || kind === "popup-blocked" ? 6000 : 4000,
-    );
+    setToast((prev) => ({ kind, detail, n: (prev?.n ?? 0) + 1 }));
   };
+  // The kind of the toast showing or leaving, so its region and its time
+  // hold while it eases out.
+  if (toast) lastToast.current = toast;
+  const toastKind = (toast ?? lastToast.current)?.kind;
 
   const setValue = (fieldKey: string, value: string) =>
     onValuesChange({ ...values, [fieldKey]: value });
@@ -257,11 +257,15 @@ export function TemplateFill({
 
   return (
     <>
-      {toast && (
-        <div className="sp-fill-toast" aria-live={toast.kind === "error" ? "assertive" : "polite"}>
-          <Toast message={toast.detail ?? TOAST_COPY[toast.kind]} />
-        </div>
-      )}
+      <div className="sp-fill-toast" aria-live={toastKind === "error" ? "assertive" : "polite"}>
+        <Toast
+          open={toast !== null}
+          message={toast ? (toast.detail ?? TOAST_COPY[toast.kind]) : undefined}
+          messageKey={toast?.n}
+          duration={toastKind === "error" || toastKind === "popup-blocked" ? 6000 : 4000}
+          onTimeout={() => setToast(null)}
+        />
+      </div>
 
       <div className="sp-fill" data-place={place}>
         {/* The stage (2322:931), with Terms and Privacy under it, here and

@@ -88,6 +88,12 @@ const ROUTES = [
   ["brand-templates-platform", "/templates?platform=instagram"],
   ["brand-templates-search", "/templates?q=launch"],
   ["template-fill", `/templates/${firstTemplate}`],
+  // The Public links dialog over the fill page (ElevenLabs 6010:2777).
+  [
+    "template-fill-links",
+    `/templates/${firstTemplate}`,
+    { act: (page) => page.getByRole("button", { name: "Public link", exact: true }).click() },
+  ],
   // The template chat is hidden (new brand Phase 4): its addresses open the
   // fill page, which "template-fill" already captures. Generate's editor
   // (the shared Details panel) is captured instead, opened from the result.
