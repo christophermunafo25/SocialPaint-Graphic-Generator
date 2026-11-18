@@ -1861,7 +1861,7 @@ button.ui-detail-tag__value {
   height: 340px; /* as drawn */
   padding: var(--space-16);
   border-radius: var(--radius-md);
-  background: var(--surface-field);
+  background: var(--surface-stage);
   container-type: size;
 }
 .ui-result-card__art {
@@ -1870,6 +1870,17 @@ button.ui-detail-tag__value {
   aspect-ratio: var(--fit-ratio);
   width: min(100cqw, 100cqh * var(--fit-ratio));
   overflow: hidden;
+}
+/* The art of a run that has just finished develops in from a 4px blur on
+   motion/duration/slow once it has decoded (PROMPT.md section 7.6). */
+.ui-result-card__stage[data-arrive] > * {
+  transition:
+    opacity var(--motion-duration-slow) var(--motion-easing-enter),
+    filter var(--motion-duration-slow) var(--motion-easing-enter);
+}
+.ui-result-card__stage[data-arrive="pending"] > * {
+  opacity: 0;
+  filter: blur(4px);
 }
 .ui-result-card__overscan {
   position: absolute;

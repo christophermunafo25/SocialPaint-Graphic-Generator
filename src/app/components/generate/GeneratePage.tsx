@@ -939,6 +939,7 @@ export function GenerateChat({
   const {
     download,
     busyId,
+    doneCount,
     error: downloadError,
     clearError: clearDownloadError,
     stage: downloadStage,
@@ -1320,6 +1321,10 @@ export function GenerateChat({
                         busyDraftId={
                           busyId && turn.drafts.some((d) => d.id === busyId) ? busyId : null
                         }
+                        downloadedCount={turn.drafts.reduce(
+                          (n, d) => n + (doneCount[d.id] ?? 0),
+                          0,
+                        )}
                         handlers={templateHandlers}
                       />
                     ) : (
@@ -1337,6 +1342,10 @@ export function GenerateChat({
                         busyDraftId={
                           busyId && turn.drafts.some((d) => d.id === busyId) ? busyId : null
                         }
+                        downloadedCount={turn.drafts.reduce(
+                          (n, d) => n + (doneCount[d.id] ?? 0),
+                          0,
+                        )}
                         pickedDraftId={draftPicks[turn.id]}
                         onPickDraft={pickDraft}
                         registerPreview={registerPreview}

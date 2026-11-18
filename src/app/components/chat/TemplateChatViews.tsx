@@ -329,16 +329,24 @@ export const TemplateTurn = memo(function TemplateTurn({
   photo,
   canRetry,
   busyDraftId,
+  downloadedCount,
   handlers,
 }: {
   turn: AssistantTurn;
   photo: ChatPhoto | null;
   canRetry: boolean;
   busyDraftId: string | null;
+  /** Finished downloads of this turn's drafts, for the card's check. */
+  downloadedCount?: number;
   handlers: TemplateTurnHandlers;
 }) {
   const statusId = useId();
   const running = isRunningTurn(turn);
+  // The card arrives (PROMPT.md section 7.6) only for a run this view saw
+  // finish: a revisit or a reload shows the art at once.
+  const sawRun = useRef(running);
+  if (running) sawRun.current = true;
+  const arrive = sawRun.current && !running;
   const draft = turn.drafts[0] as ChatDraft | undefined;
   const values = useMemo(() => (draft ? previewValues(draft, photo) : {}), [draft, photo]);
   const entries = useMemo(() => (draft ? fillInEntries(draft, values) : []), [draft, values]);
@@ -408,6 +416,8 @@ export const TemplateTurn = memo(function TemplateTurn({
             onEdit={schema ? () => handlers.onEditDraft(turn.id, draft.id) : undefined}
             editLabel={`Edit ${draftName(draft)}`}
             editRef={previewRef}
+            downloadedKey={downloadedCount}
+            arrive={arrive}
             caption={running ? "" : caption}
             downloadAll={
               schema

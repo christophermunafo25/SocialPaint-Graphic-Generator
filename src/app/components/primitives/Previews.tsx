@@ -106,6 +106,14 @@ export interface ResultCardProps {
   downloadLabel?: string;
   /** A download is being made: Download is busy and takes no click. */
   downloadBusy?: boolean;
+  /** The run that made this card has just finished: once its art has
+   * decoded it develops in from a blur (PROMPT.md section 7.6). A revisit,
+   * a reload and a size switch show the art at once. */
+  arrive?: boolean;
+  /** Changes each time one of the card's downloads finishes without a
+   * failure. Once nothing is busy, the Download that was pressed shows the
+   * drawn check for CONFIRM_MS (PROMPT.md section 7.3). */
+  downloadedKey?: number;
   /** The shown draft's caption, as written. */
   caption?: string;
   /** The card's own Download, for every draft ("Download both"). Primary
@@ -121,7 +129,7 @@ export interface ResultCardProps {
 /**
  * Result card (Figma 2216:287): one turn's posts in the chat, 12 in and 16
  * between its rows. The top row holds the size switch on the left, then
- * the size, Edit and Download (Ghost Small); the stage (340, surface/field)
+ * the size, Edit and Download (Ghost Small); the stage (340, surface/stage)
  * shows the draft the switch picks; then its caption in Body/M, and the
  * footer: Copy caption (Neutral) and the card's Download (Primary).
  *
@@ -144,6 +152,8 @@ export function ResultCard({
   onDownload,
   downloadLabel = "Download",
   downloadBusy = false,
+  downloadedKey,
+  arrive = false,
   caption = "",
   downloadAll,
   description,
@@ -157,6 +167,41 @@ export function ResultCard({
   // against other text for a frame.
   if (copied !== null && copied !== caption) setCopied(null);
   const shown = copied !== null;
+
+  // The arrival: the art waits, unseen, until its images and fonts are
+  // ready, then develops in. Only the first art the card shows arrives.
+  const stageRef = useRef<HTMLDivElement>(null);
+  const [arrival, setArrival] = useState<"pending" | "playing" | null>(arrive ? "pending" : null);
+  useEffect(() => {
+    if (arrival !== "pending") return;
+    let alive = true;
+    const stage = stageRef.current;
+    const images = stage ? [...stage.querySelectorAll("img")] : [];
+    void Promise.all([
+      document.fonts?.ready,
+      ...images.map((img) => img.decode().catch(() => undefined)),
+    ]).then(() => {
+      if (alive) setArrival("playing");
+    });
+    return () => {
+      alive = false;
+    };
+  }, [arrival]);
+
+  // The download check: which Download was pressed, and whether its check
+  // shows. It waits until nothing on the card is busy, so Download both
+  // confirms once, after its last file.
+  const pressed = useRef<"one" | "all">("all");
+  const [confirmed, setConfirmed] = useState<"one" | "all" | null>(null);
+  const seenKey = useRef(downloadedKey);
+  const anyBusy = downloadBusy || Boolean(downloadAll?.busy);
+  useEffect(() => {
+    if (downloadedKey === seenKey.current || anyBusy) return;
+    seenKey.current = downloadedKey;
+    setConfirmed(pressed.current);
+    const t = window.setTimeout(() => setConfirmed(null), CONFIRM_MS);
+    return () => window.clearTimeout(t);
+  }, [downloadedKey, anyBusy]);
   const hasCaption = caption.trim().length > 0;
   const showSizes = Boolean(sizes && sizes.length >= 2 && onSelect);
 
@@ -203,18 +248,21 @@ export function ResultCard({
             <IconButton
               variant="ghost"
               size="sm"
-              icon={Download}
+              icon={confirmed === "one" ? Check : Download}
               label={downloadLabel}
-              aria-busy={downloadBusy || undefined}
-              aria-disabled={downloadBusy || undefined}
+              busy={downloadBusy}
               onClick={() => {
-                if (!downloadBusy) onDownload();
+                if (downloadBusy) return;
+                pressed.current = "one";
+                onDownload();
               }}
             />
           )}
         </div>
       </div>
-      <div className="ui-result-card__stage">{art}</div>
+      <div ref={stageRef} className="ui-result-card__stage" data-arrive={arrival ?? undefined}>
+        {art}
+      </div>
       {/* `hidden`, not sr-only: Edit's aria-describedby still reads it, and
           browse mode does not hear it twice. */}
       {description && onEdit && (
@@ -233,12 +281,13 @@ export function ResultCard({
           {downloadAll && (
             <Button
               kind={downloadAll.lead === false ? "neutral" : "primary"}
-              icon={Download}
+              icon={confirmed === "all" ? Check : Download}
               className="ui-result-card__download"
-              aria-busy={downloadAll.busy || undefined}
-              aria-disabled={downloadAll.busy || undefined}
+              busy={downloadAll.busy}
               onClick={() => {
-                if (!downloadAll.busy) downloadAll.onClick();
+                if (downloadAll.busy) return;
+                pressed.current = "all";
+                downloadAll.onClick();
               }}
             >
               {downloadAll.label}
@@ -247,7 +296,7 @@ export function ResultCard({
         </div>
       )}
       <span className="sr-only" role="status">
-        {shown ? "Caption copied" : ""}
+        {shown ? "Caption copied" : confirmed ? "Downloaded" : ""}
       </span>
     </div>
   );

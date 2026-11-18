@@ -63,6 +63,9 @@ export interface DraftDownload {
   download(draft: ChatDraft, values: FieldValues): Promise<void>;
   /** The draft exporting now, for its card's busy state. */
   busyId: string | null;
+  /** How many exports of each draft have finished without a failure, so
+   * its card can confirm the download with a check (PROMPT.md 7.3). */
+  doneCount: Record<string, number>;
   /** The last failure's member-facing line (under TemplateFill's toast
    * title, EXPORT_ERROR_TITLE), until clearError or the next request. */
   error: string | null;
@@ -176,6 +179,7 @@ export function useDraftDownload(): DraftDownload {
   const { kit } = useBrand();
   const [queue, setQueue] = useState<DownloadQueue<ExportJob>>(emptyQueue);
   const [error, setError] = useState<string | null>(null);
+  const [doneCount, setDoneCount] = useState<Record<string, number>>({});
   const lastJobId = useRef(0);
   /** Every request not yet finished, by draft: what its caller awaits. The
    * source of truth for "already asked for", read synchronously, so two
@@ -212,6 +216,7 @@ export function useDraftDownload(): DraftDownload {
 
   const onSettled = useCallback((job: ExportJob, failure: string | null) => {
     if (failure !== null) setError(failure);
+    else setDoneCount((c) => ({ ...c, [job.draftId]: (c[job.draftId] ?? 0) + 1 }));
     requests.current.get(job.draftId)?.resolve();
     requests.current.delete(job.draftId);
     setQueue((q) => settle(q, job.id));
@@ -237,5 +242,5 @@ export function useDraftDownload(): DraftDownload {
       )
     : null;
 
-  return { download, busyId: busyDraftId(queue), error, clearError, stage };
+  return { download, busyId: busyDraftId(queue), doneCount, error, clearError, stage };
 }

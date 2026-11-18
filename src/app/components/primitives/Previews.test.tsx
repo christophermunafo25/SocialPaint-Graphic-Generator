@@ -177,3 +177,47 @@ describe("Progress", () => {
     expect(bar.getAttribute("aria-valuenow")).toBe("40");
   });
 });
+
+describe("ResultCard microinteractions", () => {
+  it("holds a just-finished card's art back until it can paint, then develops it in", async () => {
+    const { container } = render(
+      <ResultCard meta="1080 × 1080" art={<span>art</span>} arrive caption="" />,
+    );
+    const stage = container.querySelector(".ui-result-card__stage")!;
+    expect(stage.getAttribute("data-arrive")).toBe("pending");
+    await waitFor(() => expect(stage.getAttribute("data-arrive")).toBe("playing"));
+  });
+
+  it("shows a revisited card's art at once", () => {
+    const { container } = render(<ResultCard meta="1080 × 1080" art={<span>art</span>} />);
+    expect(container.querySelector(".ui-result-card__stage")?.hasAttribute("data-arrive")).toBe(
+      false,
+    );
+  });
+
+  it("confirms a finished download with the check, once nothing is busy", async () => {
+    const onDownloadAll = vi.fn();
+    function Card({ busy, done }: { busy: boolean; done: number }) {
+      return (
+        <ResultCard
+          meta="1080 × 1080"
+          art={<span>art</span>}
+          downloadedKey={done}
+          downloadAll={{ label: "Download both", onClick: onDownloadAll, busy }}
+        />
+      );
+    }
+    const { rerender } = render(<Card busy={false} done={0} />);
+    const button = screen.getByRole("button", { name: "Download both" });
+    await userEvent.click(button);
+    expect(onDownloadAll).toHaveBeenCalledTimes(1);
+    rerender(<Card busy done={0} />);
+    expect(button.getAttribute("aria-busy")).toBe("true");
+    // The first file is done while the second still exports: no check yet.
+    rerender(<Card busy done={1} />);
+    expect(screen.getByRole("status").textContent).toBe("");
+    rerender(<Card busy={false} done={2} />);
+    await waitFor(() => expect(screen.getByRole("status").textContent).toBe("Downloaded"));
+    expect(button.querySelector(".ui-icon-slot__check")).not.toBeNull();
+  });
+});
