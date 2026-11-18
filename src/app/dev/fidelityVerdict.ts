@@ -6,7 +6,7 @@
 export const DEFAULT_TOLERANCE = 0.25;
 
 /** The harness's engines. webkit18 is an older WebKit standing in for
- * Safari before 26 (scripts/fidelity/webkit18.mjs), run only on request. */
+ * Safari before 26 (scripts/fidelity/webkit18.mjs). */
 export type Engine = "chromium" | "firefox" | "webkit" | "webkit18";
 
 /** The parts of a fixture.json the runner decides with. */

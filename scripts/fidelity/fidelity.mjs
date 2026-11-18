@@ -2,7 +2,7 @@
 /**
  * The render fidelity harness (docs/brand-system/PHASE-0.md, Step 4).
  *
- *   node scripts/fidelity/fidelity.mjs run [--only a,b] [--engines chromium,firefox,webkit]
+ *   node scripts/fidelity/fidelity.mjs run [--only a,b] [--engines chromium,firefox,webkit,webkit18]
  *   node scripts/fidelity/fidelity.mjs bless <name> [--approved]
  *   node scripts/fidelity/fidelity.mjs baseline <name> --approved [--engines …]
  *   node scripts/fidelity/fidelity.mjs fonts [--only a,b] [--engines …]
@@ -42,13 +42,13 @@
  * the one command that reaches Google: it renders the fixtures into
  * test/fidelity/out/fonts, fetches the answers the recording lacks and
  * writes them. It never fetches an answer it already has, and when it has
- * rendered every fixture in every engine it drops the answers none of
- * them asked for.
+ * rendered every fixture in every engine it records for, it drops the
+ * answers none of them asked for.
  *
- * A fourth engine, webkit18, stands in for Safari before 26 (webkit18.mjs
- * says what it is and installs it). It runs only when --engines names it:
- * no fixture has a baseline for it, so its rows read "no baseline". It is
- * given WebKit's recorded fonts, and fonts refuses it.
+ * The fourth engine, webkit18, is an older WebKit that stands in for
+ * Safari before 26 (webkit18.mjs says what it is and installs it). It is
+ * given WebKit's recorded fonts, so fonts leaves it out, and refuses it
+ * when --engines names it.
  *
  * The harness starts its own Vite dev server on the local backend (the
  * shots.mjs approach; --port, default 4327) unless --base points at one.
@@ -77,10 +77,13 @@ const outDir = path.join(root, "test/fidelity/out");
 const fontsDir = path.join(root, "test/fidelity/google-fonts");
 
 const ENGINES = { chromium, firefox, webkit };
-/** What a run renders in unless --engines says otherwise. */
-const ALL_ENGINES = Object.keys(ENGINES);
+/** The engines the font recording holds answers for, which is what fonts
+ * renders in. */
+const RECORDED_ENGINES = Object.keys(ENGINES);
+/** What run and baseline render in unless --engines says otherwise. */
+const ALL_ENGINES = [...RECORDED_ENGINES, WEBKIT_18];
 /** An engine's Playwright browser type. webkit18 comes from an older
- * Playwright, loaded only when a run names it. */
+ * Playwright, loaded only when a run renders in it. */
 const browserType = (engine) => (engine === WEBKIT_18 ? webkit18() : ENGINES[engine]);
 /** Larger than the biggest canvas (1080 x 1920 stories), at 1x. */
 const VIEWPORT = { width: 2000, height: 2000 };
@@ -123,7 +126,7 @@ const list = (v) =>
         .map((s) => s.trim())
         .filter(Boolean)
     : null;
-const engines = list(flags.engines) ?? ALL_ENGINES;
+const engines = list(flags.engines) ?? (mode === "fonts" ? RECORDED_ENGINES : ALL_ENGINES);
 for (const e of engines) if (!ENGINES[e] && e !== WEBKIT_18) usage();
 
 // -------------------------------------------------------------- fixtures
@@ -600,7 +603,7 @@ async function recordFonts() {
     !crash &&
     sawEveryRequest({
       everyFixture: !only,
-      everyEngine: ALL_ENGINES.every((e) => engines.includes(e)),
+      everyEngine: RECORDED_ENGINES.every((e) => engines.includes(e)),
       outcomes: outcomes.map((o) => o.outcome),
     });
   const saved = await fonts.save({ prune });

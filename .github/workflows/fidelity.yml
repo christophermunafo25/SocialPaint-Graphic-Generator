@@ -1,8 +1,8 @@
 # Render fidelity (docs/brand-system/PHASE-0.md, Step 6): every fixture in
 # test/fidelity/fixtures rendered through the real export path in Chromium,
-# Firefox and WebKit and compared with its golden. Fails when a fixture gets
-# worse than its approved baseline, errors, or changes size. Kept out of
-# `npm run verify` so verify stays fast; see docs/CI.md.
+# Firefox, WebKit and an older WebKit, and compared with its golden. Fails
+# when a fixture gets worse than its approved baseline, errors, or changes
+# size. Kept out of `npm run verify` so verify stays fast; see docs/CI.md.
 name: Fidelity
 
 on:
@@ -29,9 +29,9 @@ jobs:
     # The baselines were recorded on macOS. Text rasterizes differently on
     # Linux, so a Linux runner would report glyph edges as regressions.
     runs-on: macos-latest
-    # 20 minutes for the gate, as before, and 8 for the two WebKit 18.5
-    # steps after it, so they cannot run a passing gate out of time.
-    timeout-minutes: 28
+    # It was 20 with three engines, when the job took 5 to 10 minutes. The
+    # fourth adds about 2.
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v5
 
@@ -46,54 +46,18 @@ jobs:
       - name: Browser engines
         run: npx playwright install --with-deps chromium firefox webkit
 
+      # The fourth engine: an older WebKit that draws as Safari before 26
+      # does. It has an install of its own, because the old Playwright's
+      # stalls under Node 26 (scripts/fidelity/webkit18.mjs). The limit
+      # keeps a download that hangs from using up the job.
+      - name: WebKit 18.5
+        timeout-minutes: 3
+        run: node scripts/fidelity/webkit18.mjs install
+
       # Google's fonts come from the recording in test/fidelity/google-fonts,
       # so the run asks Google for nothing.
       - name: Render and compare
         run: node scripts/fidelity/fidelity.mjs run
-
-      # An older WebKit that draws as Safari before 26 does
-      # (scripts/fidelity/webkit18.mjs). No fixture has a baseline for it,
-      # so the two steps below report and fail nothing. They come after the
-      # gate, each has a limit of its own, and a failure in either shows as
-      # a warning on the run.
-      - name: WebKit 18.5
-        if: ${{ !cancelled() }}
-        continue-on-error: true
-        timeout-minutes: 3
-        run: |
-          node scripts/fidelity/webkit18.mjs install || {
-            echo "::warning title=WebKit 18.5::The install failed, so the webkit18 report has nothing to render in."
-            exit 1
-          }
-
-      # The harness fails a row with no baseline under CI, which is why CI
-      # is emptied here. Every run writes report.json, so the gate's is set
-      # aside and put back, and this run's is kept as report-webkit18.json.
-      - name: Render and compare in WebKit 18.5 (reports only)
-        if: ${{ !cancelled() }}
-        continue-on-error: true
-        timeout-minutes: 5
-        env:
-          CI: ""
-        run: |
-          out=test/fidelity/out
-          if [ -f "$out/report.json" ]; then mv "$out/report.json" "$out/report-gate.json"; fi
-          status=0
-          node scripts/fidelity/fidelity.mjs run --engines webkit18 || status=$?
-          if [ -f "$out/report.json" ]; then mv "$out/report.json" "$out/report-webkit18.json"; fi
-          if [ -f "$out/report-gate.json" ]; then mv "$out/report-gate.json" "$out/report.json"; fi
-          if [ "$status" -ne 0 ]; then
-            echo "::warning title=WebKit 18.5::The webkit18 run exited $status. It reports only. Read this step's log."
-          fi
-          exit "$status"
-
-      # The step above can be stopped, at its limit or by a cancel, with the
-      # gate's report still set aside. This puts it back whatever happened.
-      - name: Put the gate's report back
-        if: always()
-        run: |
-          out=test/fidelity/out
-          if [ -f "$out/report-gate.json" ]; then mv "$out/report-gate.json" "$out/report.json"; fi
 
       - name: Upload renders, heatmaps and report
         if: always()
