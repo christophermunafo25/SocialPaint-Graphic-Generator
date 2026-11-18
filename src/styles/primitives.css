@@ -1,9 +1,10 @@
 /* ==========================================================================
-   Primitives: one component per component on the Components page
-   (4012:1193) of the Figma file "Master UX UI New Brand (Copy)", with its
-   states. The React side is src/app/components/primitives/. Values were read
-   from the file for docs/design/new-brand/PHASE-2.md, and states follow
-   docs/design/new-brand/RULES.md section 6.
+   Primitives: one component per core component on the six type pages
+   (Actions 6218:2 to Containers 6222:834) of the Figma file "Master UX-UI
+   New Brand Eleven Labs Inspired" (dQ8bQq3V7Bue5pvFrI2g9X), with its states
+   and microinteractions. The React side is src/app/components/primitives/.
+   Values were read from the file for docs/design/elevenlabs/PHASE-E1.md,
+   and states follow docs/design/elevenlabs/RULES.md section 6.
 
    The rules for those components read semantic tokens, the Scale tokens, the
    elevation composites and the .t-* classes from tokens.css. Nothing here

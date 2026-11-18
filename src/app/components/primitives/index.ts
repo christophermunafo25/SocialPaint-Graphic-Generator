@@ -1,6 +1,7 @@
-// The primitives: one per component on the Components page (4012:1193) of
-// the Figma file "Master UX UI New Brand (Copy)", built in the new-brand
-// program's Phase 2 (docs/design/new-brand/PHASE-2.md). Styles live in
+// The primitives: one per core component on the six component type pages of
+// the Figma file "Master UX-UI New Brand Eleven Labs Inspired", built in the
+// new-brand program's Phase 2 and moved onto that file in the ElevenLabs
+// program's Phase E1 (docs/design/elevenlabs/PHASE-E1.md). Styles live in
 // src/styles/primitives.css.
 export * from "./Button";
 export * from "./IconButton";

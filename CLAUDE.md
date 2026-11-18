@@ -20,7 +20,7 @@ A multi-tenant brand template platform. Admins build locked graphic templates, m
 ## Rules
 
 - No hex literals in TSX, no off-scale spacing, and no emoji anywhere, including comments and copy.
-- Platform UI follows `docs/design/new-look/RULES.md`.
+- Platform UI follows `docs/design/elevenlabs/RULES.md`.
 - Copy is sentence case and second person, with no exclamation points, no em dashes, and no helper lines explaining how the UI works.
 - Migrations are additive. Add the next number and never edit a committed migration (a hook blocks it).
 - Every model call is a forced tool call whose result is validated before use.
@@ -29,7 +29,7 @@ A multi-tenant brand template platform. Admins build locked graphic templates, m
 
 Programs live in `docs/`, each with a plan, rules, and one prompt per phase:
 
-- `docs/design/new-look/`: the platform UI from the Master UX-UI Figma file.
+- `docs/design/elevenlabs/`: the platform UI from the Figma file "Master UX-UI New Brand Eleven Labs Inspired". It builds on `docs/design/new-brand/` and `docs/design/new-look/`, the programs before it.
 - `docs/brand-system/`: Brand Studio as a complete graphic design system, and generation that works like a senior designer on the brand team.
 
 For each phase, plan in plan mode first, then build in steps, committing after each step with `npm run verify` green, and stop at every gate the prompt names. Report anything outside the phase's scope instead of changing it. Before opening the pull request, run the `phase-reviewer` subagent, and the `fidelity-checker` subagent when the phase touches rendering, export, import or template types.

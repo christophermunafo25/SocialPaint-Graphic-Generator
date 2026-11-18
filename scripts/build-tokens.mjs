@@ -65,7 +65,7 @@ const cssVarOfScale = (name, owner) => {
 
 // Figma holds the public family names. The app registers its chrome faces
 // under private names so a tenant's font can never collide with them
-// (docs/design/new-brand/RULES.md section 5), so the font tokens are written
+// (docs/design/elevenlabs/RULES.md section 5), so the font tokens are written
 // as these stacks. A family that is not here fails the build.
 const FAMILY_STACK = {
   "Inter Tight": '"Inter Tight Platform", system-ui, -apple-system, sans-serif',
