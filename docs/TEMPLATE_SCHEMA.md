@@ -39,6 +39,14 @@ Fixed elements:
   from the inspector). Full canvas editing, styling, z-order, and clipboard
   behavior still apply. A leftover `{tag}` referencing a fixed text element
   merges to its `staticValue`. `select` fields can't be static.
+- Text has one copy, and the builder's Team fills in switch (`fixedPatch` in
+  `src/app/components/builder/fieldOps.ts`, shared with the bulk toggle)
+  carries all of it across: turning the switch off makes the `placeholder`
+  the `staticValue`, and turning it on makes the `staticValue` the
+  `placeholder`. The canvas shows the same words either way and never falls
+  back to the label. An import that opens a layer to members
+  (`makeMemberField` in `supabase/functions/_shared/frameIntent.ts`) follows
+  the same rule, so the designer's whole copy is the placeholder.
 
 Types:
 

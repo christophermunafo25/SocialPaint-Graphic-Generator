@@ -688,11 +688,17 @@ export function textFieldFromPaste(
  * switch and the builder's bulk toggle share, so a field comes out the same
  * whichever way the admin flipped it.
  *
+ * Text has one copy, and the switch carries all of it across, so the canvas
+ * shows the same words either way: a member field's placeholder becomes the
+ * fixed content, and the fixed content becomes the placeholder. A fixed
+ * field with no content paints its label, so dropping the copy here would
+ * put the field's name on the graphic.
+ *
  * On: the member-input keys go (requiredness, optional, placeholder, max
  * chars). Off: the designed content survives as the member-facing preview.
- * Images keep their artwork (the renderer falls back to it); text keeps its
- * copy as the placeholder when it has none. */
+ * Images keep their artwork (the renderer falls back to it). */
 export function fixedPatch(field: TemplateField, fixed: boolean): Partial<TemplateField> {
+  const isText = field.type === "text" || field.type === "multiline";
   if (fixed) {
     return {
       static: true,
@@ -700,9 +706,9 @@ export function fixedPatch(field: TemplateField, fixed: boolean): Partial<Templa
       optional: undefined,
       placeholder: undefined,
       maxLength: undefined,
+      ...(isText && field.placeholder ? { staticValue: field.placeholder } : {}),
     };
   }
-  const isText = field.type === "text" || field.type === "multiline";
   return {
     static: undefined,
     staticValue: field.type === "image" ? field.staticValue : undefined,
@@ -712,9 +718,7 @@ export function fixedPatch(field: TemplateField, fixed: boolean): Partial<Templa
     // drew. Keyed on the sizing, not the import's node id, which a save
     // doesn't keep.
     ...(isText && !field.textSizing ? { textSizing: "shrink" as const } : {}),
-    ...(field.type !== "image" && !field.placeholder && field.staticValue
-      ? { placeholder: field.staticValue.slice(0, 80) }
-      : {}),
+    ...(isText && field.staticValue ? { placeholder: field.staticValue } : {}),
   };
 }
 
