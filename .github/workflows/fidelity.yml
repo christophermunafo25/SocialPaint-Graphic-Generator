@@ -44,10 +44,31 @@ jobs:
       - name: Browser engines
         run: npx playwright install --with-deps chromium firefox webkit
 
+      # An older WebKit that draws as Safari before 26 does
+      # (scripts/fidelity/webkit18.mjs). It reports only, below, so a
+      # failed install fails nothing either.
+      - name: WebKit 18.5
+        continue-on-error: true
+        run: node scripts/fidelity/webkit18.mjs install
+
       # Google's fonts come from the recording in test/fidelity/google-fonts,
       # so the run asks Google for nothing.
       - name: Render and compare
         run: node scripts/fidelity/fidelity.mjs run
+
+      # No fixture has a webkit18 baseline, so this step reports and never
+      # fails the job. The harness fails a row with no baseline under CI,
+      # which is why CI is emptied here. The run writes its own report.json,
+      # so the one above is kept beside it for the upload.
+      - name: Render and compare in WebKit 18.5 (reports only)
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 8
+        env:
+          CI: ""
+        run: |
+          cp test/fidelity/out/report.json test/fidelity/out/report-default-engines.json || true
+          node scripts/fidelity/fidelity.mjs run --engines webkit18
 
       - name: Upload renders, heatmaps and report
         if: always()

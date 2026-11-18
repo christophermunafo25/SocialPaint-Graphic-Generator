@@ -32,7 +32,7 @@ test/fidelity/
 | `variantId`    | The colourway to render                                                                                                                                                                                                                                                     |
 | `emptyFields`  | `"placeholder"` (default), `"hideOptional"` or `"chat"`                                                                                                                                                                                                                     |
 | `unsupported`  | Ingredients the schema can't express today, each with its reason                                                                                                                                                                                                            |
-| `baseline`     | `{ chromium?, firefox?, webkit? }`: changed share in percent, recorded only with CJ's approval                                                                                                                                                                              |
+| `baseline`     | `{ chromium?, firefox?, webkit?, webkit18? }`: changed share in percent, recorded only with CJ's approval                                                                                                                                                                   |
 | `blurBaseline` | The same for the blurred share (after a 4px blur of both images), recorded only with CJ's approval                                                                                                                                                                          |
 | `goldenFrom`   | Compare with another fixture's `golden.png`: the same Figma frame rebuilt a second way                                                                                                                                                                                      |
 | `tolerance`    | Points a run may exceed its baseline by (default 0.25)                                                                                                                                                                                                                      |
@@ -83,7 +83,7 @@ The rows do not cover an image field's alpha mask. A mask is a CSS image, which 
 
 ## The WebKit rows are not Safari before 26
 
-The harness's WebKit is the build Playwright ships, 26.6 today. Safari 18 and older paint some things differently, on screen and in the export, and no row here can catch that.
+The harness's WebKit is the build Playwright ships, 26.6 today. Safari 18 and older paint some things differently, on screen and in the export, and no row of a default run can catch that. `webkit18`, below, is an older WebKit that does, and runs only when asked for.
 
 Two differences are handled in the renderer. Both come from how Safari before 26 clips what it paints under a filter. Safari 26 has neither, and WebKit bug 219520 is the change that removed them.
 
@@ -99,7 +99,28 @@ The second is a ring that is never painted. An inner shadow is a blurred ring wh
 | `effects-matrix`, a canvas inner shadow    | 15.11 / 14.66 | 1.46 / 1.13  | 2.12 / 2.05                   |
 | `builder-roundtrip`, a canvas inner shadow | 13.62 / 15.39 | 0.49 / 2.27  | 0.73 / 1.99                   |
 
-Those numbers are this harness's compare on exports made by the system WebKit of a Mac on Safari 18.6 (2026-11-17 and 18), driven by a helper kept outside the repo. No committed fixture has a crop under a layer blur, an unblurred inner shadow under a drop shadow or a blur, or an inner shadow on a box the canvas cuts off. Those were seen in temporary fixtures, wrong before and right with the fix. A change to how a field is clipped, filtered or given effects needs that check again on a Safari before 26, or a look in one.
+Those numbers are this harness's compare on exports made by the system WebKit of a Mac on Safari 18.6 (2026-11-17 and 18), driven by a helper kept outside the repo. No committed fixture has a crop under a layer blur, an unblurred inner shadow under a drop shadow or a blur, or an inner shadow on a box the canvas cuts off. Those were seen in temporary fixtures, wrong before and right with the fix. A change to how a field is clipped, filtered or given effects needs that check again: `--engines webkit18` for what the fixtures hold, and a Safari before 26 for the rest.
+
+### webkit18, a WebKit from before the change
+
+`--engines webkit18` renders in the WebKit that Playwright 1.53.0 shipped: build 2182, which calls itself 18.5 and is dated 3 June 2025, four weeks before bug 219520 was fixed. It has both differences above. `scripts/fidelity/webkit18.mjs` says how it is driven, and installs it:
+
+```bash
+node scripts/fidelity/webkit18.mjs install
+node scripts/fidelity/fidelity.mjs run --engines webkit18
+```
+
+It is not Safari, and it draws like it. On 2026-11-18, 21 of the 24 fixtures came out of it pixel for pixel as they came out of Safari 18.6's own engine. The other three differ in the grain on an ellipse (`effects-matrix`, 0.62% of the picture), in the grain on an icon (`icons-matrix`, 0.01%), and by one level in 123 pixels of `crop-matrix`'s photos. Three renders of each fixture, and a fourth under `taskpolicy -b`, were byte for byte the same.
+
+Before the two fixes it read three rows 11 to 14 points worse, and the other 21 as it reads them now:
+
+| In webkit18, changed / blurred | Before the fixes | With them   |
+| ------------------------------ | ---------------- | ----------- |
+| `crop-matrix`                  | 12.78 / 12.81    | 1.87 / 0.00 |
+| `effects-matrix`               | 14.50 / 14.66    | 0.85 / 1.13 |
+| `builder-roundtrip`            | 13.62 / 15.39    | 0.49 / 2.27 |
+
+No fixture has a `webkit18` baseline, so its rows read `no baseline`, a default run leaves the engine out, and nothing fails on it. It is given WebKit's recorded fonts: its page asks Google for the same stylesheets, and with WebKit's answers it drew every fixture's text as Safari 18.6 drew it from Google itself. `fonts` refuses it.
 
 Measured on 18.6 and not handled:
 

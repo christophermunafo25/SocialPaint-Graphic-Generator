@@ -26,6 +26,12 @@ fails when a fixture gets worse than its approved baseline. The renders,
 heatmaps and `report.json` upload as the `fidelity-out` artifact on every
 run, pass or fail.
 
+The job also installs an older WebKit (`node scripts/fidelity/webkit18.mjs
+install`) and renders every fixture in it in a step of its own, with
+`--engines webkit18`. That engine stands in for Safari before 26
+(`test/fidelity/README.md`). No fixture has a baseline for it, so the step
+reports its numbers and never fails the job.
+
 It is kept out of `npm run verify` on purpose: it starts a dev server and
 three browsers, and takes about a minute, while verify stays fast. Run it
 locally before a pull request that touches those paths. It runs on macOS

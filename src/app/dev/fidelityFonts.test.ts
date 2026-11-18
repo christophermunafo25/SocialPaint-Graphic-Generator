@@ -10,6 +10,7 @@ import {
   isPinnedFontUrl,
   outcomeWithFonts,
   recordable,
+  recordingEngine,
   recordingToSave,
   replayable,
   requestKey,
@@ -43,6 +44,18 @@ describe("requestKey", () => {
   it("joins the method and the address", () => {
     expect(requestKey("get", CSS)).toBe(`GET ${CSS}`);
     expect(requestKey("HEAD", CSS)).toBe(`HEAD ${CSS}`);
+  });
+});
+
+describe("recordingEngine", () => {
+  it("answers each engine from its own part of the recording", () => {
+    expect(recordingEngine("chromium")).toBe("chromium");
+    expect(recordingEngine("firefox")).toBe("firefox");
+    expect(recordingEngine("webkit")).toBe("webkit");
+  });
+
+  it("answers webkit18 from WebKit's", () => {
+    expect(recordingEngine("webkit18")).toBe("webkit");
   });
 });
 
@@ -282,6 +295,12 @@ describe("test/fidelity/google-fonts", () => {
 
   it("is in the order the runner writes it", () => {
     expect(JSON.stringify(recording)).toBe(JSON.stringify(inOrder(recording)));
+  });
+
+  // webkit18 is answered from WebKit's part (recordingEngine), so a part
+  // of its own would be read by nothing.
+  it("holds answers for the three recorded engines and no other", () => {
+    expect(Object.keys(recording).sort()).toEqual([...engines]);
   });
 
   // Every fixture's page loads the platform stylesheet, so each Google

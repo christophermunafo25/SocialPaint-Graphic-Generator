@@ -8,6 +8,7 @@ description: Run the render fidelity harness, add a fixture, or read its results
 Commands, from the repo root:
 
 - `node scripts/fidelity/fidelity.mjs run [--only a,b] [--engines chromium,firefox,webkit]`
+- `node scripts/fidelity/fidelity.mjs run --engines webkit18`: the same in an older WebKit that draws as Safari 18 does (`test/fidelity/README.md`). Install it once with `node scripts/fidelity/webkit18.mjs install`. Its rows have no baseline, and a default run leaves it out.
 - `node scripts/fidelity/fidelity.mjs bless <name>`: for starter fixtures, today's Chromium render becomes the golden.
 - `node scripts/fidelity/fidelity.mjs baseline <name>`: records the current changed percentages as the fixture's baseline. Only with CJ's approval.
 - `node scripts/fidelity/fidelity.mjs fonts`: records Google's answers to the font requests the recording in `test/fidelity/google-fonts` lacks. Run it when a row errors because a Google font request is not in the recording, then commit that folder.

@@ -22,6 +22,16 @@ export interface RecordedAnswer {
  * because Google answers each browser its own way. */
 export type FontRecording = Partial<Record<Engine, Record<string, RecordedAnswer>>>;
 
+/** The engine whose recorded answers an engine is given: its own, except
+ * for webkit18 (scripts/fidelity/webkit18.mjs), which has none and takes
+ * WebKit's. Its page asks Google for the same stylesheets, so the answers
+ * name the same files, and a request WebKit never made fails its row like
+ * any other the recording lacks. Given those answers it drew every fixture's
+ * text as Safari 18.6 drew it from Google itself (2026-11-18). */
+export function recordingEngine(engine: Engine): Engine {
+  return engine === "webkit18" ? "webkit" : engine;
+}
+
 /** True for a request the recording answers. Anything else (the dev
  * server, a fixture's images) is not the recording's to answer. */
 export function isPinnedFontUrl(url: string): boolean {
