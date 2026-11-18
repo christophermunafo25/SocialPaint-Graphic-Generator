@@ -297,9 +297,10 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 }
 
 /* ── Input (2207:263) and Text area (2207:298) ───────────────────────────────
-   On surface/field at radius/sm, with no edge at rest. Hover adds a hairline
-   edge and an invalid value the error edge; both are drawn inside the box, so
-   the text never shifts. Focus is the global ring. Small is 28 with Body/S;
+   On surface/field at radius/sm under a border/field hairline. Hover moves
+   the hairline to border/field-hover and an invalid value to the error edge;
+   every edge is drawn inside the box, so the text never shifts. Disabled has
+   no edge. Focus is the global ring. Small is 28 with Body/S;
    Medium 36 and Large 44 with Body/M.
 
    An input's and a text area's type is set here from the style's variables,
@@ -365,9 +366,19 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 .ui-input__control:disabled::placeholder {
   color: var(--text-disabled);
 }
+.ui-input,
+.ui-select,
+.ui-upload {
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-field);
+}
 .ui-input:not(:disabled):hover,
 .ui-input[data-demo-state="hover"] {
-  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-strong);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-field-hover);
+}
+.ui-input:disabled,
+.ui-select:disabled,
+.ui-upload:disabled {
+  box-shadow: none;
 }
 .ui-input[aria-invalid="true"]:not(:disabled),
 .ui-input--box:has(.ui-input__control[aria-invalid="true"]) {
@@ -427,12 +438,12 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   inset: calc(-1 * var(--space-4));
 }
 
-/* ── Field (4015:628): the label row, 6 over one control, and the error 6
+/* ── Field (4015:628): the label row, 12 over one control, and the error 12
    under it. The row's text is trimmed, so the row is as tall as its capitals. ── */
 .ui-field {
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: var(--space-12);
 }
 .ui-field__row {
   display: flex;
@@ -494,8 +505,9 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 }
 
 /* ── Upload (2211:278): the photo field's control. One button, 56 tall on
-   surface/field at radius/md; hover and a file dragged over it add the
-   hairline edge, and the keyboard ring sits around the row. ── */
+   surface/field at radius/md under the field's hairline; hover and a file
+   dragged over it darken the hairline, and the keyboard ring sits around the
+   row. The empty tile sits on surface/soft. ── */
 .ui-upload {
   display: flex;
   align-items: center;
@@ -511,11 +523,11 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   text-align: left;
 }
 .ui-upload[data-value="filled"] {
-  padding-right: var(--space-12);
+  padding-right: var(--space-16);
 }
 .ui-upload:not(:disabled):hover,
 .ui-upload[data-demo-state="hover"] {
-  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-strong);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-field-hover);
 }
 .ui-upload[aria-invalid="true"]:not(:disabled) {
   box-shadow: inset 0 0 0 var(--stroke-hairline) var(--feedback-error);
@@ -528,7 +540,11 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   width: 40px; /* as drawn (2211:278) */
   height: 40px;
   border-radius: var(--radius-xs);
+  background: var(--surface-soft);
   color: var(--text-secondary);
+}
+.ui-upload:disabled .ui-upload__tile {
+  background: transparent;
 }
 .ui-upload__thumb {
   flex: none;
@@ -562,8 +578,8 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 }
 
 /* ── Select (2207:410): the Input's box at each size, with the chevron on
-   text/secondary. Hover adds the hairline edge. Open keeps it and shows the
-   ring, as drawn, while focus is in the list. ── */
+   text/secondary. Hover darkens the hairline to border/field-hover. Open
+   draws border/strong and the ring, as drawn, while focus is in the list. ── */
 .ui-select {
   display: inline-flex;
   align-items: center;
@@ -593,7 +609,9 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   width: auto;
 }
 .ui-select:not(:disabled):hover,
-.ui-select[data-demo-state="hover"],
+.ui-select[data-demo-state="hover"] {
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-field-hover);
+}
 .ui-select[aria-expanded="true"],
 .ui-select[data-demo-state="open"] {
   box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-strong);
