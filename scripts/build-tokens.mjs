@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /* Builds src/styles/tokens.css from design/tokens/master.tokens.json.
  *
- * The JSON is exported from the Figma file "Master UX UI New Brand (Copy)"
- * (1dYWgFH2V8i9Jez2ylI3ky), which is the source of truth for the platform's
+ * The JSON is exported from the Figma file "Master UX-UI New Brand Eleven Labs
+ * Inspired" (dQ8bQq3V7Bue5pvFrI2g9X), which is the source of truth for the platform's
  * tokens. Never edit tokens.css by hand: change Figma, re-export the JSON,
  * then run `npm run tokens`. `npm run tokens:check` fails when tokens.css is
  * out of date with the JSON, or when another stylesheet in src/styles
@@ -89,7 +89,7 @@ for (const [, p] of Object.entries(tokens.primitives))
 // Scale: the unit comes from the token's type and its name. A name that
 // matches no rule fails the build, so a new group in Figma is a decision
 // here and never a silent guess.
-const LENGTH = /^--(space|radius|size|type-size)-|^--stroke-|^--focus-offset$/;
+const LENGTH = /^--(space|radius|size|type-size|layout)-|^--stroke-|^--focus-offset$/;
 const scaleValue = (name, s) => {
   if (s.type === "STRING") {
     if (/^--font-/.test(s.css)) {

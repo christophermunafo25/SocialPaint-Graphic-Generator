@@ -1,9 +1,9 @@
 {
-  "$description": "SocialPaint design tokens exported from the Figma file \"Master UX UI New Brand (Copy)\" (1dYWgFH2V8i9Jez2ylI3ky). This file is the source for src/styles/tokens.css. Do not edit values here by hand: change the Figma variables or styles, re-export, then run `npm run tokens`.",
+  "$description": "SocialPaint design tokens exported from the Figma file \"Master UX-UI New Brand Eleven Labs Inspired\" (dQ8bQq3V7Bue5pvFrI2g9X). This file is the source for src/styles/tokens.css. Do not edit values here by hand: change the Figma variables or styles, re-export, then run `npm run tokens`.",
   "source": {
-    "figmaFile": "1dYWgFH2V8i9Jez2ylI3ky",
-    "name": "Master UX UI New Brand (Copy)",
-    "exported": "2026-11-14"
+    "figmaFile": "dQ8bQq3V7Bue5pvFrI2g9X",
+    "name": "Master UX-UI New Brand Eleven Labs Inspired",
+    "exported": "2026-11-17"
   },
   "primitives": {
     "neutral/0": {
@@ -22,45 +22,9 @@
       "css": "--neutral-200",
       "value": "#ECECEC"
     },
-    "neutral/300": {
-      "css": "--neutral-300",
-      "value": "#D1D1D1"
-    },
-    "neutral/400": {
-      "css": "--neutral-400",
-      "value": "#A0A0A0"
-    },
-    "neutral/600": {
-      "css": "--neutral-600",
-      "value": "#636363"
-    },
-    "neutral/700": {
-      "css": "--neutral-700",
-      "value": "#232425"
-    },
-    "neutral/800": {
-      "css": "--neutral-800",
-      "value": "#171817"
-    },
     "neutral/900": {
       "css": "--neutral-900",
       "value": "#0B0B0C"
-    },
-    "alpha/ink-5": {
-      "css": "--alpha-ink-5",
-      "value": "#0B0B0C0D"
-    },
-    "alpha/ink-8": {
-      "css": "--alpha-ink-8",
-      "value": "#0B0B0C14"
-    },
-    "alpha/ink-12": {
-      "css": "--alpha-ink-12",
-      "value": "#0B0B0C1F"
-    },
-    "alpha/ink-16": {
-      "css": "--alpha-ink-16",
-      "value": "#0B0B0C29"
     },
     "alpha/ink-45": {
       "css": "--alpha-ink-45",
@@ -74,53 +38,17 @@
       "css": "--alpha-ink-72",
       "value": "#0B0B0CB8"
     },
-    "alpha/white-6": {
-      "css": "--alpha-white-6",
-      "value": "#FFFFFF0F"
-    },
-    "alpha/white-10": {
-      "css": "--alpha-white-10",
-      "value": "#FFFFFF1A"
-    },
-    "alpha/white-16": {
-      "css": "--alpha-white-16",
-      "value": "#FFFFFF29"
-    },
-    "alpha/white-20": {
-      "css": "--alpha-white-20",
-      "value": "#FFFFFF33"
-    },
     "alpha/white-45": {
       "css": "--alpha-white-45",
       "value": "#FFFFFF73"
-    },
-    "alpha/black-5": {
-      "css": "--alpha-black-5",
-      "value": "#0000000D"
     },
     "alpha/black-10": {
       "css": "--alpha-black-10",
       "value": "#0000001A"
     },
-    "alpha/black-15": {
-      "css": "--alpha-black-15",
-      "value": "#00000026"
-    },
     "alpha/black-30": {
       "css": "--alpha-black-30",
       "value": "#0000004D"
-    },
-    "alpha/slime-10": {
-      "css": "--alpha-slime-10",
-      "value": "#2BFFA31A"
-    },
-    "alpha/slime-30": {
-      "css": "--alpha-slime-30",
-      "value": "#2BFFA34D"
-    },
-    "alpha/slime-60": {
-      "css": "--alpha-slime-60",
-      "value": "#2BFFA399"
     },
     "alpha/transparent": {
       "css": "--alpha-transparent",
@@ -130,25 +58,9 @@
       "css": "--green-slime",
       "value": "#2BFFA3"
     },
-    "green/slime-hover": {
-      "css": "--green-slime-hover",
-      "value": "#28EB97"
-    },
-    "green/slime-pressed": {
-      "css": "--green-slime-pressed",
-      "value": "#26D88B"
-    },
     "green/deep-moss": {
       "css": "--green-deep-moss",
       "value": "#123D34"
-    },
-    "green/deep-moss-hover": {
-      "css": "--green-deep-moss-hover",
-      "value": "#254D44"
-    },
-    "green/deep-moss-pressed": {
-      "css": "--green-deep-moss-pressed",
-      "value": "#385C55"
     },
     "green/lime": {
       "css": "--green-lime",
@@ -218,17 +130,9 @@
       "css": "--red-50",
       "value": "#FFEBEB"
     },
-    "red/200": {
-      "css": "--red-200",
-      "value": "#FEB7B6"
-    },
     "red/300": {
       "css": "--red-300",
       "value": "#FF9594"
-    },
-    "red/400": {
-      "css": "--red-400",
-      "value": "#FE6766"
     },
     "red/600": {
       "css": "--red-600",
@@ -265,63 +169,135 @@
     "amber/950": {
       "css": "--amber-950",
       "value": "#33260A"
+    },
+    "gray/0": {
+      "css": "--gray-0",
+      "value": "#FFFFFF"
+    },
+    "gray/50": {
+      "css": "--gray-50",
+      "value": "#FAFAFA"
+    },
+    "gray/100": {
+      "css": "--gray-100",
+      "value": "#F5F5F5"
+    },
+    "gray/150": {
+      "css": "--gray-150",
+      "value": "#EFEFEF"
+    },
+    "gray/200": {
+      "css": "--gray-200",
+      "value": "#E8E8E8"
+    },
+    "gray/400": {
+      "css": "--gray-400",
+      "value": "#A3A3A3"
+    },
+    "gray/600": {
+      "css": "--gray-600",
+      "value": "#6B6B6B"
+    },
+    "gray/700": {
+      "css": "--gray-700",
+      "value": "#333333"
+    },
+    "gray/800": {
+      "css": "--gray-800",
+      "value": "#262626"
+    },
+    "gray/900": {
+      "css": "--gray-900",
+      "value": "#0F0F0F"
+    },
+    "gray/300": {
+      "css": "--gray-300",
+      "value": "#D4D4D4"
+    },
+    "gray/750": {
+      "css": "--gray-750",
+      "value": "#2A2A2A"
+    },
+    "gray/850": {
+      "css": "--gray-850",
+      "value": "#1F1F1F"
+    },
+    "gray/870": {
+      "css": "--gray-870",
+      "value": "#1A1A1A"
+    },
+    "gray/880": {
+      "css": "--gray-880",
+      "value": "#161616"
+    },
+    "gray/890": {
+      "css": "--gray-890",
+      "value": "#121212"
+    },
+    "gray/950": {
+      "css": "--gray-950",
+      "value": "#0A0A0A"
+    },
+    "neutral/850": {
+      "css": "--neutral-850",
+      "value": "#1C1F1E"
     }
   },
   "color": {
     "surface/page": {
       "css": "--surface-page",
-      "light": "neutral/50",
-      "dark": "neutral/900",
+      "light": "gray/0",
+      "dark": "gray/950",
       "resolved": {
-        "light": "#F9F9F8",
-        "dark": "#0B0B0C"
+        "light": "#FFFFFF",
+        "dark": "#0A0A0A"
       },
       "scopes": ["FRAME_FILL", "SHAPE_FILL"],
       "description": "The app background behind every panel."
     },
     "surface/raised": {
       "css": "--surface-raised",
-      "light": "neutral/0",
-      "dark": "neutral/800",
+      "light": "gray/0",
+      "dark": "gray/880",
       "resolved": {
         "light": "#FFFFFF",
-        "dark": "#171817"
+        "dark": "#161616"
       },
       "scopes": ["FRAME_FILL", "SHAPE_FILL"],
-      "description": "Cards, panels, menus and dialogs."
+      "description": "Panels, menus, popovers and dialogs. Matches the page in Light, so the edge comes from border/raised."
     },
     "surface/sunken": {
       "css": "--surface-sunken",
-      "light": "neutral/200",
-      "dark": "neutral/700",
+      "light": "gray/150",
+      "dark": "gray/850",
       "resolved": {
-        "light": "#ECECEC",
-        "dark": "#232425"
+        "light": "#EFEFEF",
+        "dark": "#1F1F1F"
       },
       "scopes": ["FRAME_FILL", "SHAPE_FILL"],
       "description": "Wells inside a raised surface, like the canvas or a sent message."
     },
     "surface/field": {
       "css": "--surface-field",
-      "light": "neutral/100",
-      "dark": "alpha/white-10",
+      "light": "gray/0",
+      "dark": "gray/950",
       "resolved": {
-        "light": "#F1F1EF",
-        "dark": "#FFFFFF1A"
+        "light": "#FFFFFF",
+        "dark": "#0A0A0A"
       },
       "scopes": ["FRAME_FILL", "SHAPE_FILL"],
-      "description": "Inputs, selects and upload fields."
+      "description": "Inputs, selects, text areas and upload fields."
     },
     "surface/inverse": {
       "css": "--surface-inverse",
-      "light": "neutral/900",
-      "dark": "neutral/0",
+      "light": "gray/900",
+      "dark": "gray/50",
       "resolved": {
-        "light": "#0B0B0C",
-        "dark": "#FFFFFF"
+        "light": "#0F0F0F",
+        "dark": "#FAFAFA"
       },
       "scopes": ["FRAME_FILL", "SHAPE_FILL"],
-      "description": "Tooltips on images and other inverted chips."
+      "description": "The selected Chip and Platform Chip, and other inverted fills."
     },
     "surface/overlay": {
       "css": "--surface-overlay",
@@ -332,7 +308,7 @@
         "dark": "#0B0B0CB8"
       },
       "scopes": ["FRAME_FILL", "SHAPE_FILL"],
-      "description": "Labels that sit on top of a graphic."
+      "description": "Tags and labels that sit on an image or graphic. Dark in both themes."
     },
     "surface/scrim": {
       "css": "--surface-scrim",
@@ -347,88 +323,88 @@
     },
     "surface/skeleton": {
       "css": "--surface-skeleton",
-      "light": "alpha/ink-8",
-      "dark": "alpha/white-10",
+      "light": "gray/150",
+      "dark": "gray/850",
       "resolved": {
-        "light": "#0B0B0C14",
-        "dark": "#FFFFFF1A"
+        "light": "#EFEFEF",
+        "dark": "#1F1F1F"
       },
       "scopes": ["FRAME_FILL", "SHAPE_FILL"],
-      "description": "Loading placeholders."
+      "description": "Skeleton loaders while content loads."
     },
     "text/primary": {
       "css": "--text-primary",
-      "light": "neutral/900",
-      "dark": "neutral/100",
+      "light": "gray/900",
+      "dark": "gray/50",
       "resolved": {
-        "light": "#0B0B0C",
-        "dark": "#F1F1EF"
+        "light": "#0F0F0F",
+        "dark": "#FAFAFA"
       },
       "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
       "description": "Default text and icons."
     },
     "text/secondary": {
       "css": "--text-secondary",
-      "light": "neutral/600",
-      "dark": "neutral/400",
+      "light": "gray/600",
+      "dark": "gray/400",
       "resolved": {
-        "light": "#636363",
-        "dark": "#A0A0A0"
+        "light": "#6B6B6B",
+        "dark": "#A3A3A3"
       },
       "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
       "description": "Supporting text, placeholders and quiet icons."
     },
     "text/disabled": {
       "css": "--text-disabled",
-      "light": "neutral/400",
-      "dark": "neutral/600",
+      "light": "gray/400",
+      "dark": "gray/600",
       "resolved": {
-        "light": "#A0A0A0",
-        "dark": "#636363"
+        "light": "#A3A3A3",
+        "dark": "#6B6B6B"
       },
       "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
       "description": "Text and icons on disabled controls."
     },
     "text/inverse": {
       "css": "--text-inverse",
-      "light": "neutral/0",
-      "dark": "neutral/900",
+      "light": "gray/0",
+      "dark": "gray/900",
       "resolved": {
         "light": "#FFFFFF",
-        "dark": "#0B0B0C"
+        "dark": "#0F0F0F"
       },
       "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
-      "description": "Text on surface/inverse."
+      "description": "Text and icons on surface/inverse."
     },
     "text/on-color": {
       "css": "--text-on-color",
-      "light": "neutral/0",
-      "dark": "neutral/0",
+      "light": "gray/0",
+      "dark": "gray/0",
       "resolved": {
         "light": "#FFFFFF",
         "dark": "#FFFFFF"
       },
       "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
-      "description": "Text on overlays that stay dark in both themes."
+      "description": "Text and icons on surface/overlay and other fills that stay dark in both themes."
     },
     "border/subtle": {
       "css": "--border-subtle",
-      "light": "alpha/ink-8",
-      "dark": "alpha/white-10",
+      "light": "gray/150",
+      "dark": "gray/850",
       "resolved": {
-        "light": "#0B0B0C14",
-        "dark": "#FFFFFF1A"
+        "light": "#EFEFEF",
+        "dark": "#1F1F1F"
       },
       "scopes": ["STROKE_COLOR"],
       "description": "Dividers and quiet outlines."
     },
     "border/strong": {
       "css": "--border-strong",
-      "light": "alpha/ink-16",
-      "dark": "alpha/white-20",
+      "light": "gray/200",
+      "dark": "gray/750",
       "resolved": {
-        "light": "#0B0B0C29",
-        "dark": "#FFFFFF33"
+        "light": "#E8E8E8",
+        "dark": "#2A2A2A"
       },
       "scopes": ["STROKE_COLOR"],
       "description": "Outlines that need to read as an edge."
@@ -441,142 +417,151 @@
         "light": "#0B0B0C73",
         "dark": "#FFFFFF73"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "scopes": ["STROKE_COLOR"],
       "description": "The edge of a checkbox, radio or switch that is off. Passes 3:1."
     },
     "border/raised": {
       "css": "--border-raised",
-      "light": "alpha/transparent",
-      "dark": "alpha/white-20",
+      "light": "gray/200",
+      "dark": "gray/800",
       "resolved": {
-        "light": "#FFFFFF00",
-        "dark": "#FFFFFF33"
+        "light": "#E8E8E8",
+        "dark": "#262626"
       },
       "scopes": ["STROKE_COLOR"],
-      "description": "The light edge raised surfaces get in dark mode."
+      "description": "The edge of panels, cards, menus and dialogs."
     },
     "border/focus": {
       "css": "--border-focus",
-      "light": "neutral/900",
-      "dark": "neutral/0",
+      "light": "gray/900",
+      "dark": "gray/50",
       "resolved": {
-        "light": "#0B0B0C",
-        "dark": "#FFFFFF"
+        "light": "#0F0F0F",
+        "dark": "#FAFAFA"
       },
       "scopes": ["STROKE_COLOR"],
       "description": "The focus ring."
     },
     "action/primary": {
       "css": "--action-primary",
-      "light": "green/slime",
-      "dark": "green/slime",
+      "light": "gray/900",
+      "dark": "gray/50",
       "resolved": {
-        "light": "#2BFFA3",
-        "dark": "#2BFFA3"
+        "light": "#0F0F0F",
+        "dark": "#FAFAFA"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Fill of the primary button."
     },
     "action/primary-hover": {
       "css": "--action-primary-hover",
-      "light": "green/slime-hover",
-      "dark": "green/slime-hover",
+      "light": "gray/800",
+      "dark": "gray/200",
       "resolved": {
-        "light": "#28EB97",
-        "dark": "#28EB97"
+        "light": "#262626",
+        "dark": "#E8E8E8"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Primary button on hover."
     },
     "action/primary-pressed": {
       "css": "--action-primary-pressed",
-      "light": "green/slime-pressed",
-      "dark": "green/slime-pressed",
+      "light": "gray/700",
+      "dark": "gray/300",
       "resolved": {
-        "light": "#26D88B",
-        "dark": "#26D88B"
+        "light": "#333333",
+        "dark": "#D4D4D4"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Primary button while pressed."
     },
     "action/on-primary": {
       "css": "--action-on-primary",
-      "light": "neutral/900",
-      "dark": "neutral/900",
+      "light": "gray/0",
+      "dark": "gray/900",
       "resolved": {
-        "light": "#0B0B0C",
-        "dark": "#0B0B0C"
+        "light": "#FFFFFF",
+        "dark": "#0F0F0F"
       },
-      "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+      "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "Text and icons on the primary button."
     },
     "action/neutral": {
       "css": "--action-neutral",
-      "light": "neutral/0",
-      "dark": "alpha/white-10",
+      "light": "gray/0",
+      "dark": "gray/880",
       "resolved": {
         "light": "#FFFFFF",
-        "dark": "#FFFFFF1A"
+        "dark": "#161616"
       },
       "scopes": ["FRAME_FILL", "SHAPE_FILL"],
-      "description": "Works on the page and on raised surfaces, so one neutral button covers both."
+      "description": "Fill of the neutral button. Works on the page and on raised surfaces, so one neutral button covers both."
     },
     "action/neutral-hover": {
       "css": "--action-neutral-hover",
-      "light": "alpha/ink-5",
-      "dark": "alpha/white-16",
+      "light": "gray/100",
+      "dark": "gray/850",
       "resolved": {
-        "light": "#0B0B0C0D",
-        "dark": "#FFFFFF29"
+        "light": "#F5F5F5",
+        "dark": "#1F1F1F"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Neutral button on hover."
     },
     "action/neutral-pressed": {
       "css": "--action-neutral-pressed",
-      "light": "alpha/ink-12",
-      "dark": "alpha/white-20",
+      "light": "gray/150",
+      "dark": "gray/800",
       "resolved": {
-        "light": "#0B0B0C1F",
-        "dark": "#FFFFFF33"
+        "light": "#EFEFEF",
+        "dark": "#262626"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Neutral button while pressed."
     },
     "action/accent": {
       "css": "--action-accent",
-      "light": "green/slime",
-      "dark": "green/slime",
+      "light": "gray/900",
+      "dark": "gray/50",
       "resolved": {
-        "light": "#2BFFA3",
-        "dark": "#2BFFA3"
+        "light": "#0F0F0F",
+        "dark": "#FAFAFA"
       },
       "scopes": ["FRAME_FILL", "SHAPE_FILL"],
       "description": "The send button and other single accent actions."
     },
     "action/accent-hover": {
       "css": "--action-accent-hover",
-      "light": "green/slime-hover",
-      "dark": "green/slime-hover",
+      "light": "gray/800",
+      "dark": "gray/200",
       "resolved": {
-        "light": "#28EB97",
-        "dark": "#28EB97"
+        "light": "#262626",
+        "dark": "#E8E8E8"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Accent action on hover."
     },
     "action/accent-pressed": {
       "css": "--action-accent-pressed",
-      "light": "green/slime-pressed",
-      "dark": "green/slime-pressed",
+      "light": "gray/700",
+      "dark": "gray/300",
       "resolved": {
-        "light": "#26D88B",
-        "dark": "#26D88B"
+        "light": "#333333",
+        "dark": "#D4D4D4"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Accent action while pressed."
     },
     "action/on-accent": {
       "css": "--action-on-accent",
-      "light": "green/deep-moss",
-      "dark": "green/deep-moss",
+      "light": "gray/0",
+      "dark": "gray/900",
       "resolved": {
-        "light": "#123D34",
-        "dark": "#123D34"
+        "light": "#FFFFFF",
+        "dark": "#0F0F0F"
       },
-      "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+      "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "Text and icons on an accent action."
     },
     "action/danger": {
       "css": "--action-danger",
@@ -586,7 +571,8 @@
         "light": "#FA3030",
         "dark": "#FA3030"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Fill of destructive buttons, like delete."
     },
     "action/danger-hover": {
       "css": "--action-danger-hover",
@@ -596,7 +582,8 @@
         "light": "#D0121C",
         "dark": "#D0121C"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Danger button on hover."
     },
     "action/danger-pressed": {
       "css": "--action-danger-pressed",
@@ -606,100 +593,104 @@
         "light": "#A40B13",
         "dark": "#A40B13"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Danger button while pressed."
     },
     "action/on-danger": {
       "css": "--action-on-danger",
-      "light": "neutral/0",
-      "dark": "neutral/0",
+      "light": "gray/0",
+      "dark": "gray/0",
       "resolved": {
         "light": "#FFFFFF",
         "dark": "#FFFFFF"
       },
-      "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+      "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "Text and icons on a danger button."
     },
     "action/disabled": {
       "css": "--action-disabled",
-      "light": "alpha/ink-5",
-      "dark": "alpha/white-6",
+      "light": "gray/100",
+      "dark": "gray/870",
       "resolved": {
-        "light": "#0B0B0C0D",
-        "dark": "#FFFFFF0F"
+        "light": "#F5F5F5",
+        "dark": "#1A1A1A"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Fill of a disabled button."
     },
     "state/hover": {
       "css": "--state-hover",
-      "light": "alpha/ink-5",
-      "dark": "alpha/white-6",
+      "light": "gray/100",
+      "dark": "gray/870",
       "resolved": {
-        "light": "#0B0B0C0D",
-        "dark": "#FFFFFF0F"
+        "light": "#F5F5F5",
+        "dark": "#1A1A1A"
       },
       "scopes": ["FRAME_FILL", "SHAPE_FILL"],
       "description": "Hover on rows, ghost buttons and menu items."
     },
     "state/selected": {
       "css": "--state-selected",
-      "light": "alpha/ink-8",
-      "dark": "alpha/white-10",
+      "light": "gray/150",
+      "dark": "gray/850",
       "resolved": {
-        "light": "#0B0B0C14",
-        "dark": "#FFFFFF1A"
+        "light": "#EFEFEF",
+        "dark": "#1F1F1F"
       },
       "scopes": ["FRAME_FILL", "SHAPE_FILL"],
-      "description": "The current row or item."
+      "description": "The current row, item or nav entry."
     },
     "state/pressed": {
       "css": "--state-pressed",
-      "light": "alpha/ink-12",
-      "dark": "alpha/white-16",
+      "light": "gray/200",
+      "dark": "gray/800",
       "resolved": {
-        "light": "#0B0B0C1F",
-        "dark": "#FFFFFF29"
+        "light": "#E8E8E8",
+        "dark": "#262626"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Rows, ghost buttons and menu items while pressed."
     },
     "control/track": {
       "css": "--control-track",
-      "light": "neutral/100",
-      "dark": "neutral/900",
+      "light": "gray/150",
+      "dark": "gray/850",
       "resolved": {
-        "light": "#F1F1EF",
-        "dark": "#0B0B0C"
+        "light": "#EFEFEF",
+        "dark": "#1F1F1F"
       },
       "scopes": ["FRAME_FILL", "SHAPE_FILL"],
       "description": "The track of a segmented control."
     },
     "control/thumb": {
       "css": "--control-thumb",
-      "light": "neutral/0",
-      "dark": "neutral/700",
+      "light": "gray/0",
+      "dark": "gray/700",
       "resolved": {
         "light": "#FFFFFF",
-        "dark": "#232425"
+        "dark": "#333333"
       },
       "scopes": ["FRAME_FILL", "SHAPE_FILL"],
       "description": "The selected segment and the switch thumb."
     },
     "control/on": {
       "css": "--control-on",
-      "light": "neutral/900",
-      "dark": "neutral/100",
+      "light": "gray/900",
+      "dark": "gray/50",
       "resolved": {
-        "light": "#0B0B0C",
-        "dark": "#F1F1EF"
+        "light": "#0F0F0F",
+        "dark": "#FAFAFA"
       },
       "scopes": ["FRAME_FILL", "SHAPE_FILL"],
       "description": "A switch that is on, a checked checkbox or radio."
     },
     "control/on-mark": {
       "css": "--control-on-mark",
-      "light": "neutral/0",
-      "dark": "neutral/900",
+      "light": "gray/0",
+      "dark": "gray/900",
       "resolved": {
         "light": "#FFFFFF",
-        "dark": "#0B0B0C"
+        "dark": "#0F0F0F"
       },
       "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
       "description": "The check or dot inside a checked control."
@@ -707,12 +698,13 @@
     "status/positive-surface": {
       "css": "--status-positive-surface",
       "light": "green/deep-moss",
-      "dark": "neutral/700",
+      "dark": "gray/800",
       "resolved": {
         "light": "#123D34",
-        "dark": "#232425"
+        "dark": "#262626"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Fill of a positive badge."
     },
     "status/positive-text": {
       "css": "--status-positive-text",
@@ -722,17 +714,19 @@
         "light": "#2BFFA3",
         "dark": "#2BFFA3"
       },
-      "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+      "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "Text and dot on a positive badge."
     },
     "status/active-surface": {
       "css": "--status-active-surface",
       "light": "green/lime",
-      "dark": "neutral/700",
+      "dark": "gray/800",
       "resolved": {
         "light": "#BCFFDA",
-        "dark": "#232425"
+        "dark": "#262626"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Fill of an active badge."
     },
     "status/active-text": {
       "css": "--status-active-text",
@@ -742,17 +736,19 @@
         "light": "#123D34",
         "dark": "#2BFFA3"
       },
-      "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+      "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "Text and dot on an active badge."
     },
     "status/neutral-surface": {
       "css": "--status-neutral-surface",
-      "light": "alpha/ink-8",
-      "dark": "alpha/white-10",
+      "light": "gray/100",
+      "dark": "gray/850",
       "resolved": {
-        "light": "#0B0B0C14",
-        "dark": "#FFFFFF1A"
+        "light": "#F5F5F5",
+        "dark": "#1F1F1F"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Fill of neutral badges, default tags and alerts."
     },
     "feedback/error": {
       "css": "--feedback-error",
@@ -762,7 +758,8 @@
         "light": "#FA3030",
         "dark": "#FA3030"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "Error icons and the edge of a field in an error state."
     },
     "feedback/error-surface": {
       "css": "--feedback-error-surface",
@@ -772,7 +769,8 @@
         "light": "#FFEBEB",
         "dark": "#3D1011"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Fill of an error badge or alert."
     },
     "feedback/error-text": {
       "css": "--feedback-error-text",
@@ -782,7 +780,8 @@
         "light": "#D0121C",
         "dark": "#FF9594"
       },
-      "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+      "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "Error messages and text on feedback/error-surface."
     },
     "feedback/warning": {
       "css": "--feedback-warning",
@@ -792,7 +791,8 @@
         "light": "#F5B73D",
         "dark": "#F5B73D"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "Warning icons and the edge of a field that needs attention."
     },
     "feedback/warning-surface": {
       "css": "--feedback-warning-surface",
@@ -802,7 +802,8 @@
         "light": "#FFF4DC",
         "dark": "#33260A"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Fill of a warning badge or alert."
     },
     "feedback/warning-text": {
       "css": "--feedback-warning-text",
@@ -812,7 +813,8 @@
         "light": "#8A5300",
         "dark": "#F8CB6B"
       },
-      "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+      "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "Warning messages and text on feedback/warning-surface."
     },
     "editor/selection": {
       "css": "--editor-selection",
@@ -833,7 +835,8 @@
         "light": "#2BFFA3",
         "dark": "#2BFFA3"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "SocialPaint green for charts, trends and brand moments. Keep interface chrome on the gray tokens."
     },
     "deep/green": {
       "css": "--deep-green",
@@ -843,7 +846,8 @@
         "light": "#123D34",
         "dark": "#123D34"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "Deep SocialPaint green for brand moments and template content."
     },
     "tint/green": {
       "css": "--tint-green",
@@ -853,7 +857,8 @@
         "light": "#BCFFDA",
         "dark": "#BCFFDA"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "Light SocialPaint green for brand moments and template content."
     },
     "accent/blue": {
       "css": "--accent-blue",
@@ -863,7 +868,8 @@
         "light": "#6EBBFF",
         "dark": "#6EBBFF"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "SocialPaint blue for charts and brand moments."
     },
     "deep/blue": {
       "css": "--deep-blue",
@@ -873,7 +879,8 @@
         "light": "#113B5C",
         "dark": "#113B5C"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "Deep SocialPaint blue for brand moments and template content."
     },
     "tint/blue": {
       "css": "--tint-blue",
@@ -883,7 +890,8 @@
         "light": "#D8EDFF",
         "dark": "#D8EDFF"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "Light SocialPaint blue for brand moments and template content."
     },
     "accent/pink": {
       "css": "--accent-pink",
@@ -893,7 +901,8 @@
         "light": "#FF7FEE",
         "dark": "#FF7FEE"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "SocialPaint pink for charts and brand moments."
     },
     "deep/pink": {
       "css": "--deep-pink",
@@ -903,7 +912,8 @@
         "light": "#53144B",
         "dark": "#53144B"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "Deep SocialPaint pink for brand moments and template content."
     },
     "tint/pink": {
       "css": "--tint-pink",
@@ -913,7 +923,8 @@
         "light": "#FFDEFC",
         "dark": "#FFDEFC"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "Light SocialPaint pink for brand moments and template content."
     },
     "accent/warm": {
       "css": "--accent-warm",
@@ -923,7 +934,8 @@
         "light": "#FF6A57",
         "dark": "#FF6A57"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "SocialPaint orange for charts and brand moments."
     },
     "deep/warm": {
       "css": "--deep-warm",
@@ -933,7 +945,8 @@
         "light": "#4C2116",
         "dark": "#4C2116"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "Deep SocialPaint brown for brand moments and template content."
     },
     "tint/warm": {
       "css": "--tint-warm",
@@ -943,7 +956,8 @@
         "light": "#FFE2D4",
         "dark": "#FFE2D4"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "Light SocialPaint peach for brand moments and template content."
     },
     "accent/purple": {
       "css": "--accent-purple",
@@ -953,7 +967,8 @@
         "light": "#B595FF",
         "dark": "#B595FF"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "SocialPaint violet for charts and brand moments."
     },
     "deep/purple": {
       "css": "--deep-purple",
@@ -963,7 +978,8 @@
         "light": "#4B3383",
         "dark": "#4B3383"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "Deep SocialPaint purple for brand moments and template content."
     },
     "tint/purple": {
       "css": "--tint-purple",
@@ -973,7 +989,8 @@
         "light": "#F2E8FF",
         "dark": "#F2E8FF"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "Light SocialPaint lilac for brand moments and template content."
     },
     "wash/green": {
       "css": "--wash-green",
@@ -983,7 +1000,8 @@
         "light": "#E6FFF1",
         "dark": "#E6FFF1"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "Pale green background for template content."
     },
     "wash/warm": {
       "css": "--wash-warm",
@@ -993,17 +1011,19 @@
         "light": "#FFFEF1",
         "dark": "#FFFEF1"
       },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"]
+      "scopes": ["FRAME_FILL", "SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
+      "description": "Pale cream background for template content."
     },
     "shadow/raised": {
       "css": "--shadow-raised",
-      "light": "alpha/black-5",
-      "dark": "alpha/black-15",
+      "light": "alpha/transparent",
+      "dark": "alpha/transparent",
       "resolved": {
-        "light": "#0000000D",
-        "dark": "#00000026"
+        "light": "#FFFFFF00",
+        "dark": "#FFFFFF00"
       },
-      "scopes": ["EFFECT_COLOR"]
+      "scopes": ["EFFECT_COLOR"],
+      "description": "Transparent. Raised surfaces sit flat and take their edge from border/raised."
     },
     "shadow/floating": {
       "css": "--shadow-floating",
@@ -1013,7 +1033,8 @@
         "light": "#0000001A",
         "dark": "#0000004D"
       },
-      "scopes": ["EFFECT_COLOR"]
+      "scopes": ["EFFECT_COLOR"],
+      "description": "Shadow under menus, popovers and toasts."
     },
     "shadow/thumb": {
       "css": "--shadow-thumb",
@@ -1023,37 +1044,140 @@
         "light": "#0000001A",
         "dark": "#0000004D"
       },
-      "scopes": ["EFFECT_COLOR"]
+      "scopes": ["EFFECT_COLOR"],
+      "description": "Shadow under the switch thumb and the selected segment."
     },
     "bevel/top": {
       "css": "--bevel-top",
       "light": "alpha/transparent",
-      "dark": "alpha/white-16",
+      "dark": "alpha/transparent",
       "resolved": {
         "light": "#FFFFFF00",
-        "dark": "#FFFFFF29"
+        "dark": "#FFFFFF00"
       },
-      "scopes": ["EFFECT_COLOR"]
+      "scopes": ["EFFECT_COLOR"],
+      "description": "Transparent, since this system draws no bevels. Kept so the elevation styles keep the same layers in code."
     },
     "bevel/bottom": {
       "css": "--bevel-bottom",
       "light": "alpha/transparent",
-      "dark": "alpha/white-10",
+      "dark": "alpha/transparent",
       "resolved": {
         "light": "#FFFFFF00",
-        "dark": "#FFFFFF1A"
+        "dark": "#FFFFFF00"
       },
-      "scopes": ["EFFECT_COLOR"]
+      "scopes": ["EFFECT_COLOR"],
+      "description": "Transparent, since this system draws no bevels. Kept so the elevation styles keep the same layers in code."
     },
     "glow/accent": {
       "css": "--glow-accent",
-      "light": "alpha/slime-60",
-      "dark": "alpha/slime-30",
+      "light": "alpha/transparent",
+      "dark": "alpha/transparent",
       "resolved": {
-        "light": "#2BFFA399",
-        "dark": "#2BFFA34D"
+        "light": "#FFFFFF00",
+        "dark": "#FFFFFF00"
       },
-      "scopes": ["EFFECT_COLOR"]
+      "scopes": ["EFFECT_COLOR"],
+      "description": "Transparent, since this system draws no glow. Kept so Glow/Accent still resolves in code."
+    },
+    "surface/shell": {
+      "css": "--surface-shell",
+      "light": "gray/50",
+      "dark": "gray/890",
+      "resolved": {
+        "light": "#FAFAFA",
+        "dark": "#121212"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "The app shell behind the sidebar and the main area."
+    },
+    "surface/card": {
+      "css": "--surface-card",
+      "light": "gray/50",
+      "dark": "gray/890",
+      "resolved": {
+        "light": "#FAFAFA",
+        "dark": "#121212"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Template, result and content cards on the page."
+    },
+    "surface/stage": {
+      "css": "--surface-stage",
+      "light": "gray/50",
+      "dark": "gray/890",
+      "resolved": {
+        "light": "#FAFAFA",
+        "dark": "#121212"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "The stage behind a template preview."
+    },
+    "surface/soft": {
+      "css": "--surface-soft",
+      "light": "gray/150",
+      "dark": "gray/850",
+      "resolved": {
+        "light": "#EFEFEF",
+        "dark": "#1F1F1F"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Icon tiles, segmented control tracks, the count stepper, progress tracks and pending progress steps."
+    },
+    "border/field": {
+      "css": "--border-field",
+      "light": "gray/200",
+      "dark": "gray/750",
+      "resolved": {
+        "light": "#E8E8E8",
+        "dark": "#2A2A2A"
+      },
+      "scopes": ["STROKE_COLOR"],
+      "description": "The edge of inputs, selects, text areas and upload fields."
+    },
+    "plate/dark": {
+      "css": "--plate-dark",
+      "light": "gray/950",
+      "dark": "gray/950",
+      "resolved": {
+        "light": "#0A0A0A",
+        "dark": "#0A0A0A"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "The dark ground a logo is proofed on. Stays dark in both themes."
+    },
+    "plate/light": {
+      "css": "--plate-light",
+      "light": "gray/50",
+      "dark": "gray/50",
+      "resolved": {
+        "light": "#FAFAFA",
+        "dark": "#FAFAFA"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "The light ground a logo is proofed on. Stays light in both themes."
+    },
+    "border/field-hover": {
+      "css": "--border-field-hover",
+      "light": "gray/300",
+      "dark": "gray/700",
+      "resolved": {
+        "light": "#D4D4D4",
+        "dark": "#333333"
+      },
+      "scopes": ["STROKE_COLOR"],
+      "description": "The edge of a field under the pointer, one step darker than border/field."
+    },
+    "logo/ink": {
+      "css": "--logo-ink",
+      "light": "neutral/850",
+      "dark": "neutral/50",
+      "resolved": {
+        "light": "#1C1F1E",
+        "dark": "#F9F9F8"
+      },
+      "scopes": ["SHAPE_FILL"],
+      "description": "The SocialPaint lockup and its mark. Near-black on Light and off-white on Dark, the colors of the two lockup files."
     }
   },
   "scale": {
@@ -1125,7 +1249,7 @@
     "radius/xs": {
       "css": "--radius-xs",
       "type": "FLOAT",
-      "value": 4,
+      "value": 6,
       "description": "Checkboxes and the smallest marks."
     },
     "radius/sm": {
@@ -1137,32 +1261,32 @@
     "radius/md": {
       "css": "--radius-md",
       "type": "FLOAT",
-      "value": 12,
-      "description": "Thumbnails and wells inside a card, tooltips."
+      "value": 10,
+      "description": "Thumbnails and wells inside a card, tooltips and alerts."
     },
     "radius/lg": {
       "css": "--radius-lg",
       "type": "FLOAT",
-      "value": 16,
+      "value": 12,
       "description": "Menus, toasts and message bubbles."
     },
     "radius/xl": {
       "css": "--radius-xl",
       "type": "FLOAT",
-      "value": 20,
-      "description": "Cards, panels, dialogs and the composer."
+      "value": 16,
+      "description": "Cards, panels and dialogs."
     },
     "radius/full": {
       "css": "--radius-full",
       "type": "FLOAT",
       "value": 999,
-      "description": "Pills, chips, avatars and switches."
+      "description": "Pills, badges, avatars and switches."
     },
     "size/control-xs": {
       "css": "--size-control-xs",
       "type": "FLOAT",
       "value": 24,
-      "description": "Chips and tags."
+      "description": "Badges, tags and chips."
     },
     "size/control-sm": {
       "css": "--size-control-sm",
@@ -1185,27 +1309,32 @@
     "size/icon-sm": {
       "css": "--size-icon-sm",
       "type": "FLOAT",
-      "value": 16
+      "value": 16,
+      "description": "Icons inside chips, tags and compact controls."
     },
     "size/icon-md": {
       "css": "--size-icon-md",
       "type": "FLOAT",
-      "value": 18
+      "value": 18,
+      "description": "The default icon size in buttons, fields, menus and navigation."
     },
     "stroke/hairline": {
       "css": "--stroke-hairline",
       "type": "FLOAT",
-      "value": 1
+      "value": 1,
+      "description": "Borders and dividers."
     },
     "stroke/focus": {
       "css": "--stroke-focus",
       "type": "FLOAT",
-      "value": 2
+      "value": 2,
+      "description": "Width of the focus ring."
     },
     "focus/offset": {
       "css": "--focus-offset",
       "type": "FLOAT",
-      "value": 2
+      "value": 2,
+      "description": "Gap between a control and its focus ring."
     },
     "type/size/11": {
       "css": "--type-size-11",
@@ -1270,75 +1399,129 @@
     "type/weight/regular": {
       "css": "--type-weight-regular",
       "type": "FLOAT",
-      "value": 400
+      "value": 400,
+      "description": "Body text and most labels."
     },
     "type/weight/medium": {
       "css": "--type-weight-medium",
       "type": "FLOAT",
-      "value": 500
+      "value": 500,
+      "description": "Titles, buttons and emphasized labels."
     },
     "font/sans": {
       "css": "--font-sans",
       "type": "STRING",
-      "value": "Inter Tight"
+      "value": "Inter Tight",
+      "description": "All interface text."
     },
     "font/mono": {
       "css": "--font-mono",
       "type": "STRING",
-      "value": "Geist Mono"
+      "value": "Geist Mono",
+      "description": "Metrics, eyebrows and code."
     },
     "motion/duration/instant": {
       "css": "--motion-duration-instant",
       "type": "FLOAT",
-      "value": 0
+      "value": 0,
+      "description": "No transition. Use for reduced motion and immediate state changes."
     },
     "motion/duration/fast": {
       "css": "--motion-duration-fast",
       "type": "FLOAT",
-      "value": 120
+      "value": 120,
+      "description": "Hover, press and focus changes."
     },
     "motion/duration/base": {
       "css": "--motion-duration-base",
       "type": "FLOAT",
-      "value": 200
+      "value": 200,
+      "description": "Menus, tooltips and panels opening."
     },
     "motion/duration/slow": {
       "css": "--motion-duration-slow",
       "type": "FLOAT",
-      "value": 320
+      "value": 320,
+      "description": "Dialogs and larger layout changes."
     },
     "motion/duration/pulse": {
       "css": "--motion-duration-pulse",
       "type": "FLOAT",
-      "value": 1500
+      "value": 1500,
+      "description": "One cycle of the skeleton pulse and the indeterminate progress bar."
     },
     "motion/easing/standard": {
       "css": "--motion-easing-standard",
       "type": "STRING",
-      "value": "cubic-bezier(0.2, 0, 0, 1)"
+      "value": "cubic-bezier(0.2, 0, 0, 1)",
+      "description": "Movement between two on-screen states."
     },
     "motion/easing/enter": {
       "css": "--motion-easing-enter",
       "type": "STRING",
-      "value": "cubic-bezier(0, 0, 0.2, 1)"
+      "value": "cubic-bezier(0, 0, 0.2, 1)",
+      "description": "Elements entering the screen."
     },
     "motion/easing/exit": {
       "css": "--motion-easing-exit",
       "type": "STRING",
-      "value": "cubic-bezier(0.4, 0, 1, 1)"
+      "value": "cubic-bezier(0.4, 0, 1, 1)",
+      "description": "Elements leaving the screen."
+    },
+    "radius/chip": {
+      "css": "--radius-chip",
+      "type": "FLOAT",
+      "value": 10,
+      "description": "Chips, search fields and option tiles."
+    },
+    "radius/tile": {
+      "css": "--radius-tile",
+      "type": "FLOAT",
+      "value": 8,
+      "description": "Icon tiles inside chips and option tiles."
+    },
+    "radius/tag": {
+      "css": "--radius-tag",
+      "type": "FLOAT",
+      "value": 6,
+      "description": "Tags and small labels."
+    },
+    "radius/shell": {
+      "css": "--radius-shell",
+      "type": "FLOAT",
+      "value": 0,
+      "description": "Corners of the sidebar shell. 0, so the sidebar runs flush to the window."
+    },
+    "layout/shell-inset": {
+      "css": "--layout-shell-inset",
+      "type": "FLOAT",
+      "value": 0,
+      "description": "Gap around and between the sidebar and the main area. 0, so the panels sit flush."
+    },
+    "stroke/shell-edge": {
+      "css": "--stroke-shell-edge",
+      "type": "FLOAT",
+      "value": 0,
+      "description": "Top, left and bottom edges of the sidebar. 0, so only the right edge shows."
+    },
+    "radius/composer": {
+      "css": "--radius-composer",
+      "type": "FLOAT",
+      "value": 27,
+      "description": "The chat composer, so the one-line bar reads as a pill and the taller bar keeps soft corners."
     }
   },
   "textStyles": {
     "Title/Display": {
       "family": "Inter Tight",
       "style": "Medium",
-      "size": 44,
+      "size": 40,
       "lineHeight": "110%",
       "letterSpacing": "-1.5%",
       "textCase": "ORIGINAL",
       "leadingTrim": "CAP_HEIGHT",
       "bound": {
-        "size": "type/size/44",
+        "size": "type/size/40",
         "weight": "type/weight/medium",
         "family": "font/sans"
       }
@@ -1639,7 +1822,7 @@
         "y": 2,
         "blur": 8,
         "spread": 0,
-        "color": "#0000000D",
+        "color": "#FFFFFF00",
         "colorVar": "shadow/raised"
       }
     ],
@@ -1727,7 +1910,7 @@
         "y": 0,
         "blur": 12,
         "spread": 0,
-        "color": "#2BFFA399",
+        "color": "#FFFFFF00",
         "colorVar": "glow/accent"
       }
     ],

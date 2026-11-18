@@ -261,9 +261,8 @@ html {
   --type-composer-size: 16px; /* the Generate brief — one step above body, per Figma 72:27 */
 
   /* Shape — hold the gap between soft containers and crisp controls. */
-  /* The Option D chat box (Figma "Brand Templates · Chat", 2026-09-28):
-     the plus, tags, the tooltip bubble and the template ref thumb. */
-  --radius-tag: 8px;
+  /* --radius-tag now comes from tokens.css (Figma Scale radius/tag, 6 in the
+     ElevenLabs system), so it is no longer declared here. */
   /* Media cards run a tighter pair than content panels — a small card
      carries a small radius, a large panel a large one. Both values are set
      explicitly and chosen optically: at 12px on an 8px frame the
@@ -568,11 +567,8 @@ html {
      (Brand Studio's thumbnail edit overlay read it until Phase 6.) */
   --media-overlay: rgba(11, 11, 12, 0.56);
 
-  /* Logo plates (D12): fixed grounds a logo is proofed against — dark
-     artwork on the light plate, light artwork on the dark — never
-     inverting with the theme, like --bg-plate. */
-  --plate-dark: #0b0b0c;
-  --plate-light: #f9f9f8;
+  /* Logo plates (D12) now come from tokens.css: plate/dark and plate/light
+     in the Figma Color collection, fixed in both themes. */
 }
 
 /* Selection is neutral system-wide, like every other selection surface. */
