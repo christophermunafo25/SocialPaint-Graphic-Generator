@@ -179,6 +179,6 @@
       }
     ]
   },
-  "baseline": { "chromium": 0, "firefox": 0.25, "webkit": 0.45 },
-  "blurBaseline": { "chromium": 0, "firefox": 0.17, "webkit": 0.52 }
+  "baseline": { "chromium": 0, "firefox": 0.25, "webkit": 0.45, "webkit18": 0.43 },
+  "blurBaseline": { "chromium": 0, "firefox": 0.17, "webkit": 0.52, "webkit18": 0.36 }
 }

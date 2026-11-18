@@ -397,11 +397,13 @@
   "baseline": {
     "chromium": 11.28,
     "firefox": 11.21,
-    "webkit": 6.18
+    "webkit": 6.18,
+    "webkit18": 6.19
   },
   "blurBaseline": {
     "chromium": 0.45,
     "firefox": 0.69,
-    "webkit": 0.69
+    "webkit": 0.69,
+    "webkit18": 0.36
   }
 }

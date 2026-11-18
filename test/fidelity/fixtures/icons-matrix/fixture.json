@@ -462,6 +462,6 @@
     "createdAt": "2026-10-27T00:00:00.000Z",
     "updatedAt": "2026-10-27T00:00:00.000Z"
   },
-  "baseline": { "chromium": 0, "firefox": 0.04, "webkit": 0.63 },
-  "blurBaseline": { "chromium": 0, "firefox": 0, "webkit": 0 }
+  "baseline": { "chromium": 0, "firefox": 0.04, "webkit": 0.63, "webkit18": 0.64 },
+  "blurBaseline": { "chromium": 0, "firefox": 0, "webkit": 0, "webkit18": 0 }
 }

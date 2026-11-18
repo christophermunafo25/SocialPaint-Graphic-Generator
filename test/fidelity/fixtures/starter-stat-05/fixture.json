@@ -1,6 +1,6 @@
 {
   "name": "starter-stat-05",
   "kind": "starter",
-  "baseline": { "chromium": 0, "firefox": 0.7, "webkit": 0.83 },
-  "blurBaseline": { "chromium": 0, "firefox": 0.6, "webkit": 0.67 }
+  "baseline": { "chromium": 0, "firefox": 0.7, "webkit": 0.83, "webkit18": 0.63 },
+  "blurBaseline": { "chromium": 0, "firefox": 0.6, "webkit": 0.67, "webkit18": 0.65 }
 }
