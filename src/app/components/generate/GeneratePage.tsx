@@ -1234,7 +1234,7 @@ export function GenerateChat({
         layout={{ className: "sp-chat-page", state: "thread" }}
         header={threadHeader}
         // Beside the inline editor the links sit under the chat column and
-        // the panel runs to Main's foot (13:3150).
+        // the panel runs to Main's foot, 16 short of the window (13:3150).
         footer={editorPresentation !== "inline"}
       >
         <div

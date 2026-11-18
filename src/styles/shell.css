@@ -339,9 +339,13 @@
   cursor: pointer;
 }
 /* Collapsed, the mark (21.16 square in the rail) sits centred over
-   Expand. */
+   Expand, in a 24 hit area. */
 .sp-shell-logo--mark {
   align-self: center;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--size-control-xs);
+  min-height: var(--size-control-xs);
 }
 
 /* The nav (2218:588): Nav Items 36 tall, 4 apart. It takes the free height

@@ -133,7 +133,7 @@ Measured from the frames at 1440. Fixed sizes stay fixed and everything marked "
 | Main | Fills, on `--surface-page` |
 | Page header | 64 tall plus a hairline bottom edge in `--border-subtle`. A 36 row centered in it, 32 at the sides. The area's icon at 18 on `--text-secondary`, then the page name in Label/M on `--text-secondary` (a top-level page) or the Breadcrumb (one level down). Actions on the right 8 apart |
 | Content | 24 at the top, 32 at the sides. Sections 32 apart. The header row, the content and the footer links scroll together inside Main, and nothing sticks (CJ, 2026-11-16) |
-| Footer Links | Centered at the bottom of the content on every page, 16 above Main's foot. The frames draw none, and decision 14 keeps them |
+| Footer Links | Centered at the bottom of the content on every page. The frames draw none, and decision 14 keeps them |
 
 A dialog's close button sits in its top right corner.
 

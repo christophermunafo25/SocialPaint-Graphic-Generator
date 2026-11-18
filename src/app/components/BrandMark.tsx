@@ -49,8 +49,8 @@ export function BrandLockup({
         focusable="false"
       >
         <path d={LOCKUP_MARK} />
-        {LOCKUP_WORDMARK.map((d) => (
-          <path key={d.slice(0, 24)} d={d} />
+        {LOCKUP_WORDMARK.map((d, i) => (
+          <path key={i} d={d} />
         ))}
       </svg>
     </span>
