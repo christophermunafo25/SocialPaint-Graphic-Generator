@@ -24,7 +24,7 @@
   flex: none;
   display: flex;
 }
-.sp-lib-search .ui-search {
+.sp-lib-search .ui-search[data-size="lg"] {
   border-radius: var(--radius-full);
 }
 
@@ -216,6 +216,7 @@
    variations (judgement call 4) and fill the arrow with the primary pair;
    hover changes colour only (RULES.md section 6), so the card keeps its
    Elevation/1 and the rail's 12 of room holds it. ── */
+/* ElevenLabs E1: content cards are flat on surface/card with no edge (RULES.md section 4). Template Card 4018:129. */
 .sp-tcard {
   box-sizing: border-box;
   display: flex;
@@ -223,7 +224,7 @@
   width: 100%;
   padding: var(--space-8);
   border-radius: var(--radius-xl);
-  background: var(--surface-raised);
+  background: var(--surface-card);
   box-shadow: var(--elevation-1-raised);
   color: var(--text-primary);
   text-align: left;
@@ -535,6 +536,7 @@
    Title/Card, the fields 16 apart, then the footer, each 20 apart and 20
    in from the panel's edges, on surface/raised at radius/xl with
    Elevation/1. */
+/* ElevenLabs E1: raised surfaces are flat, so a panel on the white page draws a border/raised hairline (inside the box, so nothing moves). Details panel 6227:2623. */
 .sp-details {
   box-sizing: border-box;
   display: flex;
@@ -544,7 +546,7 @@
   padding: var(--space-20);
   border-radius: var(--radius-xl);
   background: var(--surface-raised);
-  box-shadow: var(--elevation-1-raised);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-raised);
   color: var(--text-primary);
 }
 .sp-details__head {
@@ -621,6 +623,7 @@
    contained 16 inside surface/field at radius/lg, with a hairline so a
    white graphic still reads. It gives up height on a short window so the
    fields keep room. */
+/* ElevenLabs E1: the preview stage reads surface/stage, gray on the white Details panel (Details panel 6227:2623). */
 .sp-details__stage {
   display: flex;
   flex: 0 1 290px;
@@ -631,7 +634,7 @@
   box-sizing: border-box;
   padding: var(--space-16);
   border-radius: var(--radius-lg);
-  background: var(--surface-field);
+  background: var(--surface-stage);
   container-type: size;
 }
 @media (max-height: 760px) {

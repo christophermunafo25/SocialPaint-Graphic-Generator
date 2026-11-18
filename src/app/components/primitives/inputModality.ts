@@ -42,3 +42,11 @@ export function trackInputModality(): void {
     true,
   );
 }
+
+/** How the member last acted, as marked on the root (none before the first
+ * key or pointer). */
+export function inputModality(): "keyboard" | "pointer" | undefined {
+  if (typeof document === "undefined") return undefined;
+  const mode = document.documentElement.dataset.input;
+  return mode === "keyboard" || mode === "pointer" ? mode : undefined;
+}

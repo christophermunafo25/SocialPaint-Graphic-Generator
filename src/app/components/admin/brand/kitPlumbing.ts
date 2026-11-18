@@ -85,7 +85,9 @@ const COALESCE_MS = 900;
  * network, and a burst of edits costs one round trip. */
 const AUTOSAVE_MS = 600;
 const HISTORY_CAP = 40;
-const TOAST_MS = 5000;
+/** How long the undo toast shows. The Toast owns the timer and waits while
+ * the pointer or focus is on it (ElevenLabs PROMPT.md section 7.2). */
+export const TOAST_MS = 5000;
 
 /** Brand Studio's working copy of the kit. Every edit lands locally at once,
  * persists a beat later, and pushes an undo step — there is no Save button
@@ -118,7 +120,6 @@ export function useBrandDraft() {
   const draftRef = useRef(draft);
   draftRef.current = draft;
   const saveTimer = useRef<number | undefined>(undefined);
-  const toastTimer = useRef<number | undefined>(undefined);
   const lastCommit = useRef<{ key: string; at: number; start: KitShape } | null>(null);
 
   const pendingRef = useRef(false);
@@ -154,9 +155,7 @@ export function useBrandDraft() {
   flushRef.current = flush;
 
   const showUndo = useCallback((offer: UndoOffer | null) => {
-    window.clearTimeout(toastTimer.current);
     setUndoOffer(offer);
-    if (offer) toastTimer.current = window.setTimeout(() => setUndoOffer(null), TOAST_MS);
   }, []);
 
   const commit = useCallback(
@@ -263,7 +262,6 @@ export function useBrandDraft() {
   useEffect(
     () => () => {
       window.clearTimeout(saveTimer.current);
-      window.clearTimeout(toastTimer.current);
       if (pendingRef.current) void flushRef.current();
     },
     [],

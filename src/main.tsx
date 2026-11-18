@@ -5,11 +5,16 @@ import { ConfigFailureScreen } from "./app/components/ConfigFailureScreen";
 import { ErrorBoundary, RootCrashScreen } from "./app/components/ErrorBoundary";
 import { captureError, initMonitoring } from "./lib/monitoring";
 import { publicLinkToken } from "./lib/publicLink/route";
+import { trackInputModality } from "./app/components/primitives/inputModality";
 
 // Fire-and-forget: DSN-gated, dynamically imported, and every failure path
 // inside degrades to console logging — the app never waits on it and never
 // fails because of it.
 void initMonitoring();
+
+// How the member last acted (key or pointer), on <html>: the liquid
+// selection, the press scale and the icon swap play for the pointer only.
+trackInputModality();
 
 const root = createRoot(document.getElementById("root")!);
 

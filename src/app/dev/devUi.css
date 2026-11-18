@@ -56,7 +56,8 @@
 .dev-board__note {
   color: var(--text-secondary);
 }
-.dev-board__block {
+.dev-board__block,
+.dev-board__light {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -122,57 +123,6 @@
 }
 .dev-board__dark[data-padded] {
   padding: calc(var(--space-24) + var(--stroke-hairline));
-}
-
-/* ── The Themes board's panels: 688 wide, 32 around and between ── */
-.dev-theme {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-32);
-}
-.dev-theme__panel {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-32);
-  width: 688px;
-  padding: var(--space-32);
-  border: var(--stroke-hairline) solid var(--border-strong);
-  border-radius: var(--radius-xl);
-  background: var(--surface-page);
-  color: var(--text-primary);
-}
-.dev-theme__row {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-12);
-}
-.dev-theme__row[data-align="center"] {
-  align-items: center;
-}
-.dev-theme__fields {
-  flex-wrap: wrap;
-}
-.dev-theme__fields > .ui-field {
-  width: 200px;
-}
-.dev-theme__navigation {
-  flex-wrap: wrap;
-  column-gap: var(--space-32);
-  row-gap: var(--space-24);
-}
-.dev-theme__tabs {
-  width: 288px;
-}
-.dev-theme__header {
-  width: 100%;
-}
-.dev-theme__menu,
-.dev-theme__metric {
-  width: 240px;
-}
-.dev-theme__alert {
-  width: 360px;
 }
 
 /* ── The working sheet ── */

@@ -62,13 +62,14 @@ describe("Button", () => {
       expect(svg.getAttribute("aria-hidden")).toBe("true");
       expect(svg.getAttribute("width")).toBe("16");
     }
-    // The label sits between the leading and the trailing icon.
+    // The label sits between the leading icon's slot and the trailing icon.
     const button = screen.getByRole("button", { name: "Saving" });
     expect([...button.children].map((c) => c.tagName.toLowerCase())).toEqual([
-      "svg",
+      "span",
       "span",
       "svg",
     ]);
+    expect(button.firstElementChild?.classList.contains("ui-icon-slot")).toBe(true);
   });
 });
 

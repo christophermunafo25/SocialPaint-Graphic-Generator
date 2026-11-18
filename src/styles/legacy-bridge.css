@@ -50,8 +50,8 @@
   --lapis: var(--blue-lapis);
   --fire: var(--warm-fire);
   --ink-900: var(--neutral-900);
-  --ink-800: var(--neutral-800);
-  --ink-700: var(--neutral-700);
+  --ink-800: var(--gray-800);
+  --ink-700: var(--gray-700);
   --paper-050: var(--neutral-50);
   --paper-100: var(--neutral-200);
 }

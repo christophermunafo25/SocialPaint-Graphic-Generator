@@ -13,10 +13,8 @@ import {
   Select,
   TextArea,
   Upload,
+  CONFIRM_MS,
 } from "../primitives";
-
-/** How long "Copied" stays on the caption's action, as today. */
-export const COPIED_MS = 1600;
 
 export interface DetailsLook {
   options: Array<{ id: string; label: string }>;
@@ -118,7 +116,7 @@ export function DetailsPanel({
     await navigator.clipboard.writeText(caption.value);
     setCopied(true);
     window.clearTimeout(copiedTimer.current);
-    copiedTimer.current = window.setTimeout(() => setCopied(false), COPIED_MS);
+    copiedTimer.current = window.setTimeout(() => setCopied(false), CONFIRM_MS);
   };
 
   return (

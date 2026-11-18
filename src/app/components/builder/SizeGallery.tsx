@@ -371,7 +371,7 @@ export function SizeGallery({
                 className="sp-size__chips"
               />
               <LibrarySearch
-                className="sp-size__search"
+                size="md"
                 value={query}
                 onChange={setQuery}
                 label="Search sizes"

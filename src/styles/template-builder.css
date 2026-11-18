@@ -24,18 +24,6 @@
   gap: var(--space-8);
   margin-left: auto;
 }
-/* The search (50:62) is the 40 square here, at radius/sm (328:1944), and
-   opens into a 320 field beside the sort. */
-.sp-lib-search.sp-tb-search .ui-search {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-sm);
-}
-.sp-lib-search.sp-tb-search .ui-search--open {
-  width: 320px;
-  max-width: 100%;
-}
-
 /* The grid, 24 under the bar: four 242 cards across at 1440, 16 apart. */
 .sp-tb-grid {
   display: grid;
@@ -48,6 +36,7 @@
 }
 
 /* ── The card (sp-template-card in 328:1944) ── */
+/* ElevenLabs E1: content cards are flat on surface/card with no edge (RULES.md section 4). Builder Template Card 4018:156. */
 .sp-tbcard {
   box-sizing: border-box;
   display: flex;
@@ -55,7 +44,7 @@
   min-width: 0;
   padding: var(--space-8);
   border-radius: var(--radius-xl);
-  background: var(--surface-raised);
+  background: var(--surface-card);
   box-shadow: var(--elevation-1-raised);
   color: var(--text-primary);
 }
@@ -466,6 +455,7 @@
 .sp-builder__workspace[data-mode="preview"] {
   grid-template-columns: minmax(0, 1fr) 380px; /* as drawn */
 }
+/* ElevenLabs E1: raised surfaces are flat, so a panel on the white page draws a border/raised hairline (inside the box, so nothing moves). Inspector 6227:2381. */
 .sp-builder__rail {
   display: flex;
   flex-direction: column;
@@ -474,7 +464,7 @@
   overflow: hidden;
   border-radius: var(--radius-xl);
   background: var(--surface-raised);
-  box-shadow: var(--elevation-1-raised);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-raised);
 }
 .sp-builder__rail-tabs {
   display: flex;
@@ -1158,6 +1148,7 @@
 /* The fill row (322:380): 40 tall on surface/field, the 24 swatch, the hex
    in Mono/S and what follows it, 10 apart (as drawn). The swatch takes the
    row step, 8 (the file draws 7). */
+/* ElevenLabs E1: a field rests on its border/field hairline. */
 .sp-hexrow {
   display: flex;
   flex: none;
@@ -1168,9 +1159,11 @@
   padding: 0 var(--space-12) 0 var(--space-8);
   border-radius: var(--radius-sm);
   background: var(--surface-field);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-field);
 }
+
 .sp-hexrow:hover {
-  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-strong);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-field-hover);
 }
 .sp-hexrow[data-disabled] {
   background: var(--action-disabled);

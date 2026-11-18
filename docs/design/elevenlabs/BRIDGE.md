@@ -33,7 +33,7 @@ Thirty-four names, all from `tokens.css`.
 
 ## 3. Moved into `tokens.css`
 
-Three names other stylesheets declared. Phase E1 deletes those declarations, so `tokens.css` owns them and `npm run tokens:check` passes.
+Three names other stylesheets declared. Phase E1 deleted those declarations (built), so `tokens.css` owns them and `npm run tokens:check` passes.
 
 | Name | Was | Now |
 |---|---|---|
@@ -43,7 +43,7 @@ Three names other stylesheets declared. Phase E1 deletes those declarations, so 
 
 ## 4. Removed
 
-Twenty-four primitives the ElevenLabs Color tokens no longer read. Only two were read outside `tokens.css`, both by `legacy-bridge.css`, and Phase E1 repoints them.
+Twenty-four primitives the ElevenLabs Color tokens no longer read. Only two were read outside `tokens.css`, both by `legacy-bridge.css`, and Phase E1 repointed them (built).
 
 | Removed | Read by | Now |
 |---|---|---|
@@ -154,18 +154,18 @@ Fixed in the file while this kit was written, so a phase reading it sees the fix
 
 | Change | Figma | Code |
 |---|---|---|
-| Added an Outline style to Icon Button | `2206:686`, Style=Outline, ten variants | Add `"outline"` to `IconButtonProps["variant"]` and a `[data-variant="outline"]` block in `.ui-iconbtn` (Phase E1) |
-| Added a Size property to Search Field | `50:62`, Size=Large 46 and Medium 36 | Add `size?: "lg" \| "md"` to `SearchFieldProps` (Phase E1) |
-| Fields rest with a hairline and hover with a darker one | Input, Select, Text Area, Upload | `.ui-input`, `.ui-select`, `.ui-upload` borders (Phase E1) |
-| Button and Icon Button icons follow their label color | `2206:542`, `2206:686` | Check each kind and the disabled state (Phase E1) |
-| Nav Item icons and labels sit on `--text-secondary` at rest | `2213:109` | Already built so in `.ui-nav-item`. Phase E1 checks it |
-| Chip and Badge on `--radius-chip`, Tag on `--radius-tag` | `2212:187`, `2212:130`, `2212:143` | `.ui-chip`, `.ui-badge`, `.ui-tag` (Phase E1) |
-| Stepper, pending progress steps and the Progress Bar's track on `--surface-soft` | `2211:227`, `2221:1105`, `2215:272` | `.ui-stepper`, `.ui-progress`, `.ui-progress-bar` (Phase E1) |
-| Search rests with a hairline | `2207:455` | `.ui-input--box` inside `Search` (Phase E1) |
+| Added an Outline style to Icon Button | `2206:686`, Style=Outline, ten variants | Add `"outline"` to `IconButtonProps["variant"]` and a `[data-variant="outline"]` block in `.ui-iconbtn` (Phase E1, built) |
+| Added a Size property to Search Field | `50:62`, Size=Large 46 and Medium 36 | Add `size?: "lg" \| "md"` to `SearchFieldProps` (Phase E1, built) |
+| Fields rest with a hairline and hover with a darker one | Input, Select, Text Area, Upload | `.ui-input`, `.ui-select`, `.ui-upload` borders (Phase E1, built) |
+| Button and Icon Button icons follow their label color | `2206:542`, `2206:686` | Check each kind and the disabled state (Phase E1, built) |
+| Nav Item icons and labels sit on `--text-secondary` at rest | `2213:109` | Already built so in `.ui-nav-item`. Phase E1 checked it against the board (no change) |
+| Chip and Badge on `--radius-chip`, Tag on `--radius-tag` | `2212:187`, `2212:130`, `2212:143` | `.ui-chip`, `.ui-badge`, `.ui-tag` (Phase E1, built) |
+| Stepper, pending progress steps and the Progress Bar's track on `--surface-soft` | `2211:227`, `2221:1105`, `2215:272` | `.ui-stepper`, `.ui-progress`, `.ui-progress-bar` (Phase E1, built) |
+| Search rests with a hairline | `2207:455` | `.ui-input--box` inside `Search` (Phase E1, built) |
 | Page Header leads with the area icon and names the page in Label/M | `4015:764` | `PageHeader` gains an `icon` prop, and the title kind sets Label/M on `--text-secondary` (Phase E2) |
 | Generate Start gains a header row | `6023:3097` | `generate/GeneratePage.tsx` passes a `PageHeader` (Phase E2) |
 | The builder editor's bar becomes the 64 header row | `6072:3662` | `builder/TemplateBuilder.tsx` (Phase E5) |
-| Field holds a Medium control | `4015:628` | Default size in `Field` (Phase E1) |
+| Field holds a Medium control | `4015:628` | Already the default: `Field` passes its control through and `Input`, `Select` and `Search` default to Medium. Phase E1 set the label 12 over the control (built) |
 | The filled Text Area carries a copy button | `2207:298` | Where generated captions show (Phase E4) |
 | Composer · Inline is the Composer | `6024:218` | `chat/ChatComposer.tsx` (Phase E4) |
 | The v2 Composer is retired | `2216:222`, deleted | Its layout goes in Phase E4 |
@@ -174,13 +174,13 @@ Fixed in the file while this kit was written, so a phase reading it sees the fix
 | Template, Builder Template, Recent and History Cards on `--surface-card` | `4018:129`, `4018:156`, `4018:183`, `4018:1728` | `.sp-tcard`, `.sp-gen-card`, `.sp-tbcard` (Phase E1, so no card vanishes on the white page) |
 | Platform Chip is 46 on `--radius-chip` with a `--radius-tile` logo tile | `53:96` | `.ui-platform-chip` (Phase E3) |
 | Logo Card grounds on the plates | `4018:1794` | `admin/brand/LogosDetail.tsx` already reads `--plate-*` (Phase E6) |
-| Segmented Control gains the liquid selection | `2211:213`, Foundations › Interactions `6262:353` | `.ui-segmented` and `SegmentedControl` in `primitives/Toggles.tsx`, after `reference/liquid-selection.html` (Phase E1) |
+| Segmented Control gains the liquid selection | `2211:213`, Foundations › Interactions `6262:353` | `.ui-segmented` and `SegmentedControl` in `primitives/Toggles.tsx`, after `reference/liquid-selection.html` (Phase E1, built) |
 | The lockup is CJ's update, on `--logo-ink` | `6243:8529` | `BrandMark.tsx` (Phase E2) |
-| The Toast eases in and out and owns a timer that pauses | `2213:213`, Foundations › Interactions `6262:353` | `Toast` gains `open`, `duration` and `onTimeout`, and `.ui-toast` its transitions. `admin/brand/kitPlumbing.ts` and `admin/settings/settingsToast.tsx` pass 5000 and 4000 in place of their own `setTimeout` (Phase E1). The other four callers move their timers onto it in their own phases, `TemplateFill.tsx` (Phase E3), `generate/EditorPanel.tsx` and `generate/GeneratePage.tsx` (Phase E4) and `admin/AdminTemplates.tsx` (Phase E5) |
-| Button and Icon Button swap icons with a drawn check, and show a spinner past 400 ms when busy | `2206:542`, `2206:686` | An icon slot in `Button` and `IconButton`, a `busy` prop, and `CONFIRM_MS` in place of the two `COPIED_MS` (Phase E1) |
-| The Checkbox's mark draws in | `2211:148` | `CheckMark` in `primitives/Toggles.tsx` renders both paths, `.ui-check__mark` (Phase E1) |
-| Buttons, icon buttons, Send and chips shrink while pressed | `2206:542`, `2206:686`, `2206:754`, `2212:187`, `53:96` | `.ui-btn`, `.ui-iconbtn`, `.ui-send`, `.ui-chip`, `.ui-platform-chip` (Phase E1) |
-| A picked or dropped photo develops in, and a slow upload pulses | `2211:278` | `Upload` gains `busy`, `.ui-upload__thumb` (Phase E1). `builder/TemplateBuilder.tsx` and `builder/FieldInspector.tsx`, the only callers that track an upload, pass it (Phase E5) |
+| The Toast eases in and out and owns a timer that pauses | `2213:213`, Foundations › Interactions `6262:353` | `Toast` gains `open`, `duration` and `onTimeout`, and `.ui-toast` its transitions. `admin/brand/kitPlumbing.ts` and `admin/settings/settingsToast.tsx` pass 5000 and 4000 in place of their own `setTimeout` (Phase E1, built). The other four callers move their timers onto it in their own phases, `TemplateFill.tsx` (Phase E3), `generate/EditorPanel.tsx` and `generate/GeneratePage.tsx` (Phase E4) and `admin/AdminTemplates.tsx` (Phase E5) |
+| Button and Icon Button swap icons with a drawn check, and show a spinner past 400 ms when busy | `2206:542`, `2206:686` | An icon slot in `Button` and `IconButton`, a `busy` prop, and `CONFIRM_MS` in place of the two `COPIED_MS` (Phase E1, built) |
+| The Checkbox's mark draws in | `2211:148` | `CheckMark` in `primitives/Toggles.tsx` renders both paths, `.ui-check__mark` (Phase E1, built) |
+| Buttons, icon buttons, Send and chips shrink while pressed | `2206:542`, `2206:686`, `2206:754`, `2212:187`, `53:96` | `.ui-btn`, `.ui-iconbtn`, `.ui-send`, `.ui-chip`, `.ui-platform-chip` (Phase E1, built) |
+| A picked or dropped photo develops in, and a slow upload pulses | `2211:278` | `Upload` gains `busy`, `.ui-upload__thumb` (Phase E1, built). `builder/TemplateBuilder.tsx` and `builder/FieldInspector.tsx`, the only callers that track an upload, pass it (Phase E5) |
 | Result art develops in, and Download confirms with a check | `2216:287` | `ResultCard` gains `arrive`, set by `chat/GenerateTurn.tsx` and `chat/TemplateChatViews.tsx` (Phase E4) |
 | Metric values roll when the member changes the range | `2215:223` | `Metric` gains `roll`, a digit roll on `useRoll`'s timing. Insights draws its numbers with `admin/insights/InsightKpi.tsx` today, so `admin/Dashboard.tsx` moves them onto `Metric`, or `InsightKpi` takes the roll (Phase E7) |
 

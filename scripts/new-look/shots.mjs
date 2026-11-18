@@ -14,8 +14,8 @@
  * Playwright. Every route is saved full page at 1440, 1024 and 390 wide (or
  * --widths) in both themes, as <name>-<theme>-<width>.png (PHASE-9 §9 D9).
  * "onboarding" is the first screen of a browser with no workspace, and
- * "dev-ui" is the primitives sheet: the boards of the Components page, each
- * 1600 wide, then the working sheet.
+ * "dev-ui" is the primitives sheet: the six component type pages, each 1600
+ * wide, then the working sheet.
  *
  * A route's options hold a page in a state: `stall` freezes local store
  * calls in loading ("hang") or error ("fail") through src/lib/stores/local/
@@ -38,11 +38,10 @@
  * compare writes a heatmap per changed screen (changed pixels in magenta over
  * the dimmed new screen) and prints the share of pixels that moved. Both
  * compare the overlap of two images of different sizes, from the top left.
- * compare-image does it for any two images. boards saves each board of
- * /dev/ui as its own image, <board>.png, so the /dev/ui gate can compare
- * every board with its Figma export in docs/design/new-brand/reference/
- * (buttons, fields, selection, labels, avatars, navigation, containers and
- * themes).
+ * compare-image does it for any two images. boards saves each component's
+ * Light and Dark panels on /dev/ui as <component>-light.png and
+ * <component>-dark.png, so the /dev/ui gate can compare each with its Figma
+ * export in docs/design/elevenlabs/reference/.
  * props snapshots every custom property at the root in both themes, so a
  * refactor can prove it changed no value.
  *
@@ -677,9 +676,11 @@ async function compare(beforeDir, afterDir, outDir = path.join(afterDir, "diff")
 }
 
 // ----------------------------------------------------------------- boards
-/** Saves each board of /dev/ui as <board>.png. A board pins its own themes
- * (Light, with a Dark preview under each component), so one pass covers
- * both. */
+/** Saves each component's Light and Dark panels on /dev/ui as
+ * <component>-light.png and <component>-dark.png, to compare with the
+ * same panels exported from the Figma file into
+ * docs/design/elevenlabs/reference/. Each board pins its own themes, so
+ * one pass covers both. */
 async function boards(dir) {
   await mkdir(dir, { recursive: true });
   await withServer(async (base) => {
@@ -688,13 +689,15 @@ async function boards(dir) {
     const page = await context.newPage();
     await page.goto(base + "/dev/ui", { waitUntil: "domcontentloaded" });
     await settle(page);
-    for (const board of await page.locator(".dev-board").all()) {
-      const name = await board.getAttribute("data-board");
-      await board.screenshot({
-        path: path.join(dir, `${name}.png`),
-        animations: "disabled",
-        caret: "hide",
-      });
+    for (const block of await page.locator(".dev-board__block[data-component]").all()) {
+      const name = await block.getAttribute("data-component");
+      for (const panel of ["light", "dark"]) {
+        await block.locator(`[data-panel="${panel}"]`).screenshot({
+          path: path.join(dir, `${name}-${panel}.png`),
+          animations: "disabled",
+          caret: "hide",
+        });
+      }
       console.log(name);
     }
     await browser.close();

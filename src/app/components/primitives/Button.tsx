@@ -1,6 +1,7 @@
 import React from "react";
 import { ArrowUp, Square } from "lucide-react";
 import { cx, type DemoStateAttr, type IconComponent } from "./cx";
+import { IconSlot } from "./IconSlot";
 
 export type ButtonKind = "primary" | "neutral" | "ghost" | "destructive";
 export type ButtonSize = "sm" | "md" | "lg";
@@ -12,9 +13,13 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   kind?: ButtonKind;
   /** Small 28, Medium 36, Large 44. */
   size?: ButtonSize;
-  /** A leading icon, drawn at 16. A busy button passes its spinner here
-   * with aria-busy; the file draws no loading variant. */
+  /** A leading icon, drawn at 16. A change of icon crossfades in its slot,
+   * and Check draws itself in (Copy to Check). */
   icon?: IconComponent;
+  /** Work is under way: the button takes aria-busy and aria-disabled and
+   * ignores clicks, and once the wait passes 400 ms its icon slot shows a
+   * spinner. */
+  busy?: boolean;
   /** A trailing icon, drawn at 16. */
   trailingIcon?: IconComponent;
   "data-demo-state"?: DemoStateAttr;
@@ -27,11 +32,13 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function 
   {
     kind = "neutral",
     size = "md",
-    icon: Icon,
+    icon,
+    busy = false,
     trailingIcon: TrailingIcon,
     className,
     children,
     type = "button",
+    onClick,
     ...rest
   },
   ref,
@@ -43,9 +50,18 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function 
       className={cx("ui-reset ui-fill ui-ring ui-btn", className)}
       data-kind={kind}
       data-size={size}
+      aria-busy={busy || undefined}
+      aria-disabled={busy || undefined}
       {...rest}
+      onClick={(e) => {
+        if (busy) {
+          e.preventDefault();
+          return;
+        }
+        onClick?.(e);
+      }}
     >
-      {Icon && <Icon size={16} className="ui-icon" aria-hidden />}
+      {icon && <IconSlot icon={icon} busy={busy} />}
       <span className={size === "sm" ? "t-label-s" : "t-label-m"}>{children}</span>
       {TrailingIcon && <TrailingIcon size={16} className="ui-icon" aria-hidden />}
     </button>
