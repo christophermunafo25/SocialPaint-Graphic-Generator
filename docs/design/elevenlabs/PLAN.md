@@ -103,7 +103,7 @@ One pull request per phase into `main`.
 
 - Area icons live in `src/app/components/areas.ts` (`AREA_ICON`). The Sidebar's nav and every `PageHeader` read it, so a new page passes `icon={AREA_ICON.<area>}`, and a page one level down takes its parent's.
 - `PageHeader` takes `icon`, and its title kind takes `titleIsHeading` for a page whose own heading sits below the header row (Generate Start), as `currentIsHeading` already did for the trail.
-- The header row is `.sp-frame__head`: 64 plus a `--border-subtle` hairline, the Page Header centred in it. Phase E5 moves the builder editor's 44 bar into it, so "bare" will want a header row of its own then.
+- The header row is `.sp-frame__head`: 64 plus a `--border-subtle` hairline, the Page Header centred in it. The builder editor stays "bare" and draws the same row itself (`.sp-builder__bar`, from `6075:3293`, 2026-11-18): the area icon and the trail, then the status, the save state, Edit or Preview and Publish in the 32 gutters, with the workspace 24 under it and 24 over Main's foot. Phase E5 builds on it.
 - Main has no padding. The footer links keep 16 under them, and a "self" page with no footer (the fill page, Generate beside its inline editor) keeps Main's old 16 as its own bottom padding.
 - The lockup and the collapsed rail's mark draw inline on `--logo-ink` from `brandArt.ts`. The earlier mark (`BrandMark`, `61:467`) still draws Generate's byline and the public link page's footer, which no phase has changed.
 - The theme toggle is Outline Small in the sidebar and stays Ghost Small in the mobile bar.
