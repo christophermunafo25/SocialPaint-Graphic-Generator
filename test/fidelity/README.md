@@ -132,7 +132,7 @@ Before the two fixes it read three rows 11 to 14 points worse, and the other 21 
 | `effects-matrix`               | 14.50 / 14.66    | 0.85 / 1.13 |
 | `builder-roundtrip`            | 13.62 / 15.39    | 0.49 / 2.27 |
 
-Those are the numbers of the Mac they were measured on (macOS 15.6). On CI's runner (macOS 26) the same commit read `builder-roundtrip` 0.48 / 2.27 and `effects-matrix` 0.81 / 1.10, and the other 22 rows the same to two decimals.
+Those are the numbers of the Mac they were measured on (macOS 15.6). On CI's runner (macOS 26) `builder-roundtrip` has read 0.48 / 2.27. `effects-matrix` read 0.81 / 1.10 in two runs and its baseline in a third. The other 22 rows have read the same there as here, to two decimals.
 
 Its 24 baselines were recorded on 2026-11-18 with CJ's approval, on the commit that has both fixes. A baseline records what this engine draws, not what is right: a fixture that held one of the first three things on the list above would hold the wrong picture as its `webkit18` baseline. A new fixture needs a `webkit18` baseline like any other.
 

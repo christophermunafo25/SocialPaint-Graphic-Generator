@@ -17,6 +17,7 @@ import {
   requestKey,
   sawEveryRequest,
   unansweredNote,
+  unrecordable,
   usedKey,
   type FontRecording,
 } from "./fidelityFonts";
@@ -77,6 +78,32 @@ describe("recordingPart", () => {
   // What webkit18 fetched would be filed as WebKit's answers.
   it("refuses to record for webkit18, and names the engine to record with", () => {
     expect(() => recordingPart("webkit18", true)).toThrow(/--engines webkit\.$/);
+  });
+});
+
+describe("unrecordable", () => {
+  const css = requestKey("GET", CSS);
+  const file = requestKey("GET", FILE);
+
+  // webkit18 is answered from WebKit's part, so it misses what WebKit
+  // misses, and recording for WebKit answers both.
+  it("leaves out what WebKit asked for too", () => {
+    expect(unrecordable([usedKey("webkit", css), usedKey("webkit18", css)])).toEqual([]);
+  });
+
+  it("names what only webkit18 asked for", () => {
+    const unanswered = [
+      usedKey("chromium", css),
+      usedKey("webkit", css),
+      usedKey("webkit18", css),
+      usedKey("webkit18", file),
+    ];
+    expect(unrecordable(unanswered)).toEqual([usedKey("webkit18", file)]);
+  });
+
+  it("never names a request of an engine that has a part of its own", () => {
+    expect(unrecordable([usedKey("chromium", css), usedKey("firefox", file)])).toEqual([]);
+    expect(unrecordable([])).toEqual([]);
   });
 });
 

@@ -56,8 +56,10 @@ each machine that runs the harness. A run that lacks it stops before it
 renders anything and names that command.
 
 That build is frozen: it belongs to a Playwright release from June 2025.
-If a new runner image stops it launching, or its archive leaves Playwright's
-CDN, the job fails at its install step or in every `webkit18` row, on every
+If its archive leaves Playwright's CDN, the job fails at its install step,
+the gate step is skipped, and the job says nothing about the other three
+engines. If a new runner image stops the build launching, the run stops
+there with no table and no report for any engine. Either way that is every
 pull request that touches these paths. The remedy then is to drop the
 engine, with CJ's say: take `webkit18` out of the default engines in
 `scripts/fidelity/fidelity.mjs` and its step out of the workflow.

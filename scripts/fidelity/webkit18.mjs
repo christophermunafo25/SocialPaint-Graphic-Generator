@@ -45,6 +45,8 @@ export const WEBKIT_18 = "webkit18";
 
 const PACKAGE = "playwright-webkit-18";
 const INSTALL = "node scripts/fidelity/webkit18.mjs install";
+/** What a host that cannot have the build is told. */
+const WITHOUT_IT = "The other engines run without it: --engines chromium,firefox,webkit.";
 const DOWNLOAD_TIMEOUT_MS = 5 * 60_000;
 /** What install names the folders it unpacks into, in the browser cache.
  * The dot matters: Playwright takes a folder named webkit-* there for a
@@ -195,15 +197,14 @@ async function install() {
     return;
   }
   if (!executable.downloadURLs?.length) {
-    throw new Error(`Playwright 1.53.0 has no WebKit build for this host.`);
+    throw new Error(`Playwright 1.53.0 has no WebKit build for this host. ${WITHOUT_IT}`);
   }
   const name = path.posix.basename(new URL(executable.downloadURLs[0]).pathname);
   const expected = ARCHIVES[`${build}/${name}`];
   if (!expected) {
     throw new Error(
       `No checksum is recorded for ${build}/${name}, this host's archive. ` +
-        `Known: ${Object.keys(ARCHIVES).join(", ")} (scripts/fidelity/webkit18.mjs). ` +
-        `The other engines run without it: --engines chromium,firefox,webkit.`,
+        `Known: ${Object.keys(ARCHIVES).join(", ")} (scripts/fidelity/webkit18.mjs). ${WITHOUT_IT}`,
     );
   }
   // The link goes first, as in Playwright's own install: from the moment

@@ -64,6 +64,7 @@ import {
   outcomeWithFonts,
   recordingPart,
   sawEveryRequest,
+  unrecordable,
 } from "../../src/app/dev/fidelityFonts.ts";
 import { DEFAULT_TOLERANCE, routeFor, verdictFor } from "../../src/app/dev/fidelityVerdict.ts";
 import { openFontRecording } from "./fontRecording.mjs";
@@ -476,9 +477,17 @@ function printUnanswered(fonts) {
     console.error(
       "Run `node scripts/fidelity/fidelity.mjs fonts` to record them, then commit that folder.",
     );
-    if (requests.some((request) => request.startsWith(`${WEBKIT_18} `))) {
+    // webkit18 misses whatever WebKit misses, and fonts records those for
+    // both. What it cannot record is a request WebKit did not make. A run
+    // that did not render in WebKit cannot tell the two apart.
+    const lost = unrecordable(requests);
+    if (lost.length && engines.includes("webkit")) {
       console.error(
-        `fonts cannot record a request only ${WEBKIT_18} made: it is given WebKit's answers (test/fidelity/README.md).`,
+        `fonts cannot record what only ${WEBKIT_18} asked for (${lost.length} of these): it is given WebKit's answers (test/fidelity/README.md).`,
+      );
+    } else if (lost.length) {
+      console.error(
+        `fonts records for WebKit, whose answers ${WEBKIT_18} is given. What WebKit does not ask for too, it cannot record (test/fidelity/README.md).`,
       );
     }
   }

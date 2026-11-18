@@ -50,6 +50,20 @@ export function recordingPart(engine: Engine, record: boolean): RecordedEngine {
   return part;
 }
 
+/** Of a run's unanswered requests (each as usedKey), the ones a recording
+ * run cannot record: those an engine with no part of its own made and the
+ * engine whose answers it is given did not. A request both made is
+ * recorded by recording for the second, which answers the first too. */
+export function unrecordable(unanswered: readonly string[]): string[] {
+  const asked = new Set(unanswered);
+  return unanswered.filter((id) => {
+    const space = id.indexOf(" ");
+    const engine = id.slice(0, space) as Engine;
+    const part = recordingEngine(engine);
+    return part !== engine && !asked.has(usedKey(part, id.slice(space + 1)));
+  });
+}
+
 /** True for a request the recording answers. Anything else (the dev
  * server, a fixture's images) is not the recording's to answer. */
 export function isPinnedFontUrl(url: string): boolean {
@@ -145,9 +159,9 @@ export function outcomeWithFonts(
 
 /** Whether a recording run made every request the fixtures can make, so
  * the answers it did not use can be dropped: it rendered every fixture in
- * every engine the recording has a part for. A fixture that was skipped or errored made only some of
- * its requests, and dropping the rest would break it wherever it does
- * render. */
+ * every engine the recording has a part for. A fixture that was skipped or
+ * errored made only some of its requests, and dropping the rest would
+ * break it wherever it does render. */
 export function sawEveryRequest(run: {
   everyFixture: boolean;
   everyEngine: boolean;
