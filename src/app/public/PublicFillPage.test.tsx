@@ -5,7 +5,7 @@
 
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { BrandKit, TemplateField, TemplateSchema } from "@/lib/types";
 import type { PublicTemplate } from "@/lib/publicLink/client";
@@ -130,6 +130,39 @@ describe("PublicFillPage", () => {
     expect(screen.queryByRole("button", { name: /Download PNG/ })).toBeNull();
     // The person's place moves on to the button that took Download PNG's.
     expect(document.activeElement).toBe(again);
+  });
+
+  it("keeps the download toast up for its time, and a second download restarts it", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      vi.mocked(fetchPublicTemplate).mockResolvedValue(payload());
+      render(<PublicFillPage token="tok" />);
+      await user.type(await screen.findByLabelText("Headline"), "Meet Acme Pro");
+      await user.click(screen.getByRole("button", { name: /Download PNG/ }));
+      expect(await screen.findByText(/Graphic downloaded/)).toBeTruthy();
+      act(() => {
+        vi.advanceTimersByTime(3000);
+      });
+      await user.click(screen.getByRole("button", { name: "Download again" }));
+      act(() => {
+        vi.advanceTimersByTime(3000);
+      });
+      // Past the first toast's 4000, the second keeps its own time.
+      expect(screen.getByText(/Graphic downloaded/)).toBeTruthy();
+      act(() => {
+        vi.advanceTimersByTime(1500);
+      });
+      // Its time is up: it eases out, then unmounts.
+      const leaving = screen.getByText(/Graphic downloaded/).closest(".ui-toast");
+      expect(leaving?.hasAttribute("data-leaving")).toBe(true);
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(screen.queryByText(/Graphic downloaded/)).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("offers no photo field when the link turns uploads off", async () => {

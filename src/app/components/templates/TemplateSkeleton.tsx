@@ -8,7 +8,7 @@ export function LibraryShelfSkeleton({ cards = 4 }: { cards?: number }) {
   return (
     <section className="sp-lib-shelf" aria-busy="true" aria-label="Loading templates">
       <div className="sp-lib-shelf__header">
-        <Skeleton width={240} height={17} />
+        <Skeleton width={240} height={12} />
       </div>
       <div className="sp-lib-rail">
         <div className="sp-lib-rail__track sp-lib-shelf__track">
