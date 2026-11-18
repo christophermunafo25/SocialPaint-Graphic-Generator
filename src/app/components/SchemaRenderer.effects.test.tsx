@@ -96,3 +96,81 @@ describe("an image field's clipping box under an effects wrapper", () => {
     expect(image.style.position).toBe("absolute");
   });
 });
+
+const rect = (over: Partial<TemplateField>): TemplateField => ({
+  id: "s1",
+  label: "Card",
+  fieldKey: "card",
+  type: "shape",
+  shape: "rect",
+  x: 0,
+  y: 0,
+  width: 280,
+  height: 200,
+  colorHex: DEFAULT_FILL_HEX,
+  cornerRadius: { tl: 40, tr: 40, br: 40, bl: 40 },
+  ...over,
+});
+
+// A rect shape carries its drop shadow or blur itself, so the same Safari
+// fault reaches the one positioned layer under it that has no filter of its
+// own: an inner shadow's frame with no blur. The overlay that clips the
+// frame is a stacking context, which keeps the frame's ring inside the shape.
+describe("the inner shadow overlay of a rect shape", () => {
+  it("is a stacking context that clips, under the shape's own drop shadow", () => {
+    const { container } = render(
+      <FieldBoxContent
+        field={rect({ effects: [DROP_SHADOW, HARD_INNER_SHADOW] })}
+        value={undefined}
+        brandKit={null}
+      />,
+    );
+    const shape = container.firstElementChild as HTMLElement;
+    expect(shape.style.filter).toContain("drop-shadow(");
+    const overlay = shape.firstElementChild as HTMLElement;
+    expect(overlay.parentElement).toBe(shape);
+    expect(overlay.style.overflow).toBe("hidden");
+    expect(overlay.style.isolation).toBe("isolate");
+    const frame = overlay.firstElementChild as HTMLElement;
+    expect(frame.style.position).toBe("absolute");
+    expect(frame.style.filter).toBe("");
+  });
+
+  it("is a stacking context under the shape's own layer blur too", () => {
+    const { container } = render(
+      <FieldBoxContent
+        field={rect({ effects: [LAYER_BLUR, HARD_INNER_SHADOW] })}
+        value={undefined}
+        brandKit={null}
+      />,
+    );
+    const shape = container.firstElementChild as HTMLElement;
+    expect(shape.style.filter).toContain("blur(");
+    const overlay = shape.firstElementChild as HTMLElement;
+    expect(overlay.style.isolation).toBe("isolate");
+  });
+
+  it("keeps the markup it had when every frame is blurred", () => {
+    // A blurred frame carries its own filter, and Safari clips a filtered
+    // layer when it applies the filter.
+    const soft: FieldEffect = {
+      type: "innerShadow",
+      x: 0,
+      y: 6,
+      blur: 16,
+      spread: 6,
+      color: DEFAULT_FILL_HEX,
+    };
+    const { container } = render(
+      <FieldBoxContent
+        field={rect({ effects: [DROP_SHADOW, soft] })}
+        value={undefined}
+        brandKit={null}
+      />,
+    );
+    const overlay = container.firstElementChild!.firstElementChild as HTMLElement;
+    expect(overlay.style.overflow).toBe("hidden");
+    expect(overlay.style.isolation).toBe("");
+    expect((overlay.firstElementChild as HTMLElement).style.filter).toContain("blur(");
+  });
+});

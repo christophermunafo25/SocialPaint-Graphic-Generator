@@ -98,11 +98,24 @@ export function filterCss(effects: readonly FieldEffect[], withShadows = true): 
   return parts.length ? parts.join(" ") : undefined;
 }
 
+/** How much smaller than the box a blurred ring's hole is when no offset
+ * and no spread would move or shrink it, in px. Safari before 26 hands a
+ * filtered layer a paint rectangle already cut by its ancestors' clip, and
+ * skips a border whose inner edge contains that rectangle. A hole exactly
+ * the size of the box does, so the ring was never painted and the shadow
+ * never showed (a canvas inner shadow with no offset, most of all). A hole
+ * this much smaller never contains it. It is more than the 1/64 px WebKit
+ * lays out in and survives px()'s two decimals, and it changed no pixel of
+ * the fidelity renders in Chromium, Firefox or WebKit 26. */
+const FLUSH_HOLE_INSET_PX = 0.02;
+
 /** One inner shadow as a frame: a ring of the shadow's color around a hole
  * the size of the box, shrunk by the spread and moved by the offset, then
  * blurred. Drawn inside the box's clip, the ring's blurred inner edge is
  * the inner shadow. The ring reaches blur + 4 px past the shadow's
  * extent, so its outer edge lightens the shadow by about 1% at most. Corner radii are the box's own, so the hole's corners match.
+ * A blurred hole that would sit flush with the box is a hairline smaller
+ * (FLUSH_HOLE_INSET_PX).
  * Styles are relative to the box; frames are drawn bottom to top. */
 export function innerShadowFrames(
   effects: readonly FieldEffect[],
@@ -113,7 +126,15 @@ export function innerShadowFrames(
     .map((e) => {
       const spread = Math.max(0, e.spread ?? 0);
       const ring = Math.ceil(e.blur + Math.abs(e.x) + Math.abs(e.y) + spread + 4);
-      const outer = ring - spread;
+      // Flush: nothing moves the hole off the box or shrinks it inside it.
+      // An unblurred flush ring stays as it is: it lies wholly outside the
+      // box and rightly paints nothing.
+      const flush =
+        e.blur > 0 &&
+        Math.abs(e.x) < FLUSH_HOLE_INSET_PX &&
+        Math.abs(e.y) < FLUSH_HOLE_INSET_PX &&
+        spread < FLUSH_HOLE_INSET_PX;
+      const outer = ring - spread - (flush ? FLUSH_HOLE_INSET_PX : 0);
       const corner = (r: number) => px(Math.max(0, r - spread) + ring);
       return {
         position: "absolute",

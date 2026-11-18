@@ -539,14 +539,31 @@ const overlayBase: React.CSSProperties = {
 };
 
 /** Inner shadows and noise drawn over a box-shaped element's content,
- * clipped to its corner radius. Null when there is neither. */
+ * clipped to its corner radius. Null when there is neither.
+ *
+ * An inner shadow's frame with no blur has no filter of its own, so it is
+ * a plain positioned layer, and Safari before 26 drew it whole, outside the
+ * box, when the element above it carried a drop shadow or a blur, as a rect
+ * shape does (WebKit bug 219520, the fault WRAPPED_IMAGE_BOX answers for a
+ * photo). An overlay that holds such a frame is its own stacking context,
+ * so the frame paints inside this layer, which clips. A blurred frame is
+ * clipped when its own filter is applied and needs nothing. */
 function BoxOverlay({ effects, radius }: { effects: FieldEffect[]; radius?: CornerRadius }) {
   const frames = innerShadowFrames(effects, radius);
   const noise = noiseLayerCss(noiseEffects(effects));
   if (!frames.length && !noise) return null;
   const r = radius ? `${radius.tl}px ${radius.tr}px ${radius.br}px ${radius.bl}px` : undefined;
+  const holdsPlainFrame = frames.some((frame) => frame.filter === undefined);
   return (
-    <div style={{ ...overlayBase, overflow: "hidden", borderRadius: r, ...(noise ?? {}) }}>
+    <div
+      style={{
+        ...overlayBase,
+        overflow: "hidden",
+        ...(holdsPlainFrame ? { isolation: "isolate" } : {}),
+        borderRadius: r,
+        ...(noise ?? {}),
+      }}
+    >
       {frames.map((frame, i) => (
         <div key={i} style={frame} />
       ))}

@@ -88,6 +88,64 @@ describe("innerShadowFrames", () => {
     // ring = 16 + 0 + 6 + 0 + 4 = 26: outer corners are the box's plus the ring.
     expect(frame.borderRadius).toBe("46px 46px 26px 26px");
   });
+
+  it("makes a blurred hole a hairline smaller than the box when nothing moves or shrinks it", () => {
+    // Safari before 26 never paints a ring whose hole is exactly the box, so
+    // a canvas inner shadow with no offset did not show there.
+    const flush = { type: "innerShadow", x: 0, y: 0, blur: 60, color: "#082A2366" } as const;
+    const [frame] = innerShadowFrames([flush]);
+    // ring = 60 + 4 = 64, and the frame stops 0.02 px short of it all round:
+    // the hole is the box less 0.02 px on every side.
+    expect(frame).toMatchObject({
+      left: "-63.98px",
+      top: "-63.98px",
+      width: "calc(100% + 127.96px)",
+      height: "calc(100% + 127.96px)",
+      border: "64px solid #082A2366",
+      borderRadius: "64px",
+      filter: "blur(30px)",
+    });
+    // A rounded box gets the same hairline, and its hole keeps the box's corners.
+    const [rounded] = innerShadowFrames([flush], { tl: 20, tr: 20, br: 20, bl: 20 });
+    expect(rounded).toMatchObject({ left: "-63.98px", borderRadius: "84px 84px 84px 84px" });
+  });
+
+  it("leaves the hole where an offset or a spread already puts it off the box's edge", () => {
+    const moved = { type: "innerShadow", x: 0, y: 4, blur: 12, color: "#00000040" } as const;
+    // ring = 12 + 4 + 4 = 20, outer = 20: the hole is the box moved down 4.
+    expect(innerShadowFrames([moved])[0]).toMatchObject({
+      left: "-20px",
+      top: "-16px",
+      width: "calc(100% + 40px)",
+      height: "calc(100% + 40px)",
+    });
+    const shrunk = {
+      type: "innerShadow",
+      x: 0,
+      y: 0,
+      blur: 12,
+      spread: 2,
+      color: "#00000040",
+    } as const;
+    // ring = 12 + 2 + 4 = 18, outer = 16: the hole is the box less 2 px.
+    expect(innerShadowFrames([shrunk])[0]).toMatchObject({
+      left: "-16px",
+      top: "-16px",
+      width: "calc(100% + 32px)",
+    });
+  });
+
+  it("leaves an unblurred flush ring wholly outside the box, where it paints nothing", () => {
+    const hard = { type: "innerShadow", x: 0, y: 0, blur: 0, color: "#000000" } as const;
+    // ring = 4, outer = 4: the hole is the box itself. A hairline here would
+    // draw a faint line round the box that the shadow does not have.
+    expect(innerShadowFrames([hard])[0]).toMatchObject({
+      left: "-4px",
+      top: "-4px",
+      width: "calc(100% + 8px)",
+      border: "4px solid #000000",
+    });
+  });
 });
 
 describe("filterCss", () => {
