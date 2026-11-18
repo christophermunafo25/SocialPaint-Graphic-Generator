@@ -31,13 +31,14 @@
  */
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { createReadStream, createWriteStream, existsSync } from "node:fs";
+import { createReadStream, createWriteStream, existsSync, realpathSync } from "node:fs";
 import { chmod, mkdir, mkdtemp, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
+import { fileURLToPath } from "node:url";
 
 /** The engine's name in --engines, in a fixture's baselines and in reports. */
 export const WEBKIT_18 = "webkit18";
@@ -52,6 +53,9 @@ const STAGING = ".unpacking-webkit18-";
 /** A staging folder this old was left by an install that was killed.
  * Unpacking takes seconds. */
 const STALE_STAGING_MS = 60 * 60_000;
+/** How often the move into place is tried. Each failure after the first
+ * is another install acting on the folder in the same instant. */
+const MOVE_ATTEMPTS = 5;
 
 /** The SHA-256 of each archive install has been checked against, by build
  * folder and file name. A host whose archive is not listed gets nothing
@@ -131,9 +135,11 @@ async function link(directory, packagePath) {
 }
 
 /** Removes the staging folders that installs which were killed left in the
- * cache. Nothing else would: the dot hides them from Playwright. */
+ * cache. Nothing else would: the dot hides them from Playwright. This is
+ * housekeeping: what it cannot read or remove it leaves, and the install
+ * goes on. */
 async function removeStaleStaging(cache) {
-  for (const entry of await readdir(cache)) {
+  for (const entry of await readdir(cache).catch(() => [])) {
     if (!entry.startsWith(STAGING)) continue;
     const folder = path.join(cache, entry);
     const modified = await stat(folder).then(
@@ -141,15 +147,17 @@ async function removeStaleStaging(cache) {
       () => Date.now(),
     );
     if (Date.now() - modified > STALE_STAGING_MS) {
-      await rm(folder, { recursive: true, force: true });
+      await rm(folder, { recursive: true, force: true }).catch(() => undefined);
     }
   }
 }
 
 /** Moves a fully unpacked build into place. Another install's finished
- * folder stays where it is. A half unpacked one makes way, once, and is
- * moved aside before it is removed: if another install finished there in
- * the meantime, what was moved aside is its folder, and it goes back. */
+ * folder stays where it is. A half unpacked one makes way, and is moved
+ * aside before it is removed: if another install finished there in the
+ * meantime, what was moved aside is its folder, and it goes back. The move
+ * is tried a few times, because installs running at once can each find the
+ * folder mid-move. */
 async function moveIntoPlace(staging, directory) {
   for (let attempt = 1; ; attempt += 1) {
     try {
@@ -157,7 +165,7 @@ async function moveIntoPlace(staging, directory) {
       return;
     } catch (e) {
       if (existsSync(markerFile(directory))) return;
-      if (attempt === 2) throw e;
+      if (attempt === MOVE_ATTEMPTS) throw e;
       const aside = await mkdtemp(path.join(path.dirname(directory), STAGING));
       try {
         await rename(directory, aside);
@@ -233,9 +241,13 @@ async function install() {
 }
 
 // True only for the file node was started with, whatever path it was
-// reached by. Comparing argv with this file's own path fails through a
-// symlinked folder, and the install would then do nothing and exit 0.
-if (import.meta.main) {
+// reached by. argv holds the path as it was typed, which through a
+// symlinked folder is not this file's own, and the install would then do
+// nothing and exit 0. Node before 24.2 has no import.meta.main.
+const startedDirectly =
+  import.meta.main ??
+  (Boolean(process.argv[1]) && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url));
+if (startedDirectly) {
   if (process.argv[2] !== "install") {
     console.error(`Usage: ${INSTALL}`);
     process.exit(2);

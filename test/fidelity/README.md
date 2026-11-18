@@ -121,7 +121,7 @@ It is not Safari, and it draws like it. On 2026-11-18, 21 of the 24 fixtures cam
 
 Five temporary fixtures (crops, masks, flips, opacity, grain on a photo, unblurred inner shadows, boxes the canvas cuts off or that bleed off every edge) came out of it identical to Safari 18.6's engine in every pixel. That includes the first three things on the list above, which it draws wrong exactly as Safari 18.6 does.
 
-One fault of its own is known. An inner shadow in an opaque colour on a box with rounded corners comes out weaker in it than in Safari 18.6 and WebKit 26.6, which draw it alike: about an eighth of a 140 px box with 40 px corners differs. With a semi-transparent colour or square corners all three agree. Every inner shadow in the fixtures is semi-transparent, so no row shows it.
+One fault of its own is known. An inner shadow in an opaque colour on a box with rounded corners comes out weaker in it than in Safari 18.6 and WebKit 26.6, which draw it alike: about an eighth of a 140 px box with 40 px corners is over the compare's threshold. With a semi-transparent colour all three agree to the pixel, and with square corners to within one level in six pixels. Every inner shadow in the fixtures is semi-transparent, so no row shows it.
 
 Before the two fixes it read three rows 11 to 14 points worse, and the other 21 as it reads them now:
 
@@ -130,6 +130,8 @@ Before the two fixes it read three rows 11 to 14 points worse, and the other 21 
 | `crop-matrix`                  | 12.78 / 12.81    | 1.87 / 0.00 |
 | `effects-matrix`               | 14.50 / 14.66    | 0.85 / 1.13 |
 | `builder-roundtrip`            | 13.62 / 15.39    | 0.49 / 2.27 |
+
+Those are the numbers of the Mac they were measured on (macOS 15.6). On CI's runner (macOS 26) the same commit read `builder-roundtrip` 0.48 / 2.27 and `effects-matrix` 0.81 / 1.10, and the other 22 rows the same to two decimals.
 
 No fixture has a `webkit18` baseline, so its rows read `no baseline` and a default run leaves the engine out. Under CI a row with no baseline fails, so the workflow renders it in steps of its own that empty `CI` and report only (`docs/CI.md`).
 

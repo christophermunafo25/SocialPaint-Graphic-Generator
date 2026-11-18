@@ -29,7 +29,9 @@ jobs:
     # The baselines were recorded on macOS. Text rasterizes differently on
     # Linux, so a Linux runner would report glyph edges as regressions.
     runs-on: macos-latest
-    timeout-minutes: 20
+    # 20 minutes for the gate, as before, and 8 for the two WebKit 18.5
+    # steps after it, so they cannot run a passing gate out of time.
+    timeout-minutes: 28
     steps:
       - uses: actions/checkout@v5
 
@@ -52,8 +54,8 @@ jobs:
       # An older WebKit that draws as Safari before 26 does
       # (scripts/fidelity/webkit18.mjs). No fixture has a baseline for it,
       # so the two steps below report and fail nothing. They come after the
-      # gate, each has a limit of its own inside the job's, and a failure
-      # in either shows as a warning on the run.
+      # gate, each has a limit of its own, and a failure in either shows as
+      # a warning on the run.
       - name: WebKit 18.5
         if: ${{ !cancelled() }}
         continue-on-error: true
@@ -84,6 +86,14 @@ jobs:
             echo "::warning title=WebKit 18.5::The webkit18 run exited $status. It reports only. Read this step's log."
           fi
           exit "$status"
+
+      # The step above can be stopped, at its limit or by a cancel, with the
+      # gate's report still set aside. This puts it back whatever happened.
+      - name: Put the gate's report back
+        if: always()
+        run: |
+          out=test/fidelity/out
+          if [ -f "$out/report-gate.json" ]; then mv "$out/report-gate.json" "$out/report.json"; fi
 
       - name: Upload renders, heatmaps and report
         if: always()
