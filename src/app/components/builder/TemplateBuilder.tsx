@@ -39,6 +39,7 @@ import { useAsync } from "@/lib/useAsync";
 import { useHistory } from "@/lib/useHistory";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useBrand } from "@/lib/brand/BrandContext";
+import { AREA_ICON } from "../areas";
 import { ErrorBoundary } from "../ErrorBoundary";
 import { ErrorState } from "../ErrorState";
 import { newId } from "@/lib/stores/local/db";
@@ -3029,36 +3030,44 @@ export function TemplateBuilder({
         </div>
       )}
 
-      {/* ── Top bar (322:157): the trail, the status and the save state, then
-          Edit or Preview and Publish. ───────────────────────────────────── */}
+      {/* ── Header row (6075:3293): the area's icon and the trail, the status
+          and the save state, then Edit or Preview and Publish. ──────────── */}
       <header className="sp-builder__bar">
-        <nav aria-label="Breadcrumb" className="ui-breadcrumb sp-builder__crumbs">
-          <ol>
-            <li>
-              <a
-                href={routeToUrl({ name: "adminTemplates" })}
-                className="ui-reset ui-ring t-label-m ui-breadcrumb__link"
-                onClick={(e) => {
-                  if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-                  e.preventDefault();
-                  navigate({ name: "adminTemplates" });
-                }}
-              >
-                Template Builder
-              </a>
-            </li>
-            <li>
-              <span className="t-label-m ui-breadcrumb__divider" aria-hidden>
-                /
-              </span>
-              <CrumbRename
-                value={draft.name}
-                placeholder="Untitled template"
-                onSave={(name) => setDraft((d) => ({ ...d, name }), "text:name")}
-              />
-            </li>
-          </ol>
-        </nav>
+        <div className="sp-builder__lead">
+          <AREA_ICON.templateBuilder
+            size={18}
+            strokeWidth={1.5}
+            className="ui-icon sp-builder__area-icon"
+            aria-hidden
+          />
+          <nav aria-label="Breadcrumb" className="ui-breadcrumb sp-builder__crumbs">
+            <ol>
+              <li>
+                <a
+                  href={routeToUrl({ name: "adminTemplates" })}
+                  className="ui-reset ui-ring t-label-m ui-breadcrumb__link"
+                  onClick={(e) => {
+                    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+                    e.preventDefault();
+                    navigate({ name: "adminTemplates" });
+                  }}
+                >
+                  Template Builder
+                </a>
+              </li>
+              <li>
+                <span className="t-label-m ui-breadcrumb__divider" aria-hidden>
+                  /
+                </span>
+                <CrumbRename
+                  value={draft.name}
+                  placeholder="Untitled template"
+                  onSave={(name) => setDraft((d) => ({ ...d, name }), "text:name")}
+                />
+              </li>
+            </ol>
+          </nav>
+        </div>
         {sourceChosen && (
           <>
             <Badge tone={draft.status === "published" ? "positive" : "neutral"}>
