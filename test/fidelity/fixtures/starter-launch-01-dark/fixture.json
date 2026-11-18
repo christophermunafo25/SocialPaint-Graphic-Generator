@@ -2,6 +2,6 @@
   "name": "starter-launch-01-dark",
   "kind": "starter",
   "variantId": "dark",
-  "baseline": { "chromium": 0, "firefox": 0.53, "webkit": 1.2 },
-  "blurBaseline": { "chromium": 0, "firefox": 0, "webkit": 0.71 }
+  "baseline": { "chromium": 0, "firefox": 0.53, "webkit": 1.2, "webkit18": 1.47 },
+  "blurBaseline": { "chromium": 0, "firefox": 0, "webkit": 0.71, "webkit18": 2.64 }
 }

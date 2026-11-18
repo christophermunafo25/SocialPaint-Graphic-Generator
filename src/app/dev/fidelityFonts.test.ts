@@ -10,11 +10,14 @@ import {
   isPinnedFontUrl,
   outcomeWithFonts,
   recordable,
+  recordingEngine,
+  recordingPart,
   recordingToSave,
   replayable,
   requestKey,
   sawEveryRequest,
   unansweredNote,
+  unrecordable,
   usedKey,
   type FontRecording,
 } from "./fidelityFonts";
@@ -43,6 +46,64 @@ describe("requestKey", () => {
   it("joins the method and the address", () => {
     expect(requestKey("get", CSS)).toBe(`GET ${CSS}`);
     expect(requestKey("HEAD", CSS)).toBe(`HEAD ${CSS}`);
+  });
+});
+
+describe("recordingEngine", () => {
+  it("answers each engine from its own part of the recording", () => {
+    expect(recordingEngine("chromium")).toBe("chromium");
+    expect(recordingEngine("firefox")).toBe("firefox");
+    expect(recordingEngine("webkit")).toBe("webkit");
+  });
+
+  it("answers webkit18 from WebKit's", () => {
+    expect(recordingEngine("webkit18")).toBe("webkit");
+  });
+});
+
+describe("recordingPart", () => {
+  it("replays each engine from its own part, and webkit18 from WebKit's", () => {
+    expect(recordingPart("chromium", false)).toBe("chromium");
+    expect(recordingPart("firefox", false)).toBe("firefox");
+    expect(recordingPart("webkit", false)).toBe("webkit");
+    expect(recordingPart("webkit18", false)).toBe("webkit");
+  });
+
+  it("records for the engines that have a part", () => {
+    expect(recordingPart("chromium", true)).toBe("chromium");
+    expect(recordingPart("firefox", true)).toBe("firefox");
+    expect(recordingPart("webkit", true)).toBe("webkit");
+  });
+
+  // What webkit18 fetched would be filed as WebKit's answers.
+  it("refuses to record for webkit18, and names the engine to record with", () => {
+    expect(() => recordingPart("webkit18", true)).toThrow(/--engines webkit\.$/);
+  });
+});
+
+describe("unrecordable", () => {
+  const css = requestKey("GET", CSS);
+  const file = requestKey("GET", FILE);
+
+  // webkit18 is answered from WebKit's part, so it misses what WebKit
+  // misses, and recording for WebKit answers both.
+  it("leaves out what WebKit asked for too", () => {
+    expect(unrecordable([usedKey("webkit", css), usedKey("webkit18", css)])).toEqual([]);
+  });
+
+  it("names what only webkit18 asked for", () => {
+    const unanswered = [
+      usedKey("chromium", css),
+      usedKey("webkit", css),
+      usedKey("webkit18", css),
+      usedKey("webkit18", file),
+    ];
+    expect(unrecordable(unanswered)).toEqual([usedKey("webkit18", file)]);
+  });
+
+  it("never names a request of an engine that has a part of its own", () => {
+    expect(unrecordable([usedKey("chromium", css), usedKey("firefox", file)])).toEqual([]);
+    expect(unrecordable([])).toEqual([]);
   });
 });
 
@@ -282,6 +343,12 @@ describe("test/fidelity/google-fonts", () => {
 
   it("is in the order the runner writes it", () => {
     expect(JSON.stringify(recording)).toBe(JSON.stringify(inOrder(recording)));
+  });
+
+  // webkit18 is answered from WebKit's part (recordingEngine), so a part
+  // of its own would be read by nothing.
+  it("holds answers for the three recorded engines and no other", () => {
+    expect(Object.keys(recording).sort()).toEqual([...engines]);
   });
 
   // Every fixture's page loads the platform stylesheet, so each Google

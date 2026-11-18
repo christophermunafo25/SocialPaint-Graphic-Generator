@@ -18,9 +18,51 @@ export interface RecordedAnswer {
   file: string;
 }
 
+/** The engines the recording holds answers for. webkit18 has no part of
+ * its own (recordingEngine). */
+export type RecordedEngine = Exclude<Engine, "webkit18">;
+
 /** recording.json: each engine's requests and their answers. Per engine,
  * because Google answers each browser its own way. */
-export type FontRecording = Partial<Record<Engine, Record<string, RecordedAnswer>>>;
+export type FontRecording = Partial<Record<RecordedEngine, Record<string, RecordedAnswer>>>;
+
+/** The engine whose recorded answers an engine is given: its own, except
+ * for webkit18 (scripts/fidelity/webkit18.mjs), which has none and takes
+ * WebKit's. Its page asks Google for the same stylesheets, so the answers
+ * name the same files, and a request WebKit never made fails its row like
+ * any other the recording lacks. Given those answers it drew every fixture's
+ * text as Safari 18.6 drew it from Google itself (2026-11-18). */
+export function recordingEngine(engine: Engine): RecordedEngine {
+  return engine === "webkit18" ? "webkit" : engine;
+}
+
+/** The part of the recording a page's requests are answered from, in a run
+ * that replays or one that records. Recording for an engine with no part
+ * of its own is refused: what it fetched would be filed as another
+ * engine's answers, got with a different browser. */
+export function recordingPart(engine: Engine, record: boolean): RecordedEngine {
+  const part = recordingEngine(engine);
+  if (record && part !== engine) {
+    throw new Error(
+      `${engine} is given ${part}'s recorded answers and has none of its own. Record with --engines ${part}.`,
+    );
+  }
+  return part;
+}
+
+/** Of a run's unanswered requests (each as usedKey), the ones a recording
+ * run cannot record: those an engine with no part of its own made and the
+ * engine whose answers it is given did not. A request both made is
+ * recorded by recording for the second, which answers the first too. */
+export function unrecordable(unanswered: readonly string[]): string[] {
+  const asked = new Set(unanswered);
+  return unanswered.filter((id) => {
+    const space = id.indexOf(" ");
+    const engine = id.slice(0, space) as Engine;
+    const part = recordingEngine(engine);
+    return part !== engine && !asked.has(usedKey(part, id.slice(space + 1)));
+  });
+}
 
 /** True for a request the recording answers. Anything else (the dev
  * server, a fixture's images) is not the recording's to answer. */
@@ -117,9 +159,9 @@ export function outcomeWithFonts(
 
 /** Whether a recording run made every request the fixtures can make, so
  * the answers it did not use can be dropped: it rendered every fixture in
- * every engine. A fixture that was skipped or errored made only some of
- * its requests, and dropping the rest would break it wherever it does
- * render. */
+ * every engine the recording has a part for. A fixture that was skipped or
+ * errored made only some of its requests, and dropping the rest would
+ * break it wherever it does render. */
 export function sawEveryRequest(run: {
   everyFixture: boolean;
   everyEngine: boolean;
@@ -194,4 +236,4 @@ export function bodyFiles(recording: FontRecording): Set<string> {
 }
 
 const entries = (recording: FontRecording) =>
-  Object.entries(recording) as Array<[Engine, Record<string, RecordedAnswer>]>;
+  Object.entries(recording) as Array<[RecordedEngine, Record<string, RecordedAnswer>]>;

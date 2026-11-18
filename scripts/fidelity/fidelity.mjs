@@ -2,7 +2,7 @@
 /**
  * The render fidelity harness (docs/brand-system/PHASE-0.md, Step 4).
  *
- *   node scripts/fidelity/fidelity.mjs run [--only a,b] [--engines chromium,firefox,webkit]
+ *   node scripts/fidelity/fidelity.mjs run [--only a,b] [--engines chromium,firefox,webkit,webkit18]
  *   node scripts/fidelity/fidelity.mjs bless <name> [--approved]
  *   node scripts/fidelity/fidelity.mjs baseline <name> --approved [--engines …]
  *   node scripts/fidelity/fidelity.mjs fonts [--only a,b] [--engines …]
@@ -42,8 +42,13 @@
  * the one command that reaches Google: it renders the fixtures into
  * test/fidelity/out/fonts, fetches the answers the recording lacks and
  * writes them. It never fetches an answer it already has, and when it has
- * rendered every fixture in every engine it drops the answers none of
- * them asked for.
+ * rendered every fixture in every engine it records for, it drops the
+ * answers none of them asked for.
+ *
+ * The fourth engine, webkit18, is an older WebKit that stands in for
+ * Safari before 26 (webkit18.mjs says what it is and installs it). It is
+ * given WebKit's recorded fonts, so fonts leaves it out, and refuses it
+ * when --engines names it.
  *
  * The harness starts its own Vite dev server on the local backend (the
  * shots.mjs approach; --port, default 4327) unless --base points at one.
@@ -55,9 +60,15 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium, firefox, webkit } from "playwright";
 import * as prettier from "prettier";
-import { outcomeWithFonts, sawEveryRequest } from "../../src/app/dev/fidelityFonts.ts";
+import {
+  outcomeWithFonts,
+  recordingPart,
+  sawEveryRequest,
+  unrecordable,
+} from "../../src/app/dev/fidelityFonts.ts";
 import { DEFAULT_TOLERANCE, routeFor, verdictFor } from "../../src/app/dev/fidelityVerdict.ts";
 import { openFontRecording } from "./fontRecording.mjs";
+import { WEBKIT_18, webkit18 } from "./webkit18.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "../..");
@@ -67,7 +78,14 @@ const outDir = path.join(root, "test/fidelity/out");
 const fontsDir = path.join(root, "test/fidelity/google-fonts");
 
 const ENGINES = { chromium, firefox, webkit };
-const ALL_ENGINES = Object.keys(ENGINES);
+/** The engines the font recording holds answers for, which is what fonts
+ * renders in. */
+const RECORDED_ENGINES = Object.keys(ENGINES);
+/** What run and baseline render in unless --engines says otherwise. */
+const ALL_ENGINES = [...RECORDED_ENGINES, WEBKIT_18];
+/** An engine's Playwright browser type. webkit18 comes from an older
+ * Playwright, loaded only when a run renders in it. */
+const browserType = (engine) => (engine === WEBKIT_18 ? webkit18() : ENGINES[engine]);
 /** Larger than the biggest canvas (1080 x 1920 stories), at 1x. */
 const VIEWPORT = { width: 2000, height: 2000 };
 const FIXTURE_TIMEOUT_MS = 60_000;
@@ -109,8 +127,8 @@ const list = (v) =>
         .map((s) => s.trim())
         .filter(Boolean)
     : null;
-const engines = list(flags.engines) ?? ALL_ENGINES;
-for (const e of engines) if (!ENGINES[e]) usage();
+const engines = list(flags.engines) ?? (mode === "fonts" ? RECORDED_ENGINES : ALL_ENGINES);
+for (const e of engines) if (!ENGINES[e] && e !== WEBKIT_18) usage();
 
 // -------------------------------------------------------------- fixtures
 async function loadFixtures(only) {
@@ -200,7 +218,7 @@ async function renderEngine(base, engine, fixtures, dir, fonts) {
   // every run. The real export passes because it waits SNAPSHOT_SETTLE_MS
   // on a timer set after the snapshot loads, which fires after Firefox's
   // for as long as its wait is the longer of the two.
-  const browser = await ENGINES[engine].launch(
+  const browser = await browserType(engine).launch(
     engine === "firefox"
       ? { firefoxUserPrefs: { "nglayout.initialpaint.delay": FIREFOX_PAINT_DELAY_MS } }
       : {},
@@ -371,6 +389,9 @@ const pct = (v) => (v === undefined || v === null ? "" : `${v.toFixed(2)}%`);
 const STRICT = Boolean(process.env.CI);
 
 async function measure(fixtures, selectedEngines, fonts) {
+  // An engine that is not installed is found here, before the dev server
+  // starts, and not after the engines named ahead of it have rendered.
+  for (const engine of selectedEngines) browserType(engine);
   const rendered = {};
   await withServer(async (base) => {
     for (const engine of selectedEngines) {
@@ -456,6 +477,19 @@ function printUnanswered(fonts) {
     console.error(
       "Run `node scripts/fidelity/fidelity.mjs fonts` to record them, then commit that folder.",
     );
+    // webkit18 misses whatever WebKit misses, and fonts records those for
+    // both. What it cannot record is a request WebKit did not make. A run
+    // that did not render in WebKit cannot tell the two apart.
+    const lost = unrecordable(requests);
+    if (lost.length && engines.includes("webkit")) {
+      console.error(
+        `fonts cannot record what only ${WEBKIT_18} asked for (${lost.length} of these): it is given WebKit's answers (test/fidelity/README.md).`,
+      );
+    } else if (lost.length) {
+      console.error(
+        `fonts records for WebKit, whose answers ${WEBKIT_18} is given. What WebKit does not ask for too, it cannot record (test/fidelity/README.md).`,
+      );
+    }
   }
 }
 
@@ -550,6 +584,9 @@ async function baseline(name) {
 // ----------------------------------------------------------------- fonts
 /** Records Google's answers to the font requests the recording lacks. */
 async function recordFonts() {
+  // Refused before anything starts; fontRecording.mjs refuses it again
+  // where the fetch would happen.
+  for (const engine of engines) recordingPart(engine, true);
   const only = list(flags.only);
   const fixtures = await loadFixtures(only);
   if (!fixtures.length) {
@@ -578,7 +615,7 @@ async function recordFonts() {
     !crash &&
     sawEveryRequest({
       everyFixture: !only,
-      everyEngine: ALL_ENGINES.every((e) => engines.includes(e)),
+      everyEngine: RECORDED_ENGINES.every((e) => engines.includes(e)),
       outcomes: outcomes.map((o) => o.outcome),
     });
   const saved = await fonts.save({ prune });

@@ -8,6 +8,6 @@
     "c3eb9c9e4690dfb561924be953c09aa0910d934f": "fill-c3eb9c9e4690.png",
     "I200:209;61:476": "r-I200-209_61-476.png"
   },
-  "baseline": { "chromium": 8.84, "firefox": 10.32, "webkit": 2.8 },
-  "blurBaseline": { "chromium": 0.58, "firefox": 0.45, "webkit": 0.53 }
+  "baseline": { "chromium": 8.84, "firefox": 10.32, "webkit": 2.8, "webkit18": 2.83 },
+  "blurBaseline": { "chromium": 0.58, "firefox": 0.45, "webkit": 0.53, "webkit18": 0.53 }
 }

@@ -7,7 +7,7 @@ import type { EmptyFieldsMode } from "@/lib/render/emptyFields";
 import { STARTER_BLUEPRINTS } from "@/lib/templates/starters";
 import { materializeStarter } from "@/lib/templates/starters/materialize";
 
-export type FidelityEngine = "chromium" | "firefox" | "webkit";
+export type FidelityEngine = "chromium" | "firefox" | "webkit" | "webkit18";
 
 /** One font file a fixture renders with. `file` is a root-relative URL
  * ("/test/fidelity/fonts-private/Brand-Bold.woff2"), or a name beside the

@@ -284,6 +284,6 @@
     "createdAt": "2026-10-08T00:00:00.000Z",
     "updatedAt": "2026-10-08T00:00:00.000Z"
   },
-  "baseline": { "chromium": 22.67, "firefox": 26.23, "webkit": 26.23 },
-  "blurBaseline": { "chromium": 18.97, "firefox": 23.7, "webkit": 23.7 }
+  "baseline": { "chromium": 22.67, "firefox": 26.23, "webkit": 26.23, "webkit18": 26.21 },
+  "blurBaseline": { "chromium": 18.97, "firefox": 23.7, "webkit": 23.7, "webkit18": 23.46 }
 }

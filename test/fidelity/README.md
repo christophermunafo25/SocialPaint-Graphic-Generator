@@ -1,6 +1,6 @@
 # Fidelity fixtures
 
-The render fidelity harness (`docs/brand-system/PHASE-0.md`) renders each fixture through the real export path in Chromium, Firefox and WebKit and compares it with a golden. `src/app/dev/fidelity.ts` holds the type, `FidelityFixture`.
+The render fidelity harness (`docs/brand-system/PHASE-0.md`) renders each fixture through the real export path in Chromium, Firefox, WebKit and an older WebKit (`webkit18`, below) and compares it with a golden. `src/app/dev/fidelity.ts` holds the type, `FidelityFixture`.
 
 ## Layout
 
@@ -32,7 +32,7 @@ test/fidelity/
 | `variantId`    | The colourway to render                                                                                                                                                                                                                                                     |
 | `emptyFields`  | `"placeholder"` (default), `"hideOptional"` or `"chat"`                                                                                                                                                                                                                     |
 | `unsupported`  | Ingredients the schema can't express today, each with its reason                                                                                                                                                                                                            |
-| `baseline`     | `{ chromium?, firefox?, webkit? }`: changed share in percent, recorded only with CJ's approval                                                                                                                                                                              |
+| `baseline`     | `{ chromium?, firefox?, webkit?, webkit18? }`: changed share in percent, recorded only with CJ's approval                                                                                                                                                                   |
 | `blurBaseline` | The same for the blurred share (after a 4px blur of both images), recorded only with CJ's approval                                                                                                                                                                          |
 | `goldenFrom`   | Compare with another fixture's `golden.png`: the same Figma frame rebuilt a second way                                                                                                                                                                                      |
 | `tolerance`    | Points a run may exceed its baseline by (default 0.25)                                                                                                                                                                                                                      |
@@ -83,7 +83,7 @@ The rows do not cover an image field's alpha mask. A mask is a CSS image, which 
 
 ## The WebKit rows are not Safari before 26
 
-The harness's WebKit is the build Playwright ships, 26.6 today. Safari 18 and older paint some things differently, on screen and in the export, and no row here can catch that.
+The harness's WebKit is the build Playwright ships, 26.6 today. Safari 18 and older paint some things differently, on screen and in the export, and no `webkit` row can catch that. The `webkit18` rows, below, are an older WebKit's, and can.
 
 Two differences are handled in the renderer. Both come from how Safari before 26 clips what it paints under a filter. Safari 26 has neither, and WebKit bug 219520 is the change that removed them.
 
@@ -99,7 +99,7 @@ The second is a ring that is never painted. An inner shadow is a blurred ring wh
 | `effects-matrix`, a canvas inner shadow    | 15.11 / 14.66 | 1.46 / 1.13  | 2.12 / 2.05                   |
 | `builder-roundtrip`, a canvas inner shadow | 13.62 / 15.39 | 0.49 / 2.27  | 0.73 / 1.99                   |
 
-Those numbers are this harness's compare on exports made by the system WebKit of a Mac on Safari 18.6 (2026-11-17 and 18), driven by a helper kept outside the repo. No committed fixture has a crop under a layer blur, an unblurred inner shadow under a drop shadow or a blur, or an inner shadow on a box the canvas cuts off. Those were seen in temporary fixtures, wrong before and right with the fix. A change to how a field is clipped, filtered or given effects needs that check again on a Safari before 26, or a look in one.
+Those numbers are this harness's compare on exports made by the system WebKit of a Mac on Safari 18.6 (2026-11-17 and 18), driven by a helper kept outside the repo. No committed fixture has a crop under a layer blur, an unblurred inner shadow under a drop shadow or a blur, or an inner shadow on a box the canvas cuts off. Those were seen in temporary fixtures, wrong before and right with the fix. A change to how a field is clipped, filtered or given effects gets that check from the `webkit18` rows for what the fixtures hold, and needs a Safari before 26 for the rest.
 
 Measured on 18.6 and not handled:
 
@@ -107,6 +107,36 @@ Measured on 18.6 and not handled:
 - A flipped field's drop shadow falls on the side it would without the flip.
 - A field with opacity under 100 and a drop shadow is darker inside its box.
 - The lower lines of a multiline paragraph sit about a pixel off.
+
+### webkit18, a WebKit from before the change
+
+The harness's fourth engine is the WebKit that Playwright 1.53.0 shipped: build 2182, which calls itself 18.5 and is dated 3 June 2025, four weeks before bug 219520 was fixed. It has both differences above. `scripts/fidelity/webkit18.mjs` says how it is driven, and installs it, once on each machine:
+
+```bash
+node scripts/fidelity/webkit18.mjs install
+```
+
+A run that cannot find it stops before it renders anything and names that command. The install has a checksum for one archive, which Apple silicon on macOS 15 and later takes. Anywhere else it refuses, and `--engines chromium,firefox,webkit` runs the other three.
+
+It is not Safari, and it draws like it. On 2026-11-18, 21 of the 24 fixtures came out of it pixel for pixel as they came out of Safari 18.6's own engine. The other three differ in the grain on an ellipse (`effects-matrix`, 0.62% of the picture), in the grain on an icon (`icons-matrix`, 0.01%), and by one level in 123 pixels of one of `crop-matrix`'s photos. In the two grain fields it draws exactly what WebKit 26.6 draws, so that difference lies between Playwright's builds and Safari's own. Three renders of each fixture, and a fourth under `taskpolicy -b`, were byte for byte the same.
+
+Five temporary fixtures (crops, masks, flips, opacity, grain on a photo, unblurred inner shadows, boxes the canvas cuts off or that bleed off every edge) came out of it identical to Safari 18.6's engine in every pixel. That includes the first three things on the list above, which it draws wrong exactly as Safari 18.6 does.
+
+One fault of its own is known. An inner shadow in an opaque colour on a box with rounded corners comes out weaker in it than in Safari 18.6 and WebKit 26.6, which draw it alike: about an eighth of a 140 px box with 40 px corners is over the compare's threshold. With a semi-transparent colour all three agree to the pixel, and with square corners to within one level in six pixels. Every inner shadow in the fixtures is semi-transparent, so no row shows it.
+
+Before the two fixes it read three rows 11 to 14 points worse, and the other 21 as it reads them now:
+
+| In webkit18, changed / blurred | Before the fixes | With them   |
+| ------------------------------ | ---------------- | ----------- |
+| `crop-matrix`                  | 12.78 / 12.81    | 1.87 / 0.00 |
+| `effects-matrix`               | 14.50 / 14.66    | 0.85 / 1.13 |
+| `builder-roundtrip`            | 13.62 / 15.39    | 0.49 / 2.27 |
+
+Those are the numbers of the Mac they were measured on (macOS 15.6). On CI's runner (macOS 26) `builder-roundtrip` has read 0.48 / 2.27. `effects-matrix` read 0.81 / 1.10 in two runs and its baseline in a third. The other 22 rows have read the same there as here, to two decimals.
+
+Its 24 baselines were recorded on 2026-11-18 with CJ's approval, on the commit that has both fixes. A baseline records what this engine draws, not what is right: a fixture that held one of the first three things on the list above would hold the wrong picture as its `webkit18` baseline. A new fixture needs a `webkit18` baseline like any other.
+
+It is given WebKit's recorded fonts: its page asks Google for the same stylesheets, and with WebKit's answers it drew every fixture's text as Safari 18.6 drew it from Google itself. `fonts` leaves it out, and refuses it when it is named. A request only it made would fail its row and could not be recorded this way, which would be the day to give it a recording of its own.
 
 ## Google's fonts are recorded
 
@@ -120,7 +150,7 @@ A request the recording lacks is failed. Its row reports `error`, and the run an
 node scripts/fidelity/fidelity.mjs fonts
 ```
 
-and commit `google-fonts/`. It renders the fixtures into `out/fonts/`, fetches the answers the recording lacks, and never fetches one it already has. It keeps only a stylesheet, a font file, or Google's 400 for a family it does not serve. Anything else, such as an outage or a rate limit, is reported and the command exits non-zero, so run it again. When it has rendered every fixture in every engine it also drops the answers none of them asked for. A run narrowed with `--only`, or to fewer than three engines, drops nothing.
+and commit `google-fonts/`. It renders the fixtures into `out/fonts/`, fetches the answers the recording lacks, and never fetches one it already has. It keeps only a stylesheet, a font file, or Google's 400 for a family it does not serve. Anything else, such as an outage or a rate limit, is reported and the command exits non-zero, so run it again. When it has rendered every fixture in each of the three engines it records for, it also drops the answers none of them asked for. A run narrowed with `--only`, or to fewer than those three, drops nothing.
 
 A fixture skipped for a missing font file is left out of both: what its page asks Google for is neither reported nor recorded.
 

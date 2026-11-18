@@ -9,6 +9,6 @@
     "432:4": "r-432-4.png"
   },
   "values": { "headline": "Is it time to drop the naps?", "call_to_action": "Read the answer" },
-  "baseline": { "chromium": 0.72, "firefox": 0.87, "webkit": 0.86 },
-  "blurBaseline": { "chromium": 0.69, "firefox": 1.46, "webkit": 1.78 }
+  "baseline": { "chromium": 0.72, "firefox": 0.87, "webkit": 0.86, "webkit18": 0.86 },
+  "blurBaseline": { "chromium": 0.69, "firefox": 1.46, "webkit": 1.78, "webkit18": 1.78 }
 }

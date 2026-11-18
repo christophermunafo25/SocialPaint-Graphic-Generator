@@ -1,6 +1,6 @@
 {
   "name": "starter-feature-02",
   "kind": "starter",
-  "baseline": { "chromium": 0, "firefox": 0.7, "webkit": 1.53 },
-  "blurBaseline": { "chromium": 0, "firefox": 0, "webkit": 0.39 }
+  "baseline": { "chromium": 0, "firefox": 0.7, "webkit": 1.53, "webkit18": 1.37 },
+  "blurBaseline": { "chromium": 0, "firefox": 0, "webkit": 0.39, "webkit18": 0.39 }
 }
