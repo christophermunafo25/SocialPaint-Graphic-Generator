@@ -1912,35 +1912,6 @@ input[type="radio"] {
   margin: 0;
 }
 
-/* The export failure toast's content (ExportErrorToast, which the page
-   shows too while the panel is closed; the .sp-toast itself is the app's,
-   TemplateFill's error toast, danger-toned). */
-.sp-chat-editor__toast-icon {
-  flex-shrink: 0;
-  width: 16px;
-  height: 16px;
-  margin-top: 1px;
-  color: var(--state-danger);
-}
-.sp-chat-editor__toast-text {
-  min-width: 0;
-}
-.sp-chat-editor__toast-title {
-  display: block;
-  font-family: var(--font-ui);
-  font-size: var(--type-label-size);
-  line-height: 1.25;
-  font-weight: var(--weight-ui);
-  color: var(--text-primary);
-}
-.sp-chat-editor__toast-detail {
-  display: block;
-  font-family: var(--font-ui);
-  font-size: var(--type-caption-size);
-  line-height: 1.4;
-  color: var(--text-muted);
-}
-
 /* The sheet (below 1180px, PROMPT §8.5 and §15 item 16): the same panel
    over the chat on the right, the viewport's full height less the 16
    gutter, on a --media-overlay scrim that closes it on click. The panel
