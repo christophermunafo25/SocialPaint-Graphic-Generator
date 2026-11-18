@@ -183,6 +183,7 @@ import {
 } from "./alignOps";
 import { GroupInspector } from "./GroupInspector";
 import { roleFace } from "@/lib/brand/fontRoles";
+import { AREA_ICON } from "../areas";
 
 /** The tool strip, in the order every design tool puts it. Each one is
  * backed by an element the palette already offers. */
@@ -3029,36 +3030,44 @@ export function TemplateBuilder({
         </div>
       )}
 
-      {/* ── Top bar (322:157): the trail, the status and the save state, then
-          Edit or Preview and Publish. ───────────────────────────────────── */}
+      {/* ── The header row (6075:3293): the area's icon and the trail, the
+          status and the save state, then Edit or Preview and Publish. ─── */}
       <header className="sp-builder__bar">
-        <nav aria-label="Breadcrumb" className="ui-breadcrumb sp-builder__crumbs">
-          <ol>
-            <li>
-              <a
-                href={routeToUrl({ name: "adminTemplates" })}
-                className="ui-reset ui-ring t-label-m ui-breadcrumb__link"
-                onClick={(e) => {
-                  if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-                  e.preventDefault();
-                  navigate({ name: "adminTemplates" });
-                }}
-              >
-                Template Builder
-              </a>
-            </li>
-            <li>
-              <span className="t-label-m ui-breadcrumb__divider" aria-hidden>
-                /
-              </span>
-              <CrumbRename
-                value={draft.name}
-                placeholder="Untitled template"
-                onSave={(name) => setDraft((d) => ({ ...d, name }), "text:name")}
-              />
-            </li>
-          </ol>
-        </nav>
+        <span className="sp-builder__lead">
+          <AREA_ICON.templateBuilder
+            size={18}
+            strokeWidth={1.5}
+            className="ui-icon ui-page-header__icon"
+            aria-hidden
+          />
+          <nav aria-label="Breadcrumb" className="ui-breadcrumb sp-builder__crumbs">
+            <ol>
+              <li>
+                <a
+                  href={routeToUrl({ name: "adminTemplates" })}
+                  className="ui-reset ui-ring t-label-m ui-breadcrumb__link"
+                  onClick={(e) => {
+                    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+                    e.preventDefault();
+                    navigate({ name: "adminTemplates" });
+                  }}
+                >
+                  Template Builder
+                </a>
+              </li>
+              <li>
+                <span className="t-label-m ui-breadcrumb__divider" aria-hidden>
+                  /
+                </span>
+                <CrumbRename
+                  value={draft.name}
+                  placeholder="Untitled template"
+                  onSave={(name) => setDraft((d) => ({ ...d, name }), "text:name")}
+                />
+              </li>
+            </ol>
+          </nav>
+        </span>
         {sourceChosen && (
           <>
             <Badge tone={draft.status === "published" ? "positive" : "neutral"}>
