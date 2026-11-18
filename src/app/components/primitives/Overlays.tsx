@@ -234,6 +234,9 @@ export function Toast({
       setMounted(true);
       return;
     }
+    // It leaves under pointer-events: none and may unmount before the
+    // pointer moves, so a hold never outlives the toast it was on.
+    held.current = { pointer: false, focus: false };
     if (!mounted) return;
     const node = el.current;
     if (node && node.contains(document.activeElement)) {

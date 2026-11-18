@@ -1004,7 +1004,7 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   cursor: default;
 }
 .ui-switch[data-disabled] .ui-switch__track {
-  background: var(--surface-field);
+  background: var(--surface-soft);
 }
 .ui-switch[data-disabled][data-checked] .ui-switch__track {
   background: var(--text-disabled);
@@ -1167,6 +1167,12 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 .ui-segmented[data-liquid] .ui-segment[data-selected] {
   background: transparent;
   box-shadow: none;
+}
+/* Hover changes the label only (PROMPT.md section 7.1): a hover fill would
+   sit above the travelling thumb. */
+.ui-segmented[data-liquid] .ui-segment {
+  --_hover: transparent;
+  --_pressed: transparent;
 }
 .ui-segmented .ui-segment:focus-visible {
   z-index: 3;

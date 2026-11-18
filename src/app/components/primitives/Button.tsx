@@ -54,7 +54,10 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function 
       aria-disabled={busy || undefined}
       {...rest}
       onClick={(e) => {
-        if (busy) return;
+        if (busy) {
+          e.preventDefault();
+          return;
+        }
         onClick?.(e);
       }}
     >

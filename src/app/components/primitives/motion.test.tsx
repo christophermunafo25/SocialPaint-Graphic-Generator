@@ -194,6 +194,23 @@ describe("Toast", () => {
     expect(screen.queryByRole("status")).toBeNull();
   });
 
+  it("forgets a pointer hold when it closes, so the next message still times out", () => {
+    const onTimeout = vi.fn();
+    const { rerender } = render(
+      <Toast open message="Color changed" duration={5000} onTimeout={onTimeout} />,
+    );
+    fireEvent.pointerEnter(screen.getByRole("status"));
+    rerender(<Toast open={false} message="Color changed" duration={5000} onTimeout={onTimeout} />);
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    rerender(<Toast open message="Logo changed" duration={5000} onTimeout={onTimeout} />);
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+    expect(onTimeout).toHaveBeenCalledTimes(1);
+  });
+
   it("turns back when it opens again while leaving", () => {
     const { rerender } = render(<Toast open message="Saved" />);
     rerender(<Toast open={false} message="Saved" />);

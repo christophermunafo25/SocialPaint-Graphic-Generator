@@ -294,8 +294,7 @@ export function SegmentedControl({
   const dropTimer = useRef<number | undefined>(undefined);
   const placedAt = useRef<number | null>(null);
   const select = (option: SegmentOption, travel: boolean) => {
-    if (option.id === selectedId) return;
-    travelNext.current = travel;
+    travelNext.current = travel && option.id !== selectedId;
     onSelect(option.id);
   };
   const { itemProps } = useRovingSelect(options, selectedIndex, (o) => select(o, false));

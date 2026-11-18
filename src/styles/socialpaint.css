@@ -937,6 +937,14 @@ select.sp-input:disabled {
   border-color: transparent;
 }
 
+/* ElevenLabs E1: raised surfaces are flat, so a card on the white page
+   draws a border/raised hairline (inside the box, so nothing moves) in
+   both themes, in place of the lit edge and the shadow. */
+.sp-card,
+.sp-emptystate {
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-raised);
+}
+
 /* Cards that sit on another surface — inside a dialog or popover, nested
    in a card, or builder chrome panels (the builder's rule: separation is
    colour plus a hairline, never a shadow) — take no drop shadow and keep a

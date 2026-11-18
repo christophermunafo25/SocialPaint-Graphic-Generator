@@ -82,8 +82,6 @@ export function PreviewOverlay({
   );
 }
 
-/** How long Copy caption shows its check after a write lands. */
-
 export interface ResultCardProps {
   /** One segment per draft (by platform, PLAN.md Phase 5); the switch shows
    * for two or more. */

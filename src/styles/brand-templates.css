@@ -24,7 +24,7 @@
   flex: none;
   display: flex;
 }
-.sp-lib-search .ui-search {
+.sp-lib-search .ui-search[data-size="lg"] {
   border-radius: var(--radius-full);
 }
 
