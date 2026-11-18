@@ -539,14 +539,31 @@ const overlayBase: React.CSSProperties = {
 };
 
 /** Inner shadows and noise drawn over a box-shaped element's content,
- * clipped to its corner radius. Null when there is neither. */
+ * clipped to its corner radius. Null when there is neither.
+ *
+ * An inner shadow's frame with no blur has no filter of its own, so it is
+ * a plain positioned layer, and Safari before 26 drew it whole, outside the
+ * box, when the element above it carried a drop shadow or a blur, as a rect
+ * shape does (WebKit bug 219520, the fault WRAPPED_IMAGE_BOX answers for a
+ * photo). An overlay that holds such a frame is its own stacking context,
+ * so the frame paints inside this layer, which clips. A blurred frame is
+ * clipped when its own filter is applied and needs nothing. */
 function BoxOverlay({ effects, radius }: { effects: FieldEffect[]; radius?: CornerRadius }) {
   const frames = innerShadowFrames(effects, radius);
   const noise = noiseLayerCss(noiseEffects(effects));
   if (!frames.length && !noise) return null;
   const r = radius ? `${radius.tl}px ${radius.tr}px ${radius.br}px ${radius.bl}px` : undefined;
+  const holdsPlainFrame = frames.some((frame) => frame.filter === undefined);
   return (
-    <div style={{ ...overlayBase, overflow: "hidden", borderRadius: r, ...(noise ?? {}) }}>
+    <div
+      style={{
+        ...overlayBase,
+        overflow: "hidden",
+        ...(holdsPlainFrame ? { isolation: "isolate" } : {}),
+        borderRadius: r,
+        ...(noise ?? {}),
+      }}
+    >
       {frames.map((frame, i) => (
         <div key={i} style={frame} />
       ))}
@@ -1015,11 +1032,12 @@ function TextFieldBox({ field, value, brandKit, fontSize: layoutFontSize }: Fiel
 }
 
 /** An image field's clipping box when an effects wrapper holds it. It is its
- * own stacking context so that the positioned layers inside it (a cropped
- * image, an inner shadow's frame that has no blur) paint inside the box's
- * layer. Safari before 26 stops clipping the layers it paints straight from
- * an element whose filter moves pixels (the wrapper's drop shadow or blur),
- * and drew them whole, over the frame and its corners (WebKit bug 219520). */
+ * own stacking context so that a cropped image, which is positioned and so
+ * a layer of its own, paints inside the box's layer. Safari before 26 stops
+ * clipping the layers it paints straight from an element whose filter moves
+ * pixels (the wrapper's drop shadow or blur), and drew the crop whole, over
+ * the frame and its corners (WebKit bug 219520). An inner shadow's frame
+ * with no blur is such a layer too; BoxOverlay keeps that one in. */
 const WRAPPED_IMAGE_BOX: React.CSSProperties = {
   width: "100%",
   height: "100%",

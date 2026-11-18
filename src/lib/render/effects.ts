@@ -98,11 +98,30 @@ export function filterCss(effects: readonly FieldEffect[], withShadows = true): 
   return parts.length ? parts.join(" ") : undefined;
 }
 
+/** How far inside the box a blurred ring's hole keeps a pair of edges that
+ * would otherwise sit exactly on the box's, in px.
+ *
+ * Safari before 26 hands a filtered layer a paint rectangle already cut by
+ * its ancestors' clip, and skips a border whose inner edge contains that
+ * rectangle. Along an axis the hole's two edges sit on the box's whenever
+ * no spread shrinks the hole and no offset moves it along that axis. With
+ * both axes like that the hole is the box, so a canvas inner shadow with no
+ * offset was never painted. With one, the same happened to a box the canvas
+ * cuts off on the side the offset moves the hole away from. Edges this much
+ * inside the box never contain a rectangle that reaches both of the box's.
+ *
+ * It is more than the 1/64 px WebKit lays out in and survives px()'s two
+ * decimals, and it changed no pixel of the fidelity renders in Chromium,
+ * Firefox or WebKit 26. */
+const FLUSH_EDGE_INSET_PX = 0.02;
+
 /** One inner shadow as a frame: a ring of the shadow's color around a hole
  * the size of the box, shrunk by the spread and moved by the offset, then
  * blurred. Drawn inside the box's clip, the ring's blurred inner edge is
  * the inner shadow. The ring reaches blur + 4 px past the shadow's
  * extent, so its outer edge lightens the shadow by about 1% at most. Corner radii are the box's own, so the hole's corners match.
+ * A blurred hole never lies flush with the box along an axis
+ * (FLUSH_EDGE_INSET_PX).
  * Styles are relative to the box; frames are drawn bottom to top. */
 export function innerShadowFrames(
   effects: readonly FieldEffect[],
@@ -114,13 +133,21 @@ export function innerShadowFrames(
       const spread = Math.max(0, e.spread ?? 0);
       const ring = Math.ceil(e.blur + Math.abs(e.x) + Math.abs(e.y) + spread + 4);
       const outer = ring - spread;
+      // An unblurred ring keeps its edges where they are: flush on both
+      // axes it lies wholly outside the box and rightly paints nothing.
+      const flushInset = (offset: number) =>
+        e.blur > 0 && spread < FLUSH_EDGE_INSET_PX && Math.abs(offset) < FLUSH_EDGE_INSET_PX
+          ? FLUSH_EDGE_INSET_PX
+          : 0;
+      const insetX = flushInset(e.x);
+      const insetY = flushInset(e.y);
       const corner = (r: number) => px(Math.max(0, r - spread) + ring);
       return {
         position: "absolute",
-        left: px(e.x - outer),
-        top: px(e.y - outer),
-        width: `calc(100% + ${px(outer * 2)})`,
-        height: `calc(100% + ${px(outer * 2)})`,
+        left: px(e.x - outer + insetX),
+        top: px(e.y - outer + insetY),
+        width: `calc(100% + ${px((outer - insetX) * 2)})`,
+        height: `calc(100% + ${px((outer - insetY) * 2)})`,
         boxSizing: "border-box",
         border: `${px(ring)} solid ${e.color}`,
         borderRadius: radius
