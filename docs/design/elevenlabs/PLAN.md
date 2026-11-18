@@ -120,12 +120,12 @@ One pull request per phase into `main`.
 - The Composer is one line (`.ui-composer__bar`), with attachments and details in `.ui-composer__top` above it. The sign-in gate's composer (`auth.css`, `.sp-auth-composer`) is its own markup and is Phase E8's.
 - `ResultCard` takes `arrive` and `downloadedKey`. `useDraftDownload` counts each draft's successful exports in `doneCount`, and the turns pass the sum for their drafts.
 - `TextArea` takes `copy`. Any generated caption elsewhere can pass it.
-- Every Toast caller is on the Toast's timer except the Template Builder list's (`admin/AdminTemplates.tsx`), which is Phase E5's.
+- Every Toast caller is on the Toast's timer except the Template Builder list's (`admin/AdminTemplates.tsx`), which is Phase E5's (built in E5).
 - History's heading is the trail's last crumb, so no page sets Title/Page under a header row any more.
 
 ### What Phase E5 left for later phases
 
-- The builder editor still mounts in a "bare" page and draws the frame's header row itself (`.sp-builder__bar`), because its last crumb renames the template in place. It matches `.sp-frame__head`'s measures.
+- The builder editor still mounts in a "bare" page and draws the frame's header row itself (`.sp-builder__bar`), because its last crumb renames the template in place. It matches `.sp-frame__head`'s measures at 1024 and wider. Below 1024 it keeps the 64 row and 32 sides, where the editor's three panels need more width than a phone has anyway.
 - Every Toast caller is on the Toast's timer now, the editor's notices included.
 - Publish template's Category is a text field where the frame draws a dropdown. A fixed category list is a product call.
 

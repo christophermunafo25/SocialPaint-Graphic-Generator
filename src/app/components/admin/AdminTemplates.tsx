@@ -120,8 +120,6 @@ export function AdminTemplates() {
   const showToast = useCallback((message: string, ms: number) => {
     setToast((prev) => ({ message, ms, n: (prev?.n ?? 0) + 1 }));
   }, []);
-  const lastToastMs = useRef(4000);
-  if (toast) lastToastMs.current = toast.ms;
   // Duplicate hands over to the editor a moment after its toast.
   const hopTimer = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(hopTimer.current), []);
@@ -358,7 +356,7 @@ export function AdminTemplates() {
           open={toast !== null}
           message={toast?.message}
           messageKey={toast?.n}
-          duration={toast?.ms ?? lastToastMs.current}
+          duration={toast?.ms}
           onTimeout={() => setToast(null)}
         />
       </div>

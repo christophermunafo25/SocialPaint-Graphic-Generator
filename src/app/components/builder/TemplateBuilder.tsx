@@ -3716,7 +3716,9 @@ export function TemplateBuilder({
                             <Upload
                               placeholder={uploading ? "Uploading…" : "Add an image"}
                               thumbnail={draft.backgroundUrl ? signedBackground.url : null}
-                              fileName={backgroundFileName(draft.backgroundUrl)}
+                              fileName={
+                                uploading ? undefined : backgroundFileName(draft.backgroundUrl)
+                              }
                               disabled={uploading}
                               busy={uploading}
                               onClick={() => bgFileRef.current?.click()}

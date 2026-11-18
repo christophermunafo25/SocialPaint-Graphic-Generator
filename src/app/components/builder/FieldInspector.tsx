@@ -535,7 +535,7 @@ export function FieldInspector(props: FieldInspectorProps) {
         <Upload
           placeholder={uploadingStatic ? "Uploading…" : "Add an image"}
           thumbnail={merged.staticValue ? signedStatic.url : null}
-          fileName={staticAsset?.name ?? "Image"}
+          fileName={uploadingStatic ? undefined : (staticAsset?.name ?? "Image")}
           disabled={uploadingStatic}
           busy={uploadingStatic}
           onClick={() => setChoosingStatic(true)}
