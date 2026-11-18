@@ -166,22 +166,22 @@ Fixed in the file while this kit was written, so a phase reading it sees the fix
 | Generate Start gains a header row | `6023:3097` | `generate/GeneratePage.tsx` passes a `PageHeader` (Phase E2, built) |
 | The builder editor's bar becomes the 64 header row | `6072:3662` | `builder/TemplateBuilder.tsx` (Phase E5) |
 | Field holds a Medium control | `4015:628` | Already the default: `Field` passes its control through and `Input`, `Select` and `Search` default to Medium. Phase E1 set the label 12 over the control (built) |
-| The filled Text Area carries a copy button | `2207:298` | Where generated captions show (Phase E4) |
-| Composer · Inline is the Composer | `6024:218` | `chat/ChatComposer.tsx` (Phase E4) |
-| The v2 Composer is retired | `2216:222`, deleted | Its layout goes in Phase E4 |
-| `LookTile` becomes `VariationTile` | `2216:315` | `primitives/Previews.tsx`, `.ui-look-tile` to `.ui-variation-tile` (Phase E4) |
+| The filled Text Area carries a copy button | `2207:298` | `TextArea` gains `copy`, set by the Details panel's caption on the fill page and in Generate's editor (Phase E4, built) |
+| Composer · Inline is the Composer | `6024:218` | `chat/ChatComposer.tsx` (Phase E4, built) |
+| The v2 Composer is retired | `2216:222`, deleted | Its layout went in Phase E4 (built) |
+| `LookTile` becomes `VariationTile` | `2216:315` | `primitives/Previews.tsx`, `.ui-look-tile` to `.ui-variation-tile` (Phase E4, built) |
 | The Sidebar runs flush with the Logo and Outline buttons | `2218:679` | `Sidebar.tsx`, `src/styles/shell.css` (Phase E2, built) |
 | Template, Builder Template, Recent and History Cards on `--surface-card` | `4018:129`, `4018:156`, `4018:183`, `4018:1728` | `.sp-tcard`, `.sp-gen-card`, `.sp-tbcard` (Phase E1, so no card vanishes on the white page) |
 | Platform Chip is 46 on `--radius-chip` with a `--radius-tile` logo tile | `53:96` | `.ui-platform-chip` (Phase E3, built) |
 | Logo Card grounds on the plates | `4018:1794` | `admin/brand/LogosDetail.tsx` already reads `--plate-*` (Phase E6) |
 | Segmented Control gains the liquid selection | `2211:213`, Foundations › Interactions `6262:353` | `.ui-segmented` and `SegmentedControl` in `primitives/Toggles.tsx`, after `reference/liquid-selection.html` (Phase E1, built) |
 | The lockup is CJ's update, on `--logo-ink` | `6243:8529` | `BrandMark.tsx` (Phase E2, built) |
-| The Toast eases in and out and owns a timer that pauses | `2213:213`, Foundations › Interactions `6262:353` | `Toast` gains `open`, `duration` and `onTimeout`, and `.ui-toast` its transitions. `admin/brand/kitPlumbing.ts` and `admin/settings/settingsToast.tsx` pass 5000 and 4000 in place of their own `setTimeout` (Phase E1, built). The other four callers move their timers onto it in their own phases, `TemplateFill.tsx` (Phase E3, built), `generate/EditorPanel.tsx` and `generate/GeneratePage.tsx` (Phase E4) and `admin/AdminTemplates.tsx` (Phase E5) |
+| The Toast eases in and out and owns a timer that pauses | `2213:213`, Foundations › Interactions `6262:353` | `Toast` gains `open`, `duration` and `onTimeout`, and `.ui-toast` its transitions. `admin/brand/kitPlumbing.ts` and `admin/settings/settingsToast.tsx` pass 5000 and 4000 in place of their own `setTimeout` (Phase E1, built). The other four callers move their timers onto it in their own phases, `TemplateFill.tsx` (Phase E3, built), `generate/EditorPanel.tsx` and `generate/GeneratePage.tsx` (Phase E4, built) and `admin/AdminTemplates.tsx` (Phase E5) |
 | Button and Icon Button swap icons with a drawn check, and show a spinner past 400 ms when busy | `2206:542`, `2206:686` | An icon slot in `Button` and `IconButton`, a `busy` prop, and `CONFIRM_MS` in place of the two `COPIED_MS` (Phase E1, built) |
 | The Checkbox's mark draws in | `2211:148` | `CheckMark` in `primitives/Toggles.tsx` renders both paths, `.ui-check__mark` (Phase E1, built) |
 | Buttons, icon buttons, Send and chips shrink while pressed | `2206:542`, `2206:686`, `2206:754`, `2212:187`, `53:96` | `.ui-btn`, `.ui-iconbtn`, `.ui-send`, `.ui-chip`, `.ui-platform-chip` (Phase E1, built) |
 | A picked or dropped photo develops in, and a slow upload pulses | `2211:278` | `Upload` gains `busy`, `.ui-upload__thumb` (Phase E1, built). `builder/TemplateBuilder.tsx` and `builder/FieldInspector.tsx`, the only callers that track an upload, pass it (Phase E5) |
-| Result art develops in, and Download confirms with a check | `2216:287` | `ResultCard` gains `arrive`, set by `chat/GenerateTurn.tsx` and `chat/TemplateChatViews.tsx` (Phase E4) |
+| Result art develops in, and Download confirms with a check | `2216:287` | `ResultCard` gains `arrive`, set by `chat/GenerateTurn.tsx` and `chat/TemplateChatViews.tsx` (Phase E4, built) |
 | Metric values roll when the member changes the range | `2215:223` | `Metric` gains `roll`, a digit roll on `useRoll`'s timing. Insights draws its numbers with `admin/insights/InsightKpi.tsx` today, so `admin/Dashboard.tsx` moves them onto `Metric`, or `InsightKpi` takes the roll (Phase E7) |
 
 ## 8. Restored in Figma
