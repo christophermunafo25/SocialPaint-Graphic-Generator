@@ -210,7 +210,7 @@ export function ImportDetail({ brand }: { brand: BrandDraft }) {
 
       {importing && phase.visible && (
         <section className="sp-bs-import__status" role="status" aria-live="polite">
-          <p className="t-body-m">{phase.step}…</p>
+          <p className="t-body-s">{phase.step}…</p>
           {/* The request can't be aborted, so there is no Cancel; the bar is
               indeterminate, as the step count is unknown. */}
           <ProgressBar label={phase.step} />
@@ -224,7 +224,7 @@ export function ImportDetail({ brand }: { brand: BrandDraft }) {
             {phase.addedStyles} type style{phase.addedStyles === 1 ? "" : "s"}
           </p>
           {phase.matched > 0 && (
-            <p className="t-body-m sp-bs-import__matched">
+            <p className="t-body-s sp-bs-import__matched">
               {phase.matched} matched what you already had, so those stayed as they were.
             </p>
           )}

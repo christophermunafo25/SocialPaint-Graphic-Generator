@@ -155,7 +155,7 @@ export function ImagesDetail({ brand }: { brand: BrandDraft }) {
           onFiles={(files) => {
             for (const f of files) void uploadRef.current(f);
           }}
-          style={{ minHeight: 207, alignSelf: "stretch" }}
+          style={{ alignSelf: "stretch" }}
         />
       </div>
       {hiddenPicker}

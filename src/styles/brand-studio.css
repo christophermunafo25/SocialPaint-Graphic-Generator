@@ -231,28 +231,35 @@ label.sp-bs-add:focus-within {
 }
 /* The open card (13:9632): a 1px ring in text/strong on its own edge. */
 .sp-bs-color[aria-expanded="true"] {
-  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--text-primary);
+  box-shadow:
+    inset 0 0 0 var(--stroke-hairline) var(--text-primary),
+    var(--elevation-1-raised);
 }
 .sp-bs-color__swatch {
   height: 88px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
 }
 .sp-bs-color__fill {
   position: absolute;
   inset: 0;
   border-radius: inherit;
   background: var(--swatch);
-  box-shadow: inset 0 0 0 1px var(--border-subtle);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-subtle);
 }
 .sp-bs-color__role {
   position: absolute;
   top: var(--space-8);
-  left: var(--space-8);
+  left: var(--space-8); /* The role tag as drawn on a swatch (6085:1662): 16 tall, Caption/S. */
+  height: var(--space-16);
+  padding: 0 var(--space-8);
+  border-radius: var(--radius-chip);
+  font: var(--type-caption-s);
+  letter-spacing: var(--type-caption-s-tracking);
 }
 .sp-bs-color__meta {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-8);
   min-width: 0;
   padding: var(--space-12) var(--space-4) var(--space-4);
 }
@@ -280,20 +287,26 @@ label.sp-bs-add:focus-within {
    card, left-aligned; right-aligned or above where §8 says. */
 .sp-bs-popover {
   position: absolute;
-  top: calc(100% + 10px);
+  top: calc(100% + var(--space-16));
   left: 0;
   z-index: 3;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 10px; /* as drawn */
+  gap: var(--space-24);
   width: 300px;
   max-width: calc(100vw - 32px);
-  padding: 14px; /* as drawn */
+  padding: var(--space-16);
   border-radius: var(--radius-lg);
   background: var(--surface-raised);
   box-shadow: var(--elevation-2-overlay);
   color: var(--text-primary);
+}
+/* Name, value and contrast, 12 apart; Role and the foot follow 24 down. */
+.sp-bs-popover__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
 }
 .sp-bs-popover[data-end] {
   left: auto;
@@ -301,7 +314,7 @@ label.sp-bs-add:focus-within {
 }
 .sp-bs-popover[data-above] {
   top: auto;
-  bottom: calc(100% + 10px);
+  bottom: calc(100% + var(--space-16));
 }
 .sp-bs-popover__foot {
   display: flex;
@@ -335,7 +348,7 @@ label.sp-bs-add:focus-within {
 .sp-bs-color-popover__contrast {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-8);
   padding: 0 2px;
   color: var(--text-secondary);
 }
@@ -345,7 +358,7 @@ label.sp-bs-add:focus-within {
 .sp-bs-color-popover__role {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-12);
   padding: 2px 2px 0;
 }
 .sp-bs-color-popover__label {
@@ -354,7 +367,7 @@ label.sp-bs-add:focus-within {
 .sp-bs-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--space-6);
 }
 
 /* Who holds each role (13:9457), 24 under the grid. */
@@ -475,14 +488,14 @@ label.sp-bs-add:focus-within {
 .sp-bs-logo__fields {
   display: flex;
   flex-direction: column;
-  gap: 10px; /* as drawn */
-  padding: 10px 0 2px;
+  gap: var(--space-24);
+  padding: var(--space-12) 0 var(--space-2);
 }
 .sp-bs-choice-row {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 0 2px;
+  gap: var(--space-12);
+  padding: 0 var(--space-2);
 }
 .sp-bs-choice-row__label {
   color: var(--text-secondary);
@@ -509,7 +522,9 @@ label.sp-bs-add:focus-within {
   padding: var(--space-8);
   border-radius: var(--radius-xl);
   background: var(--surface-raised);
-  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-raised);
+  box-shadow:
+    inset 0 0 0 var(--stroke-hairline) var(--border-raised),
+    var(--elevation-1-raised);
   color: var(--text-primary);
 }
 .sp-bs-list__rows {
@@ -518,18 +533,18 @@ label.sp-bs-add:focus-within {
   padding: 0 var(--space-16);
 }
 .sp-bs-list > .sp-bs-add {
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
 }
 /* Rows 1px apart; the open editor sits under its row with no divider. */
 .sp-bs-style + .sp-bs-style {
-  border-top: 1px solid var(--border-subtle);
+  border-top: var(--stroke-hairline) solid var(--border-subtle);
 }
 .sp-bs-style__row {
   display: flex;
   align-items: center;
   gap: var(--space-24);
   min-width: 0;
-  padding: 20px 0; /* as drawn */
+  padding: var(--space-20) 0;
 }
 .sp-bs-style__spec {
   flex: none;
@@ -590,14 +605,14 @@ label.sp-bs-add:focus-within {
 .sp-bs-style__editor {
   display: flex;
   flex-direction: column;
-  gap: var(--space-16);
+  gap: var(--space-24);
   max-width: 640px;
   padding-bottom: var(--space-24);
 }
 .sp-bs-style__fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-12) var(--space-16);
+  gap: var(--space-24) var(--space-16);
 }
 @media (max-width: 767.98px) {
   .sp-bs-style__fields {
@@ -607,17 +622,22 @@ label.sp-bs-add:focus-within {
     flex-wrap: wrap;
   }
 }
+/* Two groups 24 apart (6085:2278): "Use for" 12 from its chips, then the
+   two toggle chips. */
 .sp-bs-style__toggles {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-12) var(--space-24);
+}
+.sp-bs-style__toggle-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-12);
 }
 .sp-bs-style__toggle-label {
   color: var(--text-secondary);
-}
-.sp-bs-style__toggle-gap {
-  width: 10px;
 }
 .sp-bs-style__rules {
   display: flex;
@@ -649,14 +669,14 @@ label.sp-bs-add:focus-within {
 .sp-bs-font-wrap + .sp-bs-font-wrap,
 .sp-bs-font-wrap + .sp-bs-font,
 .sp-bs-font + .sp-bs-font {
-  border-top: 1px solid var(--border-subtle);
+  border-top: var(--stroke-hairline) solid var(--border-subtle);
 }
 .sp-bs-font {
   display: flex;
   align-items: center;
   gap: var(--space-16);
   min-width: 0;
-  padding: 20px 0; /* as drawn */
+  padding: var(--space-20) 0;
 }
 .sp-bs-font__aa {
   flex: none;
@@ -673,7 +693,7 @@ label.sp-bs-add:focus-within {
   flex: none;
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-8);
   width: 220px;
   min-width: 0;
 }
@@ -764,8 +784,8 @@ label.sp-bs-add:focus-within {
   min-width: 0;
   padding: var(--space-8);
   border-radius: var(--radius-xl);
-  background: var(--surface-raised);
-  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-raised);
+  background: var(--surface-card);
+  box-shadow: var(--elevation-1-raised);
   color: var(--text-primary);
 }
 .sp-bs-image__plate {
@@ -773,14 +793,14 @@ label.sp-bs-add:focus-within {
   display: block;
   height: 132px;
   overflow: hidden;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
 }
 .sp-bs-image__plate::after {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  box-shadow: inset 0 0 0 1px var(--border-subtle);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-subtle);
   pointer-events: none;
 }
 .sp-bs-image__plate img {
@@ -792,9 +812,9 @@ label.sp-bs-add:focus-within {
 .sp-bs-image__meta {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0;
   min-width: 0;
-  padding: 6px 0 var(--space-4) var(--space-4);
+  padding: var(--space-6) 0 var(--space-4) var(--space-4);
 }
 .sp-bs-image[data-uploading] .sp-bs-image__meta {
   gap: var(--space-8);
@@ -805,7 +825,7 @@ label.sp-bs-add:focus-within {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-8);
-  min-height: 32px;
+  min-height: var(--size-control-sm);
 }
 .sp-bs-image__name,
 .sp-bs-image__size {
@@ -841,7 +861,7 @@ label.sp-bs-add:focus-within {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-24);
-  align-items: start;
+  align-items: stretch;
 }
 @media (max-width: 767.98px) {
   .sp-bs-import {
@@ -857,9 +877,18 @@ label.sp-bs-add:focus-within {
   min-width: 0;
   padding: var(--space-24);
   border-radius: var(--radius-xl);
-  background: var(--surface-raised);
-  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-raised);
   color: var(--text-primary);
+}
+/* The two legs are item cards; the status under them is a panel. */
+.sp-bs-import__leg {
+  background: var(--surface-card);
+  box-shadow: var(--elevation-1-raised);
+}
+.sp-bs-import__status {
+  background: var(--surface-raised);
+  box-shadow:
+    inset 0 0 0 var(--stroke-hairline) var(--border-raised),
+    var(--elevation-1-raised);
 }
 .sp-bs-import__leg > p,
 .sp-bs-import__status > p {
@@ -881,10 +910,11 @@ label.sp-bs-add:focus-within {
   display: inline-flex;
   align-self: flex-start;
   align-items: center;
-  height: 40px;
-  padding: 0 18px;
+  height: var(--size-control-md);
+  padding: 0 var(--space-16);
   border-radius: var(--radius-sm);
-  background: var(--surface-sunken);
+  background: var(--action-neutral);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-strong);
   color: var(--text-primary);
   white-space: nowrap;
   cursor: pointer;
@@ -894,13 +924,13 @@ label.sp-bs-add:focus-within {
   outline-offset: var(--focus-offset);
 }
 .sp-bs-import__choose[data-active="true"] {
-  box-shadow: inset 0 0 0 1px var(--text-secondary);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--text-secondary);
 }
 .sp-bs-import__note {
   color: var(--text-secondary);
 }
 .sp-bs-import__status--done {
-  gap: 6px;
+  gap: var(--space-6);
 }
 .sp-bs-import__matched {
   color: var(--text-secondary);
@@ -909,7 +939,7 @@ label.sp-bs-add:focus-within {
   display: flex;
   align-items: center;
   gap: var(--space-16);
-  padding-top: 10px;
+  padding-top: var(--space-12);
 }
 /* A text link on text/secondary, not underlined: the breadcrumb's link. */
 .sp-bs-link {

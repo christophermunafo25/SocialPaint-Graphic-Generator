@@ -274,7 +274,7 @@ function StyleRow({
             </span>
             {s.useFor && <Tag>{ROLE_LABELS[s.useFor]}</Tag>}
           </span>
-          <span className="t-body-m sp-bs-style__values">
+          <span className="t-body-s sp-bs-style__values">
             {VALUE_ORDER.map((field, i) => (
               <React.Fragment key={field}>
                 {i > 0 && (
@@ -544,36 +544,39 @@ function StyleEditor({
       </div>
 
       <div className="sp-bs-style__toggles">
-        <span id={useForId} className="t-label-xs sp-bs-style__toggle-label">
-          Use for
-        </span>
-        <div role="group" aria-labelledby={useForId} className="sp-bs-chips">
-          <Chip selected={!s.useFor} onClick={() => s.useFor && setRole(null)}>
-            None
-          </Chip>
-          {(["heading", "body"] as const).map((role) => (
-            <Chip
-              key={role}
-              selected={s.useFor === role}
-              onClick={() => s.useFor !== role && setRole(role)}
-            >
-              {ROLE_LABELS[role]}
+        <div className="sp-bs-style__toggle-group">
+          <span id={useForId} className="t-label-xs sp-bs-style__toggle-label">
+            Use for
+          </span>
+          <div role="group" aria-labelledby={useForId} className="sp-bs-chips">
+            <Chip selected={!s.useFor} onClick={() => s.useFor && setRole(null)}>
+              None
             </Chip>
-          ))}
+            {(["heading", "body"] as const).map((role) => (
+              <Chip
+                key={role}
+                selected={s.useFor === role}
+                onClick={() => s.useFor !== role && setRole(role)}
+              >
+                {ROLE_LABELS[role]}
+              </Chip>
+            ))}
+          </div>
         </div>
-        <span className="sp-bs-style__toggle-gap" aria-hidden />
-        <Chip
-          selected={!!s.uppercase}
-          onClick={() => update({ uppercase: s.uppercase ? undefined : true })}
-        >
-          Always uppercase
-        </Chip>
-        <Chip
-          selected={s.textSizing === "shrink"}
-          onClick={() => update({ textSizing: s.textSizing === "shrink" ? undefined : "shrink" })}
-        >
-          Shrink to fit the box
-        </Chip>
+        <div className="sp-bs-chips">
+          <Chip
+            selected={!!s.uppercase}
+            onClick={() => update({ uppercase: s.uppercase ? undefined : true })}
+          >
+            Always uppercase
+          </Chip>
+          <Chip
+            selected={s.textSizing === "shrink"}
+            onClick={() => update({ textSizing: s.textSizing === "shrink" ? undefined : "shrink" })}
+          >
+            Shrink to fit the box
+          </Chip>
+        </div>
       </div>
 
       {rules.length > 0 && (

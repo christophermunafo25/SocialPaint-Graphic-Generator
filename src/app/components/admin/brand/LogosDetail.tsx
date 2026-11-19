@@ -132,7 +132,7 @@ export function LogosDetail({ brand, surface }: { brand: BrandDraft; surface?: L
           onFiles={(files) => {
             for (const f of files) void uploadRef.current(f);
           }}
-          style={{ minHeight: 213 }}
+          style={{ alignSelf: "stretch", minHeight: 206 }}
         />
       </div>
       {/* The setup strip's "Upload logo" opens the picker straight away. */}
@@ -308,7 +308,6 @@ function LogoEditingCard({ asset, logos, brand, edit, primaryFor }: LogoEditingP
 
       <div className="sp-bs-logo__fields">
         <Input
-          size="sm"
           aria-label="Logo name"
           value={name}
           autoFocus
