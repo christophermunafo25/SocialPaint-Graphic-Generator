@@ -28,7 +28,7 @@ export function BrandDetail({ category, surface, brand, bindings }: BrandDetailP
   return (
     <>
       {brand.error && (
-        <p className="tu-body-m sp-bs-error" role="alert">
+        <p className="t-body-m sp-bs-error" role="alert">
           {brand.error}
         </p>
       )}

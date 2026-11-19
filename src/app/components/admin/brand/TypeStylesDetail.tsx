@@ -267,14 +267,14 @@ function StyleRow({
               {s.name}
             </span>
           )}
-          <span className="tu-body-s sp-bs-style__face">
+          <span className="t-body-s sp-bs-style__face">
             <span>
               {s.font?.family ?? "Any face"}
               {s.weight ? ` · ${s.weight}` : ""}
             </span>
             {s.useFor && <Tag>{ROLE_LABELS[s.useFor]}</Tag>}
           </span>
-          <span className="tu-body-m sp-bs-style__values">
+          <span className="t-body-m sp-bs-style__values">
             {VALUE_ORDER.map((field, i) => (
               <React.Fragment key={field}>
                 {i > 0 && (
@@ -317,7 +317,7 @@ function StyleRow({
         </div>
       </RowContextMenu>
       {blocked && !expanded && (
-        <p className="tu-caption-m sp-bs-error-line sp-bs-style__blocked" role="alert">
+        <p className="t-caption-m sp-bs-error-line sp-bs-style__blocked" role="alert">
           {blocked}
         </p>
       )}
@@ -544,7 +544,7 @@ function StyleEditor({
       </div>
 
       <div className="sp-bs-style__toggles">
-        <span id={useForId} className="tu-label-xs sp-bs-style__toggle-label">
+        <span id={useForId} className="t-label-xs sp-bs-style__toggle-label">
           Use for
         </span>
         <div role="group" aria-labelledby={useForId} className="sp-bs-chips">
@@ -579,7 +579,7 @@ function StyleEditor({
       {rules.length > 0 && (
         <div className="sp-bs-style__rules">
           {rules.map((r) => (
-            <p key={r} className="tu-body-s sp-bs-style__rule">
+            <p key={r} className="t-body-s sp-bs-style__rule">
               <Lock size={12} className="ui-icon" aria-hidden />
               {r}
             </p>
@@ -588,7 +588,7 @@ function StyleEditor({
       )}
 
       {blocked && (
-        <p className="tu-caption-m sp-bs-error-line" role="alert">
+        <p className="t-caption-m sp-bs-error-line" role="alert">
           {blocked}
         </p>
       )}
@@ -596,7 +596,7 @@ function StyleEditor({
       <div className="sp-bs-style__foot">
         <button
           type="button"
-          className="ui-reset ui-ring tu-label-xs sp-bs-quiet-action"
+          className="ui-reset ui-ring t-label-xs sp-bs-quiet-action"
           onClick={onDelete}
         >
           Delete style
