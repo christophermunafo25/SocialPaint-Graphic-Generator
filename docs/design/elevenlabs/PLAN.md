@@ -131,7 +131,7 @@ One pull request per phase into `main`.
 
 ### What Phase E6 left for later phases
 
-- Brand Studio's item cards (color, logo, image, import leg and the overview's category cards) sit on `--surface-card` under Elevation/1 with no edge. Its panels (the type style and font list card, the import status) keep `--surface-raised` with the `--border-raised` hairline and add the drop. Plates and swatches are `--radius-lg` with a `--border-subtle` hairline.
+- Brand Studio's item cards (color, logo, image, import leg and the overview's category cards) sit on `--surface-card` under Elevation/1 with no edge. Its panels (the type style and font list card, the import status) keep `--surface-raised` with the `--border-raised` hairline and gain Elevation/1, which draws nothing today. Plates and swatches are `--radius-lg` with a `--border-subtle` hairline.
 - Brand Studio reads the trimmed `t-*` type styles and semantic tokens only, so `brand-studio.css` reads no bridged name.
 - The overview covers are the frame's art (`6085:1623` and the five after it), committed as webp.
 - The chips in Brand Studio's editors are the Chip primitive (28, outlined). The frames draw a 24 filled chip, which would be a size of the primitive, so it waits for CJ.

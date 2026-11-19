@@ -141,10 +141,6 @@
   font: var(--type-body-s);
   letter-spacing: var(--type-body-s-tracking);
 }
-.tu-label-l {
-  font: var(--type-label-l);
-  letter-spacing: var(--type-label-l-tracking);
-}
 .tu-label-m {
   font: var(--type-label-m);
   letter-spacing: var(--type-label-m-tracking);
