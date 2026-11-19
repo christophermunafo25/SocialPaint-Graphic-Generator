@@ -183,6 +183,7 @@ import {
 } from "./alignOps";
 import { GroupInspector } from "./GroupInspector";
 import { roleFace } from "@/lib/brand/fontRoles";
+import { AREA_ICON } from "../areas";
 
 /** The tool strip, in the order every design tool puts it. Each one is
  * backed by an element the palette already offers. */
@@ -428,13 +429,18 @@ export function TemplateBuilder({
   /** One-line import summary ("12 elements imported — all editable") so the
    * admin knows what they're looking at when the canvas opens full. */
   /** Transient confirmation toast (imports, grouping) — proof it worked. */
-  const [notice, setNotice] = useState<string | null>(null);
+  // The Toast owns its time (PROMPT.md section 7.2): each notice keeps its
+  // own length, none while an import runs, and n restarts it for a repeat.
+  const [notice, setNoticeState] = useState<{ message: string; ms?: number; n: number } | null>(
+    null,
+  );
+  const showNotice = useCallback((message: string, ms?: number) => {
+    setNoticeState((prev) => ({ message, ms, n: (prev?.n ?? 0) + 1 }));
+  }, []);
   /** A just-created group, highlighted briefly so the admin sees it. */
   const [flashGroupId, setFlashGroupId] = useState<string | null>(null);
   const flashTimer = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(flashTimer.current), []);
-  const noticeTimer = useRef<number | undefined>(undefined);
-  useEffect(() => () => window.clearTimeout(noticeTimer.current), []);
   const [publishState, setPublishState] = useState<"idle" | "publishing" | "success">("idle");
   const [error, setError] = useState<string | null>(null);
   /** Field whose label should open for naming (a just-added element);
@@ -497,12 +503,11 @@ export function TemplateBuilder({
     if (next.width === draft.canvasWidth && next.height === draft.canvasHeight) return;
     const { draft: rescaled, warnings } = rescaleTemplate(draft, next);
     setDraft(() => rescaled);
-    setNotice(
+    showNotice(
       `Canvas resized to ${next.width}×${next.height}.` +
         (warnings.length ? ` ${warnings.map((w) => w.message).join(" ")}` : ""),
+      warnings.length ? 15000 : 8000,
     );
-    window.clearTimeout(noticeTimer.current);
-    noticeTimer.current = window.setTimeout(() => setNotice(null), warnings.length ? 15000 : 8000);
   };
 
   /** Resize entry point. A published template served through live share
@@ -569,11 +574,10 @@ export function TemplateBuilder({
         target,
       });
     }
-    setNotice(
+    showNotice(
       `Version created at ${target.width}×${target.height} with automatic reflow applied. Review the layout, then publish.`,
+      10000,
     );
-    window.clearTimeout(noticeTimer.current);
-    noticeTimer.current = window.setTimeout(() => setNotice(null), 10000);
     // pendingReflowRef is consumed here exactly once; navigate/setDraft are
     // stable for the life of this keyed mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -894,13 +898,12 @@ export function TemplateBuilder({
       const alreadyGrouped = draft.fields.some(
         (f) => selectedIds.includes(f.id) && outermostGroupOf(f.fieldKey, groups),
       );
-      setNotice(
+      showNotice(
         alreadyGrouped
           ? "Those elements are already in a group. Ungroup them first."
           : "Select at least two elements to group them.",
+        5000,
       );
-      window.clearTimeout(noticeTimer.current);
-      noticeTimer.current = window.setTimeout(() => setNotice(null), 5000);
       return;
     }
     setDraft((d) => ({ ...d, layoutGroups: [...(d.layoutGroups ?? []), g] }));
@@ -911,10 +914,18 @@ export function TemplateBuilder({
     setFlashGroupId(g.id);
     window.clearTimeout(flashTimer.current);
     flashTimer.current = window.setTimeout(() => setFlashGroupId(null), 1600);
-    setNotice(`Grouped ${g.children.length} elements as “${g.name}”`);
-    window.clearTimeout(noticeTimer.current);
-    noticeTimer.current = window.setTimeout(() => setNotice(null), 5000);
-  }, [draft.fields, groups, selectedIds, selGroupIds, builderLayout, kit, measurer, setDraft]);
+    showNotice(`Grouped ${g.children.length} elements as “${g.name}”`, 5000);
+  }, [
+    draft.fields,
+    groups,
+    selectedIds,
+    selGroupIds,
+    builderLayout,
+    kit,
+    measurer,
+    setDraft,
+    showNotice,
+  ]);
 
   /** Commit a whole-group drag. A stack owns its children's positions, so
    * one anchor patch moves everything; a plain group's children own theirs,
@@ -1576,7 +1587,7 @@ export function TemplateBuilder({
       setError("Pasting Figma layers needs the Supabase backend with Figma connected.");
       return;
     }
-    setNotice("Importing that Figma layer…");
+    showNotice("Importing that Figma layer…");
     try {
       const result = await stores.designImport.importElementsFromUrl(company.id, url);
       // The import can take a minute. The layer is placed and keyed against
@@ -1598,19 +1609,18 @@ export function TemplateBuilder({
       );
       setDraft((d) => ({ ...d, fields: [...d.fields, ...landOnTop(fields, d.fields)] }));
       setSelectedIds(fields.map((f) => f.id));
-      setNotice(
+      showNotice(
         importSummary(fields, "pasted") +
           unfilledNote(result.intent, fields) +
           (missingFonts.length
             ? ` Fonts not available here: ${missingFonts.join(", ")}. Upload them in Brand Studio.`
             : ""),
+        8000,
       );
-      window.clearTimeout(noticeTimer.current);
-      noticeTimer.current = window.setTimeout(() => setNotice(null), 8000);
       const report = degradedReport([...(result.warningDetails ?? []), ...issues]);
       if (report) setError(report);
     } catch (e) {
-      setNotice(null);
+      setNoticeState(null);
       setError(e instanceof Error ? e.message : "Couldn't import that Figma layer.");
     }
   };
@@ -2277,9 +2287,7 @@ export function TemplateBuilder({
       opts.canvasWidth !== current.canvasWidth || opts.canvasHeight !== current.canvasHeight
         ? ` Canvas set to the frame's own size, ${opts.canvasWidth}×${opts.canvasHeight}.`
         : "";
-    setNotice(opts.summary(inForm) + sizeNote);
-    window.clearTimeout(noticeTimer.current);
-    noticeTimer.current = window.setTimeout(() => setNotice(null), 8000);
+    showNotice(opts.summary(inForm) + sizeNote, 8000);
 
     // A designed template that silently falls back to system faces reads as
     // a broken import — name the missing families and the fix. Text in a
@@ -2295,13 +2303,12 @@ export function TemplateBuilder({
         brandAssets.filter((a) => a.kind === "font"),
       );
       if (missingFonts.length) {
-        setNotice(
+        showNotice(
           opts.summary(inForm) +
             sizeNote +
             ` Fonts not available here: ${missingFonts.join(", ")}. That text shows its Figma render until you upload them in Brand Studio.`,
+          8000,
         );
-        window.clearTimeout(noticeTimer.current);
-        noticeTimer.current = window.setTimeout(() => setNotice(null), 8000);
       }
       recomposeBackground(opts.sourceUrl, imported, opts.tree, missingFonts, opts.canvasEffects);
     })();
@@ -3023,42 +3030,54 @@ export function TemplateBuilder({
         }}
       />
 
-      {notice && (
-        <div className="sp-builder__toast" aria-live="polite">
-          <Toast message={notice} />
-        </div>
-      )}
+      <div className="sp-builder__toast" aria-live="polite">
+        <Toast
+          open={notice !== null}
+          message={notice?.message}
+          messageKey={notice?.n}
+          duration={notice?.ms}
+          onTimeout={() => setNoticeState(null)}
+        />
+      </div>
 
-      {/* ── Top bar (322:157): the trail, the status and the save state, then
-          Edit or Preview and Publish. ───────────────────────────────────── */}
+      {/* ── The header row (6075:3293): the area's icon and the trail, the
+          status and the save state, then Edit or Preview and Publish. ─── */}
       <header className="sp-builder__bar">
-        <nav aria-label="Breadcrumb" className="ui-breadcrumb sp-builder__crumbs">
-          <ol>
-            <li>
-              <a
-                href={routeToUrl({ name: "adminTemplates" })}
-                className="ui-reset ui-ring t-label-m ui-breadcrumb__link"
-                onClick={(e) => {
-                  if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-                  e.preventDefault();
-                  navigate({ name: "adminTemplates" });
-                }}
-              >
-                Template Builder
-              </a>
-            </li>
-            <li>
-              <span className="t-label-m ui-breadcrumb__divider" aria-hidden>
-                /
-              </span>
-              <CrumbRename
-                value={draft.name}
-                placeholder="Untitled template"
-                onSave={(name) => setDraft((d) => ({ ...d, name }), "text:name")}
-              />
-            </li>
-          </ol>
-        </nav>
+        <span className="sp-builder__lead">
+          <AREA_ICON.templateBuilder
+            size={18}
+            strokeWidth={1.5}
+            className="ui-icon ui-page-header__icon"
+            aria-hidden
+          />
+          <nav aria-label="Breadcrumb" className="ui-breadcrumb sp-builder__crumbs">
+            <ol>
+              <li>
+                <a
+                  href={routeToUrl({ name: "adminTemplates" })}
+                  className="ui-reset ui-ring t-label-m ui-breadcrumb__link"
+                  onClick={(e) => {
+                    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+                    e.preventDefault();
+                    navigate({ name: "adminTemplates" });
+                  }}
+                >
+                  Template Builder
+                </a>
+              </li>
+              <li>
+                <span className="t-label-m ui-breadcrumb__divider" aria-hidden>
+                  /
+                </span>
+                <CrumbRename
+                  value={draft.name}
+                  placeholder="Untitled template"
+                  onSave={(name) => setDraft((d) => ({ ...d, name }), "text:name")}
+                />
+              </li>
+            </ol>
+          </nav>
+        </span>
         {sourceChosen && (
           <>
             <Badge tone={draft.status === "published" ? "positive" : "neutral"}>
@@ -3697,8 +3716,11 @@ export function TemplateBuilder({
                             <Upload
                               placeholder={uploading ? "Uploading…" : "Add an image"}
                               thumbnail={draft.backgroundUrl ? signedBackground.url : null}
-                              fileName={backgroundFileName(draft.backgroundUrl)}
+                              fileName={
+                                uploading ? undefined : backgroundFileName(draft.backgroundUrl)
+                              }
                               disabled={uploading}
+                              busy={uploading}
                               onClick={() => bgFileRef.current?.click()}
                               onDropFile={(file) => void onDropBackground([file])}
                             />

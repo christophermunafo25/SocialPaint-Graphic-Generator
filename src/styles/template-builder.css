@@ -224,6 +224,17 @@
 .sp-size__chips {
   flex: 1;
 }
+/* The Large search opens to 280 here, not the library's 440, and gives
+   way to the column on a phone, so the chips keep their room and the
+   field never runs past the dialog. */
+.sp-size__filters .sp-lib-search {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.sp-size__filters .ui-search--open[data-size] {
+  width: 280px; /* the Medium field's open width (50:62) */
+  max-width: 100%;
+}
 .sp-size__chips::after {
   background: linear-gradient(to right, transparent, var(--surface-raised));
 }
@@ -371,26 +382,36 @@
   aspect-ratio: 1;
 }
 
-/* ── The editor (322:36): the top bar, then the workspace 12 under it, in
-   Main beside the collapsed rail ("bare" in layout/Page.tsx). ── */
+/* ── The editor (ElevenLabs 6072:3662): the header row, then the
+   workspace, in Main beside the collapsed rail ("bare" in layout/Page.tsx,
+   so the editor draws the frame's header row itself). ── */
 .sp-builder {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--space-12);
   height: 100%;
   min-height: 0;
 }
-/* The top bar (322:157), 44 tall: the trail, the status Badge and the save
-   state, 12 apart; then Edit or Preview and Publish at the end. */
+/* The header row (6075:3293): 64 tall plus a border/subtle hairline, 32 at
+   the sides, as every page's. The area's icon and the trail, then the
+   status Badge and the save state, 12 apart; Edit or Preview and Publish
+   at the end. */
 .sp-builder__bar {
   display: flex;
   flex: none;
   align-items: center;
   gap: var(--space-12);
-  height: 44px; /* as drawn */
+  box-sizing: border-box;
+  min-height: calc(var(--space-64) + var(--stroke-hairline));
   min-width: 0;
-  padding-left: var(--space-6);
+  padding: 0 var(--space-32);
+  border-bottom: var(--stroke-hairline) solid var(--border-subtle);
+}
+.sp-builder__lead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
 }
 .sp-builder__crumbs {
   min-width: 0;
@@ -412,6 +433,7 @@
 }
 .sp-builder__alert {
   flex: none;
+  margin: var(--space-24) var(--space-32) 0;
 }
 /* The last crumb names the template and renames it: a click turns it into a
    Small field in the trail. */
@@ -451,6 +473,7 @@
   grid-template-columns: 260px minmax(0, 1fr) 320px; /* as drawn */
   gap: var(--space-12);
   min-height: 0;
+  padding: var(--space-24) var(--space-32);
 }
 .sp-builder__workspace[data-mode="preview"] {
   grid-template-columns: minmax(0, 1fr) 380px; /* as drawn */
@@ -491,7 +514,7 @@
   overflow-y: auto;
   padding: var(--space-16);
 }
-/* The stage (322:379): surface/sunken at radius/xl, the artboard in the
+/* The stage (6072:3701): surface/stage at radius/xl, the artboard in the
    middle and its controls floating over it. */
 .sp-builder__canvas {
   position: relative;
@@ -501,7 +524,7 @@
   min-height: 0;
   overflow: hidden;
   border-radius: var(--radius-xl);
-  background: var(--surface-sunken);
+  background: var(--surface-stage);
 }
 
 /* What floats over the stage, above the canvas: the variations at the top,

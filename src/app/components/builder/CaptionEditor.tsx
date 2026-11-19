@@ -1,6 +1,6 @@
-import React, { useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import type { TemplateField } from "@/lib/types";
-import { Chip, Field, TextArea } from "../primitives";
+import { CONFIRM_MS, Chip, Field, TextArea } from "../primitives";
 
 interface CaptionEditorProps {
   value: string;
@@ -33,6 +33,22 @@ export function CaptionEditor({ value, fields, onChange }: CaptionEditorProps) {
 
   const taggable = fields.filter((f) => f.type !== "image" && !f.static);
 
+  // The caption's copy button (Publish template, 6072:3977): the check holds
+  // for CONFIRM_MS, and a denied write claims nothing.
+  const [copied, setCopied] = useState(false);
+  const copiedTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(copiedTimer.current), []);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch {
+      return;
+    }
+    setCopied(true);
+    window.clearTimeout(copiedTimer.current);
+    copiedTimer.current = window.setTimeout(() => setCopied(false), CONFIRM_MS);
+  };
+
   return (
     <div className="sp-caption-editor">
       <Field label="Caption">
@@ -41,6 +57,9 @@ export function CaptionEditor({ value, fields, onChange }: CaptionEditorProps) {
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder="Join us in congratulating {name}"
+          copy={
+            value.trim() ? { label: "Copy caption", onCopy: () => void copy(), copied } : undefined
+          }
         />
       </Field>
       {taggable.length > 0 && (

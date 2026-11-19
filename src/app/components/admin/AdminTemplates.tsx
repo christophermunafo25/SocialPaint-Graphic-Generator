@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Copy, Eye, EyeOff, Frame, Pencil, Plus, Search, Trash2, Undo2 } from "lucide-react";
 import type { TemplateSchema, UsageSummary } from "@/lib/types";
 import { stores } from "@/lib/stores";
@@ -114,19 +114,22 @@ export function AdminTemplates() {
   /** Template pending delete confirmation. */
   const [deleting, setDeleting] = useState<TemplateSchema | null>(null);
 
-  const [toast, setToast] = useState<string | null>(null);
-  const toastTimer = useRef<number | undefined>(undefined);
-  useEffect(() => () => window.clearTimeout(toastTimer.current), []);
+  // The Toast owns its time (PROMPT.md section 7.2); each message keeps its
+  // own length, and n restarts it for a repeat.
+  const [toast, setToast] = useState<{ message: string; ms: number; n: number } | null>(null);
+  const showToast = useCallback((message: string, ms: number) => {
+    setToast((prev) => ({ message, ms, n: (prev?.n ?? 0) + 1 }));
+  }, []);
+  // Duplicate hands over to the editor a moment after its toast.
+  const hopTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(hopTimer.current), []);
 
   // Onboarding's seeding runs right before it navigates here; if any starter
   // failed to create, the notice it left behind surfaces as a toast.
   useEffect(() => {
     const notice = consumeSeedNotice();
-    if (notice) {
-      setToast(notice);
-      toastTimer.current = window.setTimeout(() => setToast(null), 8000);
-    }
-  }, []);
+    if (notice) showToast(notice, 8000);
+  }, [showToast]);
 
   /** Restore starter templates: the same seeder onboarding ran. It skips
    * starterKeys that still exist, so it only recreates deleted ones and a
@@ -139,10 +142,7 @@ export function AdminTemplates() {
     setConfirmingRestore(false);
     if (!company || !kit) return;
     setRestoring(true);
-    const showToast = (message: string) => {
-      setToast(message);
-      toastTimer.current = window.setTimeout(() => setToast(null), 6000);
-    };
+    const showRestoreToast = (message: string) => showToast(message, 6000);
     try {
       const logoAsset =
         assets.find((a) => a.id === kit.primaryLogoAssetId) ??
@@ -154,13 +154,13 @@ export function AdminTemplates() {
       });
       if (result.failed.length) {
         console.error("Starter restore failed for:", result.failed);
-        showToast("Some starter templates could not be restored. Try again.");
+        showRestoreToast("Some starter templates could not be restored. Try again.");
       } else if (result.created.length) {
-        showToast(
+        showRestoreToast(
           `${result.created.length} starter template${result.created.length === 1 ? "" : "s"} restored.`,
         );
       } else {
-        showToast("All starter templates are already in place.");
+        showRestoreToast("All starter templates are already in place.");
       }
       if (result.created.length) reload();
     } finally {
@@ -257,8 +257,7 @@ export function AdminTemplates() {
       });
     } catch (e) {
       console.error("Version create failed", e);
-      setToast("Couldn't create the version. Try again.");
-      toastTimer.current = window.setTimeout(() => setToast(null), 4000);
+      showToast("Couldn't create the version. Try again.", 4000);
     }
   };
 
@@ -270,17 +269,17 @@ export function AdminTemplates() {
     for (let n = 2; names.has(name); n++) name = `${base} ${n}`;
     try {
       const copy = await stores.templates.duplicate(t.id, name);
-      setToast("Duplicated.");
+      showToast("Duplicated.", 4000);
       reload();
-      // The person duplicating is about to edit it — the toast covers the hop.
-      toastTimer.current = window.setTimeout(
+      // The person duplicating is about to edit it: the toast covers the hop.
+      window.clearTimeout(hopTimer.current);
+      hopTimer.current = window.setTimeout(
         () => navigate({ name: "builder", templateId: copy.id }),
         600,
       );
     } catch (e) {
       console.error("Duplicate failed", e);
-      setToast("Couldn't duplicate. Try again.");
-      toastTimer.current = window.setTimeout(() => setToast(null), 4000);
+      showToast("Couldn't duplicate. Try again.", 4000);
     }
   };
 
@@ -351,12 +350,16 @@ export function AdminTemplates() {
 
   return (
     <Page header={header}>
-      {toast && (
-        // The fill page's toast position: centred at the foot of the page.
-        <div className="sp-fill-toast" aria-live="polite">
-          <Toast message={toast} />
-        </div>
-      )}
+      {/* The fill page's toast position: centred at the foot of the page. */}
+      <div className="sp-fill-toast" aria-live="polite">
+        <Toast
+          open={toast !== null}
+          message={toast?.message}
+          messageKey={toast?.n}
+          duration={toast?.ms}
+          onTimeout={() => setToast(null)}
+        />
+      </div>
       <ConfirmDialog
         open={deleting !== null}
         title={`Delete template "${deleting?.name ?? ""}"?`}

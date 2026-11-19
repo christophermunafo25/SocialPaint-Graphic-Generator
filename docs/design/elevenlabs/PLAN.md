@@ -92,8 +92,8 @@ One pull request per phase into `main`.
 | E1 | Foundation | The token patch (new `master.tokens.json` and `tokens.css`, the exporter on the new file, the `layout` unit rule, the plates and `--radius-tag` owned by `tokens.css`, the two ink names on gray). Every primitive change in `PROMPT.md` section 5.1, the liquid selection in the Segmented Control included, and the microinteractions in sections 7.2 to 7.6 that live in primitives. Every surface that would vanish on a white page, found by audit and fixed from its frame. `/dev/ui` redrawn from the component boards. `CLAUDE.md` points at this folder (`PHASE-E1.md`) | Every changed value is on `BRIDGE.md`'s list. `/dev/ui` matches the boards in both themes. No surface disappears on any route in Light or Dark. The liquid selection and the microinteractions match their references at slow motion | Done (#206) |
 | E2 | Shell | The flush sidebar on `--surface-shell` with its right edge, the Outline buttons, CJ's updated lockup on `--logo-ink`, no viewport inset, the 64 header row with its hairline, and the Page Header with the area icon on every page (`PHASE-E2.md`) | Every route reachable in both themes. The shell matches the App shell pattern | Done (#207) |
 | E3 | Brand Templates | The library, the 46 filter bar, search, the fill page with the 380 Details panel, public links | Screens match their frames in both themes | Done (#211) |
-| E4 | Generate | The one-line composer, the result thread, History, `VariationTile`, the copy button on captions, the Result Card's arrival and its download check (`PROMPT.md` sections 7.3 and 7.6) | Same | Built, pull request open |
-| E5 | Template Builder | The list and its dialogs, the editor chrome, the stage, the variations bar, the 320 inspector | Same, and the fidelity checker passes | Not started |
+| E4 | Generate | The one-line composer, the result thread, History, `VariationTile`, the copy button on captions, the Result Card's arrival and its download check (`PROMPT.md` sections 7.3 and 7.6) | Same | Done (#213) |
+| E5 | Template Builder | The list and its dialogs, the editor chrome, the stage, the variations bar, the 320 inspector | Same, and the fidelity checker passes | Built, pull request open |
 | E6 | Brand Studio | Overview and the eighteen detail states, built from the ElevenLabs frames (replaces new-brand Phase 7) | Same | Not started |
 | E7 | Settings and Insights | Seven sections and the dashboard with the Metrics' roll (`PROMPT.md` section 7.7), replacing new-brand Phase 8 | Same | Not started |
 | E8 | Sign in and Create account | Eight gate screens and ten onboarding steps, Light only (replaces new-brand Phase 9) | Screens match their frames | Not started |
@@ -120,8 +120,14 @@ One pull request per phase into `main`.
 - The Composer is one line (`.ui-composer__bar`), with attachments and details in `.ui-composer__top` above it. The sign-in gate's composer (`auth.css`, `.sp-auth-composer`) is its own markup and is Phase E8's.
 - `ResultCard` takes `arrive` and `downloadedKey`. `useDraftDownload` counts each draft's successful exports in `doneCount`, and the turns pass the sum for their drafts.
 - `TextArea` takes `copy`. Any generated caption elsewhere can pass it.
-- Every Toast caller is on the Toast's timer except the Template Builder list's (`admin/AdminTemplates.tsx`), which is Phase E5's.
+- Every Toast caller is on the Toast's timer except the Template Builder list's (`admin/AdminTemplates.tsx`), which is Phase E5's (built in E5).
 - History's heading is the trail's last crumb, so no page sets Title/Page under a header row any more.
+
+### What Phase E5 left for later phases
+
+- The builder editor still mounts in a "bare" page and draws the frame's header row itself (`.sp-builder__bar`), because its last crumb renames the template in place. It matches `.sp-frame__head`'s measures at 1024 and wider. Below 1024 it keeps the 64 row and 32 sides, where the editor's three panels need more width than a phone has anyway.
+- Every Toast caller is on the Toast's timer now, the editor's notices included.
+- Publish template's Category is a text field where the frame draws a dropdown. A fixed category list is a product call.
 
 The new-brand program split tokens from primitives, and this one keeps them together in Phase E1. The ElevenLabs values turn the page and raised surfaces white in Light, so a token-only diff would leave fields, cards and progress tracks invisible on `main` until the next phase merged. Folding the primitives in keeps every screen whole at every merge.
 
