@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import digestArt from "@/assets/socialpaint/insights/insights-digest.webp";
 import { ChartColumn } from "lucide-react";
 import type { InsightEvent, PublicLinkUsageRow, TemplateSchema } from "@/lib/types";
 import type { Member } from "@/lib/stores/interfaces";
@@ -13,6 +14,7 @@ import {
   platformsInUse,
   PUBLIC_MEMBER,
   RANGE_LABEL,
+  type Insights,
   type InsightsFilters,
   type InsightsMetric,
   type InsightsRange,
@@ -22,9 +24,9 @@ import { PLATFORMS, type PlatformId } from "@/lib/templates/platforms";
 import { routeToUrl, useRouter, type Route } from "../../router";
 import { Page } from "../layout/Page";
 import { ErrorState } from "../ErrorState";
-import { Button, PageHeader, Skeleton } from "../primitives";
+import { Button, Metric, PageHeader, Skeleton } from "../primitives";
 import { useLinkClick } from "./brand/useLinkClick";
-import { changeCopy, InsightKpi } from "./insights/InsightKpi";
+import { ChangeBadge, changeCopy, type KpiFamily } from "./insights/ChangeBadge";
 import { TrendCard } from "./insights/TrendCard";
 import { TopTemplatesCard } from "./insights/TopTemplatesCard";
 import { PublicLinksCard } from "./insights/PublicLinksCard";
@@ -44,6 +46,14 @@ const METRIC_NAME: Record<InsightsMetric, string> = {
   opens: "Opens",
   posted: "Posts to LinkedIn",
 };
+
+/** The four headline numbers, each in its colour family (D7). */
+const KPIS: { key: keyof Insights["kpis"]; label: string; family: KpiFamily }[] = [
+  { key: "exports", label: "Exports", family: "green" },
+  { key: "opens", label: "Opens", family: "blue" },
+  { key: "posted", label: "Posted to LinkedIn", family: "purple" },
+  { key: "activeMembers", label: "Active members", family: "pink" },
+];
 
 type DashboardRoute = Extract<Route, { name: "dashboard" }>;
 
@@ -93,12 +103,24 @@ export function Dashboard(route: Omit<DashboardRoute, "name">) {
   const [loaded, setLoaded] = useState<{ events: InsightEvent[]; range: InsightsRange } | null>(
     null,
   );
+  // Stored only when the read itself changes: on the render where the range
+  // changes, eventsState still holds the old window's events, and pairing
+  // them with the new range would draw (and roll to) numbers that are
+  // neither. The ref gives the range the settled read was made for.
+  const rangeRef = useRef(activeRange);
+  rangeRef.current = activeRange;
   useEffect(() => {
     if (eventsState.status === "ready" && eventsState.data) {
-      setLoaded({ events: eventsState.data, range: activeRange });
+      setLoaded({ events: eventsState.data, range: rangeRef.current });
     }
-  }, [eventsState, activeRange]);
+  }, [eventsState]);
   const refreshing = eventsState.status === "loading" && loaded !== null;
+
+  // The headline numbers roll only when new numbers land after the member
+  // changed the range or a filter (PROMPT.md section 7.7). A change arms
+  // it; the render that lands the new numbers plays it and disarms it, so
+  // a first load or a background refresh swaps at once.
+  const [roll, setRoll] = useState(false);
 
   const templates = useMemo(
     () => (templatesState.status === "ready" ? templatesState.data : []),
@@ -135,7 +157,18 @@ export function Dashboard(route: Omit<DashboardRoute, "name">) {
     [loaded, templates, company, filters.templateId, filters.member, filters.platform],
   );
 
-  const go = (patch: Partial<Omit<DashboardRoute, "name">>) =>
+  useEffect(() => {
+    if (roll && !refreshing) setRoll(false);
+    // Disarm once the numbers this change asked for have landed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [insights]);
+
+  const go = (patch: Partial<Omit<DashboardRoute, "name">>) => {
+    // Arm only for a choice that changes something: re-picking the current
+    // option lands no new numbers, and an armed roll would wait for the
+    // next change the member did not make.
+    const keys = ["range", "template", "member", "platform"] as const;
+    if (keys.some((k) => k in patch && patch[k] !== route[k])) setRoll(true);
     // A filter is a view of the page, not a place: changes replace the
     // history entry, so Back leaves Insights. Defaults stay off the URL.
     navigate(
@@ -150,6 +183,7 @@ export function Dashboard(route: Omit<DashboardRoute, "name">) {
       },
       { replace: true },
     );
+  };
 
   const templateOptions: FilterOption[] = [
     { value: null, label: "All templates" },
@@ -247,7 +281,7 @@ export function Dashboard(route: Omit<DashboardRoute, "name">) {
         header={<PageHeader icon={AREA_ICON.insights} title="Insights & Analytics" />}
       >
         <section className="sp-in-card sp-in-empty" aria-labelledby="sp-in-empty-title">
-          <h2 id="sp-in-empty-title" className="tu-title-card">
+          <h2 id="sp-in-empty-title" className="t-title-card">
             No usage yet
           </h2>
           <a
@@ -281,24 +315,22 @@ export function Dashboard(route: Omit<DashboardRoute, "name">) {
         <PageHeader icon={AREA_ICON.insights} title="Insights & Analytics" actions={exportCsv} />
       }
     >
-      {filterRow}
       {insights && (
         <div className="sp-in-content" aria-busy={refreshing || undefined}>
-          <section className="sp-in-card sp-in-digest" aria-labelledby="sp-in-digest-title">
+          <section className="sp-in-digest" aria-labelledby="sp-in-digest-title">
+            <img className="sp-in-digest__art" src={digestArt} alt="" />
             <div className="sp-in-digest__head">
               <span className="sp-in-digest__tile" aria-hidden>
                 <ChartColumn size={24} className="ui-icon" />
               </span>
               <span className="sp-in-digest__titles">
-                <h2 id="sp-in-digest-title" className="tu-title-card">
+                <h2 id="sp-in-digest-title" className="t-title-card">
                   {digestHeading(loaded.range)}
                 </h2>
-                <span className="tu-body-s sp-in-muted">
-                  {windowDates(insights.window, loaded.range)}
-                </span>
+                <span className="t-body-s">{windowDates(insights.window, loaded.range)}</span>
               </span>
             </div>
-            <p className="sp-in-digest__sentence">
+            <p className="t-title-group sp-in-digest__sentence">
               {digestSentence(
                 insights,
                 loaded.range,
@@ -308,35 +340,21 @@ export function Dashboard(route: Omit<DashboardRoute, "name">) {
             </p>
           </section>
 
+          {filterRow}
+
           <div className="sp-in-kpis">
-            <InsightKpi
-              label="Exports"
-              value={insights.kpis.exports.current}
-              change={insights.kpis.exports.change}
-              family="green"
-              rangeLabel={rangeLabel}
-            />
-            <InsightKpi
-              label="Opens"
-              value={insights.kpis.opens.current}
-              change={insights.kpis.opens.change}
-              family="blue"
-              rangeLabel={rangeLabel}
-            />
-            <InsightKpi
-              label="Posted to LinkedIn"
-              value={insights.kpis.posted.current}
-              change={insights.kpis.posted.change}
-              family="purple"
-              rangeLabel={rangeLabel}
-            />
-            <InsightKpi
-              label="Active members"
-              value={insights.kpis.activeMembers.current}
-              change={insights.kpis.activeMembers.change}
-              family="pink"
-              rangeLabel={rangeLabel}
-            />
+            {KPIS.map(({ key, label, family }) => (
+              <Metric
+                key={key}
+                className="sp-in-metric"
+                label={label}
+                value={insights.kpis[key].current.toLocaleString("en-US")}
+                roll={roll && !refreshing}
+                delta={<ChangeBadge change={insights.kpis[key].change} family={family} />}
+                caption={`vs previous ${rangeLabel}`}
+                captionStyle="body"
+              />
+            ))}
           </div>
 
           <div className="sp-in-row">
@@ -374,17 +392,18 @@ function InsightsSkeleton() {
       header={<PageHeader icon={AREA_ICON.insights} title="Insights & Analytics" />}
     >
       <div className="sp-in-content" aria-busy="true" aria-label="Loading Insights">
-        <div className="sp-in-card sp-in-digest">
-          {bone(220, 20)}
+        <div className="sp-in-card sp-in-digest" data-loading>
+          {bone(220, 44)}
           {bone("70%", 26)}
         </div>
-        <div className="sp-in-kpis">
+        <div className="sp-in-filters">
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="sp-in-card sp-in-kpi">
-              {bone(96, 14)}
-              {bone(88, 40)}
-              {bone(140, 18)}
-            </div>
+            <Skeleton key={i} width={159} height={36} />
+          ))}
+        </div>
+        <div className="sp-in-kpis">
+          {KPIS.map(({ key, label }) => (
+            <Metric key={key} className="sp-in-metric" label={label} value="" loading />
           ))}
         </div>
         <div className="sp-in-row">

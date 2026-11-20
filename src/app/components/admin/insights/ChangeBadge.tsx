@@ -1,5 +1,6 @@
 import React from "react";
 import type { InsightChange } from "@/lib/insights/buildInsights";
+import { Badge } from "../../primitives";
 
 /** "Up 18%", "Down 4%", "Up 5" (members carry an absolute delta), "No
  * change", "New this period": the change in words, for assistive tech and
@@ -35,43 +36,22 @@ export function chipText(change: InsightChange): string {
 /** A card's colour family: its identity, the same in every state (D7). */
 export type KpiFamily = "green" | "blue" | "purple" | "pink";
 
-/** The change chip (13:946): the card's family colour, the arrow and
- * words carrying the direction. */
-export function ChangeChip({ change, family }: { change: InsightChange; family: KpiFamily }) {
-  return (
-    <span className="sp-in-chip" data-family={family}>
-      <span className="tu-label-xs" aria-hidden>
-        {chipText(change)}
-      </span>
-      <span className="sr-only">{changeCopy(change)}</span>
-    </span>
-  );
-}
+/** Each family's Badge tone (6095:1053): green reads status/positive,
+ * the others their deep colour with its accent (purple on its tint). */
+const TONE: Record<KpiFamily, "positive" | "blue" | "purple" | "pink"> = {
+  green: "positive",
+  blue: "blue",
+  purple: "purple",
+  pink: "pink",
+};
 
-/** One headline card (13:941): the label, the number, then the chip and
- * "vs previous {range}" (D8). No sparkline, dot or count-up (D10). */
-export function InsightKpi({
-  label,
-  value,
-  change,
-  family,
-  rangeLabel,
-}: {
-  label: string;
-  value: number;
-  change: InsightChange;
-  family: KpiFamily;
-  /** "30 days", from RANGE_LABEL. */
-  rangeLabel: string;
-}) {
+/** A headline number's change: a Badge in the card's family colour, the
+ * arrow and words carrying the direction, read out in words. */
+export function ChangeBadge({ change, family }: { change: InsightChange; family: KpiFamily }) {
   return (
-    <section className="sp-in-card sp-in-kpi" aria-label={label}>
-      <h2 className="tu-label-m">{label}</h2>
-      <p className="tu-title-metric">{value.toLocaleString("en-US")}</p>
-      <p className="sp-in-kpi__change">
-        <ChangeChip change={change} family={family} />
-        <span className="tu-body-s sp-in-muted">vs previous {rangeLabel}</span>
-      </p>
-    </section>
+    <Badge tone={TONE[family]}>
+      <span aria-hidden>{chipText(change)}</span>
+      <span className="sr-only">{changeCopy(change)}</span>
+    </Badge>
   );
 }

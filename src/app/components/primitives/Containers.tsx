@@ -3,6 +3,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import { cx, type IconComponent } from "./cx";
 import { IconButton } from "./IconButton";
+import { RollDigits } from "./RollDigits";
 import { Skeleton } from "./Skeleton";
 
 export interface CardProps {
@@ -71,7 +72,7 @@ export function SettingsCard({
   return (
     <section className={cx("ui-settings-card", className)}>
       <header className="ui-settings-card__header">
-        <h2 className="tu-title-card">{title}</h2>
+        <h2 className="t-title-card">{title}</h2>
         {action}
       </header>
       {children}
@@ -79,11 +80,10 @@ export function SettingsCard({
   );
 }
 
-/** Stat (Figma 59:449): a label and its value, inside a settings card. At
- * Large it is a figure: the label over a big number, with an optional line
- * under it on text/secondary ("286 via public links", 13:15351). It
- * belongs to Settings and keeps its earlier look until that page is
- * rebuilt. */
+/** Stat (Settings frames 6095:1451, 6095:1464): a label and its value,
+ * inside a settings card. At Large it is a figure: the label over a big
+ * number, with an optional line under it on text/secondary ("286 via
+ * public links"). */
 export function Stat({
   label,
   value,
@@ -99,16 +99,16 @@ export function Stat({
   if (size === "lg") {
     return (
       <div className="ui-stat" data-size="lg">
-        <span className="tu-label-m">{label}</span>
-        <span className="tu-title-metric">{value}</span>
-        {sub && <span className="tu-body-s ui-stat__sub">{sub}</span>}
+        <span className="t-label-m">{label}</span>
+        <span className="t-title-metric">{value}</span>
+        {sub && <span className="t-body-s ui-stat__sub">{sub}</span>}
       </div>
     );
   }
   return (
     <div className="ui-stat">
-      <span className="tu-label-xs ui-stat__label">{label}</span>
-      <span className="tu-body-m">{value}</span>
+      <span className="t-label-xs ui-stat__label">{label}</span>
+      <span className="t-body-m">{value}</span>
     </div>
   );
 }
@@ -120,16 +120,33 @@ export interface MetricProps {
   delta?: React.ReactNode;
   /** What the change is measured against, in Caption/M. */
   caption?: React.ReactNode;
+  /** The caption's text style: Caption/M as the component draws it, or
+   * Body/S as the Insights frame does (6095:1060). */
+  captionStyle?: "caption" | "body";
   /** Loading keeps the card's size and shows the shape of each part. A
    * string label names the busy region. */
   loading?: boolean;
+  /** Draws the value as rolling digits (PROMPT.md section 7.7): true on
+   * the render where numbers land after a change the member made, false
+   * otherwise (a first load or a background refresh swaps at once). Left
+   * out, the value draws as it is. Rolling needs a string or number. */
+  roll?: boolean;
   className?: string;
 }
 
 /** Metric (Figma 2215:223): one number on a raised card at radius/xl. The
  * label in Label/M, the value in Title/Metric, then the change: a badge and
  * a caption. */
-export function Metric({ label, value, delta, caption, loading = false, className }: MetricProps) {
+export function Metric({
+  label,
+  value,
+  delta,
+  caption,
+  loading = false,
+  roll,
+  captionStyle = "caption",
+  className,
+}: MetricProps) {
   if (loading) {
     return (
       <div
@@ -146,11 +163,26 @@ export function Metric({ label, value, delta, caption, loading = false, classNam
   return (
     <div className={cx("ui-metric", className)}>
       <span className="t-label-m">{label}</span>
-      <span className="t-title-metric">{value}</span>
+      <span className="t-title-metric">
+        {roll !== undefined && (typeof value === "string" || typeof value === "number") ? (
+          <RollDigits text={String(value)} roll={roll} />
+        ) : (
+          value
+        )}
+      </span>
       {(delta || caption) && (
         <span className="ui-metric__change">
           {delta}
-          {caption && <span className="t-caption-m ui-metric__caption">{caption}</span>}
+          {caption && (
+            <span
+              className={cx(
+                captionStyle === "body" ? "t-body-s" : "t-caption-m",
+                "ui-metric__caption",
+              )}
+            >
+              {caption}
+            </span>
+          )}
         </span>
       )}
     </div>

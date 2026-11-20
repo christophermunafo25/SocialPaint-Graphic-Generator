@@ -182,7 +182,7 @@ Fixed in the file while this kit was written, so a phase reading it sees the fix
 | Buttons, icon buttons, Send and chips shrink while pressed | `2206:542`, `2206:686`, `2206:754`, `2212:187`, `53:96` | `.ui-btn`, `.ui-iconbtn`, `.ui-send`, `.ui-chip`, `.ui-platform-chip` (Phase E1, built) |
 | A picked or dropped photo develops in, and a slow upload pulses | `2211:278` | `Upload` gains `busy`, `.ui-upload__thumb` (Phase E1, built). `builder/TemplateBuilder.tsx` and `builder/FieldInspector.tsx`, the only callers that track an upload, pass it (Phase E5, built) |
 | Result art develops in, and Download confirms with a check | `2216:287` | `ResultCard` gains `arrive`, set by `chat/GenerateTurn.tsx` and `chat/TemplateChatViews.tsx` (Phase E4, built) |
-| Metric values roll when the member changes the range | `2215:223` | `Metric` gains `roll`, a digit roll on `useRoll`'s timing. Insights draws its numbers with `admin/insights/InsightKpi.tsx` today, so `admin/Dashboard.tsx` moves them onto `Metric`, or `InsightKpi` takes the roll (Phase E7) |
+| Metric values roll when the member changes the range | `2215:223` | `Metric` gains `roll`, drawn by `primitives/RollDigits.tsx` on the timing `primitives/motion.ts` now shares with `useRoll`. `admin/Dashboard.tsx` draws its four numbers on `Metric`, and `InsightKpi` is gone (its change chip is `ChangeBadge`, on `Badge`) (Phase E7, built) |
 
 ## 8. Restored in Figma
 

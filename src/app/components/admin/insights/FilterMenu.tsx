@@ -10,8 +10,8 @@ export interface FilterOption {
 /** The select's value for "all": its options are strings. */
 const ALL = "";
 
-/** One of Insights' filters (13:911): a Select as wide as its value, the
- * current choice checked in its list. Choosing one replaces the filter in
+/** One of Insights' filters (6095:1036): a Select 159 wide, the current
+ * choice checked in its list. Choosing one replaces the filter in
  * the URL. */
 export function FilterMenu({
   name,
@@ -28,7 +28,7 @@ export function FilterMenu({
   const current = options.find((o) => o.value === value) ?? options[0];
   return (
     <Select
-      hug
+      className="sp-in-filter"
       ariaLabel={name}
       value={current.value ?? ALL}
       options={options.map((o) => ({ value: o.value ?? ALL, label: o.label }))}

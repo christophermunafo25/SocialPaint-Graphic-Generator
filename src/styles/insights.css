@@ -1,39 +1,43 @@
-/* ── Insights on the new look (PHASE-8.md; frames 13:832 and 13:1142) ──
-   The page's rhythm, the filters, the digest, the headline cards and their
-   change chips, the trend, and the two bar lists (Top templates and Public
-   links). Tokens and .t-* classes only. */
+/* ── Insights (ElevenLabs Phase E7; frames 6095:1030 Light, 6110:165 Dark)
+   The digest, the filters, the headline numbers, the trend beside Top
+   templates, and Public links, 24 apart. Semantic tokens and .t-* classes
+   only. */
 
-/* The page: header, 20, filters, then 28 between every section (13:905). */
 .sp-in-page {
   display: flex;
   flex-direction: column;
-  gap: 28px; /* off the scale, as drawn */
+  gap: var(--space-24);
 }
 .sp-in-content {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: var(--space-24);
 }
-.sp-in-content[aria-busy="true"] {
+/* While a range change loads, the numbers dim; the filters stay usable. */
+.sp-in-content[aria-busy="true"] > :not(.sp-in-filters) {
   opacity: 0.56;
 }
 
-/* Filters (13:911): four menus, 8 apart. */
+/* Filters (6095:1036): four Selects 159 wide, 8 apart. */
 .sp-in-filters {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2xs);
+  gap: var(--space-8);
+}
+.sp-in-filter {
+  width: 159px; /* as drawn */
 }
 
-/* A raised card: Elevation/Small, radius 20 (every part of the page). */
-/* ElevenLabs E1: raised surfaces are flat, so a panel on the white page draws a border/raised hairline (inside the box, so nothing moves). Insights 6095:1030. */
+/* A raised card: radius/xl, the border/raised hairline inside the box. */
 .sp-in-card {
   box-sizing: border-box;
   min-width: 0;
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-xl);
   background: var(--surface-raised);
-  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-raised);
-  color: var(--text-strong);
+  box-shadow:
+    inset 0 0 0 var(--stroke-hairline) var(--border-raised),
+    var(--elevation-1-raised);
+  color: var(--text-primary);
 }
 .sp-in-card h2,
 .sp-in-card p {
@@ -43,132 +47,126 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-sm);
+  gap: var(--space-16);
+}
+.sp-in-muted {
+  color: var(--text-secondary);
 }
 
-/* "View all": a text link, underlined, on text/strong (13:1037). */
+/* "View all" (6095:1138): Label/M on text/secondary, underlined. */
 .sp-in-link {
-  border-radius: var(--radius-control);
-  color: var(--text-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
   text-decoration: underline;
-  text-underline-offset: 2px;
+  text-underline-offset: var(--space-2);
   white-space: nowrap;
 }
+.sp-in-link:hover {
+  color: var(--text-primary);
+}
 
-/* ── Digest (13:926): padding 24 / 28; the tile, the heading over its
-   dates, 16, then the sentence. ── */
+/* ── Digest (6095:1041): the frame's art under a 35% scrim, 24 in; the
+   tile and the heading over its dates, 32, then the sentence in
+   Title/Group, all on text/on-color. ── */
 .sp-in-digest {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
-  padding: var(--space-md) 28px;
+  align-items: flex-start;
+  gap: var(--space-32);
+  min-width: 0;
+  min-height: 190px; /* as drawn */
+  padding: var(--space-24);
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-raised);
+  color: var(--text-on-color);
+}
+.sp-in-digest::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--surface-scrim);
+  opacity: 0.7; /* 70% of the 50% scrim: the drawn 35% */
+}
+.sp-in-digest__art {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.sp-in-digest h2,
+.sp-in-digest p {
+  margin: 0;
 }
 .sp-in-digest__head {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: var(--space-12);
 }
 .sp-in-digest__tile {
   display: inline-flex;
   flex: none;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-control);
-  background: var(--surface-sunken);
-  color: var(--text-strong);
+  width: var(--size-control-lg);
+  height: var(--size-control-lg);
+  border-radius: var(--radius-sm);
+  background: var(--surface-page);
+  color: var(--text-primary);
 }
 .sp-in-digest__titles {
   display: flex;
   flex-direction: column;
-  gap: 2px; /* as drawn */
+  gap: var(--space-8);
 }
-.sp-in-muted {
-  color: var(--text-secondary);
-}
-/* The sentence: 22 / 30, −0.01em (13:938); no text style exists for it
-   yet (§8), so it is set here, on the body face. */
 .sp-in-digest__sentence {
-  max-width: 860px;
-  font: 400 22px/30px var(--font-ui); /* as the type tokens are written */
-  letter-spacing: -0.01em;
+  max-width: 860px; /* as drawn */
+}
+/* The loading digest is a plain card. */
+.sp-in-digest[data-loading] {
+  gap: var(--space-24);
+  background: var(--surface-raised);
+  color: var(--text-primary);
+}
+.sp-in-digest[data-loading]::before {
+  content: none;
 }
 
-/* ── Headline cards (13:940): four across, 16 apart; padding 25. ── */
+/* ── Headline numbers (6095:1053): four Metrics, 16 apart, each 24 in
+   with 16 between its parts. ── */
 .sp-in-kpis {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--space-sm);
+  gap: var(--space-16);
 }
 @media (max-width: 1023.98px) {
   .sp-in-kpis {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-.sp-in-kpi {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-  padding: 25px; /* as drawn */
-}
-.sp-in-kpi__change {
-  display: flex;
-  flex-wrap: wrap; /* the comparison moves under the chip, never breaks */
-  align-items: center;
-  gap: var(--space-2xs);
+.sp-in-metric {
   min-width: 0;
+  gap: var(--space-16);
+  padding: var(--space-24);
 }
-.sp-in-kpi__change > * {
+.sp-in-metric .ui-metric__change {
+  flex-wrap: wrap; /* the comparison moves under the badge, never breaks */
+}
+.sp-in-metric .ui-metric__change > * {
   white-space: nowrap;
 }
 
-/* The change chip (D7): the card's family colour in every state, the arrow
-   and words carrying the direction. Light: the family's field fill with
-   its accent label. Dark: the accent as the fill (10% green and blue, 20%
-   purple and pink) with the same accent label. */
-.sp-in-chip {
-  display: inline-flex;
-  align-items: center;
-  height: 21px;
-  padding: 0 var(--space-2xs);
-  border-radius: var(--radius-pill);
-  white-space: nowrap;
-}
-.sp-in-chip[data-family="green"] {
-  background: var(--field-green);
-  color: var(--accent-green);
-}
-.sp-in-chip[data-family="blue"] {
-  background: var(--field-blue);
-  color: var(--accent-blue);
-}
-.sp-in-chip[data-family="purple"] {
-  background: var(--field-purple);
-  color: var(--accent-purple);
-}
-.sp-in-chip[data-family="pink"] {
-  background: var(--field-pink);
-  color: var(--accent-pink);
-}
-[data-theme="dark"] .sp-in-chip[data-family="green"] {
-  background: color-mix(in srgb, var(--accent-green) 10%, transparent);
-}
-[data-theme="dark"] .sp-in-chip[data-family="blue"] {
-  background: color-mix(in srgb, var(--accent-blue) 10%, transparent);
-}
-[data-theme="dark"] .sp-in-chip[data-family="purple"] {
-  background: color-mix(in srgb, var(--accent-purple) 20%, transparent);
-}
-[data-theme="dark"] .sp-in-chip[data-family="pink"] {
-  background: color-mix(in srgb, var(--accent-pink) 20%, transparent);
-}
-
-/* ── The row: the trend, 16, Top templates (304) (13:974). ── */
+/* ── The row (6095:1082): the trend, 16, Top templates at 370. ── */
 .sp-in-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 304px;
-  gap: var(--space-sm);
+  grid-template-columns: minmax(0, 1fr) 370px;
+  gap: var(--space-16);
   align-items: stretch;
 }
 @media (max-width: 1023.98px) {
@@ -177,45 +175,45 @@
   }
 }
 
-/* ── Trend (13:975): 22 / 24 / 24 / 24; the tabs and the range note, 23,
-   then the chart (196 tall). ── */
+/* ── Trend (6095:1083): 24 in; the tabs and the range note, 20, then the
+   chart (196 tall). ── */
 .sp-in-trend {
   display: flex;
   flex-direction: column;
-  gap: 23px; /* as drawn */
-  padding: 22px var(--space-md) var(--space-md);
+  gap: var(--space-20);
+  padding: var(--space-24);
 }
 .sp-in-trend__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-sm);
+  gap: var(--space-16);
   flex-wrap: wrap;
 }
 .sp-in-chart {
   position: relative;
-  height: 196px;
-  border-radius: var(--radius-control);
+  height: 196px; /* as drawn */
+  border-radius: var(--radius-sm);
 }
 .sp-in-chart:focus-visible {
-  outline: var(--focus-width) solid var(--ring);
+  outline: var(--stroke-focus) solid var(--border-focus);
   outline-offset: var(--focus-offset);
 }
 /* The plot: 32 in from the left for the y labels, 30 up for the x labels. */
 .sp-in-chart__plot {
   position: absolute;
-  inset: 6px 0 30px 32px;
+  inset: var(--space-6) 0 30px var(--space-32); /* 30 as drawn */
 }
 .sp-in-chart__grid {
   position: absolute;
   left: 0;
   right: 0;
-  height: 1px;
-  background: var(--border-default);
+  height: var(--stroke-hairline);
+  background: var(--border-subtle);
 }
 .sp-in-chart__ylabel {
   position: absolute;
-  left: -32px;
+  left: calc(-1 * var(--space-32));
   transform: translateY(50%); /* centred on its gridline */
   color: var(--text-secondary);
 }
@@ -231,7 +229,7 @@
   flex: 0 1 auto; /* narrower than drawn when the bars can't fit */
   min-width: 2px;
   min-height: 2px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-full);
   background: var(--surface-sunken);
 }
 .sp-in-chart__bar[data-selected] {
@@ -239,19 +237,17 @@
 }
 .sp-in-chart__xlabels {
   position: absolute;
-  left: 32px;
+  left: var(--space-32);
   right: 0;
   bottom: 0;
-  height: 20px;
+  height: var(--space-20);
 }
-/* 11 Medium, upper case, 0.08em (13:987); no text style exists (§8). */
+/* Caption/S, the dates in capitals (6095:1127). */
 .sp-in-chart__xlabel {
   position: absolute;
-  top: 6px;
+  top: var(--space-6);
   transform: translateX(-50%);
   color: var(--text-secondary);
-  font: 500 11px/1 var(--font-ui);
-  letter-spacing: 0.08em;
   text-transform: uppercase;
   white-space: nowrap;
 }
@@ -265,38 +261,40 @@
   pointer-events: none;
 }
 .sp-in-chart__tooltip[data-edge="start"] {
-  transform: translate(-12px, -100%);
+  transform: translate(calc(-1 * var(--space-12)), -100%);
 }
 .sp-in-chart__tooltip[data-edge="end"] {
-  transform: translate(calc(-100% + 12px), -100%);
+  transform: translate(calc(-100% + var(--space-12)), -100%);
 }
 .sp-in-chart__tooltip > .ui-tooltip {
   white-space: nowrap;
 }
 
-/* ── Bar lists: an 8-tall track, radius 4, its fill on text/strong, the
-   leader full width (D6). ── */
+/* ── Public links' track (6095:1179): 8 tall and round, its fill on
+   text/primary, the leader full width (D6). ── */
 .sp-in-track {
   position: relative;
   display: block;
-  height: 8px;
+  height: var(--space-8);
   overflow: hidden;
-  border-radius: 4px;
+  border-radius: var(--radius-full);
   background: var(--surface-sunken);
 }
 .sp-in-track > span {
   display: block;
   height: 100%;
-  border-radius: 4px;
-  background: var(--text-strong);
+  border-radius: var(--radius-full);
+  background: var(--text-primary);
 }
 
-/* Top templates (13:1036): 24 in, the header, 24, rows 10 apart. */
+/* ── Top templates (6095:1135): 24 in, the header, 24, then 34 rows 10
+   apart, each the name and its count (the row's 10 of air puts its text
+   35 under the header, as drawn). ── */
 .sp-in-top {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
-  padding: var(--space-md);
+  gap: var(--space-24);
+  padding: var(--space-24);
 }
 .sp-in-top__rows {
   display: flex;
@@ -308,44 +306,40 @@
 }
 .sp-in-top__row {
   display: flex;
-  flex-direction: column;
-  gap: 7px; /* as drawn */
-  padding: 1.5px 0;
-  border-radius: var(--radius-control);
-  color: var(--text-strong);
+  align-items: center;
+  gap: var(--space-8);
+  min-height: 34px; /* as drawn */
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
   text-decoration: none;
 }
-.sp-in-top__line {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-2xs);
-  min-width: 0;
-}
-.sp-in-top__line > :first-child {
+.sp-in-top__row > :first-child {
   flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding-block: 0.3em; /* the ellipsis needs the line box the trim removes */
+  margin-block: -0.3em;
 }
 
-/* Public links (13:1076): padding 24, gap 16; the table's columns 16
-   apart, rows 12 above and below, divided, none after the last. */
+/* ── Public links (6095:1164): 24 in, the header, 24, then the table:
+   its columns 16 apart, rows 16 above and below, divided. ── */
 .sp-in-links {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
-  padding: var(--space-md);
+  gap: var(--space-24);
+  padding: var(--space-24);
 }
 .sp-in-links__table {
   width: 100%;
   border-collapse: collapse;
 }
 .sp-in-links__table th {
-  padding: 0 0 8px var(--space-sm);
+  padding: 0 0 var(--space-12) var(--space-16);
   color: var(--text-secondary);
   font-weight: inherit;
-  text-align: right;
+  text-align: center;
   white-space: nowrap;
 }
 .sp-in-links__table th:first-child {
@@ -353,13 +347,13 @@
   text-align: left;
 }
 .sp-in-links__table td {
-  padding: 12px 0 12px var(--space-sm);
+  padding: var(--space-16) 0 var(--space-16) var(--space-16);
   text-align: right;
   white-space: nowrap;
 }
 .sp-in-links__table td:first-child {
-  width: 240px;
-  min-width: 240px; /* as drawn: the bars start 256 in */
+  width: 240px; /* as drawn: the bars start 256 in */
+  min-width: 240px;
   max-width: 240px;
   padding-left: 0;
   text-align: left;
@@ -369,22 +363,25 @@
   width: 100%;
 }
 .sp-in-links__table td.sp-in-links__num {
-  width: 64px;
+  width: 64px; /* as drawn */
   min-width: 64px;
+  text-align: center;
 }
 .sp-in-links__table tbody tr + tr {
-  border-top: 1px solid var(--border-default);
+  border-top: var(--stroke-hairline) solid var(--border-subtle);
 }
 .sp-in-links__name {
   display: flex;
   flex-direction: column;
-  gap: 2px; /* as drawn */
+  gap: var(--space-8);
   min-width: 0;
 }
 .sp-in-links__name > span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding-block: 0.3em; /* the ellipsis needs the line box the trim removes */
+  margin-block: -0.3em;
 }
 @media (max-width: 767.98px) {
   .sp-in-links__table td.sp-in-links__bar,
@@ -403,7 +400,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-3xl) var(--space-md);
+  gap: var(--space-16);
+  padding: var(--space-96) var(--space-24);
   text-align: center;
 }
