@@ -45,3 +45,10 @@ export function useDelayedFlag(on: boolean, delay = BUSY_DELAY_MS): boolean {
   }, [on, delay]);
   return on && late;
 }
+
+/** The roll every changing number shares (PROMPT.md section 7.7): how far
+ * it travels, then the old value easing out and the new one overshooting
+ * in. The Variations stepper (useRoll) and Metric's digits read these. */
+export const ROLL_PX = 18;
+export const ROLL_OUT = { duration: 130, easing: "ease-in" } as const;
+export const ROLL_IN = { duration: 190, easing: "cubic-bezier(0.3, 1.5, 0.5, 1)" } as const;

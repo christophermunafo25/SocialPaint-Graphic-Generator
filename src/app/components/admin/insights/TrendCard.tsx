@@ -117,7 +117,7 @@ export function TrendCard({
             onMetricChange(id as InsightsMetric);
           }}
         />
-        <p className="tu-body-s sp-in-muted">{rangeNote}</p>
+        <p className="t-body-s sp-in-muted">{rangeNote}</p>
       </div>
 
       <div
@@ -136,7 +136,7 @@ export function TrendCard({
             <React.Fragment key={i}>
               <span className="sp-in-chart__grid" style={{ bottom: `${(i / 4) * 100}%` }} />
               <span
-                className="tu-caption-s sp-in-chart__ylabel"
+                className="t-caption-s sp-in-chart__ylabel"
                 style={{ bottom: `${(i / 4) * 100}%` }}
               >
                 {(step * i).toLocaleString("en-US")}
@@ -177,7 +177,7 @@ export function TrendCard({
             i % labelEvery === 0 ? (
               <span
                 key={p.date}
-                className="sp-in-chart__xlabel"
+                className="t-caption-s sp-in-chart__xlabel"
                 data-first={i === 0 || undefined}
                 style={{
                   left:

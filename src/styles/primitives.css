@@ -2064,6 +2064,24 @@ button.ui-detail-tag__value {
   color: var(--text-secondary);
 }
 
+/* Rolling digits (PROMPT.md section 7.7): tabular numerals, so a digit
+   that changes never moves its neighbours. A changing slot stacks the old
+   and the new digit in one cell, as wide as the wider, until the roll
+   ends. */
+.ui-roll__digits {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ui-roll__ch {
+  white-space: pre;
+}
+.ui-roll__slot {
+  display: inline-grid;
+}
+.ui-roll__slot > * {
+  grid-area: 1 / 1;
+}
+
 /* ── Dialog (2215:203): a raised panel at radius/xl under Elevation/3
    Floating, over surface/scrim. 24 around, and 24 between the title, the
    body and the actions. The close button sits in the top right corner, 12

@@ -15,7 +15,7 @@ const CAP = 5;
 const NOT_COPYABLE =
   "Made before links could be copied. Use New address in Settings › Sharing to get one you can copy.";
 
-/** Public links (13:1076): the active links by exports in the window, five
+/** Public links (6095:1164): the active links by exports in the window, five
  * at most, each the link's name over its template, a bar of its exports,
  * Opens, Exports and Copy. Since migration 0033 the token is stored, so a
  * link copies its address; one made before 0033 has none (D1). */
@@ -63,11 +63,11 @@ export function PublicLinksCard({
   return (
     <section className="sp-in-card sp-in-links" aria-labelledby="sp-in-links-title">
       <div className="sp-in-card__head">
-        <h2 id="sp-in-links-title" className="tu-title-card">
+        <h2 id="sp-in-links-title" className="t-title-card">
           Public links
         </h2>
         <a
-          className="ui-ring tu-label-m sp-in-link"
+          className="ui-ring t-label-m sp-in-link"
           href={routeToUrl({ name: "settings", section: "sharing" })}
           onClick={linkTo({ name: "settings", section: "sharing" })}
         >
@@ -76,7 +76,7 @@ export function PublicLinksCard({
       </div>
       <table className="sp-in-links__table">
         <thead>
-          <tr className="tu-label-xs">
+          <tr className="t-label-xs">
             <th scope="col">Link</th>
             <th scope="col" className="sp-in-links__bar">
               <span className="sr-only">Exports, as a bar</span>
@@ -93,17 +93,17 @@ export function PublicLinksCard({
             <tr key={row.linkId}>
               <td>
                 <span className="sp-in-links__name">
-                  <span className="tu-body-s">{row.name}</span>
-                  <span className="tu-label-xs sp-in-muted">{row.templateName}</span>
+                  <span className="t-body-s">{row.name}</span>
+                  <span className="t-label-xs sp-in-muted">{row.templateName}</span>
                 </span>
               </td>
               <td className="sp-in-links__bar">
                 <BarTrack value={row.exports} max={max} />
               </td>
-              <td className="sp-in-links__num tu-body-s sp-in-muted">
+              <td className="sp-in-links__num t-body-s sp-in-muted">
                 {row.opens.toLocaleString("en-US")}
               </td>
-              <td className="sp-in-links__num tu-label-s">{row.exports.toLocaleString("en-US")}</td>
+              <td className="sp-in-links__num t-label-s">{row.exports.toLocaleString("en-US")}</td>
               <td>
                 <Button
                   kind="neutral"

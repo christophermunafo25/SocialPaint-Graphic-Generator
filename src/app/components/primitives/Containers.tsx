@@ -3,6 +3,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import { cx, type IconComponent } from "./cx";
 import { IconButton } from "./IconButton";
+import { RollDigits } from "./RollDigits";
 import { Skeleton } from "./Skeleton";
 
 export interface CardProps {
@@ -123,13 +124,26 @@ export interface MetricProps {
   /** Loading keeps the card's size and shows the shape of each part. A
    * string label names the busy region. */
   loading?: boolean;
+  /** Draws the value as rolling digits (PROMPT.md section 7.7): true on
+   * the render where numbers land after a change the member made, false
+   * otherwise (a first load or a background refresh swaps at once). Left
+   * out, the value draws as it is. Rolling needs a string or number. */
+  roll?: boolean;
   className?: string;
 }
 
 /** Metric (Figma 2215:223): one number on a raised card at radius/xl. The
  * label in Label/M, the value in Title/Metric, then the change: a badge and
  * a caption. */
-export function Metric({ label, value, delta, caption, loading = false, className }: MetricProps) {
+export function Metric({
+  label,
+  value,
+  delta,
+  caption,
+  loading = false,
+  roll,
+  className,
+}: MetricProps) {
   if (loading) {
     return (
       <div
@@ -146,7 +160,13 @@ export function Metric({ label, value, delta, caption, loading = false, classNam
   return (
     <div className={cx("ui-metric", className)}>
       <span className="t-label-m">{label}</span>
-      <span className="t-title-metric">{value}</span>
+      <span className="t-title-metric">
+        {roll !== undefined && (typeof value === "string" || typeof value === "number") ? (
+          <RollDigits text={String(value)} roll={roll} />
+        ) : (
+          value
+        )}
+      </span>
       {(delta || caption) && (
         <span className="ui-metric__change">
           {delta}

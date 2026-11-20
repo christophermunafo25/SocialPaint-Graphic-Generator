@@ -1,14 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-
-/** How far the number travels, and the two halves' timing: the old value
- * eases out, the new one overshoots in (Variations, generate-chat PROMPT). */
-const ROLL_PX = 18;
-const OUT = { duration: 130, easing: "ease-in" } as const;
-const IN = { duration: 190, easing: "cubic-bezier(0.3, 1.5, 0.5, 1)" } as const;
-
-const prefersReducedMotion = () =>
-  typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+import { prefersReducedMotion, ROLL_IN as IN, ROLL_OUT as OUT, ROLL_PX } from "./motion";
 
 const cancelRoll = (el: HTMLElement) => {
   if (typeof el.getAnimations === "function") el.getAnimations().forEach((a) => a.cancel());
