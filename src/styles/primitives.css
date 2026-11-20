@@ -1775,8 +1775,9 @@ button.ui-detail-tag__value {
   color: var(--text-primary);
 }
 
-/* ── Preview overlay (104:584): overlay/hover over the preview with the
-   Edit button, on hover and on keyboard focus. ── */
+/* ── Preview overlay (104:584): surface/scrim dims the preview under the
+   Edit button, on hover and on keyboard focus. The art stays visible
+   through it; it is an overlay, never a fill (CJ, 2026-11-20). ── */
 .ui-preview {
   position: relative;
   overflow: hidden;
@@ -1789,7 +1790,7 @@ button.ui-detail-tag__value {
   align-items: center;
   justify-content: center;
   border-radius: inherit;
-  background: var(--overlay-hover);
+  background: var(--surface-scrim);
   opacity: 0;
 }
 .ui-preview:hover .ui-preview__overlay,
@@ -1823,8 +1824,8 @@ button.ui-detail-tag__value {
   width: 40px;
   height: 40px;
   border-radius: var(--radius-pill);
-  background: var(--overlay-control);
-  color: var(--overlay-control-fg);
+  background: var(--surface-raised);
+  color: var(--text-primary);
 }
 /* Focus is the overlay itself, as drawn ("Focus looks like hover"); the
    transparent outline keeps a ring in forced colours. */
