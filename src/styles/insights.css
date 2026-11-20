@@ -139,7 +139,7 @@
 }
 
 /* ── Headline numbers (6095:1053): four Metrics, 16 apart, each 24 in
-   with 16 between its parts, the caption in Body/S. ── */
+   with 16 between its parts. ── */
 .sp-in-kpis {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -160,10 +160,6 @@
 }
 .sp-in-metric .ui-metric__change > * {
   white-space: nowrap;
-}
-.sp-in-metric .ui-metric__caption {
-  font: var(--type-body-s);
-  letter-spacing: var(--type-body-s-tracking);
 }
 
 /* ── The row (6095:1082): the trend, 16, Top templates at 370. ── */
@@ -206,7 +202,7 @@
 /* The plot: 32 in from the left for the y labels, 30 up for the x labels. */
 .sp-in-chart__plot {
   position: absolute;
-  inset: var(--space-6) 0 30px var(--space-32);
+  inset: var(--space-6) 0 30px var(--space-32); /* 30 as drawn */
 }
 .sp-in-chart__grid {
   position: absolute;
@@ -291,8 +287,9 @@
   background: var(--text-primary);
 }
 
-/* ── Top templates (6095:1135): 24 in, the header, 32, then 34 rows 10
-   apart, each the name and its count. ── */
+/* ── Top templates (6095:1135): 24 in, the header, 24, then 34 rows 10
+   apart, each the name and its count (the row's 10 of air puts its text
+   35 under the header, as drawn). ── */
 .sp-in-top {
   display: flex;
   flex-direction: column;

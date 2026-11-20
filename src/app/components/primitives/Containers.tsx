@@ -120,6 +120,9 @@ export interface MetricProps {
   delta?: React.ReactNode;
   /** What the change is measured against, in Caption/M. */
   caption?: React.ReactNode;
+  /** The caption's text style: Caption/M as the component draws it, or
+   * Body/S as the Insights frame does (6095:1060). */
+  captionStyle?: "caption" | "body";
   /** Loading keeps the card's size and shows the shape of each part. A
    * string label names the busy region. */
   loading?: boolean;
@@ -141,6 +144,7 @@ export function Metric({
   caption,
   loading = false,
   roll,
+  captionStyle = "caption",
   className,
 }: MetricProps) {
   if (loading) {
@@ -169,7 +173,16 @@ export function Metric({
       {(delta || caption) && (
         <span className="ui-metric__change">
           {delta}
-          {caption && <span className="t-caption-m ui-metric__caption">{caption}</span>}
+          {caption && (
+            <span
+              className={cx(
+                captionStyle === "body" ? "t-body-s" : "t-caption-m",
+                "ui-metric__caption",
+              )}
+            >
+              {caption}
+            </span>
+          )}
         </span>
       )}
     </div>

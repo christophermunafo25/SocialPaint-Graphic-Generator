@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import digestArt from "@/assets/socialpaint/insights/insights-digest.webp";
 import { ChartColumn } from "lucide-react";
 import type { InsightEvent, PublicLinkUsageRow, TemplateSchema } from "@/lib/types";
@@ -103,11 +103,17 @@ export function Dashboard(route: Omit<DashboardRoute, "name">) {
   const [loaded, setLoaded] = useState<{ events: InsightEvent[]; range: InsightsRange } | null>(
     null,
   );
+  // Stored only when the read itself changes: on the render where the range
+  // changes, eventsState still holds the old window's events, and pairing
+  // them with the new range would draw (and roll to) numbers that are
+  // neither. The ref gives the range the settled read was made for.
+  const rangeRef = useRef(activeRange);
+  rangeRef.current = activeRange;
   useEffect(() => {
     if (eventsState.status === "ready" && eventsState.data) {
-      setLoaded({ events: eventsState.data, range: activeRange });
+      setLoaded({ events: eventsState.data, range: rangeRef.current });
     }
-  }, [eventsState, activeRange]);
+  }, [eventsState]);
   const refreshing = eventsState.status === "loading" && loaded !== null;
 
   // The headline numbers roll only when new numbers land after the member
@@ -158,9 +164,11 @@ export function Dashboard(route: Omit<DashboardRoute, "name">) {
   }, [insights]);
 
   const go = (patch: Partial<Omit<DashboardRoute, "name">>) => {
-    if ("range" in patch || "template" in patch || "member" in patch || "platform" in patch) {
-      setRoll(true);
-    }
+    // Arm only for a choice that changes something: re-picking the current
+    // option lands no new numbers, and an armed roll would wait for the
+    // next change the member did not make.
+    const keys = ["range", "template", "member", "platform"] as const;
+    if (keys.some((k) => k in patch && patch[k] !== route[k])) setRoll(true);
     // A filter is a view of the page, not a place: changes replace the
     // history entry, so Back leaves Insights. Defaults stay off the URL.
     navigate(
@@ -341,9 +349,10 @@ export function Dashboard(route: Omit<DashboardRoute, "name">) {
                 className="sp-in-metric"
                 label={label}
                 value={insights.kpis[key].current.toLocaleString("en-US")}
-                roll={roll}
+                roll={roll && !refreshing}
                 delta={<ChangeBadge change={insights.kpis[key].change} family={family} />}
                 caption={`vs previous ${rangeLabel}`}
+                captionStyle="body"
               />
             ))}
           </div>

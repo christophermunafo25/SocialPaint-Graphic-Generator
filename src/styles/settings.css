@@ -61,7 +61,7 @@
 /* A failed save, over the section's cards. */
 .sp-st-error {
   margin: 0;
-  color: var(--feedback-error);
+  color: var(--feedback-error-text);
 }
 
 /* Two fields a row, 16 across and 24 down (6095:1257). */

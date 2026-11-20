@@ -77,4 +77,27 @@ describe("Metric roll", () => {
     const slots = Array.from(container.querySelectorAll(".ui-roll__slot"));
     expect(slots[0].querySelector("[data-roll-in]")).toBeNull();
   });
+
+  it("swaps at once under reduced motion", () => {
+    window.matchMedia = vi.fn().mockReturnValue({ matches: true }) as never;
+    const { container, rerender } = render(<Metric label="Exports" value="1,128" roll={false} />);
+    rerender(<Metric label="Exports" value="1,148" roll />);
+    expect(calls).toHaveLength(0);
+    expect(container.querySelectorAll(".ui-roll__slot")).toHaveLength(0);
+    expect(digits(container).textContent).toBe("1,148");
+  });
+
+  it("a change landing mid-roll takes over, and the first roll's end leaves it alone", async () => {
+    const { container, rerender } = render(<Metric label="Exports" value="10" roll={false} />);
+    rerender(<Metric label="Exports" value="12" roll />);
+    const first = [...finish];
+    rerender(<Metric label="Exports" value="15" roll />);
+    // The first roll finishing must not clear the second one's slots.
+    await act(async () => first.forEach((f) => f()));
+    expect(container.querySelectorAll(".ui-roll__slot")).toHaveLength(1);
+    expect(container.querySelector("[data-roll-in]")!.textContent).toBe("5");
+    await act(async () => finish.forEach((f) => f()));
+    expect(container.querySelectorAll(".ui-roll__slot")).toHaveLength(0);
+    expect(digits(container).textContent).toBe("15");
+  });
 });
