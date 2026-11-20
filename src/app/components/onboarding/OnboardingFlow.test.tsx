@@ -47,7 +47,7 @@ describe("OnboardingFlow", () => {
     await user.click(screen.getByRole("radio", { name: "Marketing" }));
     await user.click(screen.getByRole("button", { name: "Continue" }));
 
-    expect(heading()).toBe("Who are you setting SocialPaint up for?");
+    expect(heading()).toBe("Who are you setting this account up for?");
     await user.click(screen.getByRole("radio", { name: /My company/ }));
     await user.click(screen.getByRole("button", { name: "Continue" }));
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import digestArt from "@/assets/socialpaint/insights/insights-digest.webp";
+import digestArt from "@/assets/socialpaint/watercolor.webp";
 import { ChartColumn } from "lucide-react";
 import type { InsightEvent, PublicLinkUsageRow, TemplateSchema } from "@/lib/types";
 import type { Member } from "@/lib/stores/interfaces";

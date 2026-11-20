@@ -95,8 +95,8 @@ One pull request per phase into `main`.
 | E4 | Generate | The one-line composer, the result thread, History, `VariationTile`, the copy button on captions, the Result Card's arrival and its download check (`PROMPT.md` sections 7.3 and 7.6) | Same | Done (#213) |
 | E5 | Template Builder | The list and its dialogs, the editor chrome, the stage, the variations bar, the 320 inspector | Same, and the fidelity checker passes | Done (#214) |
 | E6 | Brand Studio | Overview and the eighteen detail states, built from the ElevenLabs frames (replaces new-brand Phase 7) | Same | Done (#215) |
-| E7 | Settings and Insights | Seven sections and the dashboard with the Metrics' roll (`PROMPT.md` section 7.7), replacing new-brand Phase 8 | Same | Built, pull request open |
-| E8 | Sign in and Create account | Eight gate screens and ten onboarding steps, Light only (replaces new-brand Phase 9) | Screens match their frames | Not started |
+| E7 | Settings and Insights | Seven sections and the dashboard with the Metrics' roll (`PROMPT.md` section 7.7), replacing new-brand Phase 8 | Same | Done (#217) |
+| E8 | Sign in and Create account | Eight gate screens and ten onboarding steps, Light only (replaces new-brand Phase 9) | Screens match their frames | Built, pull request open |
 | E9 | Cleanup | Everything new-brand Phase 10 owes, plus the transparent bevel and glow tokens if CJ agrees, and any bridged name the ElevenLabs phases stopped reading | Nothing legacy left | Not started |
 
 ### What Phase E2 left for later phases

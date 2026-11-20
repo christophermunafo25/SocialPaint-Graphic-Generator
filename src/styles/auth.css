@@ -1,5 +1,5 @@
-/* ── The way in: the sign-in gate and onboarding (PHASE-8B; Figma 194:2 and
-   257:2) ──────────────────────────────────────────────────────────────────
+/* ── The way in: the sign-in gate and onboarding (ElevenLabs Phase E8;
+   Figma 6101:633 to 6101:865 and 6101:954 to 6101:1912, Light only) ──
    One layout for both: a column (the logo, the form centred between two
    flexible spacers, the legal links) beside the sp-auth-panel art. Always
    Light (PHASE-8B §9 D1): PreAppShell sets data-theme on the root. Tokens
@@ -10,23 +10,23 @@
   display: flex;
   min-height: 100vh;
   min-height: 100dvh;
-  padding: var(--space-sm) var(--space-sm) var(--space-sm) 0; /* 16 on three sides */
+  padding: var(--space-16) var(--space-16) var(--space-16) 0; /* 16 on three sides */
   background: var(--surface-page);
-  color: var(--text-strong);
+  color: var(--text-primary);
 }
 
 /* The column: 48 in on the sides, 32 top and bottom. It never narrows
    below the form plus its padding; the panel gives way first (D7). */
 .sp-auth__column {
   display: flex;
-  flex: 1 0 calc(400px + 2 * var(--space-xl));
+  flex: 1 0 calc(400px + 2 * var(--space-48));
   flex-direction: column;
   align-items: center;
   min-width: 0;
-  padding: var(--space-lg) var(--space-xl);
+  padding: var(--space-32) var(--space-48);
 }
 .sp-auth[data-width="wide"] .sp-auth__column {
-  flex-basis: calc(480px + 2 * var(--space-xl));
+  flex-basis: calc(480px + 2 * var(--space-48));
 }
 .sp-auth__header,
 .sp-auth__footer {
@@ -34,16 +34,16 @@
   display: flex;
 }
 .sp-auth__footer {
-  gap: var(--space-sm);
+  gap: var(--space-16);
   color: var(--text-secondary);
 }
 .sp-auth__legal {
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-sm);
   color: inherit;
   text-decoration: none;
 }
 .sp-auth__legal:hover {
-  color: var(--text-strong);
+  color: var(--text-primary);
 }
 
 /* The form sits in the middle of the column: the two flexible spacers of
@@ -51,19 +51,20 @@
 .sp-auth__form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
+  gap: var(--space-32);
   width: 400px;
   max-width: 100%;
   margin-block: auto;
-  padding-block: var(--space-xl);
+  padding-block: var(--space-48);
 }
 .sp-auth[data-width="wide"] .sp-auth__form {
   width: 480px;
-  gap: 40px; /* as drawn (257:3993) */
+  gap: var(--space-40);
 }
 
-/* The panel: 688 at 1440, the art filling it at radius 20, a card centred
-   on it. It narrows from 1440 down to 1024 and goes below (D7). */
+/* The panel (6101:661): 688 at 1440, the watercolor filling it at
+   radius/xl under a 20% scrim, a card centred on it. It narrows from 1440
+   down to 1024 and goes below (D7). */
 .sp-auth__panel {
   position: relative;
   display: flex;
@@ -72,7 +73,7 @@
   justify-content: center;
   min-width: 0;
   overflow: hidden;
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-xl);
   background: var(--surface-sunken);
 }
 .sp-auth__art {
@@ -81,6 +82,17 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+/* The scrim paints over the art (after it), and the card over both. */
+.sp-auth__panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--surface-scrim);
+  opacity: 0.4; /* 40% of the 50% scrim: the drawn 20% */
+}
+.sp-auth__panel > :not(.sp-auth__art) {
+  z-index: 1;
 }
 @media (max-width: 1023.98px) {
   .sp-auth {
@@ -92,21 +104,21 @@
   .sp-auth__column,
   .sp-auth[data-width="wide"] .sp-auth__column {
     flex: 1 1 auto;
-    padding: var(--space-md) var(--page-pad, var(--space-md));
+    padding: var(--space-24) var(--page-pad, var(--space-24));
   }
 }
 
 /* The card on the art: the composer (gate) or the workspace preview
-   (onboarding). Elevation/Floating, with the edge on overlay/edge (the
-   frame's raw white 25%; PHASE-8B §8). */
+   (onboarding), raised at radius/xl under Elevation/3 Floating, its edge
+   on border/raised. */
 .sp-auth__card {
   position: relative;
-  max-width: calc(100% - 2 * var(--space-md));
-  border: 5px solid var(--overlay-edge); /* as drawn */
-  border-radius: var(--radius-card);
+  box-sizing: border-box;
+  max-width: calc(100% - 2 * var(--space-24));
+  border: var(--stroke-hairline) solid var(--border-raised);
+  border-radius: var(--radius-xl);
   background: var(--surface-raised);
-  background-clip: padding-box;
-  box-shadow: var(--elevation-floating);
+  box-shadow: var(--elevation-3-floating);
 }
 
 /* ── The gate's form (200:174): title, fields, actions, 32 apart ── */
@@ -117,17 +129,17 @@
 .sp-auth-form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
+  gap: var(--space-32);
 }
 .sp-auth-fields {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: var(--space-24);
 }
 .sp-auth-password {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: var(--space-12);
 }
 .sp-auth-forgot {
   display: flex;
@@ -137,7 +149,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-md);
+  gap: var(--space-24);
 }
 .sp-auth-submit {
   align-self: stretch;
@@ -145,18 +157,18 @@
 .sp-auth-switch {
   display: flex;
   align-items: baseline;
-  gap: var(--space-3xs);
+  gap: var(--space-4);
   margin: 0;
 }
 .sp-auth-muted {
   color: var(--text-secondary);
 }
 .sp-auth-strong {
-  color: var(--text-strong);
+  color: var(--text-primary);
   text-decoration: none;
 }
 a.sp-auth-strong {
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-sm);
 }
 .sp-auth-consent {
   max-width: 215px; /* as drawn: two lines */
@@ -170,7 +182,7 @@ a.sp-auth-strong {
   text-align: center;
 }
 .sp-auth-spin {
-  animation: sp-auth-spin 0.9s linear infinite;
+  animation: sp-auth-spin calc(var(--motion-duration-pulse) * 0.6) linear infinite;
 }
 @keyframes sp-auth-spin {
   to {
@@ -183,21 +195,24 @@ a.sp-auth-strong {
   }
 }
 
-/* ── The gate's composer (61:504) ── */
+/* ── The gate's composer (6101:662): 560 wide, 16 in, the message (4 in
+   at its top and left), 24, then Attach and the count with Send, 8
+   apart. ── */
 .sp-auth-composer {
   display: flex;
   flex-direction: column;
-  gap: 30px; /* as drawn */
-  width: 560px;
-  padding: 20px 12px 12px 20px; /* as drawn */
+  gap: var(--space-24);
+  width: 560px; /* as drawn */
+  padding: var(--space-16);
 }
 .sp-auth-composer__prompt {
   margin: 0;
+  padding: var(--space-4) 0 0 var(--space-4);
 }
 .sp-auth-composer__toolbar {
   display: flex;
   align-items: center;
-  gap: 6px; /* as drawn */
+  gap: var(--space-8);
 }
 .sp-auth-composer__spacer {
   flex: 1;
@@ -211,39 +226,42 @@ a.sp-auth-strong {
 /* The progress bar (258:22): six segments, 4 tall, 4 apart. */
 .sp-onb-progress {
   display: flex;
-  gap: var(--space-3xs);
+  gap: var(--space-4);
 }
 .sp-onb-progress__segment {
   flex: 1;
-  height: 4px;
-  border-radius: var(--radius-xs);
-  background: var(--border-default);
+  height: 4px; /* as drawn */
+  border-radius: var(--radius-chip);
+  background: var(--surface-sunken);
 }
 .sp-onb-progress__segment[data-done] {
-  background: var(--text-strong);
+  background: var(--text-primary);
 }
 
-/* A question: Label/L over its control, 12 apart. Questions are 32 apart. */
+/* A question: Label/L over its control, 12 apart. Questions are 24 apart
+   (6101:961). A Select answering one is 240 wide (6101:1087). */
 .sp-onb-questions {
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
+  gap: var(--space-24);
 }
-.sp-onb-questions[data-dense] {
-  gap: 28px; /* as drawn (05b, 07) */
+.sp-onb-select {
+  width: 240px; /* as drawn */
+  max-width: 100%;
 }
 .sp-onb-question {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: var(--space-12);
 }
 .sp-onb-question > p,
 .sp-onb-question > label {
   margin: 0;
+  padding-inline: var(--space-2); /* the label row's 2 (6128:11034) */
 }
 .sp-onb-question__error {
   margin: 0;
-  color: var(--state-error);
+  color: var(--feedback-error-text);
 }
 
 /* Actions: Back hugs, the primary fills the rest, 12 apart. A text link
@@ -252,30 +270,30 @@ a.sp-auth-strong {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-md);
+  gap: var(--space-24);
 }
 .sp-onb-actions__row {
   display: flex;
-  gap: var(--space-xs);
+  gap: var(--space-12);
   align-self: stretch;
 }
 .sp-onb-actions__row > .ui-btn[data-kind="primary"] {
   flex: 1;
 }
 .sp-auth-link {
-  border-radius: var(--radius-control);
-  color: var(--text-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
 }
 
 /* Colours: 40 circles (05b), cards (07), and the add control. */
 .sp-onb-colors {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2xs);
+  gap: var(--space-8);
 }
 .sp-onb-colors[data-cards] {
   flex-wrap: nowrap;
-  gap: var(--space-xs);
+  gap: var(--space-12);
 }
 .sp-onb-dot,
 .sp-onb-color-card {
@@ -285,17 +303,17 @@ a.sp-auth-strong {
 .sp-onb-dot__fill {
   width: 40px;
   height: 40px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-full);
   background: var(--_swatch);
-  box-shadow: inset 0 0 0 1px var(--border-default);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-subtle);
 }
 .sp-onb-color-card {
   flex: 1;
   flex-direction: column;
-  gap: var(--space-2xs);
+  gap: var(--space-8);
   min-width: 0;
-  padding: var(--space-2xs);
-  border-radius: 12px; /* as drawn; no Figma token yet */
+  padding: var(--space-8);
+  border-radius: var(--radius-md);
   background: var(--surface-raised);
   box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-raised);
 }
@@ -307,9 +325,9 @@ a.sp-auth-strong {
 }
 .sp-onb-color-card__chip {
   height: 48px;
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-sm);
   background: var(--_swatch);
-  box-shadow: inset 0 0 0 1px var(--border-default);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-subtle);
 }
 .sp-onb-dot__remove {
   position: absolute;
@@ -320,10 +338,10 @@ a.sp-auth-strong {
   justify-content: center;
   width: 20px;
   height: 20px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-full);
   background: var(--surface-raised);
   box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-raised);
-  color: var(--text-strong);
+  color: var(--text-primary);
   opacity: 0;
 }
 .sp-onb-dot:hover .sp-onb-dot__remove,
@@ -331,37 +349,45 @@ a.sp-auth-strong {
 .sp-onb-dot__remove:focus-visible {
   opacity: 1;
 }
+/* Add a color (6101:2083): a field, surface/field with the border/field
+   hairline. */
 .sp-onb-add-color {
   display: inline-flex;
   flex: none;
   align-items: center;
   justify-content: center;
-  --_fill: var(--state-hover);
-  color: var(--text-strong);
+  --_fill: var(--surface-field);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-field);
+  color: var(--text-primary);
 }
 .sp-onb-add-color[data-shape="dot"] {
   width: 40px;
   height: 40px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-full);
 }
 .sp-onb-add-color[data-shape="tile"] {
   width: 56px;
-  border-radius: 12px; /* as drawn; no Figma token yet */
+  border-radius: var(--radius-md);
 }
 
-/* ── The workspace preview (onboarding's panel card) ── */
+/* ── The workspace preview (6101:991): 440 wide, 24 in, rows 24 apart,
+   inside a 6 edge on border/raised. ── */
 .sp-onb-preview {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
-  width: 440px;
-  padding: 28px; /* as drawn */
+  gap: var(--space-24);
+  box-sizing: content-box; /* the edge sits outside the drawn 440 (452 in all) */
+  width: calc(440px - 2 * var(--space-24)); /* as drawn */
+  /* Narrow panels: the whole card, edge and padding included, stays 24
+     inside the panel, so its shadow is never cut. */
+  max-width: calc(100% - 4 * var(--space-24) - 12px);
+  padding: var(--space-24);
   border-width: 6px; /* as drawn */
 }
 .sp-onb-preview__row {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: var(--space-12);
 }
 .sp-onb-preview__row > p {
   margin: 0;
@@ -369,19 +395,21 @@ a.sp-auth-strong {
 .sp-onb-preview__lead {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: var(--space-12);
   min-width: 0;
 }
 .sp-onb-preview__lead-text {
   display: flex;
   flex-direction: column;
-  gap: 2px; /* as drawn */
+  gap: var(--space-8);
   min-width: 0;
 }
 .sp-onb-preview__lead-text > span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding-block: 0.3em; /* the ellipsis needs the line box the trim removes */
+  margin-block: -0.3em;
 }
 .sp-onb-preview__icon {
   display: inline-flex;
@@ -390,61 +418,60 @@ a.sp-auth-strong {
   justify-content: center;
   width: 36px;
   height: 36px;
-  border-radius: var(--radius-control-md);
+  border-radius: var(--radius-sm);
   background: var(--surface-sunken);
 }
 .sp-onb-preview__icon[data-round] {
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-full);
 }
 .sp-onb-skeleton {
   display: block;
-  background: var(--surface-sunken);
+  background: var(--surface-skeleton);
 }
 .sp-onb-preview__line {
-  width: 140px;
-  height: 10px;
-  border-radius: 5px; /* as drawn */
+  width: 140px; /* as drawn */
+  height: 10px; /* as drawn */
+  border-radius: var(--radius-chip);
 }
 .sp-onb-preview__line[data-wide] {
-  width: 200px;
+  width: 200px; /* as drawn */
 }
 .sp-onb-preview__line[data-short] {
-  width: 90px;
-  height: 8px;
-  border-radius: 4px; /* as drawn */
+  width: 90px; /* as drawn */
+  height: var(--space-8);
 }
 .sp-onb-preview__brand {
   display: flex;
   align-items: center;
-  gap: var(--space-2xs);
+  gap: var(--space-12);
 }
 .sp-onb-preview__logo {
   width: 72px;
   height: 40px;
-  border-radius: var(--radius-control-md);
+  border-radius: var(--radius-sm);
   object-fit: contain;
 }
 .sp-onb-preview__swatch {
   width: 28px;
   height: 28px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-full);
   background: var(--_swatch, var(--surface-sunken));
 }
 .sp-onb-preview__swatch:not(.sp-onb-skeleton) {
-  box-shadow: inset 0 0 0 1px var(--border-default);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-subtle);
 }
 .sp-onb-preview__font {
   margin-left: auto;
 }
 .sp-onb-preview__templates {
   display: flex;
-  gap: var(--space-xs);
+  gap: var(--space-12);
 }
 .sp-onb-preview__thumb {
   flex: 1;
   height: 145px;
   overflow: hidden;
-  border-radius: var(--radius-control-md);
+  border-radius: var(--radius-sm);
 }
 
 /* ── Onboarding's steps (257:2) ── */
@@ -456,40 +483,42 @@ a.sp-auth-strong {
 .sp-onb-step {
   display: flex;
   flex-direction: column;
-  gap: 40px; /* as drawn (257:3993) */
+  gap: var(--space-40);
 }
 .sp-onb-note,
 .sp-onb-subtitle {
   margin: 0;
 }
 .sp-onb-step > .sp-onb-note {
-  margin-bottom: calc(var(--space-md) - 40px);
+  margin-bottom: calc(var(--space-24) - var(--space-40));
 }
-/* Workspace ready's subtitle sits 8 under the title (259:5169). */
+/* Workspace ready's subtitle sits 16 under the title (6101:1925). */
 .sp-onb-step > .sp-onb-subtitle:first-child {
-  margin-top: calc(var(--space-2xs) - 40px);
+  margin-top: calc(var(--space-16) - var(--space-40));
 }
 .sp-onb-failure {
   margin: 0;
-  color: var(--state-error);
+  color: var(--feedback-error-text);
 }
 
-/* Pulling your brand (259:583): three rows, 8 apart; the label dims while
-   its row waits. */
+/* Pulling your brand (6101:1538): three rows 58 tall, 12 apart; the label
+   dims while its row waits. */
 .sp-onb-pull {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2xs);
+  gap: var(--space-12);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 .sp-onb-pull__row {
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-sm);
-  border-radius: 12px; /* as drawn; no Figma token yet */
+  min-height: 58px; /* as drawn */
+  padding: var(--space-12) var(--space-16);
+  border-radius: var(--radius-md);
   background: var(--surface-raised);
   box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-raised);
 }
@@ -500,7 +529,7 @@ a.sp-auth-strong {
 /* Your brand's logo tile (259:735): raised, 88 tall, radius 12. */
 .sp-onb-logos {
   display: flex;
-  gap: var(--space-xs);
+  gap: var(--space-12);
 }
 .sp-onb-logo-tile {
   display: flex;
@@ -508,8 +537,8 @@ a.sp-auth-strong {
   align-items: center;
   justify-content: center;
   height: 88px;
-  padding: var(--space-sm);
-  border-radius: 12px; /* as drawn; no Figma token yet */
+  padding: var(--space-16);
+  border-radius: var(--radius-md);
   --_fill: var(--surface-raised);
   box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-raised);
 }
@@ -519,46 +548,53 @@ a.sp-auth-strong {
   object-fit: contain;
 }
 
-/* Fonts: two side by side, 12 apart; on Your brand each is a card with the
-   sample over its role and picker (259:761). */
+/* Fonts: two Selects 167 wide, 12 apart (6101:2087); on Your brand each is
+   a card with the sample over its role and picker, the two sharing the row. */
 .sp-onb-fonts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-12);
+}
+.sp-onb-fonts > .ui-select {
+  width: 167px; /* as drawn */
+}
+.sp-onb-fonts[data-cards] {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-xs);
 }
 .sp-onb-font-card__text {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: var(--space-3xs);
+  gap: var(--space-4);
   min-width: 0;
 }
 .sp-onb-font-card {
   display: flex;
   align-items: center;
-  gap: 14px; /* as drawn */
+  gap: var(--space-12);
   min-width: 0;
-  padding: var(--space-sm);
-  border-radius: 12px; /* as drawn; no Figma token yet */
+  padding: var(--space-16);
+  border-radius: var(--radius-md);
   background: var(--surface-raised);
   box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-raised);
 }
 
-/* Invites (259:904): rows of email and role, 12 apart. */
+/* Invites (6101:1793): rows of email and role, 12 apart. */
 .sp-onb-invites {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: var(--space-12);
 }
 .sp-onb-invite {
   display: flex;
   flex-direction: column;
-  gap: 6px; /* as the Field's error sits */
+  gap: var(--space-6); /* as the Field's error sits */
 }
 .sp-onb-invite__row {
   display: flex;
   align-items: center;
-  gap: var(--space-2xs);
+  gap: var(--space-8);
 }
 .sp-onb-invite__row > .ui-input {
   flex: 1;
@@ -566,17 +602,18 @@ a.sp-auth-strong {
 }
 .sp-onb-invite__role {
   flex: none;
-  width: 112px;
+  width: 167px; /* as drawn (6101:1793) */
 }
 .sp-onb-add-invite {
   align-self: flex-start;
 }
 
-/* Workspace ready (259:1074): the starters, three columns of 152, 12 apart. */
+/* Workspace ready (6101:1929): the starters, three columns of 152, 12 apart,
+   each label 8 under its thumb. */
 .sp-onb-starters {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 152px));
-  gap: var(--space-xs);
+  gap: var(--space-12);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -584,16 +621,16 @@ a.sp-auth-strong {
 .sp-onb-starter {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2xs);
+  gap: var(--space-8);
   width: 100%;
-  border-radius: 12px; /* as drawn; no Figma token yet */
-  color: var(--text-strong);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
   text-align: left;
 }
 .sp-onb-starter__thumb {
   display: block;
   height: 190px;
   overflow: hidden;
-  border-radius: 12px; /* as drawn; no Figma token yet */
+  border-radius: var(--radius-md);
   background: var(--surface-sunken);
 }

@@ -157,6 +157,8 @@ Fixed in the file while this kit was written, so a phase reading it sees the fix
 | Added an Outline style to Icon Button | `2206:686`, Style=Outline, ten variants | Add `"outline"` to `IconButtonProps["variant"]` and a `[data-variant="outline"]` block in `.ui-iconbtn` (Phase E1, built) |
 | Added a Size property to Search Field | `50:62`, Size=Large 46 and Medium 36 | Add `size?: "lg" \| "md"` to `SearchFieldProps` (Phase E1, built) |
 | Fields rest with a hairline and hover with a darker one | Input, Select, Text Area, Upload | `.ui-input`, `.ui-select`, `.ui-upload` borders (Phase E1, built) |
+| Field labels sit 2 in from the control's edges | Label row `6101:642`, `6095:1260` | `.ui-field__row` padding (Phase E8, built; reaches every Field) |
+| Option Tile is 44 tall, 12 by 16 in, on `radius/md`, its description 8 under its label | `257:4145`, `6101:967` | `.ui-option-tile` (Phase E8, built) |
 | Button and Icon Button icons follow their label color | `2206:542`, `2206:686` | Check each kind and the disabled state (Phase E1, built) |
 | Nav Item icons and labels sit on `--text-secondary` at rest | `2213:109` | Already built so in `.ui-nav-item`. Phase E1 checked it against the board (no change) |
 | Chip and Badge on `--radius-chip`, Tag on `--radius-tag` | `2212:187`, `2212:130`, `2212:143` | `.ui-chip`, `.ui-badge`, `.ui-tag` (Phase E1, built) |
