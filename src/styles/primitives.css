@@ -564,12 +564,15 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   flex-direction: column;
   gap: var(--space-12);
 }
+/* The label row sits 2 in from the control's edges, as every field in the
+   file draws it (Label row, 6101:642 and 6095:1260). */
 .ui-field__row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-8);
   min-width: 0;
+  padding-inline: var(--space-2);
 }
 .ui-field__lead {
   display: flex;
@@ -2615,26 +2618,24 @@ button.ui-detail-tag__value {
   margin-top: var(--space-8);
 }
 
-/* ── Option tile (257:4145) and its groups ───────────────────────────────────
-   Onboarding's answers. Default is raised on Elevation/Small, hover lays
-   state/hover over it (the frame's raw rgba(11,11,12,0.05) is that token),
-   selected is sunken with no shadow and shows the check. In the grid and
-   full layouts the check keeps its space in every state; a hug tile grows
-   by it when chosen, as drawn (PHASE-8B §8). Radius
-   12 and the 16 × 14 padding are unbound in the file; they wait for Figma
-   tokens (PHASE-8B PR, the request list). */
+/* ── Option tile (257:4145, Create account 6101:967) and its groups ──────
+   Onboarding's answers. Default is raised with a border/raised hairline,
+   hover lays state/hover over it, selected is sunken with no edge and
+   shows the check. 44 tall, 12 by 16 in, radius/md. In the grid and full
+   layouts the check keeps its space in every state; a hug tile grows by
+   it when chosen, as drawn. */
 .ui-option-tile {
+  box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
-  min-height: 46px; /* as drawn: 63 with a description */
-  padding: 14px 16px; /* as drawn; no Figma token yet */
-  border-radius: 12px; /* as drawn; no Figma token yet */
+  gap: var(--space-12);
+  min-height: var(--size-control-lg);
+  padding: var(--space-12) var(--space-16);
+  border-radius: var(--radius-md);
   --_fill: var(--surface-raised);
-  /* Flat with a border/raised hairline (ElevenLabs E1, Create account
-     6101:1072), drawn inside so nothing moves. */
+  /* Drawn inside so nothing moves. */
   box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-raised);
-  color: var(--text-strong);
+  color: var(--text-primary);
   text-align: left;
 }
 .ui-option-tile[data-selected] {
@@ -2649,7 +2650,7 @@ button.ui-detail-tag__value {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 2px; /* as drawn */
+  gap: var(--space-8);
   min-width: 0;
 }
 .ui-option-tile__desc {
@@ -2671,16 +2672,16 @@ button.ui-detail-tag__value {
 .ui-option-group {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2xs);
+  gap: var(--space-8);
 }
 .ui-option-group[data-layout="grid"] {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-xs);
+  gap: var(--space-12);
 }
 .ui-option-group[data-layout="full"] {
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: var(--space-12);
 }
 .ui-option-group[data-layout="hug"] .ui-option-tile__text {
   flex: none;

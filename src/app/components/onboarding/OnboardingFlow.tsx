@@ -442,7 +442,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
     </Button>
   );
   const textLink = (label: string, onClick: () => void) => (
-    <button type="button" className="ui-reset ui-ring tu-label-m sp-auth-link" onClick={onClick}>
+    <button type="button" className="ui-reset ui-ring t-label-m sp-auth-link" onClick={onClick}>
       {label}
     </button>
   );
@@ -485,9 +485,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
                 : { width: "100%", height: 48, borderRadius: "var(--radius-control)" }
             }
           />
-          {shape === "card" && (
-            <span className="tu-mono-s sp-onb-muted">{c.hex.toUpperCase()}</span>
-          )}
+          {shape === "card" && <span className="t-mono-s sp-onb-muted">{c.hex.toUpperCase()}</span>}
           <button
             type="button"
             className="ui-reset ui-ring sp-onb-dot__remove"
@@ -510,7 +508,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
   );
 
   const fontSelects = (labelled: boolean) => (
-    <div className="sp-onb-fonts">
+    <div className="sp-onb-fonts" data-cards={labelled || undefined}>
       <FontPick
         role="Headings"
         label="Heading font"
@@ -585,7 +583,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
       break;
 
     case "setupFor":
-      title = "Who are you setting SocialPaint up for?";
+      title = "Who are you setting this account up for?";
       onSubmit = () => check("setupFor") && go("team");
       body = (
         <>
@@ -604,6 +602,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
             <Question label="How did you hear about SocialPaint?" labelId={ids.heard}>
               <Select
                 ariaLabel="How did you hear about SocialPaint?"
+                className="sp-onb-select"
                 size="lg"
                 placeholder="Choose one"
                 value={answers.heardFrom}
@@ -765,8 +764,8 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
       onSubmit = () => go("brand");
       body = (
         <>
-          {pullNote && <p className="tu-body-m sp-onb-muted sp-onb-note">{pullNote}</p>}
-          <div className="sp-onb-questions" data-dense>
+          {pullNote && <p className="t-body-m sp-onb-muted sp-onb-note">{pullNote}</p>}
+          <div className="sp-onb-questions">
             <Question label="What does your logo look like?" labelId={ids.logo}>
               <Upload
                 placeholder="Upload your logo"
@@ -811,7 +810,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
       onSubmit = () => void confirmBrand();
       body = (
         <>
-          <div className="sp-onb-questions" data-dense>
+          <div className="sp-onb-questions">
             <Question label="Logos" labelId={ids.logo}>
               {brand.logoPreview ? (
                 <div className="sp-onb-logos">
@@ -842,7 +841,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
             </Question>
           </div>
           {failure && (
-            <p className="tu-caption-m sp-onb-failure" role="alert">
+            <p className="t-caption-m sp-onb-failure" role="alert">
               {failure}
             </p>
           )}
@@ -908,7 +907,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
                     {row.error && (
                       <p
                         id={`${ids.invites}-${row.id}`}
-                        className="tu-caption-m sp-onb-question__error"
+                        className="t-caption-m sp-onb-question__error"
                       >
                         {row.error}
                       </p>
@@ -951,7 +950,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
       const count = starters.length;
       body = (
         <>
-          <p className="tu-body-l sp-onb-muted sp-onb-subtitle">
+          <p className="t-body-l sp-onb-muted sp-onb-subtitle">
             {count === 0
               ? "Your starter templates are on their way. Use Restore starter templates if they don’t appear."
               : count === 1
@@ -970,14 +969,14 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
                     <span className="sp-onb-starter__thumb">
                       <TemplateThumbnail template={t} brandKit={created?.kit ?? null} />
                     </span>
-                    <span className="tu-label-s">{t.name}</span>
+                    <span className="t-label-s">{t.name}</span>
                   </button>
                 </li>
               ))}
             </ul>
           )}
           {failure && (
-            <p className="tu-caption-m sp-onb-failure" role="alert">
+            <p className="t-caption-m sp-onb-failure" role="alert">
               {failure}
             </p>
           )}
@@ -994,8 +993,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
 
   return (
     <PreAppShell width="wide" panel={<WorkspacePreview state={preview} />}>
-      {progress && <ProgressSegments done={progress.done} total={progress.total} />}
-      <h1 ref={titleRef} id={titleId} tabIndex={-1} className="tu-title-page sp-onb-title">
+      <h1 ref={titleRef} id={titleId} tabIndex={-1} className="t-title-page sp-onb-title">
         {title}
       </h1>
       <form
@@ -1009,6 +1007,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
       >
         {body}
       </form>
+      {progress && <ProgressSegments done={progress.done} total={progress.total} />}
     </PreAppShell>
   );
 }
@@ -1047,7 +1046,7 @@ function PullRow({ label, status }: { label: string; status: PullStatus }) {
           : "Waiting";
   return (
     <li className="sp-onb-pull__row" data-status={status}>
-      <span className="tu-label-m sp-onb-pull__label">{label}</span>
+      <span className="t-label-m sp-onb-pull__label">{label}</span>
       <Badge tone={tone}>{word}</Badge>
     </li>
   );
@@ -1086,12 +1085,12 @@ function FontPick({
   return (
     <div className="sp-onb-font-card">
       {/* The brand's own face (content, PHASE-9 §9 D3) on the title step. */}
-      <span className="tu-title-page" style={{ fontFamily: value }} aria-hidden>
+      <span className="t-title-page" style={{ fontFamily: value }} aria-hidden>
         Aa
       </span>
       <span className="sp-onb-font-card__text">
         {select}
-        <span className="tu-caption-m sp-onb-muted">{role}</span>
+        <span className="t-caption-m sp-onb-muted">{role}</span>
       </span>
     </div>
   );
