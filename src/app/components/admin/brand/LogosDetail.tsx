@@ -113,7 +113,7 @@ export function LogosDetail({ brand, surface }: { brand: BrandDraft; surface?: L
                 <LogoPlate asset={a} />
               </PreviewOverlay>
               <span className="sp-bs-logo__meta">
-                <span className="tu-label-l sp-bs-logo__name">{a.name}</span>
+                <span className="t-label-l sp-bs-logo__name">{a.name}</span>
                 <span className="sp-bs-logo__tags">
                   {isPrimary(a) && <Tag>Primary</Tag>}
                   {logoSurfaces(a).map((s) => (
@@ -132,7 +132,7 @@ export function LogosDetail({ brand, surface }: { brand: BrandDraft; surface?: L
           onFiles={(files) => {
             for (const f of files) void uploadRef.current(f);
           }}
-          style={{ minHeight: 213 }}
+          style={{ alignSelf: "stretch", minHeight: 206 }}
         />
       </div>
       {/* The setup strip's "Upload logo" opens the picker straight away. */}
@@ -308,7 +308,6 @@ function LogoEditingCard({ asset, logos, brand, edit, primaryFor }: LogoEditingP
 
       <div className="sp-bs-logo__fields">
         <Input
-          size="sm"
           aria-label="Logo name"
           value={name}
           autoFocus
@@ -318,7 +317,7 @@ function LogoEditingCard({ asset, logos, brand, edit, primaryFor }: LogoEditingP
         />
 
         <div className="sp-bs-choice-row">
-          <span id={`${asset.id}-show`} className="tu-label-xs sp-bs-choice-row__label">
+          <span id={`${asset.id}-show`} className="t-label-xs sp-bs-choice-row__label">
             Show on
           </span>
           <div role="group" aria-labelledby={`${asset.id}-show`} className="sp-bs-chips">
@@ -333,14 +332,14 @@ function LogoEditingCard({ asset, logos, brand, edit, primaryFor }: LogoEditingP
             ))}
           </div>
           {note && (
-            <p className="tu-caption-m sp-bs-note" role="status">
+            <p className="t-caption-m sp-bs-note" role="status">
               {note}
             </p>
           )}
         </div>
 
         <div className="sp-bs-choice-row">
-          <span id={`${asset.id}-primary`} className="tu-label-xs sp-bs-choice-row__label">
+          <span id={`${asset.id}-primary`} className="t-label-xs sp-bs-choice-row__label">
             Primary
           </span>
           <div role="group" aria-labelledby={`${asset.id}-primary`} className="sp-bs-chips">
@@ -358,7 +357,7 @@ function LogoEditingCard({ asset, logos, brand, edit, primaryFor }: LogoEditingP
         </div>
 
         {blocked && (
-          <p className="tu-caption-m sp-bs-error-line" role="alert">
+          <p className="t-caption-m sp-bs-error-line" role="alert">
             {blocked}
           </p>
         )}
@@ -367,7 +366,7 @@ function LogoEditingCard({ asset, logos, brand, edit, primaryFor }: LogoEditingP
           {/* The file goes, and Undo can't bring it back: red (§9 D6). */}
           <button
             type="button"
-            className="ui-reset ui-ring tu-label-xs sp-bs-quiet-action"
+            className="ui-reset ui-ring t-label-xs sp-bs-quiet-action"
             data-destructive
             onClick={() => void remove()}
           >

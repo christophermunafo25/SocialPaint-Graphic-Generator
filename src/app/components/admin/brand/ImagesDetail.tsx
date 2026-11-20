@@ -121,7 +121,7 @@ export function ImagesDetail({ brand }: { brand: BrandDraft }) {
     return (
       <>
         <div {...drop.bind} data-active={drop.active} className="sp-bs-images-empty">
-          <p className="tu-label-s">No images yet</p>
+          <p className="t-label-s">No images yet</p>
           <Button kind="primary" size="lg" onClick={() => addInputRef.current?.click()}>
             Upload images
           </Button>
@@ -142,7 +142,7 @@ export function ImagesDetail({ brand }: { brand: BrandDraft }) {
             <Skeleton className="sp-bs-image__plate" />
             <span className="sp-bs-image__meta">
               <span className="sp-bs-image__row">
-                <span className="tu-label-s sp-bs-image__name">{p.name}</span>
+                <span className="t-label-s sp-bs-image__name">{p.name}</span>
               </span>
               <ProgressBar label={`Uploading ${p.name}`} />
             </span>
@@ -155,7 +155,7 @@ export function ImagesDetail({ brand }: { brand: BrandDraft }) {
           onFiles={(files) => {
             for (const f of files) void uploadRef.current(f);
           }}
-          style={{ minHeight: 207, alignSelf: "stretch" }}
+          style={{ alignSelf: "stretch" }}
         />
       </div>
       {hiddenPicker}
@@ -282,18 +282,18 @@ function ImageCard({ asset, brand }: { asset: BrandAsset; brand: BrandDraft }) {
                 }}
               />
             ) : (
-              <span className="tu-label-s sp-bs-image__name">{asset.name}</span>
+              <span className="t-label-s sp-bs-image__name">{asset.name}</span>
             )}
             <RowMenu groups={groups} label={label} />
           </span>
-          <span className="tu-label-xs sp-bs-image__size">{meta}</span>
+          <span className="t-label-xs sp-bs-image__size">{meta}</span>
           {blocked && (
             <span role="alert" className="sp-bs-image__blocked">
-              <span className="tu-caption-m sp-bs-error-line">{blocked}</span>
+              <span className="t-caption-m sp-bs-error-line">{blocked}</span>
               <a
                 href={routeToUrl({ name: "adminTemplates" })}
                 onClick={linkClick({ name: "adminTemplates" })}
-                className="ui-ring tu-label-xs sp-bs-quiet-action"
+                className="ui-ring t-label-xs sp-bs-quiet-action"
               >
                 Show templates
               </a>

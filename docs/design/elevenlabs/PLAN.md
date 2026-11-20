@@ -93,8 +93,8 @@ One pull request per phase into `main`.
 | E2 | Shell | The flush sidebar on `--surface-shell` with its right edge, the Outline buttons, CJ's updated lockup on `--logo-ink`, no viewport inset, the 64 header row with its hairline, and the Page Header with the area icon on every page (`PHASE-E2.md`) | Every route reachable in both themes. The shell matches the App shell pattern | Done (#207) |
 | E3 | Brand Templates | The library, the 46 filter bar, search, the fill page with the 380 Details panel, public links | Screens match their frames in both themes | Done (#211) |
 | E4 | Generate | The one-line composer, the result thread, History, `VariationTile`, the copy button on captions, the Result Card's arrival and its download check (`PROMPT.md` sections 7.3 and 7.6) | Same | Done (#213) |
-| E5 | Template Builder | The list and its dialogs, the editor chrome, the stage, the variations bar, the 320 inspector | Same, and the fidelity checker passes | Built, pull request open |
-| E6 | Brand Studio | Overview and the eighteen detail states, built from the ElevenLabs frames (replaces new-brand Phase 7) | Same | Not started |
+| E5 | Template Builder | The list and its dialogs, the editor chrome, the stage, the variations bar, the 320 inspector | Same, and the fidelity checker passes | Done (#214) |
+| E6 | Brand Studio | Overview and the eighteen detail states, built from the ElevenLabs frames (replaces new-brand Phase 7) | Same | Built, pull request open |
 | E7 | Settings and Insights | Seven sections and the dashboard with the Metrics' roll (`PROMPT.md` section 7.7), replacing new-brand Phase 8 | Same | Not started |
 | E8 | Sign in and Create account | Eight gate screens and ten onboarding steps, Light only (replaces new-brand Phase 9) | Screens match their frames | Not started |
 | E9 | Cleanup | Everything new-brand Phase 10 owes, plus the transparent bevel and glow tokens if CJ agrees, and any bridged name the ElevenLabs phases stopped reading | Nothing legacy left | Not started |
@@ -128,6 +128,14 @@ One pull request per phase into `main`.
 - The builder editor still mounts in a "bare" page and draws the frame's header row itself (`.sp-builder__bar`), because its last crumb renames the template in place. It matches `.sp-frame__head`'s measures at 1024 and wider. Below 1024 it keeps the 64 row and 32 sides, where the editor's three panels need more width than a phone has anyway.
 - Every Toast caller is on the Toast's timer now, the editor's notices included.
 - Publish template's Category is a text field where the frame draws a dropdown. A fixed category list is a product call.
+
+### What Phase E6 left for later phases
+
+- Brand Studio's item cards (color, logo, image, import leg and the overview's category cards) sit on `--surface-card` under Elevation/1 with no edge. Its panels (the type style and font list card, the import status) keep `--surface-raised` with the `--border-raised` hairline and gain Elevation/1, which draws nothing today. Plates and swatches are `--radius-lg` with a `--border-subtle` hairline.
+- Brand Studio reads the trimmed `t-*` type styles and semantic tokens only, so `brand-studio.css` reads no bridged name.
+- The overview covers are the frame's art (`6085:1623` and the five after it), committed as webp.
+- The chips in Brand Studio's editors are the Chip primitive (28, outlined). The frames draw a 24 filled chip, which would be a size of the primitive, so it waits for CJ.
+- The progress bars (font upload, import) are the Progress primitive. The frames draw a 4 track with an `--accent-green` bar.
 
 The new-brand program split tokens from primitives, and this one keeps them together in Phase E1. The ElevenLabs values turn the page and raised surfaces white in Light, so a token-only diff would leave fields, cards and progress tracks invisible on `main` until the next phase merged. Folding the primitives in keeps every screen whole at every merge.
 

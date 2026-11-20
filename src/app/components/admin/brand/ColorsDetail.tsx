@@ -79,8 +79,8 @@ export function ColorsDetail({ brand, bindings }: { brand: BrandDraft; bindings:
                   )}
                 </PreviewOverlay>
                 <span className="sp-bs-color__meta">
-                  <span className="tu-label-l sp-bs-color__name">{c.name}</span>
-                  <span className="tu-label-xs sp-bs-color__hex">{c.hex}</span>
+                  <span className="t-label-l sp-bs-color__name">{c.name}</span>
+                  <span className="t-label-xs sp-bs-color__hex">{c.hex}</span>
                 </span>
               </button>
               {open && (
@@ -114,8 +114,8 @@ function RolesSummary({ colors }: { colors: BrandColor[] }) {
     <div className="sp-bs-roles">
       {held.map(({ role, color }) => (
         <span key={role} className="sp-bs-roles__item">
-          <span className="tu-body-s sp-bs-roles__role">{ROLE_LABELS[role]}</span>
-          <span className="tu-label-m">{color.name}</span>
+          <span className="t-body-s sp-bs-roles__role">{ROLE_LABELS[role]}</span>
+          <span className="t-label-m">{color.name}</span>
         </span>
       ))}
     </div>
@@ -277,67 +277,67 @@ function ColorPopover({ color, colors, edit, setColors, noteFor }: EditingProps)
         edit.cancel();
       }}
     >
-      <Input
-        ref={nameRef}
-        size="sm"
-        aria-label="Color name"
-        value={color.name}
-        onChange={(e) => patch({ name: e.target.value }, undefined, `name:${color.key}`)}
-        onKeyDown={(e) => e.key === "Enter" && finish()}
-      />
-      <div className="sp-bs-color-popover__value">
-        <ColorControl
-          value={color.hex}
-          size={32}
-          hexField={false}
-          brandSwatches={false}
-          ariaLabel={`Pick ${color.name}`}
-          onChange={(hex) =>
-            patch(
-              { hex: hex.toUpperCase() },
-              noteFor(color.key, `${color.name} recolored`),
-              `hex:${color.key}`,
-            )
-          }
-        />
+      <div className="sp-bs-popover__group">
         <Input
-          ref={valueRef}
-          size="sm"
-          aria-label="Color value"
-          aria-invalid={valueError ? true : undefined}
-          spellCheck={false}
-          value={valueText}
-          onChange={(e) => {
-            setValueText(e.target.value);
-            // Errors never appear per keystroke, but a shown one clears the
-            // moment the value turns valid.
-            if (valueError && parseColorInput(e.target.value)) setValueError(null);
-          }}
-          onBlur={commitValueField}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && commitValueField()) finish();
-          }}
+          ref={nameRef}
+          aria-label="Color name"
+          value={color.name}
+          onChange={(e) => patch({ name: e.target.value }, undefined, `name:${color.key}`)}
+          onKeyDown={(e) => e.key === "Enter" && finish()}
         />
-      </div>
-      {valueError && (
-        <p className="tu-caption-m sp-bs-error-line" role="alert">
-          {valueError}
-        </p>
-      )}
-
-      {readout && (
-        <div className="sp-bs-color-popover__contrast">
-          <p className="tu-caption-m">
-            Ink {readout.ink}:1 {readout.ink >= CONTRAST_PASS ? "passes" : "fails"}
-          </p>
-          <p className="tu-caption-m">
-            White {readout.white}:1 {readout.white >= CONTRAST_PASS ? "passes" : "fails"}
-          </p>
+        <div className="sp-bs-color-popover__value">
+          <ColorControl
+            value={color.hex}
+            size={36}
+            hexField={false}
+            brandSwatches={false}
+            ariaLabel={`Pick ${color.name}`}
+            onChange={(hex) =>
+              patch(
+                { hex: hex.toUpperCase() },
+                noteFor(color.key, `${color.name} recolored`),
+                `hex:${color.key}`,
+              )
+            }
+          />
+          <Input
+            ref={valueRef}
+            aria-label="Color value"
+            aria-invalid={valueError ? true : undefined}
+            spellCheck={false}
+            value={valueText}
+            onChange={(e) => {
+              setValueText(e.target.value);
+              // Errors never appear per keystroke, but a shown one clears the
+              // moment the value turns valid.
+              if (valueError && parseColorInput(e.target.value)) setValueError(null);
+            }}
+            onBlur={commitValueField}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && commitValueField()) finish();
+            }}
+          />
         </div>
-      )}
+        {valueError && (
+          <p className="t-caption-m sp-bs-error-line" role="alert">
+            {valueError}
+          </p>
+        )}
+
+        {readout && (
+          <div className="sp-bs-color-popover__contrast">
+            <p className="t-caption-m">
+              Ink {readout.ink}:1 {readout.ink >= CONTRAST_PASS ? "passes" : "fails"}
+            </p>
+            <p className="t-caption-m">
+              White {readout.white}:1 {readout.white >= CONTRAST_PASS ? "passes" : "fails"}
+            </p>
+          </div>
+        )}
+      </div>
 
       <div className="sp-bs-color-popover__role">
-        <span id={titleId} className="tu-label-xs sp-bs-color-popover__label">
+        <span id={titleId} className="t-label-xs sp-bs-color-popover__label">
           Role
         </span>
         <div role="group" aria-labelledby={titleId} className="sp-bs-chips">
@@ -356,7 +356,7 @@ function ColorPopover({ color, colors, edit, setColors, noteFor }: EditingProps)
         {!isDefault ? (
           <button
             type="button"
-            className="ui-reset ui-ring tu-label-xs sp-bs-quiet-action"
+            className="ui-reset ui-ring t-label-xs sp-bs-quiet-action"
             onClick={() => {
               setColors(
                 colors.filter((c) => c.key !== color.key),
