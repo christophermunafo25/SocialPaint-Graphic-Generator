@@ -5,9 +5,9 @@ import { IconButton, SendButton, Stepper } from "../primitives";
 
 /** The right-hand panel of the gate and onboarding (`sp-auth-panel`, Figma
  * 6101:661): the watercolor art under a 20% scrim, and a card centred on
- * it. Decorative: hidden
- * from assistive tech, inert, never focusable, and the art loads after the
- * form. It keeps the light token set in every theme, as the frames draw it. */
+ * it. Decorative: hidden from assistive tech, inert, never focusable, and
+ * the art loads after the form. It keeps the light token set in every
+ * theme, as the frames draw it. */
 export function AuthPanel({ children }: { children?: React.ReactNode }) {
   // React 18 drops a boolean `inert`, so it's set on the element directly.
   const ref = useRef<HTMLDivElement>(null);
