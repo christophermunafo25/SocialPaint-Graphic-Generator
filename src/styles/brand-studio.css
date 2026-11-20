@@ -75,7 +75,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: var(--space-12);
+  gap: var(--space-24) var(--space-12);
   margin: 0;
 }
 .sp-bs-strip__reason {
@@ -123,10 +123,10 @@
   color: var(--text-primary);
   text-decoration: none;
 }
-/* The cover is 208 tall at every width (6085:1623). */
+/* The cover keeps its 3:2 shape at every width (CJ, 2026-11-20). */
 .sp-bs-cat__cover {
   display: block;
-  height: 208px;
+  aspect-ratio: 3 / 2;
   border-radius: var(--radius-lg);
   background: var(--surface-sunken);
 }
@@ -141,7 +141,7 @@
   flex-direction: column;
   gap: var(--space-8);
   min-width: 0;
-  padding: var(--space-16) var(--space-8) var(--space-8);
+  padding: var(--space-24) var(--space-8) var(--space-16);
 }
 .sp-bs-cat__title,
 .sp-bs-cat__count {
@@ -262,9 +262,9 @@ label.sp-bs-add:focus-within {
 .sp-bs-color__meta {
   display: flex;
   flex-direction: column;
-  gap: var(--space-8);
+  gap: var(--space-12);
   min-width: 0;
-  padding: var(--space-12) var(--space-4) var(--space-4);
+  padding: var(--space-20) var(--space-4) var(--space-6);
 }
 .sp-bs-color__name,
 .sp-bs-color__hex {
@@ -474,9 +474,9 @@ label.sp-bs-add:focus-within {
 .sp-bs-logo__meta {
   display: flex;
   flex-direction: column;
-  gap: var(--space-8);
+  gap: var(--space-12);
   min-width: 0;
-  padding: var(--space-12) var(--space-4) var(--space-4);
+  padding: var(--space-16) var(--space-4) var(--space-8);
 }
 .sp-bs-logo__name {
   overflow: hidden;
@@ -814,9 +814,9 @@ label.sp-bs-add:focus-within {
 .sp-bs-image__meta {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: var(--space-8);
   min-width: 0;
-  padding: var(--space-6) 0 var(--space-4) var(--space-4);
+  padding: var(--space-6) 0 var(--space-8) var(--space-4);
 }
 .sp-bs-image[data-uploading] .sp-bs-image__meta {
   gap: var(--space-8);
@@ -883,6 +883,7 @@ label.sp-bs-add:focus-within {
 }
 /* The two legs are item cards; the status under them is a panel. */
 .sp-bs-import__leg {
+  gap: var(--space-24);
   background: var(--surface-card);
   box-shadow: var(--elevation-1-raised);
 }

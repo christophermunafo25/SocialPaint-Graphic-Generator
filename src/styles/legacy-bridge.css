@@ -73,9 +73,6 @@
   --text-on-action: var(--text-inverse);
 
   /* Overlays */
-  --overlay-hover: var(--state-pressed);
-  --overlay-control: var(--surface-raised);
-  --overlay-control-fg: var(--text-primary);
   --overlay-edge: var(--border-strong);
 
   /* Focus */
