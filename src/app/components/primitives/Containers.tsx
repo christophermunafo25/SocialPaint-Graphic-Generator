@@ -72,7 +72,7 @@ export function SettingsCard({
   return (
     <section className={cx("ui-settings-card", className)}>
       <header className="ui-settings-card__header">
-        <h2 className="tu-title-card">{title}</h2>
+        <h2 className="t-title-card">{title}</h2>
         {action}
       </header>
       {children}
@@ -80,11 +80,10 @@ export function SettingsCard({
   );
 }
 
-/** Stat (Figma 59:449): a label and its value, inside a settings card. At
- * Large it is a figure: the label over a big number, with an optional line
- * under it on text/secondary ("286 via public links", 13:15351). It
- * belongs to Settings and keeps its earlier look until that page is
- * rebuilt. */
+/** Stat (Settings frames 6095:1451, 6095:1464): a label and its value,
+ * inside a settings card. At Large it is a figure: the label over a big
+ * number, with an optional line under it on text/secondary ("286 via
+ * public links"). */
 export function Stat({
   label,
   value,
@@ -100,16 +99,16 @@ export function Stat({
   if (size === "lg") {
     return (
       <div className="ui-stat" data-size="lg">
-        <span className="tu-label-m">{label}</span>
-        <span className="tu-title-metric">{value}</span>
-        {sub && <span className="tu-body-s ui-stat__sub">{sub}</span>}
+        <span className="t-label-m">{label}</span>
+        <span className="t-title-metric">{value}</span>
+        {sub && <span className="t-body-s ui-stat__sub">{sub}</span>}
       </div>
     );
   }
   return (
     <div className="ui-stat">
-      <span className="tu-label-xs ui-stat__label">{label}</span>
-      <span className="tu-body-m">{value}</span>
+      <span className="t-label-xs ui-stat__label">{label}</span>
+      <span className="t-body-m">{value}</span>
     </div>
   );
 }

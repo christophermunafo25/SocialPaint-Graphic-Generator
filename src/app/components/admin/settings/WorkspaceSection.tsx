@@ -31,7 +31,7 @@ export function WorkspaceSection() {
   return (
     <div className="sp-st-section">
       {error && (
-        <p role="alert" className="tu-body-m sp-st-error">
+        <p role="alert" className="t-body-m sp-st-error">
           {error}
         </p>
       )}

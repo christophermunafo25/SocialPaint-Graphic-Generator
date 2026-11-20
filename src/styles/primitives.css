@@ -1996,20 +1996,22 @@ button.ui-detail-tag__value {
   color: var(--text-secondary);
 }
 
-/* ── Settings card (58:460), a Product component: its earlier look, until
-   Settings is rebuilt. ── */
+/* ── Settings card (Settings frames 6095:1220 to 6095:1664): a raised
+   card at radius/xl, 24 in, the header in Title/Card, then 20 to what it
+   holds. Flat on the white page with a border/raised hairline, drawn
+   inside so nothing moves. ── */
 .ui-settings-card {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 20px; /* as drawn (58:460) */
-  padding: var(--space-md);
-  border-radius: var(--radius-card);
+  gap: var(--space-20);
+  padding: var(--space-24);
+  border-radius: var(--radius-xl);
   background: var(--surface-raised);
-  /* Flat on the white page with a border/raised hairline (ElevenLabs E1,
-     Settings page 6227:2808), drawn inside so nothing moves. */
-  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-raised);
-  color: var(--text-strong);
+  box-shadow:
+    inset 0 0 0 var(--stroke-hairline) var(--border-raised),
+    var(--elevation-1-raised);
+  color: var(--text-primary);
 }
 .ui-settings-card h2,
 .ui-settings-card p {
@@ -2019,20 +2021,22 @@ button.ui-detail-tag__value {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-sm);
+  gap: var(--space-16);
 }
 
-/* ── Stat (59:449), which belongs to Settings: its earlier look, until that
-   page is rebuilt. Large is a figure on the Plan and usage card
-   (13:15351). ── */
+/* ── Stat (6095:1451, 6095:1464): a label over its value, 8 apart, the
+   label in Label/XS on text/secondary and the value in Body/M. Large is a
+   figure: Label/M, Title/Metric and a Body/S line on text/secondary, 12
+   apart. ── */
 .ui-stat {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3xs);
-  color: var(--text-strong);
+  gap: var(--space-8);
+  min-width: 0;
+  color: var(--text-primary);
 }
 .ui-stat[data-size="lg"] {
-  gap: var(--space-xs);
+  gap: var(--space-12);
 }
 .ui-stat__label,
 .ui-stat__sub {

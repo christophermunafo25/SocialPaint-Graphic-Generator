@@ -225,33 +225,48 @@
   }
 }
 
-/* ── Settings › Workspace, Workspaces (13:14698) ── */
+/* ── Settings › Workspace, Workspaces (6095:1240): rows 60 tall, divided
+   with 8 either side of the rule. ── */
 .sp-workspaces {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 .sp-workspaces__row {
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   gap: var(--space-12);
+  min-height: 60px; /* as drawn */
   padding: var(--space-12) 0;
   color: var(--text-primary);
 }
 .sp-workspaces__row + .sp-workspaces__row {
-  border-top: var(--stroke-hairline) solid var(--border-subtle);
+  position: relative;
+  margin-top: calc(2 * var(--space-8) + var(--stroke-hairline));
+}
+.sp-workspaces__row + .sp-workspaces__row::before {
+  content: "";
+  position: absolute;
+  top: calc(-1 * (var(--space-8) + var(--stroke-hairline)));
+  right: 0;
+  left: 0;
+  height: var(--stroke-hairline);
+  background: var(--border-subtle);
 }
 .sp-workspaces__text {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px; /* as drawn (13:14707) */
+  gap: var(--space-8);
 }
 .sp-workspaces__text > :first-child {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding-block: 0.3em; /* the ellipsis needs the line box the trim removes */
+  margin-block: -0.3em;
 }
 .sp-workspaces__meta {
   color: var(--text-secondary);

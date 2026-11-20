@@ -114,17 +114,9 @@
    screen before the new brand keeps its full line box through these until
    its screen is rebuilt, so no layout moves. One per style a call site
    still needs, in the order tokens.css declares the styles. */
-.tu-title-metric {
-  font: var(--type-title-metric);
-  letter-spacing: var(--type-title-metric-tracking);
-}
 .tu-title-page {
   font: var(--type-title-page);
   letter-spacing: var(--type-title-page-tracking);
-}
-.tu-title-card {
-  font: var(--type-title-card);
-  letter-spacing: var(--type-title-card-tracking);
 }
 .tu-body-l {
   font: var(--type-body-l);
@@ -153,10 +145,6 @@
 .tu-caption-m {
   font: var(--type-caption-m);
   letter-spacing: var(--type-caption-m-tracking);
-}
-.tu-caption-s {
-  font: var(--type-caption-s);
-  letter-spacing: var(--type-caption-s-tracking);
 }
 .tu-mono-s {
   font: var(--type-mono-s);

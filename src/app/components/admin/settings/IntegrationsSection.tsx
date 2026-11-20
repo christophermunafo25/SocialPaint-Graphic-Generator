@@ -144,7 +144,7 @@ export function IntegrationsSection() {
               }
             >
               {row.enabled && row.connected && (
-                <p className="tu-body-s sp-st-meta sp-st-wrap">
+                <p className="t-body-s sp-st-meta sp-st-wrap">
                   {row.connectedByEmail
                     ? `Connected by ${row.connectedByEmail}`
                     : "Connected before we started recording who"}
