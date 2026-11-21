@@ -128,14 +128,13 @@ const isText = (f: SuggestedField) => f.type === "text" || f.type === "multiline
 
 /** Fixed off, by the rules the builder's own switch follows (fixedPatch in
  * src/app/components/builder/fieldOps.ts): text gives up its fixed copy,
- * keeps it as the placeholder and shrinks to stay in its box; an image
- * keeps its artwork as the sample a member replaces. */
+ * keeps all of it as the placeholder, so the canvas shows the designer's
+ * words and the switch can carry them back, and shrinks to stay in its box;
+ * an image keeps its artwork as the sample a member replaces. */
 export function makeMemberField(field: SuggestedField): void {
   field.static = undefined;
   if (isText(field)) {
-    if (!field.placeholder && field.staticValue) {
-      field.placeholder = field.staticValue.slice(0, 80);
-    }
+    if (field.staticValue) field.placeholder = field.staticValue;
     field.staticValue = undefined;
     if (!field.textSizing) field.textSizing = "shrink";
   }

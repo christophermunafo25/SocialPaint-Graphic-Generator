@@ -66,6 +66,23 @@ describe("keys mapped onto the import", () => {
     expect(headline.align).toBe("left");
   });
 
+  it("keeps all of a member's copy as its placeholder, however long", () => {
+    const copy =
+      "Is it time to drop the naps? What sleep researchers tell the parents of toddlers who stop napping.";
+    const root = portraitWithPlate({
+      names: { headline: "headline · text · edit=member · align=left" },
+    });
+    const visit = (n: FigmaNode) => {
+      if (n.id === "33:18") n.characters = copy;
+      n.children?.forEach(visit);
+    };
+    visit(root);
+    const headline = byLabel(root).field("Headline");
+    expect(copy.length).toBeGreaterThan(80);
+    expect(headline.static).toBeUndefined();
+    expect(headline.placeholder).toBe(copy);
+  });
+
   it("reads a fused pill's member keys from its text and its role from the container", () => {
     const { field, intents } = byLabel(portraitWithPlate());
     const cta = field("Call to action");

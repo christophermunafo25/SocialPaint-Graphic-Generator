@@ -20,6 +20,7 @@ import {
   logoFieldFromAsset,
   svgIntrinsicSize,
 } from "./fieldOps";
+import { renderedText } from "@/lib/render/layout";
 import type { TemplateField } from "@/lib/types";
 
 const asset = {
@@ -525,7 +526,7 @@ describe("fixedPatch", () => {
     height: 100,
   };
 
-  it("turning Fixed on clears every member-input key", () => {
+  it("turning Fixed on clears every member-input key and keeps the copy as the content", () => {
     expect(
       fixedPatch({ ...base, type: "text", optional: true, placeholder: "Hi", maxLength: 9 }, true),
     ).toEqual({
@@ -534,7 +535,17 @@ describe("fixedPatch", () => {
       optional: undefined,
       placeholder: undefined,
       maxLength: undefined,
+      staticValue: "Hi",
     });
+  });
+
+  it("turning Fixed on leaves the content alone when there is no placeholder to keep", () => {
+    expect(fixedPatch({ ...base, type: "multiline" }, true)).not.toHaveProperty("staticValue");
+    // An image's content is its artwork, never words.
+    const art = "template-backgrounds/c1/photo.png";
+    expect(
+      fixedPatch({ ...base, staticValue: art, placeholder: "Add a photo" }, true),
+    ).not.toHaveProperty("staticValue");
   });
 
   it("making an image editable keeps its designed artwork", () => {
@@ -545,7 +556,7 @@ describe("fixedPatch", () => {
     });
   });
 
-  it("making text editable keeps its copy as the placeholder when it has none", () => {
+  it("making text editable keeps its copy as the placeholder", () => {
     const text: TemplateField = { ...base, type: "text", static: true, staticValue: "Now hiring" };
     // No sizing of its own, so it shrinks as member input.
     expect(fixedPatch(text, false)).toEqual({
@@ -554,10 +565,61 @@ describe("fixedPatch", () => {
       textSizing: "shrink",
       placeholder: "Now hiring",
     });
+    // The copy on the canvas wins over an older placeholder, such as the one
+    // an import kept before the content was edited.
     expect(fixedPatch({ ...text, placeholder: "Role", textSizing: "free" }, false)).toEqual({
       static: undefined,
       staticValue: undefined,
+      placeholder: "Now hiring",
     });
+  });
+});
+
+describe("the Team fills in switch keeps the copy on the canvas", () => {
+  const copy =
+    "Schedule a month of posts without leaving the calendar, then publish them to every channel your team runs.";
+  // A field the import opened to members: the designer's copy is its
+  // placeholder and it has no fixed content.
+  const member: TemplateField = {
+    id: "body",
+    label: "Body",
+    fieldKey: "body",
+    type: "multiline",
+    x: 0,
+    y: 0,
+    width: 600,
+    height: 200,
+    placeholder: copy,
+    textSizing: "shrink",
+  };
+  const flip = (f: TemplateField, fixed: boolean): TemplateField => ({
+    ...f,
+    ...fixedPatch(f, fixed),
+  });
+
+  it("paints the copy, never the field's name, once Team fills in is off", () => {
+    const fixed = flip(member, true);
+    expect(renderedText(fixed, undefined)).toBe(copy);
+    expect(renderedText(fixed, undefined)).not.toBe(member.label);
+  });
+
+  it("carries all of the copy there and back, however long it is", () => {
+    const back = flip(flip(member, true), false);
+    expect(back.placeholder).toBe(copy);
+    expect(renderedText(back, undefined)).toBe(copy);
+  });
+
+  it("carries the content as edited while Team fills in was off", () => {
+    const edited = { ...flip(member, true), staticValue: "Plan the month in one view." };
+    const back = flip(edited, false);
+    expect(back.placeholder).toBe("Plan the month in one view.");
+    expect(renderedText(back, undefined)).toBe("Plan the month in one view.");
+  });
+
+  it("keeps single-line copy the same way", () => {
+    const line: TemplateField = { ...member, type: "text", placeholder: "Now hiring" };
+    expect(renderedText(flip(line, true), undefined)).toBe("Now hiring");
+    expect(renderedText(flip(flip(line, true), false), undefined)).toBe("Now hiring");
   });
 });
 
