@@ -1,84 +1,20 @@
 /* ==========================================================================
-   ELEVENLABS (2026-11): token values come from the Figma file "Master
-   UX-UI New Brand Eleven Labs Inspired" (dQ8bQq3V7Bue5pvFrI2g9X) through
-   src/styles/tokens.css, which is generated (npm run tokens) and never
-   edited by hand. Older names that are still read point at those tokens
-   in legacy-bridge.css. Where this header disagrees with
-   docs/design/elevenlabs/RULES.md, RULES.md wins; that program's Phase E9
-   rewrites this header.
+   socialpaint.css: the first stylesheet, from before the new brand.
 
-   SocialPaint Design System — platform UI tokens.
-   Ported from the "SocialPaint Design System" Claude Design project
-   (tokens/*.css, SKILL.md, docs/02-tokens.md), 2026-07-30.
-   Final brand palette landed 2026-08-14 (Figma "Brand Assets"); locked
-   2026-09 to the four-colour set (Figma oMzk60i8cTNIedZrwH125n, "Brand
-   colors" 284:481).
+   Token values come from the Figma file "Master UX-UI New Brand Eleven Labs
+   Inspired" (dQ8bQq3V7Bue5pvFrI2g9X) through src/styles/tokens.css, which
+   is generated (npm run tokens) and never edited by hand. The ElevenLabs
+   program (docs/design/elevenlabs/) rebuilt every screen on those tokens
+   and the primitives, and Phase E9 deleted legacy-bridge.css: every rule
+   here now reads a semantic token or one of this file's own names.
 
-   Palette: five brand colours — Slime #17FF7E, Lapis #14E4FF,
-   Christina #FF3FE5, Purple Kara #9F60FF, Fire #FF3627 — over the
-   neutrals Ink #272727, White #FFFFFF, and Canvas #F9F9F8 (#F1F1F1 until
-   2026-09-25). Accent values
-   refreshed 2026-09-15 to match Figma "UX-UI Designs" 106:2 exactly
-   (Lapis replaces Aqua's value, Fire moves from #FF4229; --aqua stays as
-   the legacy name for Lapis). Two neutrals sit
-   outside the brand palette by design: #070708, the dark-mode canvas, and
-   #171819 (#161617 until 2026-09-25), the dark-mode lifted surface that
-   sits on it. Never treat either
-   as a brand colour or expose them on a brand-facing surface.
-
-   THE GOVERNING RULE: brand colours carry no meaning. They are identity,
-   and none of them encodes state — no brand colour means success, error,
-   warning, info, attention, progress, or severity anywhere in the product.
-   A user must never be able to infer status from a hue. Brand colours
-   appear in exactly three places: the brand-moment gradient, chart series
-   (categorical labelling, not severity), and artwork. Emphasis and status
-   tokens resolve to neutrals. Error Clay, Warning #FFD900, and the
-   editor's selection Blue #0D99FF sit outside the palette as functional
-   signals — they keep their meaning and their hues.
-
-   Non-negotiables carried from the DS:
-   - Soft cards (20px) against crisp controls (5px). Never meet at 12px.
-   - One UI weight. Never bold for emphasis — shift colour or step up to
-     the heading face.
-   - Two glyph colours on a brand fill, chosen by glyph size, never by
-     hue (measured 2026-09-15, WCAG 2.1; the surface and canvas columns
-     remeasured 2026-09-25 for #171819 and #F9F9F8):
-       colour                Ink    Deep   White  #171819 #F9F9F8 #FFFFFF
-       Slime #17FF7E        11.13  14.65   1.34   13.24    1.27    1.34
-       Lapis #14E4FF         9.65  12.71   1.55   11.49    1.47    1.55
-       Christina #FF3FE5     5.05   6.65   2.96    6.01    2.81    2.96
-       Purple Kara #9F60FF   3.98   5.24   3.76    4.73    3.57    3.76
-       Fire #FF3627          4.13   5.44   3.62    4.92    3.43    3.62
-     Ink #272727 (--text-on-brand) carries display-size glyphs — buttons,
-     the hero, the switch knob: it clears AA normal on Slime, Lapis, and
-     Christina and the large-text floor on all five. The deep cut #0B0B0C
-     (--text-on-brand-deep) carries small mono glyphs, 10–11px, and
-     clears AA normal on all five. White reads worse than either on every
-     hue and is a defect.
-     Brand colours are fill-only on
-     light and never appear as text or as a border that carries
-     information: on #F9F9F8 only Purple Kara (3.57:1) and Fire (3.43:1)
-     edge past the large-text floor — too little to lift the rule, which
-     stays in force.
-   - No gradients as surface, no glass. Drop shadows exist only as the
-     --shadow-rail / --shadow-rest / --shadow-card tokens, on the rail,
-     cards, platform chips, and the search trigger (2026-09-25, the Figma
-     "Navigation" page; before that, no drop shadows in either mode).
-     The plus hint glow is the one box-shadow outside those tokens.
-   - One face for the whole chrome: Inter Tight (2026-10-19, at CJ's
-     direction). Headings set in Medium at −1% tracking in sentence case;
-     body and UI in Regular for text and Medium for controls. It replaces
-     Raveo Display (2026-09-25 to 2026-10-19), which had replaced Plus
-     Jakarta Sans (headings) and Inter Tight (body and UI, 2026-09-03).
-     Nothing heavier than Medium anywhere in chrome. Small labels
-     (eyebrows, table headers) stay ALL CAPS mono at 0.04em tracking.
-
-   Themes are scoped to [data-theme="light" | "dark"], which
-   ColorSchemeProvider sets on <html> alongside the .dark class that
-   Tailwind's dark: variant needs.
-
-   PLATFORM UI ONLY: tenant brand kits style the template graphics that
-   members generate, never this chrome.
+   What is left in this file is the earlier system that screens the
+   ElevenLabs frames never drew still use: the builder's popovers and
+   dialogs (.sp-tabstrip, .sp-icon-cell, the upload chip, the dropzone),
+   the toast, the card and empty-state recipes, and the theme layer that
+   feeds them (the --bg-*, --nav-*, --icon-btn-* and edge names, some on
+   raw values). New code reads tokens.css and the primitives, never this
+   file's names. docs/design/elevenlabs/RULES.md wins where they disagree.
    ========================================================================== */
 
 @import url("https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap");
@@ -168,15 +104,8 @@ html {
    working accent all draw from the same value, so there are no separate
    "-logo" cuts any more. */
 :root {
-  --aqua: var(--lapis); /* --aqua is the legacy name for Lapis — new code uses --lapis */
+  --aqua: var(--accent-blue); /* the earlier name for accent/blue; new code reads --accent-blue */
   --purple-legacy: #9f60ff; /* the earlier bright purple; --purple-kara is the new deep primitive */
-  --text-on-brand: #272727; /* Ink carries display-size glyphs on any of the four */
-  /* The deep cut for SMALL mono glyphs on a brand fill (2026-09-05, at
-     Chris's direction). Ink lands under 4.5:1 on Purple Kara and Fire;
-     this value — the frame's #0b0b0c, the same value as --ink-900 —
-     clears AA on all four. One token, bound by the seat, never branched
-     per hue. */
-  --text-on-brand-deep: #0b0b0c;
   --white: #ffffff;
   --ink: #272727;
 
@@ -236,9 +165,6 @@ html {
      they are steps of the ramp, not component tokens, so the scale stays
      whole for the next display title. A component token with no reader is
      deleted instead (the old composer's --type-composer-lh went that way). */
-  --type-h2-size: 33px;
-  --type-h2-lh: 1;
-  --type-h2-track: var(--track-head);
   /* The page title on every route. The Jakarta rescale landed it at 36
      (the Bricolage era's 45 through ×0.8); stepped down to 32 the same
      day, at CJ's direction — "a little smaller" — which merged it with
@@ -256,7 +182,6 @@ html {
   --type-label-size: 13px;
   --type-label-track: 0.01em; /* a hair of air at 13px */
   --type-caption-size: 12px;
-  --type-caption-lh: 1.4;
   --type-button-track: 0.01em;
   --type-composer-size: 16px; /* the Generate brief — one step above body, per Figma 72:27 */
 
@@ -279,7 +204,6 @@ html {
   --gen-marker-bg: rgb(11 11 12 / 0.56);
   --gen-marker-edge: rgb(255 255 255 / 0.6);
   --gen-marker-fg: #ffffff;
-  --control-lg: 54px;
   /* Inspector density — the builder's property rows run tighter than the
      38px form floor: label + control on a 32px line, Figma-inspector style.
      Builder chrome only; member-facing forms keep the --control-* heights. */
@@ -287,20 +211,14 @@ html {
 
   /* Layout. The page gutter (--page-pad) and the mobile bar's height
      (--chrome-top) are the shell's own measures, defined in shell.css. */
-  --bp-md: 768px;
-  --bp-lg: 1024px;
-  --bp-xl: 1280px;
-  /* Tailwind reads these as its max-w-md and max-w-lg (the empty states and
-     the dialogs), so they are live though no stylesheet reads them. */
-  --container-md: 768px;
+  /* Tailwind reads this as its max-w-lg (BackgroundReflowDialog), so it is
+     live though no stylesheet reads it. */
   --container-lg: 1024px;
   --z-sticky: 100;
-  --z-drawer: 200;
   --z-popover: 500;
-  --z-tooltip: 700;
 
-  /* Motion. The easing and the state and panel durations are tokens now
-     (legacy-bridge.css points --ease, --dur-state and --dur-panel at them). */
+  /* Motion. The easing and the state and panel durations are tokens
+     (--motion-easing-standard, --motion-duration-fast and -base). */
   --dur-reveal: 400ms;
 }
 
@@ -312,7 +230,7 @@ html {
 
 /* ── Semantic: dark ─────────────────────────────────────────────────────────
    The primary mode. #0B0B0C is the floor (lifted from #070708, 2026-09 Brand
-   Templates frames) and #171819 (--ink-800) is THE lifted surface —
+   Templates frames) and #171819 is THE lifted surface —
    chrome, anything that floats or takes input, and content cards all share
    it since the two-step Brand Studio frames (2026-09-15, at CJ's direction;
    chrome sat one rung higher at #18191A before that; #161617 until
@@ -326,7 +244,7 @@ html {
      (2026-09-15): the rail, inputs, and menus no longer read lighter than
      the cards beside them — surface, raised, and card are one rung, and
      separation is the lit edge's job. */
-  --bg-raised: var(--ink-800);
+  --bg-raised: var(--state-pressed);
   --bg-hover: #2a2a2a;
   --bg-plate: #ffffff; /* imagery plate, never inverts */
   /* The lit edge (2026-09-02, at Chris's direction): light from above.
@@ -349,8 +267,6 @@ html {
      20%, D7 two-step frames), the rail 35%, chips and the search trigger
      25% at rest and 35% on hover. */
   --edge-alpha-card: 0.15;
-  --edge-alpha-chip: 0.25;
-  --edge-alpha-chip-hover: 0.35;
   /* The card's inner highlight (2026-09-25): two more 1px inset lines, top
      15% and bottom 10% white, layered over the card edge. */
   --card-highlight: inset 0 1px 0 rgb(255 255 255 / 0.15), inset 0 -1px 0 rgb(255 255 255 / 0.1);
@@ -359,9 +275,6 @@ html {
      image can't read a custom property, so the ink is baked per theme. */
   --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a0a0a0' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   --text-on-accent: #272727;
-
-  --text-on-surface: #f1f1f1;
-  --bg-surface-raised: #202020;
 
   --border-control-legacy: #f1f1f1; /* the edge of a pressable outlined control */
 
@@ -375,39 +288,15 @@ html {
      (Ink, both themes), never --text-on-action. The inverted
      --text-on-action pairs exclusively with the neutral --fill-action;
      on a brand fill it reads ~1.2:1 in light mode. */
-  --state-attention-on-surface: var(--slime);
-  --state-primary: var(--slime);
-  --fill-primary: var(--slime);
-  --fill-info: var(--aqua);
-  --state-attention: var(--slime);
-  --fill-attention: var(--slime);
+  --state-attention-on-surface: var(--accent-green);
+  --state-primary: var(--accent-green);
+  --fill-attention: var(--accent-green);
 
   /* Functional signals, outside the brand palette. */
   --state-warning: #ffd900;
   --fill-warning: #ffd900;
 
-  /* Brand-templates platform chip (Figma 141:329; states from the
-     "Navigation" hover sheet 255:3, 2026-09-25). #252627 is the one value
-     with no rung — five units off both --bg-surface-raised and --bg-hover —
-     so it gets its own. Rest: the card fill with a #252627 tile and the
-     mono mark at 90%. Hover: the chip itself lifts to #252627 and the tile
-     drops to the canvas floor (#0b0b0c IS --bg-canvas) so the colour mark
-     reads on it. Selected inverts to a white chip with ink label and
-     chevron; the tile stays on the floor and the All glyph turns Slime. */
   --chip-raised: #252627;
-  --chip-bg: var(--bg-card); /* the chip is content, not chrome (Part E, 2026-09) */
-  --chip-bg-hover: var(--chip-raised);
-  --chip-bg-selected: var(--white);
-  --chip-fg: var(--text-primary);
-  --chip-fg-selected: var(--ink-900);
-  --chip-tile-active: var(--bg-canvas);
-  --chip-tile-active-fg: var(--text-primary);
-  --chip-tile-selected: var(--ink-900);
-  /* Mono glyphs on the selected tile: the All chip's grid, and the
-     accent-mark fallback. */
-  --chip-tile-selected-fg: var(--slime);
-  --chip-mark-mono-alpha: 0.9;
-
   /* Selection controls not yet on the primitives (segments, chips, choice
      tiles, the builder's rails): hover is a neutral wash; active is a soft
      neutral pill with a white label (Figma 442:3563, 2026-09-28). The
@@ -432,8 +321,6 @@ html {
      box-shadow lists, and a `none` inside a list invalidates the whole
      declaration — edge and focus ring with it. Dark chips and the search
      trigger keep their edges only. */
-  --shadow-rest: 0 0 0 0 transparent;
-  --shadow-rest-hover: 0 0 0 0 transparent;
 
   color-scheme: dark;
 }
@@ -441,10 +328,10 @@ html {
 /* ── Semantic: light ────────────────────────────────────────────────────────
    The brand board's pairing: an off-white field with #FFFFFF cards. The
    field was #F1F1F1 until 2026-09-25; the Figma "Navigation" page moved it
-   to #F9F9F8 (--paper-050). */
+   to #F9F9F8. */
 [data-theme="light"] {
-  --accent-wash: color-mix(in srgb, var(--slime) 30%, transparent);
-  --accent-wash-strong: color-mix(in srgb, var(--slime) 48%, transparent);
+  --accent-wash: color-mix(in srgb, var(--accent-green) 30%, transparent);
+  --accent-wash-strong: color-mix(in srgb, var(--accent-green) 48%, transparent);
   --bg-raised: #e8e8e8;
   --bg-hover: #e2e2e2;
   --bg-plate: #ffffff;
@@ -464,16 +351,11 @@ html {
   --edge-alpha-card: 0.15;
   /* The per-surface rungs mirror today's light values; light never draws
      these edges (see the assembly beside .sp-card). */
-  --edge-alpha-chip: 0.15;
-  --edge-alpha-chip-hover: 0.25;
   --card-highlight: 0 0 0 0 transparent; /* dark only */
 
   /* See the dark block: the select chevron in this theme's --text-secondary. */
   --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23636363' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   --text-on-accent: #272727;
-
-  --text-on-surface: #272727;
-  --bg-surface-raised: #f0f0f0;
 
   --border-control-legacy: #272727;
 
@@ -483,44 +365,23 @@ html {
      at 11.13:1) and Aqua for info. */
   --state-attention-on-surface: #272727;
   --state-primary: #272727;
-  --fill-primary: var(--slime);
-  --fill-info: var(--aqua);
-  --state-attention: #272727;
-  --fill-attention: var(--slime);
+  --fill-attention: var(--accent-green);
 
   /* Functional signals, outside the brand palette. */
   --state-warning: #756200;
   --fill-warning: #ffd900;
 
-  /* Platform chip, light (Figma 141:858; states from the "Navigation"
-     hover sheet 253:3, 2026-09-25). Rest: a white chip on a soft shadow,
-     canvas tile, mono mark at 85%. Hover: the chip drops to the canvas
-     tone, the shadow deepens, and the tile goes to --ink-700 so the colour
-     mark reads on it. Selected inverts to an --ink-900 chip with a white
-     label and chevron, no shadow; the tile turns back to paper and the All
-     glyph turns Deep Moss. */
-  --chip-bg: var(--bg-card);
-  --chip-bg-hover: var(--paper-050);
-  --chip-bg-selected: var(--ink-900);
-  --chip-fg: var(--text-primary);
-  --chip-fg-selected: var(--white);
-  --chip-tile-active: var(--ink-700);
-  --chip-tile-active-fg: var(--text-on-action);
-  --chip-tile-selected: var(--paper-050);
-  --chip-tile-selected-fg: var(--deep-moss);
-  --chip-mark-mono-alpha: 0.85;
-
   /* See the dark block for these groups. */
-  --nav-hover-bg: var(--paper-050);
+  --nav-hover-bg: var(--state-hover);
   --nav-hover-fg: var(--text-primary);
   /* Soft pill (Figma 442:3477, 2026-09-28): the sunken paper with an ink
      label (an ink pill with a white label before). */
-  --nav-active-bg: var(--paper-100);
-  --nav-active-fg: var(--ink-900);
+  --nav-active-bg: var(--state-selected);
+  --nav-active-fg: var(--text-primary);
 
   --icon-btn-bg: transparent;
   --icon-btn-fg: var(--text-secondary);
-  --icon-btn-bg-hover: var(--paper-050);
+  --icon-btn-bg-hover: var(--state-hover);
   --icon-btn-fg-hover: var(--text-primary);
 
   /* Go button: sunken at rest; Deep Moss with a Slime arrow on card hover
@@ -528,8 +389,6 @@ html {
 
   /* Elevation — see the dark block. Light draws no edges on these
      surfaces, so the shadow alone lifts them. */
-  --shadow-rest: 6px 6px 25px 0 rgb(53 53 53 / 0.05);
-  --shadow-rest-hover: 6px 6px 25px 0 rgb(53 53 53 / 0.07);
 
   color-scheme: light;
 }
@@ -542,26 +401,19 @@ html {
   /* Focus — a --focus-width ring at --focus-offset. Where a box-shadow
      stands in for an outline (inputs), the canvas-coloured first layer
      creates the offset. */
-  --focus-ring:
-    0 0 0 var(--focus-offset) var(--bg-surface),
-    0 0 0 calc(var(--focus-offset) + var(--stroke-focus)) var(--ring);
-  --focus-ring-tight: 0 0 0 var(--focus-width) var(--ring);
+  --focus-ring-tight: 0 0 0 var(--stroke-focus) var(--border-focus);
 
   /* Selection and active states tint with the brand green — a wash is a
      fill, so it is legal in both themes. Density differs per theme: dark
      needs less pigment to read against #0B0B0C than light does against
      white. */
-  --accent-wash: color-mix(in srgb, var(--slime) 14%, transparent);
-  --accent-wash-strong: color-mix(in srgb, var(--slime) 24%, transparent);
-  --accent-border: color-mix(in srgb, var(--text-primary) 40%, transparent);
-  --danger-wash: color-mix(in srgb, var(--state-danger) 16%, transparent);
+  --accent-wash: color-mix(in srgb, var(--accent-green) 14%, transparent);
+  --accent-wash-strong: color-mix(in srgb, var(--accent-green) 24%, transparent);
 
   /* Brand-moment surface — the sign-in and onboarding front doors. Flat
      Slime since the 2026-09 brand refresh — the same value the lockup
      above it is drawn in, because the earlier ramp read as a second green
      against that lockup. Ink stays the fg, as on every brand fill. */
-  --brand-surface: var(--slime);
-  --brand-surface-fg: var(--text-on-brand);
 
   /* The scrim behind the chat editor's sheet. One scrim in both themes.
      (Brand Studio's thumbnail edit overlay read it until Phase 6.) */
@@ -580,10 +432,10 @@ html {
 /* ── Base ───────────────────────────────────────────────────────────────── */
 
 html {
-  font-family: var(--font-ui);
+  font-family: var(--font-sans);
   letter-spacing: var(--type-body-track);
   color: var(--text-primary);
-  background: var(--bg-canvas);
+  background: var(--surface-page);
   /* The page never scrolls horizontally — wide content (tables, canvases)
      scrolls inside its own container. Clipping on html propagates to the
      viewport, so position: sticky keeps working. */
@@ -598,7 +450,7 @@ input,
 select,
 textarea,
 optgroup {
-  font-family: var(--font-ui);
+  font-family: var(--font-sans);
   letter-spacing: var(--type-body-track);
 }
 
@@ -616,7 +468,7 @@ optgroup {
   font-size: 10px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-weight: 400;
 }
 
@@ -629,17 +481,17 @@ optgroup {
   line-height: var(--type-h4-lh);
   font-weight: var(--weight-head);
   letter-spacing: var(--type-h4-track);
-  color: var(--text-heading);
+  color: var(--text-primary);
 }
 
 .sp-btn {
-  font-family: var(--font-ui);
+  font-family: var(--font-sans);
   font-weight: var(--weight-ui);
   font-size: 13px;
   letter-spacing: var(--type-button-track);
   min-height: 38px;
   padding: 8px 16px;
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-sm);
   border: 1px solid transparent;
   cursor: pointer;
   display: inline-flex;
@@ -651,21 +503,21 @@ optgroup {
      label — never let it fold. */
   white-space: nowrap;
   transition:
-    background var(--dur-state) var(--ease),
-    color var(--dur-state) var(--ease),
-    border-color var(--dur-state) var(--ease),
-    opacity var(--dur-state) var(--ease);
+    background var(--motion-duration-fast) var(--motion-easing-standard),
+    color var(--motion-duration-fast) var(--motion-easing-standard),
+    border-color var(--motion-duration-fast) var(--motion-easing-standard),
+    opacity var(--motion-duration-fast) var(--motion-easing-standard);
 }
 .sp-btn:disabled {
   opacity: 0.4;
   cursor: default;
 }
 .sp-btn-primary {
-  background: var(--btn-primary-bg);
-  color: var(--btn-primary-fg);
+  background: var(--action-primary);
+  color: var(--action-on-primary);
 }
 .sp-btn-primary:hover:not(:disabled) {
-  background: var(--btn-primary-bg-hover);
+  background: var(--action-primary-hover);
 }
 .sp-btn-ghost {
   background: transparent;
@@ -678,20 +530,20 @@ optgroup {
 }
 
 .sp-input {
-  font-family: var(--font-ui);
+  font-family: var(--font-sans);
   font-size: 13px;
   letter-spacing: var(--type-body-track);
   /* 16px on touch widths — see the mobile block at the end of the file:
      iOS Safari zooms the page on focusing any field under 16px. */
   width: 100%;
   padding: 9px 12px;
-  border-radius: var(--radius-control);
-  background: var(--input-bg);
-  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-field);
+  border: 1px solid var(--border-subtle);
   color: var(--text-primary);
   transition:
-    box-shadow var(--dur-state) var(--ease),
-    border-color var(--dur-state) var(--ease);
+    box-shadow var(--motion-duration-fast) var(--motion-easing-standard),
+    border-color var(--motion-duration-fast) var(--motion-easing-standard);
 }
 .sp-input::placeholder {
   color: var(--text-disabled);
@@ -709,7 +561,7 @@ select.sp-input {
   -webkit-appearance: none;
   background-image: var(--select-chevron);
   background-repeat: no-repeat;
-  background-position: right var(--space-2xs) center;
+  background-position: right var(--space-8) center;
   background-size: 12px 12px;
   padding-right: 26px !important;
   text-overflow: ellipsis;
@@ -739,7 +591,7 @@ select.sp-input:disabled {
 .sp-seg {
   display: inline-flex;
   border: 1px solid var(--border-strong);
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-sm);
   overflow: hidden;
 }
 .sp-seg button {
@@ -750,11 +602,11 @@ select.sp-input:disabled {
   height: 30px;
   color: var(--text-secondary);
   transition:
-    background var(--dur-state) var(--ease),
-    color var(--dur-state) var(--ease);
+    background var(--motion-duration-fast) var(--motion-easing-standard),
+    color var(--motion-duration-fast) var(--motion-easing-standard);
 }
 .sp-seg button + button {
-  border-left: 1px solid var(--border);
+  border-left: 1px solid var(--border-subtle);
 }
 .sp-seg button:hover:not(:disabled):not([data-active="true"]) {
   background: var(--nav-hover-bg);
@@ -787,8 +639,8 @@ select.sp-input:disabled {
   display: inline-flex;
   flex-shrink: 0;
   border: 1px solid var(--border-strong);
-  border-radius: var(--radius-control);
-  background: var(--bg-surface);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
   overflow: hidden;
 }
 .sp-tabstrip[data-stretch] {
@@ -801,17 +653,17 @@ select.sp-input:disabled {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-ui);
+  font-family: var(--font-sans);
   white-space: nowrap;
   color: var(--text-secondary);
   background: transparent;
   cursor: pointer;
   transition:
-    background var(--dur-state) var(--ease),
-    color var(--dur-state) var(--ease);
+    background var(--motion-duration-fast) var(--motion-easing-standard),
+    color var(--motion-duration-fast) var(--motion-easing-standard);
 }
 .sp-tabstrip__tab + .sp-tabstrip__tab {
-  border-left: 1px solid var(--border);
+  border-left: 1px solid var(--border-subtle);
 }
 .sp-tabstrip__tab:hover:not(:disabled):not([aria-selected="true"]):not([aria-pressed="true"]) {
   background: var(--nav-hover-bg);
@@ -846,7 +698,7 @@ select.sp-input:disabled {
   /* Tighter than the icon segments: these carry words, and at the panel's
      narrowest the difference between 8px and 4px either side is the
      difference between "Text shrinks" fitting and not. */
-  padding: 0 var(--space-3xs);
+  padding: 0 var(--space-4);
   font-size: var(--type-caption-size);
   letter-spacing: var(--type-label-track);
   /* One line, always. A wrapped segment silently doubles the row's height
@@ -888,8 +740,7 @@ select.sp-input:disabled {
    declared, so a hover that sets --edge-alpha on the surface can only
    reach an edge assembled on the surface. */
 .sp-card,
-.sp-emptystate,
-.sp-platform-chip {
+.sp-emptystate {
   --edge-w-top: 0.75;
   --edge-w-side: 0.25;
   --edge-w-bottom: 0.55;
@@ -911,17 +762,13 @@ select.sp-input:disabled {
 .sp-emptystate {
   --edge-alpha: var(--edge-alpha-card);
   --edge-w-top: 0.65;
-  --card-shadow-now: var(--shadow-card);
-  background: var(--bg-card);
+  --card-shadow-now: 0 2px 8px 0 var(--shadow-raised);
+  background: var(--surface-raised);
   border: 1px solid transparent;
   box-shadow: var(--edge-lit), var(--card-highlight), var(--card-shadow-now);
 }
 .sp-card {
-  border-radius: var(--radius-card);
-}
-.sp-platform-chip {
-  --edge-alpha: var(--edge-alpha-chip);
-  --surface-shadow-now: var(--shadow-rest);
+  border-radius: var(--radius-xl);
 }
 
 /* Light theme: no edge on these surfaces — see the recipe note. The 1px
@@ -931,8 +778,7 @@ select.sp-input:disabled {
    card; the chips and search took a 1px inset ring. The shadow replaces
    both.) */
 [data-theme="light"] .sp-card,
-[data-theme="light"] .sp-emptystate,
-[data-theme="light"] .sp-platform-chip {
+[data-theme="light"] .sp-emptystate {
   --edge-lit: 0 0 0 0 transparent;
   border-color: transparent;
 }
@@ -953,13 +799,11 @@ select.sp-input:disabled {
    hairlines and the highlight; light keeps the pre-2026-09-25 treatment,
    a 1px border in --edge-rgb at the card rung (15%). */
 [role="dialog"] .sp-card,
-.sp-card .sp-card,
-.sp-card--chrome {
+.sp-card .sp-card {
   --card-shadow-now: 0 0 0 0 transparent;
 }
 [data-theme="light"] [role="dialog"] .sp-card,
-[data-theme="light"] .sp-card .sp-card,
-[data-theme="light"] .sp-card--chrome {
+[data-theme="light"] .sp-card .sp-card {
   border-color: rgb(var(--edge-rgb) / var(--edge-alpha));
 }
 
@@ -996,8 +840,8 @@ select.sp-input:disabled {
   overflow: hidden;
   cursor: pointer;
   border: 1px solid var(--border-strong);
-  border-radius: var(--radius-control);
-  transition: border-color var(--dur-state) var(--ease);
+  border-radius: var(--radius-sm);
+  transition: border-color var(--motion-duration-fast) var(--motion-easing-standard);
 }
 
 .sp-color-swatch:hover,
@@ -1015,7 +859,7 @@ select.sp-input:disabled {
   color: var(--white);
   background: color-mix(in srgb, var(--text-on-accent) 35%, transparent);
   opacity: 0;
-  transition: opacity var(--dur-state) var(--ease);
+  transition: opacity var(--motion-duration-fast) var(--motion-easing-standard);
 }
 
 .sp-color-swatch:hover .sp-color-swatch__veil,
@@ -1035,7 +879,7 @@ select.sp-input:disabled {
 .sp-color-pop {
   box-sizing: border-box;
   width: 240px;
-  padding: var(--space-xs);
+  padding: var(--space-12);
   background: var(--chip-raised, var(--bg-raised));
   border: 1px solid transparent;
   border-radius: var(--radius-media);
@@ -1047,7 +891,7 @@ select.sp-input:disabled {
 .sp-color-pop .react-colorful {
   width: 100%;
   height: 168px;
-  gap: var(--space-2xs);
+  gap: var(--space-8);
 }
 
 .sp-color-pop .react-colorful__saturation {
@@ -1057,7 +901,7 @@ select.sp-input:disabled {
 
 .sp-color-pop .react-colorful__last-control {
   height: 12px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-full);
 }
 
 .sp-color-pop .react-colorful__pointer {
@@ -1070,7 +914,7 @@ select.sp-input:disabled {
    when reached by keyboard so the focused channel is never a mystery. */
 
 .sp-color-pop .react-colorful__interactive:focus-visible {
-  outline: var(--focus-width) solid var(--ring);
+  outline: var(--stroke-focus) solid var(--border-focus);
   outline-offset: var(--focus-offset);
   border-radius: inherit;
 }
@@ -1078,15 +922,15 @@ select.sp-input:disabled {
 .sp-color-pop__row {
   display: flex;
   align-items: center;
-  gap: var(--space-2xs);
-  margin-top: var(--space-xs);
+  gap: var(--space-8);
+  margin-top: var(--space-12);
 }
 
 .sp-color-pop__chip {
   flex: none;
   width: 28px;
   height: 28px;
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-strong);
 }
 
@@ -1100,7 +944,7 @@ select.sp-input:disabled {
   .sp-color-pop {
     width: 100%;
     border-radius: var(--radius-media) var(--radius-media) 0 0;
-    padding: var(--space-sm) var(--space-sm) calc(var(--space-sm) + env(safe-area-inset-bottom));
+    padding: var(--space-16) var(--space-16) calc(var(--space-16) + env(safe-area-inset-bottom));
   }
   .sp-color-pop .react-colorful {
     height: 200px;
@@ -1120,14 +964,14 @@ select.sp-input:disabled {
   min-width: 260px;
   max-width: min(92vw, 420px);
   padding: 12px 16px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
   border-top: 3px solid var(--fill-attention);
-  border-radius: var(--radius-card);
-  animation: sp-toast-in var(--dur-panel) var(--ease);
+  border-radius: var(--radius-xl);
+  animation: sp-toast-in var(--motion-duration-base) var(--motion-easing-standard);
 }
 .sp-toast[data-tone="danger"] {
-  border-top-color: var(--state-danger);
+  border-top-color: var(--feedback-error);
 }
 @keyframes sp-toast-in {
   from {
@@ -1148,7 +992,6 @@ select.sp-input:disabled {
 :root {
   --editor-accent: #0d99ff; /* selection blue — functional, never brand; foreign to artwork by design */
   --editor-line: 1px;
-  --editor-handle: 7px;
   --editor-artboard-edge: var(--border-strong);
 }
 
@@ -1279,8 +1122,8 @@ body[data-sp-gesture] * {
   margin-top: 6px;
   padding: 8px 10px;
   background: var(--bg-raised);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-control);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
   overflow: hidden;
 }
 .sp-upload-chip__name {
@@ -1298,14 +1141,14 @@ body[data-sp-gesture] * {
   flex: 1;
   height: 3px;
   background: var(--bg-hover);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-full);
   overflow: hidden;
 }
 .sp-upload-chip__bar {
   position: absolute;
   inset: 0 auto 0 0;
   background: var(--fill-attention);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-full);
   transition: width 0.08s linear;
 }
 .sp-upload-chip__done {
@@ -1464,14 +1307,14 @@ input[type="radio"] {
   justify-content: center;
   width: 32px;
   height: 32px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-full);
   background: var(--icon-btn-bg);
   color: var(--icon-btn-fg);
   border: none;
   flex-shrink: 0;
   transition:
-    background-color var(--dur-state) var(--ease),
-    color var(--dur-state) var(--ease);
+    background-color var(--motion-duration-fast) var(--motion-easing-standard),
+    color var(--motion-duration-fast) var(--motion-easing-standard);
 }
 .sp-icon-btn:hover {
   background: var(--icon-btn-bg-hover);
@@ -1480,7 +1323,7 @@ input[type="radio"] {
 
 /* A cell in the builder's icon picker: the icon-button hover, neutral. */
 .sp-icon-cell {
-  transition: background var(--dur-state) var(--ease);
+  transition: background var(--motion-duration-fast) var(--motion-easing-standard);
 }
 .sp-icon-cell:hover {
   background: var(--icon-btn-bg-hover);
@@ -1496,10 +1339,6 @@ input[type="radio"] {
   padding: 48px var(--page-pad) 64px;
   box-sizing: border-box;
 }
-/* Content-panel card padding (Insights, Brand Studio, Settings, People). */
-.sp-card--content {
-  padding: 24px;
-}
 
 /* --- Brand swatch ---------------------------------------------------------
    The quick-select chip in ColorControl's brand row. One recipe so every
@@ -1509,13 +1348,13 @@ input[type="radio"] {
   width: 20px;
   height: 20px;
   flex-shrink: 0;
-  border-radius: var(--radius-control);
-  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--border-subtle);
   cursor: pointer;
   padding: 0;
   transition:
-    transform var(--dur-state) var(--ease),
-    border-color var(--dur-state) var(--ease);
+    transform var(--motion-duration-fast) var(--motion-easing-standard),
+    border-color var(--motion-duration-fast) var(--motion-easing-standard);
 }
 .sp-swatch:hover:not(:disabled) {
   transform: scale(1.12);
@@ -1525,7 +1364,7 @@ input[type="radio"] {
   box-shadow: var(--focus-ring-tight);
 }
 .sp-swatch[data-selected="true"] {
-  border-color: var(--ring);
+  border-color: var(--border-focus);
 }
 .sp-swatch:disabled {
   cursor: default;
@@ -1568,195 +1407,6 @@ input[type="radio"] {
      drift apart. The frames draw 50 tall with 0 9 0 7 padding and a 7px
      inner gap; 48 / 0 12 0 8 / 8 are the on-scale renderings, keeping the
      tighter-left, looser-right ratio. */
-  --chip-h: 48px;
-  --chip-w: 152px;
-  --chip-pad-inline-start: 8px;
-  --chip-pad-inline-end: 12px;
-  --chip-gap: 8px;
-}
-.sp-platform-chipbar {
-  gap: var(--space-2xs);
-  /* The old 2px guard padding is gone (2026-09): the filter bar's rail
-     track carries the ring and shadow room itself (.sp-filterbar
-     .sp-railfade__track), in both axes. */
-  padding-inline: 0;
-}
-.sp-platform-chip {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: var(--chip-gap);
-  flex-shrink: 0;
-  /* The frames' 152 is a floor, not a cap: at a fixed 152 "Web & Open
-     Graph" read "Web & Op…". Every other label fits inside the floor, so
-     only a chip whose label needs more grows, and only by that much. */
-  min-width: var(--chip-w);
-  box-sizing: border-box;
-  height: var(--chip-h);
-  padding: 0 var(--chip-pad-inline-end) 0 var(--chip-pad-inline-start);
-  border: 0;
-  border-radius: var(--radius-media);
-  background: var(--chip-bg);
-  color: var(--chip-fg);
-  box-shadow: var(--edge-lit), var(--surface-shadow-now);
-  font-family: var(--font-ui);
-  text-align: left;
-  cursor: pointer;
-  transition:
-    background var(--dur-state) var(--ease),
-    color var(--dur-state) var(--ease),
-    box-shadow var(--dur-state) var(--ease);
-}
-/* Hover (2026-09-25): the chip's own fill steps, the edge brightens (dark)
-   and the shadow deepens (light) — both swap a property, never the list. */
-.sp-platform-chip:hover {
-  --edge-alpha: var(--edge-alpha-chip-hover);
-  --surface-shadow-now: var(--shadow-rest-hover);
-  background: var(--chip-bg-hover);
-}
-.sp-platform-chip:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring-tight), var(--edge-lit), var(--surface-shadow-now);
-}
-/* Selected wins: hovering a selected chip changes nothing. The inverted
-   chip draws no edge and no shadow in either theme. */
-.sp-platform-chip[data-selected],
-.sp-platform-chip[data-selected]:hover {
-  --edge-lit: 0 0 0 0 transparent;
-  --surface-shadow-now: 0 0 0 0 transparent;
-  background: var(--chip-bg-selected);
-  color: var(--chip-fg-selected);
-}
-/* Focus on the selected chip. The tight ring alone vanishes in light: the
-   --ring ink against the inverted --chip-bg-selected fill is about 1.3:1,
-   so the chip only looked 2px larger (and a roving tabindex puts focus on
-   exactly this chip). A 2px band of the surface inside the fill separates
-   the ring from the chip in both themes. The ring stays tight: the rail
-   track's 2px block padding is all the room a ring has, and the offset
-   --focus-ring would clip. A pinned Start from chip (.sp-chat-chip) does
-   the same. */
-.sp-platform-chip[data-selected]:focus-visible {
-  box-shadow:
-    var(--focus-ring-tight),
-    inset 0 0 0 var(--focus-width) var(--bg-surface);
-}
-
-.sp-platform-chip__tile {
-  position: relative;
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-media-inner);
-  background: var(--chip-tile);
-  transition:
-    background var(--dur-state) var(--ease),
-    color var(--dur-state) var(--ease);
-}
-/* Hover lights the tile to --chip-tile-active and its foreground inverts,
-   so a mono mark (currentColor) still reads while the colour mark, where
-   there is one, fades in over it. Selected has its own tile since
-   2026-09-25 (paper in light, the canvas floor in dark), and mono glyphs on
-   it — the All chip's grid, marks without a colour rendition — take
-   --chip-tile-selected-fg (Deep Moss in light, Slime in dark). */
-.sp-platform-chip:hover .sp-platform-chip__tile {
-  background: var(--chip-tile-active);
-  color: var(--chip-tile-active-fg);
-}
-.sp-platform-chip[data-selected] .sp-platform-chip__tile {
-  background: var(--chip-tile-selected);
-  color: var(--chip-tile-selected-fg);
-}
-.sp-platform-chip__mark {
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  width: 20px;
-  height: 20px;
-  transition: opacity var(--dur-state) var(--ease);
-}
-.sp-platform-chip__mark--mono {
-  opacity: var(--chip-mark-mono-alpha); /* 85% light, 90% dark at rest */
-}
-.sp-platform-chip:hover .sp-platform-chip__mark--mono,
-.sp-platform-chip[data-selected] .sp-platform-chip__mark--mono {
-  opacity: 1;
-}
-.sp-platform-chip__mark--color {
-  opacity: 0;
-}
-.sp-platform-chip:hover .sp-platform-chip__mark--color,
-.sp-platform-chip[data-selected] .sp-platform-chip__mark--color {
-  opacity: 1;
-}
-.sp-platform-chip:hover .sp-platform-chip__tile[data-has-color] .sp-platform-chip__mark--mono,
-.sp-platform-chip[data-selected]
-  .sp-platform-chip__tile[data-has-color]
-  .sp-platform-chip__mark--mono {
-  opacity: 0;
-}
-/* Accent marks (Email, Website: Slime and Lapis renditions, no brand
-   colour of their own) fail contrast on the light selected tile — 1.27:1
-   and 1.47:1 on paper — so that one seat shows the mono mark in
-   --chip-tile-selected-fg instead (Deep Moss, 14.60:1). Dark tiles keep
-   the accent. No frame draws this case. */
-[data-theme="light"]
-  .sp-platform-chip[data-selected]
-  .sp-platform-chip__tile[data-mark="accent"]
-  .sp-platform-chip__mark--color {
-  opacity: 0;
-}
-[data-theme="light"]
-  .sp-platform-chip[data-selected]
-  .sp-platform-chip__tile[data-mark="accent"]
-  .sp-platform-chip__mark--mono {
-  opacity: 1;
-}
-
-.sp-platform-chip__text {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-.sp-platform-chip__label {
-  font-size: var(--type-label-size);
-  font-weight: var(--weight-ui);
-  letter-spacing: var(--type-label-track);
-  line-height: 1.25;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-/* The count line is GONE (2026-09 frames, confirmed by CJ): the chip is
-   the label and the tile alone. The cost is named and accepted — the
-   count was the only signal of how much sits behind a chip before you
-   tap it. Do not reinstate it, and do not append the number to the
-   label. */
-/* Decorative — the chip is a radio, not a way in. lucide, not the frame's
-   SF Symbol. */
-.sp-platform-chip__chevron {
-  margin-left: auto;
-  flex-shrink: 0;
-  width: 14px;
-  height: 14px;
-}
-/* A selected chip's chevron points down (2026-09-25). No transition. */
-.sp-platform-chip[data-selected] .sp-platform-chip__chevron {
-  transform: rotate(90deg);
-}
-
-/* Selected must not rely on colour alone: aria-checked carries it for
-   assistive tech, and under forced colours — which strip every fill and
-   the lit edge with it — the chip draws its own frame, selected as a
-   double rule. Label contrast, both themes, all three states (remeasured
-   2026-09-25): dark 15.7 at rest, 13.4 on hover, 19.7 selected; light
-   14.9 at rest, 14.2 on hover, 19.7 selected — all past AA. */
-@media (forced-colors: active) {
-  .sp-platform-chip {
-    border: 1px solid ButtonBorder;
-  }
-  .sp-platform-chip[data-selected] {
-    border: 3px double ButtonText;
-  }
 }
 
 /* Visually hidden live region. */
@@ -1774,8 +1424,8 @@ input[type="radio"] {
 .sp-emptystate {
   /* Fill, edge, and shadow come from the card recipe (2026-09-25; a plain
      1px --border card before). */
-  border-radius: var(--radius-card);
-  padding: var(--space-2xl) var(--space-lg);
+  border-radius: var(--radius-xl);
+  padding: var(--space-64) var(--space-32);
   text-align: center;
 }
 .sp-emptystate__title {
@@ -1790,14 +1440,14 @@ input[type="radio"] {
   font-size: var(--type-body-size);
   line-height: var(--type-body-lh);
   color: var(--text-secondary);
-  margin-top: var(--space-2xs);
+  margin-top: var(--space-8);
 }
 .sp-emptystate__actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: var(--space-2xs);
-  margin-top: var(--space-md);
+  gap: var(--space-8);
+  margin-top: var(--space-24);
 }
 
 /* --- Responsive -----------------------------------------------------------
@@ -1813,8 +1463,8 @@ input[type="radio"] {
   .sp-page {
     /* Bottom keeps the 64px rhythm, plus the home-indicator inset where
        the frame's footer links don't carry it (--frame-inset-bottom). */
-    padding: var(--space-md) var(--page-pad)
-      calc(var(--space-2xl) + var(--frame-inset-bottom, env(safe-area-inset-bottom, 0px)));
+    padding: var(--space-24) var(--page-pad)
+      calc(var(--space-64) + var(--frame-inset-bottom, env(safe-area-inset-bottom, 0px)));
   }
 }
 @media (max-width: 767px) {
@@ -1824,11 +1474,11 @@ input[type="radio"] {
      pattern change, not a rounding difference — only the templates route
      opts in, via .sp-page--bleed; every other .sp-page keeps --page-pad. */
   .sp-page--bleed {
-    padding: var(--space-md) 0
+    padding: var(--space-24) 0
       calc(30px + var(--frame-inset-bottom, env(safe-area-inset-bottom, 0px)));
   }
   .sp-page--bleed .sp-emptystate {
-    margin-inline: var(--space-sm);
+    margin-inline: var(--space-16);
   }
 
   /* iOS Safari zooms the whole page when a focused field's font-size sits
@@ -1867,13 +1517,13 @@ input[type="radio"] {
 /* Containers that were reaching for Tailwind's rounded-xl, which resolves to
    calc(--radius-control + 4px) = 9px — inside the banned 6–19 band. */
 [data-radius-card] {
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-xl);
 }
 [data-radius-control] {
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-sm);
 }
 .sp-dropzone {
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-sm);
 }
 
 .sp-chat-editor-host {
@@ -1884,7 +1534,7 @@ input[type="radio"] {
   flex-shrink: 0;
   aspect-ratio: var(--fit-ratio);
   width: min(100cqw, 100cqh * var(--fit-ratio));
-  border-radius: var(--radius-media-plate);
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 .sp-chat-editor__art {
@@ -1899,11 +1549,11 @@ input[type="radio"] {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-xs);
+  gap: var(--space-12);
   margin: 0;
-  padding: 0 var(--space-sm);
+  padding: 0 var(--space-16);
   text-align: center;
-  font-family: var(--font-ui);
+  font-family: var(--font-sans);
   font-size: var(--type-label-size);
   line-height: 1.25;
   color: var(--text-secondary);
@@ -1936,20 +1586,20 @@ input[type="radio"] {
   display: flex;
   justify-content: flex-end;
   box-sizing: border-box;
-  padding: max(var(--space-sm), env(safe-area-inset-top, 0px))
-    max(var(--space-sm), env(safe-area-inset-right, 0px))
-    max(var(--space-sm), env(safe-area-inset-bottom, 0px)) var(--space-sm);
+  padding: max(var(--space-16), env(safe-area-inset-top, 0px))
+    max(var(--space-16), env(safe-area-inset-right, 0px))
+    max(var(--space-16), env(safe-area-inset-bottom, 0px)) var(--space-16);
 }
 .sp-chat-editor-sheet__scrim {
   position: absolute;
   inset: 0;
   background: var(--media-overlay);
-  animation: sp-chat-editor-scrim-in var(--dur-panel) var(--ease);
+  animation: sp-chat-editor-scrim-in var(--motion-duration-base) var(--motion-easing-standard);
 }
 @keyframes sp-chat-editor-in {
   from {
     opacity: 0;
-    transform: translateX(var(--space-md));
+    transform: translateX(var(--space-24));
   }
 }
 @keyframes sp-chat-editor-scrim-in {
@@ -2082,7 +1732,7 @@ input[type="radio"] {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding-bottom: var(--space-xl);
+  padding-bottom: var(--space-48);
 }
 
 /* ── Generate chat: the thread (frames 04 and 05, "Thread") ──────────────
@@ -2238,7 +1888,7 @@ input[type="radio"] {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--space-md) 0 var(--space-xl);
+  padding: var(--space-24) 0 var(--space-48);
   overflow-y: auto;
 }
 .sp-chat-unavailable > .sp-emptystate {
@@ -2314,11 +1964,11 @@ input[type="radio"] {
    and reads as the recommended path, which is the opposite of the intent. */
 .sp-btn[data-tone="danger"] {
   background: transparent;
-  color: var(--state-danger-on-surface);
-  border-color: var(--state-danger-on-surface);
+  color: var(--feedback-error);
+  border-color: var(--feedback-error);
 }
 .sp-btn[data-tone="danger"]:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--state-danger-on-surface) 8%, transparent);
+  background: color-mix(in srgb, var(--feedback-error) 8%, transparent);
 }
 
 /* Selection is neutral everywhere it appears — the nav's active pill on
@@ -2327,13 +1977,13 @@ input[type="radio"] {
    vanish against a black or white swatch. The editor blue is the marker colour and reads
    against every hue in the picker. */
 .sp-swatch[data-selected="true"] {
-  border-color: var(--ring);
+  border-color: var(--border-focus);
 }
 
 /* Functional signals (danger, warning) keep their hue. Success takes the
    neutral emphasis fill — no brand colour, and no hue, means success. */
 .sp-toast[data-tone="danger"] {
-  border-top-color: var(--state-danger);
+  border-top-color: var(--feedback-error);
 }
 .sp-toast[data-tone="warning"] {
   border-top-color: var(--state-warning);
@@ -2350,7 +2000,7 @@ input[type="radio"] {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-sm);
+  gap: var(--space-16);
   text-align: center;
 }
 
@@ -2367,20 +2017,20 @@ input[type="radio"] {
   align-items: center;
   justify-content: center;
   min-height: 0;
-  margin-bottom: var(--space-sm);
+  margin-bottom: var(--space-16);
   box-sizing: border-box;
   padding: 40px;
-  border-radius: var(--radius-card);
-  background: var(--gen-sunken);
+  border-radius: var(--radius-xl);
+  background: var(--surface-sunken);
   container-type: size;
 }
 .sp-chat-stage .sp-chat-editor__graphic {
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 2px 8px 0 var(--shadow-raised);
 }
 @media (max-width: 767px) {
   .sp-chat-stage {
-    padding: var(--space-sm);
+    padding: var(--space-16);
   }
 }
 .sp-chat-split[data-view="edit"] .sp-chat-split__chat {
@@ -2416,7 +2066,7 @@ input[type="radio"] {
   border-radius: var(--radius-tag);
   background: var(--gen-marker-bg);
   color: var(--gen-marker-fg);
-  font-family: var(--font-ui);
+  font-family: var(--font-sans);
   font-size: 11px;
   line-height: 1.3;
   white-space: nowrap;

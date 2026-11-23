@@ -1826,7 +1826,7 @@ button.ui-detail-tag__value {
   justify-content: center;
   width: 40px;
   height: 40px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-full);
   background: var(--surface-raised);
   color: var(--text-primary);
 }
@@ -1935,23 +1935,23 @@ button.ui-detail-tag__value {
   display: inline-flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--space-2xs);
+  gap: var(--space-8);
   width: 132px;
-  color: var(--text-strong);
+  color: var(--text-primary);
 }
 .ui-variation-tile__ring {
   box-sizing: border-box;
   display: block;
   width: 132px;
   padding: 2px; /* as drawn (104:918) */
-  border-radius: var(--radius-control-md);
+  border-radius: var(--radius-sm);
 }
 .ui-variation-tile__thumb {
   display: block;
   width: 128px;
   height: 160px;
   overflow: hidden;
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-sm);
 }
 .ui-variation-tile:hover .ui-variation-tile__ring,
 .ui-variation-tile[data-demo-state="hover"] .ui-variation-tile__ring {
@@ -1959,7 +1959,7 @@ button.ui-detail-tag__value {
 }
 .ui-variation-tile[data-selected] .ui-variation-tile__ring,
 .ui-variation-tile[data-demo-state="selected"] .ui-variation-tile__ring {
-  box-shadow: 0 0 0 1px var(--text-strong);
+  box-shadow: 0 0 0 1px var(--text-primary);
 }
 .ui-variation-tile:focus-visible {
   outline: none;
@@ -1967,7 +1967,7 @@ button.ui-detail-tag__value {
 .ui-variation-tile:focus-visible .ui-variation-tile__ring,
 .ui-variation-tile[data-demo-state="focus"] .ui-variation-tile__ring {
   outline: 2px solid transparent;
-  box-shadow: 0 0 0 var(--focus-width) var(--ring);
+  box-shadow: 0 0 0 var(--stroke-focus) var(--border-focus);
 }
 
 /* ── Card (2215:141): a raised surface at radius/xl with a hairline edge, 24

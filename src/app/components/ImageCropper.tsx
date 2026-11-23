@@ -121,7 +121,7 @@ export function ImageCropper({
       role="dialog"
       aria-modal="true"
       aria-label="Crop image"
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/95 p-4 animate-in fade-in duration-[var(--dur-panel)]"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/95 p-4 animate-in fade-in duration-[var(--motion-duration-base)]"
     >
       <div className="relative w-full max-w-2xl h-[60vh] overflow-hidden sp-card">
         <Cropper
@@ -137,7 +137,7 @@ export function ImageCropper({
 
       <div className="w-full max-w-2xl mt-6 space-y-6">
         <div className="flex items-center gap-4">
-          <span id="crop-zoom-label" className="text-sm" style={{ color: "var(--text-muted)" }}>
+          <span id="crop-zoom-label" className="text-sm" style={{ color: "var(--text-secondary)" }}>
             Zoom
           </span>
           <input
@@ -148,8 +148,8 @@ export function ImageCropper({
             step={0.1}
             aria-labelledby="crop-zoom-label"
             onChange={(e) => setZoom(Number(e.target.value))}
-            className="w-full h-2 appearance-none cursor-pointer accent-[var(--ring)]"
-            style={{ background: "var(--bg-hover)", borderRadius: "var(--radius-control)" }}
+            className="w-full h-2 appearance-none cursor-pointer accent-[var(--border-focus)]"
+            style={{ background: "var(--bg-hover)", borderRadius: "var(--radius-sm)" }}
           />
         </div>
 

@@ -44,7 +44,7 @@ function ShapeSwatch({ width, height }: { width: number; height: number }) {
         style={{
           width: w,
           height: h,
-          border: "1.5px solid var(--text-muted)",
+          border: "1.5px solid var(--text-secondary)",
           borderRadius: 2,
         }}
       />
@@ -183,7 +183,7 @@ export function CanvasSizePicker({
                           className="block"
                           style={{
                             fontSize: "var(--type-caption-size)",
-                            color: "var(--text-muted)",
+                            color: "var(--text-secondary)",
                           }}
                         >
                           {s.width}×{s.height} · {aspectRatioOf(s.width, s.height)}
@@ -233,7 +233,7 @@ export function CanvasSizePicker({
                   data-radius-control
                   style={{
                     border: "1px solid var(--border-strong)",
-                    background: "var(--bg-surface)",
+                    background: "var(--surface-raised)",
                     fontSize: "var(--type-label-size)",
                     color: "var(--text-primary)",
                   }}

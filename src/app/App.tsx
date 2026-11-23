@@ -235,7 +235,7 @@ function Screen() {
           <button
             onClick={canvaReturn.dismiss}
             aria-label="Dismiss"
-            style={{ color: "var(--text-muted)" }}
+            style={{ color: "var(--text-secondary)" }}
           >
             ×
           </button>

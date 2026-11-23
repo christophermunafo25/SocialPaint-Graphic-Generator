@@ -118,8 +118,8 @@ function Swatch({
         width: size,
         height: size,
         flexShrink: 0,
-        borderRadius: "var(--radius-control)",
-        border: selected ? "2px solid var(--ring)" : "1px solid var(--border-strong)",
+        borderRadius: "var(--radius-sm)",
+        border: selected ? "2px solid var(--border-focus)" : "1px solid var(--border-strong)",
         background: fillSwatchCss(css),
         cursor: disabled ? "default" : "pointer",
         opacity: disabled ? 0.5 : 1,
@@ -353,11 +353,11 @@ export function FillPicker({
         maxHeight,
         overflowY: "auto",
         zIndex: "var(--z-popover)" as unknown as number,
-        background: "var(--bg-surface)",
-        border: "1px solid var(--border)",
-        borderRadius: "var(--radius-card)",
-        padding: "var(--space-xs)",
-        gap: "var(--space-xs)",
+        background: "var(--surface-raised)",
+        border: "1px solid var(--border-subtle)",
+        borderRadius: "var(--radius-xl)",
+        padding: "var(--space-12)",
+        gap: "var(--space-12)",
       }}
     >
       {/* Tabs */}
@@ -438,7 +438,7 @@ export function FillPicker({
               <div
                 className="flex items-center"
                 style={{
-                  gap: "var(--space-2xs)",
+                  gap: "var(--space-8)",
                   display: gradient.kind === "radial" ? "none" : undefined,
                 }}
               >
@@ -498,7 +498,7 @@ export function FillPicker({
               {gradient.stops.map((stop, i) => {
                 const p = parseHex(stop.color);
                 return (
-                  <div key={i} className="flex items-center" style={{ gap: "var(--space-2xs)" }}>
+                  <div key={i} className="flex items-center" style={{ gap: "var(--space-8)" }}>
                     <NumericField
                       suffix="%"
                       ariaLabel={`Stop ${i + 1} position`}
@@ -555,7 +555,9 @@ export function FillPicker({
                       }}
                       style={{
                         color:
-                          gradient.stops.length <= 2 ? "var(--text-disabled)" : "var(--text-muted)",
+                          gradient.stops.length <= 2
+                            ? "var(--text-disabled)"
+                            : "var(--text-secondary)",
                         display: "flex",
                         flexShrink: 0,
                       }}
@@ -581,8 +583,8 @@ export function FillPicker({
             style={{
               position: "relative",
               height: 120,
-              borderRadius: "var(--radius-control)",
-              border: "1px solid var(--border)",
+              borderRadius: "var(--radius-sm)",
+              border: "1px solid var(--border-subtle)",
               background: `linear-gradient(to top, black, transparent), linear-gradient(to right, white, hsl(${hsv.h} 100% 50%))`,
               cursor: locked ? "default" : "crosshair",
               touchAction: "none",
@@ -607,7 +609,7 @@ export function FillPicker({
             style={{
               position: "relative",
               height: 12,
-              borderRadius: "var(--radius-pill)",
+              borderRadius: "var(--radius-full)",
               background:
                 "linear-gradient(to right, hsl(0 100% 50%), hsl(60 100% 50%), hsl(120 100% 50%), hsl(180 100% 50%), hsl(240 100% 50%), hsl(300 100% 50%), hsl(360 100% 50%))",
               cursor: locked ? "default" : "pointer",
@@ -632,7 +634,7 @@ export function FillPicker({
             style={{
               position: "relative",
               height: 12,
-              borderRadius: "var(--radius-pill)",
+              borderRadius: "var(--radius-full)",
               background: `linear-gradient(to right, transparent, ${opaqueHex}), ${checkerCss}`,
               cursor: locked ? "default" : "pointer",
               touchAction: "none",
@@ -643,14 +645,14 @@ export function FillPicker({
           </div>
 
           {/* Format + value + alpha */}
-          <div className="flex items-center" style={{ gap: "var(--space-2xs)" }}>
+          <div className="flex items-center" style={{ gap: "var(--space-8)" }}>
             <select
               className="sp-input"
               style={{
                 ...compactControlStyle,
                 width: 58,
                 flexShrink: 0,
-                padding: "0 var(--space-3xs)",
+                padding: "0 var(--space-4)",
               }}
               aria-label="Color format"
               value={format}
@@ -686,7 +688,7 @@ export function FillPicker({
               at pick time, never a live binding back to Brand Studio. */}
           <span style={sectionLabel}>Brand colors</span>
           {(kit?.colors.length ?? 0) > 0 ? (
-            <div className="flex flex-wrap" style={{ gap: "var(--space-3xs)" }}>
+            <div className="flex flex-wrap" style={{ gap: "var(--space-4)" }}>
               {kit!.colors.map((c: BrandColor) => (
                 <Swatch
                   key={c.key}
@@ -723,7 +725,7 @@ export function FillPicker({
           {recents.length > 0 && (
             <>
               <span style={sectionLabel}>Recent</span>
-              <div className="flex flex-wrap" style={{ gap: "var(--space-3xs)" }}>
+              <div className="flex flex-wrap" style={{ gap: "var(--space-4)" }}>
                 {recents.map((hex) => (
                   <Swatch
                     key={hex}
@@ -836,7 +838,7 @@ export function RadialFields({
   const labelStyle: React.CSSProperties = { ...inspectorLabelStyle, width: 44 };
   return (
     <>
-      <div className="flex items-center" style={{ gap: "var(--space-2xs)" }}>
+      <div className="flex items-center" style={{ gap: "var(--space-8)" }}>
         <span style={labelStyle}>Center</span>
         {field("X", "Gradient center X", cx, (v) => ({
           ...gradient,
@@ -847,7 +849,7 @@ export function RadialFields({
           center: { x: cx, y: v },
         }))}
       </div>
-      <div className="flex items-center" style={{ gap: "var(--space-2xs)" }}>
+      <div className="flex items-center" style={{ gap: "var(--space-8)" }}>
         <span style={labelStyle}>Size</span>
         {field(
           "W",
@@ -906,8 +908,8 @@ function GradientBar({
       style={{
         position: "relative",
         height: 20,
-        borderRadius: "var(--radius-control)",
-        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-sm)",
+        border: "1px solid var(--border-subtle)",
         background: `${previewCss}, ${checkerCss}`,
       }}
     >
@@ -958,7 +960,7 @@ function GradientBar({
             height: 14,
             borderRadius: "50%",
             background: stop.color.slice(0, 7),
-            border: i === stopIndex ? "2px solid var(--ring)" : "2px solid var(--bg-plate)",
+            border: i === stopIndex ? "2px solid var(--border-focus)" : "2px solid var(--bg-plate)",
             boxShadow: "0 0 0 1px var(--border-strong)",
             cursor: disabled ? "default" : "ew-resize",
             touchAction: "none",

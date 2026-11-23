@@ -27,7 +27,7 @@ export function PublicLinkUnavailable({
   return (
     <div
       className="flex flex-col items-center justify-center text-center"
-      style={{ minHeight: "60vh", gap: "var(--space-xs)" }}
+      style={{ minHeight: "60vh", gap: "var(--space-12)" }}
     >
       <div style={{ maxWidth: 440 }}>
         <h1 className="sp-page-title">{copy.title}</h1>
@@ -35,7 +35,7 @@ export function PublicLinkUnavailable({
           style={{
             fontSize: "var(--type-label-size)",
             color: "var(--text-secondary)",
-            marginTop: "var(--space-2xs)",
+            marginTop: "var(--space-8)",
           }}
         >
           {copy.detail}
@@ -46,7 +46,7 @@ export function PublicLinkUnavailable({
           kind="primary"
           icon={RefreshCw}
           onClick={onRetry}
-          style={{ marginTop: "var(--space-2xs)" }}
+          style={{ marginTop: "var(--space-8)" }}
         >
           Try again
         </Button>

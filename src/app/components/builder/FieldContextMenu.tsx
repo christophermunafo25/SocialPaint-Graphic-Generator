@@ -54,9 +54,9 @@ export function FieldContextMenu({ x, y, actions, onClose }: FieldContextMenuPro
         top,
         minWidth: 180,
         maxHeight,
-        background: "var(--bg-surface)",
+        background: "var(--surface-raised)",
         border: "1px solid var(--border-strong)",
-        borderRadius: "var(--radius-card)",
+        borderRadius: "var(--radius-xl)",
       }}
       onContextMenu={(e) => e.preventDefault()}
     >
@@ -74,7 +74,7 @@ export function FieldContextMenu({ x, y, actions, onClose }: FieldContextMenuPro
             color: a.destructive ? "var(--destructive)" : "var(--text-primary)",
             opacity: a.disabled ? 0.4 : 1,
             cursor: a.disabled ? "default" : "pointer",
-            borderTop: a.separated ? "1px solid var(--border)" : undefined,
+            borderTop: a.separated ? "1px solid var(--border-subtle)" : undefined,
             marginTop: a.separated ? 4 : undefined,
             paddingTop: a.separated ? 6 : undefined,
           }}
@@ -88,7 +88,11 @@ export function FieldContextMenu({ x, y, actions, onClose }: FieldContextMenuPro
           {a.label}
           {a.shortcut && (
             <span
-              style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text-muted)" }}
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                color: "var(--text-secondary)",
+              }}
             >
               {a.shortcut}
             </span>

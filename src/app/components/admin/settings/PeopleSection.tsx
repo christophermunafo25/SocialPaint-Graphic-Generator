@@ -163,7 +163,7 @@ export function PeopleSection() {
         </div>
 
         {membersState.status === "loading" ? (
-          <SkeletonRows rows={3} inset="var(--space-xs) 0" label="Loading your team" />
+          <SkeletonRows rows={3} inset="var(--space-12) 0" label="Loading your team" />
         ) : membersState.status === "error" ? (
           <ErrorState
             title="We couldn't load your team."

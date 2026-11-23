@@ -6,7 +6,7 @@
  * tokens. Never edit tokens.css by hand: change Figma, re-export the JSON,
  * then run `npm run tokens`. `npm run tokens:check` fails when tokens.css is
  * out of date with the JSON, or when another stylesheet in src/styles
- * declares a name that tokens.css or legacy-bridge.css owns at theme level
+ * declares a name that tokens.css owns at theme level
  * (CI runs it through `npm run verify`).
  *
  * Output:
@@ -241,29 +241,13 @@ function themeLevelDeclarations(text) {
 
 async function findShadows() {
   const stylesDir = path.dirname(OUT);
-  const bridgePath = path.join(stylesDir, "legacy-bridge.css");
   const owned = declaredNames(formatted);
-  let bridged = new Set();
-  try {
-    const bridge = await readFile(bridgePath, "utf8");
-    bridged = declaredNames(stripComments(bridge));
-    for (const name of bridged) {
-      if (owned.has(name)) {
-        problems.push(`legacy-bridge.css redefines ${name}, which tokens.css owns`);
-      }
-    }
-  } catch {
-    /* no bridge (after the new-brand program's Phase 10) */
-  }
-  const files = (await readdir(stylesDir)).filter(
-    (f) => f.endsWith(".css") && !["tokens.css", "legacy-bridge.css"].includes(f),
-  );
+  const files = (await readdir(stylesDir)).filter((f) => f.endsWith(".css") && f !== "tokens.css");
   for (const file of files) {
     const text = await readFile(path.join(stylesDir, file), "utf8");
     for (const d of themeLevelDeclarations(text)) {
-      if (owned.has(d.name) || bridged.has(d.name)) {
-        const owner = owned.has(d.name) ? "tokens.css" : "legacy-bridge.css";
-        problems.push(`${file}:${d.line} declares ${d.name} in ${d.scope}; ${owner} owns it`);
+      if (owned.has(d.name)) {
+        problems.push(`${file}:${d.line} declares ${d.name} in ${d.scope}; tokens.css owns it`);
       }
     }
   }

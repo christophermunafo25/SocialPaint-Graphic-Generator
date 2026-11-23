@@ -8,7 +8,7 @@ export function ConfigFailureScreen() {
   return (
     <div
       className="min-h-screen flex items-center justify-center px-6"
-      style={{ background: "var(--bg-canvas)", fontFamily: "var(--font-ui)" }}
+      style={{ background: "var(--surface-page)", fontFamily: "var(--font-sans)" }}
     >
       <div className="text-center space-y-3" style={{ maxWidth: 440 }}>
         <p style={{ fontSize: 16, fontWeight: "var(--weight-ui)", color: "var(--text-primary)" }}>
@@ -18,7 +18,7 @@ export function ConfigFailureScreen() {
           The service is missing part of its deployment configuration, so it can't sign you in or
           save anything you make.
         </p>
-        <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-muted)" }}>
+        <p style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}>
           The deployment is missing its configuration. Your account and this device are fine. Please
           contact whoever runs this site.
         </p>

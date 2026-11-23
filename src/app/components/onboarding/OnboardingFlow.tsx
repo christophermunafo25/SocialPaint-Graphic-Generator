@@ -481,8 +481,8 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
             ariaLabel={`${c.name}, ${c.hex}`}
             swatchStyle={
               shape === "dot"
-                ? { width: 40, height: 40, borderRadius: "var(--radius-pill)" }
-                : { width: "100%", height: 48, borderRadius: "var(--radius-control)" }
+                ? { width: 40, height: 40, borderRadius: "var(--radius-full)" }
+                : { width: "100%", height: 48, borderRadius: "var(--radius-sm)" }
             }
           />
           {shape === "card" && <span className="t-mono-s sp-onb-muted">{c.hex.toUpperCase()}</span>}
@@ -1085,6 +1085,7 @@ function FontPick({
   return (
     <div className="sp-onb-font-card">
       {/* The brand's own face (content, PHASE-9 §9 D3) on the title step. */}
+      {/* eslint-disable-next-line no-restricted-syntax -- the tenant's font is content */}
       <span className="t-title-page" style={{ fontFamily: value }} aria-hidden>
         Aa
       </span>

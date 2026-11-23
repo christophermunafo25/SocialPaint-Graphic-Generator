@@ -24,8 +24,8 @@ Phase E1 points `CLAUDE.md` at this file.
 
 - Components read semantic tokens from the Color collection: `--surface-*` (page, raised, sunken, field, card, shell, stage, soft, inverse, overlay, scrim, skeleton), `--text-*`, `--border-*` (subtle, strong, field, field-hover, raised, control, focus), `--action-*`, `--state-*`, `--control-*`, `--status-*`, `--feedback-*`, `--editor-selection`, `--plate-dark`, `--plate-light` and `--logo-ink`, the `--accent-*`, `--deep-*`, `--tint-*` and `--wash-*` families, `--shadow-*`, `--bevel-*` and `--glow-accent`. From Scale they read `--space-*`, `--radius-*`, `--size-control-*`, `--size-icon-*`, `--stroke-*`, `--focus-offset`, `--layout-shell-inset` and `--motion-*`. Add the elevation composites and the text style classes and that is everything.
 - Never read a primitive (`--gray-900`, `--neutral-0`, `--green-slime`, `--alpha-ink-45`) in a component, and never write a raw color. The `--neutral-*` primitives exist for template content only.
-- New code never reads a name from the earlier systems. `BRIDGE.md` and `docs/design/new-brand/BRIDGE.md` list them. A phase removes the bridged names its screens stop using, and Phase E9 deletes the rest.
-- `npm run tokens:check` fails if any stylesheet declares a token-owned or bridged name at theme level. Override a token inside a component selector only when a frame shows that component on a different surface.
+- New code never reads a name from the earlier systems. `BRIDGE.md` and `docs/design/new-brand/BRIDGE.md` list them. Phase E9 deleted `legacy-bridge.css` (2026-11-23), so no bridged name exists any more.
+- `npm run tokens:check` fails if any stylesheet declares a token-owned name at theme level. Override a token inside a component selector only when a frame shows that component on a different surface.
 - Themes are `[data-theme="light"]` and `[data-theme="dark"]` on `<html>`. A nested `[data-theme]` recomputes every token and composite, which is how the sign-in gate and onboarding stay Light. Logo plates do not need a nested theme any more: `--plate-dark` and `--plate-light` are the same in both themes.
 
 ## 4. Corners, spacing, sizes and elevation

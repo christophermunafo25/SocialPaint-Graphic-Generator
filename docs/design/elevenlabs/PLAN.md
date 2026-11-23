@@ -38,7 +38,7 @@ Made while building the system. Built as written unless CJ overturns one.
 3. **Search Field has two sizes.** Large is 46 and sits beside the Platform Chips. Medium is 36 and sits beside other controls in the builder's filter bars.
 4. **The filter bar is 46.** Platform Chips and the Large Search Field are `--size-control-lg` with a hairline edge included, so every state of the chip is 46. The selected chip draws its edge in its own fill color.
 5. **Logo plates are tokens.** `plate/dark` and `plate/light` stay the same in both themes, replacing the two hex values `socialpaint.css` declared. The Logo Card's light ground used `--surface-page`, which turned dark in Dark, and now reads `--plate-light`.
-6. **Bevels and the accent glow stay as transparent tokens** so the elevation composites keep one shape in code. Phase E9 decides whether to delete them.
+6. **Bevels and the accent glow stay as transparent tokens** so the elevation composites keep one shape in code. CJ kept them at Phase E9 (2026-11-23).
 7. **Field holds a Medium control** and its help text stays off.
 8. **Composer · Inline is the Composer.** The earlier Composer (`2216:222`) is deleted from the file. The new one is `6024:218`.
 9. **`LookTile` becomes `VariationTile`** when Phase E4 touches Generate. The Figma component is Variation Tile (`2216:315`).
@@ -96,8 +96,8 @@ One pull request per phase into `main`.
 | E5 | Template Builder | The list and its dialogs, the editor chrome, the stage, the variations bar, the 320 inspector | Same, and the fidelity checker passes | Done (#214) |
 | E6 | Brand Studio | Overview and the eighteen detail states, built from the ElevenLabs frames (replaces new-brand Phase 7) | Same | Done (#215) |
 | E7 | Settings and Insights | Seven sections and the dashboard with the Metrics' roll (`PROMPT.md` section 7.7), replacing new-brand Phase 8 | Same | Done (#217) |
-| E8 | Sign in and Create account | Eight gate screens and ten onboarding steps, Light only (replaces new-brand Phase 9) | Screens match their frames | Built, pull request open |
-| E9 | Cleanup | Everything new-brand Phase 10 owes, plus the transparent bevel and glow tokens if CJ agrees, and any bridged name the ElevenLabs phases stopped reading | Nothing legacy left | Not started |
+| E8 | Sign in and Create account | Eight gate screens and ten onboarding steps, Light only (replaces new-brand Phase 9) | Screens match their frames | Done (#218) |
+| E9 | Cleanup | Everything new-brand Phase 10 owes, plus the transparent bevel and glow tokens if CJ agrees, and any bridged name the ElevenLabs phases stopped reading | Nothing legacy left | Built, pull request open |
 
 ### What Phase E2 left for later phases
 
@@ -138,6 +138,17 @@ One pull request per phase into `main`.
 - The progress bars (font upload, import) are the Progress primitive. The frames draw a 4 track with an `--accent-green` bar.
 
 The new-brand program split tokens from primitives, and this one keeps them together in Phase E1. The ElevenLabs values turn the page and raised surfaces white in Light, so a token-only diff would leave fields, cards and progress tracks invisible on `main` until the next phase merged. Folding the primitives in keeps every screen whole at every merge.
+
+## What Phase E9 left
+
+Phase E9 deleted `legacy-bridge.css`, the `.tu-*` classes, the dead rules and custom properties in `socialpaint.css`, and 43 unused packages, and added a lint rule against raw hex and inline type in style props. Its gate, nothing legacy left, is met only in part. What a grep still finds:
+
+- The earlier control classes `.sp-btn`, `.sp-input`, `.sp-icon-btn`, `.sp-seg` and `.sp-tabstrip`, in the builder's popovers and dialogs (`BackgroundReflowDialog`, `CanvasSizePicker`, `FillPicker`, `IconPicker`, `ShortcutsPanel`) and `ImageSourceChooser`. No frame draws these surfaces.
+- `socialpaint.css`'s own theme layer (the `--bg-*`, `--nav-*`, `--icon-btn-*`, `--state-*` and edge names, some on raw values), which those surfaces and a few older rules still read. Its header lists it.
+- The lint rule's ratchet list in `eslint.config.js`: fourteen older files still on inline type. A file leaves the list when it moves onto the `.t-*` classes.
+- The contrast and keyboard pass new-brand Phase 10 owed.
+
+CJ's calls at E9 (2026-11-23): the `company_canvas_presets` table and the unread `brand_kits` font columns stay (no drop migrations), and the transparent bevel and glow tokens stay.
 
 ## Screen map
 

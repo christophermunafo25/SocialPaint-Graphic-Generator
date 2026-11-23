@@ -66,12 +66,12 @@ What that phase still owes after #182, and where this program picks each up:
 
 | Owed | Here |
 |---|---|
-| Delete `legacy-bridge.css` and the dead tokens | Phase 10 |
-| Delete the earlier control classes. Still read after Phase 6b, all in `builder/` apart from one `.sp-tabstrip` in `ImageSourceChooser.tsx`: `.sp-btn` in 3 files (`BackgroundReflowDialog`, `CanvasSizePicker`, `ShortcutsPanel`), `.sp-input` in 2 (`FillPicker`, `IconPicker`), `.sp-icon-btn` in 1 (`CanvasSizePicker`), `.sp-seg` in 1 (`FillPicker`), `.sp-tabstrip` in 3 (`FillPicker`, `CanvasSizePicker`, `ImageSourceChooser`). These are the popovers and dialogs the editor's frames do not draw. The `.sp-chat-*` control set and `.sp-chip` are gone | Phase 10 |
-| Drop the unread `company_canvas_presets` table and the unread `brand_kits` font columns (migrations 0046 and 0047 are promised to them) | Phase 10 |
-| Remove the never-imported packages | Phase 10 |
-| Lint rules against raw colors and inline type. There is no automated check today: the rule is prose in `CLAUDE.md` and a line in the phase reviewer's checklist | Phase 10 |
-| A contrast and keyboard pass, `ARCHITECTURE.md`, the stylesheet header | Phase 10 |
+| Delete `legacy-bridge.css` and the dead tokens | Done in ElevenLabs Phase E9 |
+| Delete the earlier control classes. Still read after Phase 6b, all in `builder/` apart from one `.sp-tabstrip` in `ImageSourceChooser.tsx`: `.sp-btn` in 3 files (`BackgroundReflowDialog`, `CanvasSizePicker`, `ShortcutsPanel`), `.sp-input` in 2 (`FillPicker`, `IconPicker`), `.sp-icon-btn` in 1 (`CanvasSizePicker`), `.sp-seg` in 1 (`FillPicker`), `.sp-tabstrip` in 3 (`FillPicker`, `CanvasSizePicker`, `ImageSourceChooser`). These are the popovers and dialogs the editor's frames do not draw. The `.sp-chat-*` control set and `.sp-chip` are gone | Still open after ElevenLabs Phase E9 |
+| Drop the unread `company_canvas_presets` table and the unread `brand_kits` font columns (migrations 0046 and 0047 are promised to them) | Left out of ElevenLabs Phase E9 by CJ (2026-11-23) |
+| Remove the never-imported packages | Done in ElevenLabs Phase E9 (43 packages) |
+| Lint rules against raw colors and inline type. There is no automated check today: the rule is prose in `CLAUDE.md` and a line in the phase reviewer's checklist | Done in ElevenLabs Phase E9 (no-restricted-syntax, with a ratchet list) |
+| A contrast and keyboard pass, `ARCHITECTURE.md`, the stylesheet header | ARCHITECTURE.md and the header done in ElevenLabs Phase E9; the contrast and keyboard pass is still open |
 
 `docs/brand-system/` Phase 6 is gated on "new-look Phase 9 merged". That phase will not finish as written, so CJ decides whether #182 satisfies the gate or Track B waits for this program's Phase 7, which rebuilds the same Brand Studio screens.
 

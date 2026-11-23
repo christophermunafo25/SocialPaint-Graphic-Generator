@@ -447,7 +447,7 @@ function ResizeHandles({
             style={{
               width: 8,
               height: 8,
-              background: "var(--bg-surface)",
+              background: "var(--surface-raised)",
               border: "var(--editor-line) solid var(--editor-accent)",
             }}
           />
@@ -2166,7 +2166,7 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
                     className="absolute -top-4 left-0 rounded whitespace-nowrap"
                     style={{
                       background: overflow ? "var(--destructive)" : "var(--editor-accent)",
-                      color: "var(--text-on-action)",
+                      color: "var(--text-inverse)",
                       fontSize: 9,
                       fontWeight: 500,
                       padding: "1px 4px",
@@ -2619,7 +2619,7 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                padding: "var(--space-md)",
+                padding: "var(--space-24)",
                 pointerEvents: "none",
                 zIndex: 1,
               }}
@@ -2630,11 +2630,11 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
                   textAlign: "center",
                   fontSize: "var(--type-label-size)",
                   lineHeight: 1.55,
-                  color: "var(--text-muted)",
-                  background: "var(--bg-surface)",
+                  color: "var(--text-secondary)",
+                  background: "var(--surface-raised)",
                   border: "1px solid var(--border-strong)",
-                  borderRadius: "var(--radius-control)",
-                  padding: "var(--space-2xs) var(--space-xs)",
+                  borderRadius: "var(--radius-sm)",
+                  padding: "var(--space-8) var(--space-12)",
                 }}
               >
                 {emptyHint}
