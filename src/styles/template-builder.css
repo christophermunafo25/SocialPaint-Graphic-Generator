@@ -1396,5 +1396,7 @@
 .sp-fill-value {
   flex: 1;
   min-width: 0;
+  /* Caption size, as the field drew before: a full #RRGGBB fits the row. */
+  font: var(--type-caption-m);
   font-family: var(--font-mono);
 }
