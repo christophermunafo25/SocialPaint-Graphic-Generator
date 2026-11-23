@@ -266,6 +266,10 @@ export interface SegmentedControlProps {
   onSelect(id: string): void;
   "aria-label"?: string;
   "aria-labelledby"?: string;
+  /** Every segment is disabled (a locked layer's fill type). */
+  disabled?: boolean;
+  /** The segments share the row's width equally. */
+  stretch?: boolean;
   className?: string;
 }
 
@@ -285,6 +289,8 @@ export function SegmentedControl({
   onSelect,
   "aria-label": ariaLabel,
   "aria-labelledby": ariaLabelledBy,
+  disabled = false,
+  stretch = false,
   className,
 }: SegmentedControlProps) {
   const selectedIndex = options.findIndex((o) => o.id === selectedId);
@@ -365,6 +371,8 @@ export function SegmentedControl({
       role="radiogroup"
       aria-label={ariaLabel}
       aria-labelledby={ariaLabelledBy}
+      aria-disabled={disabled || undefined}
+      data-stretch={stretch || undefined}
       className={cx("ui-segmented", className)}
     >
       <span className="ui-segmented__goo" aria-hidden>
@@ -384,6 +392,7 @@ export function SegmentedControl({
             selected={selected}
             dot={option.dot}
             title={option.title}
+            disabled={disabled}
             // detail is 0 when Space or Enter clicks the button.
             onClick={(e) => select(option, e.detail !== 0)}
             {...roving}

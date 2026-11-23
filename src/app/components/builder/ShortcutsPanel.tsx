@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { Button } from "../primitives";
 
 interface Row {
   keys: string;
@@ -132,9 +133,9 @@ export function ShortcutsPanel({ isMac, onClose }: { isMac: boolean; onClose(): 
           >
             Keyboard shortcuts
           </h2>
-          <button onClick={onClose} className="sp-btn sp-btn-ghost" style={{ minHeight: 32 }}>
+          <Button kind="ghost" size="sm" onClick={onClose}>
             Close
-          </button>
+          </Button>
         </header>
         <div
           className="grid gap-x-8 gap-y-5"

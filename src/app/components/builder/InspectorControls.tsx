@@ -38,13 +38,6 @@ export const endInspectorGesture = (): void => {
 };
 export const inspectorGestureActive = (): boolean => gestureDepth > 0;
 
-/** The fill picker's compact inputs (FillPicker), until its own pass. */
-export const compactControlStyle: React.CSSProperties = {
-  height: "var(--row-h-compact)",
-  padding: "0 var(--space-8)",
-  fontSize: "var(--type-label-size)",
-};
-
 /** One section (322:380): its name in Mono/Eyebrow, then its rows, 12
  * apart. `headerExtra` sits at the end of the name's line (the add and
  * remove of an optional property). */

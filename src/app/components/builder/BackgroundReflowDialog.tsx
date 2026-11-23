@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { SignedImg } from "../SignedImg";
 import { useSignedUrl } from "@/lib/render/useSignedUrl";
 import { dominantEdgeColor } from "@/lib/templates/edgeColor";
+import { Button } from "../primitives";
 
 /** One crop preview: the background image inside a box of the given canvas
  * aspect, cover-cropped exactly as the renderer will crop it. */
@@ -133,19 +134,20 @@ export function BackgroundReflowDialog({
         )}
 
         <div className="space-y-2">
-          <button className="sp-btn sp-btn-primary w-full" onClick={onKeep}>
+          <Button kind="primary" className="w-full" onClick={onKeep}>
             Keep the image and accept the crop
-          </button>
-          <button
-            className="sp-btn w-full"
+          </Button>
+          <Button
+            kind="neutral"
+            className="w-full"
             onClick={() => void pickSolid()}
             disabled={!image.url || sampling}
           >
             {sampling ? "Reading the image…" : "Swap to a solid color from the image's edges"}
-          </button>
-          <button className="sp-btn sp-btn-ghost w-full" onClick={onRemove}>
+          </Button>
+          <Button kind="ghost" className="w-full" onClick={onRemove}>
             Remove it (I'll upload a replacement)
-          </button>
+          </Button>
         </div>
       </div>
     </div>

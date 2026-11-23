@@ -9,12 +9,12 @@
    here now reads a semantic token or one of this file's own names.
 
    What is left in this file is the earlier system that screens the
-   ElevenLabs frames never drew still use: the builder's popovers and
-   dialogs (.sp-tabstrip, .sp-icon-cell, the upload chip, the dropzone),
-   the toast, the card and empty-state recipes, and the theme layer that
-   feeds them (the --bg-*, --nav-*, --icon-btn-* and edge names, some on
-   raw values). New code reads tokens.css and the primitives, never this
-   file's names. docs/design/elevenlabs/RULES.md wins where they disagree.
+   ElevenLabs frames never drew still use: the icon picker's cells, the
+   upload chip, the dropzone, the toast, the card and empty-state recipes,
+   and the theme layer that feeds them (the --bg-*, --icon-btn-bg-hover and
+   edge names, some on raw values). The builder's popovers and dialogs read
+   the primitives since the follow-up to Phase E9. New code reads tokens.css
+   and the primitives, never this file's names. docs/design/elevenlabs/RULES.md wins where they disagree.
    ========================================================================== */
 
 @import url("https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap");
@@ -180,9 +180,7 @@ html {
   --type-body-lh: 1.5;
   --type-body-track: 0; /* no added squeeze at body size */
   --type-label-size: 13px;
-  --type-label-track: 0.01em; /* a hair of air at 13px */
   --type-caption-size: 12px;
-  --type-button-track: 0.01em;
   --type-composer-size: 16px; /* the Generate brief — one step above body, per Figma 72:27 */
 
   /* Shape — hold the gap between soft containers and crisp controls. */
@@ -204,10 +202,6 @@ html {
   --gen-marker-bg: rgb(11 11 12 / 0.56);
   --gen-marker-edge: rgb(255 255 255 / 0.6);
   --gen-marker-fg: #ffffff;
-  /* Inspector density — the builder's property rows run tighter than the
-     38px form floor: label + control on a 32px line, Figma-inspector style.
-     Builder chrome only; member-facing forms keep the --control-* heights. */
-  --row-h-compact: 32px;
 
   /* Layout. The page gutter (--page-pad) and the mobile bar's height
      (--chrome-top) are the shell's own measures, defined in shell.css. */
@@ -273,10 +267,7 @@ html {
 
   /* The native <select> chevron, drawn in --text-secondary. A background
      image can't read a custom property, so the ink is baked per theme. */
-  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a0a0a0' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   --text-on-accent: #272727;
-
-  --border-control-legacy: #f1f1f1; /* the edge of a pressable outlined control */
 
   /* Interactive emphasis carries the brand (amended 2026-08-14, at
      Chris's direction): Slime is the working accent, and on this canvas
@@ -297,20 +288,8 @@ html {
   --fill-warning: #ffd900;
 
   --chip-raised: #252627;
-  /* Selection controls not yet on the primitives (segments, chips, choice
-     tiles, the builder's rails): hover is a neutral wash; active is a soft
-     neutral pill with a white label (Figma 442:3563, 2026-09-28). The
-     sidebar moved to the NavItem primitive (new look, Phase 3). */
-  --nav-hover-bg: var(--bg-hover);
-  --nav-hover-fg: var(--text-primary);
-  --nav-active-bg: var(--bg-hover);
-  --nav-active-fg: var(--white);
-
   /* Icon buttons (collapse, row menus, builder chrome): neutral hover. */
-  --icon-btn-bg: transparent;
-  --icon-btn-fg: var(--text-secondary);
   --icon-btn-bg-hover: var(--bg-hover);
-  --icon-btn-fg-hover: var(--text-primary);
 
   /* Template card go button: filled at rest, inverts to white with an ink
      arrow while the card is hovered or focused. */
@@ -354,10 +333,7 @@ html {
   --card-highlight: 0 0 0 0 transparent; /* dark only */
 
   /* See the dark block: the select chevron in this theme's --text-secondary. */
-  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23636363' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   --text-on-accent: #272727;
-
-  --border-control-legacy: #272727;
 
   /* On light the brand rides FILLS and washes only: no brand colour
      clears 3:1 on this canvas, so text and information-bearing borders
@@ -371,18 +347,7 @@ html {
   --state-warning: #756200;
   --fill-warning: #ffd900;
 
-  /* See the dark block for these groups. */
-  --nav-hover-bg: var(--state-hover);
-  --nav-hover-fg: var(--text-primary);
-  /* Soft pill (Figma 442:3477, 2026-09-28): the sunken paper with an ink
-     label (an ink pill with a white label before). */
-  --nav-active-bg: var(--state-selected);
-  --nav-active-fg: var(--text-primary);
-
-  --icon-btn-bg: transparent;
-  --icon-btn-fg: var(--text-secondary);
   --icon-btn-bg-hover: var(--state-hover);
-  --icon-btn-fg-hover: var(--text-primary);
 
   /* Go button: sunken at rest; Deep Moss with a Slime arrow on card hover
      (11.45:1). */
@@ -482,229 +447,6 @@ optgroup {
   font-weight: var(--weight-head);
   letter-spacing: var(--type-h4-track);
   color: var(--text-primary);
-}
-
-.sp-btn {
-  font-family: var(--font-sans);
-  font-weight: var(--weight-ui);
-  font-size: 13px;
-  letter-spacing: var(--type-button-track);
-  min-height: 38px;
-  padding: 8px 16px;
-  border-radius: var(--radius-sm);
-  border: 1px solid transparent;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  /* A button's label is one line, always: a wrapped button reads as two
-     actions and doubles the row height. If a label ever clips, shorten the
-     label — never let it fold. */
-  white-space: nowrap;
-  transition:
-    background var(--motion-duration-fast) var(--motion-easing-standard),
-    color var(--motion-duration-fast) var(--motion-easing-standard),
-    border-color var(--motion-duration-fast) var(--motion-easing-standard),
-    opacity var(--motion-duration-fast) var(--motion-easing-standard);
-}
-.sp-btn:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-.sp-btn-primary {
-  background: var(--action-primary);
-  color: var(--action-on-primary);
-}
-.sp-btn-primary:hover:not(:disabled) {
-  background: var(--action-primary-hover);
-}
-.sp-btn-ghost {
-  background: transparent;
-  color: var(--text-secondary);
-  border-color: var(--border-strong);
-}
-.sp-btn-ghost:hover:not(:disabled) {
-  background: var(--bg-hover);
-  color: var(--text-primary);
-}
-
-.sp-input {
-  font-family: var(--font-sans);
-  font-size: 13px;
-  letter-spacing: var(--type-body-track);
-  /* 16px on touch widths — see the mobile block at the end of the file:
-     iOS Safari zooms the page on focusing any field under 16px. */
-  width: 100%;
-  padding: 9px 12px;
-  border-radius: var(--radius-sm);
-  background: var(--surface-field);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-primary);
-  transition:
-    box-shadow var(--motion-duration-fast) var(--motion-easing-standard),
-    border-color var(--motion-duration-fast) var(--motion-easing-standard);
-}
-.sp-input::placeholder {
-  color: var(--text-disabled);
-}
-/* Native selects: the browser's own arrow sat jammed against the right
-   edge, ignored the control's padding, and differed per browser. One
-   chevron instead, inset like the text. The compound selector outranks
-   .sp-input's `background` shorthand, which would otherwise wipe the image.
-   padding-right is !important because several call sites set an inline
-   `padding` shorthand for their own density; without it the value text
-   runs under the chevron. The chevron zone stays compact (26px) so the
-   58px format select in the fill picker still fits its three letters. */
-select.sp-input {
-  appearance: none;
-  -webkit-appearance: none;
-  background-image: var(--select-chevron);
-  background-repeat: no-repeat;
-  background-position: right var(--space-8) center;
-  background-size: 12px 12px;
-  padding-right: 26px !important;
-  text-overflow: ellipsis;
-  cursor: pointer;
-}
-select.sp-input:disabled {
-  cursor: default;
-  opacity: 0.5;
-}
-/* A focused text box takes the global focus ring (2 px, 2 px out), like
-   every other control. Its own edge does not change colour. */
-.sp-input:focus {
-  box-shadow: none;
-}
-
-/* Inspector numeric field: a composite control (scrub label + input + unit
-   suffix). Its inner input takes the global focus ring. */
-.sp-numfield[data-disabled] {
-  color: var(--text-disabled);
-}
-
-/* Segmented icon group — alignment triplets, flip pair, resizing modes.
-   One shared hairline container, crisp control radius. Hover and the
-   active segment speak the sidebar nav's language (2026-09-25): the
-   neutral --nav-hover-* wash, and the --nav-active-* pill (the
-   "filled = on" rule; the neutral action fill before). */
-.sp-seg {
-  display: inline-flex;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-}
-.sp-seg button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 30px;
-  color: var(--text-secondary);
-  transition:
-    background var(--motion-duration-fast) var(--motion-easing-standard),
-    color var(--motion-duration-fast) var(--motion-easing-standard);
-}
-.sp-seg button + button {
-  border-left: 1px solid var(--border-subtle);
-}
-.sp-seg button:hover:not(:disabled):not([data-active="true"]) {
-  background: var(--nav-hover-bg);
-  color: var(--nav-hover-fg);
-}
-.sp-seg button[data-active="true"] {
-  background: var(--nav-active-bg);
-  color: var(--nav-active-fg);
-}
-.sp-seg button:disabled {
-  color: var(--text-disabled);
-  cursor: default;
-}
-.sp-seg button:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring-tight);
-  position: relative;
-  z-index: 1;
-}
-/* ── Tab strip ─────────────────────────────────────────────────────────────
-   THE text segment row (2026-09-25): one hairline container, crisp control
-   radius, a divider between segments — the .sp-seg construction for words.
-   It replaces the inline strips that each painted their own states (the
-   template status filter, image source, canvas size, edit / preview, rail
-   tabs, fill tabs, auto-build source, the dev role toggle). Selection is
-   the sidebar nav's --nav-active-* pill, hover its neutral wash.
-   Sizing stays with the caller (padding and type step vary by seat);
-   colour never does. data-stretch shares the row between the segments. */
-.sp-tabstrip {
-  display: inline-flex;
-  flex-shrink: 0;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--surface-raised);
-  overflow: hidden;
-}
-.sp-tabstrip[data-stretch] {
-  display: flex;
-}
-.sp-tabstrip[data-stretch] > .sp-tabstrip__tab {
-  flex: 1;
-}
-.sp-tabstrip__tab {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-sans);
-  white-space: nowrap;
-  color: var(--text-secondary);
-  background: transparent;
-  cursor: pointer;
-  transition:
-    background var(--motion-duration-fast) var(--motion-easing-standard),
-    color var(--motion-duration-fast) var(--motion-easing-standard);
-}
-.sp-tabstrip__tab + .sp-tabstrip__tab {
-  border-left: 1px solid var(--border-subtle);
-}
-.sp-tabstrip__tab:hover:not(:disabled):not([aria-selected="true"]):not([aria-pressed="true"]) {
-  background: var(--nav-hover-bg);
-  color: var(--nav-hover-fg);
-}
-.sp-tabstrip__tab[aria-selected="true"],
-.sp-tabstrip__tab[aria-pressed="true"] {
-  background: var(--nav-active-bg);
-  color: var(--nav-active-fg);
-  font-weight: var(--weight-ui);
-}
-.sp-tabstrip__tab:disabled {
-  color: var(--text-disabled);
-  cursor: default;
-}
-.sp-tabstrip__tab:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring-tight);
-  position: relative;
-  z-index: 1;
-}
-
-/* Text segments (resizing modes): the group fills the row, segments share
-   the width, labels at caption size. */
-.sp-seg[data-stretch] {
-  display: flex;
-  flex: 1;
-}
-.sp-seg[data-stretch] button {
-  flex: 1;
-  width: auto;
-  /* Tighter than the icon segments: these carry words, and at the panel's
-     narrowest the difference between 8px and 4px either side is the
-     difference between "Text shrinks" fitting and not. */
-  padding: 0 var(--space-4);
-  font-size: var(--type-caption-size);
-  letter-spacing: var(--type-label-track);
-  /* One line, always. A wrapped segment silently doubles the row's height
-     and reads as two options; if a label ever outgrows its share, that
-     should show as a visible clip someone fixes, not as a quiet reflow. */
-  white-space: nowrap;
 }
 
 /* THE surface recipe: lifted fill, the lit edge, a soft shadow, soft
@@ -1296,31 +1038,6 @@ input[type="radio"] {
    One content column, one header pattern, one card recipe, two grids. Every
    page inherits these instead of defining its own container. */
 
-/* 32px circular utility icon button (sidebar header controls, row menus,
-   builder chrome). Neutral in both themes since 2026-09-25 (the Figma
-   "Navigation" page): transparent at rest, a wash and the primary glyph on
-   hover. It left the brand hover moments that day. The glyph inherits the
-   colour, so the transition lives here once. */
-.sp-icon-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-full);
-  background: var(--icon-btn-bg);
-  color: var(--icon-btn-fg);
-  border: none;
-  flex-shrink: 0;
-  transition:
-    background-color var(--motion-duration-fast) var(--motion-easing-standard),
-    color var(--motion-duration-fast) var(--motion-easing-standard);
-}
-.sp-icon-btn:hover {
-  background: var(--icon-btn-bg-hover);
-  color: var(--icon-btn-fg-hover);
-}
-
 /* A cell in the builder's icon picker: the icon-button hover, neutral. */
 .sp-icon-cell {
   transition: background var(--motion-duration-fast) var(--motion-easing-standard);
@@ -1487,7 +1204,6 @@ input[type="radio"] {
      existing rung, one over the desktop fields' 13/15. Fields styled
      inline are caught by the viewport meta's maximum-scale=1 instead
      (see index.html). */
-  .sp-input,
   select,
   textarea {
     font-size: var(--type-composer-size);
@@ -1948,31 +1664,7 @@ input[type="radio"] {
    Appended after the platform's component rules so it wins on cascade order.
    Colour properties only — no geometry, no layout, no shadow. */
 
-/* Ghost carries a border in this platform, which makes it the system's secondary:
-   outlined at full contrast, with the label at full contrast too. A control the
-   user is meant to press reads as a deliberate edge, not as a divider. */
-.sp-btn-ghost {
-  color: var(--text-primary);
-  border-color: var(--border-control-legacy);
-}
-.sp-btn-ghost:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--text-primary) 8%, transparent);
-  color: var(--text-primary);
-}
-
-/* Destructive is outlined, never filled: a red fill outranks the primary action
-   and reads as the recommended path, which is the opposite of the intent. */
-.sp-btn[data-tone="danger"] {
-  background: transparent;
-  color: var(--feedback-error);
-  border-color: var(--feedback-error);
-}
-.sp-btn[data-tone="danger"]:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--feedback-error) 8%, transparent);
-}
-
-/* Selection is neutral everywhere it appears — the nav's active pill on
-   every segment, chip, rail item, and choice tile (2026-09-25). The one
+/* Selection is neutral everywhere it appears (2026-09-25). The one
    selection exception: a swatch shows a colour, so a neutral marker can
    vanish against a black or white swatch. The editor blue is the marker colour and reads
    against every hue in the picker. */
