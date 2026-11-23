@@ -6,6 +6,6 @@
     "headline": "Every member of your team can now make graphics that look designed",
     "subhead": "Templates your admins lock and your whole team fills, so every post looks consistent"
   },
-  "baseline": { "chromium": 0, "firefox": 1.55, "webkit": 2.1 },
-  "blurBaseline": { "chromium": 0, "firefox": 3.75, "webkit": 4.73 }
+  "baseline": { "chromium": 0, "firefox": 1.56, "webkit": 2.1, "webkit18": 2.13 },
+  "blurBaseline": { "chromium": 0, "firefox": 3.75, "webkit": 4.74, "webkit18": 5.2 }
 }
